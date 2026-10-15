@@ -36,7 +36,7 @@ GUI-mediated MCP запускает и закрывает собственные
 | Приоритет | Осталось | Что нужно сделать следующим |
 |---|---|---|
 | P0 | DNS и сетевые отказы (19–22) | Raw signed Chromium:3headed-сессии/8наблюдений UDP/DoH сохранены. На скачанной128 дополнительно подтверждены настоящий manager/relay, revision/configuration, upstream DNS, SERVFAIL без protected origin, чувствительный Direct-контроль и same-session recovery. Остались idle/background, глобальные DNS/UDP и смена сети. [Scope и исправления harness](NETWORK_REALITY_HARNESS.md#manager--relay-dns-producer). |
-| P0 | Согласованность платформы (1–18, 40–43) | Все11tuple прошли headed CPU/memory/screen/DPR/platform/GPU/repeat projection на точном runtime128;4issued входят в них.15persisted migration/edit/collision строк+4negatives прошли локально. [Scope](evidence/cohorts-0.8.16.json). Остались font-policy, locale/events voices без имён/ID, actual codecs/PDF/MediaCapabilities/storage manifest и HTTPS identity совместно с19. Второй дисплей, смена сети/питания и физический capture — внешние условия. Canvas/WebGL/Audio и девять контекстов без изменения входов не повторять. |
+| P0 | Согласованность платформы (1–18, 40–43) | Все11tuple прошли headed CPU/memory/screen/DPR/platform/GPU/repeat projection на точном runtime128;4issued входят в них.15persisted migration/edit/collision строк+4negatives прошли локально. [Scope](evidence/cohorts-0.8.16.json). HTTPS/cross-origin identity на runtime129 теперь подтверждена [отдельным срезом](evidence/https-identity-0.8.17.json). Остались font-policy, locale/events voices без имён/ID, actual codecs/PDF/MediaCapabilities/storage manifest. Второй дисплей, смена сети/питания и физический capture — внешние условия. Canvas/WebGL/Audio и девять контекстов без изменения входов не повторять. |
 | P1 | Восстановление данных (30–31, 35–36) | Backup/restore cookies/LS/IndexedDB/вкладок, wrong-password и прерывание уже имеют signed QA evidence. Recovery pin и безопасная форма опубликованы в127. Остались недостающие crash/timeout условия и отдельный WebKit snapshot/restore. Формат Chromium-копии заново не реализуется. [Границы доказательств](BROWSER_DATA_BACKUP.md). |
 | P1 | Расширения (33–34) | Центр, CRX3 crypto и собственный native lifecycle уже реализованы в ограниченном scope. Закрыть непроверенную отмену native install dialog и совместимость нужных пакетов; не повторять весь lifecycle без изменения кода/runtime. |
 | P1 | Updater (37) | Следующие изменённые helpers, прерывания и другие macOS; существующие install/rollback и проверенную continuity не повторять для неизменённого кода. |
@@ -91,3 +91,22 @@ Manager DNS producer и custody проверены на скачанной128 п
 строгое offline-восстановление metadata и отрицательные контроли исправили
 анализ без нового запуска. [Результат](evidence/manager-dns-0.8.16.json)
 не означает полную сетевую квалификацию1.0 и не меняет опубликованные байты128.
+
+## Дополнительно проверено: HTTPS identity на0.8.17
+
+Один headed-прогон точного опубликованного runtime129 подтвердил холодный запрос,
+Accept-CH, same-origin и cross-origin redirects, явное делегирование и запрет
+делегирования hints, DedicatedWorker и фактический ServiceWorker pass-through.
+Доступность заголовков измерена заново на обычном Chrome155.0.8059.80 и runtime
+без настройки; правило отсутствия worker hints из старого HTTP-теста не переносилось.
+
+Все TLS-переходы связаны с собственным CONNECT и kernel process generation
+браузера. Намеренный Direct действительно дошёл до того же endpoint и получил
+отдельную классификацию; запрос с `Accept-Language: xx` при обычной JS identity
+отклонён.396проверок и8offline negative controls прошли. Все4сессии и собственные
+сокеты закрыты, временный TLS-ключ удалён. [Минимизированное evidence](evidence/https-identity-0.8.17.json).
+
+Это raw-runtime HTTPS identity, не новый production manager/relay gate.
+Сертификат собственный, исключение ограничено его SPKI; обычное системное
+доверие HTTPS-upstream, global DNS/UDP/background и смена сети остаются отдельно.
+Приложение не пересобиралось, опубликованные архивы не менялись.

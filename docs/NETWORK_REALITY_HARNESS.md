@@ -174,6 +174,52 @@ network changes and other environments require their own observations.
 Public reports must not contain personal IPs, cookies, credentials, headers,
 raw DNS names or ICE candidates.
 
+## HTTPS identity and CONNECT custody
+
+`scripts/runtime-platform/run-https-identity.mjs` is a separate finite producer.
+It starts two owned TLS origins and a loopback CONNECT proxy. The proxy connects
+only to those origins and refuses other destinations. Private pages execute
+fixed probes and POST bounded results; the CDP pipe permits navigation and
+lifecycle, not arbitrary JavaScript evaluation. An independent wire ledger binds
+request nonce, origin role, TLS peer, CONNECT and the owned browser/helper kernel
+process generation. Initial documents, warm-up frames and redirect hops are
+checked as well as final fetches.
+
+The four headed sessions are ordinary retained Chrome, unconfigured exact
+NeAntik runtime, configured runtime, and intentional Direct. A real request with
+contradictory `Accept-Language` tests identity sensitivity. The Direct session
+must reach the TLS origin with affirmative own-browser custody and no CONNECT;
+missing proxy evidence alone cannot qualify it. Client Hint availability is
+measured anew for each path, with Accept-CH priming, explicit delegation and a
+non-delegated frame control. See the [Client Hints specification](https://wicg.github.io/client-hints-infrastructure/)
+for the distinction between opt-in and cross-origin delegation.
+
+```bash
+node scripts/runtime-platform/run-https-identity.mjs \
+  /absolute/isolated/NeAntik.app /absolute/published-release.json \
+  /absolute/retained/Google-Chrome.app /absolute/reference-binding.json \
+  /absolute/empty-0700-output
+python3 -B scripts/runtime-platform/analyze-https-identity.py \
+  /absolute/output/observations.json /absolute/published-release.json \
+  /absolute/reference-binding.json
+```
+
+The reference binding pins `version`, `executableSHA256`, and `frameworkSHA256`
+from independently retained ordinary Chrome evidence; it is not generated from
+whatever executable happens to be installed. Each session requires fresh native
+resource admission, a new profile and mock Keychain. Runtime bytes are checked
+before and after the matrix. All inputs, source copies, raw synthetic identity
+and observations stay private; the public report contains only hashes, counts,
+checks and limitations. Do not publish the raw output directory.
+
+The one-day certificate is generated locally; only its SPKI is excepted inside
+the disposable test browser. No macOS trust setting changes, and the private key
+is removed after sockets drain. This proves the scoped TLS origin/HTTP identity
+path, **not** OS-default-trusted HTTPS proxy support, production manager/relay,
+global DNS/UDP, HTTP2/3, background traffic or network changes. The first matrix
+on published runtime129 passed without repetition: [results](evidence/https-identity-0.8.17.json).
+The immutable application archives were not rebuilt or replaced.
+
 ## Manager / relay DNS producer
 
 The new source tools extend the existing normal manager route; they do not
