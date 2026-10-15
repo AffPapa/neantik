@@ -119,7 +119,10 @@ import Security
             case "--qa-install-after-finish": .finalizedBeforeSync
             default: nil
         }
-        let observedRuntime = try DirectUpdateRuntimeProvenance.inspectResources(app.appendingPathComponent("Contents/Resources"))
+        // transfer() has moved the app; read under the retained slot custody.
+        let observedRuntime = try slot.withValidatedCandidate { candidate in
+            try DirectUpdateRuntimeProvenance.inspectResources(candidate.appendingPathComponent("Contents/Resources"))
+        }
         let cancellation = QAInstallCancellation()
         var lastFilesystemPoint = "none"
         var reachedReady = false
