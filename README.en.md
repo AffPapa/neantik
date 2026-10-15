@@ -7,8 +7,9 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-GitHub has **0.8.12 (124), public alpha**: corrected nested framework inventory and authenticated audit-key cleanup. ZIP/DMG and actual install/rollback passed; a fresh downloaded headed gate is stopped by macOS memory pressure. The website still serves 0.8.11.
-WebKit camera and microphone remain disabled. The full 1.0 program remains open. Earlier WebKit/download qualifications are retained as historical evidence in the release reports.
+**0.8.13 (125), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.13) and [browser.free](https://browser.free/): corrected SOCKS5 input, host:port URLs and profile launch; MCP exposes engine capabilities.
+The exact signed candidate passed an isolated headed audit. Public ZIP/DMG bytes match and passed notarization, stapling and Gatekeeper. The downloaded manager passed a separate isolated MCP startup/restart smoke; the full headed audit was reused, not rerun.
+System WebKit remains a preview and does not replace the complete fingerprint. WebKit media remains disabled; full1.0 qualification is open.
 
 ## Download
 
@@ -17,7 +18,7 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.8.12 (124), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.12). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.12.json).
+Latest published release: [NeAntik 0.8.13 (125), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.13). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.13.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;

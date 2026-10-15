@@ -7,9 +7,9 @@ Chromium runtime, собранный из зафиксированных исх�
 
 [English version](README.en.md)
 
-На GitHub опубликована **0.8.12 (124), public alpha**: исправлена проверка вложенных файлов framework и добавлена безопасная очистка служебного ключа аудита. ZIP/DMG и реальные установка/откат проверены; отдельный downloaded headed gate остановлен предупреждением памяти macOS. Сайт пока показывает 0.8.11.
-Проверки WebKit и загрузок из предыдущих релизов сохранены в их отчётах. Они не заменяют незавершённую проверку скачанного 0.8.12.
-Полная программа 1.0 ещё не завершена.
+На [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.13) и [browser.free](https://browser.free/) опубликована **0.8.13 (125), public alpha**: исправлены ввод SOCKS5, адреса с портом и запуск профилей; MCP сообщает возможности выбранного движка.
+Подписанный кандидат прошёл изолированный headed-аудит. Публичные ZIP/DMG совпали по SHA-256 и прошли notarization, stapling и Gatekeeper; скачанный менеджер прошёл отдельный изолированный MCP smoke с перезапуском. Повторный полный headed-аудит не запускался.
+Системный WebKit остаётся preview и не подменяет полный fingerprint. Полная программа 1.0 ещё не завершена.
 
 ## Скачать приложение
 
@@ -18,7 +18,7 @@ Chromium runtime, собранный из зафиксированных исх�
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Последний опубликованный выпуск: [NeAntik 0.8.12 (124), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.12). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.8.12.json).
+Последний опубликованный выпуск: [NeAntik 0.8.13 (125), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.13). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.8.13.json).
 
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `156.0.8078.12`, ARM64, Metal;
