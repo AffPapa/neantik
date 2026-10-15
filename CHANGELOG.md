@@ -1,11 +1,11 @@
 # NeAntik changelog
 
-## Direct 0.8.15 (127) — development candidate, ещё не опубликован
+## Direct 0.8.15 (127) — published public alpha — безопасный выбор восстановления
 
-- Завершение восстановления привязано к подтверждённому профилю и журналу. Если журнал сменился, операция отказывается до изменения данных. Из окна одного профиля нельзя завершить восстановление другого.
-- Полный локальный Swift unit-прогон прошёл; новые оконные и exact candidate проверки ещё требуются. Формат копии, identity, Keychain scope и Chromium не менялись.
-- Добавлен отдельный контролируемый DNS/DoH стенд с отказами и отрицательным контролем обхода прокси. Его локальные сетевые тесты не являются доказательством маршрута Chromium; native DNS gate остаётся открытым.
-- Последняя опубликованная версия — [0.8.14 (126)](releases/v0.8.14.json); её файлы и rollback сохранены.
+- Подтверждение восстановления привязано к выбранному профилю и конкретному журналу. Wrong-profile и stale-stage отказываются до изменения данных; профильное окно не предлагает завершить чужое/неподтверждённое восстановление.
+- Полные Swift/Python и новые recovery units, canonical Dev GUI, exact signed headed127, signed WebKit startPage control, doctor13, JS/HTTP DeviceMemory, Apple ZIP/DMG, hosted bytes, downloaded MCP и browser.free152/live прошли. Пропуски и границы — в [отчёте](releases/v0.8.15.json).
+- Новый controlled DNS/DoH срез прошёл на headed signed runtime:8наблюдений/3сессии, SERVFAIL/обрыв/восстановление и чувствительность к Direct обходу. Это raw runtime, не завершение manager/relay и всех19–22.
+- Doctor больше не создаёт executable Python bytecode через потомков. Chromium156, identity, backup/metadata/session schemas и существующие updater helpers сохранены. [0.8.14](releases/v0.8.14.json) остаётся для отката; это не завершённая1.0.
 
 ## Исходные инструменты после 0.8.14
 

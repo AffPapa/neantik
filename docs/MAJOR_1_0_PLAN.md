@@ -1,8 +1,8 @@
 # NeAntik: план до версии 1.0
 
-Последний завершённый выпуск — [0.8.14 (126)](../releases/v0.8.14.json). Он не закрывает всю приёмку 1.0. Точная очередь незавершённого и принятие ограничений — в [NEXT_1_0_SLICES](NEXT_1_0_SLICES.md); исторические результаты ниже не требуют повторного выполнения без изменения входов.
+Последний завершённый выпуск — [0.8.15 (127)](../releases/v0.8.15.json). Он не закрывает всю приёмку 1.0. Точная очередь незавершённого и принятие ограничений — в [NEXT_1_0_SLICES](NEXT_1_0_SLICES.md); исторические результаты ниже не требуют повторного выполнения без изменения входов.
 
-На GitHub и browser.free опубликована **0.8.13 (125)**, Chromium **156.0.8078.12**. [Проверки текущего выпуска](../releases/v0.8.13.json) завершены; это не закрывает всю приёмку 1.0. [Приоритеты следующих срезов и состояние WebKit](NEXT_1_0_SLICES.md) отделяют готовые возможности от локальной разработки и внешних условий. Исследование Fury сохранено; код его AGPL-компонентов в продукт не копируется.
+В127 опубликован recovery pin, завершён signed WebKit startPage-контроль, выполнен controlled DNS raw-runtime срез. Manager/relay DNS integration, фоновые запросы и смена сети остаются открытыми; WebKit proxy/GUI-MCP/media/backup не объявляются готовыми. [Приоритеты следующих срезов](NEXT_1_0_SLICES.md) отделяют эти задачи от уже пройденного. Исследование Fury сохранено; код его AGPL-компонентов в продукт не копируется.
 
 ## Очередь работ
 
@@ -53,8 +53,8 @@
 |16|P1|Apple аппаратные когорты|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
 |17|P1|Общие fingerprint когорты|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
 |18|P1|Обычная web совместимость|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
-|19|P0|Маршрут Chromium|проверено на точном кандидате в ограниченном scope|В подписанной0.8.3 контролируемый HTTP-запрос прошёл через relay. HTTPS0.8.2 — историческое свидетельство; DNS/TLS/UDP для финального кандидата остаются открыты.|
-|20|P0|Отказ mid-session|проверено на точном кандидате в ограниченном scope|В0.8.3 оборваны2 активных канала; обращений к origin во время отказа0. HTTP-маршрут восстановлен; Direct-контроль достиг того же endpoint при отключённом upstream. Смена сети и DNS-отказы остаются открыты.|
+|19|P0|Маршрут Chromium|проверено в ограниченном scope; manager DNS остаётся открыт|HTTP через relay ранее проверен. В127 добавлен headed raw signed runtime DNS/DoH срез:8наблюдений/3сессии; runtime-байты126=127. Следом manager/relay DNS и полный TLS/UDP scope.|
+|20|P0|Отказ mid-session|проверено в ограниченном scope|Существующие2канала relay/отказ/восстановление сохранены. В127 raw-runtime SERVFAIL, stream cut и recovery прошли, Direct-контроль чувствителен. Manager DNS/failure integration и смена сети остаются открыты.|
 |21|P0|WebRTC negatives|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
 |22|P0|Фоновые запросы|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
 |23|P1|Per-profile relay|опубликовано с ограничениями|HTTP/SOCKSauth relay and cleanup; HTTPSdefault-system-trust positive deferred; WebKitauthority separate|
@@ -64,7 +64,7 @@
 |27|P1|Активный network status|реализовано; lifetime matrix открыта|Revision/session observation implemented; continuous/allprotocol freshness acceptance open|
 |28|P2|Domain allow/block|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
 |29|P2|WireGuard/profile|исследование завершено с обоснованным решением|WireGuard deferred by justified infrastructure/product design gates|
-|30|P1|Full encrypted backup|опубликовано с ограничениями|Real signedQA restore cookies/LS/IDB/tabs and interruption; sameMac/Keychain only|
+|30|P1|Full encrypted backup|опубликовано с ограничениями|Real signedQA restore cookies/LS/IDB/tabs and interruption; sameMac/Keychain only. В127 опубликован profile/journal recovery pin с реальными файловыми negative controls и безопасной формой; WebKit snapshot остаётся открыт.|
 |31|P1|Clone vs restore|реализовано и проверено локально|Clone newidentity vsrestore original; noCrossMacsecret portability|
 |32|P1|Cachecleanup|опубликовано publicalpha|Chromium safe cacheallowlist сохранён; WebKit HTTPdisk/memory cache0.8.8: native/exact A v2/Bv1, cookies/LS/IDB/SW/CacheStorage/session сохранены. Без размера/CodeCache/private paths; major hardware/OS coverage открыта.|
 |33|P1|Extension center|опубликовано с ограничениями|Extension inventory/provenance+ownCRX native lifecycle; notuniversalinstallation|
@@ -77,7 +77,7 @@
 |40|P0|One vector patch+test|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
 |41|P0|Positive/negative controls|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
 |42|P0|Values vs behavior|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
-|43|P0|Exact shipped browser|0.8.14(126) опубликована public alpha; major1.0 открыта|[Точная подпись/Apple ZIP+DMG/Gatekeeper/hosted/headed/WebKit/MCP и live Site](../releases/v0.8.14.json); прежние platform observations сохранены в их scope. Все45/OS/hardware gates не закрыты.|
+|43|P0|Exact shipped browser|0.8.15(127) опубликована public alpha; major1.0 открыта|[Точная подпись/Apple ZIP+DMG/Gatekeeper/hosted/headed/WebKit/MCP и live Site152](../releases/v0.8.15.json); прежние platform observations сохранены в их scope. Все45/OS/hardware gates не закрыты.|
 |44|P1|Version regressionreport|реализован отчётный инструмент; поведенческая приёмка открыта|[JSON/читаемая сводка и CI snapshot drift](RELEASE_COMPARISON.md); реальные сопоставимые before/after условия и семантические измерения ещё требуются|
 |45|P1|Docs/CI truth|реализовано в текущем срезе; общий drift gate открыт|Current source/release/site scopes and docs; new4shardCI/localdriververified; completeclaim drift future|
 

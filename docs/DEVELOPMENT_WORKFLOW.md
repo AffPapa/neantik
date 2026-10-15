@@ -56,6 +56,11 @@
 
 ## Релиз и обновления
 
+- GitHub draft после `gh release create --draft` может иметь `untagged-…` URL:
+  запрос `/releases/tags/v…` до публикации вернёт404. Это не доказательство
+  отсутствия прав. Найти созданный draft в каталоге releases, сохранить его ID,
+  сверить уже загруженные assets через `/releases/{id}` и продолжить публикацию
+  этого же draft; не повторять создание, upload или авторизацию.
 - Direct doctor — `scripts/preflight-direct-public-release.py`, а не AffPapa
   client. Передавать `--integrated-app`, `--candidate-manifest`,
   `--gui-fingerprint-report`, `--runtime-lock`, `--release-channel public-alpha`,
