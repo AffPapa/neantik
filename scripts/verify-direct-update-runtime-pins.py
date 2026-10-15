@@ -121,27 +121,57 @@ def golden() -> None:
         raise ValueError('cross-language golden transcript mismatch')
 
 
+def compiled_records(project: Path) -> list[dict]:
+    """Read the two explicit compiled policies, never download-selected paths."""
+    records = []
+    for name, relative in (
+        ('final9', 'Sources/DirectUpdateCore/DirectUpdateRuntimeProvenance.swift'),
+        ('font-system-v1', 'Sources/DirectUpdateCore/DirectUpdateFontRuntimePins.swift'),
+    ):
+        path = project / relative
+        if path.is_symlink() or path.stat().st_size > 256 * 1024:
+            raise ValueError('compiled record source bound')
+        source = path.read_text()
+        def scalar(key: str, *, digest: bool = False):
+            expression = (r'static let ' + key + r' = "([0-9a-f]{64})"' if digest
+                          else r'\b' + key + r'(?:\s*:\s*Int64)?\s*=\s*([0-9_]+)')
+            matches = re.findall(expression, source)
+            if len(matches) != 1:
+                raise ValueError('missing or ambiguous compiled record field: ' + key)
+            return matches[0] if digest else int(matches[0].replace('_', ''))
+        records.append({'name': name, 'reportDigest': scalar('reportDigest', digest=True),
+            **{scope: {'digest': scalar(scope + 'Digest', digest=True),
+                       'entries': scalar(scope + 'Entries'), 'bytes': scalar(scope + 'Bytes'),
+                       'machoCount': 16 if scope == 'runtime' else 0}
+               for scope in ('runtime', 'evidence')}})
+    return records
+
+
+def select_record(observed: dict, report_digest: str, records: list[dict]) -> str:
+    matches = [record['name'] for record in records if
+               all(observed.get(scope) == record[scope] for scope in ('runtime', 'evidence')) and
+               report_digest == record['reportDigest']]
+    if len(matches) != 1:
+        raise ValueError('runtime/evidence/report do not match one complete compiled record')
+    return matches[0]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--reference-app', type=Path, default=PROJECT / 'dist/NeAntik.app')
     args = parser.parse_args()
     try:
         golden()
-        source = (PROJECT / 'Sources/DirectUpdateCore/DirectUpdateRuntimeProvenance.swift').read_text()
+        records = compiled_records(PROJECT)
         resources = args.reference_app / 'Contents/Resources'
         result = {}
         for scope, directory in [('runtime', 'NeAntik Browser.app'), ('evidence', 'NeAntikRuntimeEvidence')]:
             observed = measure(resources / directory, scope)
-            pin = re.search(r'static let ' + scope + r'Digest = "([0-9a-f]{64})"', source)
-            if not pin or observed['digest'] != pin.group(1):
-                raise ValueError(scope + ' fixed pin mismatch')
             result[scope] = observed
         report = resources / 'NeAntikRuntimeEvidence/runtime-verification.json'
         if report.stat().st_size > 65_536 or report.is_symlink():
             raise ValueError('report bound')
-        pin = re.search(r'static let reportDigest = "([0-9a-f]{64})"', source)
-        if not pin or hashlib.sha256(report.read_bytes()).hexdigest() != pin.group(1):
-            raise ValueError('report fixed pin mismatch')
+        selected = select_record(result, hashlib.sha256(report.read_bytes()).hexdigest(), records)
         # Source projections are reviewed checkout inputs, not values chosen by
         # the report. Large patch evidence is hashed, never executed or parsed
         # by native admission.
@@ -156,6 +186,7 @@ def main() -> int:
         spec.loader.exec_module(publication)
         publication.verify(PROJECT, evidence)
         print(json.dumps({'pass': True, 'scope': 'read-only reference reproducibility; not installer authority',
+                          'completeCompiledRecord': selected,
                           'goldenTranscript': True, 'reviewedSourceProjections': True,
                           'publicationBaselineSeparatelyVerified': True, **result}, sort_keys=True))
         return 0

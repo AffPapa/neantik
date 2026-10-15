@@ -119,11 +119,12 @@ import Security
             case "--qa-install-after-finish": .finalizedBeforeSync
             default: nil
         }
+        let observedRuntime = try DirectUpdateRuntimeProvenance.inspectResources(app.appendingPathComponent("Contents/Resources"))
         let cancellation = QAInstallCancellation()
         var lastFilesystemPoint = "none"
         var reachedReady = false
         let operation = Task { try await DirectUpdateInstallDriver.run(lease: lease, slot: slot, expectedCode: observed.pin,
-            cdHash: observed.cdHash, build: build, runtimeSHA256: DirectUpdateRuntimePins.runtimeDigest,
+            cdHash: observed.cdHash, build: build, runtimeSHA256: observedRuntime.runtimeSHA256,
             validateCandidate: validateCandidate, validateReady: { _ in
                 reachedReady = true
                 if mode == "--qa-install-refuse" { throw DirectUpdateInstallSessionError.admission }
@@ -180,7 +181,8 @@ import Security
               let string = plist["CFBundleVersion"] as? String, let build = UInt64(string) else { throw DirectUpdateInstallSessionError.identity }
         let pin = try ProxyRelayExpectedCode.qualifiedPin(at: app, expectedIdentifier: "app.neantik.desktop.update-bootstrap-qa",
             expectedTeamIdentifier: DirectUpdateCodeSignature.team, expectedCDHash: hash)
-        let request = try DirectUpdateBootstrapRequest(receipt: receipt, cdHash: hash, build: build, runtimeSHA256: DirectUpdateRuntimePins.runtimeDigest)
+        let observedRuntime = try DirectUpdateRuntimeProvenance.inspectResources(app.appendingPathComponent("Contents/Resources"))
+        let request = try DirectUpdateBootstrapRequest(receipt: receipt, cdHash: hash, build: build, runtimeSHA256: observedRuntime.runtimeSHA256)
         var retainedReadiness: DirectUpdateCandidateReadiness?
         let pid = try await DirectUpdateInstallSession.run(candidate: executable, request: request, expectedCode: pin,
             validateCustody: {

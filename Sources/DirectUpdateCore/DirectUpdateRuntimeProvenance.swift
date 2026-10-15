@@ -76,8 +76,8 @@ package enum DirectUpdateRuntimeProvenance {
     /// leaf; traversal still budgets its actual bytes and namespace entry.
     package static func measureEvidence(_ url: URL) throws -> DirectRuntimeClosureMeasurement {
         let evidence = try DirectRuntimeClosure.measure(url, scope: "evidence",
-            maximumEntries: DirectUpdateRuntimePins.evidenceEntries + 1,
-            maximumBytes: DirectUpdateRuntimePins.evidenceBytes + 65_536)
+            maximumEntries: DirectUpdateRuntimeRecord.maximumEvidenceEntries + 1,
+            maximumBytes: DirectUpdateRuntimeRecord.maximumEvidenceBytes + 65_536)
         guard let baseline = evidence.publicationBaseline else { throw DirectUpdateRuntimeProvenanceError.metadata }
         try DirectUpdatePublicationBaseline.validate(baseline)
         return evidence
@@ -116,27 +116,26 @@ package enum DirectUpdateRuntimeProvenance {
 
     private static func inspectClosure(_ stage: ExtractedUpdateApp) throws -> DirectUpdateRuntimeProvenanceObservation {
         return try stage.withValidatedApp { app in
-            let resources = app.appendingPathComponent("Contents/Resources")
-            let runtime = try DirectRuntimeClosure.measure(resources.appendingPathComponent("NeAntik Browser.app"),
-                scope: "runtime", maximumEntries: DirectUpdateRuntimePins.runtimeEntries,
-                maximumBytes: DirectUpdateRuntimePins.runtimeBytes)
-            let evidence = try measureEvidence(resources.appendingPathComponent("NeAntikRuntimeEvidence"))
-            try validateMeasurements(runtime, evidence)
-            // This signed publication observation changes between release
-            // days. It is not an immutable source/build input. The stage's
-            // genuine signature and custody still cover its exact bytes.
-            // Hash the very same bounded descriptor-read report bytes before
-            // parsing. Unknown JSON, duplicate keys or altered scalar types
-            // cannot pass the pinned byte-level report digest.
-            guard let bytes = evidence.capturedReport,
-                  BackupFS.hex(SHA256.hash(data: bytes)) == DirectUpdateRuntimePins.reportDigest,
-                  let report = try JSONSerialization.jsonObject(with: bytes) as? [String: Any] else {
-                throw DirectUpdateRuntimeProvenanceError.metadata
-            }
-            try validateReport(report)
-            try Task.checkCancellation()
-            return .init(runtime: runtime, evidence: evidence)
+            try inspectResources(app.appendingPathComponent("Contents/Resources"))
         }
+    }
+
+    /// Shared actual-byte observation for retained stage and premigration
+    /// bootstrap. The caller independently owns signature and bundle custody;
+    /// this scalar result never grants installation or profile access.
+    package static func inspectResources(_ resources: URL) throws -> DirectUpdateRuntimeProvenanceObservation {
+        let runtime = try DirectRuntimeClosure.measure(resources.appendingPathComponent("NeAntik Browser.app"),
+            scope: "runtime", maximumEntries: DirectUpdateRuntimeRecord.maximumRuntimeEntries,
+            maximumBytes: DirectUpdateRuntimeRecord.maximumRuntimeBytes)
+        let evidence = try measureEvidence(resources.appendingPathComponent("NeAntikRuntimeEvidence"))
+        let record = try validateMeasurements(runtime, evidence)
+        guard let bytes = evidence.capturedReport,
+              let report = try JSONSerialization.jsonObject(with: bytes) as? [String: Any] else {
+            throw DirectUpdateRuntimeProvenanceError.metadata
+        }
+        try validateReport(report, record: record)
+        try Task.checkCancellation()
+        return .init(runtime: runtime, evidence: evidence)
     }
 
     package static func inspectStageAsynchronously(_ stage: ExtractedUpdateApp) async throws -> DirectUpdateRuntimeProvenanceObservation {
@@ -148,46 +147,53 @@ package enum DirectUpdateRuntimeProvenance {
         } onCancel: { worker.cancel() }
     }
 
-    package static func validateMeasurements(_ runtime: DirectRuntimeClosureMeasurement, _ evidence: DirectRuntimeClosureMeasurement) throws {
-        guard runtime.digest == DirectUpdateRuntimePins.runtimeDigest,
-              evidence.digest == DirectUpdateRuntimePins.evidenceDigest,
-              runtime.entries == DirectUpdateRuntimePins.runtimeEntries,
-              evidence.entries == DirectUpdateRuntimePins.evidenceEntries,
-              runtime.regularBytes == DirectUpdateRuntimePins.runtimeBytes,
-              evidence.regularBytes == DirectUpdateRuntimePins.evidenceBytes else {
+    @discardableResult
+    package static func validateMeasurements(_ runtime: DirectRuntimeClosureMeasurement, _ evidence: DirectRuntimeClosureMeasurement) throws -> DirectUpdateRuntimeRecord {
+        // Select one whole compiled tuple. Matching individual fields from
+        // different releases, a source marker or a supplied hash cannot pass.
+        guard let report = evidence.capturedReport,
+              let record = DirectUpdateRuntimeRecord.allCases.first(where: {
+                  runtime.digest == $0.runtimeDigest && evidence.digest == $0.evidenceDigest &&
+                  runtime.entries == $0.runtimeEntries && evidence.entries == $0.evidenceEntries &&
+                  runtime.regularBytes == $0.runtimeBytes && evidence.regularBytes == $0.evidenceBytes &&
+                  BackupFS.hex(SHA256.hash(data: report)) == $0.reportDigest
+              }) else {
             throw DirectUpdateRuntimeProvenanceError.closure
         }
         guard runtime.machoPaths == DirectUpdateRuntimePins.machoPaths, evidence.machoPaths.isEmpty else {
             throw DirectUpdateRuntimeProvenanceError.architecture
         }
+        return record
     }
 
     /// Pure schema/policy tests do not manufacture provenance observations.
-    package static func validateReport(_ report: [String: Any]) throws {
+    package static func validateReport(_ report: [String: Any], record: DirectUpdateRuntimeRecord = .final9) throws {
         func integer(_ value: Any?, equals expected: Int) -> Bool {
             guard let n = value as? NSNumber, CFGetTypeID(n) != CFBooleanGetTypeID() else { return false }
             return n.doubleValue == Double(expected)
         }
         let keys = Set(["schemaVersion", "chromiumVersion", "architecture", "buildArguments", "createdAt", "executable", "framework",
                         "codeSignature", "codeSignatureKind", "fingerprintProtocolStrings", "gpuMode", "machoCount",
-                        "freshWholeSourceTreeObserved", "sourceEvidenceMode"] + Array(DirectUpdateRuntimePins.reportHashes.keys))
+                        "freshWholeSourceTreeObserved", "sourceEvidenceMode"] + Array(record.reportHashes.keys) +
+                       (record == .fontSystemV1 ? ["sourceVariant"] : []))
         guard Set(report.keys) == keys, integer(report["schemaVersion"], equals: 3),
               integer(report["machoCount"], equals: DirectUpdateRuntimePins.machoPaths.count),
               report["chromiumVersion"] as? String == DirectUpdateRuntimePins.chromiumVersion,
               report["architecture"] as? String == "arm64", report["gpuMode"] as? String == "metal",
               report["codeSignature"] as? String == "verified", report["codeSignatureKind"] as? String == "developer-id",
               report["fingerprintProtocolStrings"] as? String == "verified",
-              report["sourceEvidenceMode"] as? String == "executed-final9-preserved-build-and-current-packaging-inputs",
+              report["sourceEvidenceMode"] as? String == record.sourceMode,
+              record != .fontSystemV1 || report["sourceVariant"] as? String == "font-system-v1",
               let observed = report["freshWholeSourceTreeObserved"] as? NSNumber,
               CFGetTypeID(observed) == CFBooleanGetTypeID(), !observed.boolValue,
-              let created = report["createdAt"] as? String, created == "2026-10-10T07:09:29.793627Z",
-              DirectUpdateRuntimePins.reportHashes.allSatisfy({ report[$0.key] as? String == $0.value }),
+              let created = report["createdAt"] as? String, created == record.createdAt,
+              record.reportHashes.allSatisfy({ report[$0.key] as? String == $0.value }),
               let args = report["buildArguments"] as? [String: String],
-              args == ["sha256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01"],
+              args == ["sha256": record.argsDigest],
               let executable = report["executable"] as? [String: String],
-              executable == ["path": DirectUpdateRuntimePins.executable, "sha256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0"],
+              executable == ["path": DirectUpdateRuntimePins.executable, "sha256": record.executableDigest],
               let framework = report["framework"] as? [String: String],
-              framework == ["path": DirectUpdateRuntimePins.framework, "sha256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"] else {
+              framework == ["path": DirectUpdateRuntimePins.framework, "sha256": record.frameworkDigest] else {
             throw DirectUpdateRuntimeProvenanceError.metadata
         }
     }

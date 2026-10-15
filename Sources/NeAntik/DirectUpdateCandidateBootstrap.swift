@@ -82,14 +82,7 @@ enum DirectUpdateCandidateBootstrap {
             let runtimeURL = resources.appendingPathComponent("NeAntik Browser.app")
             _ = try DirectUpdateCodeSignature.inspect(runtimeURL, role: .runtime)
             _ = try DirectUpdateCodeSignature.inspect(runtimeURL.appendingPathComponent("Contents/Frameworks/NeAntik Browser Framework.framework"), role: .framework)
-            let runtime = try DirectRuntimeClosure.measure(runtimeURL, scope: "runtime",
-                maximumEntries: DirectUpdateRuntimePins.runtimeEntries, maximumBytes: DirectUpdateRuntimePins.runtimeBytes)
-            let evidence = try DirectUpdateRuntimeProvenance.measureEvidence(resources.appendingPathComponent("NeAntikRuntimeEvidence"))
-            try DirectUpdateRuntimeProvenance.validateMeasurements(runtime, evidence)
-            phase = "report"
-            guard let report = evidence.capturedReport, BackupFS.hex(SHA256.hash(data: report)) == DirectUpdateRuntimePins.reportDigest,
-                  let dictionary = try JSONSerialization.jsonObject(with: report) as? [String: Any] else { throw DirectUpdateInstallSessionError.custody }
-            try DirectUpdateRuntimeProvenance.validateReport(dictionary)
+            let observedRuntime = try DirectUpdateRuntimeProvenance.inspectResources(resources)
             try BackupFS.validateDirectoryPath(app, rootIdentity)
             phase = "reply-root"
             var freshRootStatus = stat()
@@ -106,7 +99,7 @@ enum DirectUpdateCandidateBootstrap {
                 throw DirectUpdateInstallSessionError.custody
             }
             phase = "reply-frame"
-            let reply = try request.reply(cdHash: fields.cdHash, build: fields.build, runtimeSHA256: DirectUpdateRuntimePins.runtimeDigest, auditRecordDigest: audit?.1)
+            let reply = try request.reply(cdHash: fields.cdHash, build: fields.build, runtimeSHA256: observedRuntime.runtimeSHA256, auditRecordDigest: audit?.1)
             try writeExactly(reply)
             // Real EOF seals the reply. Neither output nor logging can append a
             // second frame while owner records ACK. Continue is private stdin.

@@ -2,6 +2,7 @@
 from pathlib import Path
 import argparse
 import shutil
+import os
 import chromium_15612_release_evidence as source
 import chromium_15612_variant as variant
 
@@ -76,14 +77,53 @@ def process(project: Path, evidence: Path, lock: dict, *, copy: bool = False) ->
                 raise ValueError('Packaged font evidence has an extra, linked or special member')
 
 
+def normalize_font_modes(project: Path, evidence: Path, lock: dict) -> None:
+    """Normalize only a closed, fresh unsigned evidence tree before sealing.
+
+    Verification paths never change modes. Extra members, links and shared
+    files are refused before touching any entry.
+    """
+    source.need(variant.reviewed_lock_prefix(lock) == variant.FONT_PREFIX, 'Mode recipe is font-successor only')
+    process(project, evidence, lock)
+    common = {'fingerprint-chromium.lock.json', 'source-provenance.json', 'args.gn',
+              'runtime-verification.json', 'security-baseline.json', 'release-security-baseline.json',
+              'neantik-patch-series.json', 'apple-device-tuples.json'}
+    expected = set(names(project, lock)) | common
+    directories = {p.as_posix() for name in expected for p in Path(name).parents if p != Path('.')}
+    entries = list(evidence.rglob('*'))
+    source.need(len(entries) <= 2_000 and not evidence.is_symlink() and evidence.is_dir(), 'Evidence mode namespace exceeds policy')
+    seen = set()
+    for path in entries:
+        relative = path.relative_to(evidence).as_posix()
+        source.need(not path.is_symlink() and path.stat().st_uid == os.getuid(), 'Unsafe evidence mode entry')
+        if path.is_file():
+            source.need(relative in expected and path.stat().st_nlink == 1, 'Unexpected or shared evidence file')
+            seen.add(relative)
+        else:
+            source.need(path.is_dir() and relative in directories, 'Unexpected evidence directory')
+    source.need(seen == expected, 'Missing evidence mode input')
+    evidence.chmod(0o755)
+    for path in entries:
+        relative = path.relative_to(evidence).as_posix()
+        path.chmod(0o755 if path.is_dir() else
+                   0o600 if relative in {'runtime-verification.json', 'release-security-baseline.json'} else 0o644)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('lock', type=Path)
     parser.add_argument('evidence', type=Path)
     parser.add_argument('--copy', action='store_true')
+    parser.add_argument('--normalize-font-modes', action='store_true', help='Fresh unsigned font evidence only')
     args = parser.parse_args()
     try:
-        process(Path(__file__).resolve().parents[1], args.evidence,
-                source.read_object(args.lock, 'M156 lock'), copy=args.copy)
+        project = Path(__file__).resolve().parents[1]
+        lock = source.read_object(args.lock, 'M156 lock')
+        if args.normalize_font_modes:
+            if args.copy:
+                parser.error('Copy and mode sealing are separate stages')
+            normalize_font_modes(project, args.evidence, lock)
+        else:
+            process(project, args.evidence, lock, copy=args.copy)
     except (OSError, ValueError) as error:
         parser.exit(1, 'M156 packaged evidence rejected: ' + str(error) + '\n')

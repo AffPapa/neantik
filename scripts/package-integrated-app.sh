@@ -20,6 +20,7 @@ BUILD_ARGS="$2"
 SOURCE_ROOT="$3"
 CANDIDATE_LOCK="$4"
 SOURCE_PROVENANCE="$(dirname "$SOURCE_ROOT")/source-provenance.json"
+SECURITY_BASELINE_SOURCE="$PROJECT_DIR/runtime/security-baseline.json"
 
 RUNTIME_VERSION="$(
   plutil -extract fingerprintChromium.chromiumVersion raw -o - \
@@ -46,6 +47,7 @@ elif [[ "$RUNTIME_VERSION" == "156.0.8078.12" ]]; then
   if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ]]; then
     # Additive canonical proof; retain the historical emitted files beside src.
     SOURCE_PROVENANCE="$PROJECT_DIR/runtime/${M156_EVIDENCE_PREFIX}-port-candidate.json"
+    SECURITY_BASELINE_SOURCE="$(python3 "$PROJECT_DIR/scripts/chromium_15612_font_report.py" --baseline)"
   fi
 elif [[ "$RUNTIME_VERSION" == "152.0.7977.64" ]]; then
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
@@ -185,7 +187,7 @@ mkdir -p "$EVIDENCE" "$LICENSES"
 ditto "$SNAPSHOT_RUNTIME" "$RESOURCES/NeAntik Browser.app"
 cp "$CANDIDATE_LOCK" \
   "$EVIDENCE/fingerprint-chromium.lock.json"
-cp "$PROJECT_DIR/runtime/security-baseline.json" \
+cp "$SECURITY_BASELINE_SOURCE" \
   "$EVIDENCE/security-baseline.json"
 cp "$PROJECT_DIR/runtime/nevision-patches/series.json" \
   "$EVIDENCE/neantik-patch-series.json"
@@ -217,6 +219,10 @@ elif [[ "$RUNTIME_VERSION" == "156.0.8078.12" ]]; then
 fi
 cp "$SNAPSHOT_ARGS" "$EVIDENCE/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE/runtime-verification.json"
+if [[ "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-v1" ]]; then
+  python3 "$PROJECT_DIR/scripts/package-manager-release-baseline.py" --project-root "$PROJECT_DIR" --evidence "$EVIDENCE"
+  python3 "$PROJECT_DIR/scripts/chromium_15612_packaged_evidence.py" "$CANDIDATE_LOCK" "$EVIDENCE" --normalize-font-modes
+fi
 cp "$RUNTIME_NOTICES_FILE" \
   "$RESOURCES/NeAntikRuntimeNotices.md"
 ditto "$COMPLIANCE_DIR" "$COMPLIANCE"

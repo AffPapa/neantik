@@ -412,6 +412,13 @@ def verify(
                 )
 
     if runtime_version == "156.0.8078.12":
+        from chromium_15612_variant import reviewed_lock_prefix, FONT_PREFIX
+        if reviewed_lock_prefix(load_json(evidence / 'fingerprint-chromium.lock.json')) == FONT_PREFIX:
+            from chromium_15612_font_report import verify_report_file
+            try:
+                verify_report_file(report_path)
+            except ValueError as error:
+                raise PackagedRuntimeReportError(str(error)) from error
         verify_m156_source_and_runtime(report, runtime_app, evidence, project_root)
 
     command_output(

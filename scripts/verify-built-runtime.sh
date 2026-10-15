@@ -70,6 +70,9 @@ elif [[ "$LOCK_VERSION" == "156.0.8078.12" ]]; then
   IS_CHROMIUM_15612=1
   M156_EVIDENCE_PREFIX="$(python3 "$SCRIPT_DIR/chromium_15612_variant.py" "$LOCK_VERSION_SOURCE")"
   SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/${M156_EVIDENCE_PREFIX}-source-contract.json"
+  if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ]]; then
+    SECURITY_BASELINE_FILE="$(python3 "$SCRIPT_DIR/chromium_15612_font_report.py" --baseline)"
+  fi
 else
   echo "Unsupported Chromium runtime version for release verification: $LOCK_VERSION" >&2
   exit 65
@@ -619,10 +622,11 @@ if os.environ["BUILD_ARGS_SHA256"]:
     report["buildArguments"] = {
         "sha256": os.environ["BUILD_ARGS_SHA256"],
     }
-Path(os.environ["REPORT_PATH"]).write_text(
-    json.dumps(report, indent=2, sort_keys=True) + "\n",
-    encoding="utf-8",
-)
+content = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("utf-8")
+if report.get('sourceVariant') == 'font-system-v1':
+    from chromium_15612_font_report import preserved_report_bytes
+    content = preserved_report_bytes(report, script_dir.parent)
+Path(os.environ["REPORT_PATH"]).write_bytes(content)
 PY
   chmod 600 "$REPORT_PATH"
 fi
