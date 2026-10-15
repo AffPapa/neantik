@@ -84,6 +84,51 @@ is a separate operation.
 
 No runtime capability, environment emission, UI or MCP opt-in is enabled. The
 current process boundary refuses `system-v1`, and WebKit refuses this Chromium
-policy. Manager and test sources compile; the shared Python contracts passed.
-Swift test execution and exact runtime/browser behavior remain pending native
-admission. This is not a qualified or released font policy.
+policy. The ordinary manager regression passed:173 Swift suites plus1501
+Python contracts and30 focused workflow controls. Disabled/native fixtures are
+not counted as executed. See [manager scope](../../docs/evidence/font-manager-development.json).
+This is not a qualified or released font policy.
+
+
+## Fixed browser/renderer QA witness — prepared
+
+`chromium-font-witness.json` is a separate input contract applied after the
+original policy patch. Its text delta and two NeAntik-original TTF resources
+are separate from the frozen policy manifest. GN generation and four target
+header checks passed. The new objects are **not compiled or linked**; resource
+admission stopped before execution. [Current scope](../../docs/evidence/font-witness-development.json).
+
+The QA seam accepts only `NEANTIK_FONT_QA=owned-v1`, a32-hex correlation nonce,
+and an existing private nonce-bound temporary root. The root has fixed
+`profile`, `crashes`, `marker` and `witness.log` entries. Browser-side checks
+retain directory/file identity, reject symlinks/ACLs/flags/permissive modes,
+and refuse managed-policy redirection before a default profile can be created.
+Marker/log opens are nonblocking so malformed FIFOs cannot hang admission.
+The requested CDP pipes are checked before opening any new descriptor.
+
+The browser supplies a fixed Crashpad directory and requires stderr logging.
+Sandboxed children compare the browser-approved profile path without reopening
+the temporary marker. The renderer reads only fixed signed-bundle resources,
+checks SHA256 and registers them in its own process before the default font
+cache. There is no font installation, arbitrary resource loader, new sandbox
+grant, user-facing option or MCP tool. An acknowledgement has only nonce, PID,
+role and fixed completion/selection booleans; it is correlation, not authority
+against the same OS user. The harness still needs kernel process custody and
+exact-runtime pins.
+
+Future actual qualification must include no-seed and configured sessions on
+the same candidate, positive native selection of both canaries, repeat/crop
+metrics, actual fallback/style/custom collection/WOFF2 operations and Font
+Access permission behavior. Missing acknowledgements, contexts, resources or
+completion never imply PASS. Malformed-root/FIFO, managed-policy redirection
+and missing CDP-pipe controls must terminate without touching default data.
+Those operations have not run. Ordinary manager, old primitive and old7object
+receipts remain valid for their unchanged scope; this new seam needs its own
+compile/link/headed gates.
+
+Offline input verification (not runtime qualification):
+
+```sh
+python3 -B scripts/runtime-platform/verify-font-witness-inputs.py
+python3 -B -m unittest scripts.tests.test_font_witness_inputs
+```

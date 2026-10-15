@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "status": "source-applied-and-GN-verified;not-compiled-or-linked",
+  "manifest": "runtime/font-policy-v1/chromium-font-witness.json",
+  "manifestSHA256": "9645de1b7dac136df452abe2a3e039a12beef1689c58686536b9281b5e7b55b7",
+  "dependsOn": "runtime/font-policy-v1/chromium-host-font-policy.json",
+  "textFiles": 8,
+  "originalFixedResources": 2,
+  "GNStages": 5,
+  "sourceInputControlTests": 4,
+  "sourceInputControls": [
+    "changed font/source/patch hash refusal",
+    "missing fixture/path traversal refusal",
+    "malformed SFNT bounds refusal"
+  ],
+  "readOnlyReviewCorrections": [
+    "nonblocking marker/log open before regular-file validation",
+    "renderer dependency after initial deps assignment"
+  ],
+  "sourceBoundaries": [
+    "missing request no-op; invalid request aborts QA",
+    "CDP pipe check before filesystem opens",
+    "raw and effective profile path fences before creating override/default fallback",
+    "owned Crashpad path; stderr acknowledgement only",
+    "fixed SHA256 font resources; process-scoped registration",
+    "timeout/registration error/missing native selection fails",
+    "seed optional for witness, required for actual policy"
+  ],
+  "resourceAdmission": {
+    "eligibleForAttempt": false,
+    "reason": "memory pressure warning; no compilation or native execution attempted"
+  },
+  "ordinaryManagerRegression": "font-manager-development.json; matching inputs retained",
+  "actualBrowser": false,
+  "compiled": false,
+  "runtimeLinked": false,
+  "shippedRuntimeChanged": false,
+  "releaseQualified": false,
+  "remaining": [
+    "compile new witness/delegate/renderer objects",
+    "link coherent runtime without replacing rollback",
+    "actual malformed-root/FIFO/policy-redirect and configured/unconfigured headed controls",
+    "exact signed app and hosted-byte qualification"
+  ],
+  "capturedAt": "2026-10-15T19:34:58.053010+00:00"
+}

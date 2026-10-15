@@ -143,3 +143,11 @@ harness сохранены; повторялись только затронут
 [Scope и ограничения](evidence/font-manager-development.json).
 Renderer witness и квалификация нового runtime ещё не пройдены.
 Это development-код, не новая поставляемая функция.
+
+
+Renderer witness подготовлен отдельной дельтой: два собственных фиксированных
+шрифта в bundle, process-only регистрация, raw/effective profile fences,
+отдельный Crashpad path и bounded ACK. GN прошёл5этапов;4offline input-контроля
+ловят повреждение/подмену входов. Компиляция и настоящий браузерный запуск
+не начинались из-за memory pressure warning. Это не renderer PASS и не закрытие
+пункта1. [Подтверждённый scope](evidence/font-witness-development.json).
