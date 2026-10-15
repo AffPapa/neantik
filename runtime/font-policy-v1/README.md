@@ -340,7 +340,24 @@ python3 -B scripts/chromium_15612_font_release_evidence.py
 Optional `--runtime-app` and `--args-gn` compare the exact unsigned output after
 source admission. The script never grants release or installation authority.
 The shared M156 resolver refuses missing/unknown variant markers and mixed
-old/new paths. Existing packaging/report/enrollment callers and compiled updater
-records still need explicit successor integration. Published 0.8.17's updater
+old/new paths. Source/build/package/report/candidate and enrollment selectors
+now explicitly recognize this successor. The copier includes a closed list of
+public ancestor/font dependencies, original assets, owned QA sources and the
+public headed summary. It never copies private traces or the full inventory.
+The report keeps the ancestor observation and new postbuild observation distinct.
+Both report creation and standalone packaged verification compare the complete
+preserved signed font runtime; relabeling an older runtime is rejected.
+
+Before executing the current license tool, packaging separately checks 9,552
+inherited signing/license/import/metadata files against an independently pinned
+projection of the authenticated ancestor. Its one native COPY group requires
+exact aliases and the full link count. This bounded check is neither a new
+whole-source observation nor permission to rebuild the engine. Source tools
+are not executed by the verifier itself.
+
+Python integration, corruption and mixed-identity controls are local tooling
+evidence. The updated native enrollment allowlist still needs the next manager
+integration run. New packaged evidence/report bytes, compiled updater records,
+and exact signed candidate qualification remain open. Published 0.8.17's updater
 cannot learn new runtime pins from downloaded metadata: a bridge or clearly
 explained manual signed upgrade remains necessary before delivery.

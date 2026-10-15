@@ -26,7 +26,7 @@ from chromium_15540_variant import verify_candidate_document as verify_candidate
 
 def verify_live_source(document: dict, source_root: Path, project_root: Path) -> None:
     if document.get("targetChromiumVersion") == "156.0.8078.12":
-        from chromium_15612_release_evidence import verify_candidate_document as verify_m156
+        from chromium_15612_variant import verify_candidate_document as verify_m156
         try:
             verify_m156(document, project_root=project_root, source_root=source_root)
         except ValueError as error:
@@ -101,6 +101,9 @@ def main() -> int:
         if args.built_source_root is not None or args.build_evidence is not None:
             if document.get("targetChromiumVersion") != "156.0.8078.12" or args.built_source_root is None or args.build_evidence is None or args.source_root is not None:
                 raise SourceProvenanceError("Preserved build mode requires exact M156 root and evidence; cannot be combined with live mode")
+            from chromium_15612_variant import prefix_for, FONT_PREFIX
+            if prefix_for(document) == FONT_PREFIX:
+                raise SourceProvenanceError('Font successor uses its reviewed postbuild proof, not historical final9 built-source mode')
             from chromium_15612_built_source import verify as verify_built_source
             try:
                 verify_built_source(args.built_source_root, args.build_evidence, document, project_root)

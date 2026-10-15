@@ -238,7 +238,11 @@ def manifest_payload(
     runtime_framework_relative = runtime_framework.relative_to(app).as_posix()
     evidence_root = "Contents/Resources/NeAntikRuntimeEvidence"
     runtime_version = str(runtime_info.get("CFBundleShortVersionString", ""))
-    source_contract_name = GUI_VERIFIER.source_contract_name(runtime_version)
+    from chromium_15612_release_evidence import read_object
+    source_contract_name = GUI_VERIFIER.source_contract_name(
+        runtime_version, read_object(
+            regular_bundle_file(app, evidence_root + '/fingerprint-chromium.lock.json'),
+            'runtime candidate lock'))
 
     return {
         "schemaVersion": 3,

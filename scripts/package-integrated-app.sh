@@ -40,8 +40,13 @@ elif [[ "$RUNTIME_VERSION" == "155.0.8059.40" ]]; then
   SOURCE_CONTRACT_NAME="${M155_EVIDENCE_PREFIX}-source-contract.json"
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/$SOURCE_CONTRACT_NAME"
 elif [[ "$RUNTIME_VERSION" == "156.0.8078.12" ]]; then
-  SOURCE_CONTRACT_NAME="chromium-15612-source-contract.json"
+  M156_EVIDENCE_PREFIX="$(python3 "$PROJECT_DIR/scripts/chromium_15612_variant.py" "$CANDIDATE_LOCK")"
+  SOURCE_CONTRACT_NAME="${M156_EVIDENCE_PREFIX}-source-contract.json"
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/$SOURCE_CONTRACT_NAME"
+  if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ]]; then
+    # Additive canonical proof; retain the historical emitted files beside src.
+    SOURCE_PROVENANCE="$PROJECT_DIR/runtime/${M156_EVIDENCE_PREFIX}-port-candidate.json"
+  fi
 elif [[ "$RUNTIME_VERSION" == "152.0.7977.64" ]]; then
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
   SOURCE_CONTRACT_NAME="chromium-152-source-contract.json"
@@ -65,6 +70,9 @@ fi
 python3 "$PROJECT_DIR/scripts/runtime_build_path.py" \
   "$SOURCE_ROOT" "$BUILD_ARGS" "$CANDIDATE_LOCK" >/dev/null
 EXPECTED_CANDIDATE_LOCK="$(dirname "$SOURCE_ROOT")/runtime-candidate-lock.json"
+if [[ "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-v1" ]]; then
+  EXPECTED_CANDIDATE_LOCK="$PROJECT_DIR/runtime/fingerprint-${M156_EVIDENCE_PREFIX}.lock.json"
+fi
 if [[ "$(cd "$(dirname "$CANDIDATE_LOCK")" && pwd -P)/$(basename "$CANDIDATE_LOCK")" !=
       "$(cd "$(dirname "$EXPECTED_CANDIDATE_LOCK")" && pwd -P)/$(basename "$EXPECTED_CANDIDATE_LOCK")" ]]; then
   echo "Candidate lock must be the one emitted beside source provenance." >&2
@@ -81,9 +89,16 @@ if [[ "$CANDIDATE_LOCK" != /* ||
   exit 66
 fi
 if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.12" ]]; then
-  : "${NEANTIK_M156_BUILD_EVIDENCE:?Set the private final9 executed build evidence directory}"
-  "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE" \
-    --built-source-root "$SOURCE_ROOT" --build-evidence "$NEANTIK_M156_BUILD_EVIDENCE"
+  if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ]]; then
+    # The new variant authenticates its own executed build + later complete FD
+    # proof. Do not relabel it as a fresh scan or historical final9 output.
+    "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE" --runtime-lock "$CANDIDATE_LOCK"
+    python3 "$PROJECT_DIR/scripts/chromium_15612_font_packaging.py" "$SOURCE_ROOT"
+  else
+    : "${NEANTIK_M156_BUILD_EVIDENCE:?Set the private final9 executed build evidence directory}"
+    "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE" \
+      --built-source-root "$SOURCE_ROOT" --build-evidence "$NEANTIK_M156_BUILD_EVIDENCE"
+  fi
 else
   "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
   "$SOURCE_PROVENANCE" \

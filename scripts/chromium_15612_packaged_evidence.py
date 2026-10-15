@@ -3,9 +3,10 @@ from pathlib import Path
 import argparse
 import shutil
 import chromium_15612_release_evidence as source
+import chromium_15612_variant as variant
 
 
-def names(project: Path) -> list[str]:
+def names(project: Path, lock: dict | None = None) -> list[str]:
     root = project / 'runtime'
     proof = root / (source.PREFIX + '-source-evidence')
     source.evidence_documents(proof)
@@ -19,16 +20,41 @@ def names(project: Path) -> list[str]:
             result.append(path.relative_to(root).as_posix())
         elif not path.is_dir():
             raise ValueError('M156 proof contains a special file')
+    if lock is not None and variant.reviewed_lock_prefix(lock) == variant.FONT_PREFIX:
+        import chromium_15612_font_release_evidence as font
+        result += [font.PREFIX + '-' + suffix + '.json' for suffix in (
+            'source-contract', 'source-input-manifest', 'source-snapshot', 'port-candidate', 'source-proof')]
+        policy = root / 'font-policy-v1'
+        for name in font.MANIFESTS:
+            manifest = source.read_object(policy / name, 'font source manifest')
+            result += ['font-policy-v1/' + name, 'font-policy-v1/' + manifest['patchFile']]
+            result += ['font-policy-v1/' + asset['source'] for asset in manifest.get('fixedAssets', [])]
+            for owned, digest in manifest.get('ownedInputs', {}).items():
+                path = source.safe_relative_regular(policy, owned)
+                source.need(source.sha256_file(path) == digest, 'Owned font implementation drift')
+                result.append('font-policy-v1/' + owned)
+        result += ['font-policy-v1/native-probe/BUILD.gn', 'font-policy-v1/native-probe/neantik_font_probe.mm',
+                   'font-policy-v1/headed-development.json']
+        from chromium_15612_font_packaging import manifest, MANIFEST
+        manifest(project)
+        result.append(MANIFEST)
+    source.need(len(result) == len(set(result)), 'Duplicate M156 packaged dependency')
     return result
 
 
 def process(project: Path, evidence: Path, lock: dict, *, copy: bool = False) -> None:
-    candidate = source.read_object(project / 'runtime' / (source.PREFIX + '-port-candidate.json'), 'M156 candidate')
-    source.verify_candidate_lock(lock, provenance=candidate, project_root=project)
+    prefix = variant.reviewed_lock_prefix(lock)
+    candidate = source.read_object(project / 'runtime' / (prefix + '-port-candidate.json'), 'M156 candidate')
+    variant.verify_candidate_lock(lock, provenance=candidate, project_root=project)
     if evidence.is_symlink() or not evidence.is_dir():
         raise ValueError('Evidence root must be an existing regular directory')
-    for relative in names(project):
-        src = source.safe_relative_regular(project / 'runtime', relative)
+    dependencies = names(project, lock)
+    for relative in dependencies:
+        # This single, public dependency lives outside runtime. Never copy the
+        # private headed trace or broaden this mapping to a research directory.
+        src = (source.safe_relative_regular(project, 'docs/evidence/font-variation-headed-development.json')
+               if relative == 'font-policy-v1/headed-development.json'
+               else source.safe_relative_regular(project / 'runtime', relative))
         dst = evidence / relative
         if any(p.is_symlink() for p in (dst, *dst.parents) if p == evidence or p.is_relative_to(evidence)):
             raise ValueError('Packaged M156 evidence crosses a symlink')
@@ -40,6 +66,14 @@ def process(project: Path, evidence: Path, lock: dict, *, copy: bool = False) ->
         if source.sha256_file(source.safe_relative_regular(evidence, relative)) != source.sha256_file(src):
             raise ValueError('Packaged M156 evidence differs: ' + relative)
     source.evidence_documents(evidence / (source.PREFIX + '-source-evidence'))
+    if prefix == variant.FONT_PREFIX:
+        expected = {name for name in dependencies if name.startswith('font-policy-v1/')}
+        expected_directories = {p.as_posix() for name in expected for p in Path(name).parents if p != Path('.')}
+        for path in (evidence / 'font-policy-v1').rglob('*'):
+            relative = path.relative_to(evidence).as_posix()
+            if path.is_symlink() or not ((path.is_file() and relative in expected) or
+                                         (path.is_dir() and relative in expected_directories)):
+                raise ValueError('Packaged font evidence has an extra, linked or special member')
 
 
 if __name__ == '__main__':

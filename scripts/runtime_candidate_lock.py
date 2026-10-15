@@ -96,7 +96,8 @@ def expected_candidate_lock(
         )
     elif version == "156.0.8078.12":
         verify_document(provenance, project_root=project_root)
-        return load_object(project_root / "runtime/fingerprint-chromium-15612.lock.json", "M156 candidate lock")
+        from chromium_15612_variant import prefix_for
+        return load_object(project_root / 'runtime' / ('fingerprint-' + prefix_for(provenance) + '.lock.json'), 'M156 candidate lock')
     elif version == "155.0.8059.40":
         verify_document(provenance, project_root=project_root)
         return load_object(
@@ -214,7 +215,7 @@ def verify_candidate_lock(
             raise SourceProvenanceError(str(error)) from error
         return actual
     if provenance.get("targetChromiumVersion") == "156.0.8078.12":
-        from chromium_15612_release_evidence import verify_candidate_lock as verify_m156
+        from chromium_15612_variant import verify_candidate_lock as verify_m156
         try:
             verify_m156(actual, provenance=provenance, project_root=project_root)
         except ValueError as error:

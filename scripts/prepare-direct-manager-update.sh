@@ -122,7 +122,9 @@ verify_reviewed_runtime_evidence() {
       source_contract="$PROJECT_DIR/runtime/${variant_prefix}-source-contract.json"
       ;;
     156.0.8078.12)
-      source_contract="$PROJECT_DIR/runtime/chromium-15612-source-contract.json"
+      local m156_prefix
+      m156_prefix="$(python3 "$PROJECT_DIR/scripts/chromium_15612_variant.py" "$evidence/fingerprint-chromium.lock.json")"
+      source_contract="$PROJECT_DIR/runtime/${m156_prefix}-source-contract.json"
       ;;
     *)
       echo "Unsupported Chromium runtime version for manager-only update: $runtime_version" >&2

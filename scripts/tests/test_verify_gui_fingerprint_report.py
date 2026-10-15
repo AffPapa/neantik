@@ -23,7 +23,7 @@ SHA_B = "b" * 64
 class VerifyGuiFingerprintReportTests(unittest.TestCase):
     def test_exact_m156_source_contract_cannot_borrow_another_runtime(self):
         self.assertEqual(MODULE.source_contract_name("156.0.8078.12"), "chromium-15612-source-contract.json")
-        self.assertEqual(MODULE.source_contract_name("156.0.8078.12", {"sourceContract": "runtime/chromium-15612-source-contract.json"}), "chromium-15612-source-contract.json")
+        self.assertEqual(MODULE.source_contract_name("156.0.8078.12", {"sourceContract": "runtime/chromium-15612-source-contract.json", "sourceProvenance": "runtime/chromium-15612-port-candidate.json"}), "chromium-15612-source-contract.json")
         for value in ({"sourceContract": "runtime/chromium-15540-source-contract.json"}, {}, {"sourceContract": "../chromium-15612-source-contract.json"}):
             with self.assertRaises(MODULE.FingerprintReportError):
                 MODULE.source_contract_name("156.0.8078.12", value)

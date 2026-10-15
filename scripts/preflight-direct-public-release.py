@@ -105,9 +105,11 @@ def verify_source_contract_binding(
             raise ValueError("M155.40 packaged args differ from built candidate")
         return
     if runtime_version == "156.0.8078.12":
-        from chromium_15612_release_evidence import verify_candidate_lock
+        from chromium_15612_variant import verify_candidate_lock, reviewed_lock_prefix, FONT_PREFIX
         verify_candidate_lock(candidate_lock, provenance=provenance, project_root=project_root)
-        if (contract.get("schemaVersion") != 2 or provenance.get("sourceContractSHA256") != sha256_file(contract_path)
+        expected_schema = 3 if reviewed_lock_prefix(candidate_lock) == FONT_PREFIX else 2
+        if (type(contract.get('schemaVersion')) is not int or contract.get('schemaVersion') != expected_schema
+                or provenance.get("sourceContractSHA256") != sha256_file(contract_path)
                 or provenance.get("binaryBinding", {}).get("argsGNSHA256") != sha256_file(args_gn)):
             raise ValueError("M156 embedded source contract/arguments mismatch")
         return
@@ -345,7 +347,7 @@ def verify_direct_public_release_plan(
         runtime_major = parse_version(runtime_version)[0]
         contract_name = ((m155_reviewed_lock_prefix(runtime_candidate)+"-source-contract.json")
                          if runtime_version == "155.0.8059.40"
-                         else "chromium-15612-source-contract.json" if runtime_version == "156.0.8078.12"
+                         else GUI_VERIFIER.source_contract_name(runtime_version, runtime_candidate) if runtime_version == "156.0.8078.12"
                          else f"chromium-{runtime_major}-source-contract.json")
         embedded_contract_path = evidence_root / contract_name
         project_contract_name = (

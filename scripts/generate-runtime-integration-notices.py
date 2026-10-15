@@ -116,22 +116,27 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
     if version == "155.0.8059.40":
         from chromium_15540_variant import reviewed_lock_prefix
         contract_name=reviewed_lock_prefix(lock)+"-source-contract.json"
+    font_variant = False
+    if version == '156.0.8078.12':
+        from chromium_15612_variant import reviewed_lock_prefix, FONT_PREFIX
+        prefix = reviewed_lock_prefix(lock)
+        font_variant = prefix == FONT_PREFIX
+        contract_name = prefix + '-source-contract.json'
     contract_path = project_root / "runtime" / contract_name
     if lock.get("sourceContract") != f"runtime/{contract_name}":
         raise RuntimeNoticesError("candidate must reference the exact reviewed source contract")
     if lock.get("sourceContractSHA256") != sha256_file(contract_path):
         raise RuntimeNoticesError("candidate source contract SHA-256 mismatch")
     contract = load_json(contract_path)
-    if contract.get("targetChromiumVersion") != version or type(contract.get("schemaVersion")) is not int or contract.get("schemaVersion") != (3 if semantic else 2):
+    if contract.get("targetChromiumVersion") != version or type(contract.get("schemaVersion")) is not int or contract.get("schemaVersion") != (3 if semantic or font_variant else 2):
         raise RuntimeNoticesError("candidate source contract version/schema mismatch")
     base = required_mapping(contract.get("officialChromiumBase"), "officialChromiumBase")
     if base.get("commit") != chromium.get("commit"):
         raise RuntimeNoticesError("candidate Chromium source commit mismatch")
     m156 = version == "156.0.8078.12"
     if m156:
-        from chromium_15612_release_evidence import verify_contract, verify_candidate_lock
-        verify_contract(project_root)
-        verify_candidate_lock(lock, provenance=load_json(project_root / "runtime/chromium-15612-port-candidate.json"), project_root=project_root)
+        from chromium_15612_variant import verify_candidate_lock
+        verify_candidate_lock(lock, provenance=load_json(project_root / 'runtime' / (prefix + '-port-candidate.json')), project_root=project_root)
     groups = contract.get("ownedPatchGroupCount")
     if not m156 and (not isinstance(groups, int) or groups <= 0):
         raise RuntimeNoticesError("source contract must declare owned patch groups")
@@ -144,6 +149,10 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
         plan = load_json(project_root / "runtime/chromium-15612-rebase-plan.json")
         for label, key in (("Ordered input records", "orderedInputCount"), ("Source-changing patches", "sourceChangingPatchCount"), ("Native supersessions", "nativeSupersessionCount"), ("Subsequent semantic corrections", "subsequentCorrectionCount")):
             lines.append(f"- {label}: `{plan[key]}`")
+    if font_variant:
+        lines.extend(['- Additional independently authored font source layers: `6`',
+                      '- Source variant: `font-system-v1`; historical replay counts above are unchanged.',
+                      '- Font source proof is a preserved postbuild observation; exact signed release qualification is separate.'])
     if semantic:
         lines.extend([f"- Independently authored semantic correction set: `{lock['semanticCorrectionSet']}`", f"- Correction manifest SHA-256: `{lock['correctionsManifestSHA256']}`", "- Historical replay count and new correction count are separate; runtime behavior remains a release gate."])
     for label, component in (("Chromium", chromium),

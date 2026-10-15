@@ -213,11 +213,12 @@ def verify_contract(
     ensure_no_stale_markers(contract, "Chromium source contract")
 
     if contract.get("targetChromiumVersion") == CHROMIUM_15612_VERSION:
-        from chromium_15612_release_evidence import verify_contract as verify_m156
-        if (contract_path != project_root / "runtime/chromium-15612-source-contract.json" or
+        from chromium_15612_variant import prefix_for, _subject
+        prefix = prefix_for(contract)
+        if (contract_path != project_root / 'runtime' / (prefix + '-source-contract.json') or
             rebase_plan_path != project_root / "runtime/chromium-15612-rebase-plan.json"):
             raise SourceProvenanceError("M156 requires its dedicated canonical contract")
-        return verify_m156(project_root)[0]
+        return _subject(contract).verify_contract(project_root)[0]
 
     if contract.get("schemaVersion") != 1:
         raise SourceProvenanceError("Unexpected Chromium source contract schema")
@@ -893,7 +894,7 @@ def verify_document(
             raise SourceProvenanceError(str(error)) from error
         return
     if document.get("targetChromiumVersion") == CHROMIUM_15612_VERSION:
-        from chromium_15612_release_evidence import verify_candidate_document as verify_m156
+        from chromium_15612_variant import verify_candidate_document as verify_m156
         try:
             verify_m156(document, project_root=project_root)
         except ValueError as error:
@@ -991,8 +992,9 @@ def verify_runtime_lock_for_new_candidate(
         "fingerprintChromium.chromiumVersion",
     )
     if version == CHROMIUM_15612_VERSION:
-        from chromium_15612_release_evidence import verify_candidate_lock as verify_m156
-        provenance = load_object(project_root / "runtime/chromium-15612-port-candidate.json", "M156 candidate")
+        from chromium_15612_variant import reviewed_lock_prefix, verify_candidate_lock as verify_m156
+        prefix = reviewed_lock_prefix(lock)
+        provenance = load_object(project_root / 'runtime' / (prefix + '-port-candidate.json'), 'M156 candidate')
         try:
             verify_m156(lock, provenance=provenance, project_root=project_root)
         except ValueError as error:

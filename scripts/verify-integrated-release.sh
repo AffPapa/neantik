@@ -117,10 +117,11 @@ elif [[ "$EXPECTED_RUNTIME_VERSION" == "155.0.8059.40" ]]; then
   SOURCE_PROVENANCE_FILE="$PROJECT_DIR/runtime/${M155_EVIDENCE_PREFIX}-port-candidate.json"
   CANDIDATE_LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-${M155_EVIDENCE_PREFIX}.lock.json"
 elif [[ "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.12" ]]; then
-  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-15612-source-contract.json"
-  PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-15612-source-contract.json"
-  SOURCE_PROVENANCE_FILE="$PROJECT_DIR/runtime/chromium-15612-port-candidate.json"
-  CANDIDATE_LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-chromium-15612.lock.json"
+  M156_EVIDENCE_PREFIX="$(python3 "$PROJECT_DIR/scripts/chromium_15612_variant.py" "$EVIDENCE/fingerprint-chromium.lock.json")"
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/${M156_EVIDENCE_PREFIX}-source-contract.json"
+  PACKAGED_SOURCE_CONTRACT="$EVIDENCE/${M156_EVIDENCE_PREFIX}-source-contract.json"
+  SOURCE_PROVENANCE_FILE="$PROJECT_DIR/runtime/${M156_EVIDENCE_PREFIX}-port-candidate.json"
+  CANDIDATE_LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-${M156_EVIDENCE_PREFIX}.lock.json"
 else
   echo "Unsupported Chromium runtime version for integrated release verification: $EXPECTED_RUNTIME_VERSION" >&2
   exit 65

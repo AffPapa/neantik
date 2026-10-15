@@ -172,8 +172,8 @@ struct FingerprintEvidenceReleaseContextTests {
         var root = try #require(JSONSerialization.jsonObject(with: fixture.manifest) as? [String: Any])
         var critical = try #require(root["criticalFiles"] as? [String: Any])
         var contract = try #require(critical["sourceContract"] as? [String: Any])
-        let allowed = ["chromium-154-source-contract.json", "chromium-15540-semantic-v1-source-contract.json", "chromium-15540-semantic-v2-source-contract.json", "chromium-15540-semantic-v3-source-contract.json", "chromium-15540-semantic-v4-source-contract.json", "chromium-15540-semantic-v5-source-contract.json"]
-        for filename in allowed + ["chromium-155-source-contract.json", "chromium-15540-semantic-v6-source-contract.json", "../chromium-154-source-contract.json"] {
+        let allowed = ["chromium-15612-source-contract.json", "chromium-15612-font-system-v1-source-contract.json", "chromium-154-source-contract.json", "chromium-15540-semantic-v1-source-contract.json", "chromium-15540-semantic-v2-source-contract.json", "chromium-15540-semantic-v3-source-contract.json", "chromium-15540-semantic-v4-source-contract.json", "chromium-15540-semantic-v5-source-contract.json"]
+        for filename in allowed + ["chromium-15612-font-system-v2-source-contract.json", "chromium-15612-font-system-v1-source-contract.json/extra", "chromium-155-source-contract.json", "chromium-15540-semantic-v6-source-contract.json", "../chromium-154-source-contract.json"] {
             contract["bundlePath"] = "Contents/Resources/NeAntikRuntimeEvidence/" + filename
             critical["sourceContract"] = contract
             root["criticalFiles"] = critical

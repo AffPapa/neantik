@@ -301,8 +301,12 @@ def source_contract_name(runtime_version: str, candidate_lock: dict | None = Non
             return reviewed_lock_prefix(candidate_lock) + "-source-contract.json"
         return "chromium-15540-source-contract.json"
     if runtime_version == "156.0.8078.12":
-        if candidate_lock is not None and candidate_lock.get("sourceContract") != "runtime/chromium-15612-source-contract.json":
-            raise FingerprintReportError("M156 candidate source contract mismatch")
+        if candidate_lock is not None:
+            from chromium_15612_variant import reviewed_lock_prefix
+            try:
+                return reviewed_lock_prefix(candidate_lock) + '-source-contract.json'
+            except ValueError as error:
+                raise FingerprintReportError('M156 candidate source contract mismatch') from error
         return "chromium-15612-source-contract.json"
     # A new major cannot borrow a historical diagnostic contract. Explicit
     # source/provenance dispatch must be implemented before qualifying it.

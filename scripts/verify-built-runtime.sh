@@ -68,7 +68,8 @@ elif [[ "$LOCK_VERSION" == "155.0.8059.40" ]]; then
   SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/${M155_EVIDENCE_PREFIX}-source-contract.json"
 elif [[ "$LOCK_VERSION" == "156.0.8078.12" ]]; then
   IS_CHROMIUM_15612=1
-  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-15612-source-contract.json"
+  M156_EVIDENCE_PREFIX="$(python3 "$SCRIPT_DIR/chromium_15612_variant.py" "$LOCK_VERSION_SOURCE")"
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/${M156_EVIDENCE_PREFIX}-source-contract.json"
 else
   echo "Unsupported Chromium runtime version for release verification: $LOCK_VERSION" >&2
   exit 65
@@ -190,13 +191,16 @@ if [[ -n "$SOURCE_PROVENANCE_PATH" ]]; then
       "$SOURCE_PROVENANCE_PATH"
     M154_SOURCE_SNAPSHOT_VERIFIED=1
   elif (( IS_CHROMIUM_15612 == 1 )); then
-    if [[ -n "$REPORT_PATH" ]]; then
+    if [[ -n "$REPORT_PATH" && "$M156_EVIDENCE_PREFIX" == "chromium-15612" ]]; then
       : "${NEANTIK_CHROMIUM_SOURCE_ROOT:?New M156 reports require the unchanged native build root}"
       : "${NEANTIK_M156_BUILD_EVIDENCE:?New M156 reports require the executed final9 private evidence}"
       python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE_PATH" \
         --built-source-root "$NEANTIK_CHROMIUM_SOURCE_ROOT" --build-evidence "$NEANTIK_M156_BUILD_EVIDENCE"
     else
       python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE_PATH"
+    fi
+    if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ]]; then
+      python3 "$SCRIPT_DIR/chromium_15612_variant.py" "$LOCK_VERSION_SOURCE" --signed-runtime "$APP_PATH" >/dev/null
     fi
     M154_SOURCE_SNAPSHOT_VERIFIED=1
   elif (( IS_CHROMIUM_15498 == 1 || IS_CHROMIUM_15540 == 1 )); then
@@ -565,6 +569,8 @@ if [[ -n "$REPORT_PATH" ]]; then
   SOURCE_PROVENANCE_SHA256="$SOURCE_PROVENANCE_SHA256" \
   BUILD_ARGS_SHA256="$BUILD_ARGS_SHA256" \
   IS_CHROMIUM_15612="$IS_CHROMIUM_15612" \
+  M156_SOURCE_LOCK="$LOCK_VERSION_SOURCE" \
+  M156_SCRIPT_DIR="$SCRIPT_DIR" \
   python3 - <<'PY'
 import datetime
 import json
@@ -602,9 +608,13 @@ report = {
     "fingerprintProtocolStrings": "verified",
 }
 if os.environ["IS_CHROMIUM_15612"] == "1":
-    report["sourceEvidenceMode"] = "executed-final9-preserved-build-and-current-packaging-inputs"
-    report["fullFDObservationSHA256"] = "d6836d97a7a24d370663976063516306bfc646c826149f579a319fdb5578722c"
-    report["freshWholeSourceTreeObserved"] = False
+    import sys
+    script_dir = Path(os.environ['M156_SCRIPT_DIR']).resolve()
+    sys.path.insert(0, str(script_dir))
+    from chromium_15612_variant import report_source_fields
+    from chromium_15612_release_evidence import read_object
+    report.update(report_source_fields(read_object(Path(os.environ['M156_SOURCE_LOCK']), 'M156 report lock'),
+                                       project_root=script_dir.parent))
 if os.environ["BUILD_ARGS_SHA256"]:
     report["buildArguments"] = {
         "sha256": os.environ["BUILD_ARGS_SHA256"],
