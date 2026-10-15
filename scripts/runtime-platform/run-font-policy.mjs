@@ -10,7 +10,7 @@ import {OwnedPipeCDP} from '../runtime-network/run-controlled-dns.mjs';
 import {browserSocketCustody} from './run-https-identity.mjs';
 import {browserFixtureEnvironment} from './fixtures/qa-browser-environment.mjs';
 import {createFontPolicyFixture} from './fixtures/font-policy-fixture.mjs';
-import {checkFontSession,checkFontABA} from './fixtures/font-policy-semantics.mjs';
+import {checkFontSession,checkFontABA,validateFontMeasurement} from './fixtures/font-policy-semantics.mjs';
 import {verifyMachOClosure} from './fixtures/font-runtime-closure.mjs';
 import {consumeFontWarningPhase,assessFontAdmission} from './fixtures/font-headed-admission.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));
@@ -55,10 +55,7 @@ export function validateProbeEnvelope(value,nonce,hashes) {
     assert(Array.isArray(realm.measurements)&&realm.measurements.length===42);
     for(const row of realm.measurements) {
       const key=JSON.stringify([row.family,row.fallback,row.style,row.text]);assert(expected.delete(key),'Unknown/duplicate measurement');
-      assert(Array.isArray(row.widths)&&row.widths.length===3&&row.widths.every(x=>typeof x==='number'&&Number.isFinite(x)&&x>0));
-      assert(Number.isSafeInteger(row.inkPixels)&&row.inkPixels>0&&row.inkPixels<=17920);assert(/^[a-f0-9]{64}$/.test(row.maskSHA256));
-      if(realm.realm==='page')assert(Array.isArray(row.domWidths)&&row.domWidths.length===3&&row.domWidths.every(x=>typeof x==='number'&&Number.isFinite(x)&&x>0));
-      else assert.equal(row.domWidths,null);
+      validateFontMeasurement(row,realm.realm);
     }
     assert.equal(expected.size,0);
   }
@@ -177,13 +174,16 @@ export async function main(app,bindingFile,out,warningApprovalFile=null) {
         const target=await cdp.command('Target.createTarget',{url:'about:blank'}),attached=await cdp.command('Target.attachToTarget',{targetId:target.targetId,flatten:true});
         await cdp.command('Page.enable',{},attached.sessionId);const navigation=await cdp.command('Page.navigate',{url:state.url},attached.sessionId);assert(!navigation.errorText);
         assert(await until(()=>fixture.observation().result!==null,35000),'Owned font operations missing');
-        validateProbeEnvelope(fixture.observation().result,state.nonce,fixture.resourceHashes);
         const tree=await cdp.command('Page.getFrameTree',{},attached.sessionId);assert.equal(tree.frameTree.frame.url,state.url);entry.documentConfirmed=true;
         entry.liveProcesses=inventory(child.pid,app);const acknowledgements=parseAcknowledgements(privateLog(stderrFile).toString('utf8'),state.nonce);
         assert(acknowledgements.some(row=>row.role==='browser'&&row.pid===child.pid),'Browser ACK missing');
         const renderers=entry.liveProcesses.filter(row=>row.renderer);assert(renderers.length>0,'No live owned renderer');
         for(const process of renderers)assert(acknowledgements.some(row=>row.role==='renderer'&&row.pid===process.pid),'Live renderer ACK missing');
-        entry.acknowledgements=acknowledgements;entry.behavior=checkFontSession(fixture.observation().result,mode);entry.status='observed';
+        entry.acknowledgements=acknowledgements;
+        // Retain custody/witness evidence before semantic analysis so a parser
+        // correction can be evaluated offline without discarding that evidence.
+        validateProbeEnvelope(fixture.observation().result,state.nonce,fixture.resourceHashes);
+        entry.behavior=checkFontSession(fixture.observation().result,mode);entry.status='observed';
       }finally {
         if(cdp&&child?.exitCode===null)await cdp.command('Browser.close').catch(()=>{});
         const exited=()=>!child||spawnFailed||child.exitCode!==null||child.signalCode!==null;

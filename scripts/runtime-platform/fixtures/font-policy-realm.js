@@ -22,28 +22,50 @@ globalThis.runOwnFontPolicyRealm = async function({nonce, fontURL, ahemURL}) {
     } catch(error) {entry.error=error.name;entry.timedOut=error.message==='OwnFontTimeout';}
     return entry;
   }
-  async function measure(family, fallback, style, text) {
+  async function capture(family, fallback, style, text, matched=false) {
     const canvas=new OffscreenCanvas(320,56), context=canvas.getContext('2d',{willReadFrequently:true});
     if(!context)throw Error('Canvas2DUnavailable');
     const font=`${style} 20px "${family}", ${fallback}`;
     context.font=font;
+    if(matched)Object.assign(context,{fontKerning:'none',textRendering:'optimizeSpeed',letterSpacing:'0px',wordSpacing:'0px'});
+    const typography={fontKerning:context.fontKerning,textRendering:context.textRendering,letterSpacing:context.letterSpacing,wordSpacing:context.wordSpacing};
     const widths=Array.from({length:3},()=>context.measureText(text).width);
+    const pieces=text.match(/\S+| +/g);
+    const wordBoundary=text.includes(' ')?{canvasPieces:pieces.map(piece=>context.measureText(piece).width),domPieces:null}:null;
     context.fillText(text,2,36);
     const pixels=context.getImageData(0,0,320,56).data;
     const mask=new Uint8Array(320*56);let ink=0;
     for(let i=0;i<mask.length;i++){mask[i]=pixels[i*4+3]>=128?1:0;ink+=mask[i];}
     const hash=new Uint8Array(await crypto.subtle.digest('SHA-256',mask));
-    const entry={family,fallback,style,text,widths,inkPixels:ink,
+    const entry={widths,inkPixels:ink,typography,wordBoundary,
       maskSHA256:Array.from(hash,x=>x.toString(16).padStart(2,'0')).join(''),domWidths:null};
     if(windowRealm) {
       const element=document.createElement('span');
       element.textContent=text;
       Object.assign(element.style,{position:'fixed',left:'0',top:'0',whiteSpace:'pre',font,visibility:'hidden',width:'max-content'});
+      if(matched)Object.assign(element.style,{fontKerning:'none',fontVariantLigatures:'none',textRendering:'optimizeSpeed',letterSpacing:'0px',wordSpacing:'0px'});
       document.body.append(element);
-      try {entry.domWidths=Array.from({length:3},()=>element.getBoundingClientRect().width);}
+      try {
+        entry.domWidths=Array.from({length:3},()=>element.getBoundingClientRect().width);
+        const computed=getComputedStyle(element);
+        entry.domTypography=Object.fromEntries(['fontKerning','fontVariantLigatures','textRendering','letterSpacing','wordSpacing'].map(key=>[key,computed[key]]));
+        if(wordBoundary) {
+          // Separate inline blocks cannot shape across their boundaries. Keep
+          // these diagnostics apart from the whole-string DOM measurement.
+          element.replaceChildren(...pieces.map(piece=>{const part=document.createElement('span');part.style.display='inline-block';part.textContent=piece;return part;}));
+          wordBoundary.domPieces=Array.from(element.children,part=>part.getBoundingClientRect().width);
+        }
+      }
       finally {element.remove();}
     }
-    result.measurements.push(entry);
+    return entry;
+  }
+  async function measure(family,fallback,style,text) {
+    // Default Canvas and DOM may shape across spaces differently. Preserve
+    // those observations; the equality gate uses explicit no-kerning settings.
+    const native=await capture(family,fallback,style,text);
+    const matched=await capture(family,fallback,style,text,true);
+    result.measurements.push({family,fallback,style,text,...native,matched});
   }
   try {
     if(!canvasAvailable||!fontSet||typeof FontFace!=='function')return result;

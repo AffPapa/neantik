@@ -5,11 +5,14 @@ import {parseAcknowledgements,validateProbeEnvelope,modes} from '../run-font-pol
 const nonce='a'.repeat(32),hashes={canarySHA256:'b'.repeat(64),ahemSHA256:'c'.repeat(64)};
 function envelope() {
  const measurements=[];
- const add=(family,fallback,style,text)=>measurements.push({family,fallback,style,text,widths:[1,1,1],inkPixels:1,maskSHA256:'d'.repeat(64),domWidths:[1,1,1]});
+ const add=(family,fallback,style,text)=>{
+  const capture={widths:[1,1,1],inkPixels:1,maskSHA256:'d'.repeat(64),domWidths:[1,1,1],wordBoundary:text.includes(' ')?{canvasPieces:Array(7).fill(1/7),domPieces:Array(7).fill(1/7)}:null};
+  measurements.push({family,fallback,style,text,...capture,matched:{...structuredClone(capture),typography:{fontKerning:'none',textRendering:'optimizeSpeed',letterSpacing:'0px',wordSpacing:'0px'},domTypography:{fontKerning:'none',fontVariantLigatures:'none',textRendering:'optimizeSpeed',letterSpacing:'0px',wordSpacing:'0px'}}});
+ };
  for(const family of ['NeAntikFontPolicyCanary','Helvetica',`NeAntikMissing_${nonce}`])for(const fallback of ['monospace','serif'])for(const style of ['normal 400','normal 700','italic 400'])for(const text of ['ABABA','A B A B'])add(family,fallback,style,text);
  for(const family of ['QALocalUnique','QARemoteCanary','QARemoteAhem'])for(const fallback of ['monospace','serif'])add(family,fallback,'normal 400','ABABA');
  const page={kind:'own-font-policy-realm',nonce,realm:'page',available:{canvas:true,fontFace:true,fontSet:true,dom:true},local:[{kind:'known-own-unique',loaded:true,timedOut:false},{kind:'invented-missing',loaded:false,timedOut:false}],resources:[{family:'QARemoteCanary',loaded:true,timedOut:false,sha256:hashes.canarySHA256,bytes:1124},{family:'QARemoteAhem',loaded:true,timedOut:false,sha256:hashes.ahemSHA256,bytes:1000}],measurements,errors:[],ownFontFacesRemoved:true,fontSetReadyAfterLoads:true};
- const worker=structuredClone(page);worker.realm='worker';worker.available.dom=false;worker.measurements.forEach(row=>row.domWidths=null);
+ const worker=structuredClone(page);worker.realm='worker';worker.available.dom=false;worker.measurements.forEach(row=>{for(const value of [row,row.matched]){value.domWidths=null;delete value.domTypography;if(value.wordBoundary)value.wordBoundary.domPieces=null;}});
  return {schemaVersion:1,nonce,error:null,workerTerminationRequested:true,realms:[page,worker]};
 }
 test('complete ACK syntax accepted, malformed/stale/partial/duplicate ACK refused',()=>{

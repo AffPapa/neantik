@@ -2,7 +2,7 @@
 
 This development policy now includes a Chromium source patch; its seven changed
 objects compile and a coherent runtime is linked. Its separate research copy is
-Developer ID signed; **headed behavior and release qualification remain open**. It does
+Developer ID signed; **five headed page/worker modes passed; broader font and release qualification remain open**. It does
 not alter the published runtime or existing profiles. The
 [native result](../../docs/evidence/font-origin-development.json) is not a
 browser or release qualification. See also the
@@ -70,7 +70,7 @@ timeout or failed cleanup never passes the offline analyzer.
    collision, variable fonts and other macOS environments remain open.
 5. Qualify the exact signed runtime/candidate before release claims.
 
-All five final integration gates remain open despite passed compilation.
+The bounded page/worker witness gate passed; full integration gates remain open.
 WebKit is outside this policy.
 
 ## Manager metadata — development, not activated
@@ -91,7 +91,7 @@ not counted as executed. See [manager scope](../../docs/evidence/font-manager-de
 This is not a qualified or released font policy.
 
 
-## Fixed browser/renderer QA witness — linked, behavior gate pending
+## Fixed browser/renderer QA witness — bounded headed behavior verified
 
 `chromium-font-witness.json` is a separate input contract applied after the
 original policy patch. Its text delta and two NeAntik-original TTF resources
@@ -103,7 +103,10 @@ research copy is signed with the existing Developer ID. All16 Mach-O files,
 the browser. A later normal-resource headed attempt reached browser/renderer
 selection ACK and page drawing, but failed on worker fixture startup and
 QA cleanup inheritance. A separate successor patch corrects the non-profile
-cleanup role and its QA environment; its runtime is not qualified.
+cleanup role and its QA environment. The corrected signed copy passed five
+headed page/worker modes with actual cleanup and unchanged full runtime inputs.
+[Headed results](../../docs/evidence/font-headed-development.json) cover that
+bounded research scope; full release qualification remains open.
 [Current scope](../../docs/evidence/font-witness-development.json).
 
 The QA seam accepts only `NEANTIK_FONT_QA=owned-v1`, a32-hex correlation nonce,
@@ -155,7 +158,7 @@ sandbox behavior or replace drawing, browser, compilation or release gates.
 The one-off warning exception is consumed and does not apply to Chromium QA.
 
 
-### Finite headed fixture — first attempt diagnosed, not qualified
+### Finite headed fixture — five modes passed, full scope remains open
 
 `run-font-policy.mjs` uses only a separately signed, private research bundle,
 owned temporary profiles, mock Keychain and navigation-only pipe CDP. It pins
@@ -187,3 +190,14 @@ minutes and admits only the five declared modes. Critical/unknown pressure and
 serious/unknown thermal state still refuse. This does not change manager
 admission or turn a failed observation into PASS; no such permission record is
 created from a previous CoreText-only approval.
+
+The corrected five-mode capture passed2,050 behavior assertions and168 A→B→A
+checks at normal resource pressure, without a warning exception. Default
+multiword Canvas and DOM measurements remain observations: their shaping
+contexts can differ. The equality gate uses explicit no-kerning typography
+and the unchanged0.08 CSS-pixel tolerance. Per-word measurements independently
+show the boundary difference. CSS computed-value serialization is normalized
+only for exact zero-spacing/lowercase equivalents; raw observations are kept.
+Negative tests catch leakage in either default or matched typography.
+No manager activation, ordinary Chrome comparison, full nine-context font gate
+or released font-policy claim follows from this result.
