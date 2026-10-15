@@ -1967,7 +1967,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
             if processes.processState(for: processProfile.id) != .stopped {
                 processes.stop(profileID: processProfile.id)
             }
-            try await waitUntilStopped(profileID: processProfile.id)
+            try await waitUntilStopped(profileID: processProfile.id, reservation: auditReservation)
             activeProfileID = nil
             try? directoryCustody.discard()
 
@@ -1983,7 +1983,8 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 processes.stop(profileID: processProfile.id)
                 do {
                     try await waitUntilStopped(
-                        profileID: processProfile.id
+                        profileID: processProfile.id,
+                        reservation: auditReservation
                     )
                     try? directoryCustody.discard()
                 } catch {
@@ -2244,9 +2245,15 @@ final class FingerprintAuditCoordinator: ObservableObject {
         }
     }
 
-    private func waitUntilStopped(profileID: UUID) async throws {
+    private func waitUntilStopped(profileID: UUID, reservation: FingerprintAuditLaunchReservation) async throws {
         var consecutiveStoppedObservations = 0
-        for _ in 0..<160 {
+        for index in 0..<160 {
+            try Task.checkCancellation()
+            // A headed browser can take focus and suspend passive UI polling.
+            // Explicit settlement keeps the same reservation and exact lease.
+            if index % 8 == 0 {
+                _ = await processes.settleFingerprintAuditTermination(profileID: profileID, reservation: reservation)
+            }
             if processes.processState(for: profileID) == .stopped {
                 consecutiveStoppedObservations += 1
                 if consecutiveStoppedObservations >= 8 {

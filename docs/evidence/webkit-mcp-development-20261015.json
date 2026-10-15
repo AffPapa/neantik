@@ -57,7 +57,21 @@
       "ownedSyntheticStoresRemoved": 2
     },
     "exactReleaseCandidate": "pending",
-    "publicDelivery": "pending"
+    "publicDelivery": "pending",
+    "firstExactCandidate": {
+      "GUI": "PASS selected/revision/owner/EOF/reconnect/revoke/save failure/recovery/real NSSavePanel/two-window quit",
+      "headed": "FAIL: cached recovery after successful Chromium exit while passive observations suspended",
+      "retired": true,
+      "published": false
+    },
+    "auditSettlementCorrection": {
+      "tests": 109,
+      "suites": 3,
+      "skips": 0,
+      "receipt": "20261015T165816Z-79218",
+      "negativeBefore": "real-exit regression failed3issues before completion permit integration",
+      "scope": "single-use launch unchanged; completion-only profile/owner/custody permit; found/unknown remain locked; cancellation/retirement during await and replacement protected"
+    }
   },
   "limits": [
     "GUI must be open; consent per live connection and selected profiles",

@@ -667,6 +667,15 @@ final class BrowserProcessManager: ObservableObject {
     private var fingerprintAuditReservations:
         [UUID: FingerprintAuditLaunchReservation] = [:]
     private var fingerprintAuditDirectoryCustody: [UUID: FingerprintAuditDirectoryCustody] = [:]
+    private struct FingerprintAuditSettlementPermit {
+        let reservation: FingerprintAuditLaunchReservation
+        let profileID: UUID
+        let ownerToken: UUID
+        let custody: FingerprintAuditDirectoryCustody
+    }
+    // Launch admission remains single-use; this separate permit only authorizes
+    // completion of the exact process/lease created by that successful launch.
+    private var fingerprintAuditSettlementPermits: [UUID: FingerprintAuditSettlementPermit] = [:]
     private var consumedProxyPreparationKeys =
         Set<BrowserLaunchPreparationConsumptionKey>()
 
@@ -679,7 +688,7 @@ final class BrowserProcessManager: ObservableObject {
         !externalLocks.isEmpty || !externalUnverifiedProfileIDs.isEmpty ||
         !recoveryProfileIDs.isEmpty || !recoveryRecords.isEmpty ||
         !managedStopRequests.isEmpty || !externalStopTasks.isEmpty ||
-        !tombstoneRecoveryMessages.isEmpty || !fingerprintAuditReservations.isEmpty ||
+        !tombstoneRecoveryMessages.isEmpty || !fingerprintAuditReservations.isEmpty || !fingerprintAuditSettlementPermits.isEmpty ||
         !pendingReconciliationProfileIDs.isEmpty || reconcileTask != nil || queuedReconcile != nil
     }
 
@@ -935,11 +944,50 @@ final class BrowserProcessManager: ObservableObject {
         return custody
     }
 
+    /// Active audit completion is independent of foreground-only passive UI
+    /// polling. A retained reservation authorizes observation of its own fresh
+    /// directory; only the existing exact lease/custody checks may retire it.
+    func settleFingerprintAuditTermination(profileID: UUID, reservation: FingerprintAuditLaunchReservation) async -> Bool {
+        guard !Task.isCancelled,
+              let permit = fingerprintAuditSettlementPermits[reservation.id],
+              permit.reservation == reservation, permit.profileID == profileID,
+              (try? permit.custody.validate()) != nil,
+              processes[profileID]?.isRunning != true else { return false }
+        guard let record = recoveryRecords[profileID] else {
+            return processState(for: profileID) == .stopped
+        }
+        guard record.expectedBrowserDataDirectory == reservation.dataDirectory,
+              record.cleanupAuthority == .managedOwner(permit.ownerToken) else { return false }
+        let inventory: BrowserProcessInventory?
+        if let provider = processInventoryProvider {
+            inventory = await Task.detached(priority: .utility) { provider() }.value
+        } else { inventory = nil }
+        guard !Task.isCancelled,
+              let currentPermit = fingerprintAuditSettlementPermits[reservation.id],
+              currentPermit.reservation == reservation, currentPermit.profileID == profileID,
+              currentPermit.ownerToken == permit.ownerToken, currentPermit.custody === permit.custody,
+              (try? permit.custody.validate()) != nil,
+              recoveryRecords[profileID] == record,
+              processes[profileID]?.isRunning != true else { return false }
+        switch recoveryEntryChange(profileID: profileID, record: record) {
+        case .unchanged, .missing: break
+        case .changed, .unsafe, .unavailable: return false
+        }
+        _ = resolveRecoveryIfSafe(profileID: profileID, record: record,
+            browserDataProcessInspector: inventory.map { value in { value.inspectBrowserDataProcess($0) } } ?? browserDataProcessInspector,
+            relayOwnerInspection: inventory?.inspectPotentialRelayOwnerProcesses() ?? potentialRelayOwnerInspector())
+        return processState(for: profileID) == .stopped
+    }
+
     /// Releasing admission is independent of filesystem cleanup and idempotent.
     func releaseFingerprintAuditReservation(_ reservation: FingerprintAuditLaunchReservation) {
-        guard fingerprintAuditReservations[reservation.id] == reservation else { return }
-        fingerprintAuditReservations[reservation.id] = nil
-        fingerprintAuditDirectoryCustody[reservation.id] = nil
+        if fingerprintAuditSettlementPermits[reservation.id]?.reservation == reservation {
+            fingerprintAuditSettlementPermits[reservation.id] = nil
+        }
+        if fingerprintAuditReservations[reservation.id] == reservation {
+            fingerprintAuditReservations[reservation.id] = nil
+            fingerprintAuditDirectoryCustody[reservation.id] = nil
+        }
     }
 
     private func startInventoryReconcile(
@@ -2372,6 +2420,10 @@ final class BrowserProcessManager: ObservableObject {
                 ownerToken: ownerToken,
                 at: lockURL
             )
+            if let reservation = fingerprintAuditReservation, let custody = fingerprintDirectoryCustody {
+                fingerprintAuditSettlementPermits[reservation.id] = .init(reservation: reservation,
+                    profileID: profile.id, ownerToken: ownerToken, custody: custody)
+            }
             let route: BrowserSessionObservation.Route
             switch profile.proxy?.kind {
             case nil: route = .direct
@@ -2815,6 +2867,7 @@ final class BrowserProcessManager: ObservableObject {
                 expectedBrowserDataDirectory: browserDataDirectory,
                 removableSnapshot: removableSnapshot,
                 blockingManagerPID: nil,
+                cleanupAuthority: managedOwner.map { .managedOwner($0) },
                 surfaceMessage: false,
                 message:
                     "Основной процесс браузера завершён, но его вспомогательные процессы ещё используют данные профиля. Профиль разблокируется автоматически после их завершения."
