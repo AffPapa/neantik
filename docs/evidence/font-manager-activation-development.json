@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "status": "manager-activation-verified-locally;not-release",
+  "capturedAt": "2026-10-15T22:25:28.206531+00:00",
+  "compiledInputSHA256": "3ab7621fdcce4f586975058afaf1acb4a9dfc470371d839ac935818b7c931f06",
+  "managerSHA256": "cc5de74be028158b03758bacc70fe79d47d26a474c953d03a5983231836d5b57",
+  "runtimeEvidence": "font-variation-headed-development.json",
+  "runtimeExecutableSHA256": "27d0378671dd946f2b19c518f928a60a44b19ae0f97552569adb3eecc7e95c6c",
+  "changes": [
+    "Exact signed whole-tree qualification grants font capability; flavor/forged bit cannot grant it",
+    "Explicit editor and MCP profile policy; legacy/native unchanged; WebKit rejects policy",
+    "Guard before ordinary launch and authenticated relay side effects; fresh check before exec",
+    "Inherited font/QA environment removed; explicit supported request emits system-v1",
+    "DTO schema matches actual profile response; template schema unchanged"
+  ],
+  "swift": {
+    "targetedBeforeSchemaCorrection": {
+      "tests": 99,
+      "suites": 10,
+      "result": "pass"
+    },
+    "fullAttempt": {
+      "summaryTestsIncludingDisabled": 1631,
+      "suites": 193,
+      "result": "failed-in-sandbox;not-all-green",
+      "issues": 23,
+      "disabledTestLogLines": 71,
+      "classification": "All23 issues belong to7 groups requiring owned process inspection or socket permissions; original log retained"
+    },
+    "boundedFinalRun": {
+      "tests": 85,
+      "suites": 11,
+      "result": "pass",
+      "scope": "7affected groups plus current font/MCP/schema suites;authorized macOS context"
+    },
+    "composition": "Remaining full-run suites unaffected by final DTO-schema/test-only correction; no duplicate full run. Native opt-in suites remain separate."
+  },
+  "python": {
+    "tests": 1513,
+    "skipped": 19,
+    "result": "pass"
+  },
+  "nativeMCP": {
+    "headed": true,
+    "runtimeMode": "native/system-v1/native",
+    "actualChildEnvironmentVerified": true,
+    "mockKeychain": true,
+    "profileIdentityUnchanged": true,
+    "localStorageRetained": true,
+    "gracefulStops": 3,
+    "remainingLeases": 0,
+    "launchSeconds": [
+      1.037,
+      2.629,
+      1.024
+    ],
+    "managerExitCode": 0
+  },
+  "nativeEditor": {
+    "enableDiscard": true,
+    "enableSaveReopen": true,
+    "disableDiscard": true,
+    "disableSaveMetadataReadback": true,
+    "identityUnchanged": true,
+    "ownedAppExited": true
+  },
+  "review": "Independent bounded read-only review found no remaining activation blocker; not a substitute for tests",
+  "shippedRuntimeChanged": false,
+  "releaseQualified": false,
+  "remaining": [
+    "Exact signed shipping manager/runtime candidate and Direct release gates",
+    "Other mandatory1.0 slices listed in NEXT_1_0_SLICES.md",
+    "Site129 delivery remains blocked by automatic approval review; no credential workaround"
+  ]
+}

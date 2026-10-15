@@ -296,3 +296,22 @@ remain historical evidence for their own bytes. [Exact new result](../../docs/ev
 This closes the changed font runtime research gate. Manager explicit opt-in,
 trusted runtime capability, native manager smoke and exact shipping artifact
 qualification are still open. The current public release was not replaced.
+
+
+## Current manager activation — locally verified, not released
+
+The exact signed six-layer runtime now grants a dedicated capability after its
+whole-tree measurement, independent of flavor or caller-supplied bits. Legacy
+profiles remain native. The Chromium editor and MCP can explicitly request
+`system-v1`; unsupported requests fail before ordinary/relay side effects and
+are checked again before exec. WebKit does not implement this policy.
+
+One owned Dev MCP session completed native → system-v1 → native with the actual
+child environment, mock Keychain, retained LocalStorage, stable identity/seed,
+and graceful cleanup. The real editor passed save/discard/reopen controls.
+[Manager evidence](../../docs/evidence/font-manager-activation-development.json)
+records the initial sandbox-only full-run failures and bounded successful
+corrections without relabeling that invocation as an all-green run. The exact
+shipping manager/runtime and Direct Distribution qualification remain open.
+Earlier sections and reports describe their historical stage, not current
+activation status. No old manifest, signature or published asset was rewritten.

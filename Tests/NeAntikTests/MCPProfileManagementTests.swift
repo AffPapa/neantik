@@ -4,6 +4,49 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func fontPolicyIsExplicitRevisionCheckedAndDoesNotClaimRuntimeSupport() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let created = try await engine.call("profile_create", ["name": "Own font profile", "changes": ["startURL": "about:blank"]])
+        #expect(created["fontPolicy"] as? String == "native")
+        let schema = MCPOutputSchemas.schema(for: "profile_get")
+        let properties = try #require(schema["properties"] as? [String: Any])
+        let required = try #require(schema["required"] as? [String])
+        func shapeAccepts(_ response: [String: Any]) -> Bool {
+            Set(required).isSubset(of: Set(response.keys)) && Set(response.keys).isSubset(of: Set(properties.keys))
+        }
+        #expect(shapeAccepts(created))
+        var missingPolicy = created; missingPolicy.removeValue(forKey: "fontPolicy")
+        #expect(!shapeAccepts(missingPolicy))
+        var unknownField = created; unknownField["notAProfileField"] = true
+        #expect(!shapeAccepts(unknownField))
+        let templates = MCPOutputSchemas.schema(for: "template_list")
+        let templateProperties = try #require(templates["properties"] as? [String: Any])
+        let list = try #require(templateProperties["templates"] as? [String: Any])
+        let item = try #require(list["items"] as? [String: Any])
+        #expect(!(item["required"] as? [String] ?? []).contains("fontPolicy"))
+        #expect((item["properties"] as? [String: Any])?["fontPolicy"] == nil)
+
+        let id = try #require(UUID(uuidString: created["id"] as! String))
+        let before = try #require(engine.store.profile(withID: id)).identity
+        var args = request(created); args["changes"] = ["fontPolicy": "system-v1"]
+        let enabled = try await engine.call("profile_update", args)
+        #expect(enabled["fontPolicy"] as? String == "system-v1")
+        await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
+        args = request(enabled); args["changes"] = ["name": "Own renamed font profile"]
+        let renamed = try await engine.call("profile_update", args)
+        #expect(renamed["fontPolicy"] as? String == "system-v1")
+        #expect(engine.store.profile(withID: id)?.identity == before)
+        #expect(engine.processes.processState(for: id) == .stopped)
+        args = request(renamed); args["changes"] = ["fontPolicy": "future-system-v2"]
+        await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
+        args = request(renamed); args["changes"] = ["fontPolicy": "native"]
+        let disabled = try await engine.call("profile_update", args)
+        #expect(disabled["fontPolicy"] as? String == "native")
+        let webkit = try await engine.call("profile_create", ["name": "Own WebKit font control", "engine": "webkit"])
+        #expect(webkit["fontPolicy"] is NSNull)
+        args = request(webkit); args["changes"] = ["fontPolicy": "system-v1"]
+        await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
+    }
     @Test func webKitMediaPolicyIsRevisionCheckedAndRejectsOtherEngines() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let created = try await engine.call("profile_create", ["name": "Own media", "engine": "webkit", "changes": ["startURL": "about:blank", "webKitMediaPolicy": "deny"]])

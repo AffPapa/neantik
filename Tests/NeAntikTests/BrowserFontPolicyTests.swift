@@ -235,4 +235,42 @@ struct BrowserFontPolicyTests {
         #expect(manager.runningProfileIDs.isEmpty)
         #expect(!FileManager.default.fileExists(atPath: root.path))
     }
+    @Test(arguments: [ProxyKind.http, .https, .socks5])
+    func authenticatedRelayRefusesPolicyBeforeAdmissionOrFilesystemWork(kind: ProxyKind) async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-font-relay-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        var admissionReads = 0
+        let manager = BrowserProcessManager(launchAdmission: ManagerLaunchAdmission(
+            observePressure: false, thermalState: { admissionReads += 1; return .critical }),
+            paths: AppPaths(rootDirectory: root), processIdentityValidator: { _ in false })
+        defer { manager.suspendPassiveObservations() }
+        let now = Date()
+        var profile = fixture(policy: .systemV1)
+        profile.proxy = ProxyConfiguration(kind: kind, host: "owned.example.test", port: 8000,
+            username: "fixture-user")
+        profile.identity = BrowserIdentity(seed: 33, timezoneIdentifier: "Europe/Berlin",
+            localeIdentifier: "de-DE", proxyContextEvidence: .ipAPI(observedAt: now))
+        let health = ProxyHealthUpdatePolicy.success(ProxyTestObservation(observedAt: now,
+            responseTimeMilliseconds: 1, result: ProxyTestResult(ipAddress: "203.0.113.7",
+                city: "Berlin", countryName: "Germany", countryCode: "DE",
+                timezoneIdentifier: "Europe/Berlin", localeIdentifier: "de-DE"), source: .ipAPI))
+        let receipt = try #require(BrowserLaunchPreparationPolicy.receipt(profile: profile,
+            proxyHealth: health, now: now))
+        let runtime = BrowserRuntime(name: "Never executed", executableURL: root.appendingPathComponent("missing"),
+            source: "Synthetic", flavor: .fingerprintChromium,
+            inspection: BrowserRuntimeInspection(version: nil, architectures: [], codeSignatureValid: nil))
+        let keychain = KeychainStore(backend: DevelopmentFixtureKeychain(), service: "owned-font-relay", legacyService: nil)
+        do {
+            try await manager.launchWithAuthenticatedRelay(profile: profile, runtime: runtime,
+                preparationReceipt: receipt, keychain: keychain)
+            Issue.record("Unsupported font policy reached authenticated relay")
+        } catch {
+            #expect(error is UnsupportedBrowserFontPolicyError)
+        }
+        #expect(admissionReads == 0)
+        #expect(manager.runningProfileIDs.isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: root.path))
+    }
+
 }

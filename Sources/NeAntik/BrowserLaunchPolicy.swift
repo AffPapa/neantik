@@ -34,14 +34,14 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
     let appliedTimezoneIdentifier: String?
     let disabledFeatures: Set<String>
 
-    /// The prepared Chromium patch is not a qualified shipped capability yet.
-    /// Refuse an explicit request at the process boundary instead of launching
-    /// native fonts while pretending to honor it. Replace this gate only when
-    /// exact runtime support and explicit user activation have been qualified.
-    static func validateFontPolicy(_ profile: BrowserProfile) throws {
-        guard profile.fontPolicy == .native else {
-            throw UnsupportedBrowserFontPolicyError()
-        }
+    /// Recheck current bytes at the common launch boundary. The cached UI
+    /// capability is not authority after a runtime replacement or edit.
+    static func validateFontPolicy(_ profile: BrowserProfile, runtime: BrowserRuntime? = nil) throws {
+        if profile.fontPolicy == .native { return }
+        guard profile.engine == .chromium, let runtime,
+              runtime.supportsFingerprintIdentity, runtime.supportsSystemFontPolicy,
+              BrowserFontPolicyRuntime.inspect(executableURL: runtime.executableURL) != nil
+        else { throw UnsupportedBrowserFontPolicyError() }
     }
 
     static func resolve(

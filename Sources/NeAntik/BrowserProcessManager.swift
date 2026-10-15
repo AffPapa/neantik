@@ -393,6 +393,11 @@ enum BrowserLaunchBuilder {
         }
         environment["NEANTIK_PROFILE_SEED"] =
             String(profile.identity.runtimeSeed)
+        if profile.engine == .chromium, profile.fontPolicy == .systemV1,
+           runtimeCapabilities.contains(.fingerprintIdentity),
+           runtimeCapabilities.contains(.systemFontPolicy) {
+            environment["NEANTIK_FONT_POLICY"] = "system-v1"
+        }
 
         if let timezone = policy.appliedTimezoneIdentifier {
             environment["NEANTIK_PROFILE_TIMEZONE"] = timezone
@@ -2010,6 +2015,7 @@ final class BrowserProcessManager: ObservableObject {
         preparationReceipt: BrowserLaunchPreparationReceipt,
         keychain: KeychainStore, target: BrowserUserLaunchTarget = .profileStart
     ) async throws {
+        try BrowserLaunchPolicy.validateFontPolicy(profile, runtime: runtime)
         try target.routeProbePlan?.validate()
         try launchAdmission.requireSafePressure()
         guard let proxy = profile.proxy, proxy.isValid, !proxy.username.isEmpty,
@@ -2203,7 +2209,7 @@ final class BrowserProcessManager: ObservableObject {
         purpose: BrowserLaunchPurpose = .normal
     ) throws {
         guard profile.engine == .chromium else { throw NeAntikError.invalidProfile }
-        try BrowserLaunchPolicy.validateFontPolicy(profile)
+        try BrowserLaunchPolicy.validateFontPolicy(profile, runtime: runtime)
         try launchAdmission.requireSafePressure()
         guard !runningProfileIDs.contains(profile.id) else {
             throw NeAntikError.profileAlreadyRunning
@@ -2396,6 +2402,7 @@ final class BrowserProcessManager: ObservableObject {
             try prepareDiagnosticLog(logURL)
             try fingerprintDirectoryCustody?.validate()
             let auditDirectoryCustody = try releaseAuditBrowserIsolation?.validateBeforeExec(paths: paths, browserDataDirectory: browserDataDirectory)
+            try BrowserLaunchPolicy.validateFontPolicy(profile, runtime: runtime)
             try process.run()
             withExtendedLifetime((auditDirectoryCustody, fingerprintDirectoryCustody)) {}
             processes[profile.id] = process
@@ -2464,6 +2471,7 @@ final class BrowserProcessManager: ObservableObject {
                 "browser_launch_failed reason=process-launch-error",
                 to: logURL
             )
+            if error is UnsupportedBrowserFontPolicyError { throw error }
             throw NeAntikError.processLaunchFailed("")
         }
     }

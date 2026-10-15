@@ -140,6 +140,7 @@ struct ProfileEditorView: View {
   private let proxyPasswordReadFailed: Bool
   @State private var draftProfileID: UUID
   private let initialFocus: ProfileEditorField?
+  private let supportsSystemFontPolicy: Bool
   // SwiftUI rebuilds this view value while retaining its edited state. Keep
   // the original snapshot and ID in the same storage lifetime as those fields.
   @State private var initialDraft: ProfileEditorDraft
@@ -158,6 +159,7 @@ struct ProfileEditorView: View {
   @State private var selectedFolderID: UUID?
   @State private var startURL: String
   @State private var engine: BrowserEngine
+  @State private var fontPolicy: BrowserFontPolicy
   @State private var webKitMediaPolicy: WebKitMediaPolicy
   @State private var startupMode: BrowserStartupMode
   @State private var usesProxy: Bool
@@ -185,7 +187,7 @@ struct ProfileEditorView: View {
   @State private var proxyTestTask: Task<Void, Never>?
   @State private var showsAdvancedOptions = false
   private var hasUnsavedChanges: Bool {
-    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue, engine.rawValue, webKitMediaPolicy.rawValue,
+    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue, engine.rawValue, webKitMediaPolicy.rawValue, fontPolicy.rawValue,
       String(usesProxy), proxyKind.rawValue, proxyHost, proxyPort, proxyUsername,
       proxyPassword, proxyImportText], tags: tags, folderID: selectedFolderID)
   }
@@ -204,6 +206,7 @@ struct ProfileEditorView: View {
     paths: AppPaths = AppPaths(),
     showsAdvancedOptionsInitially: Bool = false,
     initialFocus: ProfileEditorField? = nil,
+    supportsSystemFontPolicy: Bool = false,
     onClose: (() -> Void)? = nil,
     onSave: @escaping (
       BrowserProfile,
@@ -219,6 +222,7 @@ struct ProfileEditorView: View {
     self.onSave = onSave
     self.onClose = onClose
     self.initialFocus = initialFocus
+    self.supportsSystemFontPolicy = supportsSystemFontPolicy
     _showsAdvancedOptions = State(
       initialValue: showsAdvancedOptionsInitially
     )
@@ -238,6 +242,7 @@ struct ProfileEditorView: View {
     )
     _startURL = State(initialValue: profile.startURL)
     _engine = State(initialValue: profile.engine)
+    _fontPolicy = State(initialValue: profile.fontPolicy)
     _webKitMediaPolicy = State(initialValue: profile.webKitMediaPolicy)
     _startupMode = State(initialValue: profile.startupMode)
     _usesProxy = State(initialValue: profile.proxy != nil)
@@ -269,7 +274,7 @@ struct ProfileEditorView: View {
       }
     }
     _initialDraft = State(initialValue: ProfileEditorDraft(values: [profile.name, profile.colorHex, profile.displaySymbolName,
-      profile.note, profile.startURL, profile.startupMode.rawValue, profile.engine.rawValue, profile.webKitMediaPolicy.rawValue, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
+      profile.note, profile.startURL, profile.startupMode.rawValue, profile.engine.rawValue, profile.webKitMediaPolicy.rawValue, profile.fontPolicy.rawValue, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
       profile.proxy?.host ?? "", profile.proxy.map { String($0.port) } ?? "",
       profile.proxy?.username ?? "", originalProxyPassword ?? "", ""], tags: profile.tags,
       folderID: folders.contains { $0.id == initialFolderID } ? initialFolderID : nil))
@@ -390,6 +395,9 @@ struct ProfileEditorView: View {
           }
           .pickerStyle(.segmented)
           .disabled(original != nil)
+          .onChange(of: engine) { _, value in
+            if value == .webkit { fontPolicy = .native }
+          }
           Text(engine.settingsSummary + (engine == .webkit && !WebKitMediaFeature.isEnabled ? " Камера и микрофон пока отключены." : ""))
             .font(.callout).foregroundStyle(.secondary)
           if original != nil { Text("Чтобы выбрать другой движок, создай новый профиль.").font(.callout).foregroundStyle(.secondary) }
@@ -432,6 +440,21 @@ struct ProfileEditorView: View {
           }
         }
         if engine == .chromium {
+        Section("Шрифты") {
+          Toggle("Только системные шрифты Mac", isOn: Binding(
+            get: { fontPolicy == .systemV1 },
+            set: { fontPolicy = $0 ? .systemV1 : .native }
+          ))
+          .disabled(!supportsSystemFontPolicy && fontPolicy == .native)
+          Text("Сайты видят системные шрифты macOS, но не установленные вами. Шрифты, загружаемые самим сайтом, работают. Cookies и данные сайтов сохраняются.")
+            .font(.callout).foregroundStyle(.secondary)
+          if !supportsSystemFontPolicy {
+            Text(fontPolicy == .systemV1
+              ? "Настройка сохранена, но этому движку не хватает проверенной поддержки. Обнови приложение или выключи настройку перед запуском."
+              : "Для включения нужен встроенный Chromium с проверенной поддержкой этой настройки.")
+              .font(.callout).foregroundStyle(.secondary)
+          }
+        }
         Section("Сеть") {
           HelpLink(topic: .proxy)
           Toggle("Использовать прокси", isOn: $usesProxy)
@@ -1226,6 +1249,7 @@ struct ProfileEditorView: View {
         name: cleanName
       )
       profile.engine = engine
+      profile.fontPolicy = engine == .chromium ? fontPolicy : .native
       profile.webKitMediaPolicy = engine == .webkit ? webKitMediaPolicy : .ask
       profile.name = cleanName
       profile.colorHex = colorHex

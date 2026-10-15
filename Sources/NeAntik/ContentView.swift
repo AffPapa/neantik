@@ -1257,6 +1257,7 @@ struct ContentView: View {
             suggestedTags: suggestedTags,
             paths: store.paths,
             initialFocus: request.initialFocus,
+            supportsSystemFontPolicy: runtime?.supportsSystemFontPolicy == true,
             onClose: {
                 editorRequest = nil
                 profileSearchIsFocused = true

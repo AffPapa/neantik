@@ -1011,6 +1011,8 @@ struct BrowserRuntimeCapabilities: OptionSet, Hashable, Sendable {
 
     static let fingerprintSeed = BrowserRuntimeCapabilities(rawValue: 1 << 0)
     static let platformOverride = BrowserRuntimeCapabilities(rawValue: 1 << 1)
+    // BrowserRuntime admits this bit only after exact signed closure inspection.
+    static let systemFontPolicy = BrowserRuntimeCapabilities(rawValue: 1 << 2)
 
     static let fingerprintIdentity: BrowserRuntimeCapabilities = [
         .fingerprintSeed,
@@ -1060,6 +1062,7 @@ struct BrowserRuntime: Identifiable, Hashable, Sendable {
     let flavor: BrowserRuntimeFlavor
     let capabilities: BrowserRuntimeCapabilities
     let inspection: BrowserRuntimeInspection
+    let fontPolicyQualification: BrowserFontPolicyQualification?
 
     init(
         name: String,
@@ -1073,13 +1076,23 @@ struct BrowserRuntime: Identifiable, Hashable, Sendable {
         self.executableURL = executableURL
         self.source = source
         self.flavor = flavor
-        self.capabilities = capabilities ?? flavor.capabilities
+        var admitted = capabilities ?? flavor.capabilities
+        admitted.remove(.systemFontPolicy)
+        let fontQualification = admitted.contains(.fingerprintIdentity)
+            ? BrowserFontPolicyRuntime.inspect(executableURL: executableURL) : nil
+        self.fontPolicyQualification = fontQualification
+        if fontQualification != nil { admitted.insert(.systemFontPolicy) }
+        self.capabilities = admitted
         self.inspection = inspection ??
             BrowserRuntimeInspector.inspect(executableURL: executableURL)
     }
 
     var supportsFingerprintIdentity: Bool {
         capabilities.contains(.fingerprintIdentity)
+    }
+
+    var supportsSystemFontPolicy: Bool {
+        fontPolicyQualification != nil && capabilities.contains(.systemFontPolicy)
     }
 
     var privacySummary: String {

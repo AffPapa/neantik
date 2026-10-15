@@ -38,19 +38,19 @@ final class MCPProfileManagement {
         let revision: [String: Any] = ["type": "string", "pattern": "^(0|[1-9][0-9]*)$"]
         let optionalUUID: [String: Any] = ["type": ["string", "null"]]
         let changes: [String: Any] = ["type": "object", "additionalProperties": false, "properties": WebKitMediaFeature.visibleFields([
-            "name": text, "startURL": text, "startupMode": ["type": "string", "enum": BrowserStartupMode.allCases.map(\.rawValue)], "webKitMediaPolicy": ["type": "string", "enum": WebKitMediaPolicy.allCases.map(\.rawValue)], "tags": ["type": "array", "maxItems": 8, "items": text],
+            "name": text, "startURL": text, "startupMode": ["type": "string", "enum": BrowserStartupMode.allCases.map(\.rawValue)], "fontPolicy": ["type": "string", "enum": ["native", "system-v1"]], "webKitMediaPolicy": ["type": "string", "enum": WebKitMediaPolicy.allCases.map(\.rawValue)], "tags": ["type": "array", "maxItems": 8, "items": text],
             "note": text, "isPinned": ["type": "boolean"], "isArchived": ["type": "boolean"], "colorHex": text, "symbolName": text], enabled: mediaPolicyEnabled)]
         let proxyFields: [String: Any] = ["type": "object", "additionalProperties": false, "required": ["kind", "host", "port"], "properties": [
             "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "host": text,
             "port": ["type": "integer", "minimum": 1, "maximum": 65535], "username": text, "password": text]]
         let specs: [(String, String, [String: Any], [String])] = [
             ("template_list", "Read saved user templates (maximum50), safe start pages and tags. No credentials, notes, identity or BrowserData. Missing project folders resolve to unfiled. Use templateID plus this organizationRevision with profile_create; creation never starts a browser.", [:], []),
-            ("profile_get", "Read profile revision, start page and organization; proxy endpoint and credentials excluded; note excluded.", ["profileID": uuid], ["profileID"]),
+            ("profile_get", "Read profile revision, start page, organization and requested fontPolicy (not applied-state proof). system-v1 is Chromium-only and needs the exact qualified runtime at launch. Proxy endpoint, credentials and note excluded.", ["profileID": uuid], ["profileID"]),
             ("folder_list", "Read up to100 project folders and organizationRevision. Pass nextCursor unchanged; restart on organization change.", ["limit": ["type": "integer", "minimum": 1, "maximum": 100], "cursor": text], []),
             ("workspace_query_profiles", "Find profiles by name, tags and project without reading private notes. Tags use AND; omitted archived means active only. folderID:null means unfiled, omission means any. Cursor is tied to filters and snapshot. Process state remains unverified.", MCPWorkspaceQuery.properties, []),
             ("profile_status", "Reconcile profile ownership. External sessions require manual close. Optional includeObservation:true requires expectedRevision and observes only this session's verified owned browser, launch configuration and readiness for graceful close. Never returns page content, credentials, PID, paths or proof of Chromium network route.", ["profileID": uuid, "includeObservation": ["type": "boolean"], "expectedRevision": revision], ["profileID"]),
             ("profile_create", "Create a persistent profile without starting it. Optional templateID uses saved safe metadata with fresh identity; requires expectedOrganizationRevision from template_list. Explicit changes/folder override template values. No automatic retry: a repeat creates another profile.", ["name": text, "engine": ["type": "string", "enum": BrowserEngine.allCases.map(\.rawValue)], "changes": changes, "templateID": uuid, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["name"]),
-            ("profile_update", "Patch an existing stopped profile; omitted fields stay unchanged. Read its revision first.", ["profileID": uuid, "expectedRevision": revision, "changes": changes], ["profileID", "expectedRevision", "changes"]),
+            ("profile_update", "Patch an existing stopped profile; omitted fields stay unchanged. fontPolicy:native|system-v1 explicitly selects Chromium font handling; system-v1 needs the qualified runtime at launch, not just a profile seed. Read its revision first.", ["profileID": uuid, "expectedRevision": revision, "changes": changes], ["profileID", "expectedRevision", "changes"]),
             ("profile_set_proxy", "Configure/disable a stopped profile proxy. Use proxy:null, proxy fields, or proxyLine with kind/order. Password is write-only; input may enter AI history. HTTP/HTTPS/SOCKS5 authentication uses the local relay; HTTPS verifies the upstream certificate before authentication. Configuration is not a route test.", ["profileID": uuid, "expectedRevision": revision, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "order": ["type": "string", "enum": ["automatic", "credentialsFirst", "endpointFirst"]]], ["profileID", "expectedRevision"]),
             ("profile_move", "Move stopped profile to folder/project or null (unfiled). Both revisions protect concurrent changes.", ["profileID": uuid, "expectedRevision": revision, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["profileID", "expectedRevision", "folderID", "expectedOrganizationRevision"]),
             ("profile_duplicate", "Copy configuration into a fresh identity; never copy cookies, notes or BrowserData. Copies proxy password via local Keychain without returning it.", ["profileID": uuid, "expectedRevision": revision, "name": text], ["profileID", "expectedRevision", "name"]),
@@ -333,12 +333,13 @@ final class MCPProfileManagement {
     }
 
     private func apply(_ changes: [String: Any], to profile: inout BrowserProfile) throws {
-        guard Set(changes.keys).isSubset(of: ["name", "startURL", "startupMode", "webKitMediaPolicy", "tags", "note", "isPinned", "isArchived", "colorHex", "symbolName"]) else { throw Failure.invalid }
+        guard Set(changes.keys).isSubset(of: ["name", "startURL", "startupMode", "fontPolicy", "webKitMediaPolicy", "tags", "note", "isPinned", "isArchived", "colorHex", "symbolName"]) else { throw Failure.invalid }
         for (key, value) in changes {
             switch key {
             case "name": profile.name = try string(changes, key).trimmingCharacters(in: .whitespacesAndNewlines)
             case "startURL": guard let url = BrowserLaunchBuilder.validatedStartURL(try string(changes, key)) else { throw Failure.invalid }; profile.startURL = url.absoluteString
             case "startupMode": guard let mode = BrowserStartupMode(rawValue: try string(changes, key)) else { throw Failure.invalid }; profile.startupMode = mode
+            case "fontPolicy": guard profile.engine == .chromium, let policy = BrowserFontPolicy(rawValue: try string(changes, key)) else { throw Failure.invalid }; profile.fontPolicy = policy
             case "webKitMediaPolicy": guard WebKitMediaFeature.isEnabled, profile.engine == .webkit, let policy = WebKitMediaPolicy(rawValue: try string(changes, key)) else { throw Failure.invalid }; profile.webKitMediaPolicy = policy
             case "note": guard let note = BrowserProfile.normalizedNote(try string(changes, key)) else { throw Failure.invalid }; profile.note = note
             case "tags": guard let tags = value as? [String], let normalized = BrowserProfile.normalizedTags(tags) else { throw Failure.invalid }; profile.tags = normalized
@@ -383,7 +384,7 @@ final class MCPProfileManagement {
         return ProxyImportDraft(configuration: configuration, password: password)
     }
     private func dto(_ profile: BrowserProfile) -> [String: Any] {
-        WebKitMediaFeature.visibleFields(["id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name, "startURL": profile.startURL, "startupMode": profile.startupMode.rawValue, "engine": profile.engine.rawValue, "webKitMediaPolicy": profile.engine == .webkit ? profile.webKitMediaPolicy.rawValue as Any : NSNull(),
+        WebKitMediaFeature.visibleFields(["id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name, "startURL": profile.startURL, "startupMode": profile.startupMode.rawValue, "fontPolicy": profile.engine == .chromium ? profile.fontPolicy.rawValue as Any : NSNull(), "engine": profile.engine.rawValue, "webKitMediaPolicy": profile.engine == .webkit ? profile.webKitMediaPolicy.rawValue as Any : NSNull(),
          "engineCapabilities": profile.engine.managementCapabilities,
          "tags": profile.tags, "isPinned": profile.isPinned, "isArchived": profile.isArchived,
          "colorHex": profile.colorHex, "symbolName": profile.symbolName, "folderID": store.folderID(forProfileID: profile.id)?.uuidString as Any? ?? NSNull(),
