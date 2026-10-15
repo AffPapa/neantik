@@ -2594,6 +2594,7 @@ final class BrowserProcessManager: ObservableObject {
                                              expectedProfile: BrowserProfile) async throws -> Bool {
         guard expectedProfile.id == profileID else { return false }
         guard sessionObservationIsCurrent(observation, profileID: profileID), let receipt = observation.launchContext else { return false }
+        guard receipt.matchesProfileRevision(expectedProfile.revision) else { return false }
         let paths = paths
         let task = Task.detached(priority: .utility) {
             let leaseMatches = try paths.withProcessLockGuard(for: profileID) {

@@ -19,6 +19,7 @@ const digest=file=>sha(fs.readFileSync(file));
 const save=(file,value)=>fs.writeFileSync(file,JSON.stringify(value,null,2)+'\n',{mode:0o600,flag:'wx'});
 const certificate='474F7C78F33EE324C24F6F5AE0443EB713E85E60';
 const closureTool=path.join(here,'../verify-direct-update-runtime-pins.py');
+const inputContracts=Object.freeze(['chromium-host-font-policy.json','chromium-font-witness.json','chromium-font-cleanup.json','chromium-font-cleanup-cstring.json']);
 export const modes=Object.freeze(['native','seeded-native','policy-a','policy-b','policy-a-repeat']);
 export function parseAcknowledgements(text,nonce) {
   assert(/^[a-f0-9]{32}$/.test(nonce));
@@ -40,7 +41,7 @@ export function validateProbeEnvelope(value,nonce,hashes) {
   for(const realm of value.realms) {
     assert.equal(realm.kind,'own-font-policy-realm');assert.equal(realm.nonce,nonce);
     for(const api of ['canvas','fontFace','fontSet'])assert.equal(realm.available?.[api],true);
-    assert.equal(realm.available.dom,realm.realm==='page');assert.deepEqual(realm.errors,[]);assert.equal(realm.ownFontFacesRemoved,true);
+    assert.equal(realm.available.dom,realm.realm==='page');assert.deepEqual(realm.errors,[]);assert.equal(realm.ownFontFacesRemoved,true);assert.equal(realm.fontSetReadyAfterLoads,true);
     assert(Array.isArray(realm.local)&&realm.local.length===2);assert.deepEqual(realm.local.map(row=>row.kind),['known-own-unique','invented-missing']);
     for(const face of realm.local){assert.equal(typeof face.loaded,'boolean');assert.equal(face.timedOut,false);}
     assert(Array.isArray(realm.resources)&&realm.resources.length===2);
@@ -76,6 +77,13 @@ export function inspectRuntime(app,binding) {
   assert(rootInfo.isDirectory()&&!rootInfo.isSymbolicLink()&&rootInfo.uid===process.getuid()&&(rootInfo.mode&0o077)===0,'Own private research runtime required');
   assert.equal(plist(app,'CFBundleShortVersionString'),binding.version);
   assert.equal(binding.sourceInputManifestSHA256,digest(path.join(here,'../../runtime/font-policy-v1/chromium-font-witness.json')));
+  assert.deepEqual(Object.keys(binding.sourceInputContracts??{}).sort(),[...inputContracts].sort(),'Complete corrected source lineage required');
+  for(const [index,name] of inputContracts.entries()) {
+    const file=path.join(here,'../../runtime/font-policy-v1',name),contract=JSON.parse(fs.readFileSync(file));
+    assert.equal(digest(file),binding.sourceInputContracts[name]);assert(/^[a-z0-9-]+\.patch$/.test(contract.patchFile));
+    assert.equal(digest(path.join(path.dirname(file),contract.patchFile)),contract.patchSHA256);
+    if(index>0){assert.equal(contract.parentManifest,inputContracts[index-1]);assert.equal(contract.parentManifestSHA256,binding.sourceInputContracts[inputContracts[index-1]]);}
+  }
   const executable=path.join(app,'Contents/MacOS',plist(app,'CFBundleExecutable'));
   const framework=path.join(app,'Contents/Frameworks/NeAntik Browser Framework.framework/Versions',binding.version,'NeAntik Browser Framework');
   assert.equal(digest(executable),binding.executableSHA256);assert.equal(digest(framework),binding.frameworkSHA256);
@@ -123,7 +131,7 @@ export async function main(app,bindingFile,out,warningApprovalFile=null) {
   const info=fs.lstatSync(out);assert(info.isDirectory()&&!info.isSymbolicLink()&&info.uid===process.getuid()&&(info.mode&0o077)===0&&fs.readdirSync(out).length===0);
   const binding=JSON.parse(fs.readFileSync(bindingFile)),runtime=inspectRuntime(app,binding);
   assert.equal(inventory(-1,app).length,0,'Research runtime already in use');
-  const sources=[fileURLToPath(import.meta.url),path.join(here,'fixtures/font-policy-fixture.mjs'),path.join(here,'fixtures/font-policy-realm.js'),path.join(here,'fixtures/font-policy-semantics.mjs'),path.join(here,'fixtures/font-runtime-closure.mjs'),path.join(here,'fixtures/font-headed-admission.mjs'),path.join(here,'../native-qa-readiness.py'),path.join(here,'fixtures/qa-browser-environment.mjs'),path.join(here,'run-https-identity.mjs'),path.join(here,'../runtime-network/run-controlled-dns.mjs'),closureTool,path.join(here,'../../runtime/font-policy-v1/chromium-font-witness.json')];
+  const sources=[fileURLToPath(import.meta.url),path.join(here,'fixtures/font-policy-fixture.mjs'),path.join(here,'fixtures/font-policy-realm.js'),path.join(here,'fixtures/font-policy-semantics.mjs'),path.join(here,'fixtures/font-runtime-closure.mjs'),path.join(here,'fixtures/font-headed-admission.mjs'),path.join(here,'../native-qa-readiness.py'),path.join(here,'fixtures/qa-browser-environment.mjs'),path.join(here,'run-https-identity.mjs'),path.join(here,'../runtime-network/run-controlled-dns.mjs'),closureTool,...inputContracts.map(name=>path.join(here,'../../runtime/font-policy-v1',name))];
   const pins=Object.fromEntries(sources.map((file,index)=>[String(index),digest(file)]));
   const report={schemaVersion:1,status:'incomplete',actualBrowser:false,scope:'research headed page/worker font operations;not all-nine-context or manager/release qualification',bindingSHA256:digest(bindingFile),runtime:{version:binding.version,executableSHA256:runtime.executableSHA256,frameworkSHA256:runtime.frameworkSHA256,closureSHA256:runtime.closureSHA256},sources:pins,headed:true,sessions:[],admission:[],cleanup:null};
   fs.mkdirSync(path.join(out,'sources'),{mode:0o700});sources.forEach((file,index)=>fs.copyFileSync(file,path.join(out,'sources',index+'-'+path.basename(file))));
@@ -196,7 +204,7 @@ export async function main(app,bindingFile,out,warningApprovalFile=null) {
     }
     report.aba=checkFontABA(report.sessions.find(row=>row.mode==='policy-a').fixture.result,report.sessions.find(row=>row.mode==='policy-a-repeat').fixture.result);
     report.status='observed';
-  }catch(error){failure=error;if(report.status!=='resource-blocked')report.status='failed';report.failureClass=error.message==='ResourceAdmission'?'resource-admission':'owned-font-stage-incomplete';}
+  }catch(error){failure=error;if(report.status!=='resource-blocked')report.status='failed';report.failureClass=error.message==='ResourceAdmission'?'resource-admission':'owned-font-stage-incomplete';report.privateFailure={kind:error.name,message:String(error.message).slice(0,2000)};}
   finally {
     clearTimeout(watchdog);
     try {
@@ -209,7 +217,7 @@ export async function main(app,bindingFile,out,warningApprovalFile=null) {
       report.cleanup={fixtureClosed:true,ownedProcessesRemaining:remaining,ownedRootsRemaining:roots.size};
       assert.equal(remaining,0);assert.equal(roots.size,0);
     }catch {report.cleanup??={fixtureClosed:false};report.status='failed';failure??=Error('FixtureCleanup');}
-    try {inspectRuntime(app,binding);for(const [index,file] of sources.entries())assert.equal(digest(file),pins[String(index)]);assert.equal(digest(bindingFile),report.bindingSHA256);report.inputsRechecked=true;}catch {report.inputsRechecked=false;report.status='failed';failure??=Error('InputsChanged');}
+    try {inspectRuntime(app,binding);for(const [index,file] of sources.entries())assert.equal(digest(file),pins[String(index)]);assert.equal(digest(bindingFile),report.bindingSHA256);report.inputsRechecked=true;}catch(error) {report.inputsRechecked=false;report.status='failed';report.privateInputFailure={kind:error.name,message:String(error.message).slice(0,2000)};failure??=Error('InputsChanged');}
     report.resourceHashes=fixture?.resourceHashes??null;report.completedAt=new Date().toISOString();save(path.join(out,'observations.json'),report);
     console.log(JSON.stringify({status:report.status,sessions:report.sessions.length,actualBrowser:report.actualBrowser,releaseQualified:false}));
   }

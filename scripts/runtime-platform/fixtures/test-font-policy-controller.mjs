@@ -8,7 +8,7 @@ function envelope() {
  const add=(family,fallback,style,text)=>measurements.push({family,fallback,style,text,widths:[1,1,1],inkPixels:1,maskSHA256:'d'.repeat(64),domWidths:[1,1,1]});
  for(const family of ['NeAntikFontPolicyCanary','Helvetica',`NeAntikMissing_${nonce}`])for(const fallback of ['monospace','serif'])for(const style of ['normal 400','normal 700','italic 400'])for(const text of ['ABABA','A B A B'])add(family,fallback,style,text);
  for(const family of ['QALocalUnique','QARemoteCanary','QARemoteAhem'])for(const fallback of ['monospace','serif'])add(family,fallback,'normal 400','ABABA');
- const page={kind:'own-font-policy-realm',nonce,realm:'page',available:{canvas:true,fontFace:true,fontSet:true,dom:true},local:[{kind:'known-own-unique',loaded:true,timedOut:false},{kind:'invented-missing',loaded:false,timedOut:false}],resources:[{family:'QARemoteCanary',loaded:true,timedOut:false,sha256:hashes.canarySHA256,bytes:1124},{family:'QARemoteAhem',loaded:true,timedOut:false,sha256:hashes.ahemSHA256,bytes:1000}],measurements,errors:[],ownFontFacesRemoved:true};
+ const page={kind:'own-font-policy-realm',nonce,realm:'page',available:{canvas:true,fontFace:true,fontSet:true,dom:true},local:[{kind:'known-own-unique',loaded:true,timedOut:false},{kind:'invented-missing',loaded:false,timedOut:false}],resources:[{family:'QARemoteCanary',loaded:true,timedOut:false,sha256:hashes.canarySHA256,bytes:1124},{family:'QARemoteAhem',loaded:true,timedOut:false,sha256:hashes.ahemSHA256,bytes:1000}],measurements,errors:[],ownFontFacesRemoved:true,fontSetReadyAfterLoads:true};
  const worker=structuredClone(page);worker.realm='worker';worker.available.dom=false;worker.measurements.forEach(row=>row.domWidths=null);
  return {schemaVersion:1,nonce,error:null,workerTerminationRequested:true,realms:[page,worker]};
 }
@@ -30,6 +30,7 @@ test('worker/page errors, missing/duplicate realms, unavailable API and incomple
   v=>v.realms[0].measurements[0].widths[1]=null,v=>v.realms[1].measurements[0].domWidths=[1,1,1],
   v=>v.realms[0].resources[0].loaded=false,v=>v.realms[1].resources[1].timedOut=true,
   v=>v.realms[1].resources[0].sha256='e'.repeat(64),v=>v.realms[0].local[0].timedOut=true,
+  v=>v.realms[1].fontSetReadyAfterLoads=false,
  ];
  for(const mutate of mutations){const value=envelope();mutate(value);assert.throws(()=>validateProbeEnvelope(value,nonce,hashes));}
 });

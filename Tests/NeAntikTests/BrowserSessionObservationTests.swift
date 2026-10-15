@@ -10,7 +10,7 @@ struct BrowserSessionObservationTests {
         let paths = AppPaths(rootDirectory: root), reader = ProfileStore(paths: paths)
         let profile = try reader.upsert(BrowserProfile(name: "Observation fence"))
         let lease = lock(), receipt = ManagedBrowserSessionReceipt(generation: UUID(), lock: lease,
-            runtimeVersion: "156.0.8078.12", configuredRoute: .direct)
+            runtimeVersion: "156.0.8078.12", configuredRoute: .direct, profileRevision: profile.revision)
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
         try paths.writePrivateFile(encoder.encode(lease), to: paths.lockFile(for: profile.id))
         let valid = try await Task.detached {
@@ -29,6 +29,45 @@ struct BrowserSessionObservationTests {
         #expect(reader.profile(withID: profile.id)?.revision == profile.revision)
         gate.continuation.yield(()); gate.continuation.finish()
         await #expect(throws: BrowserProfileRevisionConflictError.self) { try await suspendedRead.value }
+    }
+    @MainActor @Test func freshMetadataCannotAdoptAnOlderSessionReceipt() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("synthetic-observation-revision-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root), store = ProfileStore(paths: paths)
+        let original = try store.upsert(BrowserProfile(name: "Receipt revision")), lease = lock()
+        var receipt = ManagedBrowserSessionReceipt(generation: UUID(), lock: lease,
+            runtimeVersion: "156.0.8078.12", configuredRoute: .direct, profileRevision: original.revision)
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        try paths.writePrivateFile(encoder.encode(lease), to: paths.lockFile(for: original.id))
+        let transition = try #require(store.markLaunchedWithReceipt(original.id))
+        let launched = transition.recorded
+        #expect(try receipt.recordLaunchMetadata(from: original, to: launched))
+        let recordedReceipt = receipt
+        #expect(try await Task.detached {
+            try ManagedSessionLeaseReader.matchesPersistedContext(paths: paths, profile: launched, receipt: recordedReceipt)
+        }.value)
+        var edited = launched; edited.startURL = "https://example.com/new-context"
+        let saved = try store.upsert(edited)
+        // Re-reading M from disk must not make receipt N current, with or
+        // without a relay transport observation. No live process is spawned.
+        #expect(saved.revision != launched.revision)
+        let oldFenceWouldAdmit = try await Task.detached {
+            try paths.withProcessLockGuard(for: saved.id) {
+                try ProfileStore.withPersistedLaunchSnapshot(saved, paths: paths) {
+                    try ManagedSessionLeaseReader.read(paths: paths, profileID: saved.id) == recordedReceipt.lock
+                }
+            }
+        }.value
+        #expect(oldFenceWouldAdmit)
+        #expect(try await Task.detached {
+            try !ManagedSessionLeaseReader.matchesPersistedContext(paths: paths, profile: saved, receipt: recordedReceipt)
+        }.value)
+    }
+    @Test func absentLaunchRevisionCannotAuthorizeObservation() {
+        var receipt = ManagedBrowserSessionReceipt(generation: UUID(), lock: lock(), runtimeVersion: nil, configuredRoute: .direct)
+        #expect(!receipt.matchesProfileRevision(1))
+        receipt.observedMetadataRevision = 1
+        #expect(!receipt.matchesProfileRevision(1))
     }
     func lock(owner: UUID? = UUID(), manager: pid_t = getpid(), phase: BrowserProcessLockPhase = .running) -> BrowserProcessLock {
         BrowserProcessLock(pid: 123, executablePath: "/synthetic/browser",

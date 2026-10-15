@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "runtime-linked-and-research-copy-signed;headed-not-run",
+  "status": "corrected-runtime-linked-and-signed;new-headed-attempt-awaits-admission",
   "manifest": "runtime/font-policy-v1/chromium-font-witness.json",
   "manifestSHA256": "9645de1b7dac136df452abe2a3e039a12beef1689c58686536b9281b5e7b55b7",
   "dependsOn": "runtime/font-policy-v1/chromium-host-font-policy.json",
@@ -27,22 +27,23 @@
     "seed optional for witness, required for actual policy"
   ],
   "resourceAdmission": {
-    "eligibleForAttempt": false,
-    "reason": "memory pressure warning; browser exception pending; one CoreText-only approval already consumed"
+    "firstHeadedAttempt": "normal memory pressure1/thermal0",
+    "warningExceptionUsed": false,
+    "nextAttempt": "fresh observation warning2/thermal0; bounded exception answer pending; no launch or permission file"
   },
   "ordinaryManagerRegression": "font-manager-development.json; matching inputs retained",
-  "actualBrowser": false,
+  "actualBrowser": true,
   "compiled": true,
   "runtimeLinked": true,
   "shippedRuntimeChanged": false,
   "releaseQualified": false,
   "remaining": [
+    "configured/unconfigured headed font operations plus actual cleanup/no residual hardlinks",
     "actual malformed-root/FIFO/policy-redirect controls",
-    "actual native/seeded-native/configured headed font drawing and fallback controls",
     "nine-context/Font Access/style/collection qualification beyond page+DedicatedWorker",
     "qualified manager opt-in and exact signed app/hosted-byte release gates"
   ],
-  "capturedAt": "2026-10-15T20:05:34.029649+00:00",
+  "capturedAt": "2026-10-15T20:29:34.454237+00:00",
   "build": {
     "changedWitnessObjects": 4,
     "jobs": 2,
@@ -54,10 +55,40 @@
   "researchCopy": {
     "status": "signed and independently inspected; not notarized or qualified",
     "existingDeveloperID": true,
-    "executableSHA256": "558b5a175f0ccf6c22ec06be547b34e07c44d84e3e971e65e4cebecc4dd082b3",
-    "frameworkSHA256": "a0e890d512e10c32574b624c352582758eb855f7f57107ca23d9ba7bc9fade85",
+    "executableSHA256": "34d6c4fff38015c91ad8052d0452b4309bb191f64ff825518cbddc8fb59c456a",
+    "frameworkSHA256": "fdbceb62fe9abcc0f2adab08e37c4f9d712943387c4867d0f615e1966a4af932",
     "machoCount": 16,
     "bundleEntries": 948,
-    "fixedResourceHashesChecked": true
+    "fixedResourceHashesChecked": true,
+    "afterCleanupCorrection": true,
+    "sourceContracts": 4,
+    "actualBrowserForThisCopy": false
+  },
+  "firstHeadedAttempt": {
+    "modesStarted": 1,
+    "modesNotStarted": 4,
+    "overall": "failed",
+    "nativeBrowserExitCode": 0,
+    "browserACK": true,
+    "rendererACKCount": 4,
+    "pageMeasurements": 42,
+    "worker": "initial FontFaceSet.ready timeout before own load; fixture ordering corrected",
+    "codeClone": "QA environment rejected upstream cleanup child; one own inode-bound signed clone removed, nlink1 restored",
+    "notQualification": true
+  },
+  "cleanupSuccessor": {
+    "manifest": "runtime/font-policy-v1/chromium-font-cleanup.json",
+    "manifestSHA256": "5c5f93163671cbc87f98dbbb97ce25c8ef3876435d8a940f68328e6814ae4d0e",
+    "sourceFiles": 2,
+    "applied": true,
+    "compiled": true,
+    "actualBrowser": false,
+    "change": "Non-profile clone-cleanup role skips profile initialization; QA launch supplies only safe OS environment and owned crash path",
+    "lineageEndManifest": "runtime/font-policy-v1/chromium-font-cleanup-cstring.json",
+    "lineageEndSHA256": "80803d1a9a2256fa052cc8962da1e226f134e162ddabaa241d923d3229f4aeb4",
+    "runtimeLinked": true,
+    "signedResearchCopy": true,
+    "buildSeconds": 126.054,
+    "previousBuildFailure": "M156 Environment::GetVar requires base::cstring_view; failed compile retained and typed-key successor applied"
   }
 }

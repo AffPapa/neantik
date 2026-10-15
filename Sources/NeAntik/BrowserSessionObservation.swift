@@ -63,6 +63,13 @@ struct ManagedBrowserSessionReceipt: Equatable, Sendable {
     var observedMetadataRevision: UInt64? = nil
     var routePolicySHA256: String? = nil
 
+    /// A live lease does not bind a later editor revision to this launch.
+    /// Only the recorded launch-bookkeeping transition may advance the receipt.
+    func matchesProfileRevision(_ revision: UInt64) -> Bool {
+        guard let launched = profileRevision else { return false }
+        return (observedMetadataRevision ?? launched) == revision
+    }
+
     /// markLaunched advances metadata after the immutable relay bootstrap.
     /// Accept only that exact single bookkeeping transition, never a newer
     /// proxy/identity/editor configuration or a guessed revision offset.
@@ -74,7 +81,7 @@ struct ManagedBrowserSessionReceipt: Equatable, Sendable {
     }
 
     func relayBinding(profileID: UUID, expectedRevision: UInt64?) throws -> ProxyRelayObservationProtocol.Binding? {
-        guard let revision = profileRevision, (observedMetadataRevision ?? revision) == expectedRevision,
+        guard let revision = profileRevision, let expectedRevision, matchesProfileRevision(expectedRevision),
               let browserIdentity, let relay = lock.relay,
               relay.profileID == profileID, relay.sessionGeneration == generation,
               lock.ownerToken == generation, lock.phase == .running else { return nil }
@@ -110,7 +117,8 @@ enum ManagedSessionLeaseReader {
     /// The in-memory metadata snapshot alone cannot detect another manager's
     /// write during those waits. Keep the existing process -> metadata order.
     static func matchesPersistedContext(paths: AppPaths, profile: BrowserProfile, receipt: ManagedBrowserSessionReceipt) throws -> Bool {
-        try paths.withProcessLockGuard(for: profile.id) {
+        guard receipt.matchesProfileRevision(profile.revision) else { return false }
+        return try paths.withProcessLockGuard(for: profile.id) {
             try ProfileStore.withPersistedLaunchSnapshot(profile, paths: paths) {
                 try read(paths: paths, profileID: profile.id) == receipt.lock
             }

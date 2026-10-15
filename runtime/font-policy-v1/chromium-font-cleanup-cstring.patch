@@ -1,0 +1,18 @@
+--- a/chrome/browser/mac/code_sign_clone_manager.mm
++++ b/chrome/browser/mac/code_sign_clone_manager.mm
+@@ -369,12 +369,12 @@
+   auto environment = base::Environment::Create();
+   if (environment->GetVar("NEANTIK_FONT_QA") == "owned-v1") {
+     options.clear_environment = true;
+-    constexpr const char* keys[] = {"HOME", "LANG", "LC_ALL", "LC_CTYPE",
++    constexpr base::cstring_view keys[] = {"HOME", "LANG", "LC_ALL", "LC_CTYPE",
+         "LOGNAME", "PATH", "SHELL", "TMPDIR", "USER", "XPC_FLAGS",
+         "XPC_SERVICE_NAME", "__CFBundleIdentifier", "BREAKPAD_DUMP_LOCATION"};
+-    for (const char* key : keys) {
++    for (base::cstring_view key : keys) {
+       if (auto value = environment->GetVar(key))
+-        options.environment[key] = *value;
++        options.environment[key.c_str()] = *value;
+     }
+   }
+ 

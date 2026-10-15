@@ -100,7 +100,11 @@ header checks passed. Four new/changed objects and the full runtime now compile
 and link in a separate output; the previous runtime is preserved. The separate
 research copy is signed with the existing Developer ID. All16 Mach-O files,
 948 bundle entries and both fixed font assets were checked without launching
-the browser. Memory warning currently blocks actual headed execution. [Current scope](../../docs/evidence/font-witness-development.json).
+the browser. A later normal-resource headed attempt reached browser/renderer
+selection ACK and page drawing, but failed on worker fixture startup and
+QA cleanup inheritance. A separate successor patch corrects the non-profile
+cleanup role and its QA environment; its runtime is not qualified.
+[Current scope](../../docs/evidence/font-witness-development.json).
 
 The QA seam accepts only `NEANTIK_FONT_QA=owned-v1`, a32-hex correlation nonce,
 and an existing private nonce-bound temporary root. The root has fixed
@@ -126,7 +130,7 @@ metrics, actual fallback/style/custom collection/WOFF2 operations and Font
 Access permission behavior. Missing acknowledgements, contexts, resources or
 completion never imply PASS. Malformed-root/FIFO, managed-policy redirection
 and missing CDP-pipe controls must terminate without touching default data.
-Those browser operations have not run. Ordinary manager, old primitive and
+Those complete controls have not passed. Ordinary manager, old primitive and
 old7object receipts remain valid for their unchanged scope; successful new
 compile/link checks do not replace the pending headed and release gates.
 
@@ -151,7 +155,7 @@ sandbox behavior or replace drawing, browser, compilation or release gates.
 The one-off warning exception is consumed and does not apply to Chromium QA.
 
 
-### Finite headed fixture — prepared, not executed
+### Finite headed fixture — first attempt diagnosed, not qualified
 
 `run-font-policy.mjs` uses only a separately signed, private research bundle,
 owned temporary profiles, mock Keychain and navigation-only pipe CDP. It pins
@@ -167,6 +171,14 @@ synthetic controls prove the analyzer rejects missing contexts, truncated
 results, local-font leakage, broken rendering and changed A results. They are
 not runtime results. This fixture alone does not cover all nine contexts,
 Font Access permissions, custom collections or the full release gate.
+
+The first real attempt stopped after native mode. Its fresh worker waited for
+`FontFaceSet.ready` before starting a font load; Chromium's worker starts with
+a pending ready promise. The corrected fixture initiates a real URL load cycle
+and still requires ready completion before measuring. The first attempt also
+revealed inherited QA guards blocking Chromium's code-clone cleanup helper.
+The old report remains failed; source correction, owned cleanup and subsequent
+runtime results are separate evidence. No success criteria were removed.
 
 Native admission remains fail closed. A research operator may supply an
 explicitly approved, private one-shot warning-phase record bound to this exact

@@ -6,7 +6,7 @@ globalThis.runOwnFontPolicyRealm = async function({nonce, fontURL, ahemURL}) {
   const result = {kind:'own-font-policy-realm', nonce, realm:windowRealm?'page':'worker',
     available:{canvas:canvasAvailable, fontFace:typeof FontFace==='function', fontSet:!!fontSet, dom:windowRealm},
     local:[], resources:[], measurements:[], errors:[]};
-  const retained=[];
+  const retained=[];let stage='initialization';
   const bounded = async promise => {
     let timer;
     try {return await Promise.race([promise,new Promise((_,fail)=>timer=setTimeout(()=>fail(Error('OwnFontTimeout')),5000))]);}
@@ -16,8 +16,9 @@ globalThis.runOwnFontPolicyRealm = async function({nonce, fontURL, ahemURL}) {
     const entry={kind,family,loaded:false,error:null,timedOut:false};
     try {
       const font=new FontFace(family,source);
-      await bounded(font.load());
-      fontSet.add(font);retained.push(font);entry.loaded=font.status==='loaded';
+      const loading=font.load();
+      fontSet.add(font);retained.push(font);
+      await bounded(loading);entry.loaded=font.status==='loaded';
     } catch(error) {entry.error=error.name;entry.timedOut=error.message==='OwnFontTimeout';}
     return entry;
   }
@@ -46,25 +47,32 @@ globalThis.runOwnFontPolicyRealm = async function({nonce, fontURL, ahemURL}) {
   }
   try {
     if(!canvasAvailable||!fontSet||typeof FontFace!=='function')return result;
-    await bounded(fontSet.ready);
+    // A fresh Chromium worker FontFaceSet.ready starts pending until a load
+    // cycle schedules its done event. Do not deadlock before starting a load.
+    stage='initial-document-ready';if(windowRealm)await bounded(fontSet.ready);
+    stage='local-font-loads';
     result.local.push(await face('QALocalUnique','local("NeAntikFontPolicyCanary")','known-own-unique'));
     result.local.push(await face('QALocalMissing',`local("NeAntikMissing_${nonce}")`,'invented-missing'));
+    stage='downloaded-font-loads';
     for(const [family,url] of [['QARemoteCanary',fontURL],['QARemoteAhem',ahemURL]]) {
       const response=await bounded(fetch(url,{cache:'no-store'}));
       if(!response.ok)throw Error('OwnFontResourceHTTP');
       const bytes=await bounded(response.arrayBuffer());
       const hash=new Uint8Array(await crypto.subtle.digest('SHA-256',bytes));
-      const entry=await face(family,bytes,'downloaded-resource');
+      // URL loading creates a real asynchronous FontFaceSet load cycle in the
+      // worker; its immutable loopback bytes are independently hashed above.
+      const entry=await face(family,`url(${JSON.stringify(url)})`,'downloaded-resource');
       result.resources.push({...entry,bytes:bytes.byteLength,sha256:Array.from(hash,x=>x.toString(16).padStart(2,'0')).join('')});
     }
-    await bounded(fontSet.ready);
+    stage='fontset-ready-after-loads';await bounded(fontSet.ready);result.fontSetReadyAfterLoads=true;
+    stage='font-measurements';
     for(const family of ['NeAntikFontPolicyCanary','Helvetica',`NeAntikMissing_${nonce}`])
       for(const fallback of ['monospace','serif'])
         for(const style of ['normal 400','normal 700','italic 400'])
           for(const text of ['ABABA','A B A B'])await measure(family,fallback,style,text);
     for(const family of ['QALocalUnique','QARemoteCanary','QARemoteAhem'])
       for(const fallback of ['monospace','serif'])await measure(family,fallback,'normal 400','ABABA');
-  } catch(error) {result.errors.push(error.name);}
+  } catch(error) {result.errors.push({stage,kind:error.message==='OwnFontTimeout'?'timeout':error.name});}
   finally {
     for(const font of retained)fontSet.delete(font);
     result.ownFontFacesRemoved=retained.every(font=>!fontSet.has(font));
