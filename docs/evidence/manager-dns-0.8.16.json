@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "result": "scoped-manager-dns-observations-pass",
+  "checks": [
+    "same live manager/browser/relay generation",
+    "exact preflight and markLaunched metadata transition",
+    "each request socket belongs to owned relay or owned Direct browser helper",
+    "linked upstream UDP DNS and protected origin",
+    "SERVFAIL and no origin during failure window",
+    "literal-IP Direct origin sensitivity while fault armed",
+    "same-session recovery",
+    "owned cleanup"
+  ],
+  "runtimeExecutableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+  "runtimeFrameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815",
+  "managerSHA256": "3bf637bc8fa352fa72ae8163752fb5642119f0dc230a53b3e800f648fd64bf01",
+  "version": "0.8.16",
+  "build": "128",
+  "managerDNSScope": "Owned upstream DNS only; no OS resolver, global DNS/UDP, existing-stream or Direct DNS claim",
+  "globalDNSQualified": false,
+  "allNetworkGatesComplete": false,
+  "releaseGate": false,
+  "open": [
+    "global DNS/UDP",
+    "background traffic",
+    "network change",
+    "default-trusted HTTPS upstream",
+    "other environments"
+  ],
+  "inputSHA256": {
+    "fixture-ledger.json": "337c24d48df86df04c7d74fb713585b87a084bffbcabeb1fce2491b4ed0a4e80",
+    "dns-custody-before-launch.json": "af38c20178675f7f5581ed1556e7a681382f86fa951e25dc0e7834d51406015f",
+    "dns-custody-proxy-success.json": "48dde0a1e207d213e1df81e13dd022733f1bd574b3bf31a2e94f48a421e80588",
+    "dns-custody-dns-refused.json": "fef8abd93d8e8cf01a6a37084eb3ec1ddd2131e050bc423f2d8e0dcc276781df",
+    "dns-custody-direct-control.json": "46d1b900fc96af60c988a3952d4cbd9bea28c34725a7e88a19077a4900ae9cd2",
+    "dns-custody-proxy-recovered.json": "181ee44a58635964068e19c318edbd5a9e85a18d260aa8b438bb5432f410a22d",
+    "dns-custody-cleanup.json": "526c61c80ba0fa6d01d2560da67d6bf7210c278a9c7d297acaef59bae56e5b81"
+  },
+  "analyzerSHA256": "4adeae4f439be3f80a82566e8014c1c50d321527e1fa71f3078e6a4e26217014",
+  "transitionWitnessSHA256": "fef586a3606301e0e786400f53af985dfa5334ecfa01f5efe7156cff2cfe20a8",
+  "transitionValidatorSHA256": "67ccfe0c5331d88d516515039664878d82037d863c6e47d9d1cf80a6e3939a42",
+  "analysisCorrection": "Explicit preflight context commit before markLaunched; original receipts unchanged",
+  "observedOn": "2026-10-15",
+  "artifact": "Downloaded published 0.8.16 (128), isolated QA profiles and mock Keychain",
+  "admission": "normal; no inherited warning exception",
+  "corrections": [
+    "Original FAIL preserved: model omitted automatic preflight context persistence before markLaunched",
+    "Intermediate FAIL preserved: failed navigation retried inside the same armed SERVFAIL epoch"
+  ],
+  "originalFailureSHA256": "8324c085f63e50a74aa843aadcaf649576ef283fc22f297521a8f430c29cd8b8",
+  "tests": {
+    "python": "28 tests PASS:14 analysis plus14 selection contracts",
+    "swiftIdentityMatrix": "15 persisted rows and4 rejection cases PASS; source-only, not native tuple qualification"
+  },
+  "cleanup": {
+    "ownedProcessesRemaining": 0,
+    "serverThreadsDrained": true,
+    "supplementalAuthorityRetired": true
+  },
+  "privacy": "No raw profiles, credentials, addresses, URLs, DNS names, argv or fingerprints in this report; private witnesses remain local",
+  "productChanged": false,
+  "immutableReleaseAssetsChanged": false
+}

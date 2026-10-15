@@ -19,6 +19,8 @@ PHASES = COLLECT.PHASES
 INPUTS = ('fixture-ledger.json', *(f'dns-custody-{phase}.json' for phase in (*PHASES, 'cleanup')))
 HASHES = dict(fixtureSHA256='manager-route-fixture.py', dnsFixtureSHA256='manager-dns-fixture.py',
               dnsWireFixtureSHA256='controlled-dns-fixture.py', collectorSHA256='collect-manager-dns.py')
+TRANSITION_SPEC = importlib.util.spec_from_file_location('owned_dns_transition', Path(__file__).with_name('manager-dns-transition.py'))
+TRANSITION = importlib.util.module_from_spec(TRANSITION_SPEC); TRANSITION_SPEC.loader.exec_module(TRANSITION)
 
 
 def require(condition, reason):
@@ -30,7 +32,7 @@ def number(value): return type(value) in (int, float) and math.isfinite(value) a
 def hash_value(value): return isinstance(value, str) and re.fullmatch('[0-9a-f]{64}', value) is not None
 
 
-def qualify(receipts):
+def qualify(receipts, transition=None):
     try:
         ledger = receipts['fixture-ledger.json']; events = ledger['events']
         require(type(events) is list and 0 < len(events) <= 4096, 'empty-or-unbounded-ledger')
@@ -49,13 +51,19 @@ def qualify(receipts):
         require(controls[0]['at'] < controls[1]['at'] < controls[2]['at'], 'unordered-controls')
         samples = [receipts['dns-custody-' + phase + '.json'] for phase in PHASES]
         baseline, success, refused, direct, recovery = samples
+        prepared = TRANSITION.validate(transition, receipts) if transition is not None else dict(
+            revision=baseline['revision'] + 1, configurationSHA256=baseline['configurationSHA256'],
+            metadataIdentitySHA256=baseline['metadataIdentitySHA256'])
         require(all(s['phase'] == phase and number(s['at']) for s, phase in zip(samples, PHASES)), 'wrong-custody-phase')
         require([s['at'] for s in samples] == sorted(set(s['at'] for s in samples)), 'unordered-custody')
         for s in samples:
             for field in (*HASHES, 'managerSHA256', 'candidateManifestSHA256', 'metadataIdentitySHA256'):
                 require(hash_value(s[field]), 'invalid-custody-hash')
-                if field != 'metadataIdentitySHA256' or s is not direct:
-                    require(s[field] == baseline[field], 'custody-input-changed')
+                if field == 'metadataIdentitySHA256':
+                    if s is not direct:
+                        expected = baseline[field] if s is baseline else prepared[field]
+                        require(s[field] == expected, 'custody-input-changed')
+                else: require(s[field] == baseline[field], 'custody-input-changed')
             require(s['manager'] == baseline['manager'], 'manager-generation-changed')
             process(s['manager'])
             require(integer(s['revision']), 'invalid-revision')
@@ -63,7 +71,7 @@ def qualify(receipts):
         require(integer(baseline['revision']) and baseline['lastLaunchedAt'] is None, 'invalid-unused-baseline')
         protected = (success, refused, recovery)
         for s in protected:
-            require(s['profileID'] == baseline['profileID'] and s['revision'] == baseline['revision'] + 1,
+            require(s['profileID'] == baseline['profileID'] and s['revision'] == prepared['revision'],
                     'unexpected-profile-revision')
             require(isinstance(s['lastLaunchedAt'], str) and bool(s['lastLaunchedAt'])
                     and s['lastLaunchedAt'] == success['lastLaunchedAt'] and s['updatedAt'] == success['updatedAt'],
@@ -74,7 +82,7 @@ def qualify(receipts):
             require(s['browser']['parentPID'] == s['relayOwner']['parentPID'] == s['manager']['pid'], 'parent-chain-mismatch')
             relay = s['relay']
             require(relay['profileID'].lower() == s['profileID'] and relay['sessionGeneration'].lower() == s['sessionGeneration'], 'lease-profile-session-mismatch')
-            require(relay['configurationSHA256'] == s['configurationSHA256'] == baseline['configurationSHA256'], 'configuration-revision-mismatch')
+            require(relay['configurationSHA256'] == s['configurationSHA256'] == prepared['configurationSHA256'], 'configuration-revision-mismatch')
             require(relay['ownerPID'] == s['relayOwner']['pid'] and relay['ownerStartSeconds'] == s['relayOwner']['startSeconds']
                     and relay['ownerStartMicroseconds'] == s['relayOwner']['startMicroseconds']
                     and relay['ownerUID'] == s['relayOwner']['uid'], 'owner-lease-generation-mismatch')
@@ -161,7 +169,11 @@ def qualify(receipts):
         require(positive and recovered and direct_hits and rejected, 'missing-real-observation')
         fault, reset = controls[1]['at'], controls[2]['at']
         require(all(baseline['at'] < e['at'] <= success['at'] < fault and e['faultEpoch'] == 0 and e['faultEnabled'] is False for e in positive), 'positive-outside-session-window')
-        require(all(fault < e['at'] <= refused['at'] and e['faultEpoch'] == e['requestEpoch'] == 1
+        # Chromium may retry the failed navigation after the refused snapshot,
+        # while the same SERVFAIL epoch stays armed. Require an observed refusal
+        # before that snapshot and keep EVERY retry inside the armed interval.
+        require(any(fault < e['at'] <= refused['at'] for e in rejected)
+                and all(fault < e['at'] < reset and e['faultEpoch'] == e['requestEpoch'] == 1
                     and e['faultEnabled'] is True for e in rejected), 'refusal-outside-window')
         require(all(refused['at'] < e['at'] <= direct['at'] < reset and e['faultEpoch'] == e['requestEpoch'] == 1
                     and e['faultEnabled'] is True for e in direct_hits), 'direct-control-not-during-fault')
@@ -180,7 +192,8 @@ def qualify(receipts):
     except (KeyError, TypeError, IndexError, AttributeError):
         raise ValueError('missing-or-malformed-manager-dns-receipt') from None
     return dict(schemaVersion=1, result='scoped-manager-dns-observations-pass',
-        checks=['same live manager/browser/relay generation', 'exact markLaunched metadata transition',
+        checks=['same live manager/browser/relay generation',
+                'exact preflight and markLaunched metadata transition' if transition is not None else 'exact markLaunched metadata transition',
                 'each request socket belongs to owned relay or owned Direct browser helper',
                 'linked upstream UDP DNS and protected origin', 'SERVFAIL and no origin during failure window',
                 'literal-IP Direct origin sensitivity while fault armed', 'same-session recovery', 'owned cleanup'],
@@ -197,24 +210,30 @@ def process(value):
             and isinstance(value['cdhash'], str) and re.fullmatch('[0-9a-f]{40}', value['cdhash']), 'invalid-process-identity')
 
 
-def analyze(directory):
+def analyze(directory, transition_path=None):
     receipts, hashes = {}, {}
     for name in INPUTS:
         raw = COLLECT.read_private(directory / name)
         receipts[name] = json.loads(raw); hashes[name] = hashlib.sha256(raw).hexdigest()
-    result = qualify(receipts)
+    transition = COLLECT.load(transition_path) if transition_path is not None else None
+    result = qualify(receipts, transition)
     baseline = receipts['dns-custody-before-launch.json']
     for key, filename in HASHES.items():
         require(hashlib.sha256(Path(__file__).with_name(filename).read_bytes()).hexdigest() == baseline[key], 'harness-input-changed')
     result.update(inputSHA256=hashes, analyzerSHA256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
+    if transition_path is not None:
+        result.update(transitionWitnessSHA256=COLLECT.sha(COLLECT.read_private(transition_path)),
+            transitionValidatorSHA256=COLLECT.sha(Path(TRANSITION.__file__).read_bytes()),
+            analysisCorrection='Explicit preflight context commit before markLaunched; original receipts unchanged')
     return result
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--receipts', type=Path, required=True)
+    parser.add_argument('--transition-witness', type=Path, help='Optional private offline proof; never an amended custody receipt')
     args = parser.parse_args()
-    try: result = analyze(args.receipts)
+    try: result = analyze(args.receipts, args.transition_witness)
     except (ValueError, OSError) as error:
         reason = str(error) if type(error) is ValueError else 'input-read-refused'
         print(json.dumps(dict(result='FAIL', reason=reason, allNetworkGatesComplete=False))); raise SystemExit(1)

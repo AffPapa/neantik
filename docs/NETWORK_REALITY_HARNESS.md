@@ -188,6 +188,7 @@ existing three GeoIP TLS hosts; it does not turn GeoIP into route evidence.
 | `scripts/runtime-network/manager-route-fixture.py --controlled-dns` | Headed manager with two synthetic profiles; independent resolver and origin observations; bounded stdin fault control. |
 | `scripts/runtime-network/collect-manager-dns.py` | Read-only metadata/lease, exact kernel process generations, live/static CodeDirectory, tokenized argv and per-request socket custody. |
 | `scripts/runtime-network/analyze-manager-dns.py` | Offline acceptance of linked observations; missing, contradictory, stale or rejected origin arrivals fail. |
+| `scripts/runtime-network/manager-dns-transition.py` | Optional private offline proof of a preflight context commit followed by markLaunched; reconstructs both complete metadata/configuration digests without altering receipts. |
 
 The protocol uses one proxy browser session for success → SERVFAIL → recovery.
 An explicitly separate Direct profile opens the same owned origin by literal
@@ -230,10 +231,26 @@ Retire the supplemental QA authority through its supported narrow operation;
 the published candidate's original evidence remains unchanged. Timeout/SIGTERM
 cleanup is never a graceful-close qualification.
 
-**Current evidence:** local UDP/TCP fixture controls and offline negative
-controls pass; live read-only kernel/argv/socket helper controls pass. The
-headed manager DNS stage remains unqualified: the published manager refused
-its first browser launch under memory pressure warning. An agent-level QA
-exception does not override the product's normal launch admission. Continue
-only after a fresh normal observation; do not retry the same rejected state or
-weaken admission to obtain a green report.
+**Current evidence:** the downloaded signed 0.8.16 (128) completed the owned
+manager/relay DNS path after normal admission: origin success, SERVFAIL with
+no protected origin hit, an independent Direct origin while the fault stayed
+armed, and recovery in the same protected session. Kernel socket custody,
+profile/revision/configuration, exact runtime and process generations were
+linked. Own processes drained and the supplemental QA authority was retired.
+See [the scoped report](evidence/manager-dns-0.8.16.json).
+
+The original analyzer FAIL is preserved. Two harness assumptions were wrong:
+launch preflight persists timezone/locale/evidence before markLaunched, and
+Chromium may retry a failed navigation while SERVFAIL remains armed. The
+optional `--transition-witness PRIVATE_FILE` independently reconstructs the
+baseline by removing only those three previously absent fields, checks the
+entire remaining profile digest, and verifies the exact two revision commits.
+All protected receipts must match the retained post-launch metadata. A refusal
+must precede its custody snapshot; every retry must remain inside the same
+armed epoch. Wrong metadata, configuration, times, peer/session, a protected
+origin during failure, and missing cleanup still fail. No native recapture or
+receipt amendment was used to correct these assumptions.
+
+This qualifies owned upstream DNS only. OS-global DNS/UDP, idle/background,
+network change and default-trusted HTTPS upstream remain separate gates.
+The previous 127 memory-warning refusal remains a setup refusal, not a PASS.

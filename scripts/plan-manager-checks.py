@@ -40,6 +40,7 @@ STANDALONE_HARNESSES = {
     'scripts/runtime-network/manager-dns-fixture.py': 'scripts.tests.test_manager_dns_fixture',
     'scripts/runtime-network/collect-manager-dns.py': ('scripts.tests.test_manager_dns_custody', 'scripts.tests.test_manager_dns_analysis'),
     'scripts/runtime-network/analyze-manager-dns.py': 'scripts.tests.test_manager_dns_analysis',
+    'scripts/runtime-network/manager-dns-transition.py': 'scripts.tests.test_manager_dns_analysis',
     'scripts/runtime-network/analyze-controlled-dns.py': 'scripts.tests.test_controlled_dns_analysis',
     'scripts/runtime-network/run-controlled-dns.mjs': 'scripts.tests.test_controlled_dns_analysis',
     'scripts/runtime-network/analyze-manager-route.py': 'scripts.tests.test_shipping_manager_route_analysis',
@@ -103,6 +104,10 @@ def plan(paths, catalog):
             python.add('scripts.tests.test_compare_release_reports')
             gates.add('actual public before/after records; matching measurement conditions and native behavior remain separate acceptance')
             reasons.append({'path': path, 'surface': 'release-report-comparison'}); continue
+        if path == 'scripts/plan-manager-checks.py':
+            python.add('scripts.tests.test_manager_check_plan')
+            gates.add('review check selection and preserve conservative unknown/shared-input fallback')
+            reasons.append({'path': path, 'surface': 'read-only-check-planner'}); continue
         if path.startswith(("scripts/", ".github/")):
             python_full = True; gates.add("changed workflow integration; clean CI is distinct from local tests")
             reasons.append({"path": path, "surface": "workflow"}); continue

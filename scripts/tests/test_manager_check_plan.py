@@ -10,6 +10,14 @@ SPEC.loader.exec_module(MOD)
 
 
 class ManagerCheckPlanTests(unittest.TestCase):
+    def test_offline_dns_transition_and_planner_have_explicit_bounded_contracts(self):
+        result = MOD.plan(['scripts/runtime-network/manager-dns-transition.py',
+                           'scripts/plan-manager-checks.py'], [])
+        self.assertEqual(result['swiftMode'], 'none')
+        self.assertEqual(result['commands'], [['python3','-B','-m','unittest',
+            'scripts.tests.test_manager_check_plan','scripts.tests.test_manager_dns_analysis']])
+        self.assertFalse(result['releaseGate'])
+
     def test_report_comparison_uses_related_controls_without_new_app_release(self):
         result = MOD.plan(['scripts/compare-release-reports.py'], [])
         self.assertEqual(result['swiftMode'], 'none')

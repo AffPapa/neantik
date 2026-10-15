@@ -31,7 +31,7 @@ Dev-окно при неподтверждённом журнале скрыва
 
 | Приоритет | Осталось | Что нужно сделать следующим |
 |---|---|---|
-| P0 | DNS и сетевые отказы (19–22) | Raw signed Chromium:3headed-сессии/8наблюдений UDP/DoH, SERVFAIL, stream cut, recovery и обход-контроль прошли. Следом связать producer с реальным manager/relay и revision; затем незакрытые idle/background и смена сети. Raw-runtime случаи не повторять без изменения входов. |
+| P0 | DNS и сетевые отказы (19–22) | Raw signed Chromium:3headed-сессии/8наблюдений UDP/DoH сохранены. На скачанной128 дополнительно подтверждены настоящий manager/relay, revision/configuration, upstream DNS, SERVFAIL без protected origin, чувствительный Direct-контроль и same-session recovery. Остались idle/background, глобальные DNS/UDP и смена сети. [Scope и исправления harness](NETWORK_REALITY_HARNESS.md#manager--relay-dns-producer). |
 | P0 | Согласованность платформы (1–18, 40–43) | Конечный остаток:4выдаваемых когорты+11legacytuple mappings и identity migration; locale/events voices без имён/ID; actual codecs/PDF/MediaCapabilities/storage manifest; HTTPS identity совместно с19. Второй дисплей, смена сети/питания и физический capture — отдельные внешние условия. Уже доказанные Canvas/WebGL/Audio и девять контекстов не повторять ради неопределённого дополнительного покрытия. |
 | P1 | Восстановление данных (30–31, 35–36) | Backup/restore cookies/LS/IndexedDB/вкладок, wrong-password и прерывание уже имеют signed QA evidence. Recovery pin и безопасная форма опубликованы в127. Остались недостающие crash/timeout условия и отдельный WebKit snapshot/restore. Формат Chromium-копии заново не реализуется. [Границы доказательств](BROWSER_DATA_BACKUP.md). |
 | P1 | Расширения (33–34) | Центр, CRX3 crypto и собственный native lifecycle уже реализованы в ограниченном scope. Закрыть непроверенную отмену native install dialog и совместимость нужных пакетов; не повторять весь lifecycle без изменения кода/runtime. |
@@ -81,9 +81,9 @@ stderr. Реальные curl/Python controls проверены. CI ловит 
 Следующий срез — manager/relay integration; глобальные DNS/UDP и все19–22
 остаются открытыми. Описание — в [Network Reality Harness](NETWORK_REALITY_HARNESS.md).
 
-Manager DNS producer, чтение реальной custody и отдельный анализатор теперь
-реализованы в исходных инструментах. Контроли ловят подмену локального клиента,
-аргументов маршрута, сессии/revision и Direct-обход даже при отказе стенда
-обслужить запрос. Это ещё не manager DNS PASS: первый штатный запуск Chromium
-на опубликованной127 отклонён защитой от memory warning. Продолжение требует
-normal admission; бинарные release gates127 повторно не открываются.
+Manager DNS producer и custody проверены на скачанной128 после normal admission.
+Первый анализ отклонён из-за неверной модели preflight commit и повторных
+запросов Chromium во время отказа. Исходные FAIL и receipts сохранены;
+строгое offline-восстановление metadata и отрицательные контроли исправили
+анализ без нового запуска. [Результат](evidence/manager-dns-0.8.16.json)
+не означает полную сетевую квалификацию1.0 и не меняет опубликованные байты128.
