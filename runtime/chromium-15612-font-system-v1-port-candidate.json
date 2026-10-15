@@ -1,0 +1,23 @@
+{
+  "binaryBinding": {
+    "architecture": "arm64",
+    "argsGNSHA256": "428054a30abeb212aa3784f524bb27ef4bc0068ab7ebef149866b2b8bff30a3c",
+    "candidateExecutableSHA256": "ba55caca9436c6f16fd6f3e4f7578d87515f161e51c2d0f8f138729086d761f0",
+    "candidateFrameworkSHA256": "2602c5cee1f2e10aa8c551da0aebded2be51f62418a0e7e3a6f2baea8e7d6626",
+    "candidateInfoPlistSHA256": "de8aa8559bfb4ab271ab6d8cadb8cfc22f883e4bf1c22355cf82ee504d39c52c",
+    "executableBytes": 52096,
+    "frameworkBytes": 274603040,
+    "sourceVersion": "156.0.8078.12",
+    "status": "bound-to-built-candidate",
+    "targetArchitecture": "arm64"
+  },
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "sourceContractSHA256": "e0eea87dd2bfbaa8561d199f89f366c02238df252666dad37cb4ff61d98d5f4b",
+  "sourceInputManifestSHA256": "5a091945d6b08412f1464f7e4287a3e35d117f6e96bf5a5099b1b63fef04cbcb",
+  "sourceSnapshotSHA256": "489a80d9646f6280329bff4444cf493934b760140b01551f27162cc329e9eb9e",
+  "sourceVariant": "font-system-v1",
+  "status": "candidate-bound",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "156.0.8078.12"
+}

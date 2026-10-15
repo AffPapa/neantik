@@ -315,3 +315,32 @@ corrections without relabeling that invocation as an all-green run. The exact
 shipping manager/runtime and Direct Distribution qualification remain open.
 Earlier sections and reports describe their historical stage, not current
 activation status. No old manifest, signature or published asset was rewritten.
+
+## Additive M156 source release contract
+
+`chromium-15612-font-system-v1-*` and its separate runtime lock bind the six
+font layers to the authenticated final9 ancestor. The old M156 contracts,
+locks and published archives are unchanged. A new full FD observation checked
+all 1,062,655 source entries against the exact 29-member permitted overlay,
+including two original QA fonts and two original native-probe sources. All 83
+known native COPY groups retained their strict inode/alias checks. No browser
+rebuild or runtime execution was needed for this source observation.
+
+The full-content scan happened **after** the retained executed build. It is
+not labeled a prebuild or atomic snapshot. The compact public proof records
+that distinction and binds source contracts, args, raw output and signing
+lineage. The large complete inventory and execution receipts remain private.
+
+Verify this source contract without building or launching:
+
+```sh
+python3 -B scripts/chromium_15612_font_release_evidence.py
+```
+
+Optional `--runtime-app` and `--args-gn` compare the exact unsigned output after
+source admission. The script never grants release or installation authority.
+The shared M156 resolver refuses missing/unknown variant markers and mixed
+old/new paths. Existing packaging/report/enrollment callers and compiled updater
+records still need explicit successor integration. Published 0.8.17's updater
+cannot learn new runtime pins from downloaded metadata: a bridge or clearly
+explained manual signed upgrade remains necessary before delivery.

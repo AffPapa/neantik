@@ -46,6 +46,7 @@ SOURCE_SUFFIXES = {
     ".cc",
     ".command",
     ".cpp",
+    ".gn",
     ".css",
     ".h",
     ".hpp",
