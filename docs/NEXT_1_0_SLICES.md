@@ -56,3 +56,11 @@ stderr. Реальные curl/Python controls проверены. CI ловит 
 Сетевой инвентарь сверён с фактическим fetcher обновлений и browser-route
 диагностикой. Следующий срез — P0 DNS-on-wire producer с положительными/отрицательными
 контролями. Наличие harness или исправленной документации не закрывает DNS gate.
+
+Первый producer теперь реализован: собственные UDP DNS и HTTPS DNS endpoints,
+отказы resolver/upstream, восстановление, контролируемый Direct-обход,
+ограниченный pipe-CDP runner и отдельный анализатор сохранённых результатов.
+Реальные локальные сетевые и отрицательные controls прошли; новый headed DNS
+этап остановлен resource admission до запуска браузера. Это готовность стенда,
+а не подтверждённый DNS-маршрут Chromium или завершение пунктов19–22. Описание
+запуска и границ — в [Network Reality Harness](NETWORK_REALITY_HARNESS.md).

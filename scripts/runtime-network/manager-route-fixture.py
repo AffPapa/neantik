@@ -246,6 +246,13 @@ class Fixture:
                     self.ledger.record('cut-active-owned-tls-channels', channels=len(tls_channels), phase=self.https_phase())
             previous = active
 
+    def owned_local_destination(self, host, port):
+        """Only the fixed origin by default; DNS fixtures override this hook."""
+        return host == '127.0.0.1' and port == self.origin.server_address[1]
+
+    def open_upstream(self, host, port):
+        return socket.create_connection((host, port), timeout=12)
+
     def proxy_request(self, client):
         upstream = None
         self.track(client)
@@ -269,7 +276,7 @@ class Fixture:
                 forwarded = request.replace(pieces[1], path.encode(), 1)
             else:
                 raise ValueError('method')
-            local = host == '127.0.0.1' and port == self.origin.server_address[1]
+            local = self.owned_local_destination(host, port)
             owned_tls = self.owned_https and host == 'browser.free' and port == 443 and forwarded is None
             if not (local or owned_tls or host in self.public_tls_hosts and port == 443 and forwarded is None):
                 raise ValueError('destination-not-owned-or-allowlisted')
@@ -279,7 +286,7 @@ class Fixture:
             if (local or owned_tls) and (self.root / 'cut-upstream').exists():
                 self.ledger.record('upstream-tcp-cut', purpose='owned-https' if owned_tls else 'local-http', phase=self.https_phase() if owned_tls else None)
                 client.shutdown(socket.SHUT_RDWR); return
-            upstream = socket.create_connection((host, port), timeout=12)
+            upstream = self.open_upstream(host, port)
             self.track(upstream)
             if forwarded is None:
                 client.sendall(b'HTTP/1.1 200 Connection Established\r\n\r\n')

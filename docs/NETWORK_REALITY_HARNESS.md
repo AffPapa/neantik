@@ -69,6 +69,44 @@ Actual owned Chromium traces use `scripts/controlled-browser-route-observer.py`
 with separate runtime/session and endpoint evidence. That observer also has a
 bounded scope; its result is not a continuous DNS or leak guarantee.
 
+### Controlled DNS producer
+
+`scripts/runtime-network/controlled-dns-fixture.py` extends the existing owned
+HTTP-auth proxy fixture with a loopback UDP DNS server. Only its random test
+names resolve, only to its own origin. DNS refusal, TCP cut/refusal and recovery
+are independent operator controls. The optional `--doh` endpoint uses a one-day
+self-signed certificate; nothing is added to macOS trust or system DNS settings.
+The fixture denies the base fixture's external GeoIP destinations.
+
+`run-controlled-dns.mjs` measures three fresh headed sessions of the exact
+signed runtime identified by a published release report: proxy/failure/recovery,
+Direct DoH with DNS refusal, and intentional proxy bypass. It uses mock Keychain,
+private temporary data, restricted navigation/auth CDP over a pipe, and fresh
+resource admission before each session. There is no arbitrary page JS evaluation.
+The explicit SPKI override is confined to the fixture certificate and cannot
+qualify OS-default-trusted HTTPS proxy support.
+
+The operator first starts the fixture with `--root OWN_EMPTY_0700_DIRECTORY
+--doh`, keeping its stdin open. In a second terminal, run:
+
+```bash
+node scripts/runtime-network/run-controlled-dns.mjs \
+  /absolute/isolated/NeAntik.app /absolute/published-release.json \
+  /absolute/fixture-root /absolute/empty-0700-output
+python3 -B scripts/runtime-network/analyze-controlled-dns.py \
+  /absolute/output/observations.json /absolute/published-release.json
+```
+
+Stop the fixture by sending `{"action":"stop"}` on its operator stdin. Keep
+private descriptors, raw runtime logs, test keys and browser data local. The
+minimized observations contain phase/count/hash evidence instead of addresses,
+credentials or DNS names. Protocol, actual local UDP/TLS, failure, malformed
+message, bypass sensitivity and shutdown controls have local tests. These tests
+qualify the harness only: a complete successful headed observation is still
+required. A refused or missing session fails analysis. Even a completed raw
+runtime result does not cover the manager's relay, all OS DNS/UDP, background
+requests, or other hardware; those remain separate gates.
+
 ### WebRTC source check
 
 `scripts/verify-chromium-webrtc-policy.py` checks the expected Chrome switch,
