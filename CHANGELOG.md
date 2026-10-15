@@ -1,12 +1,12 @@
 # NeAntik changelog
 
-## Direct 0.8.16 (128) — development candidate — удаление WebKit
+## Direct 0.8.16 (128) — published public alpha — удаление WebKit
 
 - Реализованы удаление закрытого UUID-хранилища через public WebKit API и отдельное необратимое подтверждение. Журнал защищает запуск и позволяет явно продолжить прерванную операцию.
 - Перед нативным удалением профиль исключается из обоих metadata snapshots, включая защиту от запуска старой127. Ошибка сохранения не возвращает удалённую запись в интерфейс; очистка пароля следует за долговечным commit.
 - Каталог NeAntik изолируется через descriptor-based rename и проверку inode. Удаляются только пустые служебные папки; неожиданные локальные файлы сохраняются с предупреждением. Chromium Trash-путь не менялся.
-- Итоговая Swift-интеграция1572/183 (1498passed log lines,71explicit skips) и Python1482/19skips прошли. Source native A/B удаление/сохранность проверены до последнего filesystem correction; финальная native попытка остановлена memory warning до запуска. Dev и точный подписанный кандидат ещё не квалифицированы: версия не опубликована.
-- Chromium156.0.8078.12, сертификат, identity и формат WebKit-сессий сохранены. Это следующий public-alpha кандидат, не завершённая1.0. Текущая публичная версия — [0.8.15](releases/v0.8.15.json).
+- Итоговая Swift-интеграция1572/183 (1498passed log lines,71explicit skips) и Python1482/19skips прошли. После filesystem correction пройдены3fresh source-native фазы и точные signed GUI удаление A/сохранность B, очистка собственных UUID и recovery после перезапуска. Exact headed128, doctor13, Apple ZIP/DMG, Gatekeeper, публичные байты, downloaded MCP и browser.free153/live прошли. Пропуски и границы — в [отчёте](releases/v0.8.16.json).
+- Chromium156.0.8078.12, сертификат, identity и формат WebKit-сессий сохранены. Это public alpha, не завершённая1.0. [0.8.15](releases/v0.8.15.json) сохранена для отката приложения; удалённые данные сайтов не восстанавливаются downgrade.
 
 ## Direct 0.8.15 (127) — published public alpha — безопасный выбор восстановления
 
