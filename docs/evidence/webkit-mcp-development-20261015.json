@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "development;not-published",
+  "status": "published-on-GitHub;Site-pending",
   "targetVersion": "0.8.17",
   "build": 129,
   "feature": "WebKit GUI-mediated MCP lifecycle",
@@ -56,8 +56,8 @@
       "realNSSavePanelStop": true,
       "ownedSyntheticStoresRemoved": 2
     },
-    "exactReleaseCandidate": "pending",
-    "publicDelivery": "pending",
+    "exactReleaseCandidate": "PASS corrected129 exact GUI A/B lifecycle, own-window stop and native headed settlement control; see release report",
+    "publicDelivery": "GitHub ZIP/DMG byte-identical and downloaded MCP PASS; Sites blocked",
     "firstExactCandidate": {
       "GUI": "PASS selected/revision/owner/EOF/reconnect/revoke/save failure/recovery/real NSSavePanel/two-window quit",
       "headed": "FAIL: cached recovery after successful Chromium exit while passive observations suspended",
@@ -78,6 +78,6 @@
     "Direct WebKit only; proxy remains refused",
     "No page reads, arbitrary JavaScript, shell, cookies or secrets",
     "VoiceOver labels not independently verified; native AX identifiers observed",
-    "Development evidence does not qualify final signed or hosted bytes"
+    "Exact delivery scope documented in releases/v0.8.17.json; no real AI-client/page-observation/all-Mac claim"
   ]
 }

@@ -135,7 +135,7 @@ Passwords are accepted as write-only input and stored in Keychain. The selected 
 
 ## WebKit windows through AI — development slice
 
-Published 0.8.16 does not contain this lifecycle bridge. The following is implemented in development; signed GUI/candidate qualification and the next release remain required.
+Available from published **0.8.17 (129)** on GitHub. The section anchor is retained for existing links. Exact signed GUI lifecycle and public/downloaded archive checks passed in the scope of the [release report](../releases/v0.8.17.json). The browser.free guide update is still pending. A real external AI-client integration and page observation are separate, unqualified scopes.
 
 1. Open the same installed NeAntik version used by the AI configuration.
 2. In **Help → MCP → Окна WebKit через AI**, enable WebKit access.

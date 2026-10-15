@@ -7,7 +7,7 @@ Chromium runtime, собранный из зафиксированных исх�
 
 [English version](README.en.md)
 
-На [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.16) и [browser.free](https://browser.free/) опубликована **0.8.16 (128), public alpha**: добавлены удаление закрытого профиля WebKit и безопасное завершение прерванной операции. Сохранность соседнего профиля проверена на точном подписанном приложении.
+На [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.17) опубликована **0.8.17 (129), public alpha**: запуск и закрытие окон WebKit через MCP с разрешением на выбранные профили. NeAntik должен оставаться открытым. Обновление [browser.free](https://browser.free/) пока не завершено: сайт указывает предыдущий выпуск.
 Подписанный кандидат прошёл изолированный headed-аудит. Публичные ZIP/DMG совпали по SHA-256 и прошли notarization, stapling и Gatekeeper; скачанный менеджер прошёл отдельный изолированный MCP smoke с перезапуском. Повторный полный headed-аудит не запускался.
 Системный WebKit остаётся preview и не подменяет полный fingerprint. Полная программа 1.0 ещё не завершена.
 
@@ -18,13 +18,13 @@ Chromium runtime, собранный из зафиксированных исх�
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Последний опубликованный выпуск: [NeAntik 0.8.16 (128), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.16). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.8.16.json).
+Последний опубликованный выпуск: [NeAntik 0.8.17 (129), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.17). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.8.17.json).
 
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - Developer ID, notarization, ZIP/DMG и SHA-256 относятся к конкретному опубликованному выпуску.
 
-Скачать напрямую: [browser.free](https://browser.free).
+Скачать напрямую: [GitHub — 0.8.17](https://github.com/AffPapa/neantik/releases/tag/v0.8.17). [browser.free](https://browser.free) пока указывает предыдущий выпуск.
 
 Описание ниже отражает контракт менеджера и текущей ветки; точный состав
 публичного бинарного релиза определяется его release notes и артефактами.
