@@ -687,6 +687,21 @@ enum BrowserStartupMode: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// A separately versioned request, never inferred from a fingerprint seed.
+/// Runtime support is qualified independently before this can be applied.
+enum BrowserFontPolicy: String, Codable, Sendable {
+    case native
+    case systemV1 = "system-v1"
+}
+
+/// A future policy must not be mistaken for corrupted JSON and replaced with
+/// an older recovery snapshot that silently changes the profile environment.
+struct UnsupportedBrowserFontPolicyError: LocalizedError {
+    var errorDescription: String? {
+        "Эта версия NeAntik не может применить выбранную политику шрифтов. Данные сохранены. Открой профиль в версии с проверенной поддержкой этой настройки."
+    }
+}
+
 struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     static let maximumNameLength = 120
     static let maximumNameUTF8Bytes = 4 * 1_024
@@ -710,6 +725,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     var startupMode: BrowserStartupMode
     var engine: BrowserEngine
     var webKitMediaPolicy: WebKitMediaPolicy
+    var fontPolicy: BrowserFontPolicy
     var proxy: ProxyConfiguration?
     var identity: BrowserIdentity
     var createdAt: Date
@@ -730,6 +746,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         startupMode: BrowserStartupMode = .startPage,
         engine: BrowserEngine = .chromium,
         webKitMediaPolicy: WebKitMediaPolicy = .ask,
+        fontPolicy: BrowserFontPolicy = .native,
         proxy: ProxyConfiguration? = nil,
         identity: BrowserIdentity = BrowserIdentity(),
         createdAt: Date = Date(),
@@ -750,6 +767,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         self.startupMode = startupMode
         self.engine = engine
         self.webKitMediaPolicy = webKitMediaPolicy
+        self.fontPolicy = fontPolicy
         self.proxy = proxy
         self.identity = identity
         self.createdAt = createdAt
@@ -817,6 +835,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     }
 
     func normalizedForPersistence() -> BrowserProfile? {
+        if engine != .chromium && fontPolicy != .native { return nil }
         if engine != .webkit && webKitMediaPolicy != .ask { return nil }
         if engine == .webkit { do { try WebKitProfilePolicy.validateConfiguration(self) } catch { return nil } }
         let cleanStartURL = startURL.trimmingCharacters(
@@ -876,6 +895,8 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             startupMode: startupMode,
             engine: engine,
             webKitMediaPolicy: webKitMediaPolicy,
+            // A copy receives a new identity; policy opt-in is not inherited.
+            fontPolicy: .native,
             proxy: proxy,
             identity: BrowserIdentity(),
             createdAt: date,
@@ -900,6 +921,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         case startupMode
         case engine
         case webKitMediaPolicy
+        case fontPolicy
         case proxy
         case identity
         case createdAt
@@ -941,6 +963,19 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         startupMode = try container.decodeIfPresent(BrowserStartupMode.self, forKey: .startupMode) ?? .startPage
         engine = try container.decodeIfPresent(BrowserEngine.self, forKey: .engine) ?? .chromium
         webKitMediaPolicy = try container.decodeIfPresent(WebKitMediaPolicy.self, forKey: .webKitMediaPolicy) ?? .ask
+        if container.contains(.fontPolicy) {
+            do {
+                // Missing is legacy/native; explicit null or unknown is not.
+                fontPolicy = try container.decode(BrowserFontPolicy.self, forKey: .fontPolicy)
+            } catch {
+                throw UnsupportedBrowserFontPolicyError()
+            }
+        } else {
+            fontPolicy = .native
+        }
+        guard engine == .chromium || fontPolicy == .native else {
+            throw UnsupportedBrowserFontPolicyError()
+        }
         proxy = try container.decodeIfPresent(
             ProxyConfiguration.self,
             forKey: .proxy

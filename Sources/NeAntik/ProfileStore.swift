@@ -1828,6 +1828,7 @@ final class ProfileStore: ObservableObject {
                   current.startURL == expected.startURL,
                   current.startupMode == expected.startupMode,
                   current.webKitMediaPolicy == expected.webKitMediaPolicy,
+                  current.fontPolicy == expected.fontPolicy,
                   current.isArchived == expected.isArchived else {
                 throw BrowserProfileRevisionConflictError(profileID: expected.id)
             }
@@ -1846,10 +1847,13 @@ final class ProfileStore: ObservableObject {
         return try decodeProfiles(Data(contentsOf: url))
     }
 
-    /// The v2 envelope prevents older managers from treating WebKit data as
-    /// Chromium. Keep array writes for Chromium-only workspaces.
+    /// Versioned envelopes prevent older managers from silently ignoring an
+    /// engine/media/font policy. Ordinary Chromium workspaces keep array writes.
     nonisolated static func encodeProfiles(_ profiles: [BrowserProfile], encoder: JSONEncoder) throws -> Data {
-        try profiles.contains(where: { $0.engine == .webkit })
+        if profiles.contains(where: { $0.fontPolicy != .native }) {
+            return try encoder.encode(EngineProfilesDocument(schemaVersion: 4, profiles: profiles))
+        }
+        return try profiles.contains(where: { $0.engine == .webkit })
             ? encoder.encode(EngineProfilesDocument(schemaVersion: profiles.contains(where: { $0.webKitMediaPolicy == .deny }) ? 3 : 2, profiles: profiles))
             : encoder.encode(profiles)
     }
@@ -1859,15 +1863,16 @@ final class ProfileStore: ObservableObject {
         decoder.dateDecodingStrategy = .iso8601
         if data.first(where: { ![0x20, 0x09, 0x0A, 0x0D].contains($0) }) == 0x7B {
             let document = try decoder.decode(LegacyProfilesDocument.self, from: data)
-            guard [1, 2, 3].contains(document.schemaVersion),
+            guard [1, 2, 3, 4].contains(document.schemaVersion),
                   (document.schemaVersion >= 2 || !document.profiles.contains(where: { $0.engine == .webkit })),
-                  (document.schemaVersion >= 3 || !document.profiles.contains(where: { $0.webKitMediaPolicy == .deny })) else {
+                  (document.schemaVersion >= 3 || !document.profiles.contains(where: { $0.webKitMediaPolicy == .deny })),
+                  (document.schemaVersion >= 4 || !document.profiles.contains(where: { $0.fontPolicy != .native })) else {
                 throw UnsupportedProfilesSchemaError()
             }
             return document.profiles
         }
         let profiles = try decoder.decode([BrowserProfile].self, from: data)
-        guard !profiles.contains(where: { $0.engine == .webkit }) else { throw UnsupportedProfilesSchemaError() }
+        guard !profiles.contains(where: { $0.engine == .webkit || $0.fontPolicy != .native }) else { throw UnsupportedProfilesSchemaError() }
         return profiles
     }
 
@@ -2172,7 +2177,8 @@ struct ProfileOrganizationLoad: Sendable {
 
 /// Older NeAntik installations stored the same profile records in a v1
 /// envelope. Keep reading it so an upgrade never turns valid user profiles
-/// into an apparent empty workspace. New writes continue using the array form.
+/// into an apparent empty workspace. Explicit engine/media/font policies use
+/// versioned envelopes so old managers refuse rather than ignore them.
 private struct LegacyProfilesDocument: Decodable {
     let schemaVersion: Int
     let profiles: [BrowserProfile]
@@ -2182,7 +2188,7 @@ private struct LegacyProfilesDocument: Decodable {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try values.decode(Int.self, forKey: .schemaVersion)
         // Check the contract before interpreting an unknown payload shape.
-        guard [1, 2, 3].contains(schemaVersion) else { throw UnsupportedProfilesSchemaError() }
+        guard [1, 2, 3, 4].contains(schemaVersion) else { throw UnsupportedProfilesSchemaError() }
         profiles = try values.decode([BrowserProfile].self, forKey: .profiles)
     }
 }

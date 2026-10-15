@@ -71,3 +71,19 @@ timeout or failed cleanup never passes the offline analyzer.
 
 All five final integration gates remain open despite passed compilation.
 WebKit is outside this policy.
+
+## Manager metadata — development, not activated
+
+The manager now has a separate `fontPolicy` request (`native` / `system-v1`).
+Missing legacy fields remain native; explicit null/unknown values stop loading
+without replacing metadata from an older recovery snapshot. A nonnative request
+requires the v4 workspace envelope, which older managers refuse. The launch
+snapshot includes the policy. Copies, portable imports, metadata snapshots and
+templates create native requests with fresh identities; full BrowserData restore
+is a separate operation.
+
+No runtime capability, environment emission, UI or MCP opt-in is enabled. The
+current process boundary refuses `system-v1`, and WebKit refuses this Chromium
+policy. Manager and test sources compile; the shared Python contracts passed.
+Swift test execution and exact runtime/browser behavior remain pending native
+admission. This is not a qualified or released font policy.

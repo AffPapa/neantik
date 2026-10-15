@@ -2203,6 +2203,7 @@ final class BrowserProcessManager: ObservableObject {
         purpose: BrowserLaunchPurpose = .normal
     ) throws {
         guard profile.engine == .chromium else { throw NeAntikError.invalidProfile }
+        try BrowserLaunchPolicy.validateFontPolicy(profile)
         try launchAdmission.requireSafePressure()
         guard !runningProfileIDs.contains(profile.id) else {
             throw NeAntikError.profileAlreadyRunning

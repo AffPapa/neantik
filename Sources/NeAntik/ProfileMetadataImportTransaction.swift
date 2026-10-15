@@ -67,7 +67,10 @@ enum ProfileMetadataImportTransaction {
         beforeOrganizationPersist: @Sendable () throws -> Void = {}
     ) throws -> ProfileMetadataImportResult {
         guard !requestedProfiles.isEmpty,
-              requestedProfiles.count == folderNames.count
+              requestedProfiles.count == folderNames.count,
+              // Portable imports mint new identities and cannot opt them into
+              // a runtime policy. Full BrowserData restore is a separate path.
+              requestedProfiles.allSatisfy({ $0.fontPolicy == .native })
         else {
             throw NeAntikError.invalidProfile
         }

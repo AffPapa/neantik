@@ -59,6 +59,9 @@ enum WebKitProfilePolicy {
               profile.id != UUID(uuidString: "00000000-0000-0000-0000-000000000000") else {
             throw NeAntikError.invalidProfile
         }
+        guard profile.fontPolicy == .native else {
+            throw UnsupportedBrowserFontPolicyError()
+        }
         guard profile.proxy == nil else {
             throw WebKitProfileError.unsupported("Прокси для WebKit пока не проверены. Запуск отменён: прямое подключение вместо прокси не выполняется. Для работы с прокси создай профиль Chromium.")
         }

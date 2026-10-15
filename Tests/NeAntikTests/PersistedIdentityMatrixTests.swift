@@ -36,11 +36,13 @@ struct PersistedIdentityMatrixTests {
             identity["deviceTupleID"] = tuple
         }
         metadata[0]["identity"] = identity
+        metadata[0].removeValue(forKey: "fontPolicy")
         try paths.writePrivateFile(JSONSerialization.data(withJSONObject: metadata), to: paths.profilesFile)
 
         let loaded = ProfileStore(paths: paths)
         #expect(loaded.lastError == nil)
         let migrated = try #require(loaded.profile(withID: original.id))
+        #expect(migrated.fontPolicy == .native)
         #expect(migrated.identity.seed == seed)
         #expect(migrated.identity.catalogVersion == 1)
         #expect(migrated.identity.issuanceVersion == issuance)
@@ -59,10 +61,12 @@ struct PersistedIdentityMatrixTests {
         #expect(collision.identity.seed == seed + 11)
         #expect(collision.identity.deviceTupleID == tuple)
         #expect(collision.identity.issuanceVersion == issuance)
+        #expect(saved.fontPolicy == .native && collision.fontPolicy == .native)
 
         let reloaded = ProfileStore(paths: paths)
         #expect(reloaded.lastError == nil)
         let retained = try #require(reloaded.profile(withID: original.id))
+        #expect(retained.fontPolicy == .native)
         #expect(retained.name == edited.name)
         #expect(retained.identity == saved.identity)
         #expect(retained.identity.seed == seed)
