@@ -381,6 +381,7 @@ final class ProfileStore: ObservableObject {
             guard profileIDs.isSubset(of: knownProfileIDs) else {
                 throw ProfileOrganizationError.profileNotFound
             }
+            for id in profileIDs { try requireNoDeletionTombstone(for: id) }
             if let folderID,
                state.folder(withID: folderID) == nil {
                 throw ProfileOrganizationError.folderNotFound
@@ -395,6 +396,7 @@ final class ProfileStore: ObservableObject {
         try mutateOrganization { state in
             guard let current = profiles.first(where: { $0.id == profile.id }),
                   current.revision == profile.revision else { throw ProfileMetadataUndoConflict() }
+            try requireNoDeletionTombstone(for: profile.id)
             if let folderID, state.folder(withID: folderID) == nil { throw ProfileOrganizationError.folderNotFound }
             oldFolderID = state.folderID(forProfileID: profile.id)
             guard oldFolderID != folderID else { return }
@@ -623,6 +625,7 @@ final class ProfileStore: ObservableObject {
                 guard state.mutationRevision == token.organizationRevision,
                       profiles.first(where: { $0.id == token.profileID })?.revision == token.revision
                 else { throw ProfileMetadataUndoConflict() }
+                try requireNoDeletionTombstone(for: token.profileID)
                 if let folderID = token.folderID, state.folder(withID: folderID) == nil { throw ProfileOrganizationError.folderNotFound }
                 state.assign(profileIDs: [token.profileID], toFolderID: token.folderID)
             }
@@ -927,6 +930,9 @@ final class ProfileStore: ObservableObject {
             guard let current = profile(withID: original.id), current.revision == original.revision else {
                 throw BrowserProfileRevisionConflictError(profileID: original.id)
             }
+            try requireNoDeletionTombstone(for: current.id)
+            let webKitFence = current.engine == .webkit ? try paths.acquireWebKitMetadataGuard(for: current.id) : nil
+            defer { webKitFence?.release() }
             var copy = current.duplicated()
             copy.name = name
             // Read the source folder under the same guard as its revision.
@@ -1135,6 +1141,99 @@ final class ProfileStore: ObservableObject {
             processManager: processManager,
             afterCommit: { _ in }
         )
+    }
+
+    /// Publish intent, then durably remove launchable metadata before native
+    /// dispatch. Older managers also re-read this list, so a pending deletion
+    /// cannot launch an empty UUID store after a crash/downgrade.
+    func prepareWebKitDeletion(profileID: UUID, expected: BrowserProfile?) throws -> WebKitProfileDeletionJournal.Record {
+        try requireSynchronousMutationAdmission()
+        return try paths.withProfilesMetadataGuard {
+            try requireStorage()
+            try reloadLatestProfilesForMutation()
+            let journal = WebKitProfileDeletionJournal(paths: paths)
+            let record: WebKitProfileDeletionJournal.Record
+            if let current = profiles.first(where: { $0.id == profileID }) {
+                guard current.engine == .webkit else { throw WebKitProfileDeletionError.wrongEngine }
+                guard let expected, expected.id == profileID,
+                      try WebKitProfileDeletionJournal.profileDigest(current) == WebKitProfileDeletionJournal.profileDigest(expected) else {
+                    throw BrowserProfileRevisionConflictError(profileID: profileID)
+                }
+                record = try journal.prepare(current)
+            } else {
+                guard let existing = try journal.load(for: profileID) else { throw BrowserProfileDeletedError() }
+                if let expected {
+                    guard expected.id == profileID, try WebKitProfileDeletionJournal.profileDigest(expected) == existing.profileSHA256 else {
+                        throw BrowserProfileRevisionConflictError(profileID: profileID)
+                    }
+                }
+                record = existing // Prepared orphan still requires native removal.
+            }
+            try journal.validateProfileDirectory(record)
+            try commitWebKitDeletionMetadata(profileID: profileID, journal: journal)
+            return record
+        }
+    }
+
+    /// No rollback to an empty "working" WebKit profile. Errors retain the
+    /// native-complete journal and allow explicit finalization after restart.
+    func finalizeWebKitDeletion(_ record: WebKitProfileDeletionJournal.Record) throws {
+        try requireSynchronousMutationAdmission()
+        try paths.withProfilesMetadataGuard {
+            try requireStorage()
+            try reloadLatestProfilesForMutation()
+            let journal = WebKitProfileDeletionJournal(paths: paths)
+            guard record.stage != .prepared, try journal.load(for: record.profileID) == record else { throw WebKitProfileDeletionError.changed }
+            if let current = profiles.first(where: { $0.id == record.profileID }) {
+                guard current.engine == .webkit, current.revision == record.revision,
+                      try WebKitProfileDeletionJournal.profileDigest(current) == record.profileSHA256 else { throw WebKitProfileDeletionError.changed }
+            }
+            try journal.validateProfileDirectory(record)
+            try WebKitSessionStore(paths: paths).discard(for: record.profileID)
+            let directory = paths.profileDirectory(for: record.profileID)
+            let retainedLocalFiles = try journal.retireProfileDirectory(record)
+            guard try paths.privateFileEntryKind(directory) == .missing else { throw WebKitProfileDeletionError.interrupted }
+            try commitWebKitDeletionMetadata(profileID: record.profileID, journal: journal)
+            // Startup credential cleanup is admitted only after both metadata
+            // snapshots durably exclude A. Before this point the journal alone
+            // schedules recovery, without permitting secret cleanup.
+            let marker = paths.profileCredentialCleanupMarker(for: record.profileID)
+            switch try paths.privateFileEntryKind(marker) {
+            case .missing: try paths.createPrivateFileExclusively(Data("keychain-cleanup-v1".utf8), at: marker)
+            case .unsafe: throw WebKitProfileDeletionError.unsafeJournal
+            case .regular:
+                guard let identity = try paths.privateFileEntryIdentity(marker), identity.size <= 64,
+                      try Data(contentsOf: marker) == Data("keychain-cleanup-v1".utf8) else { throw WebKitProfileDeletionError.unsafeJournal }
+            }
+            if record.stage == .dataRemoved { _ = try journal.advance(record, to: .metadataRemoved) }
+            if retainedLocalFiles {
+                postCommitWarning = "Данные сайтов WebKit удалены. Неожиданные локальные файлы сохранены в папке Profiles/.webkit-deleted-\(record.operationID.uuidString) внутри данных NeAntik. Они не удалялись автоматически."
+            }
+        }
+        pruneOrganizationAfterProfileDeletion()
+    }
+
+    /// Preserve the actual disk commit boundary on failure. Restoring an old
+    /// in-memory row after a successful write would show a launchable ghost.
+    private func commitWebKitDeletionMetadata(profileID: UUID, journal: WebKitProfileDeletionJournal) throws {
+        profiles.removeAll { $0.id == profileID }
+        do {
+            try beforeDeleteMetadataPersist()
+            try persist(synchronizeRecoverySnapshot: true)
+            try afterDeleteMetadataPersist()
+            try journal.synchronizeMetadataFiles()
+        } catch {
+            do { try reloadLatestProfilesForMutation() }
+            catch {
+                storageIsAvailable = false
+                lastError = "Не удалось прочитать состояние удаления. Сохрани папку данных NeAntik и повтори открытие приложения."
+            }
+            throw WebKitProfileDeletionError.interrupted
+        }
+    }
+
+    private func requireNoDeletionTombstone(for id: UUID) throws {
+        guard try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: id)) == .missing else { throw BrowserProfileDeletedError() }
     }
 
     func delete(

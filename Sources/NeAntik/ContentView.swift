@@ -200,6 +200,9 @@ struct ContentView: View {
     @State private var selection: UUID?
     @State private var editorRequest: EditorRequest?
     @State private var showingDeleteConfirmation = false
+    @State private var webKitDeletionRequest: WebKitProfileDeletionRequest?
+    @State private var webKitDeletionRecoveries: [WebKitProfileDeletionRequest] = []
+    @State private var webKitDeletionRecoveryReadError = false
     @State private var showingReleaseFingerprintAudit = false
     @State private var fingerprintAuditRequest: FingerprintAuditRequest?
     @State private var privacyPanelByProfileID:
@@ -567,6 +570,24 @@ struct ContentView: View {
 
     private var workspaceBase: some View {
         VStack(spacing: 0) {
+            if webKitDeletionRecoveryReadError {
+                HStack {
+                    Label("Не удалось проверить незавершённые удаления WebKit.", systemImage: "exclamationmark.triangle")
+                    Spacer()
+                    Button("Проверить снова") { refreshWebKitDeletionRecoveries() }
+                }.padding(12).background(.regularMaterial)
+            }
+            if !webKitDeletionRecoveries.isEmpty {
+                HStack {
+                    Label("Незавершённое удаление WebKit: \(webKitDeletionRecoveries.count)", systemImage: "exclamationmark.triangle")
+                    Spacer()
+                    Menu("Завершить удаление…") {
+                        ForEach(webKitDeletionRecoveries) { request in
+                            Button(request.name) { webKitDeletionRequest = request }
+                        }
+                    }
+                }.padding(12).background(.regularMaterial)
+            }
             if selection == nil, let recoveryNotice = store.recoveryNotice {
                 ProfileRecoveryWorkspaceNoticeView(notice: recoveryNotice)
             }
@@ -653,6 +674,18 @@ struct ContentView: View {
 
     private var workspaceSheets: some View {
         workspaceBase
+        .sheet(item: $webKitDeletionRequest, onDismiss: {
+            refreshWebKitDeletionRecoveries(); normalizeSelection()
+            processes.reconcile(profiles: store.profiles)
+        }) { request in
+            WebKitProfileDeletionSheet(request: request, store: store, processes: processes,
+                cleanupCredentials: { try keychain.deleteProxyPassword(profileID: $0) }, completed: {
+                    store.managerLibrary.record(.delete, .succeeded)
+                    fingerprintObservationStore.remove(profileID: request.id)
+                    clearProxyHealth(for: request.id)
+                    normalizeSelection(); refreshWebKitDeletionRecoveries()
+                })
+        }
         .sheet(isPresented: Binding(get: { updateController.isPresented }, set: { if !$0 { updateController.close() } })) {
             ApplicationUpdateSheet(controller: updateController)
         }
@@ -1030,6 +1063,7 @@ struct ContentView: View {
     private var workspaceStateObservers: some View {
         workspaceAlerts
         .onAppear {
+            refreshWebKitDeletionRecoveries()
             normalizeSelection(preferred: selection)
             Task { @MainActor in
                 await Task.yield()
@@ -1104,6 +1138,7 @@ struct ContentView: View {
             Task { @MainActor in
                 guard !updateController.holdsFence else { return }
                 try? await store.refreshExternalMetadata(force: true)
+                refreshWebKitDeletionRecoveries()
                 processes.reconcile(profiles: store.profiles)
             }
         }
@@ -1471,13 +1506,31 @@ struct ContentView: View {
     }
 
     private func requestProfileDeletion(_ profile: BrowserProfile) {
-        guard profile.engine == .chromium else { localError = "Удаление данных WebKit пока недоступно. Профиль можно убрать в архив."; return }
         guard !processes.runningProfileIDs.contains(profile.id) else {
             localError = "Сначала останови профиль, потом удаляй."
             return
         }
         selection = profile.id
+        if profile.engine == .webkit {
+            webKitDeletionRequest = WebKitProfileDeletionRequest(id: profile.id, name: profile.name, snapshot: profile)
+            return
+        }
         showingDeleteConfirmation = true
+    }
+
+    private func refreshWebKitDeletionRecoveries() {
+        do {
+            let ids = try WebKitProfileDeletionJournal(paths: store.paths)
+                .pendingProfileIDs(includingCompletedProfiles: Set(store.profiles.map(\.id)))
+            webKitDeletionRecoveries = ids.map { id in
+                let profile = store.profile(withID: id)
+                return WebKitProfileDeletionRequest(id: id,
+                    name: profile?.name ?? "WebKit · \(id.uuidString.prefix(8))", snapshot: profile)
+            }
+            webKitDeletionRecoveryReadError = false
+        } catch {
+            webKitDeletionRecoveryReadError = true
+        }
     }
 
     private func resetProfileFilters() {
@@ -2054,16 +2107,14 @@ struct ContentView: View {
 
     private func duplicate(_ profile: BrowserProfile) {
         do {
-            let copy = profile.duplicated()
-            let password = try keychain.configuredProxyPassword(for: profile)
-            let saved = try store.duplicateProfile(
-                profile, name: copy.name
-            ) { saved in
-                if let password, !password.isEmpty {
-                    try keychain.saveProxyPassword(
-                        password,
-                        profileID: saved.id
-                    )
+            let saved = try store.paths.withProcessLockGuard(for: profile.id) {
+                guard try store.paths.privateFileEntryKind(store.paths.profileDeletionTombstone(for: profile.id)) == .missing else { throw BrowserProfileDeletedError() }
+                let copy = profile.duplicated()
+                let password = try keychain.configuredProxyPassword(for: profile)
+                return try store.duplicateProfile(profile, name: copy.name) { saved in
+                    if let password, !password.isEmpty {
+                        try keychain.saveProxyPassword(password, profileID: saved.id)
+                    }
                 }
             }
             revealSavedProfile(saved)

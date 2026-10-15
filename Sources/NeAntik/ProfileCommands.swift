@@ -62,7 +62,7 @@ struct ProfileCommandPresentation: Equatable, Sendable {
                     ? "arrow.uturn.backward"
                     : "archivebox",
             archiveIsEnabled: !processState.isRunning,
-            deleteIsEnabled: !processState.isRunning && profile.engine == .chromium,
+            deleteIsEnabled: !processState.isRunning,
             extensionsIsEnabled: profile.engine == .chromium && processState == .stopped && !profile.isArchived && launchAction.isEnabled,
             engine: profile.engine
         )

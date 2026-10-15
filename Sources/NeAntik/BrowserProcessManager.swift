@@ -1383,6 +1383,70 @@ final class BrowserProcessManager: ObservableObject {
         } catch { throw WebKitCacheMaintenanceError.authorityChangedAfterCompletion }
     }
 
+    /// UUID-store authority is distinct from Chromium BrowserData inventory.
+    /// Cancellation can stop admission; after intent/native dispatch, retain
+    /// both fences through the real callback and resumable finalization.
+    func deleteClosedWebKitProfile(
+        profileID: UUID, expected: BrowserProfile?, store: ProfileStore,
+        operation: @escaping @MainActor (UUID) async throws -> Void = WebKitDataStoreRemoval.remove,
+        afterNative: () throws -> Void = {},
+        afterCommit: (UUID) throws -> Void
+    ) async throws {
+        guard expected == nil || expected?.engine == .webkit else { throw WebKitProfileDeletionError.wrongEngine }
+        guard store.paths.rootDirectory.resolvingSymlinksInPath() == paths.rootDirectory.resolvingSymlinksInPath(),
+              !webKitQuitPending, webKitBrowsers[profileID] == nil, processes[profileID]?.isRunning != true,
+              !webKitMaintenanceProfileIDs.contains(profileID) else { throw BrowserProfileDeletionBlockedError(reason: .managedProcess) }
+        let activity = try ApplicationUpdateAdmission.shared.beginActivity()
+        defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
+        webKitMaintenanceProfileIDs.insert(profileID)
+        defer { webKitMaintenanceProfileIDs.remove(profileID) }
+        let savedPaths = paths
+        let acquire = Task.detached(priority: .utility) {
+            let process = try savedPaths.acquireProcessMaintenanceGuard(for: profileID)
+            do {
+                try Task.checkCancellation()
+                return (process, try savedPaths.acquireWebKitMetadataGuard(for: profileID))
+            } catch { process.release(); throw error }
+        }
+        let (process, metadata) = try await withTaskCancellationHandler { try await acquire.value } onCancel: { acquire.cancel() }
+        defer { metadata.release(); process.release() }
+        try Task.checkCancellation()
+        func validateAuthority() throws {
+            try process.validateHeldFile(at: paths.lockGuardFile(for: profileID))
+            try metadata.validateHeldFile(at: paths.lockGuardFile(for: profileID).appendingPathExtension("webkit"))
+            guard webKitBrowsers[profileID] == nil, processes[profileID]?.isRunning != true else { throw BrowserProfileDeletionBlockedError(reason: .managedProcess) }
+            switch try paths.privateFileEntryKind(paths.lockFile(for: profileID)) {
+            case .missing: break
+            case .regular: throw BrowserProfileDeletionBlockedError(reason: .leasePresent)
+            case .unsafe: throw BrowserProfileDeletionBlockedError(reason: .unsafeLease)
+            }
+        }
+        try validateAuthority()
+        var record = try store.prepareWebKitDeletion(profileID: profileID, expected: expected)
+        let journal = WebKitProfileDeletionJournal(paths: paths)
+        if record.stage == .prepared {
+            // No await after the durable intent and before native dispatch.
+            // A cancellation arriving now does not erase the irreversible fence.
+            try validateAuthority()
+            try journal.validateProfileDirectory(record)
+            do { try await operation(profileID) }
+            catch let error as WebKitProfileDeletionError { throw error }
+            catch { throw WebKitProfileDeletionError.nativeFailed }
+            do {
+                try validateAuthority()
+                record = try journal.advance(record, to: .dataRemoved)
+            } catch { throw WebKitProfileDeletionError.changed }
+            do { try afterNative() } catch { throw WebKitProfileDeletionError.interrupted }
+        }
+        try validateAuthority()
+        do { try store.finalizeWebKitDeletion(record) }
+        catch { throw WebKitProfileDeletionError.interrupted }
+        do {
+            try afterCommit(profileID)
+            try paths.removeCredentialCleanupMarker(for: profileID)
+        } catch { throw ProfileCredentialCleanupPendingError(cleanupError: error) }
+    }
+
     /// Disk maintenance keeps process authority across awaits. Production
     /// inventory and the worker run off-main; unknown process evidence refuses
     /// admission. A UI snapshot is checked again before the worker starts.
@@ -1593,8 +1657,10 @@ final class BrowserProcessManager: ObservableObject {
                 )
             }
             if tombstoneKind != .missing {
-                let message =
-                    "Удаление этого профиля не было завершено безопасно. Запуск заблокирован; проверь Корзину macOS или обратись в поддержку."
+                let webKitDeletion = (try? WebKitProfileDeletionJournal(paths: paths).load(for: profileID)) != nil
+                let message = webKitDeletion
+                    ? "Удаление WebKit ещё не завершено. Запуск заблокирован; открой восстановление удаления в менеджере. Данные сайтов уже могли быть удалены."
+                    : "Удаление этого профиля не было завершено безопасно. Запуск заблокирован; проверь Корзину macOS или обратись в поддержку."
                 recoveryProfileIDs.insert(profileID)
                 runningProfileIDs.insert(profileID)
                 tombstoneRecoveryMessages[profileID] = message
@@ -2517,6 +2583,9 @@ final class BrowserProcessManager: ObservableObject {
             let metadataLease = try paths.acquireWebKitMetadataGuard(for: profile.id)
             let sessionStore = WebKitSessionStore(paths: paths)
             let makeBrowser = { [weak self] in
+                // Reconciliation can lag after a crash. The held process and
+                // metadata guards must check the fence before any WKWebView.
+                guard try sessionStore.paths.privateFileEntryKind(sessionStore.paths.profileDeletionTombstone(for: profile.id)) == .missing else { throw BrowserProfileDeletedError() }
                 var restored: WebKitSessionSnapshot?, warning: String?
                 if profile.startupMode == .restoreSession {
                     do { restored = try sessionStore.load(for: profile.id) }
