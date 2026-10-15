@@ -192,8 +192,10 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     private var lease: PrivateFileGuardLease?
     private var metadataLease: PrivateFileGuardLease?
     private var onClose: (() -> Void)?
-    private let sessionStore: WebKitSessionStore?
+    private var sessionCheckpointer: WebKitSessionCheckpointer?
     private let restoresSession: Bool
+    private var assemblingSession = true
+    private var checkpointWarning: String?
     private var sessionNotice: String?
     private var restoreIncomplete = false
     private var pendingSnapshot: WebKitSessionSnapshot?
@@ -216,7 +218,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         if let restoredSession { try restoredSession.validate(for: profile.id) }
         profileID = profile.id
         mediaPolicy = profile.webKitMediaPolicy
-        self.sessionStore = sessionStore; restoresSession = profile.startupMode == .restoreSession
+        restoresSession = profile.startupMode == .restoreSession
         self.sessionNotice = sessionWarning; self.onSessionSaveError = onSessionSaveError
         self.lease = lease; self.metadataLease = metadataLease; self.onClose = onClose
         dataStore = WKWebsiteDataStore(forIdentifier: profile.id)
@@ -232,6 +234,13 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         window = WebKitBrowserWindow(contentRect: NSRect(x: 0, y: 0, width: 1100, height: 760),
             styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
         super.init()
+        if restoresSession, let sessionStore {
+            sessionCheckpointer = WebKitSessionCheckpointer(profileID: profile.id, store: sessionStore) { [weak self] saved in
+                guard let self, !self.isClosed else { return }
+                self.checkpointWarning = saved ? nil : "Автосохранение вкладок не подтверждено. Проверь свободное место и доступ к папке данных NeAntik."
+                self.refreshTab(self.order.selected)
+            }
+        }
         window.browser = self; window.delegate = self; window.isReleasedWhenClosed = false
         downloads = WebKitDownloads(window: window, picker: downloadPicker)
         window.title = "\(profile.name) — WebKit · NeAntik"
@@ -287,6 +296,8 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
             }
             presentSelectedTab()
         } else if let url = BrowserLaunchBuilder.validatedStartURL(profile.startURL) { webView.load(URLRequest(url: url)) }
+        assemblingSession = false
+        checkpointSession()
     }
 
     private func button(_ button: NSButton, title: String, help: String, action: Selector) -> NSButton {
@@ -310,7 +321,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         tabStrip.addArrangedSubview(tab.row)
         let id = tab.id
         tab.observations = [tab.view.observe(\.url, options: [.new]) { [weak self] _, _ in
-            Task { @MainActor in self?.refreshTab(id) }
+            Task { @MainActor in self?.refreshTab(id); self?.checkpointSession() }
         }, tab.view.observe(\.title, options: [.new]) { [weak self] _, _ in
             Task { @MainActor in self?.refreshTab(id) }
         }, tab.view.observe(\.canGoBack, options: [.new]) { [weak self] _, _ in
@@ -328,7 +339,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
             webView.leadingAnchor.constraint(equalTo: pageArea.leadingAnchor), webView.trailingAnchor.constraint(equalTo: pageArea.trailingAnchor)
         ])
         address.stringValue = webView.url?.absoluteString ?? selected.committedURL
-        message.stringValue = selected.status + (sessionNotice.map { "\n" + $0 } ?? "")
+        message.stringValue = displayedStatus(selected.status)
         for id in order.ids { refreshTab(id) }
         tabStrip.layoutSubtreeIfNeeded()
         tabStrip.scrollToVisible(selected.row.frame)
@@ -344,8 +355,11 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         if order.selected == id {
             if window.firstResponder !== address.currentEditor() { address.stringValue = tab.view.url?.absoluteString ?? "about:blank" }
             backButton.isEnabled = tab.view.canGoBack; forwardButton.isEnabled = tab.view.canGoForward
-            message.stringValue = tab.status + (sessionNotice.map { "\n" + $0 } ?? "")
+            message.stringValue = displayedStatus(tab.status)
         }
+    }
+    private func displayedStatus(_ status: String) -> String {
+        ([status] + [sessionNotice, checkpointWarning].compactMap { $0 }).joined(separator: "\n")
     }
     @discardableResult private func appendTab(configuration: WKWebViewConfiguration) -> WKWebView? {
         guard !isClosed, configuration.websiteDataStore.identifier == profileID else { return nil }
@@ -364,6 +378,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         }
         let tab = WebKitBrowserTab(view: WKWebView(frame: .zero, configuration: configuration))
         tabs[tab.id] = tab; order.append(tab.id); configure(tab); presentSelectedTab()
+        checkpointSession()
         return tab.view
     }
     @discardableResult func openTab(at url: URL) -> WKWebView? {
@@ -373,7 +388,9 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         guard let view = appendTab(configuration: config) else { return nil }
         view.load(URLRequest(url: url)); return view
     }
-    func selectTab(_ id: UUID) { if !isClosed, order.select(id) { presentSelectedTab() } }
+    func selectTab(_ id: UUID) {
+        if !isClosed, order.select(id) { presentSelectedTab(); checkpointSession() }
+    }
     func closeTab(_ id: UUID) {
         guard !isClosed, let tab = tabs[id] else { return }
         if order.ids.count == 1 { close(); return }
@@ -383,6 +400,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         tab.detach(preserveNavigationDelegate: downloads.hasReservations(for: tab.view))
         tabs.removeValue(forKey: id)
         if wasSelected { presentSelectedTab() }
+        checkpointSession()
     }
     @objc private func selectTabButton(_ sender: NSButton) {
         if let raw = sender.identifier?.rawValue, let id = UUID(uuidString: raw) { selectTab(id) }
@@ -409,8 +427,8 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         case .back: back()
         case .forward: forward()
         case .newTab: newTab()
-        case .previousTab: order.cycle(-1); presentSelectedTab()
-        case .nextTab: order.cycle(1); presentSelectedTab()
+        case .previousTab: order.cycle(-1); presentSelectedTab(); checkpointSession()
+        case .nextTab: order.cycle(1); presentSelectedTab(); checkpointSession()
         }
         return true
     }
@@ -427,13 +445,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         guard !isClosed else { return }; isClosed = true
         if restoresSession, !restoreIncomplete {
             do {
-                let snapshot = try WebKitSessionSnapshot.capture(profileID: profileID,
-                    // Back/forward entries also track same-document History
-                    // API/fragment changes; provisional requests are not a
-                    // new committed history entry.
-                    urls: order.ids.map { tabs[$0]?.view.backForwardList.currentItem?.url.absoluteString ?? tabs[$0]?.committedURL ?? "about:blank" },
-                    selectedIndex: order.ids.firstIndex(of: order.selected) ?? 0)
-                beginSessionSave(snapshot)
+                beginSessionSave(try captureSession())
             } catch { sessionWriteFailed = true; onSessionSaveError?() }
         }
         if let commandMonitor { NSEvent.removeMonitor(commandMonitor); self.commandMonitor = nil }
@@ -446,13 +458,26 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
             finishCloseIfSettled()
         }
     }
+    private func captureSession() throws -> WebKitSessionSnapshot {
+        // Committed history includes pushState/fragments but never a new
+        // provisional request. The same rule applies to autosave and close.
+        try WebKitSessionSnapshot.capture(profileID: profileID,
+            urls: order.ids.map { tabs[$0]?.view.backForwardList.currentItem?.url.absoluteString ?? tabs[$0]?.committedURL ?? "about:blank" },
+            selectedIndex: order.ids.firstIndex(of: order.selected) ?? 0)
+    }
+    private func checkpointSession() {
+        guard restoresSession, !assemblingSession, !restoreIncomplete, !isClosed else { return }
+        do { sessionCheckpointer?.schedule(try captureSession()) }
+        catch {
+            checkpointWarning = "Список вкладок не удалось подготовить к сохранению. Последняя сохранённая сессия не изменена."
+            refreshTab(order.selected)
+        }
+    }
     private func beginSessionSave(_ snapshot: WebKitSessionSnapshot) {
-        guard let sessionStore, !sessionSavePending else { return }
+        guard let sessionCheckpointer, !sessionSavePending else { return }
         pendingSnapshot = snapshot; sessionSavePending = true; sessionWriteFailed = false
         Task { [self] in
-            let saved = await Task.detached(priority: .utility) {
-                do { try sessionStore.save(snapshot); return true } catch { return false }
-            }.value
+            let saved = await sessionCheckpointer.finish(snapshot)
             sessionSavePending = false
             if saved { pendingSnapshot = nil }
             else { sessionWriteFailed = true; onSessionSaveError?() }
@@ -533,6 +558,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         guard owns(webView), let tab = tabs.values.first(where: { $0.view === webView }), let value = webView.url?.absoluteString else { return }
         tab.committedURL = value
+        checkpointSession()
     }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { navigationFailed(webView, error) }
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { navigationFailed(webView, error) }

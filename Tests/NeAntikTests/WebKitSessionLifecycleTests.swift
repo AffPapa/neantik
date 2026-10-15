@@ -63,6 +63,49 @@ private final class OwnedSessionWriteSwitch: @unchecked Sendable {
     }
 
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_SESSION_LIVE"] == "1"))
+    func actualAutosavePersistsCommittedHistoryAndSelectionWhileWindowRemainsOpen() async throws {
+        let ids = try await autosaveScenario(); try await remove(ids)
+    }
+    private func autosaveScenario() async throws -> [UUID] {
+        _ = NSApplication.shared
+        let directory = root(); defer { try? FileManager.default.removeItem(at: directory) }
+        let paths = AppPaths(rootDirectory: directory), profiles = ProfileStore(paths: paths)
+        let sessions = WebKitSessionStore(paths: paths), origin = try base()
+        let one = origin.appendingPathComponent("one"), two = origin.appendingPathComponent("two")
+        let updated = try #require(URL(string: origin.absoluteString + "/two?owned=checkpoint#committed"))
+        let a = try profiles.upsert(BrowserProfile(name: "Own autosave", startURL: one.absoluteString, startupMode: .restoreSession, engine: .webkit))
+        let b = try profiles.upsert(BrowserProfile(name: "Own opt-out", startURL: one.absoluteString, engine: .webkit))
+        var closedA = false, closedB = false
+        var first: WebKitProfileBrowser? = try browser(a, paths, onClose: { closedA = true })
+        var second: WebKitProfileBrowser? = try browser(b, paths, onClose: { closedB = true })
+        defer { first?.close(); second?.close() }
+        first?.show(); second?.show()
+        try await loaded(try #require(first?.webView), one)
+        try await loaded(try #require(second?.webView), one)
+        let next = try #require(first?.openTab(at: two))
+        try await loaded(next, two)
+        _ = try await next.evaluateJavaScript("history.pushState({}, '', '/two?owned=checkpoint#committed')")
+        try await loaded(next, updated)
+        // A fresh descriptor read before close catches the old close-only
+        // implementation: it cannot satisfy these persisted tab assertions.
+        try await settled {
+            let saved = try? sessions.load(for: a.id)
+            return saved?.urls == [one.absoluteString, updated.absoluteString] && saved?.selectedIndex == 1
+        }
+        #expect(!closedA && !closedB)
+        #expect(try sessions.load(for: b.id) == nil, "Opt-out must never create a session file")
+        next.load(URLRequest(url: origin.appendingPathComponent("pending")))
+        try await Task.sleep(for: .milliseconds(600))
+        #expect(try sessions.load(for: a.id)?.urls == [one.absoluteString, updated.absoluteString])
+        first?.closeTab(try #require(first?.selectedTabID))
+        try await settled { (try? sessions.load(for: a.id)?.urls) == [one.absoluteString] }
+        first?.close(); second?.close(); try await settled { closedA && closedB }
+        first = nil; second = nil
+        #expect(try sessions.load(for: a.id)?.urls == [one.absoluteString])
+        return [a.id, b.id]
+    }
+
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_SESSION_LIVE"] == "1"))
     func actualWindowsRestoreOrderSelectionQueriesAndSameDocumentState() async throws {
         let ids = try await restoreScenario(); try await remove(ids)
     }
