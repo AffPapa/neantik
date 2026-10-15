@@ -3,6 +3,7 @@ import importlib.util
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -91,6 +92,33 @@ class CandidateLocationTests(unittest.TestCase):
         launcher = (root / "scripts/Run-NeAntik-Release.command").read_text()
         self.assertEqual(launcher.count('--summary-output "$SUMMARY_PATH"'), 3)
         self.assertIn('SUMMARY_PATH="$CANDIDATE_ROOT/fingerprint-audit-summary.json"', launcher)
+
+    def test_explicit_source_guard_preserves_default_and_refuses_unsafe_override(self):
+        launcher = (Path(__file__).resolve().parents[1] / "Run-NeAntik-Release.command").read_text()
+        guard = launcher[launcher.index('SOURCE_APP='):launcher.index('\nAPP_PATH=')]
+        source = self.project / "private source" / "NeAntik.app"
+        source.mkdir(parents=True)
+        alias = self.project / "alias"
+        alias.symlink_to(source.parent, target_is_directory=True)
+        def attempt(value=None, registered=True):
+            env = {"PATH": "/usr/bin:/bin", "PROJECT_DIR": str(self.project)}
+            if value is not None:
+                env["NEANTIK_SOURCE_APP"] = value
+            if registered:
+                env["NEANTIK_DIRECT_CANDIDATE_ROOT"] = str(self.root)
+            return subprocess.run(["/bin/zsh", "-c", guard + '\nprintf "%s" "$SOURCE_APP"'],
+                                  env=env, capture_output=True, text=True)
+        default = attempt(registered=False)
+        self.assertEqual(default.returncode, 0)
+        self.assertEqual(default.stdout, str(self.project / "dist/NeAntik-Integrated.app"))
+        valid = attempt(str(source))
+        self.assertEqual(valid.returncode, 0)
+        self.assertEqual(valid.stdout, str(source))
+        for value, registered in ((str(source), False), ("relative.app", True),
+                                  (str(alias / "NeAntik.app"), True),
+                                  (str(source / "missing"), True)):
+            with self.subTest(value=value, registered=registered):
+                self.assertEqual(attempt(value, registered).returncode, 64)
 
     def test_real_collector_preparation_preserves_flat_summary_sentinel(self):
         script = Path(__file__).resolve().parents[1] / "collect-gui-fingerprint-evidence.py"

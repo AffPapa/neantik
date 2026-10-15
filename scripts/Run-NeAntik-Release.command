@@ -6,7 +6,17 @@ PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 export DEVELOPER_DIR="$(
   "$PROJECT_DIR/scripts/resolve-compatible-developer-dir.sh"
 )"
-SOURCE_APP="$PROJECT_DIR/dist/NeAntik-Integrated.app"
+SOURCE_APP="${NEANTIK_SOURCE_APP:-$PROJECT_DIR/dist/NeAntik-Integrated.app}"
+# A runtime successor can use a separately authenticated private bundle input.
+# It remains subject to the ordinary source signature/provenance checks; only
+# a registered destination may receive it, never the working dist application.
+if [[ -n "${NEANTIK_SOURCE_APP:-}" ]]; then
+  if [[ -z "${NEANTIK_DIRECT_CANDIDATE_ROOT:-}" || "$SOURCE_APP" != /* ||
+        ! -d "$SOURCE_APP" || -L "$SOURCE_APP" || "$SOURCE_APP" != "${SOURCE_APP:A}" ]]; then
+    echo "Explicit source app requires a canonical directory and registered candidate destination." >&2
+    exit 64
+  fi
+fi
 APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
 CANDIDATE_SOURCE_BINDING="$PROJECT_DIR/dist/direct-candidate-source.json"
