@@ -229,3 +229,28 @@ fallback differences remain an observed negative, never a native coherence PASS.
 code/full-tree closure. The original four-contract fixture and prior receipts
 remain intact. This is research qualification, not manager activation or release.
 Font Access, style/collection coverage and exact candidate gates remain open.
+
+
+### Actual Font Access — own-name permission/blob stage
+
+The signed five-contract research successor passed five headed modes: native,
+seed-only, policy A/B/reopened A. Queries contain only three known names and one
+invented missing name. Native returns both own fixtures plus the fixed system
+control; configured policy returns only the system control. Denied/revoked new
+queries return empty, while retained FontData blobs remain usable as upstream
+specifies. Real SFNT parsing, own stable-table equality, FontFace load/draw and
+cleanup passed. System blob bytes/hashes and inventory never leave the page.
+
+CDP permissions are explicitly bound to the disposable BrowserContext and
+nonce-confirmed top-level A. Chromium uses top-level origin for these overrides;
+this is not independent embedded-origin-pair isolation. Explicit iframe
+PermissionsPolicy delegation is observed as allowed. A distinct visible
+standalone B in that same context remains ungranted and its actual request fails.
+Late replies and stale/isolated/child contexts cannot restore permission authority.
+[Scoped result](../../docs/evidence/font-access-development.json).
+
+The first capture retained a failed harness expectation about iframe delegation;
+source diagnosis corrected that model and added a genuine standalone negative.
+No runtime rebuild, earlier nine-context replay or manager regression was needed.
+Native permission-dialog UX, remaining collection/variation scope and the exact
+shipping candidate are not claimed by this result.

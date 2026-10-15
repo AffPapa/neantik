@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-research-headed-font-access;not-release-qualified",
+  "capturedAt": "2026-10-15T21:30:03.894Z",
+  "runtime": {
+    "version": "156.0.8078.12",
+    "executableSHA256": "5c4d8407418d915f69523806975084c8ef0e1074cc85bd5cd5067e7ce0ca6a0c",
+    "frameworkSHA256": "99ce5f3bbc787f494e86f23cf320f32bd83dec86fa7b3d654146f0c3d6de9c9e",
+    "closureSHA256": "574c2ed6eab61d1f128dbf2583f8a6e99be267e24f7e694523c883b7ee483ed0"
+  },
+  "observationsSHA256": "f11d919eb8c83fba85614b54f77e6d99c10c4372e7b0ff027fb2355576de1d48",
+  "actualBrowser": true,
+  "headed": true,
+  "environment": {
+    "macOS": "27.0",
+    "osBuild": "26A5416b",
+    "architecture": "arm64"
+  },
+  "modes": [
+    "native",
+    "seeded-native",
+    "policy-a",
+    "policy-b",
+    "policy-a-repeat"
+  ],
+  "filteredKnownNames": 3,
+  "inventedMissingNames": 1,
+  "unfilteredQueries": false,
+  "knownNameRoles": [
+    "own unique PostScript canary",
+    "own family-collision PostScript canary",
+    "fixed protected-system Helvetica-Light control"
+  ],
+  "policyOwnNamesReturned": 0,
+  "nativeAndSeededNativeOwnNamesReturned": 2,
+  "protectedControlReturnedPerGrant": 1,
+  "nativeBehaviorAssertions": 273,
+  "permissionChangesPerMode": [
+    3,
+    3,
+    3,
+    3,
+    3
+  ],
+  "permissionScope": "explicit local-fonts descriptor, actual disposable BrowserContext ID, exact top-level A, nonce-confirmed live default context and generation",
+  "notOriginPairIsolation": true,
+  "permissionControls": [
+    "denied/granted/denied PermissionStatus events; no gesture or artificial activation",
+    "fresh denied and revoked queries return empty list",
+    "standalone visible B in same BrowserContext remains prompt, actual request without activation raises SecurityError",
+    "explicit allow delegation to iframe B is measured upstream behavior, not grant leakage",
+    "late TargetInfo/nonce/permission responses, stale/rebound contexts, isolated and child contexts cannot authorize permission writes"
+  ],
+  "blobOperations": 18,
+  "blobChecks": [
+    "bounded single-face SFNT with directory and name checks",
+    "exact expected known PostScript name inside page",
+    "five stable original table contents for each own font; no whole-file equivalence assumption",
+    "actual FontFace load and repeated Canvas drawing from each returned blob",
+    "retained FontData blob remains usable and byte-equal after revoke; new query empty",
+    "temporary FontFaces removed after each operation"
+  ],
+  "systemBlobBytesOrHashesExported": false,
+  "systemFontInventoryExported": false,
+  "browserInternalEnumerationClaimedAbsent": false,
+  "aba": {
+    "status": "passed",
+    "scope": "same owned A profile reopened after B;permission/blob behavior categories;no system-font byte export"
+  },
+  "nativeACKCounts": [
+    7,
+    7,
+    7,
+    7,
+    7
+  ],
+  "normalResourceAdmissionAllModes": true,
+  "warningExceptionUsed": false,
+  "browserExits": [
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "stderrFullyDrained": true,
+  "permissionCleanupDeniedAllModes": true,
+  "cleanup": {
+    "ownedProcessesRemaining": 0,
+    "ownedRootsRemaining": 0
+  },
+  "inputsRechecked": true,
+  "offlineControls": {
+    "modelFileAndSourceCases": 8,
+    "loopbackHTTPAndSourceCases": 2,
+    "actualBrowserEvidence": false
+  },
+  "retainedFailure": "first native capture proved correct iframe delegation, invalidating the harness expectation of independent embedded-origin scope; source diagnosis and separate standalone-top-level negative added",
+  "runtimeRebuilt": false,
+  "managerActivation": false,
+  "shippedRuntimeChanged": false,
+  "releaseQualified": false,
+  "remaining": [
+    "native permission prompt UX not exercised; this stage uses explicit CDP overrides",
+    "Font Access internally populates Chromium cache; filtering limits JS output, not internal enumeration",
+    "restricted style/collection/variation scope",
+    "ordinary Chrome comparison with safe clone-helper isolation",
+    "manager opt-in, exact signed candidate, notarization and hosted-byte gates"
+  ]
+}
