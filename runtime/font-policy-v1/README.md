@@ -1,9 +1,17 @@
 # System font source policy — development
 
-This CoreText building block is **not connected to Chromium**. It does not
-alter the published runtime or existing profiles. The
+This development policy now includes a Chromium source patch; its seven changed
+objects compile, but a full runtime has **not been linked or qualified**. It does
+not alter the published runtime or existing profiles. The
 [native result](../../docs/evidence/font-origin-development.json) is not a
-browser or release qualification.
+browser or release qualification. See also the
+[Chromium object result](../../docs/evidence/font-policy-chromium-objects.json).
+
+`chromium-host-font-policy.json` is a frozen **input** manifest. It records the
+exact prepared patch and expected pre/postimages; it is not a mutable release
+status. The patch applies after the existing qualified M156 NeAntik source
+stack, not directly to a clean upstream Chromium checkout. Existing source
+contracts and compiled release archives are preserved.
 
 ## Behavior
 
@@ -48,14 +56,18 @@ timeout or failed cleanup never passes the offline analyzer.
 
 ## Before enabling in NeAntik
 
-1. Connect one traceable Chromium patch to family/local/unique lookup,
-   fallback, Canvas/Offscreen, Font Access and Skia bypasses.
-2. Preserve styles, variations, downloaded fonts and sandbox compatibility.
+1. Link and qualify the prepared patch covering family/local/unique lookup,
+   fallback, Canvas/Offscreen, Font Access and Skia host paths.
+2. Prove styles, restricted collection membership, variations, downloaded fonts
+   and sandbox compatibility in actual native/browser operations.
 3. Persist an explicit policy version. Old/imported profiles stay native until
    user opt-in; require a matching runtime capability before enabling it.
-4. Run actual headed configured/unconfigured canary controls. A process-local
-   font does not automatically appear in a renderer child. Full PostScript
+4. Add a bounded renderer-local QA witness, then run actual headed
+   configured/unconfigured canary controls. Ordinary Chrome does not use the
+   content_shell test-font initialization hook. A helper's process-local font
+   does not automatically appear in a renderer child. Full PostScript
    collision, variable fonts and other macOS environments remain open.
 5. Qualify the exact signed runtime/candidate before release claims.
 
-All five integration gates remain open. WebKit is outside this policy.
+All five final integration gates remain open despite passed compilation.
+WebKit is outside this policy.

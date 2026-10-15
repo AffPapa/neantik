@@ -8,6 +8,8 @@
 #include <string>
 #include <set>
 #include <vector>
+#include <cmath>
+#include <limits>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -108,6 +110,27 @@ bool CoversText(CTFontRef font, CFStringRef text) {
   }
   return true;
 }
+
+double StyleDistance(CTFontRef requested, CTFontRef candidate) {
+  // This is a fallback tie break, not a replacement for Blink/Skia's CSS
+  // matching algorithm. Prefer the native fallback's actual family/style.
+  constexpr CTFontSymbolicTraits mask = kCTFontTraitBold | kCTFontTraitItalic |
+      kCTFontTraitCondensed | kCTFontTraitExpanded;
+  double result = (CTFontGetSymbolicTraits(requested) & mask) ==
+                  (CTFontGetSymbolicTraits(candidate) & mask) ? 0 : 100;
+  OwnedCF<CFDictionaryRef> a(CTFontCopyTraits(requested));
+  OwnedCF<CFDictionaryRef> b(CTFontCopyTraits(candidate));
+  if (!a.get() || !b.get()) return result;
+  for (auto key:{kCTFontWeightTrait,kCTFontWidthTrait,kCTFontSlantTrait}) {
+    auto x=static_cast<CFNumberRef>(CFDictionaryGetValue(a.get(),key));
+    auto y=static_cast<CFNumberRef>(CFDictionaryGetValue(b.get(),key));
+    double xv=0,yv=0;
+    if (x && y && CFGetTypeID(x)==CFNumberGetTypeID() && CFGetTypeID(y)==CFNumberGetTypeID() &&
+        CFNumberGetValue(x,kCFNumberDoubleType,&xv) && CFNumberGetValue(y,kCFNumberDoubleType,&yv) &&
+        std::isfinite(xv) && std::isfinite(yv)) result+=std::abs(xv-yv);
+  }
+  return result;
+}
 }  // namespace
 
 Origin ResolvedOrigin(CTFontRef font) { return InspectFont(font).origin; }
@@ -169,12 +192,18 @@ void SystemSourcePolicy::LoadSystemDescriptors() {
   std::call_once(catalog_once_, [this] {
     OwnedCF<CFArrayRef> urls(CTFontManagerCopyAvailableFontURLs());
     if (!urls.get()) return;
-    std::set<std::string> files_seen;
+    // Stable protected-file order prevents user inventory order from deciding
+    // tie breaks in style/fallback selection. Never publish the path list.
+    std::set<std::string> files;
     for (CFIndex i=0; i<CFArrayGetCount(urls.get()); ++i) {
       CFTypeRef value=CFArrayGetValueAtIndex(urls.get(),i);
       auto source=InspectURL(value);
-      if (source.origin!=Origin::kProtectedSystemFile || !files_seen.insert(source.canonical).second) continue;
-      OwnedCF<CFArrayRef> faces(CTFontManagerCreateFontDescriptorsFromURL(static_cast<CFURLRef>(value)));
+      if (source.origin==Origin::kProtectedSystemFile) files.insert(source.canonical);
+    }
+    for (const auto& file:files) {
+      OwnedCF<CFURLRef> url(CFURLCreateFromFileSystemRepresentation(kCFAllocatorDefault,
+          reinterpret_cast<const UInt8*>(file.data()), file.size(), false));
+      OwnedCF<CFArrayRef> faces(CTFontManagerCreateFontDescriptorsFromURL(url.get()));
       if (!faces.get()) continue;
       for (CFIndex j=0; j<CFArrayGetCount(faces.get()); ++j) {
         auto descriptor=static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(faces.get(),j));
@@ -205,12 +234,51 @@ size_t SystemSourcePolicy::SystemDescriptorCount() {
   LoadSystemDescriptors();return descriptors_.size();
 }
 
+CFArrayRef SystemSourcePolicy::CopySystemDescriptors() {
+  LoadSystemDescriptors();
+  return CFArrayCreate(kCFAllocatorDefault,
+      reinterpret_cast<const void**>(descriptors_.data()),
+      descriptors_.size(), &kCFTypeArrayCallBacks);
+}
+
+bool SystemSourcePolicy::AllowsText(CTFontRef font, CFStringRef text) {
+  return AllowsHostFont(font) && CoversText(font, text);
+}
+
 CTFontRef SystemSourcePolicy::CopySystemFallbackForText(CTFontRef base, CFStringRef text,
                                                       CFStringRef language) {
   if (!base || !text || CFStringGetLength(text)<=0 || CFStringGetLength(text)>256) return nullptr;
   OwnedCF<CTFontRef> native(CTFontCreateForStringWithLanguage(base,text,CFRangeMake(0,CFStringGetLength(text)),language));
   if (native.get() && AllowsHostFont(native.get()) && CoversText(native.get(),text)) {
     CFRetain(native.get());return native.get();
+  }
+  // A user font may shadow an otherwise available protected fallback family.
+  // Recover the exact protected face, then that family, before changing family.
+  if (native.get()) {
+    for (auto key:{kCTFontNameAttribute,kCTFontFamilyNameAttribute}) {
+      OwnedCF<CFStringRef> name(key==kCTFontNameAttribute
+          ? CTFontCopyPostScriptName(native.get()) : CTFontCopyFamilyName(native.get()));
+      if (!name.get()) continue;
+      OwnedCF<CFArrayRef> candidates(CopySystemCandidates(name.get()));
+      CTFontRef best=nullptr;
+      double best_distance=std::numeric_limits<double>::infinity();
+      for (CFIndex i=0;i<CFArrayGetCount(candidates.get());++i) {
+        auto descriptor=static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(candidates.get(),i));
+        CTFontRef candidate=CTFontCreateWithFontDescriptor(descriptor,CTFontGetSize(base),nullptr);
+        OwnedCF<CFStringRef> actual_name(candidate ? (key==kCTFontNameAttribute
+            ? CTFontCopyPostScriptName(candidate) : CTFontCopyFamilyName(candidate)) : nullptr);
+        if (candidate && actual_name.get() && CFStringCompare(name.get(),actual_name.get(),kCFCompareCaseInsensitive)==kCFCompareEqualTo &&
+            CoversText(candidate,text) && AllowsHostFont(candidate)) {
+          const double distance=StyleDistance(native.get(),candidate);
+          if (distance<best_distance) {
+            if (best) CFRelease(best);
+            best=candidate;candidate=nullptr;best_distance=distance;
+          }
+        }
+        if (candidate) CFRelease(candidate);
+      }
+      if (best) return best;
+    }
   }
   LoadSystemDescriptors();
   // Prefer native language coverage metadata, then the remaining protected

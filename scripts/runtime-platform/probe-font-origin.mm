@@ -126,11 +126,27 @@ int main(int argc, const char* argv[]) {
     }
     CFRelease(replacements);
     output[@"protectedFamilyCounterpartFound"] = @(counterpartFound);
+    CFArrayRef copied_catalog=policy.CopySystemDescriptors();
+    CFArrayRef copied_again=policy.CopySystemDescriptors();
+    output[@"protectedDescriptorCopyConsistent"] = @(copied_catalog && copied_again &&
+        CFArrayGetCount(copied_catalog)>0 &&
+        CFArrayGetCount(copied_catalog)==static_cast<CFIndex>(policy.SystemDescriptorCount()) &&
+        CFEqual(copied_catalog,copied_again));
+    if (copied_catalog)CFRelease(copied_catalog);if(copied_again)CFRelease(copied_again);
+    output[@"coverageAcceptsProtectedGlyph"] = @(policy.AllowsText(system,CFSTR("A")));
+    CTFontRef recovered=policy.CopySystemFallbackForText(familyLookup,CFSTR("A"),CFSTR("en"));
+    CFStringRef recovered_family=recovered?CTFontCopyFamilyName(recovered):nullptr;
+    output[@"nativeFamilyFallbackRecovered"] = @(recovered && recovered_family &&
+        CFStringCompare(recovered_family,CFSTR("Helvetica"),kCFCompareCaseInsensitive)==kCFCompareEqualTo &&
+        policy.AllowsText(recovered,CFSTR("A")) && DrawOwnGlyph(recovered));
+    if(recovered_family)CFRelease(recovered_family);if(recovered)CFRelease(recovered);
     CTFontRef lastResort=CTFontCreateWithName(CFSTR("LastResort"),20,nullptr);
     bool actualLastResort=IsOwnFont(lastResort,CFSTR("LastResort"));
     CTFontRef realFallback=policy.CopySystemFallbackForText(lastResort,CFSTR("A"),CFSTR("en"));
     bool avoidedLastResort=actualLastResort && realFallback && !IsOwnFont(realFallback,CFSTR("LastResort")) && policy.AllowsHostFont(realFallback) && DrawOwnGlyph(realFallback);
     output[@"actualLastResortControlRejected"] = @(avoidedLastResort);
+    output[@"coverageRejectsOwnAndLastResort"] = @(!policy.AllowsText(canary,CFSTR("A")) &&
+        actualLastResort && !policy.AllowsText(lastResort,CFSTR("A")));
     if (lastResort)CFRelease(lastResort);if(realFallback)CFRelease(realFallback);
 
     // Try to spoof origin metadata using real canary glyphs plus a system URL.
@@ -193,6 +209,10 @@ int main(int argc, const char* argv[]) {
     if (error) CFRelease(error);
     output[@"ownRegistrationsRemoved"] = @(removedCanary && removedCollision);
     output[@"primitiveControlsPassed"] = @(registered && collisionRegistered && canaryResolved &&
+        [output[@"protectedDescriptorCopyConsistent"] boolValue] &&
+        [output[@"coverageAcceptsProtectedGlyph"] boolValue] &&
+        [output[@"nativeFamilyFallbackRecovered"] boolValue] &&
+        [output[@"coverageRejectsOwnAndLastResort"] boolValue] &&
         [output[@"actualFamilyCollisionControlRejected"] boolValue] &&
         [output[@"canaryDrawn"] boolValue] && [output[@"canaryRejectedByHostPolicy"] boolValue] &&
         [output[@"spoofUsesOwnCanaryGlyphs"] boolValue] && [output[@"spoofRejected"] boolValue] &&

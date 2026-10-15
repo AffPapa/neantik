@@ -119,8 +119,15 @@ Accept-CH, same-origin и cross-origin redirects, явное делегиров�
 рисование без пропущенных glyphs и LastResort. Скачиваемый шрифт из собственных
 байтов продолжает рисоваться; кэш ограничен.
 
-Это [native primitive](evidence/font-origin-development.json), ещё не функция
-Chromium и не закрытие пункта1. Следом — единый patch поиска/fallback/Font Access,
-явная версия политики без молчаливой смены старых профилей, headed-контроли и
-квалификация нового runtime. [Контракт и оставшиеся gates](../runtime/font-policy-v1/README.md).
+Дополнительно подготовлен единый13-файловый Chromium patch: поиск/fallback,
+Skia style-set/collection и Font Access используют protected source policy.
+GN graph/header check и7изменённых объектов прошли компиляцию; старый output
+сохранён, новый использует отдельную COW-копию кэша.
+[Результат компиляции](evidence/font-policy-chromium-objects.json).
+
+Это [native primitive](evidence/font-origin-development.json) и скомпилированные
+исходники, ещё не готовая функция поставляемого Chromium и не закрытие пункта1.
+Следом — renderer-local canary witness, headed-контроли, явная версия политики
+без молчаливой смены старых профилей и квалификация нового runtime.
+[Контракт и оставшиеся gates](../runtime/font-policy-v1/README.md).
 Опубликованные0.8.17 и runtime не менялись; их проверки не повторялись.

@@ -27,6 +27,8 @@ CONTROLS = (
     'actualLastResortControlRejected', 'spoofUsesOwnCanaryGlyphs', 'spoofRejected',
     'explicitResourceDataDrawn', 'cacheWithinBound', 'ownRegistrationsRemoved',
     'primitiveControlsPassed', 'candidateFallbackReady',
+    'protectedDescriptorCopyConsistent', 'coverageAcceptsProtectedGlyph',
+    'nativeFamilyFallbackRecovered', 'coverageRejectsOwnAndLastResort',
 )
 
 

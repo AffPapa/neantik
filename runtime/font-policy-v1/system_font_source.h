@@ -40,6 +40,9 @@ class SystemSourcePolicy {
   // Owned copies from real protected file descriptors, not a global family
   // relookup that may select a user font with a colliding family/name.
   CFArrayRef CopySystemCandidates(CFStringRef family_or_face);
+  // All protected file descriptors; callers still validate constructed fonts.
+  CFArrayRef CopySystemDescriptors();
+  bool AllowsText(CTFontRef font, CFStringRef text);
   CTFontRef CopySystemFallbackForText(CTFontRef base, CFStringRef text,
                                     CFStringRef language);
   size_t SystemDescriptorCount();

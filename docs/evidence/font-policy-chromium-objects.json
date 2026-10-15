@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "status": "GN-and-seven-object-compilation-passed; full-runtime-unlinked",
+  "actualBrowser": false,
+  "releaseReady": false,
+  "publishedRuntimeChanged": false,
+  "applicationVersion": "0.8.17",
+  "build": 129,
+  "officialChromiumBase": {
+    "version": "156.0.8078.12",
+    "commit": "634b046faf2137b83af71c87baf362b533af9104"
+  },
+  "patchFile": "runtime/font-policy-v1/chromium-host-font-policy.patch",
+  "patchSHA256": "4167b8445114f624a1d857fb8cb9be038e6bb6c5ccb7a29292a64e23b3313c4a",
+  "inputManifestSHA256": "cc20f159fd9463722ef5dfbf1ff679f88c020f7e5cf44e1ec7e20bc665c35d62",
+  "sourceFiles": [
+    {
+      "path": "components/ungoogled/BUILD.gn",
+      "preimageSHA256": "c5e3eb030b64550d18d4dfa81358041f0d32cfca4a2698d2cfdaf7cebe27d99d",
+      "postimageSHA256": "40eeeb4bedae1cec1e1d2660c2b53de9c0f0326d179e1289990fada1793d489c"
+    },
+    {
+      "path": "components/ungoogled/system_font_policy_mac.cc",
+      "preimageSHA256": null,
+      "postimageSHA256": "79ec0a54c2494082cff801cbd226191ed20a31b5303cbc754aafe674db26890f"
+    },
+    {
+      "path": "components/ungoogled/system_font_policy_mac.h",
+      "preimageSHA256": null,
+      "postimageSHA256": "80e257a26c7fdb1ea94e8e839f37aade0494717fda68a3c8e69ae63915ac5d66"
+    },
+    {
+      "path": "components/ungoogled/system_font_source.cc",
+      "preimageSHA256": null,
+      "postimageSHA256": "4983e3753f65c27860673c9a7beb496dd633a2b32a0c9435f8da875ba6e8ec24"
+    },
+    {
+      "path": "components/ungoogled/system_font_source.h",
+      "preimageSHA256": null,
+      "postimageSHA256": "7d297bc1064a50fbcf1191502c1b5fc6de9cb5dfeed4127a29b3ebf18dbc4da5"
+    },
+    {
+      "path": "content/browser/BUILD.gn",
+      "preimageSHA256": "f53873acbe2d34d09dcd979b60505e61585ba7cf5ce016b63ae3f438ca0dcdd0",
+      "postimageSHA256": "d82666c1ea242b7aa020b11b85ae78d09529f36d39ecdb5a258e314c03d895b6"
+    },
+    {
+      "path": "content/browser/font_access/font_enumeration_data_source_mac.mm",
+      "preimageSHA256": "b1a619e8dfe914be6ecf0548587daea444a7fc1fa4f567b4aaff550baeb7006d",
+      "postimageSHA256": "5fddf858aa8227662737370dff5487344ca3f693ded7bee4bbdb665ea178014d"
+    },
+    {
+      "path": "skia/BUILD.gn",
+      "preimageSHA256": "8dab5d0b349107e9f599123676f1e7f9a74e793ee2f8abb5c1ca7165abf9e68c",
+      "postimageSHA256": "93b498a964250eb93d018cb32dc4d176754ce907d2629fd59c87e2a5a1f3ff7e"
+    },
+    {
+      "path": "third_party/blink/renderer/platform/BUILD.gn",
+      "preimageSHA256": "c1084a337b77a7c6b573dc0b02522e38103c92ea29adce9b16b7c72fe3fe4335",
+      "postimageSHA256": "a8396236f88319a78a8bc500480c8414cfc591635fe9c2ffea207e41cb244582"
+    },
+    {
+      "path": "third_party/blink/renderer/platform/fonts/mac/font_cache_mac.mm",
+      "preimageSHA256": "48642ce644be7744a7947c25b3036ef359dccf017223d5e16661c4684b93b97c",
+      "postimageSHA256": "02a168b7e443c9e93a624fa76ff3854f8f1b1e3acdb83f859bcaaa042d23f04a"
+    },
+    {
+      "path": "third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm",
+      "preimageSHA256": "386b0f4b2059aa3acd910f0614e3d2a100d5c0a7608a3857f563a0b847bf046d",
+      "postimageSHA256": "584718b5cbd03aab84758b4e13cb93776264a1e2def4c205a9cfa180c9fcb075"
+    },
+    {
+      "path": "third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm",
+      "preimageSHA256": "78cd6148a0ac5c58e8f0a5e7caa7da85196d51d24c31aafb29010bd42ba6881c",
+      "postimageSHA256": "4a941c7e89bb007a4ec0ef34f59bf82e189fc785e4a4483956adaca3205fb89e"
+    },
+    {
+      "path": "third_party/skia/src/ports/SkFontMgr_mac_ct.cpp",
+      "preimageSHA256": "cc1982ef00d0bf834e8920fcb73335900637ad2c05eb8faa879198c007e82b07",
+      "postimageSHA256": "2b45571117d403402a7a6ef27acc6062f7feddb66ac9faf00f2456e01a2eb1ba"
+    }
+  ],
+  "GN": {
+    "generationExitCode": 0,
+    "componentHeaderCheckExitCode": 0,
+    "sourcePinsUnchanged": true
+  },
+  "compilation": {
+    "exitCode": 0,
+    "jobs": 2,
+    "objectCount": 7,
+    "objects": {
+      "obj/components/ungoogled/system_font_policy_mac/system_font_policy_mac.o": "3710faf51bf4b32a3df2849a7d423a0d44859878fd6b8c733168afd35228b208",
+      "obj/components/ungoogled/system_font_policy_mac/system_font_source.o": "ff05de2401ab3e5a33be56b479ab9ca56d251dee276a9377052ef64f7df2fae8",
+      "obj/third_party/blink/renderer/platform/platform/font_cache_mac.o": "4dce94896c919a7885bcf676488f6242a3279abd3dbcd18f33518dd39ff4c362",
+      "obj/third_party/blink/renderer/platform/platform/font_matcher_mac.o": "51781ce2bbdd0a79f99e063f2b9f6f2924e65a2c472fdc7f51521b36c4c07381",
+      "obj/third_party/blink/renderer/platform/platform/font_platform_data_mac.o": "b01a5f6ea2f7a7877a67d66f6266e80c4dda4859b86451c1070ab653069cbd8e",
+      "obj/skia/skia/SkFontMgr_mac_ct.o": "b2759969b91f5012492e8fa5ad21502b6b8ecc6faa59a88b75848ddb0030dc95",
+      "obj/content/browser/browser/font_enumeration_data_source_mac.o": "3a28e9f9ff85a71fe5a36b392c460a8bcccc89115b41d978835e34d2086740a9"
+    },
+    "finishedAt": "2026-10-15T18:35:57.168544+00:00",
+    "sourcePinsUnchanged": true,
+    "environment": "same pinned macOS27/Xcode27/arm64 compiler setup as existing M156; separate APFS COW output",
+    "fullRuntimeLinked": false
+  },
+  "nativePrimitiveEvidence": "font-origin-development.json",
+  "activation": {
+    "validSeedAloneEnablesPolicy": false,
+    "exactEnvironmentOptIn": "NEANTIK_FONT_POLICY=system-v1",
+    "managerEmitsNewOptIn": false,
+    "oldProfilesChanged": false
+  },
+  "preservation": {
+    "oldOutputPreserved": true,
+    "originalSourcePreimagesRetained": true,
+    "oldSourceContractsChanged": false,
+    "oldSignedRuntimeAndArchivesUnchanged": true,
+    "hardlinksBrokenBeforeSourceWrites": true
+  },
+  "sourceReviewCorrections": [
+    "Protected candidates precede global duplicate elimination",
+    "Every final styled face remains within admitted collection by actual PostScript name and source URL",
+    "Fallback recovers protected native-family/style counterpart before broader fallback",
+    "NS matcher preserves existing AppKit trait algorithm; unique lookup uses actual full/PostScript names",
+    "Malformed Unicode scalar cannot become a fallback character",
+    "Font Access metadata comes from the actual validated face; permissions remain unchanged"
+  ],
+  "limitations": [
+    "Compilation is not link or browser behavior proof",
+    "No headed renderer canary yet; content_shell test-font registration is not part of ordinary Chrome",
+    "A bounded renderer-local witness design is required before full runtime build, without user/session font registration or arbitrary font paths",
+    "Full PostScript collision, actual style/collection, Font Access blob, WOFF2 and sandbox controls remain open",
+    "Persisted versioned opt-in, exact-runtime capability, migration and UI not implemented",
+    "No new application release or Site publication implied"
+  ]
+}
