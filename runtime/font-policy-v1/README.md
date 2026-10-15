@@ -132,3 +132,16 @@ Offline input verification (not runtime qualification):
 python3 -B scripts/runtime-platform/verify-font-witness-inputs.py
 python3 -B -m unittest scripts.tests.test_font_witness_inputs
 ```
+
+
+### Actual registration experiment
+
+A single authorized CoreText probe compiled once and ran three isolated cases.
+In-memory descriptor registration was unavailable for both the unique and
+family-collision fixtures on this Mac. Process-scoped URL registration of an
+original font with a full PostScript-name collision succeeded; the selected
+own face was rejected by the source policy and unregistered. All three fresh
+observers found no exposed own face. [Results](../../docs/evidence/font-registration-development.json).
+This supports the fixed bundle-resource design. It does not prove renderer
+sandbox behavior or replace drawing, browser, compilation or release gates.
+The one-off warning exception is consumed and does not apply to Chromium QA.

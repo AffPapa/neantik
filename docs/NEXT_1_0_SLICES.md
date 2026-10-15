@@ -151,3 +151,10 @@ Renderer witness подготовлен отдельной дельтой: дв�
 ловят повреждение/подмену входов. Компиляция и настоящий браузерный запуск
 не начинались из-за memory pressure warning. Это не renderer PASS и не закрытие
 пункта1. [Подтверждённый scope](evidence/font-witness-development.json).
+
+
+Отдельный одобренный CoreText-эксперимент завершён: in-memory descriptors
+недоступны на проверенном Mac; process-only URL-регистрация собственного
+шрифта с полным PostScript collision прошла, выбранный шрифт отклонён политикой,
+очистка подтверждена новыми процессами. [Scope](evidence/font-registration-development.json).
+Это не тест renderer или Canvas и не разрешение следующего запуска при warning.
