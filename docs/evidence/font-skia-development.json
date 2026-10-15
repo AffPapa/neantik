@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-native-Skia-variation-correction;not-browser-or-release-qualified",
+  "capturedAt": "2026-10-15T21:58:04.014108+00:00",
+  "sourceChromiumVersion": "156.0.8078.12",
+  "OS": "27.0",
+  "architecture": "arm64",
+  "probeSHA256": "101cd6be36879080298646c8875d52e33dccd91bddbd551b7687fe76437ffd6b",
+  "probeSourceSHA256": "eccef80ea4494bb95f8c678413f1390540f648b91237ed8e2b4634d8d001282c",
+  "sourceLayer": "runtime/font-policy-v1/chromium-font-variations.json",
+  "sourceLayerSHA256": "5c6f00023ed4f4c63ed6f585544a5f61d3e239f640a56e1c53f058170d2e038d",
+  "observationsSHA256": "c541b6d80d279679d4aa1f3c0bb1dfa284d5160fad2e297ac19891b1fe4d6d20",
+  "baselineFailureSHA256": "4e1d2cd794d483bb7450109bf570b7c9cdf2dceee172a738da1b97586016a958",
+  "actualSkia": true,
+  "actualBrowser": false,
+  "releaseQualified": false,
+  "managerActivation": false,
+  "modes": [
+    "native",
+    "policy",
+    "observe"
+  ],
+  "casesPerDrawingMode": 6,
+  "assertionsPerDrawingMode": 21,
+  "cases": [
+    "exact CoreText collection preflight",
+    "mixed protected/own collection, enumeration, lookup and real drawing",
+    "own-only non-null collection stays empty under policy; no global fallback",
+    "single protected member, normal/bold/italic containment and unsupported-character refusal",
+    "full protected family actual normal/bold/italic traits and drawing",
+    "actual UI variable font two supported weights, readback, stable and distinct rasters, strict base and clone source"
+  ],
+  "baselineDefect": "Strictly accepted protected UI base produced valid Skia weight clones rejected by default-instance source comparison. Both baseline modes retained failure; no acceptance criterion relaxed.",
+  "correction": "Reconstruct an independent counterpart from the same protected file at validated supported variation coordinates; compare effective coordinates, actual PostScript face, dev/inode and every table. Retain earlier exact-face/all-table proof.",
+  "negativeControls": [
+    "native restricted collection widening is detected; policy prevents it",
+    "native own fixture visible/drawn; policy denies it",
+    "own-only policy collection cannot fall back globally",
+    "single-member policy fallback denies an unsupported character that native resolves outside the collection",
+    "pre-fix UI clones fail strict source validation while the base passes",
+    "analyzer refuses failed/missing/duplicate cases, extra metadata, timeout, nonzero exit, failed admission and incomplete cleanup"
+  ],
+  "harnessCorrections": [
+    "Carbon SDK helper name collision fixed",
+    "Ninja manifest regeneration separated from compile planning; original output preserved with APFS COW",
+    "CoreText file-reference versus path URL matched by physical file identity plus exact face",
+    "known family name used for family lookup rather than PostScript name",
+    "extra exact-file diagnostic had no eligible default variable descriptor; retained as setup observation, not a product failure or a pass"
+  ],
+  "build": {
+    "jobs": 2,
+    "changedCompilations": 2,
+    "oldResearchRuntimePreserved": true,
+    "oldOutputAndSignedRuntimeUnchanged": true
+  },
+  "admission": {
+    "allNormal": true,
+    "thermalStates": [
+      0
+    ],
+    "warningExceptionUsed": false
+  },
+  "cleanup": {
+    "ownedProcessesRemaining": 0,
+    "ownedRootsRemaining": 0
+  },
+  "inputsRechecked": true,
+  "systemFontInventoryOrTableBytesExported": false,
+  "limitations": [
+    "Native Skia executable only; no newly linked headed or signed shipping browser",
+    "Manager activation remains disabled",
+    "The earlier nine-context/FontAccess browser evidence belongs to its unchanged five-layer research runtime; new six-layer browser needs relevant qualification",
+    "Forced managed policies, other macOS/hardware and final candidate remain separate gates"
+  ]
+}

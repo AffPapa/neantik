@@ -254,3 +254,27 @@ source diagnosis corrected that model and added a genuine standalone negative.
 No runtime rebuild, earlier nine-context replay or manager regression was needed.
 Native permission-dialog UX, remaining collection/variation scope and the exact
 shipping candidate are not claimed by this result.
+
+
+### Restricted Skia collections and real variable instances
+
+The finite direct Skia executable now passes six cases in separate native and
+policy processes, followed by a fresh cleanup observer. It uses the real patched
+Skia and policy archives, process-only own-font registration and physical file
+identity. Mixed/empty/single-member collections preserve policy boundaries;
+normal/bold/italic traits and actual drawing are measured. Native collection
+widening remains a sensitive negative control.
+
+This found a real false refusal: an allowed protected UI base's two actual
+variable-weight clones drew correctly but failed source validation. The new
+independent `chromium-font-variations.json` layer reconstructs its counterpart
+from the protected file with supported finite coordinates, preserving file
+identity, actual face, effective coordinates and every-table comparison. The old
+exact-face proof remains. Both real clones now pass; different weights produce
+different stable rasters. [Evidence and failed-baseline scope](../../docs/evidence/font-skia-development.json).
+
+The source policy object and QA executable were compiled in a separate APFS COW
+output. Original objects, five frozen manifests and the earlier signed browser
+were preserved. This is not a newly linked headed browser or a release. The
+six-layer runtime still needs its relevant browser gates, manager opt-in and
+exact-candidate qualification. No earlier browser PASS is transferred to it.
