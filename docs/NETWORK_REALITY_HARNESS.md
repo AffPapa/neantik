@@ -166,7 +166,74 @@ it from a controlled measurement and its provenance is checked separately.
 
 ## Verification boundary
 
-The loopback producer is only the first controlled step. The next step is an
-authorized producer for controlled DNS, TLS, HTTP/2/3, proxy egress, and
-WebRTC measurements. Every producer must retain no raw IP, DNS name, cookie,
-credential, header, or ICE candidate in the report artifact.
+The compact schema above is separate from the richer private producer ledgers.
+Raw signed Chromium DNS controls are recorded in the scoped
+[0.8.15 report](../releases/v0.8.15.json). That does not qualify a manager session
+or prove global absence of DNS/UDP leakage. TLS/HTTP2/3, background activity,
+network changes and other environments require their own observations.
+Public reports must not contain personal IPs, cookies, credentials, headers,
+raw DNS names or ICE candidates.
+
+## Manager / relay DNS producer
+
+The new source tools extend the existing normal manager route; they do not
+change Chromium, Swift launch policy, system DNS, trust stores or production
+profiles. Each new fixture owns its UDP resolver, authenticated HTTP upstream,
+origin, random names/nonces and temporary data directory. External connections
+are denied by default. `--allow-manager-preflight` permits only the manager's
+existing three GeoIP TLS hosts; it does not turn GeoIP into route evidence.
+
+| Tool | Responsibility |
+| --- | --- |
+| `scripts/runtime-network/manager-route-fixture.py --controlled-dns` | Headed manager with two synthetic profiles; independent resolver and origin observations; bounded stdin fault control. |
+| `scripts/runtime-network/collect-manager-dns.py` | Read-only metadata/lease, exact kernel process generations, live/static CodeDirectory, tokenized argv and per-request socket custody. |
+| `scripts/runtime-network/analyze-manager-dns.py` | Offline acceptance of linked observations; missing, contradictory, stale or rejected origin arrivals fail. |
+
+The protocol uses one proxy browser session for success → SERVFAIL → recovery.
+An explicitly separate Direct profile opens the same owned origin by literal
+IP while the fault remains armed. This proves **origin sensitivity**, not a
+Direct DNS route. A protected request must have a TCP client socket owned by
+the exact relay generation; the Direct socket must belong to its owned browser
+or a verified helper ancestry. A different local HTTP client cannot stand in
+for Chromium. Every nonce-valid origin arrival is recorded before peer/header
+rejection so the fixture cannot hide a bypass by refusing its response.
+
+Start with the current Direct QA enrollment/manifest workflow on unchanged
+signed bytes, a fresh resource admission and an empty private receipt directory:
+
+```bash
+python3 -B scripts/runtime-network/manager-route-fixture.py \
+  --app /path/to/NeAntik.app \
+  --candidate-manifest /private/tmp/neantik-update-audit-UUID/candidate-manifest.json \
+  --output /private/tmp/neantik-dns-receipts-UUID \
+  --controlled-dns --allow-manager-preflight
+```
+
+Keep stdin open: `{"action":"fail-dns"}`, `{"action":"recover"}` and
+`{"action":"stop"}` are operator controls. Page visits cannot switch faults.
+Configure only `QA route proxy` using the fixture's public dummy credentials.
+Before launching it, collect `before-launch`; then collect `proxy-success`,
+`dns-refused`, `direct-control` and `proxy-recovered` after the corresponding
+headed observations. Keep at least five seconds between observed SERVFAIL and
+the intentional Direct origin arrival. Every phase is one new file; existing
+receipts are never overwritten.
+
+```bash
+python3 -B scripts/runtime-network/collect-manager-dns.py \
+  --state /private/tmp/neantik-dns-receipts-UUID/private-state.json \
+  --phase before-launch
+```
+
+Quit the owned browsers and manager, finish the fixture, collect `cleanup`,
+then analyze that same receipt directory with `analyze-manager-dns.py --receipts`.
+Retire the supplemental QA authority through its supported narrow operation;
+the published candidate's original evidence remains unchanged. Timeout/SIGTERM
+cleanup is never a graceful-close qualification.
+
+**Current evidence:** local UDP/TCP fixture controls and offline negative
+controls pass; live read-only kernel/argv/socket helper controls pass. The
+headed manager DNS stage remains unqualified: the published manager refused
+its first browser launch under memory pressure warning. An agent-level QA
+exception does not override the product's normal launch admission. Continue
+only after a fresh normal observation; do not retry the same rejected state or
+weaken admission to obtain a green report.

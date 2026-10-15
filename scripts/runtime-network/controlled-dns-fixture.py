@@ -164,8 +164,15 @@ class DNSFixture(BASE.Fixture):
         if (sender != self.dns.server_address or q['identifier'] != identifier or q['name'] != host
                 or q['kind'] != 1 or q['rcode'] != 0 or q['answers'] != 1
                 or answer[-4:] != b'\x7f\0\0\1'):
+            self.resolution_result(host, accepted=False, rcode=q['rcode'])
             raise OSError('owned DNS resolution refused')
+        self.resolution_result(host, accepted=True, rcode=0)
         return super().open_upstream('127.0.0.1', port)
+
+    def resolution_result(self, host, *, accepted, rcode):
+        # Manager integration records the validated answer before dialing.
+        # Raw-runtime fixture behavior and its ledger stay unchanged.
+        pass
 
     def description(self):
         return dict(schemaVersion=1, urls={p: self.url(p) for p in self.nonces},

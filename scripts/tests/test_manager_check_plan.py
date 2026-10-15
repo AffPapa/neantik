@@ -52,7 +52,7 @@ class ManagerCheckPlanTests(unittest.TestCase):
         result = MOD.plan(['scripts/runtime-network/manager-route-fixture.py'], [])
         self.assertEqual(result['swiftMode'], 'none')
         self.assertEqual(result['commands'], [['python3', '-B', '-m', 'unittest',
-            'scripts.tests.test_controlled_dns_fixture', 'scripts.tests.test_shipping_manager_route_fixture']])
+            'scripts.tests.test_controlled_dns_fixture', 'scripts.tests.test_manager_dns_fixture', 'scripts.tests.test_shipping_manager_route_fixture']])
         self.assertEqual(result['status'], 'not-run')
         self.assertIn('owned network', result['requiredAdditionalGates'][0])
         unknown = MOD.plan(['scripts/runtime-network/new-unknown.py'], [])
@@ -62,9 +62,17 @@ class ManagerCheckPlanTests(unittest.TestCase):
         result = MOD.plan(['scripts/runtime-network/controlled-dns-fixture.py'], [])
         self.assertEqual(result['swiftMode'], 'none')
         self.assertEqual(result['commands'], [['python3', '-B', '-m', 'unittest',
-            'scripts.tests.test_controlled_dns_fixture']])
+            'scripts.tests.test_controlled_dns_fixture', 'scripts.tests.test_manager_dns_fixture']])
         self.assertEqual(result['status'], 'not-run')
         self.assertFalse(result['releaseGate'])
+
+    def test_manager_dns_harnesses_select_custody_and_sensitivity_without_app_build(self):
+        result=MOD.plan(['scripts/runtime-network/manager-dns-fixture.py',
+            'scripts/runtime-network/collect-manager-dns.py','scripts/runtime-network/analyze-manager-dns.py'],[])
+        self.assertEqual(result['swiftMode'],'none')
+        self.assertEqual(result['commands'],[['python3','-B','-m','unittest',
+            'scripts.tests.test_manager_dns_analysis','scripts.tests.test_manager_dns_custody','scripts.tests.test_manager_dns_fixture']])
+        self.assertFalse(result['releaseGate']);self.assertEqual(result['status'],'not-run')
 
     def test_route_observer_selects_background_and_existing_route_controls(self):
         result = MOD.plan(['scripts/controlled-browser-route-observer.py'], [])

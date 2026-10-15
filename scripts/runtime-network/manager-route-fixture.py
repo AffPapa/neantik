@@ -20,6 +20,7 @@ import socket
 import socketserver
 import stat
 import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -124,6 +125,19 @@ class Fixture:
     def url(self, phase):
         return 'http://127.0.0.1:' + str(self.origin.server_address[1]) + '/owned-route?phase=' + phase + '&nonce=' + self.nonces[phase]
 
+    def navigation_phases(self):
+        return PHASES
+
+    # Optional independent-measurement hooks. Ordinary HTTP/TCP and HTTPS
+    # fixtures keep their existing wire behavior and ledger schema.
+    def begin_owned_request(self, host, port): return {}
+    def observe_proxy_peer(self, context, client): return None
+    def validate_owned_request(self, context, target): return None
+    def owned_request_headers(self, context): return b''
+    def origin_observation(self, request, phase, protected): return {}
+    def observe_origin_arrival(self, phase, protected): return {}
+    def observe_origin_peer(self, channel, phase, protected, observation): return None
+
     def https_url(self, phase):
         if not self.owned_https or phase not in PHASES: raise ValueError('https-fixture-disabled-or-invalid-phase')
         callback = 'http://127.0.0.1:' + str(self.origin.server_address[1]) + '/__neantik_route/ack'
@@ -191,8 +205,11 @@ class Fixture:
             phase = self.phase(pieces[1].decode('ascii'))
             if phase is None:
                 answer(channel, b'404 Not Found', b''); return
+            arrival = self.observe_origin_arrival(phase, protected)
+            observation = {**arrival, **self.origin_observation(request, phase, protected)}
+            self.observe_origin_peer(channel, phase, protected, observation)
             if urlsplit(pieces[1].decode('ascii')).path == '/owned-stream':
-                self.ledger.record('origin-stream', phase=phase, throughOwnedUpstream=protected)
+                self.ledger.record('origin-stream', phase=phase, throughOwnedUpstream=protected, **observation)
                 channel.sendall(b'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nCache-Control: no-store\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n')
                 until = time.monotonic() + 180
                 first = True
@@ -210,9 +227,9 @@ class Fixture:
                             (self.root / 'cut-upstream').touch(mode=0o600)
                             self.ledger.record('automatic-cut-armed', phase=phase)
                 channel.sendall(b'0\r\n\r\n'); return
-            self.ledger.record('origin', phase=phase, throughOwnedUpstream=protected)
+            self.ledger.record('origin', phase=phase, throughOwnedUpstream=protected, **observation)
             label = 'OWNED PROXY ROUTE' if protected else 'OWNED DIRECT CONTROL'
-            links = ''.join('<p><a href="' + self.url(p) + '">' + p + '</a></p>' for p in PHASES)
+            links = ''.join('<p><a href="' + self.url(p) + '">' + p + '</a></p>' for p in self.navigation_phases())
             stream = ''
             if phase == 'proxy-success':
                 target = self.url(phase).replace('/owned-route?', '/owned-stream?')
@@ -280,6 +297,10 @@ class Fixture:
             owned_tls = self.owned_https and host == 'browser.free' and port == 443 and forwarded is None
             if not (local or owned_tls or host in self.public_tls_hosts and port == 443 and forwarded is None):
                 raise ValueError('destination-not-owned-or-allowlisted')
+            context = self.begin_owned_request(host, port) if local else {}
+            if local: self.observe_proxy_peer(context, client)
+            if local and forwarded is not None:
+                self.validate_owned_request(context, path)
             if (local or owned_tls) and (self.root / 'drop-upstream').exists():
                 self.ledger.record('upstream-refused', purpose='owned-https' if owned_tls else 'local-http', phase=self.https_phase() if owned_tls else None)
                 answer(client, b'502 Bad Gateway', b''); return
@@ -297,7 +318,8 @@ class Fixture:
                 phase = self.phase(local_target)
                 callback_target = self.owned_https and urlsplit(local_target).path == '/__neantik_route/ack'
                 if phase is None and not callback_target: raise ValueError('owned-nonce')
-                forwarded = forwarded[:-2] + b'X-NeAntik-Owned-Hop: ' + self.hop.encode() + b'\r\n\r\n'
+                self.validate_owned_request(context, local_target)
+                forwarded = forwarded[:-2] + b'X-NeAntik-Owned-Hop: ' + self.hop.encode() + b'\r\n' + self.owned_request_headers(context) + b'\r\n'
                 upstream.sendall(forwarded)
                 self.ledger.record('upstream-http', phase=phase, stream=urlsplit(local_target).path == '/owned-stream', ownedHTTPSCallback=callback_target)
             elif owned_tls:
@@ -420,6 +442,20 @@ def seed_profiles(executable, data_root, urls):
         if process.poll() is None: process.terminate(); process.wait(5)
 
 
+def read_control_lines(fd, pending):
+    """Consume available bytes, never block waiting for an operator newline."""
+    raw = os.read(fd, 1025)
+    if not raw: raise EOFError()
+    pending.extend(raw)
+    lines = []
+    while b'\n' in pending:
+        end = pending.index(b'\n')
+        if end > 1024: raise ValueError('control-line-bound')
+        lines.append(bytes(pending[:end])); del pending[:end + 1]
+    if len(pending) > 1024: raise ValueError('control-line-bound')
+    return lines
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--app', type=Path, required=True)
@@ -427,7 +463,11 @@ def main():
     parser.add_argument('--output', type=Path, required=True, help='new private output directory')
     parser.add_argument('--duration', type=int, default=900)
     parser.add_argument('--owned-https', action='store_true', help='fixed browser.free signed response; no custom endpoint/trust override')
+    parser.add_argument('--controlled-dns', action='store_true', help='linked upstream UDP DNS; separate manager DNS analysis')
+    parser.add_argument('--allow-manager-preflight', action='store_true', help='only with controlled DNS: permit existing exact GeoIP TLS hosts')
     args = parser.parse_args()
+    if args.controlled_dns and args.owned_https or args.allow_manager_preflight and not args.controlled_dns:
+        parser.error('DNS/HTTPS fixture modes cannot be combined; preflight opt-in requires DNS mode')
     if not 60 <= args.duration <= 1800: raise ValueError('duration-bound')
     app = args.app.resolve(); executable = app / 'Contents/MacOS/NeAntik'
     metadata = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
@@ -444,10 +484,17 @@ def main():
     root = Path('/private/tmp/neantik-update-audit-' + str(uuid.uuid4())); root.mkdir(mode=0o700)
     copied_manifest = root / 'candidate-manifest.json'; shutil.copyfile(args.candidate_manifest, copied_manifest); copied_manifest.chmod(0o600)
     data = root / 'manager-data'; data.mkdir(mode=0o700)
-    fixture = Fixture(root, owned_https=args.owned_https); manager = None
+    if args.controlled_dns:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('owned_manager_dns', Path(__file__).with_name('manager-dns-fixture.py'))
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+        fixture = module.ManagerDNSFixture(root, allow_manager_preflight=args.allow_manager_preflight)
+    else:
+        fixture = Fixture(root, owned_https=args.owned_https)
+    manager = None
     cleanup = None
     try:
-        urls = {phase: fixture.url(phase) for phase in PHASES}
+        urls = {phase: fixture.url(phase) for phase in fixture.navigation_phases()}
         https_urls = {phase: fixture.https_url(phase) for phase in PHASES} if args.owned_https else None
         if args.owned_https:
             (root / 'https-phase').write_text('proxy-success'); (root / 'https-phase').chmod(0o600)
@@ -458,16 +505,42 @@ def main():
         state['fixtureSHA256'] = digest(Path(__file__))
         state['candidateManifestSHA256'] = digest(copied_manifest)
         state['httpsURLs'] = https_urls
+        if args.controlled_dns:
+            state['dnsFixture'] = fixture.description()
+            state['dnsFixtureSHA256'] = digest(Path(__file__).with_name('manager-dns-fixture.py'))
+            state['dnsWireFixtureSHA256'] = digest(Path(__file__).with_name('controlled-dns-fixture.py'))
         with (root / 'manager.log').open('wb') as log:
             os.chmod(root / 'manager.log', 0o600)
             manager = subprocess.Popen([str(executable), '--neantik-release-update-audit', '--candidate-manifest',
                 str(copied_manifest).replace('/private/tmp/', '/tmp/'), '--output', state['output']], stdout=log, stderr=log, start_new_session=True)
             state['managerPID'] = manager.pid
+            if args.controlled_dns:
+                peer_spec = importlib.util.spec_from_file_location('owned_manager_peer_custody', Path(__file__).with_name('collect-manager-dns.py'))
+                peer_module = importlib.util.module_from_spec(peer_spec); peer_spec.loader.exec_module(peer_module)
+                fixture.peer_inspector = lambda channel, direct: peer_module.socket_peer(state, root, channel, direct=direct)
             private_json(output / 'private-state.json', state)
             print(json.dumps(dict(stage='manager-process-spawned', ownedPID=manager.pid, syntheticProfiles=2,
                                   authenticatedGUIVerified=False, authorityEnrollmentPerformedByFixture=False)), flush=True)
             deadline = time.monotonic() + args.duration
-            while manager.poll() is None and not (root / 'finish-fixture').exists() and time.monotonic() < deadline: time.sleep(.25)
+            pending_control = bytearray()
+            stop_control = False
+            while manager.poll() is None and not (root / 'finish-fixture').exists() and time.monotonic() < deadline:
+                if not args.controlled_dns:
+                    time.sleep(.25); continue
+                if select.select([sys.stdin], [], [], .25)[0]:
+                    try:
+                        for line in read_control_lines(sys.stdin.fileno(), pending_control):
+                            command = json.loads(line)
+                            if set(command) != {'action'}: raise ValueError('control-fields')
+                            if command['action'] == 'stop':
+                                stop_control = True; break
+                            response = fixture.apply_control(command['action'])
+                            print(json.dumps(dict(stage='dns-control', **response)), flush=True)
+                    except EOFError: break
+                    except (ValueError, TypeError, OSError):
+                        pending_control.clear()
+                        print(json.dumps(dict(stage='dns-control-refused')), flush=True)
+                    if stop_control: break
             if manager.poll() is None: manager.terminate(); manager.wait(10)
         state['managerExitCode'] = manager.returncode
         private_json(output / 'private-state.json', state)

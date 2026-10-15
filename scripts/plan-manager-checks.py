@@ -35,8 +35,11 @@ FEATURES = [
 # Reviewed stdlib-only harness boundaries. These do not link Swift or share
 # production code. Changes outside this explicit map remain conservative.
 STANDALONE_HARNESSES = {
-    'scripts/runtime-network/manager-route-fixture.py': ('scripts.tests.test_shipping_manager_route_fixture', 'scripts.tests.test_controlled_dns_fixture'),
-    'scripts/runtime-network/controlled-dns-fixture.py': 'scripts.tests.test_controlled_dns_fixture',
+    'scripts/runtime-network/manager-route-fixture.py': ('scripts.tests.test_shipping_manager_route_fixture', 'scripts.tests.test_controlled_dns_fixture', 'scripts.tests.test_manager_dns_fixture'),
+    'scripts/runtime-network/controlled-dns-fixture.py': ('scripts.tests.test_controlled_dns_fixture', 'scripts.tests.test_manager_dns_fixture'),
+    'scripts/runtime-network/manager-dns-fixture.py': 'scripts.tests.test_manager_dns_fixture',
+    'scripts/runtime-network/collect-manager-dns.py': ('scripts.tests.test_manager_dns_custody', 'scripts.tests.test_manager_dns_analysis'),
+    'scripts/runtime-network/analyze-manager-dns.py': 'scripts.tests.test_manager_dns_analysis',
     'scripts/runtime-network/analyze-controlled-dns.py': 'scripts.tests.test_controlled_dns_analysis',
     'scripts/runtime-network/run-controlled-dns.mjs': 'scripts.tests.test_controlled_dns_analysis',
     'scripts/runtime-network/analyze-manager-route.py': 'scripts.tests.test_shipping_manager_route_analysis',

@@ -74,3 +74,10 @@ stderr. Реальные curl/Python controls проверены. CI ловит 
 сертификат с точечным тестовым SPKI; это не проверка обычного доверия HTTPS-upstream.
 Следующий срез — manager/relay integration; глобальные DNS/UDP и все19–22
 остаются открытыми. Описание — в [Network Reality Harness](NETWORK_REALITY_HARNESS.md).
+
+Manager DNS producer, чтение реальной custody и отдельный анализатор теперь
+реализованы в исходных инструментах. Контроли ловят подмену локального клиента,
+аргументов маршрута, сессии/revision и Direct-обход даже при отказе стенда
+обслужить запрос. Это ещё не manager DNS PASS: первый штатный запуск Chromium
+на опубликованной127 отклонён защитой от memory warning. Продолжение требует
+normal admission; бинарные release gates127 повторно не открываются.
