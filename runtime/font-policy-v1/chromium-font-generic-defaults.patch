@@ -1,0 +1,93 @@
+diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
+--- a/third_party/blink/renderer/platform/BUILD.gn
++++ b/third_party/blink/renderer/platform/BUILD.gn
+@@ -712,6 +712,7 @@
+     "fonts/font_width_variant.h",
+     "fonts/generic_font_family_settings.cc",
+     "fonts/generic_font_family_settings.h",
++    "fonts/neantik_system_generic_defaults.h",
+     "fonts/glyph_metrics_map.h",
+     "fonts/ift/ift_patcher.cc",
+     "fonts/ift/ift_patcher.h",
+diff --git a/third_party/blink/renderer/platform/fonts/generic_font_family_settings.cc b/third_party/blink/renderer/platform/fonts/generic_font_family_settings.cc
+--- a/third_party/blink/renderer/platform/fonts/generic_font_family_settings.cc
++++ b/third_party/blink/renderer/platform/fonts/generic_font_family_settings.cc
+@@ -33,8 +33,40 @@
+ #include <memory>
+ 
+ #include "third_party/blink/renderer/platform/fonts/font_cache.h"
++#include "third_party/blink/renderer/platform/fonts/neantik_system_generic_defaults.h"
++
++#include "build/build_config.h"
++#if BUILDFLAG(IS_MAC)
++#include "components/ungoogled/system_font_policy_mac.h"
++#endif
+ 
+ namespace blink {
++
++// Shared/service workers have no document from which to inherit generic maps.
++// Only the explicit, seeded development policy supplies Chrome macOS defaults.
++// Existing COMMON/per-script mappings and downloaded font resources survive.
++void ApplySystemFontPolicyGenericDefaultsIfEmpty(
++    GenericFontFamilySettings& settings) {
++#if BUILDFLAG(IS_MAC)
++  if (!ungoogled::nevision::SystemFontPolicyV1Enabled())
++    return;
++  if (settings.Standard().empty())
++    settings.UpdateStandard(AtomicString("Times"));
++  if (settings.Fixed().empty())
++    settings.UpdateFixed(AtomicString("Menlo"));
++  if (settings.Serif().empty())
++    settings.UpdateSerif(AtomicString("Times"));
++  if (settings.SansSerif().empty())
++    settings.UpdateSansSerif(AtomicString("Helvetica"));
++  if (settings.Cursive().empty())
++    settings.UpdateCursive(AtomicString("Apple Chancery"));
++  if (settings.Fantasy().empty())
++    settings.UpdateFantasy(AtomicString("Papyrus"));
++  if (settings.Math().empty())
++    settings.UpdateMath(AtomicString("STIX Two Math"));
++#endif
++}
++
+ 
+ GenericFontFamilySettings::GenericFontFamilySettings(
+     const GenericFontFamilySettings& other)
+diff --git a/third_party/blink/renderer/core/workers/worker_settings.cc b/third_party/blink/renderer/core/workers/worker_settings.cc
+--- a/third_party/blink/renderer/core/workers/worker_settings.cc
++++ b/third_party/blink/renderer/core/workers/worker_settings.cc
+@@ -5,6 +5,7 @@
+ #include "third_party/blink/renderer/core/workers/worker_settings.h"
+ 
+ #include "third_party/blink/renderer/core/frame/settings.h"
++#include "third_party/blink/renderer/platform/fonts/neantik_system_generic_defaults.h"
+ 
+ namespace blink {
+ 
+@@ -24,7 +25,9 @@
+       allow_running_of_insecure_content_(allow_running_of_insecure_content),
+       strictly_block_blockable_mixed_content_(
+           strictly_block_blockable_mixed_content),
+-      generic_font_family_settings_(generic_font_family_settings) {}
++      generic_font_family_settings_(generic_font_family_settings) {
++  ApplySystemFontPolicyGenericDefaultsIfEmpty(generic_font_family_settings_);
++}
+ 
+ std::unique_ptr<WorkerSettings> WorkerSettings::Copy(
+     WorkerSettings* old_settings) {
+diff --git a/third_party/blink/renderer/platform/fonts/neantik_system_generic_defaults.h b/third_party/blink/renderer/platform/fonts/neantik_system_generic_defaults.h
+new file mode 100644
+--- /dev/null
++++ b/third_party/blink/renderer/platform/fonts/neantik_system_generic_defaults.h
+@@ -0,0 +1,11 @@
++// Copyright 2026 NeAntik Authors. SPDX-License-Identifier: MPL-2.0
++#ifndef THIRD_PARTY_BLINK_RENDERER_PLATFORM_FONTS_NEANTIK_SYSTEM_GENERIC_DEFAULTS_H_
++#define THIRD_PARTY_BLINK_RENDERER_PLATFORM_FONTS_NEANTIK_SYSTEM_GENERIC_DEFAULTS_H_
++#include "third_party/blink/renderer/platform/platform_export.h"
++namespace blink {
++class GenericFontFamilySettings;
++// Opt-in COMMON defaults for standalone workers; not document preferences.
++PLATFORM_EXPORT void ApplySystemFontPolicyGenericDefaultsIfEmpty(
++    GenericFontFamilySettings& settings);
++}  // namespace blink
++#endif

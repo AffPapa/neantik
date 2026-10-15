@@ -208,3 +208,24 @@ only for exact zero-spacing/lowercase equivalents; raw observations are kept.
 Negative tests catch leakage in either default or matched typography.
 No manager activation, ordinary Chrome comparison, full nine-context font gate
 or released font-policy claim follows from this result.
+
+
+### Standalone worker generic defaults — separate successor
+
+`chromium-font-generic-defaults.json` is a frozen prepared input, not current
+build status. Its four-file patch fills seven empty COMMON generic defaults
+only for explicit system-v1 and a valid seed. Existing/per-script mappings are
+preserved. It uses macOS defaults from the hash-pinned Chromium resource;
+it does not claim full localized/custom preference propagation.
+
+Two C++ objects were rebuilt in188seconds. A separately signed successor passed
+four headed modes in the font-only nine-context fixture: eight drawing realms,
+AudioWorklet API absence plus actual processing, independent creation/destruction,
+OOPIF parent/context binding, real about:blank, and A→B→A. Native Shared/SW empty-map
+fallback differences remain an observed negative, never a native coherence PASS.
+[Exact scope](../../docs/evidence/font-nine-context-development.json).
+
+`run-font-contexts.mjs` requires all five source contracts and the exact signed
+code/full-tree closure. The original four-contract fixture and prior receipts
+remain intact. This is research qualification, not manager activation or release.
+Font Access, style/collection coverage and exact candidate gates remain open.
