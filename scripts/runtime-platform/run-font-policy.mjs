@@ -12,6 +12,7 @@ import {browserFixtureEnvironment} from './fixtures/qa-browser-environment.mjs';
 import {createFontPolicyFixture} from './fixtures/font-policy-fixture.mjs';
 import {checkFontSession,checkFontABA} from './fixtures/font-policy-semantics.mjs';
 import {verifyMachOClosure} from './fixtures/font-runtime-closure.mjs';
+import {consumeFontWarningPhase,assessFontAdmission} from './fixtures/font-headed-admission.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const digest=file=>sha(fs.readFileSync(file));
@@ -117,12 +118,12 @@ function inventory(group,app) {
   }
   return found;
 }
-export async function main(app,bindingFile,out) {
+export async function main(app,bindingFile,out,warningApprovalFile=null) {
   assert([app,bindingFile,out].every(path.isAbsolute));
   const info=fs.lstatSync(out);assert(info.isDirectory()&&!info.isSymbolicLink()&&info.uid===process.getuid()&&(info.mode&0o077)===0&&fs.readdirSync(out).length===0);
   const binding=JSON.parse(fs.readFileSync(bindingFile)),runtime=inspectRuntime(app,binding);
   assert.equal(inventory(-1,app).length,0,'Research runtime already in use');
-  const sources=[fileURLToPath(import.meta.url),path.join(here,'fixtures/font-policy-fixture.mjs'),path.join(here,'fixtures/font-policy-realm.js'),path.join(here,'fixtures/font-policy-semantics.mjs'),path.join(here,'fixtures/font-runtime-closure.mjs'),path.join(here,'fixtures/qa-browser-environment.mjs'),path.join(here,'run-https-identity.mjs'),path.join(here,'../runtime-network/run-controlled-dns.mjs'),closureTool,path.join(here,'../../runtime/font-policy-v1/chromium-font-witness.json')];
+  const sources=[fileURLToPath(import.meta.url),path.join(here,'fixtures/font-policy-fixture.mjs'),path.join(here,'fixtures/font-policy-realm.js'),path.join(here,'fixtures/font-policy-semantics.mjs'),path.join(here,'fixtures/font-runtime-closure.mjs'),path.join(here,'fixtures/font-headed-admission.mjs'),path.join(here,'../native-qa-readiness.py'),path.join(here,'fixtures/qa-browser-environment.mjs'),path.join(here,'run-https-identity.mjs'),path.join(here,'../runtime-network/run-controlled-dns.mjs'),closureTool,path.join(here,'../../runtime/font-policy-v1/chromium-font-witness.json')];
   const pins=Object.fromEntries(sources.map((file,index)=>[String(index),digest(file)]));
   const report={schemaVersion:1,status:'incomplete',actualBrowser:false,scope:'research headed page/worker font operations;not all-nine-context or manager/release qualification',bindingSHA256:digest(bindingFile),runtime:{version:binding.version,executableSHA256:runtime.executableSHA256,frameworkSHA256:runtime.frameworkSHA256,closureSHA256:runtime.closureSHA256},sources:pins,headed:true,sessions:[],admission:[],cleanup:null};
   fs.mkdirSync(path.join(out,'sources'),{mode:0o700});sources.forEach((file,index)=>fs.copyFileSync(file,path.join(out,'sources',index+'-'+path.basename(file))));
@@ -131,11 +132,13 @@ export async function main(app,bindingFile,out) {
   const watchdog=setTimeout(()=>{report.deadlineExceeded=true;if(activeChild?.pid&&activeChild.exitCode===null&&activeChild.signalCode===null)activeChild.kill('SIGTERM');},300000);
   watchdog.unref();
   try {
+    const phase=warningApprovalFile===null?null:consumeFontWarningPhase(warningApprovalFile,{bindingSHA256:report.bindingSHA256,controllerSHA256:pins['0']});
+    if(phase)report.warningException={approvalSHA256:digest(warningApprovalFile),scope:phase.scope,expiresAt:phase.expiresAt};
     for(const mode of modes) {
       assert(Date.now()<deadline,'Finite headed stage deadline exceeded');
       const ready=spawnSync('python3',['-B',path.join(here,'../native-qa-readiness.py'),'--check'],{encoding:'utf8'});
-      const gate=JSON.parse(ready.stdout);report.admission.push({mode,exitCode:ready.status,readiness:gate});
-      if(ready.status!==0||gate.eligibleForAttempt!==true){report.status='resource-blocked';throw Error('ResourceAdmission');}
+      const gate=JSON.parse(ready.stdout),decision=assessFontAdmission(ready.status,gate,phase);report.admission.push({mode,exitCode:ready.status,readiness:gate,decision});
+      if(!decision.allowed){report.status='resource-blocked';throw Error('ResourceAdmission');}
       if(!fixture)fixture=await createFontPolicyFixture({browserCustody:(client,port)=>browserSocketCustody(client,port,owner)});
       const previous=mode==='policy-a-repeat'?roots.get('policy-a'):null;
       const state=fixture.begin(previous?.nonce),root=previous?.root??('/private/tmp/neantik-font-policy-qa.'+state.nonce);
@@ -214,6 +217,6 @@ export async function main(app,bindingFile,out) {
   return report;
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
-  assert.equal(process.argv.length,5,'Usage: node run-font-policy.mjs OWN_SIGNED_RUNTIME RESEARCH_BINDING FRESH_PRIVATE_OUTPUT');
+  assert([5,6].includes(process.argv.length),'Usage: node run-font-policy.mjs OWN_SIGNED_RUNTIME RESEARCH_BINDING FRESH_PRIVATE_OUTPUT [EXPLICIT_ONE_SHOT_WARNING_APPROVAL]');
   main(...process.argv.slice(2)).catch(()=>{console.error('Owned font fixture setup failed; no identities or logs emitted');process.exitCode=1;});
 }

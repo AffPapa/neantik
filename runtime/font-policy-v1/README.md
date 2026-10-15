@@ -167,3 +167,11 @@ synthetic controls prove the analyzer rejects missing contexts, truncated
 results, local-font leakage, broken rendering and changed A results. They are
 not runtime results. This fixture alone does not cover all nine contexts,
 Font Access permissions, custom collections or the full release gate.
+
+Native admission remains fail closed. A research operator may supply an
+explicitly approved, private one-shot warning-phase record bound to this exact
+controller and runtime binding. It is atomically consumed, expires within five
+minutes and admits only the five declared modes. Critical/unknown pressure and
+serious/unknown thermal state still refuse. This does not change manager
+admission or turn a failed observation into PASS; no such permission record is
+created from a previous CoreText-only approval.
