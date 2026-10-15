@@ -39,6 +39,8 @@ struct NeAntikHelpCommands: Commands {
 
 struct NeAntikHelpWindow: View {
     @ObservedObject var navigation: HelpNavigation
+    @ObservedObject var guiControl: MCPGUIControlCoordinator
+    @ObservedObject var store: ProfileStore
     let connection: MCPConnectionConfiguration
     @State private var search = ""
     @State private var client = MCPClient.claudeDesktop
@@ -123,6 +125,7 @@ struct NeAntikHelpWindow: View {
                     Toggle("Только просмотр — без изменений и запуска", isOn: Binding(
                         get: { !allowsManagement }, set: { allowsManagement = !$0 }))
                 }
+                MCPGUIControlPanel(control: guiControl, store: store)
                 Picker("AI-клиент", selection: $client) {
                     ForEach(MCPClient.allCases) { Text($0.title).tag($0) }
                 }.pickerStyle(.menu)
@@ -135,6 +138,8 @@ struct NeAntikHelpWindow: View {
                     NSPasteboard.general.clearContents()
                     copied = NSPasteboard.general.setString(selectedConnection.configuration(for: client), forType: .string)
                 }
+                .accessibilityLabel(Text(copied ? "Настройка скопирована" : "Скопировать настройку MCP"))
+                .accessibilityIdentifier("mcp-copy-configuration")
                 Link("Официальная инструкция клиента", destination: client.source)
                 Text("Найти профиль, создать его по сохранённому шаблону, поменять стартовую страницу или открыть браузер — можно обычным запросом в чате. Управление: \(MCPProfileManagement.allTools.count) инструментов; только просмотр: \(MCPProfileManagement.readTools.count + 2). Работа каждой версии стороннего клиента отдельно не подтверждена.")
                     .font(.callout)

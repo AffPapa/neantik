@@ -11,6 +11,7 @@ struct NeAntikApp: App {
     @StateObject private var updateController: ApplicationUpdateController
     @StateObject private var store: ProfileStore
     @StateObject private var processes: BrowserProcessManager
+    @StateObject private var mcpGUI: MCPGUIControlCoordinator
     @StateObject private var telemetry: TelemetryController
     @StateObject private var fingerprintObservationStore:
         FingerprintObservationStore
@@ -205,8 +206,16 @@ struct NeAntikApp: App {
         } catch {
             Self.writeControlErrorAndExit("Не удалось подтвердить временное хранилище браузера для проверки выпуска.\n", code: EX_NOPERM)
         }
-        _store = StateObject(wrappedValue: ProfileStore(paths: paths))
-        _processes = StateObject(wrappedValue: BrowserProcessManager(paths: paths, releaseAuditBrowserIsolation: browserIsolation))
+        let profileStore = ProfileStore(paths: paths)
+        let processManager = BrowserProcessManager(paths: paths, releaseAuditBrowserIsolation: browserIsolation)
+        _store = StateObject(wrappedValue: profileStore)
+        _processes = StateObject(wrappedValue: processManager)
+        let guiControl = MCPGUIControlCoordinator(store: profileStore, processes: processManager)
+        _mcpGUI = StateObject(wrappedValue: guiControl)
+        // Help can be restored without a main window. Quit must still drain
+        // the same GUI-owned windows and control endpoint.
+        NeAntikApplicationDelegate.processes = processManager
+        NeAntikApplicationDelegate.mcpGUI = guiControl
         _telemetry = StateObject(
             wrappedValue: TelemetryController(edition: .direct)
         )
@@ -249,7 +258,6 @@ struct NeAntikApp: App {
                 .frame(width: 0, height: 0)
             }
             .onAppear {
-                NeAntikApplicationDelegate.processes = processes
                 NativeMenuLocalization.applyAfterMenuCreation()
             }
             .onReceive(
@@ -282,6 +290,8 @@ struct NeAntikApp: App {
         Window("Справка NeAntik", id: "help") {
             NeAntikHelpWindow(
                 navigation: helpNavigation,
+                guiControl: mcpGUI,
+                store: store,
                 connection: MCPConnectionConfiguration(
                     executable: Bundle.main.executableURL ?? URL(fileURLWithPath: CommandLine.arguments[0]),
                     dataRoot: store.paths.rootDirectory

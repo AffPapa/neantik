@@ -14,14 +14,14 @@ enum BrowserEngine: String, Codable, CaseIterable, Identifiable, Sendable {
         let configuredEngine = self == .chromium
         return ["persistentSiteData": true,
                 "fingerprintConfiguration": configuredEngine,
-                "proxy": configuredEngine, "mcpLaunch": configuredEngine,
+                "proxy": configuredEngine, "mcpLaunch": true,
                 "extensions": configuredEngine, "browserDataBackup": configuredEngine]
     }
 
     var settingsSummary: String {
         self == .chromium
             ? "Встроенный Chromium: изолированные профили, прокси и параметры браузерного окружения."
-            : "Системный WebKit в окне NeAntik: отдельные cookies, данные сайтов и вкладки. Отпечаток, язык и часовой пояс берутся из macOS; подмена этих параметров не поддерживается. Для настройки окружения, прокси, расширений и запуска через AI выбери Chromium."
+            : "Системный WebKit в окне NeAntik: отдельные cookies, данные сайтов и вкладки. Отпечаток, язык и часовой пояс берутся из macOS; подмена этих параметров не поддерживается. Для запуска через AI включи доступ WebKit в справке MCP и разреши выбранные профили. Для настройки окружения, прокси и расширений выбери Chromium."
     }
 }
 
@@ -175,6 +175,8 @@ private final class WebKitBrowserTab {
 @MainActor
 final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDelegate, NSTextFieldDelegate {
     let profileID: UUID
+    /// Identifies this window lifetime, never a persisted profile identity.
+    let sessionGeneration: UUID
     private(set) var webView: WKWebView
     private let dataStore: WKWebsiteDataStore
     private let mediaPolicy: WebKitMediaPolicy
@@ -188,6 +190,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     private var order: WebKitTabOrder
     private var tabs: [UUID: WebKitBrowserTab]
     private var isClosed = false
+    private var closeRequested = false
     private var commandMonitor: Any?
     private var lease: PrivateFileGuardLease?
     private var metadataLease: PrivateFileGuardLease?
@@ -209,6 +212,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     var selectedTabIndex: Int { order.ids.firstIndex(of: order.selected) ?? 0 }
 
     init(profile: BrowserProfile, lease: PrivateFileGuardLease, metadataLease: PrivateFileGuardLease,
+         sessionGeneration: UUID = UUID(),
          downloadPicker: WebKitDownloads.Picker? = nil,
          sessionStore: WebKitSessionStore? = nil, restoredSession: WebKitSessionSnapshot? = nil,
          sessionWarning: String? = nil, onSessionSaveError: (() -> Void)? = nil,
@@ -217,6 +221,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         if profile.startupMode == .restoreSession, sessionStore == nil { throw WebKitSessionError.unavailable }
         if let restoredSession { try restoredSession.validate(for: profile.id) }
         profileID = profile.id
+        self.sessionGeneration = sessionGeneration
         mediaPolicy = profile.webKitMediaPolicy
         restoresSession = profile.startupMode == .restoreSession
         self.sessionNotice = sessionWarning; self.onSessionSaveError = onSessionSaveError
@@ -414,8 +419,16 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     func show() { guard !isClosed else { return }; window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
     /// Manager Stop closes the entire profile, whereas Command-W closes a tab.
     func close() {
-        if !isClosed { window.performClose(nil) }
-        else if sessionWriteFailed, let pendingSnapshot { beginSessionSave(pendingSnapshot) }
+        if !isClosed {
+            guard !closeRequested else { return }
+            closeRequested = true
+            // AppKit ignores performClose while NSSavePanel owns a sheet.
+            // Cancel our producers/panel first, then close after real settlement.
+            downloads.close { [weak self] in
+                guard let self, !self.isClosed else { return }
+                self.window.performClose(nil)
+            }
+        } else if sessionWriteFailed, let pendingSnapshot { beginSessionSave(pendingSnapshot) }
     }
     func focusAddress() { if !isClosed { window.makeFirstResponder(address); address.selectText(nil) } }
     fileprivate func handleCommand(_ event: NSEvent) -> Bool {

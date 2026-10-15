@@ -8,6 +8,7 @@ enum MCPOutputSchemas {
         let nullable: [String: Any] = ["type": ["string", "null"]]
         let revision: [String: Any] = ["type": "string", "pattern": "^(0|[1-9][0-9]*)$"]
         let boolean: [String: Any] = ["type": "boolean"]
+        let webKitState: [String: Any] = ["type": "string", "enum": ["managed", "stopPending", "stopped", "saveFailed", "notOwned", "ownershipLost"]]
         let count: [String: Any] = ["type": "integer", "minimum": 0]
         let state: [String: Any] = ["type": "string", "enum": ["managed", "stopped", "checking", "externalManualOnly", "externalUnverified", "recoveryRequired"]]
         let folder = object(["id": uuid, "name": text])
@@ -48,9 +49,9 @@ enum MCPOutputSchemas {
                 "relayTransport": ["oneOf": [transport, object(["state": ["type": "string", "const": "notObserved"]])]]
             ])
             return object(["profileID": uuid, "processState": state, "revision": revision,
-                           "observation": observation], optional: ["revision", "observation"])
+                           "observation": observation, "webKitState": webKitState], optional: ["revision", "observation", "webKitState"])
         }
-        if name == "profile_stop" { return object(["profileID": uuid, "processState": state, "stopRequested": boolean]) }
+        if name == "profile_stop" { return object(["profileID": uuid, "processState": state, "stopRequested": boolean, "webKitState": webKitState], optional: ["webKitState"]) }
         if name == "profile_start" { return object(["profileID": uuid, "processState": state, "revision": revision]) }
         if name == "profile_check_proxy" { return object(["profileID": uuid, "outcome": text, "chromiumRoute": ["type": "string", "const": "unverified"]]) }
         return object(["id": uuid, "revision": revision, "name": text, "startURL": text, "startupMode": ["type": "string", "enum": BrowserStartupMode.allCases.map(\.rawValue)], "engine": ["type": "string", "enum": BrowserEngine.allCases.map(\.rawValue)], "webKitMediaPolicy": ["type": ["string", "null"], "enum": WebKitMediaPolicy.allCases.map { $0.rawValue as Any } + [NSNull()]], "tags": ["type": "array", "items": text], "isPinned": boolean, "isArchived": boolean,

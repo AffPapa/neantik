@@ -593,6 +593,10 @@ final class BrowserProcessManager: ObservableObject {
     @Published var lastError: String?
 
     private var webKitBrowsers: [UUID: WebKitProfileBrowser] = [:]
+    /// GUI lifecycle only. Emitted after session writes and downloads settle.
+    var webKitDidClose: ((UUID, UUID) -> Void)?
+    func webKitGeneration(profileID: UUID) -> UUID? { webKitBrowsers[profileID]?.sessionGeneration }
+    func webKitSaveFailed(profileID: UUID) -> Bool { webKitBrowsers[profileID]?.sessionWriteFailed == true }
     private var webKitQuitPending = false
     @Published private(set) var webKitMaintenanceProfileIDs = Set<UUID>()
     var hasPendingWebKitWork: Bool { hasOpenWebKitProfiles || !webKitMaintenanceProfileIDs.isEmpty }
@@ -2565,7 +2569,7 @@ final class BrowserProcessManager: ObservableObject {
         return valid && sessionObservationIsCurrent(observation, profileID: profileID)
     }
 
-    func launchWebKitProfile(_ profile: BrowserProfile) throws {
+    @discardableResult func launchWebKitProfile(_ profile: BrowserProfile) throws -> UUID {
         if webKitTerminationObservation == nil {
             webKitTerminationObservation = NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)
                 .sink { [weak self] _ in
@@ -2582,6 +2586,7 @@ final class BrowserProcessManager: ObservableObject {
         do {
             let metadataLease = try paths.acquireWebKitMetadataGuard(for: profile.id)
             let sessionStore = WebKitSessionStore(paths: paths)
+            let generation = UUID()
             let makeBrowser = { [weak self] in
                 // Reconciliation can lag after a crash. The held process and
                 // metadata guards must check the fence before any WKWebView.
@@ -2592,11 +2597,13 @@ final class BrowserProcessManager: ObservableObject {
                     catch { warning = "Сохранённые вкладки недоступны. Открыта стартовая страница; другие профили не изменены." }
                 }
                 return try WebKitProfileBrowser(profile: profile, lease: lease, metadataLease: metadataLease,
-                    sessionStore: sessionStore, restoredSession: restored, sessionWarning: warning,
+                    sessionGeneration: generation, sessionStore: sessionStore, restoredSession: restored, sessionWarning: warning,
                     onSessionSaveError: { [weak self] in self?.lastError = Self.webKitSessionSaveFailureMessage }) { [weak self] in
-                self?.webKitBrowsers.removeValue(forKey: profile.id)
-                self?.runningProfileIDs.remove(profile.id)
-                if let self, !self.hasFailedWebKitSessionSave, self.lastError == Self.webKitSessionSaveFailureMessage { self.lastError = nil }
+                guard let self, self.webKitBrowsers[profile.id]?.sessionGeneration == generation else { return }
+                self.webKitBrowsers.removeValue(forKey: profile.id)
+                self.runningProfileIDs.remove(profile.id)
+                if !self.hasFailedWebKitSessionSave, self.lastError == Self.webKitSessionSaveFailureMessage { self.lastError = nil }
+                self.webKitDidClose?(profile.id, generation)
                 }
             }
             let browser = try validatesPersistedProfiles
@@ -2605,6 +2612,7 @@ final class BrowserProcessManager: ObservableObject {
             webKitBrowsers[profile.id] = browser
             runningProfileIDs.insert(profile.id)
             browser.show()
+            return generation
         } catch { lease.release(); throw error }
     }
 

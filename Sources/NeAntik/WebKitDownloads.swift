@@ -115,7 +115,7 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
     private weak var window: NSWindow?
     private let picker: Picker?
     private var closing = false
-    private var onDrained: (() -> Void)?
+    private var drainCallbacks: [() -> Void] = []
     private var progressRefresh: Task<Void, Never>?
     private let popover = NSPopover()
     private let rows = WebKitDownloadRows()
@@ -255,15 +255,18 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
         notifyDrained()
     }
     private func notifyDrained() {
-        if closing && activeCount == 0 { let callback = onDrained; onDrained = nil; callback?() }
+        guard closing, activeCount == 0 else { return }
+        let callbacks = drainCallbacks; drainCallbacks.removeAll()
+        for callback in callbacks { callback() }
     }
     /// Release the profile leases only after download cancellation has settled.
     /// A timeout cannot prove that the network producer has stopped.
     func close(onDrained: @escaping () -> Void) {
-        guard !closing else { return }
+        drainCallbacks.append(onDrained)
+        if closing { notifyDrained(); return }
         closing = true; progressRefresh?.cancel(); progressRefresh = nil
-        popover.close(); self.onDrained = onDrained
-        if activeCount == 0 { self.onDrained = nil; onDrained(); return }
+        popover.close()
+        if activeCount == 0 { notifyDrained(); return }
         for item in transfers where item.active { cancel(item) }
     }
     private func item(_ download: WKDownload) -> Transfer? { transfers.first { $0.download === download } }

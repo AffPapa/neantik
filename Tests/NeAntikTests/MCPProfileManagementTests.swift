@@ -25,15 +25,15 @@ struct MCPProfileManagementTests {
         let capabilities = try #require(created["engineCapabilities"] as? [String: Bool])
         #expect(capabilities == BrowserEngine.webkit.managementCapabilities)
         #expect(capabilities["persistentSiteData"] == true)
-        #expect(capabilities["fingerprintConfiguration"] == false && capabilities["mcpLaunch"] == false && capabilities["proxy"] == false)
+        #expect(capabilities["fingerprintConfiguration"] == false && capabilities["mcpLaunch"] == true && capabilities["proxy"] == false)
         var args = request(created); args["changes"] = ["name": "Renamed WebKit", "tags": ["qa"]]
         var edited = try await engine.call("profile_update", args)
         #expect(edited["engine"] as? String == "webkit")
         args = request(edited); args["changes"] = ["startupMode": "restoreSession"]
         edited = try await engine.call("profile_update", args)
         #expect(edited["startupMode"] as? String == "restoreSession")
-        // Proxy and stdio GUI launch remain unsupported; enabling restore is
-        // a metadata capability and must not implicitly start a browser.
+        // Proxy remains unsupported; GUI-mediated launch still refuses without
+        // a live explicitly approved GUI connection. Metadata never launches.
         args = request(edited); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1]
         await #expect(throws: Error.self) { try await engine.call("profile_set_proxy", args) }
         args = request(edited); args["name"] = "WebKit copy"

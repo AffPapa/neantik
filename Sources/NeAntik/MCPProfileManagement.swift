@@ -10,9 +10,10 @@ final class MCPProfileManagement {
     let keychain: KeychainStore
     let health: ProxyHealthCoordinator
     let allowsManagement: Bool
+    private let gui: MCPGUIControlClient
 
     init(root: URL, allowsManagement: Bool, keychain: KeychainStore? = nil,
-         processes: BrowserProcessManager? = nil) {
+         processes: BrowserProcessManager? = nil, guiClient: MCPGUIControlClient? = nil) {
         let paths = AppPaths(rootDirectory: root)
         let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: Bundle.main.bundleIdentifier)
         self.keychain = keychain ?? KeychainStore.applicationStore(environment: environment, paths: paths)
@@ -20,7 +21,10 @@ final class MCPProfileManagement {
         self.processes = processes ?? BrowserProcessManager(paths: paths)
         health = ProxyHealthCoordinator(fileURL: paths.proxyHealthFile)
         self.allowsManagement = allowsManagement
+        gui = guiClient ?? MCPGUIControlClient(root: root)
     }
+
+    func disconnectGUI() { gui.close() }
 
     enum Failure: Error { case invalid, conflict, unavailable, running, proxyFailed, manualClose, denied, stopRefused, cursor, responseLimit }
 
@@ -54,7 +58,7 @@ final class MCPProfileManagement {
             ("folder_rename", "Rename a project folder using its current organization revision.", ["folderID": uuid, "name": text, "expectedOrganizationRevision": optionalUUID], ["folderID", "name", "expectedOrganizationRevision"]),
             ("folder_remove", "Remove only the folder; retain all profiles and website data, moving them to unfiled.", ["folderID": uuid, "expectedOrganizationRevision": optionalUUID], ["folderID", "expectedOrganizationRevision"]),
             ("profile_check_proxy", "Check proxy availability using existing bounded diagnostics; does not qualify Chromium route or change profile context.", ["profileID": uuid, "expectedRevision": revision], ["profileID", "expectedRevision"]),
-            ("profile_start", "Start Chromium via the normal manager pipeline; fresh proxy preparation, no direct fallback. Chromium remains open after MCP disconnect. WebKit requires the NeAntik GUI and is explicitly refused here.", ["profileID": uuid, "expectedRevision": revision], ["profileID", "expectedRevision"]),
+            ("profile_start", "Start Chromium via the normal pipeline, no direct fallback. WebKit requires an already open signed NeAntik GUI, enabled MCP WebKit access and explicit approval of this connection and selected profiles. First request asks for consent; retry intentionally after approval. Disconnect leaves browsers open. Never starts the GUI automatically.", ["profileID": uuid, "expectedRevision": revision], ["profileID", "expectedRevision"]),
             ("profile_stop", "Request graceful close of a browser owned by this live session. Poll profile_status; pending is not stopped.", ["profileID": uuid], ["profileID"])
         ]
         return specs.filter { allowsManagement || readTools.contains($0.0) }.map { name, description, properties, required in
@@ -169,6 +173,18 @@ final class MCPProfileManagement {
             if !includeObservation && args["expectedRevision"] != nil { throw Failure.invalid }
             let expected: UInt64? = includeObservation ? try revision(args) : nil
             if let expected, profile.revision != expected { throw Failure.conflict }
+            if profile.engine == .webkit, gui.ownedProfiles.contains(profileID) {
+                let reply = try await gui.lifecycle(.status, profileID: profileID)
+                var result: [String: Any] = ["profileID": profileID.uuidString, "processState": Self.guiProcessState(reply), "webKitState": reply.state!.rawValue]
+                if includeObservation {
+                    try await store.refreshExternalMetadata(force: true)
+                    try Task.checkCancellation()
+                    guard store.hasTrustedMetadata, let current = store.profile(withID: profileID), current.revision == expected else { throw Failure.conflict }
+                    result["revision"] = String(current.revision)
+                    result["observation"] = BrowserSessionObservation.unavailable(.thisSession).mcpValue
+                }
+                return result
+            }
             try await observe(profileID)
             guard includeObservation else {
                 return ["profileID": profileID.uuidString, "processState": status(profileID)]
@@ -192,6 +208,11 @@ final class MCPProfileManagement {
                     "revision": String(current.revision), "observation": observation.mcpValue]
         }
         if name == "profile_stop" {
+            if profile.engine == .webkit, gui.ownedProfiles.contains(profileID) {
+                let reply = try await gui.lifecycle(.stop, profileID: profileID)
+                return ["profileID": profileID.uuidString, "stopRequested": reply.stopRequested!,
+                    "processState": Self.guiProcessState(reply), "webKitState": reply.state!.rawValue]
+            }
             try await observe(profileID)
             let state = processes.processState(for: profileID)
             guard state == .managed || state == .stopped else { throw Failure.manualClose }
@@ -263,9 +284,13 @@ final class MCPProfileManagement {
     }
 
     private func launch(_ initial: BrowserProfile) async throws -> [String: Any] {
+        if initial.engine == .webkit {
+            guard allowsManagement else { throw Failure.denied }
+            let reply = try await gui.start(profileID: initial.id, revision: initial.revision)
+            return ["profileID": initial.id.uuidString, "processState": "managed", "revision": reply.revision!]
+        }
         try await observe(initial.id)
         guard processes.processState(for: initial.id) == .stopped else { throw Failure.running }
-        guard initial.engine == .chromium else { throw WebKitProfileError.unsupported("WebKit-профиль создан. Открой его из окна NeAntik: запуск WebKit через MCP пока недоступен.") }
         let locator = BrowserRuntimeLocator()
         guard let runtime = await Task.detached(priority: .userInitiated, operation: { locator.preferredRuntime() }).value else { throw Failure.unavailable }
         let preflight = await Task.detached { BrowserRuntimePreflightValidator.validate(runtime) }.value
@@ -388,6 +413,13 @@ final class MCPProfileManagement {
         }
     }
 
+    private static func guiProcessState(_ reply: MCPGUIControlProtocol.Reply) -> String {
+        switch reply.state {
+        case .managed, .stopPending, .saveFailed: "managed"
+        case .stopped: "stopped"
+        default: "externalManualOnly"
+        }
+    }
     private func status(_ id: UUID) -> String {
         switch processes.processState(for: id) {
         case .managed: "managed"

@@ -49,6 +49,7 @@ final class MCPManagementSession {
 
     func eof() {
         closed = true
+        engine?.disconnectGUI()
         // Reads already queued can finish; unfinished writes/probes/launches cancel.
         if currentMethod == "tools/call" { worker?.cancel() }
         queue.removeAll { line in
@@ -237,6 +238,12 @@ final class MCPManagementSession {
                 code = "profile_not_stopped"
                 blockReason = "stopped_state_required"
                 message = "Profile is not confirmed stopped. Read profile_status; finish preparation or close a confirmed running browser normally before retrying."
+            case MCPGUIControlProtocol.Failure.consentRequired: code = "gui_consent_required"; message = "In NeAntik Help → MCP, approve this connection for selected WebKit profiles; then intentionally retry profile_start with the current revision."
+            case MCPGUIControlProtocol.Failure.revisionConflict: code = "revision_conflict"; message = "Profile changed. Read profile_get and intentionally retry with the current revision."
+            case MCPGUIControlProtocol.Failure.denied: code = "gui_profile_denied"; message = "This WebKit profile is outside the connection's approved scope. Change permission in NeAntik Help → MCP."
+            case MCPGUIControlProtocol.Failure.ownershipLost, MCPGUIControlProtocol.Failure.staleSession: code = "gui_ownership_lost"; message = "This connection no longer controls that WebKit window. Close it manually; reconnecting does not inherit ownership."
+            case MCPGUIControlProtocol.Failure.busy: code = "gui_browser_busy"; message = "The WebKit profile is already open or another launch is being prepared. Close the existing window normally or wait, then intentionally retry with the current revision."
+            case MCPGUIControlProtocol.Failure.unavailable: code = "gui_unavailable"; message = "Open the same installed NeAntik version, enable WebKit access in Help → MCP, and keep the GUI open. Failed writes are not retried automatically."
             case MCPProfileManagement.Failure.stopRefused: code = "stop_refused"; message = "Browser is not ready for graceful close or macOS refused quit. Retry after startup or use the browser Quit menu. No forced termination."
             case MCPProfileManagement.Failure.manualClose: code = "manual_close_required"; message = "Browser belongs to another session or ownership is unverified. Close it manually; no signal sent."
             case MCPProfileManagement.Failure.proxyFailed: code = "proxy_preparation_failed"; message = "Proxy preparation did not establish required context. Check protocol/port and run profile_check_proxy. No direct fallback."

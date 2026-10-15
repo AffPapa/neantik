@@ -87,7 +87,8 @@ Direct before the click; the full editor remains a secondary action.
   native UI. An opt-in local MCP stdio mode provides 18 management tools (7 in
   read mode), including saved-template reuse and owned browser lifecycle.
   Generated connections enable management; legacy configurations retain read
-  permissions. No network listener, BrowserData or credential output, arbitrary
+  permissions. WebKit lifecycle uses an explicitly enabled local Unix socket in
+  the already-open GUI, with connection/profile consent. No TCP listener, BrowserData or credential output, arbitrary
   shell/JS execution, or page automation is provided. See MCP_GUIDE.md.
 
 ## Explicitly excluded

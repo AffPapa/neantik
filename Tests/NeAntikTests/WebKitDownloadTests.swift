@@ -84,6 +84,20 @@ struct WebKitDownloadTests {
         #expect(!downloads.reserve(NSObject(), from: view))
     }
 
+    @Test func settledCloseSubscribersRunOnceIncludingReentrantWindowClose() {
+        _ = NSApplication.shared
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 420), styleMask: [.titled], backing: .buffered, defer: false)
+        let downloads = WebKitDownloads(window: window)
+        var outer = 0, windowClose = 0, repeated = 0
+        downloads.close {
+            outer += 1
+            downloads.close { windowClose += 1 }
+        }
+        downloads.close { repeated += 1 }
+        #expect(outer == 1 && windowClose == 1 && repeated == 1)
+        #expect(downloads.activeCount == 0)
+    }
+
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_DOWNLOAD_LIVE"] == "1"))
     func headedDownloadsUseProfileCookiesAndCancelWithoutPublishingPartials() async throws {
         let ids = try await headedScenario()

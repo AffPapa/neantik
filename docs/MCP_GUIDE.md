@@ -1,6 +1,6 @@
 # NeAntik local MCP: profile management
 
-The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. The manager GUI may be closed. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Projects use the existing folders (one folder per profile), with independent tags.
+The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. For Chromium and metadata operations the manager GUI may be closed. WebKit lifecycle uses the explicitly approved GUI connection described below. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Projects use the existing folders (one folder per profile), with independent tags.
 
 ## Connect (official client formats checked 7 October 2026)
 
@@ -68,7 +68,7 @@ The four additional read tools are available in read mode. Other tools require m
 
 1. Find a profile, select its **UUID**, then call `profile_get`. Duplicate names are allowed.
 
-`profile_get`, creation and edit responses include `engineCapabilities`. Check these flags before offering an operation: `persistentSiteData`, `fingerprintConfiguration`, `proxy`, `mcpLaunch`, `extensions`, `browserDataBackup`. They describe supported operations, not the measured state of the current browser session. Chromium supports configured environment and these management operations; system WebKit currently supports separate persistent site data and metadata management, with launch through the NeAntik window. WebKit uses macOS identity/language/timezone and does not implement full fingerprint substitution. A false flag means the client must explain the limitation rather than retrying the unsupported command.
+`profile_get`, creation and edit responses include `engineCapabilities`. Check these flags before offering an operation: `persistentSiteData`, `fingerprintConfiguration`, `proxy`, `mcpLaunch`, `extensions`, `browserDataBackup`. They describe supported operations, not the measured state of the current browser session. Chromium supports configured environment and these management operations; system WebKit supports separate persistent site data, metadata management and GUI-mediated MCP lifecycle. `mcpLaunch:true` means the operation exists; WebKit additionally requires the same installed signed GUI, enabled access and explicit connection/profile approval. It does not mean unattended stdio can create GUI windows. WebKit uses macOS identity/language/timezone and does not implement full fingerprint substitution. A false flag means the client must explain the limitation rather than retrying the unsupported command.
 2. Send `expectedRevision` exactly as a decimal **string**, not a floating-point JSON number.
 3. For folders/move, call `folder_list`; send `expectedOrganizationRevision` including explicit initial `null`. Checks happen inside the metadata transaction, preventing stale/ABA writes.
 4. Patches preserve omitted fields. `tags: []` clears tags. `folderID: null` unfiles; `proxy: null` disables.
@@ -133,9 +133,23 @@ Passwords are accepted as write-only input and stored in Keychain. The selected 
 - «Останови профиль, запущенный этой сессией, и дождись stopped».
 - «Архивируй остановленный профиль; сохрани данные сайтов».
 
+## WebKit windows through AI — development slice
+
+Published 0.8.16 does not contain this lifecycle bridge. The following is implemented in development; signed GUI/candidate qualification and the next release remain required.
+
+1. Open the same installed NeAntik version used by the AI configuration.
+2. In **Help → MCP → Окна WebKit через AI**, enable WebKit access.
+3. Ask the AI to start a WebKit profile. The first call returns `gui_consent_required` immediately.
+4. In NeAntik, select the profiles that this connection may use, then click **Разрешить выбранные профили**. Repeat the start request intentionally with the current revision.
+5. `profile_status` reports `webKitState`. `profile_stop` closes only windows this connection launched. Poll until `stopped`; `stopPending` and `saveFailed` are not a completed close.
+
+Approval is temporary and scoped to selected profile IDs. Reconnecting, restarting the GUI or updating its executable does not inherit another connection's windows. Revoking access/EOF leaves windows open for manual use. Quitting NeAntik revokes control first, then saves/closes its WebKit windows; a failed save postpones quit. This private local Unix socket has no TCP port, web transport, shell, arbitrary JS, page reads, cookies or password reads. Signed executable and kernel peer checks supplement explicit human consent; they do not replace it.
+
+Example: «Запусти мой WebKit-профиль Магазин. Если нужно разрешение, скажи мне, где его подтвердить». After approval: «Повтори запуск с актуальной ревизией. Затем останови своё окно и дождись stopped».
+
 ## FAQ
 
-**Must the GUI be running?** No. The stdio process uses the same canonical workspace. GUI updates external changes without replacing drafts.
+**Must the GUI be running?** For WebKit start/status/stop, yes: leave NeAntik open and approve the connection. Chromium and metadata operations use the stdio process without the GUI. GUI updates external changes without replacing drafts.
 
 **Can I stop a browser after reconnecting?** It belongs to the earlier session. Close it manually. NeAntik does not send signals to an unowned/reused PID. A stop response can be pending; only observed `stopped` confirms completion.
 

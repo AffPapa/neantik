@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "status": "development;not-published",
+  "targetVersion": "0.8.17",
+  "build": 129,
+  "feature": "WebKit GUI-mediated MCP lifecycle",
+  "runtimeChanged": false,
+  "toolsAdded": 0,
+  "toolsTotal": 18,
+  "gates": {
+    "fullSwift": {
+      "summaryCount": 1604,
+      "suiteCount": 190,
+      "actualPassedLogLines": 1530,
+      "explicitSkipLogLines": 71,
+      "inputSHA256": "907cef1b6d7976302cfb9bc59c404b97963d2ca715766cc69e980706acf81727",
+      "scope": "base integrated manager inputs; later localized corrections use delta tests and real Dev controls"
+    },
+    "delta": {
+      "socket": {
+        "tests": 12,
+        "suites": 3,
+        "skips": 0
+      },
+      "UIBridge": {
+        "tests": 18,
+        "suites": 4,
+        "skips": 0
+      },
+      "downloadClose": {
+        "summaryCount": 19,
+        "suites": 4,
+        "actualPassedLogLines": 14,
+        "explicitSkipLogLines": 5
+      }
+    },
+    "python": {
+      "summaryCount": 1493,
+      "skips": 19,
+      "originalFailures": 1,
+      "failure": "cache cancellation exit mismatch",
+      "affectedModuleRecheck": {
+        "tests": 8,
+        "status": "PASS"
+      },
+      "scope": "original invocation retained as failed; owned diagnostic and affected rerun passed"
+    },
+    "signedDev": {
+      "selectedConsent": true,
+      "revisionConflict": true,
+      "crossClientStopDenied": true,
+      "EOFDoesNotClose": true,
+      "reconnectCannotAdopt": true,
+      "revocationDoesNotClose": true,
+      "actualSaveFailureAndRecovery": true,
+      "realNSSavePanelStop": true,
+      "ownedSyntheticStoresRemoved": 2
+    },
+    "exactReleaseCandidate": "pending",
+    "publicDelivery": "pending"
+  },
+  "limits": [
+    "GUI must be open; consent per live connection and selected profiles",
+    "Direct WebKit only; proxy remains refused",
+    "No page reads, arbitrary JavaScript, shell, cookies or secrets",
+    "VoiceOver labels not independently verified; native AX identifiers observed",
+    "Development evidence does not qualify final signed or hosted bytes"
+  ]
+}
