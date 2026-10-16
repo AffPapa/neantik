@@ -72,7 +72,7 @@ class ManagerCheckPlanTests(unittest.TestCase):
         result = MOD.plan(['scripts/runtime-network/manager-route-fixture.py'], [])
         self.assertEqual(result['swiftMode'], 'none')
         self.assertEqual(result['commands'], [['python3', '-B', '-m', 'unittest',
-            'scripts.tests.test_controlled_dns_fixture', 'scripts.tests.test_manager_dns_fixture', 'scripts.tests.test_shipping_manager_route_fixture']])
+            'scripts.tests.test_controlled_dns_fixture', 'scripts.tests.test_manager_dns_fixture', 'scripts.tests.test_manager_tcp_fixture', 'scripts.tests.test_shipping_manager_route_fixture']])
         self.assertEqual(result['status'], 'not-run')
         self.assertIn('owned network', result['requiredAdditionalGates'][0])
         unknown = MOD.plan(['scripts/runtime-network/new-unknown.py'], [])
@@ -91,7 +91,17 @@ class ManagerCheckPlanTests(unittest.TestCase):
             'scripts/runtime-network/collect-manager-dns.py','scripts/runtime-network/analyze-manager-dns.py'],[])
         self.assertEqual(result['swiftMode'],'none')
         self.assertEqual(result['commands'],[['python3','-B','-m','unittest',
-            'scripts.tests.test_manager_dns_analysis','scripts.tests.test_manager_dns_custody','scripts.tests.test_manager_dns_fixture']])
+            'scripts.tests.test_manager_dns_analysis','scripts.tests.test_manager_dns_custody','scripts.tests.test_manager_dns_fixture',
+            'scripts.tests.test_manager_tcp_analysis','scripts.tests.test_manager_tcp_custody']])
+        self.assertFalse(result['releaseGate']);self.assertEqual(result['status'],'not-run')
+
+    def test_physical_tcp_has_its_source_and_analysis_controls(self):
+        result=MOD.plan(['scripts/runtime-network/manager-tcp-fixture.py',
+            'scripts/runtime-network/collect-manager-tcp.py','scripts/runtime-network/observe-manager-tcp-failure.py',
+            'scripts/runtime-network/analyze-manager-tcp.py'],[])
+        self.assertEqual(result['swiftMode'],'none')
+        self.assertEqual(result['commands'],[['python3','-B','-m','unittest',
+            'scripts.tests.test_manager_tcp_analysis','scripts.tests.test_manager_tcp_custody','scripts.tests.test_manager_tcp_fixture']])
         self.assertFalse(result['releaseGate']);self.assertEqual(result['status'],'not-run')
 
     def test_route_observer_selects_background_and_existing_route_controls(self):

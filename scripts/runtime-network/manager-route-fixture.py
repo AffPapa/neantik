@@ -465,9 +465,12 @@ def main():
     parser.add_argument('--owned-https', action='store_true', help='fixed browser.free signed response; no custom endpoint/trust override')
     parser.add_argument('--controlled-dns', action='store_true', help='linked upstream UDP DNS; separate manager DNS analysis')
     parser.add_argument('--allow-manager-preflight', action='store_true', help='only with controlled DNS: permit existing exact GeoIP TLS hosts')
+    parser.add_argument('--physical-tcp', action='store_true', help='owned upstream TCP listener close/rebind; separate analysis')
     args = parser.parse_args()
     if args.controlled_dns and args.owned_https or args.allow_manager_preflight and not args.controlled_dns:
         parser.error('DNS/HTTPS fixture modes cannot be combined; preflight opt-in requires DNS mode')
+    if args.physical_tcp and (args.controlled_dns or args.owned_https or args.allow_manager_preflight):
+        parser.error('Physical TCP fixture is a separate mode')
     if not 60 <= args.duration <= 1800: raise ValueError('duration-bound')
     app = args.app.resolve(); executable = app / 'Contents/MacOS/NeAntik'
     metadata = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
@@ -484,7 +487,12 @@ def main():
     root = Path('/private/tmp/neantik-update-audit-' + str(uuid.uuid4())); root.mkdir(mode=0o700)
     copied_manifest = root / 'candidate-manifest.json'; shutil.copyfile(args.candidate_manifest, copied_manifest); copied_manifest.chmod(0o600)
     data = root / 'manager-data'; data.mkdir(mode=0o700)
-    if args.controlled_dns:
+    if args.physical_tcp:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('owned_manager_tcp', Path(__file__).with_name('manager-tcp-fixture.py'))
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+        fixture = module.ManagerTCPFixture(root)
+    elif args.controlled_dns:
         import importlib.util
         spec = importlib.util.spec_from_file_location('owned_manager_dns', Path(__file__).with_name('manager-dns-fixture.py'))
         module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
@@ -509,12 +517,15 @@ def main():
             state['dnsFixture'] = fixture.description()
             state['dnsFixtureSHA256'] = digest(Path(__file__).with_name('manager-dns-fixture.py'))
             state['dnsWireFixtureSHA256'] = digest(Path(__file__).with_name('controlled-dns-fixture.py'))
+        if args.physical_tcp:
+            state['tcpFixture'] = fixture.description()
+            state['tcpFixtureSHA256'] = digest(Path(__file__).with_name('manager-tcp-fixture.py'))
         with (root / 'manager.log').open('wb') as log:
             os.chmod(root / 'manager.log', 0o600)
             manager = subprocess.Popen([str(executable), '--neantik-release-update-audit', '--candidate-manifest',
                 str(copied_manifest).replace('/private/tmp/', '/tmp/'), '--output', state['output']], stdout=log, stderr=log, start_new_session=True)
             state['managerPID'] = manager.pid
-            if args.controlled_dns:
+            if args.controlled_dns or args.physical_tcp:
                 peer_spec = importlib.util.spec_from_file_location('owned_manager_peer_custody', Path(__file__).with_name('collect-manager-dns.py'))
                 peer_module = importlib.util.module_from_spec(peer_spec); peer_spec.loader.exec_module(peer_module)
                 fixture.peer_inspector = lambda channel, direct: peer_module.socket_peer(state, root, channel, direct=direct)
@@ -525,7 +536,7 @@ def main():
             pending_control = bytearray()
             stop_control = False
             while manager.poll() is None and not (root / 'finish-fixture').exists() and time.monotonic() < deadline:
-                if not args.controlled_dns:
+                if not (args.controlled_dns or args.physical_tcp):
                     time.sleep(.25); continue
                 if select.select([sys.stdin], [], [], .25)[0]:
                     try:
@@ -535,11 +546,11 @@ def main():
                             if command['action'] == 'stop':
                                 stop_control = True; break
                             response = fixture.apply_control(command['action'])
-                            print(json.dumps(dict(stage='dns-control', **response)), flush=True)
+                            print(json.dumps(dict(stage='tcp-control' if args.physical_tcp else 'dns-control', **response)), flush=True)
                     except EOFError: break
                     except (ValueError, TypeError, OSError):
                         pending_control.clear()
-                        print(json.dumps(dict(stage='dns-control-refused')), flush=True)
+                        print(json.dumps(dict(stage='tcp-control-refused' if args.physical_tcp else 'dns-control-refused')), flush=True)
                     if stop_control: break
             if manager.poll() is None: manager.terminate(); manager.wait(10)
         state['managerExitCode'] = manager.returncode

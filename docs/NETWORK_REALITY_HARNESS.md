@@ -107,6 +107,75 @@ required. A refused or missing session fails analysis. Even a completed raw
 runtime result does not cover the manager's relay, all OS DNS/UDP, background
 requests, or other hardware; those remain separate gates.
 
+### Physical upstream TCP listener failure
+
+`manager-route-fixture.py --physical-tcp` uses the separate
+`manager-tcp-fixture.py` successor. It closes the owned upstream listener with
+`shutdown()` and `server_close()`, checks actual connection refusal with an
+independent fixture socket, and rebinds the same endpoint on recovery. The
+origin stays available. This differs from returning HTTP 502 or closing a
+connection after accepting it. It does not change macOS networking or DNS.
+
+Start with the exact signed downloaded app, one enrolled QA authority and a
+matching candidate manifest. Native resource admission is required. Use a new
+private output directory:
+
+```bash
+python3 -B scripts/runtime-network/manager-route-fixture.py \
+  --app /absolute/NeAntik.app \
+  --candidate-manifest /absolute/qa/candidate-manifest.json \
+  --output /absolute/qa/tcp-run --duration 900 --physical-tcp
+```
+
+The fixture seeds **two metadata profiles, initially without a proxy**. Before
+the `before-launch` snapshot, configure only `QA route proxy` through the audit
+GUI, using its private state's proxy port and the fixture's public dummy
+credentials. The audit GUI uses memory-only password storage. Leave
+`QA route direct` unchanged. Do not use a separate ordinary MCP process to
+write a proxy password: it does not share the audit GUI's password backend.
+
+Capture `before-launch` and `proxy-success` with `collect-manager-tcp.py
+--state /absolute/qa/tcp-run/private-state.json --phase <phase>`. Send
+`{"action":"stop-listener"}` to the fixture's operator stdin. Navigate the
+same protected browser to the private state's `listener-refused` URL. Retain
+only the exact matching omnibox address and visible connection error from an
+explicitly selected owned CUA window, one value per line, in a private0600
+`owned-cua-failure-values.txt`. Reduce it with:
+
+```bash
+python3 -B scripts/runtime-network/observe-manager-tcp-failure.py \
+  --state /absolute/qa/tcp-run/private-state.json \
+  --ax-observation /absolute/qa/tcp-run/owned-cua-failure-values.txt
+```
+
+This is an operator-mediated CUA observation, not unattended UI attestation.
+Missing/mismatched address or error fails. For automated address entry, prefer
+setting and reading back the omnibox value before Enter; a mistyped URL is a
+harness failure, not a successful navigation.
+
+Capture `listener-refused`; after a failure window of at least five seconds,
+launch the separate Direct profile and capture `direct-control`. Send
+`{"action":"recover-listener"}` to the fixture, navigate the original
+protected session to its recovery URL and capture `proxy-recovered`. Native
+Stop/Quit must finish before capturing `cleanup`. Then run:
+
+```bash
+python3 -B scripts/runtime-network/analyze-manager-tcp.py \
+  --receipts /absolute/qa/tcp-run --release /absolute/releases/v0.8.21.json
+```
+
+The analyzer requires unchanged live manager/browser/relay generations,
+revision, lease, session, configuration and exact runtime hashes; real peer
+socket ownership; a refused nonce navigation; no protected origin arrival;
+an independent Direct hit during the outage; same-endpoint recovery and
+settled cleanup. Source hashes and the retained reduced CUA input must match.
+Retire the temporary authority separately; no fingerprint rerun is needed.
+
+This scenario passed on the exact downloaded0.8.21(133):
+[minimized evidence](evidence/manager-tcp-0.8.21.json). It does not establish
+the manager's POSIX errno, a TCP RST, physical network switching, global
+DNS/UDP behavior, default-trusted HTTPS upstream support or all1.0 gates.
+
 ### WebRTC source check
 
 `scripts/verify-chromium-webrtc-policy.py` checks the expected Chrome switch,

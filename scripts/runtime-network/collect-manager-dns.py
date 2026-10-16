@@ -232,7 +232,15 @@ def owned_state(path):
     return state, root
 
 
-def capture(state, root, phase):
+def capture(state, root, phase, *, physical_tcp=False):
+    # A second closed fixture reuses the same kernel/lease checks without
+    # mislabelling TCP observations as DNS evidence. CLI defaults stay DNS.
+    if physical_tcp:
+        require(state['tcpFixture']['mode'] == 'manager-physical-tcp', 'wrong-tcp-fixture')
+        bindings = dict(tcpFixtureSHA256=state['tcpFixtureSHA256'])
+    else:
+        bindings = dict(dnsFixtureSHA256=state['dnsFixtureSHA256'],
+                        dnsWireFixtureSHA256=state['dnsWireFixtureSHA256'])
     app = Path(state['app']); executable = app / 'Contents/MacOS/NeAntik'
     manifest_bytes = read_private(root / 'candidate-manifest.json')
     require(sha(manifest_bytes) == state['candidateManifestSHA256'], 'manifest-changed')
@@ -259,8 +267,7 @@ def capture(state, root, phase):
         profileID=profile['id'].lower(), revision=profile['revision'], metadataIdentitySHA256=metadata_identity(profile),
         lastLaunchedAt=profile.get('lastLaunchedAt'), updatedAt=profile['updatedAt'],
         managerSHA256=state['managerSHA256'], candidateManifestSHA256=state['candidateManifestSHA256'],
-        fixtureSHA256=state['fixtureSHA256'], dnsFixtureSHA256=state['dnsFixtureSHA256'],
-        dnsWireFixtureSHA256=state['dnsWireFixtureSHA256'],
+        fixtureSHA256=state['fixtureSHA256'], **bindings,
         collectorSHA256=sha(Path(__file__).read_bytes()), version=state['version'], build=state['build'])
     if phase == 'before-launch':
         require(not (data / 'Profiles' / profile['id'] / '.neantik.lock').exists(), 'profile-already-launched')
