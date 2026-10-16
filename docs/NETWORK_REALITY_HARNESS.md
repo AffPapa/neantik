@@ -269,6 +269,34 @@ protected/Direct/protected-repeat STUN counts **0/1/0**. This does not cover
 OS-managed policies, IPv6/TURN, external interfaces or network transitions.
 The earlier eleven-case raw-runtime matrix remains separate evidence.
 
+### Future HTTP refusal diagnostics
+
+New WebRTC fixtures retain only closed enums for the failure stage, request
+category and failure category. No URL, query, header, exception message or
+credential is copied. A private per-run salt and the actual own loopback TCP
+tuple produce an optional digest shared by the proxy and origin ends. Foreign
+origins, non-loopback endpoints and closed sockets produce no digest.
+
+The analyzer retains legacy events as `unclassified`. Complete new metadata
+must use the declared schema and enums; malformed or partial metadata is
+rejected. Two opposite events with the same digest within two seconds receive
+an **event-pair hint**, not proven socket identity or cause. Duplicate, distant
+and unpaired groups remain ambiguous. Port reuse cannot be ruled out solely
+by this hint. `causeEstablished`, `browserCustodyEstablished` and
+`allHTTPCleanQualified` remain false.
+
+Owned Python socket controls reproduce favicon rejection and its empty origin
+connection, verify the matching digest, and confirm that formatter failures
+preserve the original refusal event. Pure controls reject wrong enums/types,
+partial metadata, duplicate groups and false cause/custody claims. These are
+fixture tests; no browser is launched. Generic HTTP/DNS fixtures keep the
+previous ledger through an empty default hook.
+
+This instrumentation applies to **future observations**. The original native
+two proxy failures and two origin refusals have no retained request categories
+or digest; their cause is still unknown. Old native reports and source hashes
+are not rewritten. See [development evidence](evidence/http-refusal-diagnostics-development.json).
+
 ### WebRTC source check
 
 `scripts/verify-chromium-webrtc-policy.py` checks the expected Chrome switch,

@@ -9,6 +9,8 @@ import re
 
 SPEC=importlib.util.spec_from_file_location('webrtc_analysis_custody',Path(__file__).with_name('collect-manager-webrtc.py'))
 W=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(W)
+FIXTURE_SPEC=importlib.util.spec_from_file_location('webrtc_diagnostic_schema',Path(__file__).with_name('manager-webrtc-fixture.py'))
+F=importlib.util.module_from_spec(FIXTURE_SPEC);FIXTURE_SPEC.loader.exec_module(F)
 PHASES=W.PHASES
 INPUTS=('fixture-ledger.json',*(f'webrtc-custody-{phase}.json' for phase in (*PHASES,'cleanup')))
 HASHES={'fixtureSHA256':'manager-route-fixture.py','webrtcFixtureSHA256':'manager-webrtc-fixture.py',
@@ -22,6 +24,43 @@ def require(value,reason):
 def number(value):return type(value) in (int,float) and math.isfinite(value) and value>=0
 def digest(value):return isinstance(value,str) and re.fullmatch('[0-9a-f]{64}',value) is not None
 def count(value):return type(value) is int and value>=0
+
+
+def summarize_http_diagnostics(events):
+    """Redacted fixture observations only; never promote them to route proof.
+
+    Historical events lack these fields and stay unclassified. A salted TCP
+    tuple can be reused, so only unique, close pairs receive a correlation hint.
+    Even a hint does not establish a cause or browser/socket ownership.
+    """
+    entries=[];groups={};fields={'diagnosticVersion','stage','requestCategory','failureCategory','originConnectionSHA256'}
+    for index,event in enumerate(events):
+        if event.get('kind') not in ('proxy-operation-failure','webrtc-origin-refused'):continue
+        require(number(event.get('at')),'invalid-http-diagnostic-time')
+        entry=dict(eventIndex=index,kind=event['kind'],at=event['at'],classification='unclassified')
+        present=fields.intersection(event)
+        if present:
+            require(present==fields and type(event['diagnosticVersion']) is int and event['diagnosticVersion']==1
+                    and isinstance(event['stage'],str) and event['stage'] in F.DIAGNOSTIC_STAGES
+                    and isinstance(event['requestCategory'],str) and event['requestCategory'] in F.DIAGNOSTIC_CATEGORIES
+                    and isinstance(event['failureCategory'],str) and event['failureCategory'] in F.DIAGNOSTIC_FAILURES
+                    and (event['originConnectionSHA256'] is None or digest(event['originConnectionSHA256'])),
+                    'invalid-http-diagnostic-fields')
+            entry.update({key:event[key] for key in fields})
+            entry['classification']='tagged-fixture-observation'
+            if event['originConnectionSHA256'] is not None:
+                groups.setdefault(event['originConnectionSHA256'],[]).append(entry)
+        entries.append(entry)
+    hints=[];ambiguous=0
+    for correlation,group in groups.items():
+        if len(group)!=2 or {e['kind'] for e in group}!={'proxy-operation-failure','webrtc-origin-refused'}:
+            ambiguous+=1;continue
+        first,second=sorted(group,key=lambda e:e['at'])
+        if not 0<=second['at']-first['at']<=2:ambiguous+=1;continue
+        hints.append(dict(originConnectionSHA256=correlation,eventIndices=sorted(e['eventIndex'] for e in group)))
+    return dict(scope='fixture-correlation-hints-only',entries=entries,uniqueSocketHints=hints,
+                ambiguousOrUnpairedGroups=ambiguous,causeEstablished=False,browserCustodyEstablished=False,
+                allHTTPCleanQualified=False)
 
 
 def process(value):
@@ -136,6 +175,7 @@ def qualify(receipts,release,state):
                         'unchanged protected browser/relay/session/config on repeat','final counters and owned process drain without fixture signals',
                         'both browser main processes: signed manager records normal exit/status0'],
                 HTTPDiagnostics=diagnostics,allHTTPCleanQualified=False,
+                HTTPDiagnosticSummary=summarize_http_diagnostics(events),
                 diagnosticBoundary='Unclassified refused HTTP connections retained; no inference that native requests were favicons. They cannot replace any required nonce/ICE/socket/UDP observation.',
                 gracefulCloseQualified=False,globalNetworkQualified=False,allPoint21GatesComplete=False,releaseGate=False,
                 limitation='Own loopback UDP4 and HTTP-auth relay only; OS managed policy, IPv6/TURN, external interfaces and network transition remain open')

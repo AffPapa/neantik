@@ -17,6 +17,29 @@ SPEC=importlib.util.spec_from_file_location('webrtc_route_base',Path(__file__).w
 BASE=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(BASE)
 PHASES=('proxy-success','direct-control','proxy-repeat')
 PROBE=Path(__file__).with_name('manager-webrtc-probe.js')
+DIAGNOSTIC_STAGES=frozenset(('request-header','request-line','client-authentication','destination-parse',
+    'destination-scope','peer-custody','owned-request-validation','fault-injection','upstream-connect',
+    'connect-response','tunnel-header','target-parse','nonce-validation','forward-request','relay-copy',
+    'origin-scope','receipt-validation','page-control','response-write','unknown'))
+DIAGNOSTIC_CATEGORIES=frozenset(('not-read','malformed','favicon','owned-route','owned-stream','https-callback','other'))
+DIAGNOSTIC_FAILURES=frozenset(('timeout','io','incomplete-header','protocol'))
+
+
+def request_category(target):
+    """Only fixed categories leave memory; never serialize path/query values."""
+    if target is None:return 'not-read'
+    if not isinstance(target,str) or len(target)>16384:return 'malformed'
+    try:path=urlsplit(target).path
+    except (ValueError,UnicodeError):return 'malformed'
+    return {'/favicon.ico':'favicon','/owned-route':'owned-route','/owned-stream':'owned-stream',
+            '/__neantik_route/ack':'https-callback'}.get(path,'other')
+
+
+def failure_category(error):
+    if isinstance(error,socket.timeout):return 'timeout'
+    if isinstance(error,OSError):return 'io'
+    if isinstance(error,ValueError) and error.args==('incomplete-header',):return 'incomplete-header'
+    return 'protocol'
 
 
 def require(value):
@@ -94,6 +117,27 @@ class ManagerWebRTCFixture(BASE.Fixture):
 
     def navigation_phases(self):return PHASES
 
+    def failure_diagnostic(self,stage,target,channel,error,*,incoming):
+        # Bind only the fixture's own loopback origin TCP tuple. The per-run
+        # private salt prevents exported IDs from revealing ephemeral ports.
+        # This is fixture correlation, not browser PID or route attestation.
+        correlation=None
+        if channel is not None:
+            try:
+                local,peer=channel.getsockname(),channel.getpeername()
+                origin=local if incoming else peer;source=peer if incoming else local
+                if (origin==self.origin.server_address and len(source)==2 and source[0]=='127.0.0.1'
+                        and type(source[1]) is int and 0<source[1]<65536):
+                    material=b'owned-origin-v1\0'+bytes.fromhex(self.hop)+struct.pack('!HH',source[1],origin[1])
+                    correlation=BASE.hashlib.sha256(material).hexdigest()
+            except (OSError,ValueError,AttributeError):pass
+        return dict(diagnosticVersion=1,stage=stage if isinstance(stage,str) and stage in DIAGNOSTIC_STAGES else 'unknown',
+                    requestCategory=request_category(target),failureCategory=failure_category(error),
+                    originConnectionSHA256=correlation)
+
+    def proxy_failure_diagnostic(self,stage,target,upstream,error):
+        return self.failure_diagnostic(stage,target,upstream,error,incoming=False)
+
     def phase(self,target):
         if len(target)>8192:return None
         parsed=urlsplit(target);query=parse_qs(parsed.query,keep_blank_values=True)
@@ -138,10 +182,13 @@ class ManagerWebRTCFixture(BASE.Fixture):
 
     def origin_request(self,channel):
         self.track(channel);channel.settimeout(10)
+        stage,target='request-header',None
         try:
             request=BASE.header(channel);pieces=request.split(b'\r\n',1)[0].split()
+            stage='request-line'
             require(len(pieces)==3 and pieces[0]==b'GET');target=pieces[1].decode('ascii');phase=self.phase(target)
             if phase is None:BASE.answer(channel,b'404 Not Found',b'');return
+            stage='origin-scope'
             query=parse_qs(urlsplit(target).query);protected=b'X-NeAntik-Owned-Hop: '+self.hop.encode() in request.split(b'\r\n')
             require(protected==(phase!='direct-control') and self.peer_inspector is not None)
             peer=self.peer_inspector(channel,not protected) if not protected else None
@@ -152,11 +199,14 @@ class ManagerWebRTCFixture(BASE.Fixture):
                 require(len(ids)==1 and len(ids[0])==32 and all(c in b'0123456789abcdef' for c in ids[0]))
                 peer=dict(throughOwnedFixture=True,requestIDSHA256=BASE.hashlib.sha256(ids[0]).hexdigest())
             if 'result' in query:
+                stage='receipt-validation'
                 value=validate_probe(json.loads(query['result'][0]),self.nonces[phase])
                 with self.control_lock:
                     require(phase in self.started and phase not in self.completed);self.completed.add(phase)
                 self.ledger.record('webrtc-probe',phase=phase,throughOwnedUpstream=protected,probe=value,peer=peer)
+                stage='response-write'
                 BASE.answer(channel,b'200 OK',b'owned completion accepted');return
+            stage='page-control'
             with self.control_lock:
                 require(phase not in self.started);control=self.stun[phase].canary();self.started.add(phase)
             self.ledger.record('webrtc-stun-control',phase=phase,**control)
@@ -164,9 +214,12 @@ class ManagerWebRTCFixture(BASE.Fixture):
             config=dict(nonce=self.nonces[phase],stunURL='stun:127.0.0.1:'+str(self.stun[phase].port))
             links=''.join('<p><a href="'+self.url(p)+'">'+p+'</a></p>' for p in PHASES)
             body='<!doctype html><title>OWN MANAGER WEBRTC '+phase+'</title><body data-own-fixture="'+self.nonces[phase]+'"><h1>Owned manager WebRTC</h1><p id="result">WebRTC running</p>'+links+'<script>globalThis.OWN_WEBRTC_CONFIG='+json.dumps(config)+';</script><script>'+PROBE.read_text()+'</script></body>'
+            stage='response-write'
             BASE.answer(channel,b'200 OK',body.encode())
-        except (OSError,ValueError,UnicodeError,KeyError):
-            self.ledger.record('webrtc-origin-refused')
+        except (OSError,ValueError,UnicodeError,KeyError) as error:
+            try:diagnostic=self.failure_diagnostic(stage,target,channel,error,incoming=True)
+            except (OSError,ValueError,TypeError,AttributeError):diagnostic={}
+            self.ledger.record('webrtc-origin-refused',**(diagnostic if isinstance(diagnostic,dict) else {}))
             try:BASE.answer(channel,b'400 Bad Request',b'owned fixture refused')
             except OSError:pass
         finally:self.untrack(channel)

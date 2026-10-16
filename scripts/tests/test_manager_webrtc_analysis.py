@@ -53,6 +53,42 @@ def fixture():
 
 
 class ManagerWebRTCAnalysisTests(unittest.TestCase):
+    def diagnostic(self,kind,at=1,correlation='a'*64):
+        return dict(kind=kind,at=at,diagnosticVersion=1,stage='nonce-validation',requestCategory='favicon',
+                    failureCategory='protocol',originConnectionSHA256=correlation)
+
+    def test_diagnostic_hints_never_establish_route_cause_or_erase_legacy_unknowns(self):
+        events=[dict(kind='proxy-operation-failure',at=1),
+                self.diagnostic('proxy-operation-failure',2),self.diagnostic('webrtc-origin-refused',2.1)]
+        events[1]['privateHeader']='not-to-export'
+        result=M.summarize_http_diagnostics(events)
+        self.assertEqual(result['entries'][0]['classification'],'unclassified')
+        self.assertEqual(len(result['uniqueSocketHints']),1)
+        self.assertFalse(result['causeEstablished']);self.assertFalse(result['browserCustodyEstablished'])
+        self.assertFalse(result['allHTTPCleanQualified'])
+        self.assertNotIn('not-to-export',str(result))
+        receipts,release,state=fixture();receipts['fixture-ledger.json']['events']+=events
+        receipts['fixture-ledger.json']['events'].sort(key=lambda e:e['at'])
+        joined=M.qualify(receipts,release,state)
+        self.assertFalse(joined['allHTTPCleanQualified']);self.assertFalse(joined['releaseGate'])
+        self.assertEqual(joined['HTTPDiagnosticSummary']['entries'][0]['classification'],'unclassified')
+
+    def test_reused_unpaired_and_distant_tuple_hashes_are_not_unique_hints(self):
+        a=self.diagnostic('proxy-operation-failure',1);b=self.diagnostic('webrtc-origin-refused',1.1)
+        for events in ([a],[a,b,self.diagnostic('webrtc-origin-refused',1.2)],
+                       [a,self.diagnostic('webrtc-origin-refused',4)],
+                       [a,self.diagnostic('proxy-operation-failure',1.1)]):
+            result=M.summarize_http_diagnostics(events)
+            self.assertFalse(result['uniqueSocketHints']);self.assertEqual(result['ambiguousOrUnpairedGroups'],1)
+
+    def test_diagnostic_unknown_fields_types_and_partial_metadata_are_refused(self):
+        for key,value in [('diagnosticVersion',True),('stage','private text'),('requestCategory','/private'),
+                          ('failureCategory','raw-exception'),('originConnectionSHA256','raw-peer'),('at',True)]:
+            event=self.diagnostic('proxy-operation-failure');event[key]=value
+            with self.assertRaises(ValueError):M.summarize_http_diagnostics([event])
+        event=self.diagnostic('proxy-operation-failure');del event['stage']
+        with self.assertRaises(ValueError):M.summarize_http_diagnostics([event])
+
     def test_complete_model_has_explicit_scope(self):
         result=M.qualify(*fixture());self.assertEqual(result['result'],'scoped-manager-relay-webrtc-observations-pass')
         self.assertFalse(result['allPoint21GatesComplete']);self.assertFalse(result['releaseGate'])

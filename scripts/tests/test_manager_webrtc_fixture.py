@@ -101,6 +101,59 @@ class ManagerWebRTCFixtureTests(unittest.TestCase):
         kinds=[e['kind'] for e in f.ledger.events]
         self.assertIn('proxy-operation-failure',kinds);self.assertIn('webrtc-origin-refused',kinds)
         self.assertFalse(any(kind in kinds for kind in ('webrtc-page','webrtc-probe','webrtc-stun-control')))
+        proxy=next(e for e in f.ledger.events if e['kind']=='proxy-operation-failure')
+        origin=next(e for e in f.ledger.events if e['kind']=='webrtc-origin-refused')
+        self.assertEqual((proxy['stage'],proxy['requestCategory']),('nonce-validation','favicon'))
+        self.assertEqual((origin['stage'],origin['requestCategory'],origin['failureCategory']),
+                         ('request-header','not-read','incomplete-header'))
+        self.assertRegex(proxy['originConnectionSHA256'],r'^[0-9a-f]{64}$')
+        self.assertEqual(proxy['originConnectionSHA256'],origin['originConnectionSHA256'])
+
+    def test_diagnostic_tuple_hint_is_salted_and_only_for_own_loopback_origin(self):
+        f=self.f
+        class Channel:
+            def __init__(self,local,peer):self.local,self.peer=local,peer
+            def getsockname(self):return self.local
+            def getpeername(self):return self.peer
+        def observe(channel,incoming=False):
+            return f.failure_diagnostic('nonce-validation','/favicon.ico?private-query',channel,
+                                        ValueError('private-error'),incoming=incoming)
+        source=('127.0.0.1',12345);destination=f.origin.server_address
+        outgoing=observe(Channel(source,destination));incoming=observe(Channel(destination,source),True)
+        self.assertEqual(outgoing['originConnectionSHA256'],incoming['originConnectionSHA256'])
+        self.assertNotEqual(outgoing['originConnectionSHA256'],observe(Channel(('127.0.0.1',12346),destination))['originConnectionSHA256'])
+        salt=f.hop
+        try:
+            f.hop=uuid.uuid4().hex
+            self.assertNotEqual(outgoing['originConnectionSHA256'],observe(Channel(source,destination))['originConnectionSHA256'])
+        finally:f.hop=salt
+        for local,peer in [(('192.0.2.1',12345),destination),(source,('127.0.0.1',1)),
+                           (source,('192.0.2.1',destination[1])),(('127.0.0.1',0),destination)]:
+            self.assertIsNone(observe(Channel(local,peer))['originConnectionSHA256'])
+        with socket.socket() as closed:pass
+        self.assertIsNone(observe(closed)['originConnectionSHA256'])
+        self.assertEqual(set(outgoing),{'diagnosticVersion','stage','requestCategory','failureCategory','originConnectionSHA256'})
+        self.assertNotIn('private',json.dumps(outgoing));self.assertNotIn(salt,json.dumps(outgoing))
+
+    def test_categories_do_not_copy_exception_target_or_unknown_stage(self):
+        result=self.f.failure_diagnostic([], '/private-secret?password=not-real',None,
+                                          socket.timeout('private-error'),incoming=False)
+        self.assertEqual(result['stage'],'unknown');self.assertEqual(result['requestCategory'],'other')
+        self.assertEqual(result['failureCategory'],'timeout');self.assertIsNone(result['originConnectionSHA256'])
+        self.assertNotIn('private',json.dumps(result));self.assertNotIn('password',json.dumps(result))
+        for target in [[], 'x'*16385, 'http://[broken']:
+            self.assertEqual(W.request_category(target),'malformed')
+
+    def test_diagnostic_failure_does_not_erase_original_refusal(self):
+        def broken(*args,**kwargs):raise ValueError('private-diagnostic-error')
+        for formatter in [broken,lambda *a,**k:None,lambda *a,**k:[],lambda *a,**k:'private-invalid']:
+            self.f.failure_diagnostic=formatter;before=len(self.f.ledger.events)
+            with socket.create_connection(self.f.origin.server_address,timeout=3) as client:
+                client.settimeout(3);client.sendall(b'POST /private?secret=dummy HTTP/1.1\r\nHost: owned\r\n\r\n')
+                self.assertIn(b'400 Bad Request',W.BASE.header(client))
+            self.assertEqual(len(self.f.ledger.events),before+1);event=self.f.ledger.events[-1]
+            self.assertEqual(event['kind'],'webrtc-origin-refused')
+            self.assertEqual(set(event),{'kind','at'});self.assertNotIn('private',json.dumps(event))
 
 
 if __name__=='__main__':unittest.main()

@@ -137,6 +137,7 @@ class Fixture:
     def origin_observation(self, request, phase, protected): return {}
     def observe_origin_arrival(self, phase, protected): return {}
     def observe_origin_peer(self, channel, phase, protected, observation): return None
+    def proxy_failure_diagnostic(self, stage, target, upstream, error): return {}
 
     def https_url(self, phase):
         if not self.owned_https or phase not in PHASES: raise ValueError('https-fixture-disabled-or-invalid-phase')
@@ -272,16 +273,20 @@ class Fixture:
 
     def proxy_request(self, client):
         upstream = None
+        stage, target = 'request-header', None
         self.track(client)
         try:
             client.settimeout(15)
             request = header(client)
+            stage = 'request-line'
             pieces = request.split(b'\r\n', 1)[0].split()
             if len(pieces) != 3: raise ValueError('proxy-request')
             auth = b'Proxy-Authorization: Basic ' + base64.b64encode((QA_USER + ':' + QA_PASSWORD).encode())
+            stage = 'client-authentication'
             if auth not in request.split(b'\r\n'):
                 self.ledger.record('auth-challenge')
                 client.sendall(b'HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm="Owned fixture"\r\nContent-Length: 0\r\nConnection: close\r\n\r\n'); return
+            stage = 'destination-parse'
             if pieces[0] == b'CONNECT':
                 host, port = pieces[1].decode('ascii').rsplit(':', 1)
                 port = int(port); forwarded = None
@@ -290,36 +295,49 @@ class Fixture:
                 if parsed.scheme != 'http': raise ValueError('scheme')
                 host, port = parsed.hostname, parsed.port or 80
                 path = (parsed.path or '/') + ('?' + parsed.query if parsed.query else '')
+                target = path
                 forwarded = request.replace(pieces[1], path.encode(), 1)
             else:
                 raise ValueError('method')
+            stage = 'destination-scope'
             local = self.owned_local_destination(host, port)
             owned_tls = self.owned_https and host == 'browser.free' and port == 443 and forwarded is None
             if not (local or owned_tls or host in self.public_tls_hosts and port == 443 and forwarded is None):
                 raise ValueError('destination-not-owned-or-allowlisted')
             context = self.begin_owned_request(host, port) if local else {}
+            stage = 'peer-custody'
             if local: self.observe_proxy_peer(context, client)
             if local and forwarded is not None:
+                stage = 'owned-request-validation'
                 self.validate_owned_request(context, path)
+            stage = 'fault-injection'
             if (local or owned_tls) and (self.root / 'drop-upstream').exists():
                 self.ledger.record('upstream-refused', purpose='owned-https' if owned_tls else 'local-http', phase=self.https_phase() if owned_tls else None)
                 answer(client, b'502 Bad Gateway', b''); return
             if (local or owned_tls) and (self.root / 'cut-upstream').exists():
                 self.ledger.record('upstream-tcp-cut', purpose='owned-https' if owned_tls else 'local-http', phase=self.https_phase() if owned_tls else None)
                 client.shutdown(socket.SHUT_RDWR); return
+            stage = 'upstream-connect'
             upstream = self.open_upstream(host, port)
             self.track(upstream)
             if forwarded is None:
+                stage = 'connect-response'
                 client.sendall(b'HTTP/1.1 200 Connection Established\r\n\r\n')
             if local:
                 with self.socket_lock: self.local_sockets.update((client, upstream))
+                stage = 'tunnel-header'
                 forwarded = forwarded if forwarded is not None else header(client)
+                stage = 'target-parse'
                 local_target = forwarded.split(b'\r\n', 1)[0].split()[1].decode('ascii')
+                target = local_target
+                stage = 'nonce-validation'
                 phase = self.phase(local_target)
                 callback_target = self.owned_https and urlsplit(local_target).path == '/__neantik_route/ack'
                 if phase is None and not callback_target: raise ValueError('owned-nonce')
+                stage = 'owned-request-validation'
                 self.validate_owned_request(context, local_target)
                 forwarded = forwarded[:-2] + b'X-NeAntik-Owned-Hop: ' + self.hop.encode() + b'\r\n' + self.owned_request_headers(context) + b'\r\n'
+                stage = 'forward-request'
                 upstream.sendall(forwarded)
                 self.ledger.record('upstream-http', phase=phase, stream=urlsplit(local_target).path == '/owned-stream', ownedHTTPSCallback=callback_target)
             elif owned_tls:
@@ -327,6 +345,7 @@ class Fixture:
                 self.ledger.record('owned-https-tunnel', phase=self.https_phase())
             else:
                 self.ledger.record('geoip-preflight-tunnel')
+            stage = 'relay-copy'
             until = time.monotonic() + (180 if local else 55)
             while not self.stopping.is_set() and time.monotonic() < until:
                 ready, _, _ = select.select([client, upstream], [], [], .25)
@@ -334,8 +353,10 @@ class Fixture:
                     chunk = source.recv(16384)
                     if not chunk: return
                     (upstream if source is client else client).sendall(chunk)
-        except (OSError, ValueError, IndexError):
-            self.ledger.record('proxy-operation-failure')
+        except (OSError, ValueError, IndexError) as error:
+            try:diagnostic = self.proxy_failure_diagnostic(stage, target, upstream, error)
+            except (OSError, ValueError, TypeError, AttributeError):diagnostic = {}
+            self.ledger.record('proxy-operation-failure', **(diagnostic if isinstance(diagnostic, dict) else {}))
         finally:
             if upstream is not None:
                 self.untrack(upstream); upstream.close()
