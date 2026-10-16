@@ -10,6 +10,9 @@
   targeted tests: `python3 -B scripts/test-manager-fast.py --suite NameTests`
   (repeat suites). Use the project's developer-dir resolver, local caches,
   jobs2 and serial tests. Do not change inputs of a running build.
+- Python contracts: set `PYTHONDONTWRITEBYTECODE=1` as well as `python3 -B`;
+  `-B` alone does not protect subprocess imports. Preserve and quarantine only
+  diagnosed own-generated source bytecode; never clean shared build caches.
 - Substantive manager/workflow changes use
   `.agents/skills/neantik-development/SKILL.md`; the read-only check planner
   explains selection. Unknown/shared inputs require full regression. Small
