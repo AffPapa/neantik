@@ -5,14 +5,21 @@
   "shippingWebKitProxy": false,
   "mechanism": "Dedicated per-profile host with kernel per-app NEAppProxyProvider system extension;not transparent proxy",
   "sourceFiles": {
-    "Experiments/WebKitIsolation/Package.swift": "2daf8d15cd0b7ca9c3b9b78769356a91e53d5245409d4e728fe46e53eb5b0693",
+    "Experiments/WebKitIsolation/Package.swift": "6a0a1fe05d891c0a048cdee50a72c9650fc66fa47e794dd5aeb6792e0378e683",
     "Experiments/WebKitIsolation/Sources/IsolationCore/IsolationLedger.swift": "b36c20aa7e3af56807810aae18280de80e8e849bc069cc3734986929a6150a82",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/OwnedQATargetPolicy.swift": "5bf6f9a44e0702ed440e2a00bb241d0af3047a550e110d73142accce9928d85d",
     "Experiments/WebKitIsolation/Sources/IsolationCore/ProviderLifetime.swift": "3a25b88bfaaa477ae9e4d4183d0c8846f1bf5c7fe0c9d1059fbb16bf9623fe50",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/QAOperationFence.swift": "e4bf1e1a63519e3cec7daecd1e02159803e15bfce7383e3eb3d2c39ef8d04fe6",
     "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/FailClosedAppProxyProvider.swift": "8db3fdd9f15ad48a4309c8eef1ac3591b6c8b0756d4615b236c80d7bc136cdd7",
     "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/IsolatedTCPFlowRouter.swift": "8459a88294bf25366b1147d0e94003a9f834d6de1db58473d260b71ca8659f5a",
     "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/SignedHostPin.swift": "21dc596cddbbc71b5914a6daa1e818276fde9bf6c55f54a354a2116e30ef5639",
+    "Experiments/WebKitIsolation/Sources/IsolationQAController/Entry.swift": "545ff74c699154b5f3460301327b3cac2452e20ba260a2a76287228f7fbbe64a",
+    "Experiments/WebKitIsolation/Sources/IsolationQADenyProvider/Entry.swift": "3a6197904b0a1f79d396381205da75b98e24d2ad1bdd4613c2d39a6c44325164",
+    "Experiments/WebKitIsolation/Sources/IsolationQAHost/Entry.swift": "e2d43e7d16efdef112712cb9e589d4310bb75a6008891185e37a0d2506142196",
     "Experiments/WebKitIsolation/Tests/IsolationCoreTests/IsolationLedgerTests.swift": "85201950c23a0f9820d355b1b1d23a1663c4d45fc26e00e861cc88815264001c",
-    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/ProviderLifetimeTests.swift": "887ee0c35cf943a8350d80fecc809b4b6fc561857886ce0cb7625cb84ef9ecda"
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/ProviderLifetimeTests.swift": "887ee0c35cf943a8350d80fecc809b4b6fc561857886ce0cb7625cb84ef9ecda",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/QAScopeTests.swift": "10ca4abacaeb788bae119f3cd5135e3341435719e0b41a9ad99816a15da1b97e",
+    "Experiments/WebKitIsolation/prepare-qa.py": "9d9a225830f4a29ba3623ef542a062e0a58bb4d0cbd9bc5157321652fa0050a3"
   },
   "modelTests": {
     "receiptInputSHA256": "fb910d4755fe3f0540439ae23ceb17f6ff0f61a69f437046f120236cfe1c7302",
@@ -45,9 +52,9 @@
     "productionIdentifierChanged": false
   },
   "notImplemented": [
-    "Signed/installable system-extension bundle",
-    "Dedicated profile host extraction",
-    "Authenticated control IPC and actual kernel owner attribution",
+    "Signed and notarized installable system-extension bundle",
+    "Production dedicated profile host extraction",
+    "Authenticated production control IPC and actual kernel owner attribution",
     "Concrete fixed-upstream tunnel integration",
     "Kernel failure/DNS/UDP/IPv6/loopback and persistent WebKit qualification"
   ],
@@ -70,16 +77,46 @@
     "scope": "Pure provider lifetime and callback-order fence,including deliberate broken ordering;adapter compiled;unchanged12 ledger models not repeated",
     "previousFiveControlRun": "PASS preserved;subset of final6,not counted as5additional unique tests"
   },
-  "uniquePureControls": 18,
+  "uniquePureControls": 25,
   "reviewCorrections": [
     "Factory outside state lock",
     "Generation-bound shared stop/drain with callbacks only after drain",
     "Serialized start/stop framework completions and explicit broken-order control",
     "Inert tunnel factory;attach cancellation before network handshake",
-    "Clean normal TCP EOF instead of refused error"
+    "Clean normal TCP EOF instead of refused error",
+    "Strict whole-literal IP parser rejects DNS suffix trick",
+    "Exclusive QA launch/mutation fence through async completion;fresh absence check before cleanup",
+    "Read-only provider counter request cannot block cleanup;late reply cannot restore removed manager"
   ],
   "knownHarnessWarnings": [
     "Swift Testing #require macro passes a closure without Sendable annotation in two new test assertions;no product adapter Sendable warning in final compile",
     "SwiftPM native build-system deprecation"
-  ]
+  ],
+  "preparedKernelQA": {
+    "status": "compiled;four fresh unsigned bundles assembled;not launched or installed",
+    "controller": "Separate QA-only controller;source-application routing required;refuses global/stale/domain-exception scope;no automatic preference saves or install",
+    "hosts": "Dedicated nonpersistent A and independent B;only explicit owned QA-run local HTTP navigation",
+    "provider": "Deny-only NEAppProxyProvider,observes known/unknown kernel host attribution;does not forward or provide proxy function",
+    "buildInputSHA256": "3d4c4992a671028a30fc87c760df405c69bdd10898bf1a180f1db139b7a26848",
+    "buildSeconds": 1.5958212499972433,
+    "build": "PASS",
+    "firstBuild": "FAIL Swift5 explicit-self capture requirements;diagnosed source repair only;original report retained",
+    "assemblyRefusals": "existing output,failed build,symlink receipt:3 expected refusals;original unsigned output unchanged",
+    "signature": "not signed",
+    "kernelRun": "not run",
+    "newCertificate": false,
+    "productionTouched": false,
+    "scopeTestCompileFailure": "Swift Testing mutating struct call macro expansion;harness evaluated calls before assertions;original FAIL retained",
+    "operationFence": "Pending NSWorkspace launch and extension/config changes serialize;hosts rechecked before mutations;pure controls only",
+    "counterRead": "Readonly response cannot retain mutation fence or restore removed configuration"
+  },
+  "additionalQAScopeControls": {
+    "status": "PASS",
+    "tests": 7,
+    "suites": 1,
+    "seconds": 1.3060302919475362,
+    "inputSHA256": "248b6f358d9bbfd770dce766d83fd83210e0e4425ea9a83f5e69006687c47f37",
+    "scope": "Pure fixture URL policy and launch/configuration fence only;actual Host uses the tested policy;no browser/kernel execution"
+  },
+  "sourceOnlyDelivery": "No shipping app/runtime/archive/version change;production WebKit proxy remains disabled"
 }

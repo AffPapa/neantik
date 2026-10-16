@@ -6,11 +6,20 @@ import PackageDescription
 let package = Package(
     name: "WebKitIsolation",
     platforms: [.macOS(.v14)],
-    products: [.library(name: "IsolationNetworkExtension", targets: ["IsolationNetworkExtension"])],
+    products: [
+        .library(name: "IsolationNetworkExtension", targets: ["IsolationNetworkExtension"]),
+        .executable(name: "IsolationQAHost", targets: ["IsolationQAHost"]),
+        .executable(name: "IsolationQAController", targets: ["IsolationQAController"]),
+        .executable(name: "IsolationQADenyProvider", targets: ["IsolationQADenyProvider"])
+    ],
     targets: [
         .target(name: "IsolationCore"),
         .target(name: "IsolationNetworkExtension", dependencies: ["IsolationCore"],
                 linkerSettings: [.linkedFramework("NetworkExtension"), .linkedFramework("Security")]),
+        .executableTarget(name: "IsolationQAHost", dependencies: ["IsolationCore"], linkerSettings: [.linkedFramework("WebKit"), .linkedFramework("AppKit")]),
+        .executableTarget(name: "IsolationQAController", dependencies: ["IsolationNetworkExtension", "IsolationCore"],
+                          linkerSettings: [.linkedFramework("AppKit"), .linkedFramework("SystemExtensions")]),
+        .executableTarget(name: "IsolationQADenyProvider", dependencies: ["IsolationNetworkExtension"]),
         .testTarget(name: "IsolationCoreTests", dependencies: ["IsolationCore"])
     ],
     swiftLanguageModes: [.v5]

@@ -270,3 +270,21 @@ System Extension разрешений нет. Новые сертификаты 
 постоянное расширение прав Apple Developer; ожидается точное подтверждение.
 Ни идентификаторы, ни системные настройки в результате этой попытки не изменены.
 До реальных gates WebKit proxy остаётся выключенным; план1.0 не закрыт.
+
+Подготовлен следующий kernel probe: отдельный controller без WebKit,
+пустые nonpersistent Host A/B и deny-only provider. Три executables
+скомпилированы, четыре unsigned bundles собраны; запуск/подпись/установка
+не выполнялись. Controller отказывается сохранять global/destination-IP scope
+или запускать устаревшее правило: принимается только source-application scope
+для точного QA Host A. Правило и counters не считаются доказательством маршрута.
+Сначала требуется подтвердить actual kernel capture и B/provider-stop controls;
+только затем интегрировать настоящий tunnel и production host/IPC.
+
+
+QA source review additionally fixed strict literal-IP parsing and asynchronous
+launch/cleanup overlap. Seven new pure controls passed; prior18 ownership/
+lifecycle controls were not replayed. The current total is25 unique pure
+controls, not25 browser measurements. All QA executables compile; four unsigned
+bundles are prepared. No extension or browser was executed, signed or installed.
+Developer ID QA App ID registration remains subject to the pending exact account
+approval; no production capability has been enabled.
