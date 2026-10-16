@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "result": "scoped-manager-dns-observations-pass",
+  "checks": [
+    "same live manager/browser/relay generation",
+    "exact preflight and markLaunched metadata transition",
+    "each request socket belongs to owned relay or owned Direct browser helper",
+    "linked upstream UDP DNS and protected origin",
+    "SERVFAIL and no origin during failure window",
+    "literal-IP Direct origin sensitivity while fault armed",
+    "same-session recovery",
+    "owned cleanup"
+  ],
+  "runtimeExecutableSHA256": "27d0378671dd946f2b19c518f928a60a44b19ae0f97552569adb3eecc7e95c6c",
+  "runtimeFrameworkSHA256": "7bfe8e081bd94ea222e2a9ed304a56ef96a7edf342f12ecf079abf147c4b95f8",
+  "managerSHA256": "496aa707f341314092fef85c4713b4d8b1b445048f244bdfe47432d77cfffbc4",
+  "version": "0.8.18",
+  "build": "130",
+  "managerDNSScope": "Owned upstream DNS only; no OS resolver, global DNS/UDP, existing-stream or Direct DNS claim",
+  "globalDNSQualified": false,
+  "allNetworkGatesComplete": false,
+  "releaseGate": false,
+  "open": [
+    "global DNS/UDP",
+    "background traffic",
+    "network change",
+    "default-trusted HTTPS upstream",
+    "other environments"
+  ],
+  "inputSHA256": {
+    "fixture-ledger.json": "c09ca57761080c1e3c2b533155827b8c3c1d73c7b72aed0445c4aed68c1fc4f0",
+    "dns-custody-before-launch.json": "184a3471a351f7867d72d3235407280486d665b09aa5d8400b66c84d42f89fcc",
+    "dns-custody-proxy-success.json": "a8e67f9ff6c2b8521c63be0cdb55302c20e5cb033b734ce2522a1ef48a03c430",
+    "dns-custody-dns-refused.json": "52323e0abe052eddbf57ce7dc7f40a8d4d82c25efed57ec6e6e496bed6251832",
+    "dns-custody-direct-control.json": "caffdd6e7f78ea9faa04bd93196e08817dc8c132eea08cf5e3ab9d98b3316c6d",
+    "dns-custody-proxy-recovered.json": "9b18d84aa958303484d415cb2a827d824ec17f0b5281f8b240f0c8a461355265",
+    "dns-custody-cleanup.json": "2ff7793e906123530f8cd8d797f147f315afb871fd767327049644ab6a611884"
+  },
+  "analyzerSHA256": "4adeae4f439be3f80a82566e8014c1c50d321527e1fa71f3078e6a4e26217014",
+  "transitionWitnessSHA256": "b587d73f7906c9e3739ee00e7a429037648704b60939abd33ea9b1eefb53d651",
+  "transitionValidatorSHA256": "67ccfe0c5331d88d516515039664878d82037d863c6e47d9d1cf80a6e3939a42",
+  "analysisCorrection": "Explicit preflight context commit before markLaunched; original receipts unchanged",
+  "observedOn": "2026-10-16",
+  "artifact": "Downloaded published0.8.18(130);two isolated synthetic GUI profiles and mock Keychain",
+  "admission": "Fresh normal1/thermal0 before enrollment and browser launches;no warning override",
+  "productChanged": false,
+  "immutableReleaseAssetsChanged": false,
+  "checksReused": "Existing harness controls unchanged; prior128 browser evidence not reused for130",
+  "analysis": "Preflight metadata transition reconstructed offline with existing strict witness;original simple-model FAIL retained",
+  "originalFailureSHA256": "8324c085f63e50a74aa843aadcaf649576ef283fc22f297521a8f430c29cd8b8",
+  "setup": "First stdin launch ended before browser spawn;retained separately;same authority reused",
+  "cleanup": {
+    "managerExitCode": 0,
+    "ownedProcessesRemaining": 0,
+    "serverThreadsDrained": true,
+    "supplementalAuthorityRetired": true,
+    "retirementStatus": "Verified by supported narrow candidate-scoped receipt;original app and manifest unchanged",
+    "retirementReceiptSHA256": "f02df48a6bc7f997ce34b1e23ae82eb10c6b64c0ee1eb5057bba39678ca64d3e"
+  },
+  "privacy": "No credentials,raw profiles,network addresses,DNS names,argv or private traces in public summary",
+  "retirementCustody": "Original runtime executable retained Chromium code-sign clone hardlinks. Byte/mode/symlink-identical regular copy verified by existing manifest and DeveloperID;copy only inspected,never launched;guard unchanged"
+}

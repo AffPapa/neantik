@@ -277,13 +277,13 @@ Retire the supplemental QA authority through its supported narrow operation;
 the published candidate's original evidence remains unchanged. Timeout/SIGTERM
 cleanup is never a graceful-close qualification.
 
-**Current evidence:** the downloaded signed 0.8.16 (128) completed the owned
+**Current evidence:** the downloaded signed 0.8.18 (130), with its new font-policy runtime, completed the owned
 manager/relay DNS path after normal admission: origin success, SERVFAIL with
 no protected origin hit, an independent Direct origin while the fault stayed
 armed, and recovery in the same protected session. Kernel socket custody,
 profile/revision/configuration, exact runtime and process generations were
 linked. Own processes drained and the supplemental QA authority was retired.
-See [the scoped report](evidence/manager-dns-0.8.16.json).
+See [the current scoped report](evidence/manager-dns-0.8.18.json). The [128 report](evidence/manager-dns-0.8.16.json) remains bound to its original bytes; it was not relabeled.
 
 The original analyzer FAIL is preserved. Two harness assumptions were wrong:
 launch preflight persists timezone/locale/evidence before markLaunched, and
@@ -300,3 +300,20 @@ receipt amendment was used to correct these assumptions.
 This qualifies owned upstream DNS only. OS-global DNS/UDP, idle/background,
 network change and default-trusted HTTPS upstream remain separate gates.
 The previous 127 memory-warning refusal remains a setup refusal, not a PASS.
+
+### Narrow authority retirement after Chromium launch
+
+Chromium on macOS may retain hardlinks of its executable for code-sign clones.
+A changed link count can therefore cause the existing `nlink == 1` retirement
+inspection to refuse an otherwise unchanged app. Do not weaken that check or
+delete unknown aliases. For an owned QA authority, the existing retirement
+contract permits a byte/mode/symlink-identical regular copy as `--candidate-app`.
+Verify it against the **same** manifest and Developer ID in the authorized
+macOS context; execute the original manager retirement command, never the copy.
+Use an owned project path without symlink parents for this inspected copy:
+`/tmp` app paths conflict with the provisioning reader's nofollow custody.
+Keep canonical manifest/output spellings accepted by the launch parser.
+No new authority, manifest, signature or browser recapture is needed. Preserve
+the original app and all refusal receipts; accept cleanup only after the exact
+candidate-scoped retirement receipt confirms deletion. This path completed
+for the130 supplemental DNS authority.

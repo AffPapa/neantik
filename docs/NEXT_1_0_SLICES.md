@@ -41,7 +41,7 @@ fontPolicy/перезапуском прошли. Политика WebKit не �
 
 | Приоритет | Осталось | Что нужно сделать следующим |
 |---|---|---|
-| P0 | DNS и сетевые отказы (19–22) | Raw signed Chromium:3headed-сессии/8наблюдений UDP/DoH сохранены. На скачанной128 дополнительно подтверждены настоящий manager/relay, revision/configuration, upstream DNS, SERVFAIL без protected origin, чувствительный Direct-контроль и same-session recovery. Остались idle/background, глобальные DNS/UDP и смена сети. [Scope и исправления harness](NETWORK_REALITY_HARNESS.md#manager--relay-dns-producer). |
+| P0 | DNS и сетевые отказы (19–22) | Raw signed Chromium:3headed-сессии/8наблюдений UDP/DoH сохранены. На скачанной130 с новым runtime отдельно подтверждены настоящий manager/relay, revision/configuration, upstream DNS, SERVFAIL без protected origin, чувствительный Direct-контроль и same-session recovery. [Evidence130](evidence/manager-dns-0.8.18.json);128 остаётся историческим измерением. Остались idle/background, глобальные DNS/UDP и смена сети. [Scope и исправления harness](NETWORK_REALITY_HARNESS.md#manager--relay-dns-producer). |
 | P0 | Согласованность платформы (1–18, 40–43) | Все11tuple прошли headed CPU/memory/screen/DPR/platform/GPU/repeat projection на точном runtime128;4issued входят в них.15persisted migration/edit/collision строк+4negatives прошли локально. [Scope](evidence/cohorts-0.8.16.json). HTTPS/cross-origin identity на runtime129 теперь подтверждена [отдельным срезом](evidence/https-identity-0.8.17.json). Font-policy доставлена в 0.8.18 в указанном scope. Остались locale/events voices без имён/ID, actual codecs/PDF/MediaCapabilities/storage manifest и дополнительные OS/cohort условия. Второй дисплей, смена сети/питания и физический capture — внешние условия. Canvas/WebGL/Audio и девять контекстов без изменения входов не повторять. |
 | P1 | Восстановление данных (30–31, 35–36) | Backup/restore cookies/LS/IndexedDB/вкладок, wrong-password и прерывание уже имеют signed QA evidence. Recovery pin и безопасная форма опубликованы в127. Остались недостающие crash/timeout условия и отдельный WebKit snapshot/restore. Формат Chromium-копии заново не реализуется. [Границы доказательств](BROWSER_DATA_BACKUP.md). |
 | P1 | Расширения (33–34) | Центр, CRX3 crypto и собственный native lifecycle уже реализованы в ограниченном scope. Закрыть непроверенную отмену native install dialog и совместимость нужных пакетов; не повторять весь lifecycle без изменения кода/runtime. |
@@ -360,3 +360,13 @@ unit-теста (3 пропуска). [Границы результата](evid
 Точная поставка нового кандидата завершена в [0.8.18](../releases/v0.8.18.json).
 Полные network/Canvas/WebGL/Audio матрицы на successor заново не выполнялись;
 старые результаты сохраняют исходные привязки. Это не закрытие всей 1.0.
+
+## Дополнительно проверено: manager DNS на0.8.18
+
+Скачанная опубликованная130 прошла один оконный сценарий с новым runtime:
+UDP DNS → relay → собственный сайт; отказ DNS без обхода прокси; отдельный
+Direct-контроль во время отказа; восстановление в той же защищённой сессии.
+Пять снимков связывают процессы, профиль, revision и runtime. Менеджер
+завершился штатно, своих процессов не осталось, временный ключ аудита удалён.
+[Результат и границы](evidence/manager-dns-0.8.18.json). Глобальные DNS/UDP,
+фоновые запросы и смена сети остаются открытыми. Новая сборка не требовалась.
