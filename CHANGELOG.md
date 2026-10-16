@@ -1,5 +1,12 @@
 # NeAntik changelog
 
+## Direct 0.8.18 (130) — published public alpha — системные шрифты Chromium
+
+- Добавлен opt-in режим системных шрифтов Mac в редактор и MCP. Обычный режим старых профилей сохранён; данные не сбрасываются. Исправлена provenance variable fonts.
+- Новая compiled policy связывает полный runtime/evidence/report; смешанные записи отклоняются. Нативная QA-проверка выявила чтение прежнего пути после transfer; исправлено чтение через retained slot, проверены реальные ACK/install и preACK rollback. Это QA-копии, не production feed hop.
+- Полные source-прогоны и релевантные delta-наборы, первый exact headed130b, doctor13, Apple ZIP/DMG, публичные архивы/checksums и downloaded MCP18/7+fontPolicy edit/restart прошли. Пропуски не считались нативными PASS.
+- Первый переход на этот runtime — вручную через подписанный DMG/ZIP; updater129 его не примет. Runtime APP4 и его подпись сохранены при упаковке. Сертификат прежний. WebKit не расширялся. Сайт пока на128; это не готовая1.0. [Отчёт и ограничения](releases/v0.8.18.json).
+
 ## Direct 0.8.17 (129) — published public alpha — WebKit через MCP
 
 - Запуск, статус и остановка WebKit доступны через открытый интерфейс NeAntik после явного разрешения подключения и выбранных профилей. Повторное подключение не получает чужие окна.

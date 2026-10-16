@@ -356,8 +356,10 @@ whole-source observation nor permission to rebuild the engine. Source tools
 are not executed by the verifier itself.
 
 Python integration, corruption and mixed-identity controls are local tooling
-evidence. The updated native enrollment allowlist still needs the next manager
-integration run. New packaged evidence/report bytes, compiled updater records,
-and exact signed candidate qualification remain open. Published 0.8.17's updater
-cannot learn new runtime pins from downloaded metadata: a bridge or clearly
-explained manual signed upgrade remains necessary before delivery.
+evidence. The separate frozen runtime/evidence/report record, native enrollment,
+exact signed headed candidate and public ZIP/DMG delivery are qualified in
+[0.8.18 (130)](../../releases/v0.8.18.json). Downloaded MCP checks cover requested
+policy create/edit/persistence, not applied-state proof. Native QA copies passed
+actual ACK/install and pre-ACK rollback; production feed qualification remains
+separate. Published 0.8.17's updater cannot learn the new pins from downloaded
+metadata: the first transition requires the signed manual DMG/ZIP upgrade.

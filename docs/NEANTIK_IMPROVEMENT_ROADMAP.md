@@ -1,4 +1,4 @@
-# Current public release: 0.8.17/build129 · Chromium156.0.8078.12 · [report](../releases/v0.8.17.json)
+# Current public release: 0.8.18/build130 · Chromium156.0.8078.12 · [report](../releases/v0.8.18.json)
 
 GitHub/browser.free delivery128 is complete in the report scope (Sites153). Major1.0 remains open; older dated sections below are historical. The active remaining scope is in [NEXT_1_0_SLICES](NEXT_1_0_SLICES.md).
 

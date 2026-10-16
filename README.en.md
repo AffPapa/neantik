@@ -7,7 +7,7 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-**0.8.17 (129), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.17): start and close WebKit windows through MCP after approving the connection and selected profiles in the open NeAntik GUI. The [browser.free](https://browser.free/) update is pending; its download page still points to the previous release.
+**0.8.18 (130), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.18): opt-in system Mac fonts for Chromium profiles, configurable in the editor and through MCP. Existing profiles keep native font handling. [browser.free](https://browser.free/) still points to the previous release.
 The exact signed candidate passed an isolated headed audit. Public ZIP/DMG bytes match and passed notarization, stapling and Gatekeeper. The downloaded manager passed a separate isolated MCP startup/restart smoke; the full headed audit was reused, not rerun.
 System WebKit remains a preview and does not replace the complete fingerprint. WebKit media remains disabled; full1.0 qualification is open.
 
@@ -18,13 +18,13 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.8.17 (129), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.17). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.17.json).
+Latest published release: [NeAntik 0.8.18 (130), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.18). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.18.json).
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-Direct downloads: [GitHub — 0.8.17](https://github.com/AffPapa/neantik/releases/tag/v0.8.17). [browser.free](https://browser.free) still points to the previous release.
+Direct downloads: [GitHub — 0.8.18](https://github.com/AffPapa/neantik/releases/tag/v0.8.18). [browser.free](https://browser.free) still points to the previous release.
 
 The description below reflects the manager contract and this source branch;
 the exact public binary contents are defined by its release notes and assets.

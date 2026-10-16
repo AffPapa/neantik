@@ -1,6 +1,6 @@
 # Что остаётся до 1.0
 
-База: опубликованная на GitHub [0.8.17 (129)](../releases/v0.8.17.json). browser.free пока остаётся на0.8.16; Sites-публикация отдельно заблокирована автоматической проверкой передачи credential.
+База: опубликованная на GitHub [0.8.18 (130)](../releases/v0.8.18.json). browser.free пока остаётся на 0.8.16; Sites-публикация отдельно заблокирована автоматической проверкой передачи credential.
 Это public alpha, а не завершённая 1.0. Сохранённые проверки применяются к
 указанным в них входам; список ниже не является заданием повторить их все.
 Полная 45-пунктная приёмка остаётся в [major-плане](MAJOR_1_0_PLAN.md).
@@ -33,13 +33,19 @@ GUI-mediated MCP запускает и закрывает собственные
 
 ## Оставшиеся срезы
 
+В 0.8.18 опубликован opt-in режим системных шрифтов для Chromium, редактор/MCP
+и новая compiled runtime/evidence/report policy. Exact headed, Direct13,
+ZIP/DMG/Apple/Gatekeeper, публичные байты и downloaded MCP с изменением
+fontPolicy/перезапуском прошли. Политика WebKit не расширялась. Первый переход
+129→130 — вручную; QA install/rollback не является production feed hop.
+
 | Приоритет | Осталось | Что нужно сделать следующим |
 |---|---|---|
 | P0 | DNS и сетевые отказы (19–22) | Raw signed Chromium:3headed-сессии/8наблюдений UDP/DoH сохранены. На скачанной128 дополнительно подтверждены настоящий manager/relay, revision/configuration, upstream DNS, SERVFAIL без protected origin, чувствительный Direct-контроль и same-session recovery. Остались idle/background, глобальные DNS/UDP и смена сети. [Scope и исправления harness](NETWORK_REALITY_HARNESS.md#manager--relay-dns-producer). |
-| P0 | Согласованность платформы (1–18, 40–43) | Все11tuple прошли headed CPU/memory/screen/DPR/platform/GPU/repeat projection на точном runtime128;4issued входят в них.15persisted migration/edit/collision строк+4negatives прошли локально. [Scope](evidence/cohorts-0.8.16.json). HTTPS/cross-origin identity на runtime129 теперь подтверждена [отдельным срезом](evidence/https-identity-0.8.17.json). Остались font-policy, locale/events voices без имён/ID, actual codecs/PDF/MediaCapabilities/storage manifest. Второй дисплей, смена сети/питания и физический capture — внешние условия. Canvas/WebGL/Audio и девять контекстов без изменения входов не повторять. |
+| P0 | Согласованность платформы (1–18, 40–43) | Все11tuple прошли headed CPU/memory/screen/DPR/platform/GPU/repeat projection на точном runtime128;4issued входят в них.15persisted migration/edit/collision строк+4negatives прошли локально. [Scope](evidence/cohorts-0.8.16.json). HTTPS/cross-origin identity на runtime129 теперь подтверждена [отдельным срезом](evidence/https-identity-0.8.17.json). Font-policy доставлена в 0.8.18 в указанном scope. Остались locale/events voices без имён/ID, actual codecs/PDF/MediaCapabilities/storage manifest и дополнительные OS/cohort условия. Второй дисплей, смена сети/питания и физический capture — внешние условия. Canvas/WebGL/Audio и девять контекстов без изменения входов не повторять. |
 | P1 | Восстановление данных (30–31, 35–36) | Backup/restore cookies/LS/IndexedDB/вкладок, wrong-password и прерывание уже имеют signed QA evidence. Recovery pin и безопасная форма опубликованы в127. Остались недостающие crash/timeout условия и отдельный WebKit snapshot/restore. Формат Chromium-копии заново не реализуется. [Границы доказательств](BROWSER_DATA_BACKUP.md). |
 | P1 | Расширения (33–34) | Центр, CRX3 crypto и собственный native lifecycle уже реализованы в ограниченном scope. Закрыть непроверенную отмену native install dialog и совместимость нужных пакетов; не повторять весь lifecycle без изменения кода/runtime. |
-| P1 | Updater (37) | Следующие изменённые helpers, прерывания и другие macOS; существующие install/rollback и проверенную continuity не повторять для неизменённого кода. |
+| P1 | Updater (37) | В130 добавлен новый compiled record и проверены реальные QA ACK/rollback. Первый переход129→130 только manual; production hop130→следующий кандидат, прерывания и другие macOS открыты. Не повторять старые неизменённые controls. |
 | P1 | Отчёты и документы (44–45) | Сравнивать совместимые реальные измерения между версиями, поддерживать фактические capability/release claims. Отчёт сам по себе не является runtime-проверкой. |
 
 ## Что ещё нужно WebKit
@@ -339,10 +345,10 @@ baseline хранится отдельно от текущей baseline публ
 
 Полные source-прогоны: Swift —1635 тестов/194 suites,71 пропущен;
 Python —1539 тестов,19 пропущено. Пропуски не засчитаны как нативный PASS.
-Нативное enrollment нового менеджера, установка/rollback и точный Direct-
-кандидат ещё не квалифицированы. Опубликованный updater129 новый runtime
-автоматически не принимает; первый переход планируется через подписанный
-DMG/ZIP, без обещания совместимого автоматического обновления.
+Нативное enrollment и точный signed/headed кандидат затем квалифицированы
+в выпуске 0.8.18. Updater129 новый runtime автоматически не принимает;
+переход выполняется через подписанный DMG/ZIP, без обещания совместимого
+автоматического обновления.
 
 На отдельных QA-копиях проверены настоящая установка с ACK и rollback при
 ошибке перед ACK. Проверены обе копии приложения и журнал решения; ProfileStore
@@ -351,4 +357,6 @@ DMG/ZIP, без обещания совместимого автоматичес
 перемещённого slot. После исправления оба сценария прошли, как и22 связанных
 unit-теста (3 пропуска). [Границы результата](evidence/font-updater-native-development.json).
 Это не квалификация production feed или автоматического перехода129→130.
-Точная поставка нового кандидата остаётся отдельным gate.
+Точная поставка нового кандидата завершена в [0.8.18](../releases/v0.8.18.json).
+Полные network/Canvas/WebGL/Audio матрицы на successor заново не выполнялись;
+старые результаты сохраняют исходные привязки. Это не закрытие всей 1.0.
