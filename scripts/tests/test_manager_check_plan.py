@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+import plistlib
 import subprocess
 import tempfile
 import unittest
@@ -18,7 +19,7 @@ class ManagerCheckPlanTests(unittest.TestCase):
         self.assertEqual(len(result['reasons']),9)
         self.assertFalse(result['releaseGate'])
         unknown=MOD.plan(['scripts/runtime-network/unreviewed-webrtc.mjs'],[])
-        self.assertIn('discover',unknown['commands'][0])
+        self.assertTrue(any('discover' in command for command in unknown['commands']))
 
     def test_common_evidence_preparation_has_bounded_tests_without_release_authority(self):
         result = MOD.plan(['scripts/prepare_runtime_common_evidence.py'], [])
@@ -30,7 +31,7 @@ class ManagerCheckPlanTests(unittest.TestCase):
         self.assertFalse(result['releaseSurface'])
         self.assertIn('preparation never qualifies', result['requiredAdditionalGates'][0])
         unknown = MOD.plan(['scripts/prepare_runtime_common_evidence_other.py'], [])
-        self.assertIn('discover', unknown['commands'][0])
+        self.assertTrue(any('discover' in command for command in unknown['commands']))
 
     def test_offline_dns_transition_and_planner_have_explicit_bounded_contracts(self):
         result = MOD.plan(['scripts/runtime-network/manager-dns-transition.py',
@@ -86,7 +87,105 @@ class ManagerCheckPlanTests(unittest.TestCase):
         self.assertEqual(result['status'], 'not-run')
         self.assertIn('owned network', result['requiredAdditionalGates'][0])
         unknown = MOD.plan(['scripts/runtime-network/new-unknown.py'], [])
-        self.assertIn('discover', unknown['commands'][0])
+        self.assertTrue(any('discover' in command for command in unknown['commands']))
+
+    def test_reviewed_shared_swift_keeps_full_swift_and_python_dependency_union(self):
+        result = MOD.plan(sorted(MOD.SHARED_SWIFT), ['MCPProfileManagementTests'])
+        self.assertEqual(result['swiftMode'], 'full')
+        self.assertEqual(result['commands'][0][-1], '--all')
+        self.assertEqual(result['commands'][1], ['python3', '-B', '-m', 'unittest',
+            'scripts.tests.test_verify_built_runtime_script',
+            'scripts.tests.test_verify_chromium_launch_flags',
+            'scripts.tests.test_verify_direct_ui_localization',
+            'scripts.tests.test_verify_mcp_documentation',
+            'scripts.tests.test_verify_redacted_support_bundle'])
+        self.assertEqual(result['status'], 'not-run')
+        self.assertFalse(result['releaseGate'])
+        self.assertTrue(any('stdio' in gate for gate in result['requiredAdditionalGates']))
+
+    def test_mcp_dependency_is_not_lost_to_feature_classification(self):
+        result = MOD.plan(['Sources/NeAntik/MCPProfileManagement.swift'], ['MCPProfileManagementTests'])
+        self.assertEqual(result['commands'][1][-1], 'scripts.tests.test_verify_mcp_documentation')
+        self.assertEqual(result['swiftMode'], 'full')
+        # Similar names are deliberately not added to the reviewed shared map.
+        unknown = MOD.plan(['Sources/NeAntik/MCPOutputSchemasOther.swift'], [])
+        self.assertEqual(unknown['swiftMode'], 'full')
+
+    def test_semantic_docs_add_the_reader_without_swift_build(self):
+        result = MOD.plan(['CHANGELOG.md', 'docs/MCP_GUIDE.md'], [])
+        self.assertEqual(result['swiftMode'], 'none')
+        self.assertEqual(result['commands'], [['python3', '-B', '-m', 'unittest',
+            'scripts.tests.test_verify_mcp_documentation']])
+
+    def test_unknown_inputs_dominate_reviewed_selection(self):
+        for path in ('Sources/NeAntik/UnreviewedShared.swift', 'Sources/NeAntik/Models.swift',
+                     'Package.swift', '.github/workflows/unreviewed.yml',
+                     'scripts/unreviewed.py', 'runtime/new-input.json'):
+            with self.subTest(path=path):
+                result = MOD.plan(['Sources/NeAntik/BrowserProcessManager.swift', path], [])
+                self.assertEqual(result['swiftMode'], 'full')
+                self.assertTrue(any('discover' in command for command in result['commands']))
+                self.assertEqual(result['status'], 'not-run')
+                self.assertFalse(result['releaseGate'])
+
+    def test_swift_test_declarations_keep_python_inventory_contract(self):
+        result = MOD.plan(['Tests/NeAntikTests/ExampleTests.swift'], ['ExampleTests'])
+        self.assertEqual(result['selectedSuites'], ['ExampleTests'])
+        self.assertEqual(result['commands'][1][-1], 'scripts.tests.test_verify_native_swift_tests_script')
+
+    def test_info_path_alone_does_not_guess_version_only_change(self):
+        result = MOD.plan(['Resources/Info.plist'], [])
+        self.assertEqual(result['swiftMode'], 'full')
+        self.assertTrue(any('discover' in command for command in result['commands']))
+        self.assertFalse(MOD.version_only_info_change(None))
+        narrowed = MOD.plan(['Resources/Info.plist'], [], version_only_info=True)
+        self.assertEqual(narrowed['swiftMode'], 'full')
+        self.assertEqual(narrowed['commands'][1], ['python3', '-B', '-m', 'unittest',
+            'scripts.tests.test_verify_direct_version_bump',
+            'scripts.tests.test_verify_mcp_documentation'])
+        self.assertTrue(narrowed['releaseSurface'])
+        self.assertFalse(narrowed['releaseGate'])
+
+    def test_info_narrowing_uses_actual_baseline_and_rejects_policy_or_invalid_inputs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def git(*args):
+                return subprocess.check_output(['git', *args], cwd=root, stderr=subprocess.DEVNULL)
+            git('init'); git('config', 'user.name', 'Owned fixture')
+            git('config', 'user.email', 'qa@example.test')
+            path = root / 'Resources/Info.plist'; path.parent.mkdir()
+            original = dict(CFBundleShortVersionString='0.1.0', CFBundleVersion='1', Policy=False)
+            path.write_bytes(plistlib.dumps(original)); git('add', '.'); git('commit', '-m', 'fixture')
+            base = git('rev-parse', 'HEAD').decode().strip()
+            self.assertFalse(MOD.version_only_info_change(base, root))
+            changed = {**original, 'CFBundleShortVersionString': '0.1.1', 'CFBundleVersion': '2'}
+            path.write_bytes(plistlib.dumps(changed))
+            self.assertTrue(MOD.version_only_info_change(base, root))
+            self.assertFalse(MOD.version_only_info_change('missing-baseline', root))
+            for wrong in ({**changed, 'Policy': True}, {**changed, 'NewPolicy': False},
+                          {**changed, 'CFBundleVersion': 2}):
+                path.write_bytes(plistlib.dumps(wrong))
+                self.assertFalse(MOD.version_only_info_change(base, root))
+            path.write_bytes(b'<plist><broken')
+            self.assertFalse(MOD.version_only_info_change(base, root))
+            path.unlink(); path.symlink_to(root / 'missing')
+            self.assertFalse(MOD.version_only_info_change(base, root))
+
+    def test_rename_from_reviewed_to_unknown_keeps_both_paths_and_full_fallback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def git(*args):
+                return subprocess.check_output(['git', *args], cwd=root, stderr=subprocess.DEVNULL)
+            git('init'); git('config', 'user.name', 'Owned fixture')
+            git('config', 'user.email', 'qa@example.test')
+            old = root / 'Sources/NeAntik/BrowserProcessManager.swift'; old.parent.mkdir(parents=True)
+            old.write_text('fixture'); git('add', '.'); git('commit', '-m', 'fixture')
+            git('mv', 'Sources/NeAntik/BrowserProcessManager.swift', 'Sources/NeAntik/NewUnknown.swift')
+            _, paths = MOD.changed_paths('HEAD', root)
+            self.assertEqual(len(paths), 2)
+            result = MOD.plan(paths, [])
+            self.assertEqual(result['swiftMode'], 'full')
+            self.assertTrue(any('discover' in command for command in result['commands']))
 
     def test_dns_fixture_has_bounded_controls_but_no_browser_pass_or_build(self):
         result = MOD.plan(['scripts/runtime-network/controlled-dns-fixture.py'], [])

@@ -21,9 +21,14 @@ struct ManagedBrowserQuitTests {
         let profile = BrowserProfile(name: "Fixture")
         var calls = 0
         var ownedProcess: Process?
-        let manager = BrowserProcessManager(paths: paths, processIdentityValidator: { _ in true },
+        // This child is our sleep stub, never a browser. Native fixtures retain
+        // real admission; pressure-refusal behavior has its own controls.
+        let manager = BrowserProcessManager(
+            launchAdmission: ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal }),
+            paths: paths, processIdentityValidator: { _ in true },
             managedProcessTerminator: { process in calls += 1; ownedProcess = process; return accept },
             browserDataProcessInspector: { _ in .absent })
+        defer { manager.suspendPassiveObservations() }
         try manager.launch(profile: profile, runtime: BrowserRuntime(name: "Fixture", executableURL: executable, source: "Test"))
         manager.stop(profileID: profile.id)
         manager.stop(profileID: profile.id)

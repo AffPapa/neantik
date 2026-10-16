@@ -4,8 +4,10 @@ import argparse
 import importlib.util
 import json
 from pathlib import Path, PurePosixPath
+import plistlib
 import re
 import subprocess
+from xml.parsers.expat import ExpatError
 
 ROOT = Path(__file__).resolve().parent.parent
 spec = importlib.util.spec_from_file_location("manager_fast_plan", ROOT / "scripts/test-manager-fast.py")
@@ -31,6 +33,34 @@ FEATURES = [
      r"^(MCP|ProfileStore|WebKitProfile)",
      "exact isolated stdio capability/revision/refusal integration"),
 ]
+
+# Only these reviewed shared inputs decouple full Swift regression from Python.
+# Unknown source paths still select both full sets. Paired Python contracts do
+# not execute Swift or qualify native behavior.
+SHARED_SWIFT = frozenset('Sources/NeAntik/' + name + '.swift' for name in (
+    'BrowserProcessManager', 'BrowserLaunchActionPresentation',
+    'MCPOutputSchemas', 'MCPProfileManagement', 'RedactedSupportBundle',
+))
+PYTHON_READERS = {
+    'Sources/NeAntik/BrowserProcessManager.swift': (
+        'scripts.tests.test_verify_built_runtime_script',
+        'scripts.tests.test_verify_chromium_launch_flags',
+    ),
+    'Sources/NeAntik/BrowserLaunchActionPresentation.swift': (
+        'scripts.tests.test_verify_direct_ui_localization',
+    ),
+    'Sources/NeAntik/RedactedSupportBundle.swift': (
+        'scripts.tests.test_verify_redacted_support_bundle',
+    ),
+}
+for _path in (
+    'Sources/NeAntik/MCPProfileManagement.swift',
+    'Sources/NeAntik/HelpContent.swift', 'README.md', 'README.en.md',
+    'CHANGELOG.md', 'docs/MCP_GUIDE.md', 'docs/mcp-capabilities.json',
+    'docs/PRODUCT.md', 'docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md',
+    'docs/NEANTIK_IMPROVEMENT_ROADMAP.md', 'docs/SOURCE_TO_SITE_HANDOFF.md',
+):
+    PYTHON_READERS[_path] = ('scripts.tests.test_verify_mcp_documentation',)
 
 # Reviewed stdlib-only harness boundaries. These do not link Swift or share
 # production code. Changes outside this explicit map remain conservative.
@@ -81,10 +111,38 @@ def changed_paths(base, root=ROOT):
     return sha, sorted({safe_path(p.decode()) for p in (diff + new).split(b"\0") if p})
 
 
-def plan(paths, catalog):
+def version_only_info_change(base, root=ROOT):
+    """Narrow only an observed existing plist diff, never a path-only guess."""
+    if base is None:
+        return False
+    path = root / 'Resources/Info.plist'
+    if path.is_symlink() or not path.is_file():
+        return False
+    try:
+        before = plistlib.loads(subprocess.check_output(
+            ['git', 'show', base + ':Resources/Info.plist'], cwd=root,
+            stderr=subprocess.DEVNULL))
+        after = plistlib.loads(path.read_bytes())
+        if not isinstance(before, dict) or not isinstance(after, dict):
+            return False
+        keys = {'CFBundleShortVersionString', 'CFBundleVersion'}
+        if any(not isinstance(value.get(key), str)
+               for value in (before, after) for key in keys):
+            return False
+        changed = {key for key in before.keys() | after.keys()
+                   if before.get(key) != after.get(key) or (key in before) != (key in after)}
+        return bool(changed) and changed <= keys
+    except (OSError, ValueError, TypeError, ExpatError, plistlib.InvalidFileException,
+            subprocess.CalledProcessError):
+        return False
+
+
+def plan(paths, catalog, *, version_only_info=False):
     paths = sorted({safe_path(p) for p in paths})
     selected = set(); python = set(); node = set(); reasons = []; gates = set(); full = False; python_full = False; delivery = False
     for path in paths:
+        # Accumulate dependencies before feature/documentation early returns.
+        python.update(PYTHON_READERS.get(path, ()))
         if PurePosixPath(path).suffix.lower() in (".zip", ".dmg", ".sha256", ".sig", ".provisionprofile") or ".app/" in path or PurePosixPath(path).name.startswith("direct-candidate"):
             delivery = True
             gates.add("exact source/candidate binding, signing, notarization, stapling, Gatekeeper and archive integrity")
@@ -97,12 +155,27 @@ def plan(paths, catalog):
         if path.startswith("runtime/"):
             full = True; python_full = True; gates.add("runtime patch/apply/build/provenance and exact headed vector controls")
             reasons.append({"path": path, "surface": "runtime"}); continue
+        if path == 'Resources/Info.plist' and version_only_info:
+            full = True
+            python.update(('scripts.tests.test_verify_mcp_documentation',
+                           'scripts.tests.test_verify_direct_version_bump'))
+            delivery = True
+            gates.add('verify actual version/build floor and exact candidate binding; plist version-only classification is not release qualification')
+            reasons.append({'path': path, 'surface': 'observed-version-only-plist'}); continue
         if path.startswith("Tests/NeAntikTests/") and path.endswith("Tests.swift"):
+            python.add('scripts.tests.test_verify_native_swift_tests_script')
             suite = PurePosixPath(path).stem
             if suite in catalog: selected.add(suite)
             else: full = True
             reasons.append({"path": path, "surface": "swift-test"}); continue
         match = next((f for f in FEATURES if re.fullmatch(f[0], path)), None)
+        if path in SHARED_SWIFT:
+            full = True
+            gates.add('full Swift regression for reviewed shared source; paired Python contracts are separate from native behavior')
+            gates.add('review changed native lifecycle/UI behavior and exact release gates before execution; check selection cannot qualify them')
+            if match:
+                gates.add(match[3])
+            reasons.append({'path': path, 'surface': 'reviewed-shared-swift'}); continue
         if match:
             found = {s for s in catalog if re.search(match[2], s)}
             if found: selected |= found
@@ -136,7 +209,7 @@ def plan(paths, catalog):
             gates.add('review check selection and preserve conservative unknown/shared-input fallback')
             reasons.append({'path': path, 'surface': 'read-only-check-planner'}); continue
         if path.startswith(("scripts/", ".github/")):
-            python_full = True; gates.add("changed workflow integration; clean CI is distinct from local tests")
+            full = True; python_full = True; gates.add("changed workflow integration; clean CI is distinct from local tests")
             reasons.append({"path": path, "surface": "workflow"}); continue
         if path in ("AGENTS.md", "README.md", "README.en.md", "CHANGELOG.md", "LICENSE") or path.startswith(("docs/", ".agents/skills/", "releases/")):
             gates.add("review affected claims/links; use semantic documentation contracts where applicable")
@@ -159,7 +232,9 @@ def main():
     args = parser.parse_args()
     try:
         base, paths = (None, args.path) if args.path else changed_paths(args.base)
-        report = plan(paths, fast.suites()); report["baseCommit"] = base
+        report = plan(paths, fast.suites(), version_only_info=(
+            'Resources/Info.plist' in paths and version_only_info_change(base)))
+        report["baseCommit"] = base
     except (ValueError, subprocess.CalledProcessError) as error:
         parser.error("Invalid source selection or baseline")
     print(json.dumps(report, indent=2))
