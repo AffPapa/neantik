@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "date": "2026-10-16",
-  "status": "source development;compiled;not signed/installed/native tested",
+  "status": "QA5 signed/notarized/stapled/Gatekeeper PASS;new-byteIPv4IPv6 baseline4/4PASS;filter activation awaits action-time consent;not confinement qualified",
   "shippingWebKitProxy": false,
   "scope": "supplemental QA-only explicit loopback content-filter for1to4own ports;not production firewall",
   "implemented": [
@@ -62,8 +62,8 @@
     "Experiments/WebKitIsolation/Sources/IsolationQAControl/Entry.swift": "533ff42877e4f587563af90ed6a33eb33aab7d257f5bc0536db8a681d289b988"
   },
   "nativeGateOpen": [
+    "Action-time approval for new content-filter security access;inactiveexactQA3\u2192QA5 OS replacement and bounded ownportA/B/failure/cleanup",
     "Execute listener-ownership/readback/replacement on exact signed bytes;observe currentrun+PID apply success before openingA",
-    "New exact signing/grant/notarization/install consent for opt-inQA5;no new cert/profile required by verified existing grants",
     "Actual source-app token attribution and typed A/B observations onIPv4/IPv6",
     "Provider crash/hang/stop/restart/disable:prove no bypass for new and existing flows,or reject mechanism",
     "Integrate real fixed-upstream transport,production host/IPC and full route qualification"
@@ -83,10 +83,70 @@
     "NENetworkRule.h115-127:wildcarddoesnotmatchloopback",
     "NEFilterFlow.h68-79:originalapplicationvsactualprocess"
   ],
-  "privateUnsignedFixture": "webkit-kernel-qa7 predates final controller;stale,not for native use",
+  "privateUnsignedFixture": "webkit-kernel-qa8/preparation.json",
   "newSocketControl": {
     "count": 1,
     "seconds": 1.01,
     "scope": "Actual ownedIPv4/IPv6 listeners,correct per-run HMAC,wrong key and missing challenge refused;no browser/provider"
+  },
+  "signedQA": {
+    "sourceHEAD": "00c9103bc2d47e6f942a66b83fc9a177f8203f7a",
+    "internalBuild": 5,
+    "archiveSHA256": "045c410332bbcc2aa2a169e64452393341d0b81d599ad09226663b267369859b",
+    "archiveBytes": 741056,
+    "notaryID": "79e84c7a-28b8-43e7-9176-f8c06ecbbd2a",
+    "checks": {
+      "staple": "PASS",
+      "ticket": "PASS",
+      "strict-nested": "PASS",
+      "gatekeeper": "PASS"
+    },
+    "exactExecutableHashesUnchanged": true,
+    "sameCertificateAndProfiles": true,
+    "newCertificate": false,
+    "filterActivated": false
+  },
+  "newByteBaseline": {
+    "scope": "Fresh exactQA5 distinct hosts before filter,IPv4/IPv6 own loopback",
+    "cases": [
+      {
+        "role": "B",
+        "family": "v4",
+        "originRequests": 1,
+        "httpStatus": 200,
+        "seconds": 0.4730896250111982,
+        "exitCode": 0,
+        "timeout": false
+      },
+      {
+        "role": "A",
+        "family": "v4",
+        "originRequests": 1,
+        "httpStatus": 200,
+        "seconds": 0.4485601660562679,
+        "exitCode": 0,
+        "timeout": false
+      },
+      {
+        "role": "B",
+        "family": "v6",
+        "originRequests": 1,
+        "httpStatus": 200,
+        "seconds": 0.4370724590262398,
+        "exitCode": 0,
+        "timeout": false
+      },
+      {
+        "role": "A",
+        "family": "v6",
+        "originRequests": 1,
+        "httpStatus": 200,
+        "seconds": 0.44518837495706975,
+        "exitCode": 0,
+        "timeout": false
+      }
+    ],
+    "reasonForNewCases": "QA5 signed host bytes changed from earlierbaseline,IPv6 newly covered;not a replay of same inputs",
+    "confinementProved": false
   }
 }

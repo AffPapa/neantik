@@ -83,7 +83,7 @@ frontend permutations are repeated to manufacture a PASS.
 
 ## Tests and frozen evidence
 
-There are29 unique pure Swift controls:12 ownership,6 lifecycle,7 scope and
+The prior core stage has29 unique pure Swift controls:12 ownership,6 lifecycle,7 scope and
 4 new observation identity controls. The latest run executed only the4 new
 controls and compiled changed QA targets in5.613s, jobs2/serial/shared cache.
 It used real Foundation UUID serialization as a regression control: the old
@@ -123,7 +123,7 @@ installed. Own origins/processes are gone and the old extension remains disabled
 The old private-B failure is not root-caused by this result: UUID and active
 rule state changed together. No IPv6/DNS/confinement result is inferred.
 
-## Supplemental owned-loopback filter (not installed)
+## Supplemental owned-loopback filter (not activated)
 
 The SDK explicitly excludes loopback from wildcard/default filter rules.
 An opt-in QA component now creates exact127/32 and::1/128 filterData rules for
@@ -174,3 +174,10 @@ native owner/crash/disable behavior is unqualified.
 - Installed SDK `NEAppProxyProvider.h`, `NEFlowMetaData.h`, `NEAppRule.h` and
   `SystemExtensions.h`; provider semantics do not promise every WK flow is
   captured or correctly attributed. The signature/profile guards are retained.
+
+QA5 internal build5 is now signed with the same certificate/profiles, Apple
+Accepted, stapled and Gatekeeper checked. Exact new host bytes passed four
+headed ownIPv4/IPv6 baseline cases before any filter. The local QA app bundle
+was atomically replaced with QA3 rollback retained;the OS extension is still
+inactive QA3. The new content-filter access requires action-time confirmation.
+No filter/apply/owner/failure PASS or public release is claimed.
