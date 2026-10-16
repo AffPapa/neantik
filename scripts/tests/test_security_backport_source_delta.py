@@ -94,6 +94,29 @@ class SecurityBackportSourceDeltaTests(unittest.TestCase):
             with self.subTest(mutation=mutation), self.assertRaises(ValueError):
                 subject.verify_projection(changes, expected, postimages)
 
+    def test_provenance_cannot_relabel_patch_commit_or_security_batch(self):
+        for mutation in ('header', 'security-reference', 'preexisting-commit'):
+            with tempfile.TemporaryDirectory(prefix='neantik-own-security-provenance-') as directory:
+                project = Path(directory)
+                destination = project / subject.DIRECTORY
+                destination.parent.mkdir(parents=True)
+                shutil.copytree(ROOT / subject.DIRECTORY, destination)
+                contract = project / 'runtime/chromium-15612-font-system-v1-source-contract.json'
+                contract.write_bytes((ROOT / contract.relative_to(project)).read_bytes())
+                manifest = json.loads((destination / 'manifest.json').read_text())
+                if mutation == 'header':
+                    item = manifest['orderedPatches'][0]
+                    item['commit'] = 'f' * 40
+                    item['upstreamReference'] = 'https://chromium.googlesource.com/chromium/src/+/' + 'f' * 40
+                elif mutation == 'security-reference':
+                    manifest['securityReference'] = 'https://example.com/unreviewed'
+                else:
+                    manifest['alreadyIncludedProductionFixes'][0]['commit'] = 'f' * 40
+                raw = (json.dumps(manifest, indent=2) + '\n').encode()
+                (destination / 'manifest.json').write_bytes(raw)
+                with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                    subject.load_inputs(project, hashlib.sha256(raw).hexdigest())
+
     def test_patch_tamper_symlink_and_wrong_root_fail_closed(self):
         for mutation in ('patch-tamper', 'symlink', 'wrong-root', 'drop-fix'):
             with tempfile.TemporaryDirectory(prefix='neantik-own-security-inputs-') as directory:

@@ -6,6 +6,7 @@ The additive runtime verifier must also verify the full FD delta and binaries.
 """
 from pathlib import Path, PurePosixPath
 import re
+import hashlib
 import chromium_15612_release_evidence as base
 
 DIRECTORY = 'runtime/security-backports-20261015'
@@ -14,6 +15,11 @@ V8_COMMIT = '4b33f15d4d172248a95629d6aa9917b20a79ad76'
 V8_ISSUES = {'568831769', '569286602', '569659194'}
 ISSUES = {'568719351', '567638392', '568937999', '569038297', '563194341'} | V8_ISSUES
 PREEXISTING = {'501886301', '556272421'}
+PREEXISTING_COMMITS = {
+    '501886301': '90430e752b9669b5054a31d2d4f539cd50ff75e4',
+    '556272421': 'f06e60e56d7f62632ed78bdfd414d89097669734',
+}
+SECURITY_REFERENCE = 'https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_01886704284.html'
 
 
 def need(condition, message):
@@ -44,7 +50,8 @@ def load_inputs(project: Path, manifest_sha256: str) -> dict:
          and manifest.get('baseChromiumVersion') == base.VERSION
          and manifest.get('baseChromiumCommit') == CHROMIUM_COMMIT
          and manifest.get('baseV8Commit') == V8_COMMIT
-         and manifest.get('securityBatch') == '2026-10-15', 'base identity mismatch')
+         and manifest.get('securityBatch') == '2026-10-15'
+         and manifest.get('securityReference') == SECURITY_REFERENCE, 'base identity mismatch')
     need(manifest.get('runtimeBuilt') is False and manifest.get('releaseQualified') is False
          and manifest.get('publicAlphaExceptionAllowed') is False,
          'patch manifest is not runtime qualification')
@@ -73,8 +80,13 @@ def load_inputs(project: Path, manifest_sha256: str) -> dict:
         need(name.startswith(DIRECTORY + '/') and len(PurePosixPath(name).parts) == 3
              and name.endswith('.patch') and name not in patch_names, 'patch path mismatch')
         patch_names.add(name)
-        need(digest(patch.get('sha256')) and base.sha256_file(
-            base.safe_relative_regular(project, name)) == patch['sha256'], 'patch bytes changed')
+        patch_path = base.safe_relative_regular(project, name)
+        need(0 < patch_path.stat().st_size <= 2 * 1024 * 1024, 'patch size outside bound')
+        raw = patch_path.read_bytes()
+        need(digest(patch.get('sha256')) and hashlib.sha256(raw).hexdigest() == patch['sha256'],
+             'patch bytes changed')
+        need(raw.startswith(f'From {commit} Mon Sep 17 00:00:00 2001\n'.encode('ascii')),
+             'patch header does not bind the declared upstream commit')
         files = patch.get('files')
         before = patch.get('beforeFiles')
         need(isinstance(files, list) and files and isinstance(before, list), 'source files missing')
@@ -106,6 +118,8 @@ def load_inputs(project: Path, manifest_sha256: str) -> dict:
     need(isinstance(present, list) and len(present) == 2
          and {row.get('issue') for row in present if isinstance(row, dict)} == PREEXISTING,
          'preexisting fix evidence missing')
+    need(all(row.get('commit') == PREEXISTING_COMMITS[row['issue']] for row in present),
+         'preexisting fix commit mismatch')
     need(manifest.get('licenseFiles') == ['CHROMIUM_LICENSE.txt', 'V8_LICENSE.txt'], 'license namespace differs')
     for name in manifest['licenseFiles']:
         raw = base.safe_relative_regular(directory, name).read_bytes()
