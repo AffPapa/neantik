@@ -191,3 +191,57 @@ WebKit. Точный тестовый бинарник и исходники с�
 [RFC1928](https://www.rfc-editor.org/rfc/rfc1928.html) и
 [RFC1929](https://www.rfc-editor.org/rfc/rfc1929.html). Наличие API не обещает
 устранение уже измеренного local-IP bypass.
+
+## Следующая граница: архитектура, а не ещё один протокол
+
+Проверены заголовки установленного SDK: `WKWebsiteDataStore.h:125–132`,
+`Network/proxy_config.h:219–298`. Они предоставляют конфигурации прокси,
+failover и suffix selectors; доказанного переключателя force-local/route-all
+не найдено. Upstream WebKit сериализует настройки в
+[WKWebsiteDataStore.mm](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/API/Cocoa/WKWebsiteDataStore.mm#L516)
+и передаёт их в системный сетевой контекст в
+[NetworkSessionCocoa.mm](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm#L1811).
+Это просмотр `main` 16 октября 2026, не исходники точного установленного
+бинарника macOS; причину обхода ниже этих границ мы не установили.
+
+Дальше допустимы два технических пути: конкретное исправление Apple/WebKit
+либо другая архитектура с принудительной сетевой границей на профиль.
+До новой реализации нужно показать, как она охватывает DNS/UDP, workers,
+subresources и WebSocket, блокирует Direct после отзыва и не затрагивает B.
+Глобальная системная настройка или доверие всем Apple-процессам по UID
+этого требования не выполняет. Пока WebKit остаётся Direct-only, а профили
+с прокси используют Chromium.
+
+`WKURLSchemeHandler` не заменяет сетевой контроль: SDK прямо запрещает
+обработчик схем, которые WebKit обслуживает сам, включая HTTP/HTTPS
+([проверка WebKit](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/API/Cocoa/WKWebViewConfiguration.mm#L523)).
+Navigation delegate также не покрывает все сетевые запросы. Другое имя relay
+или флаг без подтверждённой семантики не являются основанием нового прогона.
+
+### Заготовка воспроизведения для Apple/WebKit
+
+Отчёт **не отправлен**. Сохранённое воспроизведение:
+[точный тест](https://github.com/AffPapa/neantik/blob/8187fde6bfeb02e6f23a8db44d9ccb53db151db1/Tests/NeAntikTests/WebKitProxyTransportTests.swift#L527)
+и [точный DEBUG relay](https://github.com/AffPapa/neantik/blob/8187fde6bfeb02e6f23a8db44d9ccb53db151db1/Sources/NeAntik/WebKitProxySession.swift).
+Это проектный harness, не отдельно квалифицированный минимальный sample.
+
+1. На macOS27.0 ARM64/system WebKit22625.1.29.11.24 создать два временных
+   nonpersistent stores, один visible window, собственный reachable private-IP
+   HTTP origin и собственный loopback authenticated proxy. Системные настройки
+   не менять; test credentials случайные, только в памяти.
+2. До первого WKWebView задать A `proxyConfigurations` с SOCKSv5, credentials,
+   `allowFailover=false`, native exception count0 и exact match domains для
+   своего synthetic `.invalid` имени и выбранного private IP. B — Direct.
+3. Убедиться, что имя через A достигло proxy и вернуло upstream ответ;
+   B получает отдельный origin ответ; bare TCP даёт arrival без HTTP-ответа.
+4. Обратиться через A к собственному private IP. Ожидание: proxy route или
+   отказ. Факт: отдельный Direct origin arrival и ответ без нового upstream.
+5. Отозвать relay, не очищая назначение store A. Ожидание: отказ без origin
+   arrival. Факт: ещё один Direct arrival и ответ. B остаётся доступным.
+6. Закрыть окно, дождаться relay tasks и fixture stops. Полные журналы,
+   адреса и credentials не включать в публичное обращение; приложить
+   обезличенные счётчики/версии/хеши из linked JSON.
+
+Новый native-этап допустим при конкретном изменении проверяемой сетевой
+поверхности, а не для повторения этого FAIL. Все прежние ограничения и
+обязательная квалификация точного кандидата остаются открытыми.
