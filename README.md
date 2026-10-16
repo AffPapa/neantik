@@ -7,7 +7,7 @@ Chromium runtime, собранный из зафиксированных исх�
 
 [English version](README.en.md)
 
-На [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.21) опубликована **0.8.21 (133), public alpha**: исправлено зависание отключённой проверки компонентов Chromium. Новый runtime прошёл отдельную сборку и связан с точными проверками приложения; восемь security backports предыдущего выпуска сохранены. [browser.free](https://browser.free/) пока указывает предыдущий выпуск.
+На [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.22) опубликована **0.8.22 (134), public alpha**: остановка Chromium показывает «Закрывается…» до завершения браузера; это состояние доступно и через MCP. Подпись, публичные ZIP/DMG и скачанная копия проверены. Chromium и данные профилей сохранены. [browser.free](https://browser.free/) пока показывает прежний выпуск.
 Точный подписанный кандидат прошёл оконную проверку. Публично скачанные ZIP/DMG совпали по SHA-256 и прошли notarization, stapling и Gatekeeper. Скачанный менеджер прошёл отдельный изолированный MCP smoke с созданием, редактированием и перезапуском; оконный аудит для тех же критических байтов повторно не запускался.
 Системный WebKit остаётся preview и не подменяет полный fingerprint. Полная программа 1.0 ещё не завершена.
 
@@ -23,15 +23,15 @@ Chromium runtime, собранный из зафиксированных исх�
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Последний опубликованный выпуск: [NeAntik 0.8.21 (133), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.21). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.8.21.json).
+Последний опубликованный выпуск: [NeAntik 0.8.22 (134), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.22). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.8.22.json).
 
-**Переход с 0.8.20 на 0.8.21 — вручную через DMG/ZIP.** Закройте приложение перед заменой; папки профилей удалять не нужно. Старый updater не знает новый runtime.
+**Переход на 0.8.22 — вручную через DMG/ZIP.** Закройте приложение перед заменой; папки профилей удалять не нужно. Автоматический переход установленного updater этим выпуском не квалифицирован.
 
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - Developer ID, notarization, ZIP/DMG и SHA-256 относятся к конкретному опубликованному выпуску.
 
-Скачать напрямую: [GitHub — 0.8.21](https://github.com/AffPapa/neantik/releases/tag/v0.8.21). [browser.free](https://browser.free) пока указывает предыдущий выпуск.
+Скачать напрямую: [GitHub — 0.8.22](https://github.com/AffPapa/neantik/releases/tag/v0.8.22). [browser.free](https://browser.free) пока указывает предыдущий выпуск.
 
 Описание ниже отражает контракт менеджера и текущей ветки; точный состав
 публичного бинарного релиза определяется его release notes и артефактами.

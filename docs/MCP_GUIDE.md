@@ -66,7 +66,7 @@ The four additional read tools are available in read mode. Other tools require m
 
 ## Safe workflow
 
-In the 0.8.22 development contract, Chromium `profile_stop` can return
+From 0.8.22, Chromium `profile_stop` can return
 `processState: "closing"`: the request was accepted, but the browser or its
 helpers have not yet settled. Repeating Stop is safe and does not send another
 quit request. Wait for `stopped` before editing or relaunching; an expired wait
