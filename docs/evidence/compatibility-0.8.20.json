@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-on-exact-published-runtime-scoped",
+  "point": 18,
+  "version": "0.8.20",
+  "build": 132,
+  "runtime": {
+    "version": "156.0.8078.12",
+    "executableSHA256": "cf3bbc56ddbcac264363f33bac4d3f92ac66cf164038c9409651db22708a6941",
+    "frameworkSHA256": "4774c5ef3d9048b7faf9f26307ce07f29be7696a9951e6e179e3e5f8b01d046f"
+  },
+  "releaseQualified": false,
+  "headed": true,
+  "environment": {
+    "macOS": "27.0",
+    "architecture": "arm64"
+  },
+  "modes": [
+    "configured-seed21",
+    "unconfigured"
+  ],
+  "formats": [
+    "WebM VP8",
+    "WebM VP9",
+    "MP4 H.264 constrained baseline level1",
+    "WAV PCM",
+    "WebM Opus",
+    "M4A AAC"
+  ],
+  "operations": {
+    "video": "actual play/time progression;64x48;decoded-frame count and sampled red output",
+    "audio": "decodeAudioData;1channel48kHz;duration/energy/440Hz synthetic tone;muted element play/time progression",
+    "mediaCapabilities": "file decodingInfo booleans;support compared to actual decode;invalid config TypeError",
+    "pdf": "own vector PDF rendered by native PDF viewer;independently decoded screenshot,ICC to sRGB,colour order;own blank PDF white control"
+  },
+  "counts": {
+    "nativeSessions": 2,
+    "codecCasesPerSession": 6,
+    "semanticChecksPerSession": 61,
+    "offlineNegativeControlsPerSession": 10,
+    "pipePositiveControls": 6,
+    "pipeNegativeControls": 19,
+    "pythonOracleUnitTests": 7
+  },
+  "actualNegativeControls": [
+    "corrupt media EncodingError",
+    "invalid MediaCapabilities config TypeError",
+    "blank PDF lacks coloured pattern and renders white page"
+  ],
+  "captureHistory": {
+    "configuredRawStatus": "failed",
+    "reason": "Initial oracle read DisplayP3 channels as sRGB; preserved PNGs normalize to expected colours without threshold relaxation. Retained blank page has36864white pixels; not a timeout or old coloured frame.",
+    "resolvedBy": "offline reanalysis; no configured browser rerun",
+    "unconfiguredStatus": "observed-scoped-compatibility",
+    "profileAlpha": "all native screenshots opaque; transparent ICC input rejected before conversion"
+  },
+  "cleanup": {
+    "ownedProcessesRemaining": 0,
+    "ownedProfilesRemoved": 2,
+    "gracefulExitCode": 0
+  },
+  "privacy": "own fixtures only;no real profiles,Keychain,cookies,voice/device lists or raw IPs in report",
+  "limitations": [
+    "raw published Chromium runtime;not GUI manager or WebKit",
+    "muted playback and synthetic tone;no physical sound/capture claim",
+    "representative codec profiles only;no allresolutions/MSE/DRMlicense-path claim",
+    "ordinary Chrome not run for this new slice",
+    "storage/download receipts retain original bindings;not rerun here",
+    "does not complete major1.0 or all of point18"
+  ],
+  "analysisSourceSHA256": "4d8f710d6874efbb66c8e8f713221eb58dc5ea3632560b8dad9b5b089962bd83",
+  "privateObservationSHA256": {
+    "configured": "fec46bf92e948b8923b6e7612f6097fc549685c799512b7fc62aad44effd2f61",
+    "unconfigured": "e259fcf67f5917d9adf5034bf198fc3c4827cfd7efea0eb4ad692711c238160a"
+  },
+  "fixtureManifestSHA256": "cdc8bd46187ee9a58667cbb84e8fea254a6149f76e58090bdb60e604cdbd29f5",
+  "references": [
+    "https://www.w3.org/TR/media-capabilities/",
+    "https://html.spec.whatwg.org/multipage/media.html"
+  ]
+}
