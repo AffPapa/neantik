@@ -301,8 +301,14 @@ allowlisted environment; временный HOME сам по себе не из�
 update, sync и extensions. Его пустой лог не доказывает отсутствие фоновых
 запросов при обычном запуске. `observeBackgroundNetworking` работает только
 в отдельной signed DEBUG QA.app с приватным root и обычным manager launch.
-Он добавляет только mock Keychain и Default NetLog; ранние failure/restart
-эксперименты и route probe в этом режиме отклоняются.
+Он добавляет mock Keychain, Default NetLog и отдельный ephemeral loopback CDP
+для ограниченного observer скачиваний. Обычный bundle не включает этот режим.
+Ранние failure/restart эксперименты и route probe в нём отклоняются.
+Attachment endpoint открывается только после ACK `Browser.setDownloadBehavior`
+с owned-папкой: user preferences недостаточны из-за managed DownloadDirectory.
+Observer разрешает лишь настройку/отмену download и две фиксированные owned
+navigation; произвольного JS/evaluate нет. Завершение и отмена проверяют реальные
+события браузера и байты файла. Никакие production preferences не меняются.
 
 `observe_background_attempts` в `controlled-browser-route-observer.py` выдаёт
 только счётчики и выбранные маршруты, включая missing/other/Direct. Redirect

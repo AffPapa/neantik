@@ -317,3 +317,33 @@ No new authority, manifest, signature or browser recapture is needed. Preserve
 the original app and all refusal receipts; accept cleanup only after the exact
 candidate-scoped retirement receipt confirms deletion. This path completed
 for the130 supplemental DNS authority.
+
+## Background and download operations on the130 runtime
+
+[The scoped current report](evidence/background-network-0.8.18.json) records
+a unique signed DEBUG QA manager with the exact public130 runtime. Its80s
+window includes startup, owned completed/canceled downloads, idle observation,
+a proxy outage and recovery. Background/component/sync/extensions suppression
+flags were absent. Seven accepted fixture connections were bound to the retained
+lease/session, kernel process generations, live/static CDHash and exact relay
+client socket. The original manager had exited; this is deliberately a retained
+DEBUG session measurement, not a live shipping-GUI manager claim.
+
+`background-peer-custody.py` handles this lifetime explicitly. Its baseline raw
+lease hash covers all fields; generation/code/accepted socket are read anew for
+each request. It never authorizes arbitrary same-UID or Apple networking processes.
+
+`observe-background-downloads.mjs` uses the existing download observer with
+scoped `Browser.setDownloadBehavior` ACK before the fixture opens its attachment
+endpoint. Only two fixed owned download URLs and explicit download/target
+operations are admitted. The completed4096-byte file was verified after native
+close; cancellation was acknowledged and left no final file. An intentional
+headed Direct control reached its separate owned origin with kernel helper
+ancestry and was classified Direct, with zero expectedRelay selections.
+
+Default NetLog selected seven relay legs and zero Direct legs in the protected
+window; one request failed during the controlled outage. Socket evidence applies
+only to the owned fixture requests. No vendor/unclassified request in this
+window is not proof of no telemetry. Global DNS/UDP, explicit component-update
+activation, network changes, other environments and default-trusted HTTPS upstream
+remain open. The production runtime and immutable release archives did not change.

@@ -136,7 +136,15 @@ enum ProxyRelayOwnerQualification {
     static func captureArguments(log: URL, observeBackgroundNetworking: Bool) -> [String] {
         let instrumentation = ["--use-mock-keychain", "--log-net-log=" + log.path,
                                "--net-log-capture-mode=Default"]
-        if observeBackgroundNetworking { return instrumentation }
+        if observeBackgroundNetworking {
+            // Loopback ephemeral CDP is confined to this signed DEBUG fixture.
+            // The owned download observer must ACK its private destination
+            // before the fixture serves any attachment (managed preferences
+            // can override a profile's default download directory).
+            return instrumentation + ["--remote-debugging-address=127.0.0.1",
+                                      "--remote-debugging-port=0",
+                                      "--remote-allow-origins=http://neantik.local"]
+        }
         return ["--disable-background-networking", "--disable-component-update",
                 "--disable-sync", "--disable-extensions"] + instrumentation
     }
