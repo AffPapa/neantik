@@ -357,10 +357,50 @@ private enum WebKitProxyQualificationMatchMode: String {
         guard let mode = Self(rawValue: value) else { throw WebKitProxySession.Failure.scope }
         return mode
     }
+    static func nativeMatches(_ proxy: Network.ProxyConfiguration, expected: Set<String>) -> Bool {
+        var matches: [String] = []
+        nw_proxy_config_enumerate_match_domains(proxy._nw) { matches.append(String(cString: $0)) }
+        return matches.count == expected.count && Set(matches) == expected
+    }
+    static func nativeHasNoDirectExceptions(_ proxy: Network.ProxyConfiguration) -> Bool {
+        var exceptions = 0
+        nw_proxy_config_enumerate_excluded_domains(proxy._nw) { _ in exceptions += 1 }
+        return exceptions == 0 && !nw_proxy_config_get_failover_allowed(proxy._nw)
+    }
 }
 
 /// Pure synthetic selection controls; these do not read interfaces or launch WK.
 struct WebKitProxyOwnedEndpointTests {
+    /// In-memory Network configuration only: no listener, connection, view,
+    /// interface lookup or Keychain. Compare the Swift view with public C API.
+    @Test func matchSetterKeepsIndependentNativePolicyFields() {
+        var proxy = Network.ProxyConfiguration(httpCONNECTProxy:
+            .hostPort(host: .init("127.0.0.1"), port: .init(rawValue: 1)!))
+        proxy.allowFailover = false
+        proxy.matchDomains = ["192.0.2.1", "owned-fixture.invalid"]
+        var nativeMatches = 0, nativeExceptions = 0
+        nw_proxy_config_enumerate_match_domains(proxy._nw) { _ in nativeMatches += 1 }
+        nw_proxy_config_enumerate_excluded_domains(proxy._nw) { _ in nativeExceptions += 1 }
+        let nativeFailover = nw_proxy_config_get_failover_allowed(proxy._nw)
+        let swiftMatches = proxy.matchDomains.count, swiftExceptions = proxy.excludedDomains.count
+        let swiftFailover = proxy.allowFailover
+        print("OWNED_WK_POLICY_MODEL nativeMatches=\(nativeMatches) nativeExceptions=\(nativeExceptions) nativeFailover=\(nativeFailover ? 1 : 0) swiftMatches=\(swiftMatches) swiftExceptions=\(swiftExceptions) swiftFailover=\(swiftFailover ? 1 : 0)")
+        #expect(nativeMatches == 2 && nativeExceptions == 0 && !nativeFailover)
+        // The retained first run found swiftExceptions=2 while native=0.
+        // Use the public C object consumed by networking, not that Swift view.
+        #expect(WebKitProxyQualificationMatchMode.nativeHasNoDirectExceptions(proxy))
+        #expect(WebKitProxyQualificationMatchMode.nativeMatches(proxy, expected: ["192.0.2.1", "owned-fixture.invalid"]))
+        nw_proxy_config_add_excluded_domain(proxy._nw, "blocked-fixture.invalid")
+        #expect(!WebKitProxyQualificationMatchMode.nativeHasNoDirectExceptions(proxy))
+        nw_proxy_config_clear_excluded_domains(proxy._nw)
+        #expect(WebKitProxyQualificationMatchMode.nativeHasNoDirectExceptions(proxy))
+        nw_proxy_config_set_failover_allowed(proxy._nw, true)
+        #expect(!WebKitProxyQualificationMatchMode.nativeHasNoDirectExceptions(proxy))
+        nw_proxy_config_set_failover_allowed(proxy._nw, false)
+        #expect(WebKitProxyQualificationMatchMode.nativeHasNoDirectExceptions(proxy))
+        #expect(!WebKitProxyQualificationMatchMode.nativeMatches(proxy, expected: ["wrong-fixture.invalid"]))
+        #expect(!WebKitProxyQualificationMatchMode.nativeMatches(proxy, expected: ["wrong-one.invalid", "wrong-two.invalid"]))
+    }
     @Test func unknownMatchPolicyNeverFallsBackToDefaults() throws {
         #expect(try WebKitProxyQualificationMatchMode.requested(nil) == .defaults)
         #expect(try WebKitProxyQualificationMatchMode.requested("exact-hosts") == .exactHosts)
@@ -445,10 +485,10 @@ struct WebKitProxyOwnedEndpointTests {
                 // Documented suffix selectors only. Whether explicit selectors
                 // override implicit local-IP bypass is what this experiment tests.
                 proxy.matchDomains = [host, namedHost]
-                let expectedSelectors = proxy.matchDomains.count == 2 && Set(proxy.matchDomains) == Set([host, namedHost])
+                let expectedSelectors = WebKitProxyQualificationMatchMode.nativeMatches(proxy, expected: [host, namedHost])
                 try #require(expectedSelectors) // Do not render address values in a failed assertion.
             }
-            let validPolicy = !proxy.allowFailover && proxy.excludedDomains.isEmpty
+            let validPolicy = WebKitProxyQualificationMatchMode.nativeHasNoDirectExceptions(proxy)
             try #require(validPolicy)
             print("OWNED_WK_NONLOOPBACK_POLICY exactHosts=\(matchMode == .exactHosts ? 1 : 0) noFailover=1 exceptionCount=0")
             storeA.proxyConfigurations = [proxy]; storeB.proxyConfigurations = []
@@ -463,6 +503,9 @@ struct WebKitProxyOwnedEndpointTests {
             ownedWindow.title = "NeAntik · owned non-loopback WebKit proxy experiment"
             let stack = NSStackView(views: [a, b]); stack.orientation = .horizontal; stack.distribution = .fillEqually
             ownedWindow.contentView = stack; ownedWindow.makeKeyAndOrderFront(nil)
+            let windowVisible = ownedWindow.isVisible
+            print("OWNED_WK_NONLOOPBACK_WINDOW created=1 visible=\(windowVisible ? 1 : 0)")
+            try #require(windowVisible)
             func navigate(_ view: WKWebView, host: String, phase: String) async throws -> (body: String?, failed: Bool, timeout: Bool) {
                 let probe = WebKitProxyNavigationProbe(); view.navigationDelegate = probe
                 guard let url = URL(string: "http://\(host):\(originPort)/\(nonce)/\(phase)") else {
