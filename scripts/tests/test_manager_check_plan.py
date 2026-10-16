@@ -120,10 +120,12 @@ class ManagerCheckPlanTests(unittest.TestCase):
         self.assertEqual(result['swiftMode'], 'full')
         self.assertEqual(result['commands'][0][-1], '--all')
         self.assertEqual(result['commands'][1], ['python3', '-B', '-m', 'unittest',
+            'scripts.tests.test_responsive_ui_contract',
             'scripts.tests.test_verify_built_runtime_script',
             'scripts.tests.test_verify_chromium_launch_flags',
             'scripts.tests.test_verify_direct_ui_localization',
             'scripts.tests.test_verify_mcp_documentation',
+            'scripts.tests.test_verify_public_artifact_privacy',
             'scripts.tests.test_verify_redacted_support_bundle'])
         self.assertEqual(result['status'], 'not-run')
         self.assertFalse(result['releaseGate'])
@@ -136,6 +138,27 @@ class ManagerCheckPlanTests(unittest.TestCase):
         # Similar names are deliberately not added to the reviewed shared map.
         unknown = MOD.plan(['Sources/NeAntik/MCPOutputSchemasOther.swift'], [])
         self.assertEqual(unknown['swiftMode'], 'full')
+
+    def test_editor_and_help_keep_full_swift_with_closed_python_readers(self):
+        result = MOD.plan(['Sources/NeAntik/ProfileEditorView.swift',
+                           'Sources/NeAntik/HelpContent.swift'], [])
+        self.assertEqual(result['swiftMode'], 'full')
+        self.assertEqual(result['commands'][1], ['python3', '-B', '-m', 'unittest',
+            'scripts.tests.test_responsive_ui_contract',
+            'scripts.tests.test_verify_mcp_documentation',
+            'scripts.tests.test_verify_public_artifact_privacy'])
+        self.assertTrue(any('native lifecycle/UI' in gate for gate in result['requiredAdditionalGates']))
+        self.assertFalse(result['releaseGate'])
+        unknown = MOD.plan(['Sources/NeAntik/ProfileEditorOther.swift'], [])
+        self.assertTrue(any('discover' in command for command in unknown['commands']))
+
+    def test_new_network_source_keeps_wildcard_reader_and_network_gate(self):
+        result = MOD.plan(['Sources/NeAntik/ProxyProtocolDetector.swift'], ['ProxyProtocolDetectorTests'])
+        self.assertEqual(result['swiftMode'], 'targeted')
+        self.assertEqual(result['commands'][1], ['python3', '-B', '-m', 'unittest',
+            'scripts.tests.test_responsive_ui_contract'])
+        self.assertTrue(any('controlled browser route' in gate for gate in result['requiredAdditionalGates']))
+        self.assertFalse(result['releaseGate'])
 
     def test_semantic_docs_add_the_reader_without_swift_build(self):
         result = MOD.plan(['CHANGELOG.md', 'docs/MCP_GUIDE.md'], [])

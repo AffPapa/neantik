@@ -14,10 +14,11 @@ class RuntimeSpeechTests(unittest.TestCase):
         result = subprocess.run([NODE, '--test',
             'scripts/runtime-speech/test-observation.mjs',
             'scripts/runtime-speech/test-pipe.mjs',
-            'scripts/runtime-speech/test-cleanup.mjs'], cwd=ROOT,
+            'scripts/runtime-speech/test-cleanup.mjs',
+            'scripts/runtime-speech/test-admission.mjs'], cwd=ROOT,
             capture_output=True, text=True, timeout=15)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn('# tests 14', result.stdout)
+        self.assertIn('# tests 17', result.stdout)
         self.assertIn('# fail 0', result.stdout)
 
     def test_headed_controller_has_valid_syntax_without_execution(self):

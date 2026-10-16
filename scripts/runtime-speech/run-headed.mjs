@@ -11,11 +11,18 @@ import {SpeechPipe} from './speech-pipe.mjs';
 import {browserFixtureEnvironment} from '../runtime-platform/fixtures/qa-browser-environment.mjs';
 import {verifyVoices} from './semantics.mjs';
 import {settleOwnedProcesses} from './cleanup.mjs';
+import {speechAdmission} from './admission.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const project = path.resolve(here, '../..');
 const digest = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const [app, releaseFile, out, mode, locale, seedArg] = process.argv.slice(2);
+const options = process.argv.slice(8);
+assert(options.length === 0 || (options.length === 1 && options[0] === '--approved-warning-stage'));
+const approvedWarningStage = options.length === 1;
+if (approvedWarningStage) assert(
+  (mode === 'configured' && ((locale === 'fr-FR' && seedArg === '20') || (locale === 'en-US' && seedArg === '21'))) ||
+  (mode === 'unconfigured' && locale === 'fr-FR' && seedArg === '-'), 'Only the three approved remaining cases');
 assert([app, releaseFile, out].every(p => p && path.isAbsolute(p)));
 assert(['configured', 'unconfigured'].includes(mode) && ['en-US', 'fr-FR'].includes(locale));
 const seed = mode === 'configured' ? Number(seedArg) : null;
@@ -54,7 +61,7 @@ try {
   report.publicAppSource = release.sourceCommit;
   report.environment = {architecture: process.arch,
     macOS: spawnSync('/usr/bin/sw_vers', ['-productVersion'], {encoding: 'utf8'}).stdout.trim()};
-  const inputs = ['run-headed.mjs', 'probe.mjs', 'semantics.mjs', 'speech-pipe.mjs', 'cleanup.mjs',
+  const inputs = ['run-headed.mjs', 'probe.mjs', 'semantics.mjs', 'speech-pipe.mjs', 'cleanup.mjs', 'admission.mjs',
     '../runtime-platform/fixtures/font-lifecycle-pipe.mjs',
     '../runtime-platform/fixtures/qa-browser-environment.mjs', '../native-qa-readiness.py'];
   report.source = Object.fromEntries(inputs.map(file => [file, digest(path.join(here, file))]));
@@ -106,7 +113,8 @@ await fetch('/result', {method:'POST',headers:{'Content-Type':'application/json'
   phase = 'admission';
   const ready = spawnSync('/usr/local/bin/python3', ['-B', path.join(project, 'scripts/native-qa-readiness.py'), '--check'], {encoding: 'utf8'});
   report.admission = JSON.parse(ready.stdout);
-  if (ready.status !== 0 || report.admission.eligibleForAttempt !== true || report.admission.memoryPressure !== 1) {
+  report.researchAdmission = speechAdmission(report.admission, ready.status, approvedWarningStage);
+  if (!report.researchAdmission.allowed) {
     report.status = 'deferred-resource-admission'; throw Error('Resource admission refused');
   }
   profile = fs.mkdtempSync('/private/tmp/neantik-speech.'); fs.chmodSync(profile, 0o700);

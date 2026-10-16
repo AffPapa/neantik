@@ -185,6 +185,10 @@ struct ProfileEditorView: View {
   @State private var proxyTestSucceeded = false
   @State private var isTesting = false
   @State private var proxyTestTask: Task<Void, Never>?
+  @State private var protocolDetectionTask: Task<Void, Never>?
+  @State private var protocolDiscovery = ProxyProtocolDiscovery()
+  @State private var protocolDetectionError: String?
+  private var isDetectingProtocol: Bool { protocolDetectionTask != nil }
   @State private var showsAdvancedOptions = false
   private var hasUnsavedChanges: Bool {
     initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue, engine.rawValue, webKitMediaPolicy.rawValue, fontPolicy.rawValue,
@@ -477,6 +481,8 @@ struct ProfileEditorView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
 
+            proxyProtocolControls
+
             if proxyEntryMode == .paste {
             SecureField(
               "login:password@host:port",
@@ -576,12 +582,14 @@ struct ProfileEditorView: View {
                     Label("Проверить прокси", systemImage: "network")
                   }
                   .disabled(proxyEntryMode == .paste && proxyImportText.isEmpty)
+                  .disabled(isDetectingProtocol)
                   .help("Разобрать введённую строку при необходимости и проверить прокси")
                   Button("Свой адрес диагностики…") {
                     if proxyEntryMode == .paste, !importProxy(source: proxyImportText) { return }
                     showingCustomProxyDiagnostic = true
                   }
                   .disabled(proxyEntryMode == .paste && proxyImportText.isEmpty)
+                  .disabled(isDetectingProtocol)
                   .help("Отдельная ручная проверка через твой HTTPS-сервис; не меняет геоконтекст")
                 }
               }
@@ -934,6 +942,7 @@ struct ProfileEditorView: View {
     }
     .onDisappear {
       proxyTestTask?.cancel()
+      cancelProtocolDetection()
     }
     .onChange(of: usesProxy) { _, _ in
       proxyInputDidChange()
@@ -950,7 +959,7 @@ struct ProfileEditorView: View {
       proxyInputDidChange()
     }
     .onChange(of: engine) { _, value in
-      if value == .webkit { proxyTestTask?.cancel(); proxyTestTask = nil; isTesting = false; validationIssue = nil; errorMessage = nil }
+      if value == .webkit { cancelProtocolDetection(); proxyTestTask?.cancel(); proxyTestTask = nil; isTesting = false; validationIssue = nil; errorMessage = nil }
     }
     .onChange(of: proxyUsername) { _, _ in
       proxyInputDidChange()
@@ -960,8 +969,15 @@ struct ProfileEditorView: View {
       proxyInputDidChange()
     }
     .onChange(of: proxyImportOrder) { _, _ in
+      cancelProtocolDetection()
       proxyImportMessage = nil
       proxyImportFailed = false
+    }
+    .onChange(of: proxyImportText) { _, _ in
+      cancelProtocolDetection()
+    }
+    .onChange(of: proxyEntryMode) { _, _ in
+      cancelProtocolDetection()
     }
     .onChange(of: tags) { _, _ in
       clearValidation(for: .tags)
@@ -1339,6 +1355,7 @@ struct ProfileEditorView: View {
   }
 
   private func testProxy() {
+    cancelProtocolDetection()
     if proxyEntryMode == .paste {
       guard importProxy(source: proxyImportText) else { return }
     }
@@ -1457,10 +1474,97 @@ struct ProfileEditorView: View {
   }
 
   private func proxyInputDidChange() {
+    cancelProtocolDetection()
     guard !isApplyingProxyImport else { return }
     proxyImportMessage = nil
     proxyImportFailed = false
     invalidateProxyEvidence()
+  }
+
+  private var proxyProtocolControls: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 10) {
+        if isDetectingProtocol {
+          ProgressView().controlSize(.small).accessibilityHidden(true)
+          Text("Определяем тип…").foregroundStyle(.secondary)
+          Button("Отменить") { cancelProtocolDetection() }
+            .help("Остановить определение типа и закрыть соединение")
+        } else {
+          Button("Определить тип без пароля") { detectProxyProtocol() }
+            .disabled(isTesting || (proxyEntryMode == .paste && proxyImportText.isEmpty))
+            .help("Подключиться к указанному адресу и порту. Логин и пароль не отправляются; профиль не сохраняется.")
+        }
+      }
+      if isDetectingProtocol || protocolDiscovery.finding != nil {
+        Text("Проба HTTP/SOCKS5 без логина и пароля. Это ещё не проверка доступа к сайтам.")
+          .font(.caption).foregroundStyle(.secondary)
+      }
+      if let finding = protocolDiscovery.finding {
+        Text(finding.message).font(.callout).foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
+        if let kind = finding.kind {
+          Button("Использовать \(kind.title)") { applyDetectedProtocol() }
+            .disabled(isTesting || isDetectingProtocol)
+        }
+      }
+      if let protocolDetectionError {
+        Text(protocolDetectionError).font(.callout).foregroundStyle(.red)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+    }
+  }
+
+  private func currentProtocolEndpoint() throws -> ProxyProtocolEndpoint {
+    guard engine == .chromium, usesProxy else { throw NeAntikError.invalidProxy }
+    if proxyEntryMode == .paste {
+      // Parsing is local. Neither the draft credentials nor Keychain are
+      // passed into the detector, even when a pasted line includes them.
+      let draft = try ProxyImportParser.parse(proxyImportText, kind: proxyKind, order: proxyImportOrder)
+      return try .init(host: draft.configuration.host, port: draft.configuration.port)
+    }
+    guard let port = Int(proxyPort.trimmingCharacters(in: .whitespacesAndNewlines)) else { throw NeAntikError.invalidProxy }
+    return try .init(host: proxyHost, port: port)
+  }
+
+  private func detectProxyProtocol() {
+    guard !isTesting else { return }
+    cancelProtocolDetection()
+    do {
+      let endpoint = try currentProtocolEndpoint()
+      let request = protocolDiscovery.begin(endpoint: endpoint)
+      protocolDetectionTask = Task { @MainActor in
+        do {
+          let finding = try await ProxyProtocolDetector().detect(endpoint: endpoint)
+          try Task.checkCancellation()
+          guard protocolDiscovery.finish(request, finding: finding, currentEndpoint: try? currentProtocolEndpoint()) else { return }
+          protocolDetectionTask = nil
+        } catch {
+          guard !Task.isCancelled,
+                protocolDiscovery.finish(request, finding: .unknown, currentEndpoint: try? currentProtocolEndpoint()) else { return }
+          protocolDetectionTask = nil
+        }
+      }
+    } catch {
+      protocolDetectionError = "Проверь адрес, порт и формат строки прокси."
+    }
+  }
+
+  private func applyDetectedProtocol() {
+    guard let kind = protocolDiscovery.applicableKind(at: try? currentProtocolEndpoint()),
+          !isTesting, !isDetectingProtocol else { return }
+    if proxyEntryMode == .paste, !importProxy(source: proxyImportText) { return }
+    cancelProtocolDetection()
+    proxyKind = kind
+    // The paste summary describes the parser's previous kind, not the newly
+    // selected wire protocol. Do not retain a contradictory HTTP/SOCKS label.
+    proxyImportMessage = nil
+    proxyImportFailed = false
+    invalidateProxyEvidence()
+  }
+
+  private func cancelProtocolDetection() {
+    protocolDetectionTask?.cancel(); protocolDetectionTask = nil
+    protocolDiscovery.invalidate(); protocolDetectionError = nil
   }
 
 }

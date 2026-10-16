@@ -40,6 +40,7 @@ FEATURES = [
 SHARED_SWIFT = frozenset('Sources/NeAntik/' + name + '.swift' for name in (
     'BrowserProcessManager', 'BrowserLaunchActionPresentation',
     'MCPOutputSchemas', 'MCPProfileManagement', 'RedactedSupportBundle',
+    'ProfileEditorView', 'HelpContent',
 ))
 PYTHON_READERS = {
     'Sources/NeAntik/BrowserProcessManager.swift': (
@@ -61,6 +62,9 @@ for _path in (
     'docs/NEANTIK_IMPROVEMENT_ROADMAP.md', 'docs/SOURCE_TO_SITE_HANDOFF.md',
 ):
     PYTHON_READERS[_path] = ('scripts.tests.test_verify_mcp_documentation',)
+PYTHON_READERS['Sources/NeAntik/HelpContent.swift'] += (
+    'scripts.tests.test_verify_public_artifact_privacy',
+)
 
 # Reviewed stdlib-only harness boundaries. These do not link Swift or share
 # production code. Changes outside this explicit map remain conservative.
@@ -98,6 +102,7 @@ WEBRTC_CONTROLS = ('test-webrtc-boundary-semantics.mjs',
 SPEECH_HARNESSES = frozenset('scripts/runtime-speech/' + name for name in (
     'run-headed.mjs', 'probe.mjs', 'semantics.mjs', 'speech-pipe.mjs',
     'cleanup.mjs', 'test-cleanup.mjs', 'test-observation.mjs', 'test-pipe.mjs',
+    'admission.mjs', 'test-admission.mjs',
 ))
 HOSTED_INPUT_HARNESSES = frozenset({'scripts/verify-direct-hosted-download.py'})
 
@@ -148,6 +153,10 @@ def plan(paths, catalog, *, version_only_info=False):
     for path in paths:
         # Accumulate dependencies before feature/documentation early returns.
         python.update(PYTHON_READERS.get(path, ()))
+        # This contract glob-reads every shipped Swift source, including newly
+        # added files. Preserve that wildcard dependency before early returns.
+        if path.startswith('Sources/NeAntik/') and path.endswith('.swift'):
+            python.add('scripts.tests.test_responsive_ui_contract')
         if PurePosixPath(path).suffix.lower() in (".zip", ".dmg", ".sha256", ".sig", ".provisionprofile") or ".app/" in path or PurePosixPath(path).name.startswith("direct-candidate"):
             delivery = True
             gates.add("exact source/candidate binding, signing, notarization, stapling, Gatekeeper and archive integrity")

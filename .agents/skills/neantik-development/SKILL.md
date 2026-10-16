@@ -19,7 +19,7 @@ Run `python3 -B scripts/plan-manager-checks.py --base HEAD` after a change, or
 repeat `--path` for a proposed change. It recommends batched Swift/Python
 checks and additional native gates. Review dependencies the map cannot know.
 Unknown/shared inputs select full regression. Planning never means PASS.
-Five explicitly reviewed shared Swift paths keep full Swift but select only
+Explicitly reviewed shared Swift paths keep full Swift but select only
 their Python readers; unknown inputs still require both full sets. `--base`
 can recognize a version-only Info.plist diff from actual before/after values;
 `--path` alone cannot. Native, version-floor and delivery gates stay separate.
