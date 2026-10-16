@@ -23,12 +23,19 @@ def verify_m156_source_and_runtime(report: dict, runtime_app: Path, evidence: Pa
     from chromium_15612_packaged_evidence import process as verify_packaged
     from chromium_15612_variant import (verify_report_source_fields, verify_signed_runtime_identity,
                                         reviewed_lock_prefix, SUCCESSOR_PREFIXES)
+    from chromium_15612_source_context import verify_source_context, SourceContextUnavailable
     selected_lock = load_json(evidence / 'fingerprint-chromium.lock.json')
     try:
-        verify_packaged(project_root, evidence, selected_lock)
-        verify_report_source_fields(report, selected_lock, project_root=project_root)
+        try:
+            context = verify_source_context(project_root, selected_lock)
+        except SourceContextUnavailable:
+            # Dirty/standalone development input gets the original FULL checks,
+            # never an unsealed cached result. Validation errors are not caught.
+            context = None
+        verify_packaged(project_root, evidence, selected_lock, source_context=context)
+        verify_report_source_fields(report, selected_lock, project_root=project_root, source_context=context)
         if reviewed_lock_prefix(selected_lock) in SUCCESSOR_PREFIXES:
-            verify_signed_runtime_identity(runtime_app, selected_lock, project_root=project_root)
+            verify_signed_runtime_identity(runtime_app, selected_lock, project_root=project_root, source_context=context)
     except ValueError as error:
         raise PackagedRuntimeReportError(str(error)) from error
 

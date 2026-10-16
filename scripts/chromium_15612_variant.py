@@ -1,6 +1,7 @@
 """Explicit reviewed M156 identities; a version or marker is not qualification."""
 from pathlib import Path
 from dataclasses import dataclass
+from contextlib import nullcontext
 import chromium_15612_release_evidence as legacy
 
 FONT_VARIANT = 'font-system-v1'
@@ -95,15 +96,24 @@ def verify_unsigned_binary_binding(app: Path, args_gn: Path, document: dict) -> 
     _subject(document).verify_unsigned_binary_binding(app, args_gn, document)
 
 
-def report_source_fields(lock: dict, *, project_root: Path) -> dict:
+def report_source_fields(lock: dict, *, project_root: Path, source_context=None) -> dict:
     """Authenticate the source proof before describing its observation scope.
 
     This does not observe a live source tree or qualify a signed release.
     Historical final9 reports keep their original fields byte for byte.
     """
+    if source_context is not None:
+        with source_context.operation(project_root, lock):
+            return source_context.source_fields()
     prefix = reviewed_lock_prefix(lock)
     candidate = legacy.read_object(project_root / 'runtime' / (prefix + '-port-candidate.json'), 'M156 candidate')
     verify_candidate_lock(lock, provenance=candidate, project_root=project_root)
+    return _source_fields_from_verified_lock(lock, project_root=project_root)
+
+
+def _source_fields_from_verified_lock(lock: dict, *, project_root: Path) -> dict:
+    """Internal projection; callers must fully validate the source first."""
+    prefix = reviewed_lock_prefix(lock)
     if prefix == legacy.PREFIX:
         return {
             'sourceEvidenceMode': 'executed-final9-preserved-build-and-current-packaging-inputs',
@@ -127,8 +137,14 @@ def report_source_fields(lock: dict, *, project_root: Path) -> dict:
     }
 
 
-def verify_report_source_fields(report: dict, lock: dict, *, project_root: Path) -> None:
-    expected = report_source_fields(lock, project_root=project_root)
+def verify_report_source_fields(report: dict, lock: dict, *, project_root: Path, source_context=None) -> None:
+    with source_context.operation(project_root, lock) if source_context is not None else nullcontext():
+        expected = (source_context.source_fields() if source_context is not None else
+                    report_source_fields(lock, project_root=project_root))
+        _check_report_source_fields(report, expected)
+
+
+def _check_report_source_fields(report: dict, expected: dict) -> None:
     keys = {'sourceVariant', 'sourceEvidenceMode', 'fullFDObservationSHA256',
             'baseFullFDObservationSHA256', 'postbuildFullFDObservationSHA256',
             'sourceDeltaProofSHA256', 'freshWholeSourceTreeObserved'}
@@ -137,12 +153,18 @@ def verify_report_source_fields(report: dict, lock: dict, *, project_root: Path)
         raise legacy.M15612EvidenceError('M156 source evidence mode/binding mismatch')
 
 
-def verify_signed_runtime_identity(app: Path, lock: dict, *, project_root: Path) -> None:
+def verify_signed_runtime_identity(app: Path, lock: dict, *, project_root: Path, source_context=None) -> None:
     """Compare preserved font bytes; signature/native gates remain separate."""
+    with source_context.operation(project_root, lock) if source_context is not None else nullcontext():
+        if source_context is None:
+            report_source_fields(lock, project_root=project_root)
+        _verify_signed_runtime_closure(app, lock, project_root=project_root)
+
+
+def _verify_signed_runtime_closure(app: Path, lock: dict, *, project_root: Path) -> None:
     prefix = reviewed_lock_prefix(lock)
     if prefix not in SUCCESSOR_PREFIXES:
         raise legacy.M15612EvidenceError('Signed successor identity needs an explicit reviewed variant')
-    report_source_fields(lock, project_root=project_root)
     successor = _subject(lock)
     proof = legacy.bound(project_root / 'runtime', prefix + '-source-proof.json', successor.PROOF_SHA256)
     import importlib.util

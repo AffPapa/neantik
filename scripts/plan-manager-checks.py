@@ -105,6 +105,21 @@ SPEECH_HARNESSES = frozenset('scripts/runtime-speech/' + name for name in (
     'admission.mjs', 'test-admission.mjs',
 ))
 HOSTED_INPUT_HARNESSES = frozenset({'scripts/verify-direct-hosted-download.py'})
+M156_SOURCE_CHECKERS = frozenset({
+    'scripts/chromium_15612_source_context.py',
+    'scripts/chromium_15612_variant.py',
+    'scripts/chromium_15612_packaged_evidence.py',
+    'scripts/verify-packaged-runtime-report.py',
+})
+M156_SOURCE_CONTROLS = (
+    'scripts.tests.test_chromium_15612_source_context',
+    'scripts.tests.test_chromium_15612_variant',
+    'scripts.tests.test_chromium_15612_packaged_evidence',
+    'scripts.tests.test_chromium_15612_font_release_routing',
+    'scripts.tests.test_security_runtime_report_routing',
+    'scripts.tests.test_chromium_15612_component_release_evidence.ComponentSourceEvidenceTests.test_complete_packaging_keeps_both_predecessors_and_refuses_extra_members',
+    'scripts.tests.test_verify_packaged_runtime_report',
+)
 
 
 def safe_path(value):
@@ -216,6 +231,10 @@ def plan(paths, catalog, *, version_only_info=False):
                            'scripts.tests.test_release_input_snapshot'))
             gates.add('changed hosted-input checker: retain exact candidate/evidence, signing and public-byte gates for changed delivery; source controls are not release qualification')
             reasons.append({'path': path, 'surface': 'hosted-input-checker'}); continue
+        if path in M156_SOURCE_CHECKERS:
+            python.update(M156_SOURCE_CONTROLS)
+            gates.add('source-only verification reuse: measure real source/copy/runtime closure; exact candidate, signing and hosted-byte gates remain fresh for changed deliveries')
+            reasons.append({'path': path, 'surface': 'm156-source-checker'}); continue
         if path == 'scripts/native-qa-readiness.py':
             python.add('scripts.tests.test_native_qa_readiness')
             gates.add('real read-only macOS resource observation; readiness is not native qualification')

@@ -8,9 +8,14 @@ import chromium_15612_variant as variant
 
 
 def names(project: Path, lock: dict | None = None) -> list[str]:
+    return _names(project, lock)
+
+
+def _names(project: Path, lock: dict | None = None, *, source_verified=False) -> list[str]:
     root = project / 'runtime'
     proof = root / (source.PREFIX + '-source-evidence')
-    source.evidence_documents(proof)
+    if not source_verified:
+        source.evidence_documents(proof)
     result = [source.PREFIX + '-' + suffix + '.json' for suffix in (
         'source-contract', 'source-input-manifest', 'source-snapshot',
         'rebase-plan', 'port-candidate', 'toolchain-lock')]
@@ -43,7 +48,8 @@ def names(project: Path, lock: dict | None = None) -> list[str]:
     if prefix in (variant.SECURITY_PREFIX, variant.COMPONENT_PREFIX):
         import chromium_15612_security_release_evidence as security
         # Authenticate the complete overlay before deriving any copy names.
-        security.verify_contract(project)
+        if not source_verified:
+            security.verify_contract(project)
         result += [security.PREFIX + '-' + suffix + '.json' for suffix in (
             'source-contract', 'source-input-manifest', 'source-snapshot', 'port-candidate', 'source-proof')]
         relative = 'security-backports-20261015/'
@@ -53,7 +59,8 @@ def names(project: Path, lock: dict | None = None) -> list[str]:
         result += [relative + name for name in manifest['licenseFiles']]
     if prefix == variant.COMPONENT_PREFIX:
         import chromium_15612_component_release_evidence as component
-        component.verify_contract(project)
+        if not source_verified:
+            component.verify_contract(project)
         result += [component.PREFIX + '-' + suffix + '.json' for suffix in (
             'source-contract', 'source-input-manifest', 'source-snapshot', 'port-candidate', 'source-proof')]
         for name in component.MANIFESTS:
@@ -65,13 +72,40 @@ def names(project: Path, lock: dict | None = None) -> list[str]:
     return result
 
 
-def process(project: Path, evidence: Path, lock: dict, *, copy: bool = False) -> None:
+def _verified_source_expectations(project: Path, lock: dict):
+    """One full ancestry validation, then its source-only projections."""
     prefix = variant.reviewed_lock_prefix(lock)
     candidate = source.read_object(project / 'runtime' / (prefix + '-port-candidate.json'), 'M156 candidate')
     variant.verify_candidate_lock(lock, provenance=candidate, project_root=project)
+    return (variant._source_fields_from_verified_lock(lock, project_root=project),
+            _names(project, lock, source_verified=True))
+
+
+def process(project: Path, evidence: Path, lock: dict, *, copy: bool = False, source_context=None) -> None:
+    if source_context is not None:
+        with source_context.operation(project, lock):
+            # A cached source expectation cannot authorize a different copy's
+            # lock. Copy construction without a lock keeps the original path.
+            copied_lock = evidence / 'fingerprint-chromium.lock.json'
+            if source.read_object(copied_lock, 'packaged M156 lock') != lock:
+                raise ValueError('Packaged M156 lock differs from source context')
+            _process(project, evidence, lock, copy=copy, dependencies=source_context.dependencies,
+                     source_verified=True)
+            if source.read_object(copied_lock, 'packaged M156 lock') != lock:
+                raise ValueError('Packaged M156 lock changed during verification')
+            return
+    return _process(project, evidence, lock, copy=copy)
+
+
+def _process(project: Path, evidence: Path, lock: dict, *, copy=False, dependencies=None,
+             source_verified=False) -> None:
+    prefix = variant.reviewed_lock_prefix(lock)
+    if dependencies is None:
+        candidate = source.read_object(project / 'runtime' / (prefix + '-port-candidate.json'), 'M156 candidate')
+        variant.verify_candidate_lock(lock, provenance=candidate, project_root=project)
+        dependencies = names(project, lock)
     if evidence.is_symlink() or not evidence.is_dir():
         raise ValueError('Evidence root must be an existing regular directory')
-    dependencies = names(project, lock)
     for relative in dependencies:
         # This single, public dependency lives outside runtime. Never copy the
         # private headed trace or broaden this mapping to a research directory.
@@ -89,13 +123,26 @@ def process(project: Path, evidence: Path, lock: dict, *, copy: bool = False) ->
             if not dst.exists():
                 with src.open('rb') as reader, dst.open('xb') as writer:
                     shutil.copyfileobj(reader, writer)
-        if source.sha256_file(source.safe_relative_regular(evidence, relative)) != source.sha256_file(src):
+        target = source.safe_relative_regular(evidence, relative)
+        if source_verified:
+            # Preserve the proof reader's bounded O_NOFOLLOW/fstat/path-inode
+            # custody even though identical proof JSON needs no second parse.
+            copied_digest = source.digest(source.checked_file(target.parent, target.name))
+            expected_digest = source.digest(source.checked_file(src.parent, src.name))
+        else:
+            copied_digest, expected_digest = source.sha256_file(target), source.sha256_file(src)
+        if copied_digest != expected_digest:
             raise ValueError('Packaged M156 evidence differs: ' + relative)
-    source.evidence_documents(evidence / (source.PREFIX + '-source-evidence'))
+    if not source_verified:
+        source.evidence_documents(evidence / (source.PREFIX + '-source-evidence'))
     subtrees = (('font-policy-v1', 'security-backports-20261015', 'component-updates-v1')
                 if prefix == variant.COMPONENT_PREFIX else
                 ('font-policy-v1', 'security-backports-20261015') if prefix == variant.SECURITY_PREFIX
                 else ('font-policy-v1',) if prefix == variant.FONT_PREFIX else ())
+    if source_verified:
+        # Every proof byte above equals the already verified, still-sealed
+        # source. Check its whole namespace afresh instead of parsing it again.
+        subtrees = (source.PREFIX + '-source-evidence', *subtrees)
     for subtree in subtrees:
         expected = {name for name in dependencies if name.startswith(subtree + '/')}
         expected_directories = {p.as_posix() for name in expected for p in Path(name).parents if p != Path('.')}

@@ -11,6 +11,22 @@ SPEC.loader.exec_module(MOD)
 
 
 class ManagerCheckPlanTests(unittest.TestCase):
+    def test_closed_source_checker_map_keeps_real_copy_controls_and_delivery_gates(self):
+        result = MOD.plan(sorted(MOD.M156_SOURCE_CHECKERS), [])
+        self.assertEqual(result['swiftMode'], 'none')
+        self.assertEqual(result['commands'], [['python3', '-B', '-m', 'unittest',
+                                               *sorted(MOD.M156_SOURCE_CONTROLS)]])
+        self.assertEqual(result['status'], 'not-run')
+        self.assertFalse(result['releaseGate'])
+        self.assertIn('signing and hosted-byte gates remain fresh', result['requiredAdditionalGates'][0])
+        self.assertIn('scripts.tests.test_chromium_15612_packaged_evidence', MOD.M156_SOURCE_CONTROLS)
+        unknown = MOD.plan(['scripts/chromium_15612_unreviewed.py'], [])
+        self.assertEqual(unknown['swiftMode'], 'full')
+        self.assertTrue(any('discover' in command for command in unknown['commands']))
+        artifact = MOD.plan(['dist/NeAntik.app/Contents/MacOS/NeAntik'], [])
+        self.assertTrue(artifact['releaseSurface'])
+        self.assertTrue(any('Gatekeeper' in gate for gate in artifact['requiredAdditionalGates']))
+
     def test_hosted_input_checker_keeps_privacy_snapshot_and_future_delivery_gates(self):
         result = MOD.plan(['scripts/verify-direct-hosted-download.py'], [])
         self.assertEqual(result['swiftMode'], 'none')

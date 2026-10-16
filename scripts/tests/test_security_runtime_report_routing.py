@@ -99,6 +99,7 @@ class SecurityRuntimeReportTests(unittest.TestCase):
             self.assertIn('NeAntikRuntimeEvidence/security-backports-20261015/' + name, text)
 
     def test_packaged_verifier_requires_complete_closure_for_both_successors(self):
+        import chromium_15612_source_context as contexts
         spec = importlib.util.spec_from_file_location('security_packaged', ROOT / 'scripts/verify-packaged-runtime-report.py')
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -113,11 +114,12 @@ class SecurityRuntimeReportTests(unittest.TestCase):
                 # Source/report validation has independent actual-input tests.
                 # Isolate this permission boundary so a skipped closure cannot
                 # be hidden by an earlier, unrelated validation failure.
-                with patch('chromium_15612_packaged_evidence.process'), \
+                with patch.object(contexts, 'verify_source_context', side_effect=contexts.SourceContextUnavailable('isolated full path')), \
+                     patch('chromium_15612_packaged_evidence.process'), \
                      patch.object(variant, 'verify_report_source_fields'), \
                      patch.object(variant, 'verify_signed_runtime_identity') as closure:
                     module.verify_m156_source_and_runtime({}, Path('/owned/runtime'), evidence, ROOT)
-                    closure.assert_called_once_with(Path('/owned/runtime'), lock, project_root=ROOT)
+                    closure.assert_called_once_with(Path('/owned/runtime'), lock, project_root=ROOT, source_context=None)
                     closure.side_effect = ValueError('changed helper/resource with unchanged main hashes')
                     with self.assertRaisesRegex(module.PackagedRuntimeReportError, 'changed helper/resource'):
                         module.verify_m156_source_and_runtime({}, Path('/owned/runtime'), evidence, ROOT)

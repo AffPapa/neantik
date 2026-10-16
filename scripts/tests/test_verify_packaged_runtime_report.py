@@ -20,6 +20,38 @@ SPEC.loader.exec_module(MODULE)
 
 
 class VerifyPackagedRuntimeReportTests(unittest.TestCase):
+    def test_m156_source_context_wiring_and_full_unsealed_fallback(self):
+        from unittest.mock import patch
+        import chromium_15612_source_context as contexts
+        import chromium_15612_packaged_evidence as packaged
+        import chromium_15612_variant as variant
+        lock = {'sourceVariant': variant.FONT_VARIANT,
+                'sourceContract': 'runtime/' + variant.FONT_PREFIX + '-source-contract.json',
+                'sourceProvenance': 'runtime/' + variant.FONT_PREFIX + '-port-candidate.json'}
+        for sealed in (False, True):
+            marker = object() if sealed else None
+            with self.subTest(sealed=sealed), patch.object(MODULE, 'load_json', return_value=lock), \
+                 patch.object(contexts, 'verify_source_context', return_value=marker,
+                              side_effect=None if sealed else contexts.SourceContextUnavailable('unsealed')), \
+                 patch.object(packaged, 'process') as copied, \
+                 patch.object(variant, 'verify_report_source_fields') as report, \
+                 patch.object(variant, 'verify_signed_runtime_identity') as runtime:
+                MODULE.verify_m156_source_and_runtime({}, Path('/app'), Path('/evidence'), Path('/project'))
+                for gate in (copied, report, runtime):
+                    gate.assert_called_once()
+                    self.assertIs(gate.call_args.kwargs['source_context'], marker)
+
+    def test_m156_source_validation_error_never_falls_back_to_a_cached_result(self):
+        from unittest.mock import patch
+        import chromium_15612_source_context as contexts
+        import chromium_15612_packaged_evidence as packaged
+        with patch.object(MODULE, 'load_json', return_value={}), \
+             patch.object(contexts, 'verify_source_context', side_effect=ValueError('source failed')), \
+             patch.object(packaged, 'process') as copied:
+            with self.assertRaisesRegex(MODULE.PackagedRuntimeReportError, 'source failed'):
+                MODULE.verify_m156_source_and_runtime({}, Path('/app'), Path('/evidence'), Path('/project'))
+            copied.assert_not_called()
+
     def test_semantic_variant_uses_its_exact_lock_and_contract(self):
         prefix = "chromium-15540-semantic-v3"
         candidate = {"semanticCorrectionSet": "canvas-audio-webgl-native-webrtc-v3",

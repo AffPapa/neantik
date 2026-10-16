@@ -153,6 +153,7 @@ class FontReleaseRoutingTests(unittest.TestCase):
 
 class StandaloneFontReportGateTests(unittest.TestCase):
     def test_packaged_gate_does_not_accept_report_relabeling(self):
+        import chromium_15612_source_context as contexts
         verifier = module('verify-packaged-runtime-report')
         lock = json.loads((ROOT / 'runtime/fingerprint-chromium-15612-font-system-v1.lock.json').read_text())
         fields = variant.report_source_fields(lock, project_root=ROOT)
@@ -162,13 +163,14 @@ class StandaloneFontReportGateTests(unittest.TestCase):
             # Isolate the gate after source dependency verification. A forged
             # report can claim any actual hashes; the independent closure check
             # still has to inspect the supplied runtime, not trust those fields.
-            with patch.object(packaged, 'process') as source_check, \
+            with patch.object(contexts, 'verify_source_context', side_effect=contexts.SourceContextUnavailable('isolated full path')), \
+                 patch.object(packaged, 'process') as source_check, \
                  patch.object(variant, 'verify_signed_runtime_identity', side_effect=ValueError('wrong actual runtime')) as byte_check:
                 with self.assertRaisesRegex(verifier.PackagedRuntimeReportError, 'wrong actual runtime'):
                     verifier.verify_m156_source_and_runtime({**fields, 'executable': {'sha256': '0' * 64}},
                                                            Path('/owned-old-runtime'), evidence, ROOT)
                 source_check.assert_called_once()
-                byte_check.assert_called_once_with(Path('/owned-old-runtime'), lock, project_root=ROOT)
+                byte_check.assert_called_once_with(Path('/owned-old-runtime'), lock, project_root=ROOT, source_context=None)
 
 
 if __name__ == '__main__':
