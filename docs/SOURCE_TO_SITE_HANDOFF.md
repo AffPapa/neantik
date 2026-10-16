@@ -1,4 +1,4 @@
-# Current public release: 0.8.20/build132 · Chromium156.0.8078.12 +8backports · [report](../releases/v0.8.20.json)
+# Current public release: 0.8.21/build133 · Chromium156.0.8078.12 +8backports +component completion · [report](../releases/v0.8.21.json)
 
 GitHub128 and browser.free Sites153 are published and live-verified. Signed ZIP/DMG, downloaded-byte identity, isolated MCP and the scoped headed/WebKit gates are complete. Preserve immutable assets. Major1.0 remains open; subsequent dated sections are historical. The active queue is [NEXT_1_0_SLICES](NEXT_1_0_SLICES.md).
 

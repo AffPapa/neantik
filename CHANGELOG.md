@@ -1,11 +1,11 @@
 # NeAntik changelog
 
-## Direct 0.8.21 (133) — development candidate — завершение проверки компонентов
+## Direct 0.8.21 (133) — published public alpha — завершение проверки компонентов
 
 - Отключённая проверка компонентов Chromium теперь асинхронно возвращает явный отказ вместо зависания очереди. Сетевые запросы компонентов по-прежнему отключены.
 - На отдельном подписанном runtime прошли4реальных C++ теста и2последовательные оконные проверки; старый checker намеренно проваливает все4теста. Ошибки setup/cleanup сохранены и отделены от продукта. [Доказательства и границы](docs/evidence/component-completion-development.json).
 - Новый runtime привязан к собственным source/evidence/report pins; предыдущие font/security contracts и опубликованные архивы сохранены. Измерение маршрута браузера, CUP и все фоновые DNS/UDP этим не доказываются.
-- Точная квалификация приложения, обновления, notarization, Gatekeeper и публикация ещё не завершены. Первый переход с132на новый runtime потребует ручного DMG/ZIP: старый updater не содержит новой compiled record. Это public-alpha candidate, не1.0.
+- Точный кандидат, updater QA commit/preACKrollback, doctor13/13, Apple ZIP/DMG, Gatekeeper, анонимные файлы и downloadedMCP18/7 проверены. Первый переход с132на новый runtime потребует ручного DMG/ZIP: старый updater не содержит новой compiled record. Это public-alpha candidate, не1.0.
 
 ## Direct 0.8.20 (132) — published public alpha — исправления безопасности Chromium
 
