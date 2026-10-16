@@ -95,6 +95,10 @@ WEBRTC_HARNESSES = frozenset('scripts/runtime-network/' + name for name in (
 ))
 WEBRTC_CONTROLS = ('test-webrtc-boundary-semantics.mjs',
                    'test-webrtc-boundary-pipe.mjs', 'test-webrtc-stun-fixture.mjs')
+SPEECH_HARNESSES = frozenset('scripts/runtime-speech/' + name for name in (
+    'run-headed.mjs', 'probe.mjs', 'semantics.mjs', 'speech-pipe.mjs',
+    'cleanup.mjs', 'test-cleanup.mjs', 'test-observation.mjs', 'test-pipe.mjs',
+))
 
 
 def safe_path(value):
@@ -192,6 +196,10 @@ def plan(paths, catalog, *, version_only_info=False):
             node.update('scripts/runtime-network/' + name for name in WEBRTC_CONTROLS)
             gates.add('owned loopback UDP fixture; exact headed WebRTC matrix remains separate from model/pipe controls')
             reasons.append({'path': path, 'surface': 'standalone-webrtc-harness'}); continue
+        if path in SPEECH_HARNESSES:
+            python.add('scripts.tests.test_runtime_speech')
+            gates.add('fresh native admission and exact-runtime cold voice observation; JS fixture controls alone do not prove native delivery')
+            reasons.append({'path': path, 'surface': 'standalone-speech-harness'}); continue
         if path == 'scripts/native-qa-readiness.py':
             python.add('scripts.tests.test_native_qa_readiness')
             gates.add('real read-only macOS resource observation; readiness is not native qualification')
