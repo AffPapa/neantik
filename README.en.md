@@ -1,6 +1,5 @@
 # NeAntik
 
-**Security update, October 16:** shipped Chromium 156.0.8078.12 lacks an upstream DOM security fix. Candidate 0.8.19 (131) has not been published. Avoid untrusted sites with this Chromium build until the runtime is corrected. [Evidence, scope and release hold](docs/security/runtime-security-2026-10-16.md).
 
 NeAntik is an open-source, local-first browser profile manager for Apple
 Silicon Macs. The manager is native SwiftUI and launches an embedded,
@@ -12,6 +11,10 @@ separately installed Chrome, or telemetry.
 **0.8.18 (130), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.18): opt-in system Mac fonts for Chromium profiles, configurable in the editor and through MCP. Existing profiles keep native font handling. [browser.free](https://browser.free/) still points to the previous release.
 The exact signed candidate passed an isolated headed audit. Public ZIP/DMG bytes match and passed notarization, stapling and Gatekeeper. The downloaded manager passed a separate isolated MCP startup/restart smoke; the full headed audit was reused, not rerun.
 System WebKit remains a preview and does not replace the complete fingerprint. WebKit media remains disabled; full1.0 qualification is open.
+
+## Security advisory
+
+**Security update, October 16:** shipped Chromium 156.0.8078.12 lacks an upstream DOM security fix. Candidate 0.8.19 (131) has not been published. Avoid untrusted sites with this Chromium build until the runtime is corrected. [Evidence, scope and release hold](docs/security/runtime-security-2026-10-16.md).
 
 ## Download
 

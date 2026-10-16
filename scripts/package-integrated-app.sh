@@ -44,10 +44,11 @@ elif [[ "$RUNTIME_VERSION" == "156.0.8078.12" ]]; then
   M156_EVIDENCE_PREFIX="$(python3 "$PROJECT_DIR/scripts/chromium_15612_variant.py" "$CANDIDATE_LOCK")"
   SOURCE_CONTRACT_NAME="${M156_EVIDENCE_PREFIX}-source-contract.json"
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/$SOURCE_CONTRACT_NAME"
-  if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ]]; then
+  if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ||
+        "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-security-20261015-v1" ]]; then
     # Additive canonical proof; retain the historical emitted files beside src.
     SOURCE_PROVENANCE="$PROJECT_DIR/runtime/${M156_EVIDENCE_PREFIX}-port-candidate.json"
-    SECURITY_BASELINE_SOURCE="$(python3 "$PROJECT_DIR/scripts/chromium_15612_font_report.py" --baseline)"
+    SECURITY_BASELINE_SOURCE="$(python3 "$PROJECT_DIR/scripts/chromium_15612_font_report.py" --baseline --variant-prefix "$M156_EVIDENCE_PREFIX")"
   fi
 elif [[ "$RUNTIME_VERSION" == "152.0.7977.64" ]]; then
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
@@ -72,7 +73,8 @@ fi
 python3 "$PROJECT_DIR/scripts/runtime_build_path.py" \
   "$SOURCE_ROOT" "$BUILD_ARGS" "$CANDIDATE_LOCK" >/dev/null
 EXPECTED_CANDIDATE_LOCK="$(dirname "$SOURCE_ROOT")/runtime-candidate-lock.json"
-if [[ "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-v1" ]]; then
+if [[ "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-v1" ||
+      "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-security-20261015-v1" ]]; then
   EXPECTED_CANDIDATE_LOCK="$PROJECT_DIR/runtime/fingerprint-${M156_EVIDENCE_PREFIX}.lock.json"
 fi
 if [[ "$(cd "$(dirname "$CANDIDATE_LOCK")" && pwd -P)/$(basename "$CANDIDATE_LOCK")" !=
@@ -91,11 +93,12 @@ if [[ "$CANDIDATE_LOCK" != /* ||
   exit 66
 fi
 if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.12" ]]; then
-  if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ]]; then
+  if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ||
+        "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-security-20261015-v1" ]]; then
     # The new variant authenticates its own executed build + later complete FD
     # proof. Do not relabel it as a fresh scan or historical final9 output.
     "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE" --runtime-lock "$CANDIDATE_LOCK"
-    python3 "$PROJECT_DIR/scripts/chromium_15612_font_packaging.py" "$SOURCE_ROOT"
+    python3 "$PROJECT_DIR/scripts/chromium_15612_font_packaging.py" "$SOURCE_ROOT" --variant-prefix "$M156_EVIDENCE_PREFIX"
   else
     : "${NEANTIK_M156_BUILD_EVIDENCE:?Set the private final9 executed build evidence directory}"
     "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE" \
@@ -219,7 +222,8 @@ elif [[ "$RUNTIME_VERSION" == "156.0.8078.12" ]]; then
 fi
 cp "$SNAPSHOT_ARGS" "$EVIDENCE/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE/runtime-verification.json"
-if [[ "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-v1" ]]; then
+if [[ "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-v1" ||
+      "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-security-20261015-v1" ]]; then
   python3 "$PROJECT_DIR/scripts/package-manager-release-baseline.py" --project-root "$PROJECT_DIR" --evidence "$EVIDENCE"
   python3 "$PROJECT_DIR/scripts/chromium_15612_packaged_evidence.py" "$CANDIDATE_LOCK" "$EVIDENCE" --normalize-font-modes
 fi

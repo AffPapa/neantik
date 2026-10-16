@@ -28,20 +28,95 @@ package enum DirectUpdateFontRuntimePins {
 
 /// A complete record is selected only by actual closure + captured report bytes.
 package enum DirectUpdateRuntimeRecord: Sendable, Equatable, CaseIterable {
-    case final9, fontSystemV1
-    package var runtimeDigest: String { self == .final9 ? DirectUpdateRuntimePins.runtimeDigest : DirectUpdateFontRuntimePins.runtimeDigest }
-    package var evidenceDigest: String { self == .final9 ? DirectUpdateRuntimePins.evidenceDigest : DirectUpdateFontRuntimePins.evidenceDigest }
-    package var reportDigest: String { self == .final9 ? DirectUpdateRuntimePins.reportDigest : DirectUpdateFontRuntimePins.reportDigest }
-    package var runtimeEntries: Int { self == .final9 ? DirectUpdateRuntimePins.runtimeEntries : DirectUpdateFontRuntimePins.runtimeEntries }
-    package var evidenceEntries: Int { self == .final9 ? DirectUpdateRuntimePins.evidenceEntries : DirectUpdateFontRuntimePins.evidenceEntries }
-    package var runtimeBytes: Int64 { self == .final9 ? DirectUpdateRuntimePins.runtimeBytes : DirectUpdateFontRuntimePins.runtimeBytes }
-    package var evidenceBytes: Int64 { self == .final9 ? DirectUpdateRuntimePins.evidenceBytes : DirectUpdateFontRuntimePins.evidenceBytes }
-    package var reportHashes: [String: String] { self == .final9 ? DirectUpdateRuntimePins.reportHashes : DirectUpdateFontRuntimePins.reportHashes }
-    package var sourceMode: String { self == .final9 ? "executed-final9-preserved-build-and-current-packaging-inputs" : "executed-font-system-v1-preserved-build-and-postbuild-fd-source-proof" }
-    package var createdAt: String { self == .final9 ? "2026-10-10T07:09:29.793627Z" : DirectUpdateFontRuntimePins.createdAt }
-    package var argsDigest: String { self == .final9 ? "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01" : DirectUpdateFontRuntimePins.argsDigest }
-    package var executableDigest: String { self == .final9 ? "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0" : DirectUpdateFontRuntimePins.executableDigest }
-    package var frameworkDigest: String { self == .final9 ? "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815" : DirectUpdateFontRuntimePins.frameworkDigest }
+    case final9, fontSystemV1, fontSystemSecurity20261015V1
+
+    private struct RecordData: Sendable {
+        let runtimeDigest: String
+        let evidenceDigest: String
+        let reportDigest: String
+        let runtimeEntries: Int
+        let evidenceEntries: Int
+        let runtimeBytes: Int64
+        let evidenceBytes: Int64
+        let reportHashes: [String: String]
+        let sourceMode: String
+        let createdAt: String
+        let argsDigest: String
+        let executableDigest: String
+        let frameworkDigest: String
+        let sourceVariant: String?
+    }
+
+    private var data: RecordData {
+        switch self {
+        case .final9:
+            RecordData(
+                runtimeDigest: DirectUpdateRuntimePins.runtimeDigest,
+                evidenceDigest: DirectUpdateRuntimePins.evidenceDigest,
+                reportDigest: DirectUpdateRuntimePins.reportDigest,
+                runtimeEntries: DirectUpdateRuntimePins.runtimeEntries,
+                evidenceEntries: DirectUpdateRuntimePins.evidenceEntries,
+                runtimeBytes: DirectUpdateRuntimePins.runtimeBytes,
+                evidenceBytes: DirectUpdateRuntimePins.evidenceBytes,
+                reportHashes: DirectUpdateRuntimePins.reportHashes,
+                sourceMode: "executed-final9-preserved-build-and-current-packaging-inputs",
+                createdAt: "2026-10-10T07:09:29.793627Z",
+                argsDigest: "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+                executableDigest: "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+                frameworkDigest: "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815",
+                sourceVariant: nil
+            )
+        case .fontSystemV1:
+            RecordData(
+                runtimeDigest: DirectUpdateFontRuntimePins.runtimeDigest,
+                evidenceDigest: DirectUpdateFontRuntimePins.evidenceDigest,
+                reportDigest: DirectUpdateFontRuntimePins.reportDigest,
+                runtimeEntries: DirectUpdateFontRuntimePins.runtimeEntries,
+                evidenceEntries: DirectUpdateFontRuntimePins.evidenceEntries,
+                runtimeBytes: DirectUpdateFontRuntimePins.runtimeBytes,
+                evidenceBytes: DirectUpdateFontRuntimePins.evidenceBytes,
+                reportHashes: DirectUpdateFontRuntimePins.reportHashes,
+                sourceMode: "executed-font-system-v1-preserved-build-and-postbuild-fd-source-proof",
+                createdAt: DirectUpdateFontRuntimePins.createdAt,
+                argsDigest: DirectUpdateFontRuntimePins.argsDigest,
+                executableDigest: DirectUpdateFontRuntimePins.executableDigest,
+                frameworkDigest: DirectUpdateFontRuntimePins.frameworkDigest,
+                sourceVariant: "font-system-v1"
+            )
+        case .fontSystemSecurity20261015V1:
+            RecordData(
+                runtimeDigest: DirectUpdateSecurityRuntimePins.runtimeDigest,
+                evidenceDigest: DirectUpdateSecurityRuntimePins.evidenceDigest,
+                reportDigest: DirectUpdateSecurityRuntimePins.reportDigest,
+                runtimeEntries: DirectUpdateSecurityRuntimePins.runtimeEntries,
+                evidenceEntries: DirectUpdateSecurityRuntimePins.evidenceEntries,
+                runtimeBytes: DirectUpdateSecurityRuntimePins.runtimeBytes,
+                evidenceBytes: DirectUpdateSecurityRuntimePins.evidenceBytes,
+                reportHashes: DirectUpdateSecurityRuntimePins.reportHashes,
+                sourceMode: "executed-security-backport-preserved-build-and-postbuild-fd-source-proof",
+                createdAt: DirectUpdateSecurityRuntimePins.createdAt,
+                argsDigest: DirectUpdateSecurityRuntimePins.argsDigest,
+                executableDigest: DirectUpdateSecurityRuntimePins.executableDigest,
+                frameworkDigest: DirectUpdateSecurityRuntimePins.frameworkDigest,
+                sourceVariant: "font-system-security-20261015-v1"
+            )
+        }
+    }
+
+    package var runtimeDigest: String { data.runtimeDigest }
+    package var evidenceDigest: String { data.evidenceDigest }
+    package var reportDigest: String { data.reportDigest }
+    package var runtimeEntries: Int { data.runtimeEntries }
+    package var evidenceEntries: Int { data.evidenceEntries }
+    package var runtimeBytes: Int64 { data.runtimeBytes }
+    package var evidenceBytes: Int64 { data.evidenceBytes }
+    package var reportHashes: [String: String] { data.reportHashes }
+    package var sourceMode: String { data.sourceMode }
+    package var createdAt: String { data.createdAt }
+    package var argsDigest: String { data.argsDigest }
+    package var executableDigest: String { data.executableDigest }
+    package var frameworkDigest: String { data.frameworkDigest }
+    package var sourceVariant: String? { data.sourceVariant }
     package static var maximumRuntimeEntries: Int { allCases.map(\.runtimeEntries).max()! }
     package static var maximumEvidenceEntries: Int { allCases.map(\.evidenceEntries).max()! }
     package static var maximumRuntimeBytes: Int64 { allCases.map(\.runtimeBytes).max()! }

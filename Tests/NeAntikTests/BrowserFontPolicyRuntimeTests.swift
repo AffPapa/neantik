@@ -4,6 +4,37 @@ import Testing
 @testable import NeAntik
 
 struct BrowserFontPolicyRuntimeTests {
+    @Test func securitySuccessorPolicyMatchesItsOwnConfiguredSmokeAndSource() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let report = try #require(JSONSerialization.jsonObject(with: Data(contentsOf:
+            root.appendingPathComponent("docs/evidence/security-backport-font-smoke-development.json"))) as? [String: Any])
+        let runtime = try #require(report["runtime"] as? [String: Any])
+        let tree = try #require(runtime["runtimeTree"] as? [String: Any])
+        let record = try #require(BrowserFontPolicyRuntime.supportedRecords.first {
+            $0.executableSHA256 == runtime["executableSHA256"] as? String
+        })
+        #expect(BrowserFontPolicyRuntime.supportedRecords.count == 2)
+        #expect(record.runtimeDigest == tree["digest"] as? String)
+        #expect(record.entries == tree["entries"] as? Int)
+        #expect(record.regularBytes == tree["bytes"] as? Int64)
+        #expect(record.sourceContractSHA256 == report["sourceContractSHA256"] as? String)
+        #expect(record.sourceContractSHA256 != BrowserFontPolicyRuntime.sourceContractSHA256)
+        #expect(record.runtimeDigest != BrowserFontPolicyRuntime.runtimeDigest)
+        #expect(report["actualBrowser"] as? Bool == true)
+        #expect(report["headed"] as? Bool == true)
+        #expect(report["inputsRechecked"] as? Bool == true)
+        #expect(report["releaseQualified"] as? Bool == false)
+        for selected in BrowserFontPolicyRuntime.supportedRecords {
+            #expect(BrowserFontPolicyRuntime.acceptsMeasurement(digest: selected.runtimeDigest,
+                entries: selected.entries, bytes: selected.regularBytes, machoCount: selected.machoCount, record: selected))
+            for other in BrowserFontPolicyRuntime.supportedRecords where other != selected {
+                #expect(!BrowserFontPolicyRuntime.acceptsMeasurement(digest: other.runtimeDigest,
+                    entries: selected.entries, bytes: selected.regularBytes, machoCount: selected.machoCount, record: selected))
+            }
+        }
+    }
+
     @Test func sourceAndHeadedEvidenceAgreeWithIndependentRuntimePolicy() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
             .deletingLastPathComponent().deletingLastPathComponent()

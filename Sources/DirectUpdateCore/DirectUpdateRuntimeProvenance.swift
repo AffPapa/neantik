@@ -134,6 +134,8 @@ package enum DirectUpdateRuntimeProvenance {
             throw DirectUpdateRuntimeProvenanceError.metadata
         }
         try validateReport(report, record: record)
+        guard let baseline = evidence.publicationBaseline else { throw DirectUpdateRuntimeProvenanceError.metadata }
+        try DirectUpdatePublicationBaseline.validateSecurityReview(baseline, record: record)
         try Task.checkCancellation()
         return .init(runtime: runtime, evidence: evidence)
     }
@@ -175,7 +177,7 @@ package enum DirectUpdateRuntimeProvenance {
         let keys = Set(["schemaVersion", "chromiumVersion", "architecture", "buildArguments", "createdAt", "executable", "framework",
                         "codeSignature", "codeSignatureKind", "fingerprintProtocolStrings", "gpuMode", "machoCount",
                         "freshWholeSourceTreeObserved", "sourceEvidenceMode"] + Array(record.reportHashes.keys) +
-                       (record == .fontSystemV1 ? ["sourceVariant"] : []))
+                       (record.sourceVariant == nil ? [] : ["sourceVariant"]))
         guard Set(report.keys) == keys, integer(report["schemaVersion"], equals: 3),
               integer(report["machoCount"], equals: DirectUpdateRuntimePins.machoPaths.count),
               report["chromiumVersion"] as? String == DirectUpdateRuntimePins.chromiumVersion,
@@ -183,7 +185,7 @@ package enum DirectUpdateRuntimeProvenance {
               report["codeSignature"] as? String == "verified", report["codeSignatureKind"] as? String == "developer-id",
               report["fingerprintProtocolStrings"] as? String == "verified",
               report["sourceEvidenceMode"] as? String == record.sourceMode,
-              record != .fontSystemV1 || report["sourceVariant"] as? String == "font-system-v1",
+              record.sourceVariant == nil || report["sourceVariant"] as? String == record.sourceVariant,
               let observed = report["freshWholeSourceTreeObserved"] as? NSNumber,
               CFGetTypeID(observed) == CFBooleanGetTypeID(), !observed.boolValue,
               let created = report["createdAt"] as? String, created == record.createdAt,

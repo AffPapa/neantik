@@ -122,11 +122,12 @@ def golden() -> None:
 
 
 def compiled_records(project: Path) -> list[dict]:
-    """Read the two explicit compiled policies, never download-selected paths."""
+    """Read explicit compiled policies, never download-selected paths."""
     records = []
     for name, relative in (
         ('final9', 'Sources/DirectUpdateCore/DirectUpdateRuntimeProvenance.swift'),
         ('font-system-v1', 'Sources/DirectUpdateCore/DirectUpdateFontRuntimePins.swift'),
+        ('font-system-security-20261015-v1', 'Sources/DirectUpdateCore/DirectUpdateSecurityRuntimePins.swift'),
     ):
         path = project / relative
         if path.is_symlink() or path.stat().st_size > 256 * 1024:

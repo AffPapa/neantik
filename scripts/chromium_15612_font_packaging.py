@@ -7,7 +7,7 @@ import chromium_15612_release_evidence as source
 import chromium_15612_generated_cache as files
 import chromium_15612_build_copy_links_v2 as copies
 from chromium_15612_font_release_evidence import BASE_FULL_SHA256, PROOF_SHA256
-from chromium_15612_variant import FONT_PREFIX, FONT_VARIANT
+from chromium_15612_variant import FONT_PREFIX, FONT_VARIANT, SECURITY_PREFIX
 
 MANIFEST = FONT_PREFIX + '-packaging-inputs.json'
 MANIFEST_SHA256 = 'eb8d67e05d775cc0544f0dd5d178e6ebe04b6f323f37d75ab652f169403d74ea'
@@ -47,12 +47,21 @@ def verify_entries(root: Path, entries: list[dict], copy_groups: list[dict]) -> 
     source.need(set(mapped) <= seen, 'Unknown native COPY packaging group')
 
 
-def verify(root: Path, project: Path) -> dict:
+def verify(root: Path, project: Path, *, prefix: str = FONT_PREFIX) -> dict:
     value = manifest(project)
     # All selected paths are inherited unchanged. New font files are already
     # authenticated by the separately pinned six-layer source proof.
-    from chromium_15612_font_release_evidence import verify_contract
-    verify_contract(project)
+    if prefix == FONT_PREFIX:
+        from chromium_15612_font_release_evidence import verify_contract
+        verify_contract(project)
+    elif prefix == SECURITY_PREFIX:
+        from chromium_15612_security_release_evidence import verify_contract
+        _, _, proof = verify_contract(project)
+        source.need(not {entry['path'] for entry in value['entries']}.intersection(
+            change['path'] for change in proof['changes']),
+            'Security overlay changed inherited signing/license inputs')
+    else:
+        raise ValueError('Unknown M156 successor packaging inputs')
     from chromium_15612_live_source import anchored_root
     with anchored_root(root):
         verify_entries(root, value['entries'], value['knownNativeCopyGroups'])
@@ -68,9 +77,10 @@ if __name__ == '__main__':
     import json
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('source_root', type=Path)
+    parser.add_argument('--variant-prefix', choices=(FONT_PREFIX, SECURITY_PREFIX), default=FONT_PREFIX)
     args = parser.parse_args()
     try:
-        result = verify(args.source_root, Path(__file__).resolve().parents[1])
+        result = verify(args.source_root, Path(__file__).resolve().parents[1], prefix=args.variant_prefix)
     except (OSError, ValueError) as error:
         parser.exit(1, 'Current font packaging inputs rejected: ' + str(error) + '\n')
     print(json.dumps(result, sort_keys=True))

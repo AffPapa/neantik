@@ -7,9 +7,9 @@ import Foundation
 struct BrowserFontPolicyQualification: Hashable, Sendable {
     let runtimeDigest: String
     let sourceContractSHA256: String
-    fileprivate init() {
-        runtimeDigest = BrowserFontPolicyRuntime.runtimeDigest
-        sourceContractSHA256 = BrowserFontPolicyRuntime.sourceContractSHA256
+    fileprivate init(record: BrowserFontPolicyRuntime.Record) {
+        runtimeDigest = record.runtimeDigest
+        sourceContractSHA256 = record.sourceContractSHA256
     }
 }
 
@@ -24,11 +24,40 @@ enum BrowserFontPolicyRuntime {
     static let machoCount = 16
     static let sourceContractSHA256 = "5c6f00023ed4f4c63ed6f585544a5f61d3e239f640a56e1c53f058170d2e038d"
 
+    /// One complete, source-selected capability. A caller cannot construct a
+    /// qualification from these scalars; inspect still measures signed files.
+    struct Record: Hashable, Sendable {
+        let executableSHA256: String, runtimeDigest: String, sourceContractSHA256: String
+        let entries: Int, regularBytes: Int64, machoCount: Int
+        fileprivate init(update: DirectUpdateRuntimeRecord, sourceContract: String) {
+            executableSHA256 = update.executableDigest
+            runtimeDigest = update.runtimeDigest
+            sourceContractSHA256 = sourceContract
+            entries = update.runtimeEntries
+            regularBytes = update.runtimeBytes
+            machoCount = 16
+        }
+    }
+
+    // Security source/build/sign and one configured page/worker smoke are
+    // recorded separately; predecessor hashes and evidence stay unchanged.
+    static let supportedRecords: [Record] = [
+        Record(update: .fontSystemV1, sourceContract: sourceContractSHA256),
+        Record(update: .fontSystemSecurity20261015V1,
+               sourceContract: "5da10213b79c97a4bc3b13a0fd6af5e26d6034179bcdbe160bd244463a06f903")
+    ]
+
     /// Pure comparison only. It cannot manufacture a launch qualification.
     static func acceptsMeasurement(digest: String, entries: Int, bytes: Int64,
                                    machoCount: Int) -> Bool {
-        digest == runtimeDigest && entries == self.entries &&
-            bytes == regularBytes && machoCount == self.machoCount
+        acceptsMeasurement(digest: digest, entries: entries, bytes: bytes,
+                           machoCount: machoCount, record: supportedRecords[0])
+    }
+
+    static func acceptsMeasurement(digest: String, entries: Int, bytes: Int64,
+                                   machoCount: Int, record: Record) -> Bool {
+        digest == record.runtimeDigest && entries == record.entries &&
+            bytes == record.regularBytes && machoCount == record.machoCount
     }
 
     static func inspect(executableURL: URL) -> BrowserFontPolicyQualification? {
@@ -37,17 +66,20 @@ enum BrowserFontPolicyRuntime {
         guard executableURL.lastPathComponent == "NeAntik Browser",
               executableURL.deletingLastPathComponent().lastPathComponent == "MacOS",
               executableURL.deletingLastPathComponent().deletingLastPathComponent().lastPathComponent == "Contents",
-              executableDigest(executableURL) == executableSHA256 else { return nil }
+              let observedExecutable = executableDigest(executableURL),
+              let record = supportedRecords.first(where: {
+                  $0.executableSHA256 == observedExecutable
+              }) else { return nil }
         let app = executableURL.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().standardizedFileURL
         guard app.lastPathComponent == "NeAntik Browser.app",
               app.resolvingSymlinksInPath() == app else { return nil }
         do {
             _ = try DirectUpdateCodeSignature.inspect(app, role: .runtime)
             let measured = try DirectRuntimeClosure.measure(app, scope: "runtime",
-                maximumEntries: entries, maximumBytes: regularBytes)
+                maximumEntries: record.entries, maximumBytes: record.regularBytes)
             guard acceptsMeasurement(digest: measured.digest, entries: measured.entries,
-                bytes: measured.regularBytes, machoCount: measured.machoPaths.count) else { return nil }
-            return BrowserFontPolicyQualification()
+                bytes: measured.regularBytes, machoCount: measured.machoPaths.count, record: record) else { return nil }
+            return BrowserFontPolicyQualification(record: record)
         } catch { return nil }
     }
 

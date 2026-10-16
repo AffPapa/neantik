@@ -31,7 +31,8 @@ package enum DirectUpdatePublicationBaseline {
             guard let text = value[key] as? String, let d = date.date(from: text), date.string(from: d) == text else { return nil }
             return d
         }
-        guard Set(value.keys) == keys, integer("schemaVersion") == 1, integer("maximumAgeDays") == 0,
+        let extendedKeys = keys.union(["earlyStableObservation", "requiredSecurityFixes", "reviewedSecurityBranches"])
+        guard (Set(value.keys) == keys || Set(value.keys) == extendedKeys), integer("schemaVersion") == 1, integer("maximumAgeDays") == 0,
               let fixes = integer("securityFixCount"), (0...100_000).contains(fixes),
               let checked = day("checkedAt"), let published = day("publishedAt"), published <= checked,
               checked <= now,
@@ -51,4 +52,32 @@ package enum DirectUpdatePublicationBaseline {
                   return !text.isEmpty && text.utf8.count <= 4_096
               }) else { throw DirectUpdateRuntimeProvenanceError.metadata }
     }
+
+    /// Evaluate after closure and report selection: metadata alone cannot enroll a runtime.
+    package static func validateSecurityReview(_ bytes: Data, record: DirectUpdateRuntimeRecord) throws {
+        try validate(bytes)
+        guard let value = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
+              record == .fontSystemSecurity20261015V1,
+              value["reference"] as? String == DirectUpdateSecurityRuntimePins.securityReference,
+              let required = value["requiredSecurityFixes"] as? [String],
+              required.count == DirectUpdateSecurityRuntimePins.securityFixReferences.count,
+              Set(required) == Set(DirectUpdateSecurityRuntimePins.securityFixReferences.keys),
+              let branches = value["reviewedSecurityBranches"] as? [String: Any],
+              Set(branches.keys) == ["156.0.8078"],
+              let branch = branches["156.0.8078"] as? [String: Any],
+              branch["status"] as? String == "verified",
+              branch["minimumVersion"] as? String == DirectUpdateRuntimePins.chromiumVersion,
+              branch["sourceCommit"] as? String == DirectUpdateSecurityRuntimePins.sourceCommit,
+              branch["sourceContractSHA256"] as? String == record.reportHashes["sourceContractSHA256"],
+              branch["securityReference"] as? String == DirectUpdateSecurityRuntimePins.securityReference,
+              let fixes = branch["fixes"] as? [String: [String: String]],
+              Set(fixes.keys) == Set(required),
+              fixes.allSatisfy({ key, fix in
+                  fix == ["status": "included", "reference": DirectUpdateSecurityRuntimePins.securityFixReferences[key]!]
+              }),
+              let count = value["securityFixCount"] as? Int, count == required.count,
+              value["earlyStableObservation"] is [String: Any]
+        else { throw DirectUpdateRuntimeProvenanceError.metadata }
+    }
+
 }

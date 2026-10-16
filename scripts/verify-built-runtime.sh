@@ -70,8 +70,9 @@ elif [[ "$LOCK_VERSION" == "156.0.8078.12" ]]; then
   IS_CHROMIUM_15612=1
   M156_EVIDENCE_PREFIX="$(python3 "$SCRIPT_DIR/chromium_15612_variant.py" "$LOCK_VERSION_SOURCE")"
   SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/${M156_EVIDENCE_PREFIX}-source-contract.json"
-  if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ]]; then
-    SECURITY_BASELINE_FILE="$(python3 "$SCRIPT_DIR/chromium_15612_font_report.py" --baseline)"
+  if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ||
+        "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-security-20261015-v1" ]]; then
+    SECURITY_BASELINE_FILE="$(python3 "$SCRIPT_DIR/chromium_15612_font_report.py" --baseline --variant-prefix "$M156_EVIDENCE_PREFIX")"
   fi
 else
   echo "Unsupported Chromium runtime version for release verification: $LOCK_VERSION" >&2
@@ -202,7 +203,8 @@ if [[ -n "$SOURCE_PROVENANCE_PATH" ]]; then
     else
       python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE_PATH"
     fi
-    if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ]]; then
+    if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ||
+          "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-security-20261015-v1" ]]; then
       python3 "$SCRIPT_DIR/chromium_15612_variant.py" "$LOCK_VERSION_SOURCE" --signed-runtime "$APP_PATH" >/dev/null
     fi
     M154_SOURCE_SNAPSHOT_VERIFIED=1
@@ -623,7 +625,7 @@ if os.environ["BUILD_ARGS_SHA256"]:
         "sha256": os.environ["BUILD_ARGS_SHA256"],
     }
 content = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("utf-8")
-if report.get('sourceVariant') == 'font-system-v1':
+if report.get('sourceVariant') in ('font-system-v1', 'font-system-security-20261015-v1'):
     from chromium_15612_font_report import preserved_report_bytes
     content = preserved_report_bytes(report, script_dir.parent)
 Path(os.environ["REPORT_PATH"]).write_bytes(content)

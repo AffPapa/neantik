@@ -19,14 +19,20 @@ patch in its manifest root. Build into a separate owned output, preserving the
 working signed runtime. A future additive source contract must bind all changed
 files and build inputs; never rewrite the historical font contract or lock.
 
-Acceptance still requires source closure, compilation, relevant headed platform
-and network checks, regression cases, exact signing/provenance and Direct
-release qualification. The current branch security review remains empty and
-refuses publication. This directory does not claim a new Chrome version or a
-qualified security update.
+Current development state: the eight complete patches are applied to35 paths
+and linked in a separate jobs2 build. Exact source/tool inputs stayed unchanged;
+a full postbuild FD observation and sixteen Developer ID Mach-O signatures are
+retained in the additive `font-system-security-20261015-v1` contract.
 
-Current development state: all eight complete patches have now been applied to
-the owned source tree and all35 affected paths passed exact post-apply readback.
-Prior bytes were preserved before modification; Chromium/V8 HEADs were kept.
-The old compiled runtime is unchanged. A separate COW output is being prepared;
-compilation and runtime qualification are still pending.
+The current source review binds all ten fixes to that exact new contract. It
+still rejects the old131 contract. A headed research run passed nine bounded
+DOM/V8/worker controls, including two deliberately broken controls. One
+configured system-font page/worker smoke passed422 checks. These runs do not
+cover every native upstream unit suite or qualify a final signed NeAntik app.
+See `docs/evidence/security-backport-*-development.json` for exact limits.
+
+Manager/updater admission now supports the complete new tuple and checks the
+source-bound publication review. Final app enrollment, headed qualification,
+Direct signing/notarization/Gatekeeper and public byte checks remain required.
+This directory does not claim a new upstream Chrome version or a published
+security update. Historical runtime contracts and old public assets are intact.

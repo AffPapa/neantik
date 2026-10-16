@@ -98,6 +98,17 @@ struct RuntimeProvenanceCardTests {
     }
 
     @Test
+    func higherUnreviewedBranchDoesNotGetGreenSecurityStatus() {
+        let runtime = BrowserRuntime(name: "NeAntik Browser",
+            executableURL: URL(fileURLWithPath: "/private/nonexistent-qa-runtime/Browser"),
+            source: "Встроен", flavor: .fingerprintChromium,
+            inspection: BrowserRuntimeInspection(version: "156.0.8078.12",
+                architectures: ["arm64"], codeSignatureValid: true))
+        let snapshot = RuntimeProvenanceSnapshot.inspect(runtime: runtime, preflight: nil)
+        #expect(snapshot.publicReleaseStatus == "Нужна проверка исправлений Chromium")
+    }
+
+    @Test
     func bundledChromiumBelowCurrentReleaseGateIsFlagged() {
         let runtime = BrowserRuntime(
             name: "NeAntik Browser",
@@ -120,12 +131,12 @@ struct RuntimeProvenanceCardTests {
         #expect(snapshot.publicReleaseStatus.contains("заблокирован"))
     }
 
-    @Test(arguments: ["155.0.8059.40", "155.0.8059.79", "0155.0.8059.80", "155.0.8059.80 ", "155.0.8059"])
+    @Test(arguments: ["155.0.8059.40", "155.0.8059.79", "155.0.8059.84", "0155.0.8059.80", "155.0.8059.80 ", "155.0.8059"])
     func staleAndMalformedVersionsDoNotMeetCurrentBaseline(version: String) {
         #expect(!NeAntikRuntimeSecurityBaseline.meetsPublicChromiumVersion(version))
     }
 
-    @Test(arguments: ["155.0.8059.80", "155.0.8059.81", "156.0.8078.12"])
+    @Test(arguments: ["155.0.8059.85", "155.0.8059.86", "156.0.8078.12"])
     func currentAndNewerCanonicalVersionsMeetBaseline(version: String) {
         #expect(NeAntikRuntimeSecurityBaseline.meetsPublicChromiumVersion(version))
     }

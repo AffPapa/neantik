@@ -34,6 +34,7 @@ EXACT_CRITICAL_FILE_PATHS = dict(legacy.EXACT_CRITICAL_FILE_PATHS)
 EXACT_CRITICAL_FILE_PATHS["sourceContract"] += (
     "Contents/Resources/NeAntikRuntimeEvidence/chromium-15612-source-contract.json",
     "Contents/Resources/NeAntikRuntimeEvidence/chromium-15612-font-system-v1-source-contract.json",
+    "Contents/Resources/NeAntikRuntimeEvidence/chromium-15612-font-system-security-20261015-v1-source-contract.json",
 )
 
 def validate_manifest_binding(value: Any) -> dict[str, Any]:

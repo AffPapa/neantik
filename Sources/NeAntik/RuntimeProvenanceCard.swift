@@ -1,4 +1,5 @@
 import Foundation
+import DirectUpdateCore
 
 struct RuntimeProvenanceSnapshot: Equatable, Sendable {
     static let empty = Self(
@@ -52,7 +53,15 @@ struct RuntimeProvenanceSnapshot: Equatable, Sendable {
                       version
                   )
         {
-            publicReleaseStatus = "Соответствует baseline"
+            let branch = version.split(separator: ".").prefix(3).joined(separator: ".")
+            let stableBranch = NeAntikRuntimeSecurityBaseline.minimumPublicChromiumVersion.prefix(3).map(String.init).joined(separator: ".")
+            if branch == stableBranch {
+                publicReleaseStatus = "Соответствует baseline"
+            } else if runtime.fontPolicyQualification?.sourceContractSHA256 == DirectUpdateSecurityRuntimePins.sourceContractSHA256 {
+                publicReleaseStatus = "Исправления безопасности включены"
+            } else {
+                publicReleaseStatus = "Нужна проверка исправлений Chromium"
+            }
         } else if inspection.version == nil {
             publicReleaseStatus =
                 "Версия не проверена — Direct-релиз заблокирован"

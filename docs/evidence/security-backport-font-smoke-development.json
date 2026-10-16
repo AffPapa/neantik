@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "status": "scoped-configured-font-observed",
+  "dateUTC": "2026-10-16",
+  "actualBrowser": true,
+  "headed": true,
+  "sourceProofSHA256": "ac345eb85cd0f622e2dac36b5d14b43ad28a4d0e4b19ed967815e54f15226dfc",
+  "sourceContractSHA256": "5da10213b79c97a4bc3b13a0fd6af5e26d6034179bcdbe160bd244463a06f903",
+  "runtime": {
+    "version": "156.0.8078.12",
+    "executableSHA256": "cf3bbc56ddbcac264363f33bac4d3f92ac66cf164038c9409651db22708a6941",
+    "runtimeTree": {
+      "digest": "6dfde85080a3fde010869cc00d6ac35f60cec32165725b5743f2b558070a2638",
+      "entries": 948,
+      "bytes": 411230673,
+      "machoCount": 16
+    }
+  },
+  "controllerSHA256": "6c1d0916be91081cb5c79019e1fe2637bed6e48f7a99ea35b40002d236f6592f",
+  "privateReceiptSHA256": "743606f64173d3a8579d01b8721b3a822de6fc82e6f3d462de65cf018baa2943",
+  "configuration": {
+    "seed": 21,
+    "fontPolicy": "system-v1",
+    "ownedWitness": true
+  },
+  "behavior": {
+    "status": "passed",
+    "checks": 422,
+    "defaultMultiwordDifferences": 12,
+    "scope": "owned page/worker font behavior with explicit matched typography; default multiword widths retained as observations; native ACK separately proves own face selection"
+  },
+  "witnesses": {
+    "browserAcknowledged": true,
+    "liveRendererCount": 4,
+    "allLiveRenderersAcknowledged": true
+  },
+  "cleanup": {
+    "ownedProcessesRemaining": 0,
+    "ownedProfileRemoved": true,
+    "fixtureClosed": true,
+    "gracefulBrowserClose": true,
+    "exitCode": 0
+  },
+  "admission": {
+    "memoryPressure": 1,
+    "thermalState": 0,
+    "warningExceptionUsed": false
+  },
+  "inputsRechecked": true,
+  "failedSetupRetained": {
+    "productExitCode": 13,
+    "cause": "Runner log path outside owned witness root;runtime refused it before page operations",
+    "correction": "Exactownedroot/witness.log;runtime andsourceguards unchanged"
+  },
+  "releaseQualified": false,
+  "limitations": [
+    "Onepage/DedicatedWorker configuredfontsmoke;the old nine-context/lifecycle/A-B-A matrices were not rerun.",
+    "Own process-scope font witness and synthetic profile only;no personal font inventory published.",
+    "Doesnotqualify manager activation,finalpackagedcandidate,networkrouteorDirect delivery."
+  ]
+}

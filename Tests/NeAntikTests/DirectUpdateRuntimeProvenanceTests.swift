@@ -196,6 +196,44 @@ private final class RuntimeClosureFixture: @unchecked Sendable {
         #expect(try measure().digest != first.digest)
     }
 
+    @Test func actualPublicationReviewRequiresExactCompiledSourceAndAllFixes() throws {
+        let repository = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let bytes = try Data(contentsOf: repository.appendingPathComponent("runtime/security-baseline.json"))
+        try DirectUpdatePublicationBaseline.validateSecurityReview(bytes, record: .fontSystemSecurity20261015V1)
+        for record in [DirectUpdateRuntimeRecord.final9, .fontSystemV1] {
+            #expect(throws: (any Error).self) {
+                try DirectUpdatePublicationBaseline.validateSecurityReview(bytes, record: record)
+            }
+        }
+        let original = try #require(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
+        let originalBranches = try #require(original["reviewedSecurityBranches"] as? [String: [String: Any]])
+        let originalBranch = try #require(originalBranches["156.0.8078"])
+        let changes: [(String, Any)] = [("sourceCommit", String(repeating: "0", count: 40)),
+            ("sourceContractSHA256", DirectUpdateFontRuntimePins.reportHashes["sourceContractSHA256"]!),
+            ("status", "pending"), ("minimumVersion", "156.0.8078.11"),
+            ("securityReference", "https://example.com/review"), ("fixes", [:] as [String: String])]
+        for (key, value) in changes {
+            var branch = originalBranch; branch[key] = value
+            var document = original; document["reviewedSecurityBranches"] = ["156.0.8078": branch]
+            #expect(throws: (any Error).self) {
+                try DirectUpdatePublicationBaseline.validateSecurityReview(
+                    JSONSerialization.data(withJSONObject: document), record: .fontSystemSecurity20261015V1)
+            }
+        }
+        for (key, value) in [("requiredSecurityFixes", [] as [String]) as (String, Any),
+                             ("unknown", true), ("securityFixCount", 0)] {
+            var document = original; document[key] = value
+            #expect(throws: (any Error).self) {
+                try DirectUpdatePublicationBaseline.validateSecurityReview(
+                    JSONSerialization.data(withJSONObject: document), record: .fontSystemSecurity20261015V1)
+            }
+        }
+        #expect(throws: (any Error).self) {
+            try DirectUpdatePublicationBaseline.validateSecurityReview(publication(), record: .fontSystemSecurity20261015V1)
+        }
+    }
+
     @Test func publicationBaselineRejectsContradictionsAndUnsafeFileKinds() throws {
         let valid = try publication(), now = Date(timeIntervalSince1970: 1_791_849_600)
         let original = try #require(JSONSerialization.jsonObject(with: valid) as? [String: Any])

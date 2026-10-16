@@ -117,10 +117,14 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
         from chromium_15540_variant import reviewed_lock_prefix
         contract_name=reviewed_lock_prefix(lock)+"-source-contract.json"
     font_variant = False
+    security_variant = False
+    contract_schema = 3 if semantic else 2
     if version == '156.0.8078.12':
-        from chromium_15612_variant import reviewed_lock_prefix, FONT_PREFIX
+        from chromium_15612_variant import reviewed_lock_prefix, FONT_PREFIX, SECURITY_PREFIX, descriptor_for
         prefix = reviewed_lock_prefix(lock)
-        font_variant = prefix == FONT_PREFIX
+        font_variant = prefix in (FONT_PREFIX, SECURITY_PREFIX)
+        security_variant = prefix == SECURITY_PREFIX
+        contract_schema = descriptor_for(lock).contract_schema
         contract_name = prefix + '-source-contract.json'
     contract_path = project_root / "runtime" / contract_name
     if lock.get("sourceContract") != f"runtime/{contract_name}":
@@ -128,7 +132,7 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
     if lock.get("sourceContractSHA256") != sha256_file(contract_path):
         raise RuntimeNoticesError("candidate source contract SHA-256 mismatch")
     contract = load_json(contract_path)
-    if contract.get("targetChromiumVersion") != version or type(contract.get("schemaVersion")) is not int or contract.get("schemaVersion") != (3 if semantic or font_variant else 2):
+    if contract.get("targetChromiumVersion") != version or type(contract.get("schemaVersion")) is not int or contract.get("schemaVersion") != contract_schema:
         raise RuntimeNoticesError("candidate source contract version/schema mismatch")
     base = required_mapping(contract.get("officialChromiumBase"), "officialChromiumBase")
     if base.get("commit") != chromium.get("commit"):
@@ -151,8 +155,12 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
             lines.append(f"- {label}: `{plan[key]}`")
     if font_variant:
         lines.extend(['- Additional independently authored font source layers: `6`',
-                      '- Source variant: `font-system-v1`; historical replay counts above are unchanged.',
+                      f'- Source variant: `{lock["sourceVariant"]}`; historical replay counts above are unchanged.',
                       '- Font source proof is a preserved postbuild observation; exact signed release qualification is separate.'])
+    if security_variant:
+        lines.extend(['- Additional upstream Chromium/V8 security backports: `8` (distinct from the six font layers).',
+                      '- Two further security corrections are preexisting production source; they are not counted as new patches.',
+                      '- Security source/build/sign lineage does not replace exact signed release qualification.'])
     if semantic:
         lines.extend([f"- Independently authored semantic correction set: `{lock['semanticCorrectionSet']}`", f"- Correction manifest SHA-256: `{lock['correctionsManifestSHA256']}`", "- Historical replay count and new correction count are separate; runtime behavior remains a release gate."])
     for label, component in (("Chromium", chromium),
@@ -174,6 +182,11 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
                                   relative_path="runtime/licenses/" + filename,
                                   expected_sha256=expected)
         lines.append(f"- `NeAntikRuntimeLicenses/{filename}` — SHA-256 `{digest}`")
+    if security_variant:
+        for filename in ('CHROMIUM_LICENSE.txt', 'V8_LICENSE.txt'):
+            relative = 'runtime/security-backports-20261015/' + filename
+            digest = verified_license(project_root=project_root, relative_path=relative)
+            lines.append(f'- `NeAntikRuntimeEvidence/security-backports-20261015/{filename}` — SHA-256 `{digest}`')
     lines.extend(["", "The fingerprint-chromium license is retained for historical attribution.",
                   f"The owned M{version.split(chr(46))[0]} port is recorded under",
                   f"`runtime/nevision-patches/ports/chromium-{version}/`.", "",

@@ -3,15 +3,28 @@ import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from chromium_15612_release_evidence import bound, safe_relative_regular, need
+from chromium_15612_variant import FONT_PREFIX, SECURITY_PREFIX, prefix_for
 
 NAME = 'chromium-15612-font-system-v1-runtime-verification.json'
 SHA256 = '534900f801963f79dfc2e0b7fc9c693c4a06c6b06d9bb34392c59526c53df885'
+SECURITY_NAME = SECURITY_PREFIX + '-runtime-verification.json'
+SECURITY_SHA256 = '71b25e291a3fae01f680e98ed9b3a08c9e97e2190fc2d5400d32a92b8c97069e'
 
 
-def frozen_report(project: Path) -> tuple[dict, bytes]:
-    report = bound(project / 'runtime', NAME, SHA256)
-    raw = safe_relative_regular(project / 'runtime', NAME).read_bytes()
-    need(hashlib.sha256(raw).hexdigest() == SHA256, 'Frozen font report changed during read')
+def report_policy(prefix: str) -> tuple[str, str]:
+    """Only compiled source choices may select a frozen report."""
+    if prefix == FONT_PREFIX:
+        return NAME, SHA256
+    if prefix == SECURITY_PREFIX:
+        return SECURITY_NAME, SECURITY_SHA256
+    raise ValueError('Unknown preserved M156 successor report')
+
+
+def frozen_report(project: Path, *, prefix: str = FONT_PREFIX) -> tuple[dict, bytes]:
+    name, digest = report_policy(prefix)
+    report = bound(project / 'runtime', name, digest)
+    raw = safe_relative_regular(project / 'runtime', name).read_bytes()
+    need(hashlib.sha256(raw).hexdigest() == digest, 'Frozen successor report changed during read')
     return report, raw
 
 
@@ -21,7 +34,7 @@ def preserved_report_bytes(observed: dict, project: Path) -> bytes:
     Reuse its original creation date; do not manufacture a new timestamp that
     breaks the complete compiled pair or implies a new headed qualification.
     """
-    report, raw = frozen_report(project)
+    report, raw = frozen_report(project, prefix=prefix_for(observed))
     need(set(observed) == set(report), 'Observed font report fields differ')
     created = observed.get('createdAt')
     need(isinstance(created, str) and len(created) <= 64 and created.endswith('Z'), 'Invalid observation date')
@@ -31,15 +44,16 @@ def preserved_report_bytes(observed: dict, project: Path) -> bytes:
     return raw
 
 
-def verify_report_file(path: Path) -> None:
+def verify_report_file(path: Path, *, prefix: str = FONT_PREFIX) -> None:
+    _, digest = report_policy(prefix)
     raw = safe_relative_regular(path.parent, path.name).read_bytes()
-    need(len(raw) <= 65_536 and hashlib.sha256(raw).hexdigest() == SHA256,
-         'Packaged font report differs from preserved compiled binding')
+    need(len(raw) <= 65_536 and hashlib.sha256(raw).hexdigest() == digest,
+         'Packaged successor report differs from preserved compiled binding')
 
 
-def historical_baseline(project: Path) -> Path:
+def historical_baseline(project: Path, *, prefix: str = FONT_PREFIX) -> Path:
     from runtime_historical_baseline import bound_baseline_path
-    report, _ = frozen_report(project)
+    report, _ = frozen_report(project, prefix=prefix)
     return bound_baseline_path(project / 'runtime', report['securityBaselineSHA256'])
 
 
@@ -47,8 +61,9 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Resolve the preserved font report baseline; no release authority.')
     parser.add_argument('--baseline', action='store_true', required=True)
+    parser.add_argument('--variant-prefix', choices=(FONT_PREFIX, SECURITY_PREFIX), default=FONT_PREFIX)
     args = parser.parse_args()
     try:
-        print(historical_baseline(Path(__file__).resolve().parents[1]))
+        print(historical_baseline(Path(__file__).resolve().parents[1], prefix=args.variant_prefix))
     except (OSError, ValueError) as error:
         parser.exit(1, 'Frozen font baseline rejected: ' + str(error) + '\n')

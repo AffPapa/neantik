@@ -9,8 +9,13 @@ import DirectInstallFilesystem
 @Suite(.serialized) struct DirectUpdateRuntimeRecordTests {
     private func report(_ record: DirectUpdateRuntimeRecord) throws -> Data {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let path = record == .final9 ? "Tests/Fixtures/direct-update-final9-runtime-verification.json"
-            : "runtime/chromium-15612-font-system-v1-runtime-verification.json"
+        let path: String
+        switch record {
+        case .final9: path = "Tests/Fixtures/direct-update-final9-runtime-verification.json"
+        case .fontSystemV1: path = "runtime/chromium-15612-font-system-v1-runtime-verification.json"
+        case .fontSystemSecurity20261015V1:
+            path = "runtime/chromium-15612-font-system-security-20261015-v1-runtime-verification.json"
+        }
         let bytes = try Data(contentsOf: root.appendingPathComponent(path))
         #expect(BackupFS.hex(SHA256.hash(data: bytes)) == record.reportDigest)
         return bytes
