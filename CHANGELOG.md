@@ -1,11 +1,11 @@
 # NeAntik changelog
 
-## Direct 0.8.20 (132) — development candidate — исправления безопасности Chromium
+## Direct 0.8.20 (132) — published public alpha — исправления безопасности Chromium
 
 - В отдельную сборку Chromium/V8 включены восемь полных upstream patches; ещё два исправления подтверждены в исходной базе. Каждый patch, лицензия и source/build/sign evidence сохранены отдельно. Номер Chromium остаётся 156.0.8078.12: исправления перенесены в нашу ветку, это не новая upstream-версия.
 - В headed research runtime прошли девять ограниченных security/worker controls и 422 проверки настроенного режима системных шрифтов. Это не полная квалификация релиза и не все upstream native suites.
 - Менеджер и updater выбирают одну полную запись runtime/evidence/report. Публикационная политика требует полный разбор исправлений для точного source contract. UI больше не выдаёт старую ветку за безопасную по одному номеру версии.
-- Первый переход с 0.8.18 на новый runtime планируется через подписанный DMG/ZIP: установленный updater130 не знает новую compiled record. Данные профилей, сертификат, WebKit и старые immutable assets сохранены. Кандидат ещё не опубликован; Direct и hosted qualification обязательны.
+- Первый переход с 0.8.18 на новый runtime планируется через подписанный DMG/ZIP: установленный updater130 не знает новую compiled record. Данные профилей, сертификат, WebKit и старые immutable assets сохранены. Точный кандидат, doctor13/13, новые QA ACK/rollback, Apple ZIP/DMG, Gatekeeper, анонимные скачивания/checksums и downloaded MCP18/7 проверены. [Отчёт и ограничения](releases/v0.8.20.json).
 
 ## Direct 0.8.19 (131) — held, not published — понятный статус сети
 

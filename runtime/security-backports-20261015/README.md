@@ -32,7 +32,10 @@ cover every native upstream unit suite or qualify a final signed NeAntik app.
 See `docs/evidence/security-backport-*-development.json` for exact limits.
 
 Manager/updater admission now supports the complete new tuple and checks the
-source-bound publication review. Final app enrollment, headed qualification,
-Direct signing/notarization/Gatekeeper and public byte checks remain required.
-This directory does not claim a new upstream Chrome version or a published
-security update. Historical runtime contracts and old public assets are intact.
+source-bound publication review. The successor is now published as NeAntik0.8.20(132): exact app enrollment/headed,
+QA updater controls, doctor13/13, Apple ZIP/DMG, Gatekeeper, public bytes and
+downloaded MCP passed in their stated scope. See `releases/v0.8.20.json`.
+The frozen manifest describes the input stage, not current delivery status;
+completion is recorded in the separate runtime verification and release report.
+This is not a new upstream Chrome version or completed1.0. Historical runtime
+contracts and old public assets are intact.

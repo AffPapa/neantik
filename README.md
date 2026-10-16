@@ -7,14 +7,14 @@ Chromium runtime, собранный из зафиксированных исх�
 
 [English version](README.en.md)
 
-На [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.18) опубликована **0.8.18 (130), public alpha**: режим системных шрифтов Mac для Chromium-профилей, настройка через редактор и MCP. Для старых профилей сохранён обычный режим. [browser.free](https://browser.free/) пока указывает предыдущий выпуск.
-Подписанный кандидат прошёл изолированный headed-аудит. Публичные ZIP/DMG совпали по SHA-256 и прошли notarization, stapling и Gatekeeper; скачанный менеджер прошёл отдельный изолированный MCP smoke с перезапуском. Повторный полный headed-аудит не запускался.
+На [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.20) опубликована **0.8.20 (132), public alpha**: Chromium пересобран с восемью upstream security backports. Проверка допуска связывает все десять исправлений с точной сборкой. [browser.free](https://browser.free/) пока указывает предыдущий выпуск.
+Точный подписанный кандидат прошёл оконную проверку. Публично скачанные ZIP/DMG совпали по SHA-256 и прошли notarization, stapling и Gatekeeper. Скачанный менеджер прошёл отдельный изолированный MCP smoke с созданием, редактированием и перезапуском; оконный аудит для тех же критических байтов повторно не запускался.
 Системный WebKit остаётся preview и не подменяет полный fingerprint. Полная программа 1.0 ещё не завершена.
 
 
 ## Предупреждение безопасности
 
-**Обновление безопасности, 16 октября:** в Chromium 156.0.8078.12 подтверждён пробел upstream security fixes. 0.8.19 (131) не опубликована; сначала исправляем runtime. До исправления не рекомендуем открывать недоверенные сайты в этой Chromium-сборке. [Подробности и проверяемые данные](docs/security/runtime-security-2026-10-16.md).
+**Обновление безопасности, 16 октября:** runtime в 0.8.18 не включал часть upstream fixes. Исправления перенесены в **0.8.20**; обновитесь вручную через DMG/ZIP. Кандидат 0.8.19 (131) не опубликован. [История, доказательства и границы проверки](docs/security/runtime-security-2026-10-16.md).
 
 ## Скачать приложение
 
@@ -23,13 +23,15 @@ Chromium runtime, собранный из зафиксированных исх�
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Последний опубликованный выпуск: [NeAntik 0.8.18 (130), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.18). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.8.18.json).
+Последний опубликованный выпуск: [NeAntik 0.8.20 (132), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.20). Подписанные ZIP и DMG прошли notarization, stapling, Gatekeeper и проверку публично скачанных байтов. [Машиночитаемый отчёт](releases/v0.8.20.json).
+
+**Первое обновление до 0.8.20 — вручную через DMG/ZIP.** Закройте приложение перед заменой; папки профилей удалять не нужно. Старый updater не знает новый runtime.
 
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - Developer ID, notarization, ZIP/DMG и SHA-256 относятся к конкретному опубликованному выпуску.
 
-Скачать напрямую: [GitHub — 0.8.18](https://github.com/AffPapa/neantik/releases/tag/v0.8.18). [browser.free](https://browser.free) пока указывает предыдущий выпуск.
+Скачать напрямую: [GitHub — 0.8.20](https://github.com/AffPapa/neantik/releases/tag/v0.8.20). [browser.free](https://browser.free) пока указывает предыдущий выпуск.
 
 Описание ниже отражает контракт менеджера и текущей ветки; точный состав
 публичного бинарного релиза определяется его release notes и артефактами.

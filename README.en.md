@@ -8,13 +8,13 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-**0.8.18 (130), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.18): opt-in system Mac fonts for Chromium profiles, configurable in the editor and through MCP. Existing profiles keep native font handling. [browser.free](https://browser.free/) still points to the previous release.
-The exact signed candidate passed an isolated headed audit. Public ZIP/DMG bytes match and passed notarization, stapling and Gatekeeper. The downloaded manager passed a separate isolated MCP startup/restart smoke; the full headed audit was reused, not rerun.
+**0.8.20 (132), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.20): Chromium rebuilt with eight upstream security backports and a source-bound admission review covering all ten fixes. [browser.free](https://browser.free/) still points to the previous release.
+The exact signed candidate passed its headed audit. Anonymous ZIP/DMG downloads match and passed notarization, stapling and Gatekeeper. The downloaded manager passed an isolated MCP create/edit/restart smoke; the headed audit was reused for matching critical bytes.
 System WebKit remains a preview and does not replace the complete fingerprint. WebKit media remains disabled; full1.0 qualification is open.
 
 ## Security advisory
 
-**Security update, October 16:** shipped Chromium 156.0.8078.12 lacks an upstream DOM security fix. Candidate 0.8.19 (131) has not been published. Avoid untrusted sites with this Chromium build until the runtime is corrected. [Evidence, scope and release hold](docs/security/runtime-security-2026-10-16.md).
+**Security update, October 16:** the runtime shipped in 0.8.18 lacked upstream fixes. **0.8.20** includes the backports; install the signed DMG/ZIP manually. Candidate 0.8.19 (131) was not published. [History, evidence and scope](docs/security/runtime-security-2026-10-16.md).
 
 ## Download
 
@@ -23,13 +23,15 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.8.18 (130), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.18). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.18.json).
+Latest published release: [NeAntik 0.8.20 (132), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.20). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.20.json).
+
+**The first update to 0.8.20 is manual via DMG/ZIP.** Quit before replacing the app; keep profile folders. Older updaters do not know this runtime.
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-Direct downloads: [GitHub — 0.8.18](https://github.com/AffPapa/neantik/releases/tag/v0.8.18). [browser.free](https://browser.free) still points to the previous release.
+Direct downloads: [GitHub — 0.8.20](https://github.com/AffPapa/neantik/releases/tag/v0.8.20). [browser.free](https://browser.free) still points to the previous release.
 
 The description below reflects the manager contract and this source branch;
 the exact public binary contents are defined by its release notes and assets.

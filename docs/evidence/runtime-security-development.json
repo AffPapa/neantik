@@ -103,5 +103,15 @@
     "headedSecurityRegressionsExecuted": true,
     "headedEvidence": "docs/evidence/security-backport-headed-development.json",
     "sourceInclusionReview": "docs/evidence/security-backport-source-review-development.json"
+  },
+  "successorDelivery": {
+    "version": "0.8.20",
+    "build": 132,
+    "status": "GitHub-published-and-hosted-verified",
+    "appSource": "45b79d72008b9091507ac6628d2e4dd3807a41c6",
+    "releaseReport": "releases/v0.8.20.json",
+    "old131HoldRetained": true,
+    "major1_0Complete": false,
+    "siteUpdated": false
   }
 }
