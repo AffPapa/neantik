@@ -5,9 +5,10 @@
 остановки provider; private-IP контроль B не прошёл. Это **FAIL/неполное
 доказательство**, включения прокси нет. Правило удалено, расширение выключено;
 неактивная регистрация сохранена. В старом стенде A/B делили executable UUID.
-Новые отдельные executable и ограниченный автоматический оконный baseline
-подготовлены; сначала проверяется доступность без правила. Это исправление
-стенда, а не доказательство сетевой изоляции.
+Новые отдельные executable прошли подписанный оконный baseline без правила:
+4/4 A/B loopback и privateIPv4 за4.189с;окна/серверы закрыты. Причина старого
+сбоя B отдельно не доказана. Дополнительный фильтр собственных loopback портов
+реализован в QA-коде и скомпилирован;не установлен и не квалифицирован.
 [Текущее состояние и следующие gates](../Experiments/WebKitIsolation/README.md).
 HTTP/default/exact/SOCKS обходы сохранены; эти варианты не повторяются.
 
@@ -144,7 +145,7 @@ fontPolicy/перезапуском прошли. Политика WebKit не �
 |---|---|---|
 | Отдельные данные, вкладки, загрузки, HTTP-кэш | Есть в опубликованных версиях; результаты ограничены указанными ОС/fixtures | Сохранять существующие evidence; проверять только изменяемую поверхность. |
 | Автосохранение вкладок | Опубликовано в 0.8.14; локальные/native/exact signed и hosted gates пройдены в указанном scope | Дополнительные crash/timeout и аппаратные условия относятся к пункту 36; полный backup не реализован. |
-| Прокси | Production запуск с прокси отклоняется. HTTP/default/exact/SOCKS обходы сохранены; QA3 app-proxy тоже не прошёл строгую изоляцию. Расширение выключено, правило удалено | [Текущее доказательство и открытые gates](../Experiments/WebKitIsolation/README.md). Следующий этап: разные executable A/B и bounded headed baseline без правила. Затем full-token attribution, zero Direct при отказах, DNS/UDP/IPv6, production host/IPC/tunnel. Source/build не закрывают native приёмку. |
+| Прокси | Production запуск с прокси отклоняется. HTTP/default/exact/SOCKS и QA3 app-proxy обходы сохранены. Новый подписанный baseline без правила4/4PASS;QA-only loopback filter скомпилирован. Расширение выключено | [Текущее доказательство и открытые gates](../Experiments/WebKitIsolation/README.md). Далее точный подписанный owned-loopback filter:current apply, full original-token attribution, A/B и zero Direct при отказах. Затем DNS/UDP/IPv6, production host/IPC/tunnel. Source/build не закрывают native приёмку. |
 | Запуск/остановка через MCP | Опубликовано в0.8.17 на GitHub: отдельный GUI IPC, разрешение подключения/профилей, exact peer, revision и поколения окна, EOF/revoke без закрытия, stop до фактического сохранения | Exact signed и downloaded gates пройдены в scope [отчёта](../releases/v0.8.17.json). Реальные AI-клиенты, browser observation и обновление Sites ещё открыты. [Подключение](MCP_GUIDE.md#webkit-windows-through-ai--development-slice). |
 | Камера и микрофон | Policy-код есть, в поставке выключены | Реальный capture, отказ/отзыв и изоляция разрешений на точном подписанном кандидате. |
 | Удаление профиля | Опубликовано в0.8.16: public UUID removal, metadata/tombstone fence, inode-safe retirement и явное recovery; source-native и exact signed GUI/hosted gates прошли | Не удалять внутренние папки WebKit вручную. Удаление необратимо; неожиданные локальные файлы сохраняются. Другие macOS — отдельная совместимость. |

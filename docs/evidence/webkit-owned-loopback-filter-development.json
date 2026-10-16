@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-16",
+  "status": "source development;compiled;not signed/installed/native tested",
+  "shippingWebKitProxy": false,
+  "scope": "supplemental QA-only explicit loopback content-filter for1to4own ports;not production firewall",
+  "implemented": [
+    "Explicit127/32 andIPv6loopback/128 outbound filterData rules;defaultallow",
+    "Full original sourceAppAuditToken plus exactA/B dynamic signature pins;no helper/UID substitute",
+    "A drop;B allow;unknown or unsupported callback explicitlyUNQUALIFIED",
+    "Existing generation-fenced ProviderLifetime/FIFO,configuration published after successful current apply",
+    "Controller opt-in filter configuration/cleanup;foreign/stale scopes refused;app-proxy-only cleanup does not read filter preferences",
+    "Unsigned opt-in packaging only;adds content-filter class/grant only on explicit flag",
+    "Per-run ephemeral HMAC listener proof onbothIPv4/IPv6,literalURL,no redirects;key not persisted",
+    "Post-save/remove exact scope readback;current-run apply log",
+    "Optional exact DeveloperID/CDHash inactiveQA3toQA5 replacement guard;defaultcancel"
+  ],
+  "buildReceipt": {
+    "status": "PASS",
+    "scope": "QA loopback filter lifecycle/controller/opt-in packaging compile only;no activation,execution or settings changes",
+    "inputSHA256": "1f81d898aef4c6f91bc7a977ef0dc0e5891a1bf7ec1523b21facd7a9da5e7207",
+    "reason": "Add explicit signed inactive-QA3 exact-code replacement guard and run-bound apply log;compile changed QA code only;no old test/native replay",
+    "jobs": 2,
+    "nativeRun": false,
+    "exitCode": 0,
+    "seconds": 1.3913075410528108,
+    "sourceUnchanged": true,
+    "log": "webkit-isolation-filter18.log"
+  },
+  "newModelControls": {
+    "count": 3,
+    "scope": "pure owned-loopback port/address validation",
+    "receipt": "webkit-isolation-filter13.json"
+  },
+  "unmodifiedControls": "Prior29core/Chromium/manager/release gates not replayed",
+  "sourceFiles": {
+    "Experiments/WebKitIsolation/prepare-qa.py": "721e8bf4caab5e5337ea1611bf124c34656bd8428dcdb9ee4a055412446c9663",
+    "Experiments/WebKitIsolation/test-prepare-qa.py": "52fc254ffe040bb8dbbee94eaad702f150f1da648a54e9cf2b745038751926de",
+    "Experiments/WebKitIsolation/Package.swift": "3102d3b0f3bc294984c68825da7129020d9951d68e04689de85fbd579b653f17",
+    "Experiments/WebKitIsolation/owned-baseline.py": "2b92f754110157964336bca08bb78282d0696bb1b9e19e2ddf79f069e8a81745",
+    "Experiments/WebKitIsolation/test-owned-baseline.py": "b86ee6c9470a17051366f59246fe9fb6726b2de4d7f430750041ac3990d44ac6",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/ProviderLifetimeTests.swift": "887ee0c35cf943a8350d80fecc809b4b6fc561857886ce0cb7625cb84ef9ecda",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/QAScopeTests.swift": "10ca4abacaeb788bae119f3cd5135e3341435719e0b41a9ad99816a15da1b97e",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/IsolationLedgerTests.swift": "85201950c23a0f9820d355b1b1d23a1663c4d45fc26e00e861cc88815264001c",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/QALoopbackFilterScopeTests.swift": "0f07b8253d59505adb005b5049d50e88197e80e1d52b1b5eeee37f5e228604d2",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/QAObservationIdentityTests.swift": "d547aa3a59cd5fd7118699f6263c1a340b3d37ae6c6e25cf683812874dd0865c",
+    "Experiments/WebKitIsolation/Sources/IsolationQAController/Entry.swift": "3305ad4940dbe698c8480320e18d87a9a8442f9a598b98673064f1a73d7b8eeb",
+    "Experiments/WebKitIsolation/Sources/IsolationQAHost/Entry.swift": "d7091c4ef24e635a5f287b209386f5484af7f0566bc9e5990d1e3c49e51b5ca7",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/QAOperationFence.swift": "0aefd34545e35e7c2aa950b165730d93df05b104adb8a2af0f86f5fd2731704f",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/QAObservationIdentity.swift": "6674bfcbd56de6abf3893a27ffb6533a1dc6874c632109fd51c7d222ff4fb9c2",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/QALoopbackFilterScope.swift": "df73d4834af4fb77a5a82cf8e5a14a9a8cb682af6240a9b3d99114438c2f75d3",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/IsolationLedger.swift": "b36c20aa7e3af56807810aae18280de80e8e849bc069cc3734986929a6150a82",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/OwnedQATargetPolicy.swift": "5bf6f9a44e0702ed440e2a00bb241d0af3047a550e110d73142accce9928d85d",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/ProviderLifetime.swift": "3a25b88bfaaa477ae9e4d4183d0c8846f1bf5c7fe0c9d1059fbb16bf9623fe50",
+    "Experiments/WebKitIsolation/Sources/IsolationQAHostSupport/Host.swift": "bf4b512ce7513c1003bee4ce60985f761cbb3f578548a556e07d416cd9599e92",
+    "Experiments/WebKitIsolation/Sources/IsolationQADenyProvider/Entry.swift": "3a6197904b0a1f79d396381205da75b98e24d2ad1bdd4613c2d39a6c44325164",
+    "Experiments/WebKitIsolation/Sources/IsolationQADenyProvider/LoopbackFilter.swift": "a2531fd5dd59af966161c553b4cda59feff22f654ae015fd51209569e411ecd3",
+    "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/IsolatedTCPFlowRouter.swift": "8459a88294bf25366b1147d0e94003a9f834d6de1db58473d260b71ca8659f5a",
+    "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/SignedHostPin.swift": "21dc596cddbbc71b5914a6daa1e818276fde9bf6c55f54a354a2116e30ef5639",
+    "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/FailClosedAppProxyProvider.swift": "8db3fdd9f15ad48a4309c8eef1ac3591b6c8b0756d4615b236c80d7bc136cdd7",
+    "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/QALoopbackFilterSettings.swift": "141e66db93ce7615c66d328d7856910ea108649f573ae9eede037a941450f0e9",
+    "Experiments/WebKitIsolation/Sources/IsolationQAControl/Entry.swift": "533ff42877e4f587563af90ed6a33eb33aab7d257f5bc0536db8a681d289b988"
+  },
+  "nativeGateOpen": [
+    "Execute listener-ownership/readback/replacement on exact signed bytes;observe currentrun+PID apply success before openingA",
+    "New exact signing/grant/notarization/install consent for opt-inQA5;no new cert/profile required by verified existing grants",
+    "Actual source-app token attribution and typed A/B observations onIPv4/IPv6",
+    "Provider crash/hang/stop/restart/disable:prove no bypass for new and existing flows,or reject mechanism",
+    "Integrate real fixed-upstream transport,production host/IPC and full route qualification"
+  ],
+  "notClaimed": [
+    "workingWebKitproxy",
+    "filtercrashfailclosed",
+    "productionisolation",
+    "newpublicrelease"
+  ],
+  "officialSources": [
+    "https://developer.apple.com/documentation/networkextension/nefilterdataprovider",
+    "https://developer.apple.com/documentation/networkextension/nefilterflow/sourceappaudittoken"
+  ],
+  "SDKContract": [
+    "NEFilterSettings.h30-44:explicitloopbackfilterDatarules",
+    "NENetworkRule.h115-127:wildcarddoesnotmatchloopback",
+    "NEFilterFlow.h68-79:originalapplicationvsactualprocess"
+  ],
+  "privateUnsignedFixture": "webkit-kernel-qa7 predates final controller;stale,not for native use",
+  "newSocketControl": {
+    "count": 1,
+    "seconds": 1.01,
+    "scope": "Actual ownedIPv4/IPv6 listeners,correct per-run HMAC,wrong key and missing challenge refused;no browser/provider"
+  }
+}

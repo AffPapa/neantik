@@ -114,7 +114,17 @@ def main():
     parser.add_argument("--build-receipt", type=Path, required=True)
     parser.add_argument("--binary-receipt", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--include-owned-loopback-filter", action="store_true",
+                        help="Prepare an uninstalled QA-only filter; new signed grants/OS consent remain separate")
+    parser.add_argument("--replace-inactive-qa-build", choices=["3"])
+    parser.add_argument("--previous-provider-cdhash")
     args = parser.parse_args()
+    if args.replace_inactive_qa_build or args.previous_provider_cdhash:
+        if (not args.include_owned_loopback_filter or args.replace_inactive_qa_build != "3"
+                or not isinstance(args.previous_provider_cdhash, str)
+                or len(args.previous_provider_cdhash) != 40
+                or any(char not in "0123456789abcdef" for char in args.previous_provider_cdhash)):
+            parser.error("Replacement needs explicit filter opt-in, inactive QA3 and its exact lowercase CDHash")
     receipt = json.loads(regular(args.build_receipt))
     if receipt.get("status") != "PASS" or receipt.get("sourceUnchanged") is not True or receipt.get("inputSHA256") != input_digest():
         raise ValueError("Build/source receipt mismatch; do not rebuild blindly")
@@ -148,7 +158,7 @@ def main():
         info = {"CFBundleExecutable":binary, "CFBundleIdentifier":identifier,
                 "CFBundleName":title, "CFBundleDisplayName":title,
                 "CFBundlePackageType":package_type, "CFBundleShortVersionString":"0.0.0",
-                "CFBundleVersion":"4", "LSMinimumSystemVersion":"14.0", "NeAntikQARunID":run}
+                "CFBundleVersion":"5" if args.include_owned_loopback_filter else "4", "LSMinimumSystemVersion":"14.0", "NeAntikQARunID":run}
         info.update(extra or {})
         validate_usage_description(info)
         infos[identifier] = info
@@ -157,29 +167,42 @@ def main():
                          "executableUUID":executable_uuid(payloads[binary]),
                          "executableSHA256":hashlib.sha256(payloads[binary]).hexdigest()})
 
-    bundle(root,"IsolationQAController",BASE,"NeAntik Network QA",extra={
-        "NSSystemExtensionUsageDescription":USAGE_DESCRIPTION})
+    controller_extra = {
+        "NSSystemExtensionUsageDescription":USAGE_DESCRIPTION,
+        "NeAntikQALoopbackFilterIncluded":args.include_owned_loopback_filter}
+    if args.replace_inactive_qa_build:
+        controller_extra.update(NeAntikQAReplacementFromBuild=args.replace_inactive_qa_build,
+                                NeAntikQAPreviousProviderCDHash=args.previous_provider_cdhash)
+    bundle(root,"IsolationQAController",BASE,"NeAntik Network QA",extra=controller_extra)
     web_extra = {"NSAppTransportSecurity":{"NSAllowsArbitraryLoadsInWebContent":True}}
     bundle(host,"IsolationQAHost",BASE+".profilehost","NeAntik Isolation Host",extra=web_extra)
     bundle(control,"IsolationQAControl",BASE+".control","NeAntik Isolation Control",extra=web_extra)
+    classes = {"com.apple.networkextension.app-proxy":"NeAntikIsolationQADenyProvider"}
+    if args.include_owned_loopback_filter:
+        classes["com.apple.networkextension.filter-data"] = "NeAntikIsolationQALoopbackFilter"
+    network_grants = ["app-proxy-provider-systemextension"]
+    if args.include_owned_loopback_filter:
+        network_grants.append("content-filter-provider-systemextension")
     bundle(provider,"IsolationQADenyProvider",BASE+".proxy","NeAntik Isolation QA Deny Provider","SYSX",extra={
         "NSSystemExtensionUsageDescription":USAGE_DESCRIPTION,
         "NetworkExtension":{"NEMachServiceName":QA_GROUP+".proxy",
-                            "NEProviderClasses":{"com.apple.networkextension.app-proxy":"NeAntikIsolationQADenyProvider"}}})
+                            "NEProviderClasses":classes}})
     entitlement_root = destination / "unsigned-entitlement-templates"
     entitlement_root.mkdir(mode=0o700)
     for name, identifier, extra in [
         ("controller",BASE,{"com.apple.developer.system-extension.install":True,
-                            "com.apple.developer.networking.networkextension":["app-proxy-provider-systemextension"]}),
+                            "com.apple.developer.networking.networkextension":network_grants}),
         ("provider",BASE+".proxy",{"com.apple.security.app-sandbox":True,
                                   "com.apple.security.application-groups":[QA_GROUP],
-                                  "com.apple.developer.networking.networkextension":["app-proxy-provider-systemextension"]})]:
+                                  "com.apple.developer.networking.networkextension":network_grants})]:
         value = {"com.apple.application-identifier":TEAM+"."+identifier,
                  "com.apple.developer.team-identifier":TEAM, **extra}
         if name == "provider":
             validate_network_service(infos[identifier], value)
         (entitlement_root/(name+".plist")).write_bytes(plistlib.dumps(value))
     result = {"status":"UNSIGNED;NOT LAUNCHED;NOT INSTALLED", "runID":run,
+              "ownedLoopbackFilterIncluded":args.include_owned_loopback_filter,
+              "inactiveQAReplacementFromBuild":args.replace_inactive_qa_build,
               "buildInputSHA256":receipt["inputSHA256"],"bundles":manifest,
               "next":"Validate exact DeveloperID provisioning/CMS/certificate;sign with existing certificate;notarize;fresh resource admission and explicit QA-install authorization before launch. No production release.",
               "proof":"Assembly does not prove kernel routing, WebKit attribution or working proxy."}

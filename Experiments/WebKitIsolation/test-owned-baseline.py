@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-"""Pure analyzer controls: no listener, native launch, settings or Keychain."""
+"""Analyzer and optional owned-loopback proof controls; no native launch/settings/Keychain."""
 import importlib.util
 import json
+import hmac
+import hashlib
+import urllib.request
+import urllib.error
 from pathlib import Path
 import unittest
 
@@ -63,6 +67,32 @@ class ObservationTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.parse(json.dumps({**self.value, **extra}).encode())
 
+
+class OriginProofTests(unittest.TestCase):
+    def test_held_ipv4_ipv6_ports_prove_key_and_reject_wrong_challenge(self):
+        key = bytes(range(32))
+        a = QA.Origin("127.0.0.1", RUN, ["probe"], proof_key=key)
+        b = None
+        try:
+            b = QA.Origin("::1", RUN, ["probe"], proof_key=key, port=a.port)
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            challenge = "00000000-0000-4000-8000-000000000002"
+            for origin in (a, b):
+                request = urllib.request.Request(origin.url("__proof"), headers={"X-NeAntik-QA-Challenge": challenge})
+                with opener.open(request, timeout=2) as response:
+                    raw = response.read(257)
+                self.assertLessEqual(len(raw), 256)
+                value = json.loads(raw)
+                message = f"{RUN}\n{challenge}\n{a.port}".encode()
+                self.assertEqual(value, {"proof": hmac.new(key, message, hashlib.sha256).hexdigest()})
+                self.assertNotEqual(value["proof"], hmac.new(b"wrong", message, hashlib.sha256).hexdigest())
+                self.assertEqual(origin.snapshot("probe"), [])
+                with self.assertRaises(urllib.error.HTTPError):
+                    opener.open(origin.url("__proof"), timeout=2)
+        finally:
+            a.close()
+            if b:
+                b.close()
 
 if __name__ == "__main__":
     unittest.main()

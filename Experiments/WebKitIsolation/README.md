@@ -115,7 +115,39 @@ Missing, duplicate, foreign, failed or timed-out observations cannot pass.
 No addresses, URLs, error payloads or real profile data enter its report.
 This baseline diagnoses the private-IP control before installing a new rule;
 even an all-green baseline does not prove isolation or a working proxy.
-No native result for these new bytes is claimed here.
+The exact signed baseline subsequently passed4/4 headed cases in4.189s total:
+A/B each loaded the own loopback/privateIPv4 origin and exited normally.
+Apple Accepted, both tickets/strict signatures/Gatekeeper passed;no rule was
+installed. Own origins/processes are gone and the old extension remains disabled.
+[Exact baseline evidence](../../docs/evidence/webkit-owned-baseline-development.json).
+The old private-B failure is not root-caused by this result: UUID and active
+rule state changed together. No IPv6/DNS/confinement result is inferred.
+
+## Supplemental owned-loopback filter (not installed)
+
+The SDK explicitly excludes loopback from wildcard/default filter rules.
+An opt-in QA component now creates exact127/32 and::1/128 filterData rules for
+1–4own server ports. It validates the original kernel source-app token against
+exact signed A/B pins. A is dropped;B allowed;unknown or unsupported callbacks
+allow unrelated traffic and explicitly invalidate the experiment.
+This unknown behavior is unsuitable as a production firewall.
+
+The adapter reuses the existing generation-fenced lifetime/FIFO:only successful
+current apply publishes configuration;stop waits for pending apply. The QA
+controller requires a per-run HMAC proof from both held loopback listeners,
+refuses redirects and foreign/stale filter settings, and rereads exact saved
+scope. No key is persisted. These are compiled controls;the Swift-to-origin
+proof and actual filtering remain native acceptance work.
+
+Preparation requires explicit `--include-owned-loopback-filter`. Default
+preparation does not add the new class or content-filter grant. An additional
+signed replacement recipe can target only inactive QA3's exact Developer ID
+CDHash and build;default/unknown/active replacement still cancels. Neither
+preparation nor compilation changes OS settings or signs these grants.
+Three new pure scope controls and the ownIPv4/IPv6 HMAC socket control passed.
+The current filter/controller compiles without product Sendable diagnostics;
+native owner/crash/disable behavior is unqualified.
+[Source and remaining gates](../../docs/evidence/webkit-owned-loopback-filter-development.json).
 
 ## Remaining gates
 
@@ -123,9 +155,10 @@ No native result for these new bytes is claimed here.
    Retain the inactive registration and installed QA3 bytes;uninstallation
    is not claimed. Before a successor, resolve exact QA replacement/removal
    through supported OS authorization;do not bypass SIP/Gatekeeper.
-2. Explain private-IP A/B failure with safe typed errors and correct controls;
-   establish supported loopback policy before another native attempt. Current
-   results prohibit production enablement and do not justify blind retries.
+2. The new no-rule A/B reachability baseline is complete. Qualify the new
+   owned-loopback filter on exact signed bytes;observe current-run/PID apply
+   success and saved scope before launchingA. Old app-proxy permutations do
+   not need another run. Unknown attribution or anyDirect invalidates acceptance.
 3. Demonstrate full-token WebKit attribution, independent B, zero Direct,
    DNS/UDP/IPv6, provider death/revoke/disconnect/reconnect and ordinary traffic.
 4. Integrate production dedicated hosts and authenticated kernel-peer IPC;

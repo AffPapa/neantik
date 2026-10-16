@@ -2,6 +2,7 @@ import AppKit
 import SystemExtensions
 @preconcurrency import NetworkExtension
 import Security
+import CryptoKit
 import IsolationNetworkExtension
 import IsolationCore
 import Darwin
@@ -17,6 +18,8 @@ import Darwin
     private var controls: [NSButton] = []
     private var extensionOperation: (OSSystemExtensionRequest, QAOperationFence.Ticket)?
     private var extensionAction = "Установка"
+    private let filterPorts = NSTextField()
+    private var includesLoopbackFilter: Bool { Bundle.main.object(forInfoDictionaryKey: "NeAntikQALoopbackFilterIncluded") as? Bool == true }
     private func begin(_ kind: QAOperationFence.Kind) -> QAOperationFence.Ticket? {
         guard let ticket = operation.begin(kind) else { status.stringValue = "Дождитесь завершения текущего QA-действия."; return nil }
         controls.forEach { $0.isEnabled = false }; return ticket
@@ -35,10 +38,11 @@ import Darwin
     }
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard Bundle.main.bundleIdentifier == appID else { NSApp.terminate(nil); return }
-        let w = NSWindow(contentRect: .init(x:0,y:0,width:720,height:600), styleMask:[.titled,.closable,.resizable], backing:.buffered, defer:false)
+        let w = NSWindow(contentRect: .init(x:0,y:0,width:720,height:740), styleMask:[.titled,.closable,.resizable], backing:.buffered, defer:false)
         w.title = "NeAntik · Kernel isolation QA · не рабочий браузер"
         let title = NSTextField(labelWithString: "Новый системный механизм, не повтор HTTP/SOCKS")
         title.font = .systemFont(ofSize: 19, weight: .semibold)
+        filterPorts.placeholderString = "Только порты собственных loopback QA серверов, через запятую"
         let stack = NSStackView(views:[title,status,
             button("1. Запросить установку только QA system extension",#selector(activateExtension)),
             button("2. Сохранить правило только для QA Host A",#selector(configureRule)),
@@ -48,6 +52,9 @@ import Darwin
             button("Прочитать обезличенные счётчики provider",#selector(readCounters)),
             button("Остановить provider, сохранив app rule",#selector(stopProvider)),
             button("Закрыть только запущенные этим окном QA Hosts",#selector(closeOwnedHosts)),
+            filterPorts,
+            button("QA: включить отдельный фильтр только своих loopback портов",#selector(configureLoopbackFilter)),
+            button("QA: удалить только свой loopback filter",#selector(removeLoopbackFilter)),
             button("Удалить только QA-конфигурацию после выхода Hosts",#selector(removeConfiguration)),
             button("Запросить удаление только QA system extension",#selector(deactivateExtension))])
         stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 12
@@ -66,17 +73,146 @@ import Darwin
         request.delegate = self; OSSystemExtensionManager.shared.submitRequest(request)
         self.status.stringValue = "Запрошена установка QA extension; macOS может потребовать отдельное подтверждение."
     }
-    private func hostPin() throws -> (SignedHostPin,String) {
-        let url = helpers.appendingPathComponent("NeAntik Isolation Host.app")
+    private func hostPin(control: Bool = false) throws -> (SignedHostPin,String) {
+        let identifier = control ? appID + ".control" : hostID
+        let url = helpers.appendingPathComponent(control ? "NeAntik Isolation Control.app" : "NeAntik Isolation Host.app")
         var code: SecStaticCode?, info: CFDictionary?
         guard SecStaticCodeCreateWithPath(url as CFURL,SecCSFlags(),&code) == errSecSuccess, let code,
               SecCodeCopySigningInformation(code,SecCSFlags(rawValue:kSecCSSigningInformation),&info) == errSecSuccess,
-              let fields = info as? [String:Any], fields[kSecCodeInfoIdentifier as String] as? String == hostID,
+              let fields = info as? [String:Any], fields[kSecCodeInfoIdentifier as String] as? String == identifier,
               fields[kSecCodeInfoTeamIdentifier as String] as? String == "H6VGU2M6JD",
               let hash = fields[kSecCodeInfoUnique as String] as? Data, hash.count == 20,
               SecStaticCodeCheckValidity(code,SecCSFlags(rawValue:kSecCSStrictValidate),nil) == errSecSuccess
         else { throw NSError(domain:"app.neantik.isolation.qa",code:1) }
-        return (try SignedHostPin(identifier:hostID,team:"H6VGU2M6JD",cdHash:hash),hash.map{String(format:"%02x",$0)}.joined())
+        return (try SignedHostPin(identifier:identifier,team:"H6VGU2M6JD",cdHash:hash),hash.map{String(format:"%02x",$0)}.joined())
+    }
+
+    @objc private func configureLoopbackFilter() { changeLoopbackFilter(enable: true) }
+    @objc private func removeLoopbackFilter() { changeLoopbackFilter(enable: false) }
+    private func changeLoopbackFilter(enable: Bool) {
+        guard includesLoopbackFilter else { status.stringValue = "Нужен отдельно разрешённый opt-in QA build с content-filter capability. Ничего не меняю."; return }
+        guard let ticket = begin(.configuration) else { return }
+        guard hostsAbsent,
+              let (_,hostHash) = try? hostPin(), let (_,controlHash) = try? hostPin(control: true), hostHash != controlHash,
+              let run = Bundle.main.object(forInfoDictionaryKey: "NeAntikQARunID") as? String, UUID(uuidString: run) != nil
+        else { status.stringValue = "Нужны закрытые отдельные подписанные A/B. Ничего не сохранено."; finish(ticket); return }
+        let manager = NEFilterManager.shared()
+        manager.loadFromPreferences { [weak self] error in
+            Task { @MainActor in
+                guard let self else { return }
+                guard error == nil, self.hostsAbsent else { self.status.stringValue = "Не удалось прочитать QA filter или окна ещё открыты."; self.finish(ticket); return }
+                if let existing = manager.providerConfiguration {
+                    // Never overwrite another app's filter, a previous run or
+                    // a configuration with broader/unrecognised capabilities.
+                    guard existing.filterDataProviderBundleIdentifier == self.extensionID,
+                          existing.filterPacketProviderBundleIdentifier == nil,
+                          existing.filterSockets, !existing.filterPackets,
+                          let vendor = existing.vendorConfiguration,
+                          Set(vendor.keys) == ["runID", "ports", "hostCDHash", "controlCDHash"],
+                          vendor["runID"] as? String == run,
+                          vendor["hostCDHash"] as? String == hostHash,
+                          vendor["controlCDHash"] as? String == controlHash,
+                          let ports = vendor["ports"] as? [Int], ports.allSatisfy({ (1...65535).contains($0) }),
+                          (try? QALoopbackFilterScope(ports: ports.map(UInt16.init))) != nil
+                    else { self.status.stringValue = "Filter не принадлежит этому QA run или scope отличается; ничего не меняю."; self.finish(ticket); return }
+                    // An existing run must be removed explicitly before changing
+                    // ports. No silent overwrite or reset of another policy.
+                    guard !enable else { self.status.stringValue = "Сначала явно удалите свой текущий QA filter."; self.finish(ticket); return }
+                } else if !enable {
+                    self.status.stringValue = "Своего QA filter нет; удалять нечего."; self.finish(ticket); return
+                }
+                let completion: @Sendable (Error?) -> Void = { [weak self] error in
+                    Task { @MainActor in
+                        guard let self else { return }
+                        guard error == nil else { self.status.stringValue = "macOS отказала в изменении QA filter. Это setup failure."; self.finish(ticket); return }
+                        manager.loadFromPreferences { [weak self] readError in
+                            Task { @MainActor in
+                                guard let self else { return }
+                                let scoped = enable ? self.matchesOwnedFilter(manager, run: run, hostHash: hostHash, controlHash: controlHash) : manager.providerConfiguration == nil
+                                self.status.stringValue = readError == nil && scoped ? "Точный QA scope перечитан. Успешный apply и маршрут требуют отдельных наблюдений; это не PASS." : "QA filter не подтверждён после записи/удаления. Окна A не открывать."
+                                self.pendingFilterPorts = nil
+                                self.finish(ticket)
+                            }
+                        }
+                    }
+                }
+                guard self.hostsAbsent else { self.finish(ticket); return }
+                if enable {
+                    let text = self.filterPorts.stringValue.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                    let ports = text.compactMap(UInt16.init)
+                    guard ports.count == text.count, let scope = try? QALoopbackFilterScope(ports: ports) else {
+                        self.status.stringValue = "Укажите 1–4 разных собственных порта от 1 до 65535."; self.finish(ticket); return
+                    }
+                    // A typed port is not proof of ownership. The separately
+                    // launched own fixture must still hold both loopback
+                    // listeners and prove a per-run, never-persisted key.
+                    guard await self.proveOwnListeners(ports: scope.ports, run: run), self.hostsAbsent else {
+                        self.status.stringValue = "Нет подтверждения собственных IPv4/IPv6 listeners текущего run. Ничего не сохранено."; self.finish(ticket); return
+                    }
+                    let config = NEFilterProviderConfiguration()
+                    config.filterSockets = true; config.filterPackets = false
+                    config.filterDataProviderBundleIdentifier = self.extensionID
+                    config.vendorConfiguration = ["runID": run, "ports": scope.ports.map(Int.init), "hostCDHash": hostHash, "controlCDHash": controlHash]
+                    manager.providerConfiguration = config
+                    manager.localizedDescription = "NeAntik owned loopback filter QA"
+                    manager.isEnabled = true
+                    self.pendingFilterPorts = scope.ports.map(Int.init)
+                    manager.saveToPreferences(completionHandler: completion)
+                } else {
+                    manager.removeFromPreferences(completionHandler: completion)
+                }
+            }
+        }
+    }
+
+    private var pendingFilterPorts: [Int]?
+    private func matchesOwnedFilter(_ manager: NEFilterManager, run: String, hostHash: String, controlHash: String) -> Bool {
+        guard manager.isEnabled, let config = manager.providerConfiguration,
+              config.filterDataProviderBundleIdentifier == extensionID,
+              config.filterPacketProviderBundleIdentifier == nil,
+              config.filterSockets, !config.filterPackets,
+              let vendor = config.vendorConfiguration,
+              Set(vendor.keys) == ["runID", "ports", "hostCDHash", "controlCDHash"],
+              vendor["runID"] as? String == run,
+              vendor["hostCDHash"] as? String == hostHash,
+              vendor["controlCDHash"] as? String == controlHash,
+              let expectedPorts = pendingFilterPorts,
+              vendor["ports"] as? [Int] == expectedPorts else { return false }
+        return true
+    }
+    private func proveOwnListeners(ports: [UInt16], run: String) async -> Bool {
+        guard let text = ProcessInfo.processInfo.environment["NEANTIK_OWNED_QA_ORIGIN_LEASE"], text.utf8.count <= 2048,
+              let bytes = text.data(using: .utf8), let lease = (try? JSONSerialization.jsonObject(with: bytes)) as? [String: Any],
+              Set(lease.keys) == ["runID", "ports", "key"], lease["runID"] as? String == run,
+              lease["ports"] as? [Int] == ports.map(Int.init),
+              let hex = lease["key"] as? String, hex.utf8.count == 64,
+              hex.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) else { return false }
+        let key = Data(stride(from: 0, to: 64, by: 2).compactMap { offset in
+            let start = hex.index(hex.startIndex, offsetBy: offset)
+            return UInt8(hex[start..<hex.index(start, offsetBy: 2)], radix: 16)
+        })
+        let config = URLSessionConfiguration.ephemeral
+        config.connectionProxyDictionary = [:]; config.timeoutIntervalForRequest = 2; config.timeoutIntervalForResource = 3
+        let session = URLSession(configuration: config, delegate: QANoRedirects(), delegateQueue: nil)
+        defer { session.invalidateAndCancel() }
+        for port in ports {
+            for host in ["127.0.0.1", "[::1]"] {
+                let challenge = UUID().uuidString.lowercased()
+                let message = Data("\(run)\n\(challenge)\n\(port)".utf8)
+                guard let url = URL(string: "http://\(host):\(port)/__neantik_isolation_qa/\(run)/__proof") else { return false }
+                var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 2)
+                request.setValue(challenge, forHTTPHeaderField: "X-NeAntik-QA-Challenge")
+                do {
+                    let (data, response) = try await session.data(for: request)
+                    guard (response as? HTTPURLResponse)?.statusCode == 200, data.count <= 256,
+                          let body = try JSONSerialization.jsonObject(with: data) as? [String: String], Set(body.keys) == ["proof"],
+                          let proof = body["proof"], proof.utf8.count == 64,
+                          proof == HMAC<SHA256>.authenticationCode(for: message, using: SymmetricKey(data: key)).map({ String(format: "%02x", $0) }).joined()
+                    else { return false }
+                } catch { return false } // No URL/error payload is logged.
+            }
+        }
+        return true
     }
     private func loadManager(_ completion: @escaping (NEAppProxyProviderManager?) -> Void) {
         NEAppProxyProviderManager.loadAllFromPreferences { [weak self] values,error in
@@ -225,6 +361,20 @@ import Darwin
     @objc private func deactivateExtension() {
         guard let ticket = begin(.extensionRequest) else { return }
         guard hostsAbsent else { status.stringValue = "Сначала завершите собственные QA Hosts."; finish(ticket); return }
+        guard includesLoopbackFilter else { deactivateAfterFilterCheck(ticket); return }
+        let filter = NEFilterManager.shared()
+        filter.loadFromPreferences { [weak self] error in
+            Task { @MainActor in
+                guard let self else { return }
+                guard error == nil, self.hostsAbsent,
+                      filter.providerConfiguration?.filterDataProviderBundleIdentifier != self.extensionID else {
+                    self.status.stringValue = "Сначала удалите свой QA filter; extension пока не удаляется."; self.finish(ticket); return
+                }
+                self.deactivateAfterFilterCheck(ticket)
+            }
+        }
+    }
+    private func deactivateAfterFilterCheck(_ ticket: QAOperationFence.Ticket) {
         NEAppProxyProviderManager.loadAllFromPreferences { [weak self] values,error in
             Task { @MainActor in
                 guard let self else { return }
@@ -246,7 +396,30 @@ import Darwin
     nonisolated func requestNeedsUserApproval(_ request:OSSystemExtensionRequest) {
         Task { @MainActor [weak self] in self?.status.stringValue = "macOS просит разрешить только QA system extension в настройках. Защита системы не отключается." }
     }
-    nonisolated func request(_ request:OSSystemExtensionRequest,actionForReplacingExtension existing:OSSystemExtensionProperties,withExtension ext:OSSystemExtensionProperties) -> OSSystemExtensionRequest.ReplacementAction { .cancel }
+    nonisolated func request(_ request:OSSystemExtensionRequest,actionForReplacingExtension existing:OSSystemExtensionProperties,withExtension ext:OSSystemExtensionProperties) -> OSSystemExtensionRequest.ReplacementAction {
+        // Optional, signed recipe for precisely the retained inactive QA3.
+        // Default builds still cancel. No production/active/unknown extension
+        // may be replaced, even if it has a matching team or identifier.
+        let bundle = Bundle.main
+        guard bundle.object(forInfoDictionaryKey: "NeAntikQALoopbackFilterIncluded") as? Bool == true,
+              bundle.object(forInfoDictionaryKey: "NeAntikQAReplacementFromBuild") as? String == "3",
+              let hash = bundle.object(forInfoDictionaryKey: "NeAntikQAPreviousProviderCDHash") as? String,
+              hash.utf8.count == 40, hash.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }),
+              existing.bundleIdentifier == "app.neantik.desktop.network-qa.proxy",
+              ext.bundleIdentifier == existing.bundleIdentifier,
+              existing.bundleVersion == "3", ext.bundleVersion == "5",
+              !existing.isEnabled, !existing.isAwaitingUserApproval, !existing.isUninstalling,
+              ext.url.standardizedFileURL == bundle.bundleURL.appendingPathComponent("Contents/Library/SystemExtensions/app.neantik.desktop.network-qa.proxy.systemextension").standardizedFileURL
+        else { return .cancel }
+        let expression = "anchor apple generic and certificate leaf[field.1.2.840.113635.100.6.1.13] exists and certificate leaf[subject.OU] = \"H6VGU2M6JD\" and identifier \"app.neantik.desktop.network-qa.proxy\" and cdhash H\"\(hash)\""
+        var requirement: SecRequirement?, code: SecStaticCode?
+        guard SecRequirementCreateWithString(expression as CFString, SecCSFlags(), &requirement) == errSecSuccess,
+              let requirement,
+              SecStaticCodeCreateWithPath(existing.url as CFURL, SecCSFlags(), &code) == errSecSuccess,
+              let code, SecStaticCodeCheckValidity(code, SecCSFlags(rawValue: kSecCSStrictValidate), requirement) == errSecSuccess
+        else { return .cancel }
+        return .replace // OS authorization/validation still applies.
+    }
     nonisolated func request(_ request:OSSystemExtensionRequest,didFinishWithResult result:OSSystemExtensionRequest.Result) {
         Task { @MainActor [weak self] in self?.finishExtension(request, message: "Запрос system extension завершён. Его результат и действующие правила проверяются отдельно.") }
     }
@@ -261,6 +434,12 @@ import Darwin
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard !operation.isBusy, hostsAbsent else { status.stringValue = "Дождитесь QA-действия и завершите свои Hosts перед выходом."; window?.makeKeyAndOrderFront(nil); return .terminateCancel }
         return .terminateNow
+    }
+}
+private final class QANoRedirects: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
+        completionHandler(nil)
     }
 }
 @main enum Main {

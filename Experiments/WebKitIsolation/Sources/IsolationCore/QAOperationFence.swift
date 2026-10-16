@@ -4,8 +4,8 @@ import Foundation
 /// the same exclusive lease as configuration/extension changes, until its
 /// completion arrives. Stale callbacks cannot release a newer operation.
 public struct QAOperationFence {
-    public enum Kind: Equatable { case launchHost, configuration, extensionRequest, providerControl, observation, closeHosts }
-    public struct Ticket: Equatable {
+    public enum Kind: Equatable, Sendable { case launchHost, configuration, extensionRequest, providerControl, observation, closeHosts }
+    public struct Ticket: Equatable, Sendable {
         fileprivate let id: UUID
         fileprivate let kind: Kind
     }

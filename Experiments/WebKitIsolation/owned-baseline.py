@@ -7,6 +7,7 @@ are used. This baseline measures reachability, never network isolation.
 import argparse
 import datetime
 import hashlib
+import hmac
 import http.server
 import importlib.util
 import ipaddress
@@ -14,6 +15,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import socket
 import subprocess
 import sys
 import threading
@@ -66,7 +68,7 @@ def reached_origin(observation, origin_events):
 
 
 class Origin:
-    def __init__(self, address, run_id, labels):
+    def __init__(self, address, run_id, labels, *, proof_key=None, port=0):
         self.events = {label: [] for label in labels}
         self.lock = threading.Lock()
         owner = self
@@ -75,6 +77,23 @@ class Origin:
             def do_GET(self):
                 prefix = "/__neantik_isolation_qa/" + run_id + "/"
                 label = self.path[len(prefix):] if self.path.startswith(prefix) else ""
+                if label == "__proof" and proof_key is not None:
+                    challenge = self.headers.get("X-NeAntik-QA-Challenge", "")
+                    try:
+                        if str(uuid.UUID(challenge)) != challenge:
+                            raise ValueError("challenge")
+                    except ValueError:
+                        self.send_error(404)
+                        return
+                    message = f"{run_id}\n{challenge}\n{owner.port}".encode()
+                    body = json.dumps({"proof": hmac.new(proof_key, message, hashlib.sha256).hexdigest()}).encode()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Cache-Control", "no-store")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
                 if label not in owner.events:
                     self.send_error(404)
                     return
@@ -92,15 +111,24 @@ class Origin:
             def log_message(self, *_):
                 pass  # Never retain client addresses or request headers.
 
-        self.server = http.server.ThreadingHTTPServer((address, 0), Handler)
+        class Server(http.server.ThreadingHTTPServer):
+            address_family = socket.AF_INET6 if ":" in address else socket.AF_INET
+
+            def server_bind(self):
+                if self.address_family == socket.AF_INET6:
+                    self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+                super().server_bind()
+
+        self.server = Server((address, port), Handler)
         self.server.daemon_threads = True
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
-        self.address, self.port = self.server.server_address
+        self.address, self.port = self.server.server_address[:2]
         self.run_id = run_id
 
     def url(self, label):
-        return f"http://{self.address}:{self.port}/__neantik_isolation_qa/{self.run_id}/{label}"
+        host = f"[{self.address}]" if ":" in self.address else self.address
+        return f"http://{host}:{self.port}/__neantik_isolation_qa/{self.run_id}/{label}"
 
     def snapshot(self, label):
         with self.lock:
