@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-16",
+  "status": "development;distinct hosts compiled;bounded baseline prepared;native pending",
+  "shippingWebKitProxy": false,
+  "build": {
+    "inputSHA256": "b693a3d3d3d51405c4934a9e28a534ae09ef8260363bd4d433aeefa38be96ab7",
+    "seconds": 3.362662791,
+    "status": "PASS;build only"
+  },
+  "controls": {
+    "newMachOControls": 5,
+    "actualOldCopiedPairRefused": true,
+    "baselineAnalyzer": 9,
+    "baselineAnalyzerSeconds": 0.0,
+    "scope": "pure structural/analyzer controls;no native launch"
+  },
+  "sourceFiles": {
+    "Experiments/WebKitIsolation/prepare-qa.py": "446635c522bafe22820a01219f60fa5aded3693c655b090e5e128c62d3b52887",
+    "Experiments/WebKitIsolation/README.md": "be0b09c53926766cf7e51c1de62196d09537fbd4dd23b02ced2ca5b9979f8c0d",
+    "Experiments/WebKitIsolation/test-prepare-qa.py": "52fc254ffe040bb8dbbee94eaad702f150f1da648a54e9cf2b745038751926de",
+    "Experiments/WebKitIsolation/Package.swift": "3102d3b0f3bc294984c68825da7129020d9951d68e04689de85fbd579b653f17",
+    "Experiments/WebKitIsolation/owned-baseline.py": "231e24c13489318863f74b0292fa6cffc4118e9274b4d6c5a473d703099adf58",
+    "Experiments/WebKitIsolation/test-owned-baseline.py": "d98456ea29b78e8b910d76187139699ad2ff2cac6b4d8e1828426d85c7392701",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/ProviderLifetimeTests.swift": "887ee0c35cf943a8350d80fecc809b4b6fc561857886ce0cb7625cb84ef9ecda",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/QAScopeTests.swift": "10ca4abacaeb788bae119f3cd5135e3341435719e0b41a9ad99816a15da1b97e",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/IsolationLedgerTests.swift": "85201950c23a0f9820d355b1b1d23a1663c4d45fc26e00e861cc88815264001c",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/QAObservationIdentityTests.swift": "d547aa3a59cd5fd7118699f6263c1a340b3d37ae6c6e25cf683812874dd0865c",
+    "Experiments/WebKitIsolation/Sources/IsolationQAController/Entry.swift": "f1f0fed67689622afc8b11e333619fccc580a0be9d3dada28d5cad89c86458f9",
+    "Experiments/WebKitIsolation/Sources/IsolationQAHost/Entry.swift": "d7091c4ef24e635a5f287b209386f5484af7f0566bc9e5990d1e3c49e51b5ca7",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/QAOperationFence.swift": "e4bf1e1a63519e3cec7daecd1e02159803e15bfce7383e3eb3d2c39ef8d04fe6",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/QAObservationIdentity.swift": "6674bfcbd56de6abf3893a27ffb6533a1dc6874c632109fd51c7d222ff4fb9c2",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/IsolationLedger.swift": "b36c20aa7e3af56807810aae18280de80e8e849bc069cc3734986929a6150a82",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/OwnedQATargetPolicy.swift": "5bf6f9a44e0702ed440e2a00bb241d0af3047a550e110d73142accce9928d85d",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/ProviderLifetime.swift": "3a25b88bfaaa477ae9e4d4183d0c8846f1bf5c7fe0c9d1059fbb16bf9623fe50",
+    "Experiments/WebKitIsolation/Sources/IsolationQAHostSupport/Host.swift": "bf4b512ce7513c1003bee4ce60985f761cbb3f578548a556e07d416cd9599e92",
+    "Experiments/WebKitIsolation/Sources/IsolationQADenyProvider/Entry.swift": "3a6197904b0a1f79d396381205da75b98e24d2ad1bdd4613c2d39a6c44325164",
+    "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/IsolatedTCPFlowRouter.swift": "8459a88294bf25366b1147d0e94003a9f834d6de1db58473d260b71ca8659f5a",
+    "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/SignedHostPin.swift": "21dc596cddbbc71b5914a6daa1e818276fde9bf6c55f54a354a2116e30ef5639",
+    "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/FailClosedAppProxyProvider.swift": "8db3fdd9f15ad48a4309c8eef1ac3591b6c8b0756d4615b236c80d7bc136cdd7",
+    "Experiments/WebKitIsolation/Sources/IsolationQAControl/Entry.swift": "533ff42877e4f587563af90ed6a33eb33aab7d257f5bc0536db8a681d289b988"
+  },
+  "change": [
+    "Separate independently linked A/B hosts with distinct LC_UUID",
+    "Reject malformed/missing/duplicate/identical UUID before packaging",
+    "Optional headed own-endpoint observation with signed run/role and typed errors",
+    "Bounded baseline with outer deadline and independent own origin;no rule writes"
+  ],
+  "notProved": [
+    "New signed headed baseline",
+    "Complete kernel-token attribution",
+    "Strict loopback/provider-failure confinement",
+    "Production host IPC and actual proxy tunnel"
+  ],
+  "reuse": "Unchanged earlier core/Chromium/manager/release tests were not repeated",
+  "privateReceipts": [
+    "webkit-isolation-build12.json",
+    "webkit-isolation-binaries12.json",
+    "webkit-kernel-qa6/preparation.json"
+  ]
+}

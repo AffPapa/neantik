@@ -9,6 +9,7 @@ let package = Package(
     products: [
         .library(name: "IsolationNetworkExtension", targets: ["IsolationNetworkExtension"]),
         .executable(name: "IsolationQAHost", targets: ["IsolationQAHost"]),
+        .executable(name: "IsolationQAControl", targets: ["IsolationQAControl"]),
         .executable(name: "IsolationQAController", targets: ["IsolationQAController"]),
         .executable(name: "IsolationQADenyProvider", targets: ["IsolationQADenyProvider"])
     ],
@@ -16,7 +17,9 @@ let package = Package(
         .target(name: "IsolationCore"),
         .target(name: "IsolationNetworkExtension", dependencies: ["IsolationCore"],
                 linkerSettings: [.linkedFramework("NetworkExtension"), .linkedFramework("Security")]),
-        .executableTarget(name: "IsolationQAHost", dependencies: ["IsolationCore"], linkerSettings: [.linkedFramework("WebKit"), .linkedFramework("AppKit")]),
+        .target(name: "IsolationQAHostSupport", dependencies: ["IsolationCore"], linkerSettings: [.linkedFramework("WebKit"), .linkedFramework("AppKit")]),
+        .executableTarget(name: "IsolationQAHost", dependencies: ["IsolationQAHostSupport"]),
+        .executableTarget(name: "IsolationQAControl", dependencies: ["IsolationQAHostSupport"]),
         .executableTarget(name: "IsolationQAController", dependencies: ["IsolationNetworkExtension", "IsolationCore"],
                           linkerSettings: [.linkedFramework("AppKit"), .linkedFramework("SystemExtensions")]),
         .executableTarget(name: "IsolationQADenyProvider", dependencies: ["IsolationNetworkExtension"]),

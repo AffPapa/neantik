@@ -4,6 +4,8 @@ import copy
 import importlib.util
 from pathlib import Path
 import unittest
+import struct
+import uuid
 
 SPEC = importlib.util.spec_from_file_location("qa_preparation", Path(__file__).with_name("prepare-qa.py"))
 QA = importlib.util.module_from_spec(SPEC)
@@ -38,6 +40,42 @@ class MachServiceContractTests(unittest.TestCase):
     def test_keychain_claim_refuses(self):
         with self.assertRaises(ValueError):
             QA.validate_network_service(self.info, {**self.claims, "keychain-access-groups": []})
+
+
+class ExecutableIdentityTests(unittest.TestCase):
+    def image(self, identifier, command=0x1B, length=24, count=1):
+        body = struct.pack("<II", command, length) + uuid.UUID(identifier).bytes
+        return struct.pack("<8I", 0xFEEDFACF, 0x0100000C, 0, 2, count, len(body), 0, 0) + body
+
+    def test_distinct_pair_accepts(self):
+        a = self.image("00000000-0000-4000-8000-000000000001")
+        b = self.image("00000000-0000-4000-8000-000000000002")
+        self.assertNotEqual(*QA.distinct_host_uuids(a, b))
+
+    def test_former_copied_executable_refuses(self):
+        a = self.image("00000000-0000-4000-8000-000000000001")
+        with self.assertRaises(ValueError):
+            QA.distinct_host_uuids(a, bytes(a))
+
+    def test_truncated_or_unknown_header_refuses(self):
+        good = self.image("00000000-0000-4000-8000-000000000001")
+        for data in (b"", good[:31], good[:-1], bytes(32), b"\xca\xfe\xba\xbe" + good[4:]):
+            with self.subTest(size=len(data)), self.assertRaises(ValueError):
+                QA.executable_uuid(data)
+
+    def test_missing_or_zero_uuid_refuses(self):
+        for data in (self.image("00000000-0000-0000-0000-000000000000"),
+                     self.image("00000000-0000-4000-8000-000000000001", command=1)):
+            with self.assertRaises(ValueError):
+                QA.executable_uuid(data)
+
+    def test_command_bounds_and_duplicate_uuid_refuse(self):
+        good = self.image("00000000-0000-4000-8000-000000000001")
+        duplicate = struct.pack("<8I", 0xFEEDFACF, 0x0100000C, 0, 2, 2, 48, 0, 0) + good[32:] * 2
+        for data in (self.image("00000000-0000-4000-8000-000000000001", length=0),
+                     self.image("00000000-0000-4000-8000-000000000001", length=25), duplicate):
+            with self.assertRaises(ValueError):
+                QA.executable_uuid(data)
 
 
 if __name__ == "__main__":

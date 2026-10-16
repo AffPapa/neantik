@@ -12,6 +12,7 @@ from pathlib import Path
 import os
 import plistlib
 import stat
+import struct
 import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -54,6 +55,40 @@ def input_digest():
     return digest.hexdigest()
 
 
+def executable_uuid(data):
+    """Read one LC_UUID from a bounded thin ARM64 executable, without running it."""
+    if len(data) < 32:
+        raise ValueError("Truncated Mach-O header")
+    magic, cpu, _, kind, count, size, _, _ = struct.unpack_from("<8I", data)
+    if (magic != 0xFEEDFACF or cpu != 0x0100000C or kind != 2
+            or not 1 <= count <= 4096 or size > len(data) - 32):
+        raise ValueError("Expected thin ARM64 Mach-O executable")
+    end = 32 + size
+    offset = 32
+    found = []
+    for _ in range(count):
+        if offset + 8 > end:
+            raise ValueError("Truncated Mach-O load command")
+        command, length = struct.unpack_from("<II", data, offset)
+        if length < 8 or length % 8 or offset + length > end:
+            raise ValueError("Invalid Mach-O load command size")
+        if command == 0x1B:
+            if length != 24:
+                raise ValueError("Invalid LC_UUID size")
+            found.append(uuid.UUID(bytes=data[offset + 8:offset + 24]))
+        offset += length
+    if offset != end or len(found) != 1 or found[0].int == 0:
+        raise ValueError("Executable needs exactly one nonzero UUID")
+    return str(found[0])
+
+
+def distinct_host_uuids(host, control):
+    identities = (executable_uuid(host), executable_uuid(control))
+    if identities[0] == identities[1]:
+        raise ValueError("Independent A/B controls must not share an executable UUID")
+    return identities
+
+
 def regular(path):
     fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
     try:
@@ -84,7 +119,7 @@ def main():
     if receipt.get("status") != "PASS" or receipt.get("sourceUnchanged") is not True or receipt.get("inputSHA256") != input_digest():
         raise ValueError("Build/source receipt mismatch; do not rebuild blindly")
     binary_root = ROOT / ".build/neantik-local/webkit-isolation/swift/arm64-apple-macosx/debug"
-    names = ["IsolationQAController", "IsolationQAHost", "IsolationQADenyProvider"]
+    names = ["IsolationQAController", "IsolationQAHost", "IsolationQAControl", "IsolationQADenyProvider"]
     # Hash all input bytes before creating any output. This is assembly, not
     # evidence of a signature, notarization, installed rules or live routing.
     payloads = {name: regular(binary_root / name) for name in names}
@@ -92,6 +127,7 @@ def main():
     if (binding.get("buildInputSHA256") != receipt["inputSHA256"]
             or binding.get("binarySHA256") != {name: hashlib.sha256(payloads[name]).hexdigest() for name in names}):
         raise ValueError("Compiled executable binding mismatch")
+    distinct_host_uuids(payloads["IsolationQAHost"], payloads["IsolationQAControl"])
     destination = args.output.absolute()
     if destination.exists() or destination.is_symlink():
         raise ValueError("Use a fresh QA output directory; never replace a bundle")
@@ -112,19 +148,20 @@ def main():
         info = {"CFBundleExecutable":binary, "CFBundleIdentifier":identifier,
                 "CFBundleName":title, "CFBundleDisplayName":title,
                 "CFBundlePackageType":package_type, "CFBundleShortVersionString":"0.0.0",
-                "CFBundleVersion":"3", "LSMinimumSystemVersion":"14.0", "NeAntikQARunID":run}
+                "CFBundleVersion":"4", "LSMinimumSystemVersion":"14.0", "NeAntikQARunID":run}
         info.update(extra or {})
         validate_usage_description(info)
         infos[identifier] = info
         (contents / "Info.plist").write_bytes(plistlib.dumps(info, sort_keys=True))
         manifest.append({"bundle":str(path.relative_to(destination)),"identifier":identifier,
+                         "executableUUID":executable_uuid(payloads[binary]),
                          "executableSHA256":hashlib.sha256(payloads[binary]).hexdigest()})
 
     bundle(root,"IsolationQAController",BASE,"NeAntik Network QA",extra={
         "NSSystemExtensionUsageDescription":USAGE_DESCRIPTION})
     web_extra = {"NSAppTransportSecurity":{"NSAllowsArbitraryLoadsInWebContent":True}}
     bundle(host,"IsolationQAHost",BASE+".profilehost","NeAntik Isolation Host",extra=web_extra)
-    bundle(control,"IsolationQAHost",BASE+".control","NeAntik Isolation Control",extra=web_extra)
+    bundle(control,"IsolationQAControl",BASE+".control","NeAntik Isolation Control",extra=web_extra)
     bundle(provider,"IsolationQADenyProvider",BASE+".proxy","NeAntik Isolation QA Deny Provider","SYSX",extra={
         "NSSystemExtensionUsageDescription":USAGE_DESCRIPTION,
         "NetworkExtension":{"NEMachServiceName":QA_GROUP+".proxy",

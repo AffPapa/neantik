@@ -1,15 +1,15 @@
 # Что остаётся до 1.0
 
-**WebKit proxy — новый существенный результат:** одна попытка с двумя
-nonpersistent stores подтвердила CONNECT-авторизацию для синтетического имени,
-но достижимый локальный IPv4 обходил relay до и после отзыва. B и отдельный
-TCP-контроль работали; это **FAIL строгого no-Direct gate**, а не готовая функция.
-Окно и fixture закрыты; архивы135 не менялись. Отдельный явный exact
-`matchDomains` также дал **FAIL**: native exceptions=0 и failover=false,
-но локальный IP достигался напрямую до и после отзыва. Одна оконная попытка
-завершена после диагностированного setup guard; повторов этого варианта нет.
-[Exact-match результат](evidence/webkit-proxy-exact-match-development.json).
-[Счётчики и границы](evidence/webkit-proxy-nonloopback-development.json).
+**WebKit proxy — текущий этап:** QA3 с системным app proxy подписан,
+нотарифицирован и проверен в окнах. Loopback достигался напрямую до/после
+остановки provider; private-IP контроль B не прошёл. Это **FAIL/неполное
+доказательство**, включения прокси нет. Правило удалено, расширение выключено;
+неактивная регистрация сохранена. В старом стенде A/B делили executable UUID.
+Новые отдельные executable и ограниченный автоматический оконный baseline
+подготовлены; сначала проверяется доступность без правила. Это исправление
+стенда, а не доказательство сетевой изоляции.
+[Текущее состояние и следующие gates](../Experiments/WebKitIsolation/README.md).
+HTTP/default/exact/SOCKS обходы сохранены; эти варианты не повторяются.
 
 **Инструменты разработки (45):** добавлен process-local контекст source proof
 для одного вызова M156 report-checker. Каждая копия evidence и runtime
@@ -144,7 +144,7 @@ fontPolicy/перезапуском прошли. Политика WebKit не �
 |---|---|---|
 | Отдельные данные, вкладки, загрузки, HTTP-кэш | Есть в опубликованных версиях; результаты ограничены указанными ОС/fixtures | Сохранять существующие evidence; проверять только изменяемую поверхность. |
 | Автосохранение вкладок | Опубликовано в 0.8.14; локальные/native/exact signed и hosted gates пройдены в указанном scope | Дополнительные crash/timeout и аппаратные условия относятся к пункту 36; полный backup не реализован. |
-| Прокси | Production запуск с прокси отклоняется. DEBUG-only session/CONNECT: [оконные эксперименты](WEBKIT_PROXY_QUALIFICATION.md) выявили loopback и reachable private-IP Direct bypass. Авторизация синтетического имени отдельно подтверждена; включения нет | Exact matchDomains проверен и не устранил обход. Defaults/exact без новых входов не повторять. DEBUG SOCKS native выполнен: именованная auth2 работает, private-IP Direct bypass до/после revoke сохраняется (5route issues). Четыре raw случая дали upstream0; отдельный общий counter assert FAIL, конкретные значения не записаны. Общий auth catch исправлен в исходниках и только скомпилирован, native не повторялся. HTTP/default/exact/SOCKS permutations прекращены. [Отдельная OS-boundary реализация](../Experiments/WebKitIsolation/README.md): 12 ledger +6 lifecycle/callback +7 QA scope pure controls PASS; NEAppProxy adapter и три QA executable скомпилированы, четыре QA bundle подписаны прежним сертификатом; notarization/установка открыты. Исправлены DNS-label parser и гонка запуска/cleanup. Без установки, production host/IPC/tunnel integration и kernel proof. После точного подтверждения выпущены два QA App ID/Developer ID profiles; CMS и реальные signed-content negatives прошли. Отправка QA кода в Apple на notarization требует отдельного точного разрешения. Это ещё не исправленный маршрут и не включение функции. Затем HTTP/HTTPS/DNS/UDP, чужая capability, отказ upstream и lifecycle. Chromium authority не расширять на Apple-процессы/UID. Source controls не закрывают приёмку. |
+| Прокси | Production запуск с прокси отклоняется. HTTP/default/exact/SOCKS обходы сохранены; QA3 app-proxy тоже не прошёл строгую изоляцию. Расширение выключено, правило удалено | [Текущее доказательство и открытые gates](../Experiments/WebKitIsolation/README.md). Следующий этап: разные executable A/B и bounded headed baseline без правила. Затем full-token attribution, zero Direct при отказах, DNS/UDP/IPv6, production host/IPC/tunnel. Source/build не закрывают native приёмку. |
 | Запуск/остановка через MCP | Опубликовано в0.8.17 на GitHub: отдельный GUI IPC, разрешение подключения/профилей, exact peer, revision и поколения окна, EOF/revoke без закрытия, stop до фактического сохранения | Exact signed и downloaded gates пройдены в scope [отчёта](../releases/v0.8.17.json). Реальные AI-клиенты, browser observation и обновление Sites ещё открыты. [Подключение](MCP_GUIDE.md#webkit-windows-through-ai--development-slice). |
 | Камера и микрофон | Policy-код есть, в поставке выключены | Реальный capture, отказ/отзыв и изоляция разрешений на точном подписанном кандидате. |
 | Удаление профиля | Опубликовано в0.8.16: public UUID removal, metadata/tombstone fence, inode-safe retirement и явное recovery; source-native и exact signed GUI/hosted gates прошли | Не удалять внутренние папки WebKit вручную. Удаление необратимо; неожиданные локальные файлы сохраняются. Другие macOS — отдельная совместимость. |

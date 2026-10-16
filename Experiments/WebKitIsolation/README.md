@@ -98,6 +98,25 @@ Five portable Mach-service packaging controls are in `test-prepare-qa.py`;
 three prior purpose-string controls are retained in private receipts.
 These are packaging checks, not kernel acceptance.
 
+## Distinct hosts and bounded baseline (development)
+
+The old A/B wrappers copied one Mach-O image. They had different signed bundle
+IDs but the same executable UUID: an unsuitable independent macOS control.
+A and B now build as separate executables; preparation rejects identical,
+missing, duplicate or malformed LC_UUIDs. Five new portable controls passed,
+including rejection of the actual retained old pair. The changed targets
+compiled once in3.363s with the shared cache; previous suites were not replayed.
+
+An optional own-endpoint probe in each headed host emits exactly one redacted
+typed observation and exits. `owned-baseline.py` adds a25s outer deadline and
+requires the matching signed run/role, HTTP200 and an independent origin event.
+It refuses an active QA extension/rule and uses only endpoints it binds itself.
+Missing, duplicate, foreign, failed or timed-out observations cannot pass.
+No addresses, URLs, error payloads or real profile data enter its report.
+This baseline diagnoses the private-IP control before installing a new rule;
+even an all-green baseline does not prove isolation or a working proxy.
+No native result for these new bytes is claimed here.
+
 ## Remaining gates
 
 1. QA extension is durably disabled and all own processes/rules are gone.
@@ -118,6 +137,7 @@ These are packaging checks, not kernel acceptance.
 - [App proxy provider](https://developer.apple.com/documentation/networkextension/neappproxyprovider).
 - [Deployment](https://developer.apple.com/documentation/technotes/tn3134-network-extension-provider-deployment).
 - [App Groups entitlement](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.application-groups): macOS team-prefixed groups and `<group identifier>.<unique name>` Mach naming; actual OS acceptance still required.
+- [Local network privacy, TN3179](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy): distinct executable UUIDs matter. WKWebView/app-proxy exemptions do not establish the cause of the earlier failed control; no TCC reset or global exception is justified.
 - Installed SDK `NEAppProxyProvider.h`, `NEFlowMetaData.h`, `NEAppRule.h` and
   `SystemExtensions.h`; provider semantics do not promise every WK flow is
   captured or correctly attributed. The signature/profile guards are retained.
