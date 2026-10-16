@@ -7,6 +7,9 @@ FONT_VARIANT = 'font-system-v1'
 FONT_PREFIX = 'chromium-15612-font-system-v1'
 SECURITY_VARIANT = 'font-system-security-20261015-v1'
 SECURITY_PREFIX = 'chromium-15612-' + SECURITY_VARIANT
+COMPONENT_VARIANT = 'component-completion-v1'
+COMPONENT_PREFIX = 'chromium-15612-' + COMPONENT_VARIANT
+SUCCESSOR_PREFIXES = (FONT_PREFIX, SECURITY_PREFIX, COMPONENT_PREFIX)
 
 
 @dataclass(frozen=True)
@@ -20,10 +23,12 @@ _VARIANTS = {
     None: SourceVariant(legacy.PREFIX, 'NeAntikM156Qualified20261009', 2),
     FONT_VARIANT: SourceVariant(FONT_PREFIX, 'NeAntikFontSkiaQA_20261016a', 3),
     SECURITY_VARIANT: SourceVariant(SECURITY_PREFIX, 'NeAntikSecurityQA_20261016', 4),
+    COMPONENT_VARIANT: SourceVariant(COMPONENT_PREFIX, 'NeAntikComponentQA_20261016', 5),
 }
 _SUCCESSOR_FIELDS = frozenset({
     'baseSourceContractSHA256', 'baseSourceSnapshotSHA256',
     'baseFullFDObservationSHA256', 'sourceDeltaProofSHA256', 'securityPatchManifestSHA256',
+    'overlayManifestPins',
 })
 
 
@@ -32,7 +37,7 @@ def prefix_for(document: dict) -> str:
         raise legacy.M15612EvidenceError('M156 variant document must be an object')
     if 'sourceVariant' in document:
         marker = document['sourceVariant']
-        if not isinstance(marker, str) or marker not in (FONT_VARIANT, SECURITY_VARIANT):
+        if not isinstance(marker, str) or marker not in _VARIANTS:
             raise legacy.M15612EvidenceError('Unknown M156 source variant')
         prefix = _VARIANTS[marker].prefix
     else:
@@ -67,6 +72,9 @@ def _subject(document: dict):
     if prefix == SECURITY_PREFIX:
         import chromium_15612_security_release_evidence as security
         return security
+    if prefix == COMPONENT_PREFIX:
+        import chromium_15612_component_release_evidence as component
+        return component
     import chromium_15612_font_release_evidence as successor
     return successor
 
@@ -104,10 +112,12 @@ def report_source_fields(lock: dict, *, project_root: Path) -> dict:
         }
     successor = _subject(lock)
     proof = legacy.bound(project_root / 'runtime', prefix + '-source-proof.json', successor.PROOF_SHA256)
-    security = prefix == SECURITY_PREFIX
+    security = prefix in (SECURITY_PREFIX, COMPONENT_PREFIX)
+    component = prefix == COMPONENT_PREFIX
     return {
-        'sourceVariant': SECURITY_VARIANT if security else FONT_VARIANT,
-        'sourceEvidenceMode': ('executed-security-backport-preserved-build-and-postbuild-fd-source-proof'
+        'sourceVariant': lock['sourceVariant'],
+        'sourceEvidenceMode': ('executed-component-completion-preserved-build-and-postbuild-fd-source-proof' if component
+                              else 'executed-security-backport-preserved-build-and-postbuild-fd-source-proof'
                                if security else 'executed-font-system-v1-preserved-build-and-postbuild-fd-source-proof'),
         'baseFullFDObservationSHA256': (proof['base']['fullFDObservationSHA256']
                                          if security else successor.BASE_FD_SHA256),
@@ -130,7 +140,7 @@ def verify_report_source_fields(report: dict, lock: dict, *, project_root: Path)
 def verify_signed_runtime_identity(app: Path, lock: dict, *, project_root: Path) -> None:
     """Compare preserved font bytes; signature/native gates remain separate."""
     prefix = reviewed_lock_prefix(lock)
-    if prefix not in (FONT_PREFIX, SECURITY_PREFIX):
+    if prefix not in SUCCESSOR_PREFIXES:
         raise legacy.M15612EvidenceError('Signed successor identity needs an explicit reviewed variant')
     report_source_fields(lock, project_root=project_root)
     successor = _subject(lock)

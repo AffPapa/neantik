@@ -118,12 +118,14 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
         contract_name=reviewed_lock_prefix(lock)+"-source-contract.json"
     font_variant = False
     security_variant = False
+    component_variant = False
     contract_schema = 3 if semantic else 2
     if version == '156.0.8078.12':
-        from chromium_15612_variant import reviewed_lock_prefix, FONT_PREFIX, SECURITY_PREFIX, descriptor_for
+        from chromium_15612_variant import reviewed_lock_prefix, SECURITY_PREFIX, COMPONENT_PREFIX, SUCCESSOR_PREFIXES, descriptor_for
         prefix = reviewed_lock_prefix(lock)
-        font_variant = prefix in (FONT_PREFIX, SECURITY_PREFIX)
-        security_variant = prefix == SECURITY_PREFIX
+        font_variant = prefix in SUCCESSOR_PREFIXES
+        security_variant = prefix in (SECURITY_PREFIX, COMPONENT_PREFIX)
+        component_variant = prefix == COMPONENT_PREFIX
         contract_schema = descriptor_for(lock).contract_schema
         contract_name = prefix + '-source-contract.json'
     contract_path = project_root / "runtime" / contract_name
@@ -163,6 +165,10 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
                       '- Security source/build/sign lineage does not replace exact signed release qualification.'])
     if semantic:
         lines.extend([f"- Independently authored semantic correction set: `{lock['semanticCorrectionSet']}`", f"- Correction manifest SHA-256: `{lock['correctionsManifestSHA256']}`", "- Historical replay count and new correction count are separate; runtime behavior remains a release gate."])
+    if component_variant:
+        lines.extend(['- Additional component completion patch: `1`; test-only GN adapter: `1`.',
+                      '- Component network requests remain disabled; asynchronous policy refusal completes the queue.',
+                      '- Development C++ and headed observations are separate from exact app/release qualification.'])
     for label, component in (("Chromium", chromium),
                              ("Common Chromium packaging", lock.get("commonChromium")),
                              ("macOS packaging", lock.get("macPackaging"))):
@@ -187,6 +193,9 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
             relative = 'runtime/security-backports-20261015/' + filename
             digest = verified_license(project_root=project_root, relative_path=relative)
             lines.append(f'- `NeAntikRuntimeEvidence/security-backports-20261015/{filename}` — SHA-256 `{digest}`')
+    if component_variant:
+        digest = verified_license(project_root=project_root, relative_path='runtime/component-updates-v1/LICENSE')
+        lines.append(f'- `NeAntikRuntimeEvidence/component-updates-v1/LICENSE` — SHA-256 `{digest}`')
     lines.extend(["", "The fingerprint-chromium license is retained for historical attribution.",
                   f"The owned M{version.split(chr(46))[0]} port is recorded under",
                   f"`runtime/nevision-patches/ports/chromium-{version}/`.", "",

@@ -57,7 +57,7 @@ package enum DirectUpdatePublicationBaseline {
     package static func validateSecurityReview(_ bytes: Data, record: DirectUpdateRuntimeRecord) throws {
         try validate(bytes)
         guard let value = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
-              record == .fontSystemSecurity20261015V1,
+              (record == .fontSystemSecurity20261015V1 || record == .componentCompletionV1),
               value["reference"] as? String == DirectUpdateSecurityRuntimePins.securityReference,
               let required = value["requiredSecurityFixes"] as? [String],
               required.count == DirectUpdateSecurityRuntimePins.securityFixReferences.count,

@@ -1,0 +1,33 @@
+{
+  "appleDeviceTuplesSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+  "baseFullFDObservationSHA256": "55b974bd1c908f92fa7944339489cedbe5afd655b140553ff28545b9890ae97b",
+  "baseSourceContractSHA256": "5da10213b79c97a4bc3b13a0fd6af5e26d6034179bcdbe160bd244463a06f903",
+  "baseSourceSnapshotSHA256": "b2922280ad1114c3180780b7d563c2aaaaa0e267f7c53c7d3b6c1afe479128c7",
+  "buildArgsSHA256": "428054a30abeb212aa3784f524bb27ef4bc0068ab7ebef149866b2b8bff30a3c",
+  "enterpriseCloudContentAnalysis": true,
+  "officialChromiumBase": {
+    "commit": "634b046faf2137b83af71c87baf362b533af9104",
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "156.0.8078.12",
+    "tree": "64e212cac2a53bcbd28b0530cf6eb092141bddec"
+  },
+  "overlayManifestPins": {
+    "runtime/component-updates-v1/manifest.json": "bf9b3b144c0c5ec3861e4d4381be2888a05ae0938067f573c9c6bc7812055da6",
+    "runtime/component-updates-v1/native-tests/manifest.json": "1d2487a7238cb1667907ad2e9bd0f6b6eef3c2a2db7ce2473ab3640573a16ca9"
+  },
+  "rebasePlanSHA256": "fbfb37bfecbf2537ad930b5e1dcebb2a90786dd9db0d8198c295973435f32abe",
+  "releaseReady": false,
+  "safeBrowsingMode": 0,
+  "schemaVersion": 5,
+  "securityBaselineSHA256": "dd9bb55d39b249754489a9c31aea70c6805273a7481b33ce27a5d830122e9447",
+  "securityPatchManifestSHA256": "c35cd893abe1a98284c2146db542c82605c4d0fd7f159f965e0cd88cf0f36cd1",
+  "sourceDeltaProofSHA256": "ec437a25085a5ae1087acc3c5550608891c615903a35e7e0c0a0f048d0e72d39",
+  "sourceInputManifestSHA256": "b88de303a78f219369142fe68619dce0a8750dbae46bd1456a304df0ee9ee30c",
+  "sourceMode": "official-chromium-owned-macos-port",
+  "sourceSnapshotSHA256": "b6c9f068861c68094871ac0156cedc20e74733bce6ad9a712b390b354174d4a0",
+  "sourceVariant": "component-completion-v1",
+  "status": "source-qualified",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "156.0.8078.12",
+  "toolchainLockSHA256": "b7cf82bbad8113e7848df5f885c74be45fca01387d732318576a2f8b949a8371"
+}

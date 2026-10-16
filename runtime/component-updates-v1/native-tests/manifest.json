@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "status": "prepared-test-only-GN-overlay;not-built",
+  "parentManifest": "runtime/component-updates-v1/manifest.json",
+  "parentManifestSHA256": "bf9b3b144c0c5ec3861e4d4381be2888a05ae0938067f573c9c6bc7812055da6",
+  "patchFile": "focused-target.patch",
+  "patchSHA256": "651403a4114703fcc79a35a13f9201e9039357a8e146c35ac97d3cd73fa0ac0a",
+  "files": [
+    {
+      "path": "components/update_client/BUILD.gn",
+      "preimageSHA256": "b5a3db92c4af8a25c24abe370faf9def9682e4a0672e58f3ef67eddf98e2d19a",
+      "postimageSHA256": "1a9f1754445bd933cc69e1ff5dd5900b3919c0ab5c0932aab6d39e2b1a6597b6"
+    }
+  ],
+  "target": "neantik_component_completion_tests",
+  "filter": "Parameterized/UpdateCheckerTest.NeAntikDisabled*/*",
+  "expectedCases": 4,
+  "testSource": "components/update_client/update_checker_unittest.cc",
+  "testOnly": true,
+  "productTargetAffected": false,
+  "actualCppTestsExecuted": false,
+  "license": "BSD-3-Clause; see ../LICENSE"
+}

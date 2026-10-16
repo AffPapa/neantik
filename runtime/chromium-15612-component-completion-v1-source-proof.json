@@ -1,0 +1,233 @@
+{
+  "base": {
+    "fullFDObservationSHA256": "55b974bd1c908f92fa7944339489cedbe5afd655b140553ff28545b9890ae97b",
+    "fullInventorySHA256": "072e98b4d18c302d1faa007921a675580e619e123b824d8971495da741bca209",
+    "sourceContractSHA256": "5da10213b79c97a4bc3b13a0fd6af5e26d6034179bcdbe160bd244463a06f903",
+    "sourceDeltaProofSHA256": "ac345eb85cd0f622e2dac36b5d14b43ad28a4d0e4b19ed967815e54f15226dfc",
+    "sourceSnapshotSHA256": "b2922280ad1114c3180780b7d563c2aaaaa0e267f7c53c7d3b6c1afe479128c7"
+  },
+  "build": {
+    "argsSHA256": "428054a30abeb212aa3784f524bb27ef4bc0068ab7ebef149866b2b8bff30a3c",
+    "binaryBinding": {
+      "architecture": "arm64",
+      "argsGNSHA256": "428054a30abeb212aa3784f524bb27ef4bc0068ab7ebef149866b2b8bff30a3c",
+      "candidateExecutableSHA256": "ba55caca9436c6f16fd6f3e4f7578d87515f161e51c2d0f8f138729086d761f0",
+      "candidateFrameworkSHA256": "1c8ae4c391b4242662cf34e96a0408b45be487ce70ce27f13529837ab3d7019d",
+      "candidateInfoPlistSHA256": "de8aa8559bfb4ab271ab6d8cadb8cfc22f883e4bf1c22355cf82ee504d39c52c",
+      "executableBytes": 52096,
+      "frameworkBytes": 274603040,
+      "sourceVersion": "156.0.8078.12",
+      "status": "bound-to-built-candidate",
+      "targetArchitecture": "arm64"
+    },
+    "exitCode": 0,
+    "jobs": 2,
+    "logSHA256": "f687bcf958a28ece93640eae88bd87d0af4112757deff0e393884ac57a2ce20c",
+    "oldInputsPreserved": true,
+    "receiptSHA256": "46326443ca3f3a4b65f65d1323b3ef08b1fe354a39dd963ec18217774dfc461c",
+    "sourceInputsUnchanged": true,
+    "sourcePostimages": {
+      "chrome/BUILD.gn": "6579c47209ab7a8e5d2586d86105163bb0e23db61888b74603ea12a66b1adcbd",
+      "chrome/app/BUILD.gn": "6616fb9894602668d37e0eb7a7de772048720fcfa901a1469eddf556e962c1f3",
+      "chrome/app/chrome_main_delegate.cc": "99a2cf41ec3e5aee711babef3a7f118f8054cee1b6abdff1cf5430f8ac5ecf59",
+      "chrome/browser/mac/code_sign_clone_manager.mm": "1d3b89ced774829ff5711789acc935f2b6ef47fec0951faec87d344b4d02ee49",
+      "chrome/common/chrome_paths_mac.mm": "77bfc7bbf2a3b3cb02af613490a28d8395ddd301d399b2845d5f5e317e2b80a3",
+      "components/ungoogled/BUILD.gn": "73adccfca4b5b9a8e3949b58135565c11e0f941dcd5eec2a51fcf27fd3995f6d",
+      "components/ungoogled/font_qa_witness_mac.h": "8ca7da89806eda46345d01e1d659f332763e0a262f784543fa6c5add4b8fd8e3",
+      "components/ungoogled/font_qa_witness_mac.mm": "ba4877033bb9fd55a82520dab874bd28e2632b2e651a643dc7c79b98e8031b91",
+      "components/ungoogled/system_font_policy_mac.cc": "79ec0a54c2494082cff801cbd226191ed20a31b5303cbc754aafe674db26890f",
+      "components/ungoogled/system_font_policy_mac.h": "80e257a26c7fdb1ea94e8e839f37aade0494717fda68a3c8e69ae63915ac5d66",
+      "components/ungoogled/system_font_source.cc": "a9a7bcdb47fac744895cd7bb04025813ab5aba70b50ee42875a8810f7693b627",
+      "components/ungoogled/system_font_source.h": "7d297bc1064a50fbcf1191502c1b5fc6de9cb5dfeed4127a29b3ebf18dbc4da5",
+      "components/update_client/BUILD.gn": "1a9f1754445bd933cc69e1ff5dd5900b3919c0ab5c0932aab6d39e2b1a6597b6",
+      "components/update_client/update_checker.cc": "07537de29ecd695a119712d3911dea22ee33b63f67b4bef6cb69312de1641ee0",
+      "components/update_client/update_checker_unittest.cc": "7c62f7e0ea7fcfd4566bdda0bc962e2d231f0ced5caa04d188ec3ca45c2f86a3",
+      "content/browser/BUILD.gn": "d82666c1ea242b7aa020b11b85ae78d09529f36d39ecdb5a258e314c03d895b6",
+      "content/browser/font_access/font_enumeration_data_source_mac.mm": "5fddf858aa8227662737370dff5487344ca3f693ded7bee4bbdb665ea178014d",
+      "content/browser/preloading/prerender/prerender_browsertest.cc": "9cb20c691f6b263ff47c8ad85e8853fe8d6e86414059a2e94bc49003d65150d8",
+      "content/browser/renderer_host/navigation_request.cc": "3dc5b386c55559a6fb3c11b617012b1ae37b687c99498e21e1dc084dc0bf56b3",
+      "content/browser/renderer_host/text_input_manager.cc": "feec096dcc4221af882e4106b6e1080215231331730e4cd38a25b9d0bc17a1bb",
+      "content/browser/renderer_host/text_input_manager.h": "5f9c1b858a8e5be3b4029dffd593382b2f72f77fc0e65575545819c362a09172",
+      "content/browser/renderer_host/text_input_manager_unittest.cc": "849d2554b5803630bbd2e01e2ae207a61aec57f6d90f97fe80450a07dcbb6cba",
+      "content/browser/worker_host/dedicated_worker_host.cc": "1059947e94acf9ae2d738f37a677048a528104dce3dd9f9ab5b53b35f4291e60",
+      "content/browser/worker_host/dedicated_worker_host.h": "810dfce6cfb38dc65daa68196673c45e15546caeeb83f7ded144f6dbbe56c065",
+      "content/browser/worker_host/dedicated_worker_service_impl_unittest.cc": "748d2e01df6982e246f6bc3cf406e2585ec78920bffe6898443a4d3fd7a9b639",
+      "content/browser/worker_host/shared_worker_host.cc": "5a400cd44f961e2d29ef28af847e7abbb065d7aa9e78bba0562e63b3efdff660",
+      "content/browser/worker_host/shared_worker_host_unittest.cc": "6e3df861c38a777c3414408fe27d601b1ef7c8c458d2f2b89af7000bb07ef30d",
+      "content/browser/worker_host/worker_script_fetcher.cc": "61f4f378df80f9f6ef7ad997f46b02b421a97607551d2fb36f61f46df79118aa",
+      "content/browser/worker_host/worker_script_fetcher.h": "d9657bec69927ebb658ef62ac03f74aeb3e48b603f0cdb67b2b9439edb8bc048",
+      "content/browser/worker_host/worker_script_fetcher_unittest.cc": "ebae33bf36e3f42386afb4e8092fcabaf9585feb90470cb97e27600a9342aa5d",
+      "content/common/features.cc": "03263e4aec84f206161fdb5a19e6fb33b3175cb1b4d26ef81b93fa9b49ff7697",
+      "content/common/features.h": "41eb5abf26a153193078a8289d562706f370b141e7d916a8215d4680eddf07d6",
+      "content/renderer/BUILD.gn": "7af5dced4436033ef53a35a6780728b32837f4ba94a8ae52af4edf4a05c73ae5",
+      "content/renderer/renderer_main.cc": "63535f2dd7bf1eb5cf5231416ef56467c7e0ddce158ea2a771c8c20545112ba7",
+      "skia/BUILD.gn": "93b498a964250eb93d018cb32dc4d176754ce907d2629fd59c87e2a5a1f3ff7e",
+      "third_party/blink/renderer/core/dom/element.cc": "a5b9e3ffc77f8a1d73c1775da6adad3f1942c686d220c6709721f22bee6025f8",
+      "third_party/blink/renderer/core/svg/svg_resource.cc": "9daa2db1fd2bf11d120ea111f332f57f4209acd3f12153b55e7dee26f9d7f464",
+      "third_party/blink/renderer/core/workers/worker_settings.cc": "5f150428ab8617f088f9001c944cb7fe97906dec13ce853e6dbeb086dc6db089",
+      "third_party/blink/renderer/platform/BUILD.gn": "c62be39226f0a96a7bd674b82acf81411b3aa8e78601f8dd29bcb20dcf724ac2",
+      "third_party/blink/renderer/platform/fonts/generic_font_family_settings.cc": "16c68a6470fc0b08c2ccfefe458e574109485e5b0d769d62019d9f09cee09c4c",
+      "third_party/blink/renderer/platform/fonts/mac/font_cache_mac.mm": "02a168b7e443c9e93a624fa76ff3854f8f1b1e3acdb83f859bcaaa042d23f04a",
+      "third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm": "584718b5cbd03aab84758b4e13cb93776264a1e2def4c205a9cfa180c9fcb075",
+      "third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm": "4a941c7e89bb007a4ec0ef34f59bf82e189fc785e4a4483956adaca3205fb89e",
+      "third_party/blink/renderer/platform/fonts/neantik_system_generic_defaults.h": "8a483ceec214af118355323c5fb6148aa906f5447fbe33500049720f4cc60bf2",
+      "third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-credentialless.tentative.https.any.worker-expected.txt": null,
+      "third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-require-corp.tentative.https.any.worker-expected.txt": null,
+      "third_party/blink/web_tests/external/wpt/html/semantics/forms/the-datalist-element/list-id-insertion-crash.html": "4873bd28a655ddc69f4149d571b0239c54078956493a45ecb8cbb34fb721eee2",
+      "third_party/skia/src/ports/SkFontMgr_mac_ct.cpp": "2b45571117d403402a7a6ef27acc6062f7feddb66ac9faf00f2456e01a2eb1ba",
+      "v8/src/codegen/compiler.cc": "0cd4c4b3421835473543da1443c74a1ead6ff7d971cf4b6409b0b3c939977f8b",
+      "v8/src/codegen/compiler.h": "718b8ce8705db0ecbbd529e4f8df869664a68e11b67cd8304534771fce5e75b5",
+      "v8/src/compiler/js-generic-lowering.cc": "1a864183e0cdc4526ab3a2bdea678c4604c6329ea0463c528fbde0b7f014eaf7",
+      "v8/src/compiler/js-intrinsic-lowering.cc": "5318a383ed858415e39abd2e279d8cf3200d6c5dc98a8bb928345d0aef520623",
+      "v8/src/compiler/js-operator.cc": "f72dfae3776214a6fb4fa92e567bd8a0dc09fc52c54bd11bc2054947e93262e0",
+      "v8/src/compiler/operator-properties.cc": "5d42e856941981753953067bde5b5112c9e991fbb6f4cd0ff03ee7c55c8c2300",
+      "v8/src/maglev/maglev-graph-builder.cc": "7324e5934240486a05c4215b543c3cfe08e86e3934b5fdd49d4d422ded32ba7d",
+      "v8/src/snapshot/code-serializer.cc": "fd5d59e06771283ee3ea21add0cf5977d180b1912e015f678819ca81295a70db",
+      "v8/src/snapshot/code-serializer.h": "b42a2c001c7c41d4f4035413f8c6e1edb75b088aec24223c6b6451d80a33ff34",
+      "v8/test/mjsunit/compiler/regress-569659194-1.js": "7ffb14d330d3e22a2124ec9fdb5917fa2d266ad0004b70a8878e2c9f314df2dc",
+      "v8/test/mjsunit/compiler/regress-569659194-2.js": "54c5624fd8a3f3a5b278a5d5706e841f032d12ff046a163cc1c98a5fcac3d23e",
+      "v8/test/mjsunit/compiler/regress-569659194-3.js": "e450e23e470c36b77420091f3f19e87a8fd75038bf28700060d901a62566b769",
+      "v8/test/mjsunit/maglev/regress-569286602-1.js": "229c10c31d2374c1453061e17eaacbea0896a1015c5a94911e64fa3a42b8b364",
+      "v8/test/mjsunit/maglev/regress-569286602-2.js": "4d53270f8b66ee3c6f3d04f3675c4a50ae3d9b30075bcd91d9a65c142f14ee50",
+      "v8/test/unittests/api/deserialize-unittest.cc": "1d3fb2324300b5c04596ba493d063a88638f06a6bc8a648730c273845b0ec5ce"
+    },
+    "sourcePostimagesUnchanged": true,
+    "targets": [
+      "neantik_component_completion_tests",
+      "chrome"
+    ],
+    "toolHashes": {
+      "buildtools/mac/gn": "8b50f57cfac9eba62f07ce5d9ad15d738c6bfeb6e58de33fe2b586800545bee6",
+      "third_party/llvm-build/Release+Asserts/bin/clang": "a0acdda5df49257a38004653c4689a76be76e90bdf01393be2055848528069fd",
+      "third_party/ninja/ninja": "6c03e94e3ee141301a7e5151227508ac8cec05c12d79ed9240062a86a0e2d14f",
+      "third_party/rust-toolchain/bin/bindgen": "b29fedc4a718ace0a7beaa73e95301247a7b4d8ad67465d3bca0a9252bcadae8",
+      "third_party/rust-toolchain/bin/cc_bindings_from_rs": "2ad8ff14e11986b321150952422de1b23e706b26824ba01ff375668c4d8edbd1",
+      "third_party/rust-toolchain/bin/rustc": "ea97a97cdfa70463afb5408af91d48aad1b58792037432319ac07b1a445f686b"
+    },
+    "toolsPreserved": true
+  },
+  "changes": [
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "components/update_client/BUILD.gn",
+        "sha256": "1a9f1754445bd933cc69e1ff5dd5900b3919c0ab5c0932aab6d39e2b1a6597b6",
+        "sizeBytes": 11393
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "components/update_client/BUILD.gn",
+        "sha256": "b5a3db92c4af8a25c24abe370faf9def9682e4a0672e58f3ef67eddf98e2d19a",
+        "sizeBytes": 10727
+      },
+      "path": "components/update_client/BUILD.gn"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "components/update_client/update_checker.cc",
+        "sha256": "07537de29ecd695a119712d3911dea22ee33b63f67b4bef6cb69312de1641ee0",
+        "sizeBytes": 15074
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "components/update_client/update_checker.cc",
+        "sha256": "fcb4d0bfaa91e9a656109fed4a894bf1cdd840e52dda024aa95bf061eb5a3523",
+        "sizeBytes": 14791
+      },
+      "path": "components/update_client/update_checker.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "components/update_client/update_checker_unittest.cc",
+        "sha256": "7c62f7e0ea7fcfd4566bdda0bc962e2d231f0ced5caa04d188ec3ca45c2f86a3",
+        "sizeBytes": 54670
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "components/update_client/update_checker_unittest.cc",
+        "sha256": "05ca6672465207bfea10245f0ef49aa674462739176b52b3fe27c690f625231c",
+        "sizeBytes": 52321
+      },
+      "path": "components/update_client/update_checker_unittest.cc"
+    }
+  ],
+  "developmentObservation": {
+    "path": "docs/evidence/component-completion-development.json",
+    "sha256": "565c57197db6dcef0528c8528ab032d7ef1c1af85a68c1e4d87c76c1298eba7b"
+  },
+  "kind": "component-completion-executed-build-and-postbuild-source-proof",
+  "limitations": [
+    "Research-signed raw runtime; no manager candidate, notarization or public binary qualification.",
+    "Policy refusal is intentional. No CUP refusal, installation or actual proxy-route proof is claimed.",
+    "Zero observed requests applies to the bounded foreground component fixture, not all background traffic/DNS/UDP.",
+    "Published0.8.20(132) bytes remain unchanged. This runtime is not yet included in an app release."
+  ],
+  "overlayManifestPins": {
+    "runtime/component-updates-v1/manifest.json": "bf9b3b144c0c5ec3861e4d4381be2888a05ae0938067f573c9c6bc7812055da6",
+    "runtime/component-updates-v1/native-tests/manifest.json": "1d2487a7238cb1667907ad2e9bd0f6b6eef3c2a2db7ce2473ab3640573a16ca9"
+  },
+  "postbuildObservation": {
+    "ancestorFullSHA256": "072e98b4d18c302d1faa007921a675580e619e123b824d8971495da741bca209",
+    "atomicFilesystemSnapshot": false,
+    "deletedPathCount": 3250,
+    "deletedPathsSHA256": "5e0f5abbd884d9c3c03885807e89ee14a70101c473f5092d83afd59f3f4f0036",
+    "exclusiveSourceCustodyRequired": true,
+    "fullInventorySHA256": "df313c72f2779cff9ee9bb04179502172edbfea690d1f69e85380fa0b9527f11",
+    "historicalBuildObservationRelabeled": false,
+    "observation": {
+      "entriesSHA256": "4d7ae8cae704845e39095f3f36a8a15326bf6235dad927b2c777132b6826f870",
+      "exactCoverageVerified": true,
+      "explicitCopyGroupsObserved": 83,
+      "fdSafeFullObservationVerified": true,
+      "observedDirectoryCount": 94535,
+      "sourceFileCount": 1062659,
+      "unknownHardlinksRejected": true
+    },
+    "receiptSHA256": "9c3f31babf923ffb23114fe3b92df565db971d223756528b641e3b4aa8846e3d",
+    "sourceExecution": false
+  },
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "signing": {
+    "buildReceiptSHA256": "46326443ca3f3a4b65f65d1323b3ef08b1fe354a39dd963ec18217774dfc461c",
+    "rawInputUnchanged": true,
+    "receiptSHA256": "6eb25946da76e6926495d760228bf13359ad73cd17ff9070fa1b7c0b63db3c34",
+    "runtimeTree": {
+      "bytes": 411230673,
+      "digest": "5902be29e448d51ab0e2223d6539fbe5156466fee8967e2882dc1bd122a3ff04",
+      "entries": 948,
+      "machoCount": 16
+    },
+    "signedCodeClosure": {
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Alerts).app/Contents/MacOS/NeAntik Browser Helper (Alerts)": "e0eb1f366d044c09f99f9e418f19467fe562e52ffaac5278b9e11699b8cce6ae",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Aperitif Alerts).app/Contents/MacOS/NeAntik Browser Helper (Aperitif Alerts)": "cf253fc56a7cb82aa27b1426ad6597ea4655c87a63d1930b552915b9dac57fd0",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Aperitif GPU).app/Contents/MacOS/NeAntik Browser Helper (Aperitif GPU)": "a8b1abc849ca964f46b441c64dcd9b88c3447b0e1690c08e734daffe87765ce5",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Aperitif Renderer).app/Contents/MacOS/NeAntik Browser Helper (Aperitif Renderer)": "8d5b3cdf54ceb6aea6b2ab4c656b641bc0a910068f9ef24ef293e6e5ecca1858",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Aperitif).app/Contents/MacOS/NeAntik Browser Helper (Aperitif)": "02a7c118835398e868f9912010106891364d1ce1d4d462c9bff2ba76c89106c7",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (GPU).app/Contents/MacOS/NeAntik Browser Helper (GPU)": "3f9a0ede695605580fd1d7dd22410929efd63d3969602d85fa770bde36790e25",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Renderer).app/Contents/MacOS/NeAntik Browser Helper (Renderer)": "7c35a27ca4901d3b914b6c9a6e9eb7927af90949c7d4a2bc864cce09e7eec424",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper.app/Contents/MacOS/NeAntik Browser Helper": "c14c2f7922636c7abd2132a0568341ffbe3c7e1ef2548c72599236e86fcd5d3b",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/app_mode_loader": "fc9068b6a0ab95e89f154e4e3960bec007ec01ee41aab5ac157050bbef82048e",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/chrome_crashpad_handler": "b32682f8a4eeb4935f47b7ace43c5321478e01b173dff19285a5ab46a8687562",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/web_app_shortcut_copier": "fd9e8534f1e5172650366ef92140c8e9712509a86682520ff8278c18aa6ca06d",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Libraries/libaperitif.dylib": "04f6766a6616bfbff641783e1aed81c9cc0af264f1ee7e027fa304967bdd00a1",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Libraries/libvk_swiftshader.dylib": "924cec8aef08a09d26282d55488693d02bee4526a1674490b4d9579392f2c03b",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Libraries/libvulkan.dylib": "d3be1f7285c5bb3283df88dc4f17891db6b44ea1b87c8054fd471248b31289ac",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/NeAntik Browser Framework": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7",
+      "Contents/MacOS/NeAntik Browser": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc"
+    },
+    "signerIdentity": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "status": "signed-research-only"
+  },
+  "sourceSnapshotSHA256": "b6c9f068861c68094871ac0156cedc20e74733bce6ad9a712b390b354174d4a0",
+  "sourceVariant": "component-completion-v1",
+  "targetChromiumVersion": "156.0.8078.12"
+}

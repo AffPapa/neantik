@@ -17,9 +17,9 @@ spec.loader.exec_module(pins)
 
 
 class FontRuntimeBindingTests(unittest.TestCase):
-    def test_three_complete_compiled_records_not_first_digest_or_cross_product(self):
+    def test_complete_compiled_records_not_first_digest_or_cross_product(self):
         records = pins.compiled_records(ROOT)
-        self.assertEqual([r['name'] for r in records], ['final9', 'font-system-v1', 'font-system-security-20261015-v1'])
+        self.assertEqual([r['name'] for r in records], ['final9', 'font-system-v1', 'font-system-security-20261015-v1', 'component-completion-v1'])
         for runtime in records:
             for evidence in records:
                 for raw_report in records:

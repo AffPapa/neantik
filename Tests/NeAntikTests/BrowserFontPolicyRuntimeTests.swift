@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import DirectUpdateCore
 import Testing
 @testable import NeAntik
 
@@ -14,7 +15,7 @@ struct BrowserFontPolicyRuntimeTests {
         let record = try #require(BrowserFontPolicyRuntime.supportedRecords.first {
             $0.executableSHA256 == runtime["executableSHA256"] as? String
         })
-        #expect(BrowserFontPolicyRuntime.supportedRecords.count == 2)
+        #expect(BrowserFontPolicyRuntime.supportedRecords.count == 3)
         #expect(record.runtimeDigest == tree["digest"] as? String)
         #expect(record.entries == tree["entries"] as? Int)
         #expect(record.regularBytes == tree["bytes"] as? Int64)
@@ -33,6 +34,22 @@ struct BrowserFontPolicyRuntimeTests {
                     entries: selected.entries, bytes: selected.regularBytes, machoCount: selected.machoCount, record: selected))
             }
         }
+    }
+
+    @Test func componentSuccessorPolicyBindsItsOwnDevelopmentClosure() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let report = try #require(JSONSerialization.jsonObject(with: Data(contentsOf:
+            root.appendingPathComponent("docs/evidence/component-completion-development.json"))) as? [String: Any])
+        let tree = try #require(report["signedRuntimeTree"] as? [String: Any])
+        let selected = try #require(BrowserFontPolicyRuntime.supportedRecords.first {
+            $0.sourceContractSHA256 == DirectUpdateRuntimeRecord.componentCompletionV1.reportHashes["sourceContractSHA256"]
+        })
+        #expect(selected.runtimeDigest == tree["digest"] as? String)
+        #expect(selected.entries == tree["entries"] as? Int)
+        #expect(selected.regularBytes == tree["bytes"] as? Int64)
+        #expect(report["releaseQualified"] as? Bool == false)
+        #expect(selected.runtimeDigest != BrowserFontPolicyRuntime.runtimeDigest)
     }
 
     @Test func sourceAndHeadedEvidenceAgreeWithIndependentRuntimePolicy() throws {

@@ -15,6 +15,8 @@ import DirectInstallFilesystem
         case .fontSystemV1: path = "runtime/chromium-15612-font-system-v1-runtime-verification.json"
         case .fontSystemSecurity20261015V1:
             path = "runtime/chromium-15612-font-system-security-20261015-v1-runtime-verification.json"
+        case .componentCompletionV1:
+            path = "runtime/chromium-15612-component-completion-v1-runtime-verification.json"
         }
         let bytes = try Data(contentsOf: root.appendingPathComponent(path))
         #expect(BackupFS.hex(SHA256.hash(data: bytes)) == record.reportDigest)

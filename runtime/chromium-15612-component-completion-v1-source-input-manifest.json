@@ -1,0 +1,16 @@
+{
+  "baseSourceInputManifestSHA256": "da7e2a7c3d4e65252dc037bb9892a08bdaa64c32a1858bb85319cc7d56b03075",
+  "buildArgsSHA256": "428054a30abeb212aa3784f524bb27ef4bc0068ab7ebef149866b2b8bff30a3c",
+  "chromiumVersion": "156.0.8078.12",
+  "overlayManifestPins": {
+    "runtime/component-updates-v1/manifest.json": "bf9b3b144c0c5ec3861e4d4381be2888a05ae0938067f573c9c6bc7812055da6",
+    "runtime/component-updates-v1/native-tests/manifest.json": "1d2487a7238cb1667907ad2e9bd0f6b6eef3c2a2db7ce2473ab3640573a16ca9"
+  },
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "sourceDeltaProofSHA256": "ec437a25085a5ae1087acc3c5550608891c615903a35e7e0c0a0f048d0e72d39",
+  "sourceInputsReady": true,
+  "sourceSnapshotSHA256": "b6c9f068861c68094871ac0156cedc20e74733bce6ad9a712b390b354174d4a0",
+  "sourceVariant": "component-completion-v1",
+  "status": "source-qualified"
+}

@@ -128,6 +128,7 @@ def compiled_records(project: Path) -> list[dict]:
         ('final9', 'Sources/DirectUpdateCore/DirectUpdateRuntimeProvenance.swift'),
         ('font-system-v1', 'Sources/DirectUpdateCore/DirectUpdateFontRuntimePins.swift'),
         ('font-system-security-20261015-v1', 'Sources/DirectUpdateCore/DirectUpdateSecurityRuntimePins.swift'),
+        ('component-completion-v1', 'Sources/DirectUpdateCore/DirectUpdateComponentRuntimePins.swift'),
     ):
         path = project / relative
         if path.is_symlink() or path.stat().st_size > 256 * 1024:

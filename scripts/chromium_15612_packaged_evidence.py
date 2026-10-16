@@ -22,7 +22,7 @@ def names(project: Path, lock: dict | None = None) -> list[str]:
         elif not path.is_dir():
             raise ValueError('M156 proof contains a special file')
     prefix = variant.reviewed_lock_prefix(lock) if lock is not None else source.PREFIX
-    if prefix in (variant.FONT_PREFIX, variant.SECURITY_PREFIX):
+    if prefix in variant.SUCCESSOR_PREFIXES:
         import chromium_15612_font_release_evidence as font
         result += [font.PREFIX + '-' + suffix + '.json' for suffix in (
             'source-contract', 'source-input-manifest', 'source-snapshot', 'port-candidate', 'source-proof')]
@@ -40,7 +40,7 @@ def names(project: Path, lock: dict | None = None) -> list[str]:
         from chromium_15612_font_packaging import manifest, MANIFEST
         manifest(project)
         result.append(MANIFEST)
-    if prefix == variant.SECURITY_PREFIX:
+    if prefix in (variant.SECURITY_PREFIX, variant.COMPONENT_PREFIX):
         import chromium_15612_security_release_evidence as security
         # Authenticate the complete overlay before deriving any copy names.
         security.verify_contract(project)
@@ -51,6 +51,16 @@ def names(project: Path, lock: dict | None = None) -> list[str]:
         result.append(relative + 'manifest.json')
         result += [item['path'].removeprefix('runtime/') for item in manifest['orderedPatches']]
         result += [relative + name for name in manifest['licenseFiles']]
+    if prefix == variant.COMPONENT_PREFIX:
+        import chromium_15612_component_release_evidence as component
+        component.verify_contract(project)
+        result += [component.PREFIX + '-' + suffix + '.json' for suffix in (
+            'source-contract', 'source-input-manifest', 'source-snapshot', 'port-candidate', 'source-proof')]
+        for name in component.MANIFESTS:
+            manifest = source.read_object(project / name, 'component source manifest')
+            result += [name.removeprefix('runtime/'),
+                       str(Path(name).parent / manifest['patchFile']).removeprefix('runtime/')]
+        result += ['component-updates-v1/LICENSE', 'component-updates-v1/development-observation.json']
     source.need(len(result) == len(set(result)), 'Duplicate M156 packaged dependency')
     return result
 
@@ -65,9 +75,12 @@ def process(project: Path, evidence: Path, lock: dict, *, copy: bool = False) ->
     for relative in dependencies:
         # This single, public dependency lives outside runtime. Never copy the
         # private headed trace or broaden this mapping to a research directory.
-        src = (source.safe_relative_regular(project, 'docs/evidence/font-variation-headed-development.json')
-               if relative == 'font-policy-v1/headed-development.json'
-               else source.safe_relative_regular(project / 'runtime', relative))
+        public_documents = {
+            'font-policy-v1/headed-development.json': 'docs/evidence/font-variation-headed-development.json',
+            'component-updates-v1/development-observation.json': 'docs/evidence/component-completion-development.json',
+        }
+        src = (source.safe_relative_regular(project, public_documents[relative])
+               if relative in public_documents else source.safe_relative_regular(project / 'runtime', relative))
         dst = evidence / relative
         if any(p.is_symlink() for p in (dst, *dst.parents) if p == evidence or p.is_relative_to(evidence)):
             raise ValueError('Packaged M156 evidence crosses a symlink')
@@ -79,7 +92,9 @@ def process(project: Path, evidence: Path, lock: dict, *, copy: bool = False) ->
         if source.sha256_file(source.safe_relative_regular(evidence, relative)) != source.sha256_file(src):
             raise ValueError('Packaged M156 evidence differs: ' + relative)
     source.evidence_documents(evidence / (source.PREFIX + '-source-evidence'))
-    subtrees = (('font-policy-v1', 'security-backports-20261015') if prefix == variant.SECURITY_PREFIX
+    subtrees = (('font-policy-v1', 'security-backports-20261015', 'component-updates-v1')
+                if prefix == variant.COMPONENT_PREFIX else
+                ('font-policy-v1', 'security-backports-20261015') if prefix == variant.SECURITY_PREFIX
                 else ('font-policy-v1',) if prefix == variant.FONT_PREFIX else ())
     for subtree in subtrees:
         expected = {name for name in dependencies if name.startswith(subtree + '/')}
@@ -97,7 +112,7 @@ def normalize_font_modes(project: Path, evidence: Path, lock: dict) -> None:
     Verification paths never change modes. Extra members, links and shared
     files are refused before touching any entry.
     """
-    source.need(variant.reviewed_lock_prefix(lock) in (variant.FONT_PREFIX, variant.SECURITY_PREFIX),
+    source.need(variant.reviewed_lock_prefix(lock) in variant.SUCCESSOR_PREFIXES,
                 'Mode recipe needs an explicit font successor')
     process(project, evidence, lock)
     common = {'fingerprint-chromium.lock.json', 'source-provenance.json', 'args.gn',

@@ -1,0 +1,128 @@
+{
+  "actualCpp": {
+    "actualOldObjectRelinked": true,
+    "allOwnedFixturesRemoved": true,
+    "negativeLinkSHA256": "2ebd73281292c227bd9198b9feee87e667375547b749dec656ac60de2db77eb3",
+    "negativeReceiptSHA256": "066eca376b830826695d02b04289395cdfec844ddd38000d491418cf08f64ad3",
+    "negativeXMLSHA256": "c355cf46457c7fd1f8de932fb65be080d65215fcb85adad32842915d7f5932c9",
+    "oldImplementationFailures": 4,
+    "positiveCases": 4,
+    "positiveReceiptSHA256": "b64abef75a8274a045facb7a94f9a4431d092cfa23406b8ffd814b39b06516f6",
+    "positiveXMLSHA256": "aff80c9553f8b46a7f2e7f92149654f95d3964410eedfa12b2276c1c654d4a3d",
+    "testNames": [
+      "NeAntikDisabledChecksCompleteAsynchronously/0",
+      "NeAntikDisabledChecksCompleteAsynchronously/1",
+      "NeAntikDisabledCompletionSurvivesCheckerDestruction/0",
+      "NeAntikDisabledCompletionSurvivesCheckerDestruction/1"
+    ]
+  },
+  "build": {
+    "jobs": 2,
+    "priorRuntimePreserved": true,
+    "receiptSHA256": "46326443ca3f3a4b65f65d1323b3ef08b1fe354a39dd963ec18217774dfc461c",
+    "seconds": 363.537,
+    "targets": [
+      "neantik_component_completion_tests",
+      "chrome"
+    ]
+  },
+  "chromiumVersion": "156.0.8078.12",
+  "headed": {
+    "actualBrowser": true,
+    "cleanup": {
+      "exitCode": 0,
+      "graceful": true,
+      "ownedProcessesRemaining": 0,
+      "ownedProfileRemoved": true
+    },
+    "collectorCanaries": {
+      "originCounted": true,
+      "proxyCountedRejected": true,
+      "resetVerified": true
+    },
+    "componentRequests": 0,
+    "cupRefusalProved": false,
+    "elapsedMs": [
+      5,
+      1
+    ],
+    "headed": true,
+    "operations": 2,
+    "persistedError": {
+      "category": 5,
+      "code": -10014,
+      "extraCode": 0
+    },
+    "proxyRequests": 0,
+    "receiptSHA256": "5cacf40aa2709e3876653bec5dceeeb03800dd5475b7309db5a55c454c563296",
+    "releaseQualified": false,
+    "routeProved": false,
+    "status": "observed-scoped-component-operation-completion"
+  },
+  "limitations": [
+    "Research-signed raw runtime; no manager candidate, notarization or public binary qualification.",
+    "Policy refusal is intentional. No CUP refusal, installation or actual proxy-route proof is claimed.",
+    "Zero observed requests applies to the bounded foreground component fixture, not all background traffic/DNS/UDP.",
+    "Published0.8.20(132) bytes remain unchanged. This runtime is not yet included in an app release.",
+    "Initial132 native activation failure and intermediate setup/cleanup failures remain in private evidence."
+  ],
+  "offlineReview": {
+    "headed": "3c92f3ee928d9445e7c26f093e82697a73684ee8b69d176dcd62db3b889118a6",
+    "newBrowserLaunch": false,
+    "sourceDelta": "cbac181cd249d660beb2d4bb92bb1fcb0a5600ab8368b4c21b7210e1cb69369b"
+  },
+  "releaseQualified": false,
+  "retainedFailures": [
+    {
+      "reason": "Missing ICU resource; zero test cases. Exact ICU resource bound before negative-only retry.",
+      "stage": "negative-test-setup1"
+    },
+    {
+      "reason": "Immediate inventory raced natural Crashpad drain. Original overall failure retained; second run waits bounded drain.",
+      "stage": "headed-cleanup1"
+    }
+  ],
+  "schemaVersion": 1,
+  "signedCodeClosure": {
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Alerts).app/Contents/MacOS/NeAntik Browser Helper (Alerts)": "e0eb1f366d044c09f99f9e418f19467fe562e52ffaac5278b9e11699b8cce6ae",
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Aperitif Alerts).app/Contents/MacOS/NeAntik Browser Helper (Aperitif Alerts)": "cf253fc56a7cb82aa27b1426ad6597ea4655c87a63d1930b552915b9dac57fd0",
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Aperitif GPU).app/Contents/MacOS/NeAntik Browser Helper (Aperitif GPU)": "a8b1abc849ca964f46b441c64dcd9b88c3447b0e1690c08e734daffe87765ce5",
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Aperitif Renderer).app/Contents/MacOS/NeAntik Browser Helper (Aperitif Renderer)": "8d5b3cdf54ceb6aea6b2ab4c656b641bc0a910068f9ef24ef293e6e5ecca1858",
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Aperitif).app/Contents/MacOS/NeAntik Browser Helper (Aperitif)": "02a7c118835398e868f9912010106891364d1ce1d4d462c9bff2ba76c89106c7",
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (GPU).app/Contents/MacOS/NeAntik Browser Helper (GPU)": "3f9a0ede695605580fd1d7dd22410929efd63d3969602d85fa770bde36790e25",
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Renderer).app/Contents/MacOS/NeAntik Browser Helper (Renderer)": "7c35a27ca4901d3b914b6c9a6e9eb7927af90949c7d4a2bc864cce09e7eec424",
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper.app/Contents/MacOS/NeAntik Browser Helper": "c14c2f7922636c7abd2132a0568341ffbe3c7e1ef2548c72599236e86fcd5d3b",
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/app_mode_loader": "fc9068b6a0ab95e89f154e4e3960bec007ec01ee41aab5ac157050bbef82048e",
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/chrome_crashpad_handler": "b32682f8a4eeb4935f47b7ace43c5321478e01b173dff19285a5ab46a8687562",
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/web_app_shortcut_copier": "fd9e8534f1e5172650366ef92140c8e9712509a86682520ff8278c18aa6ca06d",
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Libraries/libaperitif.dylib": "04f6766a6616bfbff641783e1aed81c9cc0af264f1ee7e027fa304967bdd00a1",
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Libraries/libvk_swiftshader.dylib": "924cec8aef08a09d26282d55488693d02bee4526a1674490b4d9579392f2c03b",
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Libraries/libvulkan.dylib": "d3be1f7285c5bb3283df88dc4f17891db6b44ea1b87c8054fd471248b31289ac",
+    "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/NeAntik Browser Framework": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7",
+    "Contents/MacOS/NeAntik Browser": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc"
+  },
+  "signedRuntimeTree": {
+    "bytes": 411230673,
+    "digest": "5902be29e448d51ab0e2223d6539fbe5156466fee8967e2882dc1bd122a3ff04",
+    "entries": 948,
+    "machoCount": 16
+  },
+  "sourceManifestPins": {
+    "runtime/component-updates-v1/manifest.json": "bf9b3b144c0c5ec3861e4d4381be2888a05ae0938067f573c9c6bc7812055da6",
+    "runtime/component-updates-v1/native-tests/manifest.json": "1d2487a7238cb1667907ad2e9bd0f6b6eef3c2a2db7ce2473ab3640573a16ca9"
+  },
+  "sourceObservation": {
+    "atomicFilesystemSnapshot": false,
+    "changedPaths": [
+      "components/update_client/BUILD.gn",
+      "components/update_client/update_checker.cc",
+      "components/update_client/update_checker_unittest.cc"
+    ],
+    "entriesSHA256": "4d7ae8cae704845e39095f3f36a8a15326bf6235dad927b2c777132b6826f870",
+    "exclusiveSourceCustodyRequired": true,
+    "fileCount": 1062659,
+    "receiptSHA256": "9c3f31babf923ffb23114fe3b92df565db971d223756528b641e3b4aa8846e3d"
+  },
+  "sourceVariant": "component-completion-v1",
+  "status": "development-runtime-observed;not-release-qualified"
+}

@@ -34,18 +34,22 @@ The two added parameterized tests cover foreground and background calls:
 
 ## Qualification boundary
 
-`manifest.json` pins the old source contract, original privacy patch,
-patch bytes and both full source pre/postimages. Exact forward/reverse apply
-and compilation of both changed translation units passed on an owned copy.
-The build source, original build output, signed app and release assets were
-not changed. Compilation does **not** mean these C++ tests were executed.
+`manifest.json` preserves the initial source-only preparation: the old source
+contract, original privacy patch, patch bytes and both pre/postimages. Its
+historical execution fields are not rewritten after subsequent work.
 
-Before delivery, integrate this patch after the pinned privacy patch into a
-new source/runtime contract, execute the bounded C++ tests (including the old
-silent-return negative), then verify the actual headed error/settled state,
-queue completion and no component request on the exact successor candidate.
-The current native activation failure must remain in the evidence history.
-The remaining background/DNS/UDP/route work is still separate.
+The successor development runtime has now been built and signed separately.
+Four actual C++ cases pass; the same tests linked against the old checker fail
+all four cases. Two consecutive headed foreground operations reach the visible
+error state and persist `5 / -10014 / 0`, with zero observed component requests.
+Collector canaries, unknown-component control and owned-process cleanup pass.
+See [development evidence](../../docs/evidence/component-completion-development.json)
+and [source proof](../chromium-15612-component-completion-v1-source-proof.json).
+
+These observations do not qualify a manager/app release or prove the proxy
+route, CUP refusal, component installation, global DNS/UDP or all background
+traffic. The original 132 activation failure and subsequent setup/cleanup
+failures remain in the evidence history. Published 132 bytes stay unchanged.
 
 ## License
 

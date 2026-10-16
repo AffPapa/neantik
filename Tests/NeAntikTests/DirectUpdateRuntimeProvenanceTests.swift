@@ -199,9 +199,14 @@ private final class RuntimeClosureFixture: @unchecked Sendable {
     @Test func actualPublicationReviewRequiresExactCompiledSourceAndAllFixes() throws {
         let repository = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
             .deletingLastPathComponent().deletingLastPathComponent()
-        let bytes = try Data(contentsOf: repository.appendingPathComponent("runtime/security-baseline.json"))
+        // This is the predecessor's completed publication review. Its runtime
+        // report intentionally binds an earlier, unreviewed historical baseline;
+        // those two roles must not be confused when today's contract advances.
+        let digest = "0e5cba79267a6b9b974e078118631b1a1c224475c29e6c106dfa129a11dfd281"
+        let bytes = try Data(contentsOf: repository.appendingPathComponent("runtime/security-baselines/\(digest).json"))
+        #expect(BackupFS.hex(SHA256.hash(data: bytes)) == digest)
         try DirectUpdatePublicationBaseline.validateSecurityReview(bytes, record: .fontSystemSecurity20261015V1)
-        for record in [DirectUpdateRuntimeRecord.final9, .fontSystemV1] {
+        for record in DirectUpdateRuntimeRecord.allCases where record != .fontSystemSecurity20261015V1 {
             #expect(throws: (any Error).self) {
                 try DirectUpdatePublicationBaseline.validateSecurityReview(bytes, record: record)
             }
@@ -231,6 +236,24 @@ private final class RuntimeClosureFixture: @unchecked Sendable {
         }
         #expect(throws: (any Error).self) {
             try DirectUpdatePublicationBaseline.validateSecurityReview(publication(), record: .fontSystemSecurity20261015V1)
+        }
+    }
+
+    @Test func componentPublicationReviewDoesNotAdmitItsPredecessor() throws {
+        let repository = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let bytes = try Data(contentsOf: repository.appendingPathComponent("runtime/security-baseline.json"))
+        try DirectUpdatePublicationBaseline.validateSecurityReview(bytes, record: .componentCompletionV1)
+        for record in DirectUpdateRuntimeRecord.allCases where record != .componentCompletionV1 {
+            #expect(throws: (any Error).self) {
+                try DirectUpdatePublicationBaseline.validateSecurityReview(bytes, record: record)
+            }
+        }
+        var invalid = try #require(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
+        invalid["requiredSecurityFixes"] = [] as [String]
+        #expect(throws: (any Error).self) {
+            try DirectUpdatePublicationBaseline.validateSecurityReview(
+                JSONSerialization.data(withJSONObject: invalid), record: .componentCompletionV1)
         }
     }
 

@@ -6,9 +6,9 @@ import {FontLifecyclePipe} from '../runtime-platform/fixtures/font-lifecycle-pip
 export const CRLSET = 'hfnkpimlhhgieaddgfemjhofmfblmnib';
 export const UNKNOWN = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 export const COMPONENT_URL = 'chrome://components/';
-export const SNAPSHOT = `(async()=>{const {sendWithPromise}=await import('chrome://resources/js/cr.js');const data=await sendWithPromise('requestComponentsData');const rows=data.components.filter(c=>c.id==='${CRLSET}');return {targetCount:rows.length,unknownAbsent:!data.components.some(c=>c.id==='${UNKNOWN}'),version:rows[0]?.version??null,status:rows[0]?.status??null,buttonReady:!!document.querySelector('button.button-check-update[id="${CRLSET}"]'),events:(globalThis.__OWN_COMPONENT_EVENTS??[]).slice(-16)};})()`;
+export const SNAPSHOT = `(async()=>{const {sendWithPromise}=await import('chrome://resources/js/cr.js');const {loadTimeData}=await import('chrome://resources/js/load_time_data.js');const data=await sendWithPromise('requestComponentsData');const rows=data.components.filter(c=>c.id==='${CRLSET}');return {targetCount:rows.length,unknownAbsent:!data.components.some(c=>c.id==='${UNKNOWN}'),version:rows[0]?.version??null,status:rows[0]?.status??null,domStatus:document.getElementById('status-${CRLSET}')?.textContent??null,checkingLabel:loadTimeData.getString('checkingLabel'),buttonReady:!!document.querySelector('button.button-check-update[id="${CRLSET}"]'),events:(globalThis.__OWN_COMPONENT_EVENTS??[]).slice(-16)};})()`;
 export const TRIGGER_UNKNOWN = `(()=>{chrome.send('checkUpdate',['${UNKNOWN}']);return {unknownTriggered:true};})()`;
-export const TRIGGER_KNOWN = `(async()=>{const {addWebUiListener}=await import('chrome://resources/js/cr.js');globalThis.__OWN_COMPONENT_EVENTS=[];addWebUiListener('component-event',e=>{if(e.id==='${CRLSET}'&&globalThis.__OWN_COMPONENT_EVENTS.length<16)globalThis.__OWN_COMPONENT_EVENTS.push({event:e.event,version:e.version??null})});const button=document.querySelector('button.button-check-update[id="${CRLSET}"]');if(!button||button.disabled)throw Error('OwnComponentButtonUnavailable');button.click();return {buttonClicked:true};})()`;
+export const TRIGGER_KNOWN = `(async()=>{const {addWebUiListener}=await import('chrome://resources/js/cr.js');globalThis.__OWN_COMPONENT_EVENTS=[];if(!globalThis.__OWN_COMPONENT_LISTENER_INSTALLED){addWebUiListener('component-event',e=>{if(e.id==='${CRLSET}'&&globalThis.__OWN_COMPONENT_EVENTS.length<16)globalThis.__OWN_COMPONENT_EVENTS.push({event:e.event,version:e.version??null})});globalThis.__OWN_COMPONENT_LISTENER_INSTALLED=true;}const button=document.querySelector('button.button-check-update[id="${CRLSET}"]');if(!button||button.disabled)throw Error('OwnComponentButtonUnavailable');button.click();return {buttonClicked:true};})()`;
 const expressions = new Set([SNAPSHOT, TRIGGER_UNKNOWN, TRIGGER_KNOWN]);
 
 export class ComponentUpdatePipe extends FontLifecyclePipe {
@@ -71,7 +71,11 @@ export class ComponentUpdatePipe extends FontLifecyclePipe {
         const v = result.result.value;
         assert(v?.targetCount === 1 && v.unknownAbsent === true && v.buttonReady === true);
         assert(typeof v.version === 'string' && v.version.length <= 80 && typeof v.status === 'string' && v.status.length <= 160);
+        assert(typeof v.domStatus === 'string' && v.domStatus.length <= 160);
+        assert(typeof v.checkingLabel === 'string' && v.checkingLabel.length > 0 && v.checkingLabel.length <= 160);
         assert(Array.isArray(v.events) && v.events.length <= 16);
+        assert(v.events.every(e => e && typeof e.event === 'string' && e.event.length <= 160
+          && (e.version === null || typeof e.version === 'string' && e.version.length <= 80)));
         this.#snapshotScope = {generation, session, contextId: params.contextId};
       }
     }

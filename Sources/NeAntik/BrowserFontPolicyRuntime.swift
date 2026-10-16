@@ -44,7 +44,9 @@ enum BrowserFontPolicyRuntime {
     static let supportedRecords: [Record] = [
         Record(update: .fontSystemV1, sourceContract: sourceContractSHA256),
         Record(update: .fontSystemSecurity20261015V1,
-               sourceContract: "5da10213b79c97a4bc3b13a0fd6af5e26d6034179bcdbe160bd244463a06f903")
+               sourceContract: "5da10213b79c97a4bc3b13a0fd6af5e26d6034179bcdbe160bd244463a06f903"),
+        Record(update: .componentCompletionV1,
+               sourceContract: "a7e6ee9d61543784d74d4b8b1ee0aaa155dd4b97db8bb30aaf27e239486fb10e")
     ]
 
     /// Pure comparison only. It cannot manufacture a launch qualification.

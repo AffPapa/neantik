@@ -28,7 +28,7 @@ package enum DirectUpdateFontRuntimePins {
 
 /// A complete record is selected only by actual closure + captured report bytes.
 package enum DirectUpdateRuntimeRecord: Sendable, Equatable, CaseIterable {
-    case final9, fontSystemV1, fontSystemSecurity20261015V1
+    case final9, fontSystemV1, fontSystemSecurity20261015V1, componentCompletionV1
 
     private struct RecordData: Sendable {
         let runtimeDigest: String
@@ -99,6 +99,23 @@ package enum DirectUpdateRuntimeRecord: Sendable, Equatable, CaseIterable {
                 executableDigest: DirectUpdateSecurityRuntimePins.executableDigest,
                 frameworkDigest: DirectUpdateSecurityRuntimePins.frameworkDigest,
                 sourceVariant: "font-system-security-20261015-v1"
+            )
+        case .componentCompletionV1:
+            RecordData(
+                runtimeDigest: DirectUpdateComponentRuntimePins.runtimeDigest,
+                evidenceDigest: DirectUpdateComponentRuntimePins.evidenceDigest,
+                reportDigest: DirectUpdateComponentRuntimePins.reportDigest,
+                runtimeEntries: DirectUpdateComponentRuntimePins.runtimeEntries,
+                evidenceEntries: DirectUpdateComponentRuntimePins.evidenceEntries,
+                runtimeBytes: DirectUpdateComponentRuntimePins.runtimeBytes,
+                evidenceBytes: DirectUpdateComponentRuntimePins.evidenceBytes,
+                reportHashes: DirectUpdateComponentRuntimePins.reportHashes,
+                sourceMode: "executed-component-completion-preserved-build-and-postbuild-fd-source-proof",
+                createdAt: DirectUpdateComponentRuntimePins.createdAt,
+                argsDigest: DirectUpdateComponentRuntimePins.argsDigest,
+                executableDigest: DirectUpdateComponentRuntimePins.executableDigest,
+                frameworkDigest: DirectUpdateComponentRuntimePins.frameworkDigest,
+                sourceVariant: "component-completion-v1"
             )
         }
     }

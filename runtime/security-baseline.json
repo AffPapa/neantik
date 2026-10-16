@@ -45,12 +45,12 @@
       "status": "verified",
       "minimumVersion": "156.0.8078.12",
       "sourceCommit": "634b046faf2137b83af71c87baf362b533af9104",
-      "sourceContractSHA256": "5da10213b79c97a4bc3b13a0fd6af5e26d6034179bcdbe160bd244463a06f903",
+      "sourceContractSHA256": "a7e6ee9d61543784d74d4b8b1ee0aaa155dd4b97db8bb30aaf27e239486fb10e",
       "securityReference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_01886704284.html",
       "reviewedAt": "2026-10-16",
-      "reviewScope": "complete source inclusion for10publishedfixes;not finalsignedrelease qualification",
-      "sourceReview": "docs/evidence/security-backport-source-review-development.json",
-      "sourceReviewSHA256": "d33c51212e5a21754b4d22ade6687fbafcaa23708dd655865e6ebc6c40b48ab2",
+      "reviewScope": "complete source inclusion for10publishedfixes;exact component successor preserves security source;not final signed release qualification",
+      "sourceReview": "docs/evidence/component-security-source-review-development.json",
+      "sourceReviewSHA256": "f21dd1d49b1ed45f04add5757fee6710184268c9ed4271406cfc551d43c5b2bf",
       "fixes": {
         "568719351": {
           "status": "included",

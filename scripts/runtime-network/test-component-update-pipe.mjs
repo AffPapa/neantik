@@ -3,7 +3,7 @@ import {PassThrough} from 'node:stream';
 import {ComponentUpdatePipe, COMPONENT_URL, SNAPSHOT, TRIGGER_KNOWN, TRIGGER_UNKNOWN} from './component-update-pipe.mjs';
 const input = new PassThrough(), output = new PassThrough();
 const pipe = new ComponentUpdatePipe(input, output);
-const snapshot = {targetCount: 1, unknownAbsent: true, buttonReady: true, version: '0.0.0.0', status: 'New', events: []};
+const snapshot = {targetCount: 1, unknownAbsent: true, buttonReady: true, version: '0.0.0.0', status: 'New', domStatus: 'New', checkingLabel: 'Checking', events: []};
 input.on('data', raw => {
   const q = JSON.parse(raw.toString().replace(/\0$/, ''));
   const result = q.method === 'Page.getFrameTree' ? {frameTree: {frame: {id: 'owned', url: COMPONENT_URL}}}
@@ -28,6 +28,13 @@ snapshot.targetCount = 0;
 await assert.rejects(pipe.evaluate(SNAPSHOT, 'session')); negative++;
 assert.throws(() => pipe.validate('Runtime.evaluate', params(TRIGGER_KNOWN), 'session')); negative++;
 snapshot.targetCount = 1;
+await pipe.evaluate(SNAPSHOT, 'session'); positive++;
+for (const [key, value] of [['domStatus', null], ['checkingLabel', ''], ['events', [{event: 7, version: null}]]]) {
+  const original = snapshot[key]; snapshot[key] = value;
+  await assert.rejects(pipe.evaluate(SNAPSHOT, 'session')); negative++;
+  assert.throws(() => pipe.validate('Runtime.evaluate', params(TRIGGER_KNOWN), 'session')); negative++;
+  snapshot[key] = original;
+}
 await pipe.evaluate(SNAPSHOT, 'session'); positive++;
 pipe.pages.add('second'); pipe.targets.add('second'); pipe.sessions.set('second-session', 'second');
 pipe.observe({method: 'Runtime.executionContextCreated', sessionId: 'second-session', params: {context: {id: 9, origin: 'chrome://components', auxData: {isDefault: true, frameId: 'owned'}}}});
