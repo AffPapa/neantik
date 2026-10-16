@@ -15,7 +15,7 @@
 -  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 -
 -  update_check_callback_ = std::move(update_check_callback);
- 
+
    auto check_for_updates_invoker = base::BindOnce(
        &UpdateCheckerImpl::CheckForUpdatesHelper, weak_factory_.GetWeakPtr(),
 --- a/components/update_client/update_checker_unittest.cc
@@ -79,5 +79,5 @@
 +  EXPECT_EQ(1, callbacks);
 +  EXPECT_EQ(0, post_interceptor_->GetCount());
  }
- 
+
  // This test is parameterized for |is_foreground|.

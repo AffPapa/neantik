@@ -9,7 +9,7 @@
   "appliedPrivacyPatch": "runtime/nevision-patches/ports/chromium-156.0.8078.12/patches/common/core/ungoogled-chromium/block-requests.patch",
   "appliedPrivacyPatchSHA256": "f028bd144d53156d2748066dac50f29800947b077e1abc24d107fd100a4f9313",
   "patchFile": "chromium-disabled-completion.patch",
-  "patchSHA256": "827132b7ab44aef1154e43cdd865d978a8db09dbe09798b0755cf4450fd6bfc1",
+  "patchSHA256": "f57347fd39568bd252fee5b9c42e09d6b90773e0959c64ca5db50b9290150ccf",
   "files": [
     {
       "path": "components/update_client/update_checker.cc",
