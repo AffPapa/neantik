@@ -51,6 +51,13 @@
   контроль с включённым bytecode; старые source caches не удаляются глобально.
 - Анонимный hosted-download использует системный curl, `--disable` первым
   параметром и ограниченный environment. Сырые сетевые stderr не входят в ошибку.
+- До дорогих проверок ZIP hosted-helper теперь проверяет форму публичного
+  `fingerprint-audit-summary.json`: каноническую schema, channel, дубли ключей
+  и ограничение64KiB. Ошибка не выводит содержимое отчёта. Подпись, точная
+  привязка private evidence/candidate и проверки архива выполняются полностью.
+- В штатный GitHub helper передавать абсолютный путь `--input`/`--body-file`:
+  helper устанавливает checkout как рабочий каталог. Пути приватных receipts
+  тоже задавать от абсолютного artifact root.
 - Оконный exact signed QA следует делать до подписания финального fingerprint
   evidence: оно штатно уничтожает временную authority. Если дополнительная GUI
   проверка действительно нужна позднее, ей нужен отдельный GUI-only manifest

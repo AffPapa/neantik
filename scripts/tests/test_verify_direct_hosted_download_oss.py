@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import json
 import os
@@ -8,6 +9,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import traceback
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -25,7 +27,69 @@ sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
 
 
+def public_attestation_fixture():
+    """Existing signed synthetic evidence; structural preflight is not its auth."""
+    fixture = json.loads((ROOT / 'scripts/tests/fixtures/fingerprint-evidence-schema9-swift.json').read_text())
+    verified = MODULE.PRIVACY.EVIDENCE_SCHEMA.verify_fingerprint_evidence(
+        candidate_manifest_raw=base64.b64decode(fixture['manifestBase64'], validate=True),
+        envelope_raw=base64.b64decode(fixture['envelopeBase64'], validate=True))
+    return MODULE.PRIVACY.expected_authenticated_public_attestation(json.loads(verified.payload), verified)
+
+
 class DirectHostedDownloadOSSTests(unittest.TestCase):
+    def test_wrong_public_input_stops_before_archive_or_download_and_redacts_values(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); archive = self.make_fixture(root, version='1.2.3')
+            manifest = root / 'dist/manifest.json'; manifest.write_text('{}')
+            evidence = root / 'dist/evidence.json'; evidence.write_text('{}')
+            attestation = root / 'dist/summary.json'
+            for bad in ({'schemaVersion': 1, 'kind': 'private-envelope', 'value': 'own-rejected-marker'},
+                        {**public_attestation_fixture(), 'createdAt': 'own-rejected-marker'},
+                        {**public_attestation_fixture(), 'unexpected': 'own-rejected-marker'}):
+                attestation.write_text(json.dumps(bad))
+                archive_check, download, binding_check = mock.Mock(), mock.Mock(), mock.Mock()
+                with self.assertRaisesRegex(MODULE.HostedDownloadError, 'public.*preflight') as caught:
+                    MODULE.verify_hosted_download(project_root=root, archive=archive,
+                        download_url='https://github.com/AffPapa/neantik/releases/download/v1.2.3/' + archive.name,
+                        archive_verifier=archive_check, downloader=download,
+                        candidate_manifest=manifest, release_channel='public-alpha',
+                        fingerprint_evidence=evidence, fingerprint_attestation=attestation,
+                        candidate_verifier=mock.Mock(), release_evidence_verifier=binding_check)
+                self.assertNotIn('own-rejected-marker', ''.join(traceback.format_exception(caught.exception)))
+                archive_check.assert_not_called(); download.assert_not_called(); binding_check.assert_not_called()
+
+    def test_preflight_accepts_valid_summary_but_retains_full_binding_refusal(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); archive = self.make_fixture(root, version='1.2.3')
+            manifest = root / 'dist/manifest.json'; manifest.write_text('{}')
+            evidence = root / 'dist/evidence.json'; evidence.write_text('{}')
+            attestation = root / 'dist/summary.json'; attestation.write_text(json.dumps(public_attestation_fixture()))
+            archive_check, download, candidate_check = mock.Mock(), mock.Mock(), mock.Mock()
+            full_binding = mock.Mock(side_effect=MODULE.HostedDownloadError('own full binding refusal'))
+            with self.assertRaisesRegex(MODULE.HostedDownloadError, 'full binding refusal'):
+                MODULE.verify_hosted_download(project_root=root, archive=archive,
+                    download_url='https://github.com/AffPapa/neantik/releases/download/v1.2.3/' + archive.name,
+                    archive_verifier=archive_check, downloader=download,
+                    candidate_manifest=manifest, release_channel='public-alpha',
+                    fingerprint_evidence=evidence, fingerprint_attestation=attestation,
+                    candidate_verifier=candidate_check, release_evidence_verifier=full_binding)
+            archive_check.assert_called_once(); candidate_check.assert_called_once()
+            full_binding.assert_called_once(); download.assert_not_called()
+
+    def test_preflight_rejects_duplicate_oversized_json_and_channel_mismatch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'summary.json'
+            valid = json.dumps(public_attestation_fixture())
+            for raw, channel in ((valid[:-1] + ',"managerVersion":"own-rejected-marker"}', 'public-alpha'),
+                                 (' ' * 65537, 'public-alpha'), ('{', 'public-alpha'),
+                                 ('[' * 2000 + ']' * 2000, 'public-alpha'),
+                                 (valid, 'production')):
+                path.write_text(raw)
+                with self.assertRaisesRegex(MODULE.HostedDownloadError, 'public.*preflight'):
+                    MODULE.preflight_public_attestation(path, channel)
+            path.write_text(valid)
+            self.assertIsNone(MODULE.preflight_public_attestation(path, 'public-alpha'))
+
     @unittest.skipUnless(Path('/usr/bin/curl').is_file(), 'system curl required')
     def test_home_curlrc_cannot_add_an_unrequested_file_transfer(self):
         # A real curl control: default config can add an earlier transfer
@@ -257,7 +321,7 @@ sys.exit(2)
             evidence = root / "dist" / "fingerprint-audit.json"
             evidence.write_text("{}\n", encoding="utf-8")
             attestation = root / "dist" / "fingerprint-audit-summary.json"
-            attestation.write_text("{}\n", encoding="utf-8")
+            attestation.write_text(json.dumps(public_attestation_fixture()), encoding="utf-8")
             candidate_checks: list[tuple[Path, Path, str]] = []
             evidence_checks: list[tuple[Path, Path, Path, str]] = []
 
@@ -327,7 +391,7 @@ sys.exit(2)
             evidence = root / "dist" / "fingerprint-audit.json"
             evidence.write_text("{}\n", encoding="utf-8")
             attestation = root / "dist" / "fingerprint-audit-summary.json"
-            attestation.write_text("{}\n", encoding="utf-8")
+            attestation.write_text(json.dumps(public_attestation_fixture()), encoding="utf-8")
 
             with mock.patch.object(
                 MODULE,
@@ -376,7 +440,7 @@ sys.exit(2)
             evidence = root / "dist" / "fingerprint-audit.json"
             evidence.write_text("{}\n", encoding="utf-8")
             attestation = root / "dist" / "fingerprint-audit-summary.json"
-            attestation.write_text("{}\n", encoding="utf-8")
+            attestation.write_text(json.dumps(public_attestation_fixture()), encoding="utf-8")
             observed_manifest_bytes: list[bytes] = []
 
             def verify_evidence(
@@ -437,7 +501,7 @@ sys.exit(2)
             evidence = root / "dist" / "fingerprint-audit.json"
             evidence.write_text("{}\n", encoding="utf-8")
             attestation = root / "dist" / "fingerprint-audit-summary.json"
-            attestation.write_text("{}\n", encoding="utf-8")
+            attestation.write_text(json.dumps(public_attestation_fixture()), encoding="utf-8")
             pinned_manifest: Path | None = None
 
             def verify_evidence(

@@ -99,6 +99,7 @@ SPEECH_HARNESSES = frozenset('scripts/runtime-speech/' + name for name in (
     'run-headed.mjs', 'probe.mjs', 'semantics.mjs', 'speech-pipe.mjs',
     'cleanup.mjs', 'test-cleanup.mjs', 'test-observation.mjs', 'test-pipe.mjs',
 ))
+HOSTED_INPUT_HARNESSES = frozenset({'scripts/verify-direct-hosted-download.py'})
 
 
 def safe_path(value):
@@ -200,6 +201,12 @@ def plan(paths, catalog, *, version_only_info=False):
             python.add('scripts.tests.test_runtime_speech')
             gates.add('fresh native admission and exact-runtime cold voice observation; JS fixture controls alone do not prove native delivery')
             reasons.append({'path': path, 'surface': 'standalone-speech-harness'}); continue
+        if path in HOSTED_INPUT_HARNESSES:
+            python.update(('scripts.tests.test_verify_direct_hosted_download_oss',
+                           'scripts.tests.test_verify_public_artifact_privacy',
+                           'scripts.tests.test_release_input_snapshot'))
+            gates.add('changed hosted-input checker: retain exact candidate/evidence, signing and public-byte gates for changed delivery; source controls are not release qualification')
+            reasons.append({'path': path, 'surface': 'hosted-input-checker'}); continue
         if path == 'scripts/native-qa-readiness.py':
             python.add('scripts.tests.test_native_qa_readiness')
             gates.add('real read-only macOS resource observation; readiness is not native qualification')

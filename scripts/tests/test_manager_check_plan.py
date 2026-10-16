@@ -11,6 +11,20 @@ SPEC.loader.exec_module(MOD)
 
 
 class ManagerCheckPlanTests(unittest.TestCase):
+    def test_hosted_input_checker_keeps_privacy_snapshot_and_future_delivery_gates(self):
+        result = MOD.plan(['scripts/verify-direct-hosted-download.py'], [])
+        self.assertEqual(result['swiftMode'], 'none')
+        self.assertEqual(result['commands'], [['python3', '-B', '-m', 'unittest',
+            'scripts.tests.test_release_input_snapshot',
+            'scripts.tests.test_verify_direct_hosted_download_oss',
+            'scripts.tests.test_verify_public_artifact_privacy']])
+        self.assertEqual(result['status'], 'not-run')
+        self.assertFalse(result['releaseGate'])
+        self.assertIn('signing and public-byte gates', result['requiredAdditionalGates'][0])
+        unknown = MOD.plan(['scripts/verify-direct-hosted-other.py'], [])
+        self.assertEqual(unknown['swiftMode'], 'full')
+        self.assertTrue(any('discover' in command for command in unknown['commands']))
+
     def test_speech_harness_selects_its_controls_and_preserves_native_gate(self):
         result = MOD.plan(sorted(MOD.SPEECH_HARNESSES), [])
         self.assertEqual(result['swiftMode'], 'none')

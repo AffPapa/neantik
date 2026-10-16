@@ -43,10 +43,46 @@ assert SNAPSHOT_SPEC and SNAPSHOT_SPEC.loader
 SNAPSHOT = importlib.util.module_from_spec(SNAPSHOT_SPEC)
 sys.modules[SNAPSHOT_SPEC.name] = SNAPSHOT
 SNAPSHOT_SPEC.loader.exec_module(SNAPSHOT)
+PRIVACY_SPEC = importlib.util.spec_from_file_location(
+    "public_artifact_privacy_for_hosted_preflight",
+    PROJECT_ROOT / "scripts" / "verify-public-artifact-privacy.py",
+)
+assert PRIVACY_SPEC and PRIVACY_SPEC.loader
+PRIVACY = importlib.util.module_from_spec(PRIVACY_SPEC)
+sys.modules[PRIVACY_SPEC.name] = PRIVACY
+PRIVACY_SPEC.loader.exec_module(PRIVACY)
 
 
 class HostedDownloadError(RuntimeError):
     pass
+
+
+def preflight_public_attestation(path: Path, release_channel: str) -> None:
+    """Reject wrong input before archive work; authenticated binding runs later."""
+    def unique_object(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate public attestation key")
+            result[key] = value
+        return result
+
+    try:
+        with path.open("rb") as stream:
+            raw = stream.read(65537)
+        if len(raw) > 65536:
+            raise ValueError("oversized public attestation")
+        payload = json.loads(raw, object_pairs_hook=unique_object)
+        PRIVACY.validate_authenticated_public_attestation(payload)
+        if payload["releaseChannel"] != release_channel:
+            raise ValueError("public attestation channel mismatch")
+    except (OSError, ValueError, RecursionError, PRIVACY.PublicArtifactPrivacyError):
+        # Date/schema errors can quote input. Do not chain raw JSON values into
+        # a release log, even for a rejected or accidentally private input.
+        raise HostedDownloadError(
+            "public fingerprint attestation preflight failed; "
+            "supply the validated fingerprint-audit-summary.json"
+        ) from None
 
 
 def sha256_file(path: Path) -> str:
@@ -326,6 +362,7 @@ def _verify_pinned_hosted_download(
         ):
             if not path.is_file() or path.is_symlink():
                 raise HostedDownloadError(f"{label} is missing or unsafe")
+        preflight_public_attestation(fingerprint_attestation, release_channel)
         release_evidence_verifier = (
             release_evidence_verifier
             or (
