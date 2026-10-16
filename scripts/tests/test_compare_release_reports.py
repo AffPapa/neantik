@@ -30,6 +30,63 @@ def context():
 
 
 class ReleaseReportComparisonTests(unittest.TestCase):
+    def test_current_published_records_are_read_without_inventing_behavior(self):
+        report = MOD.build_version_comparison('0.8.22', '0.8.23')
+        self.assertEqual(report['after']['runtime']['architecture'], 'arm64')
+        self.assertEqual(report['qualificationDeclaration'], {'before': True, 'after': True})
+        self.assertEqual(report['behaviorRegressionVerdict'], 'not_established')
+        self.assertEqual(report['performanceComparison'], 'not_measured')
+        self.assertFalse(report['measurementComparability']['declaredContextsMatch'])
+        for item in report['verification']:
+            if item['key'] in ('site', 'downloadedHeaded', 'nativeRollback'):
+                self.assertNotEqual(item['after']['state'], 'reported_pass')
+        self.assertIn('NOT PASS', report['testDeclarations']['after']['Python'])
+        self.assertIn('Aggregate failures retained', report['testDeclarations']['after']['Swift'])
+        self.assertTrue(report['localizedChanges'])
+        self.assertTrue(report['localizedLimitations'])
+
+    def test_latest_snapshot_cannot_hide_open_delivery_or_source_failures(self):
+        report = MOD.build_version_comparison('0.8.22', '0.8.23')
+        root = MOD.ROOT / 'docs/evidence'
+        stored = json.loads((root / 'regression-0.8.22-0.8.23.json').read_text())
+        rendered = (root / 'regression-0.8.22-0.8.23.md').read_text()
+        MOD.require_matching_snapshot(report, stored, rendered)
+        broken = copy.deepcopy(stored)
+        gate = next(x for x in broken['verification'] if x['key'] == 'site')
+        gate['after']['state'] = 'reported_pass'
+        with self.assertRaises(MOD.ReportError): MOD.require_matching_snapshot(report, broken, rendered)
+        broken = copy.deepcopy(stored); broken['testDeclarations']['after']['Python'] = 'PASS all'
+        with self.assertRaises(MOD.ReportError): MOD.require_matching_snapshot(report, broken, rendered)
+
+    def test_top_level_architecture_cannot_conceal_conflicting_runtime(self):
+        source = record(); source['architecture'] = 'x86_64'
+        with self.assertRaises(MOD.ReportError): MOD.identity(source)
+
+    def test_checks_projection_does_not_promote_unrelated_or_unknown_evidence(self):
+        source = dict(checks={'exactHeaded': 'PASS local', 'updaterNative': 'PASS commit and rollback',
+                              'sourceSwift': '17 with skips', 'sourcePython': 'NOT PASS',
+                              'unknownSecret': 'private marker'},
+                      signing={'notarization': 'Accepted', 'stapling': 'PASS', 'gatekeeper': 'PASS',
+                               'unknownSecret': 'private marker'}, releaseQualified=True)
+        result = MOD.verification_fields(source)
+        self.assertEqual(result['GUIFingerprint'], 'PASS local')
+        self.assertEqual(result['nativeUpdater'], 'PASS commit and rollback')
+        self.assertNotIn('downloadedHeaded', result)
+        self.assertNotIn('nativeRollback', result)
+        self.assertNotIn('private marker', json.dumps(result))
+        self.assertEqual(result['tests'], {'Swift': '17 with skips', 'Python': 'NOT PASS'})
+        self.assertTrue(result['releaseQualified'])
+        # A malformed legacy field cannot be silently replaced by newer PASS.
+        for bad in [None, [], True, 'PASS']:
+            value = copy.deepcopy(source); value['verification'] = bad
+            with self.assertRaises(MOD.ReportError): MOD.verification_fields(value)
+            value = copy.deepcopy(source); value['checks'] = bad
+            with self.assertRaises(MOD.ReportError): MOD.verification_fields(value)
+            value = copy.deepcopy(source); value['signing'] = bad
+            with self.assertRaises(MOD.ReportError): MOD.verification_fields(value)
+        legacy = {'verification': {'site': 'OPEN: legacy'}, **source}
+        self.assertEqual(MOD.verification_fields(legacy), legacy['verification'])
+
     def test_checked_snapshots_match_current_public_sources_and_text(self):
         expected = MOD.build_version_comparison('0.8.11', '0.8.12')
         root = MOD.ROOT / 'docs/evidence'
@@ -113,6 +170,36 @@ class ReleaseReportComparisonTests(unittest.TestCase):
         self.assertEqual(MOD.declared_gate(dict(passed=False))["state"], "reported_fail")
         self.assertEqual(MOD.declared_gate(None)["state"], "unknown")
         self.assertEqual(MOD.declared_gate(dict(passed="true"))["state"], "unknown")
+
+    def test_leading_pass_cannot_hide_later_failure_or_unexecuted_gate(self):
+        declarations = [
+            'PASS local; downloaded FAIL', 'PASS locally; hosted ERROR',
+            'PASS local; downloaded failed', 'PASS local; hosted pending',
+            'PASS local; remaining blocked', 'PASS source; native not-run',
+            'PASS source; native not executed', 'PASS source; native skipped',
+            'PASS local; qualification incomplete', 'PASS local; remote timeout',
+            'PASS local; partial hosted validation',
+            'PASS local; 2FAIL', 'PASS local; 1FAILED',
+            'PASS local; 3ERRORS', 'PASS local; 2SKIP', 'PASS4FAIL',
+        ]
+        for text in declarations:
+            with self.subTest(text=text):
+                result = MOD.declared_gate(text)
+                self.assertNotEqual(result['state'], 'reported_pass')
+                self.assertEqual(result['declaration'], text)
+                a, b = record(), record('0.8.12', 124)
+                b['verification']['downloadedHeaded'] = text
+                comparison = MOD.compare(a, b)
+                gate = next(x for x in comparison['verification'] if x['key'] == 'downloadedHeaded')
+                self.assertNotEqual(gate['after']['state'], 'reported_pass')
+                row = next(x for x in MOD.markdown(comparison).splitlines()
+                           if x.startswith('| Запуск скачанной копии |'))
+                self.assertFalse(row.endswith('| заявлен PASS |'))
+        # Failover is a policy, not an observed failure. Do not fix this by
+        # rejecting every string that merely contains the letters "fail".
+        self.assertEqual(MOD.declared_gate('PASS with failover disabled')['state'], 'reported_pass')
+        self.assertEqual(MOD.declared_gate('13/13PASS')['state'], 'reported_pass')
+        self.assertEqual(MOD.declared_gate('PASS 0FAIL 0ERROR')['state'], 'reported_pass')
 
     def test_site_legacy_alias_and_current_open_gate_compare_without_false_green(self):
         a, b = record(), record("0.8.12", 124)

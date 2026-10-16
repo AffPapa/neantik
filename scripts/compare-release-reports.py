@@ -50,8 +50,10 @@ def identity(record):
     if not isinstance(result["managerSHA256"], str) or not SHA256.fullmatch(result["managerSHA256"]):
         raise ReportError("Missing manager digest")
     result["runtime"] = {}
+    if "architecture" in runtime and "architecture" in record and runtime["architecture"] != record["architecture"]:
+        raise ReportError("Conflicting runtime and release architectures")
     for key in ("chromiumVersion", "architecture", "executableSHA256", "frameworkSHA256"):
-        value = runtime.get(key)
+        value = runtime.get(key, record.get("architecture") if key == "architecture" else None)
         if not isinstance(value, str):
             raise ReportError("Missing runtime identity")
         if key.endswith("SHA256") and not SHA256.fullmatch(value):
@@ -61,6 +63,37 @@ def identity(record):
         if key == "architecture" and value not in ("arm64", "x86_64"):
             raise ReportError("Unsupported architecture")
         result["runtime"][key] = value
+    return result
+
+
+def verification_fields(record):
+    """Read either historical verification or current checks/signing layout.
+
+    Only direct source fields are projected. An exact local headed result is
+    not mapped to downloadedHeaded; combined updater prose is not a separate
+    rollback result. Historical records with both layouts retain verification.
+    """
+    if "verification" in record:
+        result = record["verification"]
+        if not isinstance(result, dict):
+            raise ReportError("Invalid verification object")
+        return result
+    checks, signing = record.get("checks", {}), record.get("signing", {})
+    if not isinstance(checks, dict) or not isinstance(signing, dict):
+        raise ReportError("Invalid release checks or signing object")
+    result = {}
+    for target, source in (("notarization", "notarization"), ("stapling", "stapling"), ("Gatekeeper", "gatekeeper")):
+        if source in signing:
+            result[target] = signing[source]
+    for target, source in (("DirectDoctor", "doctor"), ("GUIFingerprint", "exactHeaded"),
+                           ("nativeUpdater", "updaterNative"), ("downloadedMCP", "downloadedMCP"),
+                           ("hostedZIP", "hostedZIP"), ("hostedDMG", "hostedDMG"), ("site", "site")):
+        if source in checks:
+            result[target] = checks[source]
+    result["tests"] = {target: checks[source] for target, source in
+                       (("Swift", "sourceSwift"), ("Python", "sourcePython")) if source in checks}
+    if "releaseQualified" in record:
+        result["releaseQualified"] = record["releaseQualified"]
     return result
 
 
@@ -86,10 +119,18 @@ def declared_gate(value):
     if not isinstance(value, str) or len(value) > 2000:
         raise ReportError("Invalid verification declaration")
     lower = value.casefold()
+    # A leading PASS describes only its own scope. Later failure, a skip or an
+    # unfinished gate must not be hidden by that prefix. Whole words preserve
+    # legitimate policy descriptions such as "failover disabled".
+    unresolved = re.search(r"\b(?:fail(?:ed|ure|ures)?|errors?|blocked|pending|incomplete|timeout|partial|skip(?:ped|s)?)\b|\bnot[\s_-]+(?:run|executed)\b|(?<!\d)[1-9]\d*(?:fail(?:ed)?|errors?|skip(?:ped|s)?)\b", lower)
     if any(x in lower for x in ("open:", "not deployed", "unverified", "unavailable", "not allgreen", "not all green", "not qualified", "not tested")) or re.search(r"\b(?:no|not|without|false|unconfirmed)\s*pass\b", lower):
         state = "open"
     elif lower.startswith(("fail", "error")):
         state = "reported_fail"
+    elif unresolved:
+        # Free prose may mention an earlier failure or an expected negative
+        # control. Keep it ambiguous rather than inventing a current gate FAIL.
+        state = "declaration_only"
     elif value == "PASS" or value.startswith("PASS ") or value == "13/13PASS":
         state = "reported_pass"
     elif value.endswith("PASS") and not any(x in lower for x in ("fail", "error", "partial", "skip")):
@@ -105,7 +146,8 @@ def comparison_context(record):
     context = record.get("measurementContext")
     if not isinstance(context, dict) or any(key not in context for key in CONTEXT_KEYS):
         return None
-    if type(context["headed"]) is not bool or context["architecture"] != record["runtime"]["architecture"]:
+    architecture = record["runtime"].get("architecture", record.get("architecture"))
+    if type(context["headed"]) is not bool or context["architecture"] != architecture:
         return None
     if type(context["memoryPressure"]) is not int or context["memoryPressure"] not in (1, 2, 4):
         return None
@@ -145,9 +187,7 @@ def compare(before, after):
     differences = [] if missing else [key for key in CONTEXT_KEYS if a[key] != b[key]]
     contexts_match = not missing and not differences
     gates = []
-    old_gates, new_gates = before.get("verification", {}), after.get("verification", {})
-    if not isinstance(old_gates, dict) or not isinstance(new_gates, dict):
-        raise ReportError("Invalid verification object")
+    old_gates, new_gates = verification_fields(before), verification_fields(after)
     for key, label in GATES:
         old_value = old_gates.get("liveSite") if key == "site" and "site" not in old_gates else old_gates.get(key)
         new_value = new_gates.get("liveSite") if key == "site" and "site" not in new_gates else new_gates.get(key)
@@ -242,7 +282,7 @@ def load_version(version):
     return record, hashlib.sha256(data).hexdigest()
 
 
-def localized_notes(version, build):
+def localized_notes(version, build, fallback_limitations=None):
     path = ROOT / "releases" / ("v" + version + ".md")
     if path.is_symlink() or not path.is_file() or path.stat().st_size > 512 * 1024:
         raise ReportError("Public release notes unavailable or unsafe")
@@ -256,7 +296,7 @@ def localized_notes(version, build):
     for line in lines[1:]:
         if line == "## Что изменилось":
             section = "changes"
-        elif line == "## Ограничения":
+        elif line in ("## Ограничения", "## Установка и ограничения"):
             section = "limitations"
         elif line.startswith("## "):
             section = None
@@ -264,6 +304,8 @@ def localized_notes(version, build):
             changes.append(line[2:])
         elif section == "limitations" and line.strip():
             limitations.append(line[2:] if line.startswith("- ") else line)
+    if not limitations and fallback_limitations:
+        limitations = list(fallback_limitations)
     if not changes or not limitations:
         raise ReportError("Public changes section missing")
     return changes, limitations, hashlib.sha256(data).hexdigest()
@@ -273,7 +315,8 @@ def build_version_comparison(before_version, after_version):
     old, old_hash = load_version(before_version)
     new, new_hash = load_version(after_version)
     report = compare(old, new)
-    report["localizedChanges"], report["localizedLimitations"], notes_hash = localized_notes(after_version, report["after"]["build"])
+    report["localizedChanges"], report["localizedLimitations"], notes_hash = localized_notes(
+        after_version, report["after"]["build"], public_texts(new, "limitations"))
     report["sourceRecordSHA256"] = {"before": old_hash, "after": new_hash}
     report["sourceNotesSHA256"] = notes_hash
     return report

@@ -84,7 +84,7 @@
 |41|P0|Positive/negative controls|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
 |42|P0|Values vs behavior|Исследование и локальная реализация; приёмка 1.0 открыта|Уточнить покрытие по сохранённым отчётам; выполнить недостающие проверки поведения на финальном кандидате. Исследование не закрывает приёмку.|
 |43|P0|Exact shipped browser|0.8.20(132) опубликована на GitHub public alpha; major1.0 открыта|[Точная подпись/Apple ZIP+DMG/Gatekeeper/hosted/headed/fontPolicy MCP](../releases/v0.8.20.json). Site остаётся153/128 из-за отдельной внешней блокировки. Прежние observations сохраняют исходные runtime/source привязки; номер версии не закрывает другие gates.|
-|44|P1|Version regressionreport|реализован отчётный инструмент; поведенческая приёмка открыта|[JSON/читаемая сводка и CI snapshot drift](RELEASE_COMPARISON.md); реальные сопоставимые before/after условия и семантические измерения ещё требуются|
+|44|P1|Version regressionreport|реализован отчётный инструмент; поведенческая приёмка открыта|[JSON/читаемая сводка и CI snapshot drift](RELEASE_COMPARISON.md), включая текущие0.8.22→0.8.23 records и запрет ложного PASS смешанных declarations;21контроль прошёл. Реальные сопоставимые before/after условия и семантические измерения ещё требуются|
 |45|P1|Docs/CI truth|реализовано в текущем срезе; общий drift gate открыт|Current source/release/site scopes and docs; new4shardCI/localdriververified; completeclaim drift future|
 
 ## Развитие WebKit
