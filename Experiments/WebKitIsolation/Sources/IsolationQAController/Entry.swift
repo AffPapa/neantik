@@ -16,6 +16,7 @@ import Darwin
     private var operation = QAOperationFence()
     private var controls: [NSButton] = []
     private var extensionOperation: (OSSystemExtensionRequest, QAOperationFence.Ticket)?
+    private var extensionAction = "Установка"
     private func begin(_ kind: QAOperationFence.Kind) -> QAOperationFence.Ticket? {
         guard let ticket = operation.begin(kind) else { status.stringValue = "Дождитесь завершения текущего QA-действия."; return nil }
         controls.forEach { $0.isEnabled = false }; return ticket
@@ -60,6 +61,7 @@ import Darwin
         guard let ticket = begin(.extensionRequest) else { return }
         guard hostsAbsent else { status.stringValue = "Сначала завершите QA Hosts."; finish(ticket); return }
         let request = OSSystemExtensionRequest.activationRequest(forExtensionWithIdentifier:extensionID,queue:.main)
+        extensionAction = "Установка"
         extensionOperation = (request,ticket)
         request.delegate = self; OSSystemExtensionManager.shared.submitRequest(request)
         self.status.stringValue = "Запрошена установка QA extension; macOS может потребовать отдельное подтверждение."
@@ -179,7 +181,8 @@ import Darwin
                     guard let data, let value = try? JSONSerialization.jsonObject(with:data) as? [String:Any],
                           let tcp = value["tcp"] as? Int, let udp = value["udp"] as? Int,
                           let known = value["matchingHost"] as? Int, let unknown = value["unknownHost"] as? Int,
-                          value["runID"] as? String == Bundle.main.object(forInfoDictionaryKey:"NeAntikQARunID") as? String
+                          QAObservationIdentity.matches(actual: value["runID"] as? String,
+                              expected: Bundle.main.object(forInfoDictionaryKey:"NeAntikQARunID") as? String)
                     else { self.status.stringValue = "Счётчики не получены; не PASS."; return }
                     self.status.stringValue = "Получено provider: TCP \(tcp), UDP \(udp), Host match \(known), unknown \(unknown). Origin и B проверяются отдельно."
                 }
@@ -201,7 +204,14 @@ import Darwin
         // Reload immediately before mutation: cached preferences are not authority.
         loadManager { [weak self] value in
             guard let self else { return }
-            guard self.hostsAbsent, let value, self.isScoped(value) else { self.status.stringValue = "QA Hosts активны либо конфигурация не принадлежит этому запуску; ничего не удалено."; self.finish(ticket); return }
+            guard self.hostsAbsent else { self.status.stringValue = "QA Hosts ещё активны; ничего не удалено."; self.finish(ticket); return }
+            guard let value else { self.status.stringValue = "QA-конфигурация не прочитана; ничего не удалено."; self.finish(ticket); return }
+            guard self.isScoped(value) else {
+                // Retain the refusal. These flags diagnose preference changes
+                // without dumping endpoints, requirements or stored config.
+                self.status.stringValue = "Контракт QA-конфигурации изменился; ничего не удалено. Enabled: \(value.isEnabled), on-demand: \(value.isOnDemandEnabled), app rules: \(value.appRules.count)."
+                self.finish(ticket); return
+            }
             value.connection.stopVPNTunnel()
             value.removeFromPreferences { [weak self] error in
                 Task { @MainActor in
@@ -222,6 +232,7 @@ import Darwin
                     self.status.stringValue = "Сначала завершите QA Hosts и удалите собственную QA-конфигурацию; extension пока не удаляется."; self.finish(ticket); return
                 }
                 let request = OSSystemExtensionRequest.deactivationRequest(forExtensionWithIdentifier:self.extensionID,queue:.main)
+                self.extensionAction = "Удаление"
                 self.extensionOperation = (request,ticket)
                 request.delegate = self; OSSystemExtensionManager.shared.submitRequest(request)
                 self.status.stringValue = "Запрошено удаление только QA extension; завершение требует проверки macOS."
@@ -240,7 +251,11 @@ import Darwin
         Task { @MainActor [weak self] in self?.finishExtension(request, message: "Запрос system extension завершён. Его результат и действующие правила проверяются отдельно.") }
     }
     nonisolated func request(_ request:OSSystemExtensionRequest,didFailWithError error:Error) {
-        Task { @MainActor [weak self] in self?.finishExtension(request, message: "macOS отказала в установке QA extension. Защита не обходится; это setup failure.") }
+        let code = (error as NSError).code
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.finishExtension(request, message: "\(self.extensionAction) QA extension: macOS отказала, код \(code). Защита не обходится; это setup failure.")
+        }
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender:NSApplication) -> Bool { !operation.isBusy && hostsAbsent }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {

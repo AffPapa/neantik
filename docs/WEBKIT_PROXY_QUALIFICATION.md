@@ -327,3 +327,35 @@ controller завершён, QA extensions осталось0, установле
 [Документация Apple](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.application-groups)
 подтверждает macOS-формат группы и связь с Mach service; она не заменяет
 фактическую установку и проверку A/B.
+
+
+### QA3: OS setup принят; строгая изоляция не подтверждена
+
+Точный QA3 build3 (source97afbb51, ZIP SHA256
+`0f4cdc51e99ba2d11700f79ecc165a6f70aa077c2778d65768dec472736214d3`)
+прошёл Accepted/stapling/Gatekeeper. Расширение активировалось, правило только
+точного Host A сохранено и перечитано; журнал подтверждает connected, stopProxy
+и disconnected. Восемь запросов выполнены в пустых headed Host A/B.
+
+Loopback origin получил по одному запросу A и B до и после stop request:
+критерий ноль Direct не выполнен. Private-IP страницы не загрузились у обоих,
+хотя собственный Python TCP/HTTP контроль достиг endpoint; это не selective
+blocking PASS. Полный kernel token не измерен. Контроллер сравнивал UUID
+строками с разным регистром; новая source-правка сравнивает UUID identity.
+Четыре новых Foundation-контроля и QA-компиляция прошли за5.613с, старые25
+не повторялись. Исправление ещё не native-qualified.
+
+Первый HTTP-fixture истёк, пока CUA привязывала A1128.984с и B149.810с;
+свежие endpoints подняты после привязки тех же окон, без перезапуска приложений.
+Это ограничение инструмента, не замер скорости продукта. Все четыре QA PID
+и два own server завершены; сигналов не отправлено. Host A выходил с задержкой.
+QA VPN rule удалён через точную карточку System Settings после отказа
+controller scope guard; guard не ослаблялся. Удаление extension требует
+AuthorizationRequired13; off UI не закрепился, manual authorization pending.
+Установленный QA3 сохраняется, отсутствие extension не заявлено.
+
+Следующий native этап допустим только после cleanup и конкретного объяснения
+loopback/private-control результатов. Полный1.0 и WebKit proxy не объявлены
+готовыми; shipping0.8.23(135) не менялась. Текущая сводка в
+`Experiments/WebKitIsolation/README.md` заменяет исторические pending-статусы
+выше; старые результаты и критерии сохраняются.

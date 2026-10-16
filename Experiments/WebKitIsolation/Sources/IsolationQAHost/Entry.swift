@@ -38,7 +38,12 @@ import IsolationCore
         decisionHandler(action.request.url.map(allowed) == true ? .allow : .cancel)
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { status.stringValue = "Документ загружен. Маршрут определяется отдельно по собственным счётчикам." }
-    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { status.stringValue = "Загрузка не завершена. Без provider/origin/B это не PASS." }
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        let value = error as NSError
+        let domain = [NSURLErrorDomain, WKError.errorDomain].contains(value.domain) ? value.domain : "другой домен"
+        // userInfo and localizedDescription may contain URLs or personal data.
+        status.stringValue = "Загрузка не завершена (\(domain), код \(value.code)). Без provider/origin/B это не PASS."
+    }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationWillTerminate(_ notification: Notification) { view?.stopLoading(); view?.navigationDelegate = nil; window?.contentView = nil; view = nil }
 }
