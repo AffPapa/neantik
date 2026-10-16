@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "prepared;native-not-run",
+  "status": "native-FAIL;shipping-disabled;counter-correction-compiled-only",
   "sourceBase": "6df954d070d95db4cd08df191d4ded559d9d3726",
   "changedSurface": "DEBUG auth-only SOCKS frontend sharing existing WebKit scope/lifecycle/upstream;shipping disabled",
   "sourceFiles": {
@@ -14,16 +14,18 @@
     "tests": 17,
     "suites": 3,
     "seconds": 7.705,
-    "ciTests": 11
+    "ciTests": 11,
+    "scope": "Unchanged parser/model/CI inputs only;not native route or corrected handler qualification"
   },
   "notProven": [
-    "HTTP shared-handler socket regression pending",
+    "Corrected handler native counters and shared HTTP socket regression",
     "WebKit signed product/persistent store/network generalization",
-    "UDP/DNS/HTTPS confinement",
+    "DNS/UDP/HTTPS confinement",
+    "Supported architecture that prevents measured private-IP Direct bypass",
     "Production WebKit proxy enable"
   ],
-  "stop": "No frontend/config permutation if native Direct bypass repeats. No second native host without diagnosis and required authorization.",
-  "nativeExecuted": false,
+  "stop": "Default HTTP, exact-host HTTP and exact-host SOCKS all preserve owned private-IP bypass. Stop protocol/config permutations;require a source-supported network boundary design before new native experiment. Shipping proxy stays disabled.",
+  "nativeExecuted": true,
   "references": [
     "https://developer.apple.com/documentation/network/proxyconfiguration/init(socksv5proxy:)",
     "https://www.rfc-editor.org/rfc/rfc1928.html",
@@ -33,5 +35,117 @@
   "releaseUnchanged": {
     "version": "0.8.23",
     "build": 135
+  },
+  "nativeObservation": {
+    "sourceHEAD": "8187fde6bfeb02e6f23a8db44d9ccb53db151db1",
+    "sourceInputSHA256": "b3fcb9029a343972bf269b6064cb875fe0d7a1915fee1007ce738422e87f4b8c",
+    "sourceFiles": {
+      "Sources/NeAntik/WebKitProxySession.swift": "6a5fdb6d9d97eb62388823508dd52f9a731502040a2179097742a1549bc7505f",
+      "Sources/NeAntik/WebKitProxySOCKSCodec.swift": "fdb6db111d28d044ba960189343a800c62c437f2d45a5679c6920f557be0bd55",
+      "Tests/NeAntikTests/WebKitProxySOCKSCodecTests.swift": "be7b520f2dceceebc6990eb1ebe8fe38107fd55843bddf886b3c133d7f2c3663",
+      "Tests/NeAntikTests/WebKitProxyTransportTests.swift": "19d025cabfcac029ce4d449e1711ec18dbd47e87094bf436de2c90eeea5be9a6"
+    },
+    "testBinarySHA256": "7f510f25e3a70e018323bf4821dfeae7514fd8c4e2ad10daba625a7240dad3da",
+    "memoryPressure": 2,
+    "thermalState": 0,
+    "warningExceptionUsed": true,
+    "exitCode": 1,
+    "seconds": 3.5749392500147223,
+    "sourceUnchanged": true,
+    "hostAttempts": 1,
+    "maximumWindows": 1,
+    "scope": "four raw stream controls and one visible two-store WebKit window;not signed product",
+    "noRealProfilesKeychainOrSystemSettings": true,
+    "platform": {
+      "os": "macOS27.0",
+      "architecture": "arm64",
+      "systemWebKit": "22625.1.29.11.24"
+    },
+    "date": "2026-10-16",
+    "tests": 2,
+    "suites": 2,
+    "issues": 6,
+    "signedProductQualification": false
+  },
+  "streamControls": {
+    "status": "FAIL:combined snapshot counter assertion",
+    "cases": 4,
+    "wireAndTerminationAssertions": "no issues recorded",
+    "upstreamConnections": 0,
+    "established": 0,
+    "expectedSnapshot": {
+      "authenticationRefused": 3,
+      "malformed": 1,
+      "established": 0
+    },
+    "actualRefusalAndMalformedCounters": "not logged;which conjunct failed is unmeasured",
+    "timeoutAcceptedAsSuccess": false
+  },
+  "window": {
+    "status": "FAIL:five strict route issues",
+    "visible": true,
+    "temporaryStores": 2,
+    "frontend": "socks5",
+    "exactHosts": true,
+    "allowFailover": false,
+    "exceptionCount": 0,
+    "sameAcrossPhases": {
+      "accepted": 1,
+      "malformed": 0,
+      "authenticationRefused": 0,
+      "established": 1,
+      "upstreamAuth": 1,
+      "upstreamResponses": 1
+    },
+    "phases": [
+      {
+        "phase": "named",
+        "directConnections": 0,
+        "directResponses": 0
+      },
+      {
+        "phase": "direct-before",
+        "directConnections": 1,
+        "directResponses": 1
+      },
+      {
+        "phase": "bare-tcp-control",
+        "directConnections": 2,
+        "directResponses": 1
+      },
+      {
+        "phase": "protected",
+        "directConnections": 3,
+        "directResponses": 2
+      },
+      {
+        "phase": "revoked",
+        "directConnections": 4,
+        "directResponses": 3
+      },
+      {
+        "phase": "direct-after",
+        "directConnections": 5,
+        "directResponses": 4
+      }
+    ],
+    "conclusion": "Named WebKit SOCKS method2 authentication works. Owned reachable private-IP request bypasses relay before and after revoke. Protocol switch did not remove bypass."
+  },
+  "cleanup": {
+    "windowClosed": true,
+    "relayDrained": true,
+    "fixtureStopsAwaited": true,
+    "testHostExited": true,
+    "allSystemWebKitProcessCustodyProven": false
+  },
+  "counterCorrection": {
+    "status": "source implemented;build-only PASS;native not rerun",
+    "cause": "Broad authentication read catch classified cancellation/transport errors as authentication rejection;source-confirmed defect, not measured explanation of exact counter mismatch",
+    "change": "Only malformed auth is classified as authentication rejection;cancellation/timeout propagate to cleanup. Cancellation checked before counting. No atomic post-revoke counter guarantee asserted.",
+    "sourceSHA256": "8726a0219ab5f7d9ff47f7276e5f340e6fb64ccf582d72f17b8b52c521699f86",
+    "inputSHA256": "c16a6cfc14d757f2e0a9d524b917e5b4ac2481d471dcde66503bf1a6ba26aa82",
+    "buildSeconds": 11.462018207996152,
+    "nativeTestsOrCriteriaChanged": false,
+    "nativeRerun": false
   }
 }

@@ -213,7 +213,11 @@ final class WebKitProxySession: @unchecked Sendable, CustomStringConvertible, Cu
                         try await front.send(WebKitProxySOCKSCodec.selectedPassword, timeout: remaining())
                         let auth: WebKitProxySOCKSCodec.Authentication
                         do { auth = try await read(WebKitProxySOCKSCodec.maximumAuthenticationBytes, parse: WebKitProxySOCKSCodec.authentication) }
-                        catch {
+                        catch ProxyRelayClientWireError.malformed {
+                            // A revoked or closed transport is not a rejected
+                            // password. Only a malformed auth frame receives
+                            // RFC1929 failure; cancellation/timeout propagate.
+                            try Task.checkCancellation()
                             queue.sync { self.authenticationRefused += 1 }
                             try await front.send(WebKitProxySOCKSCodec.authenticationRefused, timeout: remaining())
                             try await front.finishWrite(timeout: remaining()); return
