@@ -35,6 +35,16 @@ VERIFIER_SPEC.loader.exec_module(VERIFIER_FIXTURES)
 
 
 class DirectPublicReleasePreflightTests(unittest.TestCase):
+    def test_doctor_refuses_current_runtime_cross_branch_without_source_review(self):
+        root = SCRIPT.parents[1]
+        baseline = json.loads((root / "runtime/security-baseline.json").read_text())
+        lock = root / "runtime/fingerprint-chromium-15612-font-system-v1.lock.json"
+        with self.assertRaisesRegex(ValueError, "security branch"):
+            MODULE.verify_runtime_security_branch("156.0.8078.12", lock, baseline)
+        # A mismatched lock cannot supply a review for another binary version.
+        with self.assertRaisesRegex(ValueError, "does not match"):
+            MODULE.verify_runtime_security_branch("156.0.8078.39", lock, baseline)
+
     def test_doctor_cli_prevents_real_descendant_bytecode_even_without_parent_environment(self):
         with tempfile.TemporaryDirectory(prefix='neantik-own-doctor-child-') as directory:
             root = Path(directory)

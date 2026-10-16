@@ -1,8 +1,11 @@
 import importlib.util
 import json
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -15,6 +18,34 @@ SPEC.loader.exec_module(MODULE)
 
 
 class RuntimeSecurityReferenceTests(unittest.TestCase):
+    def test_required_security_fixes_must_match_published_issue_links(self):
+        issues = [str(123456789 + index) for index in range(4)]
+        with tempfile.TemporaryDirectory() as temporary:
+            path = write_baseline(Path(temporary))
+            baseline = json.loads(path.read_text())
+            baseline["requiredSecurityFixes"] = issues
+            path.write_text(json.dumps(baseline))
+            with self.assertRaisesRegex(MODULE.SecurityReferenceError, "not all linked"):
+                MODULE.verify_reference(baseline_path=path, html_text=valid_html())
+            linked = valid_html() + " ".join("https://issues.chromium.org/issues/" + issue for issue in issues)
+            self.assertIn("verified", MODULE.verify_reference(baseline_path=path, html_text=linked))
+            for invalid in (issues[:-1], issues[:-1] + [issues[0]], issues[:-1] + [None]):
+                baseline["requiredSecurityFixes"] = invalid
+                path.write_text(json.dumps(baseline))
+                with self.subTest(invalid=invalid), self.assertRaisesRegex(MODULE.SecurityReferenceError, "complete"):
+                    MODULE.verify_reference(baseline_path=path, html_text=linked)
+
+    def test_primary_fetch_ignores_ambient_credentials_and_redacts_failure(self):
+        # The marker is synthetic; no credential or real network request is used.
+        with patch.dict(os.environ, {"HTTPS_PROXY": "synthetic-private-marker", "SSLKEYLOGFILE": "/synthetic/private"}), \
+             patch.object(MODULE.subprocess, "run", return_value=subprocess.CompletedProcess([], 7, "", "synthetic-private-marker")) as run:
+            with self.assertRaises(MODULE.SecurityReferenceError) as error:
+                MODULE.fetch_text("https://chromereleases.googleblog.com/example")
+            self.assertNotIn("synthetic-private-marker", str(error.exception))
+            self.assertEqual(run.call_args.args[0][:2], ["/usr/bin/curl", "--disable"])
+            self.assertNotIn("HTTPS_PROXY", run.call_args.kwargs["env"])
+            self.assertNotIn("SSLKEYLOGFILE", run.call_args.kwargs["env"])
+
     def test_accepts_mac_patch_after_slash_in_official_release_post(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             baseline = write_baseline(Path(temporary))

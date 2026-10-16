@@ -218,5 +218,112 @@ class RuntimeSecurityBaselineTests(unittest.TestCase):
             self.assertIn("source-only runtime lock", message)
 
 
+    def reviewed_branch_fixture(self):
+        lock = self.lock("151.0.8000.2")
+        lock["fingerprintChromium"]["commit"] = "1" * 40
+        lock["sourceContractSHA256"] = "2" * 64
+        baseline = self.baseline()
+        issues = ["123456789", "123456790", "123456791", "123456792"]
+        baseline["requiredSecurityFixes"] = issues
+        baseline["reviewedSecurityBranches"] = {"151.0.8000": {
+            "status": "verified", "minimumVersion": "151.0.8000.2",
+            "sourceCommit": "1" * 40, "sourceContractSHA256": "2" * 64,
+            "securityReference": baseline["reference"],
+            "fixes": {issue: {"status": "included", "reference":
+                "https://chromium.googlesource.com/chromium/src/+/" + "3" * 40}
+                for issue in issues},
+        }}
+        return lock, baseline
+
+    def verify_reviewed_fixture(self, lock, baseline, *, alpha=False):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            return MODULE.verify(self.write_json(root, "lock.json", lock),
+                self.write_json(root, "baseline.json", baseline), date(2026, 7, 25),
+                allow_public_alpha_tuples=alpha)
+
+    def test_newer_milestone_or_other_branch_does_not_imply_fix_inclusion(self):
+        for version in ("151.0.8000.2", "150.0.8000.2"):
+            with self.subTest(version=version), self.assertRaisesRegex(SystemExit, "security branch"):
+                self.verify(version)
+
+    def test_source_only_alpha_cannot_skip_branch_review(self):
+        lock, baseline = self.reviewed_branch_fixture()
+        lock.pop("verification")
+        lock["status"] = "source-qualified"
+        baseline["reviewedSecurityBranches"] = {}
+        with self.assertRaisesRegex(SystemExit, "security branch"):
+            self.verify_reviewed_fixture(lock, baseline, alpha=True)
+
+    def test_complete_source_bound_security_review_passes(self):
+        lock, baseline = self.reviewed_branch_fixture()
+        self.assertIn("source-bound security fix review", self.verify_reviewed_fixture(lock, baseline))
+        fixes = baseline["reviewedSecurityBranches"]["151.0.8000"]["fixes"]
+        fixes["123456789"]["reference"] = "https://chromium.googlesource.com/v8/v8.git/+/" + "3" * 40
+        fixes["123456790"]["reference"] = "https://github.com/AffPapa/neantik/blob/" + "4" * 40 + "/docs/evidence/report.json"
+        self.assertIn("verified", self.verify_reviewed_fixture(lock, baseline))
+
+    def test_partial_or_unverified_fix_set_is_refused(self):
+        for mutation in ("missing", "unknown", "wrong_count", "duplicate"):
+            lock, baseline = self.reviewed_branch_fixture()
+            review = baseline["reviewedSecurityBranches"]["151.0.8000"]
+            if mutation == "missing": del review["fixes"]["123456789"]
+            elif mutation == "unknown": review["fixes"]["123456789"]["status"] = "unknown"
+            elif mutation == "wrong_count": baseline["securityFixCount"] = 5
+            else: baseline["requiredSecurityFixes"][-1] = "123456789"
+            with self.subTest(mutation=mutation), self.assertRaisesRegex(SystemExit, "security branch"):
+                self.verify_reviewed_fixture(lock, baseline)
+
+    def test_review_cannot_move_to_another_source_or_security_batch(self):
+        for mutation in ("commit", "contract", "missing_contract", "batch", "pending"):
+            lock, baseline = self.reviewed_branch_fixture()
+            review = baseline["reviewedSecurityBranches"]["151.0.8000"]
+            if mutation == "commit": lock["fingerprintChromium"]["commit"] = "4" * 40
+            elif mutation == "contract": lock["sourceContractSHA256"] = "4" * 64
+            elif mutation == "missing_contract": del lock["sourceContractSHA256"]
+            elif mutation == "batch": baseline["reference"] += "-new-batch"
+            else: review["status"] = "pending"
+            with self.subTest(mutation=mutation), self.assertRaisesRegex(SystemExit, "security branch"):
+                self.verify_reviewed_fixture(lock, baseline)
+
+    def test_reviewed_floor_must_match_branch_and_runtime(self):
+        for floor in ("151.0.8000.3", "151.0.8100.1"):
+            lock, baseline = self.reviewed_branch_fixture()
+            baseline["reviewedSecurityBranches"]["151.0.8000"]["minimumVersion"] = floor
+            with self.subTest(floor=floor), self.assertRaisesRegex(SystemExit, "reviewed branch floor"):
+                self.verify_reviewed_fixture(lock, baseline)
+
+    def test_security_evidence_is_primary_or_pinned_and_not_applicable_is_explained(self):
+        for reference in ("https://example.com/unverified", "https://github.com/AffPapa/neantik/blob/main/report.json", "https://chromium.googlesource.com:wrong/commit", "https://chromium.googlesource.com/", "https://chromium.googlesource.com/chromium/src/+/refs/heads/main/file.cc", "https://chromereleases.googleblog.com/2026/10/post.html",
+                          "https://chromium.googlesource.com/chromium/src/+/" + "3" * 40 + "/../../main/file.cc",
+                          "https://chromium.googlesource.com/chromium/src/+/" + "3" * 40 + "/%2e%2e/main"):
+            lock, baseline = self.reviewed_branch_fixture()
+            baseline["reviewedSecurityBranches"]["151.0.8000"]["fixes"]["123456789"]["reference"] = reference
+            with self.subTest(reference=reference), self.assertRaisesRegex(SystemExit, "security evidence"):
+                self.verify_reviewed_fixture(lock, baseline)
+        lock, baseline = self.reviewed_branch_fixture()
+        proof = baseline["reviewedSecurityBranches"]["151.0.8000"]["fixes"]["123456789"]
+        proof["status"] = "not-applicable"
+        with self.assertRaisesRegex(SystemExit, "specific reason"):
+            self.verify_reviewed_fixture(lock, baseline)
+        for reason in (None, 0, {}, "", "  "):
+            proof["reason"] = reason
+            with self.subTest(reason=reason), self.assertRaisesRegex(SystemExit, "specific reason"):
+                self.verify_reviewed_fixture(lock, baseline)
+        proof["reason"] = "Synthetic fixture: source operation absent from this platform"
+        self.assertIn("verified", self.verify_reviewed_fixture(lock, baseline))
+
+    def test_delivered_runtime_cannot_use_alpha_to_bypass_security_review(self):
+        project = SCRIPT.parents[1]
+        baseline_path = project / "runtime/security-baseline.json"
+        baseline = json.loads(baseline_path.read_text())
+        for alpha in (False, True):
+            with self.subTest(alpha=alpha), self.assertRaisesRegex(SystemExit, "security branch"):
+                MODULE.verify(project / "runtime/fingerprint-chromium-15612-font-system-v1.lock.json",
+                    baseline_path, date.fromisoformat(baseline["checkedAt"]),
+                    allow_public_alpha_tuples=alpha)
+
+
+
 if __name__ == "__main__":
     unittest.main()

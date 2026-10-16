@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from datetime import date, datetime, timezone
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -35,6 +37,67 @@ def load_object(path: Path, label: str) -> dict[str, object]:
     if not isinstance(value, dict):
         fail(f"{label} must contain a JSON object.")
     return value
+
+
+def verify_security_branch(lock, fingerprint, baseline, runtime, minimum):
+    """A higher milestone cannot substitute for a source-bound fix review."""
+    if runtime[:3] == minimum[:3]:
+        return False
+    branch = ".".join(map(str, runtime[:3]))
+    prefix = "Public Direct release blocked: security branch " + branch + ": "
+    reviews = baseline.get("reviewedSecurityBranches")
+    review = reviews.get(branch) if isinstance(reviews, dict) else None
+    if not isinstance(review, dict) or review.get("status") != "verified":
+        fail(prefix + "a complete source-bound security fix review is required; a higher version is not proof.")
+    if review.get("securityReference") != baseline["reference"]:
+        fail(prefix + "review refers to a different security batch.")
+    commit = fingerprint.get("commit")
+    contract = lock.get("sourceContractSHA256")
+    if (not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}", commit)
+            or not isinstance(contract, str) or not re.fullmatch(r"[0-9a-f]{64}", contract)
+            or review.get("sourceCommit") != commit
+            or review.get("sourceContractSHA256") != contract):
+        fail(prefix + "review does not bind this exact source commit and contract.")
+    floor = version_tuple(review.get("minimumVersion"), "Reviewed branch minimum")
+    if floor[:3] != runtime[:3] or runtime < floor:
+        fail(prefix + "runtime is below or outside the reviewed branch floor.")
+    required = baseline.get("requiredSecurityFixes")
+    if (not isinstance(required, list)
+            or any(not isinstance(item, str) or not re.fullmatch(r"[0-9]{6,12}", item) for item in required)
+            or len(set(required)) != len(required)
+            or len(required) != baseline["securityFixCount"]):
+        fail(prefix + "the complete published security fix set is missing or invalid.")
+    fixes = review.get("fixes")
+    if not isinstance(fixes, dict) or set(fixes) != set(required):
+        fail(prefix + "security fix coverage is incomplete.")
+    for issue in required:
+        proof = fixes[issue]
+        if not isinstance(proof, dict) or proof.get("status") not in ("included", "not-applicable"):
+            fail(prefix + "security fix coverage contains an unverified result.")
+        reference = proof.get("reference")
+        if not isinstance(reference, str):
+            fail(prefix + "a security fix has no primary-source evidence.")
+        try:
+            parsed = urlsplit(reference)
+            official = (parsed.hostname == "chromium.googlesource.com" and re.fullmatch(
+                r"/(?:codesearch/)?(?:chromium/src(?:\.git)?|v8/v8(?:\.git)?)/\+/[0-9a-f]{40}(?:/.*)?",
+                parsed.path) is not None)
+            own_pinned = (parsed.hostname == "github.com" and re.match(
+                r"^/AffPapa/neantik/blob/[0-9a-f]{40}/", parsed.path) is not None)
+            valid = (parsed.scheme == "https" and parsed.username is None
+                     and parsed.password is None and parsed.port in (None, 443)
+                     and not parsed.query and not parsed.fragment
+                     and not any(part in (".", "..") for part in parsed.path.split("/"))
+                     and "%" not in parsed.path and "\\" not in parsed.path
+                     and (official or own_pinned))
+        except ValueError:
+            valid = False
+        if not valid:
+            fail(prefix + "security evidence must use a commit-pinned upstream source or a pinned NeAntik source report.")
+        if (proof["status"] == "not-applicable"
+                and (not isinstance(proof.get("reason"), str) or not proof["reason"].strip())):
+            fail(prefix + "a not-applicable fix requires a specific reason.")
+    return True
 
 
 def verify(
@@ -125,11 +188,16 @@ def verify(
             "Rebase the owned fingerprint runtime and reproduce all runtime gates first."
         )
 
+    reviewed_branch = verify_security_branch(lock, fingerprint, baseline, runtime, minimum)
+
     security_summary = (
         f"security fixes {security_fix_count}"
         if security_fix_count > 0
         else "security fixes not enumerated by the official post"
     )
+
+    if reviewed_branch:
+        security_summary += "; cross-branch source-bound security fix review verified"
 
     verification = lock.get("verification")
     if not isinstance(verification, dict):

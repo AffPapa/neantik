@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -44,8 +45,11 @@ def assert_official_reference(url: object) -> str:
 def fetch_text(url: str, *, timeout: int = 20) -> str:
     completed = subprocess.run(
         [
-            "curl",
+            "/usr/bin/curl",
+            "--disable",
             "-fsSL",
+            "--proto", "=https",
+            "--proto-redir", "=https",
             "--max-time",
             str(timeout),
             "--user-agent",
@@ -56,10 +60,12 @@ def fetch_text(url: str, *, timeout: int = 20) -> str:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
+        # Anonymous primary-source retrieval must not inherit operator secrets.
+        env={key: value for key, value in os.environ.items()
+             if key in {"PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "LC_CTYPE", "USER", "LOGNAME"}},
     )
     if completed.returncode != 0:
-        error = completed.stderr.strip() or f"curl exited {completed.returncode}"
-        raise SecurityReferenceError(f"Cannot fetch baseline reference: {error}")
+        raise SecurityReferenceError(f"Cannot fetch baseline reference: curl exit {completed.returncode}")
     return completed.stdout
 
 
@@ -134,6 +140,16 @@ def verify_reference(
         raise SecurityReferenceError(
             f"Official reference does not mention securityFixCount {security_fix_count}"
         )
+    required = baseline.get("requiredSecurityFixes")
+    if required is not None:
+        if (not isinstance(required, list)
+                or any(not isinstance(issue, str) or not re.fullmatch(r"[0-9]{6,12}", issue) for issue in required)
+                or len(set(required)) != len(required) or len(required) != security_fix_count):
+            raise SecurityReferenceError("requiredSecurityFixes must cover the complete securityFixCount")
+        published_issues = set(re.findall(
+            r"https://(?:issues\.chromium\.org/issues/|crbug\.com/)([0-9]{6,12})(?![0-9])", text))
+        if not set(required).issubset(published_issues):
+            raise SecurityReferenceError("requiredSecurityFixes are not all linked by the official post")
     fix_summary = (
         f"security fixes {security_fix_count}"
         if security_fix_count > 0

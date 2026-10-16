@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "dateUTC": "2026-10-16",
+  "status": "P0-publication-hold",
+  "candidate": {
+    "version": "0.8.19",
+    "build": 131,
+    "published": false,
+    "localDirectPackaging": "completed;does not resolve security hold"
+  },
+  "publishedRuntime": "156.0.8078.12",
+  "sourceCommit": "634b046faf2137b83af71c87baf362b533af9104",
+  "securityReference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_01886704284.html",
+  "confirmedSourceGap": {
+    "issue": "567638392",
+    "CVE": "CVE-2026-110913",
+    "file": "third_party/blink/renderer/core/dom/element.cc",
+    "sourceSHA256": "4730e00a37a3df058cd8825352c8c5c062108201a10a394522fe617fdbf29283",
+    "oldCode": "const AtomicString& id_value = GetIdAttribute();",
+    "fixCommit": "6f8bd0510049073dacc94db8968ba350678da324",
+    "scope": "source inspection bound by existing runtime provenance;no exploit executed"
+  },
+  "releaseGuard": {
+    "scriptSHA256": "e93a8062046e011661da7032f72bc0e6a645b23074ff1f5703de5dbd208b28e2",
+    "realLockControls": [
+      {
+        "publicAlpha": false,
+        "exitCode": 1,
+        "refusedBy": "security branch source-bound review required"
+      },
+      {
+        "publicAlpha": true,
+        "exitCode": 1,
+        "refusedBy": "security branch source-bound review required"
+      }
+    ],
+    "branchReviewCount": 0,
+    "sourceTests": [
+      {
+        "scope": "baseline/historical/release callers",
+        "count": 48,
+        "result": "pass"
+      },
+      {
+        "scope": "changed guard/doctor/reference",
+        "count": 45,
+        "result": "pass"
+      },
+      {
+        "scope": "changed primary reference and anonymous fetch contracts",
+        "count": 11,
+        "result": "pass"
+      }
+    ],
+    "countsAreSeparateRunsWithOverlap": true,
+    "notRuntimeFix": "Guard prevents an invalid release claim; it does not patch Chromium or verify remote report contents."
+  },
+  "successor15639": {
+    "status": "not-qualified",
+    "sourceCommit": "6f8bd0510049073dacc94db8968ba350678da324",
+    "missingFullFixes": [
+      "568719351",
+      "568937999",
+      "563194341"
+    ],
+    "partialSourceProof": [
+      "556272421"
+    ],
+    "unknown": [
+      "501886301"
+    ],
+    "boundary": "Five additional positive ancestry observations are not a full source/runtime qualification."
+  },
+  "limitations": [
+    "No new browser build or native security exploit test in this slice",
+    "Prior headed/platform/isolated-data results retain their original scope; they do not cover later upstream security fixes",
+    "System WebKit is supplied by macOS and is a distinct platform;this Chromium finding is not a WebKit qualification",
+    "No update to immutable release assets or release131 publication"
+  ]
+}

@@ -63,6 +63,32 @@ sys.modules[VERSION_BUMP_SPEC.name] = VERSION_BUMP
 VERSION_BUMP_SPEC.loader.exec_module(VERSION_BUMP)
 
 
+SECURITY_SPEC = importlib.util.spec_from_file_location(
+    "runtime_security_baseline_for_preflight",
+    PROJECT_ROOT / "scripts" / "verify-runtime-security-baseline.py",
+)
+assert SECURITY_SPEC and SECURITY_SPEC.loader
+RUNTIME_SECURITY = importlib.util.module_from_spec(SECURITY_SPEC)
+SECURITY_SPEC.loader.exec_module(RUNTIME_SECURITY)
+
+
+def verify_runtime_security_branch(runtime_version: str, runtime_lock: Path, baseline: dict) -> bool:
+    """Doctor must enforce the same branch review as preparation/notarization."""
+    lock = read_json(runtime_lock)
+    fingerprint = lock.get("fingerprintChromium")
+    if not isinstance(fingerprint, dict) or fingerprint.get("chromiumVersion") != runtime_version:
+        raise ValueError("runtime app version does not match security review source lock")
+    try:
+        return RUNTIME_SECURITY.verify_security_branch(
+            lock, fingerprint, baseline,
+            RUNTIME_SECURITY.version_tuple(runtime_version, "Runtime app version"),
+            RUNTIME_SECURITY.version_tuple(baseline.get("minimumPublicChromiumVersion"), "Security minimum"),
+        )
+    except SystemExit as error:
+        # Keep the doctor report structured; do not terminate before other gates.
+        raise ValueError(str(error)) from error
+
+
 def verify_source_contract_binding(
     *, runtime_version: str, contract: dict[str, Any], contract_path: Path,
     provenance: dict[str, Any], candidate_lock: dict[str, Any],
@@ -282,7 +308,9 @@ def verify_direct_public_release_plan(
         runtime_version = str(runtime_plist["CFBundleShortVersionString"])
         if not version_at_least(runtime_version, minimum):
             raise ValueError(f"runtime {runtime_version} is below public baseline {minimum}")
-        return f"{runtime_version} >= {minimum}"
+        reviewed = verify_runtime_security_branch(runtime_version, runtime_lock, baseline)
+        suffix = "; source-bound branch security review verified" if reviewed else ""
+        return f"{runtime_version} >= {minimum}{suffix}"
 
     def runtime_identity() -> str:
         if not runtime_app.is_dir():

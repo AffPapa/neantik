@@ -16,7 +16,7 @@
   "referenceTitle": "Stable Channel Update for Desktop",
   "sourceLabel": "Chrome Releases",
   "releaseBoundary": "This is a manually pinned primary-source security baseline. It is not a live updater. Refresh checkedAt, versions, securityFixCount and reference on the day of every public Direct release. A zero securityFixCount means the official Stable post did not enumerate security fixes; it never means that the version is exempt from the minimum-version gate.",
-  "policy": "New public NeAntik Direct builds must meet the latest widely deployed macOS Desktop Stable security baseline. The official October15 update lists155.0.8059.84/.85 and10 security fixes. M156 Early Stable remains a limited rollout, tracked separately. Refresh on publication day; historical provenance binds archived baseline bytes independently. A numeric baseline pass is not proof that an older Early Stable branch contains every later security fix.",
+  "policy": "New public NeAntik Direct builds must meet the latest widely deployed macOS Desktop Stable security baseline. The official October15 update lists155.0.8059.84/.85 and10 security fixes. M156 Early Stable remains a limited rollout, tracked separately. Refresh on publication day; historical provenance binds archived baseline bytes independently. A numeric baseline pass is not proof that an older Early Stable branch contains every later security fix. A different Chromium branch requires an exact source-contract-bound review of every listed security fix; public alpha does not waive this gate.",
   "earlyStableObservation": {
     "observedAt": "2026-10-16",
     "publishedAt": "2026-10-14",
@@ -27,5 +27,18 @@
     "reference": "https://chromereleases.googleblog.com/2026/10/early-stable-update-for-desktop_01549127219.html",
     "status": "available-upstream;not-rebuilt-or-qualified-in-NeAntik",
     "boundary": "Current NeAntik156.0.8078.12 is not the latest Early Stable;no security-fix inclusion claim from cross-major numeric comparison"
-  }
+  },
+  "requiredSecurityFixes": [
+    "568719351",
+    "567638392",
+    "568831769",
+    "568937999",
+    "569038297",
+    "569286602",
+    "569659194",
+    "501886301",
+    "556272421",
+    "563194341"
+  ],
+  "reviewedSecurityBranches": {}
 }

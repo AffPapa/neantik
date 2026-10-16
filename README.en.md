@@ -1,5 +1,7 @@
 # NeAntik
 
+**Security update, October 16:** shipped Chromium 156.0.8078.12 lacks an upstream DOM security fix. Candidate 0.8.19 (131) has not been published. Avoid untrusted sites with this Chromium build until the runtime is corrected. [Evidence, scope and release hold](docs/security/runtime-security-2026-10-16.md).
+
 NeAntik is an open-source, local-first browser profile manager for Apple
 Silicon Macs. The manager is native SwiftUI and launches an embedded,
 source-pinned Chromium runtime. It does not require Electron, an account, a
