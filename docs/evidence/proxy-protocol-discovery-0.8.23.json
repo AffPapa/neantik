@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "status": "exact135-and-hosted-verified;Site-separate",
+  "version": "0.8.23",
+  "build": 135,
+  "appSource": "33cdd33556b56e3f6f364f9d1e721447c352e595",
+  "managerSHA256": "b8092ce4db11c0053bdac9b72384464733056a8b0c90d4b5c77e63d588750c21",
+  "releaseReport": "../../releases/v0.8.23.json",
+  "historicalSourceAndDev": "proxy-protocol-discovery-development.json",
+  "exactSignedWindow": {
+    "socksFound": true,
+    "applyExplicit": true,
+    "staleHTTPParseSummaryAbsent": true,
+    "expectedGreetingOnly": true,
+    "credentialsSent": false,
+    "newProfileAutosaved": false,
+    "browserLaunchedForEditorTest": false,
+    "normalManagerExit": true,
+    "ownProcessesRemaining": 0
+  },
+  "controlsScope": "HTTP407/200/edit/cancel wire controls are source+Dev evidence; exact signed135 window is scoped SOCKS+apply, not a repeat of all socket cases",
+  "runtimeChanged": false,
+  "profileDataFormatChanged": false,
+  "siteQualified": false,
+  "full1_0": false
+}

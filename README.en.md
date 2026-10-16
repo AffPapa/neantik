@@ -8,7 +8,7 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-**0.8.22 (134), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.22): accepted Chromium Stop stays visibly closing until settlement, including through MCP. Signed public ZIP/DMG and the downloaded manager were verified. Chromium and profile data are unchanged. [browser.free](https://browser.free/) still shows the earlier release.
+**0.8.23 (135), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.23): credential-free HTTP/SOCKS5 discovery, explicit apply and corrected editor summary. The signed candidate, public ZIP/DMG and downloaded manager were verified. Chromium and profile data are unchanged. [browser.free](https://browser.free/) still shows an earlier release.
 The exact signed candidate passed its headed audit. Anonymous ZIP/DMG downloads match and passed notarization, stapling and Gatekeeper. The downloaded manager passed an isolated MCP create/edit/restart smoke; the headed audit was reused for matching critical bytes.
 System WebKit remains a preview and does not replace the complete fingerprint. WebKit media remains disabled; full1.0 qualification is open.
 
@@ -23,15 +23,15 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.8.22 (134), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.22). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.22.json).
+Latest published release: [NeAntik 0.8.23 (135), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.23). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.23.json).
 
-**The update to 0.8.22 is manual via DMG/ZIP.** Quit before replacing the app; keep profile folders. An installed-updater transition is not qualified by this release.
+**The update to 0.8.23 is manual via DMG/ZIP.** Quit before replacing the app; keep profile folders. An installed-updater transition is not qualified by this release.
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-Direct downloads: [GitHub — 0.8.22](https://github.com/AffPapa/neantik/releases/tag/v0.8.22). [browser.free](https://browser.free) still points to the previous release.
+Direct downloads: [GitHub — 0.8.23](https://github.com/AffPapa/neantik/releases/tag/v0.8.23). [browser.free](https://browser.free) still points to the previous release.
 
 The description below reflects the manager contract and this source branch;
 the exact public binary contents are defined by its release notes and assets.
