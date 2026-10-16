@@ -10,6 +10,18 @@ SPEC.loader.exec_module(MOD)
 
 
 class ManagerCheckPlanTests(unittest.TestCase):
+    def test_common_evidence_preparation_has_bounded_tests_without_release_authority(self):
+        result = MOD.plan(['scripts/prepare_runtime_common_evidence.py'], [])
+        self.assertEqual(result['swiftMode'], 'none')
+        self.assertEqual(result['commands'], [['python3', '-B', '-m', 'unittest',
+            'scripts.tests.test_prepare_runtime_common_evidence']])
+        self.assertEqual(result['status'], 'not-run')
+        self.assertFalse(result['releaseGate'])
+        self.assertFalse(result['releaseSurface'])
+        self.assertIn('preparation never qualifies', result['requiredAdditionalGates'][0])
+        unknown = MOD.plan(['scripts/prepare_runtime_common_evidence_other.py'], [])
+        self.assertIn('discover', unknown['commands'][0])
+
     def test_offline_dns_transition_and_planner_have_explicit_bounded_contracts(self):
         result = MOD.plan(['scripts/runtime-network/manager-dns-transition.py',
                            'scripts/plan-manager-checks.py'], [])

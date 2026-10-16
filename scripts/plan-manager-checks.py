@@ -104,6 +104,10 @@ def plan(paths, catalog):
             python.add('scripts.tests.test_compare_release_reports')
             gates.add('actual public before/after records; matching measurement conditions and native behavior remain separate acceptance')
             reasons.append({'path': path, 'surface': 'release-report-comparison'}); continue
+        if path == 'scripts/prepare_runtime_common_evidence.py':
+            python.add('scripts.tests.test_prepare_runtime_common_evidence')
+            gates.add('owned temporary staging against explicit input hashes; preparation never qualifies runtime, candidate or release')
+            reasons.append({'path': path, 'surface': 'common-evidence-preparation'}); continue
         if path == 'scripts/plan-manager-checks.py':
             python.add('scripts.tests.test_manager_check_plan')
             gates.add('review check selection and preserve conservative unknown/shared-input fallback')
