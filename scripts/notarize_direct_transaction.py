@@ -126,6 +126,70 @@ PhaseHook = Callable[[str, dict[str, Path]], None]
 SourceAssertion = Callable[[SOURCE.ReleaseSourceSnapshot], None]
 
 
+# Only reviewed names enter timing logs. In particular, an argv, credential,
+# profile name, path or child output must never become a diagnostic field.
+_TIMED_STAGES = frozenset({
+    "candidate archive extraction",
+    "candidate manifest verification",
+    "fingerprint evidence envelope verification",
+    "public artifact privacy verification",
+    "integrated release verification",
+    "code signature verification",
+    "runtime security baseline",
+    "runtime security reference",
+    "Direct telemetry contract",
+    "Direct update policy",
+    "public fingerprint corpus",
+    "Developer ID signature inspection",
+    "stale Apple notarization history reconciliation",
+    "Apple notarization history reconciliation",
+    "Apple notarization recovery wait",
+    "Apple notarization recovery confirmation",
+    "Apple Accepted recovery confirmation",
+    "recovery stapling accepted candidate",
+    "recovery stapled ticket validation",
+    "recovery Gatekeeper assessment",
+    "recovery final ZIP packaging",
+    "recovery final notarized archive verification",
+    "recovered public archive verification",
+    "submission ZIP packaging",
+    "Apple notarization submission",
+    "Apple notarization wait",
+    "Apple notarization status confirmation",
+    "stapling accepted candidate",
+    "stapled ticket validation",
+    "Gatekeeper assessment",
+    "final ZIP packaging",
+    "final notarized archive verification",
+    "published notarized archive verification",
+})
+
+
+def _stage_diagnostic(
+    label: str,
+    event: str,
+    *,
+    elapsed_ns: int | None = None,
+    outcome: str | None = None,
+) -> None:
+    """Observe commands without altering gates or their evidence receipts."""
+    record: dict[str, object] = {
+        "kind": "neantik.direct-stage",
+        "stage": label if label in _TIMED_STAGES else "unclassified",
+        "event": event,
+    }
+    if elapsed_ns is not None:
+        record["elapsedSeconds"] = round(elapsed_ns / 1_000_000_000, 6)
+    if outcome is not None:
+        record["outcome"] = outcome
+    try:
+        print(json.dumps(record, sort_keys=True), file=sys.stderr, flush=True)
+    except (OSError, ValueError):
+        # Diagnostics are not admission: a closed log must neither skip a gate
+        # nor turn a refused candidate into a successful transaction.
+        pass
+
+
 def default_runner(command: list[str], cwd: Path) -> CommandResult:
     executable = Path(command[0])
     if (
@@ -177,7 +241,20 @@ def run_checked(
     label: str,
     include_stderr: bool = False,
 ) -> str:
-    result = runner(command, cwd)
+    started = time.monotonic_ns()
+    _stage_diagnostic(label, "start")
+    try:
+        result = runner(command, cwd)
+    except BaseException:
+        _stage_diagnostic(
+            label, "end", elapsed_ns=time.monotonic_ns() - started,
+            outcome="runner-error",
+        )
+        raise
+    _stage_diagnostic(
+        label, "end", elapsed_ns=time.monotonic_ns() - started,
+        outcome="exit-zero" if result.returncode == 0 else "exit-nonzero",
+    )
     if result.returncode != 0:
         detail = "\n".join(
             part
