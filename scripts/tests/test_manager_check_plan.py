@@ -10,6 +10,16 @@ SPEC.loader.exec_module(MOD)
 
 
 class ManagerCheckPlanTests(unittest.TestCase):
+    def test_webrtc_closed_map_selects_node_controls_without_rebuilding(self):
+        result=MOD.plan(sorted(MOD.WEBRTC_HARNESSES), [])
+        self.assertEqual(result['swiftMode'],'none')
+        self.assertEqual(result['commands'], [['node','scripts/runtime-network/'+name]
+            for name in sorted(MOD.WEBRTC_CONTROLS)])
+        self.assertEqual(len(result['reasons']),9)
+        self.assertFalse(result['releaseGate'])
+        unknown=MOD.plan(['scripts/runtime-network/unreviewed-webrtc.mjs'],[])
+        self.assertIn('discover',unknown['commands'][0])
+
     def test_common_evidence_preparation_has_bounded_tests_without_release_authority(self):
         result = MOD.plan(['scripts/prepare_runtime_common_evidence.py'], [])
         self.assertEqual(result['swiftMode'], 'none')

@@ -176,6 +176,41 @@ This scenario passed on the exact downloaded0.8.21(133):
 the manager's POSIX errno, a TCP RST, physical network switching, global
 DNS/UDP behavior, default-trusted HTTPS upstream support or all1.0 gates.
 
+### Headed WebRTC boundary matrix on downloaded133
+
+`scripts/runtime-network/run-webrtc-boundaries.mjs` runs a separate, closed
+eleven-case matrix. It uses the signed runtime from the downloaded app, an
+independent binding to the published runtime tree and all 16 Mach-O files,
+temporary profiles, mock Keychain, and owned HTTP/STUN loopback servers.
+It never reads real profiles or exports raw ICE/SDP. This is QA tooling, not
+an MCP tool or an arbitrary script execution interface.
+
+Each case first proves that its UDP collector can receive and acknowledge a
+canary. It then checks three named effective preferences, executes the browser
+operation, waits for ICE completion, closes the browser, and reads final UDP
+counters. A timeout, crash, forced termination, wrong realm or failed cleanup
+cannot pass. Stored user preferences and effective preferences are separate:
+CLI, extension and policy stores have different priorities. The renderer's
+strict CLI guard must also survive a permissive higher-priority store.
+
+Cases cover direct/guarded traffic, permissive URL exceptions, own MV3 privacy
+extension setters/getters, a profile-local test policy, and a local-IP allowlist.
+The final pair proves that a matching URL exception actually enables STUN when
+the CLI guard is absent, while a nonmatching exception does not.
+
+Run the three `test-webrtc-*.mjs` files for model, pipe and owned UDP controls.
+For native QA, supply explicit absolute `--app`, `--binding`, and new private
+`--output` paths. `--case direct` runs a pilot; `--resume` skips matching passed
+cases only when the binding, harness and environment match. Admission is checked
+before each browser. Never replace a failed receipt or treat these controls as
+global networking evidence. Model tests do not launch a browser.
+
+[Published observations](evidence/webrtc-boundaries-0.8.21.json) cover eleven real
+headed runs on macOS27 ARM64. They do not cover manager relay integration,
+OS-managed policy, IPv6/TURN, full mDNS disclosure behavior, network transitions,
+or an ordinary Chrome comparison. The frozen earlier research harness and its
+receipts remain unchanged.
+
 ### WebRTC source check
 
 `scripts/verify-chromium-webrtc-policy.py` checks the expected Chrome switch,

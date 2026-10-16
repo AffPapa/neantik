@@ -51,6 +51,17 @@ STANDALONE_HARNESSES = {
     'scripts/controlled-browser-route-observer.py': ('scripts.tests.test_controlled_browser_route_observer', 'scripts.tests.test_background_netlog_observer'),
 }
 
+# Exact QA-only Node files: no Swift/production dependency is changed by these.
+WEBRTC_HARNESSES = frozenset('scripts/runtime-network/' + name for name in (
+    'run-webrtc-boundaries.mjs', 'webrtc-boundary-pipe.mjs',
+    'webrtc-boundary-semantics.mjs', 'webrtc-boundary-probe.js',
+    'webrtc-extension-receipt.js', 'webrtc-stun-fixture.mjs',
+    'test-webrtc-boundary-semantics.mjs', 'test-webrtc-boundary-pipe.mjs',
+    'test-webrtc-stun-fixture.mjs',
+))
+WEBRTC_CONTROLS = ('test-webrtc-boundary-semantics.mjs',
+                   'test-webrtc-boundary-pipe.mjs', 'test-webrtc-stun-fixture.mjs')
+
 
 def safe_path(value):
     path = PurePosixPath(value)
@@ -68,7 +79,7 @@ def changed_paths(base, root=ROOT):
 
 def plan(paths, catalog):
     paths = sorted({safe_path(p) for p in paths})
-    selected = set(); python = set(); reasons = []; gates = set(); full = False; python_full = False; delivery = False
+    selected = set(); python = set(); node = set(); reasons = []; gates = set(); full = False; python_full = False; delivery = False
     for path in paths:
         if PurePosixPath(path).suffix.lower() in (".zip", ".dmg", ".sha256", ".sig", ".provisionprofile") or ".app/" in path or PurePosixPath(path).name.startswith("direct-candidate"):
             delivery = True
@@ -100,6 +111,10 @@ def plan(paths, catalog):
             python.update((modules,) if isinstance(modules, str) else modules)
             gates.add('owned network fixture controls; offline analysis is distinct from fresh headed execution')
             reasons.append({'path': path, 'surface': 'standalone-network-harness'}); continue
+        if path in WEBRTC_HARNESSES:
+            node.update('scripts/runtime-network/' + name for name in WEBRTC_CONTROLS)
+            gates.add('owned loopback UDP fixture; exact headed WebRTC matrix remains separate from model/pipe controls')
+            reasons.append({'path': path, 'surface': 'standalone-webrtc-harness'}); continue
         if path == 'scripts/native-qa-readiness.py':
             python.add('scripts.tests.test_native_qa_readiness')
             gates.add('real read-only macOS resource observation; readiness is not native qualification')
@@ -129,7 +144,7 @@ def plan(paths, catalog):
     swift = ["python3", "-B", "scripts/test-manager-fast.py", "--all"] if full else ["python3", "-B", "scripts/test-manager-fast.py"] + [item for s in sorted(selected) for item in ["--suite", s]] if selected else None
     py = ["python3", "-B", "-m", "unittest", "discover", "-s", "scripts/tests", "-p", "test_*.py"] if python_full else ["python3", "-B", "-m", "unittest", *sorted(python)] if python else None
     return {"schemaVersion": 1, "status": "not-run", "swiftMode": mode, "selectedSuites": [] if full else sorted(selected),
-            "commands": [c for c in [swift, py] if c], "reasons": reasons, "requiredAdditionalGates": sorted(gates),
+            "commands": [c for c in [swift, py] if c] + [["node", file] for file in sorted(node)], "reasons": reasons, "requiredAdditionalGates": sorted(gates),
             "releaseSurface": delivery, "releaseGate": False, "boundary": "planning only; no PASS reuse, native launch, secrets, build or deploy"}
 
 
