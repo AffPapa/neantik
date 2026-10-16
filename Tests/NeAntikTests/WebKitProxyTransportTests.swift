@@ -349,8 +349,27 @@ private enum WebKitProxyOwnedEndpoint {
     }
 }
 
+/// Closed QA input. A typo must not silently select the already-failed default.
+private enum WebKitProxyQualificationMatchMode: String {
+    case defaults, exactHosts = "exact-hosts"
+    static func requested(_ value: String?) throws -> Self {
+        guard let value else { return .defaults }
+        guard let mode = Self(rawValue: value) else { throw WebKitProxySession.Failure.scope }
+        return mode
+    }
+}
+
 /// Pure synthetic selection controls; these do not read interfaces or launch WK.
 struct WebKitProxyOwnedEndpointTests {
+    @Test func unknownMatchPolicyNeverFallsBackToDefaults() throws {
+        #expect(try WebKitProxyQualificationMatchMode.requested(nil) == .defaults)
+        #expect(try WebKitProxyQualificationMatchMode.requested("exact-hosts") == .exactHosts)
+        for value in ["", "*", "exact", "exact-hosts\n"] {
+            #expect(throws: WebKitProxySession.Failure.scope) {
+                try WebKitProxyQualificationMatchMode.requested(value)
+            }
+        }
+    }
     @Test func onlyStrictRFC1918NumericAddressesAreEligible() {
         for value in ["10.1.2.3", "172.16.0.2", "172.31.255.254", "192.168.1.2"] {
             #expect(WebKitProxyOwnedEndpoint.isPrivateIPv4(value))
@@ -379,6 +398,8 @@ struct WebKitProxyOwnedEndpointTests {
 @Suite(.serialized) @MainActor struct WebKitProxyNonLoopbackQualificationTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_PROXY_NONLOOPBACK_QUALIFICATION"] == "1"))
     func namedAndReachableLocalTargetsHaveIndependentControls() async throws {
+        let matchMode = try WebKitProxyQualificationMatchMode.requested(
+            ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_PROXY_NONLOOPBACK_MATCH_MODE"])
         func requireAdmission() throws {
             var pressure: Int32 = 0, size = MemoryLayout<Int32>.size
             let observed = sysctlbyname("kern.memorystatus_vm_pressure_level", &pressure, &size, nil, 0) == 0
@@ -419,7 +440,18 @@ struct WebKitProxyOwnedEndpointTests {
                 credentials: .init(username: "owned-upstream", password: "fixture-only"))
             session = relay; _ = try await relay.start()
             let storeA = WKWebsiteDataStore.nonPersistent(), storeB = WKWebsiteDataStore.nonPersistent()
-            storeA.proxyConfigurations = [try relay.configuration(for: scope)]; storeB.proxyConfigurations = []
+            var proxy = try relay.configuration(for: scope)
+            if matchMode == .exactHosts {
+                // Documented suffix selectors only. Whether explicit selectors
+                // override implicit local-IP bypass is what this experiment tests.
+                proxy.matchDomains = [host, namedHost]
+                let expectedSelectors = proxy.matchDomains.count == 2 && Set(proxy.matchDomains) == Set([host, namedHost])
+                try #require(expectedSelectors) // Do not render address values in a failed assertion.
+            }
+            let validPolicy = !proxy.allowFailover && proxy.excludedDomains.isEmpty
+            try #require(validPolicy)
+            print("OWNED_WK_NONLOOPBACK_POLICY exactHosts=\(matchMode == .exactHosts ? 1 : 0) noFailover=1 exceptionCount=0")
+            storeA.proxyConfigurations = [proxy]; storeB.proxyConfigurations = []
             let configA = WKWebViewConfiguration(), configB = WKWebViewConfiguration()
             configA.websiteDataStore = storeA; configB.websiteDataStore = storeB
             try requireAdmission(); _ = NSApplication.shared
@@ -433,7 +465,9 @@ struct WebKitProxyOwnedEndpointTests {
             ownedWindow.contentView = stack; ownedWindow.makeKeyAndOrderFront(nil)
             func navigate(_ view: WKWebView, host: String, phase: String) async throws -> (body: String?, failed: Bool, timeout: Bool) {
                 let probe = WebKitProxyNavigationProbe(); view.navigationDelegate = probe
-                let url = try #require(URL(string: "http://\(host):\(originPort)/\(nonce)/\(phase)"))
+                guard let url = URL(string: "http://\(host):\(originPort)/\(nonce)/\(phase)") else {
+                    throw WebKitProxySession.Failure.scope
+                }
                 view.load(URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData))
                 let deadline = ContinuousClock.now.advanced(by: .seconds(6))
                 while !probe.finished && !probe.failed && ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(20)) }

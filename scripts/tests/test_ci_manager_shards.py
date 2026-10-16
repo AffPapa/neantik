@@ -18,7 +18,8 @@ class CIManagerShardTests(unittest.TestCase):
         fixtures = json.loads((root / 'scripts/swift-runtime-fixture-suites.json').read_text())
         self.assertEqual(set(fixtures['WebKitProxyNonLoopbackQualificationTests']), {
             'NEANTIK_WEBKIT_PROXY_NONLOOPBACK_QUALIFICATION',
-            'NEANTIK_WEBKIT_PROXY_NONLOOPBACK_WARNING_ONCE'})
+            'NEANTIK_WEBKIT_PROXY_NONLOOPBACK_WARNING_ONCE',
+            'NEANTIK_WEBKIT_PROXY_NONLOOPBACK_MATCH_MODE'})
         suites = MOD.catalog()
         self.assertNotIn('WebKitProxyNonLoopbackQualificationTests', suites)
         self.assertIn('WebKitProxyOwnedEndpointTests', suites)

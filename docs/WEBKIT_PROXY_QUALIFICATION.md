@@ -92,6 +92,20 @@ manager lifecycle, HTTPS destination/upstream, remote DNS, UDP/WebRTC,
 до production enable. При отзыве живому store нельзя назначать пустой список
 proxyConfigurations: это изменило бы маршрут на Direct.
 
+## Подготовленный exact-match вариант
+
+У QA-fixture есть отдельный режим
+`NEANTIK_WEBKIT_PROXY_NONLOOPBACK_MATCH_MODE=exact-hosts`. Он назначает две
+явные записи `matchDomains` — собственный адрес и случайное `.invalid`
+имя — до присоединения конфигурации к store и первого запроса. Пустых строк
+или wildcard нет. Неизвестный режим отклоняется до setup; значения адресов и
+объект proxy не передаются в диагностические assertions.
+
+Три чистых model-теста и два связанных CI/catalog-контроля прошли. Нативный
+exact-match результат ещё не получен: нужен отдельный допуск. Прежний запуск
+с defaults не повторяется. Этот список покрывает только два тестовых адреса,
+а не произвольную работу браузера; даже PASS не даст production proxy:true.
+
 ## Источники API
 
 Установленный SDK объявляет per-store proxy с macOS14; версия15 не требуется.
