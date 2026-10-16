@@ -264,17 +264,19 @@ Navigation delegate также не покрывает все сетевые з�
 Наличие `NEAppRule` объекта не доказывает применение правил системой.
 [Точный состав и границы](evidence/webkit-network-isolation-development.json).
 
-Проверены 65 существующих provisioning profiles: нужных Network Extension /
-System Extension разрешений нет. Новые сертификаты не создавались.
-Автоматическая проверка отклонила регистрацию двух отдельных QA App ID как
-постоянное расширение прав Apple Developer; ожидается точное подтверждение.
-Ни идентификаторы, ни системные настройки в результате этой попытки не изменены.
+На первом этапе проверены65 существующих provisioning profiles: нужных
+Network Extension / System Extension разрешений не было. После отдельного
+точного подтверждения зарегистрированы только два QA App ID и выпущены
+Developer ID profiles с тем же сертификатом135. CMS подписей и точные grants
+проверены; два изменения подписанного содержимого отвергнуты. Новые сертификаты
+и production account changes отсутствуют. Системные настройки не менялись.
 До реальных gates WebKit proxy остаётся выключенным; план1.0 не закрыт.
 
 Подготовлен следующий kernel probe: отдельный controller без WebKit,
 пустые nonpersistent Host A/B и deny-only provider. Три executables
-скомпилированы, четыре unsigned bundles собраны; запуск/подпись/установка
-не выполнялись. Controller отказывается сохранять global/destination-IP scope
+скомпилированы; исходные четыре unsigned bundles сохранены, отдельная свежая
+QA-копия теперь подписана прежним Developer ID с точными claims. Запуск и
+установка не выполнялись. Controller отказывается сохранять global/destination-IP scope
 или запускать устаревшее правило: принимается только source-application scope
 для точного QA Host A. Правило и counters не считаются доказательством маршрута.
 Сначала требуется подтвердить actual kernel capture и B/provider-stop controls;
@@ -284,7 +286,9 @@ System Extension разрешений нет. Новые сертификаты 
 QA source review additionally fixed strict literal-IP parsing and asynchronous
 launch/cleanup overlap. Seven new pure controls passed; prior18 ownership/
 lifecycle controls were not replayed. The current total is25 unique pure
-controls, not25 browser measurements. All QA executables compile; four unsigned
-bundles are prepared. No extension or browser was executed, signed or installed.
-Developer ID QA App ID registration remains subject to the pending exact account
-approval; no production capability has been enabled.
+controls, not25 browser measurements. All QA executables compile; four fresh
+bundles are Developer ID signed and strict-verified. Both approved QA profiles
+are authenticated, using the same certificate as release135. No extension or
+browser was executed or installed. Apple notarization remains pending after
+an automatic-review refusal of the exact private-code upload; a separate scoped
+request is open. No production capability has been enabled.

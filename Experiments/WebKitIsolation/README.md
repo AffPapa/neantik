@@ -69,8 +69,8 @@ SwiftPM's native-build deprecation warning; they are not kernel results. They do
 
 | Gate | Current status / acceptance |
 |---|---|
-| Direct signing | 65 existing NeAntik/team profiles decoded; none grants app-proxy-systemextension or system-extension.install. Reuse existing certificate; obtain appropriate Developer ID profiles. |
-| Packaging | Three executables compiled; four fresh **unsigned** QA bundles prepared. Signing/notarization/installation are pending. App extensions that require App Store distribution are excluded. |
+| Direct signing | Initial65 profiles lacked the grants. Two explicitly approved QA App IDs/profiles are now issued and authenticated by the exact macOS CMS policy; signed-content mutation controls refuse. Same certificate as release135; no new certificate. |
+| Packaging | Four fresh QA bundles are now Developer ID signed with exact claims/certificate and strict nested-code verification. Apple notarization and installation are pending. App extensions that require App Store distribution are excluded. |
 | OS rule installation | No preferences saved. Verify supported ordinary-Mac setup and reject a design requiring unmanaged users to enroll in MDM. |
 | Dedicated host | Existing UI still runs WebKit in the manager. Extract host and authenticated lifecycle/data IPC without changing profile identity. |
 | Control authority | No IPC listener exists here. Obtain peer audit tokens from the kernel, validate manager and host separately, bind enrollment to approved profile/scope/revision. Never accept tokens declared by a client. |
@@ -149,8 +149,17 @@ The final controller-only build passed in 1.596 seconds after making absent
 provider observations nonblocking. The seven controls were not rerun for that
 observation-only change.
 
-Apple Developer registration is pending exact approval after automatic review
-rejected the account permission expansion. The requested scope is only two QA
-App IDs/profiles using the existing certificate; it does not authorize installing
-an extension or modifying production IDs. No account registration, profile
-issuance, signing, installation or native launch has occurred in this stage.
+After exact approval, the two QA App IDs and Developer ID profiles were issued.
+Both profiles authenticate with Apple's exact macOS provisioning signing policy;
+two altered signed payloads refuse. The selected portal certificate's public
+DER matches the exact leaf of release135. Four fresh QA bundles are now signed
+with the same certificate, hardened runtime and exact restricted claims, with
+strict nested verification. No Keychain groups or production identity were added.
+
+The private Apple submission ZIP contains only14 allowlisted files and is609958
+bytes. Its SHA256 is `e59014677ac6493e72528e1e498dbe824b8b56f35337664cd64cc45fb7343fa9`.
+It has not been notarized, installed or launched. Automatic review rejected the
+Apple submission before execution because the two-ID/profile approval did not
+cover that exact code upload. A separate scoped notarization/installed-QA request
+is pending. No submission workaround, new certificate or app rebuild was used.
+These signing results do not establish kernel capture or a working proxy.

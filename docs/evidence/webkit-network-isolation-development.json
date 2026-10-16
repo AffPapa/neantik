@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "date": "2026-10-16",
-  "status": "development component implemented;not installed;not browser-qualified",
+  "status": "development component and exact signed QA prepared;not notarized/installed/browser-qualified",
   "shippingWebKitProxy": false,
   "mechanism": "Dedicated per-profile host with kernel per-app NEAppProxyProvider system extension;not transparent proxy",
   "sourceFiles": {
@@ -40,19 +40,22 @@
     "existingProfilesDecoded": 65,
     "appProxySystemExtensionAuthorized": 0,
     "systemExtensionInstallAuthorized": 0,
-    "newCertificatesCreated": 0
+    "newCertificatesCreated": 0,
+    "observedBeforeNewQAProfileIssuance": true
   },
   "appleAccountAction": {
-    "status": "blocked by automatic approval review;exact approval pending",
-    "registered": false,
+    "status": "two exact QA IDs/profiles approved and issued;no production changes",
+    "registered": true,
     "requestedQAIdentifiers": [
       "app.neantik.desktop.network-qa",
       "app.neantik.desktop.network-qa.proxy"
     ],
-    "productionIdentifierChanged": false
+    "productionIdentifierChanged": false,
+    "profileIssued": true,
+    "newCertificatesCreated": 0
   },
   "notImplemented": [
-    "Signed and notarized installable system-extension bundle",
+    "Apple-notarized installable QA extension;actual kernel acceptance",
     "Production dedicated profile host extraction",
     "Authenticated production control IPC and actual kernel owner attribution",
     "Concrete fixed-upstream tunnel integration",
@@ -93,7 +96,7 @@
     "SwiftPM native build-system deprecation"
   ],
   "preparedKernelQA": {
-    "status": "compiled;four fresh unsigned bundles assembled;not launched or installed",
+    "status": "four fresh QA bundles Developer ID signed and strict/nested verified;not notarized/launched/installed",
     "controller": "Separate QA-only controller;source-application routing required;refuses global/stale/domain-exception scope;no automatic preference saves or install",
     "hosts": "Dedicated nonpersistent A and independent B;only explicit owned QA-run local HTTP navigation",
     "provider": "Deny-only NEAppProxyProvider,observes known/unknown kernel host attribution;does not forward or provide proxy function",
@@ -102,13 +105,17 @@
     "build": "PASS",
     "firstBuild": "FAIL Swift5 explicit-self capture requirements;diagnosed source repair only;original report retained",
     "assemblyRefusals": "existing output,failed build,symlink receipt:3 expected refusals;original unsigned output unchanged",
-    "signature": "not signed",
+    "signature": "exact claims/certificate/hardened runtime/strict nested PASS",
     "kernelRun": "not run",
     "newCertificate": false,
     "productionTouched": false,
     "scopeTestCompileFailure": "Swift Testing mutating struct call macro expansion;harness evaluated calls before assertions;original FAIL retained",
     "operationFence": "Pending NSWorkspace launch and extension/config changes serialize;hosts rechecked before mutations;pure controls only",
-    "counterRead": "Readonly response cannot retain mutation fence or restore removed configuration"
+    "counterRead": "Readonly response cannot retain mutation fence or restore removed configuration",
+    "certificateSHA1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "archiveSHA256": "e59014677ac6493e72528e1e498dbe824b8b56f35337664cd64cc45fb7343fa9",
+    "archiveBytes": 609958,
+    "allowlistedFiles": 14
   },
   "additionalQAScopeControls": {
     "status": "PASS",
@@ -118,5 +125,17 @@
     "inputSHA256": "248b6f358d9bbfd770dce766d83fd83210e0e4425ea9a83f5e69006687c47f37",
     "scope": "Pure fixture URL policy and launch/configuration fence only;actual Host uses the tested policy;no browser/kernel execution"
   },
-  "sourceOnlyDelivery": "No shipping app/runtime/archive/version change;production WebKit proxy remains disabled"
+  "sourceOnlyDelivery": "No shipping app/runtime/archive/version change;production WebKit proxy remains disabled",
+  "qaProfileAuthentication": {
+    "status": "PASS",
+    "profiles": 2,
+    "authenticatedBy": "exact macOS provisioning CMS signing policy",
+    "actualSignedContentMutationsRefused": 2,
+    "exactReleaseCertificate": true,
+    "macOSDeveloperIDAllDevicesExactTeamAndIDs": true,
+    "requiredAppProxySystemExtensionGrant": true,
+    "systemExtensionInstall": "container only",
+    "keychainClaimsAdded": false
+  },
+  "nextExternalGate": "Exact Apple upload and conditional one installed QA stage authorization requested;no notarization submission executed after automatic rejection"
 }
