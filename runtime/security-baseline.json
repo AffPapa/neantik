@@ -1,20 +1,31 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-10-15",
-  "publishedAt": "2026-10-13",
+  "checkedAt": "2026-10-16",
+  "publishedAt": "2026-10-15",
   "maximumAgeDays": 0,
-  "minimumPublicChromiumVersion": "155.0.8059.80",
+  "minimumPublicChromiumVersion": "155.0.8059.85",
   "alsoObservedPublicChromiumVersions": [
-    "155.0.8059.79"
+    "155.0.8059.84"
   ],
   "channel": "Desktop Stable",
   "platforms": [
     "macOS"
   ],
-  "securityFixCount": 37,
-  "reference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_01668083673.html",
+  "securityFixCount": 10,
+  "reference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_01886704284.html",
   "referenceTitle": "Stable Channel Update for Desktop",
   "sourceLabel": "Chrome Releases",
   "releaseBoundary": "This is a manually pinned primary-source security baseline. It is not a live updater. Refresh checkedAt, versions, securityFixCount and reference on the day of every public Direct release. A zero securityFixCount means the official Stable post did not enumerate security fixes; it never means that the version is exempt from the minimum-version gate.",
-  "policy": "New public NeAntik Direct builds must meet the latest widely deployed macOS Desktop Stable security baseline. The official October13 update lists155.0.8059.79/.80 and37 security fixes. M156 Early Stable remains a limited rollout, tracked separately. Refresh on publication day; historical provenance binds archived baseline bytes independently."
+  "policy": "New public NeAntik Direct builds must meet the latest widely deployed macOS Desktop Stable security baseline. The official October15 update lists155.0.8059.84/.85 and10 security fixes. M156 Early Stable remains a limited rollout, tracked separately. Refresh on publication day; historical provenance binds archived baseline bytes independently. A numeric baseline pass is not proof that an older Early Stable branch contains every later security fix.",
+  "earlyStableObservation": {
+    "observedAt": "2026-10-16",
+    "publishedAt": "2026-10-14",
+    "versions": [
+      "156.0.8078.35",
+      "156.0.8078.36"
+    ],
+    "reference": "https://chromereleases.googleblog.com/2026/10/early-stable-update-for-desktop_01549127219.html",
+    "status": "available-upstream;not-rebuilt-or-qualified-in-NeAntik",
+    "boundary": "Current NeAntik156.0.8078.12 is not the latest Early Stable;no security-fix inclusion claim from cross-major numeric comparison"
+  }
 }
