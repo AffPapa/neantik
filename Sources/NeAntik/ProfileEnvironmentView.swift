@@ -248,6 +248,11 @@ struct ProfileEnvironmentView: View {
         VStack(alignment: .leading, spacing: 8) {
             overviewFacts
 
+            Text("Доступность сайтов в открытом браузере не проверяется автоматически.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
             ForEach(
                 ProfileEnvironmentPresentation.criticalFindings(in: snapshot)
             ) { field in
@@ -445,8 +450,7 @@ private struct EnvironmentSeverityRollup: View {
 
     private var presentedSeverity: DiagnosticFindingSeverity {
         ProfileEnvironmentPresentation.rollupSeverity(
-            highestSeverity: highestSeverity,
-            hasAutomaticLaunchFix: hasAutomaticLaunchFix
+            highestSeverity: highestSeverity
         )
     }
 
@@ -911,26 +915,19 @@ enum ProfileEnvironmentPresentation {
             )
         case .attention:
             return "Нужно проверить"
-        case .success:
+        case .success, .neutral:
             return hasAutomaticLaunchFix
                 ? "Настроено · проверка прокси при запуске"
-                : "Среда готова"
-        case .neutral:
-            return hasAutomaticLaunchFix
-                ? "Настроено · проверка прокси при запуске"
-                : "Среда готова"
+                : "Настройки готовы"
         }
     }
 
+    /// Successful leaf observations remain visible in the details. Their
+    /// aggregate describes settings, not continuously measured connectivity.
     static func rollupSeverity(
-        highestSeverity: DiagnosticFindingSeverity,
-        hasAutomaticLaunchFix: Bool
+        highestSeverity: DiagnosticFindingSeverity
     ) -> DiagnosticFindingSeverity {
-        if hasAutomaticLaunchFix,
-           highestSeverity == .success || highestSeverity == .neutral {
-            return .neutral
-        }
-        return highestSeverity
+        highestSeverity == .success ? .neutral : highestSeverity
     }
 
     static func hasAutomaticLaunchFix(

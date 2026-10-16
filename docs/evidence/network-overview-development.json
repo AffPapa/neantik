@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "status": "implemented-and-source-tested;not-packaged",
+  "finding": "Successful historical manager preflight made overall environment summary look like current browser connectivity",
+  "observedOnPublishedBuild": 130,
+  "changes": [
+    "Neutral overall settings summary;successful measured fields preserve their evidence",
+    "Visible statement that availability of sites in the open browser is not checked automatically",
+    "Blocking,failure and attention findings remain distinct;no fake runtime error observation or added network polling"
+  ],
+  "negativeControl": {
+    "scope": "successful preflight plus unverified browser HTTP and DNS",
+    "originalSource": "d85c70bdd17b83d95ff8356be9abe45699ff0e98",
+    "actualOldFailureIssues": 2,
+    "receiptSHA256": "c32b31a308fe376eb68b93a5e5433304472e1cc45a876e80eee25083ce0ea64f"
+  },
+  "targetedTests": {
+    "tests": 33,
+    "suites": 4,
+    "skipped": 0,
+    "seconds": 9.61,
+    "inputSHA256": "a9a4182375de17ef4a27bbd29209501a636c152cd5b818b62eede02aecae8ff0",
+    "receiptSHA256": "7cc53c9dc70b91e66e1fd5a626cf04f7f7414faad5794d52b2834197267e4362"
+  },
+  "nativeUIQualified": false,
+  "exactCandidateQualified": false,
+  "publishedInBinary": false,
+  "limits": [
+    "Does not implement live network monitoring or prove a browser route",
+    "Native UI and full integration belong to next candidate;published130 bytes unchanged"
+  ]
+}

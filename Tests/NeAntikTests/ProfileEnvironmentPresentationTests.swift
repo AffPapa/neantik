@@ -337,20 +337,18 @@ struct ProfileEnvironmentPresentationTests {
         )
         #expect(
             ProfileEnvironmentPresentation.rollupSeverity(
-                highestSeverity: .success,
-                hasAutomaticLaunchFix: true
+                highestSeverity: .success
             ) == .neutral
         )
         #expect(
             ProfileEnvironmentPresentation.rollupSeverity(
-                highestSeverity: .failure,
-                hasAutomaticLaunchFix: true
+                highestSeverity: .failure
             ) == .failure
         )
     }
 
     @Test
-    func overviewCompactsRuntimeAndUsesReadyLanguage() {
+    func overviewCompactsRuntimeAndUsesConfigurationLanguage() {
         let snapshot = makeSnapshot(
             sections: [
                 EnvironmentDiagnosticSection(
@@ -378,7 +376,40 @@ struct ProfileEnvironmentPresentationTests {
                 highestSeverity: .success,
                 failureCount: 0,
                 attentionCount: 0
-            ) == "Среда готова"
+            ) == "Настройки готовы"
+        )
+    }
+
+    @Test
+    func successfulPreflightDoesNotQualifyUnobservedBrowserConnectivity() {
+        let fields = [
+            EnvironmentDiagnosticField(
+                id: "route.last-probe", title: "Последняя проверка",
+                value: "Проверка прошла", state: .observed, severity: .success
+            ),
+            EnvironmentDiagnosticField(
+                id: "route.chromium-http", title: "HTTP-маршрут Chromium",
+                value: "Не измерялся", state: .unverified, severity: .neutral
+            ),
+            EnvironmentDiagnosticField(
+                id: "route.dns", title: "DNS",
+                value: "Не измерялся", state: .unverified, severity: .neutral
+            ),
+        ]
+        let highest = ProfileEnvironmentPresentation.highestSeverity(in: fields)
+        // The leaf records a real historical success; it cannot qualify the
+        // currently open browser's network or turn the whole overview green.
+        #expect(highest == .success)
+        #expect(fields[0].severity == .success)
+        #expect(
+            ProfileEnvironmentPresentation.rollupSeverity(
+                highestSeverity: highest
+            ) == .neutral
+        )
+        #expect(
+            ProfileEnvironmentPresentation.rollupTitle(
+                highestSeverity: highest, failureCount: 0, attentionCount: 0
+            ) == "Настройки готовы"
         )
     }
 
