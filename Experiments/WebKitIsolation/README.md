@@ -70,7 +70,7 @@ SwiftPM's native-build deprecation warning; they are not kernel results. They do
 | Gate | Current status / acceptance |
 |---|---|
 | Direct signing | Initial65 profiles lacked the grants. Two explicitly approved QA App IDs/profiles are now issued and authenticated by the exact macOS CMS policy; signed-content mutation controls refuse. Same certificate as release135; no new certificate. |
-| Packaging | Four fresh QA bundles are now Developer ID signed with exact claims/certificate and strict nested-code verification. Apple notarization and installation are pending. App extensions that require App Store distribution are excluded. |
+| Packaging | Four fresh QA bundles are now Developer ID signed with exact claims/certificate and strict nested-code verification. Two QA revisions passed Apple notarization but activation refused; the corrected QA3 is unsigned pending its dedicated group approval. App extensions that require App Store distribution are excluded. |
 | OS rule installation | No preferences saved. Verify supported ordinary-Mac setup and reject a design requiring unmanaged users to enroll in MDM. |
 | Dedicated host | Existing UI still runs WebKit in the manager. Extract host and authenticated lifecycle/data IPC without changing profile identity. |
 | Control authority | No IPC listener exists here. Obtain peer audit tokens from the kernel, validate manager and host separately, bind enrollment to approved profile/scope/revision. Never accept tokens declared by a client. |
@@ -99,7 +99,7 @@ The first implementation deliberately stops before installation. Existing
 signed archives, system network settings, certificates, real profiles, cookies
 and Keychain are unchanged.
 
-## Prepared kernel probe (not executed)
+## Prepared kernel probe (kernel route not measured)
 
 Three QA executables now compile. `prepare-qa.py` assembles four fresh unsigned
 bundles from a matching source/build/binary receipt: controller, dedicated
@@ -119,7 +119,7 @@ preferences/extension requests are pending, counts unfinished host launches, and
 rechecks host absence immediately before each mutation. Late operation callbacks
 cannot unlock a newer operation. Counter observations do not hold that fence:
 a dead provider cannot block cleanup. These guards are compiled and their pure
-state transitions tested; the controller UI is not native-tested.
+state transitions tested; controller activation was attempted twice and refused at setup; the routing controls have not executed.
 
 Host A/B start blank and use nonpersistent stores. Navigation is restricted to
 explicit loopback/private HTTP endpoints with this preparation's QA run path.
@@ -186,3 +186,33 @@ purpose/version/run metadata: all four compiled executables and both entitlement
 templates before signing are byte-identical to build1. No Swift/Chromium build
 or old25 controls were repeated. This corrected QA still needs its own exact
 signing/notarization/install acceptance; shipping WebKit proxy remains disabled.
+
+
+## Second installed QA: Mach service contract
+
+QA2 also passed Apple notarization, stapling and Gatekeeper. Its single
+activation attempt refused: macOS requires `NEMachServiceName` to start with
+a declared `com.apple.security.application-groups` entitlement. No Host A/B
+was opened, no app rule saved, and no origins started. The controller exited;
+no QA extension remains; the installed copy was retired intact. This is
+setup failure, not network evidence.
+
+The unsigned QA3 recipe adds only provider group
+`H6VGU2M6JD.app.neantik.desktop.network-qa`; its Mach name remains that group
+plus `.proxy`. The container and Hosts receive no new entitlement. Compiled
+executables, certificates and provisioning profiles remain unchanged; only
+internal build/run metadata and the provider entitlement template differ.
+Signing with the new entitlement, Apple submission and native testing await
+explicit approval. No production group or Keychain entitlement is added.
+
+Five portable packaging controls are in `test-prepare-qa.py`; run with
+`PYTHONDONTWRITEBYTECODE=1 python3 -B Experiments/WebKitIsolation/test-prepare-qa.py`.
+They reject the prior missing-group contract, wrong/broader groups, mismatched
+services and Keychain claims. A separate retained test used the actual immutable
+QA2 provider Info/entitlement pair and refused it. Neither is kernel evidence.
+
+Apple documents macOS `<team ID>.<group name>` groups without portal
+registration and Mach service names as `<group identifier>.<unique name>`:
+[App Groups entitlement](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.application-groups).
+The actual OS still must accept the signed package. Do not remove the service
+key or disable validation to get past this refusal.

@@ -309,3 +309,21 @@ provider Info negative. Internal QA build2 использует прежние c
 executables и entitlements, меняются только purpose/version/run metadata.
 Пересборок Swift/Chromium и повторов25чистых controls нет. Исправленный
 артефакт требует собственной подписи/notarization/native квалификации.
+
+
+### Второй installed QA: отдельная группа Mach-службы
+
+QA2 получил Accepted, stapling и Gatekeeper PASS. Активация остановилась
+на следующем точном требовании macOS: префикс `NEMachServiceName` должен
+совпадать с объявленной App Group. Host A/B и сетевые правила не запускались;
+controller завершён, QA extensions осталось0, установленная копия сохранена
+в частных артефактах. Сетевой gate всё ещё не измерен.
+
+Подготовлен unsigned QA3: только provider получает группу
+`H6VGU2M6JD.app.neantik.desktop.network-qa`. Код не пересобран, сертификат
+и профили прежние; production и Keychain группы не добавлены. Пять переносимых
+проверок packaging-контракта и отдельный negative на фактическом QA2 прошли.
+Подпись с новым entitlement и следующий native этап ожидают точного допуска.
+[Документация Apple](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.application-groups)
+подтверждает macOS-формат группы и связь с Mach service; она не заменяет
+фактическую установку и проверку A/B.

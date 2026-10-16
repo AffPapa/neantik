@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "date": "2026-10-16",
-  "status": "development;first signed QA activation refused on packaging;metadata recipe fixed;actual kernel route not qualified",
+  "status": "development;two notarized QA packages refused activation on distinct packaging errors;kernel route unmeasured;QA3 unsigned group correction pending approval",
   "shippingWebKitProxy": false,
   "mechanism": "Dedicated per-profile host with kernel per-app NEAppProxyProvider system extension;not transparent proxy",
   "sourceFiles": {
@@ -19,7 +19,8 @@
     "Experiments/WebKitIsolation/Tests/IsolationCoreTests/IsolationLedgerTests.swift": "85201950c23a0f9820d355b1b1d23a1663c4d45fc26e00e861cc88815264001c",
     "Experiments/WebKitIsolation/Tests/IsolationCoreTests/ProviderLifetimeTests.swift": "887ee0c35cf943a8350d80fecc809b4b6fc561857886ce0cb7625cb84ef9ecda",
     "Experiments/WebKitIsolation/Tests/IsolationCoreTests/QAScopeTests.swift": "10ca4abacaeb788bae119f3cd5135e3341435719e0b41a9ad99816a15da1b97e",
-    "Experiments/WebKitIsolation/prepare-qa.py": "1950db722f3010f07f89de71a80a37a1696a815c456e2728c7de26174aba96c2"
+    "Experiments/WebKitIsolation/prepare-qa.py": "e1535f0abb5d9ea93122dd42210a8677f3e8b4da3d887cd1d7fda84b53422a33",
+    "Experiments/WebKitIsolation/test-prepare-qa.py": "071e4077d884de77b8ac0c4929204890884a6cdf9ba1e948c7eed2b173ac2cb4"
   },
   "modelTests": {
     "receiptInputSHA256": "fb910d4755fe3f0540439ae23ceb17f6ff0f61a69f437046f120236cfe1c7302",
@@ -55,16 +56,16 @@
     "newCertificatesCreated": 0
   },
   "notImplemented": [
-    "Apple-notarized installable QA extension;actual kernel acceptance",
+    "OS-accepted installable QA extension and actual kernel acceptance",
     "Production dedicated profile host extraction",
     "Authenticated production control IPC and actual kernel owner attribution",
     "Concrete fixed-upstream tunnel integration",
     "Kernel failure/DNS/UDP/IPv6/loopback and persistent WebKit qualification"
   ],
   "notRun": [
-    "No browser or extension process launched",
+    "QA Host A/B have not launched in kernel stages",
     "No network/VPN preferences saved",
-    "No system extension installed",
+    "No active QA system extension remains",
     "No previous native/release suites repeated"
   ],
   "acceptance": "Enable only after supported non-MDM Direct deployment, real flow attribution, fixed-upstream data plane and zero Direct for owned targets/provider failure/revoke with independentB;then signed candidate/release gates",
@@ -96,7 +97,7 @@
     "SwiftPM native build-system deprecation"
   ],
   "preparedKernelQA": {
-    "status": "four fresh QA bundles Developer ID signed and strict/nested verified;not notarized/launched/installed",
+    "status": "QA1 and QA2 notarized/stapled/Gatekeeper PASS;both activation setup-refused;QA3 unsigned correction prepared",
     "controller": "Separate QA-only controller;source-application routing required;refuses global/stale/domain-exception scope;no automatic preference saves or install",
     "hosts": "Dedicated nonpersistent A and independent B;only explicit owned QA-run local HTTP navigation",
     "provider": "Deny-only NEAppProxyProvider,observes known/unknown kernel host attribution;does not forward or provide proxy function",
@@ -106,7 +107,7 @@
     "firstBuild": "FAIL Swift5 explicit-self capture requirements;diagnosed source repair only;original report retained",
     "assemblyRefusals": "existing output,failed build,symlink receipt:3 expected refusals;original unsigned output unchanged",
     "signature": "exact claims/certificate/hardened runtime/strict nested PASS",
-    "kernelRun": "not run",
+    "kernelRun": "not run;controller activation attempts only",
     "newCertificate": false,
     "productionTouched": false,
     "scopeTestCompileFailure": "Swift Testing mutating struct call macro expansion;harness evaluated calls before assertions;original FAIL retained",
@@ -137,7 +138,7 @@
     "systemExtensionInstall": "container only",
     "keychainClaimsAdded": false
   },
-  "nextExternalGate": "Exact Apple upload and conditional one installed QA stage authorization requested;no notarization submission executed after automatic rejection",
+  "nextExternalGate": "Exact QA-only App Group signing/upload/native scope approval requested;no added-entitlement signing or new submission yet",
   "firstInstalledQAAttempt": {
     "notary": "Accepted",
     "staple": "PASS",
@@ -157,5 +158,31 @@
     "newInternalQABuild": 2,
     "SwiftOrChromiumRebuilt": false,
     "correctedSignedNativeAcceptance": "pending"
+  },
+  "secondInstalledQAAttempt": {
+    "archiveSHA256": "ee2d110e714a5b9eb82f0270c2f8ebf414eda7e6b708f257d51d25c72e504887",
+    "archiveBytes": 610129,
+    "notary": "Accepted",
+    "staple": "PASS",
+    "gatekeeper": "PASS",
+    "activation": "setup refusal;NEMachServiceName requires prefix matching a declared App Group entitlement",
+    "AOrBOpened": false,
+    "ruleSaved": false,
+    "controllerExited": true,
+    "originsStarted": false,
+    "matchingQAExtensionsAfterCleanup": 0,
+    "installedCopyRetiredIntact": true,
+    "networkAcceptance": "not run"
+  },
+  "machServiceRecipeCorrection": {
+    "status": "implemented and unsigned-prepared;5portable pure tests PASS;actual prior QA2 negative also refused",
+    "providerOnlyQAGroup": "H6VGU2M6JD.app.neantik.desktop.network-qa",
+    "productionOrKeychainGroupsAdded": false,
+    "signedWithNewEntitlement": false,
+    "compiledExecutablesUnchanged": 4,
+    "newInternalQABuild": 3,
+    "SwiftOrChromiumRebuilt": false,
+    "nativeAcceptance": "not run",
+    "officialBasis": "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.application-groups"
   }
 }

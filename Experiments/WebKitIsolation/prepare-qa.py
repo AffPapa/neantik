@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = Path(__file__).resolve().parent
 TEAM = "H6VGU2M6JD"
 BASE = "app.neantik.desktop.network-qa"
+QA_GROUP = TEAM + "." + BASE
 USAGE_DESCRIPTION = "Изолированная QA-проверка только собственного WebKit Host; рабочие приложения не перехватываются."
 
 
@@ -28,6 +29,21 @@ def validate_usage_description(info):
         value = info.get("NSSystemExtensionUsageDescription")
         if not isinstance(value, str) or not value.strip() or len(value) > 1024:
             raise ValueError("Both QA container and network extension require a bounded usage description")
+
+
+def validate_network_service(info, entitlements):
+    """Refuse an unscoped Mach service before signing or Apple submission.
+
+    macOS validates the service against an entitled App Group. This QA-only
+    group grants no membership in production containers or Keychain groups.
+    """
+    network = info.get("NetworkExtension")
+    if (info.get("CFBundleIdentifier") != BASE + ".proxy"
+            or not isinstance(network, dict)
+            or network.get("NEMachServiceName") != QA_GROUP + ".proxy"
+            or entitlements.get("com.apple.security.application-groups") != [QA_GROUP]
+            or "keychain-access-groups" in entitlements):
+        raise ValueError("QA provider requires exactly its dedicated App Group and Mach service")
 
 
 def input_digest():
@@ -86,6 +102,7 @@ def main():
     host = root / "Contents/Helpers/NeAntik Isolation Host.app"
     control = root / "Contents/Helpers/NeAntik Isolation Control.app"
     manifest = []
+    infos = {}
 
     def bundle(path, binary, identifier, title, package_type="APPL", extra=None):
         contents = path / "Contents"
@@ -95,9 +112,10 @@ def main():
         info = {"CFBundleExecutable":binary, "CFBundleIdentifier":identifier,
                 "CFBundleName":title, "CFBundleDisplayName":title,
                 "CFBundlePackageType":package_type, "CFBundleShortVersionString":"0.0.0",
-                "CFBundleVersion":"2", "LSMinimumSystemVersion":"14.0", "NeAntikQARunID":run}
+                "CFBundleVersion":"3", "LSMinimumSystemVersion":"14.0", "NeAntikQARunID":run}
         info.update(extra or {})
         validate_usage_description(info)
+        infos[identifier] = info
         (contents / "Info.plist").write_bytes(plistlib.dumps(info, sort_keys=True))
         manifest.append({"bundle":str(path.relative_to(destination)),"identifier":identifier,
                          "executableSHA256":hashlib.sha256(payloads[binary]).hexdigest()})
@@ -109,7 +127,7 @@ def main():
     bundle(control,"IsolationQAHost",BASE+".control","NeAntik Isolation Control",extra=web_extra)
     bundle(provider,"IsolationQADenyProvider",BASE+".proxy","NeAntik Isolation QA Deny Provider","SYSX",extra={
         "NSSystemExtensionUsageDescription":USAGE_DESCRIPTION,
-        "NetworkExtension":{"NEMachServiceName":TEAM+"."+BASE+".proxy",
+        "NetworkExtension":{"NEMachServiceName":QA_GROUP+".proxy",
                             "NEProviderClasses":{"com.apple.networkextension.app-proxy":"NeAntikIsolationQADenyProvider"}}})
     entitlement_root = destination / "unsigned-entitlement-templates"
     entitlement_root.mkdir(mode=0o700)
@@ -117,9 +135,12 @@ def main():
         ("controller",BASE,{"com.apple.developer.system-extension.install":True,
                             "com.apple.developer.networking.networkextension":["app-proxy-provider-systemextension"]}),
         ("provider",BASE+".proxy",{"com.apple.security.app-sandbox":True,
+                                  "com.apple.security.application-groups":[QA_GROUP],
                                   "com.apple.developer.networking.networkextension":["app-proxy-provider-systemextension"]})]:
         value = {"com.apple.application-identifier":TEAM+"."+identifier,
                  "com.apple.developer.team-identifier":TEAM, **extra}
+        if name == "provider":
+            validate_network_service(infos[identifier], value)
         (entitlement_root/(name+".plist")).write_bytes(plistlib.dumps(value))
     result = {"status":"UNSIGNED;NOT LAUNCHED;NOT INSTALLED", "runID":run,
               "buildInputSHA256":receipt["inputSHA256"],"bundles":manifest,
