@@ -211,6 +211,64 @@ OS-managed policy, IPv6/TURN, full mDNS disclosure behavior, network transitions
 or an ordinary Chrome comparison. The frozen earlier research harness and its
 receipts remain unchanged.
 
+### Normal manager / authenticated relay WebRTC integration
+
+`manager-route-fixture.py --manager-webrtc` selects the separate
+`manager-webrtc-fixture.py`. It seeds the usual two metadata profiles and
+permissive user WebRTC preferences in the fresh protected BrowserData. Configure
+only the owned proxy profile through the audit GUI with the fixture's dummy
+HTTP credentials. The signed audit manager uses memory-only password storage.
+Keep the Direct profile unchanged. No CDP, browser flag override, extension,
+OS policy or ordinary user profile is introduced by this fixture.
+
+With one fresh admitted QA authority and exact downloaded-app manifest:
+
+```bash
+python3 -B scripts/runtime-network/manager-route-fixture.py \
+  --app /absolute/NeAntik.app \
+  --candidate-manifest /absolute/qa/candidate-manifest.json \
+  --output /absolute/qa/webrtc-run --duration 900 --manager-webrtc
+```
+
+Capture `before-launch` after configuring the proxy. Start the protected profile,
+wait for its own page's WebRTC completion, capture `proxy-success`, then start
+the separate Direct profile and capture `direct-control`. In the original
+protected browser, follow its `proxy-repeat` link and capture `proxy-repeat`.
+Use `collect-manager-webrtc.py --state <private-state.json> --phase <phase>`.
+The same protected browser/relay/configuration must survive both reads.
+
+Every phase has an independent UDP4 STUN socket and real canary→ACK→zero-counter
+control. The page returns bounded candidate-category/error counts and completion
+over the normal HTTP route, never SDP/addresses/raw ICE. The collector links
+each protected HTTP request to its live relay socket through an owned request
+ID. Direct HTTP and the positive UDP source port are linked to the live signed
+browser/helper generation. A single UID or a page-provided count is insufficient.
+
+Stop both profiles through the manager, then Quit the manager. After the fixture
+has closed, capture `cleanup`; it retains reduced termination reason/status
+from each fresh private manager log. Require one normal main-process exit with
+status0 per profile, zero remaining processes and no fixture termination signals.
+This is not a claim about all renderer exit statuses or saved user data. Retire
+the temporary authority through the existing narrow operation, then analyze:
+
+```bash
+python3 -B scripts/runtime-network/analyze-manager-webrtc.py \
+  --receipts /absolute/qa/webrtc-run --release /absolute/releases/v0.8.21.json
+```
+
+The first offline analysis overclassified generic HTTP refusals as failed
+WebRTC. An independent socket-only test reproduces a rejected favicon CONNECT
+that leaves an empty origin connection. Actual native refused request targets
+were not retained: their cause remains unclassified. The corrected analyzer
+keeps their counts/times and requires all original nonce, ICE, UDP, live socket,
+session and exit controls. It never reports an all-HTTP-clean result. The
+original refusal is retained; the browser was not rerun for this analysis fix.
+
+[Downloaded133 observations](evidence/manager-webrtc-0.8.21.json) confirm
+protected/Direct/protected-repeat STUN counts **0/1/0**. This does not cover
+OS-managed policies, IPv6/TURN, external interfaces or network transitions.
+The earlier eleven-case raw-runtime matrix remains separate evidence.
+
 ### WebRTC source check
 
 `scripts/verify-chromium-webrtc-policy.py` checks the expected Chrome switch,

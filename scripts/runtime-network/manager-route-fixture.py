@@ -466,11 +466,14 @@ def main():
     parser.add_argument('--controlled-dns', action='store_true', help='linked upstream UDP DNS; separate manager DNS analysis')
     parser.add_argument('--allow-manager-preflight', action='store_true', help='only with controlled DNS: permit existing exact GeoIP TLS hosts')
     parser.add_argument('--physical-tcp', action='store_true', help='owned upstream TCP listener close/rebind; separate analysis')
+    parser.add_argument('--manager-webrtc', action='store_true', help='normal owned page and independent UDP4 observer; separate analysis')
     args = parser.parse_args()
     if args.controlled_dns and args.owned_https or args.allow_manager_preflight and not args.controlled_dns:
         parser.error('DNS/HTTPS fixture modes cannot be combined; preflight opt-in requires DNS mode')
     if args.physical_tcp and (args.controlled_dns or args.owned_https or args.allow_manager_preflight):
         parser.error('Physical TCP fixture is a separate mode')
+    if args.manager_webrtc and (args.controlled_dns or args.owned_https or args.physical_tcp or args.allow_manager_preflight):
+        parser.error('Manager WebRTC fixture is a separate mode')
     if not 60 <= args.duration <= 1800: raise ValueError('duration-bound')
     app = args.app.resolve(); executable = app / 'Contents/MacOS/NeAntik'
     metadata = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
@@ -487,7 +490,12 @@ def main():
     root = Path('/private/tmp/neantik-update-audit-' + str(uuid.uuid4())); root.mkdir(mode=0o700)
     copied_manifest = root / 'candidate-manifest.json'; shutil.copyfile(args.candidate_manifest, copied_manifest); copied_manifest.chmod(0o600)
     data = root / 'manager-data'; data.mkdir(mode=0o700)
-    if args.physical_tcp:
+    if args.manager_webrtc:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('owned_manager_webrtc', Path(__file__).with_name('manager-webrtc-fixture.py'))
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+        fixture = module.ManagerWebRTCFixture(root)
+    elif args.physical_tcp:
         import importlib.util
         spec = importlib.util.spec_from_file_location('owned_manager_tcp', Path(__file__).with_name('manager-tcp-fixture.py'))
         module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
@@ -507,6 +515,7 @@ def main():
         if args.owned_https:
             (root / 'https-phase').write_text('proxy-success'); (root / 'https-phase').chmod(0o600)
         profiles = seed_profiles(executable, data, https_urls if https_urls is not None else urls)
+        if args.manager_webrtc: fixture.prepare_profiles(data, profiles)
         state = dict(app=str(app), executable=str(executable), root=str(root), data=str(data), manifest=str(copied_manifest),
                      output=str(root / 'update-audit.json'), proxyPort=fixture.proxy.server_address[1], urls=urls, profiles=profiles,
                      managerSHA256=digest(executable), version=metadata['CFBundleShortVersionString'], build=metadata['CFBundleVersion'])
@@ -520,6 +529,10 @@ def main():
         if args.physical_tcp:
             state['tcpFixture'] = fixture.description()
             state['tcpFixtureSHA256'] = digest(Path(__file__).with_name('manager-tcp-fixture.py'))
+        if args.manager_webrtc:
+            state['webrtcFixture'] = fixture.description()
+            state['webrtcFixtureSHA256'] = digest(Path(__file__).with_name('manager-webrtc-fixture.py'))
+            state['webrtcProbeSHA256'] = digest(Path(__file__).with_name('manager-webrtc-probe.js'))
         with (root / 'manager.log').open('wb') as log:
             os.chmod(root / 'manager.log', 0o600)
             manager = subprocess.Popen([str(executable), '--neantik-release-update-audit', '--candidate-manifest',
@@ -529,6 +542,11 @@ def main():
                 peer_spec = importlib.util.spec_from_file_location('owned_manager_peer_custody', Path(__file__).with_name('collect-manager-dns.py'))
                 peer_module = importlib.util.module_from_spec(peer_spec); peer_spec.loader.exec_module(peer_module)
                 fixture.peer_inspector = lambda channel, direct: peer_module.socket_peer(state, root, channel, direct=direct)
+            if args.manager_webrtc:
+                peer_spec = importlib.util.spec_from_file_location('owned_manager_webrtc_custody', Path(__file__).with_name('collect-manager-webrtc.py'))
+                peer_module = importlib.util.module_from_spec(peer_spec); peer_spec.loader.exec_module(peer_module)
+                fixture.peer_inspector = lambda channel, direct: peer_module.socket_peer(state, root, channel, direct=direct)
+                fixture.udp_inspector = lambda peer, port: peer_module.udp_peer(state, root, peer, port)
             private_json(output / 'private-state.json', state)
             print(json.dumps(dict(stage='manager-process-spawned', ownedPID=manager.pid, syntheticProfiles=2,
                                   authenticatedGUIVerified=False, authorityEnrollmentPerformedByFixture=False)), flush=True)

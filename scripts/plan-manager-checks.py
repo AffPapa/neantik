@@ -35,14 +35,18 @@ FEATURES = [
 # Reviewed stdlib-only harness boundaries. These do not link Swift or share
 # production code. Changes outside this explicit map remain conservative.
 STANDALONE_HARNESSES = {
-    'scripts/runtime-network/manager-route-fixture.py': ('scripts.tests.test_shipping_manager_route_fixture', 'scripts.tests.test_controlled_dns_fixture', 'scripts.tests.test_manager_dns_fixture', 'scripts.tests.test_manager_tcp_fixture'),
+    'scripts/runtime-network/manager-route-fixture.py': ('scripts.tests.test_shipping_manager_route_fixture', 'scripts.tests.test_controlled_dns_fixture', 'scripts.tests.test_manager_dns_fixture', 'scripts.tests.test_manager_tcp_fixture', 'scripts.tests.test_manager_webrtc_fixture'),
     'scripts/runtime-network/controlled-dns-fixture.py': ('scripts.tests.test_controlled_dns_fixture', 'scripts.tests.test_manager_dns_fixture'),
     'scripts/runtime-network/manager-dns-fixture.py': 'scripts.tests.test_manager_dns_fixture',
-    'scripts/runtime-network/collect-manager-dns.py': ('scripts.tests.test_manager_dns_custody', 'scripts.tests.test_manager_dns_analysis', 'scripts.tests.test_manager_tcp_custody', 'scripts.tests.test_manager_tcp_analysis'),
+    'scripts/runtime-network/collect-manager-dns.py': ('scripts.tests.test_manager_dns_custody', 'scripts.tests.test_manager_dns_analysis', 'scripts.tests.test_manager_tcp_custody', 'scripts.tests.test_manager_tcp_analysis', 'scripts.tests.test_manager_webrtc_custody', 'scripts.tests.test_manager_webrtc_analysis'),
     'scripts/runtime-network/manager-tcp-fixture.py': 'scripts.tests.test_manager_tcp_fixture',
     'scripts/runtime-network/collect-manager-tcp.py': ('scripts.tests.test_manager_tcp_custody', 'scripts.tests.test_manager_tcp_analysis'),
     'scripts/runtime-network/observe-manager-tcp-failure.py': ('scripts.tests.test_manager_tcp_custody', 'scripts.tests.test_manager_tcp_analysis'),
     'scripts/runtime-network/analyze-manager-tcp.py': 'scripts.tests.test_manager_tcp_analysis',
+    'scripts/runtime-network/manager-webrtc-fixture.py': ('scripts.tests.test_manager_webrtc_fixture', 'scripts.tests.test_manager_webrtc_analysis'),
+    'scripts/runtime-network/manager-webrtc-probe.js': ('scripts.tests.test_manager_webrtc_fixture', 'scripts.tests.test_manager_webrtc_analysis'),
+    'scripts/runtime-network/collect-manager-webrtc.py': ('scripts.tests.test_manager_webrtc_custody', 'scripts.tests.test_manager_webrtc_analysis'),
+    'scripts/runtime-network/analyze-manager-webrtc.py': 'scripts.tests.test_manager_webrtc_analysis',
     'scripts/runtime-network/analyze-manager-dns.py': 'scripts.tests.test_manager_dns_analysis',
     'scripts/runtime-network/manager-dns-transition.py': 'scripts.tests.test_manager_dns_analysis',
     'scripts/runtime-network/analyze-controlled-dns.py': 'scripts.tests.test_controlled_dns_analysis',
