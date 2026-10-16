@@ -292,3 +292,20 @@ are authenticated, using the same certificate as release135. No extension or
 browser was executed or installed. Apple notarization remains pending after
 an automatic-review refusal of the exact private-code upload; a separate scoped
 request is open. No production capability has been enabled.
+
+
+### Первый installed QA: отказ упаковки
+
+Точный QA ZIP получил Apple Accepted, ticket и Gatekeeper PASS. Один запуск
+controller и одна попытка активации расширения завершились setup refusal:
+`sysextd` потребовал `NSSystemExtensionUsageDescription` внутри самого network
+extension; строка была только у контейнера. Это ошибка упаковки, не повод
+создавать сертификат или добавлять Endpoint Security/DriverKit permissions.
+A/B и app rule не запускались/не сохранялись; own origins закрыты, controller
+вышел, QA extensions осталось0. Сетевой gate не выполнен, нули не являются PASS.
+
+Recipe исправлен;3metadata controls прошли, в том числе реальный старый
+provider Info negative. Internal QA build2 использует прежние compiled
+executables и entitlements, меняются только purpose/version/run metadata.
+Пересборок Swift/Chromium и повторов25чистых controls нет. Исправленный
+артефакт требует собственной подписи/notarization/native квалификации.

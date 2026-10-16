@@ -163,3 +163,26 @@ Apple submission before execution because the two-ID/profile approval did not
 cover that exact code upload. A separate scoped notarization/installed-QA request
 is pending. No submission workaround, new certificate or app rebuild was used.
 These signing results do not establish kernel capture or a working proxy.
+
+
+## First installed attempt: packaging refusal, corrected recipe
+
+The first exact QA ZIP received Apple Accepted, was stapled and passed
+Gatekeeper. One controller launch and one extension activation were attempted.
+`sysextd` refused category validation: the network extension itself lacked
+`NSSystemExtensionUsageDescription` (the container already had it). This is a
+packaging defect, not a proxy failure or missing account/certificate permission.
+Other DEXT/Endpoint Security category-probe messages do not justify new rights.
+
+Host A/B were not opened and no app rule was saved. Own origins stopped,
+the controller exited and no QA extension remained. Zero A requests in that
+state is not network-isolation PASS. The installed QA copy was retired intact;
+the original accepted ZIP and its receipts remain immutable.
+
+The preparation recipe now requires a bounded nonempty purpose string on both
+container and provider. Three pure metadata controls passed, including refusal
+of the actual old provider Info.plist. New internal QA build2 changes only
+purpose/version/run metadata: all four compiled executables and both entitlement
+templates before signing are byte-identical to build1. No Swift/Chromium build
+or old25 controls were repeated. This corrected QA still needs its own exact
+signing/notarization/install acceptance; shipping WebKit proxy remains disabled.

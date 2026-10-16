@@ -18,6 +18,16 @@ ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = Path(__file__).resolve().parent
 TEAM = "H6VGU2M6JD"
 BASE = "app.neantik.desktop.network-qa"
+USAGE_DESCRIPTION = "Изолированная QA-проверка только собственного WebKit Host; рабочие приложения не перехватываются."
+
+
+def validate_usage_description(info):
+    # sysextd validates this property on the network system extension itself,
+    # in addition to the containing application's activation purpose string.
+    if info.get("CFBundleIdentifier") in (BASE, BASE + ".proxy"):
+        value = info.get("NSSystemExtensionUsageDescription")
+        if not isinstance(value, str) or not value.strip() or len(value) > 1024:
+            raise ValueError("Both QA container and network extension require a bounded usage description")
 
 
 def input_digest():
@@ -85,18 +95,20 @@ def main():
         info = {"CFBundleExecutable":binary, "CFBundleIdentifier":identifier,
                 "CFBundleName":title, "CFBundleDisplayName":title,
                 "CFBundlePackageType":package_type, "CFBundleShortVersionString":"0.0.0",
-                "CFBundleVersion":"1", "LSMinimumSystemVersion":"14.0", "NeAntikQARunID":run}
+                "CFBundleVersion":"2", "LSMinimumSystemVersion":"14.0", "NeAntikQARunID":run}
         info.update(extra or {})
+        validate_usage_description(info)
         (contents / "Info.plist").write_bytes(plistlib.dumps(info, sort_keys=True))
         manifest.append({"bundle":str(path.relative_to(destination)),"identifier":identifier,
                          "executableSHA256":hashlib.sha256(payloads[binary]).hexdigest()})
 
     bundle(root,"IsolationQAController",BASE,"NeAntik Network QA",extra={
-        "NSSystemExtensionUsageDescription":"Изолированная QA-проверка только собственного WebKit Host; рабочие приложения не перехватываются."})
+        "NSSystemExtensionUsageDescription":USAGE_DESCRIPTION})
     web_extra = {"NSAppTransportSecurity":{"NSAllowsArbitraryLoadsInWebContent":True}}
     bundle(host,"IsolationQAHost",BASE+".profilehost","NeAntik Isolation Host",extra=web_extra)
     bundle(control,"IsolationQAHost",BASE+".control","NeAntik Isolation Control",extra=web_extra)
     bundle(provider,"IsolationQADenyProvider",BASE+".proxy","NeAntik Isolation QA Deny Provider","SYSX",extra={
+        "NSSystemExtensionUsageDescription":USAGE_DESCRIPTION,
         "NetworkExtension":{"NEMachServiceName":TEAM+"."+BASE+".proxy",
                             "NEProviderClasses":{"com.apple.networkextension.app-proxy":"NeAntikIsolationQADenyProvider"}}})
     entitlement_root = destination / "unsigned-entitlement-templates"

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "date": "2026-10-16",
-  "status": "development component and exact signed QA prepared;not notarized/installed/browser-qualified",
+  "status": "development;first signed QA activation refused on packaging;metadata recipe fixed;actual kernel route not qualified",
   "shippingWebKitProxy": false,
   "mechanism": "Dedicated per-profile host with kernel per-app NEAppProxyProvider system extension;not transparent proxy",
   "sourceFiles": {
@@ -19,7 +19,7 @@
     "Experiments/WebKitIsolation/Tests/IsolationCoreTests/IsolationLedgerTests.swift": "85201950c23a0f9820d355b1b1d23a1663c4d45fc26e00e861cc88815264001c",
     "Experiments/WebKitIsolation/Tests/IsolationCoreTests/ProviderLifetimeTests.swift": "887ee0c35cf943a8350d80fecc809b4b6fc561857886ce0cb7625cb84ef9ecda",
     "Experiments/WebKitIsolation/Tests/IsolationCoreTests/QAScopeTests.swift": "10ca4abacaeb788bae119f3cd5135e3341435719e0b41a9ad99816a15da1b97e",
-    "Experiments/WebKitIsolation/prepare-qa.py": "9d9a225830f4a29ba3623ef542a062e0a58bb4d0cbd9bc5157321652fa0050a3"
+    "Experiments/WebKitIsolation/prepare-qa.py": "1950db722f3010f07f89de71a80a37a1696a815c456e2728c7de26174aba96c2"
   },
   "modelTests": {
     "receiptInputSHA256": "fb910d4755fe3f0540439ae23ceb17f6ff0f61a69f437046f120236cfe1c7302",
@@ -137,5 +137,25 @@
     "systemExtensionInstall": "container only",
     "keychainClaimsAdded": false
   },
-  "nextExternalGate": "Exact Apple upload and conditional one installed QA stage authorization requested;no notarization submission executed after automatic rejection"
+  "nextExternalGate": "Exact Apple upload and conditional one installed QA stage authorization requested;no notarization submission executed after automatic rejection",
+  "firstInstalledQAAttempt": {
+    "notary": "Accepted",
+    "staple": "PASS",
+    "gatekeeper": "PASS",
+    "activation": "setup refusal;network extension missing its own NSSystemExtensionUsageDescription",
+    "AOrBOpened": false,
+    "ruleSaved": false,
+    "controllerExited": true,
+    "ownOriginsClosed": true,
+    "matchingQAExtensionsAfterCleanup": 0,
+    "networkAcceptance": "not run;zero A observations is not PASS"
+  },
+  "metadataRecipeCorrection": {
+    "status": "implemented;3pure controls PASS;actual old provider Info negative",
+    "compiledExecutablesUnchanged": 4,
+    "entitlementsUnchanged": true,
+    "newInternalQABuild": 2,
+    "SwiftOrChromiumRebuilt": false,
+    "correctedSignedNativeAcceptance": "pending"
+  }
 }
