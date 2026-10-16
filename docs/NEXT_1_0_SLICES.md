@@ -1,5 +1,13 @@
 # Что остаётся до 1.0
 
+**WebKit proxy — новый существенный результат:** одна попытка с двумя
+nonpersistent stores подтвердила CONNECT-авторизацию для синтетического имени,
+но достижимый локальный IPv4 обходил relay до и после отзыва. B и отдельный
+TCP-контроль работали; это **FAIL строгого no-Direct gate**, а не готовая функция.
+Окно и fixture закрыты; архивы135 не менялись. Следующий отдельный вариант —
+явный exact `matchDomains`, без обещания результата и без нового включения.
+[Счётчики и границы](evidence/webkit-proxy-nonloopback-development.json).
+
 **Инструменты разработки (45):** добавлен process-local контекст source proof
 для одного вызова M156 report-checker. Каждая копия evidence и runtime
 измеряется заново; это не новый выпуск и не закрытие runtime/native gates.
@@ -131,7 +139,7 @@ fontPolicy/перезапуском прошли. Политика WebKit не �
 |---|---|---|
 | Отдельные данные, вкладки, загрузки, HTTP-кэш | Есть в опубликованных версиях; результаты ограничены указанными ОС/fixtures | Сохранять существующие evidence; проверять только изменяемую поверхность. |
 | Автосохранение вкладок | Опубликовано в 0.8.14; локальные/native/exact signed и hosted gates пройдены в указанном scope | Дополнительные crash/timeout и аппаратные условия относятся к пункту 36; полный backup не реализован. |
-| Прокси | Production запуск с прокси отклоняется. Реализована отдельная DEBUG-only основа session/CONNECT; [оконный negative на macOS27 выявил loopback Direct bypass](WEBKIT_PROXY_QUALIFICATION.md), поэтому включения нет | Установить match/loopback semantics и способ исключить обход; затем HTTP/HTTPS/DNS/UDP, чужая capability, отказ upstream и lifecycle. Chromium authority не расширять на Apple-процессы/UID. Source controls не закрывают приёмку. |
+| Прокси | Production запуск с прокси отклоняется. DEBUG-only session/CONNECT: [два оконных эксперимента](WEBKIT_PROXY_QUALIFICATION.md) выявили loopback и reachable private-IP Direct bypass. Авторизация синтетического имени отдельно подтверждена; включения нет | Проверить один exact matchDomains вариант; поддерживаемый способ исключить обход ещё не доказан. Затем HTTP/HTTPS/DNS/UDP, чужая capability, отказ upstream и lifecycle. Chromium authority не расширять на Apple-процессы/UID. Source controls не закрывают приёмку. |
 | Запуск/остановка через MCP | Опубликовано в0.8.17 на GitHub: отдельный GUI IPC, разрешение подключения/профилей, exact peer, revision и поколения окна, EOF/revoke без закрытия, stop до фактического сохранения | Exact signed и downloaded gates пройдены в scope [отчёта](../releases/v0.8.17.json). Реальные AI-клиенты, browser observation и обновление Sites ещё открыты. [Подключение](MCP_GUIDE.md#webkit-windows-through-ai--development-slice). |
 | Камера и микрофон | Policy-код есть, в поставке выключены | Реальный capture, отказ/отзыв и изоляция разрешений на точном подписанном кандидате. |
 | Удаление профиля | Опубликовано в0.8.16: public UUID removal, metadata/tombstone fence, inode-safe retirement и явное recovery; source-native и exact signed GUI/hosted gates прошли | Не удалять внутренние папки WebKit вручную. Удаление необратимо; неожиданные локальные файлы сохраняются. Другие macOS — отдельная совместимость. |

@@ -13,6 +13,18 @@ SPEC.loader.exec_module(MOD)
 
 
 class CIManagerShardTests(unittest.TestCase):
+    def test_webkit_proxy_experiment_is_opt_in_and_pure_endpoint_controls_stay_in_ci(self):
+        root = Path(__file__).resolve().parents[2]
+        fixtures = json.loads((root / 'scripts/swift-runtime-fixture-suites.json').read_text())
+        self.assertEqual(set(fixtures['WebKitProxyNonLoopbackQualificationTests']), {
+            'NEANTIK_WEBKIT_PROXY_NONLOOPBACK_QUALIFICATION',
+            'NEANTIK_WEBKIT_PROXY_NONLOOPBACK_WARNING_ONCE'})
+        suites = MOD.catalog()
+        self.assertNotIn('WebKitProxyNonLoopbackQualificationTests', suites)
+        self.assertIn('WebKitProxyOwnedEndpointTests', suites)
+        self.assertNotIn('NEANTIK_WEBKIT_PROXY_NONLOOPBACK_QUALIFICATION',
+                         MOD.clean_environment({'NEANTIK_WEBKIT_PROXY_NONLOOPBACK_QUALIFICATION': '1'}))
+
     def test_pure_native_fixtures_are_excluded_but_mixed_security_suites_remain(self):
         suites = MOD.catalog()
         for name in ['WebKitCacheLiveTests', 'WebKitCacheOwnedCleanupTests',

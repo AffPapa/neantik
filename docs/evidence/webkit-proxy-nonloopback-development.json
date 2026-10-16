@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "status": "native-name-auth-confirmed;local-address-Direct-bypass-confirmed;shipping-disabled",
+  "observedAt": "2026-10-16T11:44:17.538573+00:00",
+  "environment": {
+    "macOS": "27.0",
+    "architecture": "arm64",
+    "systemWebKitVersion": "22625.1.29.11.24"
+  },
+  "host": "Swift test process with requested NSWindow and two fresh nonpersistent stores;not signed product",
+  "sourceBase": "0dc9596c25a92005531e469ea35d1d2c3e074fef",
+  "observedSourceSHA256": {
+    "Tests/NeAntikTests/WebKitProxyTransportTests.swift": "cc64be6397fe7af49130902d9ea3d10e1f78a0d5aa73b7c897a50117b232b3bf",
+    "Sources/NeAntik/WebKitProxySession.swift": "a6f83ff54b2db71a68d0b1c5dac41484f4aa0fdf32047e63a4b4dc360f9fe667",
+    "Sources/NeAntik/WebKitProxyConnectCodec.swift": "7fa6c03c644f9573ff0739ec283de0ce3bd18987a573e29267bbba3baf0df007"
+  },
+  "testBinarySHA256": "14d827245f815dedcd213cd15a1967c3b9e021f5d0d12b4b40a50ebdf0183fbc",
+  "sourceInputSHA256": "1a0837c8383e8ef0b4cee22f2a4c1740f28da7972825987389bf4bceea818032",
+  "admission": {
+    "memoryPressure": 1,
+    "thermalState": 1,
+    "warningExceptionUsed": false
+  },
+  "nativeAttempts": 1,
+  "result": "FAIL",
+  "testExitCode": 1,
+  "durationSeconds": 3.244686165940948,
+  "sourceUnchangedDuringNativeRun": true,
+  "phases": {
+    "named": {
+      "accepted": 2,
+      "malformed": 0,
+      "authRefused": 1,
+      "established": 1,
+      "upstreamAuth": 1,
+      "upstreamResponses": 1,
+      "directConnections": 0,
+      "directResponses": 0
+    },
+    "direct-before": {
+      "accepted": 2,
+      "malformed": 0,
+      "authRefused": 1,
+      "established": 1,
+      "upstreamAuth": 1,
+      "upstreamResponses": 1,
+      "directConnections": 1,
+      "directResponses": 1
+    },
+    "bare-tcp-control": {
+      "accepted": 2,
+      "malformed": 0,
+      "authRefused": 1,
+      "established": 1,
+      "upstreamAuth": 1,
+      "upstreamResponses": 1,
+      "directConnections": 2,
+      "directResponses": 1
+    },
+    "protected": {
+      "accepted": 2,
+      "malformed": 0,
+      "authRefused": 1,
+      "established": 1,
+      "upstreamAuth": 1,
+      "upstreamResponses": 1,
+      "directConnections": 3,
+      "directResponses": 2
+    },
+    "revoked": {
+      "accepted": 2,
+      "malformed": 0,
+      "authRefused": 1,
+      "established": 1,
+      "upstreamAuth": 1,
+      "upstreamResponses": 1,
+      "directConnections": 4,
+      "directResponses": 3
+    },
+    "direct-after": {
+      "accepted": 2,
+      "malformed": 0,
+      "authRefused": 1,
+      "established": 1,
+      "upstreamAuth": 1,
+      "upstreamResponses": 1,
+      "directConnections": 5,
+      "directResponses": 4
+    }
+  },
+  "interpretation": {
+    "named": ".invalid page returned expected proxy body;challenge followed by authenticated CONNECT and scripted upstream response;no Direct origin arrival",
+    "directBefore": "independent B loaded the same nonce URL directly;origin reachable",
+    "bareTCP": "controlled direct socket increased connections while responses stayed unchanged;proves no-response arrival detection",
+    "protected": "A loaded Direct body at reachable local IPv4;no new relay/upstream response",
+    "revoked": "A again reached Direct origin after relay stopped",
+    "directAfter": "independent B still loaded Direct body;original last count assertion cascaded from the earlier forbidden A arrival"
+  },
+  "cleanup": {
+    "windowClosed": true,
+    "relayActiveConnectionsZero": true,
+    "fixtureTasksStoppedAndAwaited": true,
+    "testProcessExited": true,
+    "separateWebKitProcessCustodyClaim": false
+  },
+  "harnessCorrection": {
+    "change": "Use immediate pre-B baseline for final B counter, so A bypass does not create an unrelated B diagnostic failure",
+    "appliedAfterObservation": true,
+    "nativeReplay": false,
+    "originalObservedSourceRetainedByHash": true,
+    "originalSixAssertionIssuesRetained": true,
+    "buildOnlyPass": true,
+    "buildOnlySeconds": 8.132281040889211
+  },
+  "sourceControls": {
+    "pureEndpointSelectionTests": 2,
+    "pureTestsReadInterfaces": false,
+    "ciContracts": 21,
+    "additionalOptInCatalogControl": 1,
+    "shippingCodeChanged": false,
+    "plannerTests": 32,
+    "plannerSeconds": 0.365
+  },
+  "notQualified": [
+    "No general proxy/no-Direct guarantee",
+    "No production WebKit proxy enable",
+    "Persistent stores, real manager lifecycle, HTTPS destination/upstream, DNS/UDP/WebRTC",
+    "Other macOS and hardware",
+    "1.0 release"
+  ],
+  "next": "One separate exact matchDomains QA variant may test documented suffix selection; no force-local-bypass guarantee documented. Preserve this FAIL and keep production proxy:false.",
+  "references": [
+    "https://developer.apple.com/documentation/network/proxyconfiguration",
+    "https://developer.apple.com/documentation/network/proxyconfiguration/init(httpconnectproxy:tlsoptions:)",
+    "https://bugs.webkit.org/show_bug.cgi?id=264309"
+  ],
+  "secretHandling": "Only own ephemeral/dummy credentials;no real Keychain,raw IP,hostname,nonce,headers,voices or user fingerprint in public report",
+  "observedAtMethod": "terminal private log mtime",
+  "sourceBaseClean": false,
+  "unchangedRelease": {
+    "version": "0.8.23",
+    "build": 135,
+    "archivesReplaced": false
+  }
+}

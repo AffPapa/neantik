@@ -11,6 +11,18 @@ SPEC.loader.exec_module(MOD)
 
 
 class ManagerCheckPlanTests(unittest.TestCase):
+    def test_fixture_catalog_is_bounded_but_does_not_admit_native_qa(self):
+        result = MOD.plan(['scripts/swift-runtime-fixture-suites.json'], [])
+        self.assertEqual(result['swiftMode'], 'none')
+        self.assertEqual(result['commands'], [['python3', '-B', '-m', 'unittest',
+            'scripts.tests.test_ci_manager_shards', 'scripts.tests.test_verify_native_swift_tests_script']])
+        self.assertFalse(result['releaseGate'])
+        self.assertEqual(result['status'], 'not-run')
+        self.assertIn('native opt-in remains separate', result['requiredAdditionalGates'][0])
+        unknown = MOD.plan(['scripts/swift-runtime-fixture-other.json'], [])
+        self.assertEqual(unknown['swiftMode'], 'full')
+        self.assertTrue(any('discover' in command for command in unknown['commands']))
+
     def test_closed_source_checker_map_keeps_real_copy_controls_and_delivery_gates(self):
         result = MOD.plan(sorted(MOD.M156_SOURCE_CHECKERS), [])
         self.assertEqual(result['swiftMode'], 'none')

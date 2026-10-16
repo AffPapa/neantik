@@ -235,6 +235,11 @@ def plan(paths, catalog, *, version_only_info=False):
             python.update(M156_SOURCE_CONTROLS)
             gates.add('source-only verification reuse: measure real source/copy/runtime closure; exact candidate, signing and hosted-byte gates remain fresh for changed deliveries')
             reasons.append({'path': path, 'surface': 'm156-source-checker'}); continue
+        if path == 'scripts/swift-runtime-fixture-suites.json':
+            python.update(('scripts.tests.test_ci_manager_shards',
+                           'scripts.tests.test_verify_native_swift_tests_script'))
+            gates.add('review fixture catalog only: native opt-in remains separate; check every suite declared in the changed Swift fixture file, not just its filename')
+            reasons.append({'path': path, 'surface': 'native-fixture-catalog'}); continue
         if path == 'scripts/native-qa-readiness.py':
             python.add('scripts.tests.test_native_qa_readiness')
             gates.add('real read-only macOS resource observation; readiness is not native qualification')
