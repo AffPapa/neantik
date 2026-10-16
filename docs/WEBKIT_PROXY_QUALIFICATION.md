@@ -359,3 +359,16 @@ loopback/private-control результатов. Полный1.0 и WebKit proxy
 готовыми; shipping0.8.23(135) не менялась. Текущая сводка в
 `Experiments/WebKitIsolation/README.md` заменяет исторические pending-статусы
 выше; старые результаты и критерии сохраняются.
+
+
+### QA cleanup: отключение подтверждено
+
+По поручению пользователя выполнены QA-only переключатель и «Готово».
+`systemextensionsctl` подтвердил `activated disabled`; `sysextd` сохранил
+переходы `activated_enabled → terminating_for_disable → activated_disabled`.
+Собственных QA-процессов нет; тестовое VPN-правило уже удалено. Изначальный
+отказ удаления AuthorizationRequired13 сохранён как исторический результат.
+Неактивная регистрация extension и установленный QA bundle сохранены;
+полное удаление не заявлено. Пересборок и повторов native QA не было.
+Сетевой результат остаётся прежним: loopback Direct и невалидный private-B
+контроль не позволяют включать shipping WebKit proxy.

@@ -23,7 +23,7 @@ This is a research fixture, not a NeAntik public release.
 | Loopback | A and B each reached the own endpoint before and after the stop request. Strict zero Direct criterion is not met. |
 | Private IPv4 | Neither A nor B loaded the endpoint; independent Python control reached it. The failing B control prevents a selective-blocking conclusion. |
 | Owner attribution | Not established. Counter receiver contains a UUID spelling defect; corrected source is compiled/pure-tested, not native-verified. |
-| Cleanup | All four QA processes and two servers exited; exact QA VPN configuration removed through System Settings. Extension removal returned AuthorizationRequired13; an off toggle was not durable. Manual OS authorization remains pending. |
+| Cleanup | All four QA processes and two servers exited; exact QA VPN configuration removed through System Settings. Controller removal returned AuthorizationRequired13. Later QA-only switch plus Done disabled the extension: both kernel status and daemon transition confirm activated disabled. Inactive registration/bundle remain;not uninstalled. |
 
 Host A's exit was delayed. A PID/path/UID guard refused a fallback signal;
 the host then exited without any signal being sent. This is not a fast-close
@@ -100,9 +100,10 @@ These are packaging checks, not kernel acceptance.
 
 ## Remaining gates
 
-1. Finish OS-authorized QA extension cleanup; retain the installed QA3 bytes
-   until removal is confirmed. Do not claim a disabled/uninstalled state from
-   an optimistic UI toggle or bypass authorization/SIP/Gatekeeper.
+1. QA extension is durably disabled and all own processes/rules are gone.
+   Retain the inactive registration and installed QA3 bytes;uninstallation
+   is not claimed. Before a successor, resolve exact QA replacement/removal
+   through supported OS authorization;do not bypass SIP/Gatekeeper.
 2. Explain private-IP A/B failure with safe typed errors and correct controls;
    establish supported loopback policy before another native attempt. Current
    results prohibit production enablement and do not justify blind retries.

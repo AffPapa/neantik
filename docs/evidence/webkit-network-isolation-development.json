@@ -139,7 +139,7 @@
     "systemExtensionInstall": "container only",
     "keychainClaimsAdded": false
   },
-  "nextExternalGate": "Manual OS authorization for QA extension cleanup;no new native retry approved or started",
+  "nextExternalGate": "Manual disable gate resolved;no new native retry authorized. Strict loopback/private-control architecture remains unqualified.",
   "firstInstalledQAAttempt": {
     "notary": "Accepted",
     "staple": "PASS",
@@ -224,9 +224,10 @@
       "HTTPServersClosed": 2,
       "QAConfig": "removed through exact System Settings named QA card after controller scope guard refused",
       "controllerCleanupGuard": "preserved;no authority weakening;future source adds refusal flags",
-      "deactivationRequest": "AuthorizationRequired13;no retry/bypass",
-      "systemSettingsOffAttempt": "UI showed off but kernel remained activated enabled;not durable cleanup PASS",
-      "remaining": "QA3 installed extension record remains activated enabled;no QA app rule or live QA process;user manual authorization requested"
+      "deactivationRequest": "Original controller removal refused AuthorizationRequired13;later QA-only System Settings switch+Done disabled successfully",
+      "systemSettingsOffAttempt": "Latest requested switch+Done durably confirmed activated disabled by systemextensionsctl and sysextd",
+      "remaining": "Inactive QA extension registration and installed QA bundle retained;not uninstalled;no QA rule/live process",
+      "verifiedDisabled": true
     },
     "nativeResourceAdmission": "normal;warning exception not used",
     "fixtureDelay": "CUA bindingA1128.984s/B149.810s;first origin expired unused;fresh fixture after both windows bound;no app restart",
