@@ -58,6 +58,22 @@ class M156VariantTests(unittest.TestCase):
                 subject.verify_candidate_lock(self.lock(), provenance=self.lock(True), project_root=Path('/owned'))
             check.assert_not_called()
 
+    def test_security_identity_is_separate_and_output_is_source_selected(self):
+        lock = {'sourceVariant': subject.SECURITY_VARIANT,
+                'sourceContract': 'runtime/' + subject.SECURITY_PREFIX + '-source-contract.json',
+                'sourceProvenance': 'runtime/' + subject.SECURITY_PREFIX + '-port-candidate.json'}
+        self.assertEqual(subject.reviewed_lock_prefix(lock), subject.SECURITY_PREFIX)
+        self.assertEqual(subject.descriptor_for(lock).output, 'NeAntikSecurityQA_20261016')
+        self.assertEqual(subject.descriptor_for(lock).contract_schema, 4)
+        self.assertNotEqual(subject.descriptor_for(lock), subject.descriptor_for(self.lock(True)))
+        for field in ('sourceContract', 'sourceProvenance'):
+            mixed = dict(lock, **{field: self.lock(True)[field]})
+            with self.assertRaises(ValueError):
+                subject.reviewed_lock_prefix(mixed)
+        lock.pop('sourceVariant')
+        with self.assertRaises(ValueError):
+            subject.reviewed_lock_prefix(lock)
+
 
 if __name__ == '__main__':
     unittest.main()

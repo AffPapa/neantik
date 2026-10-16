@@ -72,13 +72,13 @@
     "boundary": "Five additional positive ancestry observations are not a full source/runtime qualification."
   },
   "limitations": [
-    "No new browser build or native security exploit test in this slice",
+    "New runtime built and research copy signed;headed security behavior and release qualification remain open",
     "Prior headed/platform/isolated-data results retain their original scope; they do not cover later upstream security fixes",
     "System WebKit is supplied by macOS and is a distinct platform;this Chromium finding is not a WebKit qualification",
     "No update to immutable release assets or release131 publication"
   ],
   "sourceBackports": {
-    "status": "8-upstream-patches-applied-source-only",
+    "status": "built-full-source-observed-signed-research;not-runtime-qualified",
     "manifest": "runtime/security-backports-20261015/manifest.json",
     "manifestSHA256": "c35cd893abe1a98284c2146db542c82605c4d0fd7f159f965e0cd88cf0f36cd1",
     "affectedPaths": 35,
@@ -87,8 +87,17 @@
     "upstreamTestsExecuted": false,
     "priorSourceBytesPreserved": true,
     "oldCompiledRuntimeUnchanged": true,
-    "newRuntimeBuilt": false,
+    "newRuntimeBuilt": true,
     "releaseQualified": false,
-    "boundary": "Seven original patches apply cleanly;Core uses officialM156cherry-pick.All8apply/reversechecks were on owned temporarycopies first. No partial selection of security hunks."
+    "boundary": "Seven original patches apply cleanly;Core uses officialM156cherry-pick.All8apply/reversechecks were on owned temporarycopies first. No partial selection of security hunks.",
+    "sourceVariant": "font-system-security-20261015-v1",
+    "sourceProof": "runtime/chromium-15612-font-system-security-20261015-v1-source-proof.json",
+    "sourceProofSHA256": "ac345eb85cd0f622e2dac36b5d14b43ad28a4d0e4b19ed967815e54f15226dfc",
+    "sourceFileCount": 1062659,
+    "explicitCopyGroupsObserved": 83,
+    "buildJobs": 2,
+    "buildSeconds": 1618.279,
+    "fullFDObservationSeconds": 125.605,
+    "headedSecurityRegressionsExecuted": false
   }
 }

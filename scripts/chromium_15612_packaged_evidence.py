@@ -21,7 +21,8 @@ def names(project: Path, lock: dict | None = None) -> list[str]:
             result.append(path.relative_to(root).as_posix())
         elif not path.is_dir():
             raise ValueError('M156 proof contains a special file')
-    if lock is not None and variant.reviewed_lock_prefix(lock) == variant.FONT_PREFIX:
+    prefix = variant.reviewed_lock_prefix(lock) if lock is not None else source.PREFIX
+    if prefix in (variant.FONT_PREFIX, variant.SECURITY_PREFIX):
         import chromium_15612_font_release_evidence as font
         result += [font.PREFIX + '-' + suffix + '.json' for suffix in (
             'source-contract', 'source-input-manifest', 'source-snapshot', 'port-candidate', 'source-proof')]
@@ -39,6 +40,17 @@ def names(project: Path, lock: dict | None = None) -> list[str]:
         from chromium_15612_font_packaging import manifest, MANIFEST
         manifest(project)
         result.append(MANIFEST)
+    if prefix == variant.SECURITY_PREFIX:
+        import chromium_15612_security_release_evidence as security
+        # Authenticate the complete overlay before deriving any copy names.
+        security.verify_contract(project)
+        result += [security.PREFIX + '-' + suffix + '.json' for suffix in (
+            'source-contract', 'source-input-manifest', 'source-snapshot', 'port-candidate', 'source-proof')]
+        relative = 'security-backports-20261015/'
+        manifest = source.read_object(root / relative / 'manifest.json', 'security source manifest')
+        result.append(relative + 'manifest.json')
+        result += [item['path'].removeprefix('runtime/') for item in manifest['orderedPatches']]
+        result += [relative + name for name in manifest['licenseFiles']]
     source.need(len(result) == len(set(result)), 'Duplicate M156 packaged dependency')
     return result
 
@@ -67,14 +79,16 @@ def process(project: Path, evidence: Path, lock: dict, *, copy: bool = False) ->
         if source.sha256_file(source.safe_relative_regular(evidence, relative)) != source.sha256_file(src):
             raise ValueError('Packaged M156 evidence differs: ' + relative)
     source.evidence_documents(evidence / (source.PREFIX + '-source-evidence'))
-    if prefix == variant.FONT_PREFIX:
-        expected = {name for name in dependencies if name.startswith('font-policy-v1/')}
+    subtrees = (('font-policy-v1', 'security-backports-20261015') if prefix == variant.SECURITY_PREFIX
+                else ('font-policy-v1',) if prefix == variant.FONT_PREFIX else ())
+    for subtree in subtrees:
+        expected = {name for name in dependencies if name.startswith(subtree + '/')}
         expected_directories = {p.as_posix() for name in expected for p in Path(name).parents if p != Path('.')}
-        for path in (evidence / 'font-policy-v1').rglob('*'):
+        for path in (evidence / subtree).rglob('*'):
             relative = path.relative_to(evidence).as_posix()
             if path.is_symlink() or not ((path.is_file() and relative in expected) or
                                          (path.is_dir() and relative in expected_directories)):
-                raise ValueError('Packaged font evidence has an extra, linked or special member')
+                raise ValueError('Packaged ' + subtree + ' evidence has an extra, linked or special member')
 
 
 def normalize_font_modes(project: Path, evidence: Path, lock: dict) -> None:
@@ -83,7 +97,8 @@ def normalize_font_modes(project: Path, evidence: Path, lock: dict) -> None:
     Verification paths never change modes. Extra members, links and shared
     files are refused before touching any entry.
     """
-    source.need(variant.reviewed_lock_prefix(lock) == variant.FONT_PREFIX, 'Mode recipe is font-successor only')
+    source.need(variant.reviewed_lock_prefix(lock) in (variant.FONT_PREFIX, variant.SECURITY_PREFIX),
+                'Mode recipe needs an explicit font successor')
     process(project, evidence, lock)
     common = {'fingerprint-chromium.lock.json', 'source-provenance.json', 'args.gn',
               'runtime-verification.json', 'security-baseline.json', 'release-security-baseline.json',

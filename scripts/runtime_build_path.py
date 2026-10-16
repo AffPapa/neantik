@@ -30,10 +30,9 @@ def verify_build_args(source_root, args_gn, lock, project_root):
         runtime = project_root / 'runtime'
         evidence_prefix = m154_evidence[version]
         if version == '156.0.8078.12':
-            from chromium_15612_variant import prefix_for, reviewed_lock_prefix, verify_candidate_lock, FONT_PREFIX
+            from chromium_15612_variant import prefix_for, reviewed_lock_prefix, verify_candidate_lock, descriptor_for
             evidence_prefix = prefix_for(lock)
-            output = ('NeAntikFontSkiaQA_20261016a' if evidence_prefix == FONT_PREFIX
-                      else 'NeAntikM156Qualified20261009')
+            output = descriptor_for(lock).output
             expected_m156 = source_root / 'out' / output / 'args.gn'
             if args_gn != expected_m156 or args_gn.is_symlink():
                 raise ValueError('Expected exact M156 qualified build args path')

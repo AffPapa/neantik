@@ -1,12 +1,29 @@
 """Explicit reviewed M156 identities; a version or marker is not qualification."""
 from pathlib import Path
+from dataclasses import dataclass
 import chromium_15612_release_evidence as legacy
 
 FONT_VARIANT = 'font-system-v1'
 FONT_PREFIX = 'chromium-15612-font-system-v1'
+SECURITY_VARIANT = 'font-system-security-20261015-v1'
+SECURITY_PREFIX = 'chromium-15612-' + SECURITY_VARIANT
+
+
+@dataclass(frozen=True)
+class SourceVariant:
+    prefix: str
+    output: str
+    contract_schema: int
+
+
+_VARIANTS = {
+    None: SourceVariant(legacy.PREFIX, 'NeAntikM156Qualified20261009', 2),
+    FONT_VARIANT: SourceVariant(FONT_PREFIX, 'NeAntikFontSkiaQA_20261016a', 3),
+    SECURITY_VARIANT: SourceVariant(SECURITY_PREFIX, 'NeAntikSecurityQA_20261016', 4),
+}
 _SUCCESSOR_FIELDS = frozenset({
     'baseSourceContractSHA256', 'baseSourceSnapshotSHA256',
-    'baseFullFDObservationSHA256', 'sourceDeltaProofSHA256',
+    'baseFullFDObservationSHA256', 'sourceDeltaProofSHA256', 'securityPatchManifestSHA256',
 })
 
 
@@ -14,9 +31,10 @@ def prefix_for(document: dict) -> str:
     if not isinstance(document, dict):
         raise legacy.M15612EvidenceError('M156 variant document must be an object')
     if 'sourceVariant' in document:
-        if document['sourceVariant'] != FONT_VARIANT or not isinstance(document['sourceVariant'], str):
+        marker = document['sourceVariant']
+        if not isinstance(marker, str) or marker not in (FONT_VARIANT, SECURITY_VARIANT):
             raise legacy.M15612EvidenceError('Unknown M156 source variant')
-        prefix = FONT_PREFIX
+        prefix = _VARIANTS[marker].prefix
     else:
         if _SUCCESSOR_FIELDS.intersection(document):
             raise legacy.M15612EvidenceError('M156 successor marker is missing')
@@ -28,6 +46,12 @@ def prefix_for(document: dict) -> str:
     return prefix
 
 
+def descriptor_for(document: dict) -> SourceVariant:
+    """Closed source-selected metadata; JSON cannot choose a verifier/module."""
+    prefix_for(document)
+    return _VARIANTS[document.get('sourceVariant')]
+
+
 def reviewed_lock_prefix(lock: dict) -> str:
     prefix = prefix_for(lock)
     if (lock.get('sourceContract') != 'runtime/' + prefix + '-source-contract.json' or
@@ -37,8 +61,12 @@ def reviewed_lock_prefix(lock: dict) -> str:
 
 
 def _subject(document: dict):
-    if prefix_for(document) == legacy.PREFIX:
+    prefix = prefix_for(document)
+    if prefix == legacy.PREFIX:
         return legacy
+    if prefix == SECURITY_PREFIX:
+        import chromium_15612_security_release_evidence as security
+        return security
     import chromium_15612_font_release_evidence as successor
     return successor
 
@@ -74,12 +102,15 @@ def report_source_fields(lock: dict, *, project_root: Path) -> dict:
             'fullFDObservationSHA256': 'd6836d97a7a24d370663976063516306bfc646c826149f579a319fdb5578722c',
             'freshWholeSourceTreeObserved': False,
         }
-    import chromium_15612_font_release_evidence as successor
-    proof = legacy.bound(project_root / 'runtime', FONT_PREFIX + '-source-proof.json', successor.PROOF_SHA256)
+    successor = _subject(lock)
+    proof = legacy.bound(project_root / 'runtime', prefix + '-source-proof.json', successor.PROOF_SHA256)
+    security = prefix == SECURITY_PREFIX
     return {
-        'sourceVariant': FONT_VARIANT,
-        'sourceEvidenceMode': 'executed-font-system-v1-preserved-build-and-postbuild-fd-source-proof',
-        'baseFullFDObservationSHA256': successor.BASE_FD_SHA256,
+        'sourceVariant': SECURITY_VARIANT if security else FONT_VARIANT,
+        'sourceEvidenceMode': ('executed-security-backport-preserved-build-and-postbuild-fd-source-proof'
+                               if security else 'executed-font-system-v1-preserved-build-and-postbuild-fd-source-proof'),
+        'baseFullFDObservationSHA256': (proof['base']['fullFDObservationSHA256']
+                                         if security else successor.BASE_FD_SHA256),
         'postbuildFullFDObservationSHA256': proof['postbuildObservation']['receiptSHA256'],
         'sourceDeltaProofSHA256': successor.PROOF_SHA256,
         'freshWholeSourceTreeObserved': False,
@@ -98,11 +129,12 @@ def verify_report_source_fields(report: dict, lock: dict, *, project_root: Path)
 
 def verify_signed_runtime_identity(app: Path, lock: dict, *, project_root: Path) -> None:
     """Compare preserved font bytes; signature/native gates remain separate."""
-    if reviewed_lock_prefix(lock) != FONT_PREFIX:
-        raise legacy.M15612EvidenceError('Signed font identity check needs the font variant')
+    prefix = reviewed_lock_prefix(lock)
+    if prefix not in (FONT_PREFIX, SECURITY_PREFIX):
+        raise legacy.M15612EvidenceError('Signed successor identity needs an explicit reviewed variant')
     report_source_fields(lock, project_root=project_root)
-    import chromium_15612_font_release_evidence as font
-    proof = legacy.bound(project_root / 'runtime', FONT_PREFIX + '-source-proof.json', font.PROOF_SHA256)
+    successor = _subject(lock)
+    proof = legacy.bound(project_root / 'runtime', prefix + '-source-proof.json', successor.PROOF_SHA256)
     import importlib.util
     spec = importlib.util.spec_from_file_location('m156_font_closure_measure',
                                                 project_root / 'scripts/verify-direct-update-runtime-pins.py')

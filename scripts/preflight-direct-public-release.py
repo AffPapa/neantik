@@ -131,9 +131,9 @@ def verify_source_contract_binding(
             raise ValueError("M155.40 packaged args differ from built candidate")
         return
     if runtime_version == "156.0.8078.12":
-        from chromium_15612_variant import verify_candidate_lock, reviewed_lock_prefix, FONT_PREFIX
+        from chromium_15612_variant import verify_candidate_lock, descriptor_for
         verify_candidate_lock(candidate_lock, provenance=provenance, project_root=project_root)
-        expected_schema = 3 if reviewed_lock_prefix(candidate_lock) == FONT_PREFIX else 2
+        expected_schema = descriptor_for(candidate_lock).contract_schema
         if (type(contract.get('schemaVersion')) is not int or contract.get('schemaVersion') != expected_schema
                 or provenance.get("sourceContractSHA256") != sha256_file(contract_path)
                 or provenance.get("binaryBinding", {}).get("argsGNSHA256") != sha256_file(args_gn)):
