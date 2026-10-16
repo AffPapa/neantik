@@ -149,6 +149,39 @@ The current filter/controller compiles without product Sendable diagnostics;
 native owner/crash/disable behavior is unqualified.
 [Source and remaining gates](../../docs/evidence/webkit-owned-loopback-filter-development.json).
 
+## Accepting the owned-loopback observation
+
+`analyze-owned-filter.py` analyzes retained evidence offline. It requires the
+12-case matrix: A/B over IPv4/IPv6 before activation, while filtering, and
+after an independently observed provider failure. A must fail without an
+origin request; B must actually load the own origin. An active A-drop/B-allow
+event must match the request interval and exact provider run, PID and binary.
+Missing contexts, timeouts, unknown ownership and unexpected callbacks refuse
+completion. A stop callback alone never establishes provider unavailability.
+
+The native collector must bind origin events to the exact run, role, family
+and request label. The own server accepts only its per-run path and known
+label; snapshots must come from that label's held server. Preserve producer
+and receipt hashes when reusing the four completed signed-QA5 baseline cases.
+Those older cases contain real origin and headed-completion uptimes, not
+launch intervals. The analyzer checks freshness/order without inventing the
+missing launch times or rerunning those browsers.
+
+`normalize_journal` accepts the actual macOS JSON field names and matches the
+provider image path and parsed Mach-O UUID. It retains unknown/unexpected
+events and refuses malformed timestamps or wall-clock/uptime drift. Matching
+journal fields does not authenticate collection: the operator still needs an
+actual OS capture and verified signed provider/PID. Raw journal text is not a
+public artifact.
+
+Nineteen offline controls passed, including intentionally broken lifecycle,
+Direct fallback, failed B, stale evidence and foreign identity. They test the
+analysis, not the OS filter. Even complete input reports leave
+`productionQualified` and `workingProxyProved` false. External destinations,
+DNS, UDP, existing connections and the actual proxy tunnel need separate
+native evidence before shipping WebKit proxy support.
+[Analysis controls and remaining boundaries](../../docs/evidence/webkit-owned-filter-analysis-development.json).
+
 ## Remaining gates
 
 1. QA extension is durably disabled and all own processes/rules are gone.
