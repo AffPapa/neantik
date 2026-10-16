@@ -21,7 +21,7 @@ struct ProfileCommandPresentationTests {
         #expect(presentation.browserDataIsAvailable && presentation.pinIsEnabled)
     }
     @Test func extensionsRequireStoppedReadyUnarchivedProfile() {
-        for state in [BrowserProfileProcessState.stopped, .managed, .externalVerified, .checking, .externalUnverified, .externalManualOnly, .recoveryRequired] {
+        for state in [BrowserProfileProcessState.stopped, .managed, .externalVerified, .checking, .closing, .externalUnverified, .externalManualOnly, .recoveryRequired] {
             for archived in [false, true] {
                 for ready in [false, true] {
                     for busy in [false, true] {

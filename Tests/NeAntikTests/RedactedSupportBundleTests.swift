@@ -4,6 +4,15 @@ import Testing
 
 struct RedactedSupportBundleTests {
     @Test
+    func ordinaryClosingIsNotReportedAsRecoveryOrFailure() throws {
+        let bundle = try RedactedSupportBundle(managerVersion: "0.8.22", managerBuild: "134", runtime: nil,
+            runtimeAvailability: .missing, profiles: [BrowserProfile(name: "Own fixture")], folderCount: 0, processStates: [.closing],
+            generatedAt: Date(timeIntervalSince1970: 10))
+        #expect(bundle.health.failureCount == 0)
+        #expect(bundle.health.recoveryCount == 0)
+        #expect(bundle.health.attentionCount == 0)
+    }
+    @Test
     func bundleContainsOnlyAggregateStatusAndRuntimeProvenance() throws {
         let first = BrowserProfile(name: "Private profile")
         let second = BrowserProfile(name: "Another profile", isArchived: true)

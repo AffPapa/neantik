@@ -162,6 +162,7 @@ private struct BrowserProfileLeaseUnavailableError: LocalizedError {
 enum BrowserProfileProcessState: Equatable, Sendable {
     case stopped
     case checking
+    case closing
     case managed
     case externalVerified
     case externalManualOnly
@@ -174,6 +175,7 @@ enum BrowserProfileProcessState: Equatable, Sendable {
 
     var canRequestStop: Bool {
         self != .checking &&
+            self != .closing &&
             self != .externalManualOnly &&
             self != .externalUnverified &&
             self != .recoveryRequired
@@ -185,6 +187,8 @@ enum BrowserProfileProcessState: Equatable, Sendable {
             "Остановлен"
         case .checking:
             "Подготовка…"
+        case .closing:
+            "Закрывается…"
         case .managed:
             "Запущен"
         case .externalVerified:
@@ -204,6 +208,8 @@ enum BrowserProfileProcessState: Equatable, Sendable {
             nil
         case .checking:
             "NeAntik подготавливает данные профиля. Это займёт несколько секунд."
+        case .closing:
+            "NeAntik завершает браузер и прокси. Повторный запуск станет доступен после проверки."
         case .externalVerified:
             "Профиль запущен другим экземпляром NeAntik. Его можно безопасно остановить здесь."
         case .externalManualOnly:
@@ -520,6 +526,17 @@ private struct BrowserProcessRecoveryRecord: Equatable, Sendable {
     let cleanupAuthority: BrowserLeaseCleanupAuthority?
 }
 
+/// Presentation only. Cleanup authority remains with the existing lease and
+/// process inventory checks; a requested Stop never proves that data is free.
+private struct ManagedBrowserClosingIntent: Equatable {
+    let process: ObjectIdentifier
+    let owner: UUID
+    let browserDataDirectory: URL
+    let lease: Data
+    let entryIdentity: PrivateFileEntryIdentity
+    let requestedAt: Date
+}
+
 private enum BrowserLeaseEntrySnapshot: Sendable {
     case missing
     case unsafe
@@ -656,6 +673,7 @@ final class BrowserProcessManager: ObservableObject {
     private var recoveryProfileIDs = Set<UUID>()
     private var recoveryRecords: [UUID: BrowserProcessRecoveryRecord] = [:]
     private var managedStopRequests: [UUID: ObjectIdentifier] = [:]
+    @Published private var managedClosingIntents: [UUID: ManagedBrowserClosingIntent] = [:]
     private var managedStopWarnings: [UUID: Task<Void, Never>] = [:]
     private var externalStopTasks: [UUID: Task<Void, Never>] = [:]
     private var externalObservationTasks: [UUID: Task<Void, Never>] = [:]
@@ -692,7 +710,7 @@ final class BrowserProcessManager: ObservableObject {
         !unconfirmedRelayOwnerFences.isEmpty || !activeRelayOwners.isEmpty ||
         !externalLocks.isEmpty || !externalUnverifiedProfileIDs.isEmpty ||
         !recoveryProfileIDs.isEmpty || !recoveryRecords.isEmpty ||
-        !managedStopRequests.isEmpty || !externalStopTasks.isEmpty ||
+        !managedStopRequests.isEmpty || !managedClosingIntents.isEmpty || !externalStopTasks.isEmpty ||
         !tombstoneRecoveryMessages.isEmpty || !fingerprintAuditReservations.isEmpty || !fingerprintAuditSettlementPermits.isEmpty ||
         !pendingReconciliationProfileIDs.isEmpty || reconcileTask != nil || queuedReconcile != nil
     }
@@ -1289,6 +1307,9 @@ final class BrowserProcessManager: ObservableObject {
     func processState(for profileID: UUID) -> BrowserProfileProcessState {
         if webKitMaintenanceProfileIDs.contains(profileID) { return .checking }
         if webKitBrowsers[profileID] != nil { return .managed }
+        if let intent = managedClosingIntents[profileID], closingDeadlineIsCurrent(intent) {
+            return .closing
+        }
         if processes[profileID]?.isRunning == true {
             return .managed
         }
@@ -1663,6 +1684,7 @@ final class BrowserProcessManager: ObservableObject {
         relayOwnerInspection: BrowserDataProcessInspection,
         expectedLeaseAnchor: BrowserLeaseInventoryAnchor?
     ) {
+        defer { refreshManagedClosingIntent(profileID: profileID) }
         if webKitBrowsers[profileID] != nil {
             pendingReconciliationProfileIDs.remove(profileID)
             runningProfileIDs.insert(profileID)
@@ -2699,26 +2721,94 @@ final class BrowserProcessManager: ObservableObject {
         return !hasPendingWebKitWork
     }
 
+    private func closingDeadlineIsCurrent(_ intent: ManagedBrowserClosingIntent) -> Bool {
+        let age = now().timeIntervalSince(intent.requestedAt)
+        return age >= 0 && age < 8
+    }
+
+    private func captureManagedClosingIntent(profileID: UUID, process: Process) -> ManagedBrowserClosingIntent? {
+        guard let owner = managedLeaseOwners[profileID],
+              let directory = managedBrowserDataDirectories[profileID],
+              !unconfirmedRelayOwnerFences.values.contains(where: { $0.profileID == profileID }),
+              let read = try? readLeaseEntry(profileID: profileID, lockURL: paths.lockFile(for: profileID)),
+              case let .data(data) = read.entry, let entryIdentity = read.identity,
+              let lock = try? Self.decodeLock(data), lock.phase == .running,
+              lock.ownerToken == owner, lock.pid == process.processIdentifier,
+              lock.managerPID == getpid(), lock.pendingRelayOwner == nil,
+              lock.browserDataPath == directory.standardizedFileURL.path else { return nil }
+        return ManagedBrowserClosingIntent(process: ObjectIdentifier(process), owner: owner,
+            browserDataDirectory: directory, lease: data, entryIdentity: entryIdentity, requestedAt: now())
+    }
+
+    private func clearManagedClosingIntent(profileID: UUID) {
+        managedClosingIntents.removeValue(forKey: profileID)
+        if managedStopRequests[profileID] == nil {
+            managedStopWarnings.removeValue(forKey: profileID)?.cancel()
+        }
+    }
+
+    /// Revalidate only during lifecycle/reconcile work, never during every row
+    /// render. An identical token alone cannot carry Stop across a replaced file.
+    private func refreshManagedClosingIntent(profileID: UUID) {
+        guard let intent = managedClosingIntents[profileID] else { return }
+        guard !unconfirmedRelayOwnerFences.values.contains(where: { $0.profileID == profileID }),
+              tombstoneRecoveryMessages[profileID] == nil,
+              let read = try? readLeaseEntry(profileID: profileID, lockURL: paths.lockFile(for: profileID)),
+              case let .data(data) = read.entry, data == intent.lease,
+              read.identity == intent.entryIdentity else {
+            clearManagedClosingIntent(profileID: profileID); return
+        }
+        if let process = processes[profileID], process.isRunning {
+            guard ObjectIdentifier(process) == intent.process,
+                  managedLeaseOwners[profileID] == intent.owner else {
+                clearManagedClosingIntent(profileID: profileID); return
+            }
+        } else {
+            guard let record = recoveryRecords[profileID], record.blockingManagerPID == nil,
+                  record.expectedBrowserDataDirectory == intent.browserDataDirectory,
+                  record.removableSnapshot == intent.lease, record.entryIdentity == intent.entryIdentity,
+                  record.cleanupAuthority == nil || record.cleanupAuthority == .managedOwner(intent.owner),
+                  externalLocks[profileID] == nil else {
+                clearManagedClosingIntent(profileID: profileID); return
+            }
+        }
+        if !closingDeadlineIsCurrent(intent) {
+            managedClosingIntents.removeValue(forKey: profileID)
+            if managedStopRequests[profileID] == intent.process { managedStopRequests.removeValue(forKey: profileID) }
+            managedStopWarnings.removeValue(forKey: profileID)?.cancel()
+            lastError = "Закрытие профиля занимает больше времени. NeAntik продолжает проверять браузер и прокси; повторный запуск заблокирован для защиты данных."
+        }
+    }
+
     func stop(profileID: UUID) {
         if let browser = webKitBrowsers[profileID] { browser.close(); return }
+        if processState(for: profileID) == .closing { return }
 
         if let process = processes[profileID] {
             if process.isRunning {
                 let identity = ObjectIdentifier(process)
                 guard managedStopRequests[profileID] != identity else { return }
                 managedStopRequests[profileID] = identity
+                let closing = captureManagedClosingIntent(profileID: profileID, process: process)
+                managedClosingIntents[profileID] = closing
                 guard managedProcessTerminator(process) else {
                     managedStopRequests.removeValue(forKey: profileID)
+                    managedClosingIntents.removeValue(forKey: profileID)
                     lastError = "Не удалось запросить безопасное завершение браузера. Закрой его через меню «Выйти»; профиль останется заблокированным до завершения процессов."
                     return
                 }
                 managedStopWarnings[profileID] = Task { @MainActor [weak self, weak process] in
                     do { try await Task.sleep(for: .seconds(8)) } catch { return }
-                    guard let self, let process, process.isRunning,
-                          self.processes[profileID] === process else { return }
+                    guard let self else { return }
+                    let sameProcess = process.map { self.processes[profileID] === $0 && $0.isRunning } ?? false
+                    let sameClosing = closing.map { self.managedClosingIntents[profileID] == $0 } ?? false
+                    guard (sameProcess && self.managedStopRequests[profileID] == identity) || sameClosing else { return }
                     self.managedStopRequests.removeValue(forKey: profileID)
+                    self.managedClosingIntents.removeValue(forKey: profileID)
                     self.managedStopWarnings.removeValue(forKey: profileID)
-                    self.lastError = "Браузер ожидает завершения. Повтори остановку или закрой его через меню «Выйти». Принудительная остановка не выполняется, чтобы сохранить данные."
+                    self.lastError = sameProcess
+                        ? "Браузер ожидает завершения. Повтори остановку или закрой его через меню «Выйти». Принудительная остановка не выполняется, чтобы сохранить данные."
+                        : "Закрытие профиля занимает больше времени. NeAntik продолжает проверять браузер и прокси; повторный запуск заблокирован для защиты данных."
                 }
             } else {
                 handleTermination(
@@ -2799,10 +2889,13 @@ final class BrowserProcessManager: ObservableObject {
                 return
             }
         }
+        defer { refreshManagedClosingIntent(profileID: profileID) }
         managedStopRequests.removeValue(forKey: profileID)
         managedSessionReceipts.removeValue(forKey: profileID)
         activeRelayOwners.removeValue(forKey: profileID)
-        managedStopWarnings.removeValue(forKey: profileID)?.cancel()
+        if managedClosingIntents[profileID] == nil {
+            managedStopWarnings.removeValue(forKey: profileID)?.cancel()
+        }
         let managedOwner = managedLeaseOwners.removeValue(
             forKey: profileID
         )
@@ -3156,6 +3249,7 @@ final class BrowserProcessManager: ObservableObject {
             ((URL) -> BrowserDataProcessInspection)? = nil,
         relayOwnerInspection: BrowserDataProcessInspection? = nil
     ) -> Bool {
+        defer { refreshManagedClosingIntent(profileID: profileID) }
         let effectiveBrowserDataProcessInspector =
             browserDataProcessInspector ??
             self.browserDataProcessInspector
@@ -3224,6 +3318,10 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         record: BrowserProcessRecoveryRecord
     ) {
+        if let intent = managedClosingIntents[profileID], intent.lease == record.removableSnapshot,
+           intent.browserDataDirectory == record.expectedBrowserDataDirectory {
+            clearManagedClosingIntent(profileID: profileID)
+        }
         recoveryObservationTasks[profileID]?.cancel()
         recoveryObservationTasks.removeValue(forKey: profileID)
         recoveryRecords.removeValue(forKey: profileID)

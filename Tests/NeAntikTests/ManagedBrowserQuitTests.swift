@@ -28,7 +28,7 @@ struct ManagedBrowserQuitTests {
         manager.stop(profileID: profile.id)
         manager.stop(profileID: profile.id)
         #expect(calls == (accept ? 1 : 2))
-        #expect(manager.processState(for: profile.id) == .managed)
+        #expect(manager.processState(for: profile.id) == (accept ? .closing : .managed))
         #expect(FileManager.default.fileExists(atPath: paths.lockFile(for: profile.id).path))
         #expect(ownedProcess?.isRunning == true)
         if !accept { #expect(manager.lastError?.contains("безопасное завершение") == true) }

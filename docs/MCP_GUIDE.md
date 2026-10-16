@@ -66,6 +66,12 @@ The four additional read tools are available in read mode. Other tools require m
 
 ## Safe workflow
 
+In the 0.8.22 development contract, Chromium `profile_stop` can return
+`processState: "closing"`: the request was accepted, but the browser or its
+helpers have not yet settled. Repeating Stop is safe and does not send another
+quit request. Wait for `stopped` before editing or relaunching; an expired wait
+does not unlock the profile. WebKit retains its separate `stopPending` state.
+
 1. Find a profile, select its **UUID**, then call `profile_get`. Duplicate names are allowed.
 
 `profile_get`, creation and edit responses include `engineCapabilities`. Check these flags before offering an operation: `persistentSiteData`, `fingerprintConfiguration`, `proxy`, `mcpLaunch`, `extensions`, `browserDataBackup`. They describe supported operations, not the measured state of the current browser session. Chromium supports configured environment and these management operations; system WebKit supports separate persistent site data, metadata management and GUI-mediated MCP lifecycle. `mcpLaunch:true` means the operation exists; WebKit additionally requires the same installed signed GUI, enabled access and explicit connection/profile approval. It does not mean unattended stdio can create GUI windows. WebKit uses macOS identity/language/timezone and does not implement full fingerprint substitution. A false flag means the client must explain the limitation rather than retrying the unsupported command.

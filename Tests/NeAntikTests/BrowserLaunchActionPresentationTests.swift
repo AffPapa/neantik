@@ -3,6 +3,19 @@ import Testing
 
 struct BrowserLaunchActionPresentationTests {
     @Test
+    func closingKeepsEveryPrimaryActionPendingAndDisabled() {
+        for archived in [false, true] {
+            let presentation = BrowserLaunchActionPresentation.resolve(processState: .closing, isArchived: archived,
+                runtimeAvailability: .missing, isProxyTesting: true, isLaunchPreparation: true)
+            #expect(presentation.title == "Закрывается…")
+            #expect(!presentation.isEnabled)
+            #expect(presentation.help.contains("браузер и прокси"))
+        }
+        #expect(BrowserProfileProcessState.closing.isRunning)
+        #expect(!BrowserProfileProcessState.closing.canRequestStop)
+        #expect(BrowserProfileProcessState.closing.statusTone == .activity)
+    }
+    @Test
     func processStatusToneDoesNotMarkManualOrRecoveryStatesHealthy() {
         #expect(BrowserProfileProcessState.stopped.statusTone == .neutral)
         #expect(BrowserProfileProcessState.checking.statusTone == .activity)

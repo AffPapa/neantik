@@ -27,6 +27,9 @@ Unknown/shared inputs select full regression. Planning never means PASS.
   declared paths/suite names and required execution capabilities first. A
   permission denial is setup, not a product defect or proof of missing account
   rights. Reuse the working credential route; diagnose before another login.
+- After a version/build bump, add its explicitly unqualified CHANGELOG entry
+  and run `verify-mcp-documentation.py` before full regression. Missing release
+  metadata is a fast preflight failure, not a reason to spend another full run.
 - For native QA, run `python3 -B scripts/native-qa-readiness.py --check` in
   the authorized macOS context before enrollment/launch. Unknown is not normal;
   kernel pressure, not free-memory percentage, determines readiness. Exit75/78

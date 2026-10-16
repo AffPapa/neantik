@@ -133,7 +133,7 @@ struct RedactedSupportBundle: Codable, Equatable, Sendable {
             switch $0 {
             case .checking, .externalManualOnly, .externalUnverified:
                 true
-            case .stopped, .managed, .externalVerified, .recoveryRequired:
+            case .stopped, .managed, .closing, .externalVerified, .recoveryRequired:
                 false
             }
         }

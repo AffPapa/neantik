@@ -215,7 +215,7 @@ final class MCPProfileManagement {
             }
             try await observe(profileID)
             let state = processes.processState(for: profileID)
-            guard state == .managed || state == .stopped else { throw Failure.manualClose }
+            guard state == .managed || state == .closing || state == .stopped else { throw Failure.manualClose }
             if state == .managed {
                 for _ in 0..<100 {
                     try Task.checkCancellation()
@@ -229,7 +229,7 @@ final class MCPProfileManagement {
                     guard processes.lastError == nil else { throw Failure.stopRefused }
                 }
             }
-            return ["profileID": profileID.uuidString, "stopRequested": state == .managed, "processState": status(profileID)]
+            return ["profileID": profileID.uuidString, "stopRequested": state == .managed || state == .closing, "processState": status(profileID)]
         }
         let expected = try revision(args)
         guard profile.revision == expected else { throw Failure.conflict }
@@ -405,7 +405,7 @@ final class MCPProfileManagement {
     /// Production inventory is asynchronous. A newly queued check is not proof
     /// that a stopped browser is running. Await it, bounded and cancellable.
     private func observe(_ profileID: UUID) async throws {
-        if processes.processState(for: profileID) == .managed { return }
+        if [.managed, .closing].contains(processes.processState(for: profileID)) { return }
         processes.reconcile(profiles: store.profiles)
         for _ in 0..<100 {
             try Task.checkCancellation()
@@ -427,6 +427,7 @@ final class MCPProfileManagement {
         case .stopped: "stopped"
         case .externalManualOnly, .externalVerified: "externalManualOnly"
         case .checking: "checking"
+        case .closing: "closing"
         case .externalUnverified: "externalUnverified"
         case .recoveryRequired: "recoveryRequired"
         }

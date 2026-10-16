@@ -1,10 +1,127 @@
 import Darwin
+import Combine
 import Foundation
 import Testing
 @testable import NeAntik
 
 @MainActor
 struct BrowserProcessManagerTests {
+    @Test(arguments: [BrowserDataProcessInspection.found, .unknown])
+    func acceptedStopKeepsClosingAndFencesUntilHelpersSettle(inspection: BrowserDataProcessInspection) async throws {
+        let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
+        let manager = fixture.manager, profile = fixture.profile
+        try fixture.launch(); fixture.inspection = inspection
+        manager.stop(profileID: profile.id)
+        #expect(manager.processState(for: profile.id) == .closing)
+        manager.stop(profileID: profile.id)
+        #expect(fixture.stopCalls == 1)
+        #expect(throws: BrowserProfileDeletionBlockedError.self) {
+            try manager.withVerifiedStoppedProfileOperation(profileID: profile.id) {}
+        }
+        try fixture.finishMain(); try await fixture.waitForMainExit()
+        #expect(manager.processState(for: profile.id) == .closing)
+        #expect(FileManager.default.fileExists(atPath: fixture.paths.lockFile(for: profile.id).path))
+        #expect(manager.hasWorkPreventingUpdate)
+        #expect(throws: NeAntikError.self) { try fixture.launch() }
+        #expect(throws: BrowserProfileDeletionBlockedError.self) {
+            try manager.withVerifiedStoppedProfileOperation(profileID: profile.id) {}
+        }
+        manager.reconcile(profiles: [profile])
+        #expect(manager.processState(for: profile.id) == .closing)
+        fixture.inspection = .absent
+        try await fixture.waitForStopped()
+        #expect(!FileManager.default.fileExists(atPath: fixture.paths.lockFile(for: profile.id).path))
+        #expect(!manager.hasWorkPreventingUpdate)
+    }
+
+    @Test
+    func refusedStopDoesNotCreateClosingAndAcceptedRepeatIsIdempotent() async throws {
+        let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
+        try fixture.launch(); fixture.acceptsStop = false
+        fixture.manager.stop(profileID: fixture.profile.id)
+        #expect(fixture.manager.processState(for: fixture.profile.id) == .managed)
+        #expect(fixture.manager.lastError != nil)
+        fixture.acceptsStop = true; fixture.manager.lastError = nil
+        fixture.manager.stop(profileID: fixture.profile.id)
+        // A live owned child must be identified as such during reconciliation.
+        // "Unrelated + no BrowserData process" deliberately authorizes stale
+        // lease removal and is not evidence for an ordinary pending Stop.
+        fixture.identity = .expected
+        fixture.manager.reconcile(profiles: [fixture.profile])
+        #expect(fixture.manager.processState(for: fixture.profile.id) == .closing)
+        fixture.manager.stop(profileID: fixture.profile.id)
+        #expect(fixture.stopCalls == 2)
+        fixture.identity = .unrelated
+        try fixture.finishMain(); try await fixture.waitForStopped()
+    }
+
+    @Test
+    func acceptedStopPublishesPendingPresentationBeforeMainExit() throws {
+        let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
+        try fixture.launch()
+        var notifications = 0
+        let subscription = fixture.manager.objectWillChange.sink { notifications += 1 }
+        fixture.manager.stop(profileID: fixture.profile.id)
+        #expect(notifications > 0)
+        #expect(fixture.manager.processState(for: fixture.profile.id) == .closing)
+        withExtendedLifetime(subscription) {}
+    }
+
+    @Test
+    func closingDeadlineDoesNotReleaseUnknownDataOrLease() async throws {
+        let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
+        try fixture.launch(); fixture.inspection = .unknown
+        fixture.manager.stop(profileID: fixture.profile.id)
+        try fixture.finishMain(); try await fixture.waitForMainExit()
+        fixture.time.addTimeInterval(9)
+        fixture.manager.reconcile(profiles: [fixture.profile])
+        #expect(fixture.manager.processState(for: fixture.profile.id) == .recoveryRequired)
+        #expect(fixture.manager.lastError?.contains("больше времени") == true)
+        #expect(FileManager.default.fileExists(atPath: fixture.paths.lockFile(for: fixture.profile.id).path))
+        #expect(fixture.manager.hasWorkPreventingUpdate)
+        #expect(throws: NeAntikError.self) { try fixture.launch() }
+        #expect(throws: BrowserProfileDeletionBlockedError.self) {
+            try fixture.manager.withVerifiedStoppedProfileOperation(profileID: fixture.profile.id) {}
+        }
+        fixture.inspection = .absent; try await fixture.waitForStopped()
+    }
+
+    @Test(arguments: [false, true])
+    func closingNeverFollowsReplacedLeaseEvenWithSameOwner(replaceOwner: Bool) async throws {
+        let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
+        try fixture.launch(); fixture.inspection = .found
+        fixture.manager.stop(profileID: fixture.profile.id)
+        try fixture.finishMain(); try await fixture.waitForMainExit()
+        let file = fixture.paths.lockFile(for: fixture.profile.id), original = try Data(contentsOf: file)
+        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+        let old = try decoder.decode(BrowserProcessLock.self, from: original)
+        let replacement = BrowserProcessLock(pid: old.pid, executablePath: old.executablePath,
+            browserDataPath: old.browserDataPath, createdAt: old.createdAt, schemaVersion: old.schemaVersion,
+            ownerToken: replaceOwner ? UUID() : old.ownerToken, managerPID: old.managerPID, phase: old.phase)
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        let data = replaceOwner ? try encoder.encode(replacement) : original
+        try data.write(to: file, options: .atomic)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
+        fixture.identity = .expected
+        fixture.manager.reconcile(profiles: [fixture.profile])
+        #expect(fixture.manager.processState(for: fixture.profile.id) == .externalVerified)
+        #expect(try Data(contentsOf: file) == data)
+    }
+
+    @Test
+    func closingDoesNotHideUnsafeReplacementLease() async throws {
+        let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
+        try fixture.launch(); fixture.inspection = .found
+        fixture.manager.stop(profileID: fixture.profile.id)
+        try fixture.finishMain(); try await fixture.waitForMainExit()
+        let file = fixture.paths.lockFile(for: fixture.profile.id), retained = fixture.root.appendingPathComponent("own-retained-lease")
+        try FileManager.default.moveItem(at: file, to: retained)
+        try FileManager.default.createSymbolicLink(at: file, withDestinationURL: retained)
+        fixture.manager.reconcile(profiles: [fixture.profile])
+        #expect(fixture.manager.processState(for: fixture.profile.id) == .recoveryRequired)
+        #expect(try FileManager.default.destinationOfSymbolicLink(atPath: file.path) == retained.path)
+    }
+
     private var nominalAdmission: ManagerLaunchAdmission {
         ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal })
     }

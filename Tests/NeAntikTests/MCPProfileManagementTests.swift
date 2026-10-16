@@ -4,6 +4,30 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func closingIsExplicitInStatusSchemaAndRepeatedStopDoesNotSignalAgain() async throws {
+        let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
+        let engine = MCPProfileManagement(root: fixture.paths.rootDirectory, allowsManagement: true,
+            keychain: KeychainStore(backend: Backend(), service: "synthetic-closing", legacyService: nil), processes: fixture.manager)
+        fixture.profile = try engine.store.upsert(fixture.profile)
+        try fixture.launch(); fixture.inspection = .found
+        fixture.manager.stop(profileID: fixture.profile.id)
+        let args: [String: Any] = ["profileID": fixture.profile.id.uuidString]
+        let stop = try await engine.call("profile_stop", args)
+        #expect(stop["stopRequested"] as? Bool == true)
+        #expect(stop["processState"] as? String == "closing")
+        #expect(fixture.stopCalls == 1)
+        let status = try await engine.call("profile_status", args)
+        #expect(status["processState"] as? String == "closing")
+        for tool in ["profile_status", "profile_stop"] {
+            let props = try #require(MCPOutputSchemas.schema(for: tool)["properties"] as? [String: Any])
+            #expect(((props["processState"] as? [String: Any])?["enum"] as? [String])?.contains("closing") == true)
+        }
+        try fixture.finishMain(); try await fixture.waitForMainExit()
+        let pending = try await engine.call("profile_stop", args)
+        #expect(pending["processState"] as? String == "closing")
+        #expect(fixture.stopCalls == 1)
+        fixture.inspection = .absent; try await fixture.waitForStopped()
+    }
     @Test func fontPolicyIsExplicitRevisionCheckedAndDoesNotClaimRuntimeSupport() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let created = try await engine.call("profile_create", ["name": "Own font profile", "changes": ["startURL": "about:blank"]])

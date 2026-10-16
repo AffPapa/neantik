@@ -16,7 +16,7 @@ extension BrowserProfileProcessState {
         switch self {
         case .stopped:
             .neutral
-        case .checking:
+        case .checking, .closing:
             .activity
         case .managed, .externalVerified:
             .healthy
@@ -57,6 +57,9 @@ struct BrowserLaunchActionPresentation: Equatable, Sendable {
         isLaunchPreparation: Bool = false
     ) -> Self {
         switch processState {
+        case .closing:
+            return Self(title: "Закрывается…", systemImage: "hourglass", isEnabled: false,
+                        help: processState.guidance ?? "Завершается браузер и прокси")
         case .managed, .externalVerified:
             // A known running process always keeps its safe stop action. In
             // particular, an unrelated runtime lookup must not strand it.

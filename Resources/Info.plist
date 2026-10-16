@@ -23,11 +23,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.8.21</string>
+	<string>0.8.22</string>
 	<key>CFBundleSignature</key>
 	<string>NANT</string>
 	<key>CFBundleVersion</key>
-	<string>133</string>
+	<string>134</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>
@@ -44,6 +44,8 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 NeAntik. All rights reserved.</string>
+	<key>NeAntikBrowserDataBackupEnabled</key>
+	<true/>
 	<key>NeAntikDeveloperTeamIdentifier</key>
 	<string>H6VGU2M6JD</string>
 	<key>NeAntikPublicStatsURL</key>
@@ -64,7 +66,5 @@
 	<string>neantik-direct-20261012-v1</string>
 	<key>NeAntikWebKitMediaPolicyEnabled</key>
 	<false/>
-	<key>NeAntikBrowserDataBackupEnabled</key>
-	<true/>
 </dict>
 </plist>
