@@ -8,6 +8,14 @@ import Security
 /// required before this becomes a product capability. Chromium authority is
 /// deliberately independent and unchanged.
 final class WebKitProxySession: @unchecked Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
+    enum Frontend: String {
+        case httpCONNECT = "http-connect", socks5
+        static func requested(_ value: String?) throws -> Self {
+            guard let value else { return .httpCONNECT }
+            guard let mode = Self(rawValue: value) else { throw Failure.scope }
+            return mode
+        }
+    }
     struct Scope: Equatable, Sendable {
         let profileID: UUID
         let storeID: UUID
@@ -23,6 +31,7 @@ final class WebKitProxySession: @unchecked Sendable, CustomStringConvertible, Cu
     private let upstreamKind: ProxyKind
     private let upstream: ProxyRelayDestination
     private let credentials: ProxyRelayCredentials?
+    private let frontend: Frontend
     private let listener: NWListener
     private let queue = DispatchQueue(label: "app.neantik.webkit-proxy.qualification")
     private var state: State = .created
@@ -42,11 +51,11 @@ final class WebKitProxySession: @unchecked Sendable, CustomStringConvertible, Cu
     var customMirror: Mirror { Mirror(self, children: [:]) }
 
     init(scope: Scope, upstreamKind: ProxyKind, upstream: ProxyRelayDestination,
-         credentials: ProxyRelayCredentials?) throws {
+         credentials: ProxyRelayCredentials?, frontend: Frontend = .httpCONNECT) throws {
         let zero = UUID(uuid: (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
         guard scope.profileID != zero, scope.storeID == scope.profileID,
               scope.sessionID != zero, scope.revision > 0 else { throw Failure.scope }
-        self.scope = scope; self.upstreamKind = upstreamKind
+        self.scope = scope; self.upstreamKind = upstreamKind; self.frontend = frontend
         self.upstream = upstream; self.credentials = credentials
         username = "wk-" + UUID().uuidString.lowercased()
         var bytes = [UInt8](repeating: 0, count: 32)
@@ -99,8 +108,12 @@ final class WebKitProxySession: @unchecked Sendable, CustomStringConvertible, Cu
         try queue.sync {
             guard requested == scope else { throw Failure.scope }
             guard state == .ready, let port else { throw Failure.state }
-            var configuration = Network.ProxyConfiguration(httpCONNECTProxy:
-                .hostPort(host: .init("127.0.0.1"), port: .init(rawValue: port)!))
+            let endpoint = NWEndpoint.hostPort(host: .init("127.0.0.1"), port: .init(rawValue: port)!)
+            var configuration: Network.ProxyConfiguration
+            switch frontend {
+            case .httpCONNECT: configuration = .init(httpCONNECTProxy: endpoint)
+            case .socks5: configuration = .init(socksv5Proxy: endpoint)
+            }
             configuration.allowFailover = false
             // Fresh configuration has no domain exceptions. Verify the actual
             // defaults instead of mutating an already empty native domain set.
@@ -167,29 +180,74 @@ final class WebKitProxySession: @unchecked Sendable, CustomStringConvertible, Cu
                         guard seconds > 0 else { throw Failure.unavailable }; return seconds
                     }
                     try await front.open(timeout: remaining())
-                    var buffer = Data(), request: WebKitProxyConnectCodec.Request?
-                    while request == nil {
-                        let chunk = try await front.receive(maximumBytes: 1024, timeout: remaining())
-                        guard !chunk.data.isEmpty, buffer.count + chunk.data.count <= WebKitProxyConnectCodec.maximumHeaderBytes + 1024 else { throw Failure.refused }
-                        buffer.append(chunk.data)
-                        do { request = try WebKitProxyConnectCodec.request(buffer) }
-                        catch { queue.sync { self.malformed += 1 }; throw error }
+                    var buffer = Data()
+                    func read<T>(_ maximum: Int, parse: (Data) throws -> T?) async throws -> T {
+                        while true {
+                            do { if let value = try parse(buffer) { return value } }
+                            catch { queue.sync { self.malformed += 1 }; throw error }
+                            guard buffer.count < maximum else { throw Failure.refused }
+                            let chunk = try await front.receive(maximumBytes: min(1024, maximum - buffer.count), timeout: remaining())
+                            guard !chunk.data.isEmpty else { throw Failure.refused }
+                            buffer.append(chunk.data)
+                        }
                     }
-                    guard let request else { throw Failure.refused }
-                    guard permits(request.authorization) else {
-                        queue.sync { self.authenticationRefused += 1 }
-                        try await front.send(WebKitProxyConnectCodec.authenticationRequired, timeout: remaining())
-                        try await front.finishWrite(timeout: remaining()); return
+                    let destination: ProxyRelayDestination, supplied: Data?
+                    switch frontend {
+                    case .httpCONNECT:
+                        let request = try await read(WebKitProxyConnectCodec.maximumHeaderBytes + 1024, parse: WebKitProxyConnectCodec.request)
+                        guard permits(request.authorization) else {
+                            queue.sync { self.authenticationRefused += 1 }
+                            try await front.send(WebKitProxyConnectCodec.authenticationRequired, timeout: remaining())
+                            try await front.finishWrite(timeout: remaining()); return
+                        }
+                        destination = request.destination; supplied = request.authorization
+                        buffer = Data(buffer.dropFirst(request.consumed))
+                    case .socks5:
+                        let greeting = try await read(WebKitProxySOCKSCodec.maximumGreetingBytes, parse: WebKitProxySOCKSCodec.greeting)
+                        guard greeting.acceptsPassword else {
+                            queue.sync { self.authenticationRefused += 1 }
+                            try await front.send(WebKitProxySOCKSCodec.noAcceptableMethod, timeout: remaining())
+                            try await front.finishWrite(timeout: remaining()); return
+                        }
+                        buffer = Data(buffer.dropFirst(greeting.consumed))
+                        try await front.send(WebKitProxySOCKSCodec.selectedPassword, timeout: remaining())
+                        let auth: WebKitProxySOCKSCodec.Authentication
+                        do { auth = try await read(WebKitProxySOCKSCodec.maximumAuthenticationBytes, parse: WebKitProxySOCKSCodec.authentication) }
+                        catch {
+                            queue.sync { self.authenticationRefused += 1 }
+                            try await front.send(WebKitProxySOCKSCodec.authenticationRefused, timeout: remaining())
+                            try await front.finishWrite(timeout: remaining()); return
+                        }
+                        guard permits(auth.authorization) else {
+                            queue.sync { self.authenticationRefused += 1 }
+                            try await front.send(WebKitProxySOCKSCodec.authenticationRefused, timeout: remaining())
+                            try await front.finishWrite(timeout: remaining()); return
+                        }
+                        buffer = Data(buffer.dropFirst(auth.consumed))
+                        try await front.send(WebKitProxySOCKSCodec.authenticated, timeout: remaining())
+                        let request: ProxyRelayClientWireCodec.Connect
+                        do { request = try await read(ProxyRelayClientWireCodec.maximumFrameBytes, parse: ProxyRelayClientWireCodec.connect) }
+                        catch ProxyRelayClientWireError.unsupportedCommand {
+                            try await front.send(WebKitProxySOCKSCodec.commandRefused, timeout: remaining())
+                            try await front.finishWrite(timeout: remaining()); return
+                        }
+                        destination = request.destination; supplied = auth.authorization
+                        buffer = Data(buffer.dropFirst(request.consumed))
                     }
                     try Task.checkCancellation()
-                    let early = try await back.establish(destination: request.destination, credentials: credentials,
-                        timeout: remaining(), authorizeCredentials: { self.permits(request.authorization) })
-                    guard permits(request.authorization) else { throw Failure.refused }
+                    let early = try await back.establish(destination: destination, credentials: credentials,
+                        timeout: remaining(), authorizeCredentials: { self.permits(supplied) })
+                    let established: Data
+                    switch frontend {
+                    case .httpCONNECT: established = WebKitProxyConnectCodec.established
+                    case .socks5: established = try WebKitProxySOCKSCodec.established(bound: await back.localBoundEndpoint())
+                    }
+                    try Task.checkCancellation()
+                    guard permits(supplied) else { throw Failure.refused }
                     queue.sync { self.established += 1 }
-                    try await front.send(WebKitProxyConnectCodec.established, timeout: remaining())
+                    try await front.send(established, timeout: remaining())
                     if !early.isEmpty { try await front.send(early) }
-                    let payload = Data(buffer.dropFirst(request.consumed))
-                    if !payload.isEmpty { try await back.send(payload) }
+                    if !buffer.isEmpty { try await back.send(buffer) }
                     try await withThrowingTaskGroup(of: Void.self) { group in
                         group.addTask { try await Self.copy(front, back) }
                         group.addTask { try await Self.copy(back, front) }

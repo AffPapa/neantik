@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "status": "prepared;native-not-run",
+  "sourceBase": "6df954d070d95db4cd08df191d4ded559d9d3726",
+  "changedSurface": "DEBUG auth-only SOCKS frontend sharing existing WebKit scope/lifecycle/upstream;shipping disabled",
+  "sourceFiles": {
+    "Sources/NeAntik/WebKitProxySession.swift": "6a5fdb6d9d97eb62388823508dd52f9a731502040a2179097742a1549bc7505f",
+    "Sources/NeAntik/WebKitProxySOCKSCodec.swift": "fdb6db111d28d044ba960189343a800c62c437f2d45a5679c6920f557be0bd55",
+    "Tests/NeAntikTests/WebKitProxySOCKSCodecTests.swift": "be7b520f2dceceebc6990eb1ebe8fe38107fd55843bddf886b3c133d7f2c3663",
+    "Tests/NeAntikTests/WebKitProxyTransportTests.swift": "19d025cabfcac029ce4d449e1711ec18dbd47e87094bf436de2c90eeea5be9a6"
+  },
+  "inputSHA256": "b3fcb9029a343972bf269b6064cb875fe0d7a1915fee1007ce738422e87f4b8c",
+  "pureControls": {
+    "tests": 17,
+    "suites": 3,
+    "seconds": 7.705,
+    "ciTests": 11
+  },
+  "notProven": [
+    "HTTP shared-handler socket regression pending",
+    "WebKit signed product/persistent store/network generalization",
+    "UDP/DNS/HTTPS confinement",
+    "Production WebKit proxy enable"
+  ],
+  "stop": "No frontend/config permutation if native Direct bypass repeats. No second native host without diagnosis and required authorization.",
+  "nativeExecuted": false,
+  "references": [
+    "https://developer.apple.com/documentation/network/proxyconfiguration/init(socksv5proxy:)",
+    "https://www.rfc-editor.org/rfc/rfc1928.html",
+    "https://www.rfc-editor.org/rfc/rfc1929.html"
+  ],
+  "readOnlyReview": "No concrete auth/framing bypass found;refusal finishWrite and strict typed termination/setup cleanup corrections applied before native",
+  "releaseUnchanged": {
+    "version": "0.8.23",
+    "build": 135
+  }
+}

@@ -433,6 +433,95 @@ struct WebKitProxyOwnedEndpointTests {
     }
 }
 
+/// Owned raw stream controls, opt-in and separately admitted from pure codecs.
+@Suite(.serialized) struct WebKitProxySOCKSQualificationTests {
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_SOCKS_STREAM_QUALIFICATION"] == "1"))
+    func unauthenticatedMalformedForeignAndRevokedConnectionsNeverReachUpstream() async throws {
+        var pressure: Int32 = 0, size = MemoryLayout<Int32>.size
+        let observed = sysctlbyname("kern.memorystatus_vm_pressure_level", &pressure, &size, nil, 0) == 0
+        let approved = ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_SOCKS_WARNING_ONCE"] == "authorized-current-run"
+        let thermal = ProcessInfo.processInfo.thermalState
+        try #require(observed && size == MemoryLayout<Int32>.size &&
+            (pressure == 1 || (pressure == 2 && approved)) &&
+            (thermal == .nominal || thermal == .fair))
+        let upstream = try WebKitProxyTransportTests.Upstream()
+        var relayToStop: WebKitProxySession?
+        var clients: [ProxyRelayUpstreamTransport] = []
+        func cleanup() async {
+            for client in clients { client.cancel() }
+            if let relay = relayToStop {
+                await relay.stop(); #expect(await relay.activeConnectionCount() == 0)
+            }
+            await upstream.stop()
+            #expect(upstream.activeTaskCount() == 0)
+            print("OWNED_WK_SOCKS_STREAM_CLEANUP relayDrained=1 fixtureStopsAwaited=1")
+        }
+        do {
+            let upstreamPort = try await upstream.start()
+            let profile = UUID(), scope = WebKitProxySession.Scope(profileID: profile, storeID: profile, sessionID: UUID(), revision: 1)
+            let relay = try WebKitProxySession(scope: scope, upstreamKind: .http,
+                upstream: .init(host: "127.0.0.1", port: Int(upstreamPort)),
+                credentials: .init(username: "owned-upstream", password: "fixture-only"), frontend: .socks5)
+            relayToStop = relay
+            let port = try await relay.start(); _ = try relay.configuration(for: scope)
+            func client() async throws -> ProxyRelayUpstreamTransport {
+                let value = try ProxyRelayUpstreamTransport(kind: .socks5, upstream: .init(host: "127.0.0.1", port: Int(port)))
+                clients.append(value); try await value.open(timeout: 2); return value
+            }
+            func reply(_ value: ProxyRelayUpstreamTransport, equals expected: Data) async throws {
+                var received = Data()
+                let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+                while received.count < expected.count {
+                    let duration = ContinuousClock.now.duration(to: deadline).components
+                    let remaining = Double(duration.seconds) + Double(duration.attoseconds) / 1e18
+                    try #require(remaining > 0)
+                    let chunk = try await value.receive(maximumBytes: expected.count - received.count, timeout: remaining)
+                    try #require(!chunk.data.isEmpty); received.append(chunk.data)
+                }
+                // Only fixed protocol bytes reach diagnostic assertions.
+                #expect(received == expected)
+            }
+            func eof(_ value: ProxyRelayUpstreamTransport) async throws {
+                let chunk = try await value.receive(maximumBytes: 1, timeout: 2)
+                #expect(chunk.data.isEmpty && chunk.endOfStream)
+                #expect(upstream.counts().connections == 0)
+            }
+            let anonymous = try await client()
+            try await anonymous.send(Data([5, 1, 0]), timeout: 2)
+            try await reply(anonymous, equals: Data([5, 255])); try await eof(anonymous)
+            let malformed = try await client()
+            try await malformed.send(Data([5, 1, 2]), timeout: 2)
+            try await reply(malformed, equals: Data([5, 2]))
+            try await malformed.send(Data([1, 0]), timeout: 2)
+            try await reply(malformed, equals: Data([1, 1])); try await eof(malformed)
+            let foreign = try await client()
+            try await foreign.send(Data([5, 1, 2]), timeout: 2)
+            try await reply(foreign, equals: Data([5, 2]))
+            let wrong = try ProxyRelayCredentials(username: "foreign-session", password: "fixture-only")
+            try await foreign.send(ProxyRelayWireCodec.socksAuthentication(wrong), timeout: 2)
+            try await reply(foreign, equals: Data([1, 1])); try await eof(foreign)
+            let revoked = try await client()
+            try await revoked.send(Data([5, 1, 2]), timeout: 2)
+            try await reply(revoked, equals: Data([5, 2]))
+            await relay.stop()
+            // Cancellation may be reported as EOF or a transport error.
+            var terminated = false
+            do {
+                let chunk = try await revoked.receive(maximumBytes: 1, timeout: 2)
+                terminated = chunk.data.isEmpty && chunk.endOfStream
+            } catch {
+                guard WebKitProxyQualificationClosure.isConnectionTermination(error) else { throw error }
+                terminated = true
+            }
+            #expect(terminated && upstream.counts().connections == 0)
+            let snapshot = relay.qualificationSnapshot()
+            #expect(snapshot.authenticationRefused == 3 && snapshot.malformed == 1 && snapshot.established == 0)
+            print("OWNED_WK_SOCKS_STREAM cases=4 upstreamConnections=\(upstream.counts().connections) established=\(snapshot.established)")
+            await cleanup()
+        } catch { await cleanup(); throw error }
+    }
+}
+
 /// A new input, not a retry of the retained literal-loopback bypass. This is
 /// public WK API compatibility research, not shipping proxy qualification.
 @Suite(.serialized) @MainActor struct WebKitProxyNonLoopbackQualificationTests {
@@ -440,6 +529,8 @@ struct WebKitProxyOwnedEndpointTests {
     func namedAndReachableLocalTargetsHaveIndependentControls() async throws {
         let matchMode = try WebKitProxyQualificationMatchMode.requested(
             ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_PROXY_NONLOOPBACK_MATCH_MODE"])
+        let frontend = try WebKitProxySession.Frontend.requested(
+            ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_PROXY_NONLOOPBACK_FRONTEND"])
         func requireAdmission() throws {
             var pressure: Int32 = 0, size = MemoryLayout<Int32>.size
             let observed = sysctlbyname("kern.memorystatus_vm_pressure_level", &pressure, &size, nil, 0) == 0
@@ -477,7 +568,7 @@ struct WebKitProxyOwnedEndpointTests {
             let profile = UUID(), scope = WebKitProxySession.Scope(profileID: profile, storeID: profile, sessionID: UUID(), revision: 1)
             let relay = try WebKitProxySession(scope: scope, upstreamKind: .http,
                 upstream: .init(host: "127.0.0.1", port: Int(upstreamPort)),
-                credentials: .init(username: "owned-upstream", password: "fixture-only"))
+                credentials: .init(username: "owned-upstream", password: "fixture-only"), frontend: frontend)
             session = relay; _ = try await relay.start()
             let storeA = WKWebsiteDataStore.nonPersistent(), storeB = WKWebsiteDataStore.nonPersistent()
             var proxy = try relay.configuration(for: scope)
@@ -491,6 +582,7 @@ struct WebKitProxyOwnedEndpointTests {
             let validPolicy = WebKitProxyQualificationMatchMode.nativeHasNoDirectExceptions(proxy)
             try #require(validPolicy)
             print("OWNED_WK_NONLOOPBACK_POLICY exactHosts=\(matchMode == .exactHosts ? 1 : 0) noFailover=1 exceptionCount=0")
+            print("OWNED_WK_NONLOOPBACK_FRONTEND socks5=\(frontend == .socks5 ? 1 : 0)")
             storeA.proxyConfigurations = [proxy]; storeB.proxyConfigurations = []
             let configA = WKWebViewConfiguration(), configB = WKWebViewConfiguration()
             configA.websiteDataStore = storeA; configB.websiteDataStore = storeB

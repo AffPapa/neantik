@@ -19,10 +19,13 @@ class CIManagerShardTests(unittest.TestCase):
         self.assertEqual(set(fixtures['WebKitProxyNonLoopbackQualificationTests']), {
             'NEANTIK_WEBKIT_PROXY_NONLOOPBACK_QUALIFICATION',
             'NEANTIK_WEBKIT_PROXY_NONLOOPBACK_WARNING_ONCE',
-            'NEANTIK_WEBKIT_PROXY_NONLOOPBACK_MATCH_MODE'})
+            'NEANTIK_WEBKIT_PROXY_NONLOOPBACK_MATCH_MODE',
+            'NEANTIK_WEBKIT_PROXY_NONLOOPBACK_FRONTEND'})
         suites = MOD.catalog()
         self.assertNotIn('WebKitProxyNonLoopbackQualificationTests', suites)
+        self.assertNotIn('WebKitProxySOCKSQualificationTests', suites)
         self.assertIn('WebKitProxyOwnedEndpointTests', suites)
+        self.assertIn('WebKitProxySOCKSCodecTests', suites)
         self.assertNotIn('NEANTIK_WEBKIT_PROXY_NONLOOPBACK_QUALIFICATION',
                          MOD.clean_environment({'NEANTIK_WEBKIT_PROXY_NONLOOPBACK_QUALIFICATION': '1'}))
 

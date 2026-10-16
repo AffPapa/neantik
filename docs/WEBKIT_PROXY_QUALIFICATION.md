@@ -127,3 +127,39 @@ fixture tasks остановлены с ожиданием, test host завер
 См. [Apple ProxyConfiguration](https://developer.apple.com/documentation/network/proxyconfiguration),
 [HTTP CONNECT initializer](https://developer.apple.com/documentation/network/proxyconfiguration/init(httpconnectproxy:tlsoptions:))
 и `WKWebsiteDataStore.h` установленного SDK.
+
+## Следующий исследовательский транспорт: SOCKS5
+
+В DEBUG подготовлен отдельный SOCKS5 frontend существующей session. Он
+использует публичный `ProxyConfiguration(socksv5Proxy:)`, а не Chromium
+listener с анонимным методом и signed-PID authority. Lifecycle, scope,
+лимит соединений, общий пятисекундный handshake deadline, отмена и upstream
+transport общие с HTTP CONNECT; default frontend остаётся HTTP CONNECT.
+
+Метод username/password обязателен. Случайные session credentials остаются
+только в памяти и задаются native credential API. Парсер сохраняет границы
+greeting/auth/CONNECT и последующие bytes; секреты скрыты при reflection.
+Анонимный метод, чужая/неверная авторизация и UDP/BIND не должны открывать
+upstream. После авторизации повторно проверяется session; success отправляется
+только после установленного upstream. Сам relay разрешает только TCP и не
+разрешает имя конечного сайта локально. Это не доказательство отсутствия DNS
+или UDP вне relay в самом WebKit.
+
+17 pure model/parser controls прошли; 11 CI-контролей подтверждают отделение
+native suites от обычного CI. Они **не проверяют фактический маршрут**.
+Подготовлены четыре opt-in raw-stream случая: no-auth, malformed-auth,
+foreign-auth и отзыв до авторизации. Таймаут и неизвестная ошибка не являются
+успешным отзывом. Успешную native авторизацию должен отдельно подтвердить
+именованный запрос WebKit; getter секретов ради теста не добавляется.
+
+Новый этап ещё не запускался: подготовлен один процесс, четыре raw случая и
+одно окно с двумя nonpersistent stores и прежними строгими B/TCP/revoke
+критериями. При warning требуется новое явное исключение; exact-match допуск
+израсходован. Если SOCKS тоже допускает Direct arrival, этот результат
+сохраняется и перебор этих frontend прекращается. Persistent stores,
+manager lifecycle, HTTPS/DNS/UDP и другие macOS остаются отдельными gates.
+
+Основания эксперимента: [Apple SOCKSv5 initializer](https://developer.apple.com/documentation/network/proxyconfiguration/init(socksv5proxy:)),
+[RFC1928](https://www.rfc-editor.org/rfc/rfc1928.html) и
+[RFC1929](https://www.rfc-editor.org/rfc/rfc1929.html). Наличие API не обещает
+устранение уже измеренного local-IP bypass.
