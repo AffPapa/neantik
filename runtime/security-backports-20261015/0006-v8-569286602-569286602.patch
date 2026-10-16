@@ -1,0 +1,147 @@
+From 8dd66e1f4f687e137d9a6cfa6628268a1ba7869c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Tue, 6 Oct 2026 13:19:14 +0200
+Subject: [PATCH] [M156] [maglev] Fix predecessor counting in the "smi case
+ falls back to object case" logic
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> [maglev] Fix predecessor counting in the "smi case falls back to object case" logic
+>
+> If the smi case "succeeds" but it just falls back to the object case
+> which fails, that should not count as a success.
+>
+> Drive-by: Hardening; upgrading a DCHECK (which hits with one of the
+> variants) to CHECK. Another variant was already hitting a CHECK.
+>
+> Fixed: 569286602
+> Change-Id: Iae131e470629efd6a1c4c062512843944b6df138
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8518260
+> Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+> Commit-Queue: Marja Hölttä <marja@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#110393}
+
+(cherry picked from commit 6c626cef36527614a5f9001a2946ed4277118a77)
+
+Bug: 571383368,569286602
+Change-Id: Iae131e470629efd6a1c4c062512843944b6df138
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8559744
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.6@{#31}
+Cr-Branched-From: b976f35da8356fcf4e5e176d1d810ba6a6f05718-refs/heads/15.6.75@{#1}
+Cr-Branched-From: a424b0597aab8e27f12ea4a700bae3961fa1a076-refs/heads/main@{#110135}
+---
+ src/maglev/maglev-graph-builder.cc         | 15 +++++++++-----
+ test/mjsunit/maglev/regress-569286602-1.js | 24 ++++++++++++++++++++++
+ test/mjsunit/maglev/regress-569286602-2.js | 24 ++++++++++++++++++++++
+ 3 files changed, 58 insertions(+), 5 deletions(-)
+ create mode 100644 test/mjsunit/maglev/regress-569286602-1.js
+ create mode 100644 test/mjsunit/maglev/regress-569286602-2.js
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index b0bca8d41281..ca199bab0fab 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -9110,16 +9110,21 @@ MaglevGraphBuilder::BuildJSArrayBuiltinMapSwitchOnElementsKind(
+         sub_graph.GotoOrTrim(&*object_case);
+         sub_graph.Bind(&*object_case);
+       }
+-      any_successful |= (!build_kind_specific(kind).IsDoneWithAbort());
++      ReduceResult result = build_kind_specific(kind);
+       if (IsSmiElementsKind(kind) && make_smi_fallthrough_to_object) {
+         // After building the SMI specific parts (see build_kind_specific call
+         // above), jump to the beginning of the case for the object elements
+         // kind.
+         DCHECK(object_case.has_value());
+         sub_graph.GotoOrTrim(&*object_case);
++
++        // Whether the Smi case is successful depends on whether the object case
++        // is successful, so don't update any_successful here.
+       } else {
+         DCHECK(do_return.has_value());
+         sub_graph.GotoOrTrim(&*do_return);
++
++        any_successful |= !result.IsDoneWithAbort();
+       }
+       sub_graph.Bind(&check_next_map);
+     } else {
+@@ -16971,11 +16976,11 @@ void MaglevGraphBuilder::ProcessMergePointPredecessors(
+   ResetBuilderCachedState();
+ 
+   if (merge_state.is_loop()) {
+-    DCHECK_EQ(merge_state.predecessors_so_far(),
+-              merge_state.predecessor_count() - 1);
++    CHECK_EQ(merge_state.predecessors_so_far(),
++             merge_state.predecessor_count() - 1);
+   } else {
+-    DCHECK_EQ(merge_state.predecessors_so_far(),
+-              merge_state.predecessor_count());
++    CHECK_EQ(merge_state.predecessors_so_far(),
++             merge_state.predecessor_count());
+   }
+ 
+   if (merge_state.predecessor_count() == 1) {
+diff --git a/test/mjsunit/maglev/regress-569286602-1.js b/test/mjsunit/maglev/regress-569286602-1.js
+new file mode 100644
+index 000000000000..b89ebdcb4828
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-569286602-1.js
+@@ -0,0 +1,24 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++function f(r) {
++  let pos;
++  while ('a'.startsWith('b', pos)) { do { pos = 1; } while (pos); }
++  r.push(pos);
++}
++
++%PrepareFunctionForOptimization(f);
++let a = [{}];
++assertEquals(undefined, f(a));
++assertEquals([{}, undefined], a);
++let b = [1];
++assertEquals(undefined, f(b));
++assertEquals([1, undefined], b);
++
++%OptimizeMaglevOnNextCall(f);
++let c = [1];
++assertEquals(undefined, f(c));
++assertEquals([1, undefined], c);
+diff --git a/test/mjsunit/maglev/regress-569286602-2.js b/test/mjsunit/maglev/regress-569286602-2.js
+new file mode 100644
+index 000000000000..dc186b862a9b
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-569286602-2.js
+@@ -0,0 +1,24 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++function f(r) {
++  let pos;
++  while ('a'.startsWith('b', pos)) { do { pos = 1; } while (pos); }
++  if (r) r.push(pos);
++}
++
++%PrepareFunctionForOptimization(f);
++let a = [{}];
++assertEquals(undefined, f(a));
++assertEquals([{}, undefined], a);
++let b = [1];
++assertEquals(undefined, f(b));
++assertEquals([1, undefined], b);
++
++%OptimizeMaglevOnNextCall(f);
++let c = [1];
++assertEquals(undefined, f(c));
++assertEquals([1, undefined], c);

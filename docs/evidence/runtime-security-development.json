@@ -76,5 +76,19 @@
     "Prior headed/platform/isolated-data results retain their original scope; they do not cover later upstream security fixes",
     "System WebKit is supplied by macOS and is a distinct platform;this Chromium finding is not a WebKit qualification",
     "No update to immutable release assets or release131 publication"
-  ]
+  ],
+  "sourceBackports": {
+    "status": "8-upstream-patches-applied-source-only",
+    "manifest": "runtime/security-backports-20261015/manifest.json",
+    "manifestSHA256": "c35cd893abe1a98284c2146db542c82605c4d0fd7f159f965e0cd88cf0f36cd1",
+    "affectedPaths": 35,
+    "postApplyReadback": "passed",
+    "upstreamTestsIncluded": true,
+    "upstreamTestsExecuted": false,
+    "priorSourceBytesPreserved": true,
+    "oldCompiledRuntimeUnchanged": true,
+    "newRuntimeBuilt": false,
+    "releaseQualified": false,
+    "boundary": "Seven original patches apply cleanly;Core uses officialM156cherry-pick.All8apply/reversechecks were on owned temporarycopies first. No partial selection of security hunks."
+  }
 }
