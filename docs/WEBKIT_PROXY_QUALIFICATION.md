@@ -245,3 +245,28 @@ Navigation delegate также не покрывает все сетевые з�
 Новый native-этап допустим при конкретном изменении проверяемой сетевой
 поверхности, а не для повторения этого FAIL. Все прежние ограничения и
 обязательная квалификация точного кандидата остаются открытыми.
+
+## Начата реализация отдельной сетевой границы
+
+[Development package](../Experiments/WebKitIsolation/README.md) отделён от
+поставляемого менеджера. Реализованы ограниченный реестр полных audit tokens,
+короткие session leases, отзыв активных потоков, точная Developer ID/CDHash
+проверка живого процесса и adapter реальных `NEAppProxyTCPFlow`. Основа —
+`NEAppProxyProvider` system extension: отказ этого provider завершает поток;
+у transparent provider отказ может означать Direct.
+
+18 уникальных чистых controls прошли (12 ledger + 6 lifecycle/callback,
+с намеренно неверным порядком callbacks как negative control); adapter
+скомпилирован. Уже пройденные 12 ledger tests не повторялись после правок
+отдельного lifecycle. Это не установленная
+сетевая изоляция: ещё нужны dedicated host, аутентифицированный control IPC,
+конкретный proxy tunnel, реальные kernel rules и квалификация маршрута.
+Наличие `NEAppRule` объекта не доказывает применение правил системой.
+[Точный состав и границы](evidence/webkit-network-isolation-development.json).
+
+Проверены 65 существующих provisioning profiles: нужных Network Extension /
+System Extension разрешений нет. Новые сертификаты не создавались.
+Автоматическая проверка отклонила регистрацию двух отдельных QA App ID как
+постоянное расширение прав Apple Developer; ожидается точное подтверждение.
+Ни идентификаторы, ни системные настройки в результате этой попытки не изменены.
+До реальных gates WebKit proxy остаётся выключенным; план1.0 не закрыт.

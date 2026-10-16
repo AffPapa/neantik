@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-16",
+  "status": "development component implemented;not installed;not browser-qualified",
+  "shippingWebKitProxy": false,
+  "mechanism": "Dedicated per-profile host with kernel per-app NEAppProxyProvider system extension;not transparent proxy",
+  "sourceFiles": {
+    "Experiments/WebKitIsolation/Package.swift": "2daf8d15cd0b7ca9c3b9b78769356a91e53d5245409d4e728fe46e53eb5b0693",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/IsolationLedger.swift": "b36c20aa7e3af56807810aae18280de80e8e849bc069cc3734986929a6150a82",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/ProviderLifetime.swift": "3a25b88bfaaa477ae9e4d4183d0c8846f1bf5c7fe0c9d1059fbb16bf9623fe50",
+    "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/FailClosedAppProxyProvider.swift": "8db3fdd9f15ad48a4309c8eef1ac3591b6c8b0756d4615b236c80d7bc136cdd7",
+    "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/IsolatedTCPFlowRouter.swift": "8459a88294bf25366b1147d0e94003a9f834d6de1db58473d260b71ca8659f5a",
+    "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/SignedHostPin.swift": "21dc596cddbbc71b5914a6daa1e818276fde9bf6c55f54a354a2116e30ef5639",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/IsolationLedgerTests.swift": "85201950c23a0f9820d355b1b1d23a1663c4d45fc26e00e861cc88815264001c",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/ProviderLifetimeTests.swift": "887ee0c35cf943a8350d80fecc809b4b6fc561857886ce0cb7625cb84ef9ecda"
+  },
+  "modelTests": {
+    "receiptInputSHA256": "fb910d4755fe3f0540439ae23ceb17f6ff0f61a69f437046f120236cfe1c7302",
+    "tests": 12,
+    "suites": 1,
+    "seconds": 6.810580958030187,
+    "status": "PASS",
+    "scope": "pure ownership/revocation/expiry/replay controls;no kernel/browser/NE execution"
+  },
+  "adapterBuildOnly": {
+    "inputSHA256": "d69b9f19564e77a2bf9d1d94233b7732ebfac928552910c7e921844683d94574",
+    "seconds": 1.022038417053409,
+    "status": "PASS",
+    "reason": "Source review:attach inert tunnel cancellation before handshake;preserve clean TCP half-close;unchanged 12 core tests not repeated",
+    "nativeRun": false
+  },
+  "profileInventory": {
+    "existingProfilesDecoded": 65,
+    "appProxySystemExtensionAuthorized": 0,
+    "systemExtensionInstallAuthorized": 0,
+    "newCertificatesCreated": 0
+  },
+  "appleAccountAction": {
+    "status": "blocked by automatic approval review;exact approval pending",
+    "registered": false,
+    "requestedQAIdentifiers": [
+      "app.neantik.desktop.network-qa",
+      "app.neantik.desktop.network-qa.proxy"
+    ],
+    "productionIdentifierChanged": false
+  },
+  "notImplemented": [
+    "Signed/installable system-extension bundle",
+    "Dedicated profile host extraction",
+    "Authenticated control IPC and actual kernel owner attribution",
+    "Concrete fixed-upstream tunnel integration",
+    "Kernel failure/DNS/UDP/IPv6/loopback and persistent WebKit qualification"
+  ],
+  "notRun": [
+    "No browser or extension process launched",
+    "No network/VPN preferences saved",
+    "No system extension installed",
+    "No previous native/release suites repeated"
+  ],
+  "acceptance": "Enable only after supported non-MDM Direct deployment, real flow attribution, fixed-upstream data plane and zero Direct for owned targets/provider failure/revoke with independentB;then signed candidate/release gates",
+  "releaseUnchanged": {
+    "version": "0.8.23",
+    "build": 135
+  },
+  "additionalLifecycleControls": {
+    "status": "PASS",
+    "tests": 6,
+    "seconds": 1.8266058749286458,
+    "inputSHA256": "4bddb3198015ccf9de0464095c5097f43eb5e92cc315748cab026813f97768d2",
+    "scope": "Pure provider lifetime and callback-order fence,including deliberate broken ordering;adapter compiled;unchanged12 ledger models not repeated",
+    "previousFiveControlRun": "PASS preserved;subset of final6,not counted as5additional unique tests"
+  },
+  "uniquePureControls": 18,
+  "reviewCorrections": [
+    "Factory outside state lock",
+    "Generation-bound shared stop/drain with callbacks only after drain",
+    "Serialized start/stop framework completions and explicit broken-order control",
+    "Inert tunnel factory;attach cancellation before network handshake",
+    "Clean normal TCP EOF instead of refused error"
+  ],
+  "knownHarnessWarnings": [
+    "Swift Testing #require macro passes a closure without Sendable annotation in two new test assertions;no product adapter Sendable warning in final compile",
+    "SwiftPM native build-system deprecation"
+  ]
+}
