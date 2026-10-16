@@ -4,8 +4,11 @@
 nonpersistent stores подтвердила CONNECT-авторизацию для синтетического имени,
 но достижимый локальный IPv4 обходил relay до и после отзыва. B и отдельный
 TCP-контроль работали; это **FAIL строгого no-Direct gate**, а не готовая функция.
-Окно и fixture закрыты; архивы135 не менялись. Следующий отдельный вариант —
-явный exact `matchDomains`, без обещания результата и без нового включения.
+Окно и fixture закрыты; архивы135 не менялись. Отдельный явный exact
+`matchDomains` также дал **FAIL**: native exceptions=0 и failover=false,
+но локальный IP достигался напрямую до и после отзыва. Одна оконная попытка
+завершена после диагностированного setup guard; повторов этого варианта нет.
+[Exact-match результат](evidence/webkit-proxy-exact-match-development.json).
 [Счётчики и границы](evidence/webkit-proxy-nonloopback-development.json).
 
 **Инструменты разработки (45):** добавлен process-local контекст source proof
@@ -70,7 +73,7 @@ CDP не использовался. Менеджер записал normal exit
 
 Первый переход со130 — вручную через подписанный DMG/ZIP. Данные и seed не мигрируют. Старые архивы сохранены, но содержат известный security gap. WebKit остаётся preview.
 
-browser.free остаётся на0.8.16/Sites153: поддерживаемая передача credential заблокирована automatic approval review. После выпуска в исходных инструментах добавлены безопасные замеры этапов будущей Direct ZIP-транзакции: семь отдельных контролей, 36 transaction tests и 34 inspector tests (один предусмотренный skip). Уже поставленные байты не менялись. Следующий workflow-срез — transaction-local reuse неизменённых source checks с отрицательными контролями; это пока исследованный план, не реализованное ускорение.
+browser.free остаётся на0.8.16/Sites153: поддерживаемая передача credential заблокирована automatic approval review. После выпуска в исходных инструментах добавлены безопасные замеры этапов будущей Direct ZIP-транзакции: семь отдельных контролей, 36 transaction tests и 34 inspector tests (один предусмотренный skip). Уже поставленные байты не менялись. Transaction-local reuse неизменённых source checks теперь реализован отдельным source-only срезом; [измерение и отрицательные контроли](SOURCE_VERIFICATION_CONTEXT.md) не заменяют квалификацию поставки.
 
 Это public alpha, а не завершённая 1.0. Сохранённые проверки применяются к
 указанным в них входам; список ниже не является заданием повторить их все.
@@ -139,7 +142,7 @@ fontPolicy/перезапуском прошли. Политика WebKit не �
 |---|---|---|
 | Отдельные данные, вкладки, загрузки, HTTP-кэш | Есть в опубликованных версиях; результаты ограничены указанными ОС/fixtures | Сохранять существующие evidence; проверять только изменяемую поверхность. |
 | Автосохранение вкладок | Опубликовано в 0.8.14; локальные/native/exact signed и hosted gates пройдены в указанном scope | Дополнительные crash/timeout и аппаратные условия относятся к пункту 36; полный backup не реализован. |
-| Прокси | Production запуск с прокси отклоняется. DEBUG-only session/CONNECT: [два оконных эксперимента](WEBKIT_PROXY_QUALIFICATION.md) выявили loopback и reachable private-IP Direct bypass. Авторизация синтетического имени отдельно подтверждена; включения нет | Проверить один exact matchDomains вариант; поддерживаемый способ исключить обход ещё не доказан. Затем HTTP/HTTPS/DNS/UDP, чужая capability, отказ upstream и lifecycle. Chromium authority не расширять на Apple-процессы/UID. Source controls не закрывают приёмку. |
+| Прокси | Production запуск с прокси отклоняется. DEBUG-only session/CONNECT: [оконные эксперименты](WEBKIT_PROXY_QUALIFICATION.md) выявили loopback и reachable private-IP Direct bypass. Авторизация синтетического имени отдельно подтверждена; включения нет | Exact matchDomains проверен и не устранил обход. Defaults/exact без новых входов не повторять; следующий иной frontend сначала требует design и собственных controls. Поддерживаемый способ исключить обход ещё не доказан. Затем HTTP/HTTPS/DNS/UDP, чужая capability, отказ upstream и lifecycle. Chromium authority не расширять на Apple-процессы/UID. Source controls не закрывают приёмку. |
 | Запуск/остановка через MCP | Опубликовано в0.8.17 на GitHub: отдельный GUI IPC, разрешение подключения/профилей, exact peer, revision и поколения окна, EOF/revoke без закрытия, stop до фактического сохранения | Exact signed и downloaded gates пройдены в scope [отчёта](../releases/v0.8.17.json). Реальные AI-клиенты, browser observation и обновление Sites ещё открыты. [Подключение](MCP_GUIDE.md#webkit-windows-through-ai--development-slice). |
 | Камера и микрофон | Policy-код есть, в поставке выключены | Реальный capture, отказ/отзыв и изоляция разрешений на точном подписанном кандидате. |
 | Удаление профиля | Опубликовано в0.8.16: public UUID removal, metadata/tombstone fence, inode-safe retirement и явное recovery; source-native и exact signed GUI/hosted gates прошли | Не удалять внутренние папки WebKit вручную. Удаление необратимо; неожиданные локальные файлы сохраняются. Другие macOS — отдельная совместимость. |

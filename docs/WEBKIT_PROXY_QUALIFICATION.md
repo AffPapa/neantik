@@ -42,6 +42,7 @@ credentials собственные. Пароли не выводятся, не �
 | Headed WKWebsiteDataStore, macOS27.0 | Один реальный запуск при normal admission: `accepted=0`, `upstream=0`, `Direct=1`. Страница загрузилась напрямую, строгий контроль отклонён. Не проверялся последующий revoke или независимый B: тест остановился на первом нарушении. |
 | Новый `.invalid` host, macOS27.0 | Отдельный оконный прогон: challenge, затем authenticated CONNECT и ожидаемое тело через relay/upstream. Передача credentials на этой среде работает; старую ошибку WebKit264309 нельзя считать её текущим диагнозом. Это не проверка отказа Direct: синтетическое имя не разрешается напрямую. |
 | Достижимый собственный RFC1918 IPv4, тот же новый прогон | B подтвердил достижимость точного nonce URL. A загрузил Direct-ответ без нового обращения к relay; после отзыва A снова пришёл Direct. Отдельный TCP-контроль без HTTP доказал чувствительность счётчика соединений. B оставался достижимым. Строгая приёмка — **FAIL**, production proxy выключен. |
+| Явные exact `matchDomains`, macOS27.0 | Один видимый оконный прогон после исправления setup: native selectors=2, exceptions=0, failover=false. Именной CONNECT работает, но тот же собственный локальный IP снова достигается напрямую до и после отзыва. Все пять строгих нарушений сохранены; B и TCP-контроль проходят. **FAIL**, exact selector не исправляет наблюдаемый обход. |
 
 Исходные неуспешные receipts сохраняются. Перенос experimental compatibility
 в opt-in не превращает эти FAIL в PASS: обычный прогон явно показывает два
@@ -71,13 +72,14 @@ DNS, hosts, маршруты, системный proxy и trust не менял�
 прогон не повторялся.
 
 [Минимизированные результаты](evidence/webkit-proxy-development.json) разделяют
-source controls, CFNetwork failure и фактический WebKit failure. Далее нужно
-проверить отдельно явный exact `matchDomains` на тех же собственных типах
-endpoint. Это документированный suffix selector, но приоритет над фактически
-наблюдаемым local-IP bypass документацией не гарантирован. Не применять
-недокументированные wildcard-значения и не переносить NetworkExtension settings
-на per-store API. Если exact selector не поможет, SOCKS frontend — отдельный
-исследовательский вариант, не готовое исправление. Заменять отказ
+source controls, CFNetwork failure и фактический WebKit failure. Отдельный
+[exact-match прогон](evidence/webkit-proxy-exact-match-development.json)
+теперь также отклонён: документированный suffix selector не устранил обход
+локального IP на этой среде. Эти defaults/exact варианты повторять без новых
+входов не нужно. Не применять недокументированные wildcard-значения и не
+переносить NetworkExtension settings на per-store API. SOCKS frontend остаётся
+отдельным исследовательским вариантом с собственной приёмкой, не готовым
+исправлением. Заменять отказ
 Direct-подключением или разрешать relay всем Apple-процессам нельзя.
 
 Перед запуском нужен свежий normal admission. Разовое исключение warning
@@ -92,7 +94,7 @@ manager lifecycle, HTTPS destination/upstream, remote DNS, UDP/WebRTC,
 до production enable. При отзыве живому store нельзя назначать пустой список
 proxyConfigurations: это изменило бы маршрут на Direct.
 
-## Подготовленный exact-match вариант
+## Результат exact-match варианта
 
 У QA-fixture есть отдельный режим
 `NEANTIK_WEBKIT_PROXY_NONLOOPBACK_MATCH_MODE=exact-hosts`. Он назначает две
@@ -110,11 +112,13 @@ Swift `excludedDomains` возвращает две записи из match list
 Отрицательные контроли ловят добавленное исключение, разрешённый failover и
 неверные selectors, в том числе список той же длины.
 
-Оконный результат ещё не получен. В разрешённом этапе остаётся один оконный
-прогон после исправления setup; оба test host сохраняются отдельно, максимум
-два host и одно окно. Прежний defaults не повторяется. Список покрывает только
-два тестовых адреса, а не произвольную работу браузера; даже PASS не даст
-production proxy:true.
+Разрешённый этап завершён: два test host, из которых первый не создал окно,
+и один фактический оконный прогон. При warning использовано разрешённое
+исключение; thermal=0. После исправления readback strict gate снова выявил
+Direct arrival до и после отзыва, пять issues, exit1. Окно закрыто, relay и
+fixture tasks остановлены с ожиданием, test host завершён. Повторного запуска
+нет; исходный setup FAIL не заменён успешным результатом. Список покрывает
+только два тестовых адреса. Другие macOS и произвольный маршрут этим не измерены.
 
 ## Источники API
 
