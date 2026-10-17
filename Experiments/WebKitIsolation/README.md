@@ -182,37 +182,43 @@ DNS, UDP, existing connections and the actual proxy tunnel need separate
 native evidence before shipping WebKit proxy support.
 [Analysis controls and remaining boundaries](../../docs/evidence/webkit-owned-filter-analysis-development.json).
 
-## QA5 installation refusal: bundle readability
+## QA5 setup: supported container lifecycle
 
-The approved QA5 stage stopped before filter activation or new A/B probes.
-macOS returned requestCanceled11. The replacement callback requires strict
-verification of the inactive old provider. QA3's staged `Contents/MacOS`
-directory is root-owned0700; the ordinary controller gets PermissionDenied
-when accessing its executable. That independently prevents the signature
-check; the exact callback guard branch was not logged. A restricted-context
-codesign failure must not be described as missing bytes or unsigned code.
+The QA5 stage stopped before filter activation or new A/B probes. macOS
+returned requestCanceled11. The old-signature guard could not read the
+OS-managed provider copy. Administrator inspection confirmed directory0700
+and file0604 with the expected old digest/signature. Attempts to repair those
+permissions, including rollback, were refused by macOS before an observed
+mode change. The permission-repair helper is retired. Do not modify protected
+staging, disable SIP or interpret synthetic tests as permission to do so.
 
-The assembler now normalizes only fresh owned QA bundles before signing:
-directories/executables0755 and resources0644. Private output parents and
-entitlement templates stay private. It refuses symlinks, hardlinks, missing
-executables and foreign ownership before changing modes. Five new controls
-pass, and the actual retained QA5 modes are rejected. A separate corrected
-QA5 copy has identical file contents; strict signatures and Gatekeeper pass
-in the authorized macOS context. No signing, compilation or Apple submission
-was repeated. The frozen original and OS staging were not modified.
+The assembler's0755/0644 rule remains a conventional fresh-bundle packaging
+check. It does not control OS staging permissions or solve this lifecycle gate.
+The earlier administrator-repair recommendation is withdrawn.
 
-The legacy root-owned QA3 requires administrator-assisted metadata repair or
-supported removal before replacement. Do not weaken signature checks, enable
-an unqualified proxy or retry identical activation inputs. Own controller and
-origins are closed; QA3 remains disabled and no filter was enabled.
-[Result and limits](../../docs/evidence/webkit-qa-bundle-readability-development.json).
+The OS registration referred to the original containing app by file identity.
+That object had been renamed into a rollback folder while another QA5 copy
+occupied its old path. Removing the newer copy therefore did not uninstall
+QA3. After the original object was returned to its canonical Applications
+location, Finder showed the system-extension removal warning. The resulting
+OS state is **terminated waiting to uninstall on reboot**. It is stopped,
+not fully uninstalled. The signed QA3 archive/copy remains preserved.
+
+Frozen QA5 was restored to Applications without launch; all signed file bytes
+match its retained qualification. After a user-chosen reboot, verify removal
+of QA3, then resume the existing authorized QA5 stage and retain baseline4.
+No new compilation, signing, Apple submission or baseline replay is needed
+solely because the old registration has been removed. Native filtering,
+original-owner attribution and provider-failure behavior remain unqualified.
+[Result, correction and limits](../../docs/evidence/webkit-qa-bundle-readability-development.json).
+[Apple's supported lifecycle](https://developer.apple.com/documentation/systemextensions/installing-system-extensions-and-drivers).
 
 ## Remaining gates
 
-1. QA extension is durably disabled and all own processes/rules are gone.
-   Retain the inactive registration and installed QA3 bytes;uninstallation
-   is not claimed. Before a successor, resolve exact QA replacement/removal
-   through supported OS authorization;do not bypass SIP/Gatekeeper.
+1. QA3 is terminated waiting to uninstall on reboot after supported Finder
+   removal of the actual registered container. Wait for a user-chosen reboot
+   and verify the old registration is gone. QA5 bytes and baseline4 are held;
+   no protected staging repair or automatic reboot is permitted.
 2. The new no-rule A/B reachability baseline is complete. Qualify the new
    owned-loopback filter on exact signed bytes;observe current-run/PID apply
    success and saved scope before launchingA. Old app-proxy permutations do
@@ -232,10 +238,3 @@ origins are closed; QA3 remains disabled and no filter was enabled.
 - Installed SDK `NEAppProxyProvider.h`, `NEFlowMetaData.h`, `NEAppRule.h` and
   `SystemExtensions.h`; provider semantics do not promise every WK flow is
   captured or correctly attributed. The signature/profile guards are retained.
-
-QA5 internal build5 is now signed with the same certificate/profiles, Apple
-Accepted, stapled and Gatekeeper checked. Exact new host bytes passed four
-headed ownIPv4/IPv6 baseline cases before any filter. The local QA app bundle
-was atomically replaced with QA3 rollback retained;the OS extension is still
-inactive QA3. The new content-filter access requires action-time confirmation.
-No filter/apply/owner/failure PASS or public release is claimed.

@@ -67,6 +67,18 @@ can recognize a version-only Info.plist diff from actual before/after values;
 - Preserve execution receipts before parsing. Classify a failure as product,
   harness, setup or environment; diagnose two identical failures before retry.
   Fix analysis offline on retained traces when browser inputs did not change.
+- System Extensions are OS-managed: never chmod/chown/remove their staging
+  files, edit the registry, disable SIP or enable developer mode to fix QA.
+  Use documented activation/replacement/deactivation or Finder removal of
+  the containing app. Resolve the actual registered container/file identity
+  before cleanup: renaming it into a rollback folder does not unregister it.
+  Keep the registered container at its canonical location until OS teardown;
+  preserve rollback as a separate copy/archive. Verify kernel state afterward:
+  disabled, terminated-awaiting-reboot and uninstalled are different results.
+  A required reboot is an external gate; never restart the user's Mac yourself.
+  Before any administrator handoff, collect actual read-only preconditions and
+  test the full helper path with the exact interpreter, including rollback.
+  Synthetic ownership/signature checks do not prove OS permission to mutate.
 - Local full Python contracts include owned loopback listeners and own-PID
   `/bin/ps`. Establish those capabilities before the expensive run; use the
   already authorized QA execution environment. Sandbox denial is a setup

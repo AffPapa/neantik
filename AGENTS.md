@@ -24,3 +24,7 @@
   failures before retrying. Preserve real profiles, BrowserData and Keychain;
   QA uses owned synthetic roots and mock Keychain where required. Never put
   credentials/private traces in output, source, prompts or public artifacts.
+- System Extensions: never repair `/Library/SystemExtensions` permissions or
+  files. Use the framework/Finder lifecycle and the actual registered container;
+  keep its file identity at the canonical path until deactivation completes.
+  Preserve rollback by copying. Treat a required reboot as an external gate.

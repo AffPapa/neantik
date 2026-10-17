@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "date": "2026-10-17",
-  "status": "QA5 setup refusal diagnosed;assembler modes corrected;native filter unqualified",
+  "status": "Previous staging-repair recommendation withdrawn;OS-supported QA3 uninstall queued for reboot;native filter unqualified",
   "shippingWebKitProxy": false,
   "exactQA5Stage": {
     "authorizationReceived": true,
@@ -38,9 +38,33 @@
     "old pure suites",
     "public release gates"
   ],
-  "next": "Administrator-assisted exactQA3 readability repair with oldSHA/CDHash verification,or supported removal. Then same frozenQA5 stage;no guard weakening or identical retry.",
+  "next": "After user-chosen reboot,verify QA3 registration removed;resume existing authorized frozenQA5 stage with baseline4. No protected filesystem repair.",
   "sourceSHA256": {
     "Experiments/WebKitIsolation/prepare-qa.py": "59dd15e44ee07022734df27cd6a41a1d266a9bb8de7af754720ea4eaecb9eef3",
     "Experiments/WebKitIsolation/test-prepare-qa.py": "13d57e3d673fb5a93e9a7d8fffd79ab973d9810d4b43c0d4721687c48b4d03e9"
+  },
+  "correction20261017": {
+    "rootRepairOutcome": "User-reported root fchmod EPERM,then rollback fchmod EPERM;observed directory remained0700. Helper retired.",
+    "actualRootInspection": {
+      "directoryMode": "0700",
+      "fileMode": "0604",
+      "digestAndSignature": "user-rootinspection verified"
+    },
+    "operatorErrors": [
+      "Speculative mode allowlists before observing actual permissions",
+      "Synthetic filesystem tests mistaken for assurance that OS-managed staging could be repaired",
+      "Moving registered container inode into rollback while replacing its canonical path"
+    ],
+    "confirmedLifecycleFinding": "OS registration followed original containing-app file identity into rollback;removing a different QA5 object at the original path did not uninstall QA3",
+    "supportedAction": "Original registered app returned to canonicalApplications location;Finder systemextension removal prompt;OSstate terminated waiting to uninstall on reboot",
+    "frozenQA5": "Restored exact filebytes without launch",
+    "codeOrSecurityWeakened": false,
+    "newNativeABProbes": 0,
+    "rebootPerformed": false,
+    "futureRule": "Use framework/Finder lifecycle;copy backups without moving registered container;no staging chmod/chown/removal/registry edits/SIP change",
+    "sources": [
+      "https://developer.apple.com/documentation/systemextensions/installing-system-extensions-and-drivers",
+      "https://developer.apple.com/documentation/systemextensions/ossystemextensionrequest/deactivationrequest(forextensionwithidentifier:queue:)"
+    ]
   }
 }
