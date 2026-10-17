@@ -6,6 +6,9 @@ from pathlib import Path
 import unittest
 import struct
 import uuid
+import os
+import stat
+import tempfile
 
 SPEC = importlib.util.spec_from_file_location("qa_preparation", Path(__file__).with_name("prepare-qa.py"))
 QA = importlib.util.module_from_spec(SPEC)
@@ -76,6 +79,56 @@ class ExecutableIdentityTests(unittest.TestCase):
                      self.image("00000000-0000-4000-8000-000000000001", length=25), duplicate):
             with self.assertRaises(ValueError):
                 QA.executable_uuid(data)
+
+
+class BundleModeTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.parent = Path(self.temp.name)
+        self.root = self.parent / 'Own.app'
+        self.exe = self.root / 'Contents/MacOS/Own'
+        self.exe.parent.mkdir(parents=True, mode=0o700)
+        self.exe.write_bytes(b'own synthetic executable bytes')
+        self.exe.chmod(0o700)
+        self.resource = self.root / 'Contents/Info.plist'
+        self.resource.write_bytes(b'own resource')
+        self.names = ['Contents/MacOS/Own']
+
+    def test_old_private_executable_modes_refuse(self):
+        with self.assertRaises(ValueError):
+            QA.qa_bundle_modes(self.root, self.names)
+
+    def test_normalized_bundle_preserves_bytes_and_private_parent(self):
+        before = self.exe.read_bytes(), self.resource.read_bytes()
+        parent_mode = stat.S_IMODE(self.parent.stat().st_mode)
+        QA.qa_bundle_modes(self.root, self.names, normalize=True)
+        QA.qa_bundle_modes(self.root, self.names)
+        self.assertEqual(before, (self.exe.read_bytes(), self.resource.read_bytes()))
+        self.assertEqual(stat.S_IMODE(self.exe.stat().st_mode), 0o755)
+        self.assertEqual(stat.S_IMODE(self.resource.stat().st_mode), 0o644)
+        self.assertEqual(stat.S_IMODE(self.parent.stat().st_mode), parent_mode)
+
+    def test_symlink_refuses_before_any_mode_change(self):
+        outside = self.parent / 'outside'
+        outside.write_bytes(b'do not alter')
+        outside.chmod(0o600)
+        (self.root / 'link').symlink_to(outside)
+        with self.assertRaises(ValueError):
+            QA.qa_bundle_modes(self.root, self.names, normalize=True)
+        self.assertEqual(stat.S_IMODE(outside.stat().st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(self.exe.stat().st_mode), 0o700)
+
+    def test_hardlink_refuses_before_any_mode_change(self):
+        os.link(self.resource, self.root / 'alias')
+        with self.assertRaises(ValueError):
+            QA.qa_bundle_modes(self.root, self.names, normalize=True)
+        self.assertEqual(stat.S_IMODE(self.exe.stat().st_mode), 0o700)
+
+    def test_missing_or_directory_executable_refuses(self):
+        for names in ([], ['missing'], ['Contents/MacOS']):
+            with self.subTest(names=names), self.assertRaises(ValueError):
+                QA.qa_bundle_modes(self.root, names, normalize=True)
 
 
 if __name__ == "__main__":

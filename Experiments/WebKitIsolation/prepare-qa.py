@@ -109,6 +109,35 @@ def regular(path):
         os.close(fd)
 
 
+def qa_bundle_modes(root, executables, *, normalize=False):
+    """Make assembled public QA code readable after root-owned OS staging.
+
+    Use only on a fresh owned assembly before signing. The private output
+    parent and entitlement templates remain private. Never repair /Library
+    staging, frozen signed bundles or a caller-supplied symlink in place.
+    """
+    paths = [root, *root.rglob("*")]
+    executable_paths = {root / name for name in executables}
+    if not executable_paths or not executable_paths <= set(paths):
+        raise ValueError("Missing declared QA executable")
+    planned = []
+    # Validate the complete owned tree before changing any mode.
+    for path in paths:
+        info = path.lstat()
+        if info.st_uid != os.getuid() or (not stat.S_ISDIR(info.st_mode)
+                and (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1)):
+            raise ValueError("QA assembly must contain only owned directories and single-link files")
+        mode = 0o755 if stat.S_ISDIR(info.st_mode) or path in executable_paths else 0o644
+        planned.append((path, mode, info))
+    if any(not stat.S_ISREG(path.lstat().st_mode) for path in executable_paths):
+        raise ValueError("Declared QA executable is not a regular file")
+    for path, mode, info in planned:
+        if normalize:
+            path.chmod(mode, follow_symlinks=False)
+        elif stat.S_IMODE(info.st_mode) != mode:
+            raise ValueError("QA bundle modes must survive root-owned staging: directories/executables755,resources644")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-receipt", type=Path, required=True)
@@ -187,6 +216,11 @@ def main():
         "NSSystemExtensionUsageDescription":USAGE_DESCRIPTION,
         "NetworkExtension":{"NEMachServiceName":QA_GROUP+".proxy",
                             "NEProviderClasses":classes}})
+    executable_paths = [str((destination / item["bundle"] / "Contents/MacOS" /
+                            infos[item["identifier"]]["CFBundleExecutable"]).relative_to(root))
+                        for item in manifest]
+    qa_bundle_modes(root, executable_paths, normalize=True)
+    qa_bundle_modes(root, executable_paths)
     entitlement_root = destination / "unsigned-entitlement-templates"
     entitlement_root.mkdir(mode=0o700)
     for name, identifier, extra in [
@@ -204,6 +238,7 @@ def main():
               "ownedLoopbackFilterIncluded":args.include_owned_loopback_filter,
               "inactiveQAReplacementFromBuild":args.replace_inactive_qa_build,
               "buildInputSHA256":receipt["inputSHA256"],"bundles":manifest,
+              "bundleModes":"directories/executables755;resources644;private output/templates unchanged",
               "next":"Validate exact DeveloperID provisioning/CMS/certificate;sign with existing certificate;notarize;fresh resource admission and explicit QA-install authorization before launch. No production release.",
               "proof":"Assembly does not prove kernel routing, WebKit attribution or working proxy."}
     (destination/"preparation.json").write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n")

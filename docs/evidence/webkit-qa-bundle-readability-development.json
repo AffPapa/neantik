@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-17",
+  "status": "QA5 setup refusal diagnosed;assembler modes corrected;native filter unqualified",
+  "shippingWebKitProxy": false,
+  "exactQA5Stage": {
+    "authorizationReceived": true,
+    "activationAttempts": 1,
+    "result": "requestCanceled11;no new filter or A/B probes",
+    "oldProvider": "QA3 remains activated disabled",
+    "cleanup": "own controller exited and origins closed"
+  },
+  "evidence": {
+    "SDK": "SystemExtensions.h maps RequestCanceled11;replacement Cancel triggers this code",
+    "OS": "sysextd requested replacement of inactiveQA3;old staged MacOS isroot-owned0700 and ordinary userstat returnsPermissionDenied",
+    "limitation": "Unreadable old code independently causes signature guard refusal;exact failing delegate clause not logged. Do not claim missing/unsigned code from unprivileged codesign errors."
+  },
+  "change": "Normalize only fresh owned QA assemblies:directories/executables0755,resources0644;private parent/templates unchanged",
+  "newControls": {
+    "count": 5,
+    "seconds": 0.005,
+    "scope": "Filesystem fixtures only;old0700refusal,correctmodes/bytes/privateparent,symlink,hardlink,missing/directoryexecutable"
+  },
+  "exactRetainedCopy": {
+    "actualOldModesRefused": true,
+    "fileContentsUnchanged": true,
+    "strictSignatureMacOSExit": 0,
+    "gatekeeper": "accepted;Notarized Developer ID",
+    "sandboxCodesignExit": 1,
+    "sandboxFailure": "Setup/context failure;not product signature failure",
+    "frozenOriginalOrOSStagingChanged": false
+  },
+  "notRepeated": [
+    "Swift or Chromium build",
+    "signing/certificate/profile creation",
+    "Apple submission",
+    "prior native baseline4",
+    "old pure suites",
+    "public release gates"
+  ],
+  "next": "Administrator-assisted exactQA3 readability repair with oldSHA/CDHash verification,or supported removal. Then same frozenQA5 stage;no guard weakening or identical retry.",
+  "sourceSHA256": {
+    "Experiments/WebKitIsolation/prepare-qa.py": "59dd15e44ee07022734df27cd6a41a1d266a9bb8de7af754720ea4eaecb9eef3",
+    "Experiments/WebKitIsolation/test-prepare-qa.py": "13d57e3d673fb5a93e9a7d8fffd79ab973d9810d4b43c0d4721687c48b4d03e9"
+  }
+}

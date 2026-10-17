@@ -182,6 +182,31 @@ DNS, UDP, existing connections and the actual proxy tunnel need separate
 native evidence before shipping WebKit proxy support.
 [Analysis controls and remaining boundaries](../../docs/evidence/webkit-owned-filter-analysis-development.json).
 
+## QA5 installation refusal: bundle readability
+
+The approved QA5 stage stopped before filter activation or new A/B probes.
+macOS returned requestCanceled11. The replacement callback requires strict
+verification of the inactive old provider. QA3's staged `Contents/MacOS`
+directory is root-owned0700; the ordinary controller gets PermissionDenied
+when accessing its executable. That independently prevents the signature
+check; the exact callback guard branch was not logged. A restricted-context
+codesign failure must not be described as missing bytes or unsigned code.
+
+The assembler now normalizes only fresh owned QA bundles before signing:
+directories/executables0755 and resources0644. Private output parents and
+entitlement templates stay private. It refuses symlinks, hardlinks, missing
+executables and foreign ownership before changing modes. Five new controls
+pass, and the actual retained QA5 modes are rejected. A separate corrected
+QA5 copy has identical file contents; strict signatures and Gatekeeper pass
+in the authorized macOS context. No signing, compilation or Apple submission
+was repeated. The frozen original and OS staging were not modified.
+
+The legacy root-owned QA3 requires administrator-assisted metadata repair or
+supported removal before replacement. Do not weaken signature checks, enable
+an unqualified proxy or retry identical activation inputs. Own controller and
+origins are closed; QA3 remains disabled and no filter was enabled.
+[Result and limits](../../docs/evidence/webkit-qa-bundle-readability-development.json).
+
 ## Remaining gates
 
 1. QA extension is durably disabled and all own processes/rules are gone.
