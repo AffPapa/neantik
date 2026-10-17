@@ -38,7 +38,7 @@
     "old pure suites",
     "public release gates"
   ],
-  "next": "After user-chosen reboot,verify QA3 registration removed;resume existing authorized frozenQA5 stage with baseline4. No protected filesystem repair.",
+  "next": "After user-chosen reboot,verify QA3 registration removed;resume authorized frozenQA5. Retain baseline4historically;newmonotonicepoch requires scoped freshclock binding/pre-filtercontrols if needed,with explicitreason. No protected filesystem repair,build/sign/Apple replay.",
   "sourceSHA256": {
     "Experiments/WebKitIsolation/prepare-qa.py": "59dd15e44ee07022734df27cd6a41a1d266a9bb8de7af754720ea4eaecb9eef3",
     "Experiments/WebKitIsolation/test-prepare-qa.py": "13d57e3d673fb5a93e9a7d8fffd79ab973d9810d4b43c0d4721687c48b4d03e9"
@@ -65,6 +65,7 @@
     "sources": [
       "https://developer.apple.com/documentation/systemextensions/installing-system-extensions-and-drivers",
       "https://developer.apple.com/documentation/systemextensions/ossystemextensionrequest/deactivationrequest(forextensionwithidentifier:queue:)"
-    ]
+    ],
+    "clockBoundary": "Reboot changes uptime epoch;oldbaseline uptimes cannot directly order newprovider events. Oldsignedbyte/sign/notary evidence remains reusable."
   }
 }

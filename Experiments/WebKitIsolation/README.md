@@ -206,9 +206,11 @@ not fully uninstalled. The signed QA3 archive/copy remains preserved.
 
 Frozen QA5 was restored to Applications without launch; all signed file bytes
 match its retained qualification. After a user-chosen reboot, verify removal
-of QA3, then resume the existing authorized QA5 stage and retain baseline4.
-No new compilation, signing, Apple submission or baseline replay is needed
-solely because the old registration has been removed. Native filtering,
+of QA3, then resume the existing authorized QA5 stage. Preserve baseline4 as
+historical evidence: a reboot changes the monotonic-clock epoch, so its uptime
+must not be compared directly with new provider events. If fresh pre-filter
+controls are needed, record that concrete invalidation reason. Registration
+removal alone requires no compilation, signing or Apple submission. Native filtering,
 original-owner attribution and provider-failure behavior remain unqualified.
 [Result, correction and limits](../../docs/evidence/webkit-qa-bundle-readability-development.json).
 [Apple's supported lifecycle](https://developer.apple.com/documentation/systemextensions/installing-system-extensions-and-drivers).

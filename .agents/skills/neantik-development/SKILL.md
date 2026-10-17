@@ -76,6 +76,7 @@ can recognize a version-only Info.plist diff from actual before/after values;
   preserve rollback as a separate copy/archive. Verify kernel state afterward:
   disabled, terminated-awaiting-reboot and uninstalled are different results.
   A required reboot is an external gate; never restart the user's Mac yourself.
+  Reboot invalidates prior monotonic-clock bindings, not signed-byte checks.
   Before any administrator handoff, collect actual read-only preconditions and
   test the full helper path with the exact interpreter, including rollback.
   Synthetic ownership/signature checks do not prove OS permission to mutate.
