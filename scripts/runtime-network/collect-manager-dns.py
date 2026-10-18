@@ -232,11 +232,14 @@ def owned_state(path):
     return state, root
 
 
-def capture(state, root, phase, *, physical_tcp=False, manager_webrtc=False):
+def capture(state, root, phase, *, physical_tcp=False, manager_webrtc=False, manager_websocket=False):
     # A second closed fixture reuses the same kernel/lease checks without
     # mislabelling TCP observations as DNS evidence. CLI defaults stay DNS.
-    require(not (physical_tcp and manager_webrtc), 'ambiguous-fixture-mode')
-    if manager_webrtc:
+    require(sum(bool(value) for value in (physical_tcp, manager_webrtc, manager_websocket)) <= 1, 'ambiguous-fixture-mode')
+    if manager_websocket:
+        require(state['websocketFixture']['mode'] == 'manager-websocket', 'wrong-websocket-fixture')
+        bindings = dict(websocketFixtureSHA256=state['websocketFixtureSHA256'], websocketProbeSHA256=state['websocketProbeSHA256'])
+    elif manager_webrtc:
         require(state['webrtcFixture']['mode'] == 'manager-webrtc', 'wrong-webrtc-fixture')
         bindings = dict(webrtcFixtureSHA256=state['webrtcFixtureSHA256'], webrtcProbeSHA256=state['webrtcProbeSHA256'])
     elif physical_tcp:

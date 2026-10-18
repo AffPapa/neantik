@@ -211,6 +211,14 @@ OS-managed policy, IPv6/TURN, full mDNS disclosure behavior, network transitions
 or an ordinary Chrome comparison. The frozen earlier research harness and its
 receipts remain unchanged.
 
+### Normal manager / authenticated relay WebSocket integration
+
+A separate [WS fixture and custody/analyzer contract](../scripts/runtime-network/MANAGER_WEBSOCKET.md)
+is implemented in source. Its socket/model controls do not yet qualify headed
+manager behavior. It measures WS-specific CONNECT refusal/cut with HTTP control
+retained; physical listener loss and raw WS/WSS remain separate evidence.
+WSS success through the manager needs a normally trusted owned endpoint.
+
 ### Normal manager / authenticated relay WebRTC integration
 
 `manager-route-fixture.py --manager-webrtc` selects the separate
