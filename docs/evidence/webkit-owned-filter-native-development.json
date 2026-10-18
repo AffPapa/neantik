@@ -96,6 +96,12 @@
     "newCertificate": false,
     "notarized": false,
     "installed": false,
-    "nativeExecuted": false
+    "nativeExecuted": false,
+    "signed": true,
+    "archiveSHA256": "b6979cb7730d715cab58ada2679b153cea7c084dcf7d547a2fc07ae086919fdc",
+    "archiveBytes": 761545,
+    "sourceHEAD": "b6e3f39d9b781a5bd6d4f0a6707064d7bc32524d",
+    "strictSignature": "PASS",
+    "archiveCoreFiles": 14
   }
 }
