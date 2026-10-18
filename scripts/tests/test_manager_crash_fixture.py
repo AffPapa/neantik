@@ -210,4 +210,125 @@ class CrashWireTests(unittest.TestCase):
         self.assertFalse(any(e['kind']=='crash-result' for e in f.ledger.events))
 
 
+class CrashDiagnosticTests(unittest.TestCase):
+    """Exercise actual handler stages with bounded bytes, no browser or signals."""
+    def fixture(self):
+        import threading
+        class Ledger:
+            def __init__(self): self.events=[]
+            def record(self,kind,**values): self.events.append(dict(kind=kind,**values))
+        f=F.ManagerCrashFixture.__new__(F.ManagerCrashFixture)
+        f.control_lock=threading.RLock();f.socket_lock=threading.Lock()
+        f.sockets=set();f.local_sockets=set();f.https_sockets=set()
+        f.phase='baseline';f.served=set();f.completed=set();f.ledger=Ledger()
+        f.nonce='private-nonce-sentinel';f.baseline='private-baseline-sentinel';f.fresh='private-fresh-sentinel'
+        f.peer_inspector=lambda channel,direct:dict(protocolFixturePeer=True,direct=direct)
+        return f
+
+    def run_request(self,f,raw,*,receive_error=None,send_error=False):
+        class Channel:
+            def __init__(self): self.remaining=raw;self.response=b''
+            def settimeout(self,timeout): self.timeout=timeout
+            def recv(self,size):
+                if receive_error is not None:raise receive_error
+                value,self.remaining=self.remaining[:size],self.remaining[size:];return value
+            def sendall(self,data):
+                if send_error:raise OSError('private-send-error-sentinel')
+                self.response+=data
+        channel=Channel();f.origin_request(channel)
+        self.assertFalse(f.sockets)
+        for secret in (f.nonce,f.baseline,f.fresh,'private-error-sentinel','private-send-error-sentinel'):
+            self.assertNotIn(secret,json.dumps(f.ledger.events))
+        return channel
+
+    def request(self,f,method=b'GET',path=None,body=b'',length=None):
+        target=path if path is not None else '/own-crash?nonce='+f.nonce
+        return method+b' '+target.encode()+b' HTTP/1.1\r\nHost: own\r\nContent-Length: '+str(len(body) if length is None else length).encode()+b'\r\n\r\n'+body
+
+    def refusal(self,f,stage,reason):
+        events=[e for e in f.ledger.events if e['kind']=='crash-http-refused']
+        self.assertEqual(len(events),1)
+        self.assertEqual(events[0],dict(kind='crash-http-refused',diagnosticVersion=1,stage=stage,reason=reason,
+                                        phaseAtArrival='baseline',phaseAtRefusal=f.phase))
+
+    def test_header_eof_limit_timeout_and_encoding_are_bounded(self):
+        cases=[(b'',None,'header','header-incomplete'),(b'GET /',None,'header','header-incomplete'),
+               (b'x'*16384,None,'header','header-too-large'),(b'',TimeoutError('private-error-sentinel'),'header','timeout'),
+               (b'GET\r\n\r\n',None,'request-line','protocol-refusal'),
+               (b'GET /\xff HTTP/1.1\r\n\r\n',None,'request-line','invalid-encoding')]
+        for raw,error,stage,reason in cases:
+            with self.subTest(stage=stage,reason=reason):
+                f=self.fixture();self.run_request(f,raw,receive_error=error);self.refusal(f,stage,reason)
+
+    def test_peer_failures_are_not_inferred_to_be_page_failures(self):
+        for error,reason in [(ValueError('private-error-sentinel'),'protocol-refusal'),
+                             (TimeoutError('private-error-sentinel'),'timeout'),
+                             (subprocess.SubprocessError('private-error-sentinel'),'custody-process-failure')]:
+            f=self.fixture()
+            def refuse(*args):raise error
+            f.peer_inspector=refuse
+            self.run_request(f,self.request(f));self.refusal(f,'peer-custody',reason)
+            self.assertFalse(f.served)
+
+    def test_page_protocol_stages_do_not_publish_target_or_error(self):
+        for duplicate in (False,True):
+            f=self.fixture()
+            if duplicate:f.served.add('baseline')
+            raw=self.request(f,path=None if duplicate else '/own-crash?nonce=private-error-sentinel')
+            self.run_request(f,raw);self.refusal(f,'page-state' if duplicate else 'page-url','protocol-refusal')
+
+    def test_receipt_framing_parse_validation_and_order_stages(self):
+        for fault,stage,reason in [('method','receipt-method','protocol-refusal'),('url','receipt-url','protocol-refusal'),
+                                  ('length','receipt-length','protocol-refusal'),('body','receipt-body','protocol-refusal'),
+                                  ('json','receipt-json','invalid-json'),('result','receipt-result','protocol-refusal'),
+                                  ('order','receipt-state','protocol-refusal')]:
+            with self.subTest(fault=fault):
+                f=self.fixture();body=json.dumps(result('baseline',f.baseline,f.fresh)).encode()
+                if fault=='json':body=b'{private-error-sentinel'
+                if fault=='result':body=b'{}'
+                raw=self.request(f,method=b'PATCH' if fault=='method' else b'POST',
+                                 path='/wrong' if fault=='url' else '/own-crash-receipt?nonce='+f.nonce,
+                                 body=body,length=0 if fault=='length' else (len(body)+1 if fault=='body' else None))
+                self.run_request(f,raw);self.refusal(f,stage,reason)
+                self.assertFalse(f.completed)
+
+    def test_send_failure_keeps_prior_events_and_phase_without_claiming_ack(self):
+        for receipt in (False,True):
+            f=self.fixture()
+            if receipt:
+                f.served.add('baseline');body=json.dumps(result('baseline',f.baseline,f.fresh)).encode()
+                raw=self.request(f,method=b'POST',path='/own-crash-receipt?nonce='+f.nonce,body=body)
+            else:raw=self.request(f)
+            self.run_request(f,raw,send_error=True);self.refusal(f,'response','connection-error')
+            self.assertEqual(f.phase,'mutate' if receipt else 'baseline')
+            self.assertTrue(any(e['kind']==('crash-result' if receipt else 'crash-page') for e in f.ledger.events))
+        f=self.fixture();self.run_request(f,self.request(f,path='/favicon.ico'),send_error=True)
+        self.refusal(f,'favicon-response','connection-error')
+
+    def test_diagnostic_reason_never_exempts_refusal_from_full_gate(self):
+        for stage,reason in [('header','header-incomplete'),('peer-custody','timeout'),('response','connection-error')]:
+            receipts,release,state=model()
+            receipts['fixture-ledger.json']['events'].insert(0,dict(kind='crash-http-refused',at=0.5,
+                    diagnosticVersion=1,stage=stage,reason=reason,phaseAtArrival='baseline',phaseAtRefusal='baseline'))
+            with self.assertRaisesRegex(ValueError,'crash-page-protocol'):A.qualify(receipts,release,state)
+            self.assertFalse(A.measure_components(receipts,release,state)['fullScenarioQualified'])
+
+
+class CrashDiagnosticWireTests(unittest.TestCase):
+    setUp=CrashWireTests.setUp
+    tearDown=CrashWireTests.tearDown
+    request=CrashWireTests.request
+
+    def test_refusal_diagnostic_and_following_valid_HTTP_have_distinct_results(self):
+        f=self.f
+        self.assertIn(b'400',self.request(b'GET','/own-crash?nonce=wrong')[0])
+        event=next(e for e in f.ledger.events if e['kind']=='crash-http-refused')
+        self.assertEqual((event['stage'],event['reason']),('page-url','protocol-refusal'))
+        self.assertIn(b'200',self.request(b'GET','/own-crash?nonce='+f.nonce)[0])
+        body=json.dumps(result('baseline',f.baseline,f.fresh)).encode()
+        self.assertIn(b'200',self.request(b'POST','/own-crash-receipt?nonce='+f.nonce,body)[0])
+        self.assertEqual([e['kind'] for e in f.ledger.events],['crash-http-refused','crash-page','crash-result'])
+        for marker in (f.nonce,f.baseline,f.fresh):self.assertNotIn(marker,json.dumps(f.ledger.events))
+
+
 if __name__=='__main__':unittest.main()

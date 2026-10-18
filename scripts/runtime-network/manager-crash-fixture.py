@@ -16,6 +16,22 @@ STORES = {'cookie', 'localStorage', 'indexedDB', 'cacheStorage'}
 PHASES = ('baseline', 'mutate', 'read')
 
 
+def refusal_reason(stage, error):
+    """Fixed diagnostic codes only; never serialize exception text or requests."""
+    if isinstance(error, TimeoutError): return 'timeout'
+    if isinstance(error, OSError): return 'connection-error'
+    if isinstance(error, BASE.subprocess.SubprocessError): return 'custody-process-failure'
+    if isinstance(error, UnicodeError): return 'invalid-encoding'
+    if isinstance(error, json.JSONDecodeError): return 'invalid-json'
+    if stage == 'header' and isinstance(error, ValueError):
+        if error.args == ('incomplete-header',): return 'header-incomplete'
+        if error.args == ('bounded-header',): return 'header-too-large'
+    if isinstance(error, KeyError): return 'missing-field'
+    if isinstance(error, IndexError): return 'out-of-range'
+    if isinstance(error, TypeError): return 'invalid-type'
+    return 'protocol-refusal'
+
+
 def require(value):
     if not value: raise ValueError('owned-crash-protocol')
 
@@ -70,35 +86,52 @@ class ManagerCrashFixture(BASE.Fixture):
         require(len(target) <= 256 and parsed.path == path and parse_qs(parsed.query, keep_blank_values=True) == {'nonce':[self.nonce]})
 
     def origin_request(self, channel):
-        self.track(channel); channel.settimeout(10)
+        self.track(channel)
+        stage = 'socket-setup'
+        with self.control_lock: arrival_phase = self.phase
         try:
-            lines = BASE.header(channel).split(b'\r\n'); first = lines[0].split(); require(len(first) == 3)
+            channel.settimeout(10)
+            stage = 'header'; lines = BASE.header(channel).split(b'\r\n')
+            stage = 'request-line'; first = lines[0].split(); require(len(first) == 3)
             method, target = first[0], first[1].decode('ascii')
-            if urlsplit(target).path == '/favicon.ico': BASE.answer(channel, b'404 Not Found', b''); return
+            if urlsplit(target).path == '/favicon.ico':
+                stage = 'favicon-response'; BASE.answer(channel, b'404 Not Found', b''); return
+            stage = 'peer-custody'
             require(self.peer_inspector is not None); peer = self.peer_inspector(channel, True)
             with self.control_lock:
                 phase = self.phase
                 if method == b'GET':
-                    self.parse(target, '/own-crash'); require(phase not in self.served); self.served.add(phase)
+                    stage = 'page-url'; self.parse(target, '/own-crash')
+                    stage = 'page-state'; require(phase not in self.served); self.served.add(phase)
                     config = dict(phase=phase, nonce=self.nonce, baseline=self.baseline, fresh=self.fresh)
+                    stage = 'page-resource'
                     text = Path(__file__).with_name('manager-crash-probe.js').read_text()
                     body = ('<!doctype html><meta charset="utf-8"><body data-owned="' + self.nonce + '"><h1>Owned main crash recovery</h1><p id="status">Running</p><script>globalThis.OWN_CRASH=' + json.dumps(config) + ';' + text + '</script>').encode()
                     self.ledger.record('crash-page', phase=phase, peer=peer)
                 else:
-                    require(method == b'POST'); self.parse(target, '/own-crash-receipt')
+                    stage = 'receipt-method'; require(method == b'POST')
+                    stage = 'receipt-url'; self.parse(target, '/own-crash-receipt')
+                    stage = 'receipt-length'
                     lengths = [line.split(b':',1)[1].strip() for line in lines[1:] if line.lower().startswith(b'content-length:')]
                     require(len(lengths) == 1 and lengths[0].isdigit() and 0 < int(lengths[0]) <= 8192)
                     length = int(lengths[0]); raw = bytearray()
+                    stage = 'receipt-body'
                     while len(raw) < length:
                         chunk = channel.recv(length-len(raw)); require(bool(chunk)); raw.extend(chunk)
-                    value = validate_result(json.loads(raw), phase, self.baseline, self.fresh)
+                    stage = 'receipt-json'; document = json.loads(raw)
+                    stage = 'receipt-result'; value = validate_result(document, phase, self.baseline, self.fresh)
+                    stage = 'receipt-state'
                     require(phase in self.served and phase not in self.completed); self.completed.add(phase)
                     self.ledger.record('crash-result', **value, peer=peer)
                     if phase != 'read': self.phase = PHASES[PHASES.index(phase)+1]
                     body = b'owned crash receipt accepted'
+            stage = 'response'
             BASE.answer(channel, b'200 OK', body)
-        except (ValueError, OSError, KeyError, UnicodeError, IndexError, TypeError):
-            self.ledger.record('crash-http-refused')
+        except (ValueError, OSError, KeyError, UnicodeError, IndexError, TypeError, BASE.subprocess.SubprocessError) as error:
+            with self.control_lock:
+                self.ledger.record('crash-http-refused', diagnosticVersion=1, stage=stage,
+                                   reason=refusal_reason(stage,error), phaseAtArrival=arrival_phase,
+                                   phaseAtRefusal=self.phase)
             try: BASE.answer(channel, b'400 Bad Request', b'')
             except OSError: pass
         finally: self.untrack(channel)

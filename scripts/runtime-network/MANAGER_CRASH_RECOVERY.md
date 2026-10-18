@@ -98,6 +98,15 @@ incomplete cleanup or missing UI observation. Do not rewrite raw receipts or
 repeat the crash to fix offline analysis. Add bounded stage/cause diagnostics
 before any future startup experiment; the old refusal remains unclassified.
 
+Future requests now record fixed `stage` and `reason` codes, plus the fixture
+phase at arrival/refusal. Header EOF, header limit, timeout, custody failure,
+page/receipt validation and response-send failure can be distinguished without
+recording headers, body, target URL, exception text or peer identity. A failed
+send does not undo prior page/result events or mean the client acknowledged
+them. Every `crash-http-refused` remains fatal to full qualification. These
+diagnostics passed handler and loopback controls; they have not classified the
+historical native event. Its original source archive/hashes remain unchanged.
+
 For authority retirement, preserve the existing narrow operation's path
 contract. An original runtime executable with multiple hardlinks is refused by
 its stable-file guard. Use a byte/inventory/signature-verified, never-launched
