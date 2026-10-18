@@ -490,7 +490,11 @@ def main():
     parser.add_argument('--manager-webrtc', action='store_true', help='normal owned page and independent UDP4 observer; separate analysis')
     parser.add_argument('--manager-websocket', action='store_true', help='normal WS page; owned authenticated relay CONNECT refusal/cut; no WSS trust override')
     parser.add_argument('--manager-durability', action='store_true', help='normal Direct own data page; delayed close/read-only reopen; no abrupt-crash claim')
+    parser.add_argument('--manager-crash', action='store_true', help='separate own Direct baseline/strict-IDB/main-crash recovery fixture')
     args = parser.parse_args()
+    if args.manager_crash and any((args.manager_durability, args.manager_websocket, args.manager_webrtc, args.controlled_dns,
+                                  args.owned_https, args.physical_tcp, args.allow_manager_preflight)):
+        parser.error('Manager crash recovery is a separate fixture mode')
     if args.controlled_dns and args.owned_https or args.allow_manager_preflight and not args.controlled_dns:
         parser.error('DNS/HTTPS fixture modes cannot be combined; preflight opt-in requires DNS mode')
     if args.physical_tcp and (args.controlled_dns or args.owned_https or args.allow_manager_preflight):
@@ -517,7 +521,12 @@ def main():
     root = Path('/private/tmp/neantik-update-audit-' + str(uuid.uuid4())); root.mkdir(mode=0o700)
     copied_manifest = root / 'candidate-manifest.json'; shutil.copyfile(args.candidate_manifest, copied_manifest); copied_manifest.chmod(0o600)
     data = root / 'manager-data'; data.mkdir(mode=0o700)
-    if args.manager_durability:
+    if args.manager_crash:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('owned_manager_crash', Path(__file__).with_name('manager-crash-fixture.py'))
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+        fixture = module.ManagerCrashFixture(root)
+    elif args.manager_durability:
         import importlib.util
         spec = importlib.util.spec_from_file_location('owned_manager_durability', Path(__file__).with_name('manager-durability-fixture.py'))
         module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
@@ -559,6 +568,11 @@ def main():
         state['fixtureSHA256'] = digest(Path(__file__))
         state['candidateManifestSHA256'] = digest(copied_manifest)
         state['httpsURLs'] = https_urls
+        if args.manager_crash:
+            state['crashFixture'] = fixture.description()
+            state['crashFixtureSHA256'] = digest(Path(__file__).with_name('manager-crash-fixture.py'))
+            state['crashProbeSHA256'] = digest(Path(__file__).with_name('manager-crash-probe.js'))
+            state['peerCollectorSHA256'] = digest(Path(__file__).with_name('collect-manager-webrtc.py'))
         if args.manager_durability:
             state['durabilityFixture'] = fixture.description()
             state['durabilityFixtureSHA256'] = digest(Path(__file__).with_name('manager-durability-fixture.py'))
@@ -587,7 +601,7 @@ def main():
                 peer_spec = importlib.util.spec_from_file_location('owned_manager_peer_custody', Path(__file__).with_name('collect-manager-dns.py'))
                 peer_module = importlib.util.module_from_spec(peer_spec); peer_spec.loader.exec_module(peer_module)
                 fixture.peer_inspector = lambda channel, direct: peer_module.socket_peer(state, root, channel, direct=direct)
-            if args.manager_webrtc or args.manager_websocket or args.manager_durability:
+            if args.manager_webrtc or args.manager_websocket or args.manager_durability or args.manager_crash:
                 peer_spec = importlib.util.spec_from_file_location('owned_manager_webrtc_custody', Path(__file__).with_name('collect-manager-webrtc.py'))
                 peer_module = importlib.util.module_from_spec(peer_spec); peer_spec.loader.exec_module(peer_module)
                 fixture.peer_inspector = lambda channel, direct: peer_module.socket_peer(state, root, channel, direct=direct)
