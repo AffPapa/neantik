@@ -3,6 +3,23 @@ import Security
 import NetworkExtension
 import IsolationCore
 
+/// Redacted failure stages, never the audit token, executable path or identity.
+public enum HostVerificationFailure: Error, Sendable {
+    case malformedToken
+    case guestLookup(OSStatus)
+    case missingGuest
+    case requirement(OSStatus)
+
+    public var diagnostic: String {
+        switch self {
+        case .malformedToken: return "malformed-token"
+        case .guestLookup(let status): return "guest-lookup:\(status)"
+        case .missingGuest: return "missing-guest"
+        case .requirement(let status): return "requirement:\(status)"
+        }
+    }
+}
+
 /// Supplied by a trusted installer after bundle hash/signature qualification,
 /// never derived from flow-provided signing identifiers or a user path.
 public final class SignedHostPin: @unchecked Sendable {
@@ -26,12 +43,16 @@ public final class SignedHostPin: @unchecked Sendable {
     /// Dynamic guest lookup by the complete kernel audit token includes PID
     /// incarnation. Static path validation and same-team checks are insufficient.
     public func verify(kernelAuditToken: Data) throws -> ProcessToken {
-        let token = try ProcessToken(kernelBytes: kernelAuditToken)
+        guard let token = try? ProcessToken(kernelBytes: kernelAuditToken) else {
+            throw HostVerificationFailure.malformedToken
+        }
         var code: SecCode?
         let attributes = [kSecGuestAttributeAudit as String: kernelAuditToken] as CFDictionary
-        guard SecCodeCopyGuestWithAttributes(nil, attributes, SecCSFlags(), &code) == errSecSuccess,
-              let code, SecCodeCheckValidity(code, SecCSFlags(rawValue: kSecCSStrictValidate), requirement) == errSecSuccess
-        else { throw IsolationRefusal.invalidToken }
+        let lookup = SecCodeCopyGuestWithAttributes(nil, attributes, SecCSFlags(), &code)
+        guard lookup == errSecSuccess else { throw HostVerificationFailure.guestLookup(lookup) }
+        guard let code else { throw HostVerificationFailure.missingGuest }
+        let validity = SecCodeCheckValidity(code, SecCSFlags(rawValue: kSecCSStrictValidate), requirement)
+        guard validity == errSecSuccess else { throw HostVerificationFailure.requirement(validity) }
         return token
     }
     /// Recipe only. No saveToPreferences/install is performed by this library.

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-18",
+  "status": "Native QA5 owned-loopback attribution failed;not production qualified",
+  "shippingWebKitProxy": false,
+  "reboot": "User reboot removed priorQA3 registration;newboot verified",
+  "candidate": {
+    "internalBuild": 5,
+    "signedArchiveSHA256": "045c410332bbcc2aa2a169e64452393341d0b81d599ad09226663b267369859b",
+    "compiledSignedOrNotarizedAgain": false
+  },
+  "controls": {
+    "newBootBaseline": {
+      "requests": 4,
+      "loaded200": 4,
+      "reason": "Boot changed monotonic clock epoch;oldbaseline preserved historically"
+    },
+    "active": {
+      "requests": 4,
+      "loaded200": 4,
+      "AReachedOriginIPv4": true,
+      "AReachedOriginIPv6": true,
+      "providerSuccessfulApply": true,
+      "providerCodePIDRunBound": true,
+      "unknownOwnerAllowEvents": 4
+    }
+  },
+  "conclusion": "The provider received all four scoped socket flows,but neither signed A nor B validation succeeded. This does not establish whether sourceAppAuditToken was missing or SecCode validation failed;the retained binary collapses both paths. No fallback to shared helper identity or same-team matching is acceptable.",
+  "skipped": "Provider-unavailable matrix not run because active selective confinement failed",
+  "cleanup": {
+    "ownFilterAbsentReadback": true,
+    "ownOriginsClosed": true,
+    "providerExited": true,
+    "extension": "activated disabled;not fully uninstalled",
+    "controller": "own PID termination after menu/shortcut did not quit"
+  },
+  "next": "Add redacted stage diagnostics distinguishing absent/malformed sourceAppAuditToken,guest lookup and signature requirement failures. Preserve unknown-owner refusal of qualification. Review Apple original-app vs creating-process semantics before another native stage.",
+  "sources": [
+    "https://developer.apple.com/documentation/networkextension/nefilterflow/sourceappaudittoken",
+    "https://developer.apple.com/documentation/networkextension/nefilterflow/sourceprocessaudittoken"
+  ],
+  "limits": [
+    "Owned port IPv4/IPv6 only;no DNS/UDP/external tunnel proof",
+    "No provider crash/failure proof",
+    "No production proxy feature or release qualification",
+    "No real user data or Keychain used"
+  ],
+  "diagnosticChange": {
+    "implemented": "Redacted missing/malformed token,guest lookup OSStatus,missing guest and exact requirement OSStatus stages;unknown-owner still disqualifies",
+    "compile": "PASS;jobs2;13.3534 seconds;58725a9e3b64bcd3db62e76c399b3ee3c088aed113bec1d8dfe5d68774ba7134",
+    "nativeExecuted": false,
+    "frozenQA5Modified": false
+  }
+}

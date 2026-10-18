@@ -204,27 +204,44 @@ location, Finder showed the system-extension removal warning. The resulting
 OS state is **terminated waiting to uninstall on reboot**. It is stopped,
 not fully uninstalled. The signed QA3 archive/copy remains preserved.
 
-Frozen QA5 was restored to Applications without launch; all signed file bytes
-match its retained qualification. After a user-chosen reboot, verify removal
-of QA3, then resume the existing authorized QA5 stage. Preserve baseline4 as
-historical evidence: a reboot changes the monotonic-clock epoch, so its uptime
-must not be compared directly with new provider events. If fresh pre-filter
-controls are needed, record that concrete invalidation reason. Registration
-removal alone requires no compilation, signing or Apple submission. Native filtering,
-original-owner attribution and provider-failure behavior remain unqualified.
-[Result, correction and limits](../../docs/evidence/webkit-qa-bundle-readability-development.json).
-[Apple's supported lifecycle](https://developer.apple.com/documentation/systemextensions/installing-system-extensions-and-drivers).
+Frozen QA5 was restored with identical signed file bytes. On2026-10-18 the
+user rebooted; the old QA3 registration was confirmed absent. No rebuild,
+re-signing or Apple submission was needed. Four new pre-filter A/B controls
+passed on IPv4/IPv6 because reboot invalidated the prior uptime epoch.
+
+The exact QA5 provider then installed and applied its own loopback scope.
+Actual PID/executable hash/signature/run and OS journal were bound. All four
+new socket flows reached the provider, but all were classified **unknown**;
+both A requests reached the origin directly, as did independent B. Therefore
+selective confinement **failed**. The current binary hides whether the app
+audit token was missing or dynamic guest/signature validation failed; this
+result does not identify that deeper cause. Provider-unavailable checks were
+skipped after this prerequisite failure, rather than spending another run on
+an already disqualified mechanism.
+
+Cleanup readback confirmed the own filter absent, both listeners closed,
+provider exited and QA5 **activated disabled** (not uninstalled). The own
+controller required PID-bound termination because its Quit shortcut/menu did
+not exit. No working profiles, Keychain or other extensions were changed.
+[Native result and limits](../../docs/evidence/webkit-owned-filter-native-development.json).
+The historical [lifecycle correction](../../docs/evidence/webkit-qa-bundle-readability-development.json)
+remains valid; protected staging repair stays retired.
 
 ## Remaining gates
 
-1. QA3 is terminated waiting to uninstall on reboot after supported Finder
-   removal of the actual registered container. Wait for a user-chosen reboot
-   and verify the old registration is gone. QA5 bytes and baseline4 are held;
-   no protected staging repair or automatic reboot is permitted.
-2. The new no-rule A/B reachability baseline is complete. Qualify the new
-   owned-loopback filter on exact signed bytes;observe current-run/PID apply
-   success and saved scope before launchingA. Old app-proxy permutations do
-   not need another run. Unknown attribution or anyDirect invalidates acceptance.
+1. Distinguish absent/malformed original-app token, dynamic guest lookup and
+   exact signature requirement failures using redacted stage diagnostics.
+   Do not substitute creating-process tokens, shared WebKit helpers or a team
+   match for original-app ownership. Apple distinguishes the
+   [source application](https://developer.apple.com/documentation/networkextension/nefilterflow/sourceappaudittoken)
+   from the [creating process](https://developer.apple.com/documentation/networkextension/nefilterflow/sourceprocessaudittoken).
+   These redacted stage diagnostics are implemented and compile successfully
+   in the separate experimental package (jobs2,13.3534s). They have not run
+   natively or replaced the frozen signed QA5. No runtime fix is claimed.
+2. Resolve the observed attribution defect before another native stage.
+   Reuse baseline/sign/notary evidence only for matching inputs and epoch;
+   the unchanged QA5 active matrix must not be replayed. Unknown attribution
+   or any Direct invalidates acceptance.
 3. Demonstrate full-token WebKit attribution, independent B, zero Direct,
    DNS/UDP/IPv6, provider death/revoke/disconnect/reconnect and ordinary traffic.
 4. Integrate production dedicated hosts and authenticated kernel-peer IPC;

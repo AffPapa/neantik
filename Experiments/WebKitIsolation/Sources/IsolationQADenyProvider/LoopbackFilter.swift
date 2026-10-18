@@ -65,13 +65,14 @@ final class QALoopbackFilter: NEFilterDataProvider, @unchecked Sendable {
         else { return unexpected("outside-owned-scope") }
         // The original application token matters. A WebKit helper's token or
         // shared UID/team may never substitute for profile ownership.
-        if let token = flow.sourceAppAuditToken,
-           (try? config.host.verify(kernelAuditToken: token)) != nil {
+        let token = flow.sourceAppAuditToken
+        let hostCheck = ownerDiagnostic(config.host, token: token)
+        if hostCheck.verified {
             log.info("owned-filter-flow role=A verdict=drop run=\(config.run.uuidString, privacy: .public)")
             return .drop()
         }
-        if let token = flow.sourceAppAuditToken,
-           (try? config.control.verify(kernelAuditToken: token)) != nil {
+        let controlCheck = ownerDiagnostic(config.control, token: token)
+        if controlCheck.verified {
             log.info("owned-filter-flow role=B verdict=allow run=\(config.run.uuidString, privacy: .public)")
             return .allow()
         }
@@ -79,7 +80,21 @@ final class QALoopbackFilter: NEFilterDataProvider, @unchecked Sendable {
         // this owned-port experiment and record the qualification failure.
         // Any unknown observation invalidates confinement acceptance.
         log.info("owned-filter-flow role=unknown verdict=allow UNQUALIFIED run=\(config.run.uuidString, privacy: .public)")
+        // Preserve the disqualifying unknown event. These bounded stage/status
+        // fields diagnose the failed gate without exposing process metadata.
+        log.error("owned-filter-unexpected UNQUALIFIED reason=owner-check host=\(hostCheck.diagnostic, privacy: .public) control=\(controlCheck.diagnostic, privacy: .public)")
         return .allow()
+    }
+
+    private struct OwnerCheck {
+        let verified: Bool
+        let diagnostic: String
+    }
+    private func ownerDiagnostic(_ pin: SignedHostPin, token: Data?) -> OwnerCheck {
+        guard let token else { return .init(verified: false, diagnostic: "missing-token") }
+        do { _ = try pin.verify(kernelAuditToken: token); return .init(verified: true, diagnostic: "verified") }
+        catch let error as HostVerificationFailure { return .init(verified: false, diagnostic: error.diagnostic) }
+        catch { return .init(verified: false, diagnostic: "unexpected-verification-error") }
     }
 
     override func stopFilter(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
