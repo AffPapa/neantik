@@ -3,6 +3,8 @@ import copy
 import importlib.util
 from pathlib import Path
 import unittest
+import tempfile
+import json
 
 SPEC = importlib.util.spec_from_file_location('manager_ws_analysis_test', Path(__file__).resolve().parents[1] / 'runtime-network/analyze-manager-websocket.py')
 A = importlib.util.module_from_spec(SPEC); SPEC.loader.exec_module(A)
@@ -56,6 +58,16 @@ def model():
 
 
 class ManagerWebSocketAnalysisTests(unittest.TestCase):
+    def test_public_release_reader_accepts_tracked_mode_and_refuses_links_or_nonobjects(self):
+        with tempfile.TemporaryDirectory(prefix='neantik-ws-release-reader-') as root:
+            file = Path(root) / 'release.json'; file.write_text(json.dumps({'version': 'public'})); file.chmod(0o644)
+            self.assertEqual(A.load_release(file), {'version': 'public'})
+            linked = Path(root) / 'linked'; linked.symlink_to(file)
+            with self.assertRaises(OSError): A.load_release(linked)
+            file.write_text('[]')
+            with self.assertRaises(ValueError): A.load_release(file)
+            with self.assertRaises(ValueError): A.load_release(Path(root))
+
     def test_complete_modeled_evidence_passes_only_scoped_WS(self):
         result = A.qualify(*model()); self.assertFalse(result['WSSQualified']); self.assertFalse(result['releaseGate'])
         self.assertEqual(result['actualOriginHandshakes'], 5)

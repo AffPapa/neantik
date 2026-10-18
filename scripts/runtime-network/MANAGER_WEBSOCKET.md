@@ -1,7 +1,9 @@
 # Manager and authenticated relay: WebSocket integration
 
-Development harness, not a completed browser qualification. The raw-runtime
-WS/WSS pair is retained unchanged in [WEBSOCKET_ROUTE.md](WEBSOCKET_ROUTE.md).
+The bounded headed manager/relay WS observation passed on downloaded0.8.23.
+[Measured result and limits](../../docs/evidence/manager-websocket-0.8.23.json).
+This does not complete browser/global network qualification. The raw-runtime
+WS/WSS pair is retained separately in [WEBSOCKET_ROUTE.md](WEBSOCKET_ROUTE.md).
 
 This new mode uses an ordinary headed manager page, the real profile lease and
 the authenticated local relay. It does not use CDP or change browser flags.
@@ -54,3 +56,13 @@ python3 -B scripts/runtime-network/analyze-manager-websocket.py \
 
 Socket tests and modeled negative controls only qualify the harness. They do
 not establish manager behavior, WSS, WebKit, global networking or release gates.
+
+The actual manager observation adds five origin handshakes:two through the
+authenticated relay and three independent Direct controls. Protected mid-session
+cut, new connection refusal and same-session recovery passed. Both browser main
+processes exited normally/status0;the fixture exited0, servers/processes drained,
+and its temporary authority was retired. Seventeen mutations of the actual
+capture were refused without rerunning browsers. The first CLI analysis used a
+private-only reader on the public release JSON;that retained harness failure was
+fixed offline, without changing native acceptance. Synthetic private data/logs
+remain retained as evidence. No product binary was rebuilt or released.

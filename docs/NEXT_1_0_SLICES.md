@@ -176,6 +176,15 @@ GUI-mediated MCP запускает и закрывает собственные
 отклоняются. [Результат и границы](evidence/websocket-route-0.8.23.json).
 Это raw runtime/own HTTP proxy, не manager/relay, WebKit или global network PASS.
 
+**Manager/relay WS,19–20:** на точной downloaded135 новый headed-сценарий
+подтвердил два proxy-handshake,ноль protected Direct,обрыв живого WS,отказ
+нового CONNECT и восстановление в той же сессии. Отдельный Direct-профиль
+сохранил соединение и выполнил три обмена. Два browser exit0,fixture exit0,
+процессы/серверы завершены,временный QA-ключ удалён.17мутаций реального capture
+отклоняются. [Scope и сохранённые harness failures](evidence/manager-websocket-0.8.23.json).
+Это WS-specific отказ с доступной HTTP-страницей управления;WSS через менеджер,
+физическая смена сети и WebKit остаются отдельными открытыми gates.
+
 В 0.8.18 опубликован opt-in режим системных шрифтов для Chromium, редактор/MCP
 и новая compiled runtime/evidence/report policy. Exact headed, Direct13,
 ZIP/DMG/Apple/Gatekeeper, публичные байты и downloaded MCP с изменением

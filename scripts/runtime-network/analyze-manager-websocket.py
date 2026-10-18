@@ -3,7 +3,9 @@
 import argparse
 import importlib.util
 import json
+import os
 from pathlib import Path
+import stat
 
 SPEC = importlib.util.spec_from_file_location('manager_ws_analysis_custody', Path(__file__).with_name('collect-manager-websocket.py'))
 C = importlib.util.module_from_spec(SPEC); SPEC.loader.exec_module(C)
@@ -14,6 +16,19 @@ HASHES = dict(fixtureSHA256='manager-route-fixture.py', websocketFixtureSHA256='
               websocketProbeSHA256='manager-websocket-probe.js', collectorSHA256='collect-manager-dns.py', websocketCollectorSHA256='collect-manager-websocket.py')
 HASHES['peerCollectorSHA256'] = 'collect-manager-webrtc.py'
 INPUTS = ('fixture-ledger.json', *(f'ws-custody-{phase}.json' for phase in (*C.PHASES, 'cleanup')))
+
+
+def load_release(path):
+    # A tracked PUBLIC release manifest is normally0644. Keep private custody
+    # receipts on the strict0600 reader, without requiring public source files
+    # to pretend they are secrets or changing any native acceptance predicate.
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    try:
+        info = os.fstat(fd)
+        require(stat.S_ISREG(info.st_mode) and info.st_uid == os.getuid() and info.st_size <= 2_000_000, 'ws-public-release-input')
+        raw = os.read(fd, 2_000_001); require(len(raw) <= 2_000_000, 'ws-public-release-bound')
+        value = json.loads(raw); require(isinstance(value, dict), 'ws-public-release-object'); return value
+    finally: os.close(fd)
 
 
 def qualify(receipts, release, state):
@@ -106,7 +121,7 @@ def analyze(directory, release):
 def main():
     parser = argparse.ArgumentParser(description=__doc__); parser.add_argument('--receipts', type=Path, required=True)
     parser.add_argument('--release', type=Path, required=True); args = parser.parse_args()
-    try: result = analyze(args.receipts, C.CORE.load(args.release))
+    try: result = analyze(args.receipts, load_release(args.release))
     except (ValueError, OSError): parser.exit(1, 'Manager WS evidence refused.\n')
     print(json.dumps(result, indent=2))
 

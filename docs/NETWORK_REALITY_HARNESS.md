@@ -214,10 +214,14 @@ receipts remain unchanged.
 ### Normal manager / authenticated relay WebSocket integration
 
 A separate [WS fixture and custody/analyzer contract](../scripts/runtime-network/MANAGER_WEBSOCKET.md)
-is implemented in source. Its socket/model controls do not yet qualify headed
-manager behavior. It measures WS-specific CONNECT refusal/cut with HTTP control
-retained; physical listener loss and raw WS/WSS remain separate evidence.
-WSS success through the manager needs a normally trusted owned endpoint.
+passed its bounded headed manager/relay observation on downloaded0.8.23:
+two protected proxy handshakes,zero protected Direct handshakes,mid-session cut,
+new refusal,recovery and three independent Direct handshakes. Normal browser
+exits,fixture drain and temporary-authority retirement passed. [Evidence and
+retained harness failures](evidence/manager-websocket-0.8.23.json). It measures
+WS-specific CONNECT refusal/cut with HTTP control retained;physical listener
+loss and raw WS/WSS remain separate evidence. WSS success through the manager
+needs a normally trusted owned endpoint.
 
 ### Normal manager / authenticated relay WebRTC integration
 
