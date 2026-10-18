@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-18",
+  "status": "scoped-headed-ipv6-stun-pair-pass",
+  "item": 21,
+  "appVersion": "0.8.23",
+  "build": 135,
+  "runtimeVersion": "156.0.8078.12",
+  "runtimeExecutableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+  "runtimeFrameworkSHA256": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7",
+  "machOClosureSHA256": "49d782063dc94b9b89f7057147ca79496d649e2006a9e644d985eb9713885c39",
+  "runtimeMachOFiles": 16,
+  "environment": {
+    "macOS": "27.0",
+    "architecture": "arm64",
+    "headed": true
+  },
+  "scope": "Raw exact downloaded runtime;own IPv6 loopback STUN,not manager/relay or globalnetwork",
+  "cases": [
+    {
+      "id": "direct",
+      "STUNRequests": 1,
+      "reflexiveCandidateCount": 1,
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "HTTPProxyRequests": 0,
+      "canary": {
+        "canaryAcknowledged": true,
+        "canaryCount": 1,
+        "resetVerified": true,
+        "countAfterReset": 0
+      },
+      "cleanup": {
+        "graceful": true,
+        "exitCode": 0,
+        "signal": null,
+        "forcedTermination": false,
+        "ownedProcessesRemaining": 0,
+        "ownedProfileRemoved": true
+      },
+      "normalAdmission": true,
+      "receiptSHA256": "00fb6cf43fa6c10626d9da4843592c40d6f6fb627551fa6c6ce19fd4c6532e37"
+    },
+    {
+      "id": "guarded",
+      "STUNRequests": 0,
+      "reflexiveCandidateCount": 0,
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "HTTPProxyRequests": 3,
+      "canary": {
+        "canaryAcknowledged": true,
+        "canaryCount": 1,
+        "resetVerified": true,
+        "countAfterReset": 0
+      },
+      "cleanup": {
+        "graceful": true,
+        "exitCode": 0,
+        "signal": null,
+        "forcedTermination": false,
+        "ownedProcessesRemaining": 0,
+        "ownedProfileRemoved": true
+      },
+      "normalAdmission": true,
+      "receiptSHA256": "d3f56e4a0ee0bf2963cff3067311025f410d4ca6ac4231e5fc0feb63ed19bc27"
+    }
+  ],
+  "rawICEExported": false,
+  "newCollectorControls": {
+    "positive": 3,
+    "negative": 10,
+    "realUDP6": true
+  },
+  "newAnalysisControls": {
+    "positive": 1,
+    "negative": 12
+  },
+  "offlineVerifierSHA256": "1c628e6e61bbbe5c0f0855ba9076d8691656699766d0c4af55d25395bb5dafab",
+  "appOrRuntimeRebuilt": false,
+  "oldIPv4CasesRepeated": false,
+  "globalNetworkQualified": false,
+  "releaseQualified": false,
+  "limitations": [
+    "manager/relay IPv6",
+    "TURN",
+    "external IPv6 interfaces",
+    "OS-managed policy",
+    "DNS and full network qualification",
+    "WebKit"
+  ],
+  "sources": [
+    "https://www.rfc-editor.org/rfc/rfc8489#section-14.2",
+    "https://www.rfc-editor.org/rfc/rfc7064#section-3.1"
+  ]
+}
