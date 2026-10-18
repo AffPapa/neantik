@@ -168,10 +168,14 @@ GUI-mediated MCP запускает и закрывает собственные
 
 ## Оставшиеся срезы
 
-**В разработке36:** [новый сценарий задержанного закрытия и свежих данных](../scripts/runtime-network/MANAGER_DURABILITY.md)
-подготовлен для реального manager/Chromium:beforeunload,восьмисекундный deadline,
-сохранение lease и чтение cookies/LS/strict-IDB/cache после штатного выхода.
-Socket/model контроли не заменяют ещё не выполненную native-проверку.
+**В разработке36:** [сценарий задержанного закрытия и свежих данных](../scripts/runtime-network/MANAGER_DURABILITY.md)
+выполнен на скачанной135 с частичным результатом:обычный Stop/reopen сохранил
+cookies/LS/strict-IDB/cache без повторной записи;SessionStorage свежий,два exit0,
+свои процессы/серверы завершены,QA-ключ удалён. Сам timeout **не квалифицирован**:
+браузер вышел до pending-коллектора,диалог/восьмисекундное ожидание не измерены.
+Старый armed-label не проверял trusted/sticky activation. По исходникам156
+добавлен отказной guard и отдельные effect-контроли;нативно он ещё не проверен.
+[Сохранённый INCOMPLETE и scope](evidence/manager-close-data-development.json).
 Аварийное завершение и WebKit snapshot остаются отдельными открытыми задачами.
 
 **Дополнительно19–20:** WS/WSS на точном downloaded135 проверены отдельно:

@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-18",
+  "status": "INCOMPLETE delayed-close qualification;bounded normal data pair verified",
+  "version": "0.8.23",
+  "build": 135,
+  "managerSHA256": "b8092ce4db11c0053bdac9b72384464733056a8b0c90d4b5c77e63d588750c21",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "executableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+    "frameworkSHA256": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7"
+  },
+  "nativeSource": "b3628e22b3699764edaf282ed9275bf75942a3e1",
+  "observed": {
+    "headed": true,
+    "mockKeychain": true,
+    "ownDirectProfile": true,
+    "normalDataWriteThenRead": true,
+    "readWithoutRepair": true,
+    "persistentStores": [
+      "cookie",
+      "LocalStorage",
+      "IndexedDB",
+      "CacheStorage"
+    ],
+    "strictIDBWriteCompletion": true,
+    "sessionStorageFresh": true,
+    "profileMetadataIdentityUnchanged": true,
+    "freshBrowserAndSessionOnRead": true,
+    "normalBrowserExits": 2,
+    "managerExitCode": 0,
+    "serverThreadsDrained": true,
+    "ownedProcessesRemaining": 0,
+    "fixtureSignals": 0,
+    "temporaryAuthorityRetired": true
+  },
+  "unmet": {
+    "timeoutQualified": false,
+    "pageConfirmationObserved": false,
+    "pendingCaptured": false,
+    "deadlineMeasured": false,
+    "cancellationObserved": false,
+    "abruptCrashQualified": false,
+    "WebKitQualified": false,
+    "backupRestoreQualified": false
+  },
+  "nativeFailure": {
+    "classification": "required fixture precondition not established;not timeout PASS",
+    "observation": "Own armed-label click was observed;browser exited before pending collection. No confirmation or eight-second hold was established.",
+    "causeProven": false,
+    "missingObservation": "Trusted click and sticky activation were not recorded. No inference that macOS/Chromium universally bypasses beforeunload.",
+    "nativeReplay": false
+  },
+  "sourceCorrection": {
+    "change": "Do not arm without event.isTrusted and navigator.userActivation.hasBeenActive. Show actual booleans;require native confirmation before Stop.",
+    "pureEffects": {
+      "positive": 1,
+      "negative": 4
+    },
+    "nativeQualified": false,
+    "sourceReference": "https://chromium.googlesource.com/chromium/src/+/634b046faf2137b83af71c87baf362b533af9104/content/browser/renderer_host/render_frame_host_impl.cc#8330",
+    "sourceFinding": "Reviewed Chromium156 dialog-eligibility predicate needs a handler and sticky user activation. This does not establish the retained run cause.",
+    "nextNativePrerequisite": "Observe trusted/sticky values,then real own tab-close confirmation and Cancel before manager Stop;do not rerun a missing positive control blindly"
+  },
+  "harnessChecks": {
+    "initialSuite": "35tests:34PASS/1refusal-client TCP-reset classification error",
+    "affectedRetest": "Only the failed refusal test rerun:PASS. Reset is allowed only after a completeHTTP400;success/reset-without-header still fails.",
+    "newAnalyzerModels": "PASS;29negative variants including missing native activation and actual browser-close positive control",
+    "oldNativeSourcePreserved": true
+  },
+  "releaseGate": false,
+  "newAppRelease": false,
+  "limits": [
+    "Normal Stop/read pair only;it does not replace missing timeout/crash evidence.",
+    "One Mac,one own Direct Chromium profile;no real user data or OS-encrypted secret portability.",
+    "Synthetic data/logs retained privately as evidence;runtime and published immutable assets unchanged."
+  ]
+}

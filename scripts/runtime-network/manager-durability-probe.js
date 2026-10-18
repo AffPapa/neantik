@@ -1,4 +1,11 @@
 // Fixed own synthetic data only. No CDP, account data or unrelated origin.
+function ownDurabilityArm(event, fence) {
+  const evidence = {trusted: event?.isTrusted === true, sticky: navigator.userActivation?.hasBeenActive === true};
+  removeEventListener('beforeunload', fence);
+  if (evidence.trusted && evidence.sticky) addEventListener('beforeunload', fence);
+  return evidence;
+}
+
 (async () => {
   const config = globalThis.OWN_DURABILITY;
   if (!config || config.nonce !== document.body.dataset.owned) throw Error('owned-document');
@@ -33,7 +40,10 @@
     document.querySelector('#status').textContent = 'Owned data observation complete: ' + config.phase;
     if (config.phase === 'write') {
       const fence = event => { event.preventDefault(); event.returnValue = ''; };
-      document.querySelector('#hold').onclick = () => { addEventListener('beforeunload', fence); document.querySelector('#hold-state').textContent = 'Own close fence armed'; };
+      document.querySelector('#hold').onclick = event => {
+        const evidence = ownDurabilityArm(event, fence);
+        document.querySelector('#hold-state').textContent = (evidence.trusted && evidence.sticky ? 'Own close fence armed' : 'Own close fence not armed') + '; trusted=' + evidence.trusted + '; sticky=' + evidence.sticky;
+      };
       document.querySelector('#release').onclick = () => { removeEventListener('beforeunload', fence); document.querySelector('#hold-state').textContent = 'Own close fence disarmed'; };
     }
   } catch (error) { document.querySelector('#status').textContent = 'Own data observation failed'; }

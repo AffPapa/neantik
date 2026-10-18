@@ -81,6 +81,15 @@ qualification of the final notarized product or of every other Mac.
 
 ## Required integration boundaries
 
+A new actual downloaded135 manager Stop/reopen pair preserved synthetic cookie,
+LocalStorage,strict-IDB and CacheStorage values without rewriting them;the new
+session's SessionStorage was empty. Both main exits were normal/status0 and
+own cleanup/temporary-authority retirement passed. Its intended beforeunload
+timeout was not established:the browser exited before pending collection and
+trusted/sticky activation had not been measured. The [retained INCOMPLETE and
+future guard](evidence/manager-close-data-development.json) do not close timeout,
+crash,WebKit or backup-restore qualification.
+
 The filesystem worker is not process authority. Its caller must retain a verified
 stopped-profile process lease and then acquire the metadata guard, in that order.
 Recovery must verify the live and retained directories after a crash. Ordinary

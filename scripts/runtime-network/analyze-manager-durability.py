@@ -15,7 +15,7 @@ HASHES = dict(fixtureSHA256='manager-route-fixture.py', durabilityFixtureSHA256=
               durabilityProbeSHA256='manager-durability-probe.js', collectorSHA256='collect-manager-dns.py',
               durabilityCollectorSHA256='collect-manager-durability.py', peerCollectorSHA256='collect-manager-webrtc.py')
 INPUTS = ('fixture-ledger.json', 'durability-ui.json', *(f'durability-custody-{stage}.json' for stage in (*C.STAGES, 'cleanup')))
-UI_FLAGS = ('ownedDocumentGuard', 'beforeunloadArmed', 'managerClosingVisible', 'pageConfirmationVisible',
+UI_FLAGS = ('ownedDocumentGuard', 'beforeunloadArmed', 'trustedActivationConfirmed', 'nativePageClosePositive', 'positiveControlCancelled', 'managerClosingVisible', 'pageConfirmationVisible',
             'managerTimeoutWarningVisible', 'launchNotOffered', 'editDisabled', 'pageConfirmationCancelled',
             'beforeunloadDisarmed', 'readPageComplete', 'nativeStopQuitUsed')
 

@@ -76,7 +76,7 @@
 |33|P1|Extension center|опубликовано с ограничениями|Extension inventory/provenance+ownCRX native lifecycle; notuniversalinstallation|
 |34|P1|CRX provenance|реализовано и проверено локально/на runtime|Full CRX3crypto checks and ownnative lifecycle; canceldialog unobserved|
 |35|P1|Импорт|реализовано; ограниченная квалификация|Owned bookmarks import; noencryptedsecret import promise|
-|36|P1|Graceful data close|проверено в ограниченном scope|Owned signed runtime/backup/updater durability; broader crash/timeout matrix open|
+|36|P1|Graceful data close|проверено в ограниченном scope|Owned signed runtime/backup/updater durability;actual manager135 normal Stop/read pair preserves four stores. Intended timeout is INCOMPLETE,not PASS;[result/missing activation guard](evidence/manager-close-data-development.json). Broader crash/timeout matrix open.|
 |37|P1|Проверенный updater|опубликовано с ограничениями|Exact signed088→0810 install/ACK/relaunch + preACKrollback; metadata2profiles unchanged; feeds live. В130 новый compiled record и actual QA ACK/preACKrollback прошли;129→130 только manual, production next-hop открыт. Futuremedia/multihop/data/OS gates open|
 |38|P2|Bounded MCP observation|частично опубликовано|18management/7read tools; GUI IPC lifecycle опубликован в129 с connection/profile consent и exact signed controls. Page observation и realAIclient gates open; не выдавать lifecycle за чтение страниц.|
 |39|P2|Self-hosted team|исследование завершено с обоснованным решением|No teaminfra productdecision; noimplementationclaim|
