@@ -82,5 +82,20 @@
     "readOnlyResponsibilityProbe": "Two own-host sample captures succeeded but neither exposed Responsible metadata. No network-flow identity inferred;no additional profiler/admin attempt planned.",
     "normalHostExitVerified": false,
     "cleanup": "Ownfilter absent by GUI readback;QA5 activateddisabled;ownprovider/controller/hosts/listeners gone"
+  },
+  "QA7Preparation": {
+    "status": "compiled;not native qualified",
+    "internalBuild": 7,
+    "change": "Fixed expected-clause OSStatus diagnostics after both full A/B checks reject;no ownership predicate change",
+    "compileSeconds": 3.6047,
+    "swiftPureReplacementTests": 2,
+    "pythonPackagingTests": 2,
+    "maxDiagnosticMessageBytes": 395,
+    "actualIdentityExported": false,
+    "newRights": false,
+    "newCertificate": false,
+    "notarized": false,
+    "installed": false,
+    "nativeExecuted": false
   }
 }

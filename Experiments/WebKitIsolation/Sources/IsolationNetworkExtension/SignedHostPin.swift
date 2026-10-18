@@ -26,6 +26,7 @@ public final class SignedHostPin: @unchecked Sendable {
     private let requirement: SecRequirement
     private let expression: String
     private let identifier: String
+    private let expectedClauses: [(name: String, value: SecRequirement)]
     public init(identifier: String, team: String, cdHash: Data) throws {
         let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_")
         guard !identifier.isEmpty, identifier.utf8.count <= 200,
@@ -39,6 +40,20 @@ public final class SignedHostPin: @unchecked Sendable {
         guard SecRequirementCreateWithString(expression as CFString, SecCSFlags(), &value) == errSecSuccess,
               let value else { throw IsolationRefusal.invalidToken }
         requirement = value
+        // Expected values only. Never derive clauses from a flow's reported
+        // identity, or use these partial matches to authorize a connection.
+        expectedClauses = try [
+            ("apple", "anchor apple generic"),
+            ("developer-id", "certificate leaf[field.1.2.840.113635.100.6.1.13] exists"),
+            ("team", "certificate leaf[subject.OU] = \"\(team)\""),
+            ("identifier", "identifier \"\(identifier)\""),
+            ("cdhash", "cdhash H\"\(hash)\"")
+        ].map { name, text in
+            var clause: SecRequirement?
+            guard SecRequirementCreateWithString(text as CFString, SecCSFlags(), &clause) == errSecSuccess,
+                  let clause else { throw IsolationRefusal.invalidToken }
+            return (name, clause)
+        }
     }
     /// Dynamic guest lookup by the complete kernel audit token includes PID
     /// incarnation. Static path validation and same-team checks are insufficient.
@@ -54,6 +69,25 @@ public final class SignedHostPin: @unchecked Sendable {
         let validity = SecCodeCheckValidity(code, SecCSFlags(rawValue: kSecCSStrictValidate), requirement)
         guard validity == errSecSuccess else { throw HostVerificationFailure.requirement(validity) }
         return token
+    }
+
+    /// QA-only explanation after BOTH full A/B checks failed. These statuses
+    /// never grant ownership. No signing metadata, actual identity or token is
+    /// returned; each label is fixed and each value is a signed OSStatus.
+    public func expectedClauseDiagnostics(kernelAuditToken: Data) -> String {
+        guard (try? ProcessToken(kernelBytes: kernelAuditToken)) != nil else { return "malformed-token" }
+        var code: SecCode?
+        let attributes = [kSecGuestAttributeAudit as String: kernelAuditToken] as CFDictionary
+        let lookup = SecCodeCopyGuestWithAttributes(nil, attributes, SecCSFlags(), &code)
+        guard lookup == errSecSuccess else { return "guest-lookup:\(lookup)" }
+        guard let code else { return "missing-guest" }
+        let flags = SecCSFlags(rawValue: kSecCSStrictValidate)
+        let full = SecCodeCheckValidity(code, flags, requirement)
+        let integrity = SecCodeCheckValidity(code, flags, nil)
+        let clauses = expectedClauses.map { "\($0.name):\(SecCodeCheckValidity(code, flags, $0.value))" }
+        // A separate lookup is diagnostic sampling, not a revision of the
+        // original verdict. Even full:0 here never changes unknown ownership.
+        return (["full:\(full)", "integrity:\(integrity)"] + clauses).joined(separator: ",")
     }
     /// Recipe only. No saveToPreferences/install is performed by this library.
     /// A dedicated host is mandatory: matching the shared manager would mingle

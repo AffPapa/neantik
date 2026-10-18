@@ -139,10 +139,10 @@ def qa_bundle_modes(root, executables, *, normalize=False):
 
 
 def validate_replacement_build(build, previous, include_filter):
-    if build not in ("4", "5", "6") or (build != "4") != include_filter:
+    if build not in ("4", "5", "6", "7") or (build != "4") != include_filter:
         raise ValueError("Explicit QA build must match the opted-in filter surface")
-    if previous is not None and (previous, build) not in (("3", "5"), ("5", "6")):
-        raise ValueError("Only reviewed inactive QA3->5 or QA5->6 may be prepared")
+    if previous is not None and (previous, build) not in (("3", "5"), ("5", "6"), ("6", "7")):
+        raise ValueError("Only reviewed inactive QA3->5,QA5->6 or QA6->7 may be prepared")
 
 
 def main():
@@ -152,8 +152,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--include-owned-loopback-filter", action="store_true",
                         help="Prepare an uninstalled QA-only filter; new signed grants/OS consent remain separate")
-    parser.add_argument("--qa-build", choices=["4", "5", "6"])
-    parser.add_argument("--replace-inactive-qa-build", choices=["3", "5"])
+    parser.add_argument("--qa-build", choices=["4", "5", "6", "7"])
+    parser.add_argument("--replace-inactive-qa-build", choices=["3", "5", "6"])
     parser.add_argument("--previous-provider-cdhash")
     args = parser.parse_args()
     build = args.qa_build or ("5" if args.include_owned_loopback_filter else "4")

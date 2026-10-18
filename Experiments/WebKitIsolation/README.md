@@ -275,6 +275,22 @@ Ownfilter removal/readback, QA6disable, six PID exits and listener cleanup
 were verified. The new Quit menu worked;no post-quit AX reactivation occurred.
 No new same-byte native replay or production proxy enable is justified.
 
+### QA7 preparation
+
+Expected-clause diagnostics now compile in a separate development candidate.
+After both original full ownership checks reject, they report only fixed
+labels and signed OSStatus values for the expected Apple anchor, Developer ID,
+team, identifier and CDHash, plus full/integrity checks. No actual identity,
+path, token or signing metadata is exported. A later diagnostic match never
+revises the original verdict. The longest possible event is395bytes, below
+the existing512-byte journal limit.
+
+The incremental experimental build and two affected Swift replacement tests
+passed;two Python packaging controls passed. The reviewed inactive6→7 recipe
+retains the prior signature/hash and disabled-state checks. This is preparation,
+not native evidence. QA6 approval is consumed;QA7 Apple submission and one
+bounded native stage require their own concrete authorization.
+
 ## Remaining gates
 
 1. QA6 distinguishes the stages:full token and guest lookup succeeded;the
@@ -287,7 +303,8 @@ No new same-byte native replay or production proxy enable is justified.
    These stage diagnostics ran in the distinct signed QA6 and narrowed the
    failure to the exact dynamic requirement. The frozen QA5 archive remains
    unchanged. No production runtime fix is claimed.
-2. Resolve the observed attribution defect before another native stage.
+2. Use the separate expected-clause candidate to identify the failed condition;
+   resolve the observed attribution defect before another confinement matrix.
    Reuse baseline/sign/notary evidence only for matching inputs and epoch;
    the unchanged QA5 active matrix must not be replayed. Unknown attribution
    or any Direct invalidates acceptance.

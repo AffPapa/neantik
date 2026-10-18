@@ -18,12 +18,12 @@ SPEC.loader.exec_module(QA)
 class ReplacementBuildTests(unittest.TestCase):
     def test_reviewed_builds_and_transitions(self):
         for build, previous, enabled in [("4", None, False), ("5", None, True),
-                                         ("5", "3", True), ("6", "5", True)]:
+                                         ("5", "3", True), ("6", "5", True), ("7", "6", True)]:
             QA.validate_replacement_build(build, previous, enabled)
 
     def test_same_downgrade_unknown_or_wrong_surface_refuse(self):
         for build, previous, enabled in [("5", "5", True), ("5", "6", True),
-                                         ("6", "3", True), ("7", "5", True),
+                                         ("6", "3", True), ("7", "5", True), ("8", "6", True), ("6", "7", True),
                                          ("6", "5", False), ("4", None, True),
                                          ("06", "5", True)]:
             with self.subTest(build=build, previous=previous), self.assertRaises(ValueError):

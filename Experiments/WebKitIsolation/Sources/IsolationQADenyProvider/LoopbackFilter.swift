@@ -83,6 +83,15 @@ final class QALoopbackFilter: NEFilterDataProvider, @unchecked Sendable {
         // Preserve the disqualifying unknown event. These bounded stage/status
         // fields diagnose the failed gate without exposing process metadata.
         log.error("owned-filter-unexpected UNQUALIFIED reason=owner-check host=\(hostCheck.diagnostic, privacy: .public) control=\(controlCheck.diagnostic, privacy: .public)")
+        if let token {
+            // Only explain the failed full requirements after both original
+            // ownership checks rejected. Partial matches never select a role.
+            let hostClauses = hostCheck.diagnostic.hasPrefix("requirement:")
+                ? config.host.expectedClauseDiagnostics(kernelAuditToken: token) : "not-requirement"
+            let controlClauses = controlCheck.diagnostic.hasPrefix("requirement:")
+                ? config.control.expectedClauseDiagnostics(kernelAuditToken: token) : "not-requirement"
+            log.error("owned-filter-unexpected UNQUALIFIED reason=expected-clauses host=\(hostClauses, privacy: .public) control=\(controlClauses, privacy: .public) run=\(config.run.uuidString, privacy: .public)")
+        }
         return .allow()
     }
 
