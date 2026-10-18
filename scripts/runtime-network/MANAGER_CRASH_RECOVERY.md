@@ -106,6 +106,12 @@ send does not undo prior page/result events or mean the client acknowledged
 them. Every `crash-http-refused` remains fatal to full qualification. These
 diagnostics passed handler and loopback controls; they have not classified the
 historical native event. Its original source archive/hashes remain unchanged.
+A separate [single headed startup](../../docs/evidence/manager-startup-0.8.23-development.json)
+on downloaded135 then produced one accepted page/receipt and zero refusals,
+normal Stop/Quit, cleared process generations/lease/files and successful QA-key
+retirement. Twelve mutations of those receipts were rejected. No crash,
+relaunch or durability matrix was repeated. Absence of a new refusal is not a
+diagnosis or reclassification of the old event; retain its partial result.
 
 For authority retirement, preserve the existing narrow operation's path
 contract. An original runtime executable with multiple hardlinks is refused by
