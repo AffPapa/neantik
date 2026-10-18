@@ -68,5 +68,59 @@ path; do not repeat QA7 or request broader grants to compensate for a missing
 ownership proof. If the system boundary cannot supply that proof, select an
 explicit different architecture rather than label this implementation ready.
 
+## Additional supported APIs reviewed on 18 October 2026
+
+The public macOS27 SDK and current Apple documentation distinguish three
+different facts:
+
+| API | What it identifies | Boundary |
+|---|---|---|
+| `NEFilterFlow.sourceAppAuditToken` | Source application reported for the flow | This is the property QA7 used. Its expected QA requirement failed. |
+| `NEFilterFlow.sourceProcessAuditToken` | Process that actually created the connection | It may be a system process acting for an app. Switching to it does not establish the original profile owner. Available from macOS13. |
+| `es_process_t.responsible_audit_token` | Process responsible for the process described by an Endpoint Security message | Valid only at message version4 or later. It can refer to the process itself when no responsible process exists or that process has exited. Not a guaranteed WebKit host link. |
+
+Sources: [flow creator](https://developer.apple.com/documentation/networkextension/nefilterflow/sourceprocessaudittoken),
+[responsible token](https://developer.apple.com/documentation/endpointsecurity/es_process_t/responsible_audit_token).
+No second live flow token or actual guest identity was collected for this review.
+
+### A scoped alternative exists,with unresolved coverage
+
+[`es_new_descendants_client`](https://developer.apple.com/documentation/endpointsecurity/es_new_descendants_client(_:_:))
+is a macOS27 API for the caller's process subtree. It does not require root or
+TCC approval,unlike the traditional system-wide client. It still requires the
+Endpoint Security entitlement,[which Apple must approve](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.endpoint-security.client).
+There is no authorized or proven ES capability in this investigation.
+
+The installed SDK describes future fork/exec descendants;current Apple pages
+also describe existing descendants. This difference is retained. A future test
+must establish the client before launching its own hosts and may not depend on
+existing-helper enumeration. Neither version proves that launchd-created
+WebKit XPC services are visible or carry the expected responsible-host token.
+The API also does not cover NeAntik's supported macOS14–26 range.
+
+The declaration-only [fixture](APIChecks/attribution-declarations.m) typechecked
+against SDK27 with a macOS14 target. Removing the27 availability guard produced
+the expected compiler error. No executable was linked or run,no ES client was
+created,and no entitlement,TCC setting,certificate or profile changed.
+[Static result](../../docs/evidence/webkit-attribution-api-development.json).
+
+### Decision before any new native candidate
+
+Do not request Full Disk Access or a system-wide ES observer as a speculative
+fix,and do not create QA8 by replacing one token property with another. The
+next independent architecture gate is a supported flow-to-profile proof:
+
+1. Establish which own host and process generation represents each profile.
+   A shared manager identity alone cannot distinguish its WebKit profiles.
+2. If evaluating scoped ES later,first obtain an explicitly approved QA
+   entitlement and prove its descendant/XPC visibility using own hosts only.
+   Verify message versions,full audit-token identity and existing code pins.
+3. Establish the mapping before allowing any profile traffic;test missing,
+   late,stale and lost-observer cases without blocking unrelated applications.
+4. Only then consider provider integration and a new bounded network test.
+
+An ES field,successful typecheck or modeled event cache is not that proof.
+Production WebKit proxy remains refused;no root-wide monitoring path was added.
+
 [QA7 result](../../docs/evidence/webkit-owned-filter-native-development.json)
 and [self-control evidence](../../docs/evidence/webkit-selfpin-development.json).

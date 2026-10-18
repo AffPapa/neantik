@@ -1,0 +1,55 @@
+{
+  "status": "declaration typecheck and availability negative PASS;not runtime or WebKit coverage",
+  "sdk": "MacOSX27.0.sdk",
+  "target": "arm64 macOS14",
+  "results": [
+    {
+      "case": "guarded",
+      "exitCode": 0,
+      "expected": true
+    },
+    {
+      "case": "unguarded-negative",
+      "exitCode": 1,
+      "expected": true
+    }
+  ],
+  "sourceSHA256": "0d9289e3aa53d8a4b7777f82097a3674761508379fadbaba80b11a2ff09587ba",
+  "headerSHA256": {
+    "usr/include/EndpointSecurity/ESClient.h": "bdeb3706a8a6d3203d0c98340ec470f09958bc8e3e7aa9de604c07d14faba292",
+    "usr/include/EndpointSecurity/ESMessageCore.h": "14ebe087bb8379549825be6dad7a324ba6b74ba1304e9e2faa6f8c0cd5ae8ed6",
+    "System/Library/Frameworks/NetworkExtension.framework/Headers/NEFilterFlow.h": "ce36c704ca2c983ffb22bec1ab417bf7ea2433d4bcca99b2bc231b7f739dd4c7"
+  },
+  "linked": false,
+  "executed": false,
+  "ESClientCreated": false,
+  "newEntitlements": false,
+  "profilesChanged": false,
+  "nativeQA": false,
+  "productionWebKitProxy": false,
+  "schemaVersion": 1,
+  "date": "2026-10-18",
+  "scope": "public API declarations and primary-source research only",
+  "sourceBase": "3dff2dbb93ee919f52b4dcb2744607210502a640",
+  "newAppRelease": false,
+  "networkFilterActivated": false,
+  "sourceProcessTokenMeasured": false,
+  "actualGuestIdentityCollected": false,
+  "ESVisibilityQualified": false,
+  "profileAttributionQualified": false,
+  "releaseGate": false,
+  "findings": [
+    "sourceProcessAuditToken identifies creator,not automatically originalprofile",
+    "responsible_audit_token needs messageversion>=4 and canrefer toself",
+    "scoped descendants client availablemacOS27;requires Apple-approved ES entitlement butno root/TCC",
+    "SDKandcurrentdocs differ onpre-existing descendants;establish client beforelaunch ifevaluated",
+    "launchd/XPC visibility,per-profile hostidentity and earlyflow/observerfailure behavior notproven"
+  ],
+  "decision": "Do not start QA8 or request global monitoring from this static result;first prove supported own flow-to-profile attribution",
+  "sources": [
+    "https://developer.apple.com/documentation/networkextension/nefilterflow/sourceprocessaudittoken",
+    "https://developer.apple.com/documentation/endpointsecurity/es_process_t/responsible_audit_token",
+    "https://developer.apple.com/documentation/endpointsecurity/es_new_descendants_client(_:_:)",
+    "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.endpoint-security.client"
+  ]
+}
