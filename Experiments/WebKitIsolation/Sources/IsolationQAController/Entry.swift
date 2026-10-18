@@ -38,6 +38,13 @@ import Darwin
     }
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard Bundle.main.bundleIdentifier == appID else { NSApp.terminate(nil); return }
+        // A programmatic AppKit app has no nib-provided Quit item. Route Cmd-Q
+        // through NSApplication so the existing busy/host fence still applies.
+        let menu = NSMenu(), applicationItem = NSMenuItem(), applicationMenu = NSMenu()
+        applicationMenu.addItem(withTitle: "Завершить NeAntik Network QA",
+                                action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        applicationItem.submenu = applicationMenu; menu.addItem(applicationItem)
+        NSApp.mainMenu = menu
         let w = NSWindow(contentRect: .init(x:0,y:0,width:720,height:740), styleMask:[.titled,.closable,.resizable], backing:.buffered, defer:false)
         w.title = "NeAntik · Kernel isolation QA · не рабочий браузер"
         let title = NSTextField(labelWithString: "Новый системный механизм, не повтор HTTP/SOCKS")

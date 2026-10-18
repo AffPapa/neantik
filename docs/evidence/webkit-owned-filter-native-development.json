@@ -50,5 +50,13 @@
     "compile": "PASS;jobs2;13.3534 seconds;58725a9e3b64bcd3db62e76c399b3ee3c088aed113bec1d8dfe5d68774ba7134",
     "nativeExecuted": false,
     "frozenQA5Modified": false
+  },
+  "launchServicesFollowUp": {
+    "status": "Two headed A/B lifecycle/reachability controls passed with same signed QA5 hosts;no filter enabled",
+    "hypothesis": "Direct Popen launch may inherit responsible application;not yet proven cause of unknown flow owner",
+    "officialBasis": "https://developer.apple.com/videos/play/wwdc2023/10266/",
+    "preparedNext": "Two own-loopback IPv4 A/B requests using Launch Services and sameQA5,with actual provider binding and cleanup",
+    "networkChangesInFollowUp": false,
+    "newCompileOnly": "Explicit QA Quit menu routes through existing applicationShouldTerminate fence;not native verified"
   }
 }
