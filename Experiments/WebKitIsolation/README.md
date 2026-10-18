@@ -227,6 +227,38 @@ not exit. No working profiles, Keychain or other extensions were changed.
 The historical [lifecycle correction](../../docs/evidence/webkit-qa-bundle-readability-development.json)
 remains valid; protected staging repair stays retired.
 
+## Launch Services diagnostic boundary
+
+Two read-only samples of the owned direct/Launch Services hosts completed,
+but the system profiler exposed no Responsible field. Their parent process
+relationship is not a substitute for original-app network attribution. No
+more profiler/root/private-API permutations are justified by these samples.
+
+`open -W` is the launcher, not the host process. Its zero exit code cannot
+establish normal host exit. The earlier Launch Services baseline proves
+reachability and observed host termination only. The prepared comparison now
+records launcherExitCode separately, hostExitCode:null and
+normalHostExitVerified:false. It cannot pass the generic full-acceptance
+analyser's exitCode:0 condition. Installed kqueue(2) documents NOTE_EXITSTATUS
+only for child processes; a Launch Services host is not this fixture's child.
+Exact production lifecycle qualification still needs its own supported evidence.
+
+## Launch Services active comparison — 18 October
+
+The approved two-request comparison on the unchanged signed QA5 completed.
+The actual provider successfully applied before both IPv4 A/B requests and
+its PID, executable hash, signature, run and journal image were bound. Both
+requests reached the owned origin with HTTP200; both flows were unknown-owner
+allows. Launch Services therefore did not resolve the observed failure.
+No unavailable-provider matrix or same-byte replay is justified by this result.
+
+The own filter was removed and read back absent, QA5 is activated disabled,
+and all owned host/controller/provider processes and listeners exited.
+An AX read after closing the controller reopened an empty controller; it was
+closed immediately without saving settings. Future cleanup observes PID exit
+without querying an exited app binding. Host normal exit remains unmeasured
+for Launch Services; launcher exit0 is not substituted for it.
+
 ## Remaining gates
 
 1. Distinguish absent/malformed original-app token, dynamic guest lookup and

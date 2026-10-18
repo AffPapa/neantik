@@ -404,17 +404,18 @@ import Darwin
         Task { @MainActor [weak self] in self?.status.stringValue = "macOS просит разрешить только QA system extension в настройках. Защита системы не отключается." }
     }
     nonisolated func request(_ request:OSSystemExtensionRequest,actionForReplacingExtension existing:OSSystemExtensionProperties,withExtension ext:OSSystemExtensionProperties) -> OSSystemExtensionRequest.ReplacementAction {
-        // Optional, signed recipe for precisely the retained inactive QA3.
+        // Optional signed recipe for a specifically reviewed inactive QA build.
         // Default builds still cancel. No production/active/unknown extension
         // may be replaced, even if it has a matching team or identifier.
         let bundle = Bundle.main
         guard bundle.object(forInfoDictionaryKey: "NeAntikQALoopbackFilterIncluded") as? Bool == true,
-              bundle.object(forInfoDictionaryKey: "NeAntikQAReplacementFromBuild") as? String == "3",
+              let priorBuild = bundle.object(forInfoDictionaryKey: "NeAntikQAReplacementFromBuild") as? String,
               let hash = bundle.object(forInfoDictionaryKey: "NeAntikQAPreviousProviderCDHash") as? String,
               hash.utf8.count == 40, hash.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }),
               existing.bundleIdentifier == "app.neantik.desktop.network-qa.proxy",
               ext.bundleIdentifier == existing.bundleIdentifier,
-              existing.bundleVersion == "3", ext.bundleVersion == "5",
+              existing.bundleVersion == priorBuild,
+              QAReplacementRecipe.permits(from: priorBuild, to: ext.bundleVersion),
               !existing.isEnabled, !existing.isAwaitingUserApproval, !existing.isUninstalling,
               ext.url.standardizedFileURL == bundle.bundleURL.appendingPathComponent("Contents/Library/SystemExtensions/app.neantik.desktop.network-qa.proxy.systemextension").standardizedFileURL
         else { return .cancel }

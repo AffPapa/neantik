@@ -138,6 +138,13 @@ def qa_bundle_modes(root, executables, *, normalize=False):
             raise ValueError("QA bundle modes must survive root-owned staging: directories/executables755,resources644")
 
 
+def validate_replacement_build(build, previous, include_filter):
+    if build not in ("4", "5", "6") or (build != "4") != include_filter:
+        raise ValueError("Explicit QA build must match the opted-in filter surface")
+    if previous is not None and (previous, build) not in (("3", "5"), ("5", "6")):
+        raise ValueError("Only reviewed inactive QA3->5 or QA5->6 may be prepared")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-receipt", type=Path, required=True)
@@ -145,15 +152,18 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--include-owned-loopback-filter", action="store_true",
                         help="Prepare an uninstalled QA-only filter; new signed grants/OS consent remain separate")
-    parser.add_argument("--replace-inactive-qa-build", choices=["3"])
+    parser.add_argument("--qa-build", choices=["4", "5", "6"])
+    parser.add_argument("--replace-inactive-qa-build", choices=["3", "5"])
     parser.add_argument("--previous-provider-cdhash")
     args = parser.parse_args()
+    build = args.qa_build or ("5" if args.include_owned_loopback_filter else "4")
+    validate_replacement_build(build, args.replace_inactive_qa_build, args.include_owned_loopback_filter)
     if args.replace_inactive_qa_build or args.previous_provider_cdhash:
-        if (not args.include_owned_loopback_filter or args.replace_inactive_qa_build != "3"
+        if (not args.include_owned_loopback_filter or args.replace_inactive_qa_build is None
                 or not isinstance(args.previous_provider_cdhash, str)
                 or len(args.previous_provider_cdhash) != 40
                 or any(char not in "0123456789abcdef" for char in args.previous_provider_cdhash)):
-            parser.error("Replacement needs explicit filter opt-in, inactive QA3 and its exact lowercase CDHash")
+            parser.error("Replacement needs explicit filter opt-in, reviewed inactive QA build and its exact lowercase CDHash")
     receipt = json.loads(regular(args.build_receipt))
     if receipt.get("status") != "PASS" or receipt.get("sourceUnchanged") is not True or receipt.get("inputSHA256") != input_digest():
         raise ValueError("Build/source receipt mismatch; do not rebuild blindly")
@@ -187,7 +197,7 @@ def main():
         info = {"CFBundleExecutable":binary, "CFBundleIdentifier":identifier,
                 "CFBundleName":title, "CFBundleDisplayName":title,
                 "CFBundlePackageType":package_type, "CFBundleShortVersionString":"0.0.0",
-                "CFBundleVersion":"5" if args.include_owned_loopback_filter else "4", "LSMinimumSystemVersion":"14.0", "NeAntikQARunID":run}
+                "CFBundleVersion":build, "LSMinimumSystemVersion":"14.0", "NeAntikQARunID":run}
         info.update(extra or {})
         validate_usage_description(info)
         infos[identifier] = info
@@ -234,7 +244,7 @@ def main():
         if name == "provider":
             validate_network_service(infos[identifier], value)
         (entitlement_root/(name+".plist")).write_bytes(plistlib.dumps(value))
-    result = {"status":"UNSIGNED;NOT LAUNCHED;NOT INSTALLED", "runID":run,
+    result = {"status":"UNSIGNED;NOT LAUNCHED;NOT INSTALLED", "runID":run, "internalQABuild":build,
               "ownedLoopbackFilterIncluded":args.include_owned_loopback_filter,
               "inactiveQAReplacementFromBuild":args.replace_inactive_qa_build,
               "buildInputSHA256":receipt["inputSHA256"],"bundles":manifest,
