@@ -23,13 +23,16 @@ import Foundation
         let paths = paths, scope = scope, inspect = inspectRuntime
         let retained = paths.profileDirectory(for: profileID).appendingPathComponent(".neantik-backup-restore-" + UUID().uuidString.lowercased())
         return try await processes.withVerifiedStoppedProfileRestore(profileID: profileID, retainedTree: retained) { authority in
-            let runtime = try Self.validRuntime(inspect())
-            let localScope = try scope.digest(createForExport: true)
             // Hold metadata admission across export: an identity edit must not
             // invalidate the archive while its bytes are being published.
             return try paths.withProfilesMetadataGuardForRestore(authority: authority) {
                 try BrowserDataRestoreTransaction.requireNoPending(rootURL: paths.rootDirectory)
                 let profile = try Self.snapshot(paths, profileID, expectedRevision).profile
+                // Unsupported/stale targets must not inspect another engine or
+                // create a device-local backup key before refusing the action.
+                try Self.requireSupportedEngine(profile)
+                let runtime = try Self.validRuntime(inspect())
+                let localScope = try scope.digest(createForExport: true)
                 let context = try Self.context(profile, runtime, localScope)
                 return try BrowserDataBackupStorage.export(browserData: paths.browserDataDirectory(for: profileID), context: context,
                     destination: destination, password: password, fault: { point in
@@ -49,12 +52,14 @@ import Foundation
         let paths = paths, scope = scope, inspect = inspectRuntime, restoreFault = restoreFault
         let retained = paths.profileDirectory(for: profileID).appendingPathComponent(".neantik-backup-restore-" + UUID().uuidString.lowercased())
         return try await processes.withVerifiedStoppedProfileRestore(profileID: profileID, retainedTree: retained) { authority in
-            let runtime = try Self.validRuntime(inspect())
-            let localScope = try scope.digest(createForExport: false)
             let initial = try paths.withProfilesMetadataGuardForRestore(authority: authority) {
                 try BrowserDataRestoreTransaction.requireNoPending(rootURL: paths.rootDirectory)
-                return try Self.snapshot(paths, profileID, expectedRevision)
+                let snapshot = try Self.snapshot(paths, profileID, expectedRevision)
+                try Self.requireSupportedEngine(snapshot.profile)
+                return snapshot
             }
+            let runtime = try Self.validRuntime(inspect())
+            let localScope = try scope.digest(createForExport: false)
             let context = try Self.context(initial.profile, runtime, localScope)
             let stage = try BrowserDataBackupStorage.prepareRestore(archive: archive, parentURL: paths.profileDirectory(for: profileID),
                 expectedContext: context, password: password, stageName: retained.lastPathComponent)
@@ -168,8 +173,11 @@ import Foundation
             runtimeFrameworkSHA256: framework, runtimeVersion: version, compatibilityScopeSHA256: exe, entries: []))
         return value
     }
-    private nonisolated static func context(_ profile: BrowserProfile, _ runtime: BrowserRuntimeInspection, _ scope: String) throws -> EncryptedBackupArchive.Manifest {
+    private nonisolated static func requireSupportedEngine(_ profile: BrowserProfile) throws {
         guard profile.engine == .chromium else { throw BrowserDataBackupStorageError.incompatibleContext }
+    }
+    private nonisolated static func context(_ profile: BrowserProfile, _ runtime: BrowserRuntimeInspection, _ scope: String) throws -> EncryptedBackupArchive.Manifest {
+        try requireSupportedEngine(profile)
         // Match the transaction's canonical hash of disk-decoded identity,
         // including proxy-context timestamps rounded during ISO8601 storage.
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
