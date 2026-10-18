@@ -293,18 +293,15 @@ bounded native stage require their own concrete authorization.
 
 ## Remaining gates
 
-1. QA6 distinguishes the stages:full token and guest lookup succeeded;the
-   exact requirement failed. Next distinguish only the failed expected
-   signature clauses using redacted diagnostics.
+1. QA7 distinguishes the clauses:guest integrity/Apple anchor succeed,but
+   expected Developer ID/team/identifier/CDHash fail. Establish a supported
+   original-app attribution path from source before another candidate.
    Do not substitute creating-process tokens, shared WebKit helpers or a team
    match for original-app ownership. Apple distinguishes the
    [source application](https://developer.apple.com/documentation/networkextension/nefilterflow/sourceappaudittoken)
    from the [creating process](https://developer.apple.com/documentation/networkextension/nefilterflow/sourceprocessaudittoken).
-   These stage diagnostics ran in the distinct signed QA6 and narrowed the
-   failure to the exact dynamic requirement. The frozen QA5 archive remains
-   unchanged. No production runtime fix is claimed.
-2. Use the separate expected-clause candidate to identify the failed condition;
-   resolve the observed attribution defect before another confinement matrix.
+   QA6 and QA7 archives remain unchanged. No production runtime fix is claimed.
+2. Resolve the observed attribution defect before another confinement matrix.
    Reuse baseline/sign/notary evidence only for matching inputs and epoch;
    the unchanged QA5 active matrix must not be replayed. Unknown attribution
    or any Direct invalidates acceptance.
@@ -313,6 +310,35 @@ bounded native stage require their own concrete authorization.
 4. Integrate production dedicated hosts and authenticated kernel-peer IPC;
    fixed-upstream relay transport with remote DNS/TLS, no stored credentials.
 5. Qualify persistence/migrations and the exact signed release candidate.
+
+## QA7 diagnostic result — 18 October
+
+The separately approved exact QA7 was accepted by Apple, stapled and passed
+Gatekeeper. Its inactive6→7 replacement preserved the canonical container
+inode and a copied rollback. Two baseline and two active A/B requests used
+Launch Services;all reached the own origin. The applied provider was bound to
+its actual executable hash, PID, Mach-O UUID, run and measured intervals.
+
+For both measured flows, dynamic guest integrity and the generic Apple anchor
+passed. Developer ID, the expected QA team, identifier and CDHash all failed
+with−67050 against both A/B pins. Thus this is not merely a damaged signature:
+the resolved guest does not satisfy the expected QA identity. Its actual
+identity was not collected;the result alone does not prove which Apple code
+or delegation path was responsible. Partial matches still grant no ownership.
+Do not accept a shared Apple helper, weaken the requirement or replay QA7.
+
+The ownfilter was removed/read back absent;QA7 is activated disabled, six own
+PIDs and the own listeners are gone. The by-application Settings sheet showed
+off while the kernel still reported enabled. Fresh Settings alone did not fix
+that discrepancy. The by-category Network Extensions sheet displayed the
+actual on switch;only QA was switched off there and kernel state verified.
+Tailscale/OBS were unchanged. The first journal read omitted`--info`;its empty
+capture is retained and only journal collection was corrected. No browser
+replay occurred. A report wrapper's incorrect key was also fixed offline.
+
+Next establish a supported original-app/profile attribution path from source
+before proposing another native candidate. These diagnostics do not qualify
+production WebKit proxying. [Minimized result](../../docs/evidence/webkit-owned-filter-native-development.json).
 
 ## Official basis
 
