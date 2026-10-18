@@ -259,17 +259,34 @@ closed immediately without saving settings. Future cleanup observes PID exit
 without querying an exited app binding. Host normal exit remains unmeasured
 for Launch Services; launcher exit0 is not substituted for it.
 
+## QA6 diagnostic result — 18 October
+
+Apple accepted the distinct signed QA6 with unchanged certificate/grants.
+Replacement5→6 used the supported framework and preserved the canonical
+container inode;oldQA5 is inactive pending eventual OS reboot cleanup.
+Fresh baseline A/B2 and active A/B2 used Launch Services. The provider's actual
+apply/PID/code/UUID/run and active-flow intervals were bound. Both active
+requests reached the origin. Full tokens parsed and guest lookup succeeded,
+but each full expected A/B signature requirement failed with−67050. Static
+validation of the same formulas passes ownA/B and rejects both crosspins.
+This narrows the gate;it does not establish the actual original-app identity.
+
+Ownfilter removal/readback, QA6disable, six PID exits and listener cleanup
+were verified. The new Quit menu worked;no post-quit AX reactivation occurred.
+No new same-byte native replay or production proxy enable is justified.
+
 ## Remaining gates
 
-1. Distinguish absent/malformed original-app token, dynamic guest lookup and
-   exact signature requirement failures using redacted stage diagnostics.
+1. QA6 distinguishes the stages:full token and guest lookup succeeded;the
+   exact requirement failed. Next distinguish only the failed expected
+   signature clauses using redacted diagnostics.
    Do not substitute creating-process tokens, shared WebKit helpers or a team
    match for original-app ownership. Apple distinguishes the
    [source application](https://developer.apple.com/documentation/networkextension/nefilterflow/sourceappaudittoken)
    from the [creating process](https://developer.apple.com/documentation/networkextension/nefilterflow/sourceprocessaudittoken).
-   These redacted stage diagnostics are implemented and compile successfully
-   in the separate experimental package (jobs2,13.3534s). They have not run
-   natively or replaced the frozen signed QA5. No runtime fix is claimed.
+   These stage diagnostics ran in the distinct signed QA6 and narrowed the
+   failure to the exact dynamic requirement. The frozen QA5 archive remains
+   unchanged. No production runtime fix is claimed.
 2. Resolve the observed attribution defect before another native stage.
    Reuse baseline/sign/notary evidence only for matching inputs and epoch;
    the unchanged QA5 active matrix must not be replayed. Unknown attribution

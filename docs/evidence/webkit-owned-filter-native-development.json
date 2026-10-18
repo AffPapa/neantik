@@ -1,15 +1,61 @@
 {
   "schemaVersion": 1,
   "date": "2026-10-18",
-  "status": "Native QA5 owned-loopback attribution failed;not production qualified",
+  "status": "QA6 native precise dynamic signature requirement failed;no production isolation",
   "shippingWebKitProxy": false,
   "reboot": "User reboot removed priorQA3 registration;newboot verified",
   "candidate": {
+    "internalBuild": 6,
+    "signedArchiveSHA256": "5daf61cce16a6cf01d6fa25a236fe3e1552c776d1cbdf2e3c94239a616423b04",
+    "sourceHEAD": "27e38cefde7aa3659b7b7c8bdad42cc2c6044bca",
+    "notarization": "Accepted",
+    "stapleAndGatekeeper": "PASS",
+    "newCertificate": false,
+    "newRights": false
+  },
+  "conclusion": "QA6 excludes missing/malformed token and guest-lookup failures for both measured own flows. Both exact dynamic signature pins fail with-67050 while the equivalent static own/cross matrix is sensitive. Clause/guest identity still unverified;A remains Direct and qualification fails.",
+  "skipped": "Provider-unavailable matrix not run because active selective confinement failed",
+  "cleanup": "ownfilter absent/readback;QA6activateddisabled;6ownPIDs/listenersgone;normalQuitmenu used",
+  "next": "Determine which exact dynamic requirement clause differs using bounded expected-value diagnostics. Do not log actual identity/path/token,substitute shared WebKit helper/team-only checks,or replay unchanged QA6.",
+  "sources": [
+    "https://developer.apple.com/documentation/networkextension/nefilterflow/sourceappaudittoken",
+    "https://developer.apple.com/documentation/networkextension/nefilterflow/sourceprocessaudittoken"
+  ],
+  "limits": [
+    "Owned port IPv4/IPv6 only;no DNS/UDP/external tunnel proof",
+    "No provider crash/failure proof",
+    "No production proxy feature or release qualification",
+    "No real user data or Keychain used"
+  ],
+  "diagnosticChange": {
+    "implemented": "Redacted missing/malformed token,guest lookup OSStatus,missing guest and exact requirement OSStatus stages;unknown-owner still disqualifies",
+    "compile": "PASS;jobs2;13.3534 seconds;58725a9e3b64bcd3db62e76c399b3ee3c088aed113bec1d8dfe5d68774ba7134",
+    "nativeExecuted": true,
+    "frozenQA5Modified": false
+  },
+  "previousCandidateQA5": {
     "internalBuild": 5,
     "signedArchiveSHA256": "045c410332bbcc2aa2a169e64452393341d0b81d599ad09226663b267369859b",
     "compiledSignedOrNotarizedAgain": false
   },
-  "controls": {
+  "QA6": {
+    "baselineRequests": 2,
+    "activeRequests": 2,
+    "allReachedOwnOrigin": true,
+    "providerSuccessfulApplyCodePIDRunAndUUIDBound": true,
+    "twoUnknownOwnerFlowsMatchActiveIntervals": true,
+    "dynamicTokenParsed": true,
+    "dynamicGuestLookupSucceeded": true,
+    "requirementOSStatus": -67050,
+    "meaning": "code failed to satisfy specified code requirement(s)",
+    "staticOwnPinsPass": 2,
+    "staticCrossPinsRefuse": 2,
+    "normalHostExitVerified": false,
+    "cleanup": "ownfilter absent/readback;QA6activateddisabled;6ownPIDs/listenersgone;normalQuitmenu used",
+    "oldQA5": "terminated waiting uninstallonreboot;inactive",
+    "canonicalContainerInodeRetained": true
+  },
+  "QA5HistoricalControls": {
     "newBootBaseline": {
       "requests": 4,
       "loaded200": 4,
@@ -25,33 +71,7 @@
       "unknownOwnerAllowEvents": 4
     }
   },
-  "conclusion": "The provider received all four scoped socket flows,but neither signed A nor B validation succeeded. This does not establish whether sourceAppAuditToken was missing or SecCode validation failed;the retained binary collapses both paths. No fallback to shared helper identity or same-team matching is acceptable.",
-  "skipped": "Provider-unavailable matrix not run because active selective confinement failed",
-  "cleanup": {
-    "ownFilterAbsentReadback": true,
-    "ownOriginsClosed": true,
-    "providerExited": true,
-    "extension": "activated disabled;not fully uninstalled",
-    "controller": "own PID termination after menu/shortcut did not quit"
-  },
-  "next": "Use already compiled redacted stage diagnostics in a distinct QA candidate;keep original application-token verification and production proxy refusal.",
-  "sources": [
-    "https://developer.apple.com/documentation/networkextension/nefilterflow/sourceappaudittoken",
-    "https://developer.apple.com/documentation/networkextension/nefilterflow/sourceprocessaudittoken"
-  ],
-  "limits": [
-    "Owned port IPv4/IPv6 only;no DNS/UDP/external tunnel proof",
-    "No provider crash/failure proof",
-    "No production proxy feature or release qualification",
-    "No real user data or Keychain used"
-  ],
-  "diagnosticChange": {
-    "implemented": "Redacted missing/malformed token,guest lookup OSStatus,missing guest and exact requirement OSStatus stages;unknown-owner still disqualifies",
-    "compile": "PASS;jobs2;13.3534 seconds;58725a9e3b64bcd3db62e76c399b3ee3c088aed113bec1d8dfe5d68774ba7134",
-    "nativeExecuted": false,
-    "frozenQA5Modified": false
-  },
-  "launchServicesFollowUp": {
+  "QA5LaunchServicesFollowUp": {
     "status": "Two new headed A/B IPv4 requests completed with sameQA5 and actual applied provider:both loaded200;two unknown-owner allow events;FAIL",
     "hypothesis": "LaunchServices did not resolve the observed attribution failure. It does not prove which token/guest/requirement gate failed.",
     "officialBasis": "https://developer.apple.com/videos/play/wwdc2023/10266/",

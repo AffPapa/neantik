@@ -36,9 +36,14 @@ they represent current market share. A stable seed is not anonymous: it makes
 one profile repeatable and therefore linkable between visits. The policy does
 not hide NeAntik-specific runtime behavior or guarantee a populated anonymity
 set. Issuance v2 reduces the hardware tuple set only: the 780,903,144 full seed
-values still make Canvas, Audio, WebGL and ClientRects effectively distinct at
-public-alpha population sizes. Shared full-fingerprint cohorts remain a
-separate production design problem.
+values are configuration identities; they do not guarantee different values
+from every web API. The semantic Canvas, Audio, WebGL and ClientRects
+corrections preserve native readback/output/geometry instead of forcing
+per-seed differences that violate those APIs. The same own Canvas drawing
+can therefore legitimately match across two seeds in one hardware cohort.
+[The same-cohort isolation evidence](evidence/same-cohort-isolation-0.8.23.json)
+keeps configuration identity, data separation and repeatability distinct.
+Shared full-fingerprint cohorts remain a separate production design problem.
 
 The current owned runtime parses this private environment value as an unsigned
 integer constrained to Chromium's signed `int` range. NeAntik therefore never
@@ -110,7 +115,7 @@ and is not a supported distribution mode.
 
 ## Privacy boundary
 
-A distinct seed is necessary but not sufficient for anonymity. Proxy exit
+NeAntik gives each profile a stable seed; this alone does not provide anonymity. Proxy exit
 location, DNS, WebRTC, timezone, language, screen geometry, extensions,
 behavior, and authenticated accounts can still link sessions. NeAntik should
 present consistency checks as future privacy controls and must not promise that
@@ -373,8 +378,9 @@ current Codex process coalition cannot run Chromium's normal macOS
 multiprocess rendezvous. The GUI and ordinary CLI modes remain unchanged and
 do not receive those arguments.
 
-Four independent real Blink runs passed with stable, distinct Canvas, Audio,
+Historical July2026 evidence: four independent real Blink runs passed with stable, distinct Canvas, Audio,
 and ClientRects values, including two runs from the rebuilt Metal target.
 WebGL remained unavailable in headless mode, so these reports are explicitly
 not production-qualified and do not replace the production Metal GUI gate.
-See `docs/FINGERPRINT_DIAGNOSTIC_EVIDENCE.md`.
+See `docs/FINGERPRINT_DIAGNOSTIC_EVIDENCE.md`. These observations precede the
+semantic corrections and do not describe the current M156 readback policy.
