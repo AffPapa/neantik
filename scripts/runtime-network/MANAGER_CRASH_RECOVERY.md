@@ -1,7 +1,10 @@
 # Own Chromium main-process crash recovery
 
-Development harness. Native execution is **not yet qualified**. Model and socket
-controls do not establish browser durability. This is a separate scenario from
+Development harness. The downloaded signed 0.8.23 (135) completed the three
+headed sessions on 18 October. Data and custody layers were observed; the whole
+scenario remains **partial** because one pre-page HTTP refusal has no recorded
+cause. [Result and limits](../../docs/evidence/manager-crash-0.8.23-development.json).
+Model and socket controls do not establish browser durability. This is a separate scenario from
 the already retained delayed-close1352;do not repeat that case or its missing
 audit-mode alert.
 
@@ -26,6 +29,13 @@ The hard data criteria are intact baseline A,acknowledged strict-IDB B and
 absence of the aborted value. SessionStorage restoration and freshest cookie,
 LS/cache presence are reported separately. Main-only SIGKILL is not simultaneous
 death of every storage service,power failure,relay crash or WebKit recovery.
+
+The native case preserved baseline A and acknowledged B; the aborted value was
+absent. The newest cookie was lost, while fresh LS/IDB/cache were present. The
+restore-pages prompt was visible, but its action and restored tabs were not
+tested. Actual exits were 1/0 → 2/9 → 1/0; captured processes, lease and open-file
+inventory were clear before relaunch. Manager and fixture exited normally, and
+the temporary QA authority was retired. This is not power-loss qualification.
 
 ## Why the distinction matters
 
@@ -79,6 +89,23 @@ only this run's authority through the existing narrow retirement operation.
 python3 -B scripts/runtime-network/analyze-manager-crash.py \
   --receipts /absolute/new/run --release /absolute/repo/releases/v0.8.23.json
 ```
+
+The default analyzer still refuses the retained native case with
+`crash-page-protocol`. Explicit `--components-only` reports independently checked
+data/custody layers and the refusal count, with `fullScenarioQualified=false`
+and `releaseGate=false`. It cannot excuse a lost baseline, failed strict commit,
+incomplete cleanup or missing UI observation. Do not rewrite raw receipts or
+repeat the crash to fix offline analysis. Add bounded stage/cause diagnostics
+before any future startup experiment; the old refusal remains unclassified.
+
+For authority retirement, preserve the existing narrow operation's path
+contract. An original runtime executable with multiple hardlinks is refused by
+its stable-file guard. Use a byte/inventory/signature-verified, never-launched
+inspection copy under the artifact directory; do not remove an unknown link or
+relax the guard. `/tmp` canonical-argument validation and descriptor traversal
+through `/private/tmp` are distinct requirements: reuse the established helper's
+layout rather than retrying path spellings. Native-case records retain all four
+setup refusals and the final successful retirement.
 
 The analyzer requires three fresh sessions of the same metadata identity,
 actual exit sequence1/0→2/9→1/0,one intentional main signal,zero cleanup signals,

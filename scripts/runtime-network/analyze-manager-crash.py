@@ -21,7 +21,8 @@ UI_FLAGS = ('ownedDocumentGuard', 'baselineComplete', 'baselineNormalStop', 'mut
             'recoveryStoppedBeforeLaunch', 'readComplete', 'nativeStopQuitUsed')
 
 
-def qualify(receipts, release, state):
+def measure_components(receipts, release, state):
+    """Verify data/custody layers without hiding a failed whole-scenario gate."""
     try:
         baseline, mutate, read = [receipts['crash-custody-' + s + '.json'] for s in C.LIVE_STAGES]
         intent, sent, after, cleanup, ledger, ui = [receipts[n] for n in INPUTS[3:]]
@@ -71,8 +72,7 @@ def qualify(receipts, release, state):
         require(ui['source'] == 'native-cua-operator-reduction' and ui['managerPID'] == baseline['manager']['pid'] and ui['profileID'] == baseline['profileID']
                 and all(ui[key] is True for key in UI_FLAGS), 'crash-native-ui-incomplete')
         require(isinstance(events,list) and 0 < len(events) <= 128 and all(P.number(e['at']) for e in events)
-                and [e['at'] for e in events] == sorted(e['at'] for e in events)
-                and not any(e['kind'] == 'crash-http-refused' for e in events), 'crash-page-protocol')
+                and [e['at'] for e in events] == sorted(e['at'] for e in events), 'crash-page-protocol')
         for sample,phase,low in ((baseline,'baseline',0),(mutate,'mutate',baseline['at']),(read,'read',after['at'])):
             pages = [e for e in events if e['kind'] == 'crash-page' and e.get('phase') == phase]
             results = [e for e in events if e['kind'] == 'crash-result' and e.get('phase') == phase]
@@ -91,27 +91,37 @@ def qualify(receipts, release, state):
                         and result['sessionRestored'] is (phase == 'mutate'), 'crash-baseline-or-write-observation')
     except (KeyError,TypeError,IndexError,AttributeError) as error: raise ValueError('crash-evidence-incomplete') from error
     observed = next(e for e in events if e['kind']=='crash-result' and e.get('phase')=='read')
-    return dict(schemaVersion=1,result='scoped-own-main-crash-recovery-pass',version=release['version'],build=release['build'],
+    refused = sum(e['kind'] == 'crash-http-refused' for e in events)
+    return dict(schemaVersion=1,result='scoped-own-main-crash-components-only',version=release['version'],build=release['build'],
                 baselinePreserved=True,acknowledgedStrictIDBPreserved=True,abortedRequestNotCommitted=True,readWithoutRepair=True,
                 intentionalMainSignals=1,cleanupSignals=0,normalMainExits=2,freshPresence=observed['freshPresence'],
+                unclassifiedHTTPRefusals=refused,httpProtocolQualified=refused == 0,fullScenarioQualified=False,
                 sessionRestored=observed['sessionRestored'],powerLossQualified=False,relayCrashQualified=False,WebKitQualified=False,
                 backupRestoreQualified=False,releaseGate=False,limitation='One own Direct profile/main SIGKILL on one Mac;fresh cookie/LS/cache are observations,not strict disk guarantees')
 
 
-def analyze(directory, release):
+def qualify(receipts, release, state):
+    value = measure_components(receipts, release, state)
+    require(value['unclassifiedHTTPRefusals'] == 0, 'crash-page-protocol')
+    return dict(value, result='scoped-own-main-crash-recovery-pass', fullScenarioQualified=True)
+
+
+def analyze(directory, release, *, components_only=False):
     state,_ = C.owned_state(directory / 'private-state.json'); receipts = {n:C.CORE.load(directory/n) for n in INPUTS}
     for key,name in HASHES.items():
         actual = C.CORE.sha(Path(__file__).with_name(name).read_bytes())
         require(all(receipts['crash-custody-'+s+'.json'][key] == actual for s in C.LIVE_STAGES), 'crash-source-drift')
-    result = qualify(receipts,release,state)
+    result = (measure_components if components_only else qualify)(receipts,release,state)
     result['inputSHA256'] = {n:C.CORE.sha(C.CORE.read_private(directory/n)) for n in INPUTS}
     result['analyzerSHA256'] = C.CORE.sha(Path(__file__).read_bytes()); return result
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__); parser.add_argument('--receipts',type=Path,required=True)
-    parser.add_argument('--release',type=Path,required=True); args=parser.parse_args()
-    try: value=analyze(args.receipts,W.load_release(args.release))
+    parser.add_argument('--release',type=Path,required=True)
+    parser.add_argument('--components-only',action='store_true',help='Explicit non-qualifying layer report;never whole-scenario PASS or a release gate')
+    args=parser.parse_args()
+    try: value=analyze(args.receipts,W.load_release(args.release),components_only=args.components_only)
     except (ValueError,OSError): parser.exit(1,'Own main-crash recovery evidence refused.\n')
     print(json.dumps(value,indent=2))
 

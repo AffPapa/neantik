@@ -105,6 +105,18 @@ class CrashAnalysisTests(unittest.TestCase):
         value=A.qualify(*model());self.assertTrue(value['acknowledgedStrictIDBPreserved'])
         for key in ('powerLossQualified','relayCrashQualified','WebKitQualified','backupRestoreQualified','releaseGate'):self.assertFalse(value[key])
 
+    def test_component_report_retains_unexplained_refusal_and_does_not_weaken_full_gate(self):
+        receipts,release,state=model()
+        receipts['fixture-ledger.json']['events'].insert(0,dict(kind='crash-http-refused',at=0.5))
+        original=copy.deepcopy(receipts)
+        components=A.measure_components(receipts,release,state)
+        self.assertTrue(components['acknowledgedStrictIDBPreserved']);self.assertEqual(components['unclassifiedHTTPRefusals'],1)
+        self.assertFalse(components['httpProtocolQualified']);self.assertFalse(components['fullScenarioQualified']);self.assertFalse(components['releaseGate'])
+        self.assertNotIn('pass',components['result']);self.assertEqual(receipts,original)
+        with self.assertRaisesRegex(ValueError,'crash-page-protocol'):A.qualify(receipts,release,state)
+        next(e for e in receipts['fixture-ledger.json']['events'] if e.get('phase')=='read' and e['kind']=='crash-result')['strictIDBRetained']=False
+        with self.assertRaises(ValueError):A.measure_components(receipts,release,state)
+
     def test_broken_native_evidence_refuses(self):
         def read(r):return next(e for e in r['fixture-ledger.json']['events'] if e.get('kind')=='crash-result' and e.get('phase')=='read')
         changes=[lambda r:r['crash-signal.json'].update(issued=False),lambda r:r['crash-signal.json'].update(processGroupSignaled=True),
@@ -120,6 +132,7 @@ class CrashAnalysisTests(unittest.TestCase):
         changes.extend([lambda r:r['crash-custody-read.json'].update(runtimeProcesses=[]),lambda r:read(r)['freshPresence'].update(indexedDB=False)])
         changes.extend([lambda r:r['crash-custody-read.json'].update(peerCollectorSHA256='c'*64),lambda r:r['crash-intent.json']['custody']['runtimeProcesses'].append(
             dict(identity=dict(pid=99,parentPID=12,uid=501,startSeconds=103,startMicroseconds=1,cdhash='b'*40),executable='/own/helper'))])
+        changes.append(lambda r:r['fixture-ledger.json']['events'].insert(0,dict(kind='crash-http-refused',at=0.5)))
         changes.extend(lambda r,key=key:r['crash-ui.json'].update({key:False}) for key in A.UI_FLAGS)
         for i,change in enumerate(changes):
             receipts,release,state=copy.deepcopy(model());change(receipts)
