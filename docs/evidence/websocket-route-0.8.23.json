@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-18",
+  "status": "passed-scoped-websocket-route-pair",
+  "version": "0.8.23",
+  "build": 135,
+  "runtime": {
+    "runtimeVersion": "156.0.8078.12",
+    "runtimeExecutableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+    "machOClosureSHA256": "49d782063dc94b9b89f7057147ca79496d649e2006a9e644d985eb9713885c39",
+    "macOS": "27.0",
+    "architecture": "arm64"
+  },
+  "scope": "raw exact downloaded headed Chromium;own loopback HTTP CONNECT proxy;WS/WSS actual echo/failure/recovery",
+  "cases": [
+    {
+      "mode": "bypass-control",
+      "reportSHA256": "1e1abcb164bc3025bc04ecee63cdd3af0d18337cc6c69992b4b074ac257e8786",
+      "checks": 51,
+      "handshakes": 6,
+      "directHandshakes": 6,
+      "proxyHandshakes": 0,
+      "negativeCaptureMutations": [],
+      "retainedProducerDifference": [
+        {
+          "name": "websocket-fixture.mjs",
+          "change": "only FIN/drain repair;original positive close evidence retained"
+        }
+      ],
+      "sourceSHA256": {
+        "run-websocket-route.mjs": "88b70581fc88b03397ebc96852131a591afcc68ed7860d5ef6be65edbf2966cb",
+        "websocket-fixture.mjs": "898287e2902ec8a026b340143b5f01e8c33abd7c95548d84d34550e12746c8ec",
+        "websocket-route-probe.js": "f170ed4394254905dd05b5cac2ca2cac6340b415141bb4e0f71e671ad392d0ca",
+        "websocket-route-verify.mjs": "f2a9e9ba2a4a47b15ecbb601d8e625a84ced901713fb65d384fe813d9d4e3aa0",
+        "../runtime-compatibility/compat-pipe.mjs": "1dcddeb1077e96421e7dcd3e967b7d3a830acb478e02a4ebe96b25a60b6ac092",
+        "../runtime-platform/fixtures/font-lifecycle-pipe.mjs": "b9182a6f476ac6ce6e2e74cdaf58011062b8b835e4b75438e554ae62df4ac653",
+        "../runtime-platform/fixtures/font-runtime-closure.mjs": "d1cda06775c3d9e98e30b05f7138e81bf9cbdd9e9dbe7740f0e2d6122c052767",
+        "../runtime-platform/fixtures/qa-browser-environment.mjs": "32d73021fb8514cb55781f4cc56183c0cec7d0d1adcca0865394c3fdf90a6a14",
+        "../native-qa-readiness.py": "6fa865a4f924573608d494bbe3ac4b3600ba3b1698f02419a29831b850fe2a0b"
+      },
+      "lifecycle": "normal main exit0;no forced cleanup;own processes/listeners/root/key gone"
+    },
+    {
+      "mode": "protected",
+      "reportSHA256": "4cbcdf50abe9fa6e6b041a0e11a9ffa6607362b54e64afdb745f78fb15c7bf1b",
+      "checks": 47,
+      "handshakes": 4,
+      "directHandshakes": 0,
+      "proxyHandshakes": 4,
+      "negativeCaptureMutations": [
+        "missing-operation",
+        "duplicate-operation",
+        "missing-echo",
+        "timeout-not-refusal",
+        "failed-held-tunnel",
+        "normal-close-not-abort",
+        "missing-error-event",
+        "direct-on-failure",
+        "wrong-socket-route",
+        "no-origin-echo",
+        "missing-wss",
+        "no-listener-stop",
+        "no-recovery",
+        "missing-tunnel",
+        "socket-left-open",
+        "operation-error",
+        "unknown-phase",
+        "no-native-close"
+      ],
+      "retainedProducerDifference": [],
+      "sourceSHA256": {
+        "run-websocket-route.mjs": "88b70581fc88b03397ebc96852131a591afcc68ed7860d5ef6be65edbf2966cb",
+        "websocket-fixture.mjs": "9ebfe46053b57f1e7d811c61abfcad7ef86d3919913c3e757337b98a21537d08",
+        "websocket-route-probe.js": "f170ed4394254905dd05b5cac2ca2cac6340b415141bb4e0f71e671ad392d0ca",
+        "websocket-route-verify.mjs": "f2a9e9ba2a4a47b15ecbb601d8e625a84ced901713fb65d384fe813d9d4e3aa0",
+        "../runtime-compatibility/compat-pipe.mjs": "1dcddeb1077e96421e7dcd3e967b7d3a830acb478e02a4ebe96b25a60b6ac092",
+        "../runtime-platform/fixtures/font-lifecycle-pipe.mjs": "b9182a6f476ac6ce6e2e74cdaf58011062b8b835e4b75438e554ae62df4ac653",
+        "../runtime-platform/fixtures/font-runtime-closure.mjs": "d1cda06775c3d9e98e30b05f7138e81bf9cbdd9e9dbe7740f0e2d6122c052767",
+        "../runtime-platform/fixtures/qa-browser-environment.mjs": "32d73021fb8514cb55781f4cc56183c0cec7d0d1adcca0865394c3fdf90a6a14",
+        "../native-qa-readiness.py": "6fa865a4f924573608d494bbe3ac4b3600ba3b1698f02419a29831b850fe2a0b"
+      },
+      "lifecycle": "normal main exit0;no forced cleanup;own processes/listeners/root/key gone"
+    }
+  ],
+  "protectedBehavior": {
+    "abortedExistingTunnels": 2,
+    "newConnectionsRefusedWithoutOrigin": 2,
+    "successfulRecoveries": 2,
+    "directHandshakes": 0
+  },
+  "actualBypassRejectedAsProtected": true,
+  "pureControls": {
+    "positiveModels": 2,
+    "negativeModels": 19,
+    "realOwnedSocketFINAndDrain": 2
+  },
+  "retainedFailure": {
+    "status": "first protected run FAIL;immutable receipt retained",
+    "classification": "fixture FIN/half-close and early socket drain snapshot",
+    "correction": "end->socket.end;await own close events;two real wire controls;only affected protected browser rerun",
+    "originalReportSHA256": "cb0289b9e29f4740091fe7fa3e07f3fec1d6ce3411d590a256b949f4d76a8a2c"
+  },
+  "limits": [
+    "One physical macOS ARM64 machine;IPv4 loopback only",
+    "Own fixed proxy;not production manager/relay integration",
+    "Own TLS certificate/exact SPKI exception;not normal-trust HTTPS upstream",
+    "No global DNS/UDP/network-interface-transition or WebKit qualification",
+    "No app/runtime rebuild or new app release"
+  ],
+  "releaseQualified": false,
+  "managerQualified": false,
+  "WebKitQualified": false,
+  "sources": [
+    "https://chromium.googlesource.com/chromium/src/+/HEAD/net/docs/proxy.md",
+    "https://www.rfc-editor.org/rfc/rfc6455"
+  ]
+}
