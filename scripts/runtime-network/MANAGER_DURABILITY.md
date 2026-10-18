@@ -1,7 +1,8 @@
 # Delayed close and fresh Chromium data
 
-Development fixture; delayed-close native behavior is **not yet qualified**. This adds the
-missing real-browser counterpart to the existing shell-based closing tests.
+Development fixture; signed delayed-close/data behavior has now been observed,
+but the complete signed UI scenario remains **partially qualified**. This adds the
+real-browser counterpart to the existing shell-based closing tests.
 It does not reimplement backup or claim abrupt-crash recovery.
 
 The own normal HTTP page writes an original marker to a persistent cookie,
@@ -79,4 +80,35 @@ or cancellation was established;the scenario is INCOMPLETE,not timeout PASS.
 Pinned Chromium156 source requires a registered handler AND sticky activation
 for dialog eligibility. This proves a missing fixture precondition,not the
 specific cause of the retained runtime behavior. The corrected guard has pure
-effect controls but has not been measured natively. No old browser replay.
+effect controls at that stage. That first run is retained unchanged;its missing
+timeout is not retrospectively marked PASS.
+
+## Second signed case and ordinary UI observation
+
+The new downloaded135 case measured `trusted=true; sticky=true`, a real native
+tab-close confirmation and Cancel, then manager Stop. The same signed process,
+session and lease survived the sampled deadline by at least24.50seconds. Cancel,
+disarm, normal Stop and fresh read preserved all four persistent stores without
+rewriting;SessionStorage was fresh. Both browser exits and manager exit were0;
+servers/processes drained and the temporary authority was retired.
+
+The global timeout alert was absent because authenticated
+`--neantik-release-update-audit` sets `fingerprintEvidenceReleaseContext`, and
+`ContentView.workspaceAlert` explicitly returns nil for that context. This is a
+fixture expectation mismatch, not evidence of a production warning bug. The
+unchanged full analyzer correctly refuses `durability-native-ui-incomplete`.
+**Do not replay this mode expecting its suppressed alert, or change its false UI
+flag to PASS.**
+
+A separate ordinary disposable Dev window, using the matching released135 UI
+and Chromium-close sources, displayed the actual timeout warning. The same
+process and lease survived at least9.44seconds;editing remained disabled and a
+new launch was not offered. Cancel/disarm/Stop/Quit completed normally. This is
+UI-only evidence, not exact signed-release qualification or a repeated data test.
+The first private-control EOF and final exit/finish race were retained and
+reconciled without replaying successful native actions.
+
+[Combined report and explicit limitations](../../docs/evidence/manager-close-data-development.json).
+Abrupt crash, power loss and WebKit snapshot/restore remain open. A future full
+signed ordinary-UI test needs an explicitly isolated supported mode;Dev results
+cannot replace that gate. No production change or new app release was made.
