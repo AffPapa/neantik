@@ -1,0 +1,9 @@
+import assert from 'node:assert/strict';
+import {assess} from './verify.mjs';
+const manifest={cases:['video','audio'].map(kind=>({id:kind,kind,files:[kind+'-init.mp4',kind+'-0.m4s',kind+'-1.m4s']})),files:{}};
+for(const c of manifest.cases)for(const f of c.files)manifest.files[f]={sha256:'a'.repeat(64)};
+const good={kind:'actual-mse-operations',rows:manifest.cases.map(c=>({id:c.id,kind:c.kind,status:'actual-stream-operations',supported:true,sourceBufferCount:1,unsupported:'NotSupportedError',busyEndOfStream:'InvalidStateError',appends:c.files.map((file,i)=>({file,sha256:'a'.repeat(64),updating:false,rangeCount:i?1:0,end:i})),endedState:'ended',duration:2,advanced:.3,readyState:4,dimensions:[64,48],frames:8,pixel:[254,0,0,255],invalidRemove:'TypeError',rangeCountAfterRemove:0,stateAfterRemove:'open',sourceBufferCountAfterRemove:0,detachedAppend:'InvalidStateError',duplicateRemove:'NotFoundError',cleaned:true}))};
+assert.equal(assess(good,manifest).status,'passed-scoped-mse-operations');
+const mutations=[v=>v.rows.pop(),v=>v.kind='declaration-only',v=>v.rows[0].appends.pop(),v=>v.rows[0].appends[1].sha256='b'.repeat(64),v=>v.rows[0].appends[2].end=.25,v=>v.rows[0].appends[1].updating=true,v=>v.rows[0].advanced=0,v=>v.rows[0].frames=0,v=>v.rows[0].pixel=[0,0,0,255],v=>v.rows[0].busyEndOfStream='incorrectly-accepted',v=>v.rows[0].detachedAppend='incorrectly-accepted',v=>v.rows[0].unsupported='incorrectly-accepted',v=>v.rows[0].rangeCountAfterRemove=1,v=>v.rows[0].sourceBufferCountAfterRemove=1,v=>v.rows[0].duplicateRemove='incorrectly-accepted',v=>v.rows[0].readyState='4',v=>v.rows[0].status='timeout',v=>v.rows[1].cleaned=false];
+for(const [i,mutate]of mutations.entries()){const broken=structuredClone(good);mutate(broken);assert.equal(assess(broken,manifest).status,'failed','negative '+i);}
+console.log(JSON.stringify({status:'PASS',positive:1,negative:mutations.length,actualBrowser:false}));
