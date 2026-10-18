@@ -20,6 +20,12 @@ A продолжает выходить напрямую, поэтому это 
 общим Apple helper нельзя. Свой фильтр удалён, QA7 выключена, шесть процессов
 и listeners завершены. Далее нужен подтверждённый исходниками путь атрибуции,
 а не ещё один повтор той же проверки. QA5/6 неактивны до будущей перезагрузки.
+Отдельный собственный signed-process контроль подтвердил тот же динамический
+проверяющий код: 7 условий совпадают, неправильные ID/hash отклоняются. Изучен
+путь parent audit token в зафиксированных исходниках WebKit; соответствие
+установленному системному бинарнику ещё не доказано. [Выводы и отвергнутые
+варианты](../Experiments/WebKitIsolation/ATTRIBUTION.md) не считаются исправлением
+сетевой изоляции; новых браузеров или фильтров этот контроль не запускал.
 [Результат и ограничения](evidence/webkit-owned-filter-native-development.json),
 [следующие gates](../Experiments/WebKitIsolation/README.md).
 
@@ -195,7 +201,7 @@ fontPolicy/перезапуском прошли. Политика WebKit не �
 |---|---|---|
 | Отдельные данные, вкладки, загрузки, HTTP-кэш | Есть в опубликованных версиях; результаты ограничены указанными ОС/fixtures | Сохранять существующие evidence; проверять только изменяемую поверхность. |
 | Автосохранение вкладок | Опубликовано в 0.8.14; локальные/native/exact signed и hosted gates пройдены в указанном scope | Дополнительные crash/timeout и аппаратные условия относятся к пункту 36; полный backup не реализован. |
-| Прокси | Production запуск с прокси отклоняется. HTTP/default/exact/SOCKS и QA3 app-proxy обходы сохранены. После перезагрузки QA3 удалена из регистрации. Точная QA5 активирована: apply подтверждён; новые baseline4/4PASS, но активные4/4 получили unknown owner, A обошёл фильтр по IPv4/IPv6. Проверка отказа пропущена после нарушения обязательного условия. Свой filter удалён, listeners закрыты, provider завершился, расширение выключено. [Результат и ограничения](evidence/webkit-owned-filter-native-development.json). Далее диагностика стадий audit token/guest/signature; прежний прогон не повторять | [Текущее доказательство и открытые gates](../Experiments/WebKitIsolation/README.md). Далее точный подписанный owned-loopback filter:current apply, full original-token attribution, A/B и zero Direct при отказах. Затем DNS/UDP/IPv6, production host/IPC/tunnel. Source/build не закрывают native приёмку. |
+| Прокси | Production запуск с прокси отклоняется. QA7: оба запроса вышли Direct; dynamic guest валиден и Apple-anchored, но не совпадает с точным QA-владельцем. Собственный signed-process контроль того же verifier проходит и отклоняет неправильные ID/hash. Фильтр удалён, QA7 выключена, свои процессы и listeners завершены. [Факты и ограничения](evidence/webkit-owned-filter-native-development.json). | Нужна подтверждённая связь исходного profile host с делегированным потоком. [Исследование](../Experiments/WebKitIsolation/ATTRIBUTION.md) ещё не установило причину в системном WebKit. Новая native-проверка только после новой обоснованной гипотезы; затем zero Direct при отказах, DNS/UDP/IPv6 и production host/IPC/tunnel. |
 | Запуск/остановка через MCP | Опубликовано в0.8.17 на GitHub: отдельный GUI IPC, разрешение подключения/профилей, exact peer, revision и поколения окна, EOF/revoke без закрытия, stop до фактического сохранения | Exact signed и downloaded gates пройдены в scope [отчёта](../releases/v0.8.17.json). Реальные AI-клиенты, browser observation и обновление Sites ещё открыты. [Подключение](MCP_GUIDE.md#webkit-windows-through-ai--development-slice). |
 | Камера и микрофон | Policy-код есть, в поставке выключены | Реальный capture, отказ/отзыв и изоляция разрешений на точном подписанном кандидате. |
 | Удаление профиля | Опубликовано в0.8.16: public UUID removal, metadata/tombstone fence, inode-safe retirement и явное recovery; source-native и exact signed GUI/hosted gates прошли | Не удалять внутренние папки WebKit вручную. Удаление необратимо; неожиданные локальные файлы сохраняются. Другие macOS — отдельная совместимость. |

@@ -340,6 +340,13 @@ Next establish a supported original-app/profile attribution path from source
 before proposing another native candidate. These diagnostics do not qualify
 production WebKit proxying. [Minimized result](../../docs/evidence/webkit-owned-filter-native-development.json).
 
+The separate own-process dynamic pin control now passes all seven clauses
+and rejects wrong identifier/CDHash, using the same library as QA7. It does
+not reproduce the delegated provider context. The pinned upstream source
+trace and SDK boundaries are recorded in[ATTRIBUTION.md](ATTRIBUTION.md).
+Neither the existing helper-rule default nor a Unix proxy endpoint justifies
+another blind native permutation.
+
 ## Official basis
 
 - [App proxy provider](https://developer.apple.com/documentation/networkextension/neappproxyprovider).

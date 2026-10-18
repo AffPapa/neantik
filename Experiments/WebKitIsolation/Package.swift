@@ -11,7 +11,8 @@ let package = Package(
         .executable(name: "IsolationQAHost", targets: ["IsolationQAHost"]),
         .executable(name: "IsolationQAControl", targets: ["IsolationQAControl"]),
         .executable(name: "IsolationQAController", targets: ["IsolationQAController"]),
-        .executable(name: "IsolationQADenyProvider", targets: ["IsolationQADenyProvider"])
+        .executable(name: "IsolationQADenyProvider", targets: ["IsolationQADenyProvider"]),
+        .executable(name: "IsolationQASelfPin", targets: ["IsolationQASelfPin"])
     ],
     targets: [
         .target(name: "IsolationCore"),
@@ -23,6 +24,7 @@ let package = Package(
         .executableTarget(name: "IsolationQAController", dependencies: ["IsolationNetworkExtension", "IsolationCore"],
                           linkerSettings: [.linkedFramework("AppKit"), .linkedFramework("SystemExtensions")]),
         .executableTarget(name: "IsolationQADenyProvider", dependencies: ["IsolationNetworkExtension"]),
+        .executableTarget(name: "IsolationQASelfPin", dependencies: ["IsolationNetworkExtension", "IsolationCore"]),
         .testTarget(name: "IsolationCoreTests", dependencies: ["IsolationCore"])
     ],
     swiftLanguageModes: [.v5]
