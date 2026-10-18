@@ -1,9 +1,13 @@
 import hashlib
 import json
 import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import chromium_15612_receipt_projection as subject
 
 from chromium_15612_receipt_projection import (
     ProjectionError, checked_file, project_value, projection, strict_json, prepare, verify_prepared, VERSION, COMMIT, TREE,
@@ -15,6 +19,22 @@ class M156ReceiptProjectionTests(unittest.TestCase):
         self.roots = {"source": Path("/Users/alice/build/src"),
                       "workspace": Path("/Users/alice/build"),
                       "developer": Path("/Applications/OwnedXcode.app/Contents/Developer")}
+
+    def test_pathless_strings_skip_only_impossible_path_patterns(self):
+        corpus = ["", "schemaVersion", "a" * 64, "root:source", "plain text", "colon:and-hyphen", "кириллица", "引号", '"quote"', "\n-I", "C:", "a\0b"]
+        with patch.object(subject.re, 'sub', side_effect=AssertionError('unneeded substitution')), \
+             patch.object(subject.re, 'search', side_effect=AssertionError('unneeded regex')):
+            for text in corpus:
+                with self.subTest(text=text): subject.reject_embedded_absolute_paths(text)
+            for key in subject.SECRET_KEYS:
+                with self.subTest(key=key), self.assertRaises(ProjectionError):
+                    project_value({'nested': {key.swapcase(): 'pathless synthetic value'}}, {})
+
+    def test_slash_and_backslash_still_enter_the_complete_lexical_checker(self):
+        for text in ['relative/source.cc', '/tmp/owned', r'C:\\owned', 'https://example.invalid/', r'\\\\server\\owned']:
+            with self.subTest(text=text), patch.object(subject.re, 'sub', side_effect=RuntimeError('full lexical path reached')):
+                with self.assertRaisesRegex(RuntimeError, 'full lexical path reached'):
+                    subject.reject_embedded_absolute_paths(text)
 
     def test_projection_keeps_every_record_and_original_digest(self):
         payload = {"records": [{"path": "/Users/alice/build/src/base/a.cc", "sha256": "a" * 64},

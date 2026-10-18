@@ -23,9 +23,14 @@ NAME = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9._-]{0,180}\Z")
 PRIVATE_MARKERS = ("/Users/", "/private/tmp/", "/var/folders/", "file://", "\\Users\\")
 SECRET_KEYS = {"password", "proxyPassword", "credentials", "accessToken", "refreshToken",
                "privateKey", "cookies", "authorization", "bearerToken"}
+SECRET_KEY_NAMES = frozenset(key.lower() for key in SECRET_KEYS)
 
 
 def reject_embedded_absolute_paths(text: str, *, logical_receipt: str | None = None) -> None:
+    # Every URL/path matcher below needs a slash. Most receipt keys/hashes
+    # contain neither form; preserve all outer secret-field/type/depth checks.
+    if "/" not in text and "\\" not in text:
+        return
     # Public HTTP source references contain slash tokens too. Inspect their
     # authority, then mask only for this lexical check; retain original text.
     def source_url(match):
@@ -138,7 +143,7 @@ def project_value(value: Any, roots: dict[str, Path], *, depth: int = 0,
     if isinstance(value, dict):
         result = {}
         for key, child in value.items():
-            if not isinstance(key, str) or key.lower() in {s.lower() for s in SECRET_KEYS}:
+            if not isinstance(key, str) or key.lower() in SECRET_KEY_NAMES:
                 raise ProjectionError("Credential-shaped field in source receipt")
             normalized_key = project_value(key, roots, depth=depth + 1, logical_receipt=logical_receipt)
             if normalized_key in result:
