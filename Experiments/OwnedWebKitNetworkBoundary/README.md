@@ -1,0 +1,75 @@
+# Owned WebKit network boundary — research
+
+This is an independent experiment, **not the shipping WebKit implementation**.
+The manager still refuses WebKit proxies. No production profile, default website
+data store, system extension, global proxy/DNS setting or Keychain group is used.
+
+## Why a different runtime
+
+System WKWebView's proxy configuration admitted private-IP Direct traffic in
+the retained native tests. The official development WebKit archive includes
+its own Networking XPC service and a runtime sandbox resource. That gives us a
+concrete place to restrict outbound traffic before page requests execute.
+
+Archive: official Tahoe universal release `324120@main`, SHA-256
+`16a396caaa98c9562b22b7de09ca6a9df3ed410de4828976b0711e3ea4bf9728`.
+The downloaded ZIP was checked for path traversal, special entries, symlink
+escapes and CRC failures before extraction. This hash records downloaded bytes;
+it is not an upstream signature or notarization claim. Upstream development
+signatures are ad hoc. The archive's minimum macOS version is **26.5**, so it
+cannot be substituted into our currently supported release without a separate
+compatibility solution.
+
+## Implemented experiment
+
+- `Host.m` uses a nonpersistent store, verifies the actual loaded framework
+  path, shows a real window and accepts only the fixture's exact URL list.
+- Configuration and synthetic proxy credentials arrive over stdin. Output
+  contains outcome codes and counters, not URLs, passwords or fingerprint data.
+- `probe.py prepare` compiles the small host with the project developer-dir
+  resolver and signs its two QA bundles with the existing NeAntik certificate.
+  It clones the development framework without replacing any installed app.
+- Unused `.tbd` SDK stubs are preserved outside the runtime copy before signing.
+  They are not signable runtime components. The original archive is retained.
+- `run` first requires normal native admission, then appends an outbound deny
+  rule to only its private framework copy. Its own relay port is the only IP
+  destination allowed; original netsrc routing metadata and syslog remain.
+  `localhost` covers loopback address families; this is not an IPv6 proof.
+- A and B use the restricted and original framework respectively. The relay
+  fixture authenticates CONNECT and serves an owned marker itself; it does not
+  prove a real remote proxy, TLS, DNS or Internet route.
+- The seven browser controls require Direct B, authenticated named A, no
+  private-IP Direct A, upstream refusal, an independent B and recovery. Both
+  windows, servers and the exact owned helper executable paths are checked
+  during teardown. A missing result or timeout is a failure.
+- `diagnose-proxy` is a separate positive control on the unmodified archive.
+  It distinguishes proxy API support from sandbox-policy failure.
+- `test_probe.py` covers the wire fixture's successful auth, wrong auth,
+  foreign destination, refusal and draining. These are not browser evidence.
+
+Native receipts remain under the dated private project checkpoint. Never
+overwrite a previous result to report success; preserve the reason and inputs
+before a changed-input retry. A policy syntax check uses compile-only API and
+does not apply a sandbox to the runner.
+
+## Still required before a product feature
+
+1. Pass the restricted runtime controls and investigate any denial without
+   weakening them or repeating unchanged failures.
+2. Verify DNS/delegated connections, WebRTC/UDP, HTTPS, WebSocket, downloads,
+   workers, refusal and lifecycle boundaries on the owned runtime.
+3. Choose a stable broker endpoint and per-profile authenticated session
+   binding. This QA regenerates and signs a policy for a random port; a shipped
+   notarized resource cannot be rewritten for every user/profile.
+4. Build a distributable assembly with fixed load paths, hardened runtime,
+   preserved source/license notices and corresponding source delivery, then
+   Developer ID/notarization/Gatekeeper qualification. The QA host is not that
+   release assembly.
+5. Provide a supported macOS baseline and integrate the host with manager
+   lifecycle, profile storage, window autosave and MCP. The present experiment
+   does none of those migrations.
+
+Official upstream references:
+[build archives](https://webkit.org/build-archives/),
+[license information](https://webkit.org/licensing-webkit/),
+[network sandbox source](https://github.com/WebKit/WebKit/blob/d22fe75a1b10a54d034da33bf2174cff9814639b/Source/WebKit/NetworkProcess/mac/com.apple.WebKit.NetworkProcess.sb.in).
