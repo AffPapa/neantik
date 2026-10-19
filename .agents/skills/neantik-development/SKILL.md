@@ -39,6 +39,13 @@ can recognize a version-only Info.plist diff from actual before/after values;
   kernel pressure, not free-memory percentage, determines readiness. Exit75/78
   means defer the launch, not repeat it or override manager admission. A normal
   snapshot only permits an attempt; it is never a native/release PASS.
+- Batch native QA per frozen candidate: before admission, list every eligible
+  scenario and cleanup step in one run plan, then execute the changed-surface
+  checks together under that admission. Do not split one planned phase into
+  repeated permission requests per scenario. If readiness is unknown or
+  refused, defer the entire native phase and continue source-only work; ask
+  again only after a fresh environmental change makes admission eligible.
+  Never broaden the approved scope or bypass a refusal to save time.
 - A frozen candidate stays frozen while its delivery gate is open. Independent
   work during an external wait must not replace its bytes or restart finished
   stages. Give the pending gate priority when its concrete blocker changes.
