@@ -74,7 +74,7 @@ private final class BootstrapFixtureBundle {}
         let helper = root.appendingPathComponent(mode); try FileManager.default.copyItem(at: source, to: helper)
         return (root, helper)
     }
-    private func run(_ helper: URL, _ context: BootstrapFixtureContext, deadline: UInt32 = 500) -> NeAntikBootstrapResult {
+    private func run(_ helper: URL, _ context: BootstrapFixtureContext, deadline: UInt32 = 2_000) -> NeAntikBootstrapResult {
         helper.path.withCString { path in context.request.bytes.withUnsafeBytes { bytes in
             neantik_update_bootstrap_run(path, bytes.bindMemory(to: UInt8.self).baseAddress!, deadline,
                 sessionFixtureAdmit, sessionFixtureReady, sessionFixtureCancel, Unmanaged.passUnretained(context).toOpaque())

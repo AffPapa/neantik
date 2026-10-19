@@ -15,7 +15,11 @@ import WebKit
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-cache-owned-\(UUID())").resolvingSymlinksInPath()
         let paths = AppPaths(rootDirectory: root), store = ProfileStore(paths: paths)
         let profile = try store.upsert(BrowserProfile(name: "Owned WK cache", startupMode: .restoreSession, engine: .webkit))
-        let manager = BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent }, validatesPersistedProfiles: true)
+        // These contract tests exercise lease ordering, not the host's live
+        // memory-pressure state. Keep admission deterministic; production
+        // managers continue using the shared OS observer.
+        let admission = ManagerLaunchAdmission(observePressure: false)
+        let manager = BrowserProcessManager(launchAdmission: admission, paths: paths, processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent }, validatesPersistedProfiles: true)
         return (root, paths, store, profile, manager)
     }
     private func started(_ gate: OwnedCacheCallback) async throws {
@@ -52,7 +56,7 @@ import WebKit
         #expect(throws: ProfileProcessBusyError.self) { try paths.acquireWebKitMetadataGuard(for: profile.id) }
         var edited = profile; edited.name = "Must not commit"
         #expect(throws: ProfileProcessBusyError.self) { try store.upsert(edited) }
-        let second = BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent })
+        let second = BrowserProcessManager(launchAdmission: ManagerLaunchAdmission(observePressure: false), paths: paths, processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent })
         #expect(throws: ProfileProcessBusyError.self) { try second.launchWebKitProfile(profile) }
         var drained = false
         let quit = Task { drained = await manager.drainWebKitForQuit() }

@@ -182,7 +182,10 @@ struct BrowserProcessManagerTests {
         let keychain = KeychainStore(backend: DevelopmentFixtureKeychain(), service: "owned-test", legacyService: nil)
         try await manager.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: nil, keychain: keychain, target: .extensions)
         let captured = fake.appendingPathExtension("arguments")
-        for _ in 0..<100 {
+        // Process scheduling can exceed 500 ms while the full serial suite is
+        // compiling other native helpers. Keep the behavioral assertion, but
+        // give this local shell stub a bounded launch window.
+        for _ in 0..<600 {
             if FileManager.default.fileExists(atPath: captured.path) { break }
             try await Task.sleep(for: .milliseconds(5))
         }
