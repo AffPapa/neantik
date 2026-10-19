@@ -4,9 +4,10 @@
 JSON и читаемую сводку. Он не запускает браузер, не проверяет подпись измерений
 и не объявляет новую версию готовой.
 
-Текущая сводка: [0.8.22 → 0.8.23](evidence/regression-0.8.22-0.8.23.md),
-[JSON](evidence/regression-0.8.22-0.8.23.json). Исторический пример
-[0.8.11 → 0.8.12](evidence/regression-0.8.11-0.8.12.md) сохранён.
+Текущая сводка: [0.8.24 → 0.8.25](evidence/regression-0.8.24-0.8.25.md),
+[JSON](evidence/regression-0.8.24-0.8.25.json). Предыдущая сводка
+[0.8.22 → 0.8.23](evidence/regression-0.8.22-0.8.23.md) и исторический пример
+[0.8.11 → 0.8.12](evidence/regression-0.8.11-0.8.12.md) сохранены.
 
 ```bash
 python3 -B scripts/compare-release-reports.py --before 0.8.11 --after 0.8.12
