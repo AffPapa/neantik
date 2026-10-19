@@ -164,7 +164,7 @@ The settings export and saved tab list are not a backup of website data. Use
 archive to hide a profile reversibly; WebKit data deletion is irreversible.
 The full encrypted BrowserData operation continues to accept Chromium only.
 
-In development, the service also rejects a direct WebKit export/restore call
+Since [0.8.24](../releases/v0.8.24.json), the service rejects a direct WebKit export/restore call
 before Chromium inspection, compatibility-scope access or archive work. The
 authoritative metadata/revision check runs under the existing stopped-profile
 and metadata guards; the later context guard remains. The prior export ordering
@@ -172,9 +172,10 @@ created a scope in the synthetic backend before refusing. Four new refusal
 cases reproduce that bug; the corrected service and related storage/transaction
 controls passed 50 Swift tests and 35 Python contracts. Metadata, identity, sibling
 profiles and saved tab addresses stay unchanged. Existing admission still takes
-its guard files: this is not a claim of zero filesystem activity. This source
-correction is **not in published 0.8.23** and needs a new exact signed candidate.
-[Evidence](evidence/webkit-backup-admission-development.json).
+its guard files: this is not a claim of zero filesystem activity. This correction is delivered in 0.8.24. The private service branch is covered by
+source controls; the signed headed release baseline is a separate check.
+[Source controls](evidence/webkit-backup-admission-development.json) and
+[release scope](evidence/webkit-backup-admission-0.8.24.json).
 
 macOS26 introduced public `fetchData(of:)` and `restoreData(_:)` methods. That
 does not establish a full snapshot: the [pinned official implementation](https://github.com/WebKit/WebKit/blob/19ede6f35b64a7cd7ec397b64561ac09876156b4/Source/WebKit/UIProcess/API/Cocoa/WKWebsiteDataStore.mm#L605)
