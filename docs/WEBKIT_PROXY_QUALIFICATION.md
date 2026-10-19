@@ -372,3 +372,52 @@ loopback/private-control результатов. Полный1.0 и WebKit proxy
 полное удаление не заявлено. Пересборок и повторов native QA не было.
 Сетевой результат остаётся прежним: loopback Direct и невалидный private-B
 контроль не позволяют включать shipping WebKit proxy.
+
+### Persistent-store A/B повтор на исправленном fixture: 2026-10-19
+
+Один serial headed-прогон `WebKitProxyNonLoopbackQualificationTests` на двух
+свежих UUID-backed `WKWebsiteDataStore` завершился **FAIL**; production proxy
+остаётся выключенным. Новый fixture подтвердил, что named `.invalid` запрос A
+получил HTTP 407 challenge, затем прошёл authenticated CONNECT через relay:
+`proxyConnections=2`, `proxyAuth=1`, `proxyResponses=1`, Direct origin `0`.
+Независимый B получил Direct-ответ. Для достижимого private IPv4 A снова дошёл
+до origin напрямую; после отказа relay A продолжил получать Direct-ответы.
+Следовательно, persistent store и `allowFailover=false` не дают нужной
+сетевой изоляции; это подтверждённый обход, а не причина повышать статус.
+
+Первый прогон выявил две ошибки самого теста: fixture молча закрывал CONNECT
+до challenge, а локальная сильная ссылка на `NSStackView` удерживала stores.
+После исправления challenge и владения stack один повтор дал корректный
+auth-контроль и завершил очистку обоих stores (`profileStoresRemoved=2`).
+Текущий receipt: `.build/neantik-local/test-receipts/20261019T160537Z-62345.json`;
+запуск был serial (`--no-parallel`), без параллельных suites.
+
+Остаток: требуется другая, реально принудительная per-profile сетевая граница
+для WebKit. Уже исследованные `proxyConfigurations`, exact match domains,
+relay и owner-attribution варианты не закрывают Direct. Не запускать их повторно
+без нового технического изменения; до квалификации WebKit-профили остаются
+Direct-only, прокси доступны через Chromium.
+
+### HTTP/2 relay: закрытый TLS-PSK эксперимент, 2026-10-19
+
+QA-прототип HTTP/2 CONNECT прошёл собственный Node-контроль и отказ чужим
+ключам. Но Network.framework не установил даже контрольное соединение с
+правильным ключом; сервер не получил PSK negotiation. Поэтому его результат
+в WKWebView не квалифицирует маршрут. Это ошибка выбора транспорта стенда,
+не доказательство невозможности обычного HTTP/2 relay с доверенным сертификатом.
+[Apple TN3213](https://developer.apple.com/documentation/technotes/tn3213-moving-from-multipeer-connectivity-to-network-framework)
+прямо указывает отсутствие TLS1.3 в поддержке TLS-PSK Network.framework.
+
+Прототип сохранён отдельно от активных тестов, затем удалён из их source path.
+Receipts `20261019T162352Z-76072.json` и `20261019T162609Z-76942.json` остаются
+FAIL; не повторять PSK/TLS1.3, не понижать TLS и не отключать проверку сертификата.
+Сертификаты, Keychain, production bundle и системные настройки не менялись.
+
+Следующий архитектурный вариант — собственный WebKit NetworkProcess с
+принудительным доступом только к relay. Исследование исходников
+`WebKit/WebKit@d22fe75a1b10a54d034da33bf2174cff9814639b` подтвердило отдельный
+путь загрузки sandbox-профиля в `NetworkProcessMac.mm`. Профиль содержит
+несколько широких TCP/UDP grants; простой запрет навигации или изменение
+одного правила их не заменяет. Это **исследование, не реализация**: нужны
+проверка лицензий и приватных runtime-зависимостей, собственная подписанная
+сборка и native-контроли. Системный WKWebView пока остаётся Direct-only.

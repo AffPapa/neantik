@@ -14,6 +14,7 @@ struct WebKitProxyTransportTests {
         private let queue = DispatchQueue(label: "app.neantik.fixture.wk-connect")
         private var tasks: [UUID: Task<Void, Never>] = [:]
         private var connections = 0, authenticated = 0, responses = 0
+        private var authenticationChallengeIssued = false
         private var refusing = false
         private let destinations: [ProxyRelayDestination]
         private let direct: Bool
@@ -83,9 +84,16 @@ struct WebKitProxyTransportTests {
                         guard !chunk.data.isEmpty else { return }
                         header.append(chunk.data); parsed = try WebKitProxyConnectCodec.request(header)
                     }
-                    guard let parsed,
-                          parsed.authorization == Data("owned-upstream:fixture-only".utf8),
-                          self.destinations.contains(parsed.destination) else { return }
+                    guard let parsed, self.destinations.contains(parsed.destination) else { return }
+                    // Network.framework credentials are sent after the proxy
+                    // challenges the client. Closing an unauthenticated CONNECT
+                    // silently never exercises that credential path.
+                    if parsed.authorization == nil, self.issueAuthenticationChallenge() {
+                        try await transport.send(WebKitProxyConnectCodec.authenticationRequired)
+                        try await transport.finishWrite()
+                        return
+                    }
+                    guard parsed.authorization == Data("owned-upstream:fixture-only".utf8) else { return }
                     self.queue.sync { self.authenticated += 1 }
                     try await transport.send(WebKitProxyConnectCodec.established)
                     var payload = Data(header.dropFirst(parsed.consumed))
@@ -121,6 +129,13 @@ struct WebKitProxyTransportTests {
             queue.sync { (connections, authenticated, responses) }
         }
         func setRefusing(_ value: Bool) { queue.sync { refusing = value } }
+        private func issueAuthenticationChallenge() -> Bool {
+            queue.sync {
+                guard !authenticationChallengeIssued else { return false }
+                authenticationChallengeIssued = true
+                return true
+            }
+        }
         func activeTaskCount() -> Int { queue.sync { tasks.count } }
         func cancel() {
             queue.async {
@@ -562,16 +577,18 @@ struct WebKitProxyOwnedEndpointTests {
             // Match production's identifier-backed stores and remove only these
             // two owned fixture stores after releasing their WebKit objects.
             try? await Task.sleep(for: .milliseconds(200))
+            var storesRemoved = 0
             for (id, wasCreated) in [(profileIDA, storeAWasCreated), (profileIDB, storeBWasCreated)] where wasCreated {
                 let error: Error? = await withCheckedContinuation { continuation in
                     WKWebsiteDataStore.remove(forIdentifier: id) { continuation.resume(returning: $0) }
                 }
                 #expect(error == nil, "Owned persistent WebKit proxy fixture must be removed")
+                if error == nil { storesRemoved += 1 }
             }
             // Never clear the live A store's proxy assignment after refusal.
             if let upstream { await upstream.stop(); #expect(upstream.activeTaskCount() == 0) }
             if let origin { await origin.stop(); #expect(origin.activeTaskCount() == 0) }
-            print("OWNED_WK_NONLOOPBACK_CLEANUP windowClosed=1 profileStoresRemoved=1 relayDrained=1 fixtureStopsAwaited=1")
+            print("OWNED_WK_NONLOOPBACK_CLEANUP windowClosed=1 profileStoresRemoved=\(storesRemoved) relayDrained=1 fixtureStopsAwaited=1")
         }
         do {
             let sentinel = try WebKitProxyTransportTests.Upstream(direct: true, bindHost: host, noncePrefix: nonce)
@@ -611,9 +628,9 @@ struct WebKitProxyOwnedEndpointTests {
                 styleMask: [.titled, .closable], backing: .buffered, defer: false)
             window = ownedWindow; ownedWindow.isReleasedWhenClosed = false
             ownedWindow.title = "NeAntik · owned non-loopback WebKit proxy experiment"
-            let ownedStack = NSStackView(views: [try #require(viewA), try #require(viewB)])
-            ownedStack.orientation = .horizontal; ownedStack.distribution = .fillEqually; stack = ownedStack
-            ownedWindow.contentView = ownedStack; ownedWindow.makeKeyAndOrderFront(nil)
+            stack = NSStackView(views: [try #require(viewA), try #require(viewB)])
+            stack?.orientation = .horizontal; stack?.distribution = .fillEqually
+            ownedWindow.contentView = stack; ownedWindow.makeKeyAndOrderFront(nil)
             let windowVisible = ownedWindow.isVisible
             print("OWNED_WK_NONLOOPBACK_WINDOW created=1 visible=\(windowVisible ? 1 : 0)")
             try #require(windowVisible)
