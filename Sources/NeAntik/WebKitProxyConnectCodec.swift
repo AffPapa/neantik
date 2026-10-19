@@ -1,7 +1,6 @@
-#if DEBUG
 import Foundation
 
-/// Qualification-only HTTP CONNECT frontend. It parses no browsing payload,
+/// Bounded HTTP CONNECT frontend. It parses no browsing payload,
 /// performs no DNS, and never logs or reflects the local bearer credential.
 enum WebKitProxyConnectCodec {
     enum Failure: Error { case malformed, limit }
@@ -72,4 +71,3 @@ enum WebKitProxyConnectCodec {
         return try ProxyRelayDestination(host: host, port: port)
     }
 }
-#endif
