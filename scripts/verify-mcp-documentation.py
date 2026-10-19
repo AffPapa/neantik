@@ -46,6 +46,7 @@ def verify_current_product_claims(root: Path) -> None:
     if not reports:
         raise ValueError('Published release evidence is missing')
     latest = max(reports, key=lambda item: tuple(int(v) for v in item['version'].split('.')))
+    verify_roadmap_release_claim(root, latest)
     for filename in ('README.md', 'README.en.md'):
         text = (root / filename).read_text()
         # Both the introductory announcement and download label describe the
@@ -76,6 +77,25 @@ def verify_current_product_claims(root: Path) -> None:
         raise ValueError('Help incorrectly claims templates copy proxy configuration')
     if 'работающие профили закрывать не нужно' not in help_text:
         raise ValueError('Help omits additive snapshot import semantics')
+
+
+def verify_roadmap_release_claim(root: Path, latest: dict) -> None:
+    """Keep the current ROADMAP paragraph tied to the published release report."""
+    path = root / 'docs' / 'ROADMAP.md'
+    if not path.is_file():
+        raise ValueError('Current roadmap is missing: docs/ROADMAP.md')
+    paragraphs = path.read_text().split('\n\n', 2)
+    intro = paragraphs[1] if len(paragraphs) > 1 else ''
+    release_label = f"{latest['version']} ({latest['build']})"
+    release_url = latest.get('releaseUrl') or f"https://github.com/AffPapa/neantik/releases/tag/{latest['tag']}"
+    report_path = f"releases/{latest['tag']}.json"
+    site = latest.get('site') or {}
+    site_version = site.get('liveVersion')
+    site_build = site.get('liveBuild')
+    if (release_label not in intro or release_url not in intro or report_path not in intro
+            or (site_version and f"{site_version} ({site_build})" not in intro)
+            or (site.get('updated') is False and 'не опубликовано' not in intro)):
+        raise ValueError('Current roadmap release claim differs from published evidence: docs/ROADMAP.md')
 
 
 if __name__ == '__main__':

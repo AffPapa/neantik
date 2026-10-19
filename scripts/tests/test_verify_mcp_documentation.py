@@ -17,7 +17,7 @@ class MCPDocumentationTests(unittest.TestCase):
     def test_corrupt_claim_and_omitted_tool_are_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
+            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/ROADMAP.md','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
                 (root/name).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ROOT/name,root/name)
             manifest = root/'docs/mcp-capabilities.json'
@@ -30,7 +30,7 @@ class MCPDocumentationTests(unittest.TestCase):
     def test_stale_read_only_product_claim_is_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
-            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
+            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/ROADMAP.md','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
                 (root/name).parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,root/name)
             p=root/'docs/PRODUCT.md';p.write_text(p.read_text().replace('18 management tools','17 management tools'))
             with self.assertRaisesRegex(ValueError,'permission counts'): MODULE.verify(root)
@@ -38,9 +38,13 @@ class MCPDocumentationTests(unittest.TestCase):
     def test_stale_roadmap_and_template_claims_are_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
-            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/HelpContent.swift', 'docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md', 'releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
+            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/HelpContent.swift', 'docs/ROADMAP.md', 'docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md', 'releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
                 (root/name).parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,root/name)
             MODULE.verify_current_product_claims(root)
+            roadmap=root/'docs/ROADMAP.md';original=roadmap.read_text()
+            roadmap.write_text(original.replace('0.8.25 (137)', '0.8.24 (136)', 1))
+            with self.assertRaisesRegex(ValueError, 'docs/ROADMAP.md'): MODULE.verify_current_product_claims(root)
+            roadmap.write_text(original)
             for filename in ('NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'NEANTIK_IMPROVEMENT_ROADMAP.md', 'SOURCE_TO_SITE_HANDOFF.md'):
                 p=root/'docs'/filename;original=p.read_text()
                 p.write_text(original.replace('Current public release:', 'Obsolete public release:'))
@@ -58,7 +62,7 @@ class MCPDocumentationTests(unittest.TestCase):
             root = Path(tmp)
             latest_path = max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int, p.stem[1:].split('.'))))
             latest = json.loads(latest_path.read_text())
-            for name in ['README.md', 'README.en.md', 'Resources/Info.plist', 'CHANGELOG.md',
+            for name in ['README.md', 'README.en.md', 'Resources/Info.plist', 'CHANGELOG.md', 'docs/ROADMAP.md',
                          'Sources/NeAntik/HelpContent.swift', 'docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md',
                          'docs/NEANTIK_IMPROVEMENT_ROADMAP.md', 'docs/SOURCE_TO_SITE_HANDOFF.md', 'releases/' + latest_path.name]:
                 (root / name).parent.mkdir(parents=True, exist_ok=True)
