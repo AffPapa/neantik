@@ -33,6 +33,24 @@ Direct and intentional unconfined HTTPS bypass. The
 these phases; it is not a single final-candidate matrix. Temporary keys and
 owned hosts/helpers/sockets are cleaned up. DNS/UDP and product gates remain.
 
+**UDP4/STUN slice:** `NetworkHost.m` exposes only a fixed, sealed observation
+script and validates main-frame origin, nonce, schema and bounded count fields.
+No SDP, raw candidates, device names or addresses are returned. An owned STUN
+responder verifies its canary separately; endpoints are distinct across browser
+lifetimes so delayed UDP packets cannot be attributed to another profile.
+The [network report](../../docs/evidence/webkit-owned-network-development.json)
+records Direct STUN, restricted configured-proxy zero UDP, and matching
+proxy-removal unconfined positive/restricted zero UDP observations. The last two
+controls pass on the same frozen signed bytes. Full Direct ICE gathering timed
+out in a retained earlier test; a completed STUN transaction is not a full ICE
+negotiation or media call claim. A timeout or absent API never passes.
+
+The new NetworkProcess sandbox also denies the explicit system DNS/libinfo Mach
+endpoints seen in the pinned source. This is not complete DNS-on-wire or delegated
+trust-service proof. Official revision `324120@main` declares source commit
+`43d5b8d85e2e5eed41d7ff8a79da831bf405be6c`; earlier feasibility sources were a
+different revision and are not claimed to match these binary bytes.
+
 ### Assembly tools
 
 - `assemble_layout.py` creates a new clone, rejects unexpected/escaping links,

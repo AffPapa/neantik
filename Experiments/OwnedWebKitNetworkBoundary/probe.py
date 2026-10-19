@@ -254,7 +254,12 @@ class Host:
             if value.get('event') == event:
                 return value
             if value.get('event') in ('refused', 'invalid-output'):
-                raise RuntimeError('Owned host refused configuration')
+                reason = value.get('reason')
+                allowed = {'unexpected-framework', 'command-scope', 'observation-scope',
+                           'missing-owned-script', 'fixed-observation-script-failed',
+                           'observation-receipt-scope'}
+                safe_reason = reason if isinstance(reason, str) and reason in allowed else 'unclassified'
+                raise RuntimeError('Owned host refused configuration: ' + safe_reason)
         raise TimeoutError('Owned host event timed out')
 
     def stop(self):
