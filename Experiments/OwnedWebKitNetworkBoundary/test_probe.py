@@ -1,12 +1,56 @@
 """Wire controls for the owned fixture, not WebKit or shipping evidence."""
 import importlib.util
+import hashlib
+import json
 from pathlib import Path
 import socket
+import tempfile
 import time
 import unittest
 
 spec = importlib.util.spec_from_file_location('owned_webkit_probe', Path(__file__).with_name('probe.py'))
 probe = importlib.util.module_from_spec(spec); spec.loader.exec_module(probe)
+
+
+class RuntimeManifestTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.archive = Path(self.temp.name)
+        self.receipt_root = self.archive / 'unpacked'; self.receipt_root.mkdir()
+        self.root = self.receipt_root / 'Release'; self.root.mkdir()
+        selected = {}
+        for index in range(11):
+            relative = f'bin/{index}'
+            path = self.root / relative; path.parent.mkdir(exist_ok=True)
+            path.write_bytes(f'fixture-{index}'.encode())
+            selected[relative] = {'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                                  'minimumOSAndSDK': ['minos 15.4', 'sdk 26.5'],
+                                  'architectures': ['arm64']}
+        self.expected = 'a' * 64
+        report = {'status': 'archive-inspected-not-executed', 'archiveSHA256': self.expected,
+                  'sourceCommit': '43d5b8d85e2e5eed41d7ff8a79da831bf405be6c',
+                  'root': str(self.receipt_root), 'selectedMachO': selected}
+        (self.archive / 'extraction-inspection.json').write_text(json.dumps(report))
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def test_exact_archive_manifest_binds_arm64_hashes_and_minimum_os(self):
+        result = probe.verify_runtime_manifest(self.archive, self.expected, '15.4')
+        self.assertEqual(result['runtimeMinimumOS'], '15.4')
+        self.assertEqual(result['selectedMachOCount'], 11)
+        self.assertFalse(result['archiveNotarized'])
+
+    def test_rejects_older_host_target_and_archive_hash_mismatch(self):
+        with self.assertRaises(ValueError):
+            probe.verify_runtime_manifest(self.archive, self.expected, '15.3')
+        with self.assertRaises(ValueError):
+            probe.verify_runtime_manifest(self.archive, 'b' * 64, '15.4')
+
+    def test_rejects_binary_changed_after_extraction_receipt(self):
+        (self.root / 'bin/0').write_bytes(b'changed')
+        with self.assertRaises(ValueError):
+            probe.verify_runtime_manifest(self.archive, self.expected, '15.4')
 
 
 class EndpointTests(unittest.TestCase):

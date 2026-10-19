@@ -34,6 +34,52 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2) + '\n')
 
 
+def os_version(value):
+    match = re.fullmatch(r'(\d+)\.(\d+)', value or '')
+    if not match:
+        raise ValueError('Invalid macOS deployment target')
+    return tuple(map(int, match.groups()))
+
+
+def verify_runtime_manifest(archive, expected_sha256, minimum_os):
+    """Bind QA staging to the inspected archive and its exact selected Mach-Os."""
+    archive = Path(archive).resolve(strict=True)
+    receipt = archive / 'extraction-inspection.json'
+    report = json.loads(receipt.read_text())
+    receipt_root = archive / 'unpacked'
+    root = receipt_root / 'Release'
+    if (report.get('status') != 'archive-inspected-not-executed'
+            or report.get('archiveSHA256') != expected_sha256
+            or report.get('sourceCommit') != '43d5b8d85e2e5eed41d7ff8a79da831bf405be6c'
+            or Path(report.get('root', '')).resolve() != receipt_root.resolve()):
+        raise ValueError('Compatible WebKit archive receipt mismatch')
+    target = os_version(minimum_os)
+    selected = report.get('selectedMachO')
+    if not isinstance(selected, dict) or len(selected) != 11:
+        raise ValueError('Incomplete selected Mach-O manifest')
+    runtime_minimum = (0, 0)
+    checked = []
+    for relative, item in selected.items():
+        path = root / relative
+        if not path.is_file() or digest(path) != item.get('sha256'):
+            raise ValueError('Runtime binary changed after archive inspection')
+        if 'arm64' not in item.get('architectures', []):
+            raise ValueError('Selected runtime binary has no ARM64 slice')
+        versions = item.get('minimumOSAndSDK', [])
+        matches = [re.fullmatch(r'minos (\d+)\.(\d+)', value) for value in versions]
+        parsed = [tuple(map(int, match.groups())) for match in matches if match]
+        if len(parsed) != 1:
+            raise ValueError('Selected runtime binary has ambiguous minimum OS')
+        runtime_minimum = max(runtime_minimum, parsed[0])
+        checked.append(relative)
+    if target < runtime_minimum:
+        raise ValueError('Host deployment target is lower than the bundled runtime')
+    return {'archiveSHA256': expected_sha256, 'sourceCommit': report['sourceCommit'],
+            'runtimeMinimumOS': '.'.join(map(str, runtime_minimum)),
+            'hostMinimumOS': minimum_os, 'selectedMachOCount': len(checked),
+            'selectedMachO': checked, 'archiveNotarized': False}
+
+
 def sandbox_overlay(port):
     if type(port) is not int or not 1 <= port <= 65535:
         raise ValueError('Invalid owned relay port')
@@ -76,18 +122,24 @@ def normalize_framework(work):
     write_json(backup / 'receipt.json', receipt)
 
 
-def prepare(archive, work):
+def prepare(archive, work, minimum_os='26.5', expected_archive_sha256=None):
     if work.exists():
         raise RuntimeError('Preparation root exists; do not replace or rebuild it')
+    runtime_manifest = None
+    if expected_archive_sha256 is not None:
+        runtime_manifest = verify_runtime_manifest(archive, expected_archive_sha256, minimum_os)
+    elif minimum_os != '26.5':
+        raise ValueError('A pinned archive is required for a non-default deployment target')
     work.mkdir(parents=True)
     release = archive / 'unpacked/Release'
     if not (release / 'WebKit.framework/Resources/com.apple.WebKit.NetworkProcess.sb').is_file():
         raise RuntimeError('Inspected WebKit archive required')
     developer = subprocess.check_output([str(REPO / 'scripts/resolve-compatible-developer-dir.sh')], text=True).strip()
-    env = dict(os.environ, DEVELOPER_DIR=developer)
+    module_cache = work / 'clang-module-cache'; module_cache.mkdir()
+    env = dict(os.environ, DEVELOPER_DIR=developer, CLANG_MODULE_CACHE_PATH=str(module_cache))
     host = work / 'host'
     subprocess.run(['xcrun', 'clang', '-fobjc-arc', '-fblocks', '-fmodules', '-arch', 'arm64',
-                    '-mmacosx-version-min=26.5', '-framework', 'AppKit', '-framework', 'WebKit',
+                    f'-mmacosx-version-min={minimum_os}', '-framework', 'AppKit', '-framework', 'WebKit',
                     '-framework', 'Network', str(Path(__file__).with_name('Host.m')),
                     '-o', str(host)], env=env, check=True)
     apps = []
@@ -97,7 +149,7 @@ def prepare(archive, work):
         subprocess.run(['/bin/cp', str(host), str(macos / 'Host')], check=True)
         info = {'CFBundleExecutable': 'Host', 'CFBundleIdentifier': f'app.neantik.webkit-boundary-qa.{role.lower()}',
                 'CFBundleName': f'NeAntik Owned WebKit {role}', 'CFBundlePackageType': 'APPL',
-                'CFBundleVersion': '1', 'LSMinimumSystemVersion': '26.5', 'NSHighResolutionCapable': True,
+                'CFBundleVersion': '1', 'LSMinimumSystemVersion': minimum_os, 'NSHighResolutionCapable': True,
                 'NSAppTransportSecurity': {'NSAllowsArbitraryLoadsInWebContent': True}}
         (app / 'Contents/Info.plist').write_bytes(plistlib.dumps(info))
         # QA host is intentionally not a hardened/notarized release candidate.
@@ -112,10 +164,13 @@ def prepare(archive, work):
         # readable after the helper enters its sandbox.
         subprocess.run(['/bin/cp', '-cR', str(child), str(target)], check=True)
     normalize_framework(work)
+    archive_receipt = archive / ('extraction-inspection.json' if (archive / 'extraction-inspection.json').is_file()
+                                else 'extraction.json')
     write_json(work / 'prepared.json', {'schemaVersion': 1, 'release': str(release), 'ownRelease': str(own_release),
                'hostSHA256': digest(host), 'sourceSHA256': digest(Path(__file__).with_name('Host.m')),
-               'archiveReceipt': str(archive / 'extraction.json'), 'apps': apps,
+               'archiveReceipt': str(archive_receipt), 'apps': apps,
                'signedAppSHA256': {app: digest(Path(app) / 'Contents/MacOS/Host') for app in apps},
+               'minimumOS': minimum_os, 'runtimeManifest': runtime_manifest,
                'nativeLaunched': False})
     print(json.dumps({'status': 'prepared-only', 'hostSHA256': digest(host), 'appCount': len(apps)}))
 
@@ -482,10 +537,13 @@ def run(work):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(); parser.add_argument('action', choices=['prepare','run','diagnose-proxy','diagnose-own-signed','diagnose-bypass'])
     parser.add_argument('--archive-root', type=Path); parser.add_argument('--work-dir', type=Path, required=True)
+    parser.add_argument('--minimum-os', default='26.5')
+    parser.add_argument('--expected-archive-sha256')
     args = parser.parse_args()
     if args.action == 'prepare':
         if args.archive_root is None: parser.error('--archive-root required')
-        prepare(args.archive_root.resolve(), args.work_dir.resolve())
+        prepare(args.archive_root.resolve(), args.work_dir.resolve(), args.minimum_os,
+                args.expected_archive_sha256)
     elif args.action == 'run':
         run(args.work_dir.resolve())
     elif args.action == 'diagnose-bypass':

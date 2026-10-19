@@ -27,13 +27,7 @@ enum BrowserEngine: String, Codable, CaseIterable, Identifiable, Sendable {
     }
 
     private static var webKitSettingsSummary: String {
-        let proxyDescription: String
-        #if DEBUG
-        proxyDescription = "Прокси профиля включён только в Dev для сетевой проверки и не квалифицирован для публичного выпуска."
-        #else
-        proxyDescription = "Прокси WebKit отключён до проверки маршрута на подписанном кандидате."
-        #endif
-        return "Системный WebKit в окне NeAntik: отдельные cookies, данные сайтов и вкладки. \(proxyDescription) Отпечаток, язык и часовой пояс берутся из macOS; подмена этих параметров не поддерживается. Для запуска через AI включи доступ WebKit в справке MCP и разреши выбранные профили. Расширения и настройки Chromium доступны только в Chromium."
+        return "Системный WebKit в окне NeAntik: отдельные cookies, данные сайтов и вкладки. Прокси WebKit отключён во всех сборках до включения и проверки отдельного runtime. Отпечаток, язык и часовой пояс берутся из macOS; подмена этих параметров не поддерживается. Для запуска через AI включи доступ WebKit в справке MCP и разреши выбранные профили. Расширения и настройки Chromium доступны только в Chromium."
     }
 }
 
@@ -58,7 +52,7 @@ enum WebKitProfilePolicy {
             throw WebKitProfileError.unsupported("Для этого профиля нужен отдельный WebKit runtime, который ещё не включён в приложение. Данные не открывались и не изменены.")
         }
         guard profile.proxy == nil || WebKitProxyFeature.launchEnabled else {
-            throw WebKitProfileError.unsupported("Прокси WebKit пока отключён в публичной сборке: маршрут не прошёл квалификацию. Настройки профиля сохранены; прямое подключение вместо прокси не выполняется.")
+            throw WebKitProfileError.unsupported("Прокси WebKit пока отключён: маршрут не прошёл квалификацию. Настройки профиля сохранены; прямое подключение вместо прокси не выполняется.")
         }
         // Keep legacy metadata readable and unchanged; reject an unsupported
         // launch rather than silently ignoring explicit Chromium context.

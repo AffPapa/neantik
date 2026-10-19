@@ -6,6 +6,8 @@ struct WebKitProxyConfigurationFactoryTests {
     @Test func unqualifiedSystemWebKitProxyIsDisabledInEveryBuild() {
         #expect(!WebKitProxyFeature.launchEnabled)
         #expect(BrowserEngine.webkit.managementCapabilities["proxy"] == false)
+        #expect(BrowserEngine.webkit.settingsSummary.contains("Прокси WebKit отключён во всех сборках"))
+        #expect(!BrowserEngine.webkit.settingsSummary.contains("Прокси профиля включён только в Dev"))
     }
 
     @Test func directProfileHasNoProxyConfiguration() throws {

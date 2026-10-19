@@ -25,6 +25,25 @@ clone, launch fence и MCP capabilities: изменённые четыре на�
 теста; один legacy-transfer guard сначала выявил обработку отсутствующего
 optional-поля, после исправления отдельный transfer suite прошёл 7/7.
 
+## Обновление 20 октября: совместимый WebKit runtime и точность статуса
+
+Проверен тот же upstream runtime в ARM64 архиве с Mach-O minimum OS 15.4.
+На macOS 27.0 исследовательский headed A/B прошёл семь HTTP контролей:
+аутентифицированный запрос шёл через relay, private IPv4 Direct блокировался,
+отказ upstream закрывал маршрут, восстановление работало, независимый Direct
+контроль сохранялся. Намеренно неограниченная копия воспроизвела Direct bypass;
+отрицательный контроль чувствителен. Процессы и fixtures очищены.
+[Точные хеши и ограничения](evidence/webkit-compatible-runtime-15.4-attempt3.json).
+
+Это ещё не интеграция в NeAntik и не подтверждение работы на macOS 15.4:
+испытание шло на 27.0. DNS-on-wire, TLS, IPv6, WebRTC, WebSocket,
+background/delegated traffic, profile store, MCP и release-кандидат открыты.
+Публичная 0.8.25 не меняется.
+
+Исправлена и проверена подсказка WebKit: Dev больше не заявляет прокси,
+поскольку capability выключен во всех конфигурациях. Два целевых набора
+(`WebKitProxyConfigurationFactoryTests`, `WebKitProfileTests`) прошли 21 тест.
+
 ## Краткое текущее состояние — 19 октября
 
 - Публичное приложение: [0.8.25 (137)](../releases/v0.8.25.json). Source commit

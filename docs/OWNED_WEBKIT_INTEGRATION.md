@@ -18,6 +18,23 @@ fail-closed до включения отдельного проверенног�
 такой envelope. `isolatedV1` пока нельзя запустить: manager откажет до открытия
 данных, пока подписанный helper и runtime не встроены и не квалифицированы.
 
+## Совместимый runtime: исследовательский контроль
+
+Для того же upstream commit `43d5b8d85e2e5eed41d7ff8a79da831bf405be6c`
+проверен отдельный ARM64 архив с минимумом macOS 15.4. На macOS 27.0
+подписанный QA-хост прошёл headed A/B: защищённый вариант передал запрос
+аутентифицированному loopback relay, заблокировал private IPv4 Direct,
+закрылся при отказе relay и восстановился; независимый Direct-контроль
+оставался рабочим. Намеренно неограниченная копия повторно показала Direct
+bypass, то есть отрицательный контроль поймал дефект. Все окна, relay,
+origin и собственные WebKit-процессы завершены.
+
+Это подтверждает только HTTP-поведение исследовательского хоста на macOS 27.0.
+Минимум 15.4 в Mach-O не доказывает запуск на 15.4. Не проверены в этой
+матрице DNS-on-wire, HTTPS/TLS, IPv6, WebRTC, WebSocket, delegated/background
+traffic, manager, persistent profile stores или MCP. Архив не notarized и
+ещё не встроен в приложение. Подробные хеши и условия: [точный отчёт](evidence/webkit-compatible-runtime-15.4-attempt3.json).
+
 `WebKitLoopbackBroker` резервирует один loopback endpoint, соответствующий
 статической политике собственного runtime. `WebKitRelayAuthority` выдаёт
 отдельный случайный ключ для сочетания profile/store/session/revision.

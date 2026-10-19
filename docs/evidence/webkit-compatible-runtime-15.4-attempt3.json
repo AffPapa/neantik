@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "status": "research-pass-product-integration-open",
+  "observedAt": "2026-10-19T19:15:45Z",
+  "environment": {
+    "os": "macOS 27.0 (26A5416b)",
+    "architecture": "arm64",
+    "hostDeploymentTarget": "15.4"
+  },
+  "runtime": {
+    "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "archiveSHA256": "c0e2b1843067cad14f22d31b447d904635580b23a9028ba38ecc29513aaa9cd9",
+    "archiveBytes": 315373378,
+    "selectedMachOCount": 11,
+    "selectedARM64MinimumOS": "15.4",
+    "sdk": "26.5",
+    "upstreamNotarized": false
+  },
+  "qa": {
+    "hostSourceSHA256": "34aec0b78c473b40232039344a0ca3fbe36bc94189acf4c1f2cf0ecd650322e1",
+    "hostExecutableSHA256": "abcbcf87378f49eaeee9c8a22991e8e2f95ca86b7314deb7baf942857372ba73",
+    "harnessSHA256": "da34d4393bb638668d0892e0e39e89f2ec9152e2eb9d3a6209b55c81b9d1681b",
+    "preparedApps": {
+      "AExecutableSHA256": "a002e7c625b37ea49a0dea847b6a73e2290613fd7496bfe42e7bc106944ae19a",
+      "BExecutableSHA256": "0335eb9aa3a69318877d54a6ca7d75ed650cc858b7a801c6f320a4118b15b089"
+    },
+    "codeSignature": "valid Developer ID signature; exact QA host accepted by Gatekeeper",
+    "readiness": {
+      "eligibleForAttempt": true,
+      "memoryPressure": 1,
+      "thermalState": 0,
+      "observedAt": "2026-10-19T19:14:13Z"
+    },
+    "protectedAB": {
+      "status": "PASS",
+      "controls": {
+        "independentDirectControl": "passed",
+        "namedAuthenticatedRelay": "passed;no direct origin response",
+        "privateIPv4DirectAttempt": "blocked;no origin response",
+        "upstreamRefusal": "failed closed",
+        "privateIPv4DuringRefusal": "blocked;no origin response",
+        "independentDirectDuringRefusal": "passed",
+        "relayRecovery": "passed;no direct origin response"
+      },
+      "cleanup": "both hosts exited normally;fixtures drained;owned WebKit helpers absent"
+    },
+    "intentionalUnconfinedControl": {
+      "status": "PASS-control-catches-bypass",
+      "namedAuthenticatedRelay": "passed",
+      "privateIPv4DirectBypass": "observed as expected"
+    }
+  },
+  "limitations": [
+    "Research-owned HTTP fixture only; this is not the NeAntik manager, persistent profile store, MCP, or a shipping runtime.",
+    "Execution ran on macOS 27.0; setting a 15.4 deployment target does not prove execution on macOS 15.4.",
+    "No DNS-on-wire, HTTPS/TLS, IPv6, WebRTC, WebSocket, delegated/background traffic, update traffic, or real upstream proxy was qualified by this run.",
+    "The upstream archive is not notarized. Product bundling, source/license notices, stable per-profile broker integration, lifecycle, and exact-candidate signing/notarization/Gatekeeper remain open."
+  ]
+}
