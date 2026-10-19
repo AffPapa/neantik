@@ -21,6 +21,18 @@ helper's exact file is independently observed. See the
 It is not notarized or shipping-qualified; protocol and integration gates below
 remain open.
 
+**TLS development slice:** `TLSHost.m` adds an ephemeral, process-only QA root
+with real chain/signature/hostname checking, without Keychain/system trust edits.
+`tls_fixture.py` tunnels actual TLS bytes through authenticated CONNECT to an
+owned origin. Six real wire and seven acceptance/negative controls pass. Two
+native matrices retain FAIL for diagnosed request-versus-connection assumptions;
+their five confirmed conditions are preserved. The final remaining/setup phase
+passes six controls, including wrong CA, relay refusal/recovery, independent
+Direct and intentional unconfined HTTPS bypass. The
+[TLS report](../../docs/evidence/webkit-owned-tls-development.json) separates
+these phases; it is not a single final-candidate matrix. Temporary keys and
+owned hosts/helpers/sockets are cleaned up. DNS/UDP and product gates remain.
+
 ### Assembly tools
 
 - `assemble_layout.py` creates a new clone, rejects unexpected/escaping links,
