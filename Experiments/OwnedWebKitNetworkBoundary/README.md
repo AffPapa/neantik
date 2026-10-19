@@ -4,6 +4,13 @@ This is an independent experiment, **not the shipping WebKit implementation**.
 The manager still refuses WebKit proxies. No production profile, default website
 data store, system extension, global proxy/DNS setting or Keychain group is used.
 
+**Observed:** seven headed HTTP controls pass on the owned sandboxed runtime.
+The intentionally unconfined copy reproduces private-IP Direct with the same
+proxy configured. See the [scoped report](../../docs/evidence/webkit-owned-runtime-http-development.json).
+This is evidence for the boundary, not a qualified product assembly: strict
+framework bundle verification still rejects the development layout's external
+XPC service symlinks. Shipping proxy remains disabled.
+
 ## Why a different runtime
 
 System WKWebView's proxy configuration admitted private-IP Direct traffic in
@@ -28,7 +35,9 @@ compatibility solution.
   contains outcome codes and counters, not URLs, passwords or fingerprint data.
 - `probe.py prepare` compiles the small host with the project developer-dir
   resolver and signs its two QA bundles with the existing NeAntik certificate.
-  It clones the development framework without replacing any installed app.
+  It clones all sibling runtime products into one admitted directory without
+  replacing any installed app. External sibling symlinks caused WebCore bundle
+  reads to fail after sandbox entry; that failing layout is retained separately.
 - Unused `.tbd` SDK stubs are preserved outside the runtime copy before signing.
   They are not signable runtime components. The original archive is retained.
 - `run` first requires normal native admission, then appends an outbound deny
@@ -54,8 +63,8 @@ does not apply a sandbox to the runner.
 
 ## Still required before a product feature
 
-1. Pass the restricted runtime controls and investigate any denial without
-   weakening them or repeating unchanged failures.
+1. Preserve the seven HTTP controls and the intentionally broken control.
+   Repeat only for changed runtime/policy/host inputs or a diagnosed failure.
 2. Verify DNS/delegated connections, WebRTC/UDP, HTTPS, WebSocket, downloads,
    workers, refusal and lifecycle boundaries on the owned runtime.
 3. Choose a stable broker endpoint and per-profile authenticated session

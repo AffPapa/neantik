@@ -306,6 +306,57 @@ def diagnose_proxy(work, own_signed=False):
         write_json(report_path, result); print(json.dumps(result, indent=2))
 
 
+def diagnose_bypass(work):
+    """Intentional broken control: same configured runtime, no deny overlay."""
+    report = work / 'unconfined-bypass-control.json'
+    if report.exists():
+        raise RuntimeError('Negative control already recorded;do not repeat unchanged')
+    prepared = json.loads((work / 'prepared.json').read_text())
+    if json.loads((work / 'native-result.json').read_text())['status'] != 'PASS':
+        raise RuntimeError('Freeze the protected result first')
+    runtime = work / 'Release-C'
+    if runtime.exists():
+        raise RuntimeError('Control runtime exists;inspect before reuse')
+    subprocess.run(['/bin/cp','-cR',prepared['ownRelease'],str(runtime)],check=True)
+    policy = runtime / 'WebKit.framework/Resources/com.apple.WebKit.NetworkProcess.sb'
+    original = Path(prepared['release']) / 'WebKit.framework/Resources/com.apple.WebKit.NetworkProcess.sb'
+    policy.write_bytes(original.read_bytes())
+    subprocess.run(['/usr/bin/codesign','--force','--sign',IDENTITY,'--timestamp=none',str(runtime/'WebKit.framework')],check=True,capture_output=True)
+    readiness = subprocess.run(['python3','-B',str(REPO/'scripts/native-qa-readiness.py'),'--check'],capture_output=True,text=True)
+    (work/'bypass-control-admission.json').write_text(readiness.stdout)
+    if readiness.returncode:
+        print(json.dumps({'status':'native-deferred','readinessExit':readiness.returncode})); return
+    addresses = re.findall(r'\binet (\d+\.\d+\.\d+\.\d+)\b', subprocess.check_output(['/sbin/ifconfig'],text=True))
+    address = next((a for a in addresses if ipaddress.ip_address(a).is_private and not ipaddress.ip_address(a).is_loopback),None)
+    if address is None: raise RuntimeError('Own private IPv4 required')
+    nonce = uuid.uuid4().hex; marker = 'owned-' + nonce
+    origin = Endpoint(address,marker,path='/' + nonce); proxy = None; host = None
+    result = {'scope':'intentional unconfined configured-proxy negative control;not a safe product mode',
+              'harnessSHA256':digest(Path(__file__)),'policySHA256':digest(policy),'controls':[]}
+    try:
+        username,password = 'owned-fixture',uuid.uuid4().hex
+        authorities = (f'owned-{nonce}.invalid:{origin.port}',f'{address}:{origin.port}')
+        proxy = Endpoint('127.0.0.1',marker,auth=b'Basic '+base64.b64encode(f'{username}:{password}'.encode()),allowed=authorities,path='/' + nonce)
+        urls = ['http://' + a + '/' + nonce for a in authorities]
+        host = Host(prepared['apps'][1],runtime,{'role':'unconfined-negative','proxy':True,
+                    'proxyPort':proxy.port,'username':username,'password':password,'urls':urls,'marker':marker},work/'bypass-control.stderr')
+        host.wait('ready')
+        for label,url in zip(('named-authenticated-positive','private-direct-bypass-negative'),urls):
+            before_o,before_p = origin.snapshot()['responses'],proxy.snapshot()['responses']
+            host.send({'action':'navigate','case':label,'url':url}); event = host.wait('navigation')
+            result['controls'].append({'case':label,'success':event['success'],
+                'directResponses':origin.snapshot()['responses']-before_o,'relayResponses':proxy.snapshot()['responses']-before_p})
+    except Exception as error:
+        result['errorType'] = type(error).__name__
+    finally:
+        result['hostNormalExit'] = host.stop() if host else True
+        result['proxyDrained'] = proxy.stop() if proxy else True; result['originDrained'] = origin.stop()
+        expected = [{'case':'named-authenticated-positive','success':True,'directResponses':0,'relayResponses':1},
+                    {'case':'private-direct-bypass-negative','success':True,'directResponses':1,'relayResponses':0}]
+        result['status'] = 'PASS-control-catches-bypass' if result['controls']==expected and result['hostNormalExit'] and result['proxyDrained'] and result['originDrained'] else 'FAIL-control-incomplete'
+        write_json(report,result);print(json.dumps(result,indent=2))
+
+
 def run(work):
     prepared = json.loads((work / 'prepared.json').read_text())
     if digest(work / 'host') != prepared['hostSHA256'] or digest(Path(__file__).with_name('Host.m')) != prepared['sourceSHA256']:
@@ -415,7 +466,7 @@ def run(work):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(); parser.add_argument('action', choices=['prepare','run','diagnose-proxy','diagnose-own-signed'])
+    parser = argparse.ArgumentParser(); parser.add_argument('action', choices=['prepare','run','diagnose-proxy','diagnose-own-signed','diagnose-bypass'])
     parser.add_argument('--archive-root', type=Path); parser.add_argument('--work-dir', type=Path, required=True)
     args = parser.parse_args()
     if args.action == 'prepare':
@@ -423,5 +474,7 @@ if __name__ == '__main__':
         prepare(args.archive_root.resolve(), args.work_dir.resolve())
     elif args.action == 'run':
         run(args.work_dir.resolve())
+    elif args.action == 'diagnose-bypass':
+        diagnose_bypass(args.work_dir.resolve())
     else:
         diagnose_proxy(args.work_dir.resolve(), own_signed=args.action == 'diagnose-own-signed')

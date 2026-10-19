@@ -421,3 +421,25 @@ FAIL; не повторять PSK/TLS1.3, не понижать TLS и не от
 одного правила их не заменяет. Это **исследование, не реализация**: нужны
 проверка лицензий и приватных runtime-зависимостей, собственная подписанная
 сборка и native-контроли. Системный WKWebView пока остаётся Direct-only.
+
+### Собственный runtime: HTTP-граница проверена, 2026-10-20
+
+Официальный development-архив WebKit `324120@main` запущен через отдельный
+own host с nonpersistent stores. После исправления relocated layout подписанная
+QA-копия прошла собственный authenticated CONNECT-контроль. В NetworkProcess
+sandbox разрешает IP-трафик только к own relay; сохраняются исходные routing
+metadata и syslog. Семь headed HTTP-сценариев прошли: named A через relay,
+private Direct A запрещён, отказ без обхода, независимый Direct B и recovery.
+Окна закрылись штатно, собственные серверы drained, helpers отсутствуют.
+
+В отдельной намеренно незащищённой C-копии тот же proxy API пропустил private
+запрос напрямую. Это подтверждает чувствительность контроля к исходному обходу.
+Предыдущие системные WKWebView FAIL не переписывались и не повторялись.
+
+[Проверенные значения, хеши и ограничения](evidence/webkit-owned-runtime-http-development.json).
+Прошедшие HTTP-проверки не означают готовый релиз: current development framework
+не проходит strict bundle signature из-за внешних XPC symlinks, не квалифицирован
+для Direct Distribution и требует macOS26.5. Реальные DNS/TLS/UDP, остальные
+helpers и интеграция профилей ещё открыты. Отдельно требуется неизменяемая
+release-упаковка и стабильный broker endpoint: пользователь не должен менять
+и переподписывать ресурс sandbox при создании профиля.
