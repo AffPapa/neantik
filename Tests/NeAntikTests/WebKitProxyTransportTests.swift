@@ -14,6 +14,7 @@ struct WebKitProxyTransportTests {
         private let queue = DispatchQueue(label: "app.neantik.fixture.wk-connect")
         private var tasks: [UUID: Task<Void, Never>] = [:]
         private var connections = 0, authenticated = 0, responses = 0
+        private var refusing = false
         private let destinations: [ProxyRelayDestination]
         private let direct: Bool
         private let noncePrefix: String?
@@ -62,10 +63,12 @@ struct WebKitProxyTransportTests {
                   tasks.count < 8, connections < 32 else { connection.cancel(); return }
             connections += 1
             let transport = ProxyRelayUpstreamTransport(accepted: connection), id = UUID()
+            let refuseThisConnection = refusing
             tasks[id] = Task {
                 defer { transport.cancel(); self.queue.async { self.tasks.removeValue(forKey: id) } }
                 do {
                     try await transport.open(timeout: 2)
+                    guard !refuseThisConnection else { return }
                     if self.direct {
                         let chunk = try await transport.receive(maximumBytes: 1024, timeout: 2)
                         guard !chunk.data.isEmpty else { return }
@@ -117,6 +120,7 @@ struct WebKitProxyTransportTests {
         func counts() -> (connections: Int, authenticated: Int, responses: Int) {
             queue.sync { (connections, authenticated, responses) }
         }
+        func setRefusing(_ value: Bool) { queue.sync { refusing = value } }
         func activeTaskCount() -> Int { queue.sync { tasks.count } }
         func cancel() {
             queue.async {
@@ -522,15 +526,13 @@ struct WebKitProxyOwnedEndpointTests {
     }
 }
 
-/// A new input, not a retry of the retained literal-loopback bypass. This is
-/// public WK API compatibility research, not shipping proxy qualification.
+/// Exercises the shipping configuration factory in a real headed WKWebView.
+/// It remains opt-in and does not qualify DNS over arbitrary remote networks.
 @Suite(.serialized) @MainActor struct WebKitProxyNonLoopbackQualificationTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_PROXY_NONLOOPBACK_QUALIFICATION"] == "1"))
     func namedAndReachableLocalTargetsHaveIndependentControls() async throws {
         let matchMode = try WebKitProxyQualificationMatchMode.requested(
             ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_PROXY_NONLOOPBACK_MATCH_MODE"])
-        let frontend = try WebKitProxySession.Frontend.requested(
-            ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_PROXY_NONLOOPBACK_FRONTEND"])
         func requireAdmission() throws {
             var pressure: Int32 = 0, size = MemoryLayout<Int32>.size
             let observed = sysctlbyname("kern.memorystatus_vm_pressure_level", &pressure, &size, nil, 0) == 0
@@ -547,13 +549,12 @@ struct WebKitProxyOwnedEndpointTests {
         }
         let nonce = UUID().uuidString.lowercased(), namedHost = "wk-" + UUID().uuidString.lowercased() + ".invalid"
         var origin: WebKitProxyTransportTests.Upstream?, upstream: WebKitProxyTransportTests.Upstream?
-        var session: WebKitProxySession?, viewA: WKWebView?, viewB: WKWebView?, window: NSWindow?
+        var viewA: WKWebView?, viewB: WKWebView?, window: NSWindow?
         func cleanup() async {
             viewA?.stopLoading(); viewB?.stopLoading()
             viewA?.navigationDelegate = nil; viewB?.navigationDelegate = nil
             window?.contentView = nil; window?.close(); window = nil; viewA = nil; viewB = nil
-            // Never clear the live A store's proxy assignment on revoke.
-            if let session { await session.stop(); #expect(await session.activeConnectionCount() == 0) }
+            // Never clear the live A store's proxy assignment after refusal.
             if let upstream { await upstream.stop(); #expect(upstream.activeTaskCount() == 0) }
             if let origin { await origin.stop(); #expect(origin.activeTaskCount() == 0) }
             print("OWNED_WK_NONLOOPBACK_CLEANUP windowClosed=1 relayDrained=1 fixtureStopsAwaited=1")
@@ -563,15 +564,15 @@ struct WebKitProxyOwnedEndpointTests {
             origin = sentinel; let originPort = try await sentinel.start()
             let target = try ProxyRelayDestination(host: host, port: Int(originPort))
             let named = try ProxyRelayDestination(host: namedHost, port: Int(originPort))
-            let fixture = try WebKitProxyTransportTests.Upstream(destination: target, alternateDestination: named, noncePrefix: nonce)
-            upstream = fixture; let upstreamPort = try await fixture.start()
-            let profile = UUID(), scope = WebKitProxySession.Scope(profileID: profile, storeID: profile, sessionID: UUID(), revision: 1)
-            let relay = try WebKitProxySession(scope: scope, upstreamKind: .http,
-                upstream: .init(host: "127.0.0.1", port: Int(upstreamPort)),
-                credentials: .init(username: "owned-upstream", password: "fixture-only"), frontend: frontend)
-            session = relay; _ = try await relay.start()
+            let fixture = try WebKitProxyTransportTests.Upstream(destination: target,
+                bindHost: host, alternateDestination: named, noncePrefix: nonce)
+            upstream = fixture; let proxyPort = try await fixture.start()
+            let profileProxy = ProxyConfiguration(kind: .http, host: host, port: Int(proxyPort), username: "owned-upstream")
+            let productionConfiguration = try WebKitProxyConfigurationFactory.configurations(
+                for: profileProxy, password: "fixture-only")
+            try #require(productionConfiguration.count == 1)
             let storeA = WKWebsiteDataStore.nonPersistent(), storeB = WKWebsiteDataStore.nonPersistent()
-            var proxy = try relay.configuration(for: scope)
+            var proxy = productionConfiguration[0]
             if matchMode == .exactHosts {
                 // Documented suffix selectors only. Whether explicit selectors
                 // override implicit local-IP bypass is what this experiment tests.
@@ -582,7 +583,6 @@ struct WebKitProxyOwnedEndpointTests {
             let validPolicy = WebKitProxyQualificationMatchMode.nativeHasNoDirectExceptions(proxy)
             try #require(validPolicy)
             print("OWNED_WK_NONLOOPBACK_POLICY exactHosts=\(matchMode == .exactHosts ? 1 : 0) noFailover=1 exceptionCount=0")
-            print("OWNED_WK_NONLOOPBACK_FRONTEND socks5=\(frontend == .socks5 ? 1 : 0)")
             storeA.proxyConfigurations = [proxy]; storeB.proxyConfigurations = []
             let configA = WKWebViewConfiguration(), configB = WKWebViewConfiguration()
             configA.websiteDataStore = storeA; configB.websiteDataStore = storeB
@@ -611,15 +611,14 @@ struct WebKitProxyOwnedEndpointTests {
                 return (body?.trimmingCharacters(in: .whitespacesAndNewlines), probe.failed, false)
             }
             func observe(_ phase: String) {
-                let s = relay.qualificationSnapshot()
-                print("OWNED_WK_NONLOOPBACK phase=\(phase) accepted=\(s.accepted) malformed=\(s.malformed) authRefused=\(s.authenticationRefused) established=\(s.established) upstreamAuth=\(fixture.counts().authenticated) upstreamResponses=\(fixture.counts().responses) directConnections=\(sentinel.counts().connections) directResponses=\(sentinel.counts().responses)")
+                print("OWNED_WK_NONLOOPBACK phase=\(phase) proxyConnections=\(fixture.counts().connections) proxyAuth=\(fixture.counts().authenticated) proxyResponses=\(fixture.counts().responses) directConnections=\(sentinel.counts().connections) directResponses=\(sentinel.counts().responses)")
             }
             // .invalid may prove name routing/auth, but is never a Direct-failure
             // oracle: a Direct client would also fail to resolve this name.
             let nameResult = try await navigate(a, host: namedHost, phase: "named")
             observe("named")
             #expect(nameResult.body == "pong" && !nameResult.failed && !nameResult.timeout)
-            #expect(fixture.counts().responses >= 1 && sentinel.counts().responses == 0)
+            #expect(fixture.counts().responses >= 1 && fixture.counts().authenticated >= 1 && sentinel.counts().responses == 0)
             let direct = try await navigate(b, host: host, phase: "same-target")
             observe("direct-before")
             try #require(direct.body == "DIRECT" && !direct.failed && !direct.timeout && sentinel.counts().responses == 1)
@@ -643,12 +642,17 @@ struct WebKitProxyOwnedEndpointTests {
             #expect(protected.body == "pong" && !protected.failed && !protected.timeout)
             #expect(fixture.counts().responses == beforeProxy + 1 && sentinel.counts().responses == beforeA.responses)
             #expect(sentinel.counts().connections == beforeA.connections)
-            await relay.stop()
+            fixture.setRefusing(true)
             let beforeRevoke = sentinel.counts()
             let revoked = try await navigate(a, host: host, phase: "same-target")
             observe("revoked")
             #expect(revoked.failed && !revoked.timeout && sentinel.counts().responses == beforeRevoke.responses)
             #expect(sentinel.counts().connections == beforeRevoke.connections)
+            fixture.setRefusing(false)
+            let recovered = try await navigate(a, host: host, phase: "recovered")
+            observe("recovered")
+            #expect(recovered.body == "pong" && !recovered.failed && !recovered.timeout)
+            #expect(sentinel.counts().responses == beforeRevoke.responses)
             let beforeDirectAfter = sentinel.counts()
             let stillReachable = try await navigate(b, host: host, phase: "same-target")
             observe("direct-after")

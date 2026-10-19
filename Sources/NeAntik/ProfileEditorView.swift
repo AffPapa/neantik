@@ -459,8 +459,15 @@ struct ProfileEditorView: View {
               .font(.callout).foregroundStyle(.secondary)
           }
         }
+        }
         Section("Сеть") {
           HelpLink(topic: .proxy)
+          if engine == .webkit {
+            Text(WebKitProxyFeature.launchEnabled
+              ? "Прокси задаётся для этого WebKit-профиля. Предварительная проверка не подтверждает фактический маршрут окна."
+              : "Настройки прокси сохраняются в профиле, но эта сборка пока не запускает WebKit с прокси. Прямое подключение вместо него не используется.")
+              .font(.callout).foregroundStyle(.secondary)
+          }
           Toggle("Использовать прокси", isOn: $usesProxy)
           if usesProxy {
             Picker("Ввод прокси", selection: $proxyEntryMode) {
@@ -579,11 +586,13 @@ struct ProfileEditorView: View {
                   Button {
                     testProxy()
                   } label: {
-                    Label("Проверить прокси", systemImage: "network")
+                    Label(engine == .webkit ? "Предварительно проверить прокси" : "Проверить прокси", systemImage: "network")
                   }
                   .disabled(proxyEntryMode == .paste && proxyImportText.isEmpty)
                   .disabled(isDetectingProtocol)
-                  .help("Разобрать введённую строку при необходимости и проверить прокси")
+                  .help(engine == .webkit
+                    ? "Проверка через curl; она не доказывает маршрут окна WebKit"
+                    : "Разобрать введённую строку при необходимости и проверить прокси")
                   Button("Свой адрес диагностики…") {
                     if proxyEntryMode == .paste, !importProxy(source: proxyImportText) { return }
                     showingCustomProxyDiagnostic = true
@@ -604,15 +613,15 @@ struct ProfileEditorView: View {
             }
 
             DisclosureGroup("Как работает проверка") {
-              Text(
-                  "Проверка через прокси сверяет ответы двух IP-сервисов по выходному IP, стране и часовому поясу. Если сервис недоступен, используется резервный источник. Проверка повторяется перед запуском; маршрут Chromium проверяется отдельно."
-              )
+              Text(engine == .webkit
+                ? "Эта предварительная проверка использует curl и IP-сервисы. Она не измеряет маршрут окна WebKit; запуск с прокси останется заблокированным, пока отдельная проверка окна не подтвердит маршрут и отказ без прямого подключения."
+                : "Проверка через прокси сверяет ответы двух IP-сервисов по выходному IP, стране и часовому поясу. Если сервис недоступен, используется резервный источник. Проверка повторяется перед запуском; маршрут Chromium проверяется отдельно.")
               .font(.caption)
               .foregroundStyle(.secondary)
               if !proxyUsername.isEmpty {
-                Text(
-                  "HTTP, HTTPS и SOCKS5 используют сохранённые данные автоматически через локальный relay. Для HTTPS-прокси сначала проверяется сертификат сервера; ошибки TLS не приводят к переходу на HTTP или прямое подключение."
-                )
+                Text(engine == .webkit
+                  ? "Логин и пароль берутся из Связки ключей для выбранного прокси. Если конфигурация не может быть применена, окно должно завершиться ошибкой без прямого маршрута."
+                  : "HTTP, HTTPS и SOCKS5 используют сохранённые данные автоматически через локальный relay. Для HTTPS-прокси сначала проверяется сертификат сервера; ошибки TLS не приводят к переходу на HTTP или прямое подключение.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
               }
@@ -656,8 +665,6 @@ struct ProfileEditorView: View {
               .foregroundStyle(.orange)
             }
           }
-        }
-
         }
         if showsAdvancedOptions {
         Section("Организация и заметки") {
@@ -1233,7 +1240,7 @@ struct ProfileEditorView: View {
   }
 
   private func save() {
-    if engine == .chromium && usesProxy && proxyEntryMode == .paste {
+    if usesProxy && proxyEntryMode == .paste {
       guard importProxy(source: proxyImportText) else { return }
     }
     if let issue = ProfileEditorValidation.firstIssue(
@@ -1241,7 +1248,7 @@ struct ProfileEditorView: View {
       tags: tags,
       note: note,
       startURL: startURL,
-      usesProxy: engine == .chromium && usesProxy,
+      usesProxy: usesProxy,
       proxyKind: proxyKind,
       proxyHost: proxyHost,
       proxyPort: proxyPort,
@@ -1280,9 +1287,15 @@ struct ProfileEditorView: View {
       profile.note = normalizedNote
       profile.startURL = cleanStartURL.absoluteString
       profile.startupMode = startupMode
-      let proxy = engine == .webkit ? nil : try makeProxy()
+      let proxySettings = ProfileEditorProxySettings.resolve(
+        engine: engine,
+        usesProxy: usesProxy,
+        configuration: try makeProxy(),
+        detectedProxy: detectedProxy
+      )
+      let proxy = proxySettings.configuration
       profile.proxy = proxy
-      let locationMatchesProxy = proxy != nil && proxy == detectedProxy
+      let locationMatchesProxy = proxySettings.appliesProxyContext
       profile.identity = profile.identity.replacingProxyContext(
         timezoneIdentifier: locationMatchesProxy
           ? detectedTimezone
@@ -1515,7 +1528,7 @@ struct ProfileEditorView: View {
   }
 
   private func currentProtocolEndpoint() throws -> ProxyProtocolEndpoint {
-    guard engine == .chromium, usesProxy else { throw NeAntikError.invalidProxy }
+    guard usesProxy else { throw NeAntikError.invalidProxy }
     if proxyEntryMode == .paste {
       // Parsing is local. Neither the draft credentials nor Keychain are
       // passed into the detector, even when a pasted line includes them.

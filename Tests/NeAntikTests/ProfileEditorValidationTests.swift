@@ -92,6 +92,32 @@ struct ProfileEditorValidationTests {
     }
 
     @Test
+    func webKitEditorRetainsProxyWithoutApplyingChromiumGeoContext() {
+        let proxy = ProxyConfiguration(kind: .socks5, host: "proxy.example.test", port: 1080, username: "qa")
+        let settings = ProfileEditorProxySettings.resolve(
+            engine: .webkit, usesProxy: true, configuration: proxy, detectedProxy: proxy
+        )
+        #expect(settings.configuration == proxy)
+        #expect(!settings.appliesProxyContext)
+    }
+
+    @Test
+    func chromiumEditorAppliesMatchingProxyContextAndDisabledProxyIsCleared() {
+        let proxy = ProxyConfiguration(kind: .http, host: "proxy.example.test", port: 8080, username: "")
+        let matched = ProfileEditorProxySettings.resolve(
+            engine: .chromium, usesProxy: true, configuration: proxy, detectedProxy: proxy
+        )
+        #expect(matched.configuration == proxy)
+        #expect(matched.appliesProxyContext)
+
+        let disabled = ProfileEditorProxySettings.resolve(
+            engine: .webkit, usesProxy: false, configuration: proxy, detectedProxy: proxy
+        )
+        #expect(disabled.configuration == nil)
+        #expect(!disabled.appliesProxyContext)
+    }
+
+    @Test
     func noteAcceptsMultilineTextWithinBothLimits() {
         #expect(
             firstIssue(note: "Клиент: север\nСледующий шаг: проверить заказ") == nil

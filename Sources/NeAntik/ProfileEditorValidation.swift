@@ -177,3 +177,23 @@ enum ProfileEditorValidation {
         return nil
     }
 }
+
+/// Keeps a configured proxy on either engine while limiting proxy-derived
+/// locale/timezone context to Chromium, which can actually apply that context.
+struct ProfileEditorProxySettings: Equatable {
+    let configuration: ProxyConfiguration?
+    let appliesProxyContext: Bool
+
+    static func resolve(
+        engine: BrowserEngine,
+        usesProxy: Bool,
+        configuration: ProxyConfiguration?,
+        detectedProxy: ProxyConfiguration?
+    ) -> Self {
+        let retained = usesProxy ? configuration : nil
+        return Self(
+            configuration: retained,
+            appliesProxyContext: engine == .chromium && retained != nil && retained == detectedProxy
+        )
+    }
+}

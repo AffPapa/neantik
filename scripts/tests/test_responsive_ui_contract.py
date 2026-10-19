@@ -332,13 +332,21 @@ class ResponsiveUIContractTests(unittest.TestCase):
     ) -> None:
         text = EDITOR.read_text(encoding="utf-8")
         self.assertIn('Label("Заполнить из буфера"', text)
-        self.assertIn('Label("Проверить прокси"', text)
+        self.assertIn(
+            'Label(engine == .webkit ? "Предварительно проверить прокси" : "Проверить прокси"',
+            text,
+        )
         self.assertIn("private func importProxy(source: String)", text)
         self.assertNotIn("importProxyAndTest", text)
         import_start = text.index("private func importProxy(source: String)")
         test_start = text.index("private func startProxyTest(")
         import_body = text[import_start:test_start]
         self.assertNotIn("startProxyTest(", import_body)
+        endpoint_start = text.index("private func currentProtocolEndpoint()")
+        detector_start = text.index("private func detectProxyProtocol()", endpoint_start)
+        endpoint = text[endpoint_start:detector_start]
+        self.assertIn("guard usesProxy else", endpoint)
+        self.assertNotIn("engine == .chromium", endpoint)
 
     def test_advanced_editor_row_has_explicit_button(self) -> None:
         text = EDITOR.read_text(encoding="utf-8")
