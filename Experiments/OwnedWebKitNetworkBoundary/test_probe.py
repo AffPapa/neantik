@@ -15,7 +15,7 @@ class EndpointTests(unittest.TestCase):
                                        allowed=('owned.invalid:443',), path='/owned')
 
     def tearDown(self):
-        self.assertTrue(self.endpoint.stop())
+        self.assertTrue(self.endpoint.stop(), getattr(self.endpoint, 'last_stop_state', {}))
 
     def connect(self):
         connection = socket.create_connection(('127.0.0.1', self.endpoint.port), timeout=2)
@@ -61,7 +61,7 @@ class EndpointTests(unittest.TestCase):
         while self.endpoint.snapshot()['accepted'] == 0 and time.monotonic() < deadline:
             time.sleep(.01)
         self.assertEqual(self.endpoint.snapshot()['accepted'], 1)
-        self.assertTrue(self.endpoint.stop())
+        self.assertTrue(self.endpoint.stop(), getattr(self.endpoint, 'last_stop_state', {}))
 
 
 if __name__ == '__main__':

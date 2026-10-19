@@ -19,8 +19,14 @@
 - Новый research-путь: отдельный WebKit runtime с принудительным sandbox
   прошёл семь headed HTTP-сценариев. Копия без защиты воспроизвела Direct-обход
   с тем же proxy API. [Доказательство и границы](evidence/webkit-owned-runtime-http-development.json).
-  Это ещё не функция приложения: runtime требует macOS26.5, строгая подпись
-  development-layout не проходит, DNS/TLS/UDP и интеграция менеджера открыты.
+  Следующий самостоятельный ARM64 bundle исправляет development-layout:
+  XPC-службы физически внутри framework, зависимости перелинкованы, hardened
+  Developer ID и strict/deep проходят. Два оконных baseline и восемь HTTP-контролей
+  проходят, включая отказ/возврат relay, запрет private-IP Direct и намеренный
+  обход в неограниченной копии. Подтверждён именно свой Networking helper.
+  [Новый срез и ограничения](evidence/webkit-standalone-bundle-development.json).
+  Это ещё не функция приложения: runtime требует macOS26.5; DNS/TLS/UDP,
+  scoped broker, интеграция менеджера и нотарификация остаются открыты.
 - Задержанное закрытие Chromium и данные проверены в указанном ниже scope;
   обычное предупреждение проверено отдельно в Dev. Полная проверка signed UI не закрыта.
 - Аварийное завершение проверено на скачанной135: сохранённые данные и strict-IDB

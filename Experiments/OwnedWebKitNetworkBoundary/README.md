@@ -11,6 +11,39 @@ This is evidence for the boundary, not a qualified product assembly: strict
 framework bundle verification still rejects the development layout's external
 XPC service symlinks. Shipping proxy remains disabled.
 
+**Later assembly slice:** the original research layout remains frozen. A new
+standalone ARM64 copy materializes nested XPC code, relinks dependencies and
+passes strict/deep Developer ID verification with hardened runtime. Its two
+headed baseline controls and eight restricted HTTP controls pass, including
+an intentional configured-proxy Direct bypass control. The own Networking
+helper's exact file is independently observed. See the
+[standalone report](../../docs/evidence/webkit-standalone-bundle-development.json).
+It is not notarized or shipping-qualified; protocol and integration gates below
+remain open.
+
+### Assembly tools
+
+- `assemble_layout.py` creates a new clone, rejects unexpected/escaping links,
+  materializes eight known nested-code links, completes the known empty WebCore
+  Frameworks alias, and omits unused SDK stubs. Existing outputs are refused.
+- `stage_bundle.py` stages an ARM64-only QA app with rewritten Mach-O paths;
+  non-code shader resources live in Resources. It does not launch or sign.
+- `sign_bundle.py` describes inside-out QA signing, including nested JSC helper
+  executables. It is a QA helper, without release timestamp/notarization gates.
+- `bundle_probe.py` tests the changed packaging. Rpath-only packaging loaded
+  system and owned WebKit together; retained launchd evidence identifies XPC
+  service-name collisions. Fixed own framework paths use upstream WebKit's
+  loader convention and the narrow Host `allow-dyld-environment-variables`
+  entitlement. Inherited loader paths are removed; library validation stays on.
+- `confined_bundle_probe.py` freezes a separate restricted QA identity and a
+  fixed loopback port, verifies the Developer ID team recursively, then runs
+  eight controls and checks helper-file mappings and cleanup. It refuses a
+  previous result. This fixed QA listener is not a multi-profile product broker.
+
+Tests cover fixture authentication/draining, filesystem escape/refusal and
+environment sanitization. A diagnosed Darwin accept wake-up failure is retained;
+the fixture now calls shutdown before close and joins all owned threads.
+
 ## Why a different runtime
 
 System WKWebView's proxy configuration admitted private-IP Direct traffic in

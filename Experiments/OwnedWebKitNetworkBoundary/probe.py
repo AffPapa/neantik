@@ -133,9 +133,9 @@ def read_header(connection):
 
 
 class Endpoint:
-    def __init__(self, host, marker, auth=None, allowed=(), path='/'):
+    def __init__(self, host, marker, auth=None, allowed=(), path='/', port=0):
         self.socket = socket.socket(); self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.socket.bind((host, 0)); self.socket.listen(16); self.socket.settimeout(.1)
+        self.socket.bind((host, port)); self.socket.listen(16); self.socket.settimeout(.1)
         self.port = self.socket.getsockname()[1]
         self.marker, self.auth, self.allowed, self.path = marker, auth, allowed, path
         self.stopping = threading.Event(); self.refusing = False
@@ -198,7 +198,14 @@ class Endpoint:
             client.close()
 
     def stop(self):
-        self.stopping.set(); self.socket.close()
+        self.stopping.set()
+        # close() from another thread need not wake an in-flight accept on
+        # Darwin. Interrupt it before closing; every owned worker is joined.
+        try:
+            self.socket.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
+        self.socket.close()
         with self.lock:
             active = list(self.active)
         for connection in active:
@@ -210,7 +217,9 @@ class Endpoint:
         self.thread.join(2)
         for worker in self.workers:
             worker.join(2)
-        return not self.thread.is_alive() and not any(w.is_alive() for w in self.workers)
+        self.last_stop_state = {'acceptAlive': self.thread.is_alive(),
+                                'workerAlive': sum(w.is_alive() for w in self.workers)}
+        return not self.last_stop_state['acceptAlive'] and self.last_stop_state['workerAlive'] == 0
 
 
 class Host:
