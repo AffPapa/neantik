@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 
 struct ApplicationUpdateSheet: View {
+    static let latestReleaseURL = URL(string: "https://github.com/AffPapa/neantik/releases/latest")!
     @ObservedObject var controller: ApplicationUpdateController
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -22,7 +23,7 @@ struct ApplicationUpdateSheet: View {
                 }
             } else {
                 Text("В этой версии обновление выполняется вручную.").font(.headline)
-                Text("Скачай DMG или ZIP с сайта NeAntik. Закрой браузерные окна и NeAntik, затем перенеси новое приложение в «Программы». Не удаляй данные профилей.")
+                Text("Скачай последний DMG или ZIP со страницы релизов NeAntik на GitHub. Закрой браузерные окна и NeAntik, затем перенеси новое приложение в «Программы». Не удаляй данные профилей.")
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let message = controller.message {
@@ -30,7 +31,7 @@ struct ApplicationUpdateSheet: View {
             }
             Divider()
             HStack {
-                Link("Скачать с сайта", destination: URL(string: "https://browser.free/#install")!)
+                Link("Открыть последние релизы GitHub", destination: Self.latestReleaseURL)
                 Spacer()
                 if controller.canCancel {
                     Button("Отменить проверку", action: controller.cancel).keyboardShortcut(.cancelAction)
