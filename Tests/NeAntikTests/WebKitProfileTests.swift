@@ -90,6 +90,26 @@ struct WebKitProfileTests {
         #expect(try ProfileStore.encodeProfiles([BrowserProfile(name: "Chrome")], encoder: encoder()).first == 91)
     }
 
+    @Test func isolatedWebKitGenerationRequiresVersionFiveAndNeverFallsBackToSystem() throws {
+        let profile = BrowserProfile(name: "Isolated WebKit", startURL: "about:blank", engine: .webkit,
+                                     webKitRuntimeGeneration: .isolatedV1)
+        let bytes = try ProfileStore.encodeProfiles([profile], encoder: encoder())
+        let envelope = try #require(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
+        #expect(envelope["schemaVersion"] as? Int == 5)
+        let restored = try #require(ProfileStore.decodeProfiles(bytes).first)
+        #expect(restored.webKitRuntimeGeneration == .isolatedV1)
+        #expect(restored.duplicated().webKitRuntimeGeneration == .isolatedV1)
+        #expect(throws: WebKitProfileError.self) { try WebKitProfilePolicy.validate(restored) }
+
+        var legacyEnvelope = envelope
+        legacyEnvelope["schemaVersion"] = 4
+        #expect(throws: (any Error).self) {
+            try ProfileStore.decodeProfiles(JSONSerialization.data(withJSONObject: legacyEnvelope))
+        }
+        let chrome = BrowserProfile(name: "Invalid generation", webKitRuntimeGeneration: .isolatedV1)
+        #expect(chrome.normalizedForPersistence() == nil)
+    }
+
     @Test func webKitCannotBeDisguisedAsLegacyMetadataOrConfiguration() throws {
         let profile = BrowserProfile(name: "WebKit", startURL: "about:blank", engine: .webkit)
         #expect(throws: (any Error).self) { try ProfileStore.decodeProfiles(encoder().encode([profile])) }
@@ -131,6 +151,9 @@ struct WebKitProfileTests {
         #expect(store.profile(withID: saved.id)?.engine == .webkit)
         changed = saved; changed.name = "Renamed"
         #expect(try store.upsert(changed).engine == .webkit)
+        changed = saved; changed.webKitRuntimeGeneration = .isolatedV1
+        #expect(throws: (any Error).self) { try store.upsert(changed) }
+        #expect(store.profile(withID: saved.id)?.webKitRuntimeGeneration == .system)
     }
 
     @Test func webKitProxyMetadataIsPreservedButLaunchFailsClosed() throws {

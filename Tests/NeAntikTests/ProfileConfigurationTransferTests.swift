@@ -4,6 +4,24 @@ import Testing
 
 struct ProfileConfigurationTransferTests {
     @Test
+    func isolatedWebKitRuntimeGenerationIsVersionedAndPreservedByTransfer() throws {
+        let profile = BrowserProfile(name: "Owned WebKit", startURL: "about:blank", engine: .webkit,
+                                     webKitRuntimeGeneration: .isolatedV1)
+        let document = try ProfileConfigurationTransferDocument(profiles: [profile])
+        #expect(document.schemaVersion == 4)
+        #expect(try document.makeProfiles().first?.webKitRuntimeGeneration == .isolatedV1)
+
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+        var object = try #require(JSONSerialization.jsonObject(with: encoder.encode(document)) as? [String: Any])
+        object["schemaVersion"] = 3
+        #expect(throws: ProfileConfigurationTransferError.unsupportedSchema) {
+            try decoder.decode(ProfileConfigurationTransferDocument.self,
+                               from: JSONSerialization.data(withJSONObject: object))
+        }
+    }
+
+    @Test
     func encryptedTransferRoundTripsWithoutPlaintextOrSecrets() throws {
         let profile = BrowserProfile(
             name: "Зашифрованный профиль",

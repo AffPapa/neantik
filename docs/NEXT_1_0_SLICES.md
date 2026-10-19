@@ -15,6 +15,16 @@
 private parent/child IPC и независимые lifetime guards; только потом разрешать
 proxy для нового поколения профилей. Broker остаётся компонентом, не функцией.
 
+Отдельно заложена граница данных для этой интеграции: WebKit store generation
+(`system`/`isolatedV1`) теперь неизменяема и кодируется envelope v5;
+metadata-transfer использует v4. До подключения подписанного helper профиль
+`isolatedV1` блокируется до чтения хранилища. Это ещё не запуск runtime и не
+квалификация WebKit.
+Проверены versioned profile store, portable transfer, запрет смены runtime,
+clone, launch fence и MCP capabilities: изменённые четыре набора дали 103
+теста; один legacy-transfer guard сначала выявил обработку отсутствующего
+optional-поля, после исправления отдельный transfer suite прошёл 7/7.
+
 ## Краткое текущее состояние — 19 октября
 
 - Публичное приложение: [0.8.25 (137)](../releases/v0.8.25.json). Source commit

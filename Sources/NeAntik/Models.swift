@@ -702,6 +702,13 @@ struct UnsupportedBrowserFontPolicyError: LocalizedError {
     }
 }
 
+/// Persistent WebKit data belongs to one runtime family. Changing this value
+/// is a data migration, never a per-launch preference.
+enum WebKitRuntimeGeneration: String, Codable, CaseIterable, Sendable {
+    case system
+    case isolatedV1
+}
+
 struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     static let maximumNameLength = 120
     static let maximumNameUTF8Bytes = 4 * 1_024
@@ -724,6 +731,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     var startURL: String
     var startupMode: BrowserStartupMode
     var engine: BrowserEngine
+    var webKitRuntimeGeneration: WebKitRuntimeGeneration
     var webKitMediaPolicy: WebKitMediaPolicy
     var fontPolicy: BrowserFontPolicy
     var proxy: ProxyConfiguration?
@@ -745,6 +753,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         startURL: String = BrowserProfile.defaultStartURL,
         startupMode: BrowserStartupMode = .startPage,
         engine: BrowserEngine = .chromium,
+        webKitRuntimeGeneration: WebKitRuntimeGeneration = .system,
         webKitMediaPolicy: WebKitMediaPolicy = .ask,
         fontPolicy: BrowserFontPolicy = .native,
         proxy: ProxyConfiguration? = nil,
@@ -766,6 +775,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         self.startURL = startURL
         self.startupMode = startupMode
         self.engine = engine
+        self.webKitRuntimeGeneration = webKitRuntimeGeneration
         self.webKitMediaPolicy = webKitMediaPolicy
         self.fontPolicy = fontPolicy
         self.proxy = proxy
@@ -836,6 +846,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
 
     func normalizedForPersistence() -> BrowserProfile? {
         if engine != .chromium && fontPolicy != .native { return nil }
+        if engine != .webkit && webKitRuntimeGeneration != .system { return nil }
         if engine != .webkit && webKitMediaPolicy != .ask { return nil }
         if engine == .webkit { do { try WebKitProfilePolicy.validateConfiguration(self) } catch { return nil } }
         let cleanStartURL = startURL.trimmingCharacters(
@@ -894,6 +905,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             startURL: startURL,
             startupMode: startupMode,
             engine: engine,
+            webKitRuntimeGeneration: webKitRuntimeGeneration,
             webKitMediaPolicy: webKitMediaPolicy,
             // A copy receives a new identity; policy opt-in is not inherited.
             fontPolicy: .native,
@@ -920,6 +932,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         case startURL
         case startupMode
         case engine
+        case webKitRuntimeGeneration
         case webKitMediaPolicy
         case fontPolicy
         case proxy
@@ -962,6 +975,11 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         // Missing field preserves the established startup contract of old profiles.
         startupMode = try container.decodeIfPresent(BrowserStartupMode.self, forKey: .startupMode) ?? .startPage
         engine = try container.decodeIfPresent(BrowserEngine.self, forKey: .engine) ?? .chromium
+        if container.contains(.webKitRuntimeGeneration) {
+            webKitRuntimeGeneration = try container.decode(WebKitRuntimeGeneration.self, forKey: .webKitRuntimeGeneration)
+        } else {
+            webKitRuntimeGeneration = .system
+        }
         webKitMediaPolicy = try container.decodeIfPresent(WebKitMediaPolicy.self, forKey: .webKitMediaPolicy) ?? .ask
         if container.contains(.fontPolicy) {
             do {

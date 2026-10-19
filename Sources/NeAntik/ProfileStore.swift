@@ -971,7 +971,10 @@ final class ProfileStore: ObservableObject {
         let webKitFence = current?.engine == .webkit ? try paths.acquireWebKitMetadataGuard(for: value.id) : nil
         defer { webKitFence?.release() }
         if let current {
-            guard value.engine == current.engine else { throw NeAntikError.invalidProfile }
+            guard value.engine == current.engine,
+                  value.webKitRuntimeGeneration == current.webKitRuntimeGeneration else {
+                throw NeAntikError.invalidProfile
+            }
             guard value.revision == current.revision else {
                 throw BrowserProfileRevisionConflictError(
                     profileID: value.id
@@ -1823,6 +1826,7 @@ final class ProfileStore: ObservableObject {
             let persistedExpectedIdentity = try decoder.decode(BrowserIdentity.self, from: encoder.encode(expected.identity))
             guard current.revision == expected.revision,
                   current.engine == expected.engine,
+                  current.webKitRuntimeGeneration == expected.webKitRuntimeGeneration,
                   current.proxy == expected.proxy,
                   current.identity == persistedExpectedIdentity,
                   current.startURL == expected.startURL,
@@ -1850,6 +1854,9 @@ final class ProfileStore: ObservableObject {
     /// Versioned envelopes prevent older managers from silently ignoring an
     /// engine/media/font policy. Ordinary Chromium workspaces keep array writes.
     nonisolated static func encodeProfiles(_ profiles: [BrowserProfile], encoder: JSONEncoder) throws -> Data {
+        if profiles.contains(where: { $0.webKitRuntimeGeneration != .system }) {
+            return try encoder.encode(EngineProfilesDocument(schemaVersion: 5, profiles: profiles))
+        }
         if profiles.contains(where: { $0.fontPolicy != .native }) {
             return try encoder.encode(EngineProfilesDocument(schemaVersion: 4, profiles: profiles))
         }
@@ -1863,16 +1870,17 @@ final class ProfileStore: ObservableObject {
         decoder.dateDecodingStrategy = .iso8601
         if data.first(where: { ![0x20, 0x09, 0x0A, 0x0D].contains($0) }) == 0x7B {
             let document = try decoder.decode(LegacyProfilesDocument.self, from: data)
-            guard [1, 2, 3, 4].contains(document.schemaVersion),
+            guard [1, 2, 3, 4, 5].contains(document.schemaVersion),
                   (document.schemaVersion >= 2 || !document.profiles.contains(where: { $0.engine == .webkit })),
                   (document.schemaVersion >= 3 || !document.profiles.contains(where: { $0.webKitMediaPolicy == .deny })),
-                  (document.schemaVersion >= 4 || !document.profiles.contains(where: { $0.fontPolicy != .native })) else {
+                  (document.schemaVersion >= 4 || !document.profiles.contains(where: { $0.fontPolicy != .native })),
+                  (document.schemaVersion >= 5 || !document.profiles.contains(where: { $0.webKitRuntimeGeneration != .system })) else {
                 throw UnsupportedProfilesSchemaError()
             }
             return document.profiles
         }
         let profiles = try decoder.decode([BrowserProfile].self, from: data)
-        guard !profiles.contains(where: { $0.engine == .webkit || $0.fontPolicy != .native }) else { throw UnsupportedProfilesSchemaError() }
+        guard !profiles.contains(where: { $0.engine == .webkit || $0.fontPolicy != .native || $0.webKitRuntimeGeneration != .system }) else { throw UnsupportedProfilesSchemaError() }
         return profiles
     }
 
@@ -2188,7 +2196,7 @@ private struct LegacyProfilesDocument: Decodable {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try values.decode(Int.self, forKey: .schemaVersion)
         // Check the contract before interpreting an unknown payload shape.
-        guard [1, 2, 3, 4].contains(schemaVersion) else { throw UnsupportedProfilesSchemaError() }
+        guard [1, 2, 3, 4, 5].contains(schemaVersion) else { throw UnsupportedProfilesSchemaError() }
         profiles = try values.decode([BrowserProfile].self, forKey: .profiles)
     }
 }

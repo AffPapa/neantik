@@ -54,6 +54,9 @@ enum WebKitProfilePolicy {
     static func validate(_ profile: BrowserProfile) throws {
         guard !profile.isArchived else { throw NeAntikError.profileArchived }
         try validateConfiguration(profile)
+        guard profile.webKitRuntimeGeneration == .system else {
+            throw WebKitProfileError.unsupported("Для этого профиля нужен отдельный WebKit runtime, который ещё не включён в приложение. Данные не открывались и не изменены.")
+        }
         guard profile.proxy == nil || WebKitProxyFeature.launchEnabled else {
             throw WebKitProfileError.unsupported("Прокси WebKit пока отключён в публичной сборке: маршрут не прошёл квалификацию. Настройки профиля сохранены; прямое подключение вместо прокси не выполняется.")
         }

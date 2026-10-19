@@ -8,7 +8,7 @@ import Foundation
 /// profile IDs and a new browser identity so a configuration file cannot clone
 /// a live session or silently reuse an identity.
 struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
-    static let currentSchemaVersion = 3
+    static let currentSchemaVersion = 4
     static let maximumProfileCount = ProfileStorageLimits.maximumProfileCount
 
     let schemaVersion: Int
@@ -27,7 +27,8 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
             throw ProfileConfigurationTransferError.invalidDate
         }
 
-        self.schemaVersion = profiles.contains(where: { $0.webKitMediaPolicy == .deny }) ? 3 : (profiles.contains(where: { $0.engine == .webkit }) ? 2 : 1)
+        self.schemaVersion = profiles.contains(where: { $0.webKitRuntimeGeneration != .system }) ? 4 :
+            (profiles.contains(where: { $0.webKitMediaPolicy == .deny }) ? 3 : (profiles.contains(where: { $0.engine == .webkit }) ? 2 : 1))
         self.exportedAt = exportedAt
         self.profiles = try profiles.map { profile in
             let folderName = folderNameByProfileID[profile.id]
@@ -44,7 +45,7 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
             Int.self,
             forKey: .schemaVersion
         )
-        guard [1, 2, 3].contains(schemaVersion) else {
+        guard [1, 2, 3, 4].contains(schemaVersion) else {
             throw ProfileConfigurationTransferError.unsupportedSchema
         }
         let exportedAt = try container.decode(Date.self, forKey: .exportedAt)
@@ -56,7 +57,8 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
             forKey: .profiles
         )
         guard (schemaVersion >= 2 || !profiles.contains(where: { $0.engine == .webkit })),
-              (schemaVersion >= 3 || !profiles.contains(where: { $0.webKitMediaPolicy == .deny })) else {
+              (schemaVersion >= 3 || !profiles.contains(where: { $0.webKitMediaPolicy == .deny })),
+              (schemaVersion >= 4 || !profiles.contains(where: { $0.webKitRuntimeGeneration.map { $0 != .system } == true })) else {
             throw ProfileConfigurationTransferError.unsupportedSchema
         }
         guard !profiles.isEmpty else {
@@ -94,6 +96,7 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
                 startURL: entry.startURL,
                 startupMode: entry.startupMode ?? .startPage,
                 engine: entry.engine ?? .chromium,
+                webKitRuntimeGeneration: entry.webKitRuntimeGeneration ?? .system,
                 webKitMediaPolicy: entry.webKitMediaPolicy ?? .ask,
                 proxy: entry.proxy,
                 identity: BrowserIdentity(),
@@ -139,6 +142,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
     let startURL: String
     let startupMode: BrowserStartupMode?
     let engine: BrowserEngine?
+    let webKitRuntimeGeneration: WebKitRuntimeGeneration?
     let webKitMediaPolicy: WebKitMediaPolicy?
     let proxy: ProxyConfiguration?
     let folderName: String?
@@ -153,6 +157,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         startURL: String,
         startupMode: BrowserStartupMode? = nil,
         engine: BrowserEngine? = nil,
+        webKitRuntimeGeneration: WebKitRuntimeGeneration? = nil,
         webKitMediaPolicy: WebKitMediaPolicy? = nil,
         proxy: ProxyConfiguration?,
         folderName: String?
@@ -166,6 +171,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         self.startURL = startURL
         self.startupMode = startupMode
         self.engine = engine
+        self.webKitRuntimeGeneration = webKitRuntimeGeneration
         self.webKitMediaPolicy = webKitMediaPolicy
         self.proxy = proxy
         self.folderName = folderName
@@ -191,6 +197,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         startURL = normalized.startURL
         startupMode = normalized.startupMode
         engine = normalized.engine
+        webKitRuntimeGeneration = normalized.webKitRuntimeGeneration
         webKitMediaPolicy = normalized.webKitMediaPolicy
         proxy = normalized.proxy
         self.folderName = folderName
@@ -208,6 +215,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
             startURL: startURL,
             startupMode: startupMode ?? .startPage,
             engine: engine ?? .chromium,
+            webKitRuntimeGeneration: webKitRuntimeGeneration ?? .system,
             webKitMediaPolicy: webKitMediaPolicy ?? .ask,
             proxy: proxy,
             identity: BrowserIdentity()

@@ -11,6 +11,13 @@ fail-closed до включения отдельного проверенног�
 
 ## Что уже реализовано
 
+Метаданные получили явное поколение persistent WebKit store: `system` или
+`isolatedV1`. Поколение неизменяемо при редактировании, входит в снимок
+запуска и clone/metadata-transfer; его наличие поднимает профильный envelope до
+версии 5, portable transfer — до версии 4. Старые версии должны отвергать
+такой envelope. `isolatedV1` пока нельзя запустить: manager откажет до открытия
+данных, пока подписанный helper и runtime не встроены и не квалифицированы.
+
 `WebKitLoopbackBroker` резервирует один loopback endpoint, соответствующий
 статической политике собственного runtime. `WebKitRelayAuthority` выдаёт
 отдельный случайный ключ для сочетания profile/store/session/revision.
