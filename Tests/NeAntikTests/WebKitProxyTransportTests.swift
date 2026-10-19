@@ -549,15 +549,29 @@ struct WebKitProxyOwnedEndpointTests {
         }
         let nonce = UUID().uuidString.lowercased(), namedHost = "wk-" + UUID().uuidString.lowercased() + ".invalid"
         var origin: WebKitProxyTransportTests.Upstream?, upstream: WebKitProxyTransportTests.Upstream?
-        var viewA: WKWebView?, viewB: WKWebView?, window: NSWindow?
+        let profileIDA = UUID(), profileIDB = UUID()
+        var storeA: WKWebsiteDataStore?, storeB: WKWebsiteDataStore?
+        var storeAWasCreated = false, storeBWasCreated = false
+        var configA: WKWebViewConfiguration?, configB: WKWebViewConfiguration?
+        var viewA: WKWebView?, viewB: WKWebView?, stack: NSStackView?, window: NSWindow?
         func cleanup() async {
             viewA?.stopLoading(); viewB?.stopLoading()
             viewA?.navigationDelegate = nil; viewB?.navigationDelegate = nil
-            window?.contentView = nil; window?.close(); window = nil; viewA = nil; viewB = nil
+            window?.contentView = nil; window?.close(); window = nil
+            stack = nil; viewA = nil; viewB = nil; configA = nil; configB = nil; storeA = nil; storeB = nil
+            // Match production's identifier-backed stores and remove only these
+            // two owned fixture stores after releasing their WebKit objects.
+            try? await Task.sleep(for: .milliseconds(200))
+            for (id, wasCreated) in [(profileIDA, storeAWasCreated), (profileIDB, storeBWasCreated)] where wasCreated {
+                let error: Error? = await withCheckedContinuation { continuation in
+                    WKWebsiteDataStore.remove(forIdentifier: id) { continuation.resume(returning: $0) }
+                }
+                #expect(error == nil, "Owned persistent WebKit proxy fixture must be removed")
+            }
             // Never clear the live A store's proxy assignment after refusal.
             if let upstream { await upstream.stop(); #expect(upstream.activeTaskCount() == 0) }
             if let origin { await origin.stop(); #expect(origin.activeTaskCount() == 0) }
-            print("OWNED_WK_NONLOOPBACK_CLEANUP windowClosed=1 relayDrained=1 fixtureStopsAwaited=1")
+            print("OWNED_WK_NONLOOPBACK_CLEANUP windowClosed=1 profileStoresRemoved=1 relayDrained=1 fixtureStopsAwaited=1")
         }
         do {
             let sentinel = try WebKitProxyTransportTests.Upstream(direct: true, bindHost: host, noncePrefix: nonce)
@@ -571,7 +585,10 @@ struct WebKitProxyOwnedEndpointTests {
             let productionConfiguration = try WebKitProxyConfigurationFactory.configurations(
                 for: profileProxy, password: "fixture-only")
             try #require(productionConfiguration.count == 1)
-            let storeA = WKWebsiteDataStore.nonPersistent(), storeB = WKWebsiteDataStore.nonPersistent()
+            storeA = WKWebsiteDataStore(forIdentifier: profileIDA)
+            storeAWasCreated = true
+            storeB = WKWebsiteDataStore(forIdentifier: profileIDB)
+            storeBWasCreated = true
             var proxy = productionConfiguration[0]
             if matchMode == .exactHosts {
                 // Documented suffix selectors only. Whether explicit selectors
@@ -583,18 +600,20 @@ struct WebKitProxyOwnedEndpointTests {
             let validPolicy = WebKitProxyQualificationMatchMode.nativeHasNoDirectExceptions(proxy)
             try #require(validPolicy)
             print("OWNED_WK_NONLOOPBACK_POLICY exactHosts=\(matchMode == .exactHosts ? 1 : 0) noFailover=1 exceptionCount=0")
-            storeA.proxyConfigurations = [proxy]; storeB.proxyConfigurations = []
-            let configA = WKWebViewConfiguration(), configB = WKWebViewConfiguration()
-            configA.websiteDataStore = storeA; configB.websiteDataStore = storeB
+            try #require(storeA != nil && storeB != nil)
+            storeA?.proxyConfigurations = [proxy]; storeB?.proxyConfigurations = []
+            configA = WKWebViewConfiguration(); configB = WKWebViewConfiguration()
+            configA?.websiteDataStore = try #require(storeA); configB?.websiteDataStore = try #require(storeB)
             try requireAdmission(); _ = NSApplication.shared
-            let a = WKWebView(frame: NSRect(x: 0, y: 0, width: 640, height: 480), configuration: configA)
-            let b = WKWebView(frame: a.frame, configuration: configB); viewA = a; viewB = b
+            viewA = WKWebView(frame: NSRect(x: 0, y: 0, width: 640, height: 480), configuration: try #require(configA))
+            viewB = WKWebView(frame: try #require(viewA).frame, configuration: try #require(configB))
             let ownedWindow = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 1280, height: 480),
                 styleMask: [.titled, .closable], backing: .buffered, defer: false)
             window = ownedWindow; ownedWindow.isReleasedWhenClosed = false
             ownedWindow.title = "NeAntik · owned non-loopback WebKit proxy experiment"
-            let stack = NSStackView(views: [a, b]); stack.orientation = .horizontal; stack.distribution = .fillEqually
-            ownedWindow.contentView = stack; ownedWindow.makeKeyAndOrderFront(nil)
+            let ownedStack = NSStackView(views: [try #require(viewA), try #require(viewB)])
+            ownedStack.orientation = .horizontal; ownedStack.distribution = .fillEqually; stack = ownedStack
+            ownedWindow.contentView = ownedStack; ownedWindow.makeKeyAndOrderFront(nil)
             let windowVisible = ownedWindow.isVisible
             print("OWNED_WK_NONLOOPBACK_WINDOW created=1 visible=\(windowVisible ? 1 : 0)")
             try #require(windowVisible)
@@ -615,11 +634,11 @@ struct WebKitProxyOwnedEndpointTests {
             }
             // .invalid may prove name routing/auth, but is never a Direct-failure
             // oracle: a Direct client would also fail to resolve this name.
-            let nameResult = try await navigate(a, host: namedHost, phase: "named")
+            let nameResult = try await navigate(try #require(viewA), host: namedHost, phase: "named")
             observe("named")
             #expect(nameResult.body == "pong" && !nameResult.failed && !nameResult.timeout)
             #expect(fixture.counts().responses >= 1 && fixture.counts().authenticated >= 1 && sentinel.counts().responses == 0)
-            let direct = try await navigate(b, host: host, phase: "same-target")
+            let direct = try await navigate(try #require(viewB), host: host, phase: "same-target")
             observe("direct-before")
             try #require(direct.body == "DIRECT" && !direct.failed && !direct.timeout && sentinel.counts().responses == 1)
             // A deliberately broken path opens TCP but sends no HTTP. Prove
@@ -637,24 +656,24 @@ struct WebKitProxyOwnedEndpointTests {
             try #require(sentinel.counts().responses == beforeBare.responses)
             let beforeProxy = fixture.counts().responses
             let beforeA = sentinel.counts()
-            let protected = try await navigate(a, host: host, phase: "same-target")
+            let protected = try await navigate(try #require(viewA), host: host, phase: "same-target")
             observe("protected")
             #expect(protected.body == "pong" && !protected.failed && !protected.timeout)
             #expect(fixture.counts().responses == beforeProxy + 1 && sentinel.counts().responses == beforeA.responses)
             #expect(sentinel.counts().connections == beforeA.connections)
             fixture.setRefusing(true)
             let beforeRevoke = sentinel.counts()
-            let revoked = try await navigate(a, host: host, phase: "same-target")
+            let revoked = try await navigate(try #require(viewA), host: host, phase: "same-target")
             observe("revoked")
             #expect(revoked.failed && !revoked.timeout && sentinel.counts().responses == beforeRevoke.responses)
             #expect(sentinel.counts().connections == beforeRevoke.connections)
             fixture.setRefusing(false)
-            let recovered = try await navigate(a, host: host, phase: "recovered")
+            let recovered = try await navigate(try #require(viewA), host: host, phase: "recovered")
             observe("recovered")
             #expect(recovered.body == "pong" && !recovered.failed && !recovered.timeout)
             #expect(sentinel.counts().responses == beforeRevoke.responses)
             let beforeDirectAfter = sentinel.counts()
-            let stillReachable = try await navigate(b, host: host, phase: "same-target")
+            let stillReachable = try await navigate(try #require(viewB), host: host, phase: "same-target")
             observe("direct-after")
             #expect(stillReachable.body == "DIRECT" && !stillReachable.failed && !stillReachable.timeout)
             #expect(sentinel.counts().responses == beforeDirectAfter.responses + 1)
