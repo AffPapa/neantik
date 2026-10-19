@@ -58,8 +58,9 @@ struct ProxyDiagnosticPreference: Codable, Equatable, Sendable {
     }
 }
 
-/// Reads and writes run off the main actor. Cross-manager writes use a private
-/// advisory guard and compare the persisted revision before atomic replacement.
+/// Bulk load/save work runs off the main actor. Cross-manager writes use a
+/// private advisory guard and compare revisions before atomic replacement.
+/// Publication has a bounded, non-lock-waiting final read after all awaits.
 struct ProxyDiagnosticPreferenceStore: Sendable {
     let paths: AppPaths
     var write: @Sendable (AppPaths, Data, URL) throws -> Void = { try $0.writePrivateFile($1, to: $2) }
@@ -86,6 +87,16 @@ struct ProxyDiagnosticPreferenceStore: Sendable {
             }
         }
         return try await withTaskCancellationHandler { try await task.value } onCancel: { task.cancel() }
+    }
+
+    /// Final synchronous publication fence: at most 4 KiB, no advisory-lock
+    /// wait, directory creation, network or Keychain. The descriptor reader
+    /// rejects replacement and in-place edits. This is an observation at this
+    /// point, not a promise that another process cannot edit afterward.
+    func validateRevisionForPublication(_ expectedRevision: UUID?) throws {
+        guard try read()?.revision == expectedRevision else {
+            throw ProxyDiagnosticError.revisionConflict
+        }
     }
 
     private func read() throws -> ProxyDiagnosticPreference? {
@@ -145,6 +156,8 @@ enum ProxyDiagnosticRequest {
         readPassword: @Sendable () async throws -> String,
         snapshotIsCurrent: @MainActor () async throws -> Bool,
         requestIsCurrent: @MainActor () -> Bool,
+        validateSavedPreference: @MainActor () async throws -> Void,
+        validatePreferenceAtPublication: @MainActor () throws -> Void,
         runProcess: ProxyTester.ProcessRunner = ProxyTester.runCancellableProcess
     ) async throws -> ProxyDiagnosticObservation {
         func validate() async throws {
@@ -161,10 +174,17 @@ enum ProxyDiagnosticRequest {
             endpoint: endpoint, configuration: configuration, password: password,
             consent: true, runProcess: runProcess
         )
+        // Saved endpoint policy is another asynchronous input. Read it before
+        // the final profile/password fences, so an external edit during this
+        // disk wait cannot become a stale success in the sheet.
+        try await validateSavedPreference()
         try await validate()
         let currentPassword = try await readPassword()
         try await validate()
         guard currentPassword == password else { throw CancellationError() }
+        // Preserve saved-policy freshness too: it may have changed during the
+        // final async profile/password checks. No await follows this fence.
+        try validatePreferenceAtPublication()
         return result
     }
 }

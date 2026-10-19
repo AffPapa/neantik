@@ -98,6 +98,7 @@ struct ProxyDiagnosticTests {
                     return "replacement-secret"
                 },
                 snapshotIsCurrent: { state.snapshot }, requestIsCurrent: { state.tokenMatches },
+                validateSavedPreference: {}, validatePreferenceAtPublication: {},
                 runProcess: { _, _, _, _ in
                     Issue.record("Replacement password must never be sent to the old proxy")
                     return .init(status: 0, output: Data(), outputExceeded: false)
@@ -121,12 +122,131 @@ struct ProxyDiagnosticTests {
                     return ""
                 },
                 snapshotIsCurrent: { state.snapshot }, requestIsCurrent: { state.tokenMatches },
+                validateSavedPreference: {}, validatePreferenceAtPublication: {},
                 runProcess: { _, _, _, _ in
                     .init(status: 0, output: Data("{\"ip\":\"203.0.113.12\"}\nNEANTIK_METRICS_V2:0.1|200|200\n".utf8), outputExceeded: false)
                 }
             )
         }
         #expect(state.passwordReads == 2)
+    }
+
+    @Test @MainActor func publicationRejectsProfileChangedDuringPreferenceRead() async throws {
+        try await exercisePreferenceRead(change: "profile")
+    }
+
+    @Test @MainActor func publicationRejectsPasswordChangedDuringPreferenceRead() async throws {
+        try await exercisePreferenceRead(change: "password")
+    }
+
+    @Test @MainActor func publicationRejectsRequestReplacedDuringPreferenceRead() async throws {
+        try await exercisePreferenceRead(change: "request")
+    }
+
+    @Test @MainActor func unchangedPreferenceReadPublishesSingleObservation() async throws {
+        try await exercisePreferenceRead(change: "none")
+    }
+
+    @Test @MainActor func publicationRejectsPreferenceRevisionConflict() async throws {
+        try await exercisePreferenceRead(change: "revision")
+    }
+
+    @Test @MainActor func publicationRejectsUnreadablePreference() async throws {
+        try await exercisePreferenceRead(change: "unreadable")
+    }
+
+    @Test @MainActor func publicationRejectsCancellationDuringPreferenceRead() async throws {
+        let task = Task { @MainActor in try await exercisePreferenceRead(change: "cancel") }
+        try await task.value
+    }
+
+    @Test @MainActor func publicationRejectsPreferenceChangedDuringFinalPasswordRead() async throws {
+        try await exercisePreferenceRead(change: "late-policy-password")
+    }
+
+    @Test @MainActor func publicationRejectsPreferenceChangedDuringFinalSnapshotRead() async throws {
+        try await exercisePreferenceRead(change: "late-policy-snapshot")
+    }
+
+    @Test func finalPreferenceFenceDetectsCreationReplacementRemovalAndCorruption() async throws {
+        let paths = try fixture()
+        defer { try? FileManager.default.removeItem(at: paths.rootDirectory) }
+        let store = ProxyDiagnosticPreferenceStore(paths: paths)
+        try store.validateRevisionForPublication(nil)
+        let first = try await store.save(ProxyDiagnosticEndpoint("https://example.com/ip"), expectedRevision: nil)
+        #expect(throws: ProxyDiagnosticError.revisionConflict) { try store.validateRevisionForPublication(nil) }
+        try store.validateRevisionForPublication(first.revision)
+        let second = try await store.save(ProxyDiagnosticEndpoint("https://example.com/other"), expectedRevision: first.revision)
+        #expect(throws: ProxyDiagnosticError.revisionConflict) { try store.validateRevisionForPublication(first.revision) }
+        try store.validateRevisionForPublication(second.revision)
+        try FileManager.default.removeItem(at: paths.proxyDiagnosticPreferenceFile)
+        #expect(throws: ProxyDiagnosticError.revisionConflict) { try store.validateRevisionForPublication(second.revision) }
+        try paths.writePrivateFile(Data("broken".utf8), to: paths.proxyDiagnosticPreferenceFile)
+        #expect(throws: ProxyDiagnosticError.unavailableSettings) { try store.validateRevisionForPublication(second.revision) }
+        #expect(try Data(contentsOf: paths.proxyDiagnosticPreferenceFile) == Data("broken".utf8))
+        try FileManager.default.removeItem(at: paths.proxyDiagnosticPreferenceFile)
+        let target = paths.rootDirectory.appendingPathComponent("unchanged-sibling")
+        try Data("preserve".utf8).write(to: target)
+        try FileManager.default.createSymbolicLink(at: paths.proxyDiagnosticPreferenceFile, withDestinationURL: target)
+        #expect(throws: (any Error).self) { try store.validateRevisionForPublication(second.revision) }
+        #expect(try Data(contentsOf: target) == Data("preserve".utf8))
+    }
+
+    @MainActor private func exercisePreferenceRead(change: String) async throws {
+        let state = RequestState()
+        let endpoint = try ProxyDiagnosticEndpoint("https://example.com/ip")
+        let proxy = try ProxyImportParser.parse("fixture:synthetic@127.0.0.1:8080", kind: .http).configuration
+        let calls = Calls()
+        func run() async throws -> ProxyDiagnosticObservation {
+            try await ProxyDiagnosticRequest.run(
+                endpoint: endpoint, configuration: proxy,
+                readPassword: {
+                    await MainActor.run {
+                        state.passwordReads += 1
+                        if state.passwordReads == 2 && change == "late-policy-password" { state.policyMatches = false }
+                        return state.password
+                    }
+                },
+                snapshotIsCurrent: {
+                    if state.passwordReads == 2 && change == "late-policy-snapshot" { state.policyMatches = false }
+                    return state.snapshot
+                }, requestIsCurrent: { state.tokenMatches },
+                validateSavedPreference: {
+                    // Deterministically model an external edit while the disk read
+                    // suspends. No real proxy, preference file or secret is used.
+                    await Task.yield()
+                    state.preferenceReads += 1
+                    switch change {
+                    case "profile": state.snapshot = false
+                    case "password": state.password = "replacement-fixture"
+                    case "request": state.tokenMatches = false
+                    case "revision": throw ProxyDiagnosticError.revisionConflict
+                    case "unreadable": throw ProxyDiagnosticError.unavailableSettings
+                    case "cancel": withUnsafeCurrentTask { $0?.cancel() }
+                    default: break
+                    }
+                },
+                validatePreferenceAtPublication: {
+                    guard state.policyMatches else { throw ProxyDiagnosticError.revisionConflict }
+                },
+                runProcess: { _, _, _, _ in
+                    await calls.increment()
+                    return .init(status: 0, output: Data("{\"ip\":\"203.0.113.12\"}\nNEANTIK_METRICS_V2:0.1|200|200\n".utf8), outputExceeded: false)
+                }
+            )
+        }
+        if change == "none" {
+            let result = try await run()
+            #expect(result.ipAddress == "203.0.113.12")
+        } else if ["revision", "late-policy-password", "late-policy-snapshot"].contains(change) {
+            await #expect(throws: ProxyDiagnosticError.revisionConflict) { try await run() }
+        } else if change == "unreadable" {
+            await #expect(throws: ProxyDiagnosticError.unavailableSettings) { try await run() }
+        } else {
+            await #expect(throws: CancellationError.self) { try await run() }
+        }
+        #expect(state.preferenceReads == 1)
+        #expect(await calls.value == 1)
     }
 
     @Test func atomicPreferencesAndRevisionConflictPreservePreviousValue() async throws {
@@ -179,5 +299,8 @@ struct ProxyDiagnosticTests {
         var snapshot = true
         var tokenMatches = true
         var passwordReads = 0
+        var password = "synthetic"
+        var preferenceReads = 0
+        var policyMatches = true
     }
 }

@@ -115,19 +115,23 @@ struct ProxyDiagnosticSheet: View {
         cancel()
         let token = requestID
         let proxy = configuration
+        let expectedPreferenceRevision = preference?.revision
         task = Task { @MainActor in
             do {
                 let result = try await ProxyDiagnosticRequest.run(
                     endpoint: endpoint, configuration: proxy, readPassword: readPassword,
                     snapshotIsCurrent: snapshotIsCurrent,
-                    requestIsCurrent: { requestID == token }
+                    requestIsCurrent: { requestID == token },
+                    validateSavedPreference: {
+                        let current = try await ProxyDiagnosticPreferenceStore(paths: paths).load()
+                        guard current?.revision == expectedPreferenceRevision else { throw ProxyDiagnosticError.revisionConflict }
+                    },
+                    validatePreferenceAtPublication: {
+                        try ProxyDiagnosticPreferenceStore(paths: paths).validateRevisionForPublication(expectedPreferenceRevision)
+                    }
                 )
+                // No suspension between the validated request and publication.
                 guard !Task.isCancelled, requestID == token else { return }
-                // Another window may have changed the saved policy while the
-                // network request was in flight. Never display a stale success.
-                let current = try await ProxyDiagnosticPreferenceStore(paths: paths).load()
-                guard !Task.isCancelled, requestID == token else { return }
-                guard current?.revision == preference?.revision else { throw ProxyDiagnosticError.revisionConflict }
                 observation = result
                 task = nil
             } catch {
