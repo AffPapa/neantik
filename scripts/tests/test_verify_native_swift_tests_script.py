@@ -65,10 +65,19 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         self.assertIn("/private/tmp/nevision-swift-cache-*", text)
         self.assertIn("rm -rf \"$SWIFT_TEST_ROOT\"", text)
 
+    def test_suite_runner_has_safe_opt_in_incremental_cache(self) -> None:
+        text = SUITE_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("NEANTIK_SWIFT_SUITE_CACHE_DIR", text)
+        self.assertIn('EXPECTED_CACHE_ROOT="$PROJECT_DIR/.build"', text)
+        self.assertIn('PERSISTENT_CACHE=1', text)
+        self.assertIn('PERSISTENT_CACHE=0', text)
+        self.assertIn('"$PERSISTENT_CACHE" == 0', text)
+
     def test_ci_suite_runner_includes_signed_update_tests(self) -> None:
         text = SUITE_SCRIPT.read_text(encoding="utf-8")
 
-        self.assertIn("UpdateManifestTests)", text)
+        self.assertIn("UpdateManifestTests|", text)
         self.assertIn('--filter "$SUITE"', text)
 
     def test_ci_shards_include_authenticated_evidence_and_use_separate_processes(self) -> None:

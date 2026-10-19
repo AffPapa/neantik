@@ -133,10 +133,12 @@ struct WebKitProfileTests {
         #expect(try store.upsert(changed).engine == .webkit)
     }
 
-    @Test func unsupportedProxyFailsAndRestoreIsAnAllowedStartupPreference() throws {
+    @Test func validProxyMetadataAndRestoreAreAllowedButInvalidProxyIsRejected() throws {
         var profile = BrowserProfile(name: "Boundary", startURL: "about:blank", engine: .webkit)
         try WebKitProfilePolicy.validate(profile)
         profile.proxy = ProxyConfiguration(kind: .socks5, host: "127.0.0.1", port: 1, username: "synthetic")
+        try WebKitProfilePolicy.validate(profile)
+        profile.proxy?.port = 0
         #expect(throws: (any Error).self) { try WebKitProfilePolicy.validate(profile) }
         profile.proxy = nil; profile.startupMode = .restoreSession
         try WebKitProfilePolicy.validate(profile)

@@ -682,6 +682,7 @@ final class BrowserProcessManager: ObservableObject {
     private var tombstoneRecoveryMessages: [UUID: String] = [:]
     private var passiveObservationsEnabled = true
     private var reconcileTask: Task<Void, Never>?
+    private let keychain: KeychainStore
     private var reconcileGeneration: UInt64 = 0
     private var queuedReconcile: QueuedBrowserReconcile?
     private var lastReconciledProfiles: [BrowserProfile] = []
@@ -715,8 +716,10 @@ final class BrowserProcessManager: ObservableObject {
         !pendingReconciliationProfileIDs.isEmpty || reconcileTask != nil || queuedReconcile != nil
     }
 
-    init(paths: AppPaths, releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation? = nil) {
+    init(paths: AppPaths, releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation? = nil,
+         keychain: KeychainStore = KeychainStore()) {
         self.paths = paths
+        self.keychain = keychain
         self.launchAdmission = .shared
         self.releaseAuditBrowserIsolation = releaseAuditBrowserIsolation
         self.validatesPersistedProfiles = true
@@ -769,9 +772,11 @@ final class BrowserProcessManager: ObservableObject {
         allowsExternalProcessSignaling: Bool = true,
         startingLeaseTimeout: TimeInterval = 30,
         validatesPersistedProfiles: Bool = false,
-        now: @escaping () -> Date = Date.init
+        now: @escaping () -> Date = Date.init,
+        keychain: KeychainStore = KeychainStore()
     ) {
         self.paths = paths
+        self.keychain = keychain
         self.launchAdmission = launchAdmission ?? .shared
         self.releaseAuditBrowserIsolation = releaseAuditBrowserIsolation
         self.validatesPersistedProfiles = validatesPersistedProfiles
@@ -816,9 +821,11 @@ final class BrowserProcessManager: ObservableObject {
         allowsExternalProcessSignaling: Bool = true,
         startingLeaseTimeout: TimeInterval = 30,
         validatesPersistedProfiles: Bool = false,
-        now: @escaping () -> Date = Date.init
+        now: @escaping () -> Date = Date.init,
+        keychain: KeychainStore = KeychainStore()
     ) {
         self.paths = paths
+        self.keychain = keychain
         self.launchAdmission = launchAdmission ?? .shared
         self.validatesPersistedProfiles = validatesPersistedProfiles
         self.processIdentityInspector = processIdentityInspector
@@ -2664,6 +2671,11 @@ final class BrowserProcessManager: ObservableObject {
         }
         try WebKitProfilePolicy.validate(profile)
         try launchAdmission.requireSafePressure()
+        let proxyPassword = try keychain.configuredProxyPassword(for: profile)
+        let proxyConfigurations = try WebKitProxyConfigurationFactory.configurations(
+            for: profile.proxy,
+            password: proxyPassword
+        )
         guard !webKitQuitPending, webKitBrowsers[profile.id] == nil,
               processState(for: profile.id) == .stopped else { throw NeAntikError.profileAlreadyRunning }
         let lease = try paths.acquireWebKitSessionGuard(for: profile.id)
@@ -2682,6 +2694,7 @@ final class BrowserProcessManager: ObservableObject {
                 }
                 return try WebKitProfileBrowser(profile: profile, lease: lease, metadataLease: metadataLease,
                     sessionGeneration: generation, sessionStore: sessionStore, restoredSession: restored, sessionWarning: warning,
+                    proxyConfigurations: proxyConfigurations,
                     onSessionSaveError: { [weak self] in self?.lastError = Self.webKitSessionSaveFailureMessage }) { [weak self] in
                 guard let self, self.webKitBrowsers[profile.id]?.sessionGeneration == generation else { return }
                 self.webKitBrowsers.removeValue(forKey: profile.id)

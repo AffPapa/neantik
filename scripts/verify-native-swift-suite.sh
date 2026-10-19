@@ -155,7 +155,9 @@ case "$SUITE" in
   ProxyRelayTLSQualificationTests|\
   ReleaseAuditBrowserIsolationTests|\
   SignedUpdateManifestFetcherTests|\
-  UpdateManifestTests)
+  UpdateManifestTests|\
+  WebKitProfileTests|\
+  WebKitProxyConfigurationFactoryTests)
     ;;
   *)
     echo "Unknown Swift test suite: $SUITE" >&2
@@ -175,10 +177,26 @@ if [[ -z "$RESOLVED_DEVELOPER_DIR" ]]; then
   exit 69
 fi
 export DEVELOPER_DIR="$RESOLVED_DEVELOPER_DIR"
-SWIFT_TEST_ROOT="$(mktemp -d /private/tmp/neantik-swift-suite-XXXXXX)"
+PERSISTENT_CACHE_ROOT="${NEANTIK_SWIFT_SUITE_CACHE_DIR:-}"
+if [[ -n "$PERSISTENT_CACHE_ROOT" ]]; then
+  # Incremental local runs may retain SwiftPM outputs in the checkout's
+  # existing ignored build directory; never remove it on exit.
+  EXPECTED_CACHE_ROOT="$PROJECT_DIR/.build"
+  if [[ "$PERSISTENT_CACHE_ROOT" != "$EXPECTED_CACHE_ROOT" ]]; then
+    echo "NEANTIK_SWIFT_SUITE_CACHE_DIR must be exactly: $EXPECTED_CACHE_ROOT" >&2
+    exit 64
+  fi
+  SWIFT_TEST_ROOT="$PERSISTENT_CACHE_ROOT"
+  PERSISTENT_CACHE=1
+  SWIFT_BUILD_ROOT="$SWIFT_TEST_ROOT"
+else
+  SWIFT_TEST_ROOT="$(mktemp -d /private/tmp/neantik-swift-suite-XXXXXX)"
+  PERSISTENT_CACHE=0
+  SWIFT_BUILD_ROOT="$SWIFT_TEST_ROOT/build"
+fi
 
 cleanup() {
-  if [[ -n "${SWIFT_TEST_ROOT:-}" && "$SWIFT_TEST_ROOT" == /private/tmp/neantik-swift-suite-* && -d "$SWIFT_TEST_ROOT" ]]; then
+  if [[ "$PERSISTENT_CACHE" == 0 && -n "${SWIFT_TEST_ROOT:-}" && "$SWIFT_TEST_ROOT" == /private/tmp/neantik-swift-suite-* && -d "$SWIFT_TEST_ROOT" ]]; then
     rm -rf "$SWIFT_TEST_ROOT"
   fi
 }
@@ -189,7 +207,7 @@ mkdir -p \
   "$SWIFT_TEST_ROOT/module-cache" \
   "$SWIFT_TEST_ROOT/build"
 
-echo "Running NeAntik Swift suite: $SUITE via $DEVELOPER_DIR"
+echo "Running NeAntik Swift suite: $SUITE via $DEVELOPER_DIR (cache: $SWIFT_TEST_ROOT)"
 TEST_OUTPUT="$SWIFT_TEST_ROOT/test-output.txt"
 
 (
@@ -201,7 +219,7 @@ TEST_OUTPUT="$SWIFT_TEST_ROOT/test-output.txt"
       --jobs 2 \
       --no-parallel \
       --disable-sandbox \
-      --scratch-path "$SWIFT_TEST_ROOT/build" \
+      --scratch-path "$SWIFT_BUILD_ROOT" \
       --filter "$SUITE"
 ) 2>&1 | tee "$TEST_OUTPUT"
 

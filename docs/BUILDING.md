@@ -27,6 +27,18 @@ compilation uses two jobs. This avoids launching hundreds of independent
 process and disk fixtures together. Tests of concurrent operations still create
 their own controlled workers; cancellation latency limits remain unchanged.
 
+For repeated local targeted suites, reuse the ignored SwiftPM cache inside this
+checkout instead of paying a clean compile for every suite:
+
+```bash
+NEANTIK_SWIFT_SUITE_CACHE_DIR="$PWD/.build" \
+  ./scripts/verify-native-swift-suite.sh WebKitProxyConfigurationFactoryTests
+```
+
+The suite runner accepts only this checkout's exact `.build` path and never removes it.
+CI and one-off runs keep their isolated temporary cache unless this opt-in is
+set. SwiftPM still validates source and toolchain changes normally.
+
 For day-to-day SwiftUI and manager work, use the isolated fast loop instead:
 
 ```bash

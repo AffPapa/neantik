@@ -207,7 +207,8 @@ struct NeAntikApp: App {
             Self.writeControlErrorAndExit("Не удалось подтвердить временное хранилище браузера для проверки выпуска.\n", code: EX_NOPERM)
         }
         let profileStore = ProfileStore(paths: paths)
-        let processManager = BrowserProcessManager(paths: paths, releaseAuditBrowserIsolation: browserIsolation)
+        let processManager = BrowserProcessManager(paths: paths, releaseAuditBrowserIsolation: browserIsolation,
+            keychain: keychain)
         _store = StateObject(wrappedValue: profileStore)
         _processes = StateObject(wrappedValue: processManager)
         let guiControl = MCPGUIControlCoordinator(store: profileStore, processes: processManager)

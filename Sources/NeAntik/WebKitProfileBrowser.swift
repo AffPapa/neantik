@@ -1,4 +1,5 @@
 import AppKit
+import Network
 import WebKit
 
 enum BrowserEngine: String, Codable, CaseIterable, Identifiable, Sendable {
@@ -12,16 +13,27 @@ enum BrowserEngine: String, Codable, CaseIterable, Identifiable, Sendable {
     /// was measured. Never include profile identity, visits or credentials.
     var managementCapabilities: [String: Bool] {
         let configuredEngine = self == .chromium
+        let proxy = configuredEngine || (self == .webkit && WebKitProxyFeature.launchEnabled)
         return ["persistentSiteData": true,
                 "fingerprintConfiguration": configuredEngine,
-                "proxy": configuredEngine, "mcpLaunch": true,
+                "proxy": proxy, "mcpLaunch": true,
                 "extensions": configuredEngine, "browserDataBackup": configuredEngine]
     }
 
     var settingsSummary: String {
         self == .chromium
             ? "Встроенный Chromium: изолированные профили, прокси и параметры браузерного окружения."
-            : "Системный WebKit в окне NeAntik: отдельные cookies, данные сайтов и вкладки. Отпечаток, язык и часовой пояс берутся из macOS; подмена этих параметров не поддерживается. Для запуска через AI включи доступ WebKit в справке MCP и разреши выбранные профили. Для настройки окружения, прокси и расширений выбери Chromium."
+            : Self.webKitSettingsSummary
+    }
+
+    private static var webKitSettingsSummary: String {
+        let proxyDescription: String
+        #if DEBUG
+        proxyDescription = "Прокси профиля включён только в Dev для сетевой проверки и не квалифицирован для публичного выпуска."
+        #else
+        proxyDescription = "Прокси WebKit отключён до проверки маршрута на подписанном кандидате."
+        #endif
+        return "Системный WebKit в окне NeAntik: отдельные cookies, данные сайтов и вкладки. \(proxyDescription) Отпечаток, язык и часовой пояс берутся из macOS; подмена этих параметров не поддерживается. Для запуска через AI включи доступ WebKit в справке MCP и разреши выбранные профили. Расширения и настройки Chromium доступны только в Chromium."
     }
 }
 
@@ -42,6 +54,9 @@ enum WebKitProfilePolicy {
     static func validate(_ profile: BrowserProfile) throws {
         guard !profile.isArchived else { throw NeAntikError.profileArchived }
         try validateConfiguration(profile)
+        guard profile.proxy == nil || WebKitProxyFeature.launchEnabled else {
+            throw WebKitProfileError.unsupported("Прокси WebKit пока отключён в публичной сборке: маршрут не прошёл квалификацию. Настройки профиля сохранены; прямое подключение вместо прокси не выполняется.")
+        }
         // Keep legacy metadata readable and unchanged; reject an unsupported
         // launch rather than silently ignoring explicit Chromium context.
         guard profile.identity.timezoneIdentifier == nil,
@@ -62,8 +77,8 @@ enum WebKitProfilePolicy {
         guard profile.fontPolicy == .native else {
             throw UnsupportedBrowserFontPolicyError()
         }
-        guard profile.proxy == nil else {
-            throw WebKitProfileError.unsupported("Прокси для WebKit пока не проверены. Запуск отменён: прямое подключение вместо прокси не выполняется. Для работы с прокси создай профиль Chromium.")
+        if let proxy = profile.proxy, !proxy.isValid {
+            throw NeAntikError.invalidProfile
         }
         guard let url = BrowserLaunchBuilder.validatedStartURL(profile.startURL), permits(url) else {
             throw NeAntikError.invalidProfile
@@ -218,7 +233,8 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
          sessionGeneration: UUID = UUID(),
          downloadPicker: WebKitDownloads.Picker? = nil,
          sessionStore: WebKitSessionStore? = nil, restoredSession: WebKitSessionSnapshot? = nil,
-         sessionWarning: String? = nil, onSessionSaveError: (() -> Void)? = nil,
+         sessionWarning: String? = nil, proxyConfigurations: [Network.ProxyConfiguration] = [],
+         onSessionSaveError: (() -> Void)? = nil,
          onClose: @escaping () -> Void) throws {
         try WebKitProfilePolicy.validate(profile)
         if profile.startupMode == .restoreSession, sessionStore == nil { throw WebKitSessionError.unavailable }
@@ -230,7 +246,9 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         self.sessionNotice = sessionWarning; self.onSessionSaveError = onSessionSaveError
         self.lease = lease; self.metadataLease = metadataLease; self.onClose = onClose
         dataStore = WKWebsiteDataStore(forIdentifier: profile.id)
-        dataStore.proxyConfigurations = []
+        // Apply before constructing the first view so every connection owned
+        // by this persistent profile store receives the same proxy policy.
+        dataStore.proxyConfigurations = proxyConfigurations
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = dataStore
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
