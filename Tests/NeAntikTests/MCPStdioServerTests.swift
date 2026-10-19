@@ -54,7 +54,14 @@ struct MCPStdioServerTests {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        let profiles = (0..<5000).map { BrowserProfile(name: "Synthetic \($0)", note: String(repeating: "🙂", count: 1000)) }
+        // This fixture bypasses ProfileStore allocation. Give its valid page
+        // deterministic unique seeds; random collisions require recovery and
+        // belong in the refusal control below, not a probabilistic success case.
+        let profiles = (0..<5000).map {
+            BrowserProfile(name: "Synthetic \($0)",
+                           note: String(repeating: "🙂", count: 1000),
+                           identity: BrowserIdentity(seed: UInt32($0 + 1)))
+        }
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
         let data = try encoder.encode(profiles)
         #expect(data.count > 16 * 1024 * 1024)
@@ -72,6 +79,7 @@ struct MCPStdioServerTests {
             return try #require(JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
         }
         let first = try page()
+        #expect(first["error"] == nil)
         #expect(first["count"] as? Int == 100)
         #expect(first["totalCount"] as? Int == 5000)
         let cursor = try #require(first["nextCursor"] as? String)
@@ -80,6 +88,25 @@ struct MCPStdioServerTests {
         #expect(try page(cursor: "bad")["error"] != nil)
         try encoder.encode(Array(profiles.dropLast())).write(to: file)
         #expect(try page(cursor: cursor)["error"] != nil)
+    }
+
+    @Test func duplicateSeedPageIsRefusedWithoutRepairingStoredMetadata() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let profiles = [
+            BrowserProfile(name: "Synthetic A", identity: BrowserIdentity(seed: 41)),
+            BrowserProfile(name: "Synthetic B", identity: BrowserIdentity(seed: 41))
+        ]
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(profiles)
+        let file = root.appendingPathComponent("profiles.json")
+        try data.write(to: file)
+        #expect(try ProfileStore.normalizedForIsolation(profiles).changed)
+        let response = call("tools/call", params: ["name": "workspace_list_profiles_page", "arguments": ["limit": 100]], root: root)
+        let result = try #require(response["result"] as? [String: Any])
+        #expect(result["isError"] as? Bool == true)
+        #expect(try Data(contentsOf: file) == data)
     }
 
     @Test func largeUnicodePagesShrinkWithoutLosingRecordsOrExceedingCombinedLimit() throws {

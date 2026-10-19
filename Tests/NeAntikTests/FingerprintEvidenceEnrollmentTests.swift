@@ -157,7 +157,10 @@ struct FingerprintEvidenceEnrollmentTests {
             outputFactory: { _ in output }
         )
 
-        #expect(throws: FingerprintEvidenceEnrollmentTestError.failed) {
+        #expect(throws: FingerprintEvidenceEnrollmentFailure(
+            stage: .outputCommit, primaryCode: "unclassified",
+            cleanup: .released, cleanupCode: nil
+        )) {
             try runner.run(
                 outputURL: URL(fileURLWithPath: "/private/tmp/binding.json")
             )

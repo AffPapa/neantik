@@ -17,6 +17,30 @@ struct SecureEnclaveFingerprintEvidenceSignerTests {
         try backend.deletePrivateKey(applicationTag: tag)
         #expect(try authority.isRetired(sessionID: session))
     }
+    @Test func failedPreflightReleasesOnlyOwnReservation() throws {
+        let backend = InMemoryFingerprintEvidenceKeyBackend()
+        backend.lookupFailure = .operationFailed(-25308)
+        let authority = SecureEnclaveFingerprintEvidenceAuthority(backend: backend)
+        #expect(throws: (any Error).self) { try authority.enroll(sessionID: UUID()) }
+        #expect(backend.reservationCount == 0)
+        #expect(backend.releaseCallCount == 1)
+        #expect(backend.createCallCount == 0)
+        #expect(backend.deleteCallCount == 0)
+    }
+
+    @Test func preexistingKeyRefusalPreservesKeyAndReleasesOwnReservation() throws {
+        let backend = InMemoryFingerprintEvidenceKeyBackend()
+        let session = UUID()
+        let tag = SecureEnclaveFingerprintEvidenceAuthority.applicationTag(for: session)
+        let original = try backend.createPrivateKey(applicationTag: tag)
+        let authority = SecureEnclaveFingerprintEvidenceAuthority(backend: backend)
+        #expect(throws: (any Error).self) { try authority.enroll(sessionID: session) }
+        #expect(try backend.publicKeyX963(applicationTag: tag) == original)
+        #expect(backend.reservationCount == 0)
+        #expect(backend.releaseCallCount == 1)
+        #expect(backend.deleteCallCount == 0)
+    }
+
     @Test
     func secureEnclaveAuditDoesNotCreateMissingAuthority() throws {
         let backend = InMemoryFingerprintEvidenceKeyBackend()
@@ -307,6 +331,7 @@ private final class InMemoryFingerprintEvidenceKeyBackend:
     private var signatureCalls = 0
     private var deleteCalls = 0
     private var releaseCalls = 0
+    var lookupFailure: SecureEnclaveFingerprintEvidenceAuthorityError?
 
     var publicKeyCallCount: Int {
         locked { publicKeyCalls }
@@ -353,8 +378,9 @@ private final class InMemoryFingerprintEvidenceKeyBackend:
     func hasEnrollment(applicationTag: Data) throws -> Bool { locked { reservations.contains(applicationTag) } }
 
     func publicKeyX963(applicationTag: Data) throws -> Data? {
-        locked {
+        try locked {
             publicKeyCalls += 1
+            if let lookupFailure { throw lookupFailure }
             return keys[applicationTag]?.publicKey.x963Representation
         }
     }

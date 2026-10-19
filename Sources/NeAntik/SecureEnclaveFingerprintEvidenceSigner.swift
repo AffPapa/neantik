@@ -10,6 +10,8 @@ struct SecureEnclaveFingerprintEvidenceSignature: Sendable {
 protocol SecureEnclaveFingerprintEvidenceKeyBackend: Sendable {
     func reserveEnrollment(applicationTag: Data) throws
     func publicKeyX963(applicationTag: Data) throws -> Data?
+    /// Creation failures must distinguish confirmed absence/cleanup from an
+    /// uncertain permanent key. Unclassified errors retain the reservation.
     func createPrivateKey(applicationTag: Data) throws -> Data
     func signature(
         for message: Data,
@@ -18,6 +20,65 @@ protocol SecureEnclaveFingerprintEvidenceKeyBackend: Sendable {
     func deletePrivateKey(applicationTag: Data) throws
     func releaseEnrollment(applicationTag: Data) throws
     func hasEnrollment(applicationTag: Data) throws -> Bool
+}
+
+/// Only closed categories and numeric OS codes may reach the enrollment log.
+/// In particular, an injected/backend error description can contain secrets.
+struct FingerprintEvidenceEnrollmentFailure: LocalizedError, Equatable {
+    enum Stage: String, Sendable {
+        case existingKeyCheck = "existing-key-check"
+        case keyCreation = "key-creation"
+        case keyValidation = "key-validation"
+        case bindingValidation = "binding-validation"
+        case selfTest = "self-test"
+        case outputCommit = "output-commit"
+    }
+    enum Cleanup: String, Sendable { case released, retained }
+
+    let stage: Stage
+    let primaryCode: String
+    let cleanup: Cleanup
+    let cleanupCode: String?
+
+    var errorDescription: String? {
+        "Подготовка проверки остановлена: stage=\(stage.rawValue), " +
+        "cause=\(primaryCode), cleanup=\(cleanup.rawValue)" +
+        (cleanupCode.map { ", cleanupCause=\($0)" } ?? "") + "."
+    }
+
+    static func code(for error: any Error) -> String {
+        if let error = error as? SecureEnclaveFingerprintKeyCreationFailure {
+            return error.primaryCode
+        }
+        if let error = error as? SecureEnclaveFingerprintEvidenceAuthorityError {
+            switch error {
+            case .alreadyEnrolled: return "already-enrolled"
+            case .notEnrolled: return "not-enrolled"
+            case .authorityMismatch: return "authority-mismatch"
+            case .ambiguousAuthority: return "ambiguous-authority"
+            case .invalidPublicKey: return "invalid-public-key"
+            case let .operationFailed(code): return "security-\(code)"
+            }
+        }
+        if let error = error as? FingerprintEvidenceEnrollmentError {
+            switch error {
+            case .invalidOutputPath: return "invalid-output-path"
+            case .unsafeOutputDirectory: return "unsafe-output-directory"
+            case .unsafeOutputEntry: return "unsafe-output-entry"
+            case .invalidEntropy: return "invalid-entropy"
+            case .selfTestFailed: return "self-test-failed"
+            case let .operationFailed(code): return "output-\(code)"
+            }
+        }
+        return "unclassified"
+    }
+}
+
+struct SecureEnclaveFingerprintKeyCreationFailure: Error {
+    enum Outcome: Equatable, Sendable { case notCreated, createdAndRemoved, unconfirmed }
+    let primaryCode: String
+    let outcome: Outcome
+    let cleanupCode: String?
 }
 
 enum SecureEnclaveFingerprintEvidenceAuthorityError:
@@ -63,14 +124,41 @@ struct SecureEnclaveFingerprintEvidenceAuthority: Sendable {
 
     func enroll(sessionID: UUID) throws -> Data {
         let tag = Self.applicationTag(for: sessionID)
+        // A duplicate/concurrent loser owns nothing and must never enter
+        // cleanup. Keep this reservation until key cleanup is confirmed.
         try backend.reserveEnrollment(applicationTag: tag)
-        guard try backend.publicKeyX963(applicationTag: tag) == nil else {
-            throw SecureEnclaveFingerprintEvidenceAuthorityError
-                .alreadyEnrolled
+        var stage = FingerprintEvidenceEnrollmentFailure.Stage.existingKeyCheck
+        do {
+            guard try backend.publicKeyX963(applicationTag: tag) == nil else {
+                throw SecureEnclaveFingerprintEvidenceAuthorityError.alreadyEnrolled
+            }
+            stage = .keyCreation
+            let publicKey = try backend.createPrivateKey(applicationTag: tag)
+            stage = .keyValidation
+            return try Self.validatedPublicKey(publicKey)
+        } catch {
+            let creation = error as? SecureEnclaveFingerprintKeyCreationFailure
+            let mayRelease = stage == .existingKeyCheck ||
+                (stage == .keyCreation && creation != nil && creation?.outcome != .unconfirmed)
+            var cleanup = FingerprintEvidenceEnrollmentFailure.Cleanup.retained
+            var cleanupCode = creation?.cleanupCode
+            if mayRelease {
+                do {
+                    // No tag-based key deletion here: an existing key is not
+                    // ours. Creation cleans its own exact SecKey reference.
+                    try backend.releaseEnrollment(applicationTag: tag)
+                    cleanup = .released
+                } catch {
+                    cleanupCode = FingerprintEvidenceEnrollmentFailure.code(for: error)
+                }
+            }
+            throw FingerprintEvidenceEnrollmentFailure(
+                stage: stage,
+                primaryCode: FingerprintEvidenceEnrollmentFailure.code(for: error),
+                cleanup: cleanup,
+                cleanupCode: cleanupCode
+            )
         }
-        return try Self.validatedPublicKey(
-            backend.createPrivateKey(applicationTag: tag)
-        )
     }
 
     func existingSigner(
@@ -114,7 +202,7 @@ struct SecureEnclaveFingerprintEvidenceAuthority: Sendable {
         )
     }
 
-    private static func validatedPublicKey(_ data: Data) throws -> Data {
+    fileprivate static func validatedPublicKey(_ data: Data) throws -> Data {
         guard data.count == 65, data.first == 0x04 else {
             throw SecureEnclaveFingerprintEvidenceAuthorityError
                 .invalidPublicKey
@@ -202,7 +290,11 @@ struct SecuritySecureEnclaveFingerprintEvidenceKeyBackend:
             [.privateKeyUsage],
             &accessError
         ) else {
-            throw operationError(accessError?.takeRetainedValue())
+            throw SecureEnclaveFingerprintKeyCreationFailure(
+                primaryCode: FingerprintEvidenceEnrollmentFailure.code(
+                    for: operationError(accessError?.takeRetainedValue())),
+                outcome: .notCreated, cleanupCode: nil
+            )
         }
         let attributes: [String: Any] = [
             kSecAttrKeyType as String:
@@ -220,10 +312,19 @@ struct SecuritySecureEnclaveFingerprintEvidenceKeyBackend:
             attributes as CFDictionary,
             &createError
         ) else {
-            throw operationError(createError?.takeRetainedValue())
+            // No reference was returned. Do not infer permanent-key absence
+            // or delete by tag after an uncertain native creation failure.
+            throw SecureEnclaveFingerprintKeyCreationFailure(
+                primaryCode: FingerprintEvidenceEnrollmentFailure.code(
+                    for: operationError(createError?.takeRetainedValue())),
+                outcome: .unconfirmed, cleanupCode: nil
+            )
         }
         do {
-            return try publicKeyX963(privateKey: privateKey)
+            // Include full curve-point validation in exact-reference cleanup.
+            return try SecureEnclaveFingerprintEvidenceAuthority.validatedPublicKey(
+                publicKeyX963(privateKey: privateKey)
+            )
         } catch {
             let cleanupStatus = SecItemDelete(
                 [
@@ -231,13 +332,12 @@ struct SecuritySecureEnclaveFingerprintEvidenceKeyBackend:
                     kSecMatchItemList as String: [privateKey]
                 ] as CFDictionary
             )
-            guard cleanupStatus == errSecSuccess ||
-                    cleanupStatus == errSecItemNotFound
-            else {
-                throw SecureEnclaveFingerprintEvidenceAuthorityError
-                    .operationFailed(Int(cleanupStatus))
-            }
-            throw error
+            let removed = cleanupStatus == errSecSuccess || cleanupStatus == errSecItemNotFound
+            throw SecureEnclaveFingerprintKeyCreationFailure(
+                primaryCode: FingerprintEvidenceEnrollmentFailure.code(for: error),
+                outcome: removed ? .createdAndRemoved : .unconfirmed,
+                cleanupCode: removed ? nil : "security-\(cleanupStatus)"
+            )
         }
     }
 

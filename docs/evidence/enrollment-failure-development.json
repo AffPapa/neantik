@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-19",
+  "status": "source development verified; native candidate qualification pending",
+  "sourceBase": "9456d00212df9c669ecb7854e587a65209b653a7",
+  "scope": "Enrollment failure ownership, closed diagnostics and deterministic MCP pagination test fixtures",
+  "oldCodeNegativeControl": {
+    "testsFailed": 2,
+    "issues": 4,
+    "behavior": "Failed preflight and preexisting-key refusal retained own reservation"
+  },
+  "enrollmentTargeted": {
+    "tests": 45,
+    "suites": 5,
+    "skipped": 0,
+    "status": "pass",
+    "inputSHA256": "6c7b1e6bb6b0366b5db4f3807a69b5fce0a46c8c5f8381ca3779a740d1db150a"
+  },
+  "fullSwift": {
+    "fullReportedTests": 1695,
+    "fullReportedSuites": 207,
+    "fullSkipLines": 77,
+    "fullRawExitCode": 1,
+    "failedCases": [
+      "largeWorkspacePagesRemainBoundedAndRevisionBound()"
+    ],
+    "originalCauseLimit": "Original fixture data and generic MCP error body were not retained. Random seed collision is a proven invalid fixture possibility, not a recovered diagnosis of the historical sample."
+  },
+  "mcpFixtureCorrection": {
+    "tests": 11,
+    "skipped": 0,
+    "status": "pass",
+    "productionMCPChanged": false,
+    "inputSHA256": "a6cc6ac8493218a51171ff4ec647b312e95045f98cd8929a38d2f3f8ce9b6f5e",
+    "negativeControl": "Duplicate seed refused; stored metadata unchanged"
+  },
+  "fullPython": {
+    "status": "pass",
+    "exitCode": 0,
+    "tests": 1734,
+    "seconds": 360.2,
+    "skipped": 19,
+    "logSHA256": "3c692b55c56489942336a73ff27207cc74cd46dbeb147edd0395a78a0a5178ba"
+  },
+  "sourcePins": [
+    {
+      "path": "Sources/NeAntik/FingerprintEvidenceEnrollment.swift",
+      "sha256": "33c3717fef44b7e6cfc0ec70219ad5d165e2e425121ff21a4c825a255ad6b4aa"
+    },
+    {
+      "path": "Sources/NeAntik/SecureEnclaveFingerprintEvidenceSigner.swift",
+      "sha256": "3ee2535b948bfb842361cee423d4fca3698d04d2d4c568f96dd1e16ba0e4d9f8"
+    },
+    {
+      "path": "Tests/NeAntikTests/FingerprintEvidenceEnrollmentFailureTests.swift",
+      "sha256": "77f8fc8ba1eb308b8c1f689425139e4a2dba5a9566782b4b822008d12a3c2fbd"
+    },
+    {
+      "path": "Tests/NeAntikTests/FingerprintEvidenceEnrollmentTests.swift",
+      "sha256": "bac55fd867e0301cf80438f6cabaaf2dffca2c261b286168630b30aefcbc1033"
+    },
+    {
+      "path": "Tests/NeAntikTests/MCPStdioServerTests.swift",
+      "sha256": "45d0458e5a294cb0a5b914c4c942a434a76b1e1cf140d58760c6f752044d00ca"
+    },
+    {
+      "path": "Tests/NeAntikTests/SecureEnclaveFingerprintEvidenceSignerTests.swift",
+      "sha256": "759c860345e36d0992e954be8976adbff043c2387a369cf569d017cee734ffa8"
+    }
+  ],
+  "realKeychainUsed": false,
+  "signedCandidateQualified": false,
+  "newAppRelease": false,
+  "limitations": [
+    "Memory backends do not establish Secure Enclave, native Keychain, crash or signed-candidate behavior.",
+    "Historical uncertain enrollment records were not queried, changed or declared recovered.",
+    "Original full Swift failure remains recorded; only the changed fixture suite was rerun.",
+    "Published 0.8.24 artifacts are unchanged."
+  ]
+}
