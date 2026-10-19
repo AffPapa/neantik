@@ -1,6 +1,7 @@
 import importlib.util
 import contextlib
 import io
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -16,6 +17,41 @@ SPEC.loader.exec_module(MOD)
 
 
 class FastManagerWorkflowTests(unittest.TestCase):
+    def test_full_run_capability_failure_stops_before_cache_or_swift(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); (root / "Package.swift").write_text("package")
+            output = io.StringIO()
+            with mock.patch.object(MOD, "ROOT", root), \
+                    mock.patch.object(MOD, "suites", return_value=["OwnedTests"]), \
+                    mock.patch.object(MOD, "full_run_capability_gaps", return_value=["loopback-tcp"]), \
+                    mock.patch.object(MOD, "supervise") as run_swift, \
+                    contextlib.redirect_stdout(output):
+                self.assertEqual(MOD.main(["--all"]), 75)
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(receipt["status"], "blocked")
+            self.assertEqual(receipt["missingCapabilities"], ["loopback-tcp"])
+            self.assertFalse(receipt["testsStarted"])
+            run_swift.assert_not_called()
+            self.assertFalse((root / ".build").exists())
+
+    def test_full_run_with_capabilities_still_executes_and_records_pass(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); (root / "Package.swift").write_text("package")
+            def run_swift(_command, **kwargs):
+                kwargs["stdout"].write("✔ Test owned() passed after 0.1 seconds.\n✔ Test run with 1 test in 1 suite passed\n".encode())
+                return 0
+            output = io.StringIO()
+            with mock.patch.object(MOD, "ROOT", root), \
+                    mock.patch.object(MOD, "suites", return_value=["OwnedTests"]), \
+                    mock.patch.object(MOD, "full_run_capability_gaps", return_value=[]), \
+                    mock.patch.object(MOD.subprocess, "check_output", return_value="/fixture/developer\n"), \
+                    mock.patch.object(MOD, "supervise", side_effect=run_swift), \
+                    contextlib.redirect_stdout(output):
+                self.assertEqual(MOD.main(["--all"]), 0)
+            receipt = json.loads(output.getvalue().splitlines()[0])
+            self.assertEqual(receipt["status"], "pass")
+            self.assertEqual(receipt["tests"], 1)
+
     def test_python_child_cannot_pollute_source_even_when_parent_enables_bytecode(self):
         # Exercise main's actual child environment without invoking Swift.
         with tempfile.TemporaryDirectory() as directory:

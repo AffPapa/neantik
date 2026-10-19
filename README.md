@@ -216,8 +216,10 @@ python3 -B scripts/test-manager-fast.py --suite ProxyImportParserTests
 `python3 -B scripts/test-manager-fast.py --suite ProxyImportParserTests --suite BrowserRouteProbeTests`.
 Команда сохраняет локальный кэш, использует jobs=2, проверяет непустой результат
 и сохраняет отчёт. `--list` показывает актуальные наборы, `--all` запускает
-полную локальную регрессию. Чистый прогон с отдельным кэшем остаётся доступен
-через `./scripts/verify-native-swift-tests.sh`.
+полную локальную регрессию. Перед SwiftPM `--all` проверяет доступность `/bin/ps`
+и loopback TCP/UDP; если среда запрещает их, runner завершится с exit75 до тестов.
+Это блокировка среды, а не падение приложения. Чистый прогон с отдельным кэшем
+остаётся доступен через `./scripts/verify-native-swift-tests.sh`.
 См. [короткий цикл разработки](docs/DEVELOPMENT_WORKFLOW.md).
 
 `Develop-NeAntik.command` — быстрый цикл для интерфейса и Swift-кода. Он один

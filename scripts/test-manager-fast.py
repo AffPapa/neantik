@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Cached local Swift tests. Does not package, sign, launch or publish an app."""
+"""Cached local Swift tests. Does not package, sign, launch or publish an app.
+
+The --all integration run checks process-inspection and loopback TCP/UDP
+capabilities before touching SwiftPM; missing capabilities return exit 75.
+"""
 import argparse
 import datetime
 import hashlib
@@ -7,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -77,11 +82,50 @@ def input_digest(root):
     return digest.hexdigest()
 
 
+def full_run_capability_gaps():
+    """Check OS capabilities used by full integration before compiling Swift."""
+    gaps = []
+    try:
+        result = subprocess.run(
+            ["/bin/ps", "-A", "-o", "pid="],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            timeout=2, check=False,
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            gaps.append("process-inspection")
+    except (OSError, subprocess.SubprocessError):
+        gaps.append("process-inspection")
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+            listener.settimeout(1)
+            listener.bind(("127.0.0.1", 0))
+            listener.listen(1)
+            with socket.create_connection(listener.getsockname(), timeout=1):
+                connection, _ = listener.accept()
+                connection.close()
+    except OSError:
+        gaps.append("loopback-tcp")
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as receiver:
+            receiver.settimeout(1)
+            receiver.bind(("127.0.0.1", 0))
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sender:
+                sender.sendto(b"neantik-test-preflight", receiver.getsockname())
+                data, _ = receiver.recvfrom(64)
+                if data != b"neantik-test-preflight":
+                    gaps.append("loopback-udp")
+    except OSError:
+        gaps.append("loopback-udp")
+    return gaps
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--suite", action="append", help="Exact suite; repeat to test several in one build")
-    group.add_argument("--all", action="store_true", help="Full serial local regression; release gates remain separate")
+    group.add_argument("--all", action="store_true", help="Full serial regression; preflights OS/loopback access (exit 75 if unavailable)")
     group.add_argument("--list", action="store_true")
     parser.add_argument("--plan", action="store_true", help="Show selection without running Swift or accessing Keychain")
     opts = parser.parse_args(argv)
@@ -97,6 +141,14 @@ def main(argv=None):
     if opts.plan:
         print(json.dumps({"mode": "full" if opts.all else "targeted", "suites": sorted(set(opts.suite or [])),
                           "jobs": 2, "parallel": False, "cache": "project-owned persistent", "release": False})); return 0
+    if opts.all:
+        gaps = full_run_capability_gaps()
+        if gaps:
+            print(json.dumps({"schemaVersion": 1, "mode": "full", "status": "blocked",
+                              "reason": "required-execution-capabilities-unavailable",
+                              "missingCapabilities": gaps, "testsStarted": False,
+                              "releaseGate": False}))
+            return 75
     cache.mkdir(parents=True, exist_ok=True)
     with cache_lock(cache) as cache_fd:
         env = os.environ.copy()
