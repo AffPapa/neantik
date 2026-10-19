@@ -16,16 +16,10 @@ enum WebKitProxyConfigurationError: LocalizedError {
 }
 
 enum WebKitProxyFeature {
-    /// Keep proxy launch available in the development build for the required
-    /// headed qualification, but unavailable in public release builds until
-    /// that exact route has passed its no-Direct and recovery checks.
-    static var launchEnabled: Bool {
-        #if DEBUG
-        true
-        #else
-        false
-        #endif
-    }
+    /// System WKWebView does not provide NeAntik's fail-closed per-profile
+    /// route. Keep this disabled in every build until the isolated runtime and
+    /// broker are wired together and qualified on the exact candidate.
+    static let launchEnabled = false
 }
 
 /// Builds a proxy policy for one WebKit data store. This configures Apple's

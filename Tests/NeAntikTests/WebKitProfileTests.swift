@@ -133,11 +133,18 @@ struct WebKitProfileTests {
         #expect(try store.upsert(changed).engine == .webkit)
     }
 
-    @Test func validProxyMetadataAndRestoreAreAllowedButInvalidProxyIsRejected() throws {
+    @Test func webKitProxyMetadataIsPreservedButLaunchFailsClosed() throws {
         var profile = BrowserProfile(name: "Boundary", startURL: "about:blank", engine: .webkit)
         try WebKitProfilePolicy.validate(profile)
         profile.proxy = ProxyConfiguration(kind: .socks5, host: "127.0.0.1", port: 1, username: "synthetic")
-        try WebKitProfilePolicy.validate(profile)
+        try WebKitProfilePolicy.validateConfiguration(profile)
+        #expect(throws: WebKitProfileError.self) { try WebKitProfilePolicy.validate(profile) }
+        let store = ProfileStore(paths: AppPaths(rootDirectory: FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-webkit-proxy-metadata-" + UUID().uuidString)))
+        defer { try? FileManager.default.removeItem(at: store.paths.rootDirectory) }
+        let saved = try store.upsert(profile)
+        #expect(saved.proxy == profile.proxy)
+        #expect(throws: WebKitProfileError.self) { try WebKitProfilePolicy.validate(saved) }
         profile.proxy?.port = 0
         #expect(throws: (any Error).self) { try WebKitProfilePolicy.validate(profile) }
         profile.proxy = nil; profile.startupMode = .restoreSession

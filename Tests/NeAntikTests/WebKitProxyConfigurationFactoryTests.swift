@@ -3,14 +3,9 @@ import Testing
 @testable import NeAntik
 
 struct WebKitProxyConfigurationFactoryTests {
-    @Test func unqualifiedProxyIsLimitedToDevelopmentBuilds() {
-        #if DEBUG
-        #expect(WebKitProxyFeature.launchEnabled)
-        #expect(BrowserEngine.webkit.managementCapabilities["proxy"] == true)
-        #else
+    @Test func unqualifiedSystemWebKitProxyIsDisabledInEveryBuild() {
         #expect(!WebKitProxyFeature.launchEnabled)
         #expect(BrowserEngine.webkit.managementCapabilities["proxy"] == false)
-        #endif
     }
 
     @Test func directProfileHasNoProxyConfiguration() throws {
