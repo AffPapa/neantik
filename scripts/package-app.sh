@@ -12,6 +12,11 @@ RESOURCES_DIR="$CONTENTS_DIR/Resources"
 SIGNING_IDENTITY="${NEANTIK_SIGNING_IDENTITY:--}"
 DIRECT_ENTITLEMENTS="$PROJECT_DIR/runtime/neantik-direct-entitlements.plist"
 BUILD_SUPPORT_DIR="${NEANTIK_BUILD_SUPPORT_DIR:-/private/tmp/nevision-package-direct}"
+case "${NEANTIK_WEBKIT_HOST_ENABLED:-0}" in
+  0) ;;
+  1) echo "WebKit host packaging is not ready: a separately linked runtime host and trusted runtime payload are required" >&2; exit 78 ;;
+  *) echo "NEANTIK_WEBKIT_HOST_ENABLED must be 0 or 1" >&2; exit 64 ;;
+esac
 
 mkdir -p \
   "$BUILD_SUPPORT_DIR/clang" \

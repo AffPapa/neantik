@@ -1,3 +1,4 @@
+import Foundation
 import Network
 import Testing
 @testable import NeAntik
@@ -11,37 +12,46 @@ struct WebKitProxyConfigurationFactoryTests {
     }
 
     @Test func directProfileHasNoProxyConfiguration() throws {
-        #expect(try WebKitProxyConfigurationFactory.configurations(for: nil, password: nil).isEmpty)
+        #expect(try WebKitProxyConfigurationFactory.systemWebKitConfigurations(for: nil).isEmpty)
     }
 
-    @Test func supportedProxyKindsAreProfileScopedAndDoNotFailOver() throws {
+    @Test func systemWebKitRejectsEveryExplicitProxyKind() {
         for kind in ProxyKind.allCases {
-            let proxy = ProxyConfiguration(kind: kind, host: "proxy.example.test", port: 8443, username: "")
-            let configurations = try WebKitProxyConfigurationFactory.configurations(for: proxy, password: nil)
-            #expect(configurations.count == 1)
-            #expect(configurations[0].allowFailover == false)
-            #expect(configurations[0].matchDomains.isEmpty)
-            #expect(configurations[0].excludedDomains.isEmpty)
+            let proxy = ProxyConfiguration(kind: kind, host: "proxy.example.test", port: 8443, username: "qa-user")
+            #expect(throws: WebKitProxyConfigurationError.self) {
+                try WebKitProxyConfigurationFactory.systemWebKitConfigurations(for: proxy)
+            }
         }
     }
 
-    @Test func ipv6EndpointIsAcceptedAndAuthenticatedProxyRequiresKeychainPassword() throws {
-        let ipv6 = ProxyConfiguration(kind: .socks5, host: "[::1]", port: 1080, username: "")
-        #expect(try WebKitProxyConfigurationFactory.configurations(for: ipv6, password: nil).count == 1)
+    @Test func ownedRuntimeUsesOnlyAuthenticatedLoopbackBrokerWithoutFailover() throws {
+        let profileID = UUID(uuidString: "2fd91f78-8cd1-451e-8d6c-1b9b36f1b301")!
+        let sessionID = UUID(uuidString: "1315f44b-7921-4d9d-894c-4ec61fb60b5f")!
+        let scope = WebKitRelayAuthority.Scope(profileID: profileID, storeID: profileID,
+                                                sessionID: sessionID, revision: 11)
+        let authority = WebKitRelayAuthority()
+        try authority.register(scope: scope, route: .direct)
+        let capability = try authority.issue(for: scope)
+        let session = WebKitHostIPC.Session(profileID: profileID, revision: 11,
+            generation: sessionID, dataRoot: "/tmp/neantik-webkit-broker-test",
+            runtimeSHA256: String(repeating: "c", count: 64))
+        let credential = try WebKitHostIPC.RelayCredential(session: session,
+                                                            capability: capability)
 
-        let authenticated = ProxyConfiguration(kind: .https, host: "proxy.example.test", port: 443, username: "qa-user")
-        #expect(throws: WebKitProxyConfigurationError.self) {
-            try WebKitProxyConfigurationFactory.configurations(for: authenticated, password: nil)
-        }
-        let withPassword = try WebKitProxyConfigurationFactory.configurations(for: authenticated, password: "synthetic-secret")
-        #expect(withPassword.count == 1)
-        #expect(!withPassword[0].debugDescription.contains("synthetic-secret"))
+        let configuration = WebKitProxyConfigurationFactory.brokerConfiguration(using: credential)
+        #expect(WebKitProxyConfigurationFactory.brokerHost == "127.0.0.1")
+        #expect(WebKitProxyConfigurationFactory.brokerPort == WebKitLoopbackBroker.sandboxPort)
+        #expect(configuration.allowFailover == false)
+        #expect(configuration.matchDomains.isEmpty)
+        #expect(configuration.excludedDomains.isEmpty)
+        #expect(!configuration.debugDescription.contains("synthetic-secret"))
+        #expect(!configuration.debugDescription.contains("proxy.example.test"))
     }
 
-    @Test func malformedProxyIsRejectedBeforeNativeConfiguration() {
+    @Test func malformedExplicitProxyIsAlsoRejectedFailClosed() {
         let malformed = ProxyConfiguration(kind: .http, host: "proxy.example.test", port: 0, username: "")
         #expect(throws: WebKitProxyConfigurationError.self) {
-            try WebKitProxyConfigurationFactory.configurations(for: malformed, password: nil)
+            try WebKitProxyConfigurationFactory.systemWebKitConfigurations(for: malformed)
         }
     }
 }

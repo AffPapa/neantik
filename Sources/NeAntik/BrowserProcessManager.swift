@@ -615,16 +615,26 @@ final class BrowserProcessManager: ObservableObject {
     @Published var lastError: String?
 
     private var webKitBrowsers: [UUID: WebKitProfileBrowser] = [:]
+    private var webKitHostClients: [UUID: WebKitHostClient] = [:]
+    private var webKitHostBrokers: [UUID: WebKitLoopbackBroker] = [:]
+    private var webKitHostStartingProfileIDs = Set<UUID>()
+    private var webKitHostGenerations: [UUID: UUID] = [:]
+    private var webKitHostStopTasks: [UUID: Task<Void, Never>] = [:]
+    private var webKitHostSaveFailureProfileIDs = Set<UUID>()
     /// GUI lifecycle only. Emitted after session writes and downloads settle.
     var webKitDidClose: ((UUID, UUID) -> Void)?
-    func webKitGeneration(profileID: UUID) -> UUID? { webKitBrowsers[profileID]?.sessionGeneration }
-    func webKitSaveFailed(profileID: UUID) -> Bool { webKitBrowsers[profileID]?.sessionWriteFailed == true }
+    func webKitGeneration(profileID: UUID) -> UUID? {
+        webKitBrowsers[profileID]?.sessionGeneration ?? webKitHostClients[profileID]?.session.generation ?? webKitHostGenerations[profileID]
+    }
+    func webKitSaveFailed(profileID: UUID) -> Bool {
+        webKitBrowsers[profileID]?.sessionWriteFailed == true || webKitHostSaveFailureProfileIDs.contains(profileID)
+    }
     private var webKitQuitPending = false
     @Published private(set) var webKitMaintenanceProfileIDs = Set<UUID>()
-    var hasPendingWebKitWork: Bool { hasOpenWebKitProfiles || !webKitMaintenanceProfileIDs.isEmpty }
+    var hasPendingWebKitWork: Bool { hasOpenWebKitProfiles || !webKitMaintenanceProfileIDs.isEmpty || !webKitHostStopTasks.isEmpty }
     var hasActiveWebKitDownloads: Bool { webKitBrowsers.values.contains { $0.downloads.activeCount > 0 } }
-    var hasOpenWebKitProfiles: Bool { !webKitBrowsers.isEmpty }
-    var hasFailedWebKitSessionSave: Bool { webKitBrowsers.values.contains { $0.sessionWriteFailed } }
+    var hasOpenWebKitProfiles: Bool { !webKitBrowsers.isEmpty || !webKitHostClients.isEmpty || !webKitHostStartingProfileIDs.isEmpty }
+    var hasFailedWebKitSessionSave: Bool { webKitBrowsers.values.contains { $0.sessionWriteFailed } || !webKitHostSaveFailureProfileIDs.isEmpty }
     #if DEBUG
     /// In-process owned-fixture observation only; absent from release builds
     /// and never exposed by MCP, environment variables or a debug socket.
@@ -707,6 +717,7 @@ final class BrowserProcessManager: ObservableObject {
     /// a fresh full-UID kernel inventory before launch and after manager exit.
     var hasWorkPreventingUpdate: Bool {
         !webKitMaintenanceProfileIDs.isEmpty || !runningProfileIDs.isEmpty || !processes.isEmpty ||
+        !webKitHostClients.isEmpty || !webKitHostStartingProfileIDs.isEmpty || !webKitHostStopTasks.isEmpty ||
         !preparedRelayLaunches.isEmpty || !pendingRelayLaunchTokens.isEmpty ||
         !unconfirmedRelayOwnerFences.isEmpty || !activeRelayOwners.isEmpty ||
         !externalLocks.isEmpty || !externalUnverifiedProfileIDs.isEmpty ||
@@ -1029,7 +1040,10 @@ final class BrowserProcessManager: ObservableObject {
     ) {
         guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         let paths = paths
-        let profileIDs = profiles.map(\.id).filter { webKitBrowsers[$0] == nil }
+        let profileIDs = profiles.map(\.id).filter {
+            webKitBrowsers[$0] == nil && webKitHostClients[$0] == nil &&
+                !webKitHostStartingProfileIDs.contains($0)
+        }
         reconcileTask = Task { [weak self] in
             defer { ApplicationUpdateAdmission.shared.finishActivity(updateActivity) }
             let evidence = await Task.detached(priority: .utility) {
@@ -1172,7 +1186,8 @@ final class BrowserProcessManager: ObservableObject {
             processes.compactMap { key, process in
                 process.isRunning ? key : nil
             }
-        ).union(webKitBrowsers.keys)
+        ).union(webKitBrowsers.keys).union(webKitHostClients.keys)
+            .union(webKitHostStartingProfileIDs)
 
         for profile in profiles {
             reconcileProfile(
@@ -1313,7 +1328,8 @@ final class BrowserProcessManager: ObservableObject {
 
     func processState(for profileID: UUID) -> BrowserProfileProcessState {
         if webKitMaintenanceProfileIDs.contains(profileID) { return .checking }
-        if webKitBrowsers[profileID] != nil { return .managed }
+        if webKitHostStartingProfileIDs.contains(profileID) { return .checking }
+        if webKitBrowsers[profileID] != nil || webKitHostClients[profileID] != nil { return .managed }
         if let intent = managedClosingIntents[profileID], closingDeadlineIsCurrent(intent) {
             return .closing
         }
@@ -1349,7 +1365,8 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         _ destructiveOperation: () throws -> T
     ) throws -> T {
-        if webKitBrowsers[profileID] != nil || processes[profileID]?.isRunning == true {
+        if webKitBrowsers[profileID] != nil || webKitHostClients[profileID] != nil ||
+            webKitHostStartingProfileIDs.contains(profileID) || processes[profileID]?.isRunning == true {
             throw BrowserProfileDeletionBlockedError(
                 reason: .managedProcess
             )
@@ -1441,7 +1458,8 @@ final class BrowserProcessManager: ObservableObject {
         } onCancel: { acquire.cancel() }
         defer { metadata.release(); process.release() }
         try Task.checkCancellation()
-        guard webKitBrowsers[profile.id] == nil, processes[profile.id]?.isRunning != true else {
+        guard webKitBrowsers[profile.id] == nil, webKitHostClients[profile.id] == nil,
+              !webKitHostStartingProfileIDs.contains(profile.id), processes[profile.id]?.isRunning != true else {
             throw BrowserProfileDeletionBlockedError(reason: .managedProcess)
         }
         // No await between the final revision/authority check and dispatch.
@@ -1479,7 +1497,8 @@ final class BrowserProcessManager: ObservableObject {
     ) async throws {
         guard expected == nil || expected?.engine == .webkit else { throw WebKitProfileDeletionError.wrongEngine }
         guard store.paths.rootDirectory.resolvingSymlinksInPath() == paths.rootDirectory.resolvingSymlinksInPath(),
-              !webKitQuitPending, webKitBrowsers[profileID] == nil, processes[profileID]?.isRunning != true,
+              !webKitQuitPending, webKitBrowsers[profileID] == nil, webKitHostClients[profileID] == nil,
+              !webKitHostStartingProfileIDs.contains(profileID), processes[profileID]?.isRunning != true,
               !webKitMaintenanceProfileIDs.contains(profileID) else { throw BrowserProfileDeletionBlockedError(reason: .managedProcess) }
         let activity = try ApplicationUpdateAdmission.shared.beginActivity()
         defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
@@ -1499,7 +1518,10 @@ final class BrowserProcessManager: ObservableObject {
         func validateAuthority() throws {
             try process.validateHeldFile(at: paths.lockGuardFile(for: profileID))
             try metadata.validateHeldFile(at: paths.lockGuardFile(for: profileID).appendingPathExtension("webkit"))
-            guard webKitBrowsers[profileID] == nil, processes[profileID]?.isRunning != true else { throw BrowserProfileDeletionBlockedError(reason: .managedProcess) }
+            guard webKitBrowsers[profileID] == nil, webKitHostClients[profileID] == nil,
+                  !webKitHostStartingProfileIDs.contains(profileID), processes[profileID]?.isRunning != true else {
+                throw BrowserProfileDeletionBlockedError(reason: .managedProcess)
+            }
             switch try paths.privateFileEntryKind(paths.lockFile(for: profileID)) {
             case .missing: break
             case .regular: throw BrowserProfileDeletionBlockedError(reason: .leasePresent)
@@ -1692,6 +1714,11 @@ final class BrowserProcessManager: ObservableObject {
         expectedLeaseAnchor: BrowserLeaseInventoryAnchor?
     ) {
         defer { refreshManagedClosingIntent(profileID: profileID) }
+        if webKitHostClients[profileID] != nil || webKitHostStartingProfileIDs.contains(profileID) {
+            pendingReconciliationProfileIDs.remove(profileID)
+            runningProfileIDs.insert(profileID)
+            return
+        }
         if webKitBrowsers[profileID] != nil {
             pendingReconciliationProfileIDs.remove(profileID)
             runningProfileIDs.insert(profileID)
@@ -2661,21 +2688,9 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     @discardableResult func launchWebKitProfile(_ profile: BrowserProfile) throws -> UUID {
-        if webKitTerminationObservation == nil {
-            webKitTerminationObservation = NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)
-                .sink { [weak self] _ in
-                    // AppKit sends this notification synchronously on main.
-                    // A queued Task could run after application termination.
-                    MainActor.assumeIsolated { self?.closeWebKitWindows() }
-                }
-        }
+        observeWebKitTerminationIfNeeded()
         try WebKitProfilePolicy.validate(profile)
         try launchAdmission.requireSafePressure()
-        let proxyPassword = try keychain.configuredProxyPassword(for: profile)
-        let proxyConfigurations = try WebKitProxyConfigurationFactory.configurations(
-            for: profile.proxy,
-            password: proxyPassword
-        )
         guard !webKitQuitPending, webKitBrowsers[profile.id] == nil,
               processState(for: profile.id) == .stopped else { throw NeAntikError.profileAlreadyRunning }
         let lease = try paths.acquireWebKitSessionGuard(for: profile.id)
@@ -2694,7 +2709,6 @@ final class BrowserProcessManager: ObservableObject {
                 }
                 return try WebKitProfileBrowser(profile: profile, lease: lease, metadataLease: metadataLease,
                     sessionGeneration: generation, sessionStore: sessionStore, restoredSession: restored, sessionWarning: warning,
-                    proxyConfigurations: proxyConfigurations,
                     onSessionSaveError: { [weak self] in self?.lastError = Self.webKitSessionSaveFailureMessage }) { [weak self] in
                 guard let self, self.webKitBrowsers[profile.id]?.sessionGeneration == generation else { return }
                 self.webKitBrowsers.removeValue(forKey: profile.id)
@@ -2713,10 +2727,178 @@ final class BrowserProcessManager: ObservableObject {
         } catch { lease.release(); throw error }
     }
 
+    /// System WebKit remains in-process. The isolated generation uses the
+    /// signed nested host and a profile-scoped broker; proxy profiles remain
+    /// refused while the runtime qualification switch is off.
+    @discardableResult
+    func launchWebKitProfileAsync(_ profile: BrowserProfile) async throws -> UUID {
+        guard profile.webKitRuntimeGeneration == .isolatedV1 else {
+            return try launchWebKitProfile(profile)
+        }
+        return try await launchIsolatedWebKitProfile(profile)
+    }
+
+    @discardableResult
+    private func launchIsolatedWebKitProfile(_ profile: BrowserProfile) async throws -> UUID {
+        try WebKitProfilePolicy.validateConfiguration(profile)
+        guard profile.webKitRuntimeGeneration == .isolatedV1 else { throw NeAntikError.invalidProfile }
+        if profile.proxy != nil, !WebKitProxyFeature.launchEnabled {
+            throw WebKitProfileError.unsupported("Прокси WebKit пока отключён: маршрут ещё не прошёл квалификацию. Настройки сохранены, прямое подключение вместо прокси не выполняется.")
+        }
+        try launchAdmission.requireSafePressure()
+        guard !webKitQuitPending, webKitHostClients[profile.id] == nil,
+              !webKitHostStartingProfileIDs.contains(profile.id),
+              webKitBrowsers[profile.id] == nil,
+              processState(for: profile.id) == .stopped else {
+            throw NeAntikError.profileAlreadyRunning
+        }
+
+        let sessionGuard = try paths.acquireWebKitSessionGuard(for: profile.id)
+        let metadataGuard: PrivateFileGuardLease
+        do { metadataGuard = try paths.acquireWebKitMetadataGuard(for: profile.id) }
+        catch { sessionGuard.release(); throw error }
+        defer { metadataGuard.release(); sessionGuard.release() }
+
+        try ProfileStore.withValidatedLaunchSnapshot(profile, paths: paths) {}
+        guard try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: profile.id)) == .missing else {
+            throw BrowserProfileDeletedError()
+        }
+        let managerBundle = Bundle.main.bundleURL
+        let runtimeSHA256 = try WebKitHostCodeIdentity.pinnedRuntimeSHA256(in: managerBundle)
+        let generation = UUID()
+        let session = WebKitHostIPC.Session(profileID: profile.id,
+            revision: profile.revision, generation: generation,
+            dataRoot: paths.rootDirectory.standardizedFileURL.path,
+            runtimeSHA256: runtimeSHA256)
+        try WebKitProfilePolicy.validateOwnedRuntime(profile, session: session)
+
+        let scope = WebKitRelayAuthority.Scope(profileID: profile.id,
+            storeID: profile.id, sessionID: generation, revision: profile.revision)
+        let route = try webKitRelayRoute(for: profile)
+        let handoff = WebKitHostLeaseHandoff(paths: paths, session: session,
+            sessionGuard: sessionGuard, metadataGuard: metadataGuard)
+        let broker = try WebKitLoopbackBroker()
+        var client: WebKitHostClient?
+        var preserveRunningChild = false
+        webKitHostStartingProfileIDs.insert(profile.id)
+        webKitHostGenerations[profile.id] = generation
+        defer {
+            if !preserveRunningChild {
+                webKitHostStartingProfileIDs.remove(profile.id)
+                webKitHostGenerations.removeValue(forKey: profile.id)
+            }
+        }
+
+        do {
+            try await broker.start()
+            guard !webKitQuitPending else { throw CancellationError() }
+            let capability = try await broker.prepare(scope: scope, route: route)
+            let host = try await WebKitHostClient.launch(session: session,
+                registerChild: { pid, path in
+                    try handoff.register(childPID: pid, childExecutablePath: path)
+                },
+                forgetChild: { pid, childIsGone in
+                    try handoff.remove(childPID: pid, childIsGone: childIsGone)
+                })
+            client = host
+            guard !webKitQuitPending else {
+                guard await host.abort() else { throw WebKitHostClient.Failure.cleanupUnconfirmed }
+                client = nil
+                throw CancellationError()
+            }
+            let lease = try await host.configureRoute(capability, scope: scope, broker: broker)
+            try await host.activate(scope: scope, broker: broker, lease: lease)
+            guard !webKitQuitPending else {
+                try await host.close()
+                await broker.stop()
+                client = nil
+                throw CancellationError()
+            }
+            webKitHostClients[profile.id] = host
+            webKitHostBrokers[profile.id] = broker
+            runningProfileIDs.insert(profile.id)
+            webKitHostStartingProfileIDs.remove(profile.id)
+            webKitHostGenerations.removeValue(forKey: profile.id)
+            preserveRunningChild = true
+            observeWebKitTerminationIfNeeded()
+            return generation
+        } catch {
+            handoff.releaseIfUnregistered()
+            if let client {
+                if await client.abort() {
+                    await broker.stop()
+                } else {
+                    webKitHostClients[profile.id] = client
+                    webKitHostBrokers[profile.id] = broker
+                    runningProfileIDs.insert(profile.id)
+                    preserveRunningChild = true
+                    lastError = "Изолированный WebKit-процесс не подтвердил остановку. Профиль остаётся занят, прямой маршрут не включается."
+                }
+            } else {
+                await broker.stop()
+            }
+            throw error
+        }
+    }
+
+    private func webKitRelayRoute(for profile: BrowserProfile) throws -> WebKitRelayAuthority.Route {
+        guard let proxy = profile.proxy else { return .direct }
+        let destination = try ProxyRelayDestination(host: proxy.host, port: proxy.port)
+        guard !proxy.username.isEmpty else {
+            return .proxy(kind: proxy.kind, upstream: destination, credentials: nil)
+        }
+        guard let password = try keychain.proxyPassword(profileID: profile.id), !password.isEmpty else {
+            throw NeAntikError.invalidProxy
+        }
+        let credentials = try ProxyRelayCredentials(username: proxy.username, password: password)
+        return .proxy(kind: proxy.kind, upstream: destination, credentials: credentials)
+    }
+
+    private func observeWebKitTerminationIfNeeded() {
+        guard webKitTerminationObservation == nil else { return }
+        webKitTerminationObservation = NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)
+            .sink { [weak self] _ in
+                // AppKit sends this notification synchronously on main.
+                // A queued Task could run after application termination.
+                MainActor.assumeIsolated { self?.closeWebKitWindows() }
+            }
+    }
+
+    private func requestCloseWebKitHost(profileID: UUID, generation: UUID) {
+        guard let client = webKitHostClients[profileID],
+              client.session.generation == generation,
+              webKitHostStopTasks[profileID] == nil else { return }
+        let broker = webKitHostBrokers[profileID]
+        webKitHostStopTasks[profileID] = Task { @MainActor [weak self] in
+            defer { self?.webKitHostStopTasks.removeValue(forKey: profileID) }
+            do {
+                try await client.close()
+                await broker?.stop()
+                guard let self,
+                      self.webKitHostClients[profileID]?.session.generation == generation else { return }
+                self.webKitHostClients.removeValue(forKey: profileID)
+                self.webKitHostBrokers.removeValue(forKey: profileID)
+                self.webKitHostSaveFailureProfileIDs.remove(profileID)
+                self.runningProfileIDs.remove(profileID)
+                if !self.hasFailedWebKitSessionSave,
+                   self.lastError == Self.webKitSessionSaveFailureMessage {
+                    self.lastError = nil
+                }
+                self.webKitDidClose?(profileID, generation)
+            } catch {
+                self?.webKitHostSaveFailureProfileIDs.insert(profileID)
+                self?.lastError = Self.webKitSessionSaveFailureMessage
+            }
+        }
+    }
+
     /// System WebKit pages are hosted by this manager; close them before quit.
     /// Chromium processes retain their existing independent lifetime contract.
     func closeWebKitWindows() {
         for browser in Array(webKitBrowsers.values) { browser.close() }
+        for (profileID, client) in webKitHostClients {
+            requestCloseWebKitHost(profileID: profileID, generation: client.session.generation)
+        }
     }
 
     /// Application termination must not end the process before WKDownload
@@ -2794,6 +2976,10 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     func stop(profileID: UUID) {
+        if let client = webKitHostClients[profileID] {
+            requestCloseWebKitHost(profileID: profileID, generation: client.session.generation)
+            return
+        }
         if let browser = webKitBrowsers[profileID] { browser.close(); return }
         if processState(for: profileID) == .closing { return }
 

@@ -2,15 +2,12 @@ import Foundation
 import Network
 
 enum WebKitProxyConfigurationError: LocalizedError {
-    case invalidProxy
-    case credentialUnavailable
+    case systemWebKitProxyUnsupported
 
     var errorDescription: String? {
         switch self {
-        case .invalidProxy:
-            return "Настройки прокси WebKit некорректны. Проверь адрес и порт."
-        case .credentialUnavailable:
-            return "Пароль прокси недоступен в Связке ключей. Подключение остановлено; прямой маршрут не используется."
+        case .systemWebKitProxyUnsupported:
+            return "Системный WebKit не запускает профиль с прокси: безопасный изолированный маршрут ещё не подключён."
         }
     }
 }
@@ -22,45 +19,38 @@ enum WebKitProxyFeature {
     static let launchEnabled = false
 }
 
-/// Builds a proxy policy for one WebKit data store. This configures Apple's
-/// networking API; it does not by itself prove the route used by a live page.
+/// Keeps system WKWebView fail-closed. Its per-store proxy API would connect
+/// directly to an upstream and bypass NeAntik's authenticated broker boundary.
 enum WebKitProxyConfigurationFactory {
-    static func configurations(
-        for proxy: ProxyConfiguration?,
-        password: String?
-    ) throws -> [Network.ProxyConfiguration] {
-        guard let proxy else { return [] }
-        guard proxy.isValid,
-              let port = NWEndpoint.Port(rawValue: UInt16(proxy.port)) else {
-            throw WebKitProxyConfigurationError.invalidProxy
-        }
+    static let brokerHost = "127.0.0.1"
+    static let brokerPort = WebKitLoopbackBroker.sandboxPort
 
-        let host = proxy.host.hasPrefix("[") && proxy.host.hasSuffix("]")
-            ? String(proxy.host.dropFirst().dropLast())
-            : proxy.host
-        let endpoint = NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: port)
-        var result: Network.ProxyConfiguration
-        switch proxy.kind {
-        case .http:
-            result = Network.ProxyConfiguration(httpCONNECTProxy: endpoint)
-        case .https:
-            result = Network.ProxyConfiguration(
-                httpCONNECTProxy: endpoint,
-                tlsOptions: NWProtocolTLS.Options()
-            )
-        case .socks5:
-            result = Network.ProxyConfiguration(socksv5Proxy: endpoint)
-        }
-
+    /// Owned WebKit must always connect through the local broker. The broker
+    /// selects this profile's explicit Direct or upstream-proxy route; the
+    /// browser never receives the upstream endpoint or its password.
+    static func brokerConfiguration(
+        using credential: WebKitHostIPC.RelayCredential
+    ) -> Network.ProxyConfiguration {
+        let endpoint = NWEndpoint.hostPort(
+            host: NWEndpoint.Host(brokerHost),
+            port: NWEndpoint.Port(rawValue: brokerPort)!
+        )
+        var result = Network.ProxyConfiguration(httpCONNECTProxy: endpoint)
         result.allowFailover = false
         result.matchDomains = []
         result.excludedDomains = []
-        if !proxy.username.isEmpty {
-            guard let password else {
-                throw WebKitProxyConfigurationError.credentialUnavailable
-            }
-            result.applyCredential(username: proxy.username, password: password)
+        credential.withCredentials { username, password in
+            result.applyCredential(username: username, password: password)
         }
-        return [result]
+        return result
+    }
+
+    static func systemWebKitConfigurations(
+        for proxy: ProxyConfiguration?
+    ) throws -> [Network.ProxyConfiguration] {
+        guard proxy == nil else {
+            throw WebKitProxyConfigurationError.systemWebKitProxyUnsupported
+        }
+        return []
     }
 }

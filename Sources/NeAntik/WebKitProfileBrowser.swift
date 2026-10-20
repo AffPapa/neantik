@@ -31,6 +31,14 @@ enum BrowserEngine: String, Codable, CaseIterable, Identifiable, Sendable {
     }
 }
 
+/// Runtime choice is explicit. An owned session carries only the short-lived
+/// broker credential; upstream proxy credentials stay in the manager/broker.
+enum WebKitProfileBrowserRuntime {
+    case system
+    case owned(session: WebKitHostIPC.Session,
+               relayCredential: WebKitHostIPC.RelayCredential)
+}
+
 enum WebKitProfileError: LocalizedError {
     case unsupported(String)
     var errorDescription: String? {
@@ -54,6 +62,25 @@ enum WebKitProfilePolicy {
         guard profile.proxy == nil || WebKitProxyFeature.launchEnabled else {
             throw WebKitProfileError.unsupported("Прокси WebKit пока отключён: маршрут не прошёл квалификацию. Настройки профиля сохранены; прямое подключение вместо прокси не выполняется.")
         }
+        try validateNativeContext(profile)
+    }
+
+    /// Owned WebKit accepts only the exact immutable isolated-runtime session
+    /// that the authenticated parent bootstrapped. It still uses the native
+    /// WebKit platform identity; this is not a Chromium fingerprint mode.
+    static func validateOwnedRuntime(_ profile: BrowserProfile,
+                                     session: WebKitHostIPC.Session) throws {
+        guard !profile.isArchived else { throw NeAntikError.profileArchived }
+        try validateConfiguration(profile)
+        guard profile.webKitRuntimeGeneration == .isolatedV1,
+              session.isValid(), session.profileID == profile.id,
+              session.revision == profile.revision else {
+            throw WebKitProfileError.unsupported("Изолированный WebKit-сеанс не совпадает с сохранённой версией профиля. Данные не открывались и не изменены.")
+        }
+        try validateNativeContext(profile)
+    }
+
+    private static func validateNativeContext(_ profile: BrowserProfile) throws {
         // Keep legacy metadata readable and unchanged; reject an unsupported
         // launch rather than silently ignoring explicit Chromium context.
         guard profile.identity.timezoneIdentifier == nil,
@@ -206,6 +233,10 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     private var tabs: [UUID: WebKitBrowserTab]
     private var isClosed = false
     private var closeRequested = false
+    private var initialNavigationStarted = false
+    private var pendingRouteActivationSession: WebKitHostIPC.Session?
+    private var pendingStartupProfile: BrowserProfile?
+    private var pendingRestoredSession: WebKitSessionSnapshot?
     private var commandMonitor: Any?
     private var lease: PrivateFileGuardLease?
     private var metadataLease: PrivateFileGuardLease?
@@ -230,10 +261,23 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
          sessionGeneration: UUID = UUID(),
          downloadPicker: WebKitDownloads.Picker? = nil,
          sessionStore: WebKitSessionStore? = nil, restoredSession: WebKitSessionSnapshot? = nil,
-         sessionWarning: String? = nil, proxyConfigurations: [Network.ProxyConfiguration] = [],
+         sessionWarning: String? = nil,
+         runtime: WebKitProfileBrowserRuntime = .system,
          onSessionSaveError: (() -> Void)? = nil,
          onClose: @escaping () -> Void) throws {
-        try WebKitProfilePolicy.validate(profile)
+        let proxyConfigurations: [Network.ProxyConfiguration]
+        switch runtime {
+        case .system:
+            try WebKitProfilePolicy.validate(profile)
+            proxyConfigurations = try WebKitProxyConfigurationFactory.systemWebKitConfigurations(for: profile.proxy)
+        case .owned(let session, let relayCredential):
+            try WebKitProfilePolicy.validateOwnedRuntime(profile, session: session)
+            guard sessionGeneration == session.generation,
+                  relayCredential.belongs(to: session) else {
+                throw WebKitHostIPC.ProtocolError.invalidCapability
+            }
+            proxyConfigurations = [WebKitProxyConfigurationFactory.brokerConfiguration(using: relayCredential)]
+        }
         if profile.startupMode == .restoreSession, sessionStore == nil { throw WebKitSessionError.unavailable }
         if let restoredSession { try restoredSession.validate(for: profile.id) }
         profileID = profile.id
@@ -302,25 +346,73 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
             guard let self, event.window === self.window else { return event }
             return self.handleCommand(event) ? nil : event
         }
+        switch runtime {
+        case .system:
+            startInitialNavigation(profile: profile, restoredSession: restoredSession)
+            assemblingSession = false
+            checkpointSession()
+        case .owned(let session, _):
+            pendingRouteActivationSession = session
+            pendingStartupProfile = profile
+            pendingRestoredSession = restoredSession
+        }
+    }
+
+    /// Called only after the authenticated child gate accepted the exact
+    /// routeActive frame. Initial URL and restored tabs remain idle until the
+    /// manager has activated the matching broker lease.
+    @discardableResult
+    func activateOwnedRoute(_ permit: WebKitOwnedNavigationPermit) -> Bool {
+        guard !isClosed, let expected = pendingRouteActivationSession,
+              permit.authorizes(expected),
+              let profile = pendingStartupProfile else { return false }
+        pendingRouteActivationSession = nil
+        pendingStartupProfile = nil
+        let restored = pendingRestoredSession
+        pendingRestoredSession = nil
+        startInitialNavigation(profile: profile, restoredSession: restored)
+        initialNavigationStarted = true
+        assemblingSession = false
+        checkpointSession()
+        return true
+    }
+
+    /// The signed host calls this after constructing its WKWebView from the
+    /// pinned owned runtime and broker-only persistent store, before any page
+    /// is opened. This value is only a locator; the parent still attests code.
+    func networkProcessOwnerForBootstrap() throws -> WebKitOwnedNetworkProcessPID.Owner {
+        guard !isClosed, pendingRouteActivationSession != nil else {
+            throw WebKitHostIPC.ProtocolError.invalidTransition
+        }
+        return try WebKitOwnedNetworkProcessPID.currentOwner(for: dataStore)
+    }
+
+    private func startInitialNavigation(profile: BrowserProfile,
+                                        restoredSession: WebKitSessionSnapshot?) {
+        initialNavigationStarted = true
+        guard let first = tabs[order.selected] else { return }
         if restoresSession, let restoredSession {
             first.committedURL = restoredSession.urls[0]
-            webView.load(URLRequest(url: URL(string: restoredSession.urls[0])!))
+            first.view.load(URLRequest(url: URL(string: restoredSession.urls[0])!))
             for value in restoredSession.urls.dropFirst() {
-                guard let view = openTab(at: URL(string: value)!), let tab = tabs.values.first(where: { $0.view === view }) else {
+                guard let view = openTab(at: URL(string: value)!),
+                      let tab = tabs.values.first(where: { $0.view === view }) else {
                     restoreIncomplete = true
                     sessionNotice = "Не все вкладки удалось открыть. Прежний список сохранён; закрой ненужные окна и открой профиль снова."
                     break
                 }
                 tab.committedURL = value
             }
-            if order.ids.indices.contains(restoredSession.selectedIndex) { selectTab(order.ids[restoredSession.selectedIndex]) }
+            if order.ids.indices.contains(restoredSession.selectedIndex) {
+                selectTab(order.ids[restoredSession.selectedIndex])
+            }
             if !restoreIncomplete, restoredSession.unavailableCount > 0 {
                 sessionNotice = "Некоторые специальные адреса нельзя восстановить. Их вкладки открыты пустыми."
             }
             presentSelectedTab()
-        } else if let url = BrowserLaunchBuilder.validatedStartURL(profile.startURL) { webView.load(URLRequest(url: url)) }
-        assemblingSession = false
-        checkpointSession()
+        } else if let url = BrowserLaunchBuilder.validatedStartURL(profile.startURL) {
+            first.view.load(URLRequest(url: url))
+        }
     }
 
     private func button(_ button: NSButton, title: String, help: String, action: Selector) -> NSButton {
@@ -434,7 +526,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     @objc private func newTab() {
         if openTab(at: URL(string: "about:blank")!) != nil { focusAddress() }
     }
-    func show() { guard !isClosed else { return }; window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
+    func show() { guard !isClosed, initialNavigationStarted else { return }; window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
     /// Manager Stop closes the entire profile, whereas Command-W closes a tab.
     func close() {
         if !isClosed {
@@ -474,7 +566,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     }
     func windowWillClose(_ notification: Notification) {
         guard !isClosed else { return }; isClosed = true
-        if restoresSession, !restoreIncomplete {
+        if restoresSession, initialNavigationStarted, !restoreIncomplete {
             do {
                 beginSessionSave(try captureSession())
             } catch { sessionWriteFailed = true; onSessionSaveError?() }
@@ -497,7 +589,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
             selectedIndex: order.ids.firstIndex(of: order.selected) ?? 0)
     }
     private func checkpointSession() {
-        guard restoresSession, !assemblingSession, !restoreIncomplete, !isClosed else { return }
+        guard restoresSession, initialNavigationStarted, !assemblingSession, !restoreIncomplete, !isClosed else { return }
         do { sessionCheckpointer?.schedule(try captureSession()) }
         catch {
             checkpointWarning = "Список вкладок не удалось подготовить к сохранению. Последняя сохранённая сессия не изменена."

@@ -14,6 +14,7 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     static let mcpManagementArgument = "--allow-profile-management"
     static let dataRootArgument = "--data-root"
     static let proxyRelayOwnerArgument = "--neantik-proxy-relay-owner-v1"
+    static let webKitHostChildArgument = "--neantik-webkit-host-child-v1"
 
     enum Mode: Equatable, Sendable {
         case interactive(
@@ -25,6 +26,7 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         case mcpStdio(dataRoot: URL)
         case mcpManagement(dataRoot: URL)
         case proxyRelayOwner
+        case webKitHostChild
         case invalidControlArguments
     }
 
@@ -99,6 +101,11 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         if arguments.count == 2, isCanonicalAbsoluteExecutablePath(arguments[0]), arguments[1] == proxyRelayOwnerArgument {
             return Self(mode: .proxyRelayOwner)
         }
+        if arguments.count == 2,
+           isCanonicalWebKitHostExecutablePath(arguments[0]),
+           arguments[1] == webKitHostChildArgument {
+            return Self(mode: .webKitHostChild)
+        }
         if arguments.count == 5, arguments[4] == mcpManagementArgument,
            isCanonicalAbsoluteExecutablePath(arguments[0]), arguments[1] == mcpStdioArgument,
            arguments[2] == dataRootArgument, isSafeAbsoluteMCPRoot(arguments[3]) {
@@ -163,7 +170,7 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
             )
         }
         if arguments.contains(where: {
-            $0.hasPrefix("--neantik-qualify-backup-scope") || $0.hasPrefix("--neantik-qualify-relay-owner") || $0.hasPrefix(proxyRelayOwnerArgument) || $0.hasPrefix(mcpManagementArgument) ||
+            $0.hasPrefix("--neantik-qualify-backup-scope") || $0.hasPrefix("--neantik-qualify-relay-owner") || $0.hasPrefix(proxyRelayOwnerArgument) || $0.hasPrefix(webKitHostChildArgument) || $0.hasPrefix(mcpManagementArgument) ||
                 $0 == outputArgument ||
                 $0 == dataRootArgument ||
                 $0.hasPrefix(mcpStdioArgument) ||
@@ -241,5 +248,17 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
             path.hasSuffix("/Contents/MacOS/NeAntik") &&
             components.dropFirst().allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." } &&
             !path.unicodeScalars.contains { $0.value < 32 || $0.value == 127 }
+    }
+
+    private static func isCanonicalWebKitHostExecutablePath(_ path: String) -> Bool {
+        let suffix = "/" + WebKitHostCodeIdentity.hostExecutableRelativePath
+        guard path.hasPrefix("/"), path.hasSuffix(suffix),
+              !path.unicodeScalars.contains(where: { $0.value < 32 || $0.value == 127 })
+        else { return false }
+        let components = path.split(separator: "/", omittingEmptySubsequences: false)
+        guard components.first == "",
+              components.dropFirst().allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." })
+        else { return false }
+        return URL(fileURLWithPath: path).standardizedFileURL.path == path
     }
 }

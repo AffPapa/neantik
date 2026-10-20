@@ -38,6 +38,12 @@ struct NeAntikApp: App {
     }
 
     init() {
+        let launchIntent = NeAntikLaunchIntent.parse(
+            arguments: CommandLine.arguments
+        )
+        if case .webKitHostChild = launchIntent.mode {
+            WebKitHostChildRuntime.runAndExit()
+        }
         let updateAuditIsolation = DirectUpdateCandidateBootstrap.runIfRequested()
         self.updateAuditIsolation = updateAuditIsolation
         do { try ApplicationInstallLifecycle.enter() }
@@ -66,12 +72,12 @@ struct NeAntikApp: App {
             ProxyRelayOwnerQualification.runAndExit()
         }
         #endif
-        let launchIntent = NeAntikLaunchIntent.parse(
-            arguments: CommandLine.arguments
-        )
         switch launchIntent.mode {
         case .proxyRelayOwner:
             ProxyRelayOwner.runAndExit()
+        case .webKitHostChild:
+            // Handled before the manager lifecycle above.
+            WebKitHostChildRuntime.runAndExit()
         case let .mcpStdio(dataRoot):
             MCPStdioServer.runAndExit(dataRoot: dataRoot)
         case let .mcpManagement(dataRoot):

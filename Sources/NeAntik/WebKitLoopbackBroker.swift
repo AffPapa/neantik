@@ -17,13 +17,17 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
         let task: Task<Void, Never>
     }
     private let authority = WebKitRelayAuthority()
+    private var processLeases: [UUID: WebKitNetworkProcessCodeIdentity.Lease] = [:]
     private let queue = DispatchQueue(label: "app.neantik.webkit.broker")
+    private let leaseMonitorQueue = DispatchQueue(label: "app.neantik.webkit.broker.lease-monitor", qos: .utility)
     private let listener: NWListener
     private var state: State = .created
     private var port: UInt16?
+    private var preparedScopes: [UUID: WebKitRelayAuthority.Scope] = [:]
     private var connections: [UUID: Connection] = [:]
     private var startFinish: ((Result<UInt16, Error>) -> Void)?
     private var deadline: DispatchWorkItem?
+    private var leaseMonitor: DispatchSourceTimer?
 
     convenience init() throws { try self.init(port: NWEndpoint.Port(rawValue: Self.sandboxPort)!) }
     private init(port: NWEndpoint.Port) throws {
@@ -70,24 +74,124 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
         } onCancel: { self.cancel() }
     }
 
-    func register(scope: WebKitRelayAuthority.Scope, route: WebKitRelayAuthority.Route) throws {
+    /// Stage one route and return its session-scoped credential to the already
+    /// authenticated host. A connection using it is still rejected until
+    /// `activate` installs the matching live NetworkProcess lease.
+    func prepare(scope: WebKitRelayAuthority.Scope,
+                 route: WebKitRelayAuthority.Route) throws -> WebKitRelayAuthority.Capability {
         try queue.sync {
             guard state == .ready else { throw Failure.state }
+            guard preparedScopes[scope.profileID] == nil,
+                  processLeases[scope.profileID] == nil else { throw Failure.refused }
             try authority.register(scope: scope, route: route)
+            let capability: WebKitRelayAuthority.Capability
+            do { capability = try authority.issue(for: scope) }
+            catch { authority.revoke(scope); throw error }
+            preparedScopes[scope.profileID] = scope
+            return capability
         }
     }
-    func issue(for scope: WebKitRelayAuthority.Scope) throws -> WebKitRelayAuthority.Capability {
+
+    /// Activate a staged route only after the host reports and authenticates
+    /// the NetworkProcess started with that credential. Before this succeeds,
+    /// `bind` rejects every authenticated CONNECT and opens no upstream socket.
+    func activate(scope: WebKitRelayAuthority.Scope,
+                  lease: WebKitNetworkProcessCodeIdentity.Lease) throws {
+        guard lease.scope == scope, lease.authorizes(scope) else { throw Failure.refused }
         try queue.sync {
             guard state == .ready else { throw Failure.state }
-            return try authority.issue(for: scope)
+            guard preparedScopes[scope.profileID] == scope,
+                  processLeases[scope.profileID] == nil else { throw Failure.refused }
+            processLeases[scope.profileID] = lease
+            startLeaseMonitorOnQueue()
         }
     }
+
+    /// Select stale leases independently of socket state. Kept pure so expiry
+    /// policy has a focused test that does not depend on loopback permissions.
+    static func expiredLeaseScopes(
+        _ leases: [WebKitNetworkProcessCodeIdentity.Lease]
+    ) -> [WebKitRelayAuthority.Scope] {
+        expiredLeases(leases).map(\.scope)
+    }
+
+    private static func expiredLeases(
+        _ leases: [WebKitNetworkProcessCodeIdentity.Lease]
+    ) -> [WebKitNetworkProcessCodeIdentity.Lease] {
+        leases.filter { !$0.authorizes($0.scope) }
+    }
+
+    private func startLeaseMonitorOnQueue() {
+        guard leaseMonitor == nil else { return }
+        let timer = DispatchSource.makeTimerSource(queue: leaseMonitorQueue)
+        timer.schedule(deadline: .now() + .seconds(1), repeating: .seconds(1), leeway: .milliseconds(150))
+        timer.setEventHandler { [weak self] in self?.checkLeasesOffQueue() }
+        leaseMonitor = timer
+        timer.resume()
+    }
+
+    /// Check potentially expensive SecCode/kernel attestations away from the
+    /// listener queue, then revoke only if the exact session is still current.
+    private func checkLeasesOffQueue() {
+        let snapshot: [WebKitNetworkProcessCodeIdentity.Lease] = queue.sync {
+            guard state == .ready else { return [] }
+            return Array(processLeases.values)
+        }
+        let expired = Self.expiredLeases(snapshot)
+        guard !expired.isEmpty else { return }
+        queue.async {
+            for lease in expired {
+                let scope = lease.scope
+                guard self.state == .ready,
+                      self.processLeases[scope.profileID] === lease else { continue }
+                // The expensive live attestation was checked on the utility
+                // queue. Identity fences a replacement lease even for the same
+                // blocking listener work on a second SecCode inspection.
+                self.revokeExpiredLeaseOnQueue(scope)
+            }
+        }
+    }
+
+    private func revokeExpiredLeaseOnQueue(_ scope: WebKitRelayAuthority.Scope) {
+        authority.revoke(scope)
+        processLeases.removeValue(forKey: scope.profileID)
+        preparedScopes.removeValue(forKey: scope.profileID)
+        // Revoke first, then cancel every already-authorized tunnel. New
+        // handshakes fail authorization while these tasks unwind.
+        for connection in connections.values where connection.scope == scope {
+            connection.task.cancel()
+        }
+    }
+
+    #if DEBUG
+    /// Socket-fixture route registration. The production API has no
+    /// unauthenticated registration overload.
+    @discardableResult
+    func registerForTesting(scope: WebKitRelayAuthority.Scope,
+                            route: WebKitRelayAuthority.Route) throws
+        -> WebKitRelayAuthority.Capability {
+        let capability = try prepare(scope: scope, route: route)
+        try activateForTesting(scope: scope, isCurrent: { true })
+        return capability
+    }
+    /// Staging test intentionally delays process-owner activation.
+    func activateForTesting(scope: WebKitRelayAuthority.Scope,
+                            isCurrent: @escaping @Sendable () -> Bool) throws {
+        let fixture = WebKitHostIPC.Session(profileID: scope.profileID,
+            revision: scope.revision, generation: scope.sessionID,
+            dataRoot: "/tmp/neantik-webkit-broker-fixture",
+            runtimeSHA256: String(repeating: "a", count: 64))
+        try activate(scope: scope, lease: .fixture(session: fixture, isCurrent: isCurrent))
+    }
+    #endif
     /// Revoke before cancelling sockets. A stale auth cannot race a reconnect
     /// or a final upstream credential write after this queue fence.
     func revoke(_ scope: WebKitRelayAuthority.Scope) async {
         let tasks: [Task<Void, Never>] = await withCheckedContinuation { continuation in
             queue.async {
                 self.authority.revoke(scope)
+                self.processLeases.removeValue(forKey: scope.profileID)
+                self.preparedScopes.removeValue(forKey: scope.profileID)
                 let tasks = self.connections.values.filter { $0.scope == scope }.map(\.task)
                 tasks.forEach { $0.cancel() }; continuation.resume(returning: tasks)
             }
@@ -114,7 +218,9 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
     }
     private func stopOnQueue() {
         guard state != .stopped else { return }
-        state = .stopped; authority.close(); port = nil
+        state = .stopped; authority.close(); processLeases.removeAll()
+        preparedScopes.removeAll(); port = nil
+        leaseMonitor?.setEventHandler {}; leaseMonitor?.cancel(); leaseMonitor = nil
         deadline?.cancel(); deadline = nil
         listener.stateUpdateHandler = nil; listener.newConnectionHandler = nil; listener.cancel()
         let finish = startFinish; startFinish = nil; finish?(.failure(Failure.unavailable))
@@ -122,8 +228,24 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
     }
 
     private func bind(_ permit: WebKitRelayAuthority.Permit, connectionID: UUID) throws {
+        let lease = try queue.sync {
+            guard state == .ready, authority.isCurrent(permit), connections[connectionID] != nil,
+                  let lease = processLeases[permit.scope.profileID], lease.scope == permit.scope
+            else { throw Failure.refused }
+            return lease
+        }
+        guard lease.authorizes(permit.scope) else {
+            queue.sync {
+                if processLeases[permit.scope.profileID] === lease {
+                    revokeExpiredLeaseOnQueue(permit.scope)
+                }
+            }
+            throw Failure.refused
+        }
         try queue.sync {
-            guard state == .ready, authority.isCurrent(permit), var entry = connections[connectionID] else { throw Failure.refused }
+            guard state == .ready, authority.isCurrent(permit),
+                  processLeases[permit.scope.profileID] === lease,
+                  var entry = connections[connectionID] else { throw Failure.refused }
             guard connections.values.filter({ $0.scope == permit.scope }).count < Self.maximumConnectionsPerProfile else { throw Failure.limit }
             entry.scope = permit.scope; connections[connectionID] = entry
         }

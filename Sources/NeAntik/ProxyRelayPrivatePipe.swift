@@ -5,7 +5,24 @@ import Foundation
 /// through this channel, never through argv/environment/files or diagnostics.
 /// All calls run off MainActor. A timeout/cancel/EOF invalidates the exchange.
 enum ProxyRelayPrivatePipe {
-    enum Failure: Error { case unsafeDescriptor, invalidLimit, timeout, closed, malformed }
+    enum Failure: LocalizedError {
+        case unsafeDescriptor, invalidLimit, timeout, closed, malformed
+
+        var errorDescription: String? {
+            switch self {
+            case .unsafeDescriptor:
+                return "Канал обмена с процессом WebKit не прошёл проверку."
+            case .invalidLimit:
+                return "Ответ процесса WebKit нарушает ограничения протокола."
+            case .timeout:
+                return "Процесс WebKit не ответил вовремя."
+            case .closed:
+                return "Процесс WebKit закрыл канал запуска до подтверждения."
+            case .malformed:
+                return "Процесс WebKit вернул повреждённый ответ."
+            }
+        }
+    }
     static let maximumFrameBytes = 16 * 1024
 
     static func prepare(_ fd: Int32, writable: Bool) throws {

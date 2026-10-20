@@ -9,7 +9,7 @@ final class MCPGUIControlCoordinator: ObservableObject {
     struct Backend {
         let refresh: () async throws -> Void
         let profile: (UUID) -> BrowserProfile?
-        let launch: (BrowserProfile) throws -> (generation: UUID, revision: UInt64)
+        let launch: (BrowserProfile) async throws -> (generation: UUID, revision: UInt64)
         let generation: (UUID) -> UUID?
         let saveFailed: (UUID) -> Bool
         let stop: (UUID, UUID) -> Void
@@ -34,7 +34,7 @@ final class MCPGUIControlCoordinator: ObservableObject {
                 let token = try ManagerLaunchAdmission.shared.begin(profileID: profile.id)
                 var launched = false
                 defer { ManagerLaunchAdmission.shared.finish(token: token, launched: launched) }
-                let generation = try processes.launchWebKitProfile(profile)
+                let generation = try await processes.launchWebKitProfileAsync(profile)
                 guard let receipt = store.markLaunchedWithReceipt(profile.id), receipt.original.revision == profile.revision,
                       (try? ProfileLaunchMetadataTransition.matches(from: profile, to: receipt.recorded)) == true else {
                     if processes.webKitGeneration(profileID: profile.id) == generation { processes.stop(profileID: profile.id) }
@@ -142,7 +142,7 @@ final class MCPGUIControlCoordinator: ObservableObject {
                 // The same request must be able to claim a fresh lifetime
                 // before creating one. A still-unsettled prior close refuses.
                 try authority!.requireLaunchAvailable(request, transportID: transportID)
-                let result = try backend.launch(profile)
+                let result = try await backend.launch(profile)
                 try authority!.recordLaunch(request, transportID: transportID, browserGeneration: result.generation)
                 return Wire.Reply(request: request, connectionGeneration: request.connectionGeneration, state: .managed, revision: result.revision)
             case .status, .stop:

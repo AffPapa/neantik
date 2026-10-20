@@ -28,13 +28,28 @@ struct LaunchIntentTests {
     }
     @Test func noninteractiveControlModesNeverRequestAnAuditWindow() {
         let root = URL(fileURLWithPath: "/private/tmp/neantik-owned-control-test")
-        for mode in [NeAntikLaunchIntent.Mode.invalidControlArguments, .proxyRelayOwner,
+        for mode in [NeAntikLaunchIntent.Mode.invalidControlArguments, .proxyRelayOwner, .webKitHostChild,
                      .mcpStdio(dataRoot: root), .mcpManagement(dataRoot: root),
                      .fingerprintEnrollment(outputURL: root.appendingPathComponent("enrollment.json"))] {
             let intent = NeAntikLaunchIntent(mode: mode)
             #expect(!intent.opensAuditWindow)
             #expect(!intent.opensFingerprintAudit)
         }
+    }
+
+    @Test func webKitHostModeRequiresExactNestedExecutableAndSingleMarker() {
+        let executable = "/Applications/NeAntik.app/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/MacOS/NeAntikWebKitHost"
+        let marker = NeAntikLaunchIntent.webKitHostChildArgument
+        #expect(NeAntikLaunchIntent.parse(arguments: [executable, marker]).mode == .webKitHostChild)
+        for args in [[executable, marker, "--data-root", "/tmp/profile"],
+                     ["/tmp/NeAntikWebKitHost", marker],
+                     [executable.replacingOccurrences(of: "/webkit-v1/", with: "/../webkit-v1/"), marker],
+                     [executable, marker + "=true"]] {
+            #expect(NeAntikLaunchIntent.parse(arguments: args).mode == .invalidControlArguments)
+        }
+        let manager = NeAntikLaunchIntent.parse(arguments: [
+            "/Applications/NeAntik.app/Contents/MacOS/NeAntik", marker])
+        #expect(manager.mode == .invalidControlArguments)
     }
 
     @Test func updateAuditUsesAuthenticatedContextWithoutAutomaticFingerprintRun() {

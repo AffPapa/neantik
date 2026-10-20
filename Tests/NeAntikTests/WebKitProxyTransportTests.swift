@@ -598,15 +598,23 @@ struct WebKitProxyOwnedEndpointTests {
             let fixture = try WebKitProxyTransportTests.Upstream(destination: target,
                 bindHost: host, alternateDestination: named, noncePrefix: nonce)
             upstream = fixture; let proxyPort = try await fixture.start()
-            let profileProxy = ProxyConfiguration(kind: .http, host: host, port: Int(proxyPort), username: "owned-upstream")
-            let productionConfiguration = try WebKitProxyConfigurationFactory.configurations(
-                for: profileProxy, password: "fixture-only")
-            try #require(productionConfiguration.count == 1)
+            // Historical API experiment only. Never obtain this upstream
+            // configuration from production code: system WebKit currently
+            // rejects proxy profiles until the owned broker runtime is wired.
+            let proxyEndpoint = NWEndpoint.hostPort(
+                host: NWEndpoint.Host(host),
+                port: NWEndpoint.Port(rawValue: proxyPort)!
+            )
+            var experimentOnlyProxyConfiguration = Network.ProxyConfiguration(httpCONNECTProxy: proxyEndpoint)
+            experimentOnlyProxyConfiguration.allowFailover = false
+            experimentOnlyProxyConfiguration.matchDomains = []
+            experimentOnlyProxyConfiguration.excludedDomains = []
+            experimentOnlyProxyConfiguration.applyCredential(username: "owned-upstream", password: "fixture-only")
             storeA = WKWebsiteDataStore(forIdentifier: profileIDA)
             storeAWasCreated = true
             storeB = WKWebsiteDataStore(forIdentifier: profileIDB)
             storeBWasCreated = true
-            var proxy = productionConfiguration[0]
+            var proxy = experimentOnlyProxyConfiguration
             if matchMode == .exactHosts {
                 // Documented suffix selectors only. Whether explicit selectors
                 // override implicit local-IP bypass is what this experiment tests.

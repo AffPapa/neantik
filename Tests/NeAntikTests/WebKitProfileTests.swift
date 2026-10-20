@@ -110,6 +110,38 @@ struct WebKitProfileTests {
         #expect(chrome.normalizedForPersistence() == nil)
     }
 
+    @Test func ownedWebKitRequiresExactIsolatedProfileRevision() throws {
+        let profileID = UUID()
+        let generation = UUID()
+        let profile = BrowserProfile(id: profileID, name: "Owned WebKit", startURL: "about:blank",
+            engine: .webkit, webKitRuntimeGeneration: .isolatedV1, revision: 4)
+        let session = WebKitHostIPC.Session(profileID: profileID, revision: 4,
+            generation: generation,
+            dataRoot: FileManager.default.temporaryDirectory
+                .appendingPathComponent("neantik-owned-webkit-policy-" + UUID().uuidString).path,
+            runtimeSHA256: String(repeating: "a", count: 64))
+        try WebKitProfilePolicy.validateOwnedRuntime(profile, session: session)
+
+        let staleRevision = WebKitHostIPC.Session(profileID: profileID, revision: 3,
+            generation: generation, dataRoot: session.dataRoot,
+            runtimeSHA256: session.runtimeSHA256)
+        #expect(throws: WebKitProfileError.self) {
+            try WebKitProfilePolicy.validateOwnedRuntime(profile, session: staleRevision)
+        }
+        let foreignProfile = WebKitHostIPC.Session(profileID: UUID(), revision: 4,
+            generation: generation, dataRoot: session.dataRoot,
+            runtimeSHA256: session.runtimeSHA256)
+        #expect(throws: WebKitProfileError.self) {
+            try WebKitProfilePolicy.validateOwnedRuntime(profile, session: foreignProfile)
+        }
+
+        var systemProfile = profile
+        systemProfile.webKitRuntimeGeneration = .system
+        #expect(throws: WebKitProfileError.self) {
+            try WebKitProfilePolicy.validateOwnedRuntime(systemProfile, session: session)
+        }
+    }
+
     @Test func webKitCannotBeDisguisedAsLegacyMetadataOrConfiguration() throws {
         let profile = BrowserProfile(name: "WebKit", startURL: "about:blank", engine: .webkit)
         #expect(throws: (any Error).self) { try ProfileStore.decodeProfiles(encoder().encode([profile])) }
@@ -175,6 +207,32 @@ struct WebKitProfileTests {
         #expect(!WebKitProfilePolicy.permits(URL(string: "file:///fixture")!))
         #expect(!WebKitProfilePolicy.permits(URL(string: "javascript:alert(1)")!))
         #expect(WebKitProfilePolicy.permits(URL(string: "https://example.com/")!))
+    }
+
+    @Test func managerRefusesWebKitProxyBeforeTakingSessionLeases() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-webkit-proxy-launch-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        var profile = BrowserProfile(name: "Proxy remains configured", startURL: "about:blank", engine: .webkit)
+        profile.proxy = ProxyConfiguration(kind: .http, host: "proxy.invalid", port: 8080, username: "qa-user")
+        let saved = try store.upsert(profile)
+        let manager = BrowserProcessManager(paths: paths)
+
+        #expect(throws: WebKitProfileError.self) { try manager.launchWebKitProfile(saved) }
+        #expect(manager.processState(for: saved.id) == .stopped)
+        #expect(!manager.runningProfileIDs.contains(saved.id))
+        #expect(manager.webKitBrowserForTesting(profileID: saved.id) == nil)
+        #expect(store.profile(withID: saved.id)?.proxy == saved.proxy)
+
+        // A refused proxy launch must not leave either lock held. Another
+        // manager/metadata edit can proceed immediately after the refusal.
+        let sessionLease = try paths.acquireWebKitSessionGuard(for: saved.id)
+        let metadataLease = try paths.acquireWebKitMetadataGuard(for: saved.id)
+        metadataLease.release()
+        sessionLease.release()
     }
 
     @Test func unsupportedWebKitContextBlocksLaunchWithoutInvalidatingStoredMetadata() throws {

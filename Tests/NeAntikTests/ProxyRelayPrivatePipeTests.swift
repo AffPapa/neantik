@@ -11,6 +11,16 @@ struct ProxyRelayPrivatePipeTests {
         try ProxyRelayPrivatePipe.prepare(fds[1], writable: true)
         return (fds[0], fds[1])
     }
+    @Test func pipeFailuresHaveDistinctSecretFreeDescriptions() {
+        let failures: [ProxyRelayPrivatePipe.Failure] = [
+            .unsafeDescriptor, .invalidLimit, .timeout, .closed, .malformed
+        ]
+        let descriptions = failures.compactMap(\.errorDescription)
+        #expect(descriptions.count == failures.count)
+        #expect(descriptions.allSatisfy { !$0.isEmpty })
+        #expect(Set(descriptions).count == failures.count)
+        #expect(descriptions.allSatisfy { !$0.contains("@")} )
+    }
     @Test func twoFramesPreserveBoundaries() throws {
         let (input, output) = try pair(); defer { close(input); close(output) }
         for value in [Data("fixture-one".utf8), Data("fixture-two".utf8)] {

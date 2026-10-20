@@ -3349,6 +3349,10 @@ struct ContentView: View {
             try store.validateLaunchSnapshot(profile)
             if profile.engine == .webkit {
                 guard target == .profileStart else { throw NeAntikError.invalidProfile }
+                if profile.webKitRuntimeGeneration == .isolatedV1 {
+                    launchIsolatedWebKitProfile(profile)
+                    return
+                }
                 let token = try ManagerLaunchAdmission.shared.begin(profileID: profile.id)
                 var launched = false
                 defer { ManagerLaunchAdmission.shared.finish(token: token, launched: launched) }
@@ -3394,6 +3398,42 @@ struct ContentView: View {
                 offersProxyEdit: false,
                 target: target
             )
+        }
+    }
+
+    /// The separate WebKit host has an asynchronous authenticated bootstrap.
+    /// Keep launch admission active until its route is ready and profile
+    /// metadata has recorded the same revision.
+    private func launchIsolatedWebKitProfile(_ profile: BrowserProfile) {
+        do {
+            let token = try ManagerLaunchAdmission.shared.begin(profileID: profile.id)
+            Task { @MainActor in
+                var launched = false
+                defer { ManagerLaunchAdmission.shared.finish(token: token, launched: launched) }
+                do {
+                    try store.validateLaunchSnapshot(profile)
+                    let generation = try await processes.launchWebKitProfileAsync(profile)
+                    guard store.markLaunched(profile.id) else {
+                        processes.stop(profileID: profile.id)
+                        throw NeAntikError.profileLaunchStateNotPersisted
+                    }
+                    _ = generation
+                    launched = true
+                    store.managerLibrary.record(.launch, .succeeded)
+                } catch {
+                    store.managerLibrary.record(.launch, error is ManagerLaunchAdmissionError ? .deferred : .failed)
+                    launchPreparationFailure = LaunchPreparationFailure(
+                        profileID: profile.id, message: error.localizedDescription,
+                        title: "Браузер не запустился", offersProxyEdit: false,
+                        target: .profileStart)
+                }
+            }
+        } catch {
+            store.managerLibrary.record(.launch, error is ManagerLaunchAdmissionError ? .deferred : .failed)
+            launchPreparationFailure = LaunchPreparationFailure(
+                profileID: profile.id, message: error.localizedDescription,
+                title: "Браузер не запустился", offersProxyEdit: false,
+                target: .profileStart)
         }
     }
 

@@ -3,6 +3,42 @@ import Network
 import Testing
 @testable import NeAntik
 
+private final class WebKitBrokerAttestationGate: @unchecked Sendable {
+    private let condition = NSCondition()
+    private var armed = false
+    private var released = false
+    private var validationBlocked = false
+
+    func arm() {
+        condition.lock(); armed = true; condition.unlock()
+    }
+
+    func validate() -> Bool {
+        condition.lock(); defer { condition.unlock() }
+        guard armed else { return true }
+        validationBlocked = true; condition.broadcast()
+        while !released { condition.wait() }
+        return true
+    }
+
+    func waitUntilBlocked(timeout: TimeInterval) -> Bool {
+        let deadline = Date(timeIntervalSinceNow: timeout)
+        condition.lock(); defer { condition.unlock() }
+        while !validationBlocked {
+            guard condition.wait(until: deadline) else { return false }
+        }
+        return true
+    }
+
+    func release() {
+        condition.lock(); released = true; condition.broadcast(); condition.unlock()
+    }
+
+    static func wait(_ semaphore: DispatchSemaphore, timeout: TimeInterval) -> Bool {
+        semaphore.wait(timeout: .now() + timeout) == .success
+    }
+}
+
 /// Own loopback echo endpoint. It records only counts, not traffic or addresses.
 private final class WebKitBrokerEcho: @unchecked Sendable {
     let listener: NWListener
@@ -98,8 +134,8 @@ struct WebKitLoopbackBrokerTests {
         let broker = try WebKitLoopbackBroker(qualificationPort: .any), port = try await broker.start()
         defer { broker.cancel() }
         let a = scope(), b = scope()
-        try broker.register(scope: a, route: .direct); try broker.register(scope: b, route: .direct)
-        let ca = try broker.issue(for: a), cb = try broker.issue(for: b)
+        let ca = try broker.registerForTesting(scope: a, route: .direct)
+        let cb = try broker.registerForTesting(scope: b, route: .direct)
         let first = try client(port), second = try client(port)
         defer { first.cancel(); second.cancel() }
         _ = try await first.establish(destination: destination, credentials: credentials(ca), timeout: 2, authorizeCredentials: { true })
@@ -127,7 +163,7 @@ struct WebKitLoopbackBrokerTests {
         defer { origin.cancel() }
         let broker = try WebKitLoopbackBroker(qualificationPort: .any), port = try await broker.start()
         defer { broker.cancel() }
-        let s = scope(); try broker.register(scope: s, route: .direct); _ = try broker.issue(for: s)
+        let s = scope(); _ = try broker.registerForTesting(scope: s, route: .direct)
         for auth in [nil, try ProxyRelayCredentials(username: "foreign", password: "synthetic")] {
             let connection = try client(port); defer { connection.cancel() }
             await #expect(throws: ProxyRelayWireError.authenticationRejected) {
@@ -138,31 +174,58 @@ struct WebKitLoopbackBrokerTests {
         #expect(origin.acceptedCount == 0)
         await broker.stop(); await origin.stop()
     }
+    @Test func preparedCapabilityCannotRouteUntilNetworkProcessLeaseActivates() async throws {
+        let origin = try WebKitBrokerEcho(), originPort = try await origin.start()
+        defer { origin.cancel() }
+        let broker = try WebKitLoopbackBroker(qualificationPort: .any), port = try await broker.start()
+        defer { broker.cancel() }
+        let scope = scope()
+        let capability = try broker.prepare(scope: scope, route: .direct)
+        let destination = try ProxyRelayDestination(host: "127.0.0.1", port: Int(originPort))
+
+        let beforeOwner = try client(port); defer { beforeOwner.cancel() }
+        await #expect(throws: (any Error).self) {
+            try await beforeOwner.establish(destination: destination,
+                credentials: credentials(capability), timeout: 2,
+                authorizeCredentials: { true })
+        }
+        #expect(origin.acceptedCount == 0)
+
+        try broker.activateForTesting(scope: scope, isCurrent: { true })
+        let afterOwner = try client(port); defer { afterOwner.cancel() }
+        _ = try await afterOwner.establish(destination: destination,
+            credentials: credentials(capability), timeout: 2,
+            authorizeCredentials: { true })
+        try await echo(afterOwner, marker: "activated-only")
+        #expect(origin.acceptedCount == 1)
+        await broker.revoke(scope)
+        await broker.stop(); await origin.stop()
+    }
     @Test func authenticatedUpstreamAndFailureNeverBecomeDirect() async throws {
         let origin = try WebKitBrokerEcho(), originPort = try await origin.start()
         defer { origin.cancel() }
         let upstream = try WebKitLoopbackBroker(qualificationPort: .any), upstreamPort = try await upstream.start()
-        let u = scope(); try upstream.register(scope: u, route: .direct)
-        let upstreamAuth = try credentials(upstream.issue(for: u))
+        let u = scope(); let upstreamCapability = try upstream.registerForTesting(scope: u, route: .direct)
+        let upstreamAuth = try credentials(upstreamCapability)
         let broker = try WebKitLoopbackBroker(qualificationPort: .any), port = try await broker.start()
         defer { broker.cancel(); upstream.cancel() }
         let a = scope(), b = scope()
-        try broker.register(scope: a, route: .proxy(kind: .http,
+        let ca = try broker.registerForTesting(scope: a, route: .proxy(kind: .http,
             upstream: .init(host: "127.0.0.1", port: Int(upstreamPort)), credentials: upstreamAuth))
-        try broker.register(scope: b, route: .direct)
-        let ca = try credentials(broker.issue(for: a)), cb = try credentials(broker.issue(for: b))
+        let cb = try broker.registerForTesting(scope: b, route: .direct)
+        let credentialsA = try credentials(ca), credentialsB = try credentials(cb)
         let destination = try ProxyRelayDestination(host: "127.0.0.1", port: Int(originPort))
         let tunneled = try client(port); defer { tunneled.cancel() }
-        _ = try await tunneled.establish(destination: destination, credentials: ca, timeout: 2, authorizeCredentials: { true })
+        _ = try await tunneled.establish(destination: destination, credentials: credentialsA, timeout: 2, authorizeCredentials: { true })
         try await echo(tunneled, marker: "upstream-proof")
         await upstream.stop()
         let failed = try client(port); defer { failed.cancel() }
         await #expect(throws: (any Error).self) {
-            try await failed.establish(destination: destination, credentials: ca, timeout: 2, authorizeCredentials: { true })
+            try await failed.establish(destination: destination, credentials: credentialsA, timeout: 2, authorizeCredentials: { true })
         }
         #expect(origin.acceptedCount == 1)
         let direct = try client(port); defer { direct.cancel() }
-        _ = try await direct.establish(destination: destination, credentials: cb, timeout: 2, authorizeCredentials: { true })
+        _ = try await direct.establish(destination: destination, credentials: credentialsB, timeout: 2, authorizeCredentials: { true })
         try await echo(direct, marker: "explicit-direct-only")
         #expect(origin.acceptedCount == 2)
         await broker.stop(); #expect(await broker.activeConnectionCount() == 0); await origin.stop()
@@ -173,8 +236,40 @@ struct WebKitLoopbackBrokerTests {
         let second = try WebKitLoopbackBroker(qualificationPort: NWEndpoint.Port(rawValue: port)!)
         await #expect(throws: (any Error).self) { try await second.start() }
         await second.stop(); await first.stop()
-        #expect(throws: WebKitLoopbackBroker.Failure.state) { try first.register(scope: scope(), route: .direct) }
+        #expect(throws: WebKitLoopbackBroker.Failure.state) { try first.registerForTesting(scope: scope(), route: .direct) }
         await #expect(throws: WebKitLoopbackBroker.Failure.state) { try await first.start() }
+    }
+    @Test func slowLiveAttestationDoesNotHoldBrokerQueueOrIssueAfterStop() async throws {
+        let scope = scope()
+        let session = WebKitHostIPC.Session(
+            profileID: scope.profileID, revision: scope.revision,
+            generation: scope.sessionID, dataRoot: "/tmp/neantik-broker-attestation-qa",
+            runtimeSHA256: String(repeating: "d", count: 64))
+        let gate = WebKitBrokerAttestationGate()
+        let lease = WebKitNetworkProcessCodeIdentity.Lease.fixture(session: session) {
+            gate.validate()
+        }
+        let broker = try WebKitLoopbackBroker(qualificationPort: .any)
+        _ = try await broker.start()
+        _ = try broker.prepare(scope: scope, route: .direct)
+        gate.arm()
+
+        let issuance = Task.detached { () -> Bool in
+            do { try broker.activate(scope: scope, lease: lease); return true }
+            catch { return false }
+        }
+        #expect(gate.waitUntilBlocked(timeout: 2))
+        let stopFinished = DispatchSemaphore(value: 0)
+        let stopping = Task.detached {
+            await broker.stop()
+            stopFinished.signal()
+        }
+        let stoppedBeforeAttestationReturned = WebKitBrokerAttestationGate.wait(stopFinished, timeout: 0.5)
+        gate.release()
+        await stopping.value
+        let issuedAfterStop = await issuance.value
+        #expect(stoppedBeforeAttestationReturned)
+        #expect(!issuedAfterStop)
     }
     @Test func oneProfileCannotConsumeAnotherProfilesConnectionBudget() async throws {
         let origin = try WebKitBrokerEcho(), originPort = try await origin.start()
@@ -182,8 +277,9 @@ struct WebKitLoopbackBrokerTests {
         let broker = try WebKitLoopbackBroker(qualificationPort: .any), port = try await broker.start()
         defer { broker.cancel() }
         let a = scope(), b = scope()
-        try broker.register(scope: a, route: .direct); try broker.register(scope: b, route: .direct)
-        let ca = try credentials(broker.issue(for: a)), cb = try credentials(broker.issue(for: b))
+        let capabilityA = try broker.registerForTesting(scope: a, route: .direct)
+        let capabilityB = try broker.registerForTesting(scope: b, route: .direct)
+        let ca = try credentials(capabilityA), cb = try credentials(capabilityB)
         let destination = try ProxyRelayDestination(host: "127.0.0.1", port: Int(originPort))
         var clients: [ProxyRelayUpstreamTransport] = []
         defer { clients.forEach { $0.cancel() } }
