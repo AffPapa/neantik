@@ -57,18 +57,25 @@ if [[ -e "$LOG_PATH" || -L "$LOG_PATH" ]]; then
 fi
 
 enrollment_status=0
-/usr/bin/env \
+# Launch through Launch Services so Keychain/Secure Enclave operations run in
+# the signed-in GUI application context. Running the GUI executable as a child
+# of a shell can return errSecInteractionNotAllowed even when the user session
+# and signing identity are valid.
+if /usr/bin/env \
   -u DYLD_INSERT_LIBRARIES \
   -u DYLD_LIBRARY_PATH \
   -u DYLD_FRAMEWORK_PATH \
   -u DYLD_FALLBACK_LIBRARY_PATH \
-  /usr/bin/python3 "$PROJECT_DIR/scripts/run-exact-command-with-timeout.py" \
-    --timeout 60 \
-    --log "$LOG_PATH" \
-    -- \
-    "$EXECUTABLE" \
+  /usr/bin/open -n -W -a "$APP_PATH" \
+    --stdout /dev/null \
+    --stderr "$LOG_PATH" \
+    --args \
     --neantik-enroll-fingerprint-evidence \
-    --output "$OUTPUT_PATH" || enrollment_status=$?
+    --output "$OUTPUT_PATH"; then
+  enrollment_status=0
+else
+  enrollment_status=$?
+fi
 
 if (( enrollment_status != 0 )); then
   echo "Secure Enclave enrollment failed; Direct release preparation stopped." >&2

@@ -334,12 +334,13 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn('launchctl print "gui/$EUID"', text)
         self.assertIn("Authority=Developer ID Application:", text)
         self.assertIn("Timestamp=", text)
-        self.assertIn("run-exact-command-with-timeout.py", text)
-        self.assertIn("--timeout 60", text)
+        self.assertIn("/usr/bin/open -n -W -a \"$APP_PATH\"", text)
+        self.assertIn("--stderr \"$LOG_PATH\"", text)
+        self.assertIn("--args", text)
         self.assertIn("--neantik-enroll-fingerprint-evidence", text)
         self.assertIn("--output \"$OUTPUT_PATH\"", text)
         self.assertNotIn("cat \"$LOG_PATH\"", text)
-        self.assertNotIn("open -", text)
+        self.assertNotIn("run-exact-command-with-timeout.py", text)
 
     def test_release_only_verifies_and_notarizes_prepared_candidate(self) -> None:
         text = RELEASE.read_text(encoding="utf-8")
