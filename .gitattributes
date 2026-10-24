@@ -9,3 +9,4 @@
 *.icns binary
 *.png binary
 *.zip binary
+docs/evidence/third-party/webkit-v20-license-text-corpus/** -text
