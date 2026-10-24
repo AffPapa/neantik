@@ -310,6 +310,7 @@ def apply_network_sandbox(root: Path, manifest: dict) -> dict:
         except FileNotFoundError:
             pass
     return {
+        "policyRevision": config["policyRevision"],
         "path": config["path"],
         "baseSHA256": original_hash,
         "patchedSHA256": hashlib.sha256(patched).hexdigest(),

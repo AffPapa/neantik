@@ -155,6 +155,7 @@ class StageWebKitRuntimeTests(unittest.TestCase):
         self.assertIn('(global-name "com.apple.logd")', policy)
         self.assertIn("NeAntik does not invoke WebKit's delegated system-network grants", policy)
         self.assertIn("NeAntik removes the Network Service Proxy token delegation", policy)
+        self.assertEqual(result["networkSandbox"]["policyRevision"], 13)
         self.assertEqual(result["networkSandbox"]["baseSHA256"], self.manifest["networkSandbox"]["baseSHA256"])
         self.assertNotEqual(result["networkSandbox"]["patchedSHA256"], result["networkSandbox"]["baseSHA256"])
         self.assertIn("deny resolver mach endpoints", result["networkSandbox"]["policy"])
