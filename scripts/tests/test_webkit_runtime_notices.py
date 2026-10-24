@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import shutil
 import tempfile
 import unittest
@@ -96,8 +97,18 @@ class WebKitRuntimeNoticeTests(unittest.TestCase):
             MODULE.SECTION_MARKER,
             (self.app / MODULE.NOTICE_DESTINATION).read_text(encoding="utf-8"),
         )
+        notices_path = self.app / MODULE.HTML_DESTINATION
+        (notices_path.parent / "compliance-manifest.json").write_text(
+            json.dumps({"schemaVersion": 1, "notices": {
+                "file": notices_path.name,
+                "sha256": MODULE.sha256_file(notices_path),
+                "entryCount": 1,
+            }}), encoding="utf-8")
         result = MODULE.install_owned_webkit_notices(
             self.app, self.frameworks, project_root=self.root)
+        compliance_manifest = json.loads((self.app / "Contents/Resources/NeAntikRuntimeCompliance/compliance-manifest.json").read_text())
+        self.assertEqual(compliance_manifest["notices"]["sha256"],
+                         MODULE.sha256_file(self.app / MODULE.HTML_DESTINATION))
         self.assertEqual(result["licenseSHA256"], MODULE.LICENSE_SHA256)
         self.assertEqual(result["webcoreLGPL2SHA256"], MODULE.WEBCORE_LGPL2_SHA256)
         self.assertEqual(result["webcoreLGPL21SHA256"], MODULE.WEBCORE_LGPL21_SHA256)

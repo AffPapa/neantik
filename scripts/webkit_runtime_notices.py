@@ -629,6 +629,33 @@ def _atomic_write(path: Path, data: bytes, *, mode: int | None = None) -> None:
             pass
 
 
+def _compliance_manifest(app: Path, current_html: bytes) -> tuple[Path, dict] | None:
+    path = app / "Contents/Resources/NeAntikRuntimeCompliance/compliance-manifest.json"
+    if not path.exists() and not path.is_symlink():
+        return None
+    _physical_file(path, label="Chromium compliance manifest")
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise NoticeError("Chromium compliance manifest is unreadable") from error
+    notices = value.get("notices") if isinstance(value, dict) else None
+    if (not isinstance(value, dict) or value.get("schemaVersion") != 1
+            or not isinstance(notices, dict)
+            or notices.get("file") != HTML_DESTINATION.name
+            or notices.get("sha256") != hashlib.sha256(current_html).hexdigest()):
+        raise NoticeError("Chromium compliance manifest does not bind the current notice bytes")
+    return path, value
+
+
+def _refresh_compliance_notice_hash(manifest: tuple[Path, dict] | None, final_html: bytes) -> None:
+    if manifest is None:
+        return
+    path, value = manifest
+    value["notices"]["sha256"] = hashlib.sha256(final_html).hexdigest()
+    payload = (json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
+    _atomic_write(path, payload)
+
+
 def render_markdown(library_sha256: str) -> str:
     return (
         f"{SECTION_MARKER}\n\n"
@@ -850,7 +877,9 @@ def install_owned_webkit_notices(
         for row in source_candidate_manifest["entries"]
     ]
     original_markdown = markdown.read_text(encoding="utf-8")
-    original_html = html_notice.read_text(encoding="utf-8")
+    original_html_bytes = html_notice.read_bytes()
+    compliance_manifest = _compliance_manifest(app, original_html_bytes)
+    original_html = original_html_bytes.decode("utf-8")
     markdown_text = _remove_owned_markdown_sections(original_markdown)
     html_text = _remove_owned_html_sections(original_html)
     section = render_markdown(library_hash)
@@ -942,7 +971,9 @@ def install_owned_webkit_notices(
                     + webinspector_markdown + "\n" + sandbox_markdown + "\n"
                     + source_candidate_markdown)
     _atomic_write(markdown, new_markdown.encode("utf-8"))
-    _atomic_write(html_notice, new_html.encode("utf-8"))
+    new_html_bytes = new_html.encode("utf-8")
+    _atomic_write(html_notice, new_html_bytes)
+    _refresh_compliance_notice_hash(compliance_manifest, new_html_bytes)
     verify_owned_webkit_notices(app, runtime_frameworks, project_root=project_root)
     return {
         "runtimeLibrarySHA256": library_hash,
