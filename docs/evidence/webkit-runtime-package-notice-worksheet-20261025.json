@@ -7,7 +7,7 @@
     "version": "1.0.0"
   },
   "counts": {
-    "decisionsUnknown": 100,
+    "decisionsUnknown": 94,
     "images": 16,
     "resources": 84
   },
@@ -266,17 +266,28 @@
     },
     {
       "decision": {
-        "applicableLicense": "UNKNOWN",
-        "noticeLocation": "UNKNOWN",
-        "requiredNotice": "UNKNOWN",
-        "reviewerDecision": "UNKNOWN"
+        "applicableLicense": "Apple BSD 2-Clause (two conditions stated in the exact mapped source header)",
+        "noticeLocation": "NeAntikRuntimeNotices.md; exact matching source copy at NeAntikRuntimeLicenses/WebKitSandbox/JavaScriptCore-framework.sb",
+        "requiredNotice": "Retain copyright, both conditions, and warranty disclaimer in source; reproduce those terms for binary distribution. Exact mapped source template is included in the app resources.",
+        "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
       },
       "mappedSourcePaths": [
         "Source/JavaScriptCore/framework.sb"
       ],
       "originStatus": "mapped_source_input",
       "runtimePath": "JavaScriptCore.framework/Versions/A/Resources/framework.sb",
-      "runtimeSHA256": "dfe69686cb56ae2b98fe70af882fb66ea770c636f169fe417dc55cf1309a61a9"
+      "runtimeSHA256": "dfe69686cb56ae2b98fe70af882fb66ea770c636f169fe417dc55cf1309a61a9",
+      "factualReviewEvidence": {
+        "bundledCopyPath": "NeAntikRuntimeLicenses/WebKitSandbox/JavaScriptCore-framework.sb",
+        "bundledCopySHA256": "dfe69686cb56ae2b98fe70af882fb66ea770c636f169fe417dc55cf1309a61a9",
+        "noticeMarkdownSHA256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375",
+        "officialReference": "https://docs.webkit.org/Other/Licensing.html",
+        "runtimeSHA256": "dfe69686cb56ae2b98fe70af882fb66ea770c636f169fe417dc55cf1309a61a9",
+        "scopeLimit": "Only this sandbox resource row; no inference to its containing image/framework or other rows.",
+        "sourceHeader": "Apple copyright + two BSD-style redistribution conditions + warranty disclaimer",
+        "sourcePath": "Source/JavaScriptCore/framework.sb",
+        "sourceSHA256": "dfe69686cb56ae2b98fe70af882fb66ea770c636f169fe417dc55cf1309a61a9"
+      }
     },
     {
       "decision": {
@@ -1212,73 +1223,128 @@
     },
     {
       "decision": {
-        "applicableLicense": "UNKNOWN",
-        "noticeLocation": "UNKNOWN",
-        "requiredNotice": "UNKNOWN",
-        "reviewerDecision": "UNKNOWN"
+        "applicableLicense": "Apple BSD 2-Clause (two conditions stated in the exact mapped source header)",
+        "noticeLocation": "NeAntikRuntimeNotices.md; exact matching source copy at NeAntikRuntimeLicenses/WebKitSandbox/WebKit-GPUProcess.sb.in",
+        "requiredNotice": "Retain copyright, both conditions, and warranty disclaimer in source; reproduce those terms for binary distribution. Exact mapped source template is included in the app resources.",
+        "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
       },
       "mappedSourcePaths": [
         "Source/WebKit/GPUProcess/mac/com.apple.WebKit.GPUProcess.sb.in"
       ],
       "originStatus": "mapped_source_input",
       "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebKit.GPUProcess.sb",
-      "runtimeSHA256": "101bdd370512434671c1e015f069e4086b25634060061a857f4c7af72854b560"
+      "runtimeSHA256": "101bdd370512434671c1e015f069e4086b25634060061a857f4c7af72854b560",
+      "factualReviewEvidence": {
+        "bundledCopyPath": "NeAntikRuntimeLicenses/WebKitSandbox/WebKit-GPUProcess.sb.in",
+        "bundledCopySHA256": "a8e1f3d73eb240ceb51eca60feed7f6ae3121feeb5dec6c5c63586939ba440f9",
+        "noticeMarkdownSHA256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375",
+        "officialReference": "https://docs.webkit.org/Other/Licensing.html",
+        "runtimeSHA256": "101bdd370512434671c1e015f069e4086b25634060061a857f4c7af72854b560",
+        "scopeLimit": "Only this sandbox resource row; no inference to its containing image/framework or other rows.",
+        "sourceHeader": "Apple copyright + two BSD-style redistribution conditions + warranty disclaimer",
+        "sourcePath": "Source/WebKit/GPUProcess/mac/com.apple.WebKit.GPUProcess.sb.in",
+        "sourceSHA256": "a8e1f3d73eb240ceb51eca60feed7f6ae3121feeb5dec6c5c63586939ba440f9"
+      }
     },
     {
       "decision": {
-        "applicableLicense": "UNKNOWN",
-        "noticeLocation": "UNKNOWN",
-        "requiredNotice": "UNKNOWN",
-        "reviewerDecision": "UNKNOWN"
+        "applicableLicense": "Apple BSD 2-Clause (two conditions stated in the exact mapped source header)",
+        "noticeLocation": "NeAntikRuntimeNotices.md; exact matching source copy at NeAntikRuntimeLicenses/WebKitSandbox/WebKit-NetworkProcess.sb.in",
+        "requiredNotice": "Retain copyright, both conditions, and warranty disclaimer in source; reproduce those terms for binary distribution. Exact mapped source template is included in the app resources.",
+        "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
       },
       "mappedSourcePaths": [
         "Source/WebKit/NetworkProcess/mac/com.apple.WebKit.NetworkProcess.sb.in"
       ],
       "originStatus": "mapped_source_input",
       "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebKit.NetworkProcess.sb",
-      "runtimeSHA256": "e3e8a047e122938338f8e2a37e2d7e59d6f18ba20534c30765aaab9a579d2881"
+      "runtimeSHA256": "e3e8a047e122938338f8e2a37e2d7e59d6f18ba20534c30765aaab9a579d2881",
+      "factualReviewEvidence": {
+        "bundledCopyPath": "NeAntikRuntimeLicenses/WebKitSandbox/WebKit-NetworkProcess.sb.in",
+        "bundledCopySHA256": "f0b254eb98476ab6211667852eb59a0e15ae310e7369040d52e40f675ae33410",
+        "noticeMarkdownSHA256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375",
+        "officialReference": "https://docs.webkit.org/Other/Licensing.html",
+        "runtimeSHA256": "e3e8a047e122938338f8e2a37e2d7e59d6f18ba20534c30765aaab9a579d2881",
+        "scopeLimit": "Only this sandbox resource row; no inference to its containing image/framework or other rows.",
+        "sourceHeader": "Apple copyright + two BSD-style redistribution conditions + warranty disclaimer",
+        "sourcePath": "Source/WebKit/NetworkProcess/mac/com.apple.WebKit.NetworkProcess.sb.in",
+        "sourceSHA256": "f0b254eb98476ab6211667852eb59a0e15ae310e7369040d52e40f675ae33410"
+      }
     },
     {
       "decision": {
-        "applicableLicense": "UNKNOWN",
-        "noticeLocation": "UNKNOWN",
-        "requiredNotice": "UNKNOWN",
-        "reviewerDecision": "UNKNOWN"
+        "applicableLicense": "Apple BSD 2-Clause (two conditions stated in the exact mapped source header)",
+        "noticeLocation": "NeAntikRuntimeNotices.md; exact matching source copy at NeAntikRuntimeLicenses/WebKitSandbox/WebKit-webpushd.mac.sb.in",
+        "requiredNotice": "Retain copyright, both conditions, and warranty disclaimer in source; reproduce those terms for binary distribution. Exact mapped source template is included in the app resources.",
+        "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
       },
       "mappedSourcePaths": [
         "Source/WebKit/webpushd/mac/com.apple.WebKit.webpushd.mac.sb.in"
       ],
       "originStatus": "mapped_source_input",
       "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebKit.webpushd.mac.sb",
-      "runtimeSHA256": "b634bb3a99d4cead1f50532535e1826230afab36217cabec05c6403d16f502e6"
+      "runtimeSHA256": "b634bb3a99d4cead1f50532535e1826230afab36217cabec05c6403d16f502e6",
+      "factualReviewEvidence": {
+        "bundledCopyPath": "NeAntikRuntimeLicenses/WebKitSandbox/WebKit-webpushd.mac.sb.in",
+        "bundledCopySHA256": "efb6ff4f9cbdf976c2872e29e66bb593fd266f7ecbc9c955d499456ee214547c",
+        "noticeMarkdownSHA256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375",
+        "officialReference": "https://docs.webkit.org/Other/Licensing.html",
+        "runtimeSHA256": "b634bb3a99d4cead1f50532535e1826230afab36217cabec05c6403d16f502e6",
+        "scopeLimit": "Only this sandbox resource row; no inference to its containing image/framework or other rows.",
+        "sourceHeader": "Apple copyright + two BSD-style redistribution conditions + warranty disclaimer",
+        "sourcePath": "Source/WebKit/webpushd/mac/com.apple.WebKit.webpushd.mac.sb.in",
+        "sourceSHA256": "efb6ff4f9cbdf976c2872e29e66bb593fd266f7ecbc9c955d499456ee214547c"
+      }
     },
     {
       "decision": {
-        "applicableLicense": "UNKNOWN",
-        "noticeLocation": "UNKNOWN",
-        "requiredNotice": "UNKNOWN",
-        "reviewerDecision": "UNKNOWN"
+        "applicableLicense": "Apple BSD 2-Clause (two conditions stated in the exact mapped source header)",
+        "noticeLocation": "NeAntikRuntimeNotices.md; exact matching source copy at NeAntikRuntimeLicenses/WebKitSandbox/WebKit-WebProcess.sb.in",
+        "requiredNotice": "Retain copyright, both conditions, and warranty disclaimer in source; reproduce those terms for binary distribution. Exact mapped source template is included in the app resources.",
+        "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
       },
       "mappedSourcePaths": [
         "Source/WebKit/WebProcess/com.apple.WebProcess.sb.in"
       ],
       "originStatus": "mapped_source_input",
       "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebProcess.sb",
-      "runtimeSHA256": "8722db48f108e2f0341af9e6c543719155d6a986286e8683f484d32913e701d8"
+      "runtimeSHA256": "8722db48f108e2f0341af9e6c543719155d6a986286e8683f484d32913e701d8",
+      "factualReviewEvidence": {
+        "bundledCopyPath": "NeAntikRuntimeLicenses/WebKitSandbox/WebKit-WebProcess.sb.in",
+        "bundledCopySHA256": "19afbed37437e34a121c56ff588b1e418f6d97083a98bcc8c6851424ef842628",
+        "noticeMarkdownSHA256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375",
+        "officialReference": "https://docs.webkit.org/Other/Licensing.html",
+        "runtimeSHA256": "8722db48f108e2f0341af9e6c543719155d6a986286e8683f484d32913e701d8",
+        "scopeLimit": "Only this sandbox resource row; no inference to its containing image/framework or other rows.",
+        "sourceHeader": "Apple copyright + two BSD-style redistribution conditions + warranty disclaimer",
+        "sourcePath": "Source/WebKit/WebProcess/com.apple.WebProcess.sb.in",
+        "sourceSHA256": "19afbed37437e34a121c56ff588b1e418f6d97083a98bcc8c6851424ef842628"
+      }
     },
     {
       "decision": {
-        "applicableLicense": "UNKNOWN",
-        "noticeLocation": "UNKNOWN",
-        "requiredNotice": "UNKNOWN",
-        "reviewerDecision": "UNKNOWN"
+        "applicableLicense": "Apple BSD 2-Clause (two conditions stated in the exact mapped source header)",
+        "noticeLocation": "NeAntikRuntimeNotices.md; exact matching source copy at NeAntikRuntimeLicenses/WebKitSandbox/WebKit-WebProcess.x86.sb.in",
+        "requiredNotice": "Retain copyright, both conditions, and warranty disclaimer in source; reproduce those terms for binary distribution. Exact mapped source template is included in the app resources.",
+        "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
       },
       "mappedSourcePaths": [
         "Source/WebKit/WebProcess/com.apple.WebProcess.x86.sb.in"
       ],
       "originStatus": "mapped_source_input",
       "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebProcess.x86.sb",
-      "runtimeSHA256": "c52623e5732ef13ecc893fca2842f67ce97a11373112c0ffcd9d29ef9f886d16"
+      "runtimeSHA256": "c52623e5732ef13ecc893fca2842f67ce97a11373112c0ffcd9d29ef9f886d16",
+      "factualReviewEvidence": {
+        "bundledCopyPath": "NeAntikRuntimeLicenses/WebKitSandbox/WebKit-WebProcess.x86.sb.in",
+        "bundledCopySHA256": "b3b636902f94db8ec556f1151cc2ad5062a3685b93172eb8daabd3d2d7ad1c76",
+        "noticeMarkdownSHA256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375",
+        "officialReference": "https://docs.webkit.org/Other/Licensing.html",
+        "runtimeSHA256": "c52623e5732ef13ecc893fca2842f67ce97a11373112c0ffcd9d29ef9f886d16",
+        "scopeLimit": "Only this sandbox resource row; no inference to its containing image/framework or other rows.",
+        "sourceHeader": "Apple copyright + two BSD-style redistribution conditions + warranty disclaimer",
+        "sourcePath": "Source/WebKit/WebProcess/com.apple.WebProcess.x86.sb.in",
+        "sourceSHA256": "b3b636902f94db8ec556f1151cc2ad5062a3685b93172eb8daabd3d2d7ad1c76"
+      }
     },
     {
       "decision": {
@@ -1437,5 +1503,19 @@
   ],
   "schemaVersion": 1,
   "scope": "The 16 runtime images and 84 resources in the exact signed production WebKit runtime staged in the NeAntik 1.0.0 (139) candidate. SHA-256 values bind bytes only; all 100 license decisions remain UNKNOWN.",
-  "status": "exact-package-bytes-bound; license-applicability-review-open; not-release-qualified"
+  "status": "exact-package-bytes-bound; license-applicability-review-open; not-release-qualified",
+  "supplementalMaintainerReview": {
+    "method": "Exact frozen candidate runtime hash -> one mapped upstream source template -> BSD two-condition source header -> byte-identical template copy in candidate NeAntikRuntimeLicenses/WebKitSandbox; NeAntikRuntimeNotices.md explicitly maps source, runtime resource and copy.",
+    "recordedAt": "2026-10-24T23:55:42Z",
+    "resolvedCount": 6,
+    "resolvedResourceRows": [
+      "JavaScriptCore.framework/Versions/A/Resources/framework.sb",
+      "WebKit.framework/Versions/A/Resources/com.apple.WebKit.GPUProcess.sb",
+      "WebKit.framework/Versions/A/Resources/com.apple.WebKit.NetworkProcess.sb",
+      "WebKit.framework/Versions/A/Resources/com.apple.WebKit.webpushd.mac.sb",
+      "WebKit.framework/Versions/A/Resources/com.apple.WebProcess.sb",
+      "WebKit.framework/Versions/A/Resources/com.apple.WebProcess.x86.sb"
+    ],
+    "scopeLimit": "Six sandbox-resource rows only. No decision is inferred for any containing image, model, asset catalog, plist, or other row."
+  }
 }

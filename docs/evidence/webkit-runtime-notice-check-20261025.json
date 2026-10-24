@@ -1,0 +1,37 @@
+{
+  "candidate": {
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0"
+  },
+  "command": [
+    "python3",
+    "scripts/check-webkit-notice-worksheet.py",
+    "--worksheet",
+    "docs/evidence/webkit-runtime-package-notice-worksheet-20261025.json",
+    "--frameworks",
+    "dist/private/candidates/f3488c08f0b3493dbcee8db94473bacf/NeAntik.app/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks"
+  ],
+  "frameworksRoot": "dist/private/candidates/f3488c08f0b3493dbcee8db94473bacf/NeAntik.app/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks",
+  "inputs": {
+    "checker": {
+      "path": "scripts/check-webkit-notice-worksheet.py",
+      "sha256": "c8916fe0e9516acea764ca2aabaa96330033726f23b862db28f377387dd09f96"
+    },
+    "worksheet": {
+      "path": "docs/evidence/webkit-runtime-package-notice-worksheet-20261025.json",
+      "sha256": "fc9face5d21f7154028672bac340b66179cf1ccb607cdc441baff310ff0acd6c"
+    }
+  },
+  "interpretation": "The worksheet matches exact candidate runtime image/resource hashes. Six sandbox resources have factual source-header and notice-copy decisions; 94 rows remain unresolved, so this is not release qualification or legal approval.",
+  "observedAt": "2026-10-24T23:58:09Z",
+  "result": {
+    "imageCount": 16,
+    "resourceCount": 84,
+    "changedCount": 0,
+    "unresolvedDecisionCount": 94
+  },
+  "schemaVersion": 1,
+  "status": "exact-candidate-notice-byte-binding-pass;applicability-remains-partial"
+}

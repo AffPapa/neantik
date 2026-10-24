@@ -28,7 +28,7 @@
     },
     "candidateNoticeWorksheet": {
       "path": "docs/evidence/webkit-runtime-package-notice-worksheet-20261025.json",
-      "sha256": "e9dc3324002e1cbdd05cf7378f5d1e42c797c01b173a06d436771d46348f3f4b"
+      "sha256": "fc9face5d21f7154028672bac340b66179cf1ccb607cdc441baff310ff0acd6c"
     },
     "licenseCorpusManifest": {
       "path": "docs/evidence/third-party/webkit-v20-license-text-corpus/MANIFEST.json",
@@ -25724,5 +25724,11 @@
       "decision": "UNKNOWN"
     }
   ],
-  "interpretation": "This read-only addendum traverses the exact build.ninja graph whose hash matches the marker-free production WebKit rebuild receipt. It ties five previously unmapped build targets and one external Swift runtime to source inputs and candidate license-text ancestry. The WebKit-built outputs are pre-sign stage identities; the signed candidate has separate hashes. Compiler input and ancestor-license association do not decide applicable terms, notice sufficiency, source/relink obligations, or permission to distribute. All rows remain UNKNOWN."
+  "interpretation": "This read-only addendum traverses the exact build.ninja graph whose hash matches the marker-free production WebKit rebuild receipt. It ties five previously unmapped build targets and one external Swift runtime to source inputs and candidate license-text ancestry. The WebKit-built outputs are pre-sign stage identities; the signed candidate has separate hashes. Compiler input and ancestor-license association do not decide applicable terms, notice sufficiency, source/relink obligations, or permission to distribute. All rows remain UNKNOWN.",
+  "supplementalResourceReview": {
+    "factualNoticeRowsResolved": 6,
+    "path": "docs/evidence/webkit-v20-resource-license-gap-review-20261025.json",
+    "remainingResourceRowsUnknown": 13,
+    "sha256": "105aa44b861fe19058e2470b7903a57ac6ce20b6801e95681cb67401e4c3ec6e"
+  }
 }
