@@ -1,0 +1,1861 @@
+{
+  "schemaVersion": 1,
+  "status": "factual-license-text-corpus-not-applicability-review",
+  "upstream": "https://github.com/WebKit/WebKit",
+  "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+  "sourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+  "inventory": "../webkit-v20-factual-source-license-inventory-20261024.json",
+  "count": 308,
+  "totalBytes": 1743244,
+  "entries": [
+    {
+      "sourcePath": "JSTests/ChakraCore/LICENSE.txt",
+      "corpusPath": "JSTests/ChakraCore/LICENSE.txt",
+      "bytes": 1094,
+      "sha256": "6e0f9e6198737121f688101635238ba8ce215f8193dadd73a52480783bb1be1e"
+    },
+    {
+      "sourcePath": "JSTests/test262/LICENSE",
+      "corpusPath": "JSTests/test262/LICENSE",
+      "bytes": 2299,
+      "sha256": "f9215fd81c507c12df8732c7450b1e09f8a5cbf5daa14cd7081f8aec70012c7f"
+    },
+    {
+      "sourcePath": "JSTests/wasm/stress/resources/pglite/LICENSE.Emscripten",
+      "corpusPath": "JSTests/wasm/stress/resources/pglite/LICENSE.Emscripten",
+      "bytes": 5093,
+      "sha256": "620a78084fc7ca97c0b5dea9abf891f3ffcadfdbf305276f099c9c4e12fc1d86"
+    },
+    {
+      "sourcePath": "JSTests/wasm/stress/resources/pglite/LICENSE.PostgreSQL",
+      "corpusPath": "JSTests/wasm/stress/resources/pglite/LICENSE.PostgreSQL",
+      "bytes": 1192,
+      "sha256": "e3822c4797fadcab31a3fc73f75c28ac20c73d72b565da91e9974cf9398ef4d2"
+    },
+    {
+      "sourcePath": "JSTests/wasm/stress/resources/pglite/LICENSE.pglite",
+      "corpusPath": "JSTests/wasm/stress/resources/pglite/LICENSE.pglite",
+      "bytes": 1192,
+      "sha256": "31ccadc0a70e8e0e8a35c5833567b64388dfe34987d962e1911554e271294105"
+    },
+    {
+      "sourcePath": "JSTests/wasm/v8/LICENSE",
+      "corpusPath": "JSTests/wasm/v8/LICENSE",
+      "bytes": 3161,
+      "sha256": "f10a1808e442ae7dbfecf6b54ae4de84193a768770e189a67d5f397730acdbc9"
+    },
+    {
+      "sourcePath": "LayoutTests/editing/pasteboard/copying-html-strips-javascript-url-and-event-handler-expected.txt",
+      "corpusPath": "LayoutTests/editing/pasteboard/copying-html-strips-javascript-url-and-event-handler-expected.txt",
+      "bytes": 376,
+      "sha256": "8520409d815e0caa6740851c0e6c360ec72142d3af6219092827cc7a2c9f4d68"
+    },
+    {
+      "sourcePath": "LayoutTests/editing/pasteboard/copying-html-strips-javascript-url-and-event-handler.html",
+      "corpusPath": "LayoutTests/editing/pasteboard/copying-html-strips-javascript-url-and-event-handler.html",
+      "bytes": 1255,
+      "sha256": "1ea8f2cbcba5a13e9908eae4e9b6e0a5f807494e50405df08700ee5a3971c62e"
+    },
+    {
+      "sourcePath": "LayoutTests/fast/text/resources/BopomofoGposSubset-Regular/LICENSE",
+      "corpusPath": "LayoutTests/fast/text/resources/BopomofoGposSubset-Regular/LICENSE",
+      "bytes": 77,
+      "sha256": "ad38d40d86d20ef91ac87ae3daf660492925362815fc788cf8961612fef9195d"
+    },
+    {
+      "sourcePath": "LayoutTests/fast/text/resources/Filicudi Dummy BSD2/LICENSE.txt",
+      "corpusPath": "LayoutTests/fast/text/resources/Filicudi Dummy BSD2/LICENSE.txt",
+      "bytes": 1265,
+      "sha256": "f6b92de7b25fcb697fff0a9583a03a476e5b1de14d4cb5e359882d6dce7bff4d"
+    },
+    {
+      "sourcePath": "LayoutTests/fast/text/resources/langlocatest_cjk/LICENSE",
+      "corpusPath": "LayoutTests/fast/text/resources/langlocatest_cjk/LICENSE",
+      "bytes": 209,
+      "sha256": "4fd9446640cfe2bed08d2a99fbcf7188c8dcf202ab488a82556543344d161452"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/tc39-tg4/source-map-tests/LICENSE.md",
+      "corpusPath": "LayoutTests/imported/tc39-tg4/source-map-tests/LICENSE.md",
+      "bytes": 2228,
+      "sha256": "b44ad77dc900d7002f3b1cb3b3968adb404d013174e024305b2917b4f8927392"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/LICENSE.md",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/LICENSE.md",
+      "bytes": 1500,
+      "sha256": "5fac07febb0e2a97fb0d7b0def149ec08b642e1ba4b9c345283ab1cbd2af6570"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/compression/third_party/pako/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/compression/third_party/pako/LICENSE",
+      "bytes": 1104,
+      "sha256": "a04665b3b2de56c66730c1f720f528175739e4104f79073614aa611da1e85539"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/density-size-correction/third_party/piexif/LICENSE.txt",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/density-size-correction/third_party/piexif/LICENSE.txt",
+      "bytes": 1081,
+      "sha256": "98f20d2b963e6e028195cbddb071227e996768c5a13b470100fe4ff488fc9373"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/fonts/CSSTest/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/fonts/CSSTest/LICENSE",
+      "bytes": 4407,
+      "sha256": "616b9be4b7808b343d657333ccfdce3d95fadbf3773dd482511e3605b58edb6e"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/fonts/adobe-fonts/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/fonts/adobe-fonts/LICENSE",
+      "bytes": 4553,
+      "sha256": "86f0cb3b3c77ae0c5dda21d92d6370d34f739a220bda757ea6a0fe6957427116"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/fonts/hasubi-mono/LICENSE.txt",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/fonts/hasubi-mono/LICENSE.txt",
+      "bytes": 4301,
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/fonts/noto/NotoSansAdlam-hinted/LICENSE_OFL.txt",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/fonts/noto/NotoSansAdlam-hinted/LICENSE_OFL.txt",
+      "bytes": 4301,
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/fonts/noto/NotoSansCypriot-hinted/LICENSE_OFL.txt",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/fonts/noto/NotoSansCypriot-hinted/LICENSE_OFL.txt",
+      "bytes": 4301,
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/fonts/noto/cjk/LICENSE.txt",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/fonts/noto/cjk/LICENSE.txt",
+      "bytes": 4301,
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/atomicwrites/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/atomicwrites/LICENSE",
+      "bytes": 1069,
+      "sha256": "878329f0bd878ad015129ce8bda82f481e86ec2e80831e909c0d67171d922e73"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/attrs/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/attrs/LICENSE",
+      "bytes": 1109,
+      "sha256": "882115c95dfc2af1eeb6714f8ec6d5cbcabf667caff8729f42420da63f714e9f"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/attrs/docs/license.md",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/attrs/docs/license.md",
+      "bytes": 1201,
+      "sha256": "0eaf4b4ffe76f2873a044bcd32848319830259699b09ccf77b197b8d8a7b0cf7"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/certifi/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/certifi/LICENSE",
+      "bytes": 1048,
+      "sha256": "6a70a4bf6b010016d59a64b8ae4ad8dc7f5ef16f1fb453cc2ecd771c5a341131"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/exceptiongroup/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/exceptiongroup/LICENSE",
+      "bytes": 3704,
+      "sha256": "6e5070d765031e0ad403a1cbf90ae6d19a0228f802e320b7acff460aa72ed47c"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/h2/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/h2/LICENSE",
+      "bytes": 1102,
+      "sha256": "7a65a5af0cbabf1c16251c7c6b2b7cb46d16a7222e79975b9b61fcd66a2e3f28"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/hpack/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/hpack/LICENSE",
+      "bytes": 1080,
+      "sha256": "763a9342a04df62046c9dc748a5287934eb0a5331c6863b3ca0aee20e18cb4ed"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/html5lib/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/html5lib/LICENSE",
+      "bytes": 1084,
+      "sha256": "16a39991619e92f18680932da2a9199fdf7d95df3ecaedc52ea06218aabafd6f"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/html5lib/benchmarks/data/wpt/LICENSE.md",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/html5lib/benchmarks/data/wpt/LICENSE.md",
+      "bytes": 1502,
+      "sha256": "5a7b465d39b5e018bc40cc34162176269f7c476989cb4dbcf0ec0b81701545a7"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/html5lib/doc/license.rst",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/html5lib/doc/license.rst",
+      "bytes": 41,
+      "sha256": "506a88a1f9284732f1c45f4751ca4f338a9502217e1eab4fb571caebd5975bd9"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/hyperframe/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/hyperframe/LICENSE",
+      "bytes": 1080,
+      "sha256": "763a9342a04df62046c9dc748a5287934eb0a5331c6863b3ca0aee20e18cb4ed"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/importlib_metadata/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/importlib_metadata/LICENSE",
+      "bytes": 571,
+      "sha256": "c0d7ba740721989d55bd507c0fda1373e8071da742b9a48101ebf7eac60433a5"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/iniconfig/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/iniconfig/LICENSE",
+      "bytes": 1061,
+      "sha256": "2af680c39ef493fb82830356d1d3df1acb5a06033cba2dec7a19e21caa77a866"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/more-itertools/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/more-itertools/LICENSE",
+      "bytes": 1053,
+      "sha256": "09f1c8c9e941af3e584d59641ea9b87d83c0cb0fd007eb5ef391a7e2643c1a46"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/more-itertools/docs/license.rst",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/more-itertools/docs/license.rst",
+      "bytes": 646,
+      "sha256": "f4a8d4c0f47ec36904fba4fb1f7be3fcaa045cc3fdd4766200ba755d892f0d18"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/packaging/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/packaging/LICENSE",
+      "bytes": 197,
+      "sha256": "cad1ef5bd340d73e074ba614d26f7deaca5c7940c3d8c34852e65c4909686c48"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/packaging/LICENSE.APACHE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/packaging/LICENSE.APACHE",
+      "bytes": 10174,
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/packaging/LICENSE.BSD",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/packaging/LICENSE.BSD",
+      "bytes": 1344,
+      "sha256": "b70e7e9b742f1cc6f948b34c16aa39ffece94196364bc88ff0d2180f0028fac5"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/pathlib2/LICENSE.rst",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/pathlib2/LICENSE.rst",
+      "bytes": 1152,
+      "sha256": "f8e02f1a07e4c6fc59a4bee831ddde26b97064105c423b9e24340f35aaa80262"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/pdf_js/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/pdf_js/LICENSE",
+      "bytes": 10174,
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/pluggy/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/pluggy/LICENSE",
+      "bytes": 1110,
+      "sha256": "d6b65e6c213a5d0b577911d34d6e5949b9f59d76c238c5071a2f3fc16cfb2606"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/pytest-asyncio/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/pytest-asyncio/LICENSE",
+      "bytes": 11324,
+      "sha256": "a8ad31b1c3f40dca5a84119351b8fa8ddc868edd77fad8a8ebf6d8f2d16fa4ae"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/pytest/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/pytest/LICENSE",
+      "bytes": 1091,
+      "sha256": "ca836a5f9ecca3b2f350230faa20a48fb8b145653b5568d784862df864706b9b"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/pytest/doc/en/license.rst",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/pytest/doc/en/license.rst",
+      "bytes": 1372,
+      "sha256": "45b6addd843b2ed89f9f8f363f61092db2e3c2461e3f178c3c3793648c3c4e07"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/pywebsocket3/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/pywebsocket3/LICENSE",
+      "bytes": 1475,
+      "sha256": "5a2954f05e7fcc1bf240a3b58534f974760b5aae02438ce875c9c7fe0bdb4cf9"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/six/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/six/LICENSE",
+      "bytes": 1066,
+      "sha256": "8bb850c565aa389fdc16f3a46965ad23d82adff60f2393fc2762b63185e8e6c9"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/websockets/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/websockets/LICENSE",
+      "bytes": 1514,
+      "sha256": "3d6a0c050d8bec52fabad502e45fb25bd02bcadbd70dea34d447b6a0ff4e6da8"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/websockets/docs/project/license.rst",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/websockets/docs/project/license.rst",
+      "bytes": 44,
+      "sha256": "220589822091ccbcc4857033964ba24280529b830c712de3ad7ac1626f7ae212"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/zipp/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/third_party/zipp/LICENSE",
+      "bytes": 1050,
+      "sha256": "a55e2ffe9b44998e621d51d8c094bed09acc4b5236ee73d7df395a33ba3c18fd"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/wave/www/lib/davidshimjs/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/wave/www/lib/davidshimjs/LICENSE",
+      "bytes": 1098,
+      "sha256": "aaa1f349028a59432eb00222b8ddfe4d2ccebdce04cf8348dcb8d41b7068107b"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/tools/wptserve/wptserve/cgi/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/tools/wptserve/wptserve/cgi/LICENSE",
+      "bytes": 13936,
+      "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+    },
+    {
+      "sourcePath": "LayoutTests/imported/w3c/web-platform-tests/webrtc/third_party/sdp/LICENSE",
+      "corpusPath": "LayoutTests/imported/w3c/web-platform-tests/webrtc/third_party/sdp/LICENSE",
+      "bytes": 1058,
+      "sha256": "798e82590af6a84bfbde3d6bb0fb9162c519edf16122404fea00acefdc55cbd9"
+    },
+    {
+      "sourcePath": "LayoutTests/jquery/resources/src/sizzle/LICENSE",
+      "corpusPath": "LayoutTests/jquery/resources/src/sizzle/LICENSE",
+      "bytes": 17635,
+      "sha256": "9a1795ae420e7538893cfa597da4a3b01b55985662f2b95ea107ac0aa333c4b8"
+    },
+    {
+      "sourcePath": "LayoutTests/js/promises-tests/promises-tests/LICENSE.txt",
+      "corpusPath": "LayoutTests/js/promises-tests/promises-tests/LICENSE.txt",
+      "bytes": 501,
+      "sha256": "7006f9e064c4026e9518140345d7c8cb578430f0f1779dab58a9e6996e8c2700"
+    },
+    {
+      "sourcePath": "LayoutTests/media/media-source/resources/first-sample-pts-non-zero/LICENSE",
+      "corpusPath": "LayoutTests/media/media-source/resources/first-sample-pts-non-zero/LICENSE",
+      "bytes": 293,
+      "sha256": "c5bbc77674e6019a5a629b8e24252044d4b290791f81e40c87b709b2666ec50c"
+    },
+    {
+      "sourcePath": "LayoutTests/pdf/resources/copying-disabled.pdf",
+      "corpusPath": "LayoutTests/pdf/resources/copying-disabled.pdf",
+      "bytes": 11114,
+      "sha256": "11beb2782d3007d32155a21c5ffd2ea8fdae23dc30a3bd407acb7235131e3d80"
+    },
+    {
+      "sourcePath": "LayoutTests/webgl/resources/webgl_test_files/closure-library/LICENSE",
+      "corpusPath": "LayoutTests/webgl/resources/webgl_test_files/closure-library/LICENSE",
+      "bytes": 10173,
+      "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+    },
+    {
+      "sourcePath": "LayoutTests/webgl/resources/webgl_test_files/deqp/LICENSE",
+      "corpusPath": "LayoutTests/webgl/resources/webgl_test_files/deqp/LICENSE",
+      "bytes": 11362,
+      "sha256": "ca382aa537f8923d6c0991fb976d184a2009eb76080313bf10dcecdc9311f0dd"
+    },
+    {
+      "sourcePath": "PerformanceTests/JetStream/LICENSE.txt",
+      "corpusPath": "PerformanceTests/JetStream/LICENSE.txt",
+      "bytes": 1947,
+      "sha256": "f13518562d04a686d77d551051a0d4a79f2cddd7818a6078fb0d316c86380345"
+    },
+    {
+      "sourcePath": "PerformanceTests/JetStream2/web-tooling-benchmark/LICENSE",
+      "corpusPath": "PerformanceTests/JetStream2/web-tooling-benchmark/LICENSE",
+      "bytes": 34709,
+      "sha256": "80609903f6e311d820537b3f0d01ac85830159786d58ef35ba664625cbb01ade"
+    },
+    {
+      "sourcePath": "PerformanceTests/SixSpeed/LICENSE",
+      "corpusPath": "PerformanceTests/SixSpeed/LICENSE",
+      "bytes": 1056,
+      "sha256": "07db28438fcc1dfbb94442df09bd496f37fdefb430ca40a9419b72c257e8e79d"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer/resources/flightjs-example-app/LICENSE.md",
+      "corpusPath": "PerformanceTests/Speedometer/resources/flightjs-example-app/LICENSE.md",
+      "bytes": 1050,
+      "sha256": "c53707162918c087828807c656de42b56f1391335a4024fd16ecbbc2f6ad4d0e"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer/resources/flightjs-example-app/components/es5-shim/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer/resources/flightjs-example-app/components/es5-shim/LICENSE",
+      "bytes": 1092,
+      "sha256": "b9db14ab1db6d769f184558b9f7e109c94f7b939ab5e5b766aa9f8e0261551a0"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer/resources/flightjs-example-app/components/jasmine-flight/LICENSE.md",
+      "corpusPath": "PerformanceTests/Speedometer/resources/flightjs-example-app/components/jasmine-flight/LICENSE.md",
+      "bytes": 1066,
+      "sha256": "5f1d19fd8dd1e38cffbe149f6c0c20ab74366a11e97ec4074e0c29d5d5587cb0"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer/resources/todomvc/architecture-examples/jquery/node_modules/director/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer/resources/todomvc/architecture-examples/jquery/node_modules/director/LICENSE",
+      "bytes": 1097,
+      "sha256": "23486db6442c8601527c685389311beb9a65710920944dd55380364ebec269fd"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer/resources/todomvc/architecture-examples/react/license.md",
+      "corpusPath": "PerformanceTests/Speedometer/resources/todomvc/architecture-examples/react/license.md",
+      "bytes": 1165,
+      "sha256": "64fe4eaa92d415c1cac39740955f61f8a27180857affea21a04eba52215368d4"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer/resources/todomvc/architecture-examples/react/node_modules/classnames/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer/resources/todomvc/architecture-examples/react/node_modules/classnames/LICENSE",
+      "bytes": 1077,
+      "sha256": "f492b0d5d9671047541af63c283fb0cac11e7c9662dedbb8a65b036ee4f0db84"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer/resources/todomvc/architecture-examples/react/node_modules/director/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer/resources/todomvc/architecture-examples/react/node_modules/director/LICENSE",
+      "bytes": 1097,
+      "sha256": "23486db6442c8601527c685389311beb9a65710920944dd55380364ebec269fd"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer/resources/todomvc/architecture-examples/react/node_modules/react-dom/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer/resources/todomvc/architecture-examples/react/node_modules/react-dom/LICENSE",
+      "bytes": 1526,
+      "sha256": "6f66286d4dd445f058ff0ecdf1d3ef82be46f7199d5245e68dd0a57ae2d255a6"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer/resources/todomvc/architecture-examples/react/node_modules/react/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer/resources/todomvc/architecture-examples/react/node_modules/react/LICENSE",
+      "bytes": 1526,
+      "sha256": "6f66286d4dd445f058ff0ecdf1d3ef82be46f7199d5245e68dd0a57ae2d255a6"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer/resources/todomvc/dependency-examples/flight/flight/node_modules/es5-shim/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer/resources/todomvc/dependency-examples/flight/flight/node_modules/es5-shim/LICENSE",
+      "bytes": 1092,
+      "sha256": "b9db14ab1db6d769f184558b9f7e109c94f7b939ab5e5b766aa9f8e0261551a0"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer/resources/todomvc/dependency-examples/flight/flight/node_modules/flight/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer/resources/todomvc/dependency-examples/flight/flight/node_modules/flight/LICENSE",
+      "bytes": 1072,
+      "sha256": "ca2bab8f3502d2583dd66b37e68407a1a3779e0d835b9f8a6c08cf58399e7c7f"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer/resources/todomvc/dependency-examples/flight/flight/node_modules/requirejs-text/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer/resources/todomvc/dependency-examples/flight/flight/node_modules/requirejs-text/LICENSE",
+      "bytes": 1899,
+      "sha256": "a33781b5fca7dece4f994ac6ad470d3106ae8d971e7531c25cfe163930cc24c3"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer/resources/todomvc/labs/architecture-examples/react/bower_components/director/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer/resources/todomvc/labs/architecture-examples/react/bower_components/director/LICENSE",
+      "bytes": 1057,
+      "sha256": "f719b8202d5940ef5775622d85cf13b9deb1f67197fb6139a08cc12dea948780"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer/resources/todomvc/license.md",
+      "corpusPath": "PerformanceTests/Speedometer/resources/todomvc/license.md",
+      "bytes": 1166,
+      "sha256": "32238c5c6759b589ea768661b6eb0fcb42449b74d57cdf09928743f2e1eb748d"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer2.1/resources/flightjs-example-app/LICENSE.md",
+      "corpusPath": "PerformanceTests/Speedometer2.1/resources/flightjs-example-app/LICENSE.md",
+      "bytes": 1050,
+      "sha256": "c53707162918c087828807c656de42b56f1391335a4024fd16ecbbc2f6ad4d0e"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer2.1/resources/flightjs-example-app/components/es5-shim/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer2.1/resources/flightjs-example-app/components/es5-shim/LICENSE",
+      "bytes": 1092,
+      "sha256": "b9db14ab1db6d769f184558b9f7e109c94f7b939ab5e5b766aa9f8e0261551a0"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer2.1/resources/flightjs-example-app/components/jasmine-flight/LICENSE.md",
+      "corpusPath": "PerformanceTests/Speedometer2.1/resources/flightjs-example-app/components/jasmine-flight/LICENSE.md",
+      "bytes": 1066,
+      "sha256": "5f1d19fd8dd1e38cffbe149f6c0c20ab74366a11e97ec4074e0c29d5d5587cb0"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer2.1/resources/todomvc/architecture-examples/jquery/node_modules/director/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer2.1/resources/todomvc/architecture-examples/jquery/node_modules/director/LICENSE",
+      "bytes": 1097,
+      "sha256": "23486db6442c8601527c685389311beb9a65710920944dd55380364ebec269fd"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer2.1/resources/todomvc/architecture-examples/react/license.md",
+      "corpusPath": "PerformanceTests/Speedometer2.1/resources/todomvc/architecture-examples/react/license.md",
+      "bytes": 1165,
+      "sha256": "64fe4eaa92d415c1cac39740955f61f8a27180857affea21a04eba52215368d4"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/classnames/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/classnames/LICENSE",
+      "bytes": 1077,
+      "sha256": "f492b0d5d9671047541af63c283fb0cac11e7c9662dedbb8a65b036ee4f0db84"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/director/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/director/LICENSE",
+      "bytes": 1097,
+      "sha256": "23486db6442c8601527c685389311beb9a65710920944dd55380364ebec269fd"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/react-dom/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/react-dom/LICENSE",
+      "bytes": 1526,
+      "sha256": "6f66286d4dd445f058ff0ecdf1d3ef82be46f7199d5245e68dd0a57ae2d255a6"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/react/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/react/LICENSE",
+      "bytes": 1526,
+      "sha256": "6f66286d4dd445f058ff0ecdf1d3ef82be46f7199d5245e68dd0a57ae2d255a6"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer2.1/resources/todomvc/dependency-examples/flight/flight/node_modules/es5-shim/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer2.1/resources/todomvc/dependency-examples/flight/flight/node_modules/es5-shim/LICENSE",
+      "bytes": 1092,
+      "sha256": "b9db14ab1db6d769f184558b9f7e109c94f7b939ab5e5b766aa9f8e0261551a0"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer2.1/resources/todomvc/dependency-examples/flight/flight/node_modules/flight/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer2.1/resources/todomvc/dependency-examples/flight/flight/node_modules/flight/LICENSE",
+      "bytes": 1072,
+      "sha256": "ca2bab8f3502d2583dd66b37e68407a1a3779e0d835b9f8a6c08cf58399e7c7f"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer2.1/resources/todomvc/dependency-examples/flight/flight/node_modules/requirejs-text/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer2.1/resources/todomvc/dependency-examples/flight/flight/node_modules/requirejs-text/LICENSE",
+      "bytes": 1899,
+      "sha256": "a33781b5fca7dece4f994ac6ad470d3106ae8d971e7531c25cfe163930cc24c3"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer2.1/resources/todomvc/labs/architecture-examples/react/bower_components/director/LICENSE",
+      "corpusPath": "PerformanceTests/Speedometer2.1/resources/todomvc/labs/architecture-examples/react/bower_components/director/LICENSE",
+      "bytes": 1057,
+      "sha256": "f719b8202d5940ef5775622d85cf13b9deb1f67197fb6139a08cc12dea948780"
+    },
+    {
+      "sourcePath": "PerformanceTests/Speedometer2.1/resources/todomvc/license.md",
+      "corpusPath": "PerformanceTests/Speedometer2.1/resources/todomvc/license.md",
+      "bytes": 1166,
+      "sha256": "32238c5c6759b589ea768661b6eb0fcb42449b74d57cdf09928743f2e1eb748d"
+    },
+    {
+      "sourcePath": "Source/JavaScriptCore/COPYING.LIB",
+      "corpusPath": "Source/JavaScriptCore/COPYING.LIB",
+      "bytes": 25584,
+      "sha256": "5094ecb9c9dcd0eadc34f3c11511d9b5535063032bc150164ecd1a5d5a445547"
+    },
+    {
+      "sourcePath": "Source/JavaScriptCore/disassembler/ARM64/LICENSE-binja.txt",
+      "corpusPath": "Source/JavaScriptCore/disassembler/ARM64/LICENSE-binja.txt",
+      "bytes": 556,
+      "sha256": "94c095293b051622c4279153e94f8f69e6e9fd41c2d6eef07ad9ea02c30fb4c0"
+    },
+    {
+      "sourcePath": "Source/JavaScriptCore/disassembler/zydis/LICENSE-zycore.txt",
+      "corpusPath": "Source/JavaScriptCore/disassembler/zydis/LICENSE-zycore.txt",
+      "bytes": 1122,
+      "sha256": "bad974d260b4697edfdf3a126c33d451a512947b5265f6014fb66173f42ccab3"
+    },
+    {
+      "sourcePath": "Source/JavaScriptCore/disassembler/zydis/LICENSE-zydis.txt",
+      "corpusPath": "Source/JavaScriptCore/disassembler/zydis/LICENSE-zydis.txt",
+      "bytes": 1122,
+      "sha256": "1218751ea297d1559d768da22dfb95248d6b7c6fdcf3aedecd53a818694b6bf9"
+    },
+    {
+      "sourcePath": "Source/JavaScriptCore/runtime/temporal/core/LICENSE-icu4x.txt",
+      "corpusPath": "Source/JavaScriptCore/runtime/temporal/core/LICENSE-icu4x.txt",
+      "bytes": 2195,
+      "sha256": "f367c1b8e1aa262435251e442901da4607b4650e0e63a026f5044473ecfb90f2"
+    },
+    {
+      "sourcePath": "Source/JavaScriptCore/runtime/temporal/core/LICENSE-temporal_rs.txt",
+      "corpusPath": "Source/JavaScriptCore/runtime/temporal/core/LICENSE-temporal_rs.txt",
+      "bytes": 1060,
+      "sha256": "073d3574ac6389e263360572b331e045dda7ac5cdba239ce5bdb02f299ef47bb"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/LICENSE",
+      "bytes": 1643,
+      "sha256": "bf4da21bd20bcfb5b60b7ecc67fa864a79be049e21d6178076887f178dd6c71a"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/src/common/third_party/xxhash/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/src/common/third_party/xxhash/LICENSE",
+      "bytes": 1389,
+      "sha256": "6ffedbc0f7878612d2b23589f1ff2ab15633e1df7963a5d9fc750ec5500c7e7a"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/src/libANGLE/renderer/vulkan/shaders/src/third_party/etc_decoder/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/src/libANGLE/renderer/vulkan/shaders/src/third_party/etc_decoder/LICENSE",
+      "bytes": 1129,
+      "sha256": "118be5792e5126839694ca2209c62c71d2d7cd49e7bbb43bbdee9b016fb06094"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/src/libANGLE/renderer/vulkan/shaders/src/third_party/ffx_spd/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/src/libANGLE/renderer/vulkan/shaders/src/third_party/ffx_spd/LICENSE",
+      "bytes": 1093,
+      "sha256": "09a7c3fbc0b4ae6a9ccc4ffdcbfa511c14b8647a24f24783838862cf6c226d4e"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/src/tests/test_utils/third_party/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/src/tests/test_utils/third_party/LICENSE",
+      "bytes": 10341,
+      "sha256": "0e64c1e9cd62f47682caeb545d2943fb4c38a9b2e5d9fd7e3b456973bb430d1b"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/src/third_party/ceval/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/src/third_party/ceval/LICENSE",
+      "bytes": 1060,
+      "sha256": "0dd71b8a6d6db0db4dc38a983749e1b2f4bb57aba30141a168042042c4a7b6f8"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/src/third_party/libXNVCtrl/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/src/third_party/libXNVCtrl/LICENSE",
+      "bytes": 1158,
+      "sha256": "31346421254a3e6e12687cf17f19f6357ee73a617fa7b3d3ccefdcbabe49bdd3"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/src/third_party/volk/LICENSE.md",
+      "corpusPath": "Source/ThirdParty/ANGLE/src/third_party/volk/LICENSE.md",
+      "bytes": 1066,
+      "sha256": "336f505f8d5aa73ea40b4d798dde86953e9c1f6525757f1d7f18120fea09bb1d"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/third_party/android_system_sdk/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/third_party/android_system_sdk/LICENSE",
+      "bytes": 19332,
+      "sha256": "8f1bd8841582bdee098eeae9eeb3862d9e7af011e94e54c14aef0568e816be19"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/third_party/colorama/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/third_party/colorama/LICENSE",
+      "bytes": 1492,
+      "sha256": "15137d6c822e3ab097093a33c3a39a9df699f373f6438867ad534ff60762a947"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/third_party/flatbuffers/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/third_party/flatbuffers/LICENSE",
+      "bytes": 11342,
+      "sha256": "7ec9661a8afafab1eee3523d6f1a193eff76314a5ab10b4ce96aefd87621b0c3"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/third_party/glslang/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/third_party/glslang/LICENSE",
+      "bytes": 1309,
+      "sha256": "23353f4505b1c8ce4f8f72fc3b11dc74b4a8a7bf95921d93ff77f227c171a710"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/third_party/proguard/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/third_party/proguard/LICENSE",
+      "bytes": 18107,
+      "sha256": "294f58267c6f473c4ce7270bf5c8d34b2003cb43804552459654c36553431276"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/third_party/r8/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/third_party/r8/LICENSE",
+      "bytes": 1491,
+      "sha256": "68834f116f8ff545f05d14753357b620748156d60ee36b26beab4cb3f317efe4"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/third_party/spirv-headers/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/third_party/spirv-headers/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/third_party/spirv-tools/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/third_party/spirv-tools/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/third_party/turbine/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/third_party/turbine/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/third_party/vulkan-headers/LICENSE.txt",
+      "corpusPath": "Source/ThirdParty/ANGLE/third_party/vulkan-headers/LICENSE.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/third_party/wayland-protocols/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/third_party/wayland-protocols/LICENSE",
+      "bytes": 1502,
+      "sha256": "f1a2b233e8a9a71c40f4aa885be08a0842ac85bb8588703c1dd7e6e6502e3124"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/third_party/wayland/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/third_party/wayland/LICENSE",
+      "bytes": 1225,
+      "sha256": "778a9c936b9fa24f3842b6071e3cc5c794d3f7cc6d6fddbf356b6f2202afb6a0"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/tools/flex-bison/third_party/m4sugar/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/tools/flex-bison/third_party/m4sugar/LICENSE",
+      "bytes": 17987,
+      "sha256": "ab15fd526bd8dd18a9e77ebc139656bf4d33e97fc7238cd11bf60e2b9b8666c6"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/tools/flex-bison/third_party/skeletons/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/tools/flex-bison/third_party/skeletons/LICENSE",
+      "bytes": 35147,
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/util/android/third_party/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/util/android/third_party/LICENSE",
+      "bytes": 11357,
+      "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/ANGLE/util/windows/third_party/StackWalker/LICENSE",
+      "corpusPath": "Source/ThirdParty/ANGLE/util/windows/third_party/StackWalker/LICENSE",
+      "bytes": 1522,
+      "sha256": "bfec18debedcb337f8af53f143ccf0b1575d0b7c30deaee137f10397eca0d353"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/capstone/Source/LICENSE.TXT",
+      "corpusPath": "Source/ThirdParty/capstone/Source/LICENSE.TXT",
+      "bytes": 1687,
+      "sha256": "65e9ed46a59976eda8f5bd1ea79a680dea38dd299c760bc9a8d87a764ef5029b"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/capstone/Source/LICENSE_LLVM.TXT",
+      "corpusPath": "Source/ThirdParty/capstone/Source/LICENSE_LLVM.TXT",
+      "bytes": 3331,
+      "sha256": "dfdca2d7fdbabfd937f9dc41b7f61647b0e6cb1f9ee767ecb4520f979ebe91da"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/d3flamegraphjs/LICENSE",
+      "corpusPath": "Source/ThirdParty/d3flamegraphjs/LICENSE",
+      "bytes": 11356,
+      "sha256": "c5accbbd8546e94c34aed24afe689a617627d18eed5a6c48277e48db57c23851"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/d3js/LICENSE",
+      "corpusPath": "Source/ThirdParty/d3js/LICENSE",
+      "bytes": 731,
+      "sha256": "3e6849627f74ff73c257a3ae1efb574015d94fc1035c05ec3c15805165efcbc4"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/gmock/LICENSE",
+      "corpusPath": "Source/ThirdParty/gmock/LICENSE",
+      "bytes": 1475,
+      "sha256": "9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/gtest/LICENSE",
+      "corpusPath": "Source/ThirdParty/gtest/LICENSE",
+      "bytes": 1475,
+      "sha256": "9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libsysprof-capture/COPYING",
+      "corpusPath": "Source/ThirdParty/libsysprof-capture/COPYING",
+      "bytes": 2588,
+      "sha256": "1a34fe0ad4b644a6477651e4fa338fbbfc4e1a8c84a41cb4e3fa8d0f2a9fb895"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/LICENSE",
+      "bytes": 25,
+      "sha256": "46e7534f3d02fb7f5587411ef0d48f37915e6141e1ea13e172cd74561d52bb87"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/LICENSE_THIRD_PARTY",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/LICENSE_THIRD_PARTY",
+      "bytes": 37,
+      "sha256": "ef4f20712a2a769af44d4f9475f9c06552ad9c844190acd9b49984d6d733b135"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/PATENTS",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/PATENTS",
+      "bytes": 25,
+      "sha256": "7108bd10f5d5c121e7bc8ab40ccae0bf56a3733e95f3d434e33274ed1626896e"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/license_template.txt",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/license_template.txt",
+      "bytes": 410,
+      "sha256": "1f7a086c17fa2bdbe27d3eb6424a64b9bea9d7db89a4e220fef52ca24addb9e9"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/abseil-cpp/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/abseil-cpp/LICENSE",
+      "bytes": 11361,
+      "sha256": "c79a7fea0e3cac04cd43f20e7b648e5a0ff8fa5344e644b0ee09ca1162b62747"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/LICENSE",
+      "bytes": 13115,
+      "sha256": "827c8d8fc207c2392794eef9e00fe246f9f61fdcc132556c275be3dd8c3cd97f"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/third_party/benchmark/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/third_party/benchmark/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/third_party/fiat/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/third_party/fiat/LICENSE",
+      "bytes": 638,
+      "sha256": "9eacbcb81be660840c714a560a9d65ba07913db98dd4baf969f78dd499fdd60f"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/third_party/googletest/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/third_party/googletest/LICENSE",
+      "bytes": 1475,
+      "sha256": "9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/third_party/wycheproof_testvectors/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/third_party/wycheproof_testvectors/LICENSE",
+      "bytes": 11357,
+      "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/crc32c/src/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/crc32c/src/LICENSE",
+      "bytes": 1460,
+      "sha256": "a1f30b77c01e0995fa32a00119e00749e8731ee8a3c4c3549bce74083c72b0b6"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/LICENSE",
+      "bytes": 1316,
+      "sha256": "4764a286d8b2faeaf42f4418e7d7a28d58fc8fd4d00a3d0a7f44b0a4099de7f2"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/PATENTS",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/PATENTS",
+      "bytes": 5701,
+      "sha256": "661fb8e504744e95587b556b94a58343448300606a41bea8c7a9b97125696e61"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/fastfeat/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/fastfeat/LICENSE",
+      "bytes": 1504,
+      "sha256": "499041ddee5227b6f29ca06c17803e5fe24d60f243c69635cd76b7ba08d0ddd5"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/googletest/src/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/googletest/src/LICENSE",
+      "bytes": 1475,
+      "sha256": "9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/highway/LICENSE-BSD3",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/highway/LICENSE-BSD3",
+      "bytes": 1515,
+      "sha256": "d25e82e26acd42ca3ccc9993622631163425b869b9e16284226d534cff6470f2"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/libwebm/LICENSE.TXT",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/libwebm/LICENSE.TXT",
+      "bytes": 1496,
+      "sha256": "5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/libwebm/PATENTS.TXT",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/libwebm/PATENTS.TXT",
+      "bytes": 1436,
+      "sha256": "cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/libyuv/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/libyuv/LICENSE",
+      "bytes": 1506,
+      "sha256": "2b2cc1180c7e6988328ad2033b04b80117419db9c4c584918bbb3cfec7e9364f"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/vector/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/vector/LICENSE",
+      "bytes": 1084,
+      "sha256": "ff6c857ce2708e87701323078aef115c1872a1f80a9649f86dc899b48083bc60"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/x86inc/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/x86inc/LICENSE",
+      "bytes": 936,
+      "sha256": "719d8fa235f2068e0ae6d6a7dceb0a7720d7840f0f0ebed29957989e6ded3cd8"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libsrtp/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libsrtp/LICENSE",
+      "bytes": 1614,
+      "sha256": "8e19d42a1eec9561f3f347253ddf2e385c55f392f025bb0fd41b88dbf38db5ae"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/LICENSE",
+      "bytes": 1537,
+      "sha256": "8267348d5af1262c11d1a08de2f5afc77457755f1ac658627dd9acf71011d615"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/PATENTS",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/PATENTS",
+      "bytes": 1436,
+      "sha256": "cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/googletest/src/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/googletest/src/LICENSE",
+      "bytes": 1475,
+      "sha256": "9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/libwebm/LICENSE.TXT",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/libwebm/LICENSE.TXT",
+      "bytes": 1496,
+      "sha256": "5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/libwebm/PATENTS.TXT",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/libwebm/PATENTS.TXT",
+      "bytes": 1436,
+      "sha256": "cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/libyuv/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/libyuv/LICENSE",
+      "bytes": 1506,
+      "sha256": "2b2cc1180c7e6988328ad2033b04b80117419db9c4c584918bbb3cfec7e9364f"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/nalloc/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/nalloc/LICENSE",
+      "bytes": 1069,
+      "sha256": "d7dd0396ec46975e1bf9093680068ef301bc0ed204603e623a6f7073ab922ab1"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/x86inc/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/x86inc/LICENSE",
+      "bytes": 936,
+      "sha256": "719d8fa235f2068e0ae6d6a7dceb0a7720d7840f0f0ebed29957989e6ded3cd8"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libwebm/LICENSE.TXT",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libwebm/LICENSE.TXT",
+      "bytes": 1496,
+      "sha256": "5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libwebm/PATENTS.TXT",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libwebm/PATENTS.TXT",
+      "bytes": 1436,
+      "sha256": "cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libyuv/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libyuv/LICENSE",
+      "bytes": 1506,
+      "sha256": "2b2cc1180c7e6988328ad2033b04b80117419db9c4c584918bbb3cfec7e9364f"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libyuv/PATENTS",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/libyuv/PATENTS",
+      "bytes": 1387,
+      "sha256": "4da84211f947c6f9f7dd8fbce513e1522e01833407ae732b8c9a2bbb75fed495"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/opus/src/COPYING",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/opus/src/COPYING",
+      "bytes": 1945,
+      "sha256": "01e1167d54a096d123cf6dfbbeb19587278845c6481d2d66d545669846079551"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/opus/src/LICENSE_PLEASE_READ.txt",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/opus/src/LICENSE_PLEASE_READ.txt",
+      "bytes": 703,
+      "sha256": "7efb4989e0cd1b256229bdf2f09300c5d14e35db0e7476bfb87fac243498273d"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/pffft/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/pffft/LICENSE",
+      "bytes": 1919,
+      "sha256": "a46200592eb193853527250da098e6bb0c75424e7a2c7db8da526c4f301c3d88"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/rnnoise/COPYING",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/rnnoise/COPYING",
+      "bytes": 1581,
+      "sha256": "e2f59ff41d9d03adc3dcf3deff170f8c8cf4a6eb4a9b174762a7656d23200ffa"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/sframe/src/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/sframe/src/LICENSE",
+      "bytes": 2734,
+      "sha256": "55942e3b6ebf4df940d32e2fc8ce7ba59cdd4b32babcf479c1a9b5bb45bbad40"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/yasm/COPYING",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/yasm/COPYING",
+      "bytes": 2106,
+      "sha256": "795f8d76eade6130129b680ac72ea81cb3e143467a65ea1f5f64946151d7fa20"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/yasm/license.c",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/third_party/yasm/license.c",
+      "bytes": 2653,
+      "sha256": "879d04a2c7e3e26d07d7e4987739fb8da8f453bbe3f5e9f8073b67076a54f3fa"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/webrtc/LICENSE",
+      "bytes": 1511,
+      "sha256": "ab00a482b6a3902e40211b43c5d0441962ea99b6cc7c25c0f243fa270b78d482"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/PATENTS",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/webrtc/PATENTS",
+      "bytes": 1388,
+      "sha256": "01462e2068d1a04c2274f3389773014c14ed9bc3446b28303543bd3e3c064145"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/ooura/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/ooura/LICENSE",
+      "bytes": 272,
+      "sha256": "25b7731b70c77ecd5f3bb19303fbaa99be18860f81d44f71da670fdcd04829db"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/spl_sqrt_floor/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/spl_sqrt_floor/LICENSE",
+      "bytes": 915,
+      "sha256": "41d791701e3e1c1073470403de7e342442d1e6a2af72681023b13a2f45f2125c"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/examples/androidapp/third_party/autobanh/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/webrtc/examples/androidapp/third_party/autobanh/LICENSE",
+      "bytes": 10174,
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/examples/androidapp/third_party/autobanh/LICENSE.md",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/webrtc/examples/androidapp/third_party/autobanh/LICENSE.md",
+      "bytes": 1088,
+      "sha256": "26d2d16d48825edf1194cb3907c5c0b7d01f9c5527eb0fefb949c51f304635e9"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/examples/androidapp/third_party/autobanh/NOTICE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/webrtc/examples/androidapp/third_party/autobanh/NOTICE",
+      "bytes": 155,
+      "sha256": "3c7ca59cbbd4ce9a70b64a64b5ea034de4afe6707945d512cb2b8aa6416bcf0a"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/examples/objc/AppRTCMobile/third_party/SocketRocket/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/webrtc/examples/objc/AppRTCMobile/third_party/SocketRocket/LICENSE",
+      "bytes": 584,
+      "sha256": "21a742dd8cceebb1d5df7c6f945c75ccf1ad4f0d4c17e404517500c1a7de86a4"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/license_template.txt",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/webrtc/license_template.txt",
+      "bytes": 410,
+      "sha256": "1f7a086c17fa2bdbe27d3eb6424a64b9bea9d7db89a4e220fef52ca24addb9e9"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/fft/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/fft/LICENSE",
+      "bytes": 1125,
+      "sha256": "6fdbabd2c95c5efc6f1e46175278239afb9343120a3022ed0e0cb04267a6aeb3"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g711/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g711/LICENSE",
+      "bytes": 429,
+      "sha256": "b29c8f13f91feb2dab7d6655444369fa9f29c0d7121a52dab90ff97e40343a85"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g722/LICENSE",
+      "corpusPath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g722/LICENSE",
+      "bytes": 611,
+      "sha256": "61862327fd00d6a4deb2c1276577782c2500f4fe103e072018fc369d8e37e876"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/pdfjs/LICENSE",
+      "corpusPath": "Source/ThirdParty/pdfjs/LICENSE",
+      "bytes": 10174,
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/pdfjs/web/cmaps/LICENSE",
+      "corpusPath": "Source/ThirdParty/pdfjs/web/cmaps/LICENSE",
+      "bytes": 2080,
+      "sha256": "aa92ab5a472974865a96fd4a4e9c13bb41bf6fe1b309cb6b8da48bc9e19839a2"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/pdfjs/web/iccs/LICENSE",
+      "corpusPath": "Source/ThirdParty/pdfjs/web/iccs/LICENSE",
+      "bytes": 6553,
+      "sha256": "286e4fd7b447330b2c88e23890e3cd0a9d38cb398d4a59cb247f578ccbda3213"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/pdfjs/web/standard_fonts/LICENSE_FOXIT",
+      "corpusPath": "Source/ThirdParty/pdfjs/web/standard_fonts/LICENSE_FOXIT",
+      "bytes": 1553,
+      "sha256": "b578cdd2345840ada550bd12519533812320d5f1d21cf4c1c7e1b1b0a31c98b7"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/pdfjs/web/standard_fonts/LICENSE_LIBERATION",
+      "corpusPath": "Source/ThirdParty/pdfjs/web/standard_fonts/LICENSE_LIBERATION",
+      "bytes": 22154,
+      "sha256": "d2c4d5b3e115a519cb58eb691aa64538397e2611f9ebe801392cf9667997e7dc"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/pdfjs/web/wasm/LICENSE_JBIG2",
+      "corpusPath": "Source/ThirdParty/pdfjs/web/wasm/LICENSE_JBIG2",
+      "bytes": 12862,
+      "sha256": "9e66b7f1b934a28b37f3bc4dac97915de1674271e79a0a88182a18ed9731b4d1"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/pdfjs/web/wasm/LICENSE_OPENJPEG",
+      "corpusPath": "Source/ThirdParty/pdfjs/web/wasm/LICENSE_OPENJPEG",
+      "bytes": 2112,
+      "sha256": "a6af136f3e15038a666b61f376612a07d9a4e48cb7c01adbf3e33b3f14ab49b6"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/pdfjs/web/wasm/LICENSE_PDFJS_JBIG2",
+      "corpusPath": "Source/ThirdParty/pdfjs/web/wasm/LICENSE_PDFJS_JBIG2",
+      "bytes": 555,
+      "sha256": "aad3cce09842e00e9e11ad5e8fef8cc02fbc3a3768fe2f007443b9cee37aaee5"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/pdfjs/web/wasm/LICENSE_PDFJS_OPENJPEG",
+      "corpusPath": "Source/ThirdParty/pdfjs/web/wasm/LICENSE_PDFJS_OPENJPEG",
+      "bytes": 1285,
+      "sha256": "717fc62da03292dbb4dd0c8280bd4ce7bb8550dcf31d772bc93455fb50313425"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/pdfjs/web/wasm/LICENSE_PDFJS_QCMS",
+      "corpusPath": "Source/ThirdParty/pdfjs/web/wasm/LICENSE_PDFJS_QCMS",
+      "bytes": 1036,
+      "sha256": "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/pdfjs/web/wasm/LICENSE_QCMS",
+      "corpusPath": "Source/ThirdParty/pdfjs/web/wasm/LICENSE_QCMS",
+      "bytes": 1121,
+      "sha256": "36d847ae882f6574ebc72f56a4f354e4f104fde4a584373496482e97d52d31bc"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/skia/LICENSE",
+      "corpusPath": "Source/ThirdParty/skia/LICENSE",
+      "bytes": 1507,
+      "sha256": "5f787c1dee3c56547f09ccc2906ab5f5293c4d8dd6c8654e573216c38e908dbd"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/skia/bazel/rbe/gce_linux/LICENSE",
+      "corpusPath": "Source/ThirdParty/skia/bazel/rbe/gce_linux/LICENSE",
+      "bytes": 11340,
+      "sha256": "fd112c80352fc42a60f051012c6b9adef055123e395dece30fa8f44880f39e96"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/skia/include/third_party/vulkan/LICENSE",
+      "corpusPath": "Source/ThirdParty/skia/include/third_party/vulkan/LICENSE",
+      "bytes": 1635,
+      "sha256": "e59bb5c5c6ba426a9ac4ba9fe667ad14c5166b12aa25be8af1d122b14fbe2e36"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/skia/modules/canvaskit/npm_build/LICENSE",
+      "corpusPath": "Source/ThirdParty/skia/modules/canvaskit/npm_build/LICENSE",
+      "bytes": 1635,
+      "sha256": "d27678cba0d529e77201e2d2a053628143e986aad8f1e77f7039ad4366c8f978"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/skia/modules/skcms/LICENSE",
+      "corpusPath": "Source/ThirdParty/skia/modules/skcms/LICENSE",
+      "bytes": 1635,
+      "sha256": "e59bb5c5c6ba426a9ac4ba9fe667ad14c5166b12aa25be8af1d122b14fbe2e36"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/skia/third_party/etc1/LICENSE",
+      "corpusPath": "Source/ThirdParty/skia/third_party/etc1/LICENSE",
+      "bytes": 9233,
+      "sha256": "5366e97b4478f15a1e2fd7e6094337426597df28de50cd9fed3f2e7e87f1229e"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/skia/third_party/expat/LICENSE",
+      "corpusPath": "Source/ThirdParty/skia/third_party/expat/LICENSE",
+      "bytes": 1635,
+      "sha256": "cca48bacd6e7ed63f00b42a346bcc8549a460b41efe75d93db350fc882f54dca"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/skia/third_party/harfbuzz/LICENSE",
+      "corpusPath": "Source/ThirdParty/skia/third_party/harfbuzz/LICENSE",
+      "bytes": 1635,
+      "sha256": "cca48bacd6e7ed63f00b42a346bcc8549a460b41efe75d93db350fc882f54dca"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/skia/third_party/wuffs/LICENSE",
+      "corpusPath": "Source/ThirdParty/skia/third_party/wuffs/LICENSE",
+      "bytes": 1635,
+      "sha256": "e59bb5c5c6ba426a9ac4ba9fe667ad14c5166b12aa25be8af1d122b14fbe2e36"
+    },
+    {
+      "sourcePath": "Source/ThirdParty/unifdef/COPYING",
+      "corpusPath": "Source/ThirdParty/unifdef/COPYING",
+      "bytes": 4278,
+      "sha256": "37ed46a39446b15b08af418fda23b75c27a769d5aad236d817ee7522cc9caeee"
+    },
+    {
+      "sourcePath": "Source/WTF/LICENSE-LLVM.txt",
+      "corpusPath": "Source/WTF/LICENSE-LLVM.txt",
+      "bytes": 12263,
+      "sha256": "f72b120d1385408e9e380acc020756eb6ba1b461d66c328ea67327ba08d7dcfd"
+    },
+    {
+      "sourcePath": "Source/WTF/LICENSE-dragonbox.txt",
+      "corpusPath": "Source/WTF/LICENSE-dragonbox.txt",
+      "bytes": 13858,
+      "sha256": "9bb1036ef8dcb42c59e2a23c9e465f43e75003e06898faf0edd18de662f3ecb8"
+    },
+    {
+      "sourcePath": "Source/WTF/LICENSE-libc++.txt",
+      "corpusPath": "Source/WTF/LICENSE-libc++.txt",
+      "bytes": 3493,
+      "sha256": "c1938c0e9e90639d1e8f5a7f6bebaab83a3642e0ee44295a4c69934686d0bda8"
+    },
+    {
+      "sourcePath": "Source/WTF/LICENSE-simde.txt",
+      "corpusPath": "Source/WTF/LICENSE-simde.txt",
+      "bytes": 1077,
+      "sha256": "75ce0a8c5a7bff42fbd6f8f3b469b518132132c4f4948fb8d02b1ccb5d0df9d8"
+    },
+    {
+      "sourcePath": "Source/WTF/icu/LICENSE",
+      "corpusPath": "Source/WTF/icu/LICENSE",
+      "bytes": 21088,
+      "sha256": "de596f6e3482bab99d2425af16add38f959ebc17a5883c6302970355853b6539"
+    },
+    {
+      "sourcePath": "Source/WTF/wtf/dtoa/COPYING",
+      "corpusPath": "Source/WTF/wtf/dtoa/COPYING",
+      "bytes": 1527,
+      "sha256": "4af93c12062c58058378de2397dc1c92bbff9ddfb1d583a01c84127557ce97ca"
+    },
+    {
+      "sourcePath": "Source/WTF/wtf/dtoa/LICENSE",
+      "corpusPath": "Source/WTF/wtf/dtoa/LICENSE",
+      "bytes": 1527,
+      "sha256": "4af93c12062c58058378de2397dc1c92bbff9ddfb1d583a01c84127557ce97ca"
+    },
+    {
+      "sourcePath": "Source/WTF/wtf/fast_float/LICENSE",
+      "corpusPath": "Source/WTF/wtf/fast_float/LICENSE",
+      "bytes": 10767,
+      "sha256": "097a889aa954d04e088b790b10a4014d6189561d0a6013935a73ce3d4ddaaf06"
+    },
+    {
+      "sourcePath": "Source/WTF/wtf/simdutf/LICENSE-simdutf.txt",
+      "corpusPath": "Source/WTF/wtf/simdutf/LICENSE-simdutf.txt",
+      "bytes": 1059,
+      "sha256": "fc8dbc04e03ad4efc08a647ffe7f995b811a95bc04c0e85a56d5277c6593fa5f"
+    },
+    {
+      "sourcePath": "Source/WebCore/LICENSE-APPLE",
+      "corpusPath": "Source/WebCore/LICENSE-APPLE",
+      "bytes": 1313,
+      "sha256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4"
+    },
+    {
+      "sourcePath": "Source/WebCore/LICENSE-LGPL-2",
+      "corpusPath": "Source/WebCore/LICENSE-LGPL-2",
+      "bytes": 25378,
+      "sha256": "7555fa34bc131a75ca56d65c40cc1ea8f9515d23e353d4c15d58573a042f7805"
+    },
+    {
+      "sourcePath": "Source/WebCore/LICENSE-LGPL-2.1",
+      "corpusPath": "Source/WebCore/LICENSE-LGPL-2.1",
+      "bytes": 26536,
+      "sha256": "f2b3bd09663381deb99721109d22b47af1213bb43007a8b56a06c6375c8050ce"
+    },
+    {
+      "sourcePath": "Source/WebCore/PAL/ThirdParty/dav1d/COPYING",
+      "corpusPath": "Source/WebCore/PAL/ThirdParty/dav1d/COPYING",
+      "bytes": 1317,
+      "sha256": "dd92c3c2247c5651606fc23a5e2d6a1ebc5ace9a3e49cbde0e12f05ad1cb1ee5"
+    },
+    {
+      "sourcePath": "Source/WebCore/PAL/ThirdParty/dav1d/doc/PATENTS",
+      "corpusPath": "Source/WebCore/PAL/ThirdParty/dav1d/doc/PATENTS",
+      "bytes": 5730,
+      "sha256": "335eca574598bf4ca181b12f708d6669e5a5e78c8e1513e5b35fa1f03901484b"
+    },
+    {
+      "sourcePath": "Source/WebCore/PAL/pal/spi/cocoa/AppleJPEGXL/LICENSE.txt",
+      "corpusPath": "Source/WebCore/PAL/pal/spi/cocoa/AppleJPEGXL/LICENSE.txt",
+      "bytes": 1508,
+      "sha256": "8405932022a556380c2d8c272eff154a923feb197233f348ce5f7334fb0a5ede"
+    },
+    {
+      "sourcePath": "Source/WebInspectorUI/UserInterface/External/CSSDocumentation/LICENSE",
+      "corpusPath": "Source/WebInspectorUI/UserInterface/External/CSSDocumentation/LICENSE",
+      "bytes": 1074,
+      "sha256": "b5179f780ec212a434efcc989a2295a140deb0bdb17182d2bf9c5f6f1f1a01c4"
+    },
+    {
+      "sourcePath": "Source/WebInspectorUI/UserInterface/External/CodeMirror/LICENSE",
+      "corpusPath": "Source/WebInspectorUI/UserInterface/External/CodeMirror/LICENSE",
+      "bytes": 1113,
+      "sha256": "168a4becc968f5001e2ee2e0291b6e4daabafc1894a11ade1e11d56e96096e07"
+    },
+    {
+      "sourcePath": "Source/WebInspectorUI/UserInterface/External/Esprima/LICENSE",
+      "corpusPath": "Source/WebInspectorUI/UserInterface/External/Esprima/LICENSE",
+      "bytes": 1303,
+      "sha256": "94bcb9959136723aa4fb36e1a6c4d5c662a2369978cfae344dabfb83ae619e79"
+    },
+    {
+      "sourcePath": "Source/WebInspectorUI/UserInterface/External/three.js/LICENSE",
+      "corpusPath": "Source/WebInspectorUI/UserInterface/External/three.js/LICENSE",
+      "bytes": 1081,
+      "sha256": "551f06ddc3dc36b56610aa23db680826ba9d9a02e8f89f7bec05d7fa27401a2b"
+    },
+    {
+      "sourcePath": "Source/WebKitLegacy/LICENSE",
+      "corpusPath": "Source/WebKitLegacy/LICENSE",
+      "bytes": 1313,
+      "sha256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4"
+    },
+    {
+      "sourcePath": "Source/bmalloc/mimalloc/mimalloc/LICENSE",
+      "corpusPath": "Source/bmalloc/mimalloc/mimalloc/LICENSE",
+      "bytes": 1096,
+      "sha256": "82ade5d7d9b029044b5fbbc326207fc47c2d44ee4dd71e8a559c36d728217de9"
+    },
+    {
+      "sourcePath": "Tools/IonGraph/LICENSE",
+      "corpusPath": "Tools/IonGraph/LICENSE",
+      "bytes": 16726,
+      "sha256": "3f3d9e0024b1921b067d6f7f88deb4a60cbe7a78e76c64e3f1d7fc3b779b9d04"
+    },
+    {
+      "sourcePath": "Tools/Scripts/libraries/reporelaypy/LICENSE",
+      "corpusPath": "Tools/Scripts/libraries/reporelaypy/LICENSE",
+      "bytes": 1287,
+      "sha256": "9dc38a49e786ddf77d885bb0dbab5a467ee0d83b72fda5e6fa015bfce9e970fd"
+    },
+    {
+      "sourcePath": "Tools/Scripts/libraries/resultsdbpy/LICENSE",
+      "corpusPath": "Tools/Scripts/libraries/resultsdbpy/LICENSE",
+      "bytes": 1287,
+      "sha256": "9dc38a49e786ddf77d885bb0dbab5a467ee0d83b72fda5e6fa015bfce9e970fd"
+    },
+    {
+      "sourcePath": "Tools/Scripts/libraries/webkitapipy/webkitapipy/_vendor/tomli/LICENSE",
+      "corpusPath": "Tools/Scripts/libraries/webkitapipy/webkitapipy/_vendor/tomli/LICENSE",
+      "bytes": 1072,
+      "sha256": "b80816b0d530b8accb4c2211783790984a6e3b61922c2b5ee92f3372ab2742fe"
+    },
+    {
+      "sourcePath": "Tools/Scripts/libraries/webkitbugspy/LICENSE",
+      "corpusPath": "Tools/Scripts/libraries/webkitbugspy/LICENSE",
+      "bytes": 1287,
+      "sha256": "9dc38a49e786ddf77d885bb0dbab5a467ee0d83b72fda5e6fa015bfce9e970fd"
+    },
+    {
+      "sourcePath": "Tools/Scripts/libraries/webkitcorepy/LICENSE",
+      "corpusPath": "Tools/Scripts/libraries/webkitcorepy/LICENSE",
+      "bytes": 1287,
+      "sha256": "9dc38a49e786ddf77d885bb0dbab5a467ee0d83b72fda5e6fa015bfce9e970fd"
+    },
+    {
+      "sourcePath": "Tools/Scripts/libraries/webkitcorepy/webkitcorepy/_vendored/packaging-26.2.dist-info/licenses/LICENSE",
+      "corpusPath": "Tools/Scripts/libraries/webkitcorepy/webkitcorepy/_vendored/packaging-26.2.dist-info/licenses/LICENSE",
+      "bytes": 197,
+      "sha256": "cad1ef5bd340d73e074ba614d26f7deaca5c7940c3d8c34852e65c4909686c48"
+    },
+    {
+      "sourcePath": "Tools/Scripts/libraries/webkitcorepy/webkitcorepy/_vendored/packaging-26.2.dist-info/licenses/LICENSE.APACHE",
+      "corpusPath": "Tools/Scripts/libraries/webkitcorepy/webkitcorepy/_vendored/packaging-26.2.dist-info/licenses/LICENSE.APACHE",
+      "bytes": 10174,
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+    },
+    {
+      "sourcePath": "Tools/Scripts/libraries/webkitcorepy/webkitcorepy/_vendored/packaging-26.2.dist-info/licenses/LICENSE.BSD",
+      "corpusPath": "Tools/Scripts/libraries/webkitcorepy/webkitcorepy/_vendored/packaging-26.2.dist-info/licenses/LICENSE.BSD",
+      "bytes": 1344,
+      "sha256": "b70e7e9b742f1cc6f948b34c16aa39ffece94196364bc88ff0d2180f0028fac5"
+    },
+    {
+      "sourcePath": "Tools/Scripts/libraries/webkitcorepy/webkitcorepy/_vendored/packaging/LICENSE",
+      "corpusPath": "Tools/Scripts/libraries/webkitcorepy/webkitcorepy/_vendored/packaging/LICENSE",
+      "bytes": 197,
+      "sha256": "cad1ef5bd340d73e074ba614d26f7deaca5c7940c3d8c34852e65c4909686c48"
+    },
+    {
+      "sourcePath": "Tools/Scripts/libraries/webkitcorepy/webkitcorepy/_vendored/packaging/LICENSE.APACHE",
+      "corpusPath": "Tools/Scripts/libraries/webkitcorepy/webkitcorepy/_vendored/packaging/LICENSE.APACHE",
+      "bytes": 10174,
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+    },
+    {
+      "sourcePath": "Tools/Scripts/libraries/webkitcorepy/webkitcorepy/_vendored/packaging/LICENSE.BSD",
+      "corpusPath": "Tools/Scripts/libraries/webkitcorepy/webkitcorepy/_vendored/packaging/LICENSE.BSD",
+      "bytes": 1344,
+      "sha256": "b70e7e9b742f1cc6f948b34c16aa39ffece94196364bc88ff0d2180f0028fac5"
+    },
+    {
+      "sourcePath": "Tools/Scripts/libraries/webkitflaskpy/LICENSE",
+      "corpusPath": "Tools/Scripts/libraries/webkitflaskpy/LICENSE",
+      "bytes": 1287,
+      "sha256": "9dc38a49e786ddf77d885bb0dbab5a467ee0d83b72fda5e6fa015bfce9e970fd"
+    },
+    {
+      "sourcePath": "Tools/Scripts/libraries/webkitscmpy/LICENSE",
+      "corpusPath": "Tools/Scripts/libraries/webkitscmpy/LICENSE",
+      "bytes": 1287,
+      "sha256": "9dc38a49e786ddf77d885bb0dbab5a467ee0d83b72fda5e6fa015bfce9e970fd"
+    },
+    {
+      "sourcePath": "Tools/Scripts/webkitpy/thirdparty/wpt/LICENSE.md",
+      "corpusPath": "Tools/Scripts/webkitpy/thirdparty/wpt/LICENSE.md",
+      "bytes": 1502,
+      "sha256": "5a7b465d39b5e018bc40cc34162176269f7c476989cb4dbcf0ec0b81701545a7"
+    },
+    {
+      "sourcePath": "Tools/TestWebKitAPI/Resources/cocoa/copying-disabled.pdf",
+      "corpusPath": "Tools/TestWebKitAPI/Resources/cocoa/copying-disabled.pdf",
+      "bytes": 11114,
+      "sha256": "11beb2782d3007d32155a21c5ffd2ea8fdae23dc30a3bd407acb7235131e3d80"
+    },
+    {
+      "sourcePath": "Tools/TestWebKitAPI/Tests/WebKit/WKWebView/Copying.mm",
+      "corpusPath": "Tools/TestWebKitAPI/Tests/WebKit/WKWebView/Copying.mm",
+      "bytes": 3228,
+      "sha256": "d23fbf951ae3ab93fa5c5bfd8c16128c263cdf89b37f04ef54c0b93bf71bbc13"
+    },
+    {
+      "sourcePath": "Tools/WebKitTestRunner/glib/fonts/LICENSE.dejavu",
+      "corpusPath": "Tools/WebKitTestRunner/glib/fonts/LICENSE.dejavu",
+      "bytes": 2770,
+      "sha256": "53ccee972a18da8da08a92f9d0a86183b9929956106dfae25fd8d7996f192802"
+    },
+    {
+      "sourcePath": "Tools/WebKitTestRunner/glib/fonts/LICENSE.freefont",
+      "corpusPath": "Tools/WebKitTestRunner/glib/fonts/LICENSE.freefont",
+      "bytes": 1241,
+      "sha256": "1f953b86c8505ab5bf834f10d0c951d5c6842e8ddda27588b830854f34685ad0"
+    },
+    {
+      "sourcePath": "Tools/WebKitTestRunner/glib/fonts/LICENSE.kochi",
+      "corpusPath": "Tools/WebKitTestRunner/glib/fonts/LICENSE.kochi",
+      "bytes": 1873,
+      "sha256": "d909f9d43f3c9479613eca6736e3bfde17ed99b23ff27a0513befbc35cce2c14"
+    },
+    {
+      "sourcePath": "Tools/WebKitTestRunner/glib/fonts/LICENSE.latinmodern",
+      "corpusPath": "Tools/WebKitTestRunner/glib/fonts/LICENSE.latinmodern",
+      "bytes": 1456,
+      "sha256": "2bd69affc3da00715116f713f57eab9707e96daf3562ad0215987b15b9c16f73"
+    },
+    {
+      "sourcePath": "Tools/WebKitTestRunner/glib/fonts/LICENSE.liberation",
+      "corpusPath": "Tools/WebKitTestRunner/glib/fonts/LICENSE.liberation",
+      "bytes": 4938,
+      "sha256": "29068c8e53e4fa7c101ca3915d0a8bd5eed27ab253a4b257d9e2b1cb2506066d"
+    },
+    {
+      "sourcePath": "Tools/WebKitTestRunner/glib/fonts/LICENSE.noto-color-emoji",
+      "corpusPath": "Tools/WebKitTestRunner/glib/fonts/LICENSE.noto-color-emoji",
+      "bytes": 5087,
+      "sha256": "3720722d2046accb40e1696f096b57c658b0b47d74031b3d114cf7545b840b3c"
+    },
+    {
+      "sourcePath": "Tools/mangleme/LICENSE",
+      "corpusPath": "Tools/mangleme/LICENSE",
+      "bytes": 26436,
+      "sha256": "5df07007198989c622f5d41de8d703e7bef3d0e79d62e24332ee739a452af62a"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream2.0/web-tooling-benchmark/LICENSE",
+      "corpusPath": "Websites/browserbench.org/JetStream2.0/web-tooling-benchmark/LICENSE",
+      "bytes": 34709,
+      "sha256": "80609903f6e311d820537b3f0d01ac85830159786d58ef35ba664625cbb01ade"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream2.1/web-tooling-benchmark/LICENSE",
+      "corpusPath": "Websites/browserbench.org/JetStream2.1/web-tooling-benchmark/LICENSE",
+      "bytes": 34709,
+      "sha256": "80609903f6e311d820537b3f0d01ac85830159786d58ef35ba664625cbb01ade"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream2.2/web-tooling-benchmark/LICENSE",
+      "corpusPath": "Websites/browserbench.org/JetStream2.2/web-tooling-benchmark/LICENSE",
+      "bytes": 34709,
+      "sha256": "80609903f6e311d820537b3f0d01ac85830159786d58ef35ba664625cbb01ade"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream3.0/ARES-6/Air/LICENSE.txt",
+      "corpusPath": "Websites/browserbench.org/JetStream3.0/ARES-6/Air/LICENSE.txt",
+      "bytes": 1262,
+      "sha256": "3d8b0d78cc57daca5512e27326e7ae1483d8737a6d7764c797c74e521e7958d9"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream3.0/LICENSE",
+      "corpusPath": "Websites/browserbench.org/JetStream3.0/LICENSE",
+      "bytes": 1283,
+      "sha256": "ad07794655eb9c73f377d610d9fb30d6173b5e15209bd04944edcff5fec512e8"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream3.0/Octane/LICENSE.txt",
+      "corpusPath": "Websites/browserbench.org/JetStream3.0/Octane/LICENSE.txt",
+      "bytes": 1597,
+      "sha256": "d684dca7e0f7ee28e00162e7ab15ed4af7fcff45cb9e8f1148855ebc141f2c52"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream3.0/TypeScript/dist/LICENSE.txt",
+      "corpusPath": "Websites/browserbench.org/JetStream3.0/TypeScript/dist/LICENSE.txt",
+      "bytes": 9164,
+      "sha256": "2b94b6d71e8ac8216aaab8b350991bd65447eb5a2a9022263d6afcb43038716b"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream3.0/babylonjs/data/LICENSE.txt",
+      "corpusPath": "Websites/browserbench.org/JetStream3.0/babylonjs/data/LICENSE.txt",
+      "bytes": 18649,
+      "sha256": "95df2e9564862e51d69683a899b6dcc8218d577057bdf67322880769ff85f29e"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream3.0/babylonjs/dist/LICENSE.txt",
+      "corpusPath": "Websites/browserbench.org/JetStream3.0/babylonjs/dist/LICENSE.txt",
+      "bytes": 400617,
+      "sha256": "6d7db8eab1819aa6fbe5c3449946e11caf918df2077ea71e6e364668135330d5"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream3.0/jsdom-d3-startup/dist/LICENSE.txt",
+      "corpusPath": "Websites/browserbench.org/JetStream3.0/jsdom-d3-startup/dist/LICENSE.txt",
+      "bytes": 134814,
+      "sha256": "a762f7c7923fd7dd94efd01b7343d33a851c5a2149223a774b51397654603da6"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream3.0/mobx/dist/LICENSE.txt",
+      "corpusPath": "Websites/browserbench.org/JetStream3.0/mobx/dist/LICENSE.txt",
+      "bytes": 1461,
+      "sha256": "ecdb65c21a322dd7314e7973b84fab93e890bc6cea0a56d58affac4bb7e3e6d6"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream3.0/prismjs/data/LICENSE.txt",
+      "corpusPath": "Websites/browserbench.org/JetStream3.0/prismjs/data/LICENSE.txt",
+      "bytes": 1306,
+      "sha256": "7a22337fa6802f4774e89c961ac27a9a4ddab72e0140ee0c68e96d55be468a3f"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream3.0/prismjs/dist/LICENSE.txt",
+      "corpusPath": "Websites/browserbench.org/JetStream3.0/prismjs/dist/LICENSE.txt",
+      "bytes": 1078,
+      "sha256": "ffc39506e03a6969cc0454791cf1f72f032474b6adc72dc880618bda48d320cb"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream3.0/utils/polyfills/fast-text-encoding/LICENSE",
+      "corpusPath": "Websites/browserbench.org/JetStream3.0/utils/polyfills/fast-text-encoding/LICENSE",
+      "bytes": 11357,
+      "sha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream3.0/validatorjs/dist/LICENSE.txt",
+      "corpusPath": "Websites/browserbench.org/JetStream3.0/validatorjs/dist/LICENSE.txt",
+      "bytes": 1091,
+      "sha256": "1dcf774e75b6777cd7cf84dcbb4c185e8f3e6dda15c25ac990cbdeea36ec59e9"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream3.0/web-ssr/dist/LICENSE.txt",
+      "corpusPath": "Websites/browserbench.org/JetStream3.0/web-ssr/dist/LICENSE.txt",
+      "bytes": 16253,
+      "sha256": "44466b44fdd8f8ea1133d647be66adbf5779fa322a07a849be2ea3b2422c6459"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/JetStream3.0/web-tooling-benchmark/LICENSE",
+      "corpusPath": "Websites/browserbench.org/JetStream3.0/web-tooling-benchmark/LICENSE",
+      "bytes": 4099,
+      "sha256": "2a45d7447b3f8c9a96b504de6727475d320faedf1c30cfc5636fad87c4239343"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer/resources/flightjs-example-app/LICENSE.md",
+      "corpusPath": "Websites/browserbench.org/Speedometer/resources/flightjs-example-app/LICENSE.md",
+      "bytes": 1050,
+      "sha256": "c53707162918c087828807c656de42b56f1391335a4024fd16ecbbc2f6ad4d0e"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer/resources/flightjs-example-app/components/es5-shim/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer/resources/flightjs-example-app/components/es5-shim/LICENSE",
+      "bytes": 1092,
+      "sha256": "b9db14ab1db6d769f184558b9f7e109c94f7b939ab5e5b766aa9f8e0261551a0"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer/resources/flightjs-example-app/components/jasmine-flight/LICENSE.md",
+      "corpusPath": "Websites/browserbench.org/Speedometer/resources/flightjs-example-app/components/jasmine-flight/LICENSE.md",
+      "bytes": 1066,
+      "sha256": "5f1d19fd8dd1e38cffbe149f6c0c20ab74366a11e97ec4074e0c29d5d5587cb0"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer/resources/todomvc/labs/architecture-examples/react/bower_components/director/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer/resources/todomvc/labs/architecture-examples/react/bower_components/director/LICENSE",
+      "bytes": 1057,
+      "sha256": "f719b8202d5940ef5775622d85cf13b9deb1f67197fb6139a08cc12dea948780"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer/resources/todomvc/license.md",
+      "corpusPath": "Websites/browserbench.org/Speedometer/resources/todomvc/license.md",
+      "bytes": 1166,
+      "sha256": "32238c5c6759b589ea768661b6eb0fcb42449b74d57cdf09928743f2e1eb748d"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.0/resources/flightjs-example-app/LICENSE.md",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.0/resources/flightjs-example-app/LICENSE.md",
+      "bytes": 1050,
+      "sha256": "c53707162918c087828807c656de42b56f1391335a4024fd16ecbbc2f6ad4d0e"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.0/resources/flightjs-example-app/components/es5-shim/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.0/resources/flightjs-example-app/components/es5-shim/LICENSE",
+      "bytes": 1092,
+      "sha256": "b9db14ab1db6d769f184558b9f7e109c94f7b939ab5e5b766aa9f8e0261551a0"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.0/resources/flightjs-example-app/components/jasmine-flight/LICENSE.md",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.0/resources/flightjs-example-app/components/jasmine-flight/LICENSE.md",
+      "bytes": 1066,
+      "sha256": "5f1d19fd8dd1e38cffbe149f6c0c20ab74366a11e97ec4074e0c29d5d5587cb0"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/architecture-examples/jquery/node_modules/director/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/architecture-examples/jquery/node_modules/director/LICENSE",
+      "bytes": 1097,
+      "sha256": "23486db6442c8601527c685389311beb9a65710920944dd55380364ebec269fd"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/architecture-examples/react/license.md",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/architecture-examples/react/license.md",
+      "bytes": 1165,
+      "sha256": "64fe4eaa92d415c1cac39740955f61f8a27180857affea21a04eba52215368d4"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/architecture-examples/react/node_modules/classnames/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/architecture-examples/react/node_modules/classnames/LICENSE",
+      "bytes": 1077,
+      "sha256": "f492b0d5d9671047541af63c283fb0cac11e7c9662dedbb8a65b036ee4f0db84"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/architecture-examples/react/node_modules/director/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/architecture-examples/react/node_modules/director/LICENSE",
+      "bytes": 1097,
+      "sha256": "23486db6442c8601527c685389311beb9a65710920944dd55380364ebec269fd"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/architecture-examples/react/node_modules/react-dom/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/architecture-examples/react/node_modules/react-dom/LICENSE",
+      "bytes": 1526,
+      "sha256": "6f66286d4dd445f058ff0ecdf1d3ef82be46f7199d5245e68dd0a57ae2d255a6"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/architecture-examples/react/node_modules/react/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/architecture-examples/react/node_modules/react/LICENSE",
+      "bytes": 1526,
+      "sha256": "6f66286d4dd445f058ff0ecdf1d3ef82be46f7199d5245e68dd0a57ae2d255a6"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/dependency-examples/flight/flight/node_modules/es5-shim/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/dependency-examples/flight/flight/node_modules/es5-shim/LICENSE",
+      "bytes": 1092,
+      "sha256": "b9db14ab1db6d769f184558b9f7e109c94f7b939ab5e5b766aa9f8e0261551a0"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/dependency-examples/flight/flight/node_modules/flight/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/dependency-examples/flight/flight/node_modules/flight/LICENSE",
+      "bytes": 1072,
+      "sha256": "ca2bab8f3502d2583dd66b37e68407a1a3779e0d835b9f8a6c08cf58399e7c7f"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/dependency-examples/flight/flight/node_modules/requirejs-text/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/dependency-examples/flight/flight/node_modules/requirejs-text/LICENSE",
+      "bytes": 1899,
+      "sha256": "a33781b5fca7dece4f994ac6ad470d3106ae8d971e7531c25cfe163930cc24c3"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/labs/architecture-examples/react/bower_components/director/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/labs/architecture-examples/react/bower_components/director/LICENSE",
+      "bytes": 1057,
+      "sha256": "f719b8202d5940ef5775622d85cf13b9deb1f67197fb6139a08cc12dea948780"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/license.md",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.0/resources/todomvc/license.md",
+      "bytes": 1166,
+      "sha256": "32238c5c6759b589ea768661b6eb0fcb42449b74d57cdf09928743f2e1eb748d"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.1/resources/flightjs-example-app/LICENSE.md",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.1/resources/flightjs-example-app/LICENSE.md",
+      "bytes": 1050,
+      "sha256": "c53707162918c087828807c656de42b56f1391335a4024fd16ecbbc2f6ad4d0e"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.1/resources/flightjs-example-app/components/es5-shim/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.1/resources/flightjs-example-app/components/es5-shim/LICENSE",
+      "bytes": 1092,
+      "sha256": "b9db14ab1db6d769f184558b9f7e109c94f7b939ab5e5b766aa9f8e0261551a0"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.1/resources/flightjs-example-app/components/jasmine-flight/LICENSE.md",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.1/resources/flightjs-example-app/components/jasmine-flight/LICENSE.md",
+      "bytes": 1066,
+      "sha256": "5f1d19fd8dd1e38cffbe149f6c0c20ab74366a11e97ec4074e0c29d5d5587cb0"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/architecture-examples/jquery/node_modules/director/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/architecture-examples/jquery/node_modules/director/LICENSE",
+      "bytes": 1097,
+      "sha256": "23486db6442c8601527c685389311beb9a65710920944dd55380364ebec269fd"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/architecture-examples/react/license.md",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/architecture-examples/react/license.md",
+      "bytes": 1165,
+      "sha256": "64fe4eaa92d415c1cac39740955f61f8a27180857affea21a04eba52215368d4"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/classnames/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/classnames/LICENSE",
+      "bytes": 1077,
+      "sha256": "f492b0d5d9671047541af63c283fb0cac11e7c9662dedbb8a65b036ee4f0db84"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/director/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/director/LICENSE",
+      "bytes": 1097,
+      "sha256": "23486db6442c8601527c685389311beb9a65710920944dd55380364ebec269fd"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/react-dom/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/react-dom/LICENSE",
+      "bytes": 1526,
+      "sha256": "6f66286d4dd445f058ff0ecdf1d3ef82be46f7199d5245e68dd0a57ae2d255a6"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/react/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/architecture-examples/react/node_modules/react/LICENSE",
+      "bytes": 1526,
+      "sha256": "6f66286d4dd445f058ff0ecdf1d3ef82be46f7199d5245e68dd0a57ae2d255a6"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/dependency-examples/flight/flight/node_modules/es5-shim/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/dependency-examples/flight/flight/node_modules/es5-shim/LICENSE",
+      "bytes": 1092,
+      "sha256": "b9db14ab1db6d769f184558b9f7e109c94f7b939ab5e5b766aa9f8e0261551a0"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/dependency-examples/flight/flight/node_modules/flight/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/dependency-examples/flight/flight/node_modules/flight/LICENSE",
+      "bytes": 1072,
+      "sha256": "ca2bab8f3502d2583dd66b37e68407a1a3779e0d835b9f8a6c08cf58399e7c7f"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/dependency-examples/flight/flight/node_modules/requirejs-text/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/dependency-examples/flight/flight/node_modules/requirejs-text/LICENSE",
+      "bytes": 1899,
+      "sha256": "a33781b5fca7dece4f994ac6ad470d3106ae8d971e7531c25cfe163930cc24c3"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/labs/architecture-examples/react/bower_components/director/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/labs/architecture-examples/react/bower_components/director/LICENSE",
+      "bytes": 1057,
+      "sha256": "f719b8202d5940ef5775622d85cf13b9deb1f67197fb6139a08cc12dea948780"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/license.md",
+      "corpusPath": "Websites/browserbench.org/Speedometer2.1/resources/todomvc/license.md",
+      "bytes": 1166,
+      "sha256": "32238c5c6759b589ea768661b6eb0fcb42449b74d57cdf09928743f2e1eb748d"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer3.0/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer3.0/LICENSE",
+      "bytes": 1485,
+      "sha256": "1f9ee170a26f339b7fbc2e4a638f1d22defacad5b8846dc4a3862e7799a51588"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer3.0/resources/todomvc/license.md",
+      "corpusPath": "Websites/browserbench.org/Speedometer3.0/resources/todomvc/license.md",
+      "bytes": 1166,
+      "sha256": "32238c5c6759b589ea768661b6eb0fcb42449b74d57cdf09928743f2e1eb748d"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer3.1/LICENSE",
+      "corpusPath": "Websites/browserbench.org/Speedometer3.1/LICENSE",
+      "bytes": 1485,
+      "sha256": "1f9ee170a26f339b7fbc2e4a638f1d22defacad5b8846dc4a3862e7799a51588"
+    },
+    {
+      "sourcePath": "Websites/browserbench.org/Speedometer3.1/resources/todomvc/license.md",
+      "corpusPath": "Websites/browserbench.org/Speedometer3.1/resources/todomvc/license.md",
+      "bytes": 1166,
+      "sha256": "32238c5c6759b589ea768661b6eb0fcb42449b74d57cdf09928743f2e1eb748d"
+    },
+    {
+      "sourcePath": "Websites/bugs.webkit.org/LICENSE",
+      "corpusPath": "Websites/bugs.webkit.org/LICENSE",
+      "bytes": 16726,
+      "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+    },
+    {
+      "sourcePath": "Websites/bugs.webkit.org/js/history.js/license.txt",
+      "corpusPath": "Websites/bugs.webkit.org/js/history.js/license.txt",
+      "bytes": 1502,
+      "sha256": "42d1129d4934716c2fd20d509f503913eaac03b38235fc6a3d5ea7fe1a8b44ec"
+    },
+    {
+      "sourcePath": "Websites/bugs.webkit.org/template/en/default/extensions/license.txt.tmpl",
+      "corpusPath": "Websites/bugs.webkit.org/template/en/default/extensions/license.txt.tmpl",
+      "bytes": 726,
+      "sha256": "f1deb152986c0e577d6d23a213e218200dd4214290285f3e9bf7c89140076183"
+    },
+    {
+      "sourcePath": "Websites/webkit.org/blog-files/webrtc/pc-with-effects/LICENSE",
+      "corpusPath": "Websites/webkit.org/blog-files/webrtc/pc-with-effects/LICENSE",
+      "bytes": 1510,
+      "sha256": "208d27ec4345c744fb98c03135e65413734af10fdf0b7cf78d7977018e492981"
+    },
+    {
+      "sourcePath": "Websites/webkit.org/demos/mathml/demo2016/LICENSE-amiri.txt",
+      "corpusPath": "Websites/webkit.org/demos/mathml/demo2016/LICENSE-amiri.txt",
+      "bytes": 4402,
+      "sha256": "3d6887cce21ebb8b78d318941075a9ff23959af66b5d1fcadb4b274709a5fb93"
+    },
+    {
+      "sourcePath": "Websites/webkit.org/demos/mathml/demo2016/LICENSE-latinmodern-math.txt",
+      "corpusPath": "Websites/webkit.org/demos/mathml/demo2016/LICENSE-latinmodern-math.txt",
+      "bytes": 937,
+      "sha256": "3e0a6698906dc63da200239dd72424d6a08b56f7604edff3ad0e269c7b2d6aad"
+    },
+    {
+      "sourcePath": "Websites/webkit.org/demos/mathml/demo2016/LICENSE-libertinusmath.txt",
+      "corpusPath": "Websites/webkit.org/demos/mathml/demo2016/LICENSE-libertinusmath.txt",
+      "bytes": 4542,
+      "sha256": "0abda30f6632a13782cd95fa61065a510769e9fd4231fcfeb1738762e475e609"
+    },
+    {
+      "sourcePath": "Websites/webkit.org/demos/webgpu/babylon/LICENSE",
+      "corpusPath": "Websites/webkit.org/demos/webgpu/babylon/LICENSE",
+      "bytes": 9532,
+      "sha256": "c78801fa62d2f5c807849073681c4ccbc28fbc45b7c21d8d94cee9daf1a93e8b"
+    }
+  ],
+  "limitation": "These 308 files are all pinned-source filename candidates. Their presence does not assert that each text governs an included binary, and does not replace per-image applicability review or the complete corresponding-source/build offer."
+}
