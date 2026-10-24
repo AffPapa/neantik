@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-24T22:33:46+00:00",
+  "status": "pass_marker_free_rebuild_only",
+  "releaseQualified": false,
+  "source": {
+    "repository": "https://github.com/WebKit/WebKit",
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "tree": "86b6ee8faf130e81a149280914e4ea5718f60129",
+    "archiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "patchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "crosswalkSHA256": "a4855fed2d0f33b31c791440538dbc481b0176665268e9dd57dbdbc9c23d9191",
+    "crosswalkFiles": 3344,
+    "missing": 0,
+    "hashDeltas": 0
+  },
+  "configure": {
+    "sdk": "macosx27.0",
+    "architecture": "arm64",
+    "deploymentTarget": "15.4",
+    "gpuProcess": true,
+    "webgpu": true,
+    "webxr": false,
+    "systemMalloc": false,
+    "writingTools": false,
+    "cmakeCacheSHA256": "bf38a4db6cf695dbc6b88d878c379521a97b87d7ea93c1ef493c0f9b929ea17c",
+    "buildNinjaSHA256": "691f704d4a75b80b5f4e8652a1d758b78e135f83b089b61a378df3c20bffc570",
+    "targetListSHA256": "9c32432e717a5c3d8661d30027ff0d31c0c9930cc8ceef98b60638378c56925e",
+    "requestedOutputCount": 14,
+    "ninjaExitCode": 0,
+    "jobs": 4,
+    "buildLogSHA256": "a9ddd39c99ddfc9dbe991004b0f172992b18b3661a80e580bb4888fc2c0cb229"
+  },
+  "staging": {
+    "manifest": "runtime/webkit-production-staging-v4.json",
+    "manifestSHA256": "15b87655149ee85164cec6268a8ca711a20a1c299ad2a2504e53b47a6f8e5a6a",
+    "status": "staged-pre-sign-only",
+    "networkSandboxPolicyRevision": 13,
+    "machOCount": 16,
+    "regularFileCount": 105,
+    "symlinks": [
+      {
+        "path": "JavaScriptCore.framework/JavaScriptCore",
+        "target": "Versions/Current/JavaScriptCore"
+      },
+      {
+        "path": "JavaScriptCore.framework/Resources",
+        "target": "Versions/Current/Resources"
+      },
+      {
+        "path": "JavaScriptCore.framework/Versions/Current",
+        "target": "A"
+      },
+      {
+        "path": "WebCore.framework/Resources",
+        "target": "Versions/Current/Resources"
+      },
+      {
+        "path": "WebCore.framework/Versions/Current",
+        "target": "A"
+      },
+      {
+        "path": "WebCore.framework/WebCore",
+        "target": "Versions/Current/WebCore"
+      },
+      {
+        "path": "WebGPU.framework/Resources",
+        "target": "Versions/Current/Resources"
+      },
+      {
+        "path": "WebGPU.framework/Versions/Current",
+        "target": "A"
+      },
+      {
+        "path": "WebGPU.framework/WebGPU",
+        "target": "Versions/Current/WebGPU"
+      },
+      {
+        "path": "WebInspectorUI.framework/Resources",
+        "target": "Versions/Current/Resources"
+      },
+      {
+        "path": "WebInspectorUI.framework/Versions/Current",
+        "target": "A"
+      },
+      {
+        "path": "WebInspectorUI.framework/WebInspectorUI",
+        "target": "Versions/Current/WebInspectorUI"
+      },
+      {
+        "path": "WebKit.framework/Frameworks",
+        "target": "Versions/Current/Frameworks"
+      },
+      {
+        "path": "WebKit.framework/Resources",
+        "target": "Versions/Current/Resources"
+      },
+      {
+        "path": "WebKit.framework/Versions/Current",
+        "target": "A"
+      },
+      {
+        "path": "WebKit.framework/WebKit",
+        "target": "Versions/Current/WebKit"
+      },
+      {
+        "path": "WebKit.framework/XPCServices",
+        "target": "Versions/Current/XPCServices"
+      },
+      {
+        "path": "WebKitLegacy.framework/Resources",
+        "target": "Versions/Current/Resources"
+      },
+      {
+        "path": "WebKitLegacy.framework/Versions/Current",
+        "target": "A"
+      },
+      {
+        "path": "WebKitLegacy.framework/WebKitLegacy",
+        "target": "Versions/Current/WebKitLegacy"
+      }
+    ],
+    "machO": [
+      {
+        "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+        "bytes": 40078704,
+        "sha256": "8b8fd0f8ce5aa9f861ad62281074844e3e384e8fac1d0a81b42bfe86999d4b26"
+      },
+      {
+        "path": "WebCore.framework/Versions/A/WebCore",
+        "bytes": 98312576,
+        "sha256": "c309a063fe9285910d9a9a0ec78d960a5df73780b899e70f40412e6e351c3f9e"
+      },
+      {
+        "path": "WebGPU.framework/Versions/A/WebGPU",
+        "bytes": 4007776,
+        "sha256": "6aaab3a92792f89a4ad82ae0765057bde2b0292e87ec070ffa222fc07a2607d8"
+      },
+      {
+        "path": "WebInspectorUI.framework/Versions/A/WebInspectorUI",
+        "bytes": 16832,
+        "sha256": "aa5f2f762b8f02f4679f488b32836e6d8fc099ed9fb0ce0802900bcf5ad47c35"
+      },
+      {
+        "path": "WebKit.framework/Versions/A/Frameworks/libWebKitSwift.dylib",
+        "bytes": 160832,
+        "sha256": "7b67173d878335caad43e5ea751030f4a68dc04e65b45beb55fa9c2a602ced1e"
+      },
+      {
+        "path": "WebKit.framework/Versions/A/WebKit",
+        "bytes": 56488952,
+        "sha256": "a114a212993c88681dacef826f964150df37b979d0d5ad5ded8debb137c0c6ef"
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development",
+        "bytes": 34000,
+        "sha256": "efdeca24300e7a49c090eb1287292d501d5483ae85ee60a2acc9775645f5d681"
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development",
+        "bytes": 34000,
+        "sha256": "d3700bab8b058b0289c96db011e1408315d76041b55c50124645c3ab95c75d9a"
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development",
+        "bytes": 34016,
+        "sha256": "cb98c97acb1a155d37c5b22ea15c15eb5c9696b27827038de2dc769f2c61520a"
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development",
+        "bytes": 34016,
+        "sha256": "b417de356254093b42191989675eb0f4333575c8d9a6f2ecb80fffa5d8c3c1cb"
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development",
+        "bytes": 34096,
+        "sha256": "80d80774612ea2a04329ec4c8f1b8bcf9504b44989005a4db9e97a4a2ab376bb"
+      },
+      {
+        "path": "WebKitLegacy.framework/Versions/A/WebKitLegacy",
+        "bytes": 4695792,
+        "sha256": "1c2031452fa3ebeeb8644120382d3f4f2a39697a95292a941cc5e86db6644b76"
+      },
+      {
+        "path": "libANGLE-shared.dylib",
+        "bytes": 5743216,
+        "sha256": "9a12cef57ba2f0c3bfbc8e3768f5231dce87ba6969300a267f6dc99c3869dd3f"
+      },
+      {
+        "path": "libWebKitSwift.dylib",
+        "bytes": 160832,
+        "sha256": "7b67173d878335caad43e5ea751030f4a68dc04e65b45beb55fa9c2a602ced1e"
+      },
+      {
+        "path": "libswiftCompatibilitySpan.dylib",
+        "bytes": 156544,
+        "sha256": "b4256b38185e963651938ed0406c6c8ec54299621c7fa53c5e9a0a325ca5fe4f"
+      },
+      {
+        "path": "libwebrtc.dylib",
+        "bytes": 14531568,
+        "sha256": "28c0e7afca306b61b50226fc4711639b745b1a788bd829568ed8b26f782c1cd9"
+      }
+    ],
+    "licenseNoticeFiles": [
+      "WebInspectorUI.framework/Versions/A/Resources/External/CSSDocumentation/LICENSE",
+      "WebInspectorUI.framework/Versions/A/Resources/External/CodeMirror/LICENSE",
+      "WebInspectorUI.framework/Versions/A/Resources/External/Esprima/LICENSE",
+      "WebInspectorUI.framework/Versions/A/Resources/External/three.js/LICENSE"
+    ],
+    "markersFound": [],
+    "stagedDirectory": "/private/tmp/neantik-v20-production-rebuild/staged-frameworks-v20"
+  },
+  "historicalImageHashDifference": {
+    "status": "new hashes differ from 2026-10-24 marker-free build receipt; old receipt remains unchanged; new exact output hashes are recorded here",
+    "historicalReceipt": "docs/evidence/webkit-marker-free-runtime-rebuild-20261024.json"
+  },
+  "notClaimed": [
+    "WebKit runtime launch or proxy qualification",
+    "source license applicability or legal approval",
+    "complete corresponding-source and recipient relink offer",
+    "production application packaging, signing or notarization",
+    "GitHub or browser.free publication"
+  ],
+  "images": {
+    "WebCore.framework/Versions/A/WebCore": "c309a063fe9285910d9a9a0ec78d960a5df73780b899e70f40412e6e351c3f9e",
+    "WebKitLegacy.framework/Versions/A/WebKitLegacy": "1c2031452fa3ebeeb8644120382d3f4f2a39697a95292a941cc5e86db6644b76",
+    "WebKit.framework/Versions/A/WebKit": "a114a212993c88681dacef826f964150df37b979d0d5ad5ded8debb137c0c6ef"
+  }
+}
