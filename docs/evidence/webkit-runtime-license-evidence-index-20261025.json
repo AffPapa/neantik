@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "status": "candidate-license-evidence-index-not-applicability-review",
-  "generatedAt": "2026-10-24T23:37:50Z",
+  "generatedAt": "2026-10-24T23:37:57Z",
   "candidate": {
     "build": "139",
     "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
@@ -96,7 +96,9 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "WebCore.framework/Versions/A/WebCore",
@@ -127,7 +129,9 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "WebGPU.framework/Versions/A/WebGPU",
@@ -142,7 +146,9 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "WebInspectorUI.framework/Versions/A/WebInspectorUI",
@@ -156,7 +162,17 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [
+        {
+          "receipt": "webkit-v16-webinspector-resource-reconciliation-20261020.json",
+          "sha256": "6c3c8f2512c22e069bc8195e40891721064deeb563a0ea60b671cb9a5b60db46",
+          "availability": "present in main workspace; not copied into isolated release branch",
+          "scope": "resource reconciliation only",
+          "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+        }
+      ],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "WebKit.framework/Versions/A/Frameworks/libWebKitSwift.dylib",
@@ -170,7 +186,17 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [
+        {
+          "receipt": "webkit-libwebkit-swift-source-map-20261021.json",
+          "sha256": "20961d206aa9ef2fa1e2388f7b21e542447e39d49eba314ddb028dcebff6f924",
+          "availability": "present in main workspace; not copied into isolated release branch",
+          "scope": "source map only",
+          "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+        }
+      ],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "WebKit.framework/Versions/A/WebKit",
@@ -184,7 +210,9 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development",
@@ -198,7 +226,9 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development",
@@ -212,7 +242,9 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development",
@@ -226,7 +258,9 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development",
@@ -240,7 +274,9 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development",
@@ -254,7 +290,9 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "WebKitLegacy.framework/Versions/A/WebKitLegacy",
@@ -274,7 +312,9 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "libANGLE-shared.dylib",
@@ -288,7 +328,17 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [
+        {
+          "receipt": "webkit-angle-license-slice-20261020.json",
+          "sha256": "c00c674e925b415aa48b3355578212be8516478504cdc50f03a29f64d7b6df96",
+          "availability": "present in main workspace; not copied into isolated release branch",
+          "scope": "target compile-input and candidate notice map",
+          "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+        }
+      ],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "libWebKitSwift.dylib",
@@ -302,7 +352,17 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [
+        {
+          "receipt": "webkit-libwebkit-swift-source-map-20261021.json",
+          "sha256": "20961d206aa9ef2fa1e2388f7b21e542447e39d49eba314ddb028dcebff6f924",
+          "availability": "present in main workspace; not copied into isolated release branch",
+          "scope": "source map only",
+          "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+        }
+      ],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "libswiftCompatibilitySpan.dylib",
@@ -317,7 +377,17 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [
+        {
+          "receipt": "webkit-compatibilityspan-license-scope-20261021.json",
+          "sha256": "5f0553ea0c141def63c6c4433e0cd8757911df602dc6e74c50bfa1b194afe34b",
+          "availability": "present in main workspace; not copied into isolated release branch",
+          "scope": "vendor provenance and license-scope receipt",
+          "upstreamCommit": null
+        }
+      ],
+      "applicabilityDecisionRemains": "UNKNOWN"
     },
     {
       "runtimePath": "libwebrtc.dylib",
@@ -331,7 +401,17 @@
       "limitations": [
         "Candidate paths identify potentially relevant source texts only; they do not establish applicability to this image.",
         "HistoricalResearchRefs may use earlier build evidence and are not v20 decisions."
-      ]
+      ],
+      "supplementalTechnicalEvidence": [
+        {
+          "receipt": "webkit-webrtc-notice-reconciliation-20261021.json",
+          "sha256": "492c76e29614ae223904fcc7a6baf50312f8eb546c4ad92aa68efb6c4b329e08",
+          "availability": "present in main workspace; not copied into isolated release branch",
+          "scope": "source-derived notice candidate; generated notice target missing",
+          "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+        }
+      ],
+      "applicabilityDecisionRemains": "UNKNOWN"
     }
   ],
   "resources": [
@@ -2426,5 +2506,93 @@
       ]
     }
   ],
-  "interpretation": "This index joins existing build-lineage candidates to exact runtime paths and exact corpus text hashes. It does not decide which terms apply, what notices are required, or whether distribution is permitted. All 100 release decisions remain UNKNOWN and fail closed."
+  "interpretation": "This index joins existing build-lineage candidates to exact runtime paths and exact corpus text hashes. It does not decide which terms apply, what notices are required, or whether distribution is permitted. All 100 release decisions remain UNKNOWN and fail closed. Five preserved main-workspace receipts now supplement source evidence for WebInspectorUI, libWebKitSwift, ANGLE, Swift CompatibilitySpan and WebRTC. These receipts are hash-pinned references; most use earlier build graphs and none resolves applicability for the current production image. All 100 decisions remain UNKNOWN.",
+  "supplementalHistoricalReceipts": {
+    "webkit-v16-webinspector-resource-reconciliation-20261020.json": {
+      "path": "docs/evidence/webkit-v16-webinspector-resource-reconciliation-20261020.json",
+      "sha256": "6c3c8f2512c22e069bc8195e40891721064deeb563a0ea60b671cb9a5b60db46",
+      "availability": "present in main workspace; not copied into isolated release branch",
+      "runtimeTarget": "WebInspector.framework/Versions/A/WebInspectorUI",
+      "scope": "resource reconciliation only",
+      "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+      "limitations": [
+        "No legal review or complete third-party notice determination is implied.",
+        "Other frameworks, XPC services, WebCore/PAL, ANGLE, WebRTC notice coverage and LGPL corresponding-source/relink obligations remain open.",
+        "No signing, notarization, runtime launch, network test or public release qualification is established."
+      ]
+    },
+    "webkit-libwebkit-swift-source-map-20261021.json": {
+      "path": "docs/evidence/webkit-libwebkit-swift-source-map-20261021.json",
+      "sha256": "20961d206aa9ef2fa1e2388f7b21e542447e39d49eba314ddb028dcebff6f924",
+      "availability": "present in main workspace; not copied into isolated release branch",
+      "runtimeTarget": "libWebKitSwift.dylib and embedded copy",
+      "scope": "source map only",
+      "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+      "sourcePaths": [],
+      "limitations": [
+        "Maps all 32 direct link inputs for this image only.",
+        "Header notice strings are signals, not legal determinations.",
+        "Does not close generated inputs, transitive dependencies, resources, XPC images, notices, corresponding-source/relink obligations, minimum OS behavior or legal review.",
+        "No compiler/linker, runtime launch, test suite, signing, notarization, Gatekeeper check or public release was run."
+      ]
+    },
+    "webkit-angle-license-slice-20261020.json": {
+      "path": "docs/evidence/webkit-angle-license-slice-20261020.json",
+      "sha256": "c00c674e925b415aa48b3355578212be8516478504cdc50f03a29f64d7b6df96",
+      "availability": "present in main workspace; not copied into isolated release branch",
+      "runtimeTarget": "libANGLE-shared.dylib",
+      "scope": "target compile-input and candidate notice map",
+      "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+      "licenseTextCandidates": [
+        "Source/ThirdParty/ANGLE/LICENSE",
+        "Source/ThirdParty/ANGLE/src/common/third_party/xxhash/LICENSE"
+      ],
+      "licenseTextHashes": {
+        "Source/ThirdParty/ANGLE/LICENSE": "bf4da21bd20bcfb5b60b7ecc67fa864a79be049e21d6178076887f178dd6c71a",
+        "Source/ThirdParty/ANGLE/src/common/third_party/xxhash/LICENSE": "6ffedbc0f7878612d2b23589f1ff2ab15633e1df7963a5d9fc750ec5500c7e7a"
+      },
+      "limitations": [
+        "Confirm exact target/symbol and loaded-image scope against the final signed runtime; the source-pinned candidate bytes are assembled but are not release-approved.",
+        "Complete WebCore/PAL per-file/resource notice closure (the exact WebCore dav1d archive members are now mapped), reconcile the WebRTC generated notice, and review LGPL corresponding-source obligations."
+      ]
+    },
+    "webkit-compatibilityspan-license-scope-20261021.json": {
+      "path": "docs/evidence/webkit-compatibilityspan-license-scope-20261021.json",
+      "sha256": "5f0553ea0c141def63c6c4433e0cd8757911df602dc6e74c50bfa1b194afe34b",
+      "availability": "present in main workspace; not copied into isolated release branch",
+      "runtimeTarget": "libswiftCompatibilitySpan.dylib",
+      "scope": "vendor provenance and license-scope receipt",
+      "upstreamCommit": null,
+      "license": "Apache-2.0 WITH Swift Runtime Library Exception",
+      "licenseSHA256": "770af8291f708538d8ff885a0bbc4e045cd700531741c4f99528d435c14d7f55",
+      "limitations": [
+        "No legal opinion obtained.",
+        "No app, runtime, candidate archive, or public release changed.",
+        "No production gate closed."
+      ]
+    },
+    "webkit-webrtc-notice-reconciliation-20261021.json": {
+      "path": "docs/evidence/webkit-webrtc-notice-reconciliation-20261021.json",
+      "sha256": "492c76e29614ae223904fcc7a6baf50312f8eb546c4ad92aa68efb6c4b329e08",
+      "availability": "present in main workspace; not copied into isolated release branch",
+      "runtimeTarget": "libwebrtc.dylib",
+      "scope": "source-derived notice candidate; generated notice target missing",
+      "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+      "noticeCandidate": {
+        "path": "docs/evidence/webkit-webrtc-notices-candidate-20261020.md",
+        "sha256": "87628e1d7690a75ac3eb228f9d7f30c93c9b40579e3b473ed50d806f31796aba",
+        "uniqueNoticeBlobs": 24,
+        "method": "pinned WebKit CMake compile dependency map plus exact selected libwebrtc static archive link map",
+        "buildNinjaSHA256": "4f3756b0640a1a79125868f85f83eea0355a0f80ad3dbceb67ed865fc3b0c833",
+        "selectedArchiveMapSHA256": "990e20529b0307407a1570e56606d7aeb582bedc2a6d0f376290d12f263696a9",
+        "selectedArchiveOccurrences": 397,
+        "sourceMappedOccurrences": 397
+      },
+      "limitations": [
+        "qualified review of the source-derived WebRTC notice set and linked-image scope",
+        "complete per-image/resource notices for the entire owned WebKit runtime",
+        "LGPL corresponding-source, recipient relink and qualified legal review"
+      ]
+    }
+  }
 }
