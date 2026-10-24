@@ -217,6 +217,33 @@ class RuntimeSecurityBaselineTests(unittest.TestCase):
             )
             self.assertIn("source-only runtime lock", message)
 
+    def test_source_only_candidate_lock_can_prepare_private_bundle_but_not_release(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            lock_path = self.write_json(
+                root,
+                "lock.json",
+                {
+                    "status": "source-qualified",
+                    "fingerprintChromium": {"chromiumVersion": "150.0.7871.187"},
+                },
+            )
+            baseline_path = self.write_json(root, "baseline.json", self.baseline())
+            with self.assertRaisesRegex(SystemExit, "no verification object"):
+                MODULE.verify(lock_path, baseline_path, date(2026, 7, 25))
+            message = MODULE.verify(
+                lock_path,
+                baseline_path,
+                date(2026, 7, 25),
+                allow_unqualified_bundle=True,
+            )
+            self.assertIn("Pre-qualification bundle only", message)
+            self.assertIn("still required before a public Direct release", message)
+
+    def test_private_bundle_preparation_does_not_bypass_security_floor(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "below the security baseline"):
+            self.verify("144.0.7559.132")
+
 
     def reviewed_branch_fixture(self):
         lock = self.lock("151.0.8000.2")
@@ -313,12 +340,12 @@ class RuntimeSecurityBaselineTests(unittest.TestCase):
         proof["reason"] = "Synthetic fixture: source operation absent from this platform"
         self.assertIn("verified", self.verify_reviewed_fixture(lock, baseline))
 
-    def test_delivered_runtime_cannot_use_alpha_to_bypass_security_review(self):
+    def test_delivered_runtime_below_current_floor_cannot_use_alpha(self):
         project = SCRIPT.parents[1]
         baseline_path = project / "runtime/security-baseline.json"
         baseline = json.loads(baseline_path.read_text())
         for alpha in (False, True):
-            with self.subTest(alpha=alpha), self.assertRaisesRegex(SystemExit, "security branch"):
+            with self.subTest(alpha=alpha), self.assertRaisesRegex(SystemExit, "below the security baseline"):
                 MODULE.verify(project / "runtime/fingerprint-chromium-15612-font-system-v1.lock.json",
                     baseline_path, date.fromisoformat(baseline["checkedAt"]),
                     allow_public_alpha_tuples=alpha)

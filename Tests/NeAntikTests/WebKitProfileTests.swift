@@ -2,6 +2,9 @@ import AppKit
 import Foundation
 import Testing
 import WebKit
+#if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+import Security
+#endif
 @testable import NeAntik
 
 @MainActor
@@ -18,6 +21,71 @@ private final class WebKitPopupCounter: NSObject, WKUIDelegate {
 @Suite(.serialized)
 struct WebKitProfileTests {
     private func encoder() -> JSONEncoder { let value = JSONEncoder(); value.dateEncodingStrategy = .iso8601; return value }
+
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    // Public certificates generated solely for this test. The signing keys
+    // were discarded; none of these anchors enter a system trust store.
+    private var qaCA: Data {
+        Data(base64Encoded: "MIIBTTCB9KADAgECAgkAu473oWivtbEwCgYIKoZIzj0EAwIwGjEYMBYGA1UEAwwPTmVBbnRpayBVbml0IENBMB4XDTI2MTAyMzEzMDQwMVoXDTI3MTAyMzEzMDQwMVowGjEYMBYGA1UEAwwPTmVBbnRpayBVbml0IENBMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE0BVo54q7YtCck+KAtAtzjezVj1QsGkISCCue669E87uF7ELu5fNrocjBxnogD6Rye+McZVybtaxcz2TgF6LkIKMjMCEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwIDSAAwRQIhAIIko97wBOPcK89dKxOxG9+Qk1RjEazyZA2Z7FbX3b4uAiBNu2GsEbcM5v/2KTWU3WLxlxdtof25b7S1kjl2E6IN5Q==")!
+    }
+    private var qaLeaf: Data {
+        Data(base64Encoded: "MIIBjzCCATSgAwIBAgIJAOfrMHZ9NvJjMAoGCCqGSM49BAMCMBoxGDAWBgNVBAMMD05lQW50aWsgVW5pdCBDQTAeFw0yNjEwMjMxMzA0MDFaFw0yNzEwMjMxMzA0MDFaMCMxITAfBgNVBAMMGG5lYW50aWstcHJveHktcWEuaW52YWxpZDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABLcfduTbYMU6aAAsXyDRrfxfrOtOl6UGcmib1e0PNGQCa3aj6B9Y7M1QxdNFJffmQWOsr6hwbljpx1oxwwWbCX+jWjBYMCMGA1UdEQQcMBqCGG5lYW50aWstcHJveHktcWEuaW52YWxpZDAMBgNVHRMBAf8EAjAAMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAKBggqhkjOPQQDAgNJADBGAiEAtj0OAGiDlZ/t3B5vgzEme5QepoRdvFkQxW3/tywRp/QCIQDL1QrndIAfuwsAP0abl+WZ0jVhANNSINFzVMkPvBBBPg==")!
+    }
+    private var wrongCA: Data {
+        Data(base64Encoded: "MIIBWjCCAQCgAwIBAgIJALkDcF1W0FYhMAoGCCqGSM49BAMCMCAxHjAcBgNVBAMMFU5lQW50aWsgV3JvbmcgVW5pdCBDQTAeFw0yNjEwMjMxMjU3NDRaFw0zNjEwMjAxMjU3NDRaMCAxHjAcBgNVBAMMFU5lQW50aWsgV3JvbmcgVW5pdCBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABOm1x1d12DAuoLjJFEULockjyLJLtFukCaNYdJodxvN4a8yVOBhgqI4/iih6WkBz2skL4O/7LkRCO/z/C9sUZLWjIzAhMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMAoGCCqGSM49BAMCA0gAMEUCIG5qFh9/s+q1+ws+beX5gobYg8nnh0Uuwk40VTlS8ET4AiEAxOeHp07ldJbobnjroxOu1R/fm8asVZ+29cK/A8osrTY=")!
+    }
+
+    @Test func qaTLSScopeRequiresExactSyntheticOriginAndValidCertificate() throws {
+        let origin = try #require(URL(string: "https://neantik-proxy-qa.invalid:45102/"))
+        let scope = try WebKitQATrustScope(caDER: qaCA, origins: [origin])
+        #expect(scope.authorizes(host: "neantik-proxy-qa.invalid", port: 45102))
+        #expect(!scope.authorizes(host: "neantik-proxy-qa.invalid", port: 443))
+        #expect(!scope.authorizes(host: "neantik-second-qa.invalid", port: 45102))
+        #expect(throws: WebKitProfileError.self) {
+            try WebKitQATrustScope(caDER: Data([1, 2, 3]), origins: [origin])
+        }
+        for invalid in ["https://example.com:45102/", "http://neantik-proxy-qa.invalid:45102/",
+                        "https://neantik-proxy-qa.invalid/", "https://neantik-proxy-qa.invalid:45102/path"] {
+            let url = try #require(URL(string: invalid))
+            #expect(throws: WebKitProfileError.self) {
+                try WebKitQATrustScope(caDER: qaCA, origins: [url])
+            }
+        }
+    }
+
+    @Test func qaTLSTrustUsesExactSSLHostnameAndOnlyFixtureAnchor() throws {
+        let origin = try #require(URL(string: "https://neantik-proxy-qa.invalid:45102/"))
+        let certificate = try #require(SecCertificateCreateWithData(nil, qaLeaf as CFData))
+        func trust() throws -> SecTrust {
+            var result: SecTrust?
+            let policy = SecPolicyCreateSSL(true, "neantik-proxy-qa.invalid" as CFString)
+            try #require(SecTrustCreateWithCertificates(certificate, policy, &result) == errSecSuccess)
+            let value = try #require(result)
+            // Freeze verification inside the public fixture's validity window
+            // so this unit test does not become a hidden clock-dependent gate.
+            let fixtureDate = try #require(ISO8601DateFormatter().date(from: "2026-10-23T13:05:00Z"))
+            try #require(SecTrustSetVerifyDate(value, fixtureDate as CFDate) == errSecSuccess)
+            return value
+        }
+        let correct = try WebKitQATrustScope(caDER: qaCA, origins: [origin])
+        #expect(correct.accepts(try trust(), host: "neantik-proxy-qa.invalid", port: 45102))
+        #expect(!correct.accepts(try trust(), host: "neantik-second-qa.invalid", port: 45102))
+        let differentHost = try WebKitQATrustScope(caDER: qaCA,
+            origins: [try #require(URL(string: "https://neantik-second-qa.invalid:45102/"))])
+        #expect(!differentHost.accepts(try trust(), host: "neantik-second-qa.invalid", port: 45102))
+        let wrong = try WebKitQATrustScope(caDER: wrongCA, origins: [origin])
+        #expect(!wrong.accepts(try trust(), host: "neantik-proxy-qa.invalid", port: 45102))
+    }
+    #endif
+
+    @Test func editorChoosesOwnedOnlyForEnabledWebKitProxyAndRestoresSystemDirect() {
+        let proxy = ProxyConfiguration(kind: .http, host: "127.0.0.1", port: 45101, username: "")
+        let choose = WebKitProfilePolicy.runtimeGenerationForSave
+        #expect(choose(.webkit, proxy, .system, true) == .isolatedV1)
+        #expect(choose(.webkit, proxy, .system, false) == .system)
+        #expect(choose(.webkit, nil, .isolatedV1, true) == .system)
+        #expect(choose(.chromium, proxy, .isolatedV1, true) == .system)
+    }
 
     @Test func windowCommandsHandleCapsLockAndCyrillicWithoutCapturingPlainInput() {
         #expect(WebKitWindowCommand.resolve(characters: "l", keyCode: 37, modifiers: [.command, .capsLock]) == .address)

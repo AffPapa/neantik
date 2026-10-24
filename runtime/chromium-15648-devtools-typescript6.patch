@@ -1,0 +1,26 @@
+diff --git a/front_end/ui/legacy/ARIAUtils.ts b/front_end/ui/legacy/ARIAUtils.ts
+index accf1744..1c500129 100644
+--- a/front_end/ui/legacy/ARIAUtils.ts
++++ b/front_end/ui/legacy/ARIAUtils.ts
+@@ -420,7 +420,7 @@ export class LiveAnnouncer {
+     element.textContent = Platform.StringUtilities.trimEndWithMaxLength(announcedMessage, 10000);
+   }
+ 
+-  static getOrCreateAnnouncerElement(container: HTMLElement = document.body, role: AnnouncerRole, opts?: {
++  static getOrCreateAnnouncerElement(container: HTMLElement | undefined = document.body, role: AnnouncerRole, opts?: {
+     force: boolean,
+   }): HTMLElement {
+     const existingAnnouncerElement = LiveAnnouncer.#announcerElementsByRole[role].get(container);
+diff --git a/front_end/ui/legacy/Widget.ts b/front_end/ui/legacy/Widget.ts
+index 899d050e..58211419 100644
+--- a/front_end/ui/legacy/Widget.ts
++++ b/front_end/ui/legacy/Widget.ts
+@@ -84,7 +84,7 @@ export type WidgetFactory<WidgetT extends AnyWidget> = WidgetConstructor<WidgetT
+ export type InferWidgetTFromFactory<F> = F extends WidgetFactory<infer WidgetT>? WidgetT : never;
+ 
+ export class WidgetConfig<WidgetT extends AnyWidget> {
+-  constructor(readonly widgetClass: WidgetFactory<WidgetT>, readonly widgetParams?: Partial<WidgetT>) {
++  constructor(readonly widgetClass: WidgetFactory<WidgetT>, readonly widgetParams: Partial<WidgetT> | undefined = undefined) {
+   }
+ }
+ 

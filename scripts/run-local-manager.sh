@@ -62,6 +62,12 @@ while (( $# > 0 )); do
   shift
 done
 
+case "${NEANTIK_WEBKIT_HOST_ENABLED:-0}" in
+  0) ;;
+  1) echo "Owned WebKit is not enabled in the Dev launcher: production source/notice coverage and native runtime qualification remain open. The fail-closed launcher is unchanged; see docs/NEXT_1_0_SLICES.md." >&2; exit 78 ;;
+  *) echo "NEANTIK_WEBKIT_HOST_ENABLED must be 0 or 1" >&2; exit 64 ;;
+esac
+
 if [[ ! -d "$SOURCE_APP/Contents/Resources/NeAntik Browser.app" ]]; then
   echo "Не найден встроенный Chromium в $SOURCE_APP" >&2
   echo "Сначала нужен один готовый локальный Direct-кандидат." >&2
@@ -139,6 +145,15 @@ DEVELOPMENT_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PROJE
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $DEVELOPMENT_BUILD" "$INFO_PLIST"
 /usr/libexec/PlistBuddy \
   -c "Set :CFBundleIdentifier app.neantik.desktop.dev" \
+  "$INFO_PLIST"
+# A copied release bundle may carry the production-only BrowserData backup
+# capability. The Dev identity must never inherit it: the backup composition
+# correctly refuses that capability outside the production bundle ID.
+/usr/libexec/PlistBuddy \
+  -c 'Delete :NeAntikBrowserDataBackupEnabled' \
+  "$INFO_PLIST" >/dev/null 2>&1 || true
+/usr/libexec/PlistBuddy \
+  -c 'Add :NeAntikBrowserDataBackupEnabled bool false' \
   "$INFO_PLIST"
 /usr/libexec/PlistBuddy \
   -c "Set :CFBundleDisplayName NeAntik Dev" \

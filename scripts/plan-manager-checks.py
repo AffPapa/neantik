@@ -40,9 +40,14 @@ FEATURES = [
 SHARED_SWIFT = frozenset('Sources/NeAntik/' + name + '.swift' for name in (
     'BrowserProcessManager', 'BrowserLaunchActionPresentation',
     'MCPOutputSchemas', 'MCPProfileManagement', 'RedactedSupportBundle',
-    'ProfileEditorView', 'HelpContent',
+    'ProfileEditorView', 'HelpContent', 'NeAntikApp',
 ))
 PYTHON_READERS = {
+    # App entry/lifecycle needs full Swift. Its Python source reader is the
+    # responsive UI contract (also added for every app Swift path below).
+    'Sources/NeAntik/NeAntikApp.swift': (
+        'scripts.tests.test_responsive_ui_contract',
+    ),
     'Sources/NeAntik/BrowserProcessManager.swift': (
         'scripts.tests.test_verify_built_runtime_script',
         'scripts.tests.test_verify_chromium_launch_flags',
@@ -252,6 +257,14 @@ def plan(paths, catalog, *, version_only_info=False):
             python.add('scripts.tests.test_prepare_runtime_common_evidence')
             gates.add('owned temporary staging against explicit input hashes; preparation never qualifies runtime, candidate or release')
             reasons.append({'path': path, 'surface': 'common-evidence-preparation'}); continue
+        if path == 'scripts/qa-candidate-binding.py':
+            python.add('scripts.tests.test_qa_candidate_binding')
+            gates.add('inert candidate binding only; native and signed-byte gates remain separate')
+            reasons.append({'path': path, 'surface': 'qa-binding-preflight'}); continue
+        if path == 'scripts/check-webkit-recipient-prereqs.py':
+            python.add('scripts.tests.test_check_webkit_recipient_prereqs')
+            gates.add('read-only source pin checks do not qualify license scope, recipient relink, runtime or public release')
+            reasons.append({'path': path, 'surface': 'recipient-source-preflight'}); continue
         if path == 'scripts/plan-manager-checks.py':
             python.add('scripts.tests.test_manager_check_plan')
             gates.add('review check selection and preserve conservative unknown/shared-input fallback')

@@ -88,6 +88,12 @@ def expected_candidate_lock(
             project_root / "runtime" / "fingerprint-chromium-154.lock.json",
             "Chromium 154 candidate runtime lock",
         )
+    if version == "156.0.8078.48":
+        from chromium_15648_release_evidence import expected_lock as expected_m15648
+        try:
+            return expected_m15648(provenance_path, project_root)
+        except ValueError as error:
+            raise SourceProvenanceError(str(error)) from error
     elif version == "154.0.8037.98":
         verify_document(provenance, project_root=project_root)
         return load_object(
@@ -194,6 +200,12 @@ def verify_candidate_lock(
         provenance_path,
         "emitted Chromium source provenance",
     )
+    if provenance.get("targetChromiumVersion") == "156.0.8078.48":
+        from chromium_15648_release_evidence import verify_lock as verify_m15648
+        try:
+            return verify_m15648(actual, provenance_path, project_root)
+        except ValueError as error:
+            raise SourceProvenanceError(str(error)) from error
     if provenance.get("targetChromiumVersion") == "154.0.8037.93":
         try:
             verify_chromium_154_candidate_lock(

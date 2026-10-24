@@ -5,6 +5,7 @@ import ctypes
 import errno
 import importlib.util
 import json
+import marshal
 import os
 from pathlib import Path
 import re
@@ -15,7 +16,17 @@ import uuid
 
 SPEC = importlib.util.spec_from_file_location('crash_custody_core', Path(__file__).with_name('collect-manager-dns.py'))
 CORE = importlib.util.module_from_spec(SPEC); SPEC.loader.exec_module(CORE)
+PEER_PATH = Path(__file__).with_name('collect-manager-webrtc.py')
+PEER_SPEC = importlib.util.spec_from_file_location('crash_peer_socket_custody', PEER_PATH)
+PEER = importlib.util.module_from_spec(PEER_SPEC); PEER_SPEC.loader.exec_module(PEER)
 LIVE_STAGES = ('baseline', 'mutate', 'read')
+
+
+def peer_socket_binding():
+    """Bind the imported peer socket implementation, not only its path name."""
+    code = PEER.socket_peer.__code__
+    CORE.require(Path(code.co_filename).resolve() == PEER_PATH.resolve(), 'crash-peer-import-changed')
+    return CORE.sha(PEER_PATH.read_bytes()), CORE.sha(marshal.dumps(code))
 
 
 def owned_state(path):
@@ -32,8 +43,10 @@ def owned_state(path):
 def capture(state, root, stage):
     CORE.require(stage in LIVE_STAGES, 'wrong-crash-stage')
     value = CORE.capture(state, root, 'direct-control', manager_crash=True)
-    CORE.require(value['peerCollectorSHA256'] == CORE.sha(Path(__file__).with_name('collect-manager-webrtc.py').read_bytes()), 'crash-peer-source-changed')
-    value.update(crashStage=stage, crashCollectorSHA256=CORE.sha(Path(__file__).read_bytes()))
+    peer_source, peer_socket = peer_socket_binding()
+    CORE.require(value['peerCollectorSHA256'] == peer_source, 'crash-peer-source-changed')
+    value.update(crashStage=stage, crashCollectorSHA256=CORE.sha(Path(__file__).read_bytes()),
+                 peerSocketCodeSHA256=peer_socket)
     args = CORE.argv_for(value['browser']['pid'])
     CORE.require(not any(a.startswith('--ignore-certificate-errors-spki-list') for a in args), 'crash-trust-override')
     manifest = CORE.load(root / 'candidate-manifest.json')
@@ -49,7 +62,7 @@ def validate_target(previous, current, events):
     for key in ('manager', 'browser', 'profileID', 'metadataIdentitySHA256', 'sessionGeneration', 'leaseSHA256',
                 'revision', 'lastLaunchedAt', 'updatedAt', 'managerSHA256', 'candidateManifestSHA256',
                 'runtimeExecutableSHA256', 'runtimeFrameworkSHA256', 'crashFixtureSHA256', 'crashProbeSHA256', 'crashCollectorSHA256',
-                'fixtureSHA256', 'collectorSHA256', 'peerCollectorSHA256'):
+                'fixtureSHA256', 'collectorSHA256', 'peerCollectorSHA256', 'peerSocketCodeSHA256'):
         CORE.require(previous[key] == current[key], 'crash-target-changed')
     CORE.require(previous['crashStage'] == current['crashStage'] == 'mutate' and current['phase'] == 'direct-control'
                  and current.get('relay') is None, 'not-own-direct-crash-target')

@@ -43,7 +43,9 @@ CHROMIUM_154_VERSION = "154.0.8037.93"
 CHROMIUM_15498_VERSION = "154.0.8037.98"
 CHROMIUM_15540_VERSION = "155.0.8059.40"
 CHROMIUM_15612_VERSION = "156.0.8078.12"
+CHROMIUM_15648_VERSION = "156.0.8078.48"
 CONTRACT_SOURCE_VERSIONS = {
+    CHROMIUM_15648_VERSION: ("chromium-15648-source-contract.json", "chromium-15648-rebase-plan.json"),
     CHROMIUM_15612_VERSION: ("chromium-15612-source-contract.json", "chromium-15612-rebase-plan.json"),
     CHROMIUM_15540_VERSION: ("chromium-15540-source-contract.json", "chromium-15540-rebase-plan.json"),
     CHROMIUM_152_VERSION: (
@@ -211,6 +213,16 @@ def verify_contract(
     contract = load_object(contract_path, "Chromium source contract")
     plan = load_object(rebase_plan_path, "Chromium rebase plan")
     ensure_no_stale_markers(contract, "Chromium source contract")
+
+    if contract.get("targetChromiumVersion") == CHROMIUM_15648_VERSION:
+        from chromium_15648_release_evidence import verify_contract as verify_m15648
+        if (contract_path != project_root / "runtime" / "chromium-15648-source-contract.json" or
+                rebase_plan_path != project_root / "runtime" / "chromium-15648-rebase-plan.json"):
+            raise SourceProvenanceError("M156.48 requires its canonical source contract and plan")
+        try:
+            return verify_m15648(project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
 
     if contract.get("targetChromiumVersion") == CHROMIUM_15612_VERSION:
         from chromium_15612_variant import prefix_for, _subject
@@ -518,6 +530,12 @@ def build_provenance(
         raise SourceProvenanceError(
             f"Chromium source root does not exist: {source_root}"
         )
+    if chromium_version(source_root) == CHROMIUM_15648_VERSION:
+        from chromium_15648_release_evidence import build_provenance as build_m15648
+        try:
+            return build_m15648(source_root, project_root.resolve())
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
     if chromium_version(source_root) in {CHROMIUM_154_VERSION, CHROMIUM_15498_VERSION, CHROMIUM_15540_VERSION, CHROMIUM_15612_VERSION}:
         raise SourceProvenanceError(
             "Chromium 154 provenance must be emitted by the dedicated "
@@ -875,6 +893,13 @@ def verify_document(
     rebase_plan_path: Path = DEFAULT_REBASE_PLAN,
 ) -> None:
     ensure_no_stale_markers(document, "emitted source provenance")
+    if document.get("targetChromiumVersion") == CHROMIUM_15648_VERSION:
+        from chromium_15648_release_evidence import verify_provenance as verify_m15648
+        try:
+            verify_m15648(document, project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+        return
     if document.get("targetChromiumVersion") == CHROMIUM_154_VERSION:
         try:
             verify_chromium_154_candidate_document(
@@ -991,6 +1016,13 @@ def verify_runtime_lock_for_new_candidate(
         fingerprint.get("chromiumVersion"),
         "fingerprintChromium.chromiumVersion",
     )
+    if version == CHROMIUM_15648_VERSION:
+        from chromium_15648_release_evidence import verify_contract as verify_m15648
+        try:
+            verify_m15648(project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+        return
     if version == CHROMIUM_15612_VERSION:
         from chromium_15612_variant import reviewed_lock_prefix, verify_candidate_lock as verify_m156
         prefix = reviewed_lock_prefix(lock)

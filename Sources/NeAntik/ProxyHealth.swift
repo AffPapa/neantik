@@ -49,11 +49,6 @@ enum ProxyHealthOutcome: String, Codable, Equatable, Sendable {
     }
 }
 
-enum ProxyHealthSource: String, Codable, Equatable, Sendable {
-    case ipAPI = "ipapi.co"
-    case crossChecked = "ipwho.is+freeipapi.com"
-}
-
 struct ProxyHealthAttempt: Codable, Equatable, Sendable {
     static let maximumResponseTimeMilliseconds = 120_000
 
@@ -246,6 +241,7 @@ enum ProxyHealthStoreError: LocalizedError, Equatable {
     case unsupportedSchema
     case unsafePath
     case capacityExceeded
+    case lockTimedOut
 
     var errorDescription: String? {
         switch self {
@@ -257,6 +253,9 @@ enum ProxyHealthStoreError: LocalizedError, Equatable {
                 "открыть."
         case .capacityExceeded:
             "История проверок прокси достигла безопасного лимита."
+        case .lockTimedOut:
+            "История проверок прокси занята другим процессом. " +
+                "Повтори проверку позже."
         }
     }
 }
@@ -594,12 +593,25 @@ actor ProxyHealthStore {
         }
         defer { _ = Darwin.close(descriptor) }
 
-        while proxyHealthFlock(descriptor, LOCK_EX) != 0 {
-            guard errno == EINTR else {
-                throw POSIXError(
-                    POSIXErrorCode(rawValue: errno) ?? .EIO
-                )
+        let lockDeadline = ProcessInfo.processInfo.systemUptime + 3
+        while proxyHealthFlock(descriptor, LOCK_EX | LOCK_NB) != 0 {
+            let failure = errno
+            if failure == EINTR {
+                continue
             }
+            if failure == EWOULDBLOCK || failure == EAGAIN {
+                if Task<Never, Never>.isCancelled {
+                    throw CancellationError()
+                }
+                guard ProcessInfo.processInfo.systemUptime < lockDeadline else {
+                    throw ProxyHealthStoreError.lockTimedOut
+                }
+                Darwin.usleep(10_000)
+                continue
+            }
+            throw POSIXError(
+                POSIXErrorCode(rawValue: failure) ?? .EIO
+            )
         }
         defer { _ = proxyHealthFlock(descriptor, LOCK_UN) }
 

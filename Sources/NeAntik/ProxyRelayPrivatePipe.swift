@@ -24,6 +24,9 @@ enum ProxyRelayPrivatePipe {
         }
     }
     static let maximumFrameBytes = 16 * 1024
+    // Covers the bounded WebKit route activation (15 s) and graceful save
+    // acknowledgement (30 s); larger or unbounded waits remain invalid.
+    static let maximumTimeout: TimeInterval = 30
 
     static func prepare(_ fd: Int32, writable: Bool) throws {
         var info = stat()
@@ -60,7 +63,7 @@ enum ProxyRelayPrivatePipe {
     }
 
     private static func deadline(_ timeout: TimeInterval) throws -> Double {
-        guard timeout.isFinite, timeout > 0, timeout <= 10 else { throw Failure.invalidLimit }
+        guard timeout.isFinite, timeout > 0, timeout <= maximumTimeout else { throw Failure.invalidLimit }
         return uptime() + timeout
     }
     private static func uptime() -> Double { Double(DispatchTime.now().uptimeNanoseconds) / 1_000_000_000 }

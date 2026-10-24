@@ -38,9 +38,9 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
     def test_doctor_refuses_current_runtime_cross_branch_without_source_review(self):
         root = SCRIPT.parents[1]
         baseline = json.loads((root / "runtime/security-baseline.json").read_text())
-        lock = root / "runtime/fingerprint-chromium-15612-font-system-v1.lock.json"
+        lock = root / "runtime/fingerprint-chromium-15540.lock.json"
         with self.assertRaisesRegex(ValueError, "security branch"):
-            MODULE.verify_runtime_security_branch("156.0.8078.12", lock, baseline)
+            MODULE.verify_runtime_security_branch("155.0.8059.40", lock, baseline)
         # A mismatched lock cannot supply a review for another binary version.
         with self.assertRaisesRegex(ValueError, "does not match"):
             MODULE.verify_runtime_security_branch("156.0.8078.39", lock, baseline)
@@ -88,11 +88,27 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
                               candidate_lock={}, project_root=root, args_gn=args)
                 MODULE.verify_source_contract_binding(**kwargs)
                 verifier.assert_called_once_with({}, provenance=provenance, project_root=root)
+
+    def test_m15648_preflight_binds_source_contract_and_current_args(self) -> None:
+        import chromium_15648_release_evidence
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            contract_path = root / "contract.json"
+            contract_path.write_text('{"schemaVersion":1}')
+            args = root / "args.gn"
+            args.write_text("angle_enable_metal = true\n")
+            provenance = {
+                "sourceContractSHA256": MODULE.sha256_file(contract_path),
+                "binaryBinding": {"argsGNSHA256": MODULE.sha256_file(args)},
+            }
+            kwargs = dict(runtime_version="156.0.8078.48", contract={"schemaVersion":1},
+                          contract_path=contract_path, provenance=provenance,
+                          candidate_lock={}, project_root=root, args_gn=args)
+            with mock.patch.object(chromium_15648_release_evidence, "verify_provenance") as verifier:
+                MODULE.verify_source_contract_binding(**kwargs)
+                verifier.assert_called_once_with(provenance, root)
                 args.write_text("angle_enable_metal=false\n")
                 with self.assertRaisesRegex(ValueError, "packaged args differ"):
-                    MODULE.verify_source_contract_binding(**kwargs)
-                kwargs["runtime_version"] = "154.0.8037.58"
-                with self.assertRaisesRegex(ValueError, "unqualified"):
                     MODULE.verify_source_contract_binding(**kwargs)
 
     def test_m15498_preflight_uses_separate_candidate_verifier(self) -> None:

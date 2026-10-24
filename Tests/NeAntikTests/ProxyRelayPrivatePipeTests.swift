@@ -33,8 +33,19 @@ struct ProxyRelayPrivatePipeTests {
         for value in [Data(), Data(count: ProxyRelayPrivatePipe.maximumFrameBytes + 1)] {
             #expect(throws: ProxyRelayPrivatePipe.Failure.invalidLimit) { try ProxyRelayPrivatePipe.writeFrame(output, data: value, timeout: 1) }
         }
-        for value in [0.0, -1, 11, .infinity, .nan] {
+        for value in [0.0, -1, ProxyRelayPrivatePipe.maximumTimeout + 1, .infinity, .nan] {
             #expect(throws: ProxyRelayPrivatePipe.Failure.invalidLimit) { try ProxyRelayPrivatePipe.readFrame(input, timeout: value) }
+        }
+    }
+    @Test func webKitStartupAndCloseBudgetsRemainWithinPipeContract() throws {
+        let (input, output) = try pair(); defer { close(input); close(output) }
+        for timeout in [15.0, 30.0] {
+            let frame = Data("bounded".utf8)
+            try ProxyRelayPrivatePipe.writeFrame(output, data: frame, timeout: timeout)
+            #expect(try ProxyRelayPrivatePipe.readFrame(input, timeout: timeout) == frame)
+        }
+        #expect(throws: ProxyRelayPrivatePipe.Failure.invalidLimit) {
+            try ProxyRelayPrivatePipe.readFrame(input, timeout: 31)
         }
     }
     @Test func truncatedAndExcessivePeerFramesAreRefused() throws {

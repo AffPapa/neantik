@@ -464,7 +464,7 @@ struct ProfileEditorView: View {
           HelpLink(topic: .proxy)
           if engine == .webkit {
             Text(WebKitProxyFeature.launchEnabled
-              ? "Прокси задаётся для этого WebKit-профиля. Предварительная проверка не подтверждает фактический маршрут окна."
+              ? "С прокси новый профиль использует изолированный WebKit и своё хранилище сайтов. Без прокси — системный WebKit. Для смены режима у сохранённого профиля создай новый: данные старого сохранятся. Предварительная проверка не подтверждает маршрут окна."
               : "Настройки прокси сохраняются в профиле, но эта сборка пока не запускает WebKit с прокси. Прямое подключение вместо него не используется.")
               .font(.callout).foregroundStyle(.secondary)
           }
@@ -1295,6 +1295,18 @@ struct ProfileEditorView: View {
       )
       let proxy = proxySettings.configuration
       profile.proxy = proxy
+      let desiredWebKitRuntime = WebKitProfilePolicy.runtimeGenerationForSave(
+        engine: engine,
+        proxy: proxy,
+        previous: profile.webKitRuntimeGeneration,
+        ownedProxyAvailable: WebKitProxyFeature.launchEnabled
+      )
+      if let original, original.webKitRuntimeGeneration != desiredWebKitRuntime {
+        throw WebKitProfileError.unsupported(
+          "Смена режима сети WebKit требует нового профиля: хранилища системного и изолированного WebKit разделены. Старый профиль и его данные сохранены."
+        )
+      }
+      profile.webKitRuntimeGeneration = desiredWebKitRuntime
       let locationMatchesProxy = proxySettings.appliesProxyContext
       profile.identity = profile.identity.replacingProxyContext(
         timezoneIdentifier: locationMatchesProxy

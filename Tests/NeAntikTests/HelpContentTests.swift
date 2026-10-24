@@ -11,6 +11,14 @@ struct HelpContentTests {
         #expect(HelpTopic.matching("nonexistent-synthetic-term").isEmpty)
     }
 
+    @Test func proxyHelpDoesNotClaimWebKitUsesSavedProxy() {
+        let proxyHelp = HelpTopic.mcp.sections.map(\.text).joined(separator: " ")
+        #expect(proxyHelp.contains("текущая сборка не запускает профиль с прокси"))
+        #expect(proxyHelp.contains("прямого обхода нет"))
+        #expect(proxyHelp.contains("Используй Chromium для работы через прокси"))
+        #expect(!proxyHelp.contains("настройки применяются к отдельному хранилищу сайтов"))
+    }
+
     @Test func copiedConfigurationUsesExactResolvedWorkspaceAndEscapesClientFormats() throws {
         let executable = URL(fileURLWithPath: "/private/tmp/NeAntik \"QA\".app/Contents/MacOS/NeAntik")
         let root = URL(fileURLWithPath: "/private/tmp/neantik-legacy \"root\"", isDirectory: true)

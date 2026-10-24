@@ -1,6 +1,103 @@
 import AppKit
 import Network
 import WebKit
+#if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+import Security
+#endif
+
+#if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+/// A disposable Dev-host trust scope. The caller must obtain the CA from a
+/// validated, private QA fixture; no certificate is installed in Keychain or
+/// added to the system trust store. Production builds omit this type entirely.
+struct WebKitQATrustScope {
+    private struct Origin: Hashable {
+        let host: String
+        let port: Int
+    }
+
+    private let anchor: SecCertificate
+    private let origins: Set<Origin>
+
+    init(caDER: Data, origins: [URL]) throws {
+        guard (256...32_768).contains(caDER.count),
+              let anchor = SecCertificateCreateWithData(nil, caDER as CFData),
+              (1...4).contains(origins.count) else {
+            throw WebKitProfileError.unsupported("Некорректная область доверия тестового HTTPS-сервера.")
+        }
+        var accepted = Set<Origin>()
+        for url in origins {
+            guard url.scheme?.lowercased() == "https", let host = url.host,
+                  Self.isFixtureHost(host), let port = url.port,
+                  (1...65_535).contains(port), url.user == nil, url.password == nil,
+                  url.query == nil, url.fragment == nil,
+                  url.path.isEmpty || url.path == "/" else {
+                throw WebKitProfileError.unsupported("Некорректная область доверия тестового HTTPS-сервера.")
+            }
+            guard accepted.insert(Origin(host: host, port: port)).inserted else {
+                throw WebKitProfileError.unsupported("Повторная область доверия тестового HTTPS-сервера.")
+            }
+        }
+        self.anchor = anchor
+        self.origins = accepted
+    }
+
+    private static func isFixtureHost(_ host: String) -> Bool {
+        guard host == host.lowercased(), host.hasSuffix(".invalid"), host.utf8.count <= 253 else { return false }
+        return host.split(separator: ".", omittingEmptySubsequences: false).allSatisfy { label in
+            guard (1...63).contains(label.utf8.count),
+                  let first = label.utf8.first, let last = label.utf8.last,
+                  Self.isASCIIAlphaNumeric(first), Self.isASCIIAlphaNumeric(last) else { return false }
+            return label.utf8.allSatisfy { Self.isASCIIAlphaNumeric($0) || $0 == 45 }
+        }
+    }
+
+    private static func isASCIIAlphaNumeric(_ value: UInt8) -> Bool {
+        (48...57).contains(value) || (97...122).contains(value)
+    }
+
+    func authorizes(host: String, port: Int) -> Bool {
+        origins.contains(Origin(host: host, port: port))
+    }
+
+    /// Re-evaluate the challenge under exact SSL hostname policy and only the
+    /// fixture anchor. A mismatch or any Security API error fails closed.
+    func accepts(_ trust: SecTrust, host: String, port: Int,
+                 onStage: (String) -> Void = { _ in }) -> Bool {
+        guard authorizes(host: host, port: port) else {
+            onStage("qa-tls-scope-mismatch")
+            return false
+        }
+        let policy = SecPolicyCreateSSL(true, host as CFString)
+        let policies = SecTrustSetPolicies(trust, policy)
+        onStage(Self.statusStage("policies", policies))
+        guard policies == errSecSuccess else { return false }
+        let anchors = SecTrustSetAnchorCertificates(trust, [anchor] as CFArray)
+        onStage(Self.statusStage("anchors", anchors))
+        guard anchors == errSecSuccess else { return false }
+        let anchorOnly = SecTrustSetAnchorCertificatesOnly(trust, true)
+        onStage(Self.statusStage("anchoronly", anchorOnly))
+        guard anchorOnly == errSecSuccess else { return false }
+        let networkFetch = SecTrustSetNetworkFetchAllowed(trust, false)
+        onStage(Self.statusStage("netfetch", networkFetch))
+        guard networkFetch == errSecSuccess else { return false }
+        var error: CFError?
+        let accepted = SecTrustEvaluateWithError(trust, &error)
+        if accepted { onStage("qa-tls-eval-ok") }
+        else if let error { onStage("qa-tls-eval-\(Self.boundedCode(CFErrorGetCode(error)))") }
+        else { onStage("qa-tls-eval-no-error") }
+        return accepted
+    }
+
+    private static func statusStage(_ step: String, _ status: OSStatus) -> String {
+        status == errSecSuccess ? "qa-tls-\(step)-ok" : "qa-tls-\(step)-\(boundedCode(Int(status)))"
+    }
+
+    private static func boundedCode(_ code: Int) -> String {
+        guard (-999_999...999_999).contains(code) else { return "other" }
+        return code < 0 ? "m\(-code)" : "p\(code)"
+    }
+}
+#endif
 
 enum BrowserEngine: String, Codable, CaseIterable, Identifiable, Sendable {
     case chromium
@@ -27,6 +124,9 @@ enum BrowserEngine: String, Codable, CaseIterable, Identifiable, Sendable {
     }
 
     private static var webKitSettingsSummary: String {
+        if WebKitProxyFeature.launchEnabled {
+            return "WebKit в отдельном окне NeAntik: Direct-профили используют системный движок, а профиль с прокси — изолированный runtime и локальный брокер. Cookies и данные сайтов хранятся отдельно. Язык и часовой пояс берутся из macOS; подмена параметров Chromium и расширения здесь недоступны."
+        }
         return "Системный WebKit в окне NeAntik: отдельные cookies, данные сайтов и вкладки. Прокси WebKit отключён во всех сборках до включения и проверки отдельного runtime. Отпечаток, язык и часовой пояс берутся из macOS; подмена этих параметров не поддерживается. Для запуска через AI включи доступ WebKit в справке MCP и разреши выбранные профили. Расширения и настройки Chromium доступны только в Chromium."
     }
 }
@@ -53,6 +153,22 @@ enum WebKitProfileError: LocalizedError {
 enum WebKitProfilePolicy {
     static let maximumTabs = 32
     static func canOpenTab(count: Int) -> Bool { (0..<maximumTabs).contains(count) }
+
+    /// A saved proxy must select the owned runtime that contains the broker.
+    /// A Direct profile uses the existing system WebKit path. Keep a proxy
+    /// profile unchanged when the owned route is disabled so it still fails
+    /// closed at launch without rewriting the user's saved configuration.
+    static func runtimeGenerationForSave(
+        engine: BrowserEngine,
+        proxy: ProxyConfiguration?,
+        previous: WebKitRuntimeGeneration,
+        ownedProxyAvailable: Bool
+    ) -> WebKitRuntimeGeneration {
+        guard engine == .webkit else { return .system }
+        guard proxy != nil else { return .system }
+        return ownedProxyAvailable ? .isolatedV1 : previous
+    }
+
     static func validate(_ profile: BrowserProfile) throws {
         guard !profile.isArchived else { throw NeAntikError.profileArchived }
         try validateConfiguration(profile)
@@ -104,7 +220,7 @@ enum WebKitProfilePolicy {
         if let proxy = profile.proxy, !proxy.isValid {
             throw NeAntikError.invalidProfile
         }
-        guard let url = BrowserLaunchBuilder.validatedStartURL(profile.startURL), permits(url) else {
+        guard let url = BrowserStartURL.validate(profile.startURL), permits(url) else {
             throw NeAntikError.invalidProfile
         }
     }
@@ -251,6 +367,13 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     private var sessionSavePending = false
     private var downloadsSettled = false
     private var onSessionSaveError: (() -> Void)?
+    private let onQANavigation: ((String, String, Int) -> Void)?
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    private var qaTLSTrustScope: WebKitQATrustScope?
+    private var onQATLSStage: ((String) -> Void)?
+    private var qaTLSChallengeSeen = false
+    private var qaTLSNoChallengeReported = false
+    #endif
     private(set) var sessionWriteFailed = false
     private(set) var downloads: WebKitDownloads!
     var tabCount: Int { isClosed ? 0 : order.ids.count }
@@ -264,8 +387,9 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
          sessionWarning: String? = nil,
          runtime: WebKitProfileBrowserRuntime = .system,
          onSessionSaveError: (() -> Void)? = nil,
+         onQANavigation: ((String, String, Int) -> Void)? = nil,
          onClose: @escaping () -> Void) throws {
-        let proxyConfigurations: [Network.ProxyConfiguration]
+        let proxyConfigurations: [nw_proxy_config_t]
         switch runtime {
         case .system:
             try WebKitProfilePolicy.validate(profile)
@@ -285,11 +409,12 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         mediaPolicy = profile.webKitMediaPolicy
         restoresSession = profile.startupMode == .restoreSession
         self.sessionNotice = sessionWarning; self.onSessionSaveError = onSessionSaveError
+        self.onQANavigation = onQANavigation
         self.lease = lease; self.metadataLease = metadataLease; self.onClose = onClose
         dataStore = WKWebsiteDataStore(forIdentifier: profile.id)
         // Apply before constructing the first view so every connection owned
         // by this persistent profile store receives the same proxy policy.
-        dataStore.proxyConfigurations = proxyConfigurations
+        dataStore.__proxyConfigurations = proxyConfigurations
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = dataStore
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
@@ -377,19 +502,43 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         return true
     }
 
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    /// Install before route activation and the first navigation. The nested
+    /// Dev host provides the validated fixture input; a system WebKit window
+    /// or production host can never acquire this override.
+    func installQATrustScope(_ scope: WebKitQATrustScope,
+                             onStage: @escaping (String) -> Void) -> Bool {
+        guard Bundle.main.bundleIdentifier == "app.neantik.desktop.dev.webkit-host",
+              !isClosed, !initialNavigationStarted,
+              pendingRouteActivationSession != nil,
+              qaTLSTrustScope == nil else { return false }
+        qaTLSTrustScope = scope
+        onQATLSStage = onStage
+        return true
+    }
+    #endif
+
     /// The signed host calls this after constructing its WKWebView from the
     /// pinned owned runtime and broker-only persistent store, before any page
     /// is opened. This value is only a locator; the parent still attests code.
-    func networkProcessOwnerForBootstrap() throws -> WebKitOwnedNetworkProcessPID.Owner {
+    func networkProcessOwnerForBootstrap() async throws -> WebKitOwnedNetworkProcessPID.Owner {
         guard !isClosed, pendingRouteActivationSession != nil else {
             throw WebKitHostIPC.ProtocolError.invalidTransition
         }
-        return try WebKitOwnedNetworkProcessPID.currentOwner(for: dataStore)
+        let owner = try await WebKitOwnedNetworkProcessPID.ownerWhenReady(for: dataStore)
+        guard !isClosed, pendingRouteActivationSession != nil else {
+            throw WebKitHostIPC.ProtocolError.invalidTransition
+        }
+        return owner
     }
 
     private func startInitialNavigation(profile: BrowserProfile,
                                         restoredSession: WebKitSessionSnapshot?) {
         initialNavigationStarted = true
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+        qaTLSChallengeSeen = false
+        qaTLSNoChallengeReported = false
+        #endif
         guard let first = tabs[order.selected] else { return }
         if restoresSession, let restoredSession {
             first.committedURL = restoredSession.urls[0]
@@ -410,7 +559,8 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
                 sessionNotice = "Некоторые специальные адреса нельзя восстановить. Их вкладки открыты пустыми."
             }
             presentSelectedTab()
-        } else if let url = BrowserLaunchBuilder.validatedStartURL(profile.startURL) {
+        } else if let url = BrowserStartURL.validate(profile.startURL) {
+            onQANavigation?("started", "none", 0)
             first.view.load(URLRequest(url: url))
         }
     }
@@ -559,7 +709,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     @objc func forward() { if !isClosed { webView.goForward() } }
     @objc func reload() { if !isClosed { webView.reload() } }
     @objc private func openAddress() {
-        guard !isClosed, let url = BrowserLaunchBuilder.validatedStartURL(address.stringValue), WebKitProfilePolicy.permits(url) else {
+        guard !isClosed, let url = BrowserStartURL.validate(address.stringValue), WebKitProfilePolicy.permits(url) else {
             message.stringValue = "Введи адрес http:// или https://. Для пустой страницы — about:blank."; return
         }
         webView.load(URLRequest(url: url)); window.makeFirstResponder(webView)
@@ -619,6 +769,12 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         tab.status = value; refreshTab(tab.id)
     }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+        if qaTLSTrustScope != nil, action.targetFrame?.isMainFrame == true {
+            qaTLSChallengeSeen = false
+            qaTLSNoChallengeReported = false
+        }
+        #endif
         if owns(webView), action.shouldPerformDownload, let url = action.request.url,
            WebKitProfilePolicy.permits(url) || url.scheme?.lowercased() == "blob" {
             let admitted = downloads.reserve(action, from: webView)
@@ -632,6 +788,36 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         }
         decisionHandler(.allow)
     }
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge,
+                 completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        qaTLSChallengeSeen = true
+        onQATLSStage?("qa-tls-challenge")
+        guard let scope = qaTLSTrustScope else {
+            onQATLSStage?("qa-tls-no-scope")
+            completionHandler(.performDefaultHandling, nil); return
+        }
+        guard owns(webView),
+              Bundle.main.bundleIdentifier == "app.neantik.desktop.dev.webkit-host" else {
+            onQATLSStage?("qa-tls-unowned")
+            completionHandler(.cancelAuthenticationChallenge, nil); return
+        }
+        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust else {
+            onQATLSStage?("qa-tls-method-other")
+            completionHandler(.performDefaultHandling, nil); return
+        }
+        onQATLSStage?("qa-tls-method-trust")
+        guard let trust = challenge.protectionSpace.serverTrust,
+              scope.accepts(trust, host: challenge.protectionSpace.host,
+                            port: challenge.protectionSpace.port,
+                            onStage: { [weak self] in self?.onQATLSStage?($0) }) else {
+            if challenge.protectionSpace.serverTrust == nil { onQATLSStage?("qa-tls-no-trust") }
+            completionHandler(.cancelAuthenticationChallenge, nil); return
+        }
+        onQATLSStage?("qa-tls-accepted")
+        completionHandler(.useCredential, URLCredential(trust: trust))
+    }
+    #endif
     func webView(_ webView: WKWebView, decidePolicyFor response: WKNavigationResponse,
                  decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
         guard owns(webView) else { decisionHandler(.cancel); return }
@@ -695,6 +881,16 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         // Other navigation/iframe failures cannot identify which pending
         // download converted; only didBecome consumes its exact token.
         guard (error as NSError).code != NSURLErrorCancelled else { return }
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+        if owns(view), qaTLSTrustScope != nil,
+           !qaTLSChallengeSeen, !qaTLSNoChallengeReported {
+            qaTLSNoChallengeReported = true
+            onQATLSStage?("qa-tls-no-challenge")
+        }
+        #endif
+        let category = native.domain == NSURLErrorDomain ? "url" :
+            native.domain == "WebKitErrorDomain" ? "webkit" : "other"
+        onQANavigation?("failed", category, (-100_000...100_000).contains(native.code) ? native.code : 0)
         setStatus("Не удалось открыть страницу. Проверь адрес и подключение к сети; затем обнови страницу.", for: view)
     }
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {

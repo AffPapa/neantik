@@ -1,8 +1,35 @@
+import Darwin
 import Foundation
 import Testing
 @testable import NeAntik
 
 struct ProxyTesterTests {
+    private actor SlowProbeCounter {
+        var starts = 0
+        func started() { starts += 1 }
+    }
+
+    @Test
+    func wholeProbeDeadlineCancelsSlowServiceAndDoesNotStartFallback() async throws {
+        let proxy = try ProxyImportParser.parse("127.0.0.1:8080", kind: .http).configuration
+        let counter = SlowProbeCounter()
+        let started = ContinuousClock.now
+        do {
+            _ = try await ProxyTester().probe(
+                configuration: proxy, password: "", runProcess: { _, _, _, _ in
+                    await counter.started()
+                    try await Task.sleep(for: .seconds(10))
+                    return .init(status: 28, output: Data(), outputExceeded: false)
+                }, maximumDuration: .milliseconds(40)
+            )
+            Issue.record("Expired observation succeeded")
+        } catch let error as ProxyProbeError {
+            #expect(error.outcome == .timedOut)
+        }
+        #expect(await counter.starts == 1)
+        #expect(started.duration(to: .now) < .seconds(2))
+    }
+
     @Test
     func connectRefusalIsNotMistakenForIPServiceFailure() async throws {
         let proxy = try ProxyImportParser.parse("127.0.0.1:8080", kind: .http).configuration
@@ -135,6 +162,59 @@ struct ProxyTesterTests {
         do { _ = try await task.value; Issue.record("Cancelled input writer succeeded") }
         catch is CancellationError {} catch { Issue.record("Unexpected cancellation error") }
         #expect(Date().timeIntervalSince(started) < 2)
+    }
+
+    @Test
+    func cancellationKillsChildIgnoringTERMAndClosesStalledPipes() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-proxy-process-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let pidFile = directory.appendingPathComponent("pid")
+        let started = Date()
+        let task = Task {
+            try await ProxyTester.runCancellableProcess(
+                executableURL: URL(fileURLWithPath: "/bin/sh"),
+                arguments: ["-c", "trap '' TERM; printf '%s' \"$$\" > \"$1\"; exec /bin/sleep 10", "sh", pidFile.path],
+                standardInput: Data(repeating: 0x78, count: 128 * 1_024)
+            )
+        }
+        var pid: Int32?
+        for _ in 0..<80 {
+            if let raw = try? String(contentsOf: pidFile, encoding: .utf8),
+               let parsed = Int32(raw), parsed > 0 {
+                pid = parsed
+                break
+            }
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        guard let pid else {
+            task.cancel()
+            _ = try? await task.value
+            Issue.record("Synthetic child setup failed before the cancellation assertion")
+            return
+        }
+        // Allow the shell to exec sleep with SIGTERM ignored and both pipes open.
+        try await Task.sleep(for: .milliseconds(75))
+        task.cancel()
+        do {
+            _ = try await task.value
+            Issue.record("TERM-ignoring proxy child unexpectedly succeeded")
+        } catch is CancellationError {
+            // Bounded TERM -> KILL must finish the suspended caller.
+        } catch {
+            Issue.record("Cancellation returned an unexpected error")
+        }
+        #expect(Date().timeIntervalSince(started) < 3)
+        var childGone = false
+        for _ in 0..<40 {
+            if Darwin.kill(pid, 0) == -1 && errno == ESRCH {
+                childGone = true
+                break
+            }
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        #expect(childGone)
     }
 
     @Test

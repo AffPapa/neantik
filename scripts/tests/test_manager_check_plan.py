@@ -11,6 +11,33 @@ SPEC.loader.exec_module(MOD)
 
 
 class ManagerCheckPlanTests(unittest.TestCase):
+    def test_recipient_source_preflight_is_bounded_without_release_authority(self):
+        result = MOD.plan(['scripts/check-webkit-recipient-prereqs.py',
+                           'scripts/tests/test_check_webkit_recipient_prereqs.py'], [])
+        self.assertEqual(result['swiftMode'], 'none')
+        self.assertEqual(result['commands'], [['python3', '-B', '-m', 'unittest',
+            'scripts.tests.test_check_webkit_recipient_prereqs']])
+        self.assertFalse(result['releaseGate'])
+        self.assertIn('do not qualify license scope', result['requiredAdditionalGates'][0])
+
+    def test_inert_qa_binding_checker_does_not_rebuild_app(self):
+        result = MOD.plan(['scripts/qa-candidate-binding.py'], [])
+        self.assertEqual(result['swiftMode'], 'none')
+        self.assertEqual(result['commands'], [['python3', '-B', '-m', 'unittest',
+            'scripts.tests.test_qa_candidate_binding']])
+        self.assertFalse(result['releaseGate'])
+
+    def test_app_entry_keeps_full_swift_and_only_reviewed_python_reader(self):
+        result = MOD.plan(['Sources/NeAntik/NeAntikApp.swift'], [])
+        self.assertEqual(result['swiftMode'], 'full')
+        self.assertEqual(result['commands'], [
+            ['python3', '-B', 'scripts/test-manager-fast.py', '--all'],
+            ['python3', '-B', '-m', 'unittest', 'scripts.tests.test_responsive_ui_contract'],
+        ])
+        unknown = MOD.plan(['Sources/NeAntik/UnreviewedEntry.swift'], [])
+        self.assertTrue(any('discover' in command for command in unknown['commands']))
+        self.assertFalse(result['releaseGate'])
+
     def test_fixture_catalog_is_bounded_but_does_not_admit_native_qa(self):
         result = MOD.plan(['scripts/swift-runtime-fixture-suites.json'], [])
         self.assertEqual(result['swiftMode'], 'none')

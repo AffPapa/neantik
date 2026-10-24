@@ -31,6 +31,15 @@ def verify(root: Path = ROOT) -> dict:
     guide = (root / 'docs/MCP_GUIDE.md').read_text()
     if any('`' + name + '`' not in guide for name in expected['tools']):
         raise ValueError('MCP guide omits an advertised native tool')
+    if ('no WebKit request uses the saved setting' not in guide
+            or 'the launch gate refuses a configured proxy before creating the window' not in guide
+            or "the app applies Apple's proxy configuration" in guide):
+        raise ValueError('MCP guide WebKit proxy claim differs from the native fail-closed policy')
+    webkit_guide = (root / 'docs/WEBKIT_PROFILES.md').read_text()
+    if ('профиль с прокси не запускается' not in webkit_guide
+            or 'для работы через прокси' not in webkit_guide
+            or 'В Dev профильный прокси назначается' in webkit_guide):
+        raise ValueError('WebKit profile guide proxy claim differs from the native fail-closed policy')
     product = (root / 'docs/PRODUCT.md').read_text()
     declared = re.search(r'(\d+) management tools \((\d+) in\s+read mode\)', product)
     if not declared or tuple(map(int, declared.groups())) != (expected['toolCount'], expected['readToolCount']):
@@ -73,6 +82,10 @@ def verify_current_product_claims(root: Path) -> None:
     if heading not in (root / 'CHANGELOG.md').read_text():
         raise ValueError('Current app version has no release changelog entry')
     help_text = (root / 'Sources/NeAntik/HelpContent.swift').read_text()
+    if ('текущая сборка не запускает профиль с прокси' not in help_text
+            or 'Используй Chromium для работы через прокси' not in help_text
+            or 'настройки применяются к отдельному хранилищу сайтов' in help_text):
+        raise ValueError('In-app help WebKit proxy claim differs from the native fail-closed policy')
     if 'прокси с авторизацией требует собственного пароля' in help_text:
         raise ValueError('Help incorrectly claims templates copy proxy configuration')
     if 'работающие профили закрывать не нужно' not in help_text:
@@ -92,7 +105,10 @@ def verify_roadmap_release_claim(root: Path, latest: dict) -> None:
     site = latest.get('site') or {}
     site_version = site.get('liveVersion')
     site_build = site.get('liveBuild')
-    if (release_label not in intro or release_url not in intro or report_path not in intro
+    # Bind the release version to its link text. Merely finding the current
+    # version elsewhere in the paragraph can hide a stale GitHub link label.
+    linked_claim = f"[{release_label}]({release_url})"
+    if (linked_claim not in intro or report_path not in intro
             or (site_version and f"{site_version} ({site_build})" not in intro)
             or (site.get('updated') is False and 'не опубликовано' not in intro)):
         raise ValueError('Current roadmap release claim differs from published evidence: docs/ROADMAP.md')

@@ -20,12 +20,14 @@
   },
   "siteUrl": "https://browser.free",
   "site": {
-    "status": "blocked-separately",
-    "savedVersion": 153,
-    "liveVersion": "0.8.16",
-    "liveBuild": 128,
-    "liveCheckedDateUTC": "2026-10-19T12:06:50.345149+00:00",
-    "updated": false
+    "status": "published-and-live-verified",
+    "savedVersion": 154,
+    "liveVersion": "0.8.25",
+    "liveBuild": 137,
+    "liveCheckedDateUTC": "2026-10-20",
+    "sourceCommit": "da483569b7d81aa360b33616245b3766197a702b",
+    "deploymentID": "appgdep_6ad642bc76a08191989aeb0259c77c01",
+    "updated": true
   },
   "version": "0.8.25",
   "build": 137,
@@ -93,7 +95,7 @@
     "hostedZIP": "Anonymous bytes/size,exact candidate/evidence,privacy/signature/notarization/Gatekeeper PASS;headed evidence reused for matching critical bytes",
     "hostedDMG": "Anonymous bytes/size,image/signature/notarization/Gatekeeper PASS",
     "downloadedMCP": "Downloaded137 isolated manager startup:18management/7read tools,closing schemas,requested fontPolicy create/edit/persistence/restart PASS;no real profiles;no headed replay",
-    "site": "Anonymous API 2026-10-19T12:06:50.345149+00:00:0.8.16/build128;Sites delivery separately blocked",
+    "site": "Sites154 deployment succeeded from da483569b7d81aa360b33616245b3766197a702b; visible landing and DMG/ZIP links target 0.8.25/build137; anonymous release API HTTP200 reports canDownload=true",
     "publicChecksums": "Both anonymously downloaded sidecars match qualified export",
     "tagAndLatest": "GitHub Latest v0.8.25/release417243809;source tag and4asset digests verified"
   },
@@ -104,7 +106,7 @@
     "backupArchiveSchemaChanged": false,
     "rollback": "v0.8.24 immutable archives preserved;no data migration"
   },
-  "publicationState": "GitHub-published-and-hosted-verified;Site-separately-blocked",
+  "publicationState": "GitHub-and-browser.free-published-and-hosted-verified",
   "releaseQualified": true,
   "major1_0Complete": false,
   "limitations": [
@@ -116,6 +118,6 @@
     "Custom diagnostic is curl preflight,not Chromium route evidence.",
     "Old crash135 partial result and unknown October18 enrollment cleanup remain unresolved.",
     "Chromium156.0.8078.12 with reviewed security backports is not latestEarlyStable;SafeBrowsingdisabled.",
-    "GitHub published bytes and downloaded MCP qualified;browser.free remains separate blocked lane."
+    "GitHub artifacts and browser.free are separate release lanes; both currently publish 0.8.25/build137."
   ]
 }

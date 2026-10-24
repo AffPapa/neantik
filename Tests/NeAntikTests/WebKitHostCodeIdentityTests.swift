@@ -4,22 +4,26 @@ import Testing
 @testable import NeAntik
 
 @Suite struct WebKitHostCodeIdentityTests {
+    @Test func failuresExplainTheSafeActionWithoutExposingPathsOrSecrets() {
+        #expect(WebKitHostCodeIdentity.Failure.hostHashMismatch.errorDescription ==
+                "Файл WebKit-host не совпадает с проверочной записью приложения. Нужна новая сборка.")
+        #expect(WebKitHostCodeIdentity.Failure.unsafeBundle.errorDescription ==
+                "Пакет отдельного WebKit неполный или изменён. Профиль не запускался.")
+    }
+
     @Test func pinAcceptsOnlyExactVersionedHelperIdentity() throws {
         #expect(WebKitHostCodeIdentity.expectedHostIdentifier(
             for: WebKitHostCodeIdentity.managerIdentifier) == WebKitHostCodeIdentity.hostIdentifier)
         #expect(WebKitHostCodeIdentity.isSupportedHostIdentifier(WebKitHostCodeIdentity.hostIdentifier))
-        #if DEBUG
         #expect(WebKitHostCodeIdentity.expectedHostIdentifier(
             for: NeAntikApplicationEnvironment.developmentBundleIdentifier)
             == NeAntikApplicationEnvironment.developmentBundleIdentifier + ".webkit-host")
         #expect(WebKitHostCodeIdentity.isSupportedHostIdentifier(
             NeAntikApplicationEnvironment.developmentBundleIdentifier + ".webkit-host"))
-        #else
         #expect(WebKitHostCodeIdentity.expectedHostIdentifier(
-            for: NeAntikApplicationEnvironment.developmentBundleIdentifier) == nil)
+            for: NeAntikApplicationEnvironment.developmentBundleIdentifier + ".extra") == nil)
         #expect(!WebKitHostCodeIdentity.isSupportedHostIdentifier(
-            NeAntikApplicationEnvironment.developmentBundleIdentifier + ".webkit-host"))
-        #endif
+            NeAntikApplicationEnvironment.developmentBundleIdentifier + ".webkit-host.extra"))
         let value: [String: Any] = [
             "schemaVersion": 1,
             "identifier": WebKitHostCodeIdentity.hostIdentifier,
@@ -73,6 +77,22 @@ import Testing
         let path = try WebKitHostCodeIdentity.helperURL(in: app)
         #expect(path.standardizedFileURL == helper.standardizedFileURL)
 
+        // A notarized, optimized Dev QA bundle has the same exact host naming
+        // contract as a Debug bundle. This used to fail because the Dev case
+        // was compiled out whenever DEBUG was absent.
+        let developmentManagerID = NeAntikApplicationEnvironment.developmentBundleIdentifier
+        try PropertyListSerialization.data(fromPropertyList: [
+            "CFBundleIdentifier": developmentManagerID,
+            "CFBundleExecutable": "NeAntik",
+        ], format: .xml, options: 0).write(to: app.appendingPathComponent("Contents/Info.plist"))
+        try PropertyListSerialization.data(fromPropertyList: [
+            "CFBundleIdentifier": developmentManagerID + ".webkit-host",
+            "CFBundleExecutable": "NeAntikWebKitHost",
+            "CFBundlePackageType": "APPL",
+        ], format: .xml, options: 0).write(to: helper.deletingLastPathComponent()
+            .deletingLastPathComponent().appendingPathComponent("Info.plist"))
+        #expect(try WebKitHostCodeIdentity.helperURL(in: app) == helper)
+
         let outside = root.appendingPathComponent("outside", isDirectory: true)
         try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: true)
         let symlinkApp = root.appendingPathComponent("Linked.app", isDirectory: true)
@@ -89,7 +109,7 @@ import Testing
         }
     }
 
-    @Test func managerIdentityAcceptsReleaseAndDebugOnlyQAIdentifiers() throws {
+    @Test func managerIdentityAcceptsReleaseAndExactQAIdentifiersInEveryConfiguration() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("webkit-manager-identity-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -108,16 +128,29 @@ import Testing
         try writeIdentifier(WebKitHostCodeIdentity.managerIdentifier)
         #expect(WebKitHostCodeIdentity.expectedManagerIdentifier(in: root)
                 == WebKitHostCodeIdentity.managerIdentifier)
-        #if DEBUG
         try writeIdentifier(NeAntikApplicationEnvironment.developmentBundleIdentifier)
         #expect(WebKitHostCodeIdentity.expectedManagerIdentifier(in: root)
                 == NeAntikApplicationEnvironment.developmentBundleIdentifier)
-        #else
-        try writeIdentifier(NeAntikApplicationEnvironment.developmentBundleIdentifier)
+        try writeIdentifier(NeAntikApplicationEnvironment.developmentBundleIdentifier + ".extra")
         #expect(WebKitHostCodeIdentity.expectedManagerIdentifier(in: root) == nil)
-        #endif
         try writeIdentifier("app.neantik.desktop.untrusted")
         #expect(WebKitHostCodeIdentity.expectedManagerIdentifier(in: root) == nil)
+    }
+
+    @Test func expectedTeamFailsClosedWhenManagerIsUnsignedOrMissing() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("webkit-manager-team-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let contents = root.appendingPathComponent("Contents", isDirectory: true)
+        let macOS = contents.appendingPathComponent("MacOS", isDirectory: true)
+        try FileManager.default.createDirectory(at: macOS, withIntermediateDirectories: true)
+        try PropertyListSerialization.data(fromPropertyList: [
+            "CFBundleIdentifier": WebKitHostCodeIdentity.managerIdentifier,
+            "CFBundleExecutable": "NeAntik",
+        ], format: .xml, options: 0).write(to: contents.appendingPathComponent("Info.plist"))
+        try Data("unsigned manager fixture".utf8).write(to: macOS.appendingPathComponent("NeAntik"))
+
+        #expect(WebKitHostCodeIdentity.expectedTeamIdentifier(in: root) == nil)
     }
 
     @Test func parentCannotClaimAChildForAnotherProcess() {

@@ -351,7 +351,11 @@ struct AppPaths: Sendable {
         // coordination parents are still created explicitly: launches must be
         // safe even when a caller constructs AppPaths before app startup.
         try createPrivateDirectory(rootDirectory)
+        #if NEANTIK_WEBKIT_STANDALONE_HOST
+        try WebKitHostProfileReader.requireNoPending(rootURL: rootDirectory)
+        #else
         try BrowserDataRestoreTransaction.requireNoPending(rootURL: rootDirectory)
+        #endif
         try createPrivateDirectory(profilesDirectory)
         try createPrivateDirectory(processLocksDirectory)
         try createPrivateDirectory(logsDirectory)
@@ -466,13 +470,18 @@ struct AppPaths: Sendable {
             at: profilesMetadataGuardFile,
             nonBlocking: true
         ) {
+            #if NEANTIK_WEBKIT_STANDALONE_HOST
+            try WebKitHostProfileReader.requireNoPending(rootURL: rootDirectory)
+            #else
             try BrowserDataRestoreTransaction.requireNoPending(rootURL: rootDirectory)
+            #endif
             return try operation()
         }
     }
 
     /// The sole pending-fence exception holds an unforgeable, borrowed stopped
     /// process lease. Ordinary metadata consumers always use the fenced guard.
+    #if !NEANTIK_WEBKIT_STANDALONE_HOST
     func withProfilesMetadataGuardForRestore<T>(
         authority: StoppedProfileRestoreAuthority,
         _ operation: () throws -> T
@@ -483,6 +492,7 @@ struct AppPaths: Sendable {
             return try operation()
         }
     }
+    #endif
 
     func withSnapshotsGuard<T>(_ operation: () throws -> T) throws -> T {
         try withPrivateFileGuard(at: snapshotsGuardFile, operation)

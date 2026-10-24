@@ -32,13 +32,17 @@ def result(phase,baseline='base',fresh='fresh'):
 def model():
     manager=dict(pid=10,parentPID=2,uid=501,startSeconds=100,startMicroseconds=1,cdhash='b'*40)
     samples=[]
-    state=dict(managerPID=10,managerSHA256=H,candidateManifestSHA256=H,version='own',build='1',profiles=[{},dict(id='own')],**{k:H for k in ('fixtureSHA256','crashFixtureSHA256','crashProbeSHA256','peerCollectorSHA256')})
+    peer_source, peer_socket = C.peer_socket_binding()
+    state=dict(managerPID=10,managerSHA256=H,candidateManifestSHA256=H,version='own',build='1',profiles=[{},dict(id='own')],
+               **{k:H for k in ('fixtureSHA256','crashFixtureSHA256','crashProbeSHA256')},peerCollectorSHA256=peer_source)
     release=dict(version='own',build='1',managerSHA256=H,runtime=dict(executableSHA256=H,frameworkSHA256=H))
     for i,(stage,at) in enumerate(zip(C.LIVE_STAGES,(3,8,25))):
         browser=dict(pid=11+i,parentPID=10,uid=501,startSeconds=101+i,startMicroseconds=1,cdhash='b'*40)
         samples.append(dict(at=at,crashStage=stage,phase='direct-control',manager=manager,browser=browser,profileID='own',metadataIdentitySHA256=H,
             managerSHA256=H,candidateManifestSHA256=H,version='own',build='1',runtimeExecutableSHA256=H,runtimeFrameworkSHA256=H,
             sessionGeneration='s'+str(i),leaseSHA256=H,revision=i+1,lastLaunchedAt=str(i),updatedAt=str(i),**{k:H for k in A.HASHES}))
+        samples[-1]['peerCollectorSHA256']=peer_source
+        samples[-1]['peerSocketCodeSHA256']=peer_socket
         samples[-1]['runtimeProcesses']=[dict(identity=browser,executable='/own/browser')]
     events=[]
     for sample,phase,at in zip(samples,C.LIVE_STAGES,(1,6,23)):
@@ -105,6 +109,19 @@ class CrashAnalysisTests(unittest.TestCase):
         value=A.qualify(*model());self.assertTrue(value['acknowledgedStrictIDBPreserved'])
         for key in ('powerLossQualified','relayCrashQualified','WebKitQualified','backupRestoreQualified','releaseGate'):self.assertFalse(value[key])
 
+    def test_imported_peer_socket_code_drift_refuses(self):
+        receipts,release,state=model()
+        scope={}
+        exec(compile('def socket_peer(*args, **kwargs): return None',str(C.PEER_PATH),'exec'),scope)
+        with patch.object(C.PEER,'socket_peer',scope['socket_peer']),self.assertRaisesRegex(ValueError,'crash-peer-import-binding'):
+            A.qualify(receipts,release,state)
+
+    def test_same_count_descendant_substitution_refuses(self):
+        receipts,release,state=model()
+        receipts['crash-intent.json']['descendants'][0]['executable']='/other/browser'
+        self.assertEqual(len(receipts['crash-intent.json']['descendants']),len(receipts['crash-intent.json']['custody']['runtimeProcesses']))
+        with self.assertRaisesRegex(ValueError,'crash-descendants-missing'):A.qualify(receipts,release,state)
+
     def test_component_report_retains_unexplained_refusal_and_does_not_weaken_full_gate(self):
         receipts,release,state=model()
         receipts['fixture-ledger.json']['events'].insert(0,dict(kind='crash-http-refused',at=0.5))
@@ -132,6 +149,8 @@ class CrashAnalysisTests(unittest.TestCase):
         changes.extend([lambda r:r['crash-custody-read.json'].update(runtimeProcesses=[]),lambda r:read(r)['freshPresence'].update(indexedDB=False)])
         changes.extend([lambda r:r['crash-custody-read.json'].update(peerCollectorSHA256='c'*64),lambda r:r['crash-intent.json']['custody']['runtimeProcesses'].append(
             dict(identity=dict(pid=99,parentPID=12,uid=501,startSeconds=103,startMicroseconds=1,cdhash='b'*40),executable='/own/helper'))])
+        changes.extend([lambda r:r['crash-custody-mutate.json'].update(peerSocketCodeSHA256='c'*64),
+                        lambda r:r['crash-intent.json']['descendants'][0].update(executable='/other/browser')])
         changes.append(lambda r:r['fixture-ledger.json']['events'].insert(0,dict(kind='crash-http-refused',at=0.5)))
         changes.extend(lambda r,key=key:r['crash-ui.json'].update({key:False}) for key in A.UI_FLAGS)
         for i,change in enumerate(changes):

@@ -278,6 +278,9 @@ def source_evidence_paths(
         prefix = reviewed_lock_prefix(candidate_lock) if candidate_lock is not None else 'chromium-15612'
         return (project_root / 'runtime' / ('fingerprint-' + prefix + '.lock.json'),
                 evidence / (prefix + '-source-contract.json'))
+    if runtime_version == "156.0.8078.48":
+        return (evidence / "fingerprint-chromium.lock.json",
+                evidence / "chromium-15648-source-contract.json")
     if runtime_version.startswith("154."):
         raise PackagedRuntimeReportError(
             f"Chromium {runtime_version} release qualification is unavailable; "
@@ -324,7 +327,7 @@ def verify(
         runtime_version,
         evidence,
         project_root,
-        load_json(evidence / "fingerprint-chromium.lock.json") if runtime_version in {"155.0.8059.40", "156.0.8078.12"} else None,
+        load_json(evidence / "fingerprint-chromium.lock.json") if runtime_version in {"155.0.8059.40", "156.0.8078.12", "156.0.8078.48"} else None,
     )
     evidence_files = {
         "sourceLockSHA256": source_lock,
@@ -417,6 +420,28 @@ def verify(
                 raise PackagedRuntimeReportError(
                     f"Packaged M155.40 source evidence differs: {name}"
                 )
+
+    if runtime_version == "156.0.8078.48":
+        from chromium_15648_release_evidence import verify_lock
+        packaged_lock = load_json(evidence / "fingerprint-chromium.lock.json")
+        verify_lock(packaged_lock, evidence / "source-provenance.json", project_root)
+        contract = project_root / "runtime/chromium-15648-source-contract.json"
+        packaged_contract = evidence / "chromium-15648-source-contract.json"
+        if packaged_contract.is_symlink() or not packaged_contract.is_file() or packaged_contract.read_bytes() != contract.read_bytes():
+            raise PackagedRuntimeReportError("Packaged Chromium 156.48 source contract differs from reviewed evidence")
+        expected_sources = {
+            "chromium-15648-source-adoption-v3.json": "chromium-15648-source-adoption-v3.json",
+            "chromium-15648-deps-lock.json": "chromium-15648-deps-lock.json",
+            "chromium-15648-neantik-v3.patch": "chromium-15648-neantik-v3.patch",
+            "chromium-15648-devtools-typescript6.patch": "chromium-15648-devtools-typescript6.patch",
+            "chromium-15648-v8-scope-iterator-compat.patch": "chromium-15648-v8-scope-iterator-compat.patch",
+            "chromium-15648-rebase-plan.json": "chromium-15648-rebase-plan.json",
+        }
+        for packaged, reviewed in expected_sources.items():
+            target = evidence / "chromium-15648-source-evidence" / packaged
+            source = project_root / "runtime" / reviewed
+            if target.is_symlink() or not target.is_file() or target.read_bytes() != source.read_bytes():
+                raise PackagedRuntimeReportError("Packaged Chromium 156.48 source evidence differs: " + packaged)
 
     if runtime_version == "156.0.8078.12":
         from chromium_15612_variant import reviewed_lock_prefix, SUCCESSOR_PREFIXES

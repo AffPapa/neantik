@@ -198,10 +198,15 @@ final class MCPManagementSession {
         do {
             try Task.checkCancellation()
             try ApplicationInstallLifecycle.requireNewWork()
+            if name == "profile_check_proxy" { ProxyAuditPhase.mark(.engineInitBegin) }
             if engine == nil { engine = MCPProfileManagement(root: root, allowsManagement: allowsManagement) }
+            if name == "profile_check_proxy" { ProxyAuditPhase.mark(.engineInitDone) }
             let result = try await engine!.call(name, params["arguments"] as? [String: Any] ?? [:])
+            if name == "profile_check_proxy" { ProxyAuditPhase.mark(.responseBegin) }
             guard try MCPStdioServer.toolResult(result).count <= MCPStdioServer.maximumToolPayloadBytes else { throw MCPProfileManagement.Failure.responseLimit }
-            return MCPStdioServer.response(id: id, result: try MCPStdioServer.toolResultObject(result))
+            let response = MCPStdioServer.response(id: id, result: try MCPStdioServer.toolResultObject(result))
+            if name == "profile_check_proxy" { ProxyAuditPhase.mark(.responseDone) }
+            return response
         } catch {
             let message: String
             let code: String

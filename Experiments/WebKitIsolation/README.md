@@ -1,9 +1,10 @@
 # WebKit isolation: development component
 
 **Strict network confinement is not qualified. Shipping WebKit proxy remains
-disabled.** This separate Swift package does not change the shipping manager.
+disabled.** The source implementation is integrated into the NeAntik manager,
+but the optional owned-runtime package is not enabled by the release build.
 Build/preparation never installs an extension or saves a VPN configuration.
-Those operations exist only in a separately authorized disposable QA stage.
+Those operations exist only in separately authorized disposable QA stages.
 
 ## Current evidence
 
@@ -42,12 +43,28 @@ No personal addresses, URLs, credentials or raw ICE are published.
 
 ## Boundary under investigation
 
+The 22 October standalone-host QA failed closed before navigation because both
+the owned and system WebKit images were present. The bundled WebKitSwift image
+weak-linked Apple's WritingToolsUI, whose system dependency chain reaches
+WebKit. The new upstream patch
+[`disable-writing-tools-ui-when-feature-off.patch`](owned-patches/disable-writing-tools-ui-when-feature-off.patch)
+omits that link when the build sets `ENABLE_WRITING_TOOLS=OFF`; the next runtime
+must still pass headed image attestation and network A/B, failure, and recovery
+tests. Packaging now rejects a WritingToolsUI-linked runtime before signing.
+The same feature-off build also requires
+[`guard-accessibility-writing-tools-action.patch`](owned-patches/guard-accessibility-writing-tools-action.patch)
+for an upstream accessibility call that otherwise fails to compile.
+
 A dedicated signed process owns one WebKit profile. An ordinary
 `NEAppProxyProvider` system extension receives per-app flows; a full kernel
 audit token plus exact Developer ID/CDHash selects an enrolled session.
 The manager, an Apple process, a team ID and a UID are insufficient authority.
-`NETransparentProxyProvider` is not substituted: rejecting a flow there can
-permit an unproxied path. An app rule is not proof of captured WebKit traffic.
+The existing `NEAppProxyProvider` adapter cannot be reused unchanged with
+`NETransparentProxyProvider`: returning `false` from the latter passes traffic
+directly. A transparent-provider variant would need to claim a protected flow
+and close it on missing/revoked authority; it also has broader system-wide
+network-settings and attribution questions. An app rule is not proof of
+captured WebKit traffic.
 
 ```
 dedicated profile host -> OS per-app rule -> app proxy provider
@@ -56,13 +73,54 @@ dedicated profile host -> OS per-app rule -> app proxy provider
                                       fixed proxy tunnel
 ```
 
-The diagram is the intended boundary. The concrete tunnel and production
-host/IPC integration are not implemented; the native QA provider forwards
-nothing. `WKWebsiteDataStore.proxyConfigurations` is not the firewall.
-Previous HTTP/default/exact/SOCKS bypass observations remain failures; no
-frontend permutations are repeated to manufacture a PASS.
+This diagram describes the separate Network Extension experiment, not the
+active product design. That QA provider forwards nothing; its ownership and
+capture failures are not a release route. The current source design instead
+uses the owned WebKit NetworkProcess sandbox to deny direct egress and allow a
+fixed IPv4-loopback broker. The broker authenticates a one-use session
+capability, waits for an attested NetworkProcess lease, then tunnels HTTP
+CONNECT or SOCKS5 to the configured upstream. The manager, child host, IPC,
+relay authority, codecs and transport are implemented in `Sources/NeAntik`.
+`WKWebsiteDataStore.proxyConfigurations` alone is not the firewall.
+
+The v16 runtime and XPC entitlement package gate passed, and a disposable
+nested host passed strict signature verification; see the current checkpoint
+and `docs/evidence/webkit-owned-v16-qa-host-packaged-20261020.json`. However,
+`WebKitProxyFeature.launchEnabled` is still `false`, and
+`scripts/package-app.sh` still refuses the owned-host release mode. The exact
+runtime has not completed licensing, notarization/Gatekeeper or headed launch;
+no A/B/no-Direct/DNS/TLS route evidence exists for that runtime. Previous
+system-WebKit direct-fallback observations remain failures. Do not repeat
+frontend permutations or claim a qualified proxy.
+
+The exact v16 static load-command inventory reports macOS 15.4 as the minimum
+for all 15 bundled Mach-O images and 14 references to 11 private system
+framework install names. This is not a launch test. An owned-runtime release
+must have its own macOS 15.4 capability gate and must verify those dependencies
+on the supported system; Chromium and the system-WebKit preview keep the
+application's existing macOS 14 floor. See
+`docs/evidence/webkit-owned-v16-load-commands-20261020.json`.
 
 ## Implemented source
+
+- An MPL-2.0 NeAntik-owned replacement for WebKit's unannotated libvpx
+  `usage_exit` shim is under `owned-source/` with a pinned-source patch under
+  `owned-patches/`. The exact configured object and `libwebrtc.dylib` were
+  rebuilt; both output hashes remained unchanged. The already staged bytes are
+  therefore unchanged too. This receipt closes source attribution for that
+  object only; it does not close whole-runtime licensing or qualification.
+  Runtime v16 signing/package status is recorded separately above. Receipt:
+  `docs/evidence/webkit-owned-usage-exit-stub-20261020.json`.
+
+- Pinned Cocoa TLS trust challenge patch under `owned-patches/` disables
+  Security's network fetch for missing intermediate certificates and cancels
+  TLS if that restriction cannot be applied. The exact unified NetworkProcess
+  object compiled 1/1 and WebKit.framework was relinked with jobs=2. Separate
+  pre-sign v15 contains only that changed Mach-O relative to preserved v14.
+  Apple documents this API only for missing intermediates, so OCSP/revocation
+  and other trustd egress are still open. Receipts:
+  `docs/evidence/webkit-trustd-no-aia-source-compile-20261020.json` and
+  `docs/evidence/webkit-runtime-staging-v15-20261020.json`.
 
 - Bounded ownership registry: profile generation/session, monotonic leases,
   replay refusal, flow capacity and active cancellation on expiry/revoke.
@@ -291,27 +349,43 @@ retains the prior signature/hash and disabled-state checks. This is preparation,
 not native evidence. QA6 approval is consumed;QA7 Apple submission and one
 bounded native stage require their own concrete authorization.
 
-## Remaining gates
+## Remaining gates for the owned WebKit runtime
 
-1. QA7 distinguishes the clauses:guest integrity/Apple anchor succeed,but
-   expected Developer ID/team/identifier/CDHash fail. Establish a supported
-   original-app attribution path from source before another candidate.
-   Do not substitute creating-process tokens, shared WebKit helpers or a team
-   match for original-app ownership. Apple distinguishes the
-   [source application](https://developer.apple.com/documentation/networkextension/nefilterflow/sourceappaudittoken)
-   from the [creating process](https://developer.apple.com/documentation/networkextension/nefilterflow/sourceprocessaudittoken).
-   QA6 and QA7 archives remain unchanged. No production runtime fix is claimed.
-2. Resolve the observed attribution defect before another confinement matrix.
-   Reuse baseline/sign/notary evidence only for matching inputs and epoch;
-   the unchanged QA5 active matrix must not be replayed. Unknown attribution
-   or any Direct invalidates acceptance.
-3. Demonstrate full-token WebKit attribution, independent B, zero Direct,
-   DNS/UDP/IPv6, provider death/revoke/disconnect/reconnect and ordinary traffic.
-4. Integrate production dedicated hosts and authenticated kernel-peer IPC;
-   fixed-upstream relay transport with remote DNS/TLS, no stored credentials.
-5. Qualify persistence/migrations and the exact signed release candidate.
+The QA5–QA7 Network Extension work below is an archived alternative experiment,
+not a dependency of the current product path. Its provider attribution failure
+does not justify another filter permutation and does not invalidate the
+separate owned-NetworkProcess design described above.
+
+1. Close the exact runtime source, notice, corresponding-source and recipient
+   relink package for the pinned build. Keep archive members marked as
+   candidates unless a saved link map proves which ones were selected; obtain
+   qualified review for ambiguous file-level licensing before distribution.
+2. Sign and notarize the exact owned runtime package and pass Gatekeeper. Then
+   launch that exact bundle on the supported macOS 15.4+ baseline in a headed,
+   disposable profile. Confirm the pinned NetworkProcess identity and active
+   sandbox before enabling a route.
+3. With controlled local endpoints, prove profile A uses its configured proxy
+   while independent profile B remains Direct. Exercise DNS, TLS, IPv4/IPv6,
+   UDP policy, upstream failure, revoke, reconnect and ordinary traffic. Any
+   unowned request or Direct reach fails the gate; preflight alone is not proof.
+4. Verify close/reopen persistence and migrations on temporary profiles, then
+   qualify the exact signed app/runtime candidate and only then enable the
+   feature and publish matching release notes and downloads.
+
+Keep `WebKitProxyFeature.launchEnabled` false until every gate above passes.
+The system-WebKit preview remains a separate feature with its own root-bound
+smoke; neither it nor the Network Extension experiment qualifies the owned
+runtime.
 
 ## QA7 diagnostic result — 18 October
+
+The signed QA7 preparation enabled both the `NEAppProxyProvider` and the
+supplemental `NEFilterDataProvider`. The observed expected-clause failures and
+Direct reaches are attributable to the filter path, whose diagnostic unknown
+owner branch allows the scoped flow. The retained result does not establish
+that App Proxy captured those same requests; its handler returns `false` for a
+captured flow. Keep these observations separate. See the
+[provider classification correction](../../docs/evidence/webkit-qa7-provider-classification-correction-20261020.json).
 
 The separately approved exact QA7 was accepted by Apple, stapled and passed
 Gatekeeper. Its inactive6→7 replacement preserved the canonical container

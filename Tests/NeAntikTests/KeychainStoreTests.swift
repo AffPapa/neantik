@@ -125,6 +125,37 @@ struct KeychainStoreTests {
     }
 
     @Test
+    func proxyPreflightReadsCurrentThenLegacyWithoutMutatingEither() throws {
+        let backend = MemoryKeychainBackend()
+        let profileID = UUID()
+        let store = KeychainStore(backend: backend)
+        backend.set("synthetic-legacy", service: KeychainStore.legacyService, profileID: profileID)
+        #expect(try store.proxyPasswordWithoutMigration(profileID: profileID) == "synthetic-legacy")
+        #expect(backend.upsertCallCount == 0)
+        #expect(backend.deleteCallCount == 0)
+        #expect(backend.string(service: KeychainStore.currentService, profileID: profileID) == nil)
+        backend.set("synthetic-current", service: KeychainStore.currentService, profileID: profileID)
+        #expect(try store.proxyPasswordWithoutMigration(profileID: profileID) == "synthetic-current")
+        #expect(backend.string(service: KeychainStore.legacyService, profileID: profileID) == "synthetic-legacy")
+        #expect(backend.upsertCallCount == 0)
+        #expect(backend.deleteCallCount == 0)
+    }
+
+    @Test
+    func proxyPreflightDoesNotFallBackFromCorruptCurrentCredential() throws {
+        let backend = MemoryKeychainBackend()
+        let profileID = UUID()
+        backend.set(Data([0xFF]), service: KeychainStore.currentService, profileID: profileID)
+        backend.set("synthetic-legacy", service: KeychainStore.legacyService, profileID: profileID)
+        let store = KeychainStore(backend: backend)
+        #expect(throws: (any Error).self) {
+            try store.proxyPasswordWithoutMigration(profileID: profileID)
+        }
+        #expect(backend.upsertCallCount == 0)
+        #expect(backend.deleteCallCount == 0)
+    }
+
+    @Test
     func corruptCurrentPreservesValidLegacyCredential() throws {
         let backend = MemoryKeychainBackend()
         let profileID = UUID()

@@ -1,6 +1,9 @@
 import unittest
 import plistlib
+import os
 from pathlib import Path
+import subprocess
+import tempfile
 
 
 SCRIPTS = Path(__file__).resolve().parents[1]
@@ -14,9 +17,61 @@ ENROLL = SCRIPTS / "enroll-direct-fingerprint-authority.sh"
 INTEGRATED_VERIFIER = SCRIPTS / "verify-integrated-release.sh"
 DIRECT_ENTITLEMENTS = SCRIPTS.parent / "runtime/neantik-direct-entitlements.plist"
 RELEASE_COMMAND = SCRIPTS / "Run-NeAntik-Release.command"
+RELEASE_ENTRYPOINT = SCRIPTS.parent / "Release-NeAntik.command"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
+    def test_1_0_wrapper_requires_production_channel(self) -> None:
+        text = RELEASE_ENTRYPOINT.read_text(encoding="utf-8")
+        self.assertIn('if [[ "$VERSION" == "1.0.0" ]]; then', text)
+        self.assertIn('"$NEANTIK_RELEASE_CHANNEL" != "production"', text)
+        self.assertIn("export NEANTIK_RELEASE_CHANNEL=production", text)
+
+    def test_production_channel_selects_production_webkit_build_mode(self) -> None:
+        for script in (PACKAGE_APP, PREPARE_MANAGER):
+            with self.subTest(script=script.name):
+                self.assertIn('source "$PROJECT_DIR/scripts/resolve-webkit-proxy-build-mode.sh"',
+                              script.read_text(encoding="utf-8"))
+
+        helper = SCRIPTS / "resolve-webkit-proxy-build-mode.sh"
+        cases = (
+            ({"NEANTIK_RELEASE_CHANNEL": "production"}, 0, "production"),
+            ({"NEANTIK_RELEASE_CHANNEL": "production",
+              "NEANTIK_WEBKIT_PROXY_BUILD_MODE": "qualification"}, 64, None),
+            ({"NEANTIK_RELEASE_CHANNEL": "public-alpha",
+              "NEANTIK_WEBKIT_PROXY_BUILD_MODE": "production"}, 64, None),
+            ({"NEANTIK_RELEASE_CHANNEL": "public-alpha"}, 0, "unset"),
+        )
+        for environment, expected_code, expected_mode in cases:
+            with self.subTest(environment=environment):
+                child_env = os.environ.copy()
+                child_env.pop("NEANTIK_RELEASE_CHANNEL", None)
+                child_env.pop("NEANTIK_WEBKIT_PROXY_BUILD_MODE", None)
+                child_env.update(environment)
+                result = subprocess.run(
+                    ["/bin/zsh", "-c",
+                     'source "$1" || exit $?; print -r -- "${NEANTIK_WEBKIT_PROXY_BUILD_MODE:-unset}"',
+                     "zsh", str(helper)],
+                    env=child_env, text=True, capture_output=True, timeout=10)
+                self.assertEqual(result.returncode, expected_code, result.stderr)
+                if expected_mode is not None:
+                    self.assertEqual(result.stdout.strip(), expected_mode)
+
+    def test_owned_webkit_release_switch_remains_fail_closed_with_actionable_reason(self) -> None:
+        text = PACKAGE_APP.read_text(encoding="utf-8")
+        self.assertIn('1) echo "Owned WebKit is not release-enabled:', text)
+        self.assertIn("license closure", text)
+        self.assertIn("per-profile no-Direct network proof", text)
+        self.assertIn("exit 78", text)
+        self.assertNotIn("separately linked runtime host", text)
+
+    def test_finder_release_wrapper_uses_the_current_neantik_identity(self) -> None:
+        text = RELEASE_COMMAND.read_text(encoding="utf-8")
+        self.assertIn(
+            'NEANTIK_SIGNING_IDENTITY:-474F7C78F33EE324C24F6F5AE0443EB713E85E60',
+            text,
+        )
+
     def test_device_memory_control_blocks_release_before_gui_audit(self) -> None:
         text = RELEASE_COMMAND.read_text(encoding="utf-8")
         control = 'node "$PROJECT_DIR/scripts/verify-device-memory-coherence.mjs" "$APP_PATH"'
@@ -90,6 +145,43 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             text.index("enroll-direct-fingerprint-authority.sh"),
             text.index("direct-candidate-manifest.py"),
         )
+
+    def test_public_candidate_prep_cannot_bypass_owned_webkit_gate(self) -> None:
+        text = PREPARE.read_text(encoding="utf-8")
+        input_preflight = text.index('Owned WebKit is not release-enabled; direct candidate preparation refuses runtime injection.')
+        runtime_provenance = text.index('scripts/runtime_build_path.py')
+        self.assertLess(input_preflight, runtime_provenance)
+        self.assertNotIn('package-webkit-host.py', text)
+        self.assertIn('NEANTIK_OWNED_WEBKIT_HOST_BINARY', text)
+        self.assertIn('NEANTIK_OWNED_WEBKIT_FRAMEWORKS', text)
+        verifier = INTEGRATED_VERIFIER.read_text(encoding="utf-8")
+        self.assertIn('verify-webkit-host-pin.py" "$APP_PATH"', verifier)
+        self.assertLess(verifier.index('verify-webkit-host-pin.py'), verifier.index('verify-release.sh'))
+        self.assertIn('webkit_runtime_notices.py', verifier)
+
+    def test_public_candidate_prep_refuses_runtime_injection_before_build(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="neantik-webkit-gate-") as temporary:
+            root = Path(temporary)
+            runtime = root / "NeAntik Browser.app"
+            source = root / "chromium-source"
+            runtime.mkdir()
+            source.mkdir()
+            args = root / "args.gn"
+            lock = root / "runtime-lock.json"
+            args.write_text("", encoding="utf-8")
+            lock.write_text("{}\n", encoding="utf-8")
+            environment = os.environ.copy()
+            environment["NEANTIK_OWNED_WEBKIT_HOST_BINARY"] = str(root / "host")
+            environment.pop("NEANTIK_OWNED_WEBKIT_FRAMEWORKS", None)
+
+            result = subprocess.run(
+                ["/bin/zsh", str(PREPARE), str(runtime), str(args), str(source), str(lock)],
+                env=environment, capture_output=True, text=True, timeout=10,
+            )
+
+            self.assertEqual(result.returncode, 78, result.stdout + result.stderr)
+            self.assertIn("refuses runtime injection", result.stderr)
+            self.assertNotIn("runtime_build_path.py", result.stderr)
 
     def test_manager_candidate_enrolls_only_after_final_signature(self) -> None:
         text = PREPARE_MANAGER.read_text(encoding="utf-8")

@@ -139,8 +139,37 @@ struct ProxyTester: Sendable {
     func probe(
         configuration: ProxyConfiguration,
         password: String,
-        observedAt: @Sendable () -> Date = { Date() },
-        runProcess: ProcessRunner = ProxyTester.runCancellableProcess
+        observedAt: @escaping @Sendable () -> Date = { Date() },
+        runProcess: @escaping ProcessRunner = ProxyTester.runCancellableProcess,
+        maximumDuration: Duration = .seconds(45)
+    ) async throws -> ProxyTestObservation {
+        // The cross-check and fallback can launch three serial curl children.
+        // Bound the whole observation, not only each child, so one proxy cannot
+        // stall the serialized MCP worker or be mistaken for an expired account.
+        return try await withThrowingTaskGroup(of: ProxyTestObservation.self) { group in
+            group.addTask {
+                try await performProbe(
+                    configuration: configuration, password: password,
+                    observedAt: observedAt, runProcess: runProcess
+                )
+            }
+            group.addTask {
+                try await Task.sleep(for: maximumDuration)
+                throw ProxyProbeError(outcome: .timedOut)
+            }
+            defer { group.cancelAll() }
+            guard let first = try await group.next() else {
+                throw ProxyProbeError(outcome: .internalFailure)
+            }
+            return first
+        }
+    }
+
+    private func performProbe(
+        configuration: ProxyConfiguration,
+        password: String,
+        observedAt: @Sendable () -> Date,
+        runProcess: ProcessRunner
     ) async throws -> ProxyTestObservation {
         try Task.checkCancellation()
         guard configuration.isValid else {
@@ -501,6 +530,19 @@ struct ProxyTester: Sendable {
         // stdin. Keep that failure local to this writer, not the manager.
         _ = fcntl(input.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)
 
+        // curl has its own 12-second limit, but a wedged child or inherited
+        // pipe descriptor must not keep the manager suspended indefinitely.
+        // Dispatch deadlines use the monotonic system clock.
+        let stop: @Sendable () -> Void = {
+            guard runner.requestStop() else { return }
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + .milliseconds(500)) {
+                runner.forceKillIfRunning()
+            }
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + .milliseconds(1_500)) {
+                completion.expire(output: boundedOutput.snapshot())
+            }
+        }
+
         return try await withTaskCancellationHandler {
             try Task.checkCancellation()
             return try await withCheckedThrowingContinuation {
@@ -513,33 +555,64 @@ struct ProxyTester: Sendable {
                 }
                 do {
                     try runner.start()
+                    DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + .seconds(18)) {
+                        if !completion.isFinished { stop() }
+                    }
                     // Start the reader before filling its finite pipe. Large
                     // valid credentials must never block the calling actor.
                     DispatchQueue.global(qos: .utility).async {
                         defer { try? input.fileHandleForWriting.close() }
-                        do { try input.fileHandleForWriting.write(contentsOf: standardInput) }
-                        catch {
-                            // A child may exit without consuming all config.
-                            // Its bounded output/status remains the authority.
-                            runner.cancel()
+                        let fd = input.fileHandleForWriting.fileDescriptor
+                        guard Self.makeNonblocking(fd) else { stop(); return }
+                        standardInput.withUnsafeBytes { rawBytes in
+                            guard let base = rawBytes.baseAddress else { return }
+                            var offset = 0
+                            while offset < rawBytes.count && !runner.shouldStopIO && !completion.isFinished {
+                                let count = Darwin.write(fd, base.advanced(by: offset), rawBytes.count - offset)
+                                if count > 0 { offset += count; continue }
+                                if count == -1 && errno == EINTR { continue }
+                                if count == -1 && errno == EAGAIN {
+                                    Self.waitForPipe(fd, events: Int16(POLLOUT))
+                                    continue
+                                }
+                                // A child may exit without consuming all config.
+                                // Its bounded output/status remains the authority.
+                                break
+                            }
                         }
                     }
                     DispatchQueue.global(qos: .utility).async {
-                        do {
-                            while let chunk = try output
-                                .fileHandleForReading
-                                .read(upToCount: 4_096),
-                                  !chunk.isEmpty {
-                                if boundedOutput.append(chunk) {
-                                    runner.stopForOutputLimit()
-                                }
-                            }
-                            completion.readerFinished(
-                                boundedOutput.snapshot()
-                            )
-                        } catch {
-                            completion.fail(error)
+                        defer { try? output.fileHandleForReading.close() }
+                        let fd = output.fileHandleForReading.fileDescriptor
+                        guard Self.makeNonblocking(fd) else {
+                            stop()
+                            completion.fail(ProxyProbeError(outcome: .internalFailure))
+                            return
                         }
+                        var buffer = [UInt8](repeating: 0, count: 4_096)
+                        while !completion.isFinished {
+                            let count = buffer.withUnsafeMutableBytes { bytes in
+                                Darwin.read(fd, bytes.baseAddress, bytes.count)
+                            }
+                            if count > 0 {
+                                if boundedOutput.append(Data(buffer.prefix(count))) { stop() }
+                                continue
+                            }
+                            if count == 0 { break }
+                            if errno == EINTR { continue }
+                            if errno == EAGAIN {
+                                Self.waitForPipe(fd, events: Int16(POLLIN))
+                                // A descendant can retain stdout after the
+                                // owned child exits. Drain available bytes,
+                                // then finish without waiting for its EOF.
+                                if completion.hasTerminated && !Self.pipeHasData(fd) { break }
+                                continue
+                            }
+                            stop()
+                            completion.fail(ProxyProbeError(outcome: .internalFailure))
+                            return
+                        }
+                        completion.readerFinished(boundedOutput.snapshot())
                     }
                 } catch {
                     try? input.fileHandleForWriting.close()
@@ -548,8 +621,24 @@ struct ProxyTester: Sendable {
             }
         } onCancel: {
             completion.markCancelled()
-            runner.cancel()
+            stop()
         }
+    }
+
+    private static func makeNonblocking(_ fd: Int32) -> Bool {
+        let flags = fcntl(fd, F_GETFL)
+        return flags >= 0 && fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0
+    }
+
+    private static func waitForPipe(_ fd: Int32, events: Int16) {
+        var descriptor = pollfd(fd: fd, events: events, revents: 0)
+        _ = Darwin.poll(&descriptor, 1, 100)
+    }
+
+    private static func pipeHasData(_ fd: Int32) -> Bool {
+        var descriptor = pollfd(fd: fd, events: Int16(POLLIN), revents: 0)
+        return Darwin.poll(&descriptor, 1, 0) > 0 &&
+            (descriptor.revents & Int16(POLLIN)) != 0
     }
 
     static func parseResponse(_ data: Data) throws -> ProxyTestResult {
@@ -718,6 +807,18 @@ private final class ProcessOutputCompletion: @unchecked Sendable {
     private var readerSnapshot: (data: Data, exceeded: Bool)?
     private var cancelled = false
 
+    var isFinished: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return continuation == nil
+    }
+
+    var hasTerminated: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return terminationStatus != nil
+    }
+
     func install(
         _ continuation: CheckedContinuation<ProxyProcessResult, Error>
     ) {
@@ -760,6 +861,21 @@ private final class ProcessOutputCompletion: @unchecked Sendable {
         continuation?.resume(throwing: error)
     }
 
+    func expire(output: (data: Data, exceeded: Bool)) {
+        lock.lock()
+        let continuation = continuation
+        self.continuation = nil
+        let cancelled = self.cancelled
+        lock.unlock()
+        if cancelled {
+            continuation?.resume(throwing: CancellationError())
+        } else {
+            continuation?.resume(returning: ProxyProcessResult(
+                status: 28, output: output.data, outputExceeded: output.exceeded
+            ))
+        }
+    }
+
     private func takeCompletionIfReady() -> (() -> Void)? {
         guard let continuation,
               let terminationStatus,
@@ -789,6 +905,12 @@ private final class CancellableProcessRunner: @unchecked Sendable {
 
     private let lock = NSLock()
     private var cancelled = false
+
+    var shouldStopIO: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return cancelled
+    }
 
     init(executableURL: URL, arguments: [String]) {
         process.executableURL = executableURL
@@ -822,19 +944,22 @@ private final class CancellableProcessRunner: @unchecked Sendable {
         }
     }
 
-    func cancel() {
+    @discardableResult
+    func requestStop() -> Bool {
         lock.lock()
+        let firstRequest = !cancelled
         cancelled = true
         let shouldTerminate = process.isRunning
         lock.unlock()
-        if shouldTerminate {
+        if firstRequest && shouldTerminate {
             process.terminate()
         }
+        return firstRequest
     }
 
-    func stopForOutputLimit() {
+    func forceKillIfRunning() {
         if process.isRunning {
-            process.terminate()
+            _ = Darwin.kill(process.processIdentifier, SIGKILL)
         }
     }
 }

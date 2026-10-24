@@ -178,6 +178,8 @@ struct ContentView: View {
         FingerprintObservationStore
     @ObservedObject var proxyHealthCoordinator:
         ProxyHealthCoordinator
+    @ObservedObject private var managerLaunchAdmission =
+        ManagerLaunchAdmission.shared
 
     let keychain: KeychainStore
     let backupComposition: BackupApplicationComposition
@@ -2499,7 +2501,9 @@ struct ContentView: View {
                                 profileID: profile.id
                             ),
                             isLaunchPreparation:
-                                launchPreparingProfileIDs.contains(profile.id)
+                                launchPreparingProfileIDs.contains(profile.id),
+                            isManagerPreparing:
+                                managerLaunchAdmission.isPreparing
                         )
                         ProfileRow(
                             profile: profile,
@@ -3061,7 +3065,8 @@ struct ContentView: View {
             runtimeAvailability: profile.engine == .webkit ? .ready : runtimeAvailability,
             isProxyTesting: isProxyTestInFlight(profileID: profile.id),
             isLaunchPreparation:
-                launchPreparingProfileIDs.contains(profile.id)
+                launchPreparingProfileIDs.contains(profile.id),
+            isManagerPreparing: managerLaunchAdmission.isPreparing
         )
         let currentFolderID = store.folderID(forProfileID: profile.id)
         let folderProjection = ProfileFolderCommandProjection.resolve(
@@ -3339,6 +3344,9 @@ struct ContentView: View {
 
     private func launch(_ profile: BrowserProfile, target: BrowserUserLaunchTarget = .profileStart) {
         guard !updateController.holdsFence else { return }
+        // A second click can arrive before SwiftUI redraws the disabled
+        // launch control. Keep the in-flight launch and avoid a false alert.
+        guard managerLaunchAdmission.preparingProfileID != profile.id else { return }
         guard !isImportingProfileConfigurations,
               !isRestoringLocalSnapshot
         else {

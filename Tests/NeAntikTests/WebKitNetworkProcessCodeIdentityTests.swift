@@ -83,6 +83,30 @@ import Testing
         #expect(try WebKitNetworkProcessCodeIdentity.executableURL(
             in: manager, expectedExecutable: "app.neantik.desktop.webkit.Networking.Development") == executable)
 
+        let devInfo: [String: Any] = ["CFBundleIdentifier":
+            NeAntikApplicationEnvironment.developmentBundleIdentifier]
+        try PropertyListSerialization.data(fromPropertyList: devInfo, format: .xml, options: 0)
+            .write(to: manager.appendingPathComponent("Contents/Info.plist"))
+        #expect(try WebKitNetworkProcessCodeIdentity.executableURL(
+            in: manager, expectedExecutable: "app.neantik.desktop.webkit.Networking.Development") == executable)
+
+        let unknownInfo: [String: Any] = ["CFBundleIdentifier":
+            NeAntikApplicationEnvironment.developmentBundleIdentifier + ".other"]
+        try PropertyListSerialization.data(fromPropertyList: unknownInfo, format: .xml, options: 0)
+            .write(to: manager.appendingPathComponent("Contents/Info.plist"))
+        #expect(throws: WebKitNetworkProcessCodeIdentity.Failure.self) {
+            try WebKitNetworkProcessCodeIdentity.executableURL(
+                in: manager, expectedExecutable: "app.neantik.desktop.webkit.Networking.Development")
+        }
+        try PropertyListSerialization.data(fromPropertyList: [:], format: .xml, options: 0)
+            .write(to: manager.appendingPathComponent("Contents/Info.plist"))
+        #expect(throws: WebKitNetworkProcessCodeIdentity.Failure.self) {
+            try WebKitNetworkProcessCodeIdentity.executableURL(
+                in: manager, expectedExecutable: "app.neantik.desktop.webkit.Networking.Development")
+        }
+        try PropertyListSerialization.data(fromPropertyList: devInfo, format: .xml, options: 0)
+            .write(to: manager.appendingPathComponent("Contents/Info.plist"))
+
         try FileManager.default.removeItem(at: executable)
         try FileManager.default.createSymbolicLink(at: executable,
                                                    withDestinationURL: root.appendingPathComponent("outside"))

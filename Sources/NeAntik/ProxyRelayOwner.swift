@@ -6,7 +6,6 @@ import Foundation
 /// the listener and every established stream. It never owns BrowserData or
 /// Keychain and never exposes a public control/debugging endpoint.
 enum ProxyRelayOwner {
-    private static let team = "H6VGU2M6JD"
     private final class ObservationActivation: @unchecked Sendable {
         private let lock = NSLock(); private var active = false
         func set(_ value: Bool) { lock.lock(); active = value; lock.unlock() }
@@ -36,6 +35,10 @@ enum ProxyRelayOwner {
         guard parentPID > 1, let parentIdentity = ProxyRelaySocketOwnerInspector.processIdentity(parentPID),
               let ownID = Bundle.main.bundleIdentifier, let ownExecutable = Bundle.main.executableURL
         else { throw ProxyRelayOwnerProtocol.Failure.invalidBootstrap }
+        // Anchor this relay generation to the signed manager that launched it.
+        // Public releases still get their fixed team from release qualification;
+        // local LGPL relinks can use the recipient's consistently re-signed app.
+        let team = try ProxyRelayExpectedCode.teamIdentifier(at: ownExecutable, expectedIdentifier: ownID)
         let managerCode = try ProxyRelayExpectedCode.qualifiedPin(at: ownExecutable, expectedIdentifier: ownID, expectedTeamIdentifier: team)
         guard ProxyRelayLiveCodeVerifier.matches(processID: parentPID, expectedProcess: parentIdentity, expectedCode: managerCode)
         else { throw ProxyRelayOwnerProtocol.Failure.invalidBootstrap }

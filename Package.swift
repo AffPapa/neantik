@@ -1,6 +1,20 @@
 // swift-tools-version: 6.2
 
 import PackageDescription
+import Foundation
+
+let webKitProxyBuildMode = ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_PROXY_BUILD_MODE"] ?? "disabled"
+let webKitProxyBuildSettings: [SwiftSetting]
+switch webKitProxyBuildMode {
+case "disabled":
+    webKitProxyBuildSettings = []
+case "qualification":
+    webKitProxyBuildSettings = [.define("NEANTIK_WEBKIT_PROXY_QUALIFICATION")]
+case "production":
+    webKitProxyBuildSettings = [.define("NEANTIK_WEBKIT_PROXY_PRODUCTION")]
+default:
+    fatalError("NEANTIK_WEBKIT_PROXY_BUILD_MODE must be disabled, qualification, or production")
+}
 
 let package = Package(
     name: "NeAntik",
@@ -9,6 +23,7 @@ let package = Package(
     ],
     products: [
         .executable(name: "NeAntik", targets: ["NeAntik"]),
+        .executable(name: "NeAntikWebKitHost", targets: ["NeAntikWebKitHost"]),
         .executable(name: "NeAntikUpdateAssessment", targets: ["NeAntikUpdateAssessment"]),
         .executable(name: "NeAntikUpdateOwner", targets: ["NeAntikUpdateOwner"])
     ],
@@ -31,10 +46,24 @@ let package = Package(
         .executableTarget(
             name: "NeAntik",
             dependencies: ["DirectUpdateCore", "DirectZipCodec", "DirectProvisioning", "DirectInstallFilesystem", "DirectAssessmentParent"],
+            // Use WebKit's Objective-C proxy API. The system Swift overlay
+            // re-exports system WebKit and cannot enter an owned-runtime host.
+            // Any new overlay symbol must fail linking, not silently mix engines.
+            swiftSettings: webKitProxyBuildSettings + [.unsafeFlags(["-Xfrontend", "-disable-autolink-library",
+                                                                      "-Xfrontend", "swiftWebKit"])],
             linkerSettings: [
                 .linkedFramework("Security"),
                 .linkedFramework("Network")
             ]
+        ),
+        .executableTarget(
+            name: "NeAntikWebKitHost",
+            dependencies: ["DirectUpdateCore", "DirectZipCodec", "DirectProvisioning", "DirectInstallFilesystem", "DirectAssessmentParent"],
+            path: "DerivedSources/NeAntikWebKitHost",
+            swiftSettings: [.define("NEANTIK_WEBKIT_STANDALONE_HOST")] + webKitProxyBuildSettings + [
+                            .unsafeFlags(["-Xfrontend", "-disable-autolink-library",
+                                          "-Xfrontend", "swiftWebKit"])],
+            linkerSettings: [.linkedFramework("Security"), .linkedFramework("Network")]
         ),
         .testTarget(
             name: "NeAntikTests",

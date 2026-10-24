@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import Testing
 @testable import NeAntik
@@ -31,6 +32,21 @@ struct ManagerLaunchAdmissionTests {
         admission.finish(token: next, launched: true, now: now)
         #expect(throws: ManagerLaunchAdmissionError.self) { try admission.begin(profileID: UUID(), now: now) }
         _ = try admission.begin(profileID: UUID(), now: now.addingTimeInterval(2))
+    }
+    @Test func preparationChangesNotifyTheLaunchControls() throws {
+        let admission = ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal })
+        let id = UUID()
+        var notifications = 0
+        let subscription = admission.objectWillChange.sink { notifications += 1 }
+        defer { subscription.cancel() }
+        let token = try admission.begin(profileID: id)
+        #expect(admission.isPreparing)
+        #expect(admission.preparingProfileID == id)
+        #expect(notifications == 1)
+        admission.finish(token: token)
+        #expect(!admission.isPreparing)
+        #expect(admission.preparingProfileID == nil)
+        #expect(notifications == 2)
     }
     @Test func pressureAndThermalOnlyBlockNewStarts() throws {
         let admission = ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal })

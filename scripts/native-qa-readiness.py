@@ -3,6 +3,7 @@
 import argparse
 import ctypes
 import datetime
+import errno
 import json
 import subprocess
 import sys
@@ -61,6 +62,21 @@ def assess(pressure, thermal):
     }
 
 
+def classify_observer_failure(error):
+    """Return a safe diagnostic category without exposing command or OS text."""
+    if isinstance(error, OSError) and error.errno in (errno.EPERM, errno.EACCES):
+        return "permission_denied"
+    if isinstance(error, subprocess.CalledProcessError):
+        diagnostic = (error.stderr or "").lower()
+        if "operation not permitted" in diagnostic or "permission denied" in diagnostic:
+            return "permission_denied"
+    if isinstance(error, subprocess.TimeoutExpired):
+        return "timeout"
+    if isinstance(error, FileNotFoundError):
+        return "observer_unavailable"
+    return "observer_failed"
+
+
 def observe(platform=sys.platform, memory_reader=observe_memory_pressure,
             thermal_reader=observe_thermal_state):
     if platform != "darwin":
@@ -68,15 +84,20 @@ def observe(platform=sys.platform, memory_reader=observe_memory_pressure,
         report["reasons"] = ["macos_required"]
     else:
         # A failed observer is unknown, not normal. Raw system errors are private.
+        observer_failures = {}
         try:
             pressure = memory_reader()
-        except (OSError, ValueError, subprocess.SubprocessError):
+        except (OSError, ValueError, subprocess.SubprocessError) as error:
             pressure = None
+            observer_failures["memoryPressure"] = classify_observer_failure(error)
         try:
             thermal = thermal_reader()
-        except (OSError, ValueError, RuntimeError):
+        except (OSError, ValueError, RuntimeError) as error:
             thermal = None
+            observer_failures["thermalState"] = classify_observer_failure(error)
         report = assess(pressure, thermal)
+        if observer_failures:
+            report["observerFailures"] = observer_failures
     report["observedAt"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
     return report
 

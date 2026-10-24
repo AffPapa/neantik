@@ -52,6 +52,34 @@ struct BrowserLaunchActionPresentationTests {
     }
 
     @Test
+    func stoppedProfileCannotStartAgainWhileAnotherLaunchIsPreparing() {
+        let presentation = BrowserLaunchActionPresentation.resolve(
+            processState: .stopped,
+            isArchived: false,
+            runtimeAvailability: .ready,
+            isManagerPreparing: true
+        )
+
+        #expect(presentation.title == "Подготовка запуска…")
+        #expect(presentation.systemImage == "hourglass")
+        #expect(!presentation.isEnabled)
+        #expect(presentation.help.contains("повторно нажимать не нужно"))
+    }
+
+    @Test
+    func activeProfileKeepsItsStopActionWhileAnotherLaunchIsPreparing() {
+        let presentation = BrowserLaunchActionPresentation.resolve(
+            processState: .managed,
+            isArchived: false,
+            runtimeAvailability: .ready,
+            isManagerPreparing: true
+        )
+
+        #expect(presentation.title == "Остановить")
+        #expect(presentation.isEnabled)
+    }
+
+    @Test
     func runtimeResolutionExplainsWhyStoppedProfileCannotLaunchYet() {
         let presentation = BrowserLaunchActionPresentation.resolve(
             processState: .stopped,

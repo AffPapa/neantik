@@ -21,6 +21,7 @@ def verify_build_args(source_root, args_gn, lock, project_root):
         '154.0.8037.98': 'chromium-15498',
         '155.0.8059.40': 'chromium-15540',
         '156.0.8078.12': 'chromium-15612',
+        '156.0.8078.48': 'chromium-15648',
     }
     # Every newer port needs its own reviewed source/args binding. Never let
     # an unknown major silently use the historical out/Default convention.
@@ -29,6 +30,15 @@ def verify_build_args(source_root, args_gn, lock, project_root):
     if version in m154_evidence:
         runtime = project_root / 'runtime'
         evidence_prefix = m154_evidence[version]
+        if version == '156.0.8078.48':
+            from chromium_15648_release_evidence import verify_contract
+            contract = verify_contract(project_root)
+            expected_m15648 = source_root / 'out' / 'NeAntikStable156_48' / 'args.gn'
+            if args_gn != expected_m15648 or args_gn.is_symlink():
+                raise ValueError('Expected exact M156.48 build args path')
+            if hashlib.sha256(args_gn.read_bytes()).hexdigest() != contract.get('buildArgsSHA256'):
+                raise ValueError('M156.48 build args digest mismatch')
+            return expected_m15648.resolve()
         if version == '156.0.8078.12':
             from chromium_15612_variant import prefix_for, reviewed_lock_prefix, verify_candidate_lock, descriptor_for
             evidence_prefix = prefix_for(lock)

@@ -117,7 +117,20 @@ struct WebKitProxySessionTests {
         #expect(await session.activeConnectionCount() == 0)
         let client = try ProxyRelayUpstreamTransport(kind: .http, upstream: .init(host: "127.0.0.1", port: Int(port)))
         defer { client.cancel() }
-        await #expect(throws: (any Error).self) { try await client.open(timeout: 1) }
+        var receivedEstablishedTunnel = false
+        do {
+            // Listener teardown is asynchronous at the Network.framework
+            // boundary. A TCP connect can briefly succeed after revoke, so the
+            // security contract is that no unauthenticated tunnel is issued.
+            try await client.open(timeout: 1)
+            try await client.send(Data("CONNECT owned.invalid:443 HTTP/1.1\r\nHost: owned.invalid:443\r\n\r\n".utf8), timeout: 1)
+            let reply = try await client.receive(maximumBytes: 4096, timeout: 1)
+            receivedEstablishedTunnel = reply.data.starts(with: WebKitProxyConnectCodec.established)
+        } catch {
+            // A closed listener or refused connection is an acceptable result.
+        }
+        #expect(!receivedEstablishedTunnel)
+        #expect(session.qualificationSnapshot().established == 0)
     }
     @Test(arguments: [false, true])
     func listenerCancellationRevokesReadyAndIssuedSession(issueConfiguration: Bool) async throws {

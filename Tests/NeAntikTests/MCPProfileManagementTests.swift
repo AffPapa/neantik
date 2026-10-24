@@ -87,6 +87,12 @@ struct MCPProfileManagementTests {
     @Test func webKitCreationMetadataAndProxyCredentialManagementStayProfileScoped() async throws {
         let (root, engine, backend) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
+        let proxyTool = try #require(MCPProfileManagement.definitions(allowsManagement: true)
+            .first(where: { $0["name"] as? String == "profile_set_proxy" }))
+        let proxyDescription = try #require(proxyTool["description"] as? String)
+        #expect(proxyDescription.contains("A WebKit proxy requires the owned runtime"))
+        #expect(proxyDescription.contains("launch fails closed without Direct fallback"))
+        #expect(!proxyDescription.contains("WebKit applies the system proxy configuration"))
         let created = try await engine.call("profile_create", ["name": "WebKit MCP", "engine": "webkit", "changes": ["startURL": "about:blank"]])
         #expect(created["engine"] as? String == "webkit")
         let capabilities = try #require(created["engineCapabilities"] as? [String: Bool])
@@ -115,6 +121,29 @@ struct MCPProfileManagementTests {
         await #expect(throws: Error.self) { try await engine.call("profile_start", request(edited)) }
         let id = try #require(UUID(uuidString: edited["id"] as! String))
         #expect(engine.processes.processState(for: id) == .stopped)
+    }
+
+    @Test func webKitProxyCanBeCreatedAtomicallyWithoutExposingCredential() async throws {
+        let (root, engine, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let creation = try #require(MCPProfileManagement.definitions(allowsManagement: true)
+            .first(where: { $0["name"] as? String == "profile_create" }))
+        let properties = try #require((creation["inputSchema"] as? [String: Any])?["properties"] as? [String: Any])
+        #expect(properties["proxy"] != nil)
+        let created = try await engine.call("profile_create", [
+            "name": "WebKit proxy at creation", "engine": "webkit",
+            "changes": ["startURL": "about:blank"],
+            "proxy": ["kind": "http", "host": "127.0.0.1", "port": 45101,
+                      "username": "qa-user", "password": "qa-only-password"]
+        ])
+        let id = try #require(UUID(uuidString: created["id"] as! String))
+        let saved = try #require(engine.store.profile(withID: id))
+        #expect(saved.proxy?.host == "127.0.0.1")
+        #expect(saved.webKitRuntimeGeneration ==
+            (WebKitProxyFeature.launchEnabled ? .isolatedV1 : .system))
+        #expect(backend.values[id] == Data("qa-only-password".utf8))
+        #expect(!String(decoding: try JSONSerialization.data(withJSONObject: created), as: UTF8.self)
+            .contains("qa-only-password"))
     }
 
     @Test func webKitSessionAddressesStayOutOfMCPAndConfigurationExport() async throws {

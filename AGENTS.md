@@ -3,6 +3,10 @@
 - Direct Distribution only: GitHub `AffPapa/neantik` and browser.free via the
   existing Sites project. Preserve Developer ID, notarization, stapling,
   Gatekeeper, immutable assets and rollback. Never use App Store Connect.
+- Canonical signer SHA-1 `474F7C78F33EE324C24F6F5AE0443EB713E85E60` is already
+  in `~/Library/Keychains/login.keychain-db`; sandbox-scoped zero results can
+  be false negatives. Follow `docs/NEANTIK_SIGNING_IDENTITY.md`; never issue
+  another cert or export the private key into files/repo.
 - AffPapa is excluded by the user. Only after new explicit authorization read
   `ops/affpapa/README.md` and use its restricted client. Never use raw SSH,
   SCP/SFTP/rsync or direct server edits; missing AffPapa keys do not block us.
@@ -18,6 +22,8 @@
   explains selection. Unknown/shared inputs require full regression. Small
   prose fixes need relevant diff/claim/link review. Planning is never PASS.
 - Read one CURRENT linked by the parent `docs/PROJECT_CONTEXT_INDEX.md`.
+  CURRENT is the sole rolling status; index/roadmap link to it rather than
+  copying candidate hashes or next actions. Old snapshots remain archival.
   Historical receipts answer specific questions. App/runtime/Site/hosted
   evidence are separate; repeat a gate only for changed inputs or a failure.
 - Finish authorized local work to its acceptance gate. Diagnose two identical

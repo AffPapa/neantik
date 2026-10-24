@@ -272,6 +272,7 @@ enum MCPGUIControlSocket {
     /// Existing Developer ID only; no certificate or Keychain changes.
     static func currentExecutableCode() throws -> ProxyRelayExpectedCode {
         guard let executable = Bundle.main.executableURL, let identifier = Bundle.main.bundleIdentifier else { throw Wire.Failure.unavailable }
-        return try ProxyRelayExpectedCode.qualifiedPin(at: executable, expectedIdentifier: identifier, expectedTeamIdentifier: "H6VGU2M6JD")
+        let team = try ProxyRelayExpectedCode.teamIdentifier(at: executable, expectedIdentifier: identifier)
+        return try ProxyRelayExpectedCode.qualifiedPin(at: executable, expectedIdentifier: identifier, expectedTeamIdentifier: team)
     }
 }

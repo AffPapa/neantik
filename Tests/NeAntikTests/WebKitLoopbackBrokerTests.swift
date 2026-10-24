@@ -108,6 +108,25 @@ private final class WebKitBrokerEcho: @unchecked Sendable {
 
 @Suite(.serialized)
 struct WebKitLoopbackBrokerTests {
+    @Test func startupFailurePreservesOnlySanitizedNetworkDomainAndCode() {
+        let addressInUse = POSIXErrorCode(rawValue: 48)!
+        let failure = WebKitLoopbackBroker.listenerStartFailure(.posix(addressInUse))
+        #expect(failure.errorDescription == "Не удалось запустить локальный WebKit-маршрут (POSIX-48). Профиль не запущен.")
+        #expect(!failure.localizedDescription.contains("127.0.0.1"))
+    }
+
+    @Test func listenerStartupTimeoutHasDistinctUserMessage() {
+        let failure = WebKitLoopbackBroker.Failure.listenerStartTimedOut
+        #expect(failure.errorDescription == "Локальный WebKit-маршрут не запустился вовремя. Профиль не запущен.")
+    }
+
+    @Test func productionLoopbackEndpointCanStartAndStop() async throws {
+        let broker = try WebKitLoopbackBroker(qualificationPort: NWEndpoint.Port(rawValue: WebKitLoopbackBroker.sandboxPort)!)
+        let port = try await broker.start()
+        await broker.stop()
+        #expect(port == WebKitLoopbackBroker.sandboxPort)
+    }
+
     private func scope() -> WebKitRelayAuthority.Scope {
         let profile = UUID(); return .init(profileID: profile, storeID: profile, sessionID: UUID(), revision: 1)
     }
@@ -299,5 +318,27 @@ struct WebKitLoopbackBrokerTests {
         #expect(await broker.activeConnectionCount() == 1)
         try await echo(independent, marker: "survives-revoke")
         await broker.stop(); #expect(await broker.activeConnectionCount() == 0); await origin.stop()
+    }
+}
+
+@MainActor
+struct WebKitLoopbackBrokerPoolTests {
+    @Test func concurrentProfileLaunchesShareOneListenerAndIdlePoolCanRestart() async throws {
+        let pool = WebKitLoopbackBrokerPool {
+            try WebKitLoopbackBroker(qualificationPort: .any)
+        }
+
+        async let first = pool.acquire()
+        async let second = pool.acquire()
+        let (firstBroker, secondBroker) = try await (first, second)
+        #expect(firstBroker === secondBroker)
+
+        await pool.stopIfIdle(false)
+        #expect(try await pool.acquire() === firstBroker)
+
+        await pool.stopIfIdle(true)
+        let restarted = try await pool.acquire()
+        #expect(restarted !== firstBroker)
+        await pool.stopIfIdle(true)
     }
 }

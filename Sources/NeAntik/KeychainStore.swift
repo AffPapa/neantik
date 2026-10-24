@@ -243,6 +243,19 @@ struct KeychainStore: Sendable {
         return value
     }
 
+    /// Preflight only: observe the existing credential without changing either
+    /// Keychain namespace. A proxy check must not migrate or delete an item.
+    func proxyPasswordWithoutMigration(profileID: UUID) throws -> String? {
+        if let current = try backend.data(service: service, profileID: profileID) {
+            return try decode(current)
+        }
+        guard let legacyService,
+              let legacy = try backend.data(service: legacyService, profileID: profileID) else {
+            return nil
+        }
+        return try decode(legacy)
+    }
+
     func deleteProxyPassword(profileID: UUID) throws {
         var failures = 0
         for service in [service, legacyService].compactMap({ $0 }) {

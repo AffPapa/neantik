@@ -11,6 +11,40 @@ struct WebKitProxyConfigurationFactoryTests {
         #expect(!BrowserEngine.webkit.settingsSummary.contains("Прокси профиля включён только в Dev"))
     }
 
+    @Test func qualificationSwitchIsCompileTimeAndDevBundleScoped() {
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+        #expect(WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop.dev"))
+        #expect(!WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop"))
+        #expect(WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop.dev.webkit-host"))
+        #expect(!WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop.webkit-host"))
+        #expect(!WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop.dev.webkit-host.extra"))
+        #expect(!WebKitProxyFeature.isEnabled(bundleIdentifier: nil))
+        #else
+        #expect(!WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop.dev"))
+        #expect(!WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop.dev.webkit-host"))
+        #expect(!WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop"))
+        #expect(!WebKitProxyFeature.isEnabled(bundleIdentifier: nil))
+        #endif
+    }
+
+    @Test func productionModeUsesOnlyProductionManagerAndHostIdentifiers() {
+        #expect(WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop",
+                                             mode: .production))
+        #expect(WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop.webkit-host",
+                                             mode: .production))
+        #expect(!WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop.dev",
+                                              mode: .production))
+        #expect(!WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop.dev.webkit-host",
+                                              mode: .production))
+        #expect(!WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop.webkit-host.extra",
+                                              mode: .production))
+        #expect(!WebKitProxyFeature.isEnabled(bundleIdentifier: nil, mode: .production))
+        #expect(!WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop",
+                                              mode: .qualification))
+        #expect(!WebKitProxyFeature.isEnabled(bundleIdentifier: "app.neantik.desktop.dev",
+                                              mode: .disabled))
+    }
+
     @Test func directProfileHasNoProxyConfiguration() throws {
         #expect(try WebKitProxyConfigurationFactory.systemWebKitConfigurations(for: nil).isEmpty)
     }
@@ -41,11 +75,22 @@ struct WebKitProxyConfigurationFactoryTests {
         let configuration = WebKitProxyConfigurationFactory.brokerConfiguration(using: credential)
         #expect(WebKitProxyConfigurationFactory.brokerHost == "127.0.0.1")
         #expect(WebKitProxyConfigurationFactory.brokerPort == WebKitLoopbackBroker.sandboxPort)
-        #expect(configuration.allowFailover == false)
-        #expect(configuration.matchDomains.isEmpty)
-        #expect(configuration.excludedDomains.isEmpty)
-        #expect(!configuration.debugDescription.contains("synthetic-secret"))
-        #expect(!configuration.debugDescription.contains("proxy.example.test"))
+        #expect(nw_proxy_config_get_failover_allowed(configuration) == false)
+        var matchDomains: [String] = []
+        var excludedCount = 0
+        nw_proxy_config_enumerate_match_domains(configuration) {
+            matchDomains.append(String(cString: $0))
+        }
+        nw_proxy_config_enumerate_excluded_domains(configuration) { _ in excludedCount += 1 }
+        #expect(matchDomains == [""])
+        #expect(excludedCount == 0)
+        // Positive/negative control: the API must expose a deliberately changed
+        // policy; a default value or missing observation is not a pass.
+        nw_proxy_config_set_failover_allowed(configuration, true)
+        #expect(nw_proxy_config_get_failover_allowed(configuration))
+        nw_proxy_config_add_excluded_domain(configuration, "own.invalid")
+        nw_proxy_config_enumerate_excluded_domains(configuration) { _ in excludedCount += 1 }
+        #expect(excludedCount == 1)
     }
 
     @Test func malformedExplicitProxyIsAlsoRejectedFailClosed() {

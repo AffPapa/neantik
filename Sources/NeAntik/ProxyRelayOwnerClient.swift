@@ -51,8 +51,9 @@ actor ProxyRelayOwnerClient {
                   ownExecutable.standardizedFileURL == executable.standardizedFileURL,
                   let parent = ProxyRelaySocketOwnerInspector.processIdentity(getpid())
             else { throw Failure.invalidState }
+            let team = try ProxyRelayExpectedCode.teamIdentifier(at: ownExecutable, expectedIdentifier: ownID)
             let expectedCode = try ProxyRelayExpectedCode.qualifiedPin(at: ownExecutable,
-                expectedIdentifier: ownID, expectedTeamIdentifier: "H6VGU2M6JD")
+                expectedIdentifier: ownID, expectedTeamIdentifier: team)
             guard ProxyRelayLiveCodeVerifier.matches(processID: getpid(), expectedProcess: parent, expectedCode: expectedCode)
             else { throw Failure.invalidState }
             let request = Pipe(), reply = Pipe(), process = Process()

@@ -207,6 +207,9 @@ struct WebKitHostIPCTests {
         #expect(acceptedOwner == owner)
 
         var child = WebKitHostChildRouteGate(expected: expected)
+        #expect(throws: WebKitHostIPC.ProtocolError.invalidTransition) {
+            try child.acceptRouteActivation(.routeActive(expected))
+        }
         #expect(try child.reportNetworkProcess(owner) == ownerFrame)
         #expect(throws: WebKitHostIPC.ProtocolError.invalidTransition) {
             try child.readyFrame()

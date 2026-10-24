@@ -170,6 +170,22 @@ private final class RuntimeClosureFixture: @unchecked Sendable {
             "releaseBoundary": "Publication gate, not historical provenance", "policy": "Current reviewed minimum"] as [String: Any])
     }
 
+    @Test func installedPredecessorAcceptsNewerPublicationSecurityFloor() throws {
+        var document = try #require(JSONSerialization.jsonObject(with: publication()) as? [String: Any])
+        document["checkedAt"] = "2026-10-24"
+        document["publishedAt"] = "2026-10-20"
+        document["minimumPublicChromiumVersion"] = "156.0.8078.48"
+        document["alsoObservedPublicChromiumVersions"] = ["156.0.8078.47"]
+        document["securityFixCount"] = 353
+        document["reference"] = "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_02018666648.html"
+        let bytes = try JSONSerialization.data(withJSONObject: document)
+        let now = try #require(ISO8601DateFormatter().date(from: "2026-10-24T12:00:00Z"))
+        // The publication baseline describes the candidate version. The
+        // installed runtime may be older so it can receive that update.
+        #expect(DirectUpdateRuntimePins.chromiumVersion == "156.0.8078.12")
+        try DirectUpdatePublicationBaseline.validate(bytes, now: now)
+    }
+
     @Test func advancingPublicationDatePreservesHistoricalClosureButRetainsExactSignedBytes() throws {
         let fixture = try RuntimeClosureFixture()
         try FileManager.default.removeItem(at: fixture.root.appendingPathComponent("link"))
@@ -239,10 +255,12 @@ private final class RuntimeClosureFixture: @unchecked Sendable {
         }
     }
 
-    @Test func componentPublicationReviewDoesNotAdmitItsPredecessor() throws {
+    @Test func componentPublicationReviewUsesItsImmutableHistoricalBaseline() throws {
         let repository = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
             .deletingLastPathComponent().deletingLastPathComponent()
-        let bytes = try Data(contentsOf: repository.appendingPathComponent("runtime/security-baseline.json"))
+        let digest = DirectUpdateComponentRuntimePins.reportHashes["securityBaselineSHA256"]!
+        let bytes = try Data(contentsOf: repository.appendingPathComponent("runtime/security-baselines/\(digest).json"))
+        #expect(BackupFS.hex(SHA256.hash(data: bytes)) == digest)
         try DirectUpdatePublicationBaseline.validateSecurityReview(bytes, record: .componentCompletionV1)
         for record in DirectUpdateRuntimeRecord.allCases where record != .componentCompletionV1 {
             #expect(throws: (any Error).self) {
@@ -262,7 +280,7 @@ private final class RuntimeClosureFixture: @unchecked Sendable {
         let original = try #require(JSONSerialization.jsonObject(with: valid) as? [String: Any])
         let controls: [(String, Any)] = [("schemaVersion", true), ("maximumAgeDays", 7), ("securityFixCount", -1),
             ("checkedAt", "2026-10-30"), ("checkedAt", "2026-02-30"), ("publishedAt", "2026-10-20"),
-            ("minimumPublicChromiumVersion", "154.0.0.0"), ("minimumPublicChromiumVersion", "157.0.0.0"),
+            ("minimumPublicChromiumVersion", "154.0.0.0"),
             ("minimumPublicChromiumVersion", "0155.0.8059.40"), ("platforms", ["Windows"]),
             ("reference", "https://evil.example/stable.html"), ("reference", "https://user:secret@chromereleases.googleblog.com/stable.html"),
             ("unknown", "not admitted")]

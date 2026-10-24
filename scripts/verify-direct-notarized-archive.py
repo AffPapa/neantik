@@ -284,6 +284,21 @@ def verify_app(
     display = run_checked(["codesign", "--display", "--verbose=4", str(app)], runner=runner)
     parse_codesign_display(display, expected=expected)
     run_checked(["codesign", "--verify", "--deep", "--strict", "--verbose=2", str(app)], runner=runner)
+    # If an owned WebKit helper is present, verify its byte and CodeDirectory
+    # pins after the final nested signing pass. A later deep re-sign can change
+    # the helper executable while leaving the manager's sealed pin stale.
+    with (app / "Contents" / "Info.plist").open("rb") as file:
+        manager_info = plistlib.load(file)
+    owned_host = app / "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
+    if "NeAntikWebKitHostV1" in manager_info or owned_host.exists() or owned_host.is_symlink():
+        pin_verifier = Path(__file__).resolve().with_name("verify-webkit-host-pin.py")
+        run_checked([sys.executable, str(pin_verifier), str(app)], runner=runner)
+        notice_verifier = Path(__file__).resolve().with_name("webkit_runtime_notices.py")
+        runtime_frameworks = owned_host / "Contents/Frameworks"
+        run_checked([
+            sys.executable, str(notice_verifier), "--verify", "--app", str(app),
+            "--runtime-frameworks", str(runtime_frameworks),
+        ], runner=runner)
     run_policy_tool(
         ["xcrun", "stapler", "validate", str(app)],
         runner=runner,

@@ -5,6 +5,7 @@ import importlib.util
 from pathlib import Path
 import socket
 import tempfile
+import time
 import unittest
 
 SPEC = importlib.util.spec_from_file_location('tcp_fixture_tests', Path(__file__).resolve().parents[1] / 'runtime-network/manager-tcp-fixture.py')
@@ -55,11 +56,33 @@ class ManagerTCPFixtureTests(unittest.TestCase):
     def test_live_stream_shutdown_precedes_recovery(self):
         client = self.request('proxy-success', stream=True)
         self.assertTrue(client.recv(64))
+        # The first recv may contain only response headers. Do not stop the
+        # listener until the origin fixture confirms it sent stream data; this
+        # makes the two accepted channels a real precondition, not a timing
+        # assumption about the proxy and origin handler threads.
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            if any(e['kind'] == 'stream-first-heartbeat'
+                   for e in self.fixture.ledger.events):
+                break
+            time.sleep(0.01)
+        else:
+            self.fail('stream fixture did not send its first heartbeat')
+        with self.fixture.socket_lock:
+            self.assertGreaterEqual(len(self.fixture.sockets), 2)
+        # Negative control: stopping only accepts leaves the existing tunnel
+        # alive. The control below must also disconnect that actual stream.
+        self.fixture.proxy.shutdown()
+        self.fixture.proxy.server_close()
+        self.assertTrue(client.recv(256), 'listener-only control closed the live tunnel')
         self.fixture.apply_control('stop-listener')
         while client.recv(256): pass
         client.close()
         event = next(e for e in self.fixture.ledger.events if e['kind']=='tcp-listener-control' and not e['listenerActive'])
-        self.assertGreaterEqual(event['acceptedChannelsShutdown'], 2)
+        # One successful shutdown can make the relay handler close its other
+        # socket before our next syscall. Count successful calls honestly; EOF
+        # above proves the client disconnected, irrespective of thread order.
+        self.assertGreaterEqual(event['acceptedChannelsShutdown'], 1)
 
     def test_invalid_or_duplicate_operator_controls_refused(self):
         for action in ['recover-listener','fail-dns','stop','unknown']:

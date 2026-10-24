@@ -49,9 +49,9 @@ final class MCPProfileManagement {
             ("folder_list", "Read up to100 project folders and organizationRevision. Pass nextCursor unchanged; restart on organization change.", ["limit": ["type": "integer", "minimum": 1, "maximum": 100], "cursor": text], []),
             ("workspace_query_profiles", "Find profiles by name, tags and project without reading private notes. Tags use AND; omitted archived means active only. folderID:null means unfiled, omission means any. Cursor is tied to filters and snapshot. Process state remains unverified.", MCPWorkspaceQuery.properties, []),
             ("profile_status", "Reconcile profile ownership. External sessions require manual close. Optional includeObservation:true requires expectedRevision and observes only this session's verified owned browser, launch configuration and readiness for graceful close. Never returns page content, credentials, PID, paths or proof of Chromium network route.", ["profileID": uuid, "includeObservation": ["type": "boolean"], "expectedRevision": revision], ["profileID"]),
-            ("profile_create", "Create a persistent profile without starting it. Optional templateID uses saved safe metadata with fresh identity; requires expectedOrganizationRevision from template_list. Explicit changes/folder override template values. No automatic retry: a repeat creates another profile.", ["name": text, "engine": ["type": "string", "enum": BrowserEngine.allCases.map(\.rawValue)], "changes": changes, "templateID": uuid, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["name"]),
+            ("profile_create", "Create a persistent profile without starting it. Optional templateID uses saved safe metadata with fresh identity; requires expectedOrganizationRevision from template_list. Explicit changes/folder override template values. Optional proxy fields, proxyLine or proxy:null use the same write-only credential rules as profile_set_proxy. A new WebKit proxy profile selects the owned runtime only when that route is enabled; a Direct WebKit profile selects system WebKit. No automatic retry: a repeat creates another profile.", ["name": text, "engine": ["type": "string", "enum": BrowserEngine.allCases.map(\.rawValue)], "changes": changes, "templateID": uuid, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "order": ["type": "string", "enum": ["automatic", "credentialsFirst", "endpointFirst"]]], ["name"]),
             ("profile_update", "Patch an existing stopped profile; omitted fields stay unchanged. fontPolicy:native|system-v1 explicitly selects Chromium font handling; system-v1 needs the qualified runtime at launch, not just a profile seed. Read its revision first.", ["profileID": uuid, "expectedRevision": revision, "changes": changes], ["profileID", "expectedRevision", "changes"]),
-            ("profile_set_proxy", "Configure/disable a stopped profile proxy. Use proxy:null, proxy fields, or proxyLine with kind/order. Password is write-only and may enter AI history. Chromium authentication uses its per-profile local relay; WebKit applies the system proxy configuration to that profile's website data store. HTTPS proxy certificates are verified before authentication. Saved settings do not prove a route; public WebKit launch remains disabled until headed failure and recovery qualification passes.", ["profileID": uuid, "expectedRevision": revision, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "order": ["type": "string", "enum": ["automatic", "credentialsFirst", "endpointFirst"]]], ["profileID", "expectedRevision"]),
+            ("profile_set_proxy", "Configure/disable proxy settings on a stopped profile. Use proxy:null, proxy fields, or proxyLine with kind/order. Password is write-only and may enter AI history. Chromium authentication uses its per-profile local relay. A WebKit proxy requires the owned runtime; switching an existing WebKit profile between Direct and proxy is refused because those runtimes have separate site data. Create a new profile for that change. When the WebKit route is disabled, settings may be saved but launch fails closed without Direct fallback. HTTPS proxy certificates are verified before authentication when the supported route is enabled. A saved proxy and preflight result do not prove the browser route.", ["profileID": uuid, "expectedRevision": revision, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "order": ["type": "string", "enum": ["automatic", "credentialsFirst", "endpointFirst"]]], ["profileID", "expectedRevision"]),
             ("profile_move", "Move stopped profile to folder/project or null (unfiled). Both revisions protect concurrent changes.", ["profileID": uuid, "expectedRevision": revision, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["profileID", "expectedRevision", "folderID", "expectedOrganizationRevision"]),
             ("profile_duplicate", "Copy configuration into a fresh identity; never copy cookies, notes or BrowserData. Copies proxy password via local Keychain without returning it.", ["profileID": uuid, "expectedRevision": revision, "name": text], ["profileID", "expectedRevision", "name"]),
             ("folder_create", "Create a project folder.", ["name": text, "expectedOrganizationRevision": optionalUUID], ["name", "expectedOrganizationRevision"]),
@@ -78,6 +78,7 @@ final class MCPProfileManagement {
         guard Self.readTools.contains(name) || allowsManagement else { throw Failure.denied }
         let lifecycleOnly = name == "profile_status" || name == "profile_stop"
         if !allowsManagement, (!store.hasTrustedMetadata || (!lifecycleOnly && !store.hasTrustedOrganization)) { throw Failure.unavailable }
+        if name == "profile_check_proxy" { ProxyAuditPhase.mark(.metadataInitialBegin) }
         do {
             try await store.refreshExternalMetadata()
         } catch {
@@ -86,6 +87,7 @@ final class MCPProfileManagement {
             // prevent gracefully closing a browser owned by this session.
             guard lifecycleOnly, store.hasTrustedMetadata, !store.hasTrustedOrganization else { throw error }
         }
+        if name == "profile_check_proxy" { ProxyAuditPhase.mark(.metadataInitialDone) }
         guard store.hasTrustedMetadata, lifecycleOnly || store.hasTrustedOrganization else { throw Failure.unavailable }
         try Task.checkCancellation()
         if name == "template_list" {
@@ -150,14 +152,26 @@ final class MCPProfileManagement {
             }
             profile.name = requestedName
             try apply(args["changes"] as? [String: Any] ?? [:], to: &profile)
-            try validate(profile)
+            let hasProxyArgument = args["proxy"] != nil || args["proxyLine"] != nil || args["kind"] != nil || args["order"] != nil
+            let proxyDraft = hasProxyArgument ? try parseProxy(args) : nil
+            profile.proxy = proxyDraft?.configuration
+            profile.webKitRuntimeGeneration = WebKitProfilePolicy.runtimeGenerationForSave(
+                engine: profile.engine, proxy: profile.proxy,
+                previous: profile.webKitRuntimeGeneration,
+                ownedProxyAvailable: WebKitProxyFeature.launchEnabled)
+            try validate(profile, password: proxyDraft?.password ?? "")
             if let value = args["changes"], !(value is [String: Any]) { throw Failure.invalid }
             let folder = args["folderID"] != nil ? try nullableID(args, "folderID") : template?.folderID.flatMap {
                 store.organization.folder(withID: $0)?.id
             }
             let expected: UUID?? = args["expectedOrganizationRevision"] == nil ? nil : .some(try organizationRevision(args))
             if folder != nil && expected == nil { throw Failure.invalid }
-            let saved = try store.upsert(profile, toFolderID: folder, expectedOrganizationRevision: expected)
+            let saved = try store.upsert(profile, toFolderID: folder, expectedOrganizationRevision: expected,
+                afterPersist: { committed in
+                    if let proxyDraft {
+                        try self.keychain.updateProxyPasswordForProfileEdit(proxyDraft.password, profileID: committed.id)
+                    }
+                })
             store.managerLibrary.record(.create, .succeeded)
             return dto(saved)
         }
@@ -236,12 +250,16 @@ final class MCPProfileManagement {
         switch name {
         case "profile_start": return try await launch(profile)
         case "profile_check_proxy":
+            ProxyAuditPhase.mark(.stoppedVerifyBegin)
             try processes.withVerifiedStoppedProfileOperation(profileID: profileID) {}
+            ProxyAuditPhase.mark(.stoppedVerifyDone)
             guard let proxy = profile.proxy else { throw Failure.invalid }
+            ProxyAuditPhase.mark(.healthRunBegin)
             let state = try await health.run(profile: profile, operationWithCurrentIdentity: { previous in
                 try await ProfileProxyOperations(store: self.store, keychain: self.keychain, invalidateObservation: { _ in })
                     .commit(profileID: profileID, expectedProxy: proxy, expectedRevision: expected, previous: previous, commitsLaunchContext: false)
             })
+            ProxyAuditPhase.mark(.healthRunDone)
             return ["profileID": profileID.uuidString, "outcome": state?.latestAttempt.outcome.userSummary ?? "No committed observation", "chromiumRoute": "unverified"]
         default: break
         }
@@ -258,6 +276,11 @@ final class MCPProfileManagement {
             case "profile_set_proxy":
                 let draft = try parseProxy(args)
                 profile.proxy = draft?.configuration
+                let desiredWebKitRuntime = WebKitProfilePolicy.runtimeGenerationForSave(
+                    engine: profile.engine, proxy: profile.proxy,
+                    previous: profile.webKitRuntimeGeneration,
+                    ownedProxyAvailable: WebKitProxyFeature.launchEnabled)
+                guard profile.webKitRuntimeGeneration == desiredWebKitRuntime else { throw Failure.invalid }
                 if profile.engine == .chromium {
                     profile.identity = profile.identity.replacingProxyContext(timezoneIdentifier: nil, localeIdentifier: nil, evidence: nil)
                 }

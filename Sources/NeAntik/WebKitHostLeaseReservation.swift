@@ -1,6 +1,8 @@
 import Darwin
 import Foundation
 
+#if !NEANTIK_WEBKIT_STANDALONE_HOST
+
 /// Durable manager-to-child ownership record for the WebKit host handoff.
 /// The manager creates it while holding both profile guards; the child checks
 /// it after acquiring those same guards. It is removed only after the child
@@ -227,3 +229,4 @@ final class WebKitHostLeaseHandoff: @unchecked Sendable {
         metadataGuard?.release(); metadataGuard = nil
     }
 }
+#endif

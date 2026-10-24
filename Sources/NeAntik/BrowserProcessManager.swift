@@ -3,6 +3,103 @@ import Combine
 import Darwin
 import Foundation
 
+/// Private QA only: retain the child's closed-vocabulary image count after a
+/// failed launch. The normal alert stays human-readable and never exposes
+/// paths, profile data, or arbitrary stderr.
+enum WebKitQAImageFailureReceipt {
+    static func matchesFixtureRoot(_ root: URL, fixture: String) -> Bool {
+        let expected = URL(fileURLWithPath: fixture, isDirectory: true)
+        return root.standardizedFileURL.path == expected.standardizedFileURL.path &&
+            root.resolvingSymlinksInPath().standardizedFileURL.path ==
+                expected.resolvingSymlinksInPath().standardizedFileURL.path
+    }
+
+    static func code(from error: Error) -> String? {
+        guard let failure = error as? WebKitHostClient.Failure,
+              case let .childRefusedStartup(code, _) = failure,
+              code.range(of: "^runtime-ambiguousImages-owned[0-9]-system[0-9]-other[0-9](-entry[0-9]-appkit[0-9])?$",
+                         options: .regularExpression) != nil else { return nil }
+        return code
+    }
+
+    static func record(_ error: Error, root: URL, bundle: Bundle = .main) {
+        guard let code = code(from: error) else { return }
+        write(code + "\n", name: "webkit-image-failure-qa.txt", root: root, bundle: bundle)
+    }
+
+    /// Dev-only failure and last stage. Both tokens come from the parent's
+    /// closed vocabulary; no child stderr, profile paths, or URLs are saved.
+    static func recordStartup(_ error: Error, root: URL, bundle: Bundle = .main) {
+        guard let failure = error as? WebKitHostClient.Failure,
+              case let .childRefusedStartup(code, stage) = failure,
+              WebKitStartupDiagnosticCapture.Tokens.isSafeFailureCode(code) else { return }
+        let safeStage = stage.flatMap {
+            WebKitStartupDiagnosticCapture.Tokens.stages.contains($0) ? $0 : nil
+        } ?? "unknown"
+        write("failure=\(code) stage=\(safeStage)\n",
+              name: "webkit-startup-failure-qa.txt", root: root, bundle: bundle)
+    }
+
+    static func recordCloseStage(_ stage: String?, root: URL, bundle: Bundle = .main) {
+        let safe = stage.flatMap {
+            WebKitStartupDiagnosticCapture.Tokens.stages.contains($0) ? $0 : nil
+        } ?? "unknown"
+        write("stage=\(safe)\n", name: "webkit-close-failure-qa.txt",
+              root: root, bundle: bundle)
+    }
+
+    static func recordNavigationStage(_ stage: String?, profileID: UUID,
+                                      root: URL, bundle: Bundle = .main) {
+        let safe = stage.flatMap {
+            WebKitStartupDiagnosticCapture.Tokens.isSafeQANavigationStage($0) ? $0 : nil
+        } ?? "unknown"
+        write("stage=\(safe)\n", name: "webkit-nav-stage-\(profileID.uuidString)-qa.txt",
+              root: root, bundle: bundle)
+    }
+
+    static func recordTLSStage(_ stage: String?, profileID: UUID,
+                               root: URL, bundle: Bundle = .main) {
+        let safe = stage.flatMap {
+            WebKitStartupDiagnosticCapture.Tokens.isSafeQATLSStage($0) ? $0 : nil
+        } ?? "unknown"
+        write("stage=\(safe)\n", name: "webkit-tls-stage-\(profileID.uuidString)-qa.txt",
+              root: root, bundle: bundle)
+    }
+
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    static func recordBrokerCounters(_ counters: WebKitLoopbackBroker.QACounters,
+                                     profileID: UUID, root: URL,
+                                     bundle: Bundle = .main) {
+        let values = [counters.inbound, counters.loopback, counters.parsed,
+                      counters.authorized, counters.bound]
+        guard values.allSatisfy({ (0...999_999).contains($0) }) else { return }
+        let line = "inbound=\(counters.inbound) loopback=\(counters.loopback) " +
+            "parsed=\(counters.parsed) authorized=\(counters.authorized) bound=\(counters.bound)\n"
+        write(line, name: "webkit-broker-counts-\(profileID.uuidString)-qa.txt",
+              root: root, bundle: bundle)
+    }
+    #endif
+
+    private static func write(_ value: String, name: String,
+                              root: URL, bundle: Bundle) {
+        guard bundle.bundleIdentifier == "app.neantik.desktop.dev",
+              let fixture = bundle.object(forInfoDictionaryKey: "NeAntikDevelopmentFixtureRoot") as? String,
+              matchesFixtureRoot(root, fixture: fixture) else { return }
+        var entry = stat()
+        guard lstat(fixture, &entry) == 0,
+              entry.st_mode & mode_t(S_IFMT) == mode_t(S_IFDIR),
+              entry.st_mode & 0o777 == 0o700,
+              entry.st_uid == geteuid() else { return }
+        let file = root.appendingPathComponent(name)
+        let fd = open(file.path, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0o600)
+        guard fd >= 0 else { return }
+        defer { Darwin.close(fd) }
+        let bytes = Array(value.utf8)
+        let written = bytes.withUnsafeBytes { Darwin.write(fd, $0.baseAddress, $0.count) }
+        if written != bytes.count || fsync(fd) != 0 { _ = unlink(file.path) }
+    }
+}
+
 enum BrowserProcessLockPhase: String, Codable, Equatable, Sendable {
     case starting
     case running
@@ -433,68 +530,9 @@ enum BrowserLaunchBuilder {
     }
 
     static func validatedStartURL(_ value: String) -> URL? {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        // One inert built-in page is safe and was used by older fixtures.
-        // Do not generalize this exception to privileged or script schemes.
-        if trimmed == "about:blank" { return URL(string: trimmed) }
-        if let url = URL(string: trimmed),
-           let scheme = url.scheme?.lowercased(),
-           scheme == "http" || scheme == "https",
-           let host = url.host,
-           !host.isEmpty,
-           url.user == nil,
-           url.password == nil,
-           url.port.map({ (1...65_535).contains($0) }) ?? true
-        {
-            return url
-        }
-        let authority = String(trimmed.prefix { $0 != "/" && $0 != "?" && $0 != "#" })
-        if authority.contains(":") {
-            return validatedBareHostPortURL(trimmed, authority: authority)
-        }
-        if URL(string: trimmed)?.scheme != nil {
-            return nil
-        }
-        if let url = URL(string: "https://\(trimmed)"),
-           let host = url.host,
-           !host.isEmpty,
-           url.user == nil,
-           url.password == nil
-        {
-            return url
-        }
-        return nil
+        BrowserStartURL.validate(value)
     }
 
-    /// A colon in a bare address is ambiguous with a URI scheme. Only a
-    /// dotted host, localhost or bracketed IPv6 with a numeric port qualifies.
-    private static func validatedBareHostPortURL(_ text: String, authority: String) -> URL? {
-        guard !text.contains("\\"),
-              !text.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }),
-              !authority.contains("@") else { return nil }
-        let host: String, portText: String
-        if authority.hasPrefix("[") {
-            guard let closing = authority.firstIndex(of: "]") else { return nil }
-            host = String(authority[...closing])
-            let suffix = authority[authority.index(after: closing)...]
-            guard suffix.hasPrefix(":") else { return nil }
-            portText = String(suffix.dropFirst())
-            var address = in6_addr()
-            guard String(host.dropFirst().dropLast()).withCString({ inet_pton(AF_INET6, $0, &address) }) == 1 else { return nil }
-        } else {
-            let parts = authority.split(separator: ":", omittingEmptySubsequences: false)
-            guard parts.count == 2 else { return nil }
-            host = String(parts[0]); portText = String(parts[1])
-            guard host.lowercased() == "localhost" || host.contains(".") else { return nil }
-        }
-        guard !portText.isEmpty, portText.utf8.allSatisfy({ (48...57).contains($0) }),
-              let port = Int(portText), (1...65_535).contains(port),
-              ProxyConfiguration(kind: .https, host: host, port: port, username: "").isValid,
-              let components = URLComponents(string: "https://\(text)"),
-              components.user == nil, components.password == nil,
-              components.port == port else { return nil }
-        return components.url
-    }
 }
 
 private enum BrowserLeaseCleanupAuthority: Equatable, Sendable {
@@ -617,8 +655,10 @@ final class BrowserProcessManager: ObservableObject {
     private var webKitBrowsers: [UUID: WebKitProfileBrowser] = [:]
     private var webKitHostClients: [UUID: WebKitHostClient] = [:]
     private var webKitHostBrokers: [UUID: WebKitLoopbackBroker] = [:]
+    private let webKitLoopbackBrokerPool = WebKitLoopbackBrokerPool()
     private var webKitHostStartingProfileIDs = Set<UUID>()
     private var webKitHostGenerations: [UUID: UUID] = [:]
+    private var webKitHostUnexpectedExitGenerations: [UUID: UUID] = [:]
     private var webKitHostStopTasks: [UUID: Task<Void, Never>] = [:]
     private var webKitHostSaveFailureProfileIDs = Set<UUID>()
     /// GUI lifecycle only. Emitted after session writes and downloads settle.
@@ -2592,7 +2632,8 @@ final class BrowserProcessManager: ObservableObject {
             do {
                 if let binding = try receipt.relayBinding(profileID: profileID, expectedRevision: expectedRevision),
                    let executable = Bundle.main.executableURL, let identifier = Bundle.main.bundleIdentifier {
-                    let code = try ProxyRelayExpectedCode.qualifiedPin(at: executable, expectedIdentifier: identifier, expectedTeamIdentifier: "H6VGU2M6JD")
+                    let team = try ProxyRelayExpectedCode.teamIdentifier(at: executable, expectedIdentifier: identifier)
+                    let code = try ProxyRelayExpectedCode.qualifiedPin(at: executable, expectedIdentifier: identifier, expectedTeamIdentifier: team)
                     // Never hold the filesystem guard while waiting for IPC or
                     // Security. An observation failure does not stop a browser.
                     transport = try ProxyRelayObservationSocket.queryObservation(binding: binding, expectedOwnerCode: code,
@@ -2670,7 +2711,8 @@ final class BrowserProcessManager: ObservableObject {
                 guard let binding = try receipt.relayBinding(profileID: profileID, expectedRevision: expectedProfile.revision), binding.processesAreCurrent,
                       let executable = Bundle.main.executableURL, let identifier = Bundle.main.bundleIdentifier,
                       let owner = ProxyRelaySocketOwnerInspector.processIdentity(binding.owner.pid) else { return false }
-                let code = try ProxyRelayExpectedCode.qualifiedPin(at: executable, expectedIdentifier: identifier, expectedTeamIdentifier: "H6VGU2M6JD")
+                let team = try ProxyRelayExpectedCode.teamIdentifier(at: executable, expectedIdentifier: identifier)
+                let code = try ProxyRelayExpectedCode.qualifiedPin(at: executable, expectedIdentifier: identifier, expectedTeamIdentifier: team)
                 guard ProxyRelayLiveCodeVerifier.matches(processID: binding.owner.pid, expectedProcess: owner, expectedCode: code), binding.processesAreCurrent else { return false }
             }
             try Task.checkCancellation()
@@ -2753,6 +2795,24 @@ final class BrowserProcessManager: ObservableObject {
             throw NeAntikError.profileAlreadyRunning
         }
 
+        // Reserve the profile before the first suspension so a concurrent
+        // launch cannot stage the same identity twice while the shared
+        // listener is starting.
+        webKitHostStartingProfileIDs.insert(profile.id)
+        var preserveRunningChild = false
+        defer {
+            if !preserveRunningChild {
+                webKitHostStartingProfileIDs.remove(profile.id)
+                webKitHostGenerations.removeValue(forKey: profile.id)
+                webKitHostUnexpectedExitGenerations.removeValue(forKey: profile.id)
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    await self.webKitLoopbackBrokerPool.stopIfIdle(
+                        self.webKitHostClients.isEmpty && self.webKitHostStartingProfileIDs.isEmpty)
+                }
+            }
+        }
+
         let sessionGuard = try paths.acquireWebKitSessionGuard(for: profile.id)
         let metadataGuard: PrivateFileGuardLease
         do { metadataGuard = try paths.acquireWebKitMetadataGuard(for: profile.id) }
@@ -2764,7 +2824,12 @@ final class BrowserProcessManager: ObservableObject {
             throw BrowserProfileDeletedError()
         }
         let managerBundle = Bundle.main.bundleURL
-        let runtimeSHA256 = try WebKitHostCodeIdentity.pinnedRuntimeSHA256(in: managerBundle)
+        let runtimePin = try WebKitHostCodeIdentity.pinnedRuntime(in: managerBundle)
+        guard runtimePin.supports(ProcessInfo.processInfo.operatingSystemVersion) else {
+            throw WebKitProfileError.unsupported(
+                "Этот отдельный WebKit runtime требует macOS \(runtimePin.minimumOSVersion). Chromium и системный WebKit доступны отдельно; профиль не запускался и данные не менялись.")
+        }
+        let runtimeSHA256 = runtimePin.webKitSHA256
         let generation = UUID()
         let session = WebKitHostIPC.Session(profileID: profile.id,
             revision: profile.revision, generation: generation,
@@ -2777,28 +2842,24 @@ final class BrowserProcessManager: ObservableObject {
         let route = try webKitRelayRoute(for: profile)
         let handoff = WebKitHostLeaseHandoff(paths: paths, session: session,
             sessionGuard: sessionGuard, metadataGuard: metadataGuard)
-        let broker = try WebKitLoopbackBroker()
+        let broker = try await webKitLoopbackBrokerPool.acquire()
         var client: WebKitHostClient?
-        var preserveRunningChild = false
-        webKitHostStartingProfileIDs.insert(profile.id)
         webKitHostGenerations[profile.id] = generation
-        defer {
-            if !preserveRunningChild {
-                webKitHostStartingProfileIDs.remove(profile.id)
-                webKitHostGenerations.removeValue(forKey: profile.id)
-            }
-        }
 
         do {
-            try await broker.start()
             guard !webKitQuitPending else { throw CancellationError() }
-            let capability = try await broker.prepare(scope: scope, route: route)
+            let capability = try broker.prepare(scope: scope, route: route)
             let host = try await WebKitHostClient.launch(session: session,
                 registerChild: { pid, path in
                     try handoff.register(childPID: pid, childExecutablePath: path)
                 },
                 forgetChild: { pid, childIsGone in
                     try handoff.remove(childPID: pid, childIsGone: childIsGone)
+                },
+                onUnexpectedTermination: { [weak self] exitedSession, status in
+                    Task { @MainActor [weak self] in
+                        self?.webKitHostDidTerminate(exitedSession, status: status)
+                    }
                 })
             client = host
             guard !webKitQuitPending else {
@@ -2808,14 +2869,22 @@ final class BrowserProcessManager: ObservableObject {
             }
             let lease = try await host.configureRoute(capability, scope: scope, broker: broker)
             try await host.activate(scope: scope, broker: broker, lease: lease)
+            let hostIsRunning = await host.isRunning
+            if webKitHostUnexpectedExitGenerations[profile.id] == generation || !hostIsRunning {
+                webKitHostUnexpectedExitGenerations.removeValue(forKey: profile.id)
+                await broker.revoke(scope)
+                guard await host.abort() else { throw WebKitHostClient.Failure.cleanupUnconfirmed }
+                client = nil
+                throw WebKitHostClient.Failure.childExited
+            }
             guard !webKitQuitPending else {
                 try await host.close()
-                await broker.stop()
                 client = nil
                 throw CancellationError()
             }
             webKitHostClients[profile.id] = host
             webKitHostBrokers[profile.id] = broker
+            webKitHostUnexpectedExitGenerations.removeValue(forKey: profile.id)
             runningProfileIDs.insert(profile.id)
             webKitHostStartingProfileIDs.remove(profile.id)
             webKitHostGenerations.removeValue(forKey: profile.id)
@@ -2823,19 +2892,23 @@ final class BrowserProcessManager: ObservableObject {
             observeWebKitTerminationIfNeeded()
             return generation
         } catch {
+            WebKitQAImageFailureReceipt.recordStartup(error, root: paths.rootDirectory)
+            WebKitQAImageFailureReceipt.record(error, root: paths.rootDirectory)
             handoff.releaseIfUnregistered()
+            await broker.revoke(scope)
             if let client {
                 if await client.abort() {
-                    await broker.stop()
+                    // Only this profile's route is revoked. Other sessions
+                    // keep using the shared listener.
                 } else {
                     webKitHostClients[profile.id] = client
                     webKitHostBrokers[profile.id] = broker
                     runningProfileIDs.insert(profile.id)
+                    webKitHostStartingProfileIDs.remove(profile.id)
+                    webKitHostGenerations.removeValue(forKey: profile.id)
                     preserveRunningChild = true
                     lastError = "Изолированный WebKit-процесс не подтвердил остановку. Профиль остаётся занят, прямой маршрут не включается."
                 }
-            } else {
-                await broker.stop()
             }
             throw error
         }
@@ -2854,6 +2927,13 @@ final class BrowserProcessManager: ObservableObject {
         return .proxy(kind: proxy.kind, upstream: destination, credentials: credentials)
     }
 
+    private static func webKitRelayScope(for session: WebKitHostIPC.Session)
+        -> WebKitRelayAuthority.Scope {
+        WebKitRelayAuthority.Scope(profileID: session.profileID,
+            storeID: session.profileID, sessionID: session.generation,
+            revision: session.revision)
+    }
+
     private func observeWebKitTerminationIfNeeded() {
         guard webKitTerminationObservation == nil else { return }
         webKitTerminationObservation = NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)
@@ -2869,11 +2949,24 @@ final class BrowserProcessManager: ObservableObject {
               client.session.generation == generation,
               webKitHostStopTasks[profileID] == nil else { return }
         let broker = webKitHostBrokers[profileID]
+        let fixtureRoot = paths.rootDirectory
         webKitHostStopTasks[profileID] = Task { @MainActor [weak self] in
             defer { self?.webKitHostStopTasks.removeValue(forKey: profileID) }
             do {
                 try await client.close()
-                await broker?.stop()
+                WebKitQAImageFailureReceipt.recordNavigationStage(
+                    await client.qaNavigationStage(), profileID: profileID,
+                    root: fixtureRoot)
+                WebKitQAImageFailureReceipt.recordTLSStage(
+                    await client.qaTLSStage(), profileID: profileID,
+                    root: fixtureRoot)
+                #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+                if let broker {
+                    WebKitQAImageFailureReceipt.recordBrokerCounters(
+                        broker.qaCounters(), profileID: profileID,
+                        root: fixtureRoot)
+                }
+                #endif
                 guard let self,
                       self.webKitHostClients[profileID]?.session.generation == generation else { return }
                 self.webKitHostClients.removeValue(forKey: profileID)
@@ -2885,9 +2978,84 @@ final class BrowserProcessManager: ObservableObject {
                     self.lastError = nil
                 }
                 self.webKitDidClose?(profileID, generation)
+                await self.webKitLoopbackBrokerPool.stopIfIdle(
+                    self.webKitHostClients.isEmpty && self.webKitHostStartingProfileIDs.isEmpty)
             } catch {
+                WebKitQAImageFailureReceipt.recordNavigationStage(
+                    await client.qaNavigationStage(), profileID: profileID,
+                    root: fixtureRoot)
+                WebKitQAImageFailureReceipt.recordTLSStage(
+                    await client.qaTLSStage(), profileID: profileID,
+                    root: fixtureRoot)
+                #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+                if let broker {
+                    WebKitQAImageFailureReceipt.recordBrokerCounters(
+                        broker.qaCounters(), profileID: profileID,
+                        root: fixtureRoot)
+                }
+                #endif
+                WebKitQAImageFailureReceipt.recordCloseStage(
+                    await client.qaCloseStage(), root: fixtureRoot)
+                // A failed save/close is a stop-network event. Never leave the
+                // profile's route open while the child is unconfirmed.
+                await broker?.revoke(Self.webKitRelayScope(for: client.session))
+                if !(await client.isRunning), await client.abort(), let self,
+                   self.webKitHostClients[profileID]?.session.generation == generation {
+                    self.webKitHostClients.removeValue(forKey: profileID)
+                    self.webKitHostBrokers.removeValue(forKey: profileID)
+                    self.webKitHostSaveFailureProfileIDs.remove(profileID)
+                    self.runningProfileIDs.remove(profileID)
+                    self.lastError = "Окно WebKit завершилось без подтверждения сохранения. Данные профиля оставлены на месте; проверьте профиль перед повторным запуском."
+                    self.webKitDidClose?(profileID, generation)
+                    await self.webKitLoopbackBrokerPool.stopIfIdle(
+                        self.webKitHostClients.isEmpty && self.webKitHostStartingProfileIDs.isEmpty)
+                    return
+                }
                 self?.webKitHostSaveFailureProfileIDs.insert(profileID)
                 self?.lastError = Self.webKitSessionSaveFailureMessage
+            }
+        }
+    }
+
+    private func webKitHostDidTerminate(_ session: WebKitHostIPC.Session, status: Int32) {
+        let profileID = session.profileID
+        let currentGeneration = webKitHostClients[profileID]?.session.generation
+            ?? webKitHostGenerations[profileID]
+        switch WebKitHostTerminationPolicy.action(
+            exitedGeneration: session.generation,
+            currentGeneration: currentGeneration,
+            launchInProgress: webKitHostStartingProfileIDs.contains(profileID),
+            closeInProgress: webKitHostStopTasks[profileID] != nil) {
+        case .ignore:
+            return
+        case .deferUntilLaunchSettles:
+            webKitHostUnexpectedExitGenerations[profileID] = session.generation
+        case .reconcileUnexpectedExit:
+            guard let client = webKitHostClients[profileID],
+                  client.session.generation == session.generation,
+                  webKitHostStopTasks[profileID] == nil else { return }
+            let broker = webKitHostBrokers[profileID]
+            webKitHostStopTasks[profileID] = Task { @MainActor [weak self] in
+                defer { self?.webKitHostStopTasks.removeValue(forKey: profileID) }
+                // Revoke network access first. abort() then confirms the exact
+                // owned child is gone before the session fence is released.
+                await broker?.revoke(Self.webKitRelayScope(for: session))
+                guard await client.abort(), let self,
+                      self.webKitHostClients[profileID]?.session.generation == session.generation else {
+                    self?.webKitHostSaveFailureProfileIDs.insert(profileID)
+                    self?.lastError = Self.webKitSessionSaveFailureMessage
+                    return
+                }
+                self.webKitHostClients.removeValue(forKey: profileID)
+                self.webKitHostBrokers.removeValue(forKey: profileID)
+                self.webKitHostSaveFailureProfileIDs.remove(profileID)
+                self.runningProfileIDs.remove(profileID)
+                self.lastError = status == 0
+                    ? "Окно WebKit неожиданно закрылось. Данные профиля оставлены на месте; проверьте профиль перед повторным запуском."
+                    : "Окно WebKit аварийно завершилось (код \(status)). Данные профиля не удалялись; проверьте профиль перед повторным запуском."
+                self.webKitDidClose?(profileID, session.generation)
+                await self.webKitLoopbackBrokerPool.stopIfIdle(
+                    self.webKitHostClients.isEmpty && self.webKitHostStartingProfileIDs.isEmpty)
             }
         }
     }

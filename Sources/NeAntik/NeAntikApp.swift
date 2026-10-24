@@ -4,6 +4,20 @@ import Foundation
 import SwiftUI
 
 @main
+enum NeAntikEntryPoint {
+    @MainActor
+    static func main() {
+        // The pinned helper must enter AppKit before SwiftUI constructs the
+        // manager's delegate and property wrappers. Keep this in the app file
+        // so the standalone RuntimeAuditCLI still excludes the entry point.
+        if case .webKitHostChild = NeAntikLaunchIntent.parse(
+            arguments: CommandLine.arguments).mode {
+            WebKitHostChildRuntime.runAndExit()
+        }
+        NeAntikApp.main()
+    }
+}
+
 struct NeAntikApp: App {
     @NSApplicationDelegateAdaptor(NeAntikApplicationDelegate.self) private var applicationDelegate
     @Environment(\.openWindow) private var openWindow
@@ -41,9 +55,6 @@ struct NeAntikApp: App {
         let launchIntent = NeAntikLaunchIntent.parse(
             arguments: CommandLine.arguments
         )
-        if case .webKitHostChild = launchIntent.mode {
-            WebKitHostChildRuntime.runAndExit()
-        }
         let updateAuditIsolation = DirectUpdateCandidateBootstrap.runIfRequested()
         self.updateAuditIsolation = updateAuditIsolation
         do { try ApplicationInstallLifecycle.enter() }
@@ -76,7 +87,7 @@ struct NeAntikApp: App {
         case .proxyRelayOwner:
             ProxyRelayOwner.runAndExit()
         case .webKitHostChild:
-            // Handled before the manager lifecycle above.
+            // Defensive only: normal helper entry bypasses SwiftUI entirely.
             WebKitHostChildRuntime.runAndExit()
         case let .mcpStdio(dataRoot):
             MCPStdioServer.runAndExit(dataRoot: dataRoot)

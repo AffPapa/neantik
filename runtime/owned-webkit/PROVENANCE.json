@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "status": "official_swift_package_binary_pinned_for_owned_webkit_staging",
+  "package": {
+    "url": "https://download.swift.org/swift-6.4.0-release/xcode/swift-6.4.0-RELEASE/swift-6.4.0-RELEASE-osx.pkg",
+    "sha256": "8fd03185b98fe27f54f8f523867e297ca5ff12bf8d4d63a6c627d7c60e286e845",
+    "bytes": 1590830585
+  },
+  "library": {
+    "source": "runtime/owned-webkit/libswiftCompatibilitySpan.dylib",
+    "packagePath": "usr/lib/swift-6.2/macosx/libswiftCompatibilitySpan.dylib",
+    "sha256": "b4256b38185e963651938ed0406c6c8ec54299621c7fa53c5e9a0a325ca5fe4f",
+    "bytes": 156544,
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "minimumOS": "11.0",
+    "installName": "/usr/lib/swift/libswiftCompatibilitySpan.dylib"
+  },
+  "license": {
+    "path": "runtime/licenses/Swift-6.4.0-Runtime-Library-Exception-LICENSE.txt",
+    "sha256": "770af8291f708538d8ff885a0bbc4e045cd700531741c4f99528d435c14d7f55",
+    "spdx": "Apache-2.0 WITH Swift Runtime Library Exception"
+  },
+  "scope": "Staging and license provenance only; the exact owned-WebKit runtime still needs supported-OS launch qualification."
+}

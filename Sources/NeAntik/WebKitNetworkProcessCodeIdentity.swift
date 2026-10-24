@@ -116,8 +116,7 @@ enum WebKitNetworkProcessCodeIdentity {
               isPhysicalDirectory(managerBundle),
               isPhysicalDirectory(managerBundle.appendingPathComponent("Contents", isDirectory: true)),
               isPhysicalFile(managerBundle.appendingPathComponent("Contents/Info.plist")),
-              let managerInfo = NSDictionary(contentsOf: managerBundle.appendingPathComponent("Contents/Info.plist")) as? [String: Any],
-              managerInfo["CFBundleIdentifier"] as? String == WebKitHostCodeIdentity.managerIdentifier
+              WebKitHostCodeIdentity.expectedManagerIdentifier(in: managerBundle) != nil
         else { throw Failure.unsafeBundle }
         var cursor = managerBundle
         for component in serviceRelativePath.split(separator: "/") {
@@ -149,7 +148,8 @@ enum WebKitNetworkProcessCodeIdentity {
         let managerInfoURL = managerBundle.appendingPathComponent("Contents/Info.plist")
         guard isPhysicalFile(managerInfoURL),
               let managerInfo = NSDictionary(contentsOf: managerInfoURL) as? [String: Any],
-              managerInfo["CFBundleIdentifier"] as? String == WebKitHostCodeIdentity.managerIdentifier
+              WebKitHostCodeIdentity.expectedManagerIdentifier(in: managerBundle) != nil,
+              let expectedTeam = WebKitHostCodeIdentity.expectedTeamIdentifier(in: managerBundle)
         else { throw Failure.unsafeBundle }
         let pin = try Pin(propertyList: managerInfo[pinKey])
         let executable = try executableURL(in: managerBundle, expectedExecutable: pin.executable)
@@ -159,7 +159,7 @@ enum WebKitNetworkProcessCodeIdentity {
         do {
             code = try ProxyRelayExpectedCode.qualifiedPin(
                 at: service, expectedIdentifier: pin.identifier,
-                expectedTeamIdentifier: WebKitHostCodeIdentity.teamIdentifier,
+                expectedTeamIdentifier: expectedTeam,
                 expectedCDHash: pin.cdHashBytes)
         } catch { throw Failure.codeIdentityMismatch }
         let attestation = Attestation(owner: owner, code: code)

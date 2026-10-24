@@ -58,6 +58,12 @@ class PackageIntegratedAppScriptTests(unittest.TestCase):
         text = PACKAGER.read_text(encoding="utf-8")
 
         self.assertIn('codesign --force --sign -', text)
+        self.assertIn('SIGNING_IDENTITY="${NEANTIK_SIGNING_IDENTITY:--}"', text)
+        self.assertIn('NEANTIK_BROWSER_DATA_BACKUP_ENABLED="$BACKUP_ENABLED"', text)
+        self.assertIn('NEANTIK_DIRECT_PROVISIONING_PROFILE="$PROVISIONING_PROFILE"', text)
+        self.assertIn('scripts/direct_backup_signing.py" sign \\', text)
+        self.assertIn('"$OUTPUT_APP" "$SIGNING_IDENTITY"', text)
+        self.assertNotIn('NEANTIK_BROWSER_DATA_BACKUP_ENABLED=0 NEANTIK_DIRECT_PROVISIONING_PROFILE=""', text)
         self.assertIn(
             '--entitlements "$PROJECT_DIR/runtime/neantik-direct-entitlements.plist"',
             text,
@@ -65,6 +71,8 @@ class PackageIntegratedAppScriptTests(unittest.TestCase):
         self.assertIn("verify-public-named-bundle.py", text)
         self.assertIn('--engineering-app "$OUTPUT_APP"', text)
         self.assertIn("verify-integrated-release.sh", text)
+        self.assertIn('scripts/package-manager-release-baseline.py', text)
+        self.assertIn('--evidence "$EVIDENCE"', text)
         self.assertNotIn(
             'verify-integrated-release.sh" "$OUTPUT_APP"',
             text,

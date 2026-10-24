@@ -13,6 +13,7 @@ IS_CHROMIUM_154=0
 IS_CHROMIUM_15498=0
 IS_CHROMIUM_15540=0
 IS_CHROMIUM_15612=0
+IS_CHROMIUM_15648=0
 M154_SOURCE_SNAPSHOT_VERIFIED=0
 
 usage() {
@@ -75,6 +76,9 @@ elif [[ "$LOCK_VERSION" == "156.0.8078.12" ]]; then
         "$M156_EVIDENCE_PREFIX" == "chromium-15612-component-completion-v1" ]]; then
     SECURITY_BASELINE_FILE="$(python3 "$SCRIPT_DIR/chromium_15612_font_report.py" --baseline --variant-prefix "$M156_EVIDENCE_PREFIX")"
   fi
+elif [[ "$LOCK_VERSION" == "156.0.8078.48" ]]; then
+  IS_CHROMIUM_15648=1
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-15648-source-contract.json"
 else
   echo "Unsupported Chromium runtime version for release verification: $LOCK_VERSION" >&2
   exit 65
@@ -210,7 +214,7 @@ if [[ -n "$SOURCE_PROVENANCE_PATH" ]]; then
       python3 "$SCRIPT_DIR/chromium_15612_variant.py" "$LOCK_VERSION_SOURCE" --signed-runtime "$APP_PATH" >/dev/null
     fi
     M154_SOURCE_SNAPSHOT_VERIFIED=1
-  elif (( IS_CHROMIUM_15498 == 1 || IS_CHROMIUM_15540 == 1 )); then
+  elif (( IS_CHROMIUM_15498 == 1 || IS_CHROMIUM_15540 == 1 || IS_CHROMIUM_15648 == 1 )); then
     if [[ -n "$REPORT_PATH" &&
           ( -z "${PROVENANCE_VERIFY_ARGS[1]:-}" ||
             "${PROVENANCE_VERIFY_ARGS[1]}" != --source-root ) ]]; then
@@ -461,7 +465,7 @@ if [[ -n "$BUILD_ARGS_PATH" ]]; then
     # port. Its candidate evidence binds that source; historical 152 patch
     # postimages are not evidence for this port.
     SOURCE_POSTIMAGES_VERIFIED=1
-  elif (( IS_CHROMIUM_154 == 1 || IS_CHROMIUM_15498 == 1 || IS_CHROMIUM_15540 == 1 || IS_CHROMIUM_15612 == 1 )); then
+  elif (( IS_CHROMIUM_154 == 1 || IS_CHROMIUM_15498 == 1 || IS_CHROMIUM_15540 == 1 || IS_CHROMIUM_15612 == 1 || IS_CHROMIUM_15648 == 1 )); then
     if (( M154_SOURCE_SNAPSHOT_VERIFIED != 1 )); then
       echo "Chromium source snapshot verification is required." >&2
       exit 66

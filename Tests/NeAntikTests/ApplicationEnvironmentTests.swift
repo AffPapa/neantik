@@ -65,7 +65,14 @@ struct ApplicationEnvironmentTests {
     @Test func disposableRootAcceptsOnlyNamedTemporaryRootsWithoutTraversal() {
         let dev = NeAntikApplicationEnvironment.resolve(bundleIdentifier: nil)
         #expect(dev.applicationSupportRoot(environment: [:], developmentFixtureRoot: "/tmp/neantik-dev-fixture.alias").path == "/private/tmp/neantik-dev-fixture.alias")
-        for unsafe in ["/private/tmp/neantik-../child", "/private/tmp/neantik-test/../other", "/tmp/../neantik-root", "/private/tmp/neantik-test\n", "/var/tmp/neantik-other"] {
+        for unsafe in [
+            "/private/tmp/neantik-../child",
+            "/private/tmp/neantik-test/../other",
+            "/private/tmp/neantik-test/qa-root",
+            "/tmp/../neantik-root",
+            "/private/tmp/neantik-test\n",
+            "/var/tmp/neantik-other",
+        ] {
             let resolved = dev.applicationSupportRoot(environment: [:], developmentFixtureRoot: unsafe)
             #expect(resolved.lastPathComponent == "NeAntik Development")
         }

@@ -126,6 +126,9 @@ verify_reviewed_runtime_evidence() {
       m156_prefix="$(python3 "$PROJECT_DIR/scripts/chromium_15612_variant.py" "$evidence/fingerprint-chromium.lock.json")"
       source_contract="$PROJECT_DIR/runtime/${m156_prefix}-source-contract.json"
       ;;
+    156.0.8078.48)
+      source_contract="$PROJECT_DIR/runtime/chromium-15648-source-contract.json"
+      ;;
     *)
       echo "Unsupported Chromium runtime version for manager-only update: $runtime_version" >&2
       exit 65
@@ -170,6 +173,11 @@ verify_reviewed_runtime_evidence() {
   elif [[ "$runtime_version" == "156.0.8078.12" ]]; then
     python3 "$PROJECT_DIR/scripts/chromium_15612_packaged_evidence.py" \
       "$evidence/fingerprint-chromium.lock.json" "$evidence"
+  elif [[ "$runtime_version" == "156.0.8078.48" ]]; then
+    local name
+    for name in chromium-15648-source-adoption-v3.json chromium-15648-deps-lock.json chromium-15648-neantik-v3.patch chromium-15648-devtools-typescript6.patch chromium-15648-v8-scope-iterator-compat.patch chromium-15648-rebase-plan.json; do
+      comparisons+=("$PROJECT_DIR/runtime/$name:$evidence/chromium-15648-source-evidence/$name")
+    done
   fi
   local comparison
   for comparison in "${comparisons[@]}"; do
@@ -246,12 +254,38 @@ case "${NEANTIK_RELEASE_CHANNEL:-}" in
     SECURITY_BASELINE_ARGS+=(--allow-public-alpha-tuples)
     ;;
   production)
+    if [[ "$PREPARATION_MODE" == "bundle-only" ]]; then
+      SECURITY_BASELINE_ARGS+=(--allow-unqualified-bundle)
+    fi
     ;;
   *)
     echo "Set NEANTIK_RELEASE_CHANNEL to public-alpha or production." >&2
     exit 64
     ;;
 esac
+source "$PROJECT_DIR/scripts/resolve-webkit-proxy-build-mode.sh"
+WEBKIT_HOST_ENABLED="${NEANTIK_WEBKIT_HOST_ENABLED:-0}"
+case "$WEBKIT_HOST_ENABLED" in
+  0|1) ;;
+  *) echo "NEANTIK_WEBKIT_HOST_ENABLED must be 0 or 1." >&2; exit 64 ;;
+esac
+if [[ "${NEANTIK_RELEASE_CHANNEL:-}" == "production" ]]; then
+  if [[ "$WEBKIT_HOST_ENABLED" != "1" ]]; then
+    echo "Production release requires the owned WebKit host; refusing a proxy-enabled manager-only candidate." >&2
+    exit 78
+  fi
+  if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ||
+        "${NEANTIK_WEBKIT_BUILD_ROOT:-}" != /* ||
+        "${NEANTIK_WEBKIT_SOURCE_ROOT:-}" != /* ||
+        ! -d "${NEANTIK_WEBKIT_BUILD_ROOT:-/nonexistent}" ||
+        ! -d "${NEANTIK_WEBKIT_SOURCE_ROOT:-/nonexistent}" ]]; then
+    echo "Production WebKit packaging requires physical pinned build and source roots plus Developer ID signing." >&2
+    exit 78
+  fi
+elif [[ "$WEBKIT_HOST_ENABLED" == "1" ]]; then
+  echo "Owned WebKit release packaging requires NEANTIK_RELEASE_CHANNEL=production." >&2
+  exit 64
+fi
 if [[ "${NEANTIK_LOCAL_ADHOC:-0}" != "1" ]]; then
   : "${NEANTIK_SIGNING_IDENTITY:?Set NEANTIK_SIGNING_IDENTITY to a Developer ID Application identity}"
   python3 "$PROJECT_DIR/scripts/direct_backup_signing.py" preflight "$SOURCE_APP" "$NEANTIK_SIGNING_IDENTITY"
@@ -326,6 +360,11 @@ BIN_PATH="$(
     -Xcc "-fdebug-prefix-map=$SOURCE_PARENT=/NeAntikWorkspace" \
     --show-bin-path
 )"
+if [[ ! -d "$BIN_PATH" || -L "$BIN_PATH" ]]; then
+  echo "Swift build output path must resolve to a physical directory." >&2
+  exit 66
+fi
+BIN_PATH="$(cd "$BIN_PATH" && pwd -P)"
 MANAGER_BINARY="$BIN_PATH/NeAntik"
 if [[ ! -x "$MANAGER_BINARY" ]]; then
   echo "Swift release binary is missing: $MANAGER_BINARY" >&2
@@ -377,6 +416,14 @@ verify_reviewed_runtime_evidence
 verify_runtime_unchanged
 if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_APP/Contents/Resources/NeAntikRuntimeEvidence/fingerprint-chromium.lock.json")" == "156.0.8078.12" ]]; then
   python3 "$PROJECT_DIR/scripts/verify-direct-update-runtime-pins.py" --reference-app "$CANDIDATE_APP"
+fi
+
+if [[ "$WEBKIT_HOST_ENABLED" == "1" ]]; then
+  python3 "$PROJECT_DIR/scripts/package-owned-webkit-release.py" \
+    --app "$CANDIDATE_APP" \
+    --build-root "$NEANTIK_WEBKIT_BUILD_ROOT" \
+    --source-root "$NEANTIK_WEBKIT_SOURCE_ROOT" \
+    --identity "$NEANTIK_SIGNING_IDENTITY"
 fi
 
 if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then

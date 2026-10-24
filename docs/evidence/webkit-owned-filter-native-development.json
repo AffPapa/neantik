@@ -102,7 +102,9 @@
     "archiveBytes": 761545,
     "sourceHEAD": "b6e3f39d9b781a5bd6d4f0a6707064d7bc32524d",
     "strictSignature": "PASS",
-    "archiveCoreFiles": 14
+    "archiveCoreFiles": 14,
+    "ownedLoopbackFilterIncluded": true,
+    "providerClasses": ["NEAppProxyProvider", "NEFilterDataProvider"]
   },
   "QA6Historical": {
     "candidate": {
@@ -198,6 +200,8 @@
       "Settings by-application sheet showed misleading off;by-category actual on disabled and kernel state verified",
       "First no-info journal capture empty;only collector fixed",
       "Report wrapper requested wrong key;only offline correction"
-    ]
+    ],
+    "providerAttribution": "The owner-clause rows and Direct reaches are from the supplemental NEFilterDataProvider path, whose unknown-owner branch allows the scoped diagnostic flow. QA7 also packaged an NEAppProxyProvider that returns false for captured flows, but the retained native result does not show it captured these requests.",
+    "appProxyCaptureOfMeasuredRequests": "not established"
   }
 }

@@ -80,20 +80,19 @@ enum WebKitHostIPC {
         var debugDescription: String { description }
         var customMirror: Mirror { Mirror(self, children: [:]) }
 
+        #if !NEANTIK_WEBKIT_STANDALONE_HOST
         init(session: Session, capability: WebKitRelayAuthority.Capability) throws {
             let scope = capability.scope
             let credentials = capability.withCredentials { ($0, $1) }
-            try self.init(session: session, scope: scope,
-                          username: credentials.0, password: credentials.1)
+            guard scope.profileID == session.profileID,
+                  scope.storeID == session.profileID,
+                  scope.sessionID == session.generation,
+                  scope.revision == session.revision else { throw ProtocolError.invalidCapability }
+            try self.init(session: session, username: credentials.0, password: credentials.1)
         }
+        #endif
 
         fileprivate init(session: Session, username: String, password: String) throws {
-            try self.init(session: session, scope: nil, username: username,
-                          password: password)
-        }
-
-        private init(session: Session, scope: WebKitRelayAuthority.Scope?,
-                     username: String, password: String) throws {
             let canonicalUsername = username.hasPrefix("wk-") &&
                 UUID(uuidString: String(username.dropFirst(3)))?.uuidString.lowercased() ==
                     String(username.dropFirst(3))
@@ -102,14 +101,6 @@ enum WebKitHostIPC {
                   decodedPassword?.count == 32,
                   decodedPassword?.base64EncodedString() == password else {
                 throw ProtocolError.invalidCapability
-            }
-            if let scope {
-                guard scope.profileID == session.profileID,
-                      scope.storeID == session.profileID,
-                      scope.sessionID == session.generation,
-                      scope.revision == session.revision else {
-                    throw ProtocolError.invalidCapability
-                }
             }
             self.session = session
             self.username = username
@@ -324,6 +315,7 @@ struct WebKitHostCloseGate: Sendable {
     /// broker-only store before WebKit starts the NetworkProcess. The broker
     /// still refuses CONNECT until that exact NetworkProcess is attested.
     /// Callers must authenticate the child and verify its live code first.
+    #if !NEANTIK_WEBKIT_STANDALONE_HOST
     mutating func issueRelayCapability(_ capability: WebKitRelayAuthority.Capability)
         throws -> WebKitHostIPC.Frame {
         guard state == .awaitingRelayCapability,
@@ -372,10 +364,12 @@ struct WebKitHostCloseGate: Sendable {
         state = .awaitingReady
         return .routeActive(expected)
     }
+    #endif
 
     /// Convert the exact running-session report into a live-code-checked lease.
     /// The IPC transport peer must be authenticated by the caller separately;
     /// this method authenticates the reported NetworkProcess executable.
+    #if !NEANTIK_WEBKIT_STANDALONE_HOST
     mutating func attestNetworkProcessOwner(_ frame: WebKitHostIPC.Frame,
                                             managerBundle: URL = Bundle.main.bundleURL)
         throws -> WebKitNetworkProcessCodeIdentity.Lease {
@@ -387,6 +381,7 @@ struct WebKitHostCloseGate: Sendable {
         return try WebKitNetworkProcessCodeIdentity.lease(
             session: expected, owner: owner, managerBundle: managerBundle)
     }
+    #endif
 
     mutating func requestClose() throws {
         guard state == .running || state == .failed else {

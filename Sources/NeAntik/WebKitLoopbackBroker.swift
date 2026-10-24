@@ -7,10 +7,32 @@ import Network
 /// controller before any capability is sent to a child. It is not an OS PID
 /// identity boundary. Chromium's existing relay is deliberately independent.
 final class WebKitLoopbackBroker: @unchecked Sendable {
-    static let sandboxPort: UInt16 = 58631
+    // Keep the service socket outside the OS ephemeral range so unrelated
+    // outbound connections cannot randomly reserve the fixed sandbox endpoint.
+    static let sandboxPort: UInt16 = WebKitBrokerPort.sandboxPort
     static let maximumConnections = 128
     static let maximumConnectionsPerProfile = 8
-    enum Failure: Error { case state, unavailable, refused, limit }
+    enum Failure: Error, LocalizedError, Equatable {
+        case state, unavailable, refused, limit
+        case listenerStartFailed(diagnostic: String)
+        case listenerStartTimedOut
+        case listenerStartCancelled
+
+        var errorDescription: String? {
+            switch self {
+            case .state: "Локальный WebKit-маршрут уже запущен или остановлен."
+            case .unavailable: "Локальный WebKit-маршрут недоступен. Профиль не запущен."
+            case .refused: "Локальный WebKit-маршрут отклонил запрос. Профиль не запущен."
+            case .limit: "Достигнут лимит соединений WebKit-маршрута."
+            case .listenerStartFailed(let diagnostic):
+                "Не удалось запустить локальный WebKit-маршрут (\(diagnostic)). Профиль не запущен."
+            case .listenerStartTimedOut:
+                "Локальный WebKit-маршрут не запустился вовремя. Профиль не запущен."
+            case .listenerStartCancelled:
+                "Запуск локального WebKit-маршрута отменён. Профиль не запущен."
+            }
+        }
+    }
     private enum State { case created, starting, ready, stopped }
     private struct Connection {
         var scope: WebKitRelayAuthority.Scope?
@@ -28,6 +50,28 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
     private var startFinish: ((Result<UInt16, Error>) -> Void)?
     private var deadline: DispatchWorkItem?
     private var leaseMonitor: DispatchSourceTimer?
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    struct QACounters: Equatable {
+        let inbound: Int
+        let loopback: Int
+        let parsed: Int
+        let authorized: Int
+        let bound: Int
+    }
+    private var qaInbound = 0
+    private var qaLoopback = 0
+    private var qaParsed = 0
+    private var qaAuthorized = 0
+    private var qaBound = 0
+
+    /// Counts only protocol boundaries. No URL, address, credential or error
+    /// payload enters the private QA receipt.
+    func qaCounters() -> QACounters {
+        queue.sync { QACounters(inbound: qaInbound, loopback: qaLoopback,
+                                parsed: qaParsed, authorized: qaAuthorized,
+                                bound: qaBound) }
+    }
+    #endif
 
     convenience init() throws { try self.init(port: NWEndpoint.Port(rawValue: Self.sandboxPort)!) }
     private init(port: NWEndpoint.Port) throws {
@@ -49,19 +93,24 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
                 queue.async {
                     guard self.state == .created else { continuation.resume(throwing: Failure.state); return }
                     self.state = .starting; self.startFinish = { continuation.resume(with: $0) }
-                    let deadline = DispatchWorkItem { [weak self] in self?.stopOnQueue() }
+                    let deadline = DispatchWorkItem { [weak self] in
+                        self?.stopOnQueue(startFailure: Failure.listenerStartTimedOut)
+                    }
                     self.deadline = deadline; self.queue.asyncAfter(deadline: .now() + 5, execute: deadline)
                     self.listener.stateUpdateHandler = { [weak self] state in
                         guard let self, self.state != .stopped else { return }
                         switch state {
                         case .ready:
                             guard self.state == .starting, let port = self.listener.port?.rawValue, port > 0 else {
-                                self.stopOnQueue(); return
+                                self.stopOnQueue(startFailure: Failure.listenerStartFailed(diagnostic: "READY_NO_PORT")); return
                             }
                             self.state = .ready; self.port = port
                             self.deadline?.cancel(); self.deadline = nil
                             let finish = self.startFinish; self.startFinish = nil; finish?(.success(port))
-                        case .failed, .cancelled: self.stopOnQueue()
+                        case .failed(let error):
+                            self.stopOnQueue(startFailure: Self.listenerStartFailure(error))
+                        case .cancelled:
+                            self.stopOnQueue(startFailure: Failure.listenerStartCancelled)
                         default: break
                         }
                     }
@@ -216,14 +265,25 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
     private func fence() async {
         await withCheckedContinuation { continuation in queue.async { continuation.resume() } }
     }
-    private func stopOnQueue() {
+    static func listenerStartFailure(_ error: NWError) -> Failure {
+        let diagnostic: String
+        switch error {
+        case .posix(let code): diagnostic = "POSIX-\(code.rawValue)"
+        case .dns(let code): diagnostic = "DNS-\(code)"
+        case .tls(let code): diagnostic = "TLS-\(code)"
+        @unknown default: diagnostic = "NETWORK-UNKNOWN"
+        }
+        return .listenerStartFailed(diagnostic: diagnostic)
+    }
+
+    private func stopOnQueue(startFailure: Error = Failure.unavailable) {
         guard state != .stopped else { return }
         state = .stopped; authority.close(); processLeases.removeAll()
         preparedScopes.removeAll(); port = nil
         leaseMonitor?.setEventHandler {}; leaseMonitor?.cancel(); leaseMonitor = nil
         deadline?.cancel(); deadline = nil
         listener.stateUpdateHandler = nil; listener.newConnectionHandler = nil; listener.cancel()
-        let finish = startFinish; startFinish = nil; finish?(.failure(Failure.unavailable))
+        let finish = startFinish; startFinish = nil; finish?(.failure(startFailure))
         for connection in connections.values { connection.task.cancel() }
     }
 
@@ -248,12 +308,21 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
                   var entry = connections[connectionID] else { throw Failure.refused }
             guard connections.values.filter({ $0.scope == permit.scope }).count < Self.maximumConnectionsPerProfile else { throw Failure.limit }
             entry.scope = permit.scope; connections[connectionID] = entry
+            #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+            qaBound += 1
+            #endif
         }
     }
     private func accept(_ connection: NWConnection) {
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+        qaInbound += 1
+        #endif
         guard state == .ready, connections.count < Self.maximumConnections,
               case .hostPort(let host, _) = connection.endpoint, host == NWEndpoint.Host("127.0.0.1")
         else { connection.cancel(); return }
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+        qaLoopback += 1
+        #endif
         let id = UUID(), front = ProxyRelayUpstreamTransport(accepted: connection)
         let task = Task.detached { [self] in
             defer { front.cancel(); queue.async { self.connections.removeValue(forKey: id) } }
@@ -274,10 +343,16 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
                         let chunk = try await front.receive(maximumBytes: min(1024, WebKitProxyConnectCodec.maximumHeaderBytes - buffer.count), timeout: remaining())
                         guard !chunk.data.isEmpty else { throw Failure.refused }; buffer.append(chunk.data)
                     }
+                    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+                    queue.sync { qaParsed += 1 }
+                    #endif
                     guard let permit = authority.authorize(request.authorization) else {
                         try await front.send(WebKitProxyConnectCodec.authenticationRequired, timeout: remaining())
                         try await front.finishWrite(timeout: remaining()); return
                     }
+                    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+                    queue.sync { qaAuthorized += 1 }
+                    #endif
                     try bind(permit, connectionID: id)
                     buffer = Data(buffer.dropFirst(request.consumed))
                     let back: ProxyRelayUpstreamTransport
@@ -320,5 +395,71 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
             if !chunk.data.isEmpty { try await to.send(chunk.data) }
             if chunk.endOfStream { try await to.finishWrite(); return }
         }
+    }
+}
+
+/// Owns the single fixed-port listener shared by all isolated WebKit profiles
+/// in one manager. The broker itself separates sessions by scoped capability;
+/// creating one broker per profile would make every profile contend for the
+/// same sandbox-allowed loopback port.
+@MainActor
+final class WebKitLoopbackBrokerPool {
+    typealias Factory = () throws -> WebKitLoopbackBroker
+
+    private let makeBroker: Factory
+    private var broker: WebKitLoopbackBroker?
+    private var startTask: Task<UInt16, Error>?
+    private var stopTask: Task<Void, Never>?
+
+    init(makeBroker: @escaping Factory = { try WebKitLoopbackBroker() }) {
+        self.makeBroker = makeBroker
+    }
+
+    /// Concurrent profile launches await one listener startup and receive the
+    /// same broker instance. A stopped listener is fully drained before a new
+    /// one can bind the fixed sandbox endpoint.
+    func acquire() async throws -> WebKitLoopbackBroker {
+        if let stopTask { await stopTask.value }
+
+        if let broker {
+            if let startTask { _ = try await startTask.value }
+            return broker
+        }
+
+        let broker = try makeBroker()
+        self.broker = broker
+        let startTask = Task { try await broker.start() }
+        self.startTask = startTask
+        do {
+            _ = try await startTask.value
+            if self.broker === broker { self.startTask = nil }
+            return broker
+        } catch {
+            if self.broker === broker {
+                self.broker = nil
+                self.startTask = nil
+            }
+            await broker.stop()
+            throw error
+        }
+    }
+
+    /// Stop the fixed listener only after all profile launches and sessions
+    /// have settled. If another launch races with stop, acquire waits for the
+    /// stop task before binding a new listener.
+    func stopIfIdle(_ isIdle: Bool) async {
+        guard isIdle else { return }
+        if let stopTask { await stopTask.value; return }
+        guard let broker else { return }
+
+        let task = Task { @MainActor [weak self] in
+            await broker.stop()
+            guard let self, self.broker === broker else { return }
+            self.broker = nil
+            self.startTask = nil
+            self.stopTask = nil
+        }
+        stopTask = task
+        await task.value
     }
 }

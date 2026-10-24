@@ -7,8 +7,9 @@ import Foundation
 final class ManagerLaunchAdmission: ObservableObject {
     static let shared = ManagerLaunchAdmission()
     @Published private(set) var pressured = false
-    private var active: (profileID: UUID, token: UUID)?
+    @Published private var active: (profileID: UUID, token: UUID)?
     var isPreparing: Bool { active != nil }
+    var preparingProfileID: UUID? { active?.profileID }
     private var nextStart = Date.distantPast
     private var source: DispatchSourceMemoryPressure?
     private let thermalState: () -> ProcessInfo.ThermalState
@@ -28,7 +29,13 @@ final class ManagerLaunchAdmission: ObservableObject {
     }
     deinit { source?.cancel() }
     func requireSafePressure() throws {
+        #if NEANTIK_WEBKIT_STANDALONE_HOST
+        // The child has no manager install controller. The signed parent owns
+        // that admission; the child retains its own thermal/pressure refusal.
+        try ApplicationUpdateAdmission.shared.requireNewWork()
+        #else
         try ApplicationInstallLifecycle.requireNewWork()
+        #endif
         // Use one observation: critical followed by serious must not pass two
         // separate inequality checks while the system temperature changes.
         let thermal = thermalState()

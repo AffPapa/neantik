@@ -89,7 +89,14 @@ final class WebKitHostChildBootstrap {
             do {
                 let reservation: WebKitHostLeaseReservation
                 do { reservation = try WebKitHostLeaseReservation.validateChild(session: session, paths: paths) }
-                catch { throw Failure.reservationMismatch }
+                catch {
+                    #if NEANTIK_WEBKIT_STANDALONE_HOST
+                    if let leaseFailure = error as? WebKitHostLeaseReservation.Failure {
+                        throw leaseFailure
+                    }
+                    #endif
+                    throw Failure.reservationMismatch
+                }
                 // Match the manager-side launch fence before reading metadata.
                 // A tombstone is authoritative even if stale metadata still
                 // contains the profile after an interrupted deletion.
@@ -98,16 +105,14 @@ final class WebKitHostChildBootstrap {
                 ) == .missing else {
                     throw Failure.profileUnavailable
                 }
-                let store = ProfileStore(paths: paths, readOnlyMetadata: true)
-                guard let profile = store.profile(withID: session.profileID) else {
-                    throw Failure.profileUnavailable
-                }
+                let profile: BrowserProfile
+                do { profile = try WebKitHostProfileReader.profile(id: session.profileID, paths: paths) }
+                catch { throw Failure.profileUnavailable }
                 guard profile.engine == .webkit,
                       profile.webKitRuntimeGeneration == .isolatedV1,
                       profile.revision == session.revision,
                       !profile.isArchived else { throw Failure.profileMismatch }
                 try WebKitProfilePolicy.validateConfiguration(profile)
-                try ProfileStore.withValidatedLaunchSnapshot(profile, paths: paths) {}
                 return WebKitHostChildBootstrap(session: session, paths: paths,
                     profile: profile, reservation: reservation,
                     sessionLease: sessionLease,

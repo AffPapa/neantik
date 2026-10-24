@@ -19,7 +19,7 @@ import probe
 from assemble_layout import clone, validate_links
 from bundle_probe import BundleHost
 
-PORT = 58631
+PORT = 45100
 APP = 'NeAntik WebKit Bundle QA.app'
 BASE_ID = 'app.neantik.webkit-bundle-qa'
 RESTRICTED_ID = BASE_ID + '.restricted'

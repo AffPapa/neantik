@@ -106,6 +106,7 @@ def verify(
     today: date,
     *,
     allow_public_alpha_tuples: bool = False,
+    allow_unqualified_bundle: bool = False,
 ) -> str:
     lock = load_object(lock_path, "runtime source lock")
     baseline = load_object(baseline_path, "runtime security baseline")
@@ -201,6 +202,13 @@ def verify(
 
     verification = lock.get("verification")
     if not isinstance(verification, dict):
+        if allow_unqualified_bundle and lock.get("status") == "source-qualified":
+            return (
+                f"Pre-qualification bundle only: Chromium {runtime_raw} >= "
+                f"{minimum_raw}; baseline age {age} day(s); source {source_label}; "
+                f"{security_summary}; runtime tuple evidence is still required "
+                "before a public Direct release."
+            )
         if allow_public_alpha_tuples and lock.get("status") == "source-qualified":
             return (
                 f"Runtime security baseline verified for public alpha: Chromium {runtime_raw} >= "
@@ -249,6 +257,14 @@ def main() -> None:
             "is verified but strict coherent Apple tuple hardening is incomplete."
         ),
     )
+    parser.add_argument(
+        "--allow-unqualified-bundle",
+        action="store_true",
+        help=(
+            "Permit only a private bundle-only preparation from source-qualified "
+            "runtime evidence; this never qualifies a public release."
+        ),
+    )
     args = parser.parse_args()
     print(
         verify(
@@ -256,6 +272,7 @@ def main() -> None:
             args.baseline,
             args.today,
             allow_public_alpha_tuples=args.allow_public_alpha_tuples,
+            allow_unqualified_bundle=args.allow_unqualified_bundle,
         )
     )
 

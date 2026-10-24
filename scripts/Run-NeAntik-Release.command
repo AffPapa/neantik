@@ -40,6 +40,8 @@ DEFAULT_SOURCE_PROVENANCE="/private/tmp/nevision-chromium-152/build/source-prove
 EXPECTED_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PROJECT_DIR/Resources/Info.plist")"
 EXPECTED_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PROJECT_DIR/Resources/Info.plist")"
 
+# Keep using the one NeAntik Developer ID identity in the login Keychain.
+# This fingerprint is also pinned by AGENTS.md and verify-release.sh.
 export NEANTIK_SIGNING_IDENTITY="${NEANTIK_SIGNING_IDENTITY:-474F7C78F33EE324C24F6F5AE0443EB713E85E60}"
 export NEANTIK_NOTARY_PROFILE="${NEANTIK_NOTARY_PROFILE:-neantik-notary}"
 export NEANTIK_RELEASE_CHANNEL="${NEANTIK_RELEASE_CHANNEL:-public-alpha}"

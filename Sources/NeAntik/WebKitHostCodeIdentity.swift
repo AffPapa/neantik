@@ -8,9 +8,13 @@ import Foundation
 enum WebKitHostCodeIdentity {
     static let managerIdentifier = "app.neantik.desktop"
     static let hostIdentifier = "app.neantik.desktop.webkit-host"
+    #if NEANTIK_WEBKIT_STANDALONE_HOST
+    private static let developmentManagerIdentifier = "app.neantik.desktop.dev"
+    #else
     private static let developmentManagerIdentifier = NeAntikApplicationEnvironment.developmentBundleIdentifier
+    #endif
     private static let developmentHostIdentifier = developmentManagerIdentifier + ".webkit-host"
-    static let teamIdentifier = "H6VGU2M6JD"
+    static let productionTeamIdentifier = "H6VGU2M6JD"
     static let pinKey = "NeAntikWebKitHostV1"
     static let hostBundleRelativePath = "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
     static let hostExecutableRelativePath =
@@ -18,17 +22,17 @@ enum WebKitHostCodeIdentity {
 
     static func expectedHostIdentifier(for managerIdentifier: String?) -> String? {
         if managerIdentifier == Self.managerIdentifier { return Self.hostIdentifier }
-        #if DEBUG
+        // The notarized, separately provisioned Dev QA app is optimized like
+        // a release build. Keep its one exact identity available in every
+        // configuration; the signed manager, child hash/CDHash and live parent
+        // checks remain the trust boundary. Do not accept arbitrary suffixes.
         if managerIdentifier == Self.developmentManagerIdentifier { return Self.developmentHostIdentifier }
-        #endif
         return nil
     }
 
     static func isSupportedHostIdentifier(_ identifier: String?) -> Bool {
         if identifier == Self.hostIdentifier { return true }
-        #if DEBUG
         if identifier == Self.developmentHostIdentifier { return true }
-        #endif
         return false
     }
 
@@ -40,27 +44,57 @@ enum WebKitHostCodeIdentity {
         return info["CFBundleIdentifier"] as? String
     }
 
-    /// Accept the release manager everywhere and the dedicated QA manager only
-    /// in Debug builds. The child launch must pin the same identity that the
-    /// bundle's signed Info.plist declares; otherwise an isolated development
-    /// app is rejected before the helper can bootstrap.
+    /// Accept only the release manager or the exact separately provisioned Dev
+    /// QA manager. QA builds may be optimized and signed for notarization, so
+    /// this identity rule cannot depend on Swift's DEBUG compilation condition.
     static func expectedManagerIdentifier(in managerBundle: URL) -> String? {
         guard let identifier = managerIdentifier(in: managerBundle) else {
             return nil
         }
         if identifier == Self.managerIdentifier { return identifier }
-        #if DEBUG
         if identifier == Self.developmentManagerIdentifier { return identifier }
-        #endif
         return nil
     }
 
-    enum Failure: Error, Equatable {
+    /// Keep WebKit code in the same Developer ID trust domain as the signed
+    /// manager bundle. The public release is still signed by
+    /// `productionTeamIdentifier`; deriving this value from the signed manager
+    /// also makes a recipient's consistently re-signed relinked copy usable.
+    static func expectedTeamIdentifier(in managerBundle: URL) -> String? {
+        guard let identifier = expectedManagerIdentifier(in: managerBundle),
+              let executable = managerExecutable(in: managerBundle) else { return nil }
+        return try? ProxyRelayExpectedCode.teamIdentifier(at: executable,
+                                                          expectedIdentifier: identifier)
+    }
+
+    private static func managerExecutable(in managerBundle: URL) -> URL? {
+        guard let info = NSDictionary(contentsOf: managerBundle.appendingPathComponent("Contents/Info.plist")) as? [String: Any],
+              info["CFBundleExecutable"] as? String == "NeAntik" else { return nil }
+        let executable = managerBundle.appendingPathComponent("Contents/MacOS/NeAntik")
+        return isPhysicalFile(executable) ? executable : nil
+    }
+
+    enum Failure: LocalizedError, Equatable {
         case malformedPin
         case unsafeBundle
         case hostHashMismatch
         case codeIdentityMismatch
         case parentIdentityMismatch
+
+        var errorDescription: String? {
+            switch self {
+            case .malformedPin:
+                return "Проверочная запись отдельного WebKit повреждена. Профиль не запускался."
+            case .unsafeBundle:
+                return "Пакет отдельного WebKit неполный или изменён. Профиль не запускался."
+            case .hostHashMismatch:
+                return "Файл WebKit-host не совпадает с проверочной записью приложения. Нужна новая сборка."
+            case .codeIdentityMismatch:
+                return "Не удалось подтвердить подпись процесса WebKit. Профиль не запускался."
+            case .parentIdentityMismatch:
+                return "Не удалось подтвердить связь процесса WebKit с приложением. Профиль не запускался."
+            }
+        }
     }
 
     struct Pin: Equatable, Sendable {
@@ -127,26 +161,25 @@ enum WebKitHostCodeIdentity {
               let info = NSDictionary(contentsOf: infoURL) as? [String: Any]
         else { throw Failure.unsafeBundle }
         let pin = try Pin(propertyList: info[pinKey])
-        guard sha256(helper) == pin.sha256 else { throw Failure.hostHashMismatch }
+        guard sha256(helper) == pin.sha256,
+              let expectedTeam = expectedTeamIdentifier(in: managerBundle) else {
+            throw Failure.hostHashMismatch
+        }
         let code = try ProxyRelayExpectedCode.qualifiedPin(
             at: helper, expectedIdentifier: pin.identifier,
-            expectedTeamIdentifier: teamIdentifier, expectedCDHash: pin.cdHashBytes)
+            expectedTeamIdentifier: expectedTeam, expectedCDHash: pin.cdHashBytes)
         return (helper, code)
     }
 
     /// Runtime pin carried inside the signed helper bundle. The parent uses
     /// this exact digest in the session message; the child independently
     /// checks the same pin against dyld before reading profile data.
-    static func pinnedRuntimeSHA256(in managerBundle: URL) throws -> String {
+    static func pinnedRuntime(in managerBundle: URL) throws -> WebKitRuntimeImageAttestation.Pin {
         _ = try pinnedHelperCode(in: managerBundle)
-        let infoURL = managerBundle.appendingPathComponent(
-            hostBundleRelativePath + "/Contents/Info.plist")
-        guard isPhysicalFile(infoURL),
-              let info = NSDictionary(contentsOf: infoURL) as? [String: Any]
-        else { throw Failure.unsafeBundle }
+        let hostBundle = managerBundle.appendingPathComponent(hostBundleRelativePath,
+                                                               isDirectory: true)
         do {
-            return try WebKitRuntimeImageAttestation.Pin(
-                propertyList: info[WebKitRuntimeImageAttestation.pinKey]).webKitSHA256
+            return try WebKitRuntimeImageAttestation.pin(in: hostBundle)
         } catch { throw Failure.unsafeBundle }
     }
 
@@ -169,12 +202,13 @@ enum WebKitHostCodeIdentity {
 
         let managerExecutable = managerBundle.appendingPathComponent("Contents/MacOS/NeAntik")
         guard isPhysicalFile(managerExecutable),
+              let expectedTeam = expectedTeamIdentifier(in: managerBundle),
               let parentIdentity = ProxyRelaySocketOwnerInspector.processIdentity(expectedParentPID),
               parentIdentity.userID == geteuid(),
               let managerCode = try? ProxyRelayExpectedCode.qualifiedPin(
                   at: managerExecutable,
                   expectedIdentifier: Self.managerIdentifier(in: managerBundle) ?? "",
-                  expectedTeamIdentifier: teamIdentifier),
+                  expectedTeamIdentifier: expectedTeam),
               ProxyRelayLiveCodeVerifier.matches(processID: expectedParentPID,
                   expectedProcess: parentIdentity, expectedCode: managerCode),
               ProxyRelaySocketOwnerInspector.processIdentity(expectedParentPID) == parentIdentity
@@ -183,6 +217,7 @@ enum WebKitHostCodeIdentity {
 
     /// Parent-side check immediately after spawn and again before sending any
     /// session bootstrap bytes.
+    #if !NEANTIK_WEBKIT_STANDALONE_HOST
     static func verifyChild(processID: pid_t, expectedParentPID: pid_t,
                             managerBundle: URL) -> ProxyRelayOwnerProcessIdentity? {
         let managerExecutable = managerBundle.appendingPathComponent("Contents/MacOS/NeAntik")
@@ -193,10 +228,11 @@ enum WebKitHostCodeIdentity {
                 forExecutablePath: currentExecutable),
               currentBundle.standardizedFileURL == managerBundle.standardizedFileURL,
               isPhysicalFile(managerExecutable),
+              let expectedTeam = expectedTeamIdentifier(in: managerBundle),
               let managerCode = try? ProxyRelayExpectedCode.qualifiedPin(
                 at: managerExecutable,
                 expectedIdentifier: Self.managerIdentifier(in: managerBundle) ?? "",
-                expectedTeamIdentifier: teamIdentifier),
+                expectedTeamIdentifier: expectedTeam),
               let parentBefore = ProxyRelaySocketOwnerInspector.processIdentity(getpid()),
               parentBefore.userID == geteuid(),
               ProxyRelayLiveCodeVerifier.matches(processID: getpid(),
@@ -212,6 +248,7 @@ enum WebKitHostCodeIdentity {
               ProxyRelaySocketOwnerInspector.processIdentity(getpid()) == parentBefore else { return nil }
         return before
     }
+    #endif
 
     private static func managerBundle(for helper: URL) -> URL? {
         let suffix = "/" + hostExecutableRelativePath

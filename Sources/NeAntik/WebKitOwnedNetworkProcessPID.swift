@@ -45,6 +45,8 @@ enum WebKitOwnedNetworkProcessPID {
     enum Failure: Error, Equatable {
         case imageNotLoaded
         case symbolMissing
+        case processStarting
+        case processStartupTimedOut
         case invalidProcessIdentifier
         case invalidProcessIdentity
     }
@@ -77,6 +79,44 @@ enum WebKitOwnedNetworkProcessPID {
         let storeAddress = Unmanaged.passUnretained(dataStore).toOpaque()
         return try resolveOwner(storeAddress: storeAddress,
                                 verifiedImage: image)
+    }
+
+    /// The owned C getter initiates an asynchronous XPC launch when needed;
+    /// its PID remains zero until the main-queue launch callback completes.
+    /// Yield the main actor while waiting, and retry only that starting state.
+    @MainActor
+    static func ownerWhenReady(for dataStore: WKWebsiteDataStore,
+                               bundleURL: URL = Bundle.main.bundleURL) async throws -> Owner {
+        // Attest the immutable loaded image once, before the bounded wait.
+        // Hashing it on each poll would delay the main-queue XPC callback.
+        let image = try WebKitRuntimeImageAttestation.attestCurrentProcess(bundleURL: bundleURL)
+        return try await waitForOwner(readOwner: {
+            let storeAddress = Unmanaged.passUnretained(dataStore).toOpaque()
+            return try resolveOwner(storeAddress: storeAddress, verifiedImage: image)
+        })
+    }
+
+    @MainActor
+    static func waitForOwner(
+        readOwner: () throws -> Owner,
+        now: () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+        suspend: () async throws -> Void = { try await Task.sleep(for: .milliseconds(20)) }
+    ) async throws -> Owner {
+        let deadline = now() + 3
+        while true {
+            try Task.checkCancellation()
+            guard now() < deadline else { throw Failure.processStartupTimedOut }
+            do {
+                let owner = try readOwner()
+                try Task.checkCancellation()
+                guard now() < deadline else { throw Failure.processStartupTimedOut }
+                return owner
+            } catch Failure.processStarting {
+                // Wrong identity, a dead/reused PID, or an unattested image
+                // must fail immediately rather than being retried as startup.
+                try await suspend()
+            }
+        }
     }
 
     /// Resolves and snapshots a NetworkProcess belonging to the current user.
@@ -146,6 +186,7 @@ enum WebKitOwnedNetworkProcessPID {
             let function = unsafeBitCast(symbol, to: PIDFunction.self)
             pid = function(storeAddress)
         }
+        guard pid != 0 else { throw Failure.processStarting }
         guard pid > 1, processIsLive(pid) else {
             throw Failure.invalidProcessIdentifier
         }

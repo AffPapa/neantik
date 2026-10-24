@@ -195,6 +195,63 @@ class DirectNotarizedArchiveVerifierTests(unittest.TestCase):
         self.assertIn("xcrun stapler validate", joined)
         self.assertIn("spctl --assess --type", joined)
 
+    def test_verify_app_runs_owned_webkit_pin_guard_when_runtime_is_present(self) -> None:
+        commands: list[list[str]] = []
+
+        def runner(command):
+            commands.append(command)
+            if command[:2] == ["codesign", "--display"]:
+                return MODULE.CommandResult(0, signed_display())
+            if command and command[0] == sys.executable and command[1].endswith("verify-webkit-host-pin.py"):
+                return MODULE.CommandResult(1, "nested WebKit host executable changed after its manager pin was sealed")
+            return MODULE.CommandResult(0, "ok")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            app = Path(temporary) / "NeAntik.app"
+            write_app_info(app)
+            info_path = app / "Contents" / "Info.plist"
+            info = plistlib.loads(info_path.read_bytes())
+            info["NeAntikWebKitHostV1"] = {"fixture": "present"}
+            info_path.write_bytes(plistlib.dumps(info))
+            with self.assertRaisesRegex(
+                MODULE.DirectNotarizedArchiveError,
+                "nested WebKit host executable changed after its manager pin was sealed",
+            ):
+                MODULE.verify_app(app, expected=EXPECTED, runner=runner)
+
+        self.assertTrue(any(command and command[0] == sys.executable
+                            and command[1].endswith("verify-webkit-host-pin.py")
+                            for command in commands))
+
+    def test_verify_app_requires_owned_webkit_runtime_notice_guard(self) -> None:
+        commands: list[list[str]] = []
+
+        def runner(command):
+            commands.append(command)
+            if command[:2] == ["codesign", "--display"]:
+                return MODULE.CommandResult(0, signed_display())
+            return MODULE.CommandResult(0, "ok")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            app = Path(temporary) / "NeAntik.app"
+            write_app_info(app)
+            host = app / "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
+            host.mkdir(parents=True)
+            frameworks = host / "Contents/Frameworks"
+            frameworks.mkdir(parents=True)
+            info_path = app / "Contents/Info.plist"
+            info = plistlib.loads(info_path.read_bytes())
+            info["NeAntikWebKitHostV1"] = {"fixture": "present"}
+            info_path.write_bytes(plistlib.dumps(info))
+            MODULE.verify_app(app, expected=EXPECTED, runner=runner)
+
+        notice_commands = [command for command in commands
+                           if command and command[0] == sys.executable
+                           and command[1].endswith("webkit_runtime_notices.py")]
+        self.assertEqual(len(notice_commands), 1)
+        self.assertIn("--verify", notice_commands[0])
+        self.assertIn(str(frameworks), notice_commands[0])
+
     def test_verify_app_fails_closed_when_stapler_or_spctl_fails(self) -> None:
         def runner(command):
             if command[:2] == ["codesign", "--display"]:

@@ -75,13 +75,23 @@ different facts:
 
 | API | What it identifies | Boundary |
 |---|---|---|
-| `NEFilterFlow.sourceAppAuditToken` | Source application reported for the flow | This is the property QA7 used. Its expected QA requirement failed. |
+| `NEFilterFlow.sourceAppAuditToken` | Source application reported for a content-filter flow | QA7's supplemental content-filter provider read this token; both signed QA identities failed their expected requirement. |
 | `NEFilterFlow.sourceProcessAuditToken` | Process that actually created the connection | It may be a system process acting for an app. Switching to it does not establish the original profile owner. Available from macOS13. |
 | `es_process_t.responsible_audit_token` | Process responsible for the process described by an Endpoint Security message | Valid only at message version4 or later. It can refer to the process itself when no responsible process exists or that process has exited. Not a guaranteed WebKit host link. |
 
 Sources: [flow creator](https://developer.apple.com/documentation/networkextension/nefilterflow/sourceprocessaudittoken),
 [responsible token](https://developer.apple.com/documentation/endpointsecurity/es_process_t/responsible_audit_token).
-No second live flow token or actual guest identity was collected for this review.
+QA7 packaged both `NEAppProxyProvider` and the explicitly enabled supplemental
+`NEFilterDataProvider`. The measured A/B Direct reaches and expected-clause rows
+belong to the filter path: it read `NEFilterFlow.sourceAppAuditToken`, failed
+the expected QA identity checks, then allowed the scoped flow while reporting
+unknown ownership. The separate App Proxy class reads
+`NEAppProxyFlow.metaData.sourceAppAuditToken` and returns `false` for every
+captured flow, but the retained report does not establish that it captured the
+measured requests. Do not attribute the filter's Direct result to App Proxy.
+The test used system WebKit and did not test our app-owned Networking helper or
+a transparent proxy. See the
+[classification correction](../../docs/evidence/webkit-qa7-provider-classification-correction-20261020.json).
 
 ### A scoped alternative exists,with unresolved coverage
 
@@ -124,3 +134,75 @@ Production WebKit proxy remains refused;no root-wide monitoring path was added.
 
 [QA7 result](../../docs/evidence/webkit-owned-filter-native-development.json)
 and [self-control evidence](../../docs/evidence/webkit-selfpin-development.json).
+
+### macOS 27 SDK confirmation (20 October 2026)
+
+The current selected SDK headers reconfirm the boundary with exact local hashes:
+`NEFilterFlow.h` SHA-256 `ce36c704ca2c983ffb22bec1ab417bf7ea2433d4bcca99b2bc231b7f739dd4c7`
+and `NEFilterProviderConfiguration.h` SHA-256
+`6cd55e64b14fca6da3cab305968b4654d1aab30d40d5fbea9f6fff01a25423af`.
+`sourceAppIdentifier`, `sourceAppUniqueIdentifier`, and `NEFilterBrowserFlow`
+are unavailable on macOS; `filterBrowsers` is explicitly unsupported there.
+Current Apple web pages list these symbols without surfacing that platform
+boundary in the short summaries, so use the SDK availability annotations. This
+confirms the existing no-retry decision; no native test, entitlement, filter,
+or profile change is warranted. [Receipt](../../docs/evidence/webkit-filter-browser-api-macos-check-20261020.json).
+
+### App-proxy helper-matching research (20 October 2026)
+
+The public macOS SDK documents a rule refinement QA7 did not exercise:
+`NEAppRule.matchTools` can restrict an app rule to named helper processes.
+QA7 used `matchTools = nil`, which includes the app and all its helpers. The current
+WebKit namespace configure receipt identifies the app-owned Networking helper
+as `app.neantik.desktop.webkit.Networking` (the executable suffix varies by
+build). This makes a precise app-proxy rule for a dedicated profile host and
+its signed Networking helper worth testing with an app-owned runtime. QA7's
+App Proxy was packaged beside the supplemental content filter; the retained
+evidence does not prove the app-proxy class captured the measured request, and
+system WebKit does not prove helper-token attribution. Apple
+also documents App Proxy configurations through
+managed app-layer configuration profiles and macOS per-app rules for
+MDM-managed apps. Ordinary self-service enrollment for NeAntik is unproven,
+so this is a platform deployment gate, not an implementation detail.
+
+Upstream Cocoa WebKit adds a process-scope constraint:
+`NetworkProcessProxy::defaultNetworkProcess()` is a process-local static
+singleton and `ensureDefaultNetworkProcess()` reuses it. Multiple
+`WebsiteDataStore`s in one host process therefore share a NetworkProcess. The
+planned one-profile-per-host boundary can isolate that helper instance only if
+manager launch and store ownership enforce it.
+
+Do not change the shipping rule or accept helper tokens yet. The remaining
+proof is an exact signed runtime showing (1) app-proxy `matchTools` captures its
+Networking helper, (2) the complete kernel flow token validates against that
+helper's pinned Developer ID/CDHash, (3) an authenticated host lease maps that
+instance to exactly one profile, and (4) unrelated tools, missing/revoked
+leases, relay loss, DNS/IPv4/IPv6/UDP/WebSocket and restart fail closed. The
+The app-proxy/system-WebKit attribution failure does not establish how a
+custom app-owned Networking helper will appear to the provider. No custom
+helper flow was tested. Per-App App Proxy is documented as MDM-only, so it is
+not the ordinary-user product route.
+See the [source review receipt](../../docs/evidence/webkit-app-proxy-matchtools-review-20261020.json).
+
+### Transparent-proxy route for direct distribution (20 October 2026)
+
+Apple's deployment matrix permits a macOS `NETransparentProxyProvider` packaged
+as a system extension for Developer ID distribution. Unlike per-app App Proxy,
+its configuration is not documented as MDM-only. Its network rules are global,
+not per-app: they match network attributes rather than bundle IDs. A protected
+flow must be identified from system-supplied flow metadata and a full audit
+token; unrelated flows can pass through, but a protected flow with missing or
+revoked authority must be claimed and explicitly closed. Returning `false` is a
+direct path for this provider.
+
+This route remains unproven for NeAntik. The app-owned WebKit Networking helper
+has a distinct signed identifier, but no exact flow has shown that the
+transparent provider reports that helper's token. If metadata is absent or
+misattributed, returning `false` risks the known bypass; failing closed for all
+unknown traffic would break unrelated applications. Transparent proxy settings
+also do not configure DNS/proxy settings, and DNS matching has separate rule
+constraints. A controlled test must establish exact helper attribution,
+claim-and-close behavior, DNS, unrelated-app pass-through, IPv4/IPv6, UDP,
+WebSocket, relay-loss handling, and recovery without altering global user
+network settings. No provider was installed, configured or tested here. See
+the [source review receipt](../../docs/evidence/webkit-transparent-proxy-candidate-20261020.json).

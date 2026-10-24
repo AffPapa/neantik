@@ -16,6 +16,19 @@
     "sdk": "26.5",
     "upstreamNotarized": false
   },
+  "runtimeImageAttributionAudit": {
+    "observedAt": "2026-10-20",
+    "hostExecutableSHA256": "abcbcf87378f49eaeee9c8a22991e8e2f95ca86b7314deb7baf942857372ba73",
+    "hostWebKitLoadCommand": "/System/Library/Frameworks/WebKit.framework/Versions/A/WebKit",
+    "preparedAppAExecutableSHA256": "a002e7c625b37ea49a0dea847b6a73e2290613fd7496bfe42e7bc106944ae19a",
+    "preparedAppAWebKitLoadCommand": "/System/Library/Frameworks/WebKit.framework/Versions/A/WebKit",
+    "candidateBundledWebKitSHA256": "51d3c8cbe84449a136cb9e4f19b4dfaf5f868cce310320df9a9ba19a5f46a15a",
+    "candidateBundledWebKitMinimumOS": "15.4",
+    "nativeResultHasLoadedImagePath": false,
+    "nativeResultHasLoadedImageHash": false,
+    "status": "network controls remain observed; bundled-runtime attribution unverified",
+    "conclusion": "The recorded A/B behavior cannot establish that the tested process loaded the bundled WebKit. Do not count this as a compatible owned-runtime qualification. No process was launched during this audit."
+  },
   "qa": {
     "hostSourceSHA256": "34aec0b78c473b40232039344a0ca3fbe36bc94189acf4c1f2cf0ecd650322e1",
     "hostExecutableSHA256": "abcbcf87378f49eaeee9c8a22991e8e2f95ca86b7314deb7baf942857372ba73",
@@ -52,6 +65,7 @@
   },
   "limitations": [
     "Research-owned HTTP fixture only; this is not the NeAntik manager, persistent profile store, MCP, or a shipping runtime.",
+    "The exact tested host load command references system WebKit and its native result does not record the loaded framework image; the 15.4 bundled-runtime attribution is unverified.",
     "Execution ran on macOS 27.0; setting a 15.4 deployment target does not prove execution on macOS 15.4.",
     "No DNS-on-wire, HTTPS/TLS, IPv6, WebRTC, WebSocket, delegated/background traffic, update traffic, or real upstream proxy was qualified by this run.",
     "The upstream archive is not notarized. Product bundling, source/license notices, stable per-profile broker integration, lifecycle, and exact-candidate signing/notarization/Gatekeeper remain open."

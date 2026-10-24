@@ -105,7 +105,9 @@ class DNSFixture(BASE.Fixture):
     # This fixture has no reason to dial even the base fixture's GeoIP hosts.
     public_tls_hosts = frozenset()
 
-    def __init__(self, root):
+    def __init__(self, root, *, name_suffix='.neantik-dns.test'):
+        if name_suffix not in ('.neantik-dns.test', '.neantik-dns.invalid'):
+            raise ValueError('only owned synthetic DNS suffixes are allowed')
         root = Path(root)
         mode = root.lstat()
         if not stat.S_ISDIR(mode.st_mode) or mode.st_uid != os.getuid() or mode.st_mode & 0o077:
@@ -115,7 +117,7 @@ class DNSFixture(BASE.Fixture):
         try:
             for phase in ('dns-refused', 'doh-refused', 'bypass-control'):
                 self.nonces[phase] = uuid.uuid4().hex
-            self.names = {phase: uuid.uuid4().hex + '.neantik-dns.test' for phase in self.nonces}
+            self.names = {phase: uuid.uuid4().hex + name_suffix for phase in self.nonces}
             self.reverse_names = {name: phase for phase, name in self.names.items()}
             owner = self
             class Handler(socketserver.BaseRequestHandler):

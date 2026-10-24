@@ -1,8 +1,52 @@
+import Darwin
 import Foundation
 import Testing
 @testable import NeAntik
 
+@_silgen_name("flock")
+private func proxyHealthTestFlock(
+    _ descriptor: Int32,
+    _ operation: Int32
+) -> Int32
+
 struct ProxyHealthTests {
+    @Test
+    func proxyAuditMarkersHaveOnlyFixedNonsecretValues() {
+        let phases = ProxyAuditPhase.allCases
+        #expect(phases.count == 18)
+        #expect(Set(phases.map(\.rawValue)).count == phases.count)
+        for phase in phases {
+            #expect(phase.frame == "NEANTIK_MCP_QA phase=\(phase.rawValue)\n")
+            #expect(phase.rawValue.utf8.allSatisfy { (97...122).contains($0) || $0 == 95 })
+            #expect(phase.frame.utf8.count < 80)
+        }
+    }
+
+    @MainActor @Test
+    func unauthenticatedProxyCheckNeverReadsKeychain() async throws {
+        let root = Self.temporaryRoot("no-keychain-proxy")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let backend = MCPProfileManagementTests.Backend()
+        backend.failRead = true
+        let proxy = ProxyConfiguration(kind: .http, host: "example.invalid", port: 8080, username: "")
+        let profile = try store.upsert(BrowserProfile(name: "No credentials", proxy: proxy))
+        let operations = ProfileProxyOperations(
+            store: store, keychain: KeychainStore(backend: backend, service: "synthetic-no-keychain", legacyService: nil),
+            invalidateObservation: { _ in },
+            probe: { _, password in
+                #expect(password.isEmpty)
+                return ProxyTestObservation(observedAt: .now, responseTimeMilliseconds: 10,
+                    result: ProxyTestResult(ipAddress: "203.0.113.8", city: nil, countryName: "Germany",
+                                            countryCode: "DE", timezoneIdentifier: "Europe/Berlin", localeIdentifier: "de-DE"))
+            }
+        )
+        _ = try await operations.commit(profileID: profile.id, expectedProxy: proxy,
+            expectedRevision: profile.revision, previous: nil, commitsLaunchContext: false)
+        #expect(backend.reads == 0)
+    }
+
     @MainActor @Test
     func launchBookkeepingRetainsMeasuredHealthAfterDurableReload() async throws {
         let root = Self.temporaryRoot("launch-health")
@@ -361,6 +405,40 @@ struct ProxyHealthTests {
         #expect(try Data(contentsOf: fileURL) == previousData)
         let reloaded = try ProxyHealthStore(fileURL: fileURL)
         #expect(await reloaded.state(for: seedID) == seedState)
+    }
+
+    @Test
+    func occupiedHistoryLockFailsWithinBoundWithoutOverwriting() async throws {
+        let root = Self.temporaryRoot("busy-lock")
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        let fileURL = root.appendingPathComponent("proxy-health.json")
+        let lockURL = fileURL.appendingPathExtension("lock")
+        let descriptor = lockURL.path.withCString {
+            Darwin.open($0, O_RDWR | O_CREAT | O_CLOEXEC, 0o600)
+        }
+        try #require(descriptor >= 0)
+        defer {
+            _ = proxyHealthTestFlock(descriptor, LOCK_UN)
+            _ = Darwin.close(descriptor)
+        }
+        try #require(proxyHealthTestFlock(descriptor, LOCK_EX | LOCK_NB) == 0)
+
+        let store = try ProxyHealthStore(fileURL: fileURL)
+        let profileID = UUID()
+        do {
+            try await store.set(
+                Self.healthState(timestamp: 1_800_000_080),
+                for: profileID
+            )
+            Issue.record("Occupied history lock unexpectedly allowed a write")
+        } catch {
+            #expect(error as? ProxyHealthStoreError == .lockTimedOut)
+        }
+        #expect(!FileManager.default.fileExists(atPath: fileURL.path))
     }
 
     @Test

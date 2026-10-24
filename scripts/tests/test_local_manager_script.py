@@ -44,6 +44,8 @@ class LocalManagerScriptTests(unittest.TestCase):
         )
         self.assertNotIn('exec "$DEVELOPMENT_APP/Contents/MacOS/NeAntik"', text)
         self.assertIn("NeAntikDevelopmentFixtureRoot", text)
+        self.assertIn("license closure and native runtime qualification", text)
+        self.assertIn("docs/NEXT_1_0_SLICES.md", text)
 
         for forbidden in (
             "notarytool",
@@ -71,6 +73,26 @@ class LocalManagerScriptTests(unittest.TestCase):
                     shlex.quote(str(info)) + "\n" + operations], check=True, capture_output=True)
                 actual = plistlib.loads(info.read_bytes())
                 self.assertIs(actual["NeAntikWebKitMediaPolicyEnabled"], True)
+                self.assertEqual(actual["UnrelatedMarker"], "preserved")
+
+    @unittest.skipUnless(pathlib.Path("/usr/libexec/PlistBuddy").is_file(), "macOS plist control")
+    def test_dev_bundle_disables_production_backup_capability(self) -> None:
+        text = SCRIPT.read_text(encoding="utf-8")
+        marker = "# A copied release bundle may carry the production-only BrowserData backup"
+        start = text.index(marker)
+        next_command = text.index('  -c "Set :CFBundleDisplayName NeAntik Dev"', start)
+        end = text.rfind("/usr/libexec/PlistBuddy", start, next_command)
+        operations = text[start:end].split("\n", 1)[1]
+
+        for initial in ({}, {"NeAntikBrowserDataBackupEnabled": True},
+                        {"NeAntikBrowserDataBackupEnabled": False}):
+            with self.subTest(initial=initial), tempfile.TemporaryDirectory() as root:
+                info = pathlib.Path(root) / "Info.plist"
+                info.write_bytes(plistlib.dumps({"UnrelatedMarker": "preserved", **initial}))
+                subprocess.run(["/bin/zsh", "-c", "set -e; INFO_PLIST=" +
+                    shlex.quote(str(info)) + "\n" + operations], check=True, capture_output=True)
+                actual = plistlib.loads(info.read_bytes())
+                self.assertIs(actual["NeAntikBrowserDataBackupEnabled"], False)
                 self.assertEqual(actual["UnrelatedMarker"], "preserved")
 
     def test_fast_path_never_rewrites_dist(self) -> None:

@@ -477,7 +477,8 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
               ownExecutable.standardizedFileURL.path == path,
               let identity = ProxyRelaySocketOwnerInspector.processIdentity(pid),
               identity.generation == generation, identity.userID == geteuid(),
-              let pin = try? ProxyRelayExpectedCode.qualifiedPin(at: ownExecutable, expectedIdentifier: identifier, expectedTeamIdentifier: "H6VGU2M6JD")
+              let team = try? ProxyRelayExpectedCode.teamIdentifier(at: ownExecutable, expectedIdentifier: identifier),
+              let pin = try? ProxyRelayExpectedCode.qualifiedPin(at: ownExecutable, expectedIdentifier: identifier, expectedTeamIdentifier: team)
         else { return false }
         return ProxyRelayLiveCodeVerifier.matches(processID: pid, expectedProcess: identity, expectedCode: pin) &&
             Self.currentProcessIdentity(pid) == generation

@@ -26,6 +26,11 @@ for input in "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_ROOT" "$CANDIDATE_LOCK"; do
     exit 66
   fi
 done
+if [[ -n "${NEANTIK_OWNED_WEBKIT_HOST_BINARY:-}" ||
+      -n "${NEANTIK_OWNED_WEBKIT_FRAMEWORKS:-}" ]]; then
+  echo "Owned WebKit is not release-enabled; direct candidate preparation refuses runtime injection." >&2
+  exit 78
+fi
 if [[ -e "$CANDIDATE_MANIFEST" || -L "$CANDIDATE_MANIFEST" ]]; then
   echo "Prepared candidate manifest already exists; refusing to replace it." >&2
   exit 65

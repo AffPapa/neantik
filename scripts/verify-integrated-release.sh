@@ -54,6 +54,15 @@ for localized_resource in InfoPlist.strings Localizable.strings; do
   fi
 done
 
+OWNED_WEBKIT_HOST="$APP_PATH/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
+if [[ -e "$OWNED_WEBKIT_HOST" || -L "$OWNED_WEBKIT_HOST" ]]; then
+  python3 -B "$PROJECT_DIR/scripts/verify-webkit-host-pin.py" "$APP_PATH"
+  python3 -B "$PROJECT_DIR/scripts/webkit_runtime_notices.py" \
+    --verify --app "$APP_PATH" \
+    --runtime-frameworks "$OWNED_WEBKIT_HOST/Contents/Frameworks" \
+    --project-root "$PROJECT_DIR"
+fi
+
 "$PROJECT_DIR/scripts/verify-release.sh" "$APP_PATH"
 
 if [[ ! -d "$RUNTIME_APP" ]]; then
@@ -122,6 +131,11 @@ elif [[ "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.12" ]]; then
   PACKAGED_SOURCE_CONTRACT="$EVIDENCE/${M156_EVIDENCE_PREFIX}-source-contract.json"
   SOURCE_PROVENANCE_FILE="$PROJECT_DIR/runtime/${M156_EVIDENCE_PREFIX}-port-candidate.json"
   CANDIDATE_LOCK_FILE="$PROJECT_DIR/runtime/fingerprint-${M156_EVIDENCE_PREFIX}.lock.json"
+elif [[ "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.48" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-15648-source-contract.json"
+  PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-15648-source-contract.json"
+  SOURCE_PROVENANCE_FILE="$EVIDENCE/source-provenance.json"
+  CANDIDATE_LOCK_FILE="$EVIDENCE/fingerprint-chromium.lock.json"
 else
   echo "Unsupported Chromium runtime version for integrated release verification: $EXPECTED_RUNTIME_VERSION" >&2
   exit 65
@@ -179,6 +193,14 @@ elif [[ "$EXPECTED_RUNTIME_VERSION" == "155.0.8059.40" ]]; then
   python3 "$PROJECT_DIR/scripts/chromium_15540_packaged_evidence.py" "$EVIDENCE/fingerprint-chromium.lock.json" "$EVIDENCE"
 elif [[ "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.12" ]]; then
   python3 "$PROJECT_DIR/scripts/chromium_15612_packaged_evidence.py" "$EVIDENCE/fingerprint-chromium.lock.json" "$EVIDENCE"
+elif [[ "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.48" ]]; then
+  for evidence_name in chromium-15648-source-adoption-v3.json chromium-15648-deps-lock.json chromium-15648-neantik-v3.patch chromium-15648-devtools-typescript6.patch chromium-15648-v8-scope-iterator-compat.patch chromium-15648-rebase-plan.json; do
+    if [[ ! -f "$EVIDENCE/chromium-15648-source-evidence/$evidence_name" || -L "$EVIDENCE/chromium-15648-source-evidence/$evidence_name" ]] ||
+       ! cmp -s "$PROJECT_DIR/runtime/$evidence_name" "$EVIDENCE/chromium-15648-source-evidence/$evidence_name"; then
+      echo "Integrated Chromium 156.48 source evidence differs: $evidence_name" >&2
+      exit 65
+    fi
+  done
 fi
 
 if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
@@ -196,7 +218,8 @@ elif [[ "$EXPECTED_RUNTIME_VERSION" == 152.* ||
         "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ||
         "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.98" ||
         "$EXPECTED_RUNTIME_VERSION" == "155.0.8059.40" ||
-        "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.12" ]]; then
+        "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.12" ||
+        "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.48" ]]; then
   "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
     "$EVIDENCE/source-provenance.json"
   "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
@@ -262,7 +285,8 @@ if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ||
       "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.93" ||
       "$EXPECTED_RUNTIME_VERSION" == "154.0.8037.98" ||
         "$EXPECTED_RUNTIME_VERSION" == "155.0.8059.40" ||
-        "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.12" ]]; then
+      "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.12" ||
+      "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.48" ]]; then
   VERIFY_BUILT_RUNTIME_ARGS+=(
     ""
     "$EVIDENCE/args.gn"

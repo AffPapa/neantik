@@ -30,6 +30,10 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
         with self.assertRaises(MODULE.FingerprintReportError):
             MODULE.source_contract_name("156.0.8078.13")
 
+    def test_current_stable_15648_uses_its_own_source_contract(self):
+        self.assertEqual(MODULE.source_contract_name("156.0.8078.48"), "chromium-15648-source-contract.json")
+        self.assertEqual(MODULE.source_contract_name("156.0.8078.48", {"fingerprintChromium": {"chromiumVersion": "156.0.8078.48"}}), "chromium-15648-source-contract.json")
+
     def test_semantic_audit8_allows_equal_webgl_without_relaxing_coherence(self):
         report = production_report(); report["auditSchemaVersion"] = 8
         # Distinct identities keep their coherent tuples; rendering equality is

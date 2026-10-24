@@ -308,6 +308,8 @@ def source_contract_name(runtime_version: str, candidate_lock: dict | None = Non
             except ValueError as error:
                 raise FingerprintReportError('M156 candidate source contract mismatch') from error
         return "chromium-15612-source-contract.json"
+    if runtime_version == "156.0.8078.48":
+        return "chromium-15648-source-contract.json"
     # A new major cannot borrow a historical diagnostic contract. Explicit
     # source/provenance dispatch must be implemented before qualifying it.
     if int(runtime_version.split(".")[0]) >= 154:

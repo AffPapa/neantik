@@ -26,6 +26,27 @@ final package class ProxyRelayExpectedCode: @unchecked Sendable {
         self.requirement = requirement
     }
 
+    /// Return the team of an already signed manager executable after validating
+    /// its Developer ID signature and identifier. Child code may then be pinned
+    /// to this same team, allowing a recipient to re-sign a complete local
+    /// relinked bundle without weakening the exact identifier/CDHash checks.
+    /// Public release qualification still checks NeAntik's production team.
+    package static func teamIdentifier(at url: URL, expectedIdentifier: String) throws -> String {
+        var code: SecStaticCode?
+        guard SecStaticCodeCreateWithPath(url as CFURL, SecCSFlags(), &code) == errSecSuccess,
+              let code else { throw Failure.invalidIdentity }
+        var information: CFDictionary?
+        guard SecCodeCopySigningInformation(code, SecCSFlags(rawValue: kSecCSSigningInformation), &information) == errSecSuccess,
+              let info = information as? [String: Any],
+              info[kSecCodeInfoIdentifier as String] as? String == expectedIdentifier,
+              let teamIdentifier = info[kSecCodeInfoTeamIdentifier as String] as? String,
+              let hash = info[kSecCodeInfoUnique as String] as? Data
+        else { throw Failure.invalidIdentity }
+        _ = try qualifiedPin(at: url, expectedIdentifier: expectedIdentifier,
+                             expectedTeamIdentifier: teamIdentifier, expectedCDHash: hash)
+        return teamIdentifier
+    }
+
     /// Called only for a helper/main inside an already hash-qualified runtime.
     /// Static inspection supplies a pin; admission still validates live code.
     /// This does not substitute for runtime payload provenance/notarization.

@@ -48,11 +48,16 @@ class NativeQAReadinessTests(unittest.TestCase):
         self.assertEqual(report["reasons"], ["thermal_critical"])
 
     def test_sandbox_or_timeout_failure_is_unknown_and_does_not_print_raw_error(self):
-        for error in (OSError("private fixture path"), subprocess.TimeoutExpired("private fixture command", 5)):
+        for error, classification in (
+            (OSError(1, "private fixture path"), "permission_denied"),
+            (subprocess.CalledProcessError(1, "private fixture command", stderr="Operation not permitted: private path"), "permission_denied"),
+            (subprocess.TimeoutExpired("private fixture command", 5), "timeout"),
+        ):
             def refused():
                 raise error
             report = MOD.observe("darwin", refused, lambda: 0)
             self.assertEqual(report["reasons"], ["memory_pressure_unknown"])
+            self.assertEqual(report["observerFailures"]["memoryPressure"], classification)
             self.assertNotIn("private fixture", str(report))
 
     def test_thermal_failure_does_not_hide_memory_warning(self):

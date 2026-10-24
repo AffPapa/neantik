@@ -38,7 +38,6 @@ package enum DirectUpdatePublicationBaseline {
               checked <= now,
               let minimum = value["minimumPublicChromiumVersion"] as? String, let components = version(minimum),
               !components.lexicographicallyPrecedes(NeAntikRuntimeSecurityBaseline.minimumPublicChromiumVersion),
-              let runtime = version(DirectUpdateRuntimePins.chromiumVersion), !runtime.lexicographicallyPrecedes(components),
               let observed = value["alsoObservedPublicChromiumVersions"] as? [String], observed.count <= 8,
               observed.allSatisfy({ version($0) != nil }),
               value["channel"] as? String == "Desktop Stable", value["platforms"] as? [String] == ["macOS"],

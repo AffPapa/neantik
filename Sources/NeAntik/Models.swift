@@ -1,6 +1,11 @@
 import Darwin
 import Foundation
 
+enum ProxyHealthSource: String, Codable, Equatable, Sendable {
+    case ipAPI = "ipapi.co"
+    case crossChecked = "ipwho.is+freeipapi.com"
+}
+
 enum ProxyKind: String, Codable, CaseIterable, Identifiable, Sendable {
     case http
     case https
@@ -860,7 +865,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
               cleanStartURL == startURL,
               startURL.utf8.count <= Self.maximumStartURLUTF8Bytes,
               PersistedInlineText.isSafe(startURL),
-              BrowserLaunchBuilder.validatedStartURL(startURL) != nil,
+              BrowserStartURL.validate(startURL) != nil,
               proxy?.isValid != false
         else {
             return nil
@@ -1072,6 +1077,7 @@ struct BrowserRuntimePreference: Codable, Equatable, Sendable {
     var updatedAt: Date
 }
 
+#if !NEANTIK_WEBKIT_STANDALONE_HOST
 struct BrowserRuntime: Identifiable, Hashable, Sendable {
     var id: String { executableURL.path }
     let name: String
@@ -1130,6 +1136,7 @@ struct BrowserRuntime: Identifiable, Hashable, Sendable {
         return parts.joined(separator: " · ")
     }
 }
+#endif
 
 enum NeAntikError: LocalizedError {
     case browserNotFound

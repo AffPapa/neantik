@@ -1,6 +1,10 @@
-# Current public release: 0.8.25/build137 · Chromium156.0.8078.12 +8backports +component completion · [report](../releases/v0.8.25.json)
+# NeAntik source-to-site handoff
 
-GitHub137 is published and hosted-verified; browser.free remains Sites153/app128 and is separately blocked as last checked 2026-10-19. Preserve immutable assets. Major1.0 remains open; older dated sections are historical. The active remaining scope is [NEXT_1_0_SLICES](NEXT_1_0_SLICES.md).
+Current public state, candidate, and next action are in [CURRENT.json](../artifacts/neantik/looper-goals/20261020-webkit-1_0/CURRENT.json). [NEXT_1_0_SLICES](NEXT_1_0_SLICES.md) has the remaining acceptance gates. The version notes below are historical.
+
+## Historical snapshot
+
+At this earlier snapshot, GitHub137 was published and hosted-verified; browser.free was Sites154/app137, live-verified from source commit `da483569b7d81aa360b33616245b3766197a702b`. Preserve immutable assets. Major1.0 remained open. [0.8.25 report](../releases/v0.8.25.json).
 
 
 0.8.8 published on GitHub/browser.free Sites146. Exact signed WebKit cache A/B and data-preservation checks, Apple ZIP/DMG, hosted bytes, downloaded headed/MCP and live signed feed passed. Manager source027d42c, catalog-only workflow3fa9e09; runtime unchanged. Cloud CI dispatch403, no cloudPASS. Full1.0 remains open; subsequent dated sections are historical pointers. AffPapa excluded.

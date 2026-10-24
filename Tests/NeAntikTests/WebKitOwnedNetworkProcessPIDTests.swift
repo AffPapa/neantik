@@ -189,7 +189,7 @@ struct WebKitOwnedNetworkProcessPIDTests {
         #expect(closed)
     }
 
-    @Test func refusesZeroDeadAndInvalidPIDs() throws {
+    @Test func distinguishesStartingPIDFromDeadAndInvalidPIDs() throws {
         let (root, app, digest) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
         let image = try attestedImage(app: app, digest: digest)
@@ -198,7 +198,9 @@ struct WebKitOwnedNetworkProcessPIDTests {
         let store = UnsafeRawPointer(bitPattern: 0x5600)!
 
         for reportedPID: Int32 in [0, 1, -7, 32123] {
-            #expect(throws: WebKitOwnedNetworkProcessPID.Failure.invalidProcessIdentifier) {
+            let expected: WebKitOwnedNetworkProcessPID.Failure = reportedPID == 0
+                ? .processStarting : .invalidProcessIdentifier
+            #expect(throws: expected) {
                 try WebKitOwnedNetworkProcessPID.resolve(
                     storeAddress: store, verifiedImage: image,
                     openImage: { _, _ in handle },
@@ -208,5 +210,96 @@ struct WebKitOwnedNetworkProcessPIDTests {
                     processIsLive: { _ in reportedPID != 32123 })
             }
         }
+    }
+
+    private var owner: WebKitOwnedNetworkProcessPID.Owner {
+        .init(pid: 42137, startedAtSeconds: 1_700_000_000,
+              startedAtMicroseconds: 123_456, userID: 501, parentPID: 1)
+    }
+
+    @MainActor @Test func waitsForLaunchCallbackWithoutBlockingMainActor() async throws {
+        var launchCompleted = false
+        var reads = 0
+        var suspensions = 0
+        let expected = owner
+        let actual = try await WebKitOwnedNetworkProcessPID.waitForOwner(
+            readOwner: {
+                reads += 1
+                guard launchCompleted else { throw WebKitOwnedNetworkProcessPID.Failure.processStarting }
+                return expected
+            },
+            suspend: {
+                suspensions += 1
+                await Task { @MainActor in launchCompleted = true }.value
+            })
+        #expect(actual == expected)
+        #expect(reads == 2)
+        #expect(suspensions == 1)
+    }
+
+    @MainActor @Test func readyOwnerDoesNotWait() async throws {
+        var suspensions = 0
+        let expected = owner
+        let actual = try await WebKitOwnedNetworkProcessPID.waitForOwner(
+            readOwner: { expected }, suspend: { suspensions += 1 })
+        #expect(actual == expected)
+        #expect(suspensions == 0)
+    }
+
+    @MainActor @Test func zeroPIDHasBoundedDeadline() async {
+        var time: TimeInterval = 0
+        var reads = 0
+        await #expect(throws: WebKitOwnedNetworkProcessPID.Failure.processStartupTimedOut) {
+            try await WebKitOwnedNetworkProcessPID.waitForOwner(
+                readOwner: {
+                    reads += 1
+                    throw WebKitOwnedNetworkProcessPID.Failure.processStarting
+                }, now: { time }, suspend: { time += 1 })
+        }
+        #expect(reads == 3)
+        #expect(time == 3)
+    }
+
+    @MainActor @Test func identityAndImageFailuresAreNeverRetried() async {
+        let failures: [WebKitOwnedNetworkProcessPID.Failure] = [
+            .imageNotLoaded, .symbolMissing, .invalidProcessIdentifier, .invalidProcessIdentity
+        ]
+        for failure in failures {
+            var reads = 0
+            var suspensions = 0
+            await #expect(throws: failure) {
+                try await WebKitOwnedNetworkProcessPID.waitForOwner(
+                    readOwner: { reads += 1; throw failure },
+                    suspend: { suspensions += 1 })
+            }
+            #expect(reads == 1)
+            #expect(suspensions == 0)
+        }
+    }
+
+    @MainActor @Test func cancellationStopsBeforeReadingOwner() async {
+        var reads = 0
+        let expected = owner
+        let task = Task { @MainActor in
+            try await WebKitOwnedNetworkProcessPID.waitForOwner(readOwner: {
+                reads += 1
+                return expected
+            })
+        }
+        task.cancel()
+        await #expect(throws: CancellationError.self) { try await task.value }
+        #expect(reads == 0)
+    }
+
+    @MainActor @Test func cancellationDuringWaitStopsRetrying() async {
+        var reads = 0
+        await #expect(throws: CancellationError.self) {
+            try await WebKitOwnedNetworkProcessPID.waitForOwner(
+                readOwner: {
+                    reads += 1
+                    throw WebKitOwnedNetworkProcessPID.Failure.processStarting
+                }, suspend: { throw CancellationError() })
+        }
+        #expect(reads == 1)
     }
 }

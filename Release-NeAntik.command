@@ -16,6 +16,15 @@ BUILD="$(
     -c 'Print :CFBundleVersion' \
     "$PROJECT_DIR/Resources/Info.plist"
 )"
+# A 1.0.0 release must use production qualification, never silently inherit
+# the public-alpha default used for 0.x releases.
+if [[ "$VERSION" == "1.0.0" ]]; then
+  if [[ -n "${NEANTIK_RELEASE_CHANNEL:-}" && "$NEANTIK_RELEASE_CHANNEL" != "production" ]]; then
+    echo "NeAntik 1.0.0 requires NEANTIK_RELEASE_CHANNEL=production." >&2
+    exit 64
+  fi
+  export NEANTIK_RELEASE_CHANNEL=production
+fi
 RELEASE_SCRIPT="$PROJECT_DIR/scripts/Run-NeAntik-Release.command"
 ZIP_PATH="$PROJECT_DIR/dist/NeAntik-$VERSION-arm64-notarized.zip"
 DMG_PATH="$PROJECT_DIR/dist/NeAntik-$VERSION-arm64-notarized.dmg"

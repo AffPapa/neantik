@@ -8,6 +8,12 @@ import Foundation
 enum WebKitRuntimeImageAttestation {
     static let pinKey = "NeAntikWebKitRuntimeV1"
 
+    /// QA diagnosis only. The counts contain no image paths or profile data.
+    struct StartupCheckpoint: Equatable {
+        let systemAtEntry: Int
+        let systemAfterAppKit: Int
+    }
+
     enum Failure: Error, Equatable {
         case malformedPin
         case unsafeBundle
@@ -15,19 +21,68 @@ enum WebKitRuntimeImageAttestation {
         case ambiguousRuntimeImage
         case wrongRuntimeImage
         case runtimeHashMismatch
+        case unsupportedOperatingSystem
+    }
+
+    /// QA-only failure payload: bounded counts, never image paths. Nine means
+    /// nine or more. This diagnoses multiplicity without relaxing attestation.
+    struct AmbiguousImageDiagnostic: Error, Equatable {
+        var code: String
+
+        init(imagePaths: [String], bundleURL: URL,
+             checkpoint: StartupCheckpoint? = nil) {
+            let expected = bundleURL.appendingPathComponent(
+                "Contents/Frameworks/WebKit.framework/Versions/A/WebKit")
+                .resolvingSymlinksInPath().standardizedFileURL.path
+            let system = "/System/Library/Frameworks/WebKit.framework/Versions/A/WebKit"
+            var owned = 0, shared = 0, other = 0
+            for path in runtimeCandidates(imagePaths) {
+                let canonical = URL(fileURLWithPath: path)
+                    .resolvingSymlinksInPath().standardizedFileURL.path
+                if canonical == expected { owned += 1 }
+                else if canonical == system { shared += 1 }
+                else { other += 1 }
+            }
+            code = "ambiguousImages-owned\(min(owned, 9))-system\(min(shared, 9))-other\(min(other, 9))"
+            if let checkpoint {
+                code += "-entry\(min(checkpoint.systemAtEntry, 9))-appkit\(min(checkpoint.systemAfterAppKit, 9))"
+            }
+        }
     }
 
     struct Pin: Equatable, Sendable {
         let webKitSHA256: String
+        let minimumOSVersion: String
 
         init(propertyList value: Any?) throws {
             guard let object = value as? [String: Any],
-                  Set(object.keys) == Set(["schemaVersion", "webKitSHA256"]),
-                  object["schemaVersion"] as? Int == 1,
+                  Set(object.keys) == Set(["schemaVersion", "webKitSHA256", "minimumOSVersion"]),
+                  object["schemaVersion"] as? Int == 2,
                   let sha256 = object["webKitSHA256"] as? String,
-                  sha256.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil
+                  sha256.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil,
+                  let minimumOSVersion = object["minimumOSVersion"] as? String,
+                  minimumOSVersion.range(of: "^\\d+\\.\\d+\\.\\d+$", options: .regularExpression) != nil
             else { throw Failure.malformedPin }
             webKitSHA256 = sha256
+            self.minimumOSVersion = minimumOSVersion
+        }
+
+        func supports(_ current: OperatingSystemVersion) -> Bool {
+            Self.supports(minimumOSVersion, current: current)
+        }
+
+        static func supports(_ minimum: String, current: OperatingSystemVersion) -> Bool {
+            let parts = minimum.split(separator: ".").compactMap { Int($0) }
+            guard parts.count == 3 else { return false }
+            let required = OperatingSystemVersion(majorVersion: parts[0],
+                minorVersion: parts[1], patchVersion: parts[2])
+            if current.majorVersion != required.majorVersion {
+                return current.majorVersion > required.majorVersion
+            }
+            if current.minorVersion != required.minorVersion {
+                return current.minorVersion > required.minorVersion
+            }
+            return current.patchVersion >= required.patchVersion
         }
     }
 
@@ -49,18 +104,59 @@ enum WebKitRuntimeImageAttestation {
 
     /// Returns a capability for the exact embedded image only after the
     /// current process's signed bundle pin and dyld image table agree.
-    static func attestCurrentProcess(bundleURL: URL = Bundle.main.bundleURL) throws -> VerifiedImage {
+    static func attestCurrentProcess(
+        bundleURL: URL = Bundle.main.bundleURL,
+        startupCheckpoint: StartupCheckpoint? = nil
+    ) throws -> VerifiedImage {
         guard let info = Bundle(url: bundleURL)?.infoDictionary else {
             throw Failure.unsafeBundle
         }
         let pin = try Pin(propertyList: info[pinKey])
+        guard pin.supports(ProcessInfo.processInfo.operatingSystemVersion) else {
+            throw Failure.unsupportedOperatingSystem
+        }
         let images = (0..<_dyld_image_count()).compactMap { index -> String? in
             guard let name = _dyld_get_image_name(index) else { return nil }
             return String(cString: name)
         }
-        let url = try verify(imagePaths: images, bundleURL: bundleURL,
+        let url: URL
+        do {
+            url = try verify(imagePaths: images, bundleURL: bundleURL,
                              expectedSHA256: pin.webKitSHA256)
+        } catch Failure.ambiguousRuntimeImage {
+            #if DEBUG || NEANTIK_WEBKIT_PROXY_QUALIFICATION
+            throw AmbiguousImageDiagnostic(imagePaths: images, bundleURL: bundleURL,
+                                           checkpoint: startupCheckpoint)
+            #else
+            throw Failure.ambiguousRuntimeImage
+            #endif
+        }
         return VerifiedImage(url: url, sha256: pin.webKitSHA256)
+    }
+
+    /// Count only Apple's system WebKit image at an early host milestone.
+    /// A change between milestones identifies the loading phase without
+    /// exposing dyld paths or weakening the final uniqueness check.
+    static func systemImageCount() -> Int {
+        let system = URL(fileURLWithPath:
+            "/System/Library/Frameworks/WebKit.framework/Versions/A/WebKit")
+            .resolvingSymlinksInPath().standardizedFileURL.path
+        return (0..<_dyld_image_count()).reduce(into: 0) { count, index in
+            guard let name = _dyld_get_image_name(index) else { return }
+            let path = URL(fileURLWithPath: String(cString: name))
+                .resolvingSymlinksInPath().standardizedFileURL.path
+            if path == system { count += 1 }
+        }
+    }
+
+    static func pin(in hostBundleURL: URL) throws -> Pin {
+        guard hostBundleURL.isFileURL, hostBundleURL.pathExtension == "app",
+              isPhysicalDirectory(hostBundleURL),
+              isPhysicalDirectory(hostBundleURL.appendingPathComponent("Contents", isDirectory: true)),
+              let info = Bundle(url: hostBundleURL)?.infoDictionary else {
+            throw Failure.unsafeBundle
+        }
+        return try Pin(propertyList: info[pinKey])
     }
 
     /// Isolated contract used by tests and packaging verification. Both the
@@ -85,10 +181,7 @@ enum WebKitRuntimeImageAttestation {
             throw Failure.unsafeBundle
         }
 
-        let candidates = imagePaths.filter { path in
-            let components = URL(fileURLWithPath: path).standardizedFileURL.pathComponents
-            return components.suffix(4) == ["WebKit.framework", "Versions", "A", "WebKit"]
-        }
+        let candidates = runtimeCandidates(imagePaths)
         guard !candidates.isEmpty else { throw Failure.missingRuntimeImage }
         guard candidates.count == 1 else { throw Failure.ambiguousRuntimeImage }
 
@@ -97,6 +190,13 @@ enum WebKitRuntimeImageAttestation {
         guard actual == expectedPhysical else { throw Failure.wrongRuntimeImage }
         guard sha256(expected) == expectedSHA256 else { throw Failure.runtimeHashMismatch }
         return actual
+    }
+
+    private static func runtimeCandidates(_ paths: [String]) -> [String] {
+        paths.filter { path in
+            URL(fileURLWithPath: path).standardizedFileURL.pathComponents.suffix(4)
+                == ["WebKit.framework", "Versions", "A", "WebKit"]
+        }
     }
 
     #if DEBUG

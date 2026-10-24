@@ -159,7 +159,9 @@ final class ProfileStore: ObservableObject {
         } catch {
             storageIsAvailable = false
             lastError = error.localizedDescription
+            recordQAMetadataFailure(phase: "initial-load", error: error)
         }
+        recordQAMetadataState(phase: "initial-load-complete")
     }
 
     var hasTrustedMetadata: Bool {
@@ -238,6 +240,7 @@ final class ProfileStore: ObservableObject {
             throw ProfileMetadataBusyError()
         } catch {
             // Preserve last-good UI data and prohibit writes until a trusted read.
+            recordQAMetadataFailure(phase: "external-refresh", error: error)
             externalMetadataStamp = nil
             storageIsAvailable = false
             organizationStorageIsAvailable = false
@@ -260,6 +263,31 @@ final class ProfileStore: ObservableObject {
             metadataRefreshFailureWarning = lastError
             throw error
         }
+    }
+
+    /// Private diagnostic for the disposable, explicitly qualified Dev bundle.
+    /// Record only error category and numeric code; no profile content or path.
+    private func recordQAMetadataState(phase: String, error: Error? = nil) {
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+        guard Bundle.main.bundleIdentifier == NeAntikApplicationEnvironment.developmentBundleIdentifier,
+              paths.rootDirectory.lastPathComponent.hasPrefix("neantik-") else { return }
+        let nsError = error as NSError?
+        let document: [String: Any] = [
+            "phase": phase,
+            "trusted": storageIsAvailable,
+            "profileCount": profiles.count,
+            "errorDomain": nsError?.domain ?? "none",
+            "errorCode": nsError?.code ?? 0,
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: document, options: [.sortedKeys]) else { return }
+        let destination = paths.rootDirectory.appendingPathComponent("qa-metadata-\(phase).json")
+        try? data.write(to: destination, options: .atomic)
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
+        #endif
+    }
+
+    private func recordQAMetadataFailure(phase: String, error: Error) {
+        recordQAMetadataState(phase: phase, error: error)
     }
 
     nonisolated private static func boundedMetadata(_ url: URL) throws -> Data? {

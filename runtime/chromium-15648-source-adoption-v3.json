@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "status": "source-port-patch-frozen-build-complete",
+  "chromiumVersion": "156.0.8078.48",
+  "officialRepository": "https://chromium.googlesource.com/chromium/src.git",
+  "officialCommit": "d0c02bfad08ec92a6ffcf989e53cd995e6381a4c",
+  "officialTree": "7f8057b292482977d1eb92dfab20d3b129af4134",
+  "targetArchitecture": "arm64",
+  "patchFile": "runtime/chromium-15648-neantik-v3.patch",
+  "patchSHA256": "0befae3e9af29233e9af3b36260d924ee63840d91960701d1d5a8be6541612c6",
+  "patchBytes": 1340195,
+  "sourceChangeCount": 746,
+  "addedSourceFileCount": 21,
+  "validation": {
+    "gitDiffCheck": true,
+    "reverseApplyCheck": true,
+    "gnGeneration": "PASS",
+    "arm64ChromeBuild": "in-progress; direct StorageKey include target passed; full build resumes at 8 workers",
+    "devtoolsTypeDeclarationTarget": "PASS after exact two-signature compatibility patch"
+  },
+  "notes": [
+    "v1 omitted added source files and v2 predates the version_info include fix; use only this v3 patch.",
+    "Four optional cosmetic/UI patches were intentionally omitted; list is in docs/evidence/chromium-stable-port-156-8078-48-20261024.json.",
+    "Reacquire exact upstream commit and pinned dependency checkouts before applying; this source artifact is not a qualified runtime.",
+    "Runtime qualification, binary binding, production packaging, signing, notarization and public release remain pending."
+  ],
+  "releaseReady": false,
+  "dependencyLock": "runtime/chromium-15648-deps-lock.json",
+  "dependencyLockSHA256": "31e0017e19a60a9d44540152266e2e3abfdd0c30ecf49124ee539428cc1c69e2",
+  "dependencyGitCheckoutCount": 150,
+  "buildArgsFile": "runtime/chromium-15648-args.gn",
+  "buildArgsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+  "buildArgsBytes": 1134,
+  "devtoolsCompatibilityPatch": {
+    "status": "source-fix-required-by-TypeScript-6-isolated-declarations",
+    "path": "runtime/chromium-15648-devtools-typescript6.patch",
+    "sha256": "39272ebfee0371ba7afe048d24f634730cfb86d10b7ccd095dd3f7bcfa9519b9",
+    "bytes": 1393,
+    "changedPaths": 2,
+    "dependencyCheckout": "src/third_party/devtools-frontend/src",
+    "dependencyCommit": "bf69d041b0ad1f74730204a73bff29f3ef1d4ead",
+    "reason": "Chromium 156.0.8078.48 pinned TypeScript 6.0.2 rejects two existing exported parameter declarations with TS9025 under the mandated isolatedDeclarations build action. Explicitly spelling undefined preserves runtime behavior and makes the declaration surface emit."
+  },
+  "v8CompatibilityPatch": {
+    "status": "source-fix-required-by-new-pure-virtual-scope-iterator-method",
+    "path": "runtime/chromium-15648-v8-scope-iterator-compat.patch",
+    "sha256": "9952fba47636d6079545cfcf097309250168ad7991242516292eb4d32b931686",
+    "bytes": 505,
+    "changedPaths": 1,
+    "dependencyCheckout": "src/v8",
+    "dependencyCommit": "392e44423f46d75904da712fadea4c7d5d97967f",
+    "reason": "Chromium 156.0.8078.48 adds ScopeIterator::DeclaresLocals as a pure virtual. The existing interpreter scope iterator already exposes the module scope and neighboring WasmScopeIterator reports locals; return true to preserve the same debug-scope contract and keep the V8 arm64 target buildable."
+  },
+  "changedPaths": 746
+}

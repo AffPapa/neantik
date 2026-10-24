@@ -103,6 +103,38 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
     lock = load_json(runtime_lock)
     chromium = required_mapping(lock.get("fingerprintChromium"), "fingerprintChromium")
     version = chromium.get("chromiumVersion")
+    if version == "156.0.8078.48":
+        from chromium_15648_release_evidence import verify_lock
+        provenance = runtime_lock.parent / "source-provenance.json"
+        verify_lock(lock, provenance, project_root)
+        contract_path = project_root / "runtime/chromium-15648-source-contract.json"
+        if lock.get("sourceContractSHA256") != sha256_file(contract_path):
+            raise RuntimeNoticesError("Chromium 156.48 source contract digest mismatch")
+        contract = load_json(contract_path)
+        devtools_patch = project_root / "runtime/chromium-15648-devtools-typescript6.patch"
+        v8_patch = project_root / "runtime/chromium-15648-v8-scope-iterator-compat.patch"
+        lines = [
+            "# NeAntik Chromium runtime notices", "", "## Source references", "",
+            f"- Chromium: `{version}`",
+            f"- Official source: `{contract['officialChromiumBase']['repository']}`",
+            f"- Commit: `{contract['officialChromiumBase']['commit']}`; tree: `{contract['officialChromiumBase']['tree']}`",
+            f"- NeAntik source patch SHA-256: `{contract['sourcePatchSHA256']}`",
+            f"- DevTools TypeScript compatibility patch SHA-256: `{sha256_file(devtools_patch)}`",
+            f"- V8 ScopeIterator compatibility patch SHA-256: `{sha256_file(v8_patch)}`",
+            f"- Pinned DEPS lock SHA-256: `{contract['dependencyLockSHA256']}`",
+            f"- GN args SHA-256: `{contract['buildArgsSHA256']}`",
+            f"- Candidate lock SHA-256: `{sha256_file(runtime_lock)}`",
+            "", "## Bundled licenses", "",
+            "The generated Chromium THIRD_PARTY_NOTICES and SPDX SBOM are packaged separately.",
+        ]
+        for filename in ("Chromium-LICENSE", "fingerprint-chromium-LICENSE"):
+            expected = contract["chromiumLicenseSHA256"] if filename == "Chromium-LICENSE" else None
+            digest = verified_license(project_root=project_root, relative_path="runtime/licenses/" + filename,
+                                      expected_sha256=expected)
+            lines.append(f"- `NeAntikRuntimeLicenses/{filename}` — SHA-256 `{digest}`")
+        lines.extend(["", "## Qualification boundary", "",
+                      "This notice identifies the source and license bytes used for this candidate. It does not itself establish runtime behavior, license applicability decisions, signing, notarization, Gatekeeper acceptance, or publication.", ""])
+        return "\n".join(lines)
     contract_names = {
         "154.0.8037.93": "chromium-154-source-contract.json",
         "154.0.8037.98": "chromium-15498-source-contract.json",
@@ -209,7 +241,7 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
 def render_notices(*, project_root: Path = PROJECT_ROOT) -> str:
     project_root = project_root.resolve()
     lock = load_json(project_root / "runtime" / "fingerprint-chromium.lock.json")
-    if lock.get("fingerprintChromium", {}).get("chromiumVersion") in {"154.0.8037.93", "154.0.8037.98", "155.0.8059.40", "156.0.8078.12"}:
+    if lock.get("fingerprintChromium", {}).get("chromiumVersion") in {"154.0.8037.93", "154.0.8037.98", "155.0.8059.40", "156.0.8078.12", "156.0.8078.48"}:
         return render_m154_notices(
             project_root=project_root,
             runtime_lock=project_root / "runtime/fingerprint-chromium.lock.json",

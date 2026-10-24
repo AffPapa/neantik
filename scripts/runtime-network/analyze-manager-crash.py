@@ -27,6 +27,8 @@ def measure_components(receipts, release, state):
         baseline, mutate, read = [receipts['crash-custody-' + s + '.json'] for s in C.LIVE_STAGES]
         intent, sent, after, cleanup, ledger, ui = [receipts[n] for n in INPUTS[3:]]
         samples = (baseline,mutate,read); events = ledger['events']
+        peer_source, peer_socket = C.peer_socket_binding()
+        require(peer_source == state['peerCollectorSHA256'], 'crash-peer-source-binding')
         require(ledger['managerExitCode'] == 0 and type(ledger['managerExitCode']) is int and ledger['serverThreadsDrained'] is True
                 and ledger['runtimeCleanup']['ownedRuntimeProcessesRemaining'] == ledger['runtimeCleanup']['signaledMainProcesses'] == 0, 'crash-fixture-cleanup')
         expected = [dict(reason=1,status=0),dict(reason=2,status=9),dict(reason=1,status=0)]
@@ -53,6 +55,8 @@ def measure_components(receipts, release, state):
                 require(P.digest(s[key]) and s[key] == baseline[key], 'crash-source-binding')
             for key in ('fixtureSHA256','crashFixtureSHA256','crashProbeSHA256','candidateManifestSHA256','peerCollectorSHA256'):
                 require(s[key] == state[key], 'crash-state-source-binding')
+            require(P.digest(s['peerSocketCodeSHA256']) and s['peerSocketCodeSHA256'] == peer_socket,
+                    'crash-peer-import-binding')
             require(s['runtimeExecutableSHA256'] == release['runtime']['executableSHA256']
                     and s['runtimeFrameworkSHA256'] == release['runtime']['frameworkSHA256'], 'crash-runtime-binding')
         require(len({s['sessionGeneration'] for s in samples}) == len({(s['browser']['pid'],s['browser']['startSeconds'],s['browser']['startMicroseconds']) for s in samples}) == 3

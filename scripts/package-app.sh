@@ -14,9 +14,11 @@ DIRECT_ENTITLEMENTS="$PROJECT_DIR/runtime/neantik-direct-entitlements.plist"
 BUILD_SUPPORT_DIR="${NEANTIK_BUILD_SUPPORT_DIR:-/private/tmp/nevision-package-direct}"
 case "${NEANTIK_WEBKIT_HOST_ENABLED:-0}" in
   0) ;;
-  1) echo "WebKit host packaging is not ready: a separately linked runtime host and trusted runtime payload are required" >&2; exit 78 ;;
+  1) echo "Owned WebKit is not release-enabled: Dev route/persistence QA does not close production source/build and license closure, per-profile no-Direct network proof on exact production bytes, or exact production qualification. Public packaging remains fail-closed; see docs/NEXT_1_0_SLICES.md." >&2; exit 78 ;;
   *) echo "NEANTIK_WEBKIT_HOST_ENABLED must be 0 or 1" >&2; exit 64 ;;
 esac
+
+source "$PROJECT_DIR/scripts/resolve-webkit-proxy-build-mode.sh"
 
 mkdir -p \
   "$BUILD_SUPPORT_DIR/clang" \
@@ -56,6 +58,11 @@ BIN_PATH="$(
     --security-path "$BUILD_SUPPORT_DIR/security" \
     --show-bin-path
 )"
+if [[ ! -d "$BIN_PATH" || -L "$BIN_PATH" ]]; then
+  echo "Swift build output path must resolve to a physical directory." >&2
+  exit 66
+fi
+BIN_PATH="$(cd "$BIN_PATH" && pwd -P)"
 MANAGER_BINARY="$BIN_PATH/NeAntik"
 if [[ ! -x "$MANAGER_BINARY" ]]; then
   echo "Swift release binary is missing: $MANAGER_BINARY" >&2

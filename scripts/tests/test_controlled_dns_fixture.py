@@ -121,6 +121,24 @@ class ControlledDNSFixtureTests(unittest.TestCase):
         events = self.wait_event('dns-wire', 2)
         self.assertEqual([e['phase'] for e in events], ['proxy-success', None])
 
+    def test_invalid_hostname_mode_is_opt_in_for_dev_tls_scope(self):
+        self.assertTrue(all(name.endswith('.neantik-dns.test') for name in self.fixture.names.values()))
+        root = Path(self.temp.name) / 'invalid-qa'; root.mkdir(mode=0o700)
+        dev = MOD.DNSFixture(root, name_suffix='.neantik-dns.invalid')
+        try:
+            self.assertTrue(all(name.endswith('.neantik-dns.invalid') for name in dev.names.values()))
+            packet = MOD.query(dev.names['proxy-success'], 42)
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as channel:
+                channel.settimeout(2)
+                channel.sendto(packet, dev.dns.server_address)
+                answer, sender = channel.recvfrom(MOD.MAX_PACKET + 1)
+            self.assertEqual(sender, dev.dns.server_address)
+            self.assertEqual(MOD.question(answer, response=True)['answers'], 1)
+        finally:
+            self.assertTrue(dev.close())
+        with self.assertRaises(ValueError):
+            MOD.DNSFixture(root, name_suffix='.external.example')
+
     def test_actual_authenticated_proxy_resolves_over_udp_before_owned_origin_hit(self):
         self.assertTrue(self.request('proxy-recovered').startswith(b'HTTP/1.1 200 '))
         dns = self.wait_event('dns-wire')[0]

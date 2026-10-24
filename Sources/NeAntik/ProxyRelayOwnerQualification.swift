@@ -233,7 +233,8 @@ enum ProxyRelayOwnerQualification {
             let diagnosticReceipt = ManagedBrowserSessionReceipt(generation: generation, lock: lease,
                 runtimeVersion: version, configuredRoute: .httpProxy, profileRevision: profile.revision, browserIdentity: browserIdentity)
             guard let diagnosticBinding = try diagnosticReceipt.relayBinding(profileID: profile.id, expectedRevision: profile.revision) else { throw Failure.unsafeRoot }
-            let code = try ProxyRelayExpectedCode.qualifiedPin(at: manager, expectedIdentifier: identifier, expectedTeamIdentifier: "H6VGU2M6JD")
+            let team = try ProxyRelayExpectedCode.teamIdentifier(at: manager, expectedIdentifier: identifier)
+            let code = try ProxyRelayExpectedCode.qualifiedPin(at: manager, expectedIdentifier: identifier, expectedTeamIdentifier: team)
             _ = try await Task.detached {
                 try ProxyRelayObservationSocket.abandonReplyForQualification(binding: diagnosticBinding, expectedOwnerCode: code)
             }.value
@@ -301,7 +302,8 @@ enum ProxyRelayOwnerQualification {
             let receipt = ManagedBrowserSessionReceipt(generation: relay.sessionGeneration, lock: lease,
                 runtimeVersion: version, configuredRoute: .httpProxy, profileRevision: launchRevision, browserIdentity: browserIdentity)
             guard let context = try receipt.relayBinding(profileID: profile.id, expectedRevision: launchRevision) else { throw Failure.unsafeRoot }
-            let code = try ProxyRelayExpectedCode.qualifiedPin(at: manager, expectedIdentifier: identifier, expectedTeamIdentifier: "H6VGU2M6JD")
+            let team = try ProxyRelayExpectedCode.teamIdentifier(at: manager, expectedIdentifier: identifier)
+            let code = try ProxyRelayExpectedCode.qualifiedPin(at: manager, expectedIdentifier: identifier, expectedTeamIdentifier: team)
             result.transportObservation = try await Task.detached {
                 try ProxyRelayObservationSocket.query(binding: context, expectedOwnerCode: code)
             }.value

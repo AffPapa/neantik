@@ -54,7 +54,8 @@ struct BrowserLaunchActionPresentation: Equatable, Sendable {
         isArchived: Bool,
         runtimeAvailability: BrowserRuntimeAvailability,
         isProxyTesting: Bool = false,
-        isLaunchPreparation: Bool = false
+        isLaunchPreparation: Bool = false,
+        isManagerPreparing: Bool = false
     ) -> Self {
         switch processState {
         case .closing:
@@ -112,6 +113,16 @@ struct BrowserLaunchActionPresentation: Equatable, Sendable {
                     systemImage: "hourglass",
                     isEnabled: false,
                     help: "Проверка прокси уже выполняется"
+                )
+            }
+
+            if isManagerPreparing {
+                return Self(
+                    title: "Подготовка запуска…",
+                    systemImage: "hourglass",
+                    isEnabled: false,
+                    help: "Сейчас подготавливается запуск профиля. " +
+                        "Дождись результата; повторно нажимать не нужно."
                 )
             }
 
