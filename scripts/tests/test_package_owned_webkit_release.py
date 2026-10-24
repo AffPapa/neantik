@@ -50,6 +50,26 @@ class OwnedWebKitReleaseContractTests(unittest.TestCase):
         with self.assertRaisesRegex(MODULE.PackageError, "existing pinned Developer ID"):
             MODULE.validate_manager_info(self.info, "0" * 40)
 
+    def test_selects_rebound_production_host_and_binds_its_hash(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            system = Path(temporary) / "host-system"
+            owned = Path(temporary) / "host-owned"
+            system.write_bytes(b"system linked")
+            owned.write_bytes(b"bundle linked")
+            receipt = {
+                "status": "built-production-mode-unqualified",
+                "qaProxy": False,
+                "productionProxy": True,
+                "binary": str(system),
+                "binarySHA256": MODULE.sha256(system),
+                "ownedBinary": str(owned),
+                "ownedSHA256": MODULE.sha256(owned),
+            }
+            self.assertEqual(MODULE.production_host_binary(receipt), owned)
+            receipt["ownedSHA256"] = "0" * 64
+            with self.assertRaisesRegex(MODULE.PackageError, "changed"):
+                MODULE.production_host_binary(receipt)
+
     def test_source_archive_identity_does_not_require_local_git_metadata(self):
         with tempfile.TemporaryDirectory() as temporary:
             archive = Path(temporary) / "WebKit.tar.zst"

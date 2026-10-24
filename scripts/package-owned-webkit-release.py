@@ -198,6 +198,20 @@ def _last_json(stdout: str, *, field: str) -> dict:
     raise PackageError("packaging helper did not return its stage receipt")
 
 
+def production_host_binary(receipt: dict) -> Path:
+    """Select the relocatable binary emitted for the bundled engine."""
+    if (receipt.get("status") != "built-production-mode-unqualified"
+            or receipt.get("qaProxy") is not False
+            or receipt.get("productionProxy") is not True):
+        raise PackageError("standalone production host was not built with the production-only feature gate")
+    binary = Path(receipt.get("ownedBinary", ""))
+    expected = receipt.get("ownedSHA256")
+    if (binary.is_symlink() or not binary.is_file()
+            or not isinstance(expected, str) or sha256(binary) != expected):
+        raise PackageError("relocatable production host binary is unavailable or changed")
+    return binary
+
+
 def package(app: Path, build_root: Path, source_root: Path, identity: str) -> dict:
     app, build_root, source_root = validate_inputs(app, build_root, source_root, identity)
     developer_dir = run([str(ROOT / "scripts/resolve-compatible-developer-dir.sh")]).stdout.strip()
@@ -224,11 +238,7 @@ def package(app: Path, build_root: Path, source_root: Path, identity: str) -> di
         host_result = run([sys.executable, str(ROOT / "scripts/build-webkit-standalone-host.py"),
                            "--configuration", "release", "--production-proxy"], cwd=ROOT, env=env)
         host_receipt = _last_json(host_result.stdout, field="binarySHA256")
-        if host_receipt.get("status") != "built-production-mode-unqualified" or host_receipt.get("qaProxy") is not False:
-            raise PackageError("standalone host was not built with the production-only feature gate")
-        host_binary = Path(host_receipt.get("binary", ""))
-        if host_binary.is_symlink() or not host_binary.is_file():
-            raise PackageError("standalone production host binary is unavailable")
+        host_binary = production_host_binary(host_receipt)
 
         run([sys.executable, str(ROOT / "scripts/resign-webkit-recipient-runtime.py"),
              "--manager-app", str(app), "--source-frameworks", str(unsigned_frameworks),
