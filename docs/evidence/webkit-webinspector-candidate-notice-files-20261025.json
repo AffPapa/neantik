@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "status": "candidate-license-files-present-and-hash-matched;image-applicability-open",
+  "observedAt": "2026-10-25",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "upstream": {
+    "repository": "https://github.com/WebKit/WebKit",
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+  },
+  "inputReceipt": {
+    "path": "/Users/dumay/rumors-wtf/neantik-open-source/docs/evidence/webkit-webinspector-resource-staging-v14-20261020.json",
+    "sha256": "4716cadfff5fc539eedba8eb3ed6613460c7c612f82ce4686bf8d4524bbb1fd6",
+    "status": "generated-staged-and-hash-verified;pre-sign-only"
+  },
+  "frameworkImage": {
+    "path": "WebInspectorUI.framework/Versions/A/WebInspectorUI",
+    "sha256": "b1bb2202335233b4e2c479ba0cc65b5947bd44a2ac2b2173e28d3bdeb6b5b2a1"
+  },
+  "licenseFiles": [
+    {
+      "component": "CSSDocumentation",
+      "candidatePath": "WebInspectorUI.framework/Versions/A/Resources/External/CSSDocumentation/LICENSE",
+      "sourceGitBlob": "6d74843eb54e16ca0e1c906c80e6aa1be07986dd",
+      "sha256": "b5179f780ec212a434efcc989a2295a140deb0bdb17182d2bf9c5f6f1f1a01c4",
+      "bytes": 1074,
+      "matchesPinnedSourceReceipt": true
+    },
+    {
+      "component": "CodeMirror",
+      "candidatePath": "WebInspectorUI.framework/Versions/A/Resources/External/CodeMirror/LICENSE",
+      "sourceGitBlob": "9018d33e8f9dea1dca38436def2cdc4cbcfc9cdd",
+      "sha256": "168a4becc968f5001e2ee2e0291b6e4daabafc1894a11ade1e11d56e96096e07",
+      "bytes": 1113,
+      "matchesPinnedSourceReceipt": true
+    },
+    {
+      "component": "Esprima",
+      "candidatePath": "WebInspectorUI.framework/Versions/A/Resources/External/Esprima/LICENSE",
+      "sourceGitBlob": "7a55160f562ddb581344b26bf879be8c7ac73eef",
+      "sha256": "94bcb9959136723aa4fb36e1a6c4d5c662a2369978cfae344dabfb83ae619e79",
+      "bytes": 1303,
+      "matchesPinnedSourceReceipt": true
+    },
+    {
+      "component": "three.js",
+      "candidatePath": "WebInspectorUI.framework/Versions/A/Resources/External/three.js/LICENSE",
+      "sourceGitBlob": "492c23e29a3f57e27125d911077b5e26df745c79",
+      "sha256": "551f06ddc3dc36b56610aa23db680826ba9d9a02e8f89f7bec05d7fa27401a2b",
+      "bytes": 1081,
+      "matchesPinnedSourceReceipt": true
+    }
+  ],
+  "scopeLimit": "Confirms exact candidate package copies of four source-pinned license files. Does not establish whether or how those licenses apply to the WebInspectorUI image, does not close any UNKNOWN applicability decision, and is not legal advice or release qualification."
+}

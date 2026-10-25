@@ -170,6 +170,12 @@
           "availability": "present in main workspace; not copied into isolated release branch",
           "scope": "resource reconciliation only",
           "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+        },
+        {
+          "receipt": "docs/evidence/webkit-webinspector-candidate-notice-files-20261025.json",
+          "sha256": "fe64154df48532c279370ed21f478ce0a9df3c1a855703f674984a5405e893dc",
+          "availability": "present in exact candidate bundle",
+          "scope": "four pinned-source license files are present and hash matched; image applicability remains UNKNOWN"
         }
       ],
       "applicabilityDecisionRemains": "UNKNOWN"
