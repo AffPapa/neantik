@@ -715,8 +715,7 @@ final class FingerprintEvidenceReleaseContext {
         maximumBytes: Int
     ) throws -> Data {
         guard url.isFileURL,
-              url.path.hasPrefix("/"),
-              url.path == url.standardizedFileURL.path
+              isCanonicalAbsoluteFilePath(url.path)
         else {
             throw FingerprintEvidenceReleaseError.unsafeManifest
         }
@@ -776,6 +775,24 @@ final class FingerprintEvidenceReleaseContext {
             throw FingerprintEvidenceReleaseError.unsafeManifest
         }
         return data
+    }
+
+    private static func isCanonicalAbsoluteFilePath(
+        _ path: String
+    ) -> Bool {
+        guard path.hasPrefix("/"), path != "/", !path.hasSuffix("/"),
+              !path.unicodeScalars.contains(where: {
+                  $0.value < 32 || $0.value == 127
+              })
+        else { return false }
+        let components = path.split(
+            separator: "/",
+            omittingEmptySubsequences: false
+        )
+        return components.first == "" &&
+            components.dropFirst().allSatisfy {
+                !$0.isEmpty && $0 != "." && $0 != ".."
+            }
     }
 
     private static func hex<H: Sequence>(_ digest: H) -> String

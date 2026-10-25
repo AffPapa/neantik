@@ -624,8 +624,11 @@ struct FingerprintEvidenceReleaseContextTests {
     func stableReaderRejectsSymlinkHardlinkAndOversizedManifest()
         throws
     {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let root = URL(fileURLWithPath: "/private/tmp", isDirectory: true)
+            .appendingPathComponent(
+                "neantik-manifest-reader-" + UUID().uuidString,
+                isDirectory: true
+            )
         try FileManager.default.createDirectory(
             at: root,
             withIntermediateDirectories: false,
@@ -637,6 +640,17 @@ struct FingerprintEvidenceReleaseContextTests {
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o600],
             ofItemAtPath: manifest.path
+        )
+        // Foundation rewrites this valid macOS system alias to /tmp when
+        // standardizing an existing path. The authenticated reader must keep
+        // the caller's lexical path while still enforcing O_NOFOLLOW/fstat.
+        #expect(manifest.path.hasPrefix("/private/tmp/"))
+        #expect(manifest.path != manifest.standardizedFileURL.path)
+        #expect(
+            try FingerprintEvidenceReleaseContext.readStableRegularFile(
+                manifest,
+                maximumBytes: 1024
+            ) == Data("{}".utf8)
         )
         let symlink = root.appendingPathComponent("manifest-link.json")
         try FileManager.default.createSymbolicLink(
