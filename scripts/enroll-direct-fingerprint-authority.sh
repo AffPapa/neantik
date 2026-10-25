@@ -78,8 +78,24 @@ else
 fi
 
 if (( enrollment_status != 0 )); then
-  echo "Secure Enclave enrollment failed; Direct release preparation stopped." >&2
-  exit "$enrollment_status"
+  # On some macOS releases `open -W` can fail while setting up its wait
+  # observer after Launch Services has already launched the app. The app may
+  # still have atomically written its public enrollment binding. Reuse that
+  # result only when the private output is a regular, owner-only, single-link
+  # file and the strict schema/key parser accepts it. The later candidate
+  # manifest and headed audit still prove this binding belongs to the exact
+  # prepared app and that the enrolled Secure Enclave signer is usable.
+  if [[ -f "$OUTPUT_PATH" && ! -L "$OUTPUT_PATH" &&
+        "$(/usr/bin/stat -f '%u:%Lp:%l' "$OUTPUT_PATH" 2>/dev/null)" == \
+          "$EUID:600:1" ]] &&
+     PYTHONPATH="$PROJECT_DIR/scripts" /usr/bin/python3 -B -c \
+       'import sys; from pathlib import Path; import fingerprint_evidence_schema9 as schema; schema.load_enrollment_binding(Path(sys.argv[1]))' \
+       "$OUTPUT_PATH"; then
+    echo "Launch Services wait returned $enrollment_status after writing a valid private enrollment binding; strict manifest and signer checks remain required." >&2
+  else
+    echo "Secure Enclave enrollment failed without a valid private binding; Direct release preparation stopped." >&2
+    exit "$enrollment_status"
+  fi
 fi
 if [[ ! -f "$OUTPUT_PATH" || -L "$OUTPUT_PATH" ]]; then
   echo "Secure Enclave enrollment did not create a safe public binding." >&2

@@ -72,6 +72,14 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             text,
         )
 
+    def test_enrollment_wait_error_requires_valid_private_binding_before_reuse(self) -> None:
+        text = ENROLL.read_text(encoding="utf-8")
+        self.assertIn("open -n -W -a", text)
+        self.assertIn("stat -f '%u:%Lp:%l'", text)
+        self.assertIn("schema.load_enrollment_binding(Path(sys.argv[1]))", text)
+        self.assertIn("strict manifest and signer checks remain required", text)
+        self.assertIn("Secure Enclave enrollment failed without a valid private binding", text)
+
     def test_device_memory_control_blocks_release_before_gui_audit(self) -> None:
         text = RELEASE_COMMAND.read_text(encoding="utf-8")
         control = 'node "$PROJECT_DIR/scripts/verify-device-memory-coherence.mjs" "$APP_PATH"'
