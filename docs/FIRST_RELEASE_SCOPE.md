@@ -27,7 +27,7 @@
 ## Release sequence
 
 1. Freeze a clean source commit and build 0.9.0 (140) using the existing `public-alpha` route.
-2. Run the one full Swift suite justified by the corrected M157 negative-control fixture, then one alpha-qualified A→B→A candidate check. Reuse all other matching receipts.
+2. Reuse the completed full Swift suite and all matching receipts; perform one alpha-qualified A→B→A check on the frozen candidate. The release runner is capped at one GUI attempt, so a setup failure is diagnosed instead of retried in a loop.
 3. Sign and notarize one ZIP and DMG; verify the exact local bytes.
 4. Publish matching GitHub assets and browser.free version/download metadata; fetch and compare live bytes and links.
 
