@@ -219,7 +219,7 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         guard path.hasPrefix("/"),
               path != "/",
               !path.hasSuffix("/"),
-              !path.contains("\u{0}")
+              !path.unicodeScalars.contains(where: { $0.value < 32 || $0.value == 127 })
         else {
             return false
         }
@@ -234,7 +234,10 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         else {
             return false
         }
-        return URL(fileURLWithPath: path).standardizedFileURL.path == path
+        // Keep the caller's canonical spelling. Foundation resolves macOS's
+        // /private/tmp alias to /tmp for existing paths, which rejects valid
+        // registered release candidates before their authenticated path checks.
+        return true
     }
 
     private static func isCanonicalAbsoluteExecutablePath(

@@ -160,6 +160,31 @@ struct LaunchIntentTests {
     }
 
     @Test
+    func releaseArgumentAcceptsExistingPrivateTmpAlias() throws {
+        let directory = "/private/tmp/neantik-launch-intent-\(UUID().uuidString.lowercased())"
+        try FileManager.default.createDirectory(
+            atPath: directory,
+            withIntermediateDirectories: false
+        )
+        defer { try? FileManager.default.removeItem(atPath: directory) }
+        let manifest = directory + "/direct-candidate-manifest.json"
+        let output = directory + "/fingerprint-evidence-schema8.json"
+        #expect(FileManager.default.createFile(atPath: manifest, contents: Data("{}".utf8)))
+
+        let intent = NeAntikLaunchIntent.parse(arguments: [
+            directory + "/NeAntik.app/Contents/MacOS/NeAntik",
+            NeAntikLaunchIntent.releaseFingerprintAuditArgument,
+            NeAntikLaunchIntent.candidateManifestArgument,
+            manifest,
+            NeAntikLaunchIntent.outputArgument,
+            output
+        ])
+
+        #expect(intent.opensFingerprintAudit)
+        #expect(intent.mode != .invalidControlArguments)
+    }
+
+    @Test
     func releaseExecutableResolvesItsOwningApplicationBundle() {
         let executable =
             "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
