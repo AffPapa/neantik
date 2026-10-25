@@ -45,6 +45,11 @@ EXPECTED_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PROJECT_
 export NEANTIK_SIGNING_IDENTITY="${NEANTIK_SIGNING_IDENTITY:-474F7C78F33EE324C24F6F5AE0443EB713E85E60}"
 export NEANTIK_NOTARY_PROFILE="${NEANTIK_NOTARY_PROFILE:-neantik-notary}"
 export NEANTIK_RELEASE_CHANNEL="${NEANTIK_RELEASE_CHANNEL:-public-alpha}"
+GUI_ATTEMPT_LIMIT="${NEANTIK_GUI_ATTEMPT_LIMIT:-1}"
+if [[ ! "$GUI_ATTEMPT_LIMIT" =~ '^[1-3]$' ]]; then
+  echo "NEANTIK_GUI_ATTEMPT_LIMIT must be 1, 2, or 3." >&2
+  exit 64
+fi
 pause_on_error() {
   local exit_code=$?
   trap - ERR
@@ -360,7 +365,7 @@ evaluate_current_gui_attempt() {
 }
 
 attempt=1
-while (( REUSED_GUI_EVIDENCE == 0 && attempt <= 3 )); do
+while (( REUSED_GUI_EVIDENCE == 0 && attempt <= GUI_ATTEMPT_LIMIT )); do
   python3 "$PROJECT_DIR/scripts/wait-for-neantik-runtime-drain.py" \
     --app "$APP_PATH"
   ATTEMPT_STATE_DIR="$ATTEMPT_STATE_ROOT/attempt-$attempt"
@@ -418,9 +423,9 @@ while (( REUSED_GUI_EVIDENCE == 0 && attempt <= 3 )); do
       ;;
   esac
 
-  if (( attempt == 3 )); then
+  if (( attempt == GUI_ATTEMPT_LIMIT )); then
     echo
-    echo "Свежий подписанный отчёт A → B → A не создан после трёх попыток." >&2
+    echo "Свежий подписанный отчёт A → B → A не создан после ${GUI_ATTEMPT_LIMIT} попыток." >&2
     echo "Notarization и публикация не запускались." >&2
     exit 66
   fi
