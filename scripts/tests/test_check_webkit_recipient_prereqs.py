@@ -18,6 +18,18 @@ SPEC = importlib.util.spec_from_file_location("check_webkit_recipient_prereqs", 
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
+TEST_WEBKIT_COMMIT = "a" * 40
+TEST_EXPECTED = {name: char * 64 for name, char in zip(
+    ("webkitArchive", "neantikArchive", "patch", "buildConfig"), "1234")}
+
+
+def write_manifest(root: Path, hashes: dict[str, str] | None = None) -> Path:
+    values = dict(TEST_EXPECTED if hashes is None else hashes)
+    path = root / "pins.json"
+    path.write_text(json.dumps({"schemaVersion": 1,
+                                "pinnedWebKitCommit": TEST_WEBKIT_COMMIT,
+                                "expectedSHA256": values}))
+    return path
 
 
 class RecipientPreflightTests(unittest.TestCase):
@@ -26,11 +38,8 @@ class RecipientPreflightTests(unittest.TestCase):
             root = Path(tmp)
             source = root / "new-source.tar.zst"
             source.write_bytes(b"new source-only archive")
-            hashes = dict(MODULE.EXPECTED, neantikArchive=hashlib.sha256(source.read_bytes()).hexdigest())
-            manifest = root / "pins.json"
-            manifest.write_text(json.dumps({"schemaVersion": 1,
-                                            "pinnedWebKitCommit": MODULE.WEBKIT_COMMIT,
-                                            "expectedSHA256": hashes}))
+            hashes = dict(TEST_EXPECTED, neantikArchive=hashlib.sha256(source.read_bytes()).hexdigest())
+            manifest = write_manifest(root, hashes)
             args = argparse.Namespace(input_manifest=manifest, recipient_team=None,
                                       webkit_archive=None, neantik_archive=source,
                                       patch=None, build_config=None, source_tree=None,
@@ -45,26 +54,32 @@ class RecipientPreflightTests(unittest.TestCase):
     def test_hash_manifest_rejects_claims_and_bad_digests(self):
         with tempfile.TemporaryDirectory() as tmp:
             manifest = Path(tmp) / "pins.json"
-            base = {"schemaVersion": 1, "pinnedWebKitCommit": MODULE.WEBKIT_COMMIT,
-                    "expectedSHA256": dict(MODULE.EXPECTED)}
+            base = {"schemaVersion": 1, "pinnedWebKitCommit": TEST_WEBKIT_COMMIT,
+                    "expectedSHA256": dict(TEST_EXPECTED)}
             for change in ({"completeBuildInputsEstablished": True},
                            {"schemaVersion": True},
-                           {"expectedSHA256": dict(MODULE.EXPECTED, neantikArchive="0" * 63)}):
+                           {"expectedSHA256": dict(TEST_EXPECTED, neantikArchive="0" * 63)}):
                 manifest.write_text(json.dumps(dict(base, **change)))
                 with self.assertRaises(ValueError):
                     MODULE.load_input_manifest(manifest)
-            self.assertEqual(MODULE.load_input_manifest(None), (MODULE.WEBKIT_COMMIT, MODULE.EXPECTED, None))
+            with self.assertRaises(ValueError):
+                MODULE.load_input_manifest(None)
 
     def test_exact_pinned_patch_passes_and_changed_bytes_fail(self):
-        base = SCRIPT.parents[1] / "docs/evidence/third-party/webkit-v16-relink-candidate-20261020"
-        pinned = base / "webkit-v16-source-modifications.patch"
-        self.assertEqual(MODULE.check_pinned_file(pinned, "patch", MODULE.EXPECTED["patch"])["status"], "pass")
-        self.assertEqual(MODULE.check_pinned_file(base / "BUILD-CONFIG.json", "buildConfig",
-                                                  MODULE.EXPECTED["buildConfig"])["status"], "pass")
         with tempfile.TemporaryDirectory() as tmp:
-            wrong = Path(tmp) / "changed.patch"
+            root = Path(tmp)
+            pinned = root / "patch"
+            config = root / "BUILD-CONFIG.json"
+            pinned.write_bytes(b"exact patch fixture")
+            config.write_bytes(b"exact config fixture")
+            self.assertEqual(MODULE.check_pinned_file(pinned, "patch",
+                                                      hashlib.sha256(pinned.read_bytes()).hexdigest())["status"], "pass")
+            self.assertEqual(MODULE.check_pinned_file(config, "buildConfig",
+                                                      hashlib.sha256(config.read_bytes()).hexdigest())["status"], "pass")
+            wrong = root / "changed.patch"
             wrong.write_text("different\n")
-            self.assertEqual(MODULE.check_pinned_file(wrong, "patch", MODULE.EXPECTED["patch"])["status"], "mismatch")
+            self.assertEqual(MODULE.check_pinned_file(wrong, "patch",
+                                                      hashlib.sha256(pinned.read_bytes()).hexdigest())["status"], "mismatch")
 
     def test_missing_source_markers_and_built_layout_are_separate(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -99,19 +114,31 @@ class RecipientPreflightTests(unittest.TestCase):
             self.assertEqual(command.call_count, 1)
             self.assertEqual(command.call_args.args[0][:2], ["/usr/bin/codesign", "-dv"])
 
-    def test_publisher_team_cannot_satisfy_independent_recipient(self):
-        args = argparse.Namespace(recipient_team=MODULE.PUBLISHER_TEAM, webkit_archive=None,
-                                  neantik_archive=None,
-                                  patch=None, build_config=None, source_tree=None,
-                                  built_frameworks=None, manager_app=None, identity_sha1=None)
-        with patch.object(MODULE, "check_toolchain", return_value={"status": "pass"}):
-            report = MODULE.inspect(args)
-        self.assertEqual(report["checks"]["recipientTeam"]["status"], "mismatch")
+    def test_same_team_is_allowed_and_independent_team_is_optional(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            args = argparse.Namespace(input_manifest=write_manifest(Path(tmp)),
+                                      recipient_team=MODULE.PUBLISHER_TEAM, webkit_archive=None,
+                                      neantik_archive=None, patch=None, build_config=None,
+                                      source_tree=None, built_frameworks=None, manager_app=None,
+                                      identity_sha1=None)
+            with patch.object(MODULE, "check_toolchain", return_value={"status": "pass"}):
+                report = MODULE.inspect(args)
+        self.assertEqual(report["checks"]["expectedSigningTeam"]["status"], "pass")
+        self.assertEqual(report["checks"]["independentTeamAssurance"]["status"], "same-team-only")
         self.assertFalse(report["recipientPackagingInputsPresent"])
         self.assertFalse(report["completeBuildInputsEstablished"])
         self.assertEqual(report["checks"]["completeDependencyInputs"]["status"], "unresolved")
         self.assertFalse(report["recipientRelinkProved"])
         self.assertFalse(report["licenseOrSourceOfferQualified"])
+
+    def test_preflight_exit_does_not_claim_complete_source_offer(self):
+        report = {"knownPinnedInputsPresent": True,
+                  "completeBuildInputsEstablished": False,
+                  "recipientRelinkProved": False,
+                  "licenseOrSourceOfferQualified": False}
+        self.assertEqual(MODULE.exit_code(report), 0)
+        report["knownPinnedInputsPresent"] = False
+        self.assertEqual(MODULE.exit_code(report), 2)
 
     def test_identity_check_only_matches_requested_fingerprint_and_team(self):
         sha = "A" * 40

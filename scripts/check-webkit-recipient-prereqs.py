@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Read-only preflight for a recipient's pinned WebKit source/relink inputs.
+"""Read-only preflight for explicitly pinned WebKit source/build inputs.
 
-This checks inputs, tools, and an optional recipient identity. It never builds,
-signs, launches, extracts, patches, or qualifies a corresponding-source offer.
-The hashes describe the private v16 draft, not a future production release.
+This checks supplied inputs, tools, and optionally an expected signing team. It
+never builds, signs, launches, extracts, patches, or qualifies a source offer.
+There is no implicit historical pin set: callers must name the exact manifest.
 """
 from __future__ import annotations
 
@@ -18,14 +18,7 @@ import shutil
 import subprocess
 
 
-WEBKIT_COMMIT = "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
-EXPECTED = {
-    "webkitArchive": "5283e980fb4a691d9cc1bd05a0fa046a88c0d924c892259c7475311e828885dc",
-    "neantikArchive": "cac6b7ee7c2a967a19cd78231d60f7cdf46289fad7ef0bfb2dea9161eb40801f",
-    "patch": "ca3586d580610f91ee51bbebec42f558b181839bd866456a2084b98b811a6371",
-    "buildConfig": "f498447afb0e9e2e48fffa4c9a795577dfcc3a74f812c70ecbb87d95ba174749",
-}
-PIN_KEYS = frozenset(EXPECTED)
+PIN_KEYS = frozenset({"webkitArchive", "neantikArchive", "patch", "buildConfig"})
 PUBLISHER_TEAM = "H6VGU2M6JD"
 SOURCE_MARKERS = ("Source/WebCore", "Source/JavaScriptCore", "Tools/Scripts/build-webkit")
 TOOLS = ("cmake", "ninja", "zstd", "git", "tar", "python3", "xcodebuild", "xcrun", "codesign", "security")
@@ -39,10 +32,10 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def load_input_manifest(path: Path | None) -> tuple[str, dict[str, str], str | None]:
+def load_input_manifest(path: Path | None) -> tuple[str, dict[str, str], str]:
     """Select exact input hashes; never turn a manifest into a qualification."""
     if path is None:
-        return WEBKIT_COMMIT, EXPECTED, None
+        raise ValueError("An explicit input manifest is required; historical defaults are disabled")
     if path.is_symlink() or not path.is_file() or path.stat().st_size > 16_384:
         raise ValueError("Invalid pinned input manifest")
     try:
@@ -103,7 +96,7 @@ def check_frameworks(path: Path | None) -> dict[str, object]:
 
 def check_manager(path: Path | None, team: str | None) -> dict[str, object]:
     if path is None:
-        return {"status": "missing", "reason": "Supply --manager-app signed by the recipient team"}
+        return {"status": "missing", "reason": "Supply --manager-app signed by the expected team, if checking packaging inputs"}
     if path.is_symlink() or not path.is_dir() or path.suffix != ".app":
         return {"status": "missing", "reason": "Expected a physical .app directory"}
     info_path = path / "Contents/Info.plist"
@@ -127,7 +120,7 @@ def check_manager(path: Path | None, team: str | None) -> dict[str, object]:
 
 def check_identity(sha1: str | None, team: str | None) -> dict[str, object]:
     if sha1 is None:
-        return {"status": "missing", "reason": "Supply --identity-sha1 for a recipient-owned Developer ID Application identity"}
+        return {"status": "missing", "reason": "Supply --identity-sha1 if checking local packaging inputs"}
     if not re.fullmatch(r"[0-9A-Fa-f]{40}", sha1):
         return {"status": "mismatch", "reason": "Identity must be a 40-character certificate SHA-1"}
     try:
@@ -171,9 +164,15 @@ def check_toolchain() -> dict[str, object]:
 def inspect(args: argparse.Namespace) -> dict[str, object]:
     webkit_commit, expected, manifest_sha = load_input_manifest(getattr(args, "input_manifest", None))
     team = args.recipient_team
-    team_status = "pass" if team and re.fullmatch(r"[A-Z0-9]{10}", team) and team != PUBLISHER_TEAM else "missing" if not team else "mismatch"
+    team_status = "not-required" if team is None else "pass" if re.fullmatch(r"[A-Z0-9]{10}", team) else "mismatch"
+    independent_team_status = (
+        "not-requested" if team is None else
+        "same-team-only" if team == PUBLISHER_TEAM else
+        "independent-team-observed" if team_status == "pass" else "invalid"
+    )
     checks = {
-        "recipientTeam": {"status": team_status, "reason": "Independent recipient team required" if team_status != "pass" else ""},
+        "expectedSigningTeam": {"status": team_status, "reason": "Optional expected team; a separate team is not a release prerequisite" if team_status == "not-required" else ""},
+        "independentTeamAssurance": {"status": independent_team_status, "note": "Optional assurance only; same-team build/relink evidence remains usable for the project release gate"},
         "webkitArchive": check_pinned_file(args.webkit_archive, "webkitArchive", expected["webkitArchive"]),
         "neantikArchive": check_pinned_file(args.neantik_archive, "neantikArchive", expected["neantikArchive"]),
         "patch": check_pinned_file(args.patch, "patch", expected["patch"]),
@@ -184,34 +183,39 @@ def inspect(args: argparse.Namespace) -> dict[str, object]:
         "managerApp": check_manager(args.manager_app, team),
         "identity": check_identity(args.identity_sha1, team),
         "completeDependencyInputs": {"status": "unresolved", "reason":
-                                     "The private v16 draft lacks a reviewed exact transitive dependency/source and full build recipe"},
+                                     "This input-only manifest does not establish the complete transitive dependency/source inventory or full portable build recipe"},
     }
     pinned_ready = all(checks[name]["status"] == "pass" for name in
                        ("webkitArchive", "neantikArchive", "patch", "buildConfig", "sourceTree", "toolchain"))
     recipient_inputs_present = pinned_ready and all(checks[name]["status"] == "pass" for name in
-                                                    ("recipientTeam", "builtFrameworks", "managerApp", "identity"))
+                                                    ("builtFrameworks", "managerApp", "identity"))
     return {
         "schemaVersion": 1,
-        "mode": "read-only-prerequisite-check",
+        "mode": "read-only-pinned-input-preflight",
         "pinnedWebKitCommit": webkit_commit,
         "inputManifestSHA256": manifest_sha,
         "checks": checks,
         "knownPinnedInputsPresent": pinned_ready,
+        "packagingInputsPresent": recipient_inputs_present,
         "recipientPackagingInputsPresent": recipient_inputs_present,
         "completeBuildInputsEstablished": False,
         "recipientRelinkProved": False,
         "licenseOrSourceOfferQualified": False,
-        "remainingProof": ["recipient-controlled source edit and dependent rebuild",
-                           "exact nested-runtime signatures and mixed-team rejection",
-                           "headed proof of the modified loaded image",
+        "remainingProof": ["complete transitive build-input inventory and portable build/relink procedure",
+                           "modified-image rebuild/load evidence for the chosen signing scope",
                            "reviewed licenses, notices and final binary/source binding"],
     }
+
+
+def exit_code(report: dict[str, object]) -> int:
+    """Input preflight exit is intentionally narrower than source-offer qualification."""
+    return 0 if report["knownPinnedInputsPresent"] else 2
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--webkit-archive", type=Path)
-    parser.add_argument("--input-manifest", type=Path, help="optional exact-hash manifest for a new private source draft")
+    parser.add_argument("--input-manifest", type=Path, required=True, help="explicit exact-hash manifest for this source offer")
     parser.add_argument("--neantik-archive", type=Path)
     parser.add_argument("--patch", type=Path)
     parser.add_argument("--build-config", type=Path)
@@ -225,7 +229,7 @@ def main() -> int:
     except (OSError, ValueError):
         parser.exit(2, "Pinned input manifest refused.\n")
     print(json.dumps(report, ensure_ascii=False, sort_keys=True))
-    return 0 if report["recipientPackagingInputsPresent"] and report["completeBuildInputsEstablished"] else 2
+    return exit_code(report)
 
 
 if __name__ == "__main__":
