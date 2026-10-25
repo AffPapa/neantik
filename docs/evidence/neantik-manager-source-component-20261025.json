@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "status": "pass-manager-source-component-only-not-release-qualified",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "managerSource": {
+    "commit": "955bc0808a1e1a49d3a9f74f2b02e05af9fee3e2",
+    "tree": "85143a9d6752763cec7228076d7661dd0ae9b0bf",
+    "worktreeState": "clean",
+    "preparationSourceReceiptSHA256": "c1024af324c0b86142ea6197ff077862fd8affc7845537635caead4500f79e02",
+    "archivePath": "dist/private/source-offers/1.0.0-manager-955/NeAntik-source-955bc08.tar.zst",
+    "archiveSHA256": "b880531a56aced46dbf8cda817b3c1c52a8294dc1c38a4b13a2c2177cb556197",
+    "archiveBytes": 22117688,
+    "trackedBlobCount": 2574
+  },
+  "gitleaksDelta": {
+    "tool": "gitleaks",
+    "scope": "full exact manager source archive extracted and scanned; report redacted locally",
+    "baselineCommit": "5074d658d4950164d2c64dca839c405738c06f76",
+    "baselineReportPath": "/Users/dumay/rumors-wtf/artifacts/neantik/private-release-source-freeze-20261023/gitleaks-dir-final-20261023.json",
+    "baselineFindingCount": 2405,
+    "candidateFindingCount": 2405,
+    "ruleFileLineKeysAdded": 0,
+    "findingBearingFiles": 18,
+    "findingBearingFilesByteIdenticalToBaseline": 18,
+    "findingBearingFilesChangedOrMissing": 0,
+    "rawFindingValuesPublished": false
+  },
+  "comparisonToOld332Freeze": {
+    "oldFreezeCommit": "7bfd95e9145fa940a981903e3b216217a6c2e236",
+    "oldFreezeSelectedPathCount": 332,
+    "candidateSourceMatchesOldFreeze": false,
+    "candidateSourceFiles": 2574,
+    "sameFiles": 2208,
+    "addedFiles": 304,
+    "removedFiles": 133,
+    "changedFiles": 62,
+    "decision": "Use the exact candidate commit archive as manager source; do not reuse the old 332-path snapshot as candidate-matched source."
+  },
+  "separateWebKitComponent": {
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "patchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "status": "separate private source component; still needs final configuration/relink instructions and candidate-bound notice closure"
+  },
+  "releaseBoundary": {
+    "completeCorrespondingSourceOffer": false,
+    "unresolvedNoticeRows": 94,
+    "productionCandidateQualified": false,
+    "publicReleaseAuthorizedByThisReceipt": false
+  },
+  "recordedAt": "2026-10-25T00:04:11Z"
+}
