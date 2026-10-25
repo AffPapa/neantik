@@ -54,6 +54,17 @@ class SemanticEvidenceTests(unittest.TestCase):
         with self.assertRaises(current.FingerprintEvidenceVerificationError):
             current.validate_manifest_binding(value)
 
+    def test_current_m15648_contract_path_is_supported_and_unknown_path_is_rejected(self):
+        current._validate_critical_bundle_path(
+            "sourceContract",
+            "Contents/Resources/NeAntikRuntimeEvidence/chromium-15648-source-contract.json",
+        )
+        with self.assertRaises(current.FingerprintEvidenceVerificationError):
+            current._validate_critical_bundle_path(
+                "sourceContract",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15649-source-contract.json",
+            )
+
     def test_payload_negatives_and_no_artificial_uniqueness(self):
         original = json.loads(fixture(9)[2])
         value = copy.deepcopy(original); value["criticalSurfaces"] = dict.fromkeys(value["criticalSurfaces"], "stable-same")
