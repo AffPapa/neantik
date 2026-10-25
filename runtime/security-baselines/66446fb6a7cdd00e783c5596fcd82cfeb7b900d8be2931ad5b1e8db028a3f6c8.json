@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-24",
+  "publishedAt": "2026-10-20",
+  "maximumAgeDays": 0,
+  "minimumPublicChromiumVersion": "156.0.8078.48",
+  "alsoObservedPublicChromiumVersions": [
+    "156.0.8078.47"
+  ],
+  "channel": "Desktop Stable",
+  "platforms": [
+    "macOS"
+  ],
+  "securityFixCount": 353,
+  "reference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_02018666648.html",
+  "referenceTitle": "Stable Channel Update for Desktop",
+  "sourceLabel": "Chrome Releases",
+  "releaseBoundary": "This manually pinned primary-source security baseline is not a live updater. Refresh checkedAt, versions, securityFixCount and reference on the day of every public Direct release. This names the current M156 stable train; same-train version comparison is not a source review for another Chromium branch.",
+  "policy": "The current widely deployed macOS Desktop Stable floor is Chromium 156.0.8078.48, published 2026-10-20; the official post lists 156.0.8078.47 for Linux and .47/.48 for Windows and Mac with 353 security fixes. The NeAntik runtime must be built from the pinned official stable source at or above this floor. A limited Early Stable 157 rollout is observed separately and is not treated as the widely deployed floor. Cross-branch runtime use still requires source-bound review."
+}
