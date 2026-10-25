@@ -14,7 +14,7 @@
   "rebasePlanSHA256": "ce749a3a1ffbe068c81ffe685ddca1e0d93047ad084aa4ce97c87a3ebb043ea4",
   "releaseReady": false,
   "schemaVersion": 1,
-  "securityBaselineSHA256": "70f4fd41f88862b8bc971d63bdf05a547b274aeb5340da70ab597a1091aa048d",
+  "securityBaselineSHA256": "66446fb6a7cdd00e783c5596fcd82cfeb7b900d8be2931ad5b1e8db028a3f6c8",
   "sourceAdoptionManifest": "runtime/chromium-15648-source-adoption-v3.json",
   "sourceAdoptionManifestSHA256": "97aae1b192339d834bc5b0a91e2c1f6a1f71bfb9bcee0f9b83e6d56e880152cf",
   "sourceMode": "official-chromium-stable-with-reviewed-neantik-patches",

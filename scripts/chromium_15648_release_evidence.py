@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from runtime_historical_baseline import bound_baseline_path
+
 VERSION = "156.0.8078.48"
 PREFIX = "chromium-15648"
 CONTRACT = PREFIX + "-source-contract.json"
@@ -76,7 +78,13 @@ def verify_contract(project_root: Path) -> dict[str, Any]:
         ("chromiumLicenseSHA256", "licenses/Chromium-LICENSE", None),
         ("securityBaselineSHA256", "security-baseline.json", None),
     ):
-        if contract.get(key) != _sha(project_root.resolve() / "runtime" / rel):
+        selected = project_root.resolve() / "runtime" / rel
+        if key == "securityBaselineSHA256":
+            try:
+                selected = bound_baseline_path(project_root.resolve() / "runtime", contract.get(key))
+            except ValueError as error:
+                raise M15648EvidenceError("Chromium 156.48 source-bound security baseline is unavailable") from error
+        if contract.get(key) != _sha(selected):
             raise M15648EvidenceError("Chromium 156.48 packaged input digest mismatch: " + key)
     base = contract.get("officialChromiumBase")
     if not isinstance(base, dict) or base != plan.get("officialChromiumBase"):
@@ -190,7 +198,10 @@ def expected_lock(provenance_path: Path, project_root: Path) -> dict[str, Any]:
         "ownedManifests": {
             "neantikPatchSeriesSHA256": _sha(project_root.resolve() / "runtime/nevision-patches/series.json"),
             "appleDeviceTuplesSHA256": _sha(project_root.resolve() / "runtime/apple-device-tuples.json"),
-            "securityBaselineSHA256": _sha(project_root.resolve() / "runtime/security-baseline.json"),
+            # The runtime lock records the baseline used to qualify this exact
+            # source/build. Today's public-release observation is a separate
+            # release-security-baseline.json and must not rewrite that history.
+            "securityBaselineSHA256": contract["securityBaselineSHA256"],
         },
         "binaryBinding": {"status":"not-attested-by-this-document","requiredEvidence":"schema-3-runtime-report",
                           "policy":"This source-only candidate lock makes no binary, build, notarization, publication, or runtime-result claim."},
