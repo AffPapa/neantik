@@ -8,8 +8,7 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-**0.8.25 (137), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.25): two stale-result cases in proxy diagnostics were fixed. The exact signed candidate, ZIP/DMG and downloaded MCP were checked; Chromium was not rebuilt and profile data was not migrated.
-At the last check, [browser.free](https://browser.free/) still showed version 0.8.16, build 128; that is a separate, unfinished update channel. System WebKit remains a preview: proxy and full backup are unavailable there. The full 1.0 program remains open.
+**0.8.26 (138), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.8.26); [browser.free](https://browser.free/) is also updated to 0.8.26 (138), Sites 158. System WebKit is a preview only: NeAntik does not yet ship its own WebKit runtime, WebKit proxy, or full WebKit backup. The full 1.0 program remains open.
 
 ## Security advisory
 
@@ -22,15 +21,15 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.8.25 (137), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.25). Signed ZIP and DMG passed notarization, stapling, Gatekeeper and public-download byte verification. [Machine-readable report](releases/v0.8.25.json).
+Latest published release: [NeAntik 0.8.26 (138), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.8.26). [Reconciled publication report](releases/v0.8.26.json).
 
-**The update to 0.8.25 is manual via DMG/ZIP.** Quit before replacing the app; keep profile folders. An installed-updater transition is not qualified by this release.
+**The update to 0.8.26 is manual via DMG/ZIP.** Quit before replacing the app; keep profile folders. An installed-updater transition is not qualified by this release.
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `156.0.8078.12`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-Direct downloads: [GitHub — 0.8.25](https://github.com/AffPapa/neantik/releases/tag/v0.8.25). [browser.free](https://browser.free) is updated separately.
+Direct downloads: [GitHub — 0.8.26](https://github.com/AffPapa/neantik/releases/tag/v0.8.26). [browser.free](https://browser.free) is updated separately.
 
 The description below reflects the manager contract and this source branch;
 the exact public binary contents are defined by its release notes and assets.

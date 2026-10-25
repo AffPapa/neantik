@@ -48,6 +48,24 @@ struct ManagerLaunchAdmissionTests {
         #expect(admission.preparingProfileID == nil)
         #expect(notifications == 2)
     }
+    @Test func activePreparationCanBeCancelledWithoutReleasingItsAdmissionEarly() throws {
+        let admission = ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal })
+        let token = try admission.begin(profileID: UUID())
+        var cancellationCount = 0
+        admission.registerCancellation(token: token) { cancellationCount += 1 }
+
+        #expect(admission.canCancelPreparation)
+        #expect(admission.cancelActivePreparation())
+        #expect(cancellationCount == 1)
+        #expect(admission.isPreparing)
+        #expect(throws: ManagerLaunchAdmissionError.self) {
+            try admission.begin(profileID: UUID())
+        }
+
+        admission.finish(token: token)
+        #expect(!admission.canCancelPreparation)
+        #expect(!admission.isPreparing)
+    }
     @Test func pressureAndThermalOnlyBlockNewStarts() throws {
         let admission = ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal })
         let token = try admission.begin(profileID: UUID())

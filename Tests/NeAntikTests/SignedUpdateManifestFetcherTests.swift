@@ -20,7 +20,7 @@ struct ManifestDiscoveryFixture {
             archiveName: "NeAntik-0.7.35-arm64-notarized.zip",
             downloadURL: "https://github.com/AffPapa/neantik/releases/download/v0.7.35/NeAntik-0.7.35-arm64-notarized.zip",
             sha256: String(repeating: "a", count: 64), minimumOS: minimumOS, architecture: "arm64",
-            artifactKind: "public-notarized", publicReleaseState: "public-ready", chromiumVersion: "156.0.8078.12")
+            artifactKind: "public-notarized", publicReleaseState: "public-ready", chromiumVersion: "156.0.8078.48")
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
         let bytes = try encoder.encode(payload)
         return try JSONEncoder().encode(SignedUpdateEnvelope(schemaVersion: 1, algorithm: "Ed25519",

@@ -1037,6 +1037,12 @@ struct ContentView: View {
                     launch(profile, target: failure.target)
                 }
             }
+            if managerLaunchAdmission.canCancelPreparation {
+                Button("Отменить текущую подготовку", role: .destructive) {
+                    _ = managerLaunchAdmission.cancelActivePreparation()
+                    launchPreparationFailure = nil
+                }
+            }
             if failure.offersProxyEdit {
                 Button("Изменить прокси…") {
                     launchPreparationFailure = nil
@@ -3415,12 +3421,26 @@ struct ContentView: View {
     private func launchIsolatedWebKitProfile(_ profile: BrowserProfile) {
         do {
             let token = try ManagerLaunchAdmission.shared.begin(profileID: profile.id)
-            Task { @MainActor in
+            let launchToken = UUID()
+            launchPreparationTokens[profile.id] = launchToken
+            launchPreparingProfileIDs.insert(profile.id)
+            let task = Task { @MainActor in
                 var launched = false
-                defer { ManagerLaunchAdmission.shared.finish(token: token, launched: launched) }
+                defer {
+                    ManagerLaunchAdmission.shared.finish(token: token, launched: launched)
+                    if launchPreparationTokens[profile.id] == launchToken {
+                        launchPreparationTokens[profile.id] = nil
+                        launchPreparingProfileIDs.remove(profile.id)
+                        launchPreparationTasks[profile.id] = nil
+                    }
+                }
                 do {
                     try store.validateLaunchSnapshot(profile)
                     let generation = try await processes.launchWebKitProfileAsync(profile)
+                    guard !Task.isCancelled else {
+                        processes.stop(profileID: profile.id)
+                        return
+                    }
                     guard store.markLaunched(profile.id) else {
                         processes.stop(profileID: profile.id)
                         throw NeAntikError.profileLaunchStateNotPersisted
@@ -3429,12 +3449,17 @@ struct ContentView: View {
                     launched = true
                     store.managerLibrary.record(.launch, .succeeded)
                 } catch {
+                    guard !Task.isCancelled else { return }
                     store.managerLibrary.record(.launch, error is ManagerLaunchAdmissionError ? .deferred : .failed)
                     launchPreparationFailure = LaunchPreparationFailure(
                         profileID: profile.id, message: error.localizedDescription,
                         title: "Браузер не запустился", offersProxyEdit: false,
                         target: .profileStart)
                 }
+            }
+            launchPreparationTasks[profile.id] = task
+            ManagerLaunchAdmission.shared.registerCancellation(token: token) {
+                task.cancel()
             }
         } catch {
             store.managerLibrary.record(.launch, error is ManagerLaunchAdmissionError ? .deferred : .failed)
@@ -3521,7 +3546,7 @@ struct ContentView: View {
         let launchToken = UUID()
         launchPreparationTokens[profile.id] = launchToken
         launchPreparingProfileIDs.insert(profile.id)
-        launchPreparationTasks[profile.id] = Task { @MainActor in
+        let task = Task { @MainActor in
             var launched = false
             defer {
                 ManagerLaunchAdmission.shared.finish(token: admissionToken, launched: launched)
@@ -3609,8 +3634,13 @@ struct ContentView: View {
                         ),
                     target: target
                 )
+                guard !Task.isCancelled else {
+                    processes.stop(profileID: currentProfile.id)
+                    return
+                }
                 launched = true
             } catch {
+                guard !Task.isCancelled else { return }
                 launchPreparationFailure = LaunchPreparationFailure(
                     profileID: currentProfile.id,
                     message:
@@ -3621,6 +3651,10 @@ struct ContentView: View {
                     target: target
                 )
             }
+        }
+        launchPreparationTasks[profile.id] = task
+        ManagerLaunchAdmission.shared.registerCancellation(token: admissionToken) {
+            task.cancel()
         }
     }
 

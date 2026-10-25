@@ -102,7 +102,7 @@ struct RuntimeProvenanceCardTests {
         let runtime = BrowserRuntime(name: "NeAntik Browser",
             executableURL: URL(fileURLWithPath: "/private/nonexistent-qa-runtime/Browser"),
             source: "Встроен", flavor: .fingerprintChromium,
-            inspection: BrowserRuntimeInspection(version: "156.0.8078.12",
+            inspection: BrowserRuntimeInspection(version: "157.0.0.0",
                 architectures: ["arm64"], codeSignatureValid: true))
         let snapshot = RuntimeProvenanceSnapshot.inspect(runtime: runtime, preflight: nil)
         #expect(snapshot.publicReleaseStatus == "Нужна проверка исправлений Chromium")
@@ -136,7 +136,7 @@ struct RuntimeProvenanceCardTests {
         #expect(!NeAntikRuntimeSecurityBaseline.meetsPublicChromiumVersion(version))
     }
 
-    @Test(arguments: ["155.0.8059.85", "155.0.8059.86", "156.0.8078.12"])
+    @Test(arguments: ["156.0.8078.48", "156.0.8078.49"])
     func currentAndNewerCanonicalVersionsMeetBaseline(version: String) {
         #expect(NeAntikRuntimeSecurityBaseline.meetsPublicChromiumVersion(version))
     }

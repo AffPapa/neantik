@@ -32,7 +32,7 @@ private final class OwnUpdateStageFixture: @unchecked Sendable {
             issuedAt: now.addingTimeInterval(-60), expiresAt: now.addingTimeInterval(86_400),
             archiveName: "NeAntik-\(version)-arm64-notarized.zip", downloadURL: "https://browser.free/downloads/NeAntik-\(version)-arm64-notarized.zip",
             sha256: digest ?? BackupFS.hex(SHA256.hash(data: bytes)), minimumOS: minimumOS, architecture: "arm64",
-            artifactKind: "public-notarized", publicReleaseState: "public-ready", chromiumVersion: "156.0.8078.12")
+            artifactKind: "public-notarized", publicReleaseState: "public-ready", chromiumVersion: "156.0.8078.48")
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
         let payload = try encoder.encode(value)
         return try JSONEncoder().encode(SignedUpdateEnvelope(schemaVersion: 1, algorithm: "Ed25519", keyID: "own-stage-fixture",

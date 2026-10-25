@@ -1,9 +1,10 @@
 import CoreFoundation
 import Foundation
 
-/// Called only after genuine signed-stage verification. Publication date is
-/// allowed to advance without changing the historical runtime closure. This
-/// never refreshes a manifest's expiry or substitutes for the release doctor.
+/// Called only after genuine signed-stage verification. This validates the
+/// recorded baseline's shape and permits immutable historical observations;
+/// current update admission separately enforces the installed security floor.
+/// It never substitutes for the release doctor.
 package enum DirectUpdatePublicationBaseline {
     package static func validate(_ bytes: Data, now: Date = Date()) throws {
         guard (1...65_536).contains(bytes.count),
@@ -36,8 +37,7 @@ package enum DirectUpdatePublicationBaseline {
               let fixes = integer("securityFixCount"), (0...100_000).contains(fixes),
               let checked = day("checkedAt"), let published = day("publishedAt"), published <= checked,
               checked <= now,
-              let minimum = value["minimumPublicChromiumVersion"] as? String, let components = version(minimum),
-              !components.lexicographicallyPrecedes(NeAntikRuntimeSecurityBaseline.minimumPublicChromiumVersion),
+              let minimum = value["minimumPublicChromiumVersion"] as? String, version(minimum) != nil,
               let observed = value["alsoObservedPublicChromiumVersions"] as? [String], observed.count <= 8,
               observed.allSatisfy({ version($0) != nil }),
               value["channel"] as? String == "Desktop Stable", value["platforms"] as? [String] == ["macOS"],

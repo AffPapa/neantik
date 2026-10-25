@@ -73,7 +73,7 @@ private final class OwnZIPFixture: @unchecked Sendable {
         .init(isEnabled: true, manifestURL: URL(string: "https://browser.free/update.json"),
               publicKeyID: "own-zip-fixture", publicKey: key.publicKey.rawRepresentation)
     }
-    func manifest(publicArchive: Bool = false, chromiumVersion: String = "156.0.8078.12", digest: String? = nil) throws -> Data {
+    func manifest(publicArchive: Bool = false, chromiumVersion: String = "156.0.8078.48", digest: String? = nil) throws -> Data {
         let version = publicArchive ? "0.7.29" : "0.7.30", build = publicArchive ? 92 : 93
         let payload = UpdateManifestPayload(schemaVersion: 1, product: "NeAntik", edition: "Direct", version: version, build: build,
             issuedAt: now.addingTimeInterval(-60), expiresAt: now.addingTimeInterval(86_400),
@@ -85,7 +85,7 @@ private final class OwnZIPFixture: @unchecked Sendable {
         return try JSONEncoder().encode(SignedUpdateEnvelope(schemaVersion: 1, algorithm: "Ed25519", keyID: "own-zip-fixture",
             payload: body.base64EncodedString(), signature: try key.signature(for: body).base64EncodedString()))
     }
-    func prepare(publicArchive: Bool = false, chromiumVersion: String = "156.0.8078.12") throws -> PreparedUpdateArchive {
+    func prepare(publicArchive: Bool = false, chromiumVersion: String = "156.0.8078.48") throws -> PreparedUpdateArchive {
         return try DirectUpdateStageStorage.prepareSynchronously(archiveURL: source, signedManifest: manifest(publicArchive: publicArchive, chromiumVersion: chromiumVersion),
             configuration: configuration,
             installedVersion: "0.7.28", installedBuild: 91, destinationParent: stages,

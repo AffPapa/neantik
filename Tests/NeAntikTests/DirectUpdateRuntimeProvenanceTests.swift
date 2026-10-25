@@ -280,7 +280,7 @@ private final class RuntimeClosureFixture: @unchecked Sendable {
         let original = try #require(JSONSerialization.jsonObject(with: valid) as? [String: Any])
         let controls: [(String, Any)] = [("schemaVersion", true), ("maximumAgeDays", 7), ("securityFixCount", -1),
             ("checkedAt", "2026-10-30"), ("checkedAt", "2026-02-30"), ("publishedAt", "2026-10-20"),
-            ("minimumPublicChromiumVersion", "154.0.0.0"),
+            ("minimumPublicChromiumVersion", "156.0.8078"),
             ("minimumPublicChromiumVersion", "0155.0.8059.40"), ("platforms", ["Windows"]),
             ("reference", "https://evil.example/stable.html"), ("reference", "https://user:secret@chromereleases.googleblog.com/stable.html"),
             ("unknown", "not admitted")]

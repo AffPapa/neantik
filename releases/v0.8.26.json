@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "channel": "public-alpha",
+  "architecture": "arm64",
+  "minimumOS": "14.0",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "sourceVariant": "component-completion-v1",
+    "rebuilt": false,
+    "builtDuringPackaging": false,
+    "safeBrowsingEnabled": false,
+    "latestEarlyStable": false
+  },
+  "siteUrl": "https://browser.free",
+  "site": {
+    "status": "published-and-live-verified",
+    "savedVersion": 158,
+    "liveVersion": "0.8.26",
+    "liveBuild": 138,
+    "liveCheckedDateUTC": "2026-10-25",
+    "deploymentID": "appgdep_6ad75d95c15c8191b7cffca7323b2099",
+    "updated": true
+  },
+  "version": "0.8.26",
+  "build": 138,
+  "sourceCommit": "8177f2b8c8f75805d853558546184c8911a21a02",
+  "tag": "v0.8.26",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.8.26",
+  "rollbackRelease": "v0.8.25",
+  "githubReleaseId": 418262507,
+  "artifacts": [
+    {
+      "name": "NeAntik-0.8.26-arm64-notarized.zip",
+      "sha256": "e1baac08c86234e5a4bb7b7001ba9bb97ab698595c695bcdc753408018550420",
+      "sizeBytes": 191523375,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.26/NeAntik-0.8.26-arm64-notarized.zip"
+    },
+    {
+      "name": "NeAntik-0.8.26-arm64-notarized.dmg",
+      "sha256": "554b2aff916386d95ed26ec2d13032a7b21704b9fc357ff61041413855663233",
+      "sizeBytes": 217004974,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.26/NeAntik-0.8.26-arm64-notarized.dmg"
+    }
+  ],
+  "checksumFiles": [
+    {
+      "name": "NeAntik-0.8.26-arm64-notarized.zip.sha256",
+      "sha256": "8c3414b579e80e42f79ccd50230f58c41385b391a0266e93aecc462104a9a708",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.26/NeAntik-0.8.26-arm64-notarized.zip.sha256"
+    },
+    {
+      "name": "NeAntik-0.8.26-arm64-notarized.dmg.sha256",
+      "sha256": "0428c5d0a2987006a7b5d74acea07813fa0feeeed6d8443c72bfcf7ed4d31c86",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.26/NeAntik-0.8.26-arm64-notarized.dmg.sha256"
+    }
+  ],
+  "publicationState": "published-and-live-verified",
+  "releaseQualified": true,
+  "major1_0Complete": false,
+  "reconciliation": {
+    "source": "GitHub release API asset metadata, local v0.8.26 Git tag, Sites version 158 deployment status, and the retained 2026-10-24 CURRENT.json publicBaseline",
+    "scope": "Publication metadata reconciliation only; does not re-run or re-attest the original candidate QA. Chromium runtime fields are inherited from the unchanged 0.8.25 report, consistent with the 0.8.26 changelog.",
+    "githubTagTargetCommit": "8177f2b8c8f75805d853558546184c8911a21a02",
+    "githubReleaseName": "NeAntik 0.8.26 (138) · WebKit preview lifecycle"
+  },
+  "limitations": [
+    "Public alpha; stable 1.0 remains open.",
+    "System WebKit is preview-only; an owned WebKit runtime, WebKit proxy, and full WebKit BrowserData backup are not qualified.",
+    "No Safari.app equivalence or complete fingerprint substitution claim.",
+    "Chromium runtime is unchanged from 0.8.25; only the app manager lifecycle changed in 0.8.26."
+  ]
+}

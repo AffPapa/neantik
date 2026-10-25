@@ -28,7 +28,7 @@ private final class OwnUpdateIntegrityFixture: @unchecked Sendable {
             archiveName: "NeAntik-\(version)-arm64-notarized.zip",
             downloadURL: "https://browser.free/downloads/NeAntik-\(version)-arm64-notarized.zip",
             sha256: digest ?? BackupFS.hex(SHA256.hash(data: bytes)), minimumOS: minimumOS, architecture: "arm64",
-            artifactKind: "public-notarized", publicReleaseState: "public-ready", chromiumVersion: "156.0.8078.12")
+            artifactKind: "public-notarized", publicReleaseState: "public-ready", chromiumVersion: "156.0.8078.48")
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
         let encoded = try encoder.encode(payload)
         return try JSONEncoder().encode(SignedUpdateEnvelope(schemaVersion: 1, algorithm: "Ed25519", keyID: "own-fixture",

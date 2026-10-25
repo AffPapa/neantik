@@ -1,6 +1,6 @@
-# NeAntik improvement roadmap
+# NeAntik improvement roadmap — Current public release: 0.8.26/build138; Chromium 156.0.8078.12; releases/v0.8.26.json
 
-Current public state, candidate, and next action are in [CURRENT.json](../artifacts/neantik/looper-goals/20261020-webkit-1_0/CURRENT.json). [NEXT_1_0_SLICES](NEXT_1_0_SLICES.md) has the remaining acceptance gates. The version notes below are historical.
+Current public baseline is recorded in [the v0.8.26 report](../releases/v0.8.26.json); the next alpha scope and stable 1.0 gates are in [NEXT_1_0_SLICES](NEXT_1_0_SLICES.md). The version notes below are historical.
 
 ## Historical snapshot
 

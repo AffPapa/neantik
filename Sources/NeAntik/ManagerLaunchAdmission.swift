@@ -8,8 +8,10 @@ final class ManagerLaunchAdmission: ObservableObject {
     static let shared = ManagerLaunchAdmission()
     @Published private(set) var pressured = false
     @Published private var active: (profileID: UUID, token: UUID)?
+    private var activeCancellation: (() -> Void)?
     var isPreparing: Bool { active != nil }
     var preparingProfileID: UUID? { active?.profileID }
+    var canCancelPreparation: Bool { activeCancellation != nil }
     private var nextStart = Date.distantPast
     private var source: DispatchSourceMemoryPressure?
     private let thermalState: () -> ProcessInfo.ThermalState
@@ -51,7 +53,18 @@ final class ManagerLaunchAdmission: ObservableObject {
     func finish(token: UUID, launched: Bool = false, now: Date = Date()) {
         guard active?.token == token else { return }
         active = nil
+        activeCancellation = nil
         if launched { nextStart = now.addingTimeInterval(1) }
+    }
+    func registerCancellation(token: UUID, handler: @escaping () -> Void) {
+        guard active?.token == token else { return }
+        activeCancellation = handler
+    }
+    @discardableResult
+    func cancelActivePreparation() -> Bool {
+        guard let activeCancellation else { return false }
+        activeCancellation()
+        return true
     }
     func setPressureForTesting(_ value: Bool) { pressured = value }
 }
