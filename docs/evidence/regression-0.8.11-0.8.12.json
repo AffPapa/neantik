@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 1,
+  "scope": "Declared public release records, not an independent runtime audit",
+  "before": {
+    "version": "0.8.11",
+    "build": 122,
+    "sourceCommit": "1ad88915e9a4f1487202e0667ac36e9371cf588d",
+    "managerBuildSourceCommit": "128ac1f06c39c3977e1afe97f7a5d99391dd287e",
+    "managerSHA256": "1849ad3b76b741ae92698e957cc0c7781fc56076cfb88161aa9c66ea9c50a16f",
+    "runtime": {
+      "chromiumVersion": "156.0.8078.12",
+      "architecture": "arm64",
+      "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+      "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+    }
+  },
+  "after": {
+    "version": "0.8.12",
+    "build": 124,
+    "sourceCommit": "ed511ee1e2164e4e91a464993a8d587345c6c845",
+    "managerBuildSourceCommit": "ed511ee1e2164e4e91a464993a8d587345c6c845",
+    "managerSHA256": "77c8fc2755d5b3fbc54bb292dbe228778f454380b7175faab0c821f21ebd5ec0",
+    "runtime": {
+      "chromiumVersion": "156.0.8078.12",
+      "architecture": "arm64",
+      "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+      "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+    }
+  },
+  "identityComparison": {
+    "managerExecutableChanged": true,
+    "runtimeExecutableDigestsEqual": true,
+    "fullRuntimeInventoryCompared": false
+  },
+  "measurementComparability": {
+    "declaredContextsMatch": false,
+    "reason": "missing_context",
+    "differingFields": [],
+    "before": null,
+    "after": null,
+    "independentlyVerified": false
+  },
+  "behaviorRegressionVerdict": "not_established",
+  "performanceComparison": "not_measured",
+  "verification": [
+    {
+      "key": "notarization",
+      "label": "Нотарификация",
+      "before": {
+        "state": "reported_pass"
+      },
+      "after": {
+        "state": "reported_pass"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "stapling",
+      "label": "Stapling",
+      "before": {
+        "state": "reported_pass",
+        "declaration": "PASS"
+      },
+      "after": {
+        "state": "reported_pass",
+        "declaration": "PASS"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "Gatekeeper",
+      "label": "Gatekeeper",
+      "before": {
+        "state": "reported_pass",
+        "declaration": "PASS localZIP/DMG and downloadedDMG"
+      },
+      "after": {
+        "state": "reported_pass",
+        "declaration": "PASS localZIP/DMG and anonymousdownloadedZIP/DMG"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "DirectDoctor",
+      "label": "Direct doctor",
+      "before": {
+        "state": "reported_pass",
+        "declaration": "13/13PASS"
+      },
+      "after": {
+        "state": "reported_pass",
+        "declaration": "13/13PASS"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "nativeUpdater",
+      "label": "Установка обновления",
+      "before": {
+        "state": "reported_pass"
+      },
+      "after": {
+        "state": "reported_pass"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "nativeRollback",
+      "label": "Откат",
+      "before": {
+        "state": "reported_pass"
+      },
+      "after": {
+        "state": "reported_pass"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "GUIFingerprint",
+      "label": "Запуск локальной подписанной сборки",
+      "before": {
+        "state": "reported_pass",
+        "declaration": "fresh authenticated headed exactcandidatePASS"
+      },
+      "after": {
+        "state": "reported_pass",
+        "declaration": "fresh authenticated headed exact local candidatePASS"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "downloadedHeaded",
+      "label": "Запуск скачанной копии",
+      "before": {
+        "state": "reported_pass",
+        "declaration": "freshenrollment/criticalbytes/headed/drainPASS"
+      },
+      "after": {
+        "state": "open",
+        "declaration": "OPEN: OS memory pressure warning2; both refusal records preserved, no override"
+      },
+      "reportedStateChanged": true
+    },
+    {
+      "key": "MCPExactSigned",
+      "label": "MCP подписанного кандидата",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "18management/7readonlyPASS;ownedmetadata workspace only"
+      },
+      "after": {
+        "state": "reported_pass",
+        "declaration": "18 management/7 read;20 metadata/refusal checksPASS"
+      },
+      "reportedStateChanged": true
+    },
+    {
+      "key": "downloadedMCP",
+      "label": "MCP скачанной копии",
+      "before": {
+        "state": "reported_pass",
+        "declaration": "18/7metadata/refusalcontractsPASS"
+      },
+      "after": {
+        "state": "declaration_only",
+        "declaration": "18/7;21 checksPASS with profile_status=stopped before cold edit; original refusal retained"
+      },
+      "reportedStateChanged": true
+    },
+    {
+      "key": "hostedZIP",
+      "label": "Публичный ZIP",
+      "before": {
+        "state": "reported_match",
+        "declaration": "anonymousSHA/sizeMATCH"
+      },
+      "after": {
+        "state": "reported_pass",
+        "declaration": "anonymous SHA/sizeMATCH; candidate/evidence/privacy/notary/GatekeeperPASS"
+      },
+      "reportedStateChanged": true
+    },
+    {
+      "key": "hostedDMG",
+      "label": "Публичный DMG",
+      "before": {
+        "state": "reported_pass",
+        "declaration": "anonymousSHA/sizeMATCH;integrity/signature/stapling/Gatekeeper/read-onlymountedcontentPASS"
+      },
+      "after": {
+        "state": "reported_pass",
+        "declaration": "anonymous SHA/sizeMATCH; integrity/signature/stapling/GatekeeperPASS"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "site",
+      "label": "Сайт",
+      "before": {
+        "state": "reported_pass",
+        "declaration": "anonymousrelease/download/changelog/home/notes/MCP;V2signature0811/classic0810PASS"
+      },
+      "after": {
+        "state": "open",
+        "declaration": "37 source tests/build/packaging/privacyPASS; saved149/source737a0b65; not deployed"
+      },
+      "reportedStateChanged": true
+    }
+  ],
+  "testDeclarations": {
+    "before": {
+      "Swift": "1534reported/178suites;1464passedloglines/67skiploglines;PASS75.05s; source128ac",
+      "Python": "1367tests/19explicit skips;PASS168.282s; source128ac",
+      "Harness": "selftest+13releasecontracts;oldDelayedFAIL/fixedDelayedPASS/noAcceptCHFAIL on realexactruntime",
+      "site": "37PASS/0skip;officialbuildPASS"
+    },
+    "after": {
+      "Swift": "1541reported/179suites;1471passedloglines/67skiploglines;76.328sPASS",
+      "Python": "full1383/19skip had one harness error; affected12testsPASS after correction; original full run not allgreen"
+    }
+  },
+  "qualificationDeclaration": {
+    "before": null,
+    "after": false
+  },
+  "reportedChanges": [
+    "Complete nested Chromium Framework inventory; actual old Foundation enumeration negative control and fixed exact inventory verified",
+    "Authenticated resumable retirement of temporary audit authority without another full fingerprint run; no real profiles opened",
+    "Same Chromium bytes, profile identity/schema, Developer ID certificate and rollback retained"
+  ],
+  "reportedLimitations": [
+    "Public alpha; full45 major1.0/hardware/macOS14/physicalVoiceOver remainopen",
+    "WebKit media/proxy/extensions/fullbackup/deletion/stdioGUIlaunch unavailable; media shipsdisabled",
+    "SafeBrowsing disabled; no anonymity/CAPTCHA/rulebypass guarantee",
+    "Updater synthetic metadata only; no freshcookie or crossMacKeychain portability claim",
+    "OS-default-trusted authenticated HTTPS upstream positive deferred by user",
+    "First cold downloaded MCP edit refused profile_not_stopped; explicit profile_status stopped workflow21checks passed. Original refusal retained; no product fix claimed",
+    "Downloaded headed resource refusal twice; kernel memory pressure2 confirmed, thermal nominal; no bypass. Original local exact signed headed passed, public hashes match; fresh published headed gate incomplete"
+  ],
+  "noBrowserLaunched": true,
+  "localizedChanges": [
+    "Исправлена инвентаризация вложенных файлов Chromium Framework в проверке целостности приложения. Проверка теперь учитывает весь framework и отклоняет отсутствующие или изменённые файлы.",
+    "Добавлено безопасное завершение служебного аудита: тестовый ключ можно удалить отдельной проверяемой операцией без повторного полного аудита браузера. Операция проверяет точный кандидат и не открывает пользовательские профили.",
+    "Сохранены прежний Chromium, сертификат Developer ID, данные профилей и предыдущий релиз для отката."
+  ],
+  "localizedLimitations": [
+    "Это public alpha; полная программа 1.0 и проверка всех моделей Mac ещё не завершены. Физический проход VoiceOver не заявляется проверенным. WebKit preview работает через прямое подключение; прокси, расширения, полный backup, камера/микрофон и запуск через stdio MCP в этом режиме не доступны. Safe Browsing остаётся отключённым. Гарантии анонимности, обхода CAPTCHA и правил сайтов нет.",
+    "Проверка обновления относится к metadata синтетических профилей; перенос свежих cookies или OS-encrypted passwords между Mac не заявляется. Проверка authenticated HTTPS upstream с сертификатом, которому доверяет macOS, остаётся отложенной до появления тестового сервера. Один ранний отказ MCP не сохранил ответ до assertion и остаётся необъяснённым; последующий инструментированный прогон прошёл, исправление продукта для этого отказа не заявляется.",
+    "Предыдущая [0.8.11](https://github.com/AffPapa/neantik/releases/tag/v0.8.11) сохранена для отката. Скачайте DMG или ZIP; Code → Download ZIP скачивает исходники, а не приложение."
+  ],
+  "sourceRecordSHA256": {
+    "before": "cf0bb0602b97b2bece700681ad893f2b31da678f4a90e5242d9d383e7212c083",
+    "after": "395eadf9da5025de56e14a08f0abe3f639be8bbe59ed47408f4fbdd222023420"
+  },
+  "sourceNotesSHA256": "84973ef43cf796319275e5116505528990438b1634dc170e5f9cba835c675910"
+}

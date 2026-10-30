@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25",
+  "status": "exact-v20-webrtc-notice-candidate-package-bind;not-license-applicability-decision",
+  "upstream": {
+    "repository": "WebKit/WebKit",
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+  },
+  "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+  "candidate": {
+    "build": "139",
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "manifest": {
+    "path": "docs/evidence/third-party/webkit-v20-webrtc-notices-cmake-candidate-v3/MANIFEST.json",
+    "sha256": "4b3b7e454c45ba186ad56ca84a1e1b2e0575117a401eae233969f2687a937100",
+    "noticeCount": 40
+  },
+  "coverage": {
+    "previousCandidateRowsPreserved": 36,
+    "newV20CorpusBoundRows": 4,
+    "totalCandidateFiles": 40,
+    "exactMatchesInV20LicenseTextCorpus": 33,
+    "candidatePathsNotRepresentedInLicenseTextCorpus": [
+      "Source/ThirdParty/libwebrtc/Source/third_party/abseil-cpp/AUTHORS",
+      "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/AUTHORS",
+      "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/AUTHORS",
+      "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/AUTHORS",
+      "Source/ThirdParty/libwebrtc/Source/third_party/libyuv/AUTHORS",
+      "Source/ThirdParty/libwebrtc/Source/third_party/opus/src/AUTHORS",
+      "Source/ThirdParty/libwebrtc/Source/webrtc/AUTHORS"
+    ],
+    "mismatches": [],
+    "limitation": "Corpus presence and source-path association are factual inventory only; not a legal applicability decision or complete notice/source closure."
+  },
+  "limitations": [
+    "research candidate only; no per-file legal applicability decision",
+    "does not close full WebKit corresponding source, third-party notices, LGPL relinking, or redistribution approval",
+    "the four added files are pinned v20 source candidates and include license pointers/templates, not necessarily complete license texts"
+  ]
+}

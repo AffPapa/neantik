@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "status": "count discrepancy confirmed; package worksheet is authoritative for release gate",
+  "candidate": {
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "authoritativePackageWorksheet": {
+    "path": "docs/evidence/webkit-runtime-package-notice-worksheet-20261025.json",
+    "sha256": "fc9face5d21f7154028672bac340b66179cf1ccb607cdc441baff310ff0acd6c",
+    "imageRows": 16,
+    "resourceRows": 84,
+    "unknownApplicabilityDecisions": 94,
+    "factuallyResolvedSandboxResourceRows": 6,
+    "releaseQualified": false
+  },
+  "inconsistentSupplement": {
+    "path": "docs/evidence/webkit-v20-resource-license-gap-review-20261025.json",
+    "sha256": "105aa44b861fe19058e2470b7903a57ac6ce20b6801e95681cb67401e4c3ec6e",
+    "rowCount": 19,
+    "rowDerived": {
+      "unknownRows": 14,
+      "resolvedRows": 5,
+      "mappedSourcePathOccurrences": 27,
+      "uniqueMappedSourcePaths": 23
+    },
+    "summaryReports": {
+      "unknownRows": 13,
+      "resolvedRows": 6,
+      "uniqueMappedSourcePaths": 23
+    },
+    "conclusion": "The summary's 13/6 decision counts do not match its 19 detailed rows, which encode 14 UNKNOWN and 5 resolved decisions. Keep the original dated report immutable; this correction records the discrepancy."
+  },
+  "action": "Use the package worksheet's 94 unknown decisions for release status. Do not use the conflicting 13/6 summary to claim any additional closure.",
+  "scopeLimit": "This is an evidence reconciliation only; no license applicability was inferred or changed."
+}

@@ -1,0 +1,38 @@
+{
+  "attempt": "V284",
+  "changedInputsSHA256": {
+    "scripts/package-owned-webkit-release.py": "d4a3e17ad0acda828cd4f5b51a3a32a6773444051057a0dad17504b75cdad763",
+    "scripts/package-webkit-host.py": "d032c1db3ae4af0f8317ef6a5ae3c8c7d90f08f7334b247c96976a433653f22e",
+    "scripts/tests/test_package_owned_webkit_release.py": "e8d38a7b8bd2c8c33ab4f12b8e64612880bfea48c2efb562b893b5b1eadf8aaf",
+    "scripts/tests/test_package_webkit_host.py": "76dcfe3eb5dbfd9709e9a29672f449cc960d1534d9696b1bd0f8c0528f285f2b",
+    "scripts/tests/test_webkit_runtime_notices.py": "ae3e032396b613c3491794ecede052163005726d08d25e6145e2f9d3ae115f07",
+    "scripts/webkit_runtime_notices.py": "3c3d5efec61929e2223a966c12f2b5fb5186c9ec3b5f386cd22d35f8c4a67c89"
+  },
+  "checkOnly": {
+    "assetCount": 35,
+    "mutated": false,
+    "sourceTree": "/private/tmp/neantik-v20-production-rebuild/WebKit",
+    "status": "PASS_PRECONDITIONS"
+  },
+  "createdAt": "2026-10-28",
+  "overlayAttributionSHA256": "f83a70a19410524d8e9f1c9864540f84a4e1f870b2a69a73f16a97390e87af82",
+  "overlayLicenseSHA256": "3ab0de831861966f2c2ec76d3ba1b24473c64ee08cb7699327a2005fca688ff7",
+  "planner": {
+    "command": "python3 scripts/plan-manager-checks.py --path [six changed files]",
+    "result": "workflow integration affected; selected focused Python suites; clean CI separate"
+  },
+  "schemaVersion": 1,
+  "scope": "Production owned-WebKit source-offer path now passes its pinned source offer to host packaging and notice verification. For the 35 first-party media-controls replacements, preflight verifies each exact WebCore runtime resource hash, installs the BSD-2-Clause text and attribution manifest, renders scoped notices, and verification rejects missing or mismatched runtime bytes.",
+  "scopeLimits": [
+    "No source overlay applied to configured build tree.",
+    "No WebKit build, candidate, signing, notarization, publication, or runtime qualification performed.",
+    "Four engine source/notice rows and other source/relink gates remain open."
+  ],
+  "sourceOfferManifestSHA256": "6a600e21ef358e5bd43ec96180d25140bf22929aaa589ea1d6aaa5287f096d62",
+  "status": "PASS_NOTICE_PIPELINE_INTEGRATION_TESTS; NO_SOURCE_BUILD_OR_RELEASE_ARTIFACT_CHANGE",
+  "verification": {
+    "command": "python3 -m unittest scripts.tests.test_webkit_runtime_notices scripts.tests.test_package_webkit_host scripts.tests.test_package_owned_webkit_release",
+    "result": "PASS",
+    "tests": 120
+  }
+}

@@ -23,7 +23,14 @@ class GitHistorySecretAuditTests(unittest.TestCase):
             check=True,
         )
         subprocess.run(
-            ["git", "-C", str(root), "config", "user.email", "test@example.invalid"],
+            [
+                "git",
+                "-C",
+                str(root),
+                "config",
+                "user.email",
+                "test@example.invalid",
+            ],
             check=True,
         )
 
@@ -44,6 +51,61 @@ class GitHistorySecretAuditTests(unittest.TestCase):
             self.assertGreaterEqual(objects, 3)
             self.assertEqual(blobs, 1)
 
+    def test_header_only_python_prefix_check_is_not_private_key_material(self) -> None:
+        header = "-----BEGIN " + "PRIVATE KEY-----\\n"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); self.make_repo(root)
+            source = root / "check.py"
+            source.write_text('if not key.startswith(b"' + header + '"):\n    raise ValueError("encoding")\n')
+            self.commit_all(root, "public encoding check")
+            self.assertEqual(MODULE.audit(root)[1], 1)
+
+    def test_material_beside_marker_checks_still_fails_without_printing_values(self) -> None:
+        header = "-----BEGIN " + "PRIVATE KEY-----\\n"
+        controls = [
+            'key = b"' + header + 'never-print-owned-test-material"\n',
+            'key.startswith(b"' + header + 'never-print-owned-test-material")\n',
+            'key.startswith(b"' + header + '" + b"never-print-owned-test-material")\n',
+            'key.startswith(b"' + header + '")\nsecret = b"' + header + 'never-print-owned-test-material"\n',
+            'key.startswith(b"' + header + '"',  # Invalid source fails closed.
+            "-----BEGIN " + "PRIVATE KEY-----\nnever-print-owned-test-material\n",
+        ]
+        for source in controls:
+            with self.subTest(control=controls.index(source)), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary); self.make_repo(root)
+                (root / "check.py").write_text(source)
+                self.commit_all(root, "synthetic negative")
+                with self.assertRaisesRegex(MODULE.HistorySecretAuditError, "private key") as context:
+                    MODULE.audit(root)
+                self.assertNotIn("never-print-owned-test-material", str(context.exception))
+
+    def test_shallow_clone_cannot_claim_complete_history(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            root = base / "source"
+            self.make_repo(root)
+            (root / "README.md").write_text("gh" + "p_" + "s" * 30)
+            self.commit_all(root, "synthetic historical secret")
+            (root / "README.md").write_text("clean tip")
+            self.commit_all(root, "remove synthetic secret")
+            clone = base / "shallow"
+            subprocess.run(["git", "clone", "-q", "--depth=1", root.as_uri(), str(clone)], check=True)
+            with self.assertRaisesRegex(MODULE.HistorySecretAuditError, "shallow"):
+                MODULE.audit(clone)
+            with self.assertRaisesRegex(MODULE.HistorySecretAuditError, "GitHub token"):
+                MODULE.audit(root)
+
+    def test_historical_forbidden_filename_survives_identical_blob_rename(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_repo(root)
+            (root / ".env").write_text("unrecognized-provider-fixture\n")
+            self.commit_all(root, "historical forbidden filename")
+            (root / ".env").rename(root / "README.md")
+            self.commit_all(root, "same bytes under allowed name")
+            with self.assertRaisesRegex(MODULE.HistorySecretAuditError, "credential-bearing filename"):
+                MODULE.audit(root)
+
     def test_deleted_private_key_still_fails_without_printing_value(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -60,6 +122,20 @@ class GitHistorySecretAuditTests(unittest.TestCase):
             message = str(context.exception)
             self.assertIn("signing.p8", message)
             self.assertNotIn("never-print-this-value", message)
+
+    def test_large_blob_and_chunk_boundary_secrets_are_not_skipped(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_repo(root)
+            marker = ("gh" + "p_" + "x" * 30).encode()
+            # Beyond the old 4MiB skip, with the token split across a chunk.
+            padding = b" " * (5 * MODULE.SCAN_CHUNK_BYTES - 7)
+            (root / "large.txt").write_bytes(padding + marker + b"\n")
+            self.commit_all(root, "large synthetic leak")
+            with self.assertRaises(MODULE.HistorySecretAuditError) as context:
+                MODULE.audit(root)
+            self.assertIn("GitHub token", str(context.exception))
+            self.assertNotIn(marker.decode(), str(context.exception))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "status": "CANDIDATE_V122_SOURCE_OFFER_AND_FOUR_REVIEWED_IMAGE_IDENTITIES_JOINED",
+  "candidate": "66f4338eb3374569817d1964d57cfedb",
+  "inventorySHA256": "c4081c051286df3bdbbcd8de3f907298234e2ee0af99a78ae703211bd728787b",
+  "embeddedOfferManifestSHA256": "821828b9261d9678ef196a9dc14d006d002fd89a9fb926e80c51d7b69a3b21a0",
+  "v122BuildReceiptSHA256": "804a60911bf67912d8f17665958f88051b3085a175f145db0fd76fa7ea23bd9c",
+  "reviewSHA256": "b2249501dd8bfbe308456d94484625f876e7cda90f0057f9ecc7193e7afc04d5",
+  "stageReceiptSHA256": "38c66ae78677d6f0bbaaf790ca37604bdef25dc158381faa71d9676dbd703645",
+  "candidateSigningReceiptSHA256": "285667a6fd72ea22044f85ed6c21c5cf1fbfddc15253b314e53603a19ca46441",
+  "matchingStagedImageCount": 16,
+  "fourReviewedImages": [
+    {
+      "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "stagedSHA256": "34de2ac0d7f7b854966dd0335b7656308e3e22a1f009c79e22b456f840764fcc",
+      "recipientSignedSHA256": "633324cc6165d4019a831ace6b922154d8dccb428971bd74ca5c38fab9f6aa06"
+    },
+    {
+      "path": "WebCore.framework/Versions/A/WebCore",
+      "stagedSHA256": "6c894ce051a20dee391a1bfd99648546b3797b51dc46999ba2b83a4644833174",
+      "recipientSignedSHA256": "dbf0ed4ca26ed5c179866e1d425bec99e908236d8602aad5b7d1de9bd2aefb8e"
+    },
+    {
+      "path": "WebKit.framework/Versions/A/WebKit",
+      "stagedSHA256": "cc304648fd66c205100deca9a7bbcec28858ed4a55226dd1a3810b262d4f2b10",
+      "recipientSignedSHA256": "050e398865f11e415864e6afada5637a2555d910f63fe4562f999281ab7a5274"
+    },
+    {
+      "path": "libwebrtc.dylib",
+      "stagedSHA256": "6f77ced9d634c7379b1a90ea5a078d5aedfa4a9be7e9db57dd6884961aa08a46",
+      "recipientSignedSHA256": "971388528f14ff9c0c0dcbc315c2932a2d1e5948eaa6a25282defd2161caf520"
+    }
+  ],
+  "candidateNoticeVerification": "passed during V239 signed bundle preparation",
+  "limits": [
+    "review is maintainer disposition to retain exact upstream mixed terms, not legal opinion or patent clearance",
+    "full portable corresponding source, recipient rebuild/relink/load and final archive notices remain open",
+    "not runtime or release qualification"
+  ],
+  "releaseQualified": false
+}

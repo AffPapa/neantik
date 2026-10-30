@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v256-owned-webkit-route-boundary-diagnosis-20261027",
+  "observedAtUTC": "2026-10-27T13:57:41.544253+00:00",
+  "status": "PRODUCTION_ROUTE_ROOT_CAUSE_NOT_LOCALIZED; V252_FAIL_RETAINED; NO_REPEAT_RUN",
+  "scope": "Read-only route-path and primary API contract review after V255; no source edits, build, native launch, signing, notarization, or publication.",
+  "verifiedFacts": {
+    "v252": {
+      "receipt": "docs/evidence/neantik-v252-exact-signed-production-webkit-https-fail-20261027.json",
+      "candidate": "b96006a994664a80bf89cd757f932eff",
+      "observation": "External HTTPS endpoint https://browser.free/api/route-qa/https returned an invalid local callback; no owned HTTPS CONNECT tunnel was recorded. The UI displayed the synthetic proxy profile as running.",
+      "interpretation": "Route FAIL is retained; callback is not route proof and the absence of CONNECT is not explained by a loopback destination origin."
+    },
+    "proxyConfigurationPath": {
+      "manager": "BrowserProcessManager maps an absent profile proxy to Direct and a configured proxy to the per-profile authenticated broker route.",
+      "host": "WebKitProfileBrowser assigns one broker HTTP CONNECT configuration to the profile-scoped WKWebsiteDataStore before constructing WKWebView.",
+      "productionBuildGate": "Package.swift applies NEANTIK_WEBKIT_PROXY_PRODUCTION to both manager and standalone host; launch allowlist accepts app.neantik.desktop and app.neantik.desktop.webkit-host.",
+      "endpoint": "127.0.0.1:<sandboxPort>; failover disabled; empty match/exclusion lists; per-session relay credentials."
+    },
+    "boundedComparators": {
+      "v176": "One historical named HTTP request passed an empty match-domain proxy configuration with a non-loopback proxy endpoint in system WKWebKit; it does not qualify the owned loopback broker or production host.",
+      "build200": "Private Dev archive passed its own synthetic A/B/A; production candidate separately passed Direct Google/Booking. These results are not transferable to the failed production proxy route.",
+      "v254": "No fixture event and no nested host window observation; inconclusive and not repeated."
+    },
+    "observer": "CUA inventory shows NeAntik build200 QA is not currently running. No live host PID/window could be joined to the prior route attempt."
+  },
+  "sourceReview": {
+    "sdk": "Installed Network.framework header documents match domains as domain suffixes but does not state that an empty list means all hosts; WKWebsiteDataStore documentation confirms per-store proxy configuration should be set before page loads.",
+    "codeVsDocs": "No documentation/code mismatch identified in the reviewed proxy configuration path. Repository notes correctly leave empty-list semantics and production route unqualified."
+  },
+  "decision": "Do not change selector semantics based on inference. Do not repeat V252 or V254 unchanged. One future native attempt must bind the exact signed candidate, synthetic profile ID, manager and WebKit host PID/executable, visible window/navigation stage, loopback broker counters, and controlled HTTPS upstream/direct-origin counters before and during the same attempt.",
+  "noMutation": true,
+  "releaseQualified": false
+}

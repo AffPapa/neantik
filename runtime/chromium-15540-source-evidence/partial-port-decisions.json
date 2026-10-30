@@ -1,0 +1,14 @@
+{
+  "macos:ungoogled-chromium/macos/fix-esbuild.patch": {
+    "retained": "DispatchHttpRequestClient.ts explicit undefined optional type",
+    "superseded": "Four Homebrew esbuild path substitutions; use exact DEPS pinned native esbuild payload instead of untracked external brew binary. Legacy_ts_library use-esbuild branch no longer exists. Current JS/GN/python native paths agree; binary/package matching must qualify."
+  },
+  "owned:m154-restore-safe-browsing-prefs-plumbing": {
+    "retained": "Restore safe_browsing_prefs static target in mode0 graph",
+    "superseded": "Fresh155.40 upstream safe_browsing_prefs .h/.cc still present byte-for-byte; retain new exact upstream API rather than overwrite with M154copies. Prevent later pruning of these dependency paths; SAFE_BROWSING mode0 unchanged."
+  },
+  "owned:m154-use-deps-pinned-devtools-node-tools": {
+    "retained": "Both TypeScript sources use DEPS-pinned package+Chromium node instead of Homebrew",
+    "superseded": "Esbuild paths already point to exact upstream DEPS0.28.2; legacy_ts_library esbuild branch absent. Preserve JS/GN/python consistent new esbuild native dependency."
+  }
+}

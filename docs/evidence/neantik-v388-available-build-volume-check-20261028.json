@@ -1,0 +1,14 @@
+{
+  "classification": "NO_ADDITIONAL_BUILD_VOLUME_WITH_SAFE_FREE_SPACE_OBSERVED",
+  "createdAt": "2026-10-28T05:45:45Z",
+  "id": "V388",
+  "nextAction": "Do not start the 12,942-action WebKit build until peak disk use is measured from equivalent evidence or safe free capacity is made available without removing protected source, candidate, cache, or user data. Timestamp signing remains a separate gate requiring an environment change and successful disposable control.",
+  "observation": {
+    "disposition": "No separate output-capable volume with demonstrated build headroom is available.",
+    "otherMountedVolume": "/Volumes/Recovery",
+    "otherMountedVolumeFreeGiB": 19,
+    "privateTmpFreeGiB": 19,
+    "sameUnderlyingDataVolume": true
+  },
+  "scope": "Read-only mounted-volume capacity check; no files removed or moved."
+}

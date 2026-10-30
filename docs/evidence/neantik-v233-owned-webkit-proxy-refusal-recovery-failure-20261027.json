@@ -1,0 +1,33 @@
+{
+  "status": "SYNTHETIC_PROXY_REFUSAL_PASS_RECOVERY_RESTART_FAIL_BLANK_SESSION",
+  "archiveSHA256": "b87ed260c9194c1d9b3221d04a42cb6cd39da83cecba27fdfac43184b011188a",
+  "stageReceiptSHA256": "b74bbe3d0ad055300ee988e092a332bf7c953c4c56f6770ba664f5ed08d1498b",
+  "fixtureRoot": "/private/tmp/neantik-webkit-ab-root-4gz33pfa",
+  "fixtureScriptSHA256": "3eaefbb429d24399fc1914c0c81a834da682eefe48a00034807b4df9748d2712",
+  "firstAttempt": {
+    "proxyARefused": 2,
+    "proxyBAuthorizedOrigin": 0,
+    "originPageResponses": 0,
+    "observation": "no local origin request observed during refusal"
+  },
+  "recoveredProxyRestart": {
+    "proxyAAdditionalConnections": 0,
+    "originPageResponses": 0,
+    "observedAfter": "at least 8 seconds and a subsequent snapshot",
+    "sessionURLs": [
+      "about:blank"
+    ],
+    "sessionSHA256": "b001554180438f4e7433da6e59bf232c30f9991238f2681c8e8b0f70997e9fd6",
+    "observation": "after failure and profile restart, restored blank session rather than configured start URL"
+  },
+  "cleanup": {
+    "fixtureStop": "exit 0; allChannelsDrained true",
+    "testProfilesStopped": true
+  },
+  "limits": [
+    "single synthetic HTTPS origin and local HTTP proxy; not comprehensive leak or all proxy support",
+    "does not establish how the browser presents the failure UI",
+    "archive is private Dev QA, not release"
+  ],
+  "releaseQualified": false
+}

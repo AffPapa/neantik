@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.15",
+  "version": "0.7.15",
+  "build": 78,
+  "releasedAt": "2026-10-05",
+  "channel": "public-alpha",
+  "sourceCommit": "6fa4d6a4a047a8ecf81d0bde937a1b01ae01776c",
+  "runtime": {
+    "chromiumVersion": "154.0.8037.93",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "scope": "Existing qualified M154 runtime reused; exact source snapshot restored for provenance verification, binary unchanged",
+    "safeBrowsingEnabled": false
+  },
+  "archive": {
+    "name": "NeAntik-0.7.15-arm64-notarized.zip",
+    "sizeBytes": 175272359,
+    "sha256": "38af98c5151dc86c2648f87ecdfa74fd86c5759c803384e3524a267233b594d1"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.15-arm64-notarized.dmg",
+    "sizeBytes": 198218352,
+    "sha256": "2da2dee4e88037ee4b060053c03dbd7a4b51eebb7bfe0e71fc9d376f284ad667"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "accepted ZIP and DMG",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "privacy": "exact app, final ZIP and mounted DMG passed",
+    "deviceMemory": "navigator.deviceMemory=8; navigation modern/legacy=8/8; subresource modern/legacy=8/8",
+    "fingerprint": "authenticated exact-candidate A-B-A with synthetic profiles",
+    "sessionPersistence": "isolated Dev.app localStorage visit 1 to 2 passed; packaged app passed exact-candidate A-B-A, not a separate user-device session test",
+    "hostedDownload": "fresh ZIP and DMG downloads matched local sizes/SHA256 and passed full artifact verification",
+    "swiftTests": "672 tests/76 suites passed before packaging",
+    "siteTests": "26/26 passed after release metadata update",
+    "physicalVoiceOver": "not claimed",
+    "proxy": "three selected HTTP proxies accepted TCP but aborted CONNECT before an HTTP response; route not qualified"
+  },
+  "siteVersion": 108,
+  "siteSourceCommit": "1d071921a45ecbd51d7f83d7a90e6d0b8b7220ca",
+  "siteDeploymentId": "appgdep_6ac378b7333481918a8dd14a3965e6f7",
+  "siteDeploymentStatus": "succeeded",
+  "siteUrl": "https://browser.free",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.15",
+  "rollbackRelease": "v0.7.14",
+  "candidateManifestSHA256": "4c216d391463156621c2f8ec62e204d2d9e8c70b1cc817577fb7854ccd4921c4",
+  "candidateSourceBindingSHA256": "dc3263064ca402e8ed33d71d8f470a62fb8eb59c6399939cb950d21978e2f808",
+  "limitations": [
+    "Reporter original M3 Pro/macOS 26 device and installed app bytes were not directly tested.",
+    "Three selected user HTTP proxies aborted CONNECT; provider, credentials or protocol mismatch remain unproven. No browser route qualification is claimed.",
+    "Safe Browsing remains disabled; no anonymity, CAPTCHA or site-rule bypass claim.",
+    "Physical VoiceOver pass was not performed.",
+    "Real user profiles were not modified; installed-user migration was covered by fixtures, not their private data."
+  ]
+}

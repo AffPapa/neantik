@@ -1,0 +1,115 @@
+{
+  "status": "DECLARED_SWIFT_INPUTS_MATCH_MODULE_BINARIES_DIFFER",
+  "moduleInputChecks": [
+    {
+      "module": "Source/WebCore/PAL/pal/pal.swiftmodule",
+      "inputPathsEqual": true,
+      "countEach": [
+        5,
+        5
+      ],
+      "swiftInputs": 5,
+      "swiftEqual": 5,
+      "swiftDifferent": 0,
+      "swiftMissing": 0,
+      "otherInputs": 0,
+      "otherEqual": 0,
+      "otherDifferent": 0,
+      "otherMissing": 0
+    },
+    {
+      "module": "Source/WebGPU/WebGPU/WebGPU.swiftmodule",
+      "inputPathsEqual": true,
+      "countEach": [
+        5,
+        5
+      ],
+      "swiftInputs": 5,
+      "swiftEqual": 5,
+      "swiftDifferent": 0,
+      "swiftMissing": 0,
+      "otherInputs": 0,
+      "otherEqual": 0,
+      "otherDifferent": 0,
+      "otherMissing": 0
+    },
+    {
+      "module": "Source/WebKit/SwiftPrewarmMac.swiftmodule",
+      "inputPathsEqual": true,
+      "countEach": [
+        1,
+        1
+      ],
+      "swiftInputs": 1,
+      "swiftEqual": 1,
+      "swiftDifferent": 0,
+      "swiftMissing": 0,
+      "otherInputs": 0,
+      "otherEqual": 0,
+      "otherDifferent": 0,
+      "otherMissing": 0
+    },
+    {
+      "module": "Source/WebCore/WebCore.swiftmodule",
+      "inputPathsEqual": true,
+      "countEach": [
+        4,
+        4
+      ],
+      "swiftInputs": 2,
+      "swiftEqual": 2,
+      "swiftDifferent": 0,
+      "swiftMissing": 0,
+      "otherInputs": 2,
+      "otherEqual": 0,
+      "otherDifferent": 2,
+      "otherMissing": 0
+    }
+  ],
+  "moduleCommandChecks": [
+    {
+      "module": "Source/WebCore/PAL/pal/pal.swiftmodule",
+      "commands": [
+        2801,
+        2801
+      ],
+      "orderedNormalizedCommandsEqual": true,
+      "unequalAlignedLines": 0
+    },
+    {
+      "module": "Source/WebGPU/WebGPU/WebGPU.swiftmodule",
+      "commands": [
+        2589,
+        2589
+      ],
+      "orderedNormalizedCommandsEqual": true,
+      "unequalAlignedLines": 0
+    },
+    {
+      "module": "Source/WebKit/SwiftPrewarmMac.swiftmodule",
+      "commands": [
+        6021,
+        6021
+      ],
+      "orderedNormalizedCommandsEqual": true,
+      "unequalAlignedLines": 0
+    },
+    {
+      "module": "Source/WebCore/WebCore.swiftmodule",
+      "commands": [
+        7418,
+        7418
+      ],
+      "orderedNormalizedCommandsEqual": false,
+      "unequalAlignedLines": 2226
+    }
+  ],
+  "webCoreModuleCommands": "same normalized command multiset; order differs in ninja traversal",
+  "binaryFacts": "all four module binaries differ; root replacement does not make binary files equal",
+  "limits": [
+    "Swift generated command graph and declared inputs are not proof of execution, complete transitive inputs, semantic binary equivalence or license applicability",
+    "SDK and generated dependency contents not completely compared",
+    "does not qualify signing, browser launch, proxy or release"
+  ],
+  "releaseQualified": false
+}

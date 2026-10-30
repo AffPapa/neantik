@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T13:40:11+00:00",
+  "status": "exact-signed-dev-qa-zip-preflight-pass;not-notarized-or-runtime-qualified",
+  "candidate": {
+    "stage": "/private/tmp/neantik-owned-webkit-qa-vw48xl6o",
+    "root": "/private/tmp/neantik-dns-tls-root-w2y7eeug",
+    "app": "/private/tmp/neantik-owned-webkit-qa-vw48xl6o/NeAntik.app",
+    "archive": "/private/tmp/neantik-owned-webkit-qa-vw48xl6o/NeAntik-1.0.0-148-dev-owned-webkit-qa.zip",
+    "sha256": "ba20cac53d97656175777373c193770a7527bf1211c9159dfcca22807a4c10ce",
+    "profileSeedSHA256": "142cfd10da2d2ca1b4d6796163125b29f8b818c49e75603cbe08afd6a66f23ba",
+    "managerSignedSHA256": "41a417f04c510d89e927967297bbe7b25cf5c5caaf656a4690aa3deaab9af2ba",
+    "hostSHA256": "732f8e7f16b911843d412c9f1c43ca94df7158338291f5a3c6d898c7f30bd44f",
+    "version": "1.0.0",
+    "build": "148"
+  },
+  "profileSeedSHA256": "142cfd10da2d2ca1b4d6796163125b29f8b818c49e75603cbe08afd6a66f23ba",
+  "tlsFixture": {
+    "archiveSHA256": "ba20cac53d97656175777373c193770a7527bf1211c9159dfcca22807a4c10ce",
+    "root": "/private/tmp/neantik-dns-tls-root-w2y7eeug",
+    "profileSeedSHA256": "142cfd10da2d2ca1b4d6796163125b29f8b818c49e75603cbe08afd6a66f23ba"
+  },
+  "tests": [
+    "NamedProxyQASeedDiagnosticTests.generateModelEncodedIsolatedBlankTemplate 1/1 PASS",
+    "verify_owned_webkit_profile PASS"
+  ],
+  "hostSourcesMatchDerived": true,
+  "ownedWebKitRuntimeImageSHA256": "876cb2176bc9c722e64b8bbc31f29b1539f435994fda1d4a037c572984943276",
+  "archiveInventory": {
+    "entries": 3414,
+    "expandedBytes": 675206832,
+    "containsProfileStoresOrPrivateKeys": false,
+    "qaTrustAnchor": "public DER certificate embedded as host plist data; SHA-256 516422ebd4594bf19c2eb612737949f72246b0cdf8a0f392302769d8fcc4056f",
+    "privateCAAndLeafKeysOutsideArchive": true
+  },
+  "nativeLaunched": false,
+  "appleSubmission": {
+    "id": "264b5f59-7406-4708-80b6-9a775e1de8b6",
+    "status": "Accepted"
+  },
+  "acceptance": "exact signed Dev ZIP; target-origin trust scope bound to one synthetic DNS/TLS hostname and port",
+  "gatekeeper": "accepted; source=Notarized Developer ID",
+  "nativeReadiness": {
+    "eligibleForAttempt": true,
+    "memoryPressure": 1,
+    "thermalState": 0
+  }
+}

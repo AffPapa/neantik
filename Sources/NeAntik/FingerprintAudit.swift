@@ -47,11 +47,11 @@ enum FingerprintAuditVerdict: String, Codable, Sendable {
     var explanation: String {
         switch self {
         case .verified:
-            "Минимум две критичные поверхности браузера отличаются между профилями и остаются стабильными при повторном запуске профиля A."
+            "Минимум два измерения отличаются между профилями и повторяются для профиля A. Число различий не доказывает изоляцию данных или анонимность."
         case .partial:
-            "Одна критичная поверхность отличается и остаётся стабильной. Движок даёт ограниченное разделение отпечатков."
+            "Одно измерение отличается и повторяется. Совпадение остальных измерений допустимо; согласованность, данные и сеть проверяются отдельно."
         case .unchanged:
-            "Критичные поверхности не доказали различие между профилями. Недоступные измерения не считаются разделением."
+            "Различий в доступных измерениях нет. Это допустимо для одинаковой аппаратной когорты; доступность и повторяемость показаны отдельно."
         case .unstable:
             "Минимум одно критичное значение изменилось при повторном запуске того же профиля."
         }
@@ -60,8 +60,6 @@ enum FingerprintAuditVerdict: String, Codable, Sendable {
 
 enum FingerprintAuditExecutionMode: String, Codable, Sendable {
     case browser
-    // Kept only so already-saved diagnostic reports remain decodable. New
-    // audits reject this legacy value before a browser process is launched.
     case headlessSingleProcessDiagnostic = "headless-single-process-diagnostic"
 
     var isReleaseEvidence: Bool {
@@ -69,7 +67,15 @@ enum FingerprintAuditExecutionMode: String, Codable, Sendable {
     }
 
     var additionalLaunchArguments: [String] {
-        []
+        switch self {
+        case .browser:
+            []
+        case .headlessSingleProcessDiagnostic:
+            [
+                "--single-process",
+                "--no-sandbox"
+            ]
+        }
     }
 
     var diagnosticTitle: String {
@@ -91,7 +97,8 @@ struct FingerprintCapture: Codable, Equatable, Sendable {
 }
 
 struct FingerprintAuditReport: Codable, Equatable, Sendable {
-    static let currentAuditSchemaVersion = 7
+    static let currentAuditSchemaVersion = 8
+    static let semanticPolicyID = "repeatable-critical-observations-v1"
     static let criticalKeys = [
         "canvas",
         "webgl_pixels",
@@ -147,6 +154,23 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         "webgl_shader_precision",
         "css_screen_match",
         "worker_webgl_shader_precision"
+    ]
+    /// Optional privacy-safe diagnostics. Missing values remain compatible
+    /// with older reports and never become release qualification requirements.
+    static let optionalPrivacyDiagnosticKeys = [
+        "media_devices",
+        "media_device_observation",
+        "permission_camera_observation",
+        "permission_microphone_observation",
+        "media_device_count",
+        "permissions_api",
+        "permission_camera",
+        "permission_microphone",
+        "speech_synthesis",
+        "speech_voice_count",
+        "speech_voice_observation",
+        "worker_audio",
+        "worker_client_rects"
     ]
 
     let id: UUID
@@ -264,7 +288,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             "Сетевое доказательство: настроенный маршрут и WebRTC-контроль",
             "Фактический HTTP-маршрут: не измерялся",
             "Публичное тестирование: \(isPublicAlphaReleaseQualified ? "PASS" : "FAIL")",
-            "Строгая проверка: \(isProductionReleaseQualified ? "PASS" : "FAIL")"
+            "Базовая согласованность page/worker: \(isProductionReleaseQualified ? "PASS" : "FAIL")"
         ].joined(separator: "\n")
     }
 
@@ -283,11 +307,24 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     }
 
     var unavailableCriticalKeys: [String] {
-        unavailableKeys(in: Self.criticalKeys)
+        Self.criticalKeys.filter { key in
+            !Self.isAvailable(firstInitial.values[key]) ||
+                !Self.isAvailable(second.values[key]) ||
+                !Self.isAvailable(firstRepeat.values[key])
+        }
     }
 
     var unstableCriticalKeys: [String] {
-        unstableKeys(in: Self.criticalKeys)
+        Self.criticalKeys.filter {
+            firstInitial.values[$0] != firstRepeat.values[$0]
+        }
+    }
+
+    /// Repeatability and availability are independent of cross-profile
+    /// uniqueness. Equal GPU pixels are lawful; this is not a storage-isolation
+    /// or comprehensive API-semantics proof. Those remain separate gates.
+    var criticalObservationsStable: Bool {
+        unavailableCriticalKeys.isEmpty && unstableCriticalKeys.isEmpty
     }
 
     var verdict: FingerprintAuditVerdict {
@@ -402,11 +439,17 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     }
 
     var productionUnavailableKeys: [String] {
-        unavailableKeys(in: Self.productionRequiredKeys)
+        Self.productionRequiredKeys.filter { key in
+            !Self.isAvailable(firstInitial.values[key]) ||
+                !Self.isAvailable(second.values[key]) ||
+                !Self.isAvailable(firstRepeat.values[key])
+        }
     }
 
     var productionUnstableKeys: [String] {
-        unstableKeys(in: Self.productionRequiredKeys)
+        Self.productionRequiredKeys.filter {
+            firstInitial.values[$0] != firstRepeat.values[$0]
+        }
     }
 
     var productionReleaseIssues: [String] {
@@ -426,6 +469,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             )
         }
         issues.append(contentsOf: strictContextConsistencyIssues)
+        issues.append(contentsOf: privacyDiagnosticIssues)
         return issues
     }
 
@@ -485,8 +529,8 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
                 "The report does not contain distinct, stable profile identities."
             )
         }
-        if verdict != .verified {
-            issues.append("The critical-surface verdict is not verified.")
+        if !criticalObservationsStable {
+            issues.append("The critical observations are unavailable or unstable.")
         }
         if !publicAlphaUnavailableKeys.isEmpty {
             issues.append(
@@ -500,11 +544,15 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
                     publicAlphaUnstableKeys.joined(separator: ", ") + "."
             )
         }
-        if !changedCriticalKeys.contains("webgl_pixels") {
-            issues.append("WebGL pixels did not differ between profiles.")
+        for capture in [firstInitial, second, firstRepeat] {
+            if !Self.isFontMetricEvidence(capture.values["fonts"]) {
+                issues.append("Font rendering evidence is missing or uses the legacy font-list format.")
+                break
+            }
         }
         issues.append(contentsOf: crossRealmConsistencyIssues)
         issues.append(contentsOf: deviceTupleConsistencyIssues)
+        issues.append(contentsOf: privacyDiagnosticIssues)
         if let webrtcDirectControl {
             issues.append(
                 contentsOf: Self.networkPrivacyIssues(
@@ -533,7 +581,11 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         guard let runtimeVersion, !runtimeVersion.isEmpty else {
             return []
         }
-        let captures = labeledCaptures
+        let captures = [
+            ("profile A, first capture", firstInitial),
+            ("profile B", second),
+            ("profile A, repeat capture", firstRepeat)
+        ]
         guard captures.allSatisfy({ Self.canMapDeviceTuple($0.1) }) else {
             return [
                 "The report identity cannot be mapped to the immutable "
@@ -550,50 +602,46 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     }
 
     var crossRealmConsistencyIssues: [String] {
-        labeledCaptures.flatMap { label, capture in
+        [
+            ("profile A, first capture", firstInitial),
+            ("profile B", second),
+            ("profile A, repeat capture", firstRepeat)
+        ].flatMap { label, capture in
             Self.crossRealmIssues(for: capture, label: label)
         }
     }
 
-    /// Stable, privacy-safe identifiers for strict coherence failures. These
-    /// names describe only the failed invariant and never include profile
-    /// names, surface values, hashes, network addresses, or identity seeds.
-    var strictContextFailureIDs: [String] {
-        Array(Set(labeledCaptures.flatMap { _, capture in
-            Self.strictContextFailureIDs(for: capture)
-        })).sorted()
-    }
-
     private var strictContextConsistencyIssues: [String] {
-        labeledCaptures.flatMap { label, capture in
+        [
+            ("profile A, first capture", firstInitial),
+            ("profile B", second),
+            ("profile A, repeat capture", firstRepeat)
+        ].flatMap { label, capture in
             Self.strictContextIssues(for: capture, label: label)
         }
     }
 
     var networkPrivacyIssues: [String] {
-        labeledCaptures.flatMap { label, capture in
-            Self.networkPrivacyIssues(for: capture, label: label)
-        }
-    }
-
-    private var labeledCaptures: [(String, FingerprintCapture)] {
         [
             ("profile A, first capture", firstInitial),
             ("profile B", second),
             ("profile A, repeat capture", firstRepeat)
-        ]
-    }
-
-    private func unavailableKeys(in keys: [String]) -> [String] {
-        keys.filter { key in
-            !Self.isAvailable(firstInitial.values[key]) ||
-                !Self.isAvailable(second.values[key]) ||
-                !Self.isAvailable(firstRepeat.values[key])
+        ].flatMap { label, capture in
+            Self.networkPrivacyIssues(for: capture, label: label)
         }
     }
 
-    private func unstableKeys(in keys: [String]) -> [String] {
-        keys.filter { firstInitial.values[$0] != firstRepeat.values[$0] }
+    /// Validates only the bounded diagnostic vocabulary. Missing values are
+    /// accepted for reports written before these diagnostics existed;
+    /// malformed present values are never promoted to PASS.
+    var privacyDiagnosticIssues: [String] {
+        [
+            ("profile A, first capture", firstInitial),
+            ("profile B", second),
+            ("profile A, repeat capture", firstRepeat)
+        ].flatMap { label, capture in
+            Self.privacyDiagnosticIssues(for: capture, label: label)
+        }
     }
 
     private var comparableCriticalKeys: [String] {
@@ -602,6 +650,16 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
                 Self.isAvailable(second.values[key]) &&
                 Self.isAvailable(firstRepeat.values[key])
         }
+    }
+
+    /// Rendering evidence includes a repeatable digest and an absent-family
+    /// fallback control. A historical list of names proves neither property.
+    static func isFontMetricEvidence(_ value: String?) -> Bool {
+        guard let value else { return false }
+        return value.range(
+            of: #"^metrics-v1:[0-9a-f]{8}:fallback-control-pass$"#,
+            options: .regularExpression
+        ) != nil
     }
 
     private static func isAvailable(_ value: String?) -> Bool {
@@ -640,9 +698,11 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     }
 
     private static func canMapDeviceTuple(_ capture: FingerprintCapture) -> Bool {
-        capture.identityCode.hasPrefix("NA-") &&
-            capture.identityCode.count == 11 &&
-            UInt32(capture.identityCode.dropFirst(3), radix: 16) != nil
+        guard capture.identityCode.hasPrefix("NA-"),
+              capture.identityCode.count == 11,
+              let seed = UInt32(capture.identityCode.dropFirst(3), radix: 16)
+        else { return false }
+        return seed > 0 && seed <= UInt32(Int32.max)
     }
 
     private static func deviceTupleIssues(
@@ -655,7 +715,8 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
               let seed = UInt32(
                 capture.identityCode.dropFirst(3),
                 radix: 16
-              )
+              ),
+              seed > 0, seed <= UInt32(Int32.max)
         else {
             return [
                 "The \(label) identity code cannot be mapped to the reviewed Apple device catalog."
@@ -678,10 +739,11 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         expect("screen", tuple.screen)
         expect("platform", "MacIntel")
         expect("webgl_vendor", "Google Inc. (Apple)")
-        expect("webgpu_policy", "disabled")
-        if capture.values["webgl_renderer"]?.contains(
-            "Apple \(tuple.gpuModel)"
-        ) != true {
+        expect("webgpu_policy", "adapter-null")
+        // This runtime emits a canonical ANGLE renderer. A substring would
+        // incorrectly accept a Pro/Max model as the corresponding base model.
+        if capture.values["webgl_renderer"] !=
+            "ANGLE (Apple, ANGLE Metal Renderer: Apple \(tuple.gpuModel), Unspecified Version)" {
             issues.append(
                 "The \(label) WebGL renderer does not match device tuple \(tuple.id)."
             )
@@ -877,19 +939,31 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
     ]
 
     private var publicAlphaUnavailableKeys: [String] {
-        unavailableKeys(in: Self.publicAlphaRequiredKeys)
+        Self.publicAlphaRequiredKeys.filter { key in
+            !Self.isAvailable(firstInitial.values[key]) ||
+                !Self.isAvailable(second.values[key]) ||
+                !Self.isAvailable(firstRepeat.values[key])
+        }
     }
 
     private var publicAlphaUnstableKeys: [String] {
-        unstableKeys(in: Self.publicAlphaRequiredKeys)
+        Self.publicAlphaRequiredKeys.filter {
+            firstInitial.values[$0] != firstRepeat.values[$0]
+        }
     }
 
     private var productionExtendedUnavailableKeys: [String] {
-        unavailableKeys(in: Self.productionExtendedContextKeys)
+        Self.productionExtendedContextKeys.filter { key in
+            !Self.isAvailable(firstInitial.values[key]) ||
+                !Self.isAvailable(second.values[key]) ||
+                !Self.isAvailable(firstRepeat.values[key])
+        }
     }
 
     private var productionExtendedUnstableKeys: [String] {
-        unstableKeys(in: Self.productionExtendedContextKeys)
+        Self.productionExtendedContextKeys.filter {
+            firstInitial.values[$0] != firstRepeat.values[$0]
+        }
     }
 
     private static var publicAlphaRequiredKeys: [String] {
@@ -1159,7 +1233,8 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
             ("canvas", "canvas_repeat"),
             ("client_rects", "client_rects_repeat"),
             ("webgl_pixels", "webgl_pixels_repeat"),
-            ("webgl_shader_precision", "worker_webgl_shader_precision")
+            ("webgl_shader_precision", "worker_webgl_shader_precision"),
+            ("audio", "worker_audio")
         ] where isAvailable(values[pair.0]) &&
             isAvailable(values[pair.1]) &&
             values[pair.0] != values[pair.1]
@@ -1179,42 +1254,128 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
         return issues
     }
 
-    private static func strictContextFailureIDs(
-        for capture: FingerprintCapture
+    private static func privacyDiagnosticIssues(
+        for capture: FingerprintCapture,
+        label: String
     ) -> [String] {
         let values = capture.values
-        var failures: [String] = []
-        for (first, second, identifier) in [
-            ("audio", "audio_repeat", "audio-repeat"),
-            ("canvas", "canvas_repeat", "canvas-repeat"),
-            (
-                "client_rects",
-                "client_rects_repeat",
-                "client-rects-repeat"
-            ),
-            (
-                "webgl_pixels",
-                "webgl_pixels_repeat",
-                "webgl-pixels-repeat"
-            ),
-            (
-                "webgl_shader_precision",
-                "worker_webgl_shader_precision",
-                "webgl-shader-worker"
-            )
-        ] where isAvailable(values[first]) &&
-            isAvailable(values[second]) &&
-            values[first] != values[second]
-        {
-            failures.append(identifier)
+        var issues: [String] = []
+        let stateValues = Set([
+            "granted", "denied", "prompt", "unavailable", "unknown"
+        ])
+        let availabilityValues = Set(["available", "unavailable"])
+
+        func checkEnum(_ key: String, allowed: Set<String>) {
+            guard let value = values[key] else { return }
+            if !allowed.contains(value) {
+                issues.append(
+                    "The \(label) \(key) diagnostic has an unsupported state."
+                )
+            }
         }
-        if isAvailable(values["css_screen_match"]),
-           values["css_screen_match"] !=
-            "width:1|height:1|resolution:1"
-        {
-            failures.append("css-screen")
+
+        func checkCount(_ key: String) {
+            guard let value = values[key] else { return }
+            // Optional native APIs may legitimately be unavailable. This is
+            // not a count of zero and must remain distinct in the receipt.
+            if value == "unavailable" { return }
+            if let count = Int(value), (0...256).contains(count) {
+                return
+            } else {
+                issues.append(
+                    "The \(label) \(key) diagnostic is not a bounded count."
+                )
+            }
         }
-        return failures
+
+        func checkHash(_ key: String) {
+            guard let value = values[key], value != "unavailable" else {
+                return
+            }
+            if value.count == 8 && value.utf8.allSatisfy({
+                (48...57).contains($0) || (97...102).contains($0)
+            }) {
+                return
+            } else {
+                issues.append(
+                    "The \(label) \(key) diagnostic is not a bounded hash."
+                )
+            }
+        }
+
+        checkEnum("media_devices", allowed: availabilityValues)
+        checkCount("media_device_count")
+        checkEnum("permissions_api", allowed: availabilityValues)
+        checkEnum("permission_camera", allowed: stateValues)
+        checkEnum("permission_microphone", allowed: stateValues)
+        let nativeOutcomes: Set<String> = ["observed", "api-absent", "timeout", "error"]
+        checkEnum("media_device_observation", allowed: nativeOutcomes)
+        checkEnum("permission_camera_observation", allowed: nativeOutcomes)
+        checkEnum("permission_microphone_observation", allowed: nativeOutcomes)
+        if let outcome = values["media_device_observation"] {
+            let count = values["media_device_count"]
+            let consistent: Bool
+            switch outcome {
+            case "observed":
+                consistent = values["media_devices"] == "available" &&
+                    count.flatMap(Int.init).map { (0...256).contains($0) } == true
+            case "api-absent":
+                consistent = values["media_devices"] == "unavailable" && count == "unavailable"
+            case "error", "timeout":
+                consistent = values["media_devices"] == "available" && count == "unavailable"
+            default: consistent = false
+            }
+            if !consistent {
+                issues.append("The \(label) media observation disagrees with its count or availability.")
+            }
+        }
+        for key in ["permission_camera", "permission_microphone"] {
+            if let outcome = values[key + "_observation"] {
+                let consistent: Bool
+                switch outcome {
+                case "observed":
+                    consistent = values["permissions_api"] == "available" &&
+                        ["granted", "denied", "prompt"].contains(values[key] ?? "")
+                case "api-absent":
+                    consistent = values["permissions_api"] == "unavailable" && values[key] == "unavailable"
+                case "error", "timeout":
+                    consistent = values["permissions_api"] == "available" && values[key] == "unknown"
+                default: consistent = false
+                }
+                if !consistent {
+                    issues.append("The \(label) \(key) observation disagrees with its state or API availability.")
+                }
+            }
+        }
+        checkEnum("speech_synthesis", allowed: availabilityValues)
+        checkCount("speech_voice_count")
+        checkEnum("speech_voice_observation", allowed: Set([
+            "observed", "unavailable", "timeout", "error"
+        ]))
+        if values["speech_voice_observation"] == "error" {
+            issues.append("The \(label) native speech voice observation failed.")
+        }
+        if let observation = values["speech_voice_observation"] {
+            let count = values["speech_voice_count"]
+            let available = values["speech_synthesis"] == "available"
+            let consistent: Bool
+            switch observation {
+            case "observed":
+                consistent = available && count.flatMap(Int.init).map { (0...256).contains($0) } == true
+            case "timeout":
+                consistent = available && count == "unavailable"
+            case "unavailable", "error":
+                consistent = values["speech_synthesis"] == "unavailable" && count == "unavailable"
+            default:
+                consistent = false
+            }
+            if !consistent {
+                issues.append("The \(label) speech voice state disagrees with its count or availability.")
+            }
+        }
+        checkHash("worker_audio")
+        checkHash("worker_client_rects")
+        return issues
     }
 
     private struct WebRTCCandidateSummary: Decodable {
@@ -1387,6 +1548,7 @@ struct FingerprintAuditReport: Codable, Equatable, Sendable {
 
 struct FingerprintAuditReportStore: Sendable {
     static let maximumStoredReports = 3
+    static let maximumStoredReportBytes = 512 * 1_024
 
     let paths: AppPaths
 
@@ -1402,7 +1564,13 @@ struct FingerprintAuditReportStore: Sendable {
             .withoutEscapingSlashes
         ]
         encoder.dateEncodingStrategy = .iso8601
-        try paths.writePrivateFile(encoder.encode(report), to: url)
+        let encoded = try encoder.encode(report)
+        guard encoded.count <= Self.maximumStoredReportBytes else {
+            throw NeAntikError.fingerprintAuditFailed(
+                "Локальный отчёт отпечатка превысил безопасный размер."
+            )
+        }
+        try paths.writePrivateFile(encoded, to: url)
         try pruneReports(preserving: url)
         return url
     }
@@ -1542,11 +1710,6 @@ final class FingerprintAuditCoordinator: ObservableObject {
         ) as? String
     ) {
         guard !isRunning else { return }
-        guard executionMode == .browser else {
-            errorMessage =
-                "Устаревший небезопасный диагностический режим отключён."
-            return
-        }
         guard first.id != second.id else {
             errorMessage = "Выбери два разных профиля."
             return
@@ -1562,9 +1725,9 @@ final class FingerprintAuditCoordinator: ObservableObject {
             return
         }
         for profile in [first, second] {
-            if processes.runningProfileIDs.contains(profile.id) {
+            if processes.processState(for: profile.id) != .stopped {
                 errorMessage =
-                    "Останови «\(profile.name)» перед проверкой."
+                    "Останови выбранные профили и дождись завершения восстановления перед проверкой."
                 return
             }
         }
@@ -1750,6 +1913,8 @@ final class FingerprintAuditCoordinator: ObservableObject {
             httpLoopbackPort: UInt16(auditServer.url.port!)
         )
         let dataDirectory = auditReservation.dataDirectory
+        defer { processes.releaseFingerprintAuditReservation(auditReservation) }
+        let directoryCustody = try processes.retainFingerprintAuditDirectory(auditReservation)
 
         let portFile = dataDirectory.appendingPathComponent(
             "DevToolsActivePort"
@@ -1792,10 +1957,19 @@ final class FingerprintAuditCoordinator: ObservableObject {
             values["webrtc_stun_requests"] =
                 String(stunServer.acceptedRequestCount)
             await requestBrowserClose(port: port)
-            processes.stop(profileID: processProfile.id)
-            try await waitUntilStopped(profileID: processProfile.id)
+            // Browser.close is asynchronous on Chromium's multi-process
+            // runtime. Give the browser a bounded grace period to reap its
+            // renderer/GPU helpers before falling back to SIGTERM. Sending
+            // SIGTERM after the 200 ms websocket grace window can leave
+            // BrowserData temporarily owned by helpers and turn a healthy
+            // audit into a recovery timeout.
+            await waitForNaturalStop(profileID: processProfile.id)
+            if processes.processState(for: processProfile.id) != .stopped {
+                processes.stop(profileID: processProfile.id)
+            }
+            try await waitUntilStopped(profileID: processProfile.id, reservation: auditReservation)
             activeProfileID = nil
-            try? FileManager.default.removeItem(at: dataDirectory)
+            try? directoryCustody.discard()
 
             return FingerprintCapture(
                 profileID: profile.id,
@@ -1809,16 +1983,17 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 processes.stop(profileID: processProfile.id)
                 do {
                     try await waitUntilStopped(
-                        profileID: processProfile.id
+                        profileID: processProfile.id,
+                        reservation: auditReservation
                     )
-                    try? FileManager.default.removeItem(at: dataDirectory)
+                    try? directoryCustody.discard()
                 } catch {
                     // Keep the disposable directory while a browser may still
                     // use it. The system temporary-directory cleanup can
                     // remove it after the process has exited.
                 }
             } else {
-                try? FileManager.default.removeItem(at: dataDirectory)
+                try? directoryCustody.discard()
             }
             activeProfileID = nil
             throw error
@@ -1842,11 +2017,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
                     with: data
                   ) as? [String: Any],
                   let value = object["webSocketDebuggerUrl"] as? String,
-                  let webSocketURL = DevToolsSecurity.validatedWebSocketURL(
-                    value,
-                    expectedPort: port,
-                    expectedPathPrefix: "/devtools/browser/"
-                  )
+                  let webSocketURL = URL(string: value)
             else {
                 return
             }
@@ -1858,12 +2029,24 @@ final class FingerprintAuditCoordinator: ObservableObject {
             )
             let socket = session.webSocketTask(with: request)
             socket.resume()
+            let responseTimeout = Task {
+                do {
+                    try await Task.sleep(for: .seconds(2))
+                    socket.cancel(with: .goingAway, reason: nil)
+                } catch {
+                    // The browser responded or disconnected first.
+                }
+            }
             defer {
+                responseTimeout.cancel()
                 socket.cancel(with: .normalClosure, reason: nil)
             }
             let command = "{\"id\":1,\"method\":\"Browser.close\"}"
             try await socket.send(.string(command))
-            try? await Task.sleep(nanoseconds: 200_000_000)
+            // Keep the socket alive until Chromium acknowledges the command
+            // or closes the connection. A fixed 200 ms delay can cancel the
+            // command before it reaches a busy browser process.
+            _ = try? await socket.receive()
         } catch {
             // This is a graceful fast path. BrowserProcessManager still owns
             // the process and performs the ordinary termination fallback.
@@ -1882,7 +2065,16 @@ final class FingerprintAuditCoordinator: ObservableObject {
     private func waitForDevToolsPort(at url: URL) async throws -> Int {
         for _ in 0..<80 {
             try Task.checkCancellation()
-            if let port = try DevToolsSecurity.readPort(at: url) {
+            if let contents = try? String(
+                contentsOf: url,
+                encoding: .utf8
+            ),
+               let firstLine = contents
+                .split(whereSeparator: \.isNewline)
+                .first,
+               let port = Int(firstLine),
+               (1...65_535).contains(port)
+            {
                 return port
             }
             try await Task.sleep(nanoseconds: 250_000_000)
@@ -1912,7 +2104,6 @@ final class FingerprintAuditCoordinator: ObservableObject {
                    http.statusCode == 200,
                    let url = try Self.pageTargetWebSocketURL(
                     from: data,
-                    expectedPort: port,
                     expectedPageURL: expectedPageURL
                    )
                 {
@@ -2054,9 +2245,15 @@ final class FingerprintAuditCoordinator: ObservableObject {
         }
     }
 
-    private func waitUntilStopped(profileID: UUID) async throws {
+    private func waitUntilStopped(profileID: UUID, reservation: FingerprintAuditLaunchReservation) async throws {
         var consecutiveStoppedObservations = 0
-        for _ in 0..<160 {
+        for index in 0..<160 {
+            try Task.checkCancellation()
+            // A headed browser can take focus and suspend passive UI polling.
+            // Explicit settlement keeps the same reservation and exact lease.
+            if index % 8 == 0 {
+                _ = await processes.settleFingerprintAuditTermination(profileID: profileID, reservation: reservation)
+            }
             if processes.processState(for: profileID) == .stopped {
                 consecutiveStoppedObservations += 1
                 if consecutiveStoppedObservations >= 8 {
@@ -2074,9 +2271,19 @@ final class FingerprintAuditCoordinator: ObservableObject {
         )
     }
 
+    private func waitForNaturalStop(profileID: UUID) async {
+        // Five seconds is long enough for Chromium's normal browser-close
+        // path, while keeping a bounded fallback for a hung or broken runtime.
+        for _ in 0..<40 {
+            if processes.processState(for: profileID) == .stopped {
+                return
+            }
+            try? await Task.sleep(nanoseconds: 125_000_000)
+        }
+    }
+
     nonisolated static func pageTargetWebSocketURL(
         from data: Data,
-        expectedPort: Int,
         expectedPageURL: URL? = nil
     ) throws -> URL? {
         let targets = try JSONDecoder().decode(
@@ -2090,11 +2297,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
         }) else {
             return nil
         }
-        return DevToolsSecurity.validatedWebSocketURL(
-            target.webSocketDebuggerURL,
-            expectedPort: expectedPort,
-            expectedPathPrefix: "/devtools/page/"
-        )
+        return URL(string: target.webSocketDebuggerURL)
     }
 
     private struct DevToolsTarget: Decodable {
@@ -2251,21 +2454,42 @@ final class FingerprintAuditCoordinator: ObservableObject {
         }
       } catch (_) {}
 
-      let webgpuPolicy = 'disabled';
-      try {
-        const adapter = navigator.gpu ?
-          await navigator.gpu.requestAdapter() : null;
-        if (adapter) {
-          const limits = {};
-          for (const key in adapter.limits) {
-            limits[key] = String(adapter.limits[key]);
+      // Observation is distinct from the configured launch policy. Missing
+      // API, unavailable adapter, failed request and timeout are not synonyms.
+      const observeWebGPU = async (timeoutMilliseconds = 5000) => {
+        let timer;
+        try {
+          const gpu = navigator.gpu;
+          if (!gpu || typeof gpu.requestAdapter !== 'function') {
+            return 'api-absent';
           }
-          webgpuPolicy = `available:${hashText(JSON.stringify({
-            features: Array.from(adapter.features || []).sort(),
+          const outcome = await Promise.race([
+            Promise.resolve(gpu.requestAdapter()).then(adapter => ({ adapter })),
+            new Promise(resolve => {
+              timer = setTimeout(() => resolve({ timedOut: true }), timeoutMilliseconds);
+            })
+          ]);
+          if (outcome.timedOut) return 'timeout';
+          if (outcome.adapter === null) return 'adapter-null';
+          if (!outcome.adapter) return 'error';
+          const limits = {};
+          for (const key in outcome.adapter.limits) {
+            limits[key] = String(outcome.adapter.limits[key]);
+          }
+          // Availability and advertised capabilities are not operation proof.
+          return `available:${hashText(JSON.stringify({
+            features: Array.from(outcome.adapter.features || []).sort(),
             limits
           }))}`;
+        } catch (_) {
+          return 'error';
+        } finally {
+          if (timer !== undefined) clearTimeout(timer);
         }
-      } catch (_) {}
+      };
+      // The historical report key is retained for wire compatibility; its
+      // value describes the observed adapter result, never an inferred policy.
+      const webgpuPolicy = await observeWebGPU();
 
       const renderAudioHash = async () => {
         const Audio = window.OfflineAudioContext ||
@@ -2295,31 +2519,218 @@ final class FingerprintAuditCoordinator: ObservableObject {
         audioRepeatHash = await renderAudioHash();
       } catch (_) {}
 
+      const boundedNativeObservation = async (operation, timeoutMilliseconds = 2000) => {
+        // Promise cancellation cannot stop a native API. Ignore late completion
+        // and always release our timer; export only a bounded outcome.
+        let timer;
+        try {
+          return await Promise.race([
+            Promise.resolve().then(operation).then(value => ({ observation: 'observed', value })),
+            new Promise(resolve => {
+              timer = setTimeout(() => resolve({ observation: 'timeout' }), timeoutMilliseconds);
+            })
+          ]);
+        } catch (_) {
+          return { observation: 'error' };
+        } finally {
+          if (timer !== undefined) clearTimeout(timer);
+        }
+      };
+      const permissionState = async name => {
+        if (!navigator.permissions || typeof navigator.permissions.query !== 'function') {
+          return { state: 'unavailable', observation: 'api-absent' };
+        }
+        const result = await boundedNativeObservation(async () => {
+          const status = await navigator.permissions.query({ name });
+          if (!status || !['granted', 'denied', 'prompt'].includes(status.state)) {
+            throw new Error('Invalid permission state');
+          }
+          return status.state;
+        });
+        return { state: result.value || 'unknown', observation: result.observation };
+      };
+      const observeMediaDevices = async () => {
+        if (!navigator.mediaDevices || typeof navigator.mediaDevices.enumerateDevices !== 'function') {
+          return { availability: 'unavailable', count: 'unavailable', observation: 'api-absent' };
+        }
+        const result = await boundedNativeObservation(async () => {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          if (!Array.isArray(devices)) throw new Error('Invalid device list');
+          // Labels and IDs never leave this native observation.
+          return String(Math.min(devices.length, 256));
+        });
+        return { availability: 'available', count: result.value || 'unavailable', observation: result.observation };
+      };
+      const [mediaObservation, cameraObservation, microphoneObservation] = await Promise.all([
+        observeMediaDevices(), permissionState('camera'), permissionState('microphone')
+      ]);
+      const mediaDevices = mediaObservation.availability;
+      const mediaDeviceCount = mediaObservation.count;
+      const mediaDeviceObservation = mediaObservation.observation;
+      const permissionsAPI = navigator.permissions && typeof navigator.permissions.query === 'function' ?
+        'available' : 'unavailable';
+      const permissionCamera = cameraObservation.state;
+      const permissionMicrophone = microphoneObservation.state;
+      const permissionCameraObservation = cameraObservation.observation;
+      const permissionMicrophoneObservation = microphoneObservation.observation;
+      const observeSpeechVoices = async (timeoutMilliseconds = 2000) => {
+        // Native lists load asynchronously. Keep only a bounded count; never
+        // return voice names, identifiers, locales, or synthesise speech.
+        let timer;
+        let listener;
+        let synthesis;
+        try {
+          synthesis = window.speechSynthesis;
+          if (!synthesis || typeof synthesis.getVoices !== 'function') {
+            return { availability: 'unavailable', count: 'unavailable', observation: 'unavailable' };
+          }
+          const count = () => {
+            const voices = synthesis.getVoices();
+            if (!Array.isArray(voices)) throw new Error('Invalid voice list');
+            return String(Math.min(voices.length, 256));
+          };
+          const initial = count();
+          if (initial !== '0') return { availability: 'available', count: initial, observation: 'observed' };
+          const observed = await new Promise((resolve, reject) => {
+            listener = () => {
+              try { resolve({ count: count(), observation: 'observed' }); }
+              catch (_) { reject(new Error('Voice observation failed')); }
+            };
+            synthesis.addEventListener('voiceschanged', listener);
+            // Close the gap between the initial read and listener setup.
+            const afterSubscription = count();
+            if (afterSubscription !== '0') resolve({ count: afterSubscription, observation: 'observed' });
+            timer = setTimeout(() => resolve({ count: 'unavailable', observation: 'timeout' }), timeoutMilliseconds);
+          });
+          return { availability: 'available', ...observed };
+        } catch (_) {
+          return { availability: 'unavailable', count: 'unavailable', observation: 'error' };
+        } finally {
+          if (timer !== undefined) clearTimeout(timer);
+          if (listener && synthesis && typeof synthesis.removeEventListener === 'function') {
+            synthesis.removeEventListener('voiceschanged', listener);
+          }
+        }
+      };
+      const speechObservation = await observeSpeechVoices();
+      const speechSynthesis = speechObservation.availability;
+      const speechVoiceCount = speechObservation.count;
+
       const rectHost = document.createElement('div');
       rectHost.style.cssText =
         'position:absolute;left:-9999px;width:240.25px;font:15.5px Arial;letter-spacing:.17px';
       rectHost.innerHTML =
         '<span>NeAntik fingerprint rectangle probe with wrapping text</span>';
       document.body.appendChild(rectHost);
-      const rectValues = Array.from(
-        rectHost.firstChild.getClientRects()
-      ).map(rect => [
-        rect.x, rect.y, rect.width, rect.height
-      ].map(value => value.toFixed(6)).join(',')).join('|');
-      const rectRepeatValues = Array.from(
-        rectHost.firstChild.getClientRects()
-      ).map(rect => [
-        rect.x, rect.y, rect.width, rect.height
-      ].map(value => value.toFixed(6)).join(',')).join('|');
-      rectHost.remove();
+      const readRectMetrics = () => {
+        const rects = Array.from(rectHost.firstChild.getClientRects());
+        if (!rects.length || rects.length > 256) throw new Error('Missing rectangle metrics');
+        return rects.map(rect => {
+          const values = [rect.x, rect.y, rect.width, rect.height,
+            rect.top, rect.right, rect.bottom, rect.left];
+          if (!values.every(Number.isFinite) || rect.width <= 0 || rect.height <= 0 ||
+              Math.abs(rect.left - rect.x) > 0.000001 || Math.abs(rect.top - rect.y) > 0.000001 ||
+              Math.abs(rect.right - rect.x - rect.width) > 0.000001 ||
+              Math.abs(rect.bottom - rect.y - rect.height) > 0.000001) {
+            throw new Error('Inconsistent rectangle metrics');
+          }
+          return values.slice(0, 4).map(value => value.toFixed(6)).join(',');
+        }).join('|');
+      };
+      let rectHash = 'unavailable';
+      let rectRepeatHash = 'unavailable';
+      try {
+        rectHash = hashText(readRectMetrics());
+        rectRepeatHash = hashText(readRectMetrics());
+      } catch (_) {
+        rectHash = 'unavailable';
+        rectRepeatHash = 'unavailable';
+      } finally {
+        rectHost.remove();
+      }
 
       const fontCandidates = [
         'Arial', 'Helvetica Neue', 'Times New Roman', 'Courier New',
         'Menlo', 'SF Pro Text', 'Verdana', 'Georgia'
       ];
-      const fonts = fontCandidates.filter(font =>
-        document.fonts && document.fonts.check(`16px "${font}"`)
-      );
+      // FontFaceSet.check reports load readiness, including fallback. It is
+      // not installed-font evidence. Observe DOM and Canvas rendering against
+      // several fallback families, and retain an intentionally absent control.
+      const fontFallbacks = ['monospace', 'serif', 'sans-serif'];
+      const fontTexts = ['mmmmWWWWiiii1111', 'Text 0123456789', 'ЖЩДяй', '漢字かな'];
+      const absentFont = 'NeAntikAbsentFont_8b243f21';
+      const fontHost = document.createElement('div');
+      fontHost.style.cssText =
+        'position:absolute;left:-10000px;visibility:hidden;white-space:pre';
+      document.body.appendChild(fontHost);
+      const fontCanvas = document.createElement('canvas');
+      const fontContext = fontCanvas.getContext('2d');
+      const measureFont = (family, text) => {
+        const span = document.createElement('span');
+        span.style.cssText = 'font-size:48px;font-kerning:none';
+        span.style.fontFamily = family;
+        span.textContent = text;
+        fontHost.appendChild(span);
+        const box = span.getBoundingClientRect();
+        fontContext.font = `48px ${family}`;
+        fontContext.fontKerning = 'none';
+        const metric = fontContext.measureText(text);
+        span.remove();
+        const values = [box.width, box.height, metric.width,
+          metric.actualBoundingBoxLeft, metric.actualBoundingBoxRight,
+          metric.actualBoundingBoxAscent, metric.actualBoundingBoxDescent];
+        if (!values.every(Number.isFinite)) throw new Error('Font metric unavailable');
+        return values;
+      };
+      let fonts = 'unavailable';
+      try {
+        const fontDeadline = performance.now() + 5000;
+        const waitForFonts = async operation => {
+          const remaining = fontDeadline - performance.now();
+          if (remaining <= 0) throw new Error('Font observation timed out');
+          const result = await boundedNativeObservation(operation, remaining);
+          if (result.observation !== 'observed') throw new Error('Font observation incomplete');
+        };
+        await waitForFonts(() => document.fonts.ready);
+        const baseline = new Map();
+        const observations = [];
+        for (const fallback of fontFallbacks) {
+          for (const text of fontTexts) {
+            const first = measureFont(fallback, text);
+            const repeated = measureFont(fallback, text);
+            if (JSON.stringify(first) !== JSON.stringify(repeated)) {
+              throw new Error('Unstable fallback metrics');
+            }
+            baseline.set(`${fallback}:${text}`, first);
+          }
+        }
+        for (const font of [...fontCandidates, absentFont]) {
+          for (const fallback of fontFallbacks) {
+            for (const text of fontTexts) {
+              const family = `"${font}", ${fallback}`;
+              await waitForFonts(() => document.fonts.load(`48px ${family}`, text));
+              const first = measureFont(family, text);
+              const repeated = measureFont(family, text);
+              if (JSON.stringify(first) !== JSON.stringify(repeated)) {
+                throw new Error('Unstable candidate metrics');
+              }
+              const fallbackEquivalent = JSON.stringify(first) ===
+                JSON.stringify(baseline.get(`${fallback}:${text}`));
+              if (font === absentFont && !fallbackEquivalent) {
+                throw new Error('Absent font control changed fallback');
+              }
+              observations.push([font, fallback, text, first, fallbackEquivalent]);
+            }
+          }
+        }
+        // Equality is inconclusive, not a claim that a family exists or is
+        // absent. Report bounded rendering evidence rather than a font list.
+        fonts = `metrics-v1:${hashText(JSON.stringify(observations))}:fallback-control-pass`;
+      } catch (_) {
+        fonts = 'unavailable';
+      } finally {
+        fontHost.remove();
+      }
 
       let clientHints = {};
       try {
@@ -2362,6 +2773,31 @@ final class FingerprintAuditCoordinator: ObservableObject {
             };
             const hashText = value =>
               fnv(new TextEncoder().encode(String(value)));
+            const renderAudioHash = async () => {
+              const Audio = self.OfflineAudioContext ||
+                self.webkitOfflineAudioContext;
+              if (!Audio) throw new Error('OfflineAudioContext unavailable');
+              const audio = new Audio(1, 6000, 44100);
+              const oscillator = audio.createOscillator();
+              oscillator.type = 'triangle';
+              oscillator.frequency.value = 10000;
+              const compressor = audio.createDynamicsCompressor();
+              compressor.threshold.value = -50;
+              compressor.knee.value = 40;
+              compressor.ratio.value = 12;
+              compressor.attack.value = 0;
+              compressor.release.value = 0.25;
+              oscillator.connect(compressor);
+              compressor.connect(audio.destination);
+              oscillator.start(0);
+              const rendered = await audio.startRendering();
+              return fnv(new Uint8Array(rendered.getChannelData(0).buffer));
+            };
+            let workerAudio = 'unavailable';
+            try { workerAudio = await renderAudioHash(); } catch (_) {}
+            // ClientRects is a DOM API and is intentionally unavailable in a
+            // Worker; record that fact rather than comparing unlike probes.
+            const workerClientRects = 'unavailable';
             const localeCore = value => {
               try {
                 const locale = new Intl.Locale(
@@ -2510,6 +2946,8 @@ final class FingerprintAuditCoordinator: ObservableObject {
               webgl_renderer: webglRenderer,
               webgl_extensions: webglExtensions,
               webgl_shader_precision: webglShaderPrecision,
+              worker_audio: workerAudio,
+              worker_client_rects: workerClientRects,
               user_agent: navigator.userAgent,
               platform: navigator.platform,
               languages: (navigator.languages || []).join(','),
@@ -2624,8 +3062,19 @@ final class FingerprintAuditCoordinator: ObservableObject {
         webgpu_policy: webgpuPolicy,
         audio: audioHash,
         audio_repeat: audioRepeatHash,
-        client_rects: hashText(rectValues),
-        client_rects_repeat: hashText(rectRepeatValues),
+        media_devices: mediaDevices,
+        media_device_count: mediaDeviceCount,
+        media_device_observation: mediaDeviceObservation,
+        permissions_api: permissionsAPI,
+        permission_camera: permissionCamera,
+        permission_microphone: permissionMicrophone,
+        permission_camera_observation: permissionCameraObservation,
+        permission_microphone_observation: permissionMicrophoneObservation,
+        speech_synthesis: speechSynthesis,
+        speech_voice_count: speechVoiceCount,
+        speech_voice_observation: speechObservation.observation,
+        client_rects: rectHash,
+        client_rects_repeat: rectRepeatHash,
         user_agent: navigator.userAgent,
         platform: navigator.platform,
         languages: (navigator.languages || []).join(','),
@@ -2645,7 +3094,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
         hardware_concurrency: String(navigator.hardwareConcurrency || ''),
         device_memory: String(navigator.deviceMemory || ''),
         touch_points: String(navigator.maxTouchPoints || 0),
-        fonts: fonts.join(','),
+        fonts,
         client_hints: JSON.stringify(clientHints),
         worker_canvas: workerValue('canvas'),
         worker_webgl_pixels: workerValue('webgl_pixels'),
@@ -2667,6 +3116,8 @@ final class FingerprintAuditCoordinator: ObservableObject {
           workerValue('hardware_concurrency'),
         worker_device_memory: workerValue('device_memory'),
         worker_client_hints: workerValue('client_hints'),
+        worker_audio: workerValue('worker_audio'),
+        worker_client_rects: workerValue('worker_client_rects'),
         webrtc_probe: 'loopback-stun-v1',
         webrtc_complete: rtcComplete,
         webrtc_candidate_summary: rtcSummaryValue
@@ -2675,7 +3126,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
     """#
 }
 
-private final class FingerprintAuditLoopbackServer {
+final class FingerprintAuditLoopbackServer {
     let url: URL
 
     private let listener: NWListener

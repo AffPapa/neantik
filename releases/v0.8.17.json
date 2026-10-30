@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "channel": "public-alpha",
+  "architecture": "arm64",
+  "minimumOS": "14.0",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "rebuilt": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815",
+    "safeBrowsingEnabled": false,
+    "architecture": "arm64"
+  },
+  "qualificationEnvironment": {
+    "macOS": "27.0",
+    "architecture": "arm64",
+    "dateUTC": "2026-10-15",
+    "headed": true
+  },
+  "version": "0.8.17",
+  "build": 129,
+  "sourceCommit": "7bee33e113e7a7dfc44393758b83b2a9d3a6ff66",
+  "tag": "v0.8.17",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.8.17",
+  "siteUrl": "https://browser.free/",
+  "rollbackRelease": "v0.8.16",
+  "managerSHA256": "9a82d0044219725b292d003f048b2f0f87e1d02dff64b557a5f66ab153460871",
+  "candidateManifestSHA256": "88294063a29cc50b356845772c8f0b29b1f2f487aba0d64d5690a09487405a49",
+  "candidateSourceBindingSHA256": "f7f48a887afe4daa0a966b71d1f9f248645e8dc2c240217a4d6df6571c7a670b",
+  "artifacts": [
+    {
+      "name": "NeAntik-0.8.17-arm64-notarized.zip",
+      "sha256": "618008d7d88653695c5ed4ce35247a1644fb9962a67419e6b7af9c35ac08e1f1",
+      "sizeBytes": 190624970,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.17/NeAntik-0.8.17-arm64-notarized.zip"
+    },
+    {
+      "name": "NeAntik-0.8.17-arm64-notarized.dmg",
+      "sha256": "c25a0bdfb6f1e1aa8ba659ff0805aaa18a0fb3a2bf2bbadd81635c58e6dacbc8",
+      "sizeBytes": 215017922,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.17/NeAntik-0.8.17-arm64-notarized.dmg"
+    }
+  ],
+  "checksumFiles": [
+    {
+      "name": "NeAntik-0.8.17-arm64-notarized.zip.sha256",
+      "sha256": "692aa112db5add3985faec461e7532bcfb3fa74bfe0a415bbc685d7ebb4a0314",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.17/NeAntik-0.8.17-arm64-notarized.zip.sha256"
+    },
+    {
+      "name": "NeAntik-0.8.17-arm64-notarized.dmg.sha256",
+      "sha256": "6781cc705c438a6c67d908b2630a5ed00ef6913c4ebaccec6a69f695494eb4c5",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.17/NeAntik-0.8.17-arm64-notarized.dmg.sha256"
+    }
+  ],
+  "signing": {
+    "teamID": "H6VGU2M6JD",
+    "certificateSHA1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "notarization": "Accepted",
+    "stapling": "pass",
+    "gatekeeper": "accepted",
+    "zipSubmissionID": "5bb036fb-2a1f-407f-88de-29d0d3af4ee5",
+    "dmgSubmissionID": "1edaf040-aa9d-4617-99a2-72a04f1bd7cd"
+  },
+  "checks": {
+    "swiftIntegration": "Full base1604/190 summary;1530 passed log lines/71 explicit skips on matching base; final localized delta suites and109/3 active-settlement tests PASS, no skips; exact input reconstruction retained",
+    "pythonIntegration": "Original1493/19skips had1 cache-cancellation mismatch; actual owned diagnostic143 and affected8tests PASS; original failure retained",
+    "exactSignedWebKitMCP": "Full consent/ownership/EOF/reconnect/revoke/stale/saveFailed/recovery/NSSavePanel/quit controls on first signed129; unchanged MCP source final corrected candidate A/B start/status/stop, cross-client denial, snapshots, quit/EOF/cleanup PASS",
+    "exactSignedHeaded": "Corrected candidate authenticated schema8 PASS; controlled own lingering process retained lease after Chromium exit0 then released and lease retired; original failed candidate retained, audit authority retired",
+    "runtimeReuse": "Same156 executable/framework; bounded previously qualified semantics/cohorts retained; not a fresh full platform/network1.0 qualification",
+    "doctor": "13/13 PASS",
+    "sourcePrivacy": "31-file feature source freeze and5-file correction reviewed/scanned; baseline unchanged file receipts retained; unknown secret formats not guaranteed",
+    "updater": "Helpers unchanged; continuity preserved; no new128-to129 physical install/rollback hop",
+    "hostedZIP": "Anonymous byte-identical ZIP; exact candidate/evidence/signing/notary/Gatekeeper PASS",
+    "hostedDMG": "Anonymous byte-identical DMG; image/signing/notary/Gatekeeper PASS",
+    "downloadedMCP": "Exact downloaded129 isolated stdio startup18/7 and metadata restart PASS; critical inventory equal; normal admission; no second full headed suite",
+    "site": "blocked: automatic approval rejected Site credential in tool record even after hidden-stdin permission; published Site153 remains128"
+  },
+  "verification": {
+    "notarization": {
+      "ZIP": "Accepted",
+      "DMG": "Accepted"
+    },
+    "stapling": {
+      "passed": true
+    },
+    "Gatekeeper": {
+      "passed": true
+    },
+    "DirectDoctor": "13/13PASS",
+    "GUIFingerprint": {
+      "passed": true
+    },
+    "MCPExactSigned": "PASS bounded final GUI A/B lifecycle; detailed unchanged-source controls on preceding signed candidate; no real AI-client integration",
+    "downloadedMCP": {
+      "passed": true
+    },
+    "hostedZIP": {
+      "passed": true
+    },
+    "hostedDMG": {
+      "passed": true
+    },
+    "site": {
+      "passed": false
+    },
+    "nativeUpdater": "open: no new128-to129 physical install; unchanged helper continuity retained",
+    "nativeRollback": "open: no new128-to129 physical rollback",
+    "tests": {
+      "Swift": "Full base1604/190 summary;1530 passed log lines/71 explicit skips on matching base; final localized delta suites and109/3 active-settlement tests PASS, no skips; exact input reconstruction retained",
+      "Python": "Original1493/19skips had1 cache-cancellation mismatch; actual owned diagnostic143 and affected8tests PASS; original failure retained",
+      "site": "not changed"
+    },
+    "downloadedHeaded": "Exact candidate headed evidence reused after downloaded critical-file inventory equality; no second full headed run"
+  },
+  "site": {
+    "status": "blocked-by-automatic-approval-review",
+    "previousSavedVersion": 153,
+    "previousSourceCommit": "de26488234c1988525045fc537c409e39a7ce81b",
+    "reason": "No credential workaround; existing public Site remains on v0.8.16"
+  },
+  "migrations": {
+    "metadataAndSessionSchemaChanged": false,
+    "profileIdentityChanged": false,
+    "backupArchiveSchemaChanged": false,
+    "newWebKitDeletionJournal": false,
+    "GUIConsentPersisted": false,
+    "recovery": "Existing metadata/identity/session formats retained; per-connection GUI consent is volatile",
+    "rollback": "v0.8.16 immutable archives retained; quit app before downgrade. No identity or data format migration introduced"
+  },
+  "limitations": [
+    "Public alpha; full mandatory1.0 acceptance remains open",
+    "System WebKit identity; no full Safari fingerprint replacement, WebKit proxy, Chromium extensions, full BrowserData backup or media capture",
+    "WebKit MCP requires already-open signed GUI and per-live-connection/profile approval; no page JS, shell, cookie or credential reads",
+    "Prior downloaded128 manager/relay upstream DNS evidence retained; global DNS/UDP, background and network-change scopes remain open; no fresh final129 route measurement",
+    "OS-default-trusted authenticated HTTPS upstream positive deferred until test server available",
+    "No new physical VoiceOver/macOS14/otherMac/second-display/media or crossMac encrypted-secret qualification",
+    "No new128-to129 native updater/rollback hop; helpers unchanged",
+    "Safe Browsing disabled; no anonymity/CAPTCHA/site-policy bypass guarantee",
+    "browser.free Site/update feed remains128 while Sites credential transfer is blocked"
+  ],
+  "publicationState": "GitHub latest v0.8.17 published and anonymous ZIP/DMG/downloaded MCP verified; browser.free remains v0.8.16/Sites153, publication blocked",
+  "changes": [
+    "Consent-scoped WebKit start/status/stop through existing18 MCP tools and an already-open GUI",
+    "Exact signed peer/kernel/custody binding, volatile selected-profile permissions and per-window generation ownership",
+    "EOF/revoke leaves windows; close waits for session/download settlement and reports save failure",
+    "Fix closing WebKit while its download NSSavePanel is open",
+    "Completion-only audit permit fixes stale recovery while manager is in background without re-enabling passive polling"
+  ]
+}

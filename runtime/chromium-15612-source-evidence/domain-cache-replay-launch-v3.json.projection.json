@@ -1,0 +1,42 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "ebef55e46ab00d0e8907330eaa233efc0eeafbd0b2a0016027c4ca6b2251e5d9",
+  "payload": {
+    "actualReportName": "m156-independent-domain-cache-replay-attempt-4.json",
+    "archiveName": "m156-domain-substitution-cache.tar.gz",
+    "archiveSizeBytes": 167078523,
+    "bootstrapVerifierSourcesSHA256": {
+      "chromium_15612_generated_cache.py": "e47c18b7eb70891f9a72d7aec1079defc7a0965e07c984e55bd429dc15f54461",
+      "chromium_15612_live_source.py": "d786ff2dad92ce1a0929aa7a74284cc0307c7f0915c3d766bd43ad45b165a787",
+      "chromium_15612_postbuild.py": "f67289352464b2c4e3e0e96e69c0d649f170f0f422e0fcbdbc063734f7ab008e",
+      "chromium_15612_receipt_projection.py": "42466d4047fde867ff4f24d8208c5099155b37bc5b6dbf55349e6975241cb2bc"
+    },
+    "fixtureReportName": "domain-cache-owned-fixtures-attempt-4-v3.json",
+    "loaderSHA256": "9de519c85a67558d659bb22260c3e5008c61897ae4171cdaa7bd50709216cc53",
+    "nativeReceiptName": "m156-native-inputs-receipt.json",
+    "nativeReceiptSHA256": "f54ac245a02d6e4f494341d1923d41d1ddf846489061a04065c31abc652f77a2",
+    "recipePath": "root:research/upstream/common/domain_regex.list",
+    "replaySourceSHA256": "dc1a42b7afa32c13adec1216c00abefc8f76834d745b9a1ff73c5df60c662e81",
+    "schemaVersion": 1,
+    "scripts": "root:manager/scripts",
+    "targetListPath": "root:research/upstream/common/domain_substitution.list",
+    "terminalName": "m156-native-build-attempt-4-state.json"
+  },
+  "payloadType": "json",
+  "receipt": "domain-cache-replay-launch-v3.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

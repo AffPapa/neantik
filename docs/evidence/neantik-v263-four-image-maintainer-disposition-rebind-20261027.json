@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v263-four-image-maintainer-disposition-rebind-20261027",
+  "observedAtUTC": "2026-10-27T14:50:53Z",
+  "status": "FOUR_IMAGE_MAINTAINER_DISPOSITION_REBOUND_TO_B960_INPUT_HASHES; NOTICE_SOURCE_AND_RECIPIENT_RELINK_OPEN",
+  "scope": "Read-only hash reconciliation of V129 exact V122 image maintainer dispositions with V248 exact b960 staged-image identities. No legal opinion, code/build/package/signing/runtime/publication action.",
+  "v129ReceiptSHA256": "b2249501dd8bfbe308456d94484625f876e7cda90f0057f9ecc7193e7afc04d5",
+  "v248ReceiptSHA256": "30cfcba515ae600897b55f792a95ecb77e024ea3e506ce57e2add1268df8df6a",
+  "sourceOfferManifestSHA256": "6240d928c933b9b44d6d5376cadc66fee0a1107cd9e1528281a016363ad7c59c",
+  "candidateId": "b96006a994664a80bf89cd757f932eff",
+  "images": {
+    "JavaScriptCore": {
+      "stagedSHA256": "34de2ac0d7f7b854966dd0335b7656308e3e22a1f009c79e22b456f840764fcc",
+      "maintainerDisposition": "preserve exact upstream mixed terms, per-file/header/generated-input attribution, BSD/LGPL where applicable, source, generator inputs/scripts and relink materials",
+      "evidence": "V124 mapped 32 headerless generator inputs and six generated outputs; separate review classifies 32 as BSD-2 for maintainer source-closure purposes.",
+      "open": "per-file owner/notice gaps, complete final package notices, portable recipient rebuild/relink and signed replacement/load."
+    },
+    "WebCore": {
+      "stagedSHA256": "6c894ce051a20dee391a1bfd99648546b3797b51dc46999ba2b83a4644833174",
+      "maintainerDisposition": "preserve exact upstream mixed BSD/LGPL and nested project/data notices; provide LGPL-compatible replacement/relink materials for applicable linked portions",
+      "evidence": "V124 bound 3,127 linked-source header rows and scoped generated-input reviews.",
+      "open": "unmapped copyright attribution, complete final package notices, portable recipient rebuild/relink and signed replacement/load."
+    },
+    "WebKit": {
+      "stagedSHA256": "cc304648fd66c205100deca9a7bbcec28858ed4a55226dd1a3810b262d4f2b10",
+      "maintainerDisposition": "preserve exact per-file upstream terms; do not label whole image BSD-only",
+      "evidence": "V124 source-notice rebinding and V248 exact b960 staged-image join.",
+      "open": "complete runtime/resource notice payloads, portable recipient rebuild/relink and signed replacement/load."
+    },
+    "libwebrtc": {
+      "stagedSHA256": "6f77ced9d634c7379b1a90ea5a078d5aedfa4a9be7e9db57dd6884961aa08a46",
+      "maintainerDisposition": "include upstream license, pinned nested third-party notices and applicable patent/disclosure files; make no blanket patent-clearance claim",
+      "evidence": "V129 exact V122 maintainer disposition; V218 source-binds 60 notice files for its recorded source scope; V248 joins exact b960 image identity.",
+      "open": "final candidate archive notice binding/applicability, complete source/build/relink materials, and no blanket conclusion on codecs or third-party patent claims."
+    }
+  },
+  "globalDecision": "The maintainer distribution choice for all four pinned V122 inputs is settled: retain the exact upstream mixed terms. This does not grant rights or constitute legal/patent clearance. Candidate139 V29 UNKNOWN worksheet remains immutable. For b960, source identity is joined but complete final archive notices, source/relink, and recipient signed-load remain open.",
+  "nextAction": "Complete the recipient-facing manager build recipe and integrated Chromium/WebKit input closure in the next source-offer draft using the V129 dispositions and exact b960 source bindings. Do not mutate b960 or the frozen source offer. Keep per-file owner/notice gaps explicit; then run exact source-offer check-only and prepare the next candidate only after the recipe/notice gaps close.",
+  "releaseQualified": false
+}

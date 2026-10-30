@@ -1,0 +1,37 @@
+--- a/extensions/browser/webstore_installer.cc
++++ b/extensions/browser/webstore_installer.cc
+@@ -98,34 +98,7 @@
+ 
+ constexpr base::TimeDelta kTimeRemainingThreshold = base::Seconds(1);
+ 
+-// Folder for downloading crx files from the webstore. This is used so that the
+-// crx files don't go via the usual downloads folder.
+-const base::FilePath::CharType kWebstoreDownloadFolder[] =
+-    FILE_PATH_LITERAL("Webstore Downloads");
+-
+ base::FilePath* g_download_directory_for_tests = nullptr;
+-
+-base::FilePath GetDownloadFilePath(const base::FilePath& download_directory,
+-                                   const ExtensionId& id) {
+-  // Ensure the download directory exists. TODO(asargent) - make this use
+-  // common code from the downloads system.
+-  if (!base::DirectoryExists(download_directory) &&
+-      !base::CreateDirectory(download_directory)) {
+-    return base::FilePath();
+-  }
+-
+-  // This is to help avoid a race condition between when we generate this
+-  // filename and when the download starts writing to it (think concurrently
+-  // running sharded browser tests installing the same test file, for
+-  // instance).
+-  std::string random_number = base::NumberToString(
+-      base::RandGenerator(std::numeric_limits<uint16_t>::max()));
+-
+-  base::FilePath file =
+-      download_directory.AppendASCII(id + "_" + random_number + ".crx");
+-
+-  return base::GetUniquePath(file);
+-}
+ 
+ }  // namespace
+ 

@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-18",
+  "status": "PARTIAL: actual main-crash data/custody observed;whole scenario refused for one unclassified pre-page HTTP event",
+  "version": "0.8.23",
+  "build": 135,
+  "nativeSourceHEAD": "3dff2dbb93ee919f52b4dcb2744607210502a640",
+  "managerSHA256": "b8092ce4db11c0053bdac9b72384464733056a8b0c90d4b5c77e63d588750c21",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "executableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+    "frameworkSHA256": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7"
+  },
+  "environment": {
+    "OS": "macOS27.0",
+    "architecture": "arm64",
+    "headed": true,
+    "ownDirectProfile": true,
+    "mockKeychain": true,
+    "realUserProfilesUsed": false
+  },
+  "observed": {
+    "baselinePreserved": true,
+    "acknowledgedStrictIDBPreserved": true,
+    "abortedRequestNotCommitted": true,
+    "readWithoutRepair": true,
+    "intentionalMainSignals": 1,
+    "cleanupSignals": 0,
+    "normalMainExits": 2,
+    "freshPresence": {
+      "cookie": false,
+      "indexedDB": true,
+      "cacheStorage": true,
+      "localStorage": true
+    },
+    "sessionRestored": false
+  },
+  "custody": {
+    "threeFreshSessions": true,
+    "sameMetadataIdentity": true,
+    "actualExitSequence": [
+      {
+        "reason": 1,
+        "status": 0
+      },
+      {
+        "reason": 2,
+        "status": 9
+      },
+      {
+        "reason": 1,
+        "status": 0
+      }
+    ],
+    "capturedProcessesAtCrash": 7,
+    "capturedGenerationsGoneBeforeRelaunch": true,
+    "oldLeaseRetiredBeforeRelaunch": true,
+    "dataOpenFilesBeforeRelaunch": 0,
+    "managerExitCode": 0,
+    "serverThreadsDrained": true,
+    "ownedProcessesRemaining": 0,
+    "temporaryAuthorityRetired": true
+  },
+  "nativeUI": {
+    "restorePromptObserved": true,
+    "restoreActionInvoked": false,
+    "nativeStopQuitUsed": true,
+    "normalResourceAdmission": true,
+    "warningExceptionUsed": false
+  },
+  "unknown": {
+    "unclassifiedHTTPRefusals": 1,
+    "occurredBeforeFirstBaselinePage": true,
+    "causeProven": false,
+    "fullAnalyzerRefusal": "crash-page-protocol",
+    "originalRefusalRetained": true,
+    "rawReceiptsChanged": false
+  },
+  "analysis": {
+    "mode": "components-only;explicit non-qualification",
+    "fullDefaultGateStillRefuses": true,
+    "actualMutationsRejected": 27,
+    "affectedModelTests": 3,
+    "nativeReplay": false,
+    "analyzerSHA256": "8cf3bb89386cdfb84baf6c3f90f0788de5a861abe8f1ec21d2fd33137bf672f2"
+  },
+  "retirement": {
+    "authorityRetired": true,
+    "priorRefusalsRetained": 4,
+    "sourceRuntimeExecutableLinkCount": 2,
+    "externalLinkOriginProven": false,
+    "validatedInspectionCopyUsed": true,
+    "originalBundleBytesMatchManifest": true,
+    "guardWeakened": false,
+    "newCertificateOrEntitlement": false
+  },
+  "fullScenarioQualified": false,
+  "httpProtocolQualified": false,
+  "powerLossQualified": false,
+  "relayCrashQualified": false,
+  "WebKitQualified": false,
+  "backupRestoreQualified": false,
+  "tabRestorationQualified": false,
+  "releaseGate": false,
+  "newAppRelease": false,
+  "limits": [
+    "One own Direct profile on one Mac;not all OS or hardware conditions.",
+    "Newest synthetic cookie was visible before SIGKILL and absent afterward;old settled cookie and acknowledged strict-IDB survived. document.cookie is not a disk-flush acknowledgement.",
+    "One pre-page HTTP refusal lacks stage/cause;do not classify it retrospectively or mark the full scenario PASS.",
+    "Main SIGKILL is not simultaneous loss of every storage service or power failure.",
+    "Restore-pages prompt observed;its action and restored tabs were not exercised."
+  ]
+}

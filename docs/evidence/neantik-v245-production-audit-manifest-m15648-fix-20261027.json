@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "status": "PRODUCTION_AUDIT_MANIFEST_M15648_BUG_REPRODUCED_AND_FOCUSED_FIX_PASS",
+  "candidate": "66f4338eb3374569817d1964d57cfedb",
+  "inventorySHA256": "c4081c051286df3bdbbcd8de3f907298234e2ee0af99a78ae703211bd728787b",
+  "candidateManifestSHA256": "b1b5814404a1df5b2460fa949ab017299f54aa37fdd9c3c3ff47f2b3063379d1",
+  "fingerprintEnrollment": "PASS using exact signed candidate",
+  "fixture": "authenticated update-audit harness with disposable manager-data and two synthetic profiles; local servers drained",
+  "managerExitCode": 65,
+  "nativeProfileStarted": false,
+  "failure": "Swift candidate metadata validator omitted exact chromium-15648-source-contract.json emitted by manifest producer",
+  "redTest": "the exact 15648 allowed-path regression failed with invalidManifest",
+  "fix": "add exact path to strict allowlist; additional extra-suffix path stays rejected",
+  "focusedTests": "20 passed, zero skipped",
+  "fullRegression": "running",
+  "limits": [
+    "old signed candidate is unchanged and remains unable to pass audit",
+    "new candidate must be rebuilt from the fixed source and qualified",
+    "no production profile or proxy route was exercised"
+  ],
+  "releaseQualified": false
+}

@@ -6,17 +6,6 @@ enum ProxyPasswordUpdate: Equatable {
   case replace(String)
   case delete
 
-  func requiresCredentialMutation(originalHadUsername: Bool) -> Bool {
-    switch self {
-    case .keepExisting:
-      false
-    case .replace:
-      true
-    case .delete:
-      originalHadUsername
-    }
-  }
-
   static func resolve(
     currentHasUsername: Bool,
     originalHadUsername: Bool,
@@ -90,85 +79,101 @@ struct ProfileEditorProxyContextPresentation: Equatable, Sendable {
     let isFresh = evidence.isFresh(relativeTo: now)
     return Self(
       title: isFresh
-        ? "Данные прокси актуальны"
-        : "Данные прокси устарели",
+        ? "Контекст прокси свежий"
+        : "Контекст прокси устарел",
       detail:
         "Источник: \(evidence.source) · проверено " +
         "\(evidence.observedAt.neAntikDisplayDateTime). " +
-        "Перед запуском NeAntik проверит прокси заново.",
-      systemImage: isFresh ? "checkmark.circle" : "clock",
-      requiresAttention: false
+        (isFresh
+          ? "Перед каждым запуском профиля NeAntik проверит " +
+            "прокси заново."
+          : "Перед следующим запуском профиля NeAntik проверит " +
+            "прокси заново."),
+      systemImage: isFresh
+        ? "checkmark.circle.fill"
+        : "exclamationmark.triangle.fill",
+      requiresAttention: !isFresh
     )
   }
 }
 
-enum ProfileEditorAdvancedPresentation {
-  static let summary = "Стартовая страница, папка, теги и оформление"
-
-  static func summary(
-    folderTitle: String,
-    tagCount: Int,
-    startURL: String
-  ) -> String {
-    var parts = [folderTitle]
-    if tagCount > 0 {
-      let remainder = tagCount % 100
-      let lastDigit = tagCount % 10
-      let noun: String
-      if (11...14).contains(remainder) {
-        noun = "тегов"
-      } else if lastDigit == 1 {
-        noun = "тег"
-      } else if (2...4).contains(lastDigit) {
-        noun = "тега"
-      } else {
-        noun = "тегов"
-      }
-      parts.append("\(tagCount) \(noun)")
+enum ProfileProxyTestPresentation {
+  static func successMessage(location: String, hasCompleteRouteContext: Bool = true) -> String {
+    guard hasCompleteRouteContext else {
+      return "Прокси отвечает, но часовой пояс и язык не определены. Повтори проверку перед запуском."
     }
-    let page = startURL.trimmingCharacters(in: .whitespacesAndNewlines)
-    if !page.isEmpty {
-      parts.append(page == "about:blank" ? "Пустая страница" : "URL настроен")
-    }
-    return parts.joined(separator: " · ")
+    let cleanLocation = location.trimmingCharacters(
+      in: .whitespacesAndNewlines
+    )
+    return cleanLocation.isEmpty
+      ? "Проверка через прокси прошла"
+      : "Проверка через прокси прошла · " + cleanLocation
   }
 }
 
-enum ProfileEditorInitialPresentation {
-  static func showsAdvancedOptions(initialFocus: ProfileEditorField?, requested: Bool) -> Bool {
-    requested || [.tags, .startURL].contains(initialFocus)
-  }
+private enum ProxyEntryMode: String, CaseIterable {
+  case paste = "Вставить строку"
+  case manual = "Поля"
+}
+
+/// Value comparison prevents both lost paste drafts and stale dirty flags
+/// after reverting an edit. Secrets remain transient and are never logged.
+struct ProfileEditorDraft: Equatable {
+  let values: [String]
+  let tags: [String]
+  let folderID: UUID?
 }
 
 struct ProfileEditorView: View {
   let original: BrowserProfile?
   let keychain: KeychainStore
+  let paths: AppPaths
   let folders: [ProfileFolder]
   let suggestedTags: [String]
-  let proxyReuseInputs: [ProxyReuseInput]
   let onSave: (
     BrowserProfile,
     ProxyPasswordUpdate,
     UUID?
   ) throws -> Void
-  private let canCreateAndOpen: Bool
-  private let onCreateAndOpen: ((BrowserProfile, ProxyPasswordUpdate, UUID?) throws -> Void)?
+  private let onClose: (() -> Void)?
   private let originalProxyPassword: String?
   private let proxyPasswordReadFailed: Bool
-  @State private var editorSession: ProfileEditorSession
-  private var draftProfileID: UUID { editorSession.profileID }
+  @State private var draftProfileID: UUID
   private let initialFocus: ProfileEditorField?
-  private let appliesOnNextLaunch: Bool
+  private let supportsSystemFontPolicy: Bool
+  // SwiftUI rebuilds this view value while retaining its edited state. Keep
+  // the original snapshot and ID in the same storage lifetime as those fields.
+  @State private var initialDraft: ProfileEditorDraft
 
   @Environment(\.dismiss) private var dismiss
-  @State private var editorDraft: ProfileEditorDraft
-  @State private var pendingTagInput = ""
+  @State private var showingCustomProxyDiagnostic = false
+  @State private var name: String
+  @State private var quickStartTemplate: ProfileQuickStartTemplate = .blank
+  @State private var generatedTemplateName: String?
+  @State private var generatedTemplateTag: String?
+  @State private var colorHex: String
+  @State private var symbolName: String
+  @State private var tags: [String]
+  @State private var note: String
   @State private var showsNoteEditor: Bool
-  @State private var proxyPasswordRevealLease = SensitiveRevealLeaseState()
-  @State private var proxyPasswordRevealTask: Task<Void, Never>?
+  @State private var selectedFolderID: UUID?
+  @State private var startURL: String
+  @State private var engine: BrowserEngine
+  @State private var fontPolicy: BrowserFontPolicy
+  @State private var webKitMediaPolicy: WebKitMediaPolicy
+  @State private var webKitBlockPeerConnections: Bool
+  @State private var startupMode: BrowserStartupMode
+  @State private var usesProxy: Bool
+  @State private var proxyKind: ProxyKind
+  @State private var proxyHost: String
+  @State private var proxyPort: String
+  @State private var proxyUsername: String
+  @State private var proxyPassword: String
   @State private var proxyImportText = ""
+  @State private var proxyEntryMode: ProxyEntryMode
   @State private var proxyImportOrder: ProxyImportOrder = .automatic
-  @State private var proxyImportNotice: UserNotice?
+  @State private var proxyImportMessage: String?
+  @State private var proxyImportFailed = false
   @State private var isApplyingProxyImport = false
   @State private var detectedProxy: ProxyConfiguration?
   @State private var detectedTimezone: String?
@@ -177,14 +182,20 @@ struct ProfileEditorView: View {
   @State private var detectedProxyContextEvidence: ProxyContextEvidence?
   @State private var errorMessage: String?
   @State private var validationIssue: ProfileEditorValidationIssue?
-  @State private var validationNavigationRequest = 0
-  @State private var testNotice: UserNotice?
+  @State private var testMessage: String?
+  @State private var proxyTestSucceeded = false
   @State private var isTesting = false
-  @State private var refreshedProxyEvidence = false
-  @State private var invalidatedProxyEvidence = false
   @State private var proxyTestTask: Task<Void, Never>?
+  @State private var protocolDetectionTask: Task<Void, Never>?
+  @State private var protocolDiscovery = ProxyProtocolDiscovery()
+  @State private var protocolDetectionError: String?
+  private var isDetectingProtocol: Bool { protocolDetectionTask != nil }
   @State private var showsAdvancedOptions = false
-  @State private var showsProxyDetails = false
+  private var hasUnsavedChanges: Bool {
+    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue, engine.rawValue, webKitMediaPolicy.rawValue, String(webKitBlockPeerConnections), fontPolicy.rawValue,
+      String(usesProxy), proxyKind.rawValue, proxyHost, proxyPort, proxyUsername,
+      proxyPassword, proxyImportText], tags: tags, folderID: selectedFolderID)
+  }
   @State private var showingDiscardConfirmation = false
   @State private var showingFolderPicker = false
   @FocusState private var focusedField: ProfileEditorField?
@@ -192,17 +203,16 @@ struct ProfileEditorView: View {
 
   init(
     original: BrowserProfile?,
+    creationTemplate: UserProfileTemplate? = nil,
     keychain: KeychainStore,
     folders: [ProfileFolder],
     initialFolderID: UUID?,
     suggestedTags: [String],
-    proxyReuseInputs: [ProxyReuseInput] = [],
-    appliesOnNextLaunch: Bool = false,
+    paths: AppPaths = AppPaths(),
     showsAdvancedOptionsInitially: Bool = false,
     initialFocus: ProfileEditorField? = nil,
-    initialName: String = "",
-    canCreateAndOpen: Bool = false,
-    onCreateAndOpen: ((BrowserProfile, ProxyPasswordUpdate, UUID?) throws -> Void)? = nil,
+    supportsSystemFontPolicy: Bool = false,
+    onClose: (() -> Void)? = nil,
     onSave: @escaping (
       BrowserProfile,
       ProxyPasswordUpdate,
@@ -211,41 +221,79 @@ struct ProfileEditorView: View {
   ) {
     self.original = original
     self.keychain = keychain
+    self.paths = paths
     self.folders = folders.sorted(by: ProfileFolder.areInIncreasingOrder)
     self.suggestedTags = suggestedTags
-    self.proxyReuseInputs = proxyReuseInputs
-    self.appliesOnNextLaunch = appliesOnNextLaunch
     self.onSave = onSave
-    self.canCreateAndOpen = canCreateAndOpen
-    self.onCreateAndOpen = onCreateAndOpen
+    self.onClose = onClose
     self.initialFocus = initialFocus
+    self.supportsSystemFontPolicy = supportsSystemFontPolicy
     _showsAdvancedOptions = State(
-      initialValue: ProfileEditorInitialPresentation.showsAdvancedOptions(initialFocus: initialFocus, requested: showsAdvancedOptionsInitially)
+      initialValue: showsAdvancedOptionsInitially
     )
 
-    let profile = original ?? BrowserProfile(name: initialName)
-    _showsNoteEditor = State(
-      initialValue: initialFocus == .note
+    var profile = original ?? creationTemplate?.makeProfile() ?? BrowserProfile(name: "")
+    #if NEANTIK_CHROMIUM_ONLY
+    // A retained WebKit template may still be useful as a source of ordinary
+    // profile metadata, but this build creates Chromium profiles only.
+    if original == nil, profile.engine == .webkit {
+      profile.engine = .chromium
+      profile.webKitRuntimeGeneration = .system
+      profile.webKitMediaPolicy = .ask
+      profile.webKitBlockPeerConnections = false
+    }
+    #endif
+    _draftProfileID = State(initialValue: profile.id)
+    _name = State(initialValue: profile.name)
+    _colorHex = State(initialValue: profile.colorHex)
+    _symbolName = State(initialValue: profile.displaySymbolName)
+    _tags = State(initialValue: profile.tags)
+    _note = State(initialValue: profile.note)
+    _showsNoteEditor = State(initialValue: initialFocus == .note)
+    _selectedFolderID = State(
+      initialValue: folders.contains { $0.id == initialFolderID }
+        ? initialFolderID
+        : nil
     )
+    _startURL = State(initialValue: profile.startURL)
+    _engine = State(initialValue: profile.engine)
+    _fontPolicy = State(initialValue: profile.fontPolicy)
+    _webKitMediaPolicy = State(initialValue: profile.webKitMediaPolicy)
+    _webKitBlockPeerConnections = State(initialValue: profile.webKitBlockPeerConnections)
+    _startupMode = State(initialValue: profile.startupMode)
+    _usesProxy = State(initialValue: profile.proxy != nil)
+    _proxyKind = State(initialValue: profile.proxy?.kind ?? .http)
+    _proxyHost = State(initialValue: profile.proxy?.host ?? "")
+    _proxyEntryMode = State(initialValue: profile.proxy == nil ? .paste : .manual)
+    _proxyPort = State(initialValue: profile.proxy.map { String($0.port) } ?? "")
+    _proxyUsername = State(initialValue: profile.proxy?.username ?? "")
     if original == nil {
       originalProxyPassword = nil
       proxyPasswordReadFailed = false
+      _proxyPassword = State(initialValue: "")
     } else {
       do {
-        let password = try keychain.proxyPassword(
-          profileID: profile.id
-        )
+        let password = try keychain.configuredProxyPassword(for: profile)
         originalProxyPassword = password
         proxyPasswordReadFailed = false
+        _proxyPassword = State(
+          initialValue: password ?? ""
+        )
       } catch {
         originalProxyPassword = nil
         proxyPasswordReadFailed = true
+        _proxyPassword = State(initialValue: "")
         _errorMessage = State(
           initialValue:
             "Не удалось прочитать пароль прокси: \(error.localizedDescription)"
         )
       }
     }
+    _initialDraft = State(initialValue: ProfileEditorDraft(values: [profile.name, profile.colorHex, profile.displaySymbolName,
+      profile.note, profile.startURL, profile.startupMode.rawValue, profile.engine.rawValue, profile.webKitMediaPolicy.rawValue, String(profile.webKitBlockPeerConnections), profile.fontPolicy.rawValue, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
+      profile.proxy?.host ?? "", profile.proxy.map { String($0.port) } ?? "",
+      profile.proxy?.username ?? "", originalProxyPassword ?? "", ""], tags: profile.tags,
+      folderID: folders.contains { $0.id == initialFolderID } ? initialFolderID : nil))
     _detectedProxy = State(
       initialValue: profile.identity.timezoneIdentifier == nil
         ? nil
@@ -261,21 +309,6 @@ struct ProfileEditorView: View {
     _detectedProxyContextEvidence = State(
       initialValue: profile.identity.proxyContextEvidence
     )
-    let initialDraft = ProfileEditorDraft(
-      name: profile.name, colorHex: profile.colorHex,
-      symbolName: profile.displaySymbolName, tags: profile.tags,
-      note: profile.note,
-      folderID: folders.contains { $0.id == initialFolderID }
-        ? initialFolderID : nil,
-      startURL: profile.startURL, usesProxy: profile.proxy != nil,
-      proxyKind: profile.proxy?.kind ?? .http,
-      proxyHost: profile.proxy?.host ?? "",
-      proxyPort: profile.proxy.map { String($0.port) } ?? "",
-      proxyUsername: profile.proxy?.username ?? "",
-      proxyPassword: originalProxyPassword ?? ""
-    )
-    _editorSession = State(initialValue: ProfileEditorSession(profileID: profile.id, initialDraft: initialDraft))
-    _editorDraft = State(initialValue: initialDraft)
   }
 
   init(
@@ -290,7 +323,6 @@ struct ProfileEditorView: View {
       folders: [],
       initialFolderID: nil,
       suggestedTags: original?.tags ?? [],
-      appliesOnNextLaunch: false,
       showsAdvancedOptionsInitially: showsAdvancedOptionsInitially
     ) { profile, passwordUpdate, _ in
       try onSave(profile, passwordUpdate)
@@ -299,241 +331,318 @@ struct ProfileEditorView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      let heading = ProfileEditorHeadingPresentation.resolve(
-        original: original,
-        currentName: editorDraft.name
-      )
       HStack {
-        VStack(alignment: .leading, spacing: 2) {
-          Text(heading.title)
-            .font(.headline)
-            .accessibilityHeading(.h1)
-          if let subtitle = heading.subtitle {
-            Text(subtitle)
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .lineLimit(1)
-          }
-        }
+        Text(original == nil ? "Создать профиль" : "Настройки профиля")
+          .font(.title3.weight(.semibold))
+          .accessibilityHeading(.h1)
         Spacer()
+        HelpLink(topic: .profiles)
       }
       .padding(.horizontal, 20)
-      .padding(.vertical, 12)
+      .padding(.top, 16)
+      .padding(.bottom, 8)
 
-      Divider()
+      if let errorMessage {
+        Label(errorMessage, systemImage: "exclamationmark.circle.fill")
+          .font(.callout)
+          .foregroundStyle(.red)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 20)
+          .padding(.bottom, 8)
+      }
 
       ScrollViewReader { scrollProxy in
         Form {
-        if appliesOnNextLaunch {
-          Section {
-            Label(
-              "Профиль запущен. Название, заметка, теги и папка сохранятся сразу; параметры Chromium и прокси применятся при следующем запуске.",
-              systemImage: "clock.arrow.circlepath"
-            )
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .accessibilityElement(children: .combine)
+        if original == nil {
+          Section("Быстрый старт") {
+            Picker("Шаблон", selection: $quickStartTemplate) {
+              ForEach(ProfileQuickStartTemplate.allCases) { template in
+                Text(template.title).tag(template)
+              }
+            }
+            .accessibilityLabel("Шаблон нового профиля")
+            .onChange(of: quickStartTemplate) { previous, template in
+              let replacingGeneratedName = generatedTemplateName == name
+              let templateNameWasAlreadyPresent =
+                template.suggestedName == name
+              let templateTagWasAlreadyPresent = template.suggestedTag.map {
+                suggestedTag in tags.contains(where: {
+                  $0.localizedCaseInsensitiveCompare(suggestedTag) == .orderedSame
+                })
+              } ?? true
+              let replacingGeneratedTag = previous.suggestedTag.map { tag in
+                generatedTemplateTag == tag && tags.contains(where: {
+                  $0.localizedCaseInsensitiveCompare(tag) == .orderedSame
+                })
+              } ?? false
+              let draft = template.draft(
+                name: name,
+                tags: tags,
+                replacing: previous,
+                replacingGeneratedName: replacingGeneratedName,
+                replacingGeneratedTag: replacingGeneratedTag
+              )
+              let changed = draft.name != name || draft.tags != tags
+              generatedTemplateName =
+                changed && !templateNameWasAlreadyPresent &&
+                    draft.name == template.suggestedName
+                  ? template.suggestedName
+                  : nil
+              generatedTemplateTag =
+                changed && !templateTagWasAlreadyPresent &&
+                    template.suggestedTag.map({ tag in
+                  draft.tags.contains(where: {
+                    $0.localizedCaseInsensitiveCompare(tag) == .orderedSame
+                  })
+                }) == true
+                  ? template.suggestedTag
+                  : nil
+              name = draft.name
+              tags = draft.tags
+            }
+            Text("Заполняются только название и тег. Остальные параметры можно изменить перед сохранением.")
+              .font(.caption)
+              .foregroundStyle(.secondary)
           }
         }
-        Section("Рабочее место") {
-          TextField("Название", text: $editorDraft.name)
-            .accessibilityLabel("Название рабочего места")
+        Section("Профиль") {
+          Picker("Движок браузера", selection: $engine) {
+            ForEach(BrowserEngine.allCases) { Text($0.title).tag($0) }
+          }
+          .pickerStyle(.segmented)
+          .disabled(original != nil)
+          .onChange(of: engine) { _, value in
+            if value == .webkit { fontPolicy = .native }
+          }
+          Text(engine.settingsSummary + (engine == .webkit && !WebKitMediaFeature.isEnabled ? " Камера и микрофон пока отключены." : ""))
+            .font(.callout).foregroundStyle(.secondary)
+          if original != nil { Text("Чтобы выбрать другой движок, создай новый профиль.").font(.callout).foregroundStyle(.secondary) }
+
+          TextField("Название", text: $name)
+            .accessibilityLabel("Название профиля")
             .focused($focusedField, equals: .name)
             .id(ProfileEditorField.name)
             .onSubmit {
               focusedField = nil
             }
-            .onChange(of: editorDraft.name) { _, _ in
+            .onChange(of: name) { _, value in
+              if value != generatedTemplateName {
+                generatedTemplateName = nil
+              }
               clearValidation(for: .name)
+              if value.count > BrowserProfile.maximumNameLength {
+                name = String(
+                  value.prefix(
+                    BrowserProfile.maximumNameLength
+                  )
+                )
+              }
             }
-          if editorDraft.name.count >= BrowserProfile.maximumNameLength - 20 {
-            Text("\(editorDraft.name.count) из \(BrowserProfile.maximumNameLength) символов")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-          }
+          Text(
+            "\(name.count) из \(BrowserProfile.maximumNameLength) символов"
+          )
+          .font(.caption)
+          .foregroundStyle(.secondary)
           validationLabel(for: .name)
-
-          noteEditor
         }
 
-        Section("Сеть") {
-          Toggle("Использовать прокси", isOn: $editorDraft.usesProxy)
-          if !editorDraft.usesProxy && !proxyImportText.isEmpty {
-            ProfilePendingProxyImportRecovery(text: $proxyImportText, usesProxy: $editorDraft.usesProxy, focus: $focusedField)
-              .id(ProfileEditorField.proxyImport)
+        if engine == .webkit {
+          Section("WebRTC") {
+            Toggle("Ограничить WebRTC peer-соединения (экспериментально)", isOn: $webKitBlockPeerConnections)
+            Text("Ограничивает peer-соединения WebRTC. Сайты для звонков могут работать не полностью. Если движок не поддерживает настройку, профиль не запустится. Это не гарантирует анонимность.")
+              .font(.callout).foregroundStyle(.secondary)
           }
-          if editorDraft.usesProxy {
-            SecureField(
-              "Вставить прокси одной строкой",
-              text: $proxyImportText
-            )
-            .accessibilityLabel("Строка прокси для импорта")
-            .focused($focusedField, equals: .proxyImport)
-            .id(ProfileEditorField.proxyImport)
-            Text("Например: login:password@ip:port или ip:port@login:password")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-
-            if let preview = proxyImportPreview {
-              Label(
-                "Будет импортировано: \(preview.redactedSummary)",
-                systemImage: "checkmark.circle"
-              )
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .accessibilityElement(children: .combine)
+        }
+        if engine == .webkit && WebKitMediaFeature.isEnabled {
+          Section("Камера и микрофон") {
+            Picker("Доступ сайтов", selection: $webKitMediaPolicy) {
+              ForEach(WebKitMediaPolicy.allCases) { Text($0.title).tag($0) }
             }
-
-            importProxyButton
-            if let proxyImportNotice {
-              UserNoticeLabel(notice: proxyImportNotice)
+            Text("«Спрашивать» оставляет запрос доступа WebKit и macOS. «Запретить» отклоняет запросы всех сайтов этого профиля. Измени настройку после остановки профиля. Это не отключает сетевые соединения WebRTC.")
+              .font(.callout).foregroundStyle(.secondary)
+          }
+        }
+        if engine == .chromium {
+        Section("Шрифты") {
+          Toggle("Только системные шрифты Mac", isOn: Binding(
+            get: { fontPolicy == .systemV1 },
+            set: { fontPolicy = $0 ? .systemV1 : .native }
+          ))
+          .disabled(!supportsSystemFontPolicy && fontPolicy == .native)
+          Text("Сайты видят системные шрифты macOS, но не установленные вами. Шрифты, загружаемые самим сайтом, работают. Cookies и данные сайтов сохраняются.")
+            .font(.callout).foregroundStyle(.secondary)
+          if !supportsSystemFontPolicy {
+            Text(fontPolicy == .systemV1
+              ? "Настройка сохранена, но этому движку не хватает проверенной поддержки. Обнови приложение или выключи настройку перед запуском."
+              : "Для включения нужен встроенный Chromium с проверенной поддержкой этой настройки.")
+              .font(.callout).foregroundStyle(.secondary)
+          }
+        }
+        }
+        Section("Сеть") {
+          HelpLink(topic: .proxy)
+          if engine == .webkit {
+            Text(WebKitProxyFeature.launchEnabled
+              ? "С прокси новый профиль использует изолированный WebKit и своё хранилище сайтов. Без прокси — системный WebKit. Для смены режима у сохранённого профиля создай новый: данные старого сохранятся. Предварительная проверка не подтверждает маршрут окна."
+              : "Настройки прокси сохраняются в профиле, но эта сборка пока не запускает WebKit с прокси. Прямое подключение вместо него не используется.")
+              .font(.callout).foregroundStyle(.secondary)
+          }
+          Toggle("Использовать прокси", isOn: $usesProxy)
+          if usesProxy {
+            Picker("Ввод прокси", selection: $proxyEntryMode) {
+              ForEach(ProxyEntryMode.allCases, id: \.self) { mode in
+                Text(mode.rawValue).tag(mode)
+              }
             }
-
-            if let proxy = try? makeProxy(), proxyImportText.isEmpty {
-              Label("\(proxy.kind.title) · \(proxy.displayEndpoint)", systemImage: "network")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-            Text("Подключение, часовой пояс и язык проверим автоматически при запуске.")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-
-            DisclosureGroup("Параметры подключения", isExpanded: $showsProxyDetails) {
-            Picker("Тип", selection: $editorDraft.proxyKind) {
+            .pickerStyle(.segmented)
+            .help("Вставь одну строку или заполни поля вручную")
+            Picker("Тип", selection: $proxyKind) {
               ForEach(ProxyKind.allCases) { kind in
                 Text(kind.title).tag(kind)
               }
             }
-            proxyImportOrderPicker
+            Text(
+              "Выбери протокол и его порт из кабинета провайдера. Порты HTTP и SOCKS5 могут различаться."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+            proxyProtocolControls
+
+            if proxyEntryMode == .paste {
+            SecureField(
+              "login:password@host:port",
+              text: $proxyImportText
+            )
+            .accessibilityLabel("Строка прокси для импорта")
+            Text(
+              "login:password@host:port · без схемы используется выбранный тип"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+            DisclosureGroup("Форматы и выбор протокола") {
+              Text(
+                "Принимаются login:password@host:port, host:port@login:password, host:port и ссылки с http://, https:// или socks5://. Схема в строке задаёт тип. HTTP-прокси подходит для HTTPS-сайтов; HTTPS-прокси означает шифрование соединения до самого прокси."
+              )
+              .font(.caption)
+              .foregroundStyle(.secondary)
+            }
 
             ViewThatFits(in: .horizontal) {
               HStack {
-                TextField("Хост", text: $editorDraft.proxyHost)
+                importProxyButton
+                pasteProxyButton
+              }
+              VStack(alignment: .leading, spacing: 8) {
+                importProxyButton
+                pasteProxyButton
+              }
+            }
+            DisclosureGroup("Другой порядок полей") {
+              proxyImportOrderPicker
+            }
+            } else {
+
+            ViewThatFits(in: .horizontal) {
+              HStack {
+                TextField("Хост", text: $proxyHost)
                   .focused($focusedField, equals: .proxyHost)
                   .id(ProfileEditorField.proxyHost)
-                TextField("Порт", text: $editorDraft.proxyPort)
+                TextField("Порт", text: $proxyPort)
                   .frame(width: 90)
                   .focused($focusedField, equals: .proxyPort)
                   .id(ProfileEditorField.proxyPort)
               }
               VStack(alignment: .leading, spacing: 8) {
-                TextField("Хост", text: $editorDraft.proxyHost)
+                TextField("Хост", text: $proxyHost)
                   .focused($focusedField, equals: .proxyHost)
                   .id(ProfileEditorField.proxyHost)
-                TextField("Порт", text: $editorDraft.proxyPort)
+                TextField("Порт", text: $proxyPort)
                   .focused($focusedField, equals: .proxyPort)
                   .id(ProfileEditorField.proxyPort)
               }
             }
             validationLabel(for: .proxyHost)
             validationLabel(for: .proxyPort)
-            if let warning = draftProxyReuseAssessment.warningText {
-              Label(
-                title: { Text(warning).foregroundStyle(.primary) },
-                icon: {
-                  Image(systemName: "exclamationmark.triangle")
-                    .foregroundStyle(.orange)
-                }
-              )
-                .font(.caption)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityHint("Предупреждение не блокирует сохранение")
+            if proxyKind == .socks5 {
+              Text("DNS сайтов передаётся SOCKS5-прокси. Для авторизации используются логин и пароль из Связки ключей.")
+                .font(.caption).foregroundStyle(.secondary)
             }
-            if editorDraft.proxyKind == .socks5 {
-              Text(
-                "Chromium поддерживает SOCKS5 только без логина и пароля. DNS для сайтов будет идти через прокси."
-              )
-              .font(.caption)
-              .foregroundStyle(.secondary)
-            } else {
-              TextField(
+            TextField(
                 "Логин (необязательно)",
-                text: $editorDraft.proxyUsername
+                text: $proxyUsername
               )
-              .focused($focusedField, equals: .proxyUsername)
-              .id(ProfileEditorField.proxyUsername)
-              .accessibilityLabel("Логин прокси")
-              validationLabel(for: .proxyUsername)
-              HStack(spacing: 8) {
-                Group {
-                  if proxyPasswordRevealLease.isRevealed {
-                    TextField(
-                      "Пароль (хранится в Связке ключей)",
-                      text: $editorDraft.proxyPassword
-                    )
-                  } else {
-                    SecureField(
-                      "Пароль (хранится в Связке ключей)",
-                      text: $editorDraft.proxyPassword
-                    )
-                  }
-                }
-                .focused($focusedField, equals: .proxyPassword)
-                .id(ProfileEditorField.proxyPassword)
-
-                Button {
-                  toggleProxyPasswordReveal()
-                } label: {
-                  Image(
-                    systemName: proxyPasswordRevealLease.isRevealed
-                      ? "eye.slash"
-                      : "eye"
-                  )
-                }
-                .buttonStyle(.borderless)
-                .help(
-                  proxyPasswordRevealLease.isRevealed
-                    ? "Скрыть пароль"
-                    : "Показать пароль"
-                )
-                .accessibilityLabel(
-                  proxyPasswordRevealLease.isRevealed
-                    ? "Скрыть пароль прокси" :
-                    "Показать пароль прокси"
-                )
-              }
+              SecureField(
+                "Пароль (хранится в Связке ключей)",
+                text: $proxyPassword
+              )
+              .focused($focusedField, equals: .proxyPassword)
+              .id(ProfileEditorField.proxyPassword)
               validationLabel(for: .proxyPassword)
             }
 
-            HStack(spacing: 10) {
-              if isTesting {
-                ProgressView()
-                  .controlSize(.small)
-                  .accessibilityHidden(true)
-                Text("Проверяем прокси…")
-                  .foregroundStyle(.secondary)
-                Button("Отменить") {
-                  cancelProxyTest()
-                }
-                .help("Отменить проверку прокси")
-              } else {
-                Button {
-                  testProxy()
-                } label: {
-                  Label("Проверить прокси", systemImage: "network")
-                }
-                .disabled(proxyDraftIssue != nil)
-                if let issue = proxyDraftIssue {
-                  Text(issue.message)
-                    .font(.caption)
+            if let proxyImportMessage {
+              Text(proxyImportMessage)
+                .font(.caption)
+                .foregroundColor(proxyImportFailed ? .red : .secondary)
+                .accessibilityLabel(proxyImportMessage)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+              HStack(spacing: 10) {
+                if isTesting {
+                  ProgressView()
+                    .controlSize(.small)
+                    .accessibilityHidden(true)
+                  Text("Проверяем прокси…")
                     .foregroundStyle(.secondary)
+                  Button("Отменить") {
+                    cancelProxyTest()
+                  }
+                  .help("Отменить проверку прокси")
+                } else {
+                  Button {
+                    testProxy()
+                  } label: {
+                    Label(engine == .webkit ? "Предварительно проверить прокси" : "Проверить прокси", systemImage: "network")
+                  }
+                  .disabled(proxyEntryMode == .paste && proxyImportText.isEmpty)
+                  .disabled(isDetectingProtocol)
+                  .help(engine == .webkit
+                    ? "Проверка через curl; она не доказывает маршрут окна WebKit"
+                    : "Разобрать введённую строку при необходимости и проверить прокси")
+                  Button("Свой адрес диагностики…") {
+                    if proxyEntryMode == .paste, !importProxy(source: proxyImportText) { return }
+                    showingCustomProxyDiagnostic = true
+                  }
+                  .disabled(proxyEntryMode == .paste && proxyImportText.isEmpty)
+                  .disabled(isDetectingProtocol)
+                  .help("Отдельная ручная проверка через твой HTTPS-сервис; не меняет геоконтекст")
                 }
               }
-              if let testNotice {
-                UserNoticeLabel(notice: testNotice)
+              if let testMessage {
+                Text(testMessage)
+                  .font(.caption)
+                  .foregroundStyle(
+                    proxyTestSucceeded ? Color.green : Color.red
+                  )
+                  .accessibilityLabel(testMessage)
               }
             }
 
-            DisclosureGroup("Как работает проверка и авторизация") {
-              Text(
-                "Проверка обращается к ipapi.co через прокси и показывает внешний IP и примерную локацию. Перед каждым запуском NeAntik проверяет прокси заново. Проверка не доказывает маршрут Chromium."
-              )
+            DisclosureGroup("Как работает проверка") {
+              Text(engine == .webkit
+                ? (WebKitProxyFeature.launchEnabled
+                  ? "Эта предварительная проверка использует curl и IP-сервисы. Она не измеряет маршрут окна WebKit; фактический маршрут и отказ без прямого подключения проверяются отдельно."
+                  : "Эта предварительная проверка использует curl и IP-сервисы. Она не измеряет маршрут окна WebKit; в этой сборке запуск WebKit с прокси отключён.")
+                : "Проверка через прокси сверяет ответы двух IP-сервисов по выходному IP, стране и часовому поясу. Если сервис недоступен, используется резервный источник. Проверка повторяется перед запуском; маршрут Chromium проверяется отдельно.")
               .font(.caption)
               .foregroundStyle(.secondary)
-              if !editorDraft.proxyUsername.isEmpty {
-                Text(
-                  "Chromium может запросить логин и пароль при первом запуске. NeAntik не вводит их автоматически; пароль хранится только в Связке ключей."
-                )
+              if !proxyUsername.isEmpty {
+                Text(engine == .webkit
+                  ? "Логин и пароль берутся из Связки ключей для выбранного прокси. Если конфигурация не может быть применена, окно должно завершиться ошибкой без прямого маршрута."
+                  : "HTTP, HTTPS и SOCKS5 используют сохранённые данные автоматически через локальный relay. Для HTTPS-прокси сначала проверяется сертификат сервера; ошибки TLS не приводят к переходу на HTTP или прямое подключение.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
               }
@@ -570,44 +679,214 @@ struct ProfileEditorView: View {
               .accessibilityLabel("\(status.title). \(status.detail)")
             } else if detectedTimezone != nil {
               Label(
-                "Дата проверки прокси неизвестна",
+                "Контекст прокси без даты проверки",
                 systemImage: "exclamationmark.triangle.fill"
               )
               .font(.caption.weight(.semibold))
               .foregroundStyle(.orange)
-              Text(
-                "Перед следующим запуском профиля NeAntik проверит " +
-                "прокси заново. Можно проверить сейчас."
+            }
+          }
+        }
+        if showsAdvancedOptions {
+        Section("Организация и заметки") {
+          folderControl
+
+          ProfileTagEditor(
+            tags: $tags,
+            suggestions: suggestedTags
+          )
+          .id(ProfileEditorField.tags)
+          .onChange(of: tags) { _, value in
+            if let generatedTemplateTag,
+               !value.contains(where: {
+                 $0.localizedCaseInsensitiveCompare(generatedTemplateTag) == .orderedSame
+               })
+            {
+              self.generatedTemplateTag = nil
+            }
+          }
+          validationLabel(for: .tags)
+
+          noteEditor
+        }
+        }
+
+        Section {
+          Button {
+            focusedField = nil
+            if reduceMotion {
+              showsAdvancedOptions.toggle()
+            } else {
+              withAnimation(.easeInOut(duration: 0.18)) {
+                showsAdvancedOptions.toggle()
+              }
+            }
+          } label: {
+            HStack {
+              Image(
+                systemName:
+                  showsAdvancedOptions
+                    ? "chevron.down"
+                    : "chevron.right"
               )
-              .font(.caption)
+              .font(.caption.weight(.semibold))
+              .accessibilityHidden(true)
+              VStack(alignment: .leading, spacing: 2) {
+                Text("Запуск и оформление")
+                  .fontWeight(.semibold)
+                if !showsAdvancedOptions {
+                  Text("Папка, теги, заметка, стартовая страница, значок и цвет")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+              }
+              Spacer()
+            }
+            .frame(
+              maxWidth: .infinity,
+              minHeight: 28,
+              alignment: .leading
+            )
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel("Запуск и оформление профиля")
+          .accessibilityValue(
+            showsAdvancedOptions ? "Развёрнуто" : "Свёрнуто"
+          )
+          .accessibilityHint(
+            showsAdvancedOptions
+              ? "Скрывает дополнительные настройки профиля"
+              : "Показывает дополнительные настройки профиля"
+          )
+
+          if showsAdvancedOptions {
+            Picker("При запуске", selection: $startupMode) {
+              ForEach(BrowserStartupMode.allCases, id: \.self) { mode in
+                Text(mode.title).tag(mode)
+              }
+            }
+            .accessibilityLabel("При запуске профиля")
+            TextField("Стартовая страница", text: $startURL)
+              .accessibilityLabel("Стартовая страница")
+              .focused($focusedField, equals: .startURL)
+              .id(ProfileEditorField.startURL)
+            Text(startupMode == .restoreSession
+              ? (engine == .webkit
+                  ? "Адреса, порядок и выбранная вкладка сохраняются автоматически и при закрытии. После сбоя восстанавливается последний успешно сохранённый список; формы не восстанавливаются. Полные адреса остаются в приватной папке на этом Mac и не попадают в MCP или экспорт настроек. При первом запуске откроется стартовая страница."
+                  : "При первом запуске откроется этот адрес, затем — сохранённые вкладки. Вкладки сохраняются после штатного закрытия браузера.")
+              : "Этот адрес открывается при каждом запуске профиля. Для пустой страницы укажи about:blank.")
+              .font(.callout)
               .foregroundStyle(.secondary)
+            validationLabel(for: .startURL)
+
+            Text("Иконка")
+              .font(.headline)
+            LazyVGrid(
+              columns: [
+                GridItem(
+                  .adaptive(minimum: 42, maximum: 46),
+                  spacing: 10
+                )
+              ],
+              alignment: .leading,
+              spacing: 10
+            ) {
+              ForEach(ProfileAppearance.symbols, id: \.self) { symbol in
+                Button {
+                  symbolName = symbol
+                } label: {
+                  RoundedRectangle(cornerRadius: 10)
+                    .fill(
+                      symbolName == symbol
+                        ? Color.accentColor
+                        : Color.secondary.opacity(0.12)
+                    )
+                    .frame(width: 42, height: 42)
+                    .overlay {
+                      Image(systemName: symbol)
+                        .font(
+                          .system(
+                            size: 18,
+                            weight: .medium
+                          )
+                        )
+                        .foregroundStyle(
+                          symbolName == symbol
+                            ? Color.white
+                            : Color.primary
+                        )
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                  "Иконка \(ProfileAppearance.title(for: symbol))"
+                )
+                .accessibilityValue(
+                  symbolName == symbol
+                    ? "Выбрана"
+                    : "Не выбрана"
+                )
+              }
             }
+
+            Text("Цвет")
+              .font(.headline)
+            LazyVGrid(
+              columns: [
+                GridItem(
+                  .adaptive(minimum: 28, maximum: 32),
+                  spacing: 9
+                )
+              ],
+              alignment: .leading,
+              spacing: 9
+            ) {
+              ForEach(ProfileAppearance.colors, id: \.self) { hex in
+                Button {
+                  colorHex = hex
+                } label: {
+                  Circle()
+                    .fill(Color(hex: hex))
+                    .frame(width: 24, height: 24)
+                    .overlay {
+                      if colorHex == hex {
+                        Image(systemName: "checkmark")
+                          .font(
+                            .system(
+                              size: 9,
+                              weight: .bold
+                            )
+                          )
+                          .foregroundStyle(
+                            ProfileAppearance
+                              .usesDarkForeground(for: hex)
+                              ? Color.black
+                              : Color.white
+                          )
+                      }
+                    }
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                  ProfileAppearance.title(forColor: hex)
+                )
+                .accessibilityValue(
+                  colorHex == hex ? "Выбран" : "Не выбран"
+                )
+              }
             }
-            .disclosureGroupStyle(NeAntikDisclosureStyle())
-          } else {
-            Label(
-              "Прямое подключение",
-              systemImage: "exclamationmark.shield"
-            )
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.primary)
-            Text(
-              "Сайты увидят обычный публичный адрес этого Mac или " +
-                "системного VPN. Для профиля не настроен отдельный прокси."
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
-            .accessibilityElement(children: .combine)
+
           }
         }
 
-        advancedOptionsSection
 
         }
         .formStyle(.grouped)
-        .onChange(of: validationNavigationRequest) { _, _ in
-          guard let field = validationIssue?.field else { return }
+        .onChange(of: validationIssue?.field) { _, field in
+          guard let field else { return }
           if reduceMotion {
             scrollProxy.scrollTo(field, anchor: .center)
           } else {
@@ -617,17 +896,8 @@ struct ProfileEditorView: View {
           }
         }
       }
-      .frame(minHeight: 0, maxHeight: .infinity)
-      .layoutPriority(-1)
 
       Divider()
-
-      ProfileEditorSaveSummary(
-        presentation: savePresentation,
-        errorMessage: errorMessage,
-        issue: currentValidationIssue,
-        onShowIssue: presentValidation
-      )
 
       HStack {
         Spacer()
@@ -636,37 +906,43 @@ struct ProfileEditorView: View {
         }
         .keyboardShortcut(.cancelAction)
 
-        if original == nil, onCreateAndOpen != nil {
-          Button("Только создать") { save() }
-            .disabled(!savePresentation.canSave)
-        }
-        Button(original == nil ? (onCreateAndOpen == nil ? "Создать" : "Создать и открыть") : "Сохранить") {
-          save(andOpen: original == nil && onCreateAndOpen != nil)
+        Button(original == nil ? "Создать" : "Сохранить") {
+          save()
         }
         .buttonStyle(.borderedProminent)
         .keyboardShortcut(.defaultAction)
-        .disabled(!savePresentation.canSave || (original == nil && onCreateAndOpen != nil && !canCreateAndOpen))
       }
       .padding()
-      .fixedSize(horizontal: false, vertical: true)
-      .background(.bar)
     }
-    .frame(
-      minWidth: 460,
-      idealWidth: 540,
-      minHeight: 380,
-      idealHeight: editorDraft.usesProxy ? 620 : 500
-    )
+    .frame(minWidth: 460, maxWidth: .infinity, minHeight: 380, maxHeight: .infinity)
+    .sheet(isPresented: $showingCustomProxyDiagnostic) {
+      if let proxy = try? makeProxy() {
+        let password = proxyPassword
+        ProxyDiagnosticSheet(
+          configuration: proxy,
+          contextRevision: proxyPassword,
+          paths: paths,
+          readPassword: { password },
+          snapshotIsCurrent: { true }
+        )
+      } else {
+        VStack(spacing: 16) {
+          Text("Проверь тип, адрес и порт прокси.")
+          Button("Закрыть") { showingCustomProxyDiagnostic = false }
+            .keyboardShortcut(.cancelAction)
+        }.padding(24)
+      }
+    }
     .sheet(isPresented: $showingFolderPicker) {
       ProfileFolderPickerSheet(
         profileName:
-          editorDraft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+          name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             ? "Новый профиль"
-            : editorDraft.name,
+            : name,
         folders: folders,
-        selectedFolderID: editorDraft.folderID
+        selectedFolderID: selectedFolderID
       ) { folderID in
-        editorDraft.folderID = folderID
+        selectedFolderID = folderID
       }
     }
     .interactiveDismissDisabled(hasUnsavedChanges)
@@ -676,19 +952,16 @@ struct ProfileEditorView: View {
     ) {
       Button("Продолжить редактирование", role: .cancel) {}
       Button("Отменить изменения", role: .destructive) {
-        dismiss()
+        closeEditor()
       }
     } message: {
-      Text("Несохранённые изменения рабочего места будут потеряны.")
+      Text("Несохранённые изменения профиля будут потеряны.")
     }
     .onAppear {
       let target = initialFocus ?? (original == nil ? .name : nil)
       guard let target else { return }
       if target == .note {
         showsNoteEditor = true
-      }
-      if [.proxyHost, .proxyPort, .proxyUsername, .proxyPassword].contains(target) {
-        showsProxyDetails = true
       }
       Task { @MainActor in
         await Task.yield()
@@ -697,64 +970,50 @@ struct ProfileEditorView: View {
     }
     .onDisappear {
       proxyTestTask?.cancel()
-      hideProxyPassword()
+      cancelProtocolDetection()
     }
-    .onReceive(
-      NotificationCenter.default.publisher(
-        for: NSApplication.willResignActiveNotification
-      )
-    ) { _ in
-      hideProxyPassword()
-    }
-    .onChange(of: editorDraft.usesProxy) { _, _ in
-      if !editorDraft.usesProxy {
-        hideProxyPassword()
-      }
+    .onChange(of: usesProxy) { _, _ in
       proxyInputDidChange()
     }
-    .onChange(of: editorDraft.proxyKind) { _, _ in
-      if editorDraft.proxyKind == .socks5 {
-        hideProxyPassword()
-      }
+    .onChange(of: proxyKind) { _, _ in
       proxyInputDidChange()
     }
-    .onChange(of: editorDraft.proxyHost) { _, _ in
+    .onChange(of: proxyHost) { _, _ in
       clearValidation(for: .proxyHost)
       proxyInputDidChange()
     }
-    .onChange(of: editorDraft.proxyPort) { _, _ in
+    .onChange(of: proxyPort) { _, _ in
       clearValidation(for: .proxyPort)
       proxyInputDidChange()
     }
-    .onChange(of: editorDraft.proxyUsername) { _, _ in
-      clearValidation(for: .proxyUsername)
+    .onChange(of: engine) { _, value in
+      if value == .webkit { cancelProtocolDetection(); proxyTestTask?.cancel(); proxyTestTask = nil; isTesting = false; validationIssue = nil; errorMessage = nil }
+    }
+    .onChange(of: proxyUsername) { _, _ in
       proxyInputDidChange()
     }
-    .onChange(of: editorDraft.proxyPassword) { _, _ in
+    .onChange(of: proxyPassword) { _, _ in
       clearValidation(for: .proxyPassword)
-      refreshProxyPasswordRevealLease()
       proxyInputDidChange()
-    }
-    .onChange(of: draftProxyReuseAssessment.warningText) { _, warning in
-      if let warning {
-        announce(warning)
-      }
     }
     .onChange(of: proxyImportOrder) { _, _ in
-      proxyImportNotice = nil
-      invalidateProxyEvidence()
+      cancelProtocolDetection()
+      proxyImportMessage = nil
+      proxyImportFailed = false
     }
     .onChange(of: proxyImportText) { _, _ in
-      clearValidation(for: .proxyImport)
-      if !isApplyingProxyImport { invalidateProxyEvidence() }
+      cancelProtocolDetection()
     }
-    .onChange(of: editorDraft.tags) { _, _ in
+    .onChange(of: proxyEntryMode) { _, _ in
+      cancelProtocolDetection()
+    }
+    .onChange(of: tags) { _, _ in
       clearValidation(for: .tags)
     }
-    .onChange(of: editorDraft.note) { _, _ in
+    .onChange(of: note) { _, _ in
       clearValidation(for: .note)
     }
-    .onChange(of: editorDraft.startURL) { _, _ in
+    .onChange(of: startURL) { _, _ in
       clearValidation(for: .startURL)
     }
   }
@@ -763,206 +1022,27 @@ struct ProfileEditorView: View {
     if hasUnsavedChanges {
       showingDiscardConfirmation = true
     } else {
+      closeEditor()
+    }
+  }
+
+  private func closeEditor() {
+    if let onClose {
+      onClose()
+    } else {
       dismiss()
     }
   }
 
-  private func toggleProxyPasswordReveal() {
-    if proxyPasswordRevealLease.isRevealed {
-      hideProxyPassword()
-      return
-    }
-    let generation = proxyPasswordRevealLease.reveal()
-    scheduleProxyPasswordAutoHide(generation: generation)
-  }
-
-  private func refreshProxyPasswordRevealLease() {
-    guard let generation = proxyPasswordRevealLease.refreshIfRevealed()
-    else {
-      return
-    }
-    scheduleProxyPasswordAutoHide(generation: generation)
-  }
-
-  private func scheduleProxyPasswordAutoHide(generation: UInt64) {
-    proxyPasswordRevealTask?.cancel()
-    proxyPasswordRevealTask = Task { @MainActor in
-      do {
-        try await Task.sleep(for: SensitiveRevealLeaseState.defaultLifetime)
-      } catch {
-        return
-      }
-      _ = proxyPasswordRevealLease.expire(generation: generation)
-      proxyPasswordRevealTask = nil
-    }
-  }
-
-  private func hideProxyPassword() {
-    proxyPasswordRevealTask?.cancel()
-    proxyPasswordRevealTask = nil
-    proxyPasswordRevealLease.hide()
-  }
-
   private var notePresentation: ProfileNotePresentation {
-    ProfileNotePresentation.resolve(editorDraft.note)
+    ProfileNotePresentation.resolve(note)
   }
 
   private var folderPresentation: ProfileEditorFolderPresentation {
     ProfileEditorFolderPresentation.resolve(
       folders: folders,
-      selectedFolderID: editorDraft.folderID
+      selectedFolderID: selectedFolderID
     )
-  }
-
-  private var advancedOptionsSummary: String {
-    ProfileEditorAdvancedPresentation.summary(
-      folderTitle: folderPresentation.selectedTitle,
-      tagCount: editorDraft.tags.count,
-      startURL: editorDraft.startURL
-    )
-  }
-
-  private var advancedOptionsSection: some View {
-    Section {
-      DisclosureGroup(isExpanded: Binding(
-        get: { showsAdvancedOptions },
-        set: { expanded in
-          focusedField = nil
-          showsAdvancedOptions = expanded
-        }
-      )) {
-        Text("Организация")
-          .font(.headline)
-        folderControl
-        ProfileTagEditor(
-          tags: $editorDraft.tags,
-          input: $pendingTagInput,
-          suggestions: suggestedTags,
-          focusRequest: validationIssue?.field == .tags
-            ? validationNavigationRequest
-            : (initialFocus == .tags ? 1 : 0)
-        )
-        .id(ProfileEditorField.tags)
-        validationLabel(for: .tags)
-
-        Divider()
-
-        VStack(alignment: .leading, spacing: 6) {
-          Text("Стартовая страница")
-            .font(.headline)
-          TextField("Стартовая страница", text: $editorDraft.startURL)
-            .labelsHidden()
-            .accessibilityLabel("Стартовая страница")
-            .focused($focusedField, equals: .startURL)
-          Text("about:blank — пустая страница. Можно указать адрес сайта.")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-        .id(ProfileEditorField.startURL)
-        validationLabel(for: .startURL)
-
-        Divider()
-
-        Text("Иконка")
-          .font(.headline)
-        appearanceIconGrid
-
-        Text("Цвет")
-          .font(.headline)
-        appearanceColorGrid
-      } label: {
-        HStack {
-          Text("Дополнительно").fontWeight(.semibold)
-          Spacer()
-          Text(advancedOptionsSummary)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-        }
-        .accessibilityLabel("Дополнительные настройки профиля")
-      }
-      .disclosureGroupStyle(NeAntikDisclosureStyle())
-    }
-  }
-
-  private var appearanceIconGrid: some View {
-    LazyVGrid(
-      columns: [
-        GridItem(
-          .adaptive(minimum: 42, maximum: 46),
-          spacing: 10
-        )
-      ],
-      alignment: .leading,
-      spacing: 10
-    ) {
-      ForEach(ProfileAppearance.symbols, id: \.self) { symbol in
-        Button {
-          editorDraft.symbolName = symbol
-        } label: {
-          RoundedRectangle(cornerRadius: 10)
-            .fill(
-              editorDraft.symbolName == symbol
-                ? Color.accentColor
-                : Color.secondary.opacity(0.12)
-            )
-            .frame(width: 42, height: 42)
-            .overlay {
-              Image(systemName: symbol)
-                .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(
-                  editorDraft.symbolName == symbol ? Color.white : Color.primary
-                )
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(
-          "Иконка \(ProfileAppearance.title(for: symbol))"
-        )
-        .accessibilityValue(
-          editorDraft.symbolName == symbol ? "Выбрана" : "Не выбрана"
-        )
-      }
-    }
-  }
-
-  private var appearanceColorGrid: some View {
-    LazyVGrid(
-      columns: [
-        GridItem(
-          .adaptive(minimum: 28, maximum: 32),
-          spacing: 9
-        )
-      ],
-      alignment: .leading,
-      spacing: 9
-    ) {
-      ForEach(ProfileAppearance.colors, id: \.self) { hex in
-        Button {
-          editorDraft.colorHex = hex
-        } label: {
-          Circle()
-            .fill(Color(hex: hex))
-            .frame(width: 24, height: 24)
-            .overlay {
-              if editorDraft.colorHex == hex {
-                Image(systemName: "checkmark")
-                  .font(.system(size: 9, weight: .bold))
-                  .foregroundStyle(
-                    ProfileAppearance.usesDarkForeground(for: hex)
-                      ? Color.black
-                      : Color.white
-                  )
-              }
-            }
-            .frame(width: 32, height: 32)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(ProfileAppearance.title(forColor: hex))
-        .accessibilityValue(editorDraft.colorHex == hex ? "Выбран" : "Не выбран")
-      }
-    }
   }
 
   @ViewBuilder
@@ -972,7 +1052,7 @@ struct ProfileEditorView: View {
         Menu {
           ForEach(folderPresentation.quickOptions) { option in
             Button {
-              editorDraft.folderID = option.folderID
+              selectedFolderID = option.folderID
             } label: {
               if option.isSelected {
                 Label(option.title, systemImage: "checkmark")
@@ -1000,7 +1080,7 @@ struct ProfileEditorView: View {
         )
       }
     } else {
-      Picker("Папка", selection: $editorDraft.folderID) {
+      Picker("Папка", selection: $selectedFolderID) {
         ForEach(folderPresentation.quickOptions) { option in
           Text(option.title).tag(option.folderID)
         }
@@ -1012,38 +1092,93 @@ struct ProfileEditorView: View {
 
   @ViewBuilder
   private var noteEditor: some View {
-    DisclosureGroup(isExpanded: Binding(
-      get: { showsNoteEditor },
-      set: { expanded in
-        showsNoteEditor = expanded
-        if expanded {
-          Task { @MainActor in
-            await Task.yield()
-            focusedField = .note
-          }
-        } else if focusedField == .note {
-          focusedField = nil
+    Button {
+      let willExpand = !showsNoteEditor
+      if reduceMotion {
+        showsNoteEditor = willExpand
+      } else {
+        withAnimation(.easeInOut(duration: 0.18)) {
+          showsNoteEditor = willExpand
         }
       }
-    )) {
+      if willExpand {
+        Task { @MainActor in
+          await Task.yield()
+          focusedField = .note
+        }
+      } else if focusedField == .note {
+        focusedField = nil
+      }
+    } label: {
+      HStack(spacing: 8) {
+        Image(
+          systemName: showsNoteEditor ? "chevron.down" : "chevron.right"
+        )
+        .font(.caption.weight(.semibold))
+        Image(systemName: "note.text")
+          .accessibilityHidden(true)
+        Text("Заметка")
+          .fontWeight(.semibold)
+        Spacer()
+        Text(
+          notePresentation.collapsedSummary.isEmpty
+            ? "Не добавлена"
+            : "Добавлена"
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel("Заметка профиля")
+    .accessibilityValue(
+      showsNoteEditor
+        ? "Развёрнуто"
+        : (
+          notePresentation.collapsedSummary.isEmpty
+            ? "Свёрнуто, не добавлена"
+            : "Свёрнуто, добавлена"
+        )
+    )
+    .accessibilityHint(
+      showsNoteEditor
+        ? "Скрывает поле заметки"
+        : "Показывает поле заметки"
+    )
+
+    if !showsNoteEditor,
+      !notePresentation.collapsedSummary.isEmpty
+    {
+      Text(notePresentation.collapsedSummary)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .truncationMode(.tail)
+        .accessibilityLabel("Краткая заметка")
+        .accessibilityValue(notePresentation.collapsedSummary)
+    }
+
+    if showsNoteEditor {
       ZStack(alignment: .topLeading) {
-        TextEditor(text: $editorDraft.note)
+        TextEditor(text: $note)
           .focused($focusedField, equals: .note)
           .id(ProfileEditorField.note)
-          .accessibilityLabel("Необязательная заметка профиля")
+          .accessibilityLabel("Заметка профиля")
           .accessibilityHint(
             "До \(BrowserProfile.maximumNoteLength) символов"
           )
-        if editorDraft.note.isEmpty {
+        if note.isEmpty {
           Text("Короткий контекст для этого профиля")
-            .foregroundStyle(.secondary)
+            .foregroundStyle(.tertiary)
             .padding(.horizontal, 6)
             .padding(.vertical, 8)
             .accessibilityHidden(true)
             .allowsHitTesting(false)
         }
       }
-      .frame(minHeight: 72, idealHeight: 84, maxHeight: 96)
+      .frame(minHeight: 96, idealHeight: 108, maxHeight: 120)
 
       HStack(alignment: .firstTextBaseline) {
         Text(notePresentation.countLabel)
@@ -1062,15 +1197,6 @@ struct ProfileEditorView: View {
           )
           .foregroundStyle(.red)
         }
-        Label(
-          "Без паролей, ключей и seed-фраз",
-          systemImage: "exclamationmark.shield"
-        )
-        .foregroundStyle(.secondary)
-        .accessibilityLabel(
-          "Заметка хранится локально открытым текстом. " +
-            "Не сохраняй здесь пароли, API-ключи или seed-фразы."
-        )
       }
       .font(.caption)
 
@@ -1080,34 +1206,7 @@ struct ProfileEditorView: View {
           .foregroundStyle(.red)
           .accessibilityElement(children: .combine)
       }
-    } label: {
-      HStack {
-        Label("Заметка (необязательно)", systemImage: "note.text")
-          .fontWeight(.semibold)
-        Spacer()
-        Text(notePresentation.collapsedSummary.isEmpty ? "Не добавлена" : "Добавлена")
-          .font(.caption)
-          .foregroundStyle(.secondary)
-      }
-      .accessibilityLabel(
-        notePresentation.collapsedSummary.isEmpty
-          ? "Необязательная заметка профиля, не добавлена"
-          : "Необязательная заметка профиля, добавлена"
-      )
     }
-    .disclosureGroupStyle(NeAntikDisclosureStyle())
-    if !showsNoteEditor,
-      !notePresentation.collapsedSummary.isEmpty
-    {
-      Text(notePresentation.collapsedSummary)
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
-        .truncationMode(.tail)
-        .accessibilityLabel("Краткая заметка")
-        .accessibilityValue(notePresentation.collapsedSummary)
-    }
-
   }
 
   private var proxyImportOrderPicker: some View {
@@ -1120,40 +1219,38 @@ struct ProfileEditorView: View {
     .accessibilityLabel("Расположение адреса прокси")
   }
 
-  private var proxyImportPreview: ProxyImportDraft? {
-    let source = proxyImportText.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !source.isEmpty else { return nil }
-    return try? ProxyImportParser.parse(
-      source,
-      kind: editorDraft.proxyKind,
-      order: proxyImportOrder
-    )
-  }
-
   private var importProxyButton: some View {
     Button {
-      importProxy()
+      importProxy(source: proxyImportText)
     } label: {
-      Label("Вставить прокси", systemImage: "doc.on.clipboard")
+      Label("Заполнить поля из строки", systemImage: "checkmark.circle")
+    }
+    .disabled(isTesting || proxyImportText.isEmpty)
+    .help("Разобрать строку из поля и заполнить настройки")
+  }
+
+  private var pasteProxyButton: some View {
+    Button {
+      importProxy(
+        source: NSPasteboard.general.string(forType: .string) ?? ""
+      )
+    } label: {
+      Label("Заполнить из буфера", systemImage: "doc.on.clipboard")
     }
     .disabled(isTesting)
-    .help(
-      "Взять строку из поля или буфера обмена и заполнить настройки"
-    )
+    .help("Разобрать строку из буфера обмена и заполнить настройки")
   }
 
   private func makeProxy() throws -> ProxyConfiguration? {
-    guard editorDraft.usesProxy else { return nil }
-    guard let port = Int(editorDraft.proxyPort) else {
+    guard usesProxy else { return nil }
+    guard let port = Int(proxyPort) else {
       throw NeAntikError.invalidProxy
     }
     let value = ProxyConfiguration(
-      kind: editorDraft.proxyKind,
-      host: editorDraft.proxyHost.trimmingCharacters(in: .whitespacesAndNewlines),
+      kind: proxyKind,
+      host: proxyHost.trimmingCharacters(in: .whitespacesAndNewlines),
       port: port,
-      username: editorDraft.proxyKind == .socks5
-        ? ""
-        : editorDraft.proxyUsername.trimmingCharacters(
+      username: proxyUsername.trimmingCharacters(
           in: .whitespacesAndNewlines
         )
     )
@@ -1163,32 +1260,30 @@ struct ProfileEditorView: View {
     return value
   }
 
-  private var draftProxyReuseAssessment: ProxyReuseAssessment {
-    let draft = ProxyReuseInput(
-      profileID: draftProfileID,
-      kind: editorDraft.usesProxy ? editorDraft.proxyKind : nil,
-      host: editorDraft.usesProxy ? editorDraft.proxyHost : nil,
-      port: editorDraft.usesProxy ? Int(editorDraft.proxyPort) : nil
-    )
-    return .assess(
-      selectedProfileID: draftProfileID,
-      among: proxyReuseInputs + [draft]
-    )
-  }
-
-  private func save(andOpen: Bool = false) {
-    if let issue = currentValidationIssue {
+  private func save() {
+    if usesProxy && proxyEntryMode == .paste {
+      guard importProxy(source: proxyImportText) else { return }
+    }
+    if let issue = ProfileEditorValidation.firstIssue(
+      name: name,
+      tags: tags,
+      note: note,
+      startURL: startURL,
+      usesProxy: usesProxy,
+      proxyKind: proxyKind,
+      proxyHost: proxyHost,
+      proxyPort: proxyPort,
+      proxyUsername: proxyUsername,
+      proxyPassword: proxyPassword
+    ) {
       presentValidation(issue)
       return
     }
-    guard savePresentation.canSave else { return }
-    guard !andOpen || (original == nil && canCreateAndOpen && onCreateAndOpen != nil) else { return }
     do {
-      try applyPendingProxyImport()
-      let cleanName = editorDraft.name.trimmingCharacters(in: .whitespacesAndNewlines)
+      let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
       guard BrowserProfile.isValidName(cleanName),
         let cleanStartURL =
-          BrowserLaunchBuilder.validatedStartURL(editorDraft.startURL)
+          BrowserLaunchBuilder.validatedStartURL(startURL)
       else {
         throw NeAntikError.invalidProfile
       }
@@ -1197,21 +1292,49 @@ struct ProfileEditorView: View {
         id: draftProfileID,
         name: cleanName
       )
+      #if NEANTIK_CHROMIUM_ONLY
+      guard original != nil || engine.isAvailableInBuild else {
+        throw NeAntikError.invalidProfile
+      }
+      #endif
+      profile.engine = engine
+      profile.fontPolicy = engine == .chromium ? fontPolicy : .native
+      profile.webKitMediaPolicy = engine == .webkit ? webKitMediaPolicy : .ask
+      profile.webKitBlockPeerConnections = engine == .webkit && webKitBlockPeerConnections
       profile.name = cleanName
-      profile.colorHex = editorDraft.colorHex
-      profile.symbolName = editorDraft.symbolName
-      guard let normalizedTags = BrowserProfile.normalizedTags(resolvedTagDraft.tags) else {
+      profile.colorHex = colorHex
+      profile.symbolName = symbolName
+      guard let normalizedTags = BrowserProfile.normalizedTags(tags) else {
         throw ProfileTagsValidationError()
       }
-      guard let normalizedNote = BrowserProfile.normalizedNote(editorDraft.note) else {
+      guard let normalizedNote = BrowserProfile.normalizedNote(note) else {
         throw NeAntikError.invalidProfile
       }
       profile.tags = normalizedTags
       profile.note = normalizedNote
       profile.startURL = cleanStartURL.absoluteString
-      let proxy = try makeProxy()
+      profile.startupMode = startupMode
+      let proxySettings = ProfileEditorProxySettings.resolve(
+        engine: engine,
+        usesProxy: usesProxy,
+        configuration: try makeProxy(),
+        detectedProxy: detectedProxy
+      )
+      let proxy = proxySettings.configuration
       profile.proxy = proxy
-      let locationMatchesProxy = proxy != nil && proxy == detectedProxy
+      let desiredWebKitRuntime = WebKitProfilePolicy.runtimeGenerationForSave(
+        engine: engine,
+        proxy: proxy,
+        previous: profile.webKitRuntimeGeneration,
+        ownedProxyAvailable: WebKitProxyFeature.launchEnabled
+      )
+      if let original, original.webKitRuntimeGeneration != desiredWebKitRuntime {
+        throw WebKitProfileError.unsupported(
+          "Смена режима сети WebKit требует нового профиля: хранилища системного и изолированного WebKit разделены. Старый профиль и его данные сохранены."
+        )
+      }
+      profile.webKitRuntimeGeneration = desiredWebKitRuntime
+      let locationMatchesProxy = proxySettings.appliesProxyContext
       profile.identity = profile.identity.replacingProxyContext(
         timezoneIdentifier: locationMatchesProxy
           ? detectedTimezone
@@ -1227,19 +1350,14 @@ struct ProfileEditorView: View {
         currentHasUsername: proxy?.username.isEmpty == false,
         originalHadUsername:
           original?.proxy?.username.isEmpty == false,
-        enteredPassword: editorDraft.proxyPassword,
+        enteredPassword: proxyPassword,
         originalPassword: originalProxyPassword,
         readFailed: proxyPasswordReadFailed
       )
-      if andOpen, let onCreateAndOpen {
-        try onCreateAndOpen(profile, passwordUpdate, editorDraft.folderID)
-      } else {
-        try onSave(profile, passwordUpdate, editorDraft.folderID)
-      }
-      dismiss()
+      try onSave(profile, passwordUpdate, selectedFolderID)
+      closeEditor()
     } catch {
       errorMessage = error.localizedDescription
-      announce(error.localizedDescription)
     }
   }
 
@@ -1260,27 +1378,21 @@ struct ProfileEditorView: View {
 
   private func presentValidation(_ issue: ProfileEditorValidationIssue) {
     validationIssue = issue
-    validationNavigationRequest &+= 1
     errorMessage = nil
     switch issue.field {
-    case .startURL, .tags:
+    case .startURL, .proxyHost, .proxyPort, .proxyPassword:
       showsAdvancedOptions = true
-    case .proxyHost, .proxyPort, .proxyUsername, .proxyPassword:
-      showsProxyDetails = true
-    case .proxyImport:
-      showsProxyDetails = true
-    case .name, .note:
+    case .name, .tags, .note:
       break
     }
     if issue.field == .note {
       showsNoteEditor = true
     }
-    announce(issue.message)
     Task { @MainActor in
       await Task.yield()
       switch issue.field {
       case .name, .note, .startURL, .proxyHost, .proxyPort,
-        .proxyUsername, .proxyPassword, .proxyImport:
+        .proxyPassword:
         focusedField = issue.field
       case .tags:
         focusedField = nil
@@ -1295,17 +1407,15 @@ struct ProfileEditorView: View {
   }
 
   private func testProxy() {
-    if let issue = proxyDraftIssue {
-      presentValidation(issue)
-      return
+    cancelProtocolDetection()
+    if proxyEntryMode == .paste {
+      guard importProxy(source: proxyImportText) else { return }
     }
     do {
-      guard let input = try editorDraft.proxyTestInput(
-        pendingProxyText: proxyImportText, order: proxyImportOrder
-      ) else { return }
+      guard let proxy = try makeProxy() else { return }
       startProxyTest(
-        configuration: input.configuration,
-        password: input.password
+        configuration: proxy,
+        password: proxyPassword
       )
     } catch {
       errorMessage = error.localizedDescription
@@ -1316,36 +1426,30 @@ struct ProfileEditorView: View {
     proxyTestTask?.cancel()
     proxyTestTask = nil
     isTesting = false
-    testNotice = UserNotice(
-      "Проверка отменена",
-      level: .information
-    )
-    announce("Проверка прокси отменена.")
+    proxyTestSucceeded = false
+    testMessage = "Проверка отменена"
   }
 
-  private func importProxy() {
+  @discardableResult
+  private func importProxy(source: String) -> Bool {
     do {
-      let source = proxyImportText.isEmpty
-        ? NSPasteboard.general.string(forType: .string) ?? ""
-        : proxyImportText
       let draft = try ProxyImportParser.parse(
         source,
-        kind: editorDraft.proxyKind,
+        kind: proxyKind,
         order: proxyImportOrder
       )
-      invalidateProxyEvidence()
       isApplyingProxyImport = true
-      editorDraft.usesProxy = true
-      editorDraft.proxyHost = draft.configuration.host
-      editorDraft.proxyPort = String(draft.configuration.port)
-      editorDraft.proxyUsername = draft.configuration.username
-      editorDraft.proxyPassword = draft.password
-      proxyImportNotice = UserNotice(
+      usesProxy = true
+      proxyKind = draft.configuration.kind
+      proxyHost = draft.configuration.host
+      proxyPort = String(draft.configuration.port)
+      proxyUsername = draft.configuration.username
+      proxyPassword = draft.password
+      proxyImportMessage =
         "Прокси распознан: \(draft.redactedSummary). " +
-          "Проверим соединение при запуске.",
-        level: .information
-      )
-      announce(proxyImportNotice?.message ?? "Прокси распознан.")
+        "Соединение ещё не проверено; сверь тип и порт с провайдером."
+      proxyImportFailed = false
+      proxyEntryMode = .manual
       errorMessage = nil
 
       Task { @MainActor in
@@ -1353,13 +1457,12 @@ struct ProfileEditorView: View {
         proxyImportText = ""
         isApplyingProxyImport = false
       }
+      return true
     } catch {
       isApplyingProxyImport = false
-      proxyImportNotice = UserNotice(
-        error.localizedDescription,
-        level: .failure
-      )
-      announce(error.localizedDescription)
+      proxyImportMessage = error.localizedDescription
+      proxyImportFailed = true
+      return false
     }
   }
 
@@ -1369,55 +1472,52 @@ struct ProfileEditorView: View {
   ) {
     proxyTestTask?.cancel()
     isTesting = true
-    testNotice = nil
+    testMessage = nil
+    proxyTestSucceeded = false
     proxyTestTask = Task {
         do {
-          let result = try await ProxyTester().test(
+          let observation = try await ProxyTester().probe(
             configuration: proxy,
             password: password
           )
           try Task.checkCancellation()
           await MainActor.run {
+            let result = observation.result
             let location = result.locationSummary
-            let message = location.isEmpty
-              ? "Прокси отвечает · \(result.ipAddress)"
-              : "Прокси отвечает · \(result.ipAddress) · \(location)"
-            testNotice = UserNotice(message, level: .success)
+            let hasCompleteRouteContext = ProxyHealthUpdatePolicy.success(observation).hasCompleteRouteContext
+            testMessage = ProfileProxyTestPresentation.successMessage(
+              location: location, hasCompleteRouteContext: hasCompleteRouteContext
+            )
             detectedProxy = proxy
             detectedTimezone = result.timezoneIdentifier
             detectedLocale = result.localeIdentifier
             detectedLocation = location.isEmpty ? nil : location
-            detectedProxyContextEvidence = .ipAPI()
-            refreshedProxyEvidence = true
-            invalidatedProxyEvidence = false
+            detectedProxyContextEvidence = hasCompleteRouteContext ? .from(
+              observation.source,
+              observedAt: observation.observedAt
+            ) : nil
             isTesting = false
+            proxyTestSucceeded = hasCompleteRouteContext
             proxyTestTask = nil
-            announce(testNotice?.message ?? "Прокси подключён.")
           }
         } catch {
           guard !Task.isCancelled else { return }
           await MainActor.run {
-            testNotice = UserNotice(
-              error.localizedDescription,
-              level: .failure
-            )
+            testMessage = error.localizedDescription
             isTesting = false
+            proxyTestSucceeded = false
             proxyTestTask = nil
-            announce(error.localizedDescription)
           }
         }
       }
   }
 
   private func invalidateProxyEvidence() {
-    if detectedProxy != nil || refreshedProxyEvidence {
-      invalidatedProxyEvidence = true
-    }
-    refreshedProxyEvidence = false
     proxyTestTask?.cancel()
     proxyTestTask = nil
     isTesting = false
-    testNotice = nil
+    testMessage = nil
+    proxyTestSucceeded = false
     detectedProxy = nil
     detectedTimezone = nil
     detectedLocale = nil
@@ -1426,68 +1526,99 @@ struct ProfileEditorView: View {
   }
 
   private func proxyInputDidChange() {
+    cancelProtocolDetection()
     guard !isApplyingProxyImport else { return }
-    proxyImportNotice = nil
+    proxyImportMessage = nil
+    proxyImportFailed = false
     invalidateProxyEvidence()
   }
 
-  private var savePresentation: ProfileEditorSavePresentation {
-    .resolve(
-      isNew: original == nil,
-      hasChanges: hasUnsavedChanges,
-      issue: currentValidationIssue, usesProxy: editorDraft.usesProxy,
-      kind: editorDraft.proxyKind,
-      hasUsername: !(proxyImportPreview?.configuration.username ?? editorDraft.proxyUsername).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-      isTesting: isTesting, refreshedEvidence: refreshedProxyEvidence,
-      invalidatedEvidence: invalidatedProxyEvidence,
-      latestProbeFailed: testNotice?.level == .failure
-    )
+  private var proxyProtocolControls: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 10) {
+        if isDetectingProtocol {
+          ProgressView().controlSize(.small).accessibilityHidden(true)
+          Text("Определяем тип…").foregroundStyle(.secondary)
+          Button("Отменить") { cancelProtocolDetection() }
+            .help("Остановить определение типа и закрыть соединение")
+        } else {
+          Button("Определить тип без пароля") { detectProxyProtocol() }
+            .disabled(isTesting || (proxyEntryMode == .paste && proxyImportText.isEmpty))
+            .help("Подключиться к указанному адресу и порту. Логин и пароль не отправляются; профиль не сохраняется.")
+        }
+      }
+      if isDetectingProtocol || protocolDiscovery.finding != nil {
+        Text("Проба HTTP/SOCKS5 без логина и пароля. Это ещё не проверка доступа к сайтам.")
+          .font(.caption).foregroundStyle(.secondary)
+      }
+      if let finding = protocolDiscovery.finding {
+        Text(finding.message).font(.callout).foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
+        if let kind = finding.kind {
+          Button("Использовать \(kind.title)") { applyDetectedProtocol() }
+            .disabled(isTesting || isDetectingProtocol)
+        }
+      }
+      if let protocolDetectionError {
+        Text(protocolDetectionError).font(.callout).foregroundStyle(.red)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+    }
   }
 
-  private var hasUnsavedChanges: Bool {
-    editorSession.hasUnsavedChanges(draft: editorDraft, refreshedProxyEvidence: refreshedProxyEvidence, pendingProxyText: proxyImportText, pendingTagInput: pendingTagInput)
+  private func currentProtocolEndpoint() throws -> ProxyProtocolEndpoint {
+    guard usesProxy else { throw NeAntikError.invalidProxy }
+    if proxyEntryMode == .paste {
+      // Parsing is local. Neither the draft credentials nor Keychain are
+      // passed into the detector, even when a pasted line includes them.
+      let draft = try ProxyImportParser.parse(proxyImportText, kind: proxyKind, order: proxyImportOrder)
+      return try .init(host: draft.configuration.host, port: draft.configuration.port)
+    }
+    guard let port = Int(proxyPort.trimmingCharacters(in: .whitespacesAndNewlines)) else { throw NeAntikError.invalidProxy }
+    return try .init(host: proxyHost, port: port)
   }
 
-  private var resolvedTagDraft: ProfileTagEditorInputResult {
-    ProfileTagEditorModel.resolvingDraft(pendingTagInput, tags: editorDraft.tags)
-  }
-
-  private var currentValidationIssue: ProfileEditorValidationIssue? {
-    editorDraft.saveIssue(pendingProxyText: proxyImportText, pendingTagInput: pendingTagInput, order: proxyImportOrder)
-  }
-
-  private var proxyDraftIssue: ProfileEditorValidationIssue? {
+  private func detectProxyProtocol() {
+    guard !isTesting else { return }
+    cancelProtocolDetection()
     do {
-      return try editorDraft.resolvingProxyImport(proxyImportText, order: proxyImportOrder).proxyIssue
+      let endpoint = try currentProtocolEndpoint()
+      let request = protocolDiscovery.begin(endpoint: endpoint)
+      protocolDetectionTask = Task { @MainActor in
+        do {
+          let finding = try await ProxyProtocolDetector().detect(endpoint: endpoint)
+          try Task.checkCancellation()
+          guard protocolDiscovery.finish(request, finding: finding, currentEndpoint: try? currentProtocolEndpoint()) else { return }
+          protocolDetectionTask = nil
+        } catch {
+          guard !Task.isCancelled,
+                protocolDiscovery.finish(request, finding: .unknown, currentEndpoint: try? currentProtocolEndpoint()) else { return }
+          protocolDetectionTask = nil
+        }
+      }
     } catch {
-      return ProfileEditorValidationIssue(field: .proxyImport, message: error.localizedDescription)
+      protocolDetectionError = "Проверь адрес, порт и формат строки прокси."
     }
   }
 
-  private func applyPendingProxyImport() throws {
-    guard !proxyImportText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-    let draft = try editorDraft.resolvingProxyImport(proxyImportText, order: proxyImportOrder)
+  private func applyDetectedProtocol() {
+    guard let kind = protocolDiscovery.applicableKind(at: try? currentProtocolEndpoint()),
+          !isTesting, !isDetectingProtocol else { return }
+    if proxyEntryMode == .paste, !importProxy(source: proxyImportText) { return }
+    cancelProtocolDetection()
+    proxyKind = kind
+    // The paste summary describes the parser's previous kind, not the newly
+    // selected wire protocol. Do not retain a contradictory HTTP/SOCKS label.
+    proxyImportMessage = nil
+    proxyImportFailed = false
     invalidateProxyEvidence()
-    isApplyingProxyImport = true
-    editorDraft = draft
-    proxyImportText = ""
-    Task { @MainActor in
-      await Task.yield()
-      isApplyingProxyImport = false
-    }
   }
 
-  @MainActor
-  private func announce(_ message: String) {
-    NSAccessibility.post(
-      element: NSApp as Any,
-      notification: .announcementRequested,
-      userInfo: [
-        .announcement: message,
-        .priority: NSAccessibilityPriorityLevel.medium.rawValue
-      ]
-    )
+  private func cancelProtocolDetection() {
+    protocolDetectionTask?.cancel(); protocolDetectionTask = nil
+    protocolDiscovery.invalidate(); protocolDetectionError = nil
   }
+
 }
 
 private struct ProfileTagsValidationError: LocalizedError {

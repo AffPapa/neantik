@@ -1,0 +1,34 @@
+{
+  "status": "V135_FIVE_XPC_ENTRYPOINT_SOURCE_AND_NOTICE_BINDING",
+  "sourceSHA256": "5363ad87e3e7049a31497f886ba8e8af496dcee316845997b31592d79ed44755",
+  "noticeSHA256": "193fa78ff7879bf105a6a1ad66a50ba0355d5068e67ed911e4bcee7eb19dc9af",
+  "historicalReviewSHA256": "7b942e2df8cf8799f598ea4615527907360464e21b4889376536f1378843ff4f",
+  "images": [
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development",
+      "sha256": "3ecf2f2b7650e65257e561ccd93187f58b7ed9559356ad412baf03bea8f736a0"
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development",
+      "sha256": "4ff32a6b2068f4383fc9ca0d09a27f1f161374a919e2fb416a34491af1314f9e"
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development",
+      "sha256": "95e5eb9fd76d4525ed22b0ecec74ab531fd3abcb067886a5469f682021586e75"
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development",
+      "sha256": "1c3ff4505f7bfb597fb042f4ba2b8b277377bc87671da11d3dc9902b3eb0f0bb"
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development",
+      "sha256": "b031d2c898581f1b83e744eaad83316621fe4e7eaef91c1b242a7b4fe11d7d8a"
+    }
+  ],
+  "entrypointObjectInEachLinkQuery": true,
+  "sourceInEachObjectDependencyRecord": true,
+  "exactHeaderPrefixMatchesNotice": true,
+  "scope": "common entrypoint source header for five XPC images only; other linked dependencies, complete license applicability, signed packaging and runtime remain open",
+  "signingContext": "V186 packaging calls used host permissions; V87 host success alone does not remove subsequent failure",
+  "releaseQualified": false
+}

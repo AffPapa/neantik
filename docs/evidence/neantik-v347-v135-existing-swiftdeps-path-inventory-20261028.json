@@ -1,0 +1,751 @@
+{
+  "schemaVersion": 1,
+  "id": "V347",
+  "scope": "Hash-bound literal path extraction from existing V135 Swift dependency records; no compiler/scanner/build run. Paths are normalized to source/build/Xcode roots.",
+  "v135BuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+  "buildNinjaSHA256": "2a28e27f417390a2f24e8dfe28b5e094e30eee2b22aae165cfbeba308dd38836",
+  "swiftdepsCount": 106,
+  "swiftdepsTotalBytes": 117353072,
+  "swiftdeps": [
+    {
+      "path": "Source/WebCore/CMakeFiles/WebCore.dir/SwiftStub.swift.o.swiftdeps",
+      "bytes": 258500,
+      "sha256": "cd31e8fa27a7e4e96b3f39e4ead480a4109ab3cd042b71f271cff44384ce51e5",
+      "absolutePathCount": 1571
+    },
+    {
+      "path": "Source/WebCore/CMakeFiles/WebCore.dir/WebCore_SwiftRebuildTrigger.swift.o.swiftdeps",
+      "bytes": 258456,
+      "sha256": "0b4c3b55619c501f3ebc570bbd9b825e3988afe9a82e7ffae0e6756804066831",
+      "absolutePathCount": 1571
+    },
+    {
+      "path": "Source/WebCore/PAL/pal/CMakeFiles/PAL.dir/PAL_SwiftRebuildTrigger.swift.o.swiftdeps",
+      "bytes": 550428,
+      "sha256": "c076ddcd12ee018dede028c43ad8080ae53e8daf35629e6ffbf193456dbce29e",
+      "absolutePathCount": 3766
+    },
+    {
+      "path": "Source/WebCore/PAL/pal/CMakeFiles/PAL.dir/crypto/CryptoKitShim.swift.o.swiftdeps",
+      "bytes": 586312,
+      "sha256": "30224868d9b7bb4806ac7b8d1491afb2852fe87cfce900e0d51b56c141aa5045",
+      "absolutePathCount": 3766
+    },
+    {
+      "path": "Source/WebCore/PAL/pal/CMakeFiles/PAL.dir/crypto/WTFExtras.swift.o.swiftdeps",
+      "bytes": 589068,
+      "sha256": "dcb2ecd67066d53880200beef71f27a6f9b46c89a75d3beac2d4d4395bc9d57b",
+      "absolutePathCount": 3894
+    },
+    {
+      "path": "Source/WebCore/PAL/pal/CMakeFiles/PAL.dir/pal.swift.o.swiftdeps",
+      "bytes": 550408,
+      "sha256": "44933e2f11f3f98bb05814e1d6b43078f9542ca2f3492b6008baf361e75d4a5f",
+      "absolutePathCount": 3766
+    },
+    {
+      "path": "Source/WebCore/PAL/pal/CMakeFiles/PAL.dir/system/cocoa/RegexHelper.swift.o.swiftdeps",
+      "bytes": 555088,
+      "sha256": "7f6a78c0dcc63d8a46129060aa1b906ba4e1ea5f24511af00bb555c36ffea9a9",
+      "absolutePathCount": 3766
+    },
+    {
+      "path": "Source/WebGPU/WebGPU/CMakeFiles/WebGPU.dir/Buffer.swift.o.swiftdeps",
+      "bytes": 582376,
+      "sha256": "7cec563abb2a65db07eba69b832797f769ba88005797d9a2317fcc5ac997d17d",
+      "absolutePathCount": 3791
+    },
+    {
+      "path": "Source/WebGPU/WebGPU/CMakeFiles/WebGPU.dir/CommandEncoder.swift.o.swiftdeps",
+      "bytes": 668320,
+      "sha256": "2ba4717881d89c96f1b7cd0d0fa4fd45046d0f71aafe697b5079ff65b6a893c9",
+      "absolutePathCount": 3791
+    },
+    {
+      "path": "Source/WebGPU/WebGPU/CMakeFiles/WebGPU.dir/Queue.swift.o.swiftdeps",
+      "bytes": 572032,
+      "sha256": "40229957e7b5541f0938536b5c2750cf06ff63e228cea4ae7308c1017c74c973",
+      "absolutePathCount": 3791
+    },
+    {
+      "path": "Source/WebGPU/WebGPU/CMakeFiles/WebGPU.dir/StdLibExtras.swift.o.swiftdeps",
+      "bytes": 577872,
+      "sha256": "f40ddbda7a9910d60b732fabced607f788b3bbf0605a3deab4ae427a56cdffe1",
+      "absolutePathCount": 3791
+    },
+    {
+      "path": "Source/WebGPU/WebGPU/CMakeFiles/WebGPU.dir/WebGPU_SwiftRebuildTrigger.swift.o.swiftdeps",
+      "bytes": 565008,
+      "sha256": "e54b808f16dc9d73b1906e0326c871a787db7b18d923e4e967348d1b8fa0ac8d",
+      "absolutePathCount": 3791
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/SwiftPrewarmMac.dir/SwiftPrewarmMac.swift.o.swiftdeps",
+      "bytes": 1394908,
+      "sha256": "2464c16c8f1da2fae5d6fee8daa710fa3124f9d3dc1bc2f9f47c4c2badcabca2",
+      "absolutePathCount": 9738
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/Platform/IPC/MessageCheck.swift.o.swiftdeps",
+      "bytes": 1500464,
+      "sha256": "96c2f7555f57b67d8ea482faa4458910a764481ee81731765a115b0f60562905",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/Platform/cocoa/FloatRectCG.swift.o.swiftdeps",
+      "bytes": 1489644,
+      "sha256": "5b7fbb1c975796034dfd443365732a5e1fe4f4cc9b8fbdaf6461488a950e0c5c",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/Platform/cocoa/IntRectCG.swift.o.swiftdeps",
+      "bytes": 1489640,
+      "sha256": "f80c53c082e2878fa8a8cf2981f6722df0c6f12e5786c57fd6b5d9e14f17b5c6",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/Platform/cocoa/WKMaterialHostingSupport.swift.o.swiftdeps",
+      "bytes": 1489656,
+      "sha256": "0d776e6c7c984005ebba18d29d698c64a5baf7c85c6ed1f19c58aaa8ad65349c",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/Shared/API/APIArray.swift.o.swiftdeps",
+      "bytes": 1493548,
+      "sha256": "fe3e9c50eb50f1992a380565325fcc03d0683cd97150ceb3da50b9db853d1d66",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/Shared/Concurrency+Extras.swift.o.swiftdeps",
+      "bytes": 1490664,
+      "sha256": "62edbeee11ec41bdd2f78bc8f9965672d41b36e3e34099f479688e5b3b7b8510",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/Shared/Foundation+Extras.swift.o.swiftdeps",
+      "bytes": 1493376,
+      "sha256": "358588f38b9f09c90f7eba815079aebb1e75047929a7ebc751624a3f332f2733",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/Shared/IPCTesterReceiver.swift.o.swiftdeps",
+      "bytes": 1489640,
+      "sha256": "5f868ec610175d19670a6d6fc43a33ba5723065058491323d0b1b9f8568ef103",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/Shared/Model/WKStageModeOrbitSimulator.swift.o.swiftdeps",
+      "bytes": 1509784,
+      "sha256": "cab3cf38805dce98dcee2e37933573e2f0ecb034ffd3b1d7ecdd66a73738d163",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/Shared/RunJavaScriptResult.swift.o.swiftdeps",
+      "bytes": 1491952,
+      "sha256": "26b875118d0d56cec7f9cd460e6672d0a357e40bb425ff4b2f365ee4c52b47d5",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/Shared/WTFCompletionHandler+Extras.swift.o.swiftdeps",
+      "bytes": 1500920,
+      "sha256": "3f9c1cf77b391bc638b9c0706104028b0822c87f710904d9e584e9c3c47a29eb",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/Shared/WTFExpected+Extras.swift.o.swiftdeps",
+      "bytes": 1494168,
+      "sha256": "bac72a9f98f8a98ea600245e15c6282bc967d58ded1d73a8755f6d8d2f92f1df",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Cocoa/Logger+Extras.swift.o.swiftdeps",
+      "bytes": 1491576,
+      "sha256": "6530f86db81c8ab0309139ac8c6753e9b93ebdc9db4c3e8aa609875ef9820fdb",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Cocoa/ObjectiveCBlockConversions.swift.o.swiftdeps",
+      "bytes": 1492432,
+      "sha256": "c9e6500feaac16bdd06415e0895a2dab815c564c641340bb5b23f5743569ff81",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Cocoa/WKContentWorld.swift.o.swiftdeps",
+      "bytes": 1490996,
+      "sha256": "c8b002a409b0ba14d6798b1084b28cf22400c1a830eee9b8999d21c00a9959a2",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Cocoa/WKContextMenuElementInfoAdapter.swift.o.swiftdeps",
+      "bytes": 1489820,
+      "sha256": "a0e2d87a4ec41228b3a18ca8b5998ee75e6fbd2072b0d5c402f4fa1381882879",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Cocoa/WKUserContentController.swift.o.swiftdeps",
+      "bytes": 1494052,
+      "sha256": "2a41ff7b413a56d66d67b602b4ed04b67d589c4b9e0dba280220970c4d3a6a5c",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Cocoa/WKWebView+RefreshControl.swift.o.swiftdeps",
+      "bytes": 1489812,
+      "sha256": "604e029f71ce5a8e1b1ece23e2afd3116493cdd1deb4dd2af3eb9f854cdd3eec",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Cocoa/WKWebViewConfiguration+Extras.swift.o.swiftdeps",
+      "bytes": 1489816,
+      "sha256": "347b165346de48c0646753b4c9fef2d540fbf8d07dee9e19c9d57190ac36790b",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Cocoa/WKWebpagePreferences+Extras.swift.o.swiftdeps",
+      "bytes": 1489816,
+      "sha256": "73f8b3e784133b03b03c85a44a27edbf036164e838134e9ade292aed434d7e8e",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Cocoa/WKWebsiteDataStore+SwiftOverlay.swift.o.swiftdeps",
+      "bytes": 1494184,
+      "sha256": "9a097eab74809a314e5690caba1b1a9d5702fcbf4a628ab088efb2e1b619e0e5",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Cocoa/WebKitSwiftOverlay.swift.o.swiftdeps",
+      "bytes": 1506300,
+      "sha256": "0bd9594501ce382390875f30147820224f2158891223d02dbbf1bf7fe98437bf",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Cocoa/_WKRectEdge+Extras.swift.o.swiftdeps",
+      "bytes": 1489656,
+      "sha256": "c6120abc2e0a0051f5a9885f204fd2e7639107b0a4ee166173e4cec16ab18f4c",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Cocoa/_WKTextExtraction.swift.o.swiftdeps",
+      "bytes": 1502212,
+      "sha256": "ffba55f2b88099f4d161cdb0ed625c061d235a4f8ac051bdef24d0c6310e054b",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Swift/URLSchemeHandler.swift.o.swiftdeps",
+      "bytes": 1489804,
+      "sha256": "d9d5be1943e18e6918e37e6fe916f8a3b916b94236dd7d395b88ef8e1838df95",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Swift/WebPage+BackForwardList.swift.o.swiftdeps",
+      "bytes": 1489660,
+      "sha256": "fc98f5e2f7f3df1e5aa8bed5a012f4fb5bb1fa267585ec3e8e1383d48e628960",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Swift/WebPage+Configuration.swift.o.swiftdeps",
+      "bytes": 1489656,
+      "sha256": "7cec592cf43035cffc15d38354f7e51e5d88a875ea13d004e77bb6512c011c07",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Swift/WebPage+DialogPresenting.swift.o.swiftdeps",
+      "bytes": 1489660,
+      "sha256": "accb797b484756be50d10121d5783c0f3e408494ca6ad856afe9016884696450",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Swift/WebPage+FormInfo.swift.o.swiftdeps",
+      "bytes": 1489652,
+      "sha256": "e6a8d50d87dc9ae935d7a92896b21fb29d4950e14791a991ff8bed05bc5b1651",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Swift/WebPage+FrameInfo.swift.o.swiftdeps",
+      "bytes": 1489652,
+      "sha256": "fd83e773619a33eda2f7f01edbce5dcd8ab7379f1397e1e13612b45d26c708ba",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Swift/WebPage+ImmersiveEnvironment.swift.o.swiftdeps",
+      "bytes": 1489664,
+      "sha256": "b93e982a7b97d05b75e9d4fdafb3bfa0834c3ed3eb62553bd66bf0f85b850f64",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Swift/WebPage+Navigation.swift.o.swiftdeps",
+      "bytes": 1489656,
+      "sha256": "d50a0f11e005443b5336577018d9a117abbd0272d577b0ad9a734e09b0ec3de5",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Swift/WebPage+NavigationDeciding.swift.o.swiftdeps",
+      "bytes": 1489664,
+      "sha256": "a9ce66c3cf0c65ac6b5de4e077891d452e6c8f182f3b8f15d0bfeae771e62ec2",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Swift/WebPage+NavigationPreferences.swift.o.swiftdeps",
+      "bytes": 1489664,
+      "sha256": "9eab90aa31d7f4fd08fe1ba87ae1c8371b130f4a184e5e8dc430db04e26f10ef",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Swift/WebPage+SPI.swift.o.swiftdeps",
+      "bytes": 1489648,
+      "sha256": "399fd041e0bc33d49742f5df087caa46d041b4b5967d59a4a0b2c93c702eb08d",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Swift/WebPage+Transferable.swift.o.swiftdeps",
+      "bytes": 1489656,
+      "sha256": "7d17db5175f13c3c8af51b9f966a008290b418d23034595202b1fe16a65093e4",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/API/Swift/WebPage.swift.o.swiftdeps",
+      "bytes": 1489644,
+      "sha256": "0b11259ad3c7b7542ff82b9303edf03b8a10cb5e9162e7f46e09d29e5e8744eb",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/Cocoa/TextExtraction/WKWebView+TextExtraction.swift.o.swiftdeps",
+      "bytes": 1489672,
+      "sha256": "9ad3d5e7f53baa2c8778e91d7d7e9315c25a92f98629220897f77e63dbd4d2bf",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/Cocoa/WKDeferringGestureRecognizer.swift.o.swiftdeps",
+      "bytes": 1501548,
+      "sha256": "91ec62bf0c9329a2d24f5fa221cf6aad5b356ab295ff1f6d76fb9a9bd4bf9520",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/Cocoa/WKNavigationDelegateAdapter.swift.o.swiftdeps",
+      "bytes": 1489660,
+      "sha256": "73fb0e171908a4731d573f7cb211c2cba94c67edbbce4909128742b5d7ba9d6e",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/Cocoa/WKScrollGeometryAdapter.swift.o.swiftdeps",
+      "bytes": 1489656,
+      "sha256": "4b4590052efaff1021958edbd055f8db02b3780d646bc51fbe3ad3bb889fb293",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/Cocoa/WKUIDelegateAdapter.swift.o.swiftdeps",
+      "bytes": 1489652,
+      "sha256": "007a30e0a721f381d28693b8c0ed24877a4bce375169dc937271c1c78205efaa",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/Cocoa/WKURLSchemeHandlerAdapter.swift.o.swiftdeps",
+      "bytes": 1489656,
+      "sha256": "c0f1370462974677c38e39758e765478ce8c019160429acebce13b065c652e37",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/Cocoa/WebPageWebView.swift.o.swiftdeps",
+      "bytes": 1489648,
+      "sha256": "9d02660f90b0c52dfb3266ea3a99c9b66a8931f9e6878ea8df17ec37a08eeecb",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/PDF/WKAlternatePDFHUDView+Testing.swift.o.swiftdeps",
+      "bytes": 1496180,
+      "sha256": "e11af8f11629716acfc2c15b4596b5fcc5db1a736f3aa92b84445ff0ea98a27c",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/PDF/WKAlternatePDFHUDView.swift.o.swiftdeps",
+      "bytes": 1771976,
+      "sha256": "9348355ab03a8126e2dc1c1733af507edcdb2f2894ecd2f1f21eb97426b10585",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/PDF/WKDefaultPDFHUDView.swift.o.swiftdeps",
+      "bytes": 1535448,
+      "sha256": "62ee3005a2bf15dbcf61f9e65ea30629211fed32cbbe13aca18fb5a7df868476",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/StdlibExtras.swift.o.swiftdeps",
+      "bytes": 1503632,
+      "sha256": "78d7180042514382fa5e85ddc3d1973519120ce34f8e113f052fd1994ca466d3",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/WebBackForwardList.swift.o.swiftdeps",
+      "bytes": 1764204,
+      "sha256": "3512d6b33d4eda38f1909fbf1f038d7b8da5e31a22304a0fcfb152a469d0562b",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/WebPageProxy.swift.o.swiftdeps",
+      "bytes": 1494564,
+      "sha256": "758e730a6a1c14a0d48700c6db7a8d7b2a3ee6c2ba2d4dda31ae26c7dcb73dec",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/mac/AppKitGestures/WKAppKitGestureController.swift.o.swiftdeps",
+      "bytes": 1489672,
+      "sha256": "3b7f0e754f11c9d63d784f1c1542178ae94ff7b38d3c3b5742a51a44450ad70c",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/mac/AppKitGestures/WKDOMDoubleClickGestureRecognizer.swift.o.swiftdeps",
+      "bytes": 1489680,
+      "sha256": "c762f9cc8954f81e05969837b1147a7827c103e418885746f7d7165c12b15fd8",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/mac/AppKitGestures/WKDirectionalScrollLockTracker.swift.o.swiftdeps",
+      "bytes": 1489676,
+      "sha256": "4d52ddc1ef4548f3a6712e18f9ec529acab0357d5e2b195dbc4d5c980a7f0737",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/mac/AppKitGestures/WKFastScrollTracker.swift.o.swiftdeps",
+      "bytes": 1489816,
+      "sha256": "b7915d9280bff606645b049450bc273f6e1bf36698bad7edf9051458756dcea3",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/mac/AppKitGestures/WKMouseTrackingGestureRecognizer.swift.o.swiftdeps",
+      "bytes": 1489828,
+      "sha256": "67a70212b39337d9632af1924220042d2835d089d70b02c7ce8e0c3742008543",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/mac/AppKitGestures/WKPointerTrackingGestureRecognizer.swift.o.swiftdeps",
+      "bytes": 1489832,
+      "sha256": "54fdaadac9cd1350d35785b6f3da41f80372e438becb3991a7568cd89e8b98c9",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/mac/AppKitGestures/WKPressGestureRecognizer.swift.o.swiftdeps",
+      "bytes": 1489820,
+      "sha256": "b5cdde65ef94021606d281236864b54122b0378a73ac9287f35ed4b84e204d99",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/mac/SpatialShim.swift.o.swiftdeps",
+      "bytes": 1499136,
+      "sha256": "09ae0fccce833af3c36f98072fb212e397b917a53f01010c17597984ba87af4a",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/UIProcess/mac/WKTextSelectionController.swift.o.swiftdeps",
+      "bytes": 1489808,
+      "sha256": "bb3798bdc462300f211e5760a68810c810b9d3325ac39bf524618128c7c432a2",
+      "absolutePathCount": 10606
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/WebKit_SwiftRebuildTrigger.swift.o.swiftdeps",
+      "bytes": 1489640,
+      "sha256": "0cdee339a35ed5090487025fdd3eb1ef20d21eab46239cbe8651e37f3b193a2e",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/__/__/WebKit/DerivedSources/IPCTesterReceiverMessageReceiver.swift.o.swiftdeps",
+      "bytes": 1489656,
+      "sha256": "253009da8c31b373f3692ab2c8b90632a3e0550dd5f1d68df66eb81b322aa9a3",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/__/__/WebKit/DerivedSources/WebBackForwardListMessageReceiver.swift.o.swiftdeps",
+      "bytes": 1520032,
+      "sha256": "586e883d9533ba06a80573bf9bd6f496311644c57cadc546198927a0cbe318d1",
+      "absolutePathCount": 10605
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/GPUProcess/graphics/Model/ModelBridge.swift.o.swiftdeps",
+      "bytes": 562168,
+      "sha256": "5416bc07f741bdd2f345ded76e1b4de89f911334318145eb3dc13a9714807469",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/GPUProcess/graphics/Model/ModelParameters.swift.o.swiftdeps",
+      "bytes": 530692,
+      "sha256": "4e2daf67735698c938c16ffb1712dfc64c5eac89c38b4f0068387aecb5b39df7",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/GPUProcess/graphics/Model/ModelRenderer.swift.o.swiftdeps",
+      "bytes": 530692,
+      "sha256": "d490f1cef82b932d95a9aced050ef3393ef793991a621be2a96771642538771d",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/GPUProcess/graphics/Model/ModelUtils.swift.o.swiftdeps",
+      "bytes": 530688,
+      "sha256": "bf14cfc70049bbdfa6d8820dc1256f369b0b5296626322fd08118eefa932dc76",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/GPUProcess/graphics/Model/USDModel+Deformation.swift.o.swiftdeps",
+      "bytes": 530700,
+      "sha256": "54c97ed6471df9a840441f3d93cc285db9d16d003be4e26ea5be111f2bdf0084",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/GPUProcess/graphics/Model/USDModel.swift.o.swiftdeps",
+      "bytes": 538604,
+      "sha256": "795767c444c4c642bade83432ce5b5d34ec0f8f9fed1084155cec242d2d72199",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/AVKit/WKSExperienceController.swift.o.swiftdeps",
+      "bytes": 530692,
+      "sha256": "8ce3781adeaeb631106a1d3e438926f2dbec77b944989fa542140ff36eb3a307",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/CredentialUpdaterShim.swift.o.swiftdeps",
+      "bytes": 530684,
+      "sha256": "6804122dc27d9e22d8559a4acc1958084fc84f7f19f5140d3f533c1e4d7d6d07",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/GroupActivities/WKGroupSession.swift.o.swiftdeps",
+      "bytes": 541784,
+      "sha256": "d3630a59f7ad62316270c5976f71a4b5b57ade87b8ac7a5118694ee359503740",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/IdentityDocumentServices/ISO18013MobileDocumentRequest+Extras.swift.o.swiftdeps",
+      "bytes": 530724,
+      "sha256": "2b6200bc49c5de82a874ae88c3158cc08fa5d92565ae5761b2581356147a4a3c",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentController.swift.o.swiftdeps",
+      "bytes": 530728,
+      "sha256": "c7e92acbaebbbd603a19a66d4358becc0177ee1da8b0ee5953205fb40c3d4bd0",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentMobileDocumentRequest+Extras.swift.o.swiftdeps",
+      "bytes": 530748,
+      "sha256": "398cf92a62575ba750418166bde5547be0de74edc3a09a2de13a474edc7d06f9",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentMobileDocumentRequest.swift.o.swiftdeps",
+      "bytes": 530740,
+      "sha256": "fee7b09169952b6714d24162efee12893e4965e57282146de0ee2ffeb59e26d4",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentOpenID4VPRequest.swift.o.swiftdeps",
+      "bytes": 530736,
+      "sha256": "53f64f09fbe5f91a86a94f6cfde6005be098fb45e3812c4fa8c6c24a9ccf04c5",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentRawRequest.swift.o.swiftdeps",
+      "bytes": 530728,
+      "sha256": "cee10bde834246e303fa570eb04a68b8fad6759f851f14673f3175792b0288c3",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentRequest.swift.o.swiftdeps",
+      "bytes": 530724,
+      "sha256": "6e7773636e5fc1c6b5a537b31b407ef60ef511f465720b54f91db33201e1ecb2",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentResponse.swift.o.swiftdeps",
+      "bytes": 530728,
+      "sha256": "1325ed082d244ec28c38db7921276f3da26122d6c32f58a5cb9dce4e21363778",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentRawRequestValidator.swift.o.swiftdeps",
+      "bytes": 530728,
+      "sha256": "6b6d4cbd3f4e1b456a890c380a661c561985406691cbd9f24a49d7f6cff24f2f",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/LinearMediaKit/LinearMediaPlayer.swift.o.swiftdeps",
+      "bytes": 530696,
+      "sha256": "db5064da4477b0e3983c9a27123e5ed4240619a96741c8fe352ff62d398524b2",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/LinearMediaKit/LinearMediaTypes.swift.o.swiftdeps",
+      "bytes": 530696,
+      "sha256": "49e8ec128c484e9337d286c56077e9cb13c38cd4d9af0989187aac9137112abd",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/MarketplaceKit/WKMarketplaceKit.swift.o.swiftdeps",
+      "bytes": 530696,
+      "sha256": "1d28630a4fdf44215da0240bd6fbf68005912afaae74470626053c8556a9df98",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/Preview/WKPreviewWindowController.swift.o.swiftdeps",
+      "bytes": 530696,
+      "sha256": "db707aa969ad088b86733070918d299bea1274a3d17d9ac264822002acf0d744",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/RealityKit/WKRKEntity.swift.o.swiftdeps",
+      "bytes": 530684,
+      "sha256": "3280edd331e473896e6edd1ee0e459ba27753086c94a6acbfc414144e61ea569",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/StageMode/WKStageMode.swift.o.swiftdeps",
+      "bytes": 530684,
+      "sha256": "bf89de941754d302eecb708344755fc459cafee52cf2e00548df88d3c8a78f39",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/TextAnimation/WKTextAnimationManagerIOS.swift.o.swiftdeps",
+      "bytes": 530704,
+      "sha256": "309639cab10d4a4f57e2282c4c9177ccbaac5f3dd72cbe2bdf5b920a4c85434d",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/WebKitSwift.swift.o.swiftdeps",
+      "bytes": 530676,
+      "sha256": "2e859adc81966413087bdebab2673d346ba34ecd184fe416d404690abf5e5d22",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/WritingTools/IntelligenceTextEffectChunk.swift.o.swiftdeps",
+      "bytes": 530704,
+      "sha256": "8a193bca0a96d6eb601077c788b7be2aadc2fc60da8d72f008aeeefdfaf0b7b2",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/WritingTools/IntelligenceTextEffectViewManager.swift.o.swiftdeps",
+      "bytes": 530712,
+      "sha256": "2af159cc46f7c2d6e5024f7ab384c4423b0ccae0c40919e76c0746e72ff21d6b",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/WritingTools/PlatformIntelligenceTextEffectView.swift.o.swiftdeps",
+      "bytes": 530712,
+      "sha256": "73bc36d852c587d83221ba0824b9db0a32cd83a1d8dd18803e94a083a5421063",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/WritingTools/WKIntelligenceReplacementTextEffectCoordinator.swift.o.swiftdeps",
+      "bytes": 530724,
+      "sha256": "b6db2f216911d9bca82ae11d21fa026abd9fbdc585ced655affe6330ec1a1bd5",
+      "absolutePathCount": 3108
+    },
+    {
+      "path": "Source/WebKit/CMakeFiles/WebKitSwift.dir/WebKitSwift/WritingTools/WKIntelligenceSmartReplyTextEffectCoordinator.swift.o.swiftdeps",
+      "bytes": 530724,
+      "sha256": "f4fca2e4fc0f20a88ed2a4a2814b47b077b2fbb4a73c40f700188f555c0dac85",
+      "absolutePathCount": 3108
+    }
+  ],
+  "uniqueLiteralPathCount": 11415,
+  "pathSetSHA256": "c9498bc4dc15457c5558a2dce7d4fff1d158c775a12a00d4250f74e86533aa1d",
+  "pathCategoryCounts": {
+    "SDK27": 4098,
+    "XCODE_PLATFORM": 2,
+    "TOOLCHAIN": 46,
+    "SOURCE": 811,
+    "BUILD": 6458
+  },
+  "extensionCounts": {
+    ".apinotes": 31,
+    ".def": 4,
+    ".dylib": 2,
+    ".h": 10903,
+    ".json": 1,
+    ".modulemap": 156,
+    ".swift": 106,
+    ".swiftinterface": 64,
+    ".swiftmodule": 1,
+    ".swiftoverlay": 19,
+    "<none>": 128
+  },
+  "missingReferencedPathCount": 0,
+  "missingPathExamples": [],
+  "unclassifiedPaths": [],
+  "pluginRelatedPaths": [
+    "BUILD/JavaScriptCore.framework/PrivateHeaders/AbstractMacroAssembler.h",
+    "BUILD/JavaScriptCore.framework/PrivateHeaders/AllowMacroScratchRegisterUsage.h",
+    "BUILD/JavaScriptCore.framework/PrivateHeaders/DisallowMacroScratchRegisterUsage.h",
+    "BUILD/JavaScriptCore.framework/PrivateHeaders/JSExportMacros.h",
+    "BUILD/JavaScriptCore.framework/PrivateHeaders/MacroAssembler.h",
+    "BUILD/JavaScriptCore.framework/PrivateHeaders/MacroAssemblerARM64.h",
+    "BUILD/JavaScriptCore.framework/PrivateHeaders/MacroAssemblerARM64E.h",
+    "BUILD/JavaScriptCore.framework/PrivateHeaders/MacroAssemblerCodeRef.h",
+    "BUILD/JavaScriptCore.framework/PrivateHeaders/MacroAssemblerHelpers.h",
+    "BUILD/JavaScriptCore.framework/PrivateHeaders/MacroAssemblerPrinter.h",
+    "BUILD/JavaScriptCore.framework/PrivateHeaders/MacroAssemblerX86_64.h",
+    "BUILD/JavaScriptCore.framework/PrivateHeaders/SlotVisitorMacros.h",
+    "BUILD/PAL/Headers/pal/ExportMacros.h",
+    "BUILD/WTF/Headers/wtf/ExportMacros.h",
+    "BUILD/WebCore.framework/PrivateHeaders/HTMLPlugInElement.h",
+    "BUILD/WebCore.framework/PrivateHeaders/LibWebRTCMacros.h",
+    "BUILD/WebCore.framework/PrivateHeaders/NetscapePlugInStreamLoader.h",
+    "BUILD/WebCore.framework/PrivateHeaders/PlatformExportMacros.h",
+    "BUILD/WebCore.framework/PrivateHeaders/PluginData.h",
+    "BUILD/WebCore.framework/PrivateHeaders/PluginDocument.h",
+    "BUILD/WebCore.framework/PrivateHeaders/PluginInfoProvider.h",
+    "BUILD/WebCore.framework/PrivateHeaders/PluginReplacement.h",
+    "BUILD/WebCore.framework/PrivateHeaders/PluginViewBase.h",
+    "BUILD/WebCore.framework/PrivateHeaders/ScrollingStatePluginHostingNode.h",
+    "BUILD/WebCore.framework/PrivateHeaders/ScrollingStatePluginScrollingNode.h",
+    "BUILD/WebCore.framework/PrivateHeaders/ScrollingTreePluginHostingNode.h",
+    "BUILD/WebCore.framework/PrivateHeaders/ScrollingTreePluginScrollingNode.h",
+    "BUILD/WebCore.framework/PrivateHeaders/ScrollingTreePluginScrollingNodeMac.h",
+    "BUILD/WebCore.framework/PrivateHeaders/YouTubePluginReplacement.h",
+    "BUILD/WebKit.framework/Headers/WebPlugin.h",
+    "BUILD/WebKit.framework/Headers/WebPluginContainer.h",
+    "BUILD/WebKit.framework/Headers/WebPluginViewFactory.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKPluginInformation.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKPluginLoadPolicy.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugIn.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugInBrowserContextController.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugInBrowserContextControllerPrivate.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugInCSSStyleDeclarationHandle.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugInEditingDelegate.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugInFrame.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugInFramePrivate.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugInHitTestResult.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugInLoadDelegate.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugInNodeHandle.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugInNodeHandlePrivate.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugInPageGroup.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugInPrivate.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugInRangeHandle.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WKWebProcessPlugInScriptWorld.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WebPluginContainerPrivate.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WebPluginDatabase.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WebPluginPackagePrivate.h",
+    "BUILD/WebKit.framework/PrivateHeaders/WebPluginViewFactoryPrivate.h",
+    "SDK27/MacOSX.sdk/System/Library/Frameworks/ApplicationServices.framework/Frameworks/PrintCore.framework/Headers/PDEPluginInterface.h",
+    "SDK27/MacOSX.sdk/System/Library/Frameworks/CoreAudio.framework/Headers/AudioServerPlugIn.h",
+    "SDK27/MacOSX.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CFPlugInCOM.h",
+    "SDK27/MacOSX.sdk/System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/TextEncodingPlugin.h",
+    "SDK27/MacOSX.sdk/System/Library/Frameworks/IOKit.framework/Headers/IOCFPlugIn.h",
+    "SDK27/MacOSX.sdk/System/Library/Frameworks/IOKit.framework/Headers/hid/IOHIDDevicePlugIn.h",
+    "SDK27/MacOSX.sdk/System/Library/Frameworks/IOKit.framework/Headers/ps/IOUPSPlugIn.h",
+    "SDK27/MacOSX.sdk/System/Library/Frameworks/Quartz.framework/Frameworks/QuartzComposer.framework/Headers/QCPlugIn.h",
+    "SDK27/MacOSX.sdk/System/Library/Frameworks/Quartz.framework/Frameworks/QuartzComposer.framework/Headers/QCPlugInViewController.h",
+    "SDK27/MacOSX.sdk/System/Library/Frameworks/Security.framework/Headers/AuthorizationPlugin.h",
+    "SDK27/MacOSX27.0.sdk/System/Library/Frameworks/CoreFoundation.framework/Headers/CFPlugIn.h",
+    "SDK27/MacOSX27.0.sdk/System/Library/Frameworks/CoreImage.framework/Headers/CIPlugIn.h",
+    "SDK27/MacOSX27.0.sdk/System/Library/Frameworks/CoreImage.framework/Headers/CIPlugInInterface.h",
+    "SDK27/MacOSX27.0.sdk/usr/include/AssertMacros.h",
+    "SDK27/MacOSX27.0.sdk/usr/include/AvailabilityMacros.h",
+    "SDK27/MacOSX27.0.sdk/usr/include/ConditionalMacros.h",
+    "SDK27/MacOSX27.0.sdk/usr/include/c++/v1/__undef_macros",
+    "SOURCE/Source/ThirdParty/libwebrtc/Source/third_party/abseil-cpp/absl/base/macros.h",
+    "SOURCE/Source/WebKit/WebProcess/Plugins/PDFPluginIdentifier.h",
+    "TOOLCHAIN/XcodeDefault.xctoolchain/usr/lib/clang/21/include/__float_header_macro.h",
+    "TOOLCHAIN/XcodeDefault.xctoolchain/usr/lib/clang/21/include/__stdarg_header_macro.h",
+    "TOOLCHAIN/XcodeDefault.xctoolchain/usr/lib/clang/21/include/__stddef_header_macro.h",
+    "XCODE_PLATFORM/usr/lib/swift/host/plugins/libObservationMacros.dylib",
+    "XCODE_PLATFORM/usr/lib/swift/host/plugins/libSwiftMacros.dylib"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "baseOrderedReplaySHA256": "c936de57c8cf27ee00e3220a2c5a8bb69d3c6194a93c1405d53f921fb79b69a0",
+  "baseSourceContractSHA256": "5c1f8789fe9f586a075b98d29a969c62aa86cc8562b0c6a489fa9fc66a865716",
+  "baseSourceSnapshotSHA256": "61636de70b6e5d11305d93fbc715e7a8c05901952b23255cce70be8c15edc977",
+  "binaryBinding": {
+    "architecture": "arm64",
+    "argsGNSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+    "candidateExecutableSHA256": "897ff2edea48efd30e6332cb9b47d54af06b1bd8e6ff6070c7c4d2d6287d25a1",
+    "candidateFrameworkSHA256": "84173a4ab9db43b0f167373eb9481bc903d856d10a14264b4130a29438d84468",
+    "sourceVersion": "155.0.8059.40",
+    "status": "bound-to-built-candidate"
+  },
+  "correctionsManifestSHA256": "8b1a5fae94274a4a6c2c156625fb1a2f0ea8dc853276acd5f9ca4e706808d4fe",
+  "correctionsReceiptSHA256": "20d002f4ecfa922131d8f9d50541a22487b67f41bd63fd83535211c8ce908009",
+  "generatedBuildCacheEvidenceSHA256": "8bc163d54804cc9e25ff3535eafd27d0e0862263b5831ed66c33c357ffc122aa",
+  "policy": "Source and unsigned build only; signed runtime and release gates remain required.",
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "semanticCorrectionSet": "canvas-audio-webgl-native-webrtc-layout-text-event-v5",
+  "sourceContractSHA256": "8728e1e996d742616741f8ad41a74ade619033b5aaf6bc7cce9c2810a6529318",
+  "sourceInputManifestSHA256": "e5b5a67b19e1e7364cb6137e1549ed0a833b9e7c46cb97f94e945e6423163803",
+  "sourceInputSnapshotSHA256": "ee8096b06457e4c7d3fafd9f3dcd6bd642ffefe6aad6ad280483af93e749274b",
+  "sourceSnapshotSHA256": "ee8096b06457e4c7d3fafd9f3dcd6bd642ffefe6aad6ad280483af93e749274b",
+  "status": "candidate-bound",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "155.0.8059.40"
+}

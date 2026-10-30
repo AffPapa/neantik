@@ -1,0 +1,140 @@
+{
+  "assetsSHA256": "4554bf51ecaed1db9021776be273b73cbebd3b97809f50bfc80b20f735559ed4",
+  "build": {
+    "configurationCacheSHA256": "5271654199e4606946e531c6b79127f46fc1672ba9eb99f22151f631e0847abf",
+    "incrementalLogSHA256": "aba7807c8dd168d9cf7ff87848e7f1538616e03c037cd5faa43bd759a55b1c2d",
+    "initialLogSHA256": "afcb855f564bccbe333ebf0c91adc7c6f7a8d18f66b39f4d9b414a02f7f3539d",
+    "method": "fresh initial build; test WebGPU marker temporarily introduced and removed; original pre-marker WebGPU artifact restored from exact recorded stage, then downstream dependency relinking completed",
+    "ninjaGraphSHA256": "4124b495ed851f795468bc2f18749dd82ce5f1b9ccbe01bd0dbf6ca269e86662",
+    "requestedActions": 10900
+  },
+  "checks": {
+    "allArm64": true,
+    "allPresent": true,
+    "ninjaDryRunNoWork": true,
+    "outputCount": 14
+  },
+  "environment": {
+    "deploymentTarget": "15.4",
+    "hostArchitecture": "arm64",
+    "macOSSDK": "27.0"
+  },
+  "id": "V468-stabilized-filtered-webkit-build",
+  "inputs": {
+    "mainSourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "patchSHA256s": {
+      "patches/webkit-coreprediction-model-macos-deployment-gate-v381.patch": "e2aea7ebc6fba39295e4f4cbdbef157afcae34db252c98d76ae60ffab2cb8d83",
+      "patches/webkit-empty-webkit-infoplist-strings-exclusion-v36.patch": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+      "patches/webkit-filtered-model-assets-deployment-scope-v382.patch": "5889129ffef355e29e4db9ca5d5ca47f2865e030523c6f4de9fdc5ef869cfdf6",
+      "patches/webkit-text-extraction-filter-macos-deployment-gate-v377.patch": "a3a8e43188e6f0fcd3a603e0f3e6a814283da6f56a268f206b10f7fc97416ee2",
+      "webkit-v20-source-modifications.patch": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735"
+    },
+    "sourceArchiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "webkitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+  },
+  "limitations": "Same-host build; no complete corresponding-source, legal applicability, signed host load or release qualification.",
+  "outputs": [
+    {
+      "architecture": "arm64",
+      "bytes": 40078704,
+      "matchesV445": true,
+      "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "sha256": "f76792a84b7cba5247199d2780e7563127cc08d17bc7042f4ad2dfb92d7b63ec"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 98279648,
+      "matchesV445": false,
+      "path": "WebCore.framework/Versions/A/WebCore",
+      "sha256": "b601d9580b268ce621a154d792b809e135f1240048de873ee04fc248ec3e8e33"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 4007776,
+      "matchesV445": true,
+      "path": "WebGPU.framework/Versions/A/WebGPU",
+      "sha256": "f87d4f3d7143cf01633b07831e09cfd5442c67761f77b034bce83f4968abe2a7"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 16832,
+      "matchesV445": true,
+      "path": "WebInspectorUI.framework/Versions/A/WebInspectorUI",
+      "sha256": "aa5f2f762b8f02f4679f488b32836e6d8fc099ed9fb0ce0802900bcf5ad47c35"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 56488952,
+      "matchesV445": true,
+      "path": "WebKit.framework/Versions/A/WebKit",
+      "sha256": "6b66599514891ac5852210c77eddbc3b8cea24e74216883a81138e8768a61451"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 34000,
+      "matchesV445": true,
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development",
+      "sha256": "7fffec84b1b93025e72b80adceeebeeceab3c75664ba96ccdef4d90789d3ae4f"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 34000,
+      "matchesV445": true,
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development",
+      "sha256": "dd3f118f92b87c8b9c504f3b1279d3247438b12daa5bebd7a48f17251ce8e40b"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 34016,
+      "matchesV445": true,
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development",
+      "sha256": "3c8d9ac8ac062805888371f2c027eaa4c1d6e46a26d27bd2b8fc89f7ece451d8"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 34016,
+      "matchesV445": true,
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development",
+      "sha256": "4824da345697a25bc5d886a9530992d354de45dabc2a77345f5bafb690b44a7a"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 34096,
+      "matchesV445": true,
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development",
+      "sha256": "bb7a60cc97f629626c6653562ab15a1655b61745c79ece3b310ffe8a1590ada4"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 4695792,
+      "matchesV445": true,
+      "path": "WebKitLegacy.framework/Versions/A/WebKitLegacy",
+      "sha256": "222328ba083d23e44f8e886c441f6034e6f7ee8890422d91bb7f232c331644cc"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 5743216,
+      "matchesV445": true,
+      "path": "libANGLE-shared.dylib",
+      "sha256": "0787cf34ea6d4c727a6e214c57572efeea433eb94718f55dab33028b6340fd26"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 160832,
+      "matchesV445": true,
+      "path": "libWebKitSwift.dylib",
+      "sha256": "0aebe0e0eaa40741a4c7ea5fbfb82c2c55392d4f9e62ae3c53f99813249ad124"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 14515152,
+      "matchesV445": true,
+      "path": "libwebrtc.dylib",
+      "sha256": "ac6173286d8530ec5a5f6baf0298a7b84a8071fe689dabad7a8ffd7d4415d685"
+    }
+  ],
+  "runtimeIdentitySHA256": "ace2e90d03cb752df509f1177bbcaaac0e9403826be9dd757ad1749a201c071e",
+  "schemaVersion": 1,
+  "status": "PASS_SAME_HOST_STABILIZED_14_ARM64_NOT_RELEASE_QUALIFIED"
+}

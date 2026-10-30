@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "status": "scoped-native-observations-pass",
+  "observedOnUTC": "2026-10-16",
+  "shippingVersion": "0.8.21",
+  "shippingBuild": 133,
+  "managerSHA256": "f912efaeddad22aaea3f13957af125662bcfb8ac068b13c5177579d38b2585d9",
+  "runtimeVersion": "156.0.8078.12",
+  "runtimeExecutableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+  "runtimeFrameworkSHA256": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7",
+  "exactDownloadedApp": true,
+  "headedShippingManager": true,
+  "mockKeychain": true,
+  "productionProfilesUsed": false,
+  "scenario": {
+    "upstreamListenerPhysicallyClosed": true,
+    "fixtureSocketProbeConnectionRefused": true,
+    "browserError": "ERR_SOCKS_CONNECTION_FAILED",
+    "protectedOriginDuringOutage": 0,
+    "directOriginSensitivity": true,
+    "sameEndpointRecovery": true,
+    "sameManagerBrowserRelaySessionConfiguration": true,
+    "originSocketPeerCustody": "Live kernel/code/lease and exact socket tuple matched to relay or Direct browser helper"
+  },
+  "failureObservation": {
+    "method": "operator-owned-CUA-AX",
+    "expectedNonceAddressAndErrorObserved": true,
+    "liveCustodyAroundReduction": true,
+    "autonomousUIAttestation": false
+  },
+  "cleanup": {
+    "managerExitCode": 0,
+    "ownedProcessesRemaining": 0,
+    "serversDrained": true,
+    "authorityRetired": true,
+    "retirementReceiptSHA256": "63c404c76e9216a6d02497d31741effb25352ce621b9bea6d8e83cd2f63482ac"
+  },
+  "inputSHA256": {
+    "fixture-ledger.json": "a7a9b4637e2be01cafbbdded8bcf0e82d754989216cb36e252a6dc464dad5dd5",
+    "tcp-browser-failure.json": "51993c07e7da894e06b1ff4296b82aa19b86f1772d2b2096d0588471c2555033",
+    "tcp-custody-before-launch.json": "670e7736e080a4a5aa2f43fd4147905f36cec81026cccc14670807fc571d7afa",
+    "tcp-custody-proxy-success.json": "a48844194e5caacc0fd246b9aff1579b15b42b7783b08d080e014d2b7c17a04d",
+    "tcp-custody-listener-refused.json": "48c31ed30f907028e99a8f73f58bc57ab85de62f91c60fb2b32301e8e7b9fb6d",
+    "tcp-custody-direct-control.json": "baa23d812839d129921317ed623cfe8ffb84daffe70c0ebd2fb07928c809124e",
+    "tcp-custody-proxy-recovered.json": "766463f328334941a447d5284085461e3bc4def0685c47eb3b3f1066a3ecdd71",
+    "tcp-custody-cleanup.json": "b5d993bd5fa5732271c2b185847335e8d1859a24e71ea38f47a81cc9d3d71c12",
+    "owned-cua-failure-values.txt": "c94e45ad01fda8a0992d891383528fa16cb9534b7a64897aead86b7675d75f63"
+  },
+  "analyzerSHA256": "62197a6402897e61fe24d0d33c2b8d2cec68d75d91eff181ec64a6bb7a5316b2",
+  "harnessCorrections": [
+    "Initial before-launch snapshot correctly refused unconfigured synthetic proxy;configured through owned GUI, same manager continued.",
+    "Initial model test used non-normalized session text;model fixed, original FAIL retained.",
+    "CUA typeText corrupted recovery URL;nonce validation refused it. Address corrected with setValue and visibly verified before navigation;no browser/session restart."
+  ],
+  "releaseArtifactsChanged": false,
+  "allNetworkGatesComplete": false,
+  "releaseGate": false,
+  "limitations": [
+    "Physical listener refusal only; no manager errno or RST claim",
+    "No system network change or OS/global DNS/UDP coverage",
+    "No default-trusted HTTPS upstream or other hardware/macOS qualification",
+    "Operator-mediated CUA observation, not unattended UI attestation",
+    "Chromium generic host-resolver-rules warning observed;separate UX follow-up"
+  ],
+  "sourceSHA256": {
+    "manager-route-fixture.py": "db2eaea269f675c7d7578b52595701a6d236b766c532335243a18abbe35e863c",
+    "manager-tcp-fixture.py": "8f3282622653017093af2c3b0914474d50053f8e167687c0e7149863e53c7ca8",
+    "collect-manager-dns.py": "1a97e7f2ff78a6820dbc7bcc09f3bdcca2660329ee1ef34a5704240e950823ca",
+    "collect-manager-tcp.py": "b420bb47ef573c8237ab8900dd74db5327d6007f54ec98786b9639e579150236",
+    "observe-manager-tcp-failure.py": "62adeac2e044b5e0528a26952b6660afe01a7a380968a6fbe10d779df43159f0",
+    "analyze-manager-tcp.py": "62197a6402897e61fe24d0d33c2b8d2cec68d75d91eff181ec64a6bb7a5316b2"
+  },
+  "tests": {
+    "controlledSocketsAndExistingRouteDNSCustody": {
+      "count": 33,
+      "status": "PASS"
+    },
+    "newWrapperPlannerAndRemainingDNSControls": {
+      "count": 50,
+      "status": "PASS"
+    },
+    "analysisModels": {
+      "count": 4,
+      "status": "PASS",
+      "negativeMutations": 30
+    },
+    "actualHeadedRuns": 1,
+    "offlineReanalysisAfterRetainedAXHashBinding": true
+  }
+}

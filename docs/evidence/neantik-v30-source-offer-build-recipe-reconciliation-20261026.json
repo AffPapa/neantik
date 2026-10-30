@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T20:17:01Z",
+  "status": "PASS_PRIVATE_SOURCE_OFFER_RECIPE_RECONCILED; NO_RUNTIME_OR_RELEASE_GATE_CHANGED",
+  "scope": "Updated the recipient-facing V20 draft recipe from stale V21 overlay/input references to the exact V28/V30 source-offer materials. No build, install, signing, notarization, publication, or candidate/worksheet mutation.",
+  "oldRecipeSHA256": "49834ad81609bfcdce9d4ea94b7b954e2f946642e47e9340c1417b7e932c2f22",
+  "newRecipeSHA256": "f417248b4e80f7d157c94e9ad7e5d558c666737460d2e7c28cc12ac0e4e4907c",
+  "overlayPatchSHA256": "e2562c350389dff04497a4d2b5d4c2de951ee2e3010d0d460896ffaf7bc7bda0",
+  "noticeSourceInputsArchiveSHA256": "afcbbf32dfda4a47fb7af875562bfdfec7a56933c99f2e58658990731a98b012",
+  "noticeSourceInputsManifestSHA256": "fedc4233be6208c110d877e5601a763c81bf278746d97a7c879b6f96805fff73",
+  "sourceOfferStageReceiptSHA256": "0c5ba61d1c6b49fb1c803924f0b74f39ae330b57692df37ab4fffcaa7fe6f42d",
+  "worksheetSHA256": "b5d00e7589a67102c62372a6feddc9e7d06a50c6d0c3b6fde047bd42b9954441",
+  "worksheetUnknownRowsPreserved": 82,
+  "candidate139Changed": false,
+  "packageNoticeBytes": "unverified; no package/build run",
+  "actions": {
+    "build": false,
+    "install": false,
+    "signOrNotarize": false,
+    "publish": false
+  }
+}

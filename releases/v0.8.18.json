@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "channel": "public-alpha",
+  "architecture": "arm64",
+  "minimumOS": "14.0",
+  "version": "0.8.18",
+  "build": 130,
+  "sourceCommit": "1812f8fdb5caa7c94033f5ddb0d6c872b0806b5a",
+  "tag": "v0.8.18",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.8.18",
+  "siteUrl": "https://browser.free/",
+  "rollbackRelease": "v0.8.17",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "sourceVariant": "font-system-v1",
+    "rebuilt": true,
+    "builtDuringPackaging": false,
+    "executableSHA256": "27d0378671dd946f2b19c518f928a60a44b19ae0f97552569adb3eecc7e95c6c",
+    "frameworkSHA256": "7bfe8e081bd94ea222e2a9ed304a56ef96a7edf342f12ecf079abf147c4b95f8",
+    "closureSHA256": "f0bd944a15e57476f7f2d78ea8df8f743dd9d7dbd1647c69c8e89d5754485b80",
+    "evidenceClosureSHA256": "dd2804eff2ebf60cccf1e99a072837278814bd1a13e6c6110014785517dd0d19",
+    "safeBrowsingEnabled": false
+  },
+  "qualificationEnvironment": {
+    "macOS": "27.0",
+    "architecture": "arm64",
+    "dateUTC": "2026-10-15",
+    "headed": true
+  },
+  "managerSHA256": "496aa707f341314092fef85c4713b4d8b1b445048f244bdfe47432d77cfffbc4",
+  "candidateManifestSHA256": "2f88b07cc0ca08352722b32c56722182ebb88848b1f59c02a28bd3b164750787",
+  "candidateSourceBindingSHA256": "36aaa4af625968928c70a5341e11770384b9da9f612fb517fc1d28017e79a2d5",
+  "artifacts": [
+    {
+      "name": "NeAntik-0.8.18-arm64-notarized.zip",
+      "sha256": "966ca44eb77b126bb4612bfe44fe03de3d566f54d79241a8a448f3ca30e0e579",
+      "sizeBytes": 191203909,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.18/NeAntik-0.8.18-arm64-notarized.zip"
+    },
+    {
+      "name": "NeAntik-0.8.18-arm64-notarized.dmg",
+      "sha256": "0ab5c99ac330d0a32f7bf2a8598b2b856a8e6c04f25b0da6756acd2990c04fd1",
+      "sizeBytes": 214741465,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.18/NeAntik-0.8.18-arm64-notarized.dmg"
+    }
+  ],
+  "checksumFiles": [
+    {
+      "name": "NeAntik-0.8.18-arm64-notarized.zip.sha256",
+      "sha256": "4fdca58cd8b3ae5030bddd584a0cde07f11bde4d61d98b582aeee6ff95d99f95",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.18/NeAntik-0.8.18-arm64-notarized.zip.sha256"
+    },
+    {
+      "name": "NeAntik-0.8.18-arm64-notarized.dmg.sha256",
+      "sha256": "d0563ad4067389879d9c89496fff1665f88ef5f88a8ad83f9d4cc15be9323226",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.18/NeAntik-0.8.18-arm64-notarized.dmg.sha256"
+    }
+  ],
+  "checks": {
+    "sourceSwift": "Full1635tests/194suites,71skips; after DEBUG-only slot fix22targetedtests/3suites,3skipsPASS; skips not nativePASS",
+    "sourcePython": "Full1539tests/19skipsPASS; after source-wrapper guard35targetedPASS",
+    "updaterNative": "Separate QA identities/currentDEBUG owner+manager/exact runtime+evidence;ACK commit and preACK fault rollbackPASS;no production feed qualification",
+    "exactHeaded": "Exact130b schema8 firstattemptPASS;DeviceMemory JS/HTTP coherence and owned-process cleanupPASS",
+    "fontResearchReuse": "Exact same signed APP4; six native Skia cases, four headed modes/36contexts and five access modes retained; no research matrix replay",
+    "doctor": "13/13PASS",
+    "localDirect": "ZIP/DMG signatures,notarization,stapling,Gatekeeper,integrity PASS",
+    "hostedZIP": "Anonymous ZIP byte identity,exact candidate binding,notarization,privacy,Gatekeeper PASS",
+    "hostedDMG": "Anonymous DMG byte identity,image content,signing,notarization,Gatekeeper PASS",
+    "downloadedMCP": "Downloaded exact signed manager18/7;requested fontPolicy create/edit/read/persistence across restartPASS;no browser launch or applied-policy claim",
+    "publicChecksums": "Both anonymous checksum files match exact qualified101-byte files",
+    "tagAndLatest": "Public v0.8.18 tag resolves to exact app-source1812f8f;latest414383007 verified",
+    "site": "Fresh anonymous API observed0.8.16(128);no credential transmitted"
+  },
+  "signing": {
+    "teamID": "H6VGU2M6JD",
+    "certificateSHA1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "notarization": "Accepted",
+    "stapling": "pass",
+    "gatekeeper": "accepted",
+    "zipSubmissionID": "31d99371-7a1a-43c5-ae13-9c0d7d06f5c7",
+    "dmgSubmissionID": "70c8682e-435a-45f2-b8b3-427beb14bdc7"
+  },
+  "migrations": {
+    "optionalFontPolicyMetadataFieldAdded": true,
+    "legacyProfileDefault": "native;system-v1 opt-in only",
+    "profileIdentitySeedRegenerated": false,
+    "browserDataFormatChanged": false,
+    "backupArchiveSchemaChanged": false,
+    "rollback": "Old129 archives retained. Quit before replacing app;129 does not support system-v1 and must not be expected to preserve this new setting."
+  },
+  "site": {
+    "status": "blocked-by-automatic-approval-review",
+    "previousSavedVersion": 153,
+    "previousAppVersion": "0.8.16"
+  },
+  "publicationState": "GitHub latestv0.8.18;anonymous ZIP/DMG/checksums and downloaded manager MCP verified;browser.free remainsv0.8.16/Sites153",
+  "limitations": [
+    "Public alpha; mandatory1.0 acceptance remains open",
+    "Source membership/full-content reconciliation observed postbuild; not a new clean reproducible-build or prebuild atomic snapshot claim",
+    "First129-to130 transition manual signed DMG/ZIP;old updater refuses new runtime",
+    "QA install/rollback is not a production signed-feed hop",
+    "macOS27 ARM64 qualified; no new otherMac/macOS14/second-display/media qualification",
+    "WebKit remains experimental system identity; no complete Safari spoof,WebKit proxy,Chromium extensions or full WebKit BrowserData backup",
+    "SafeBrowsing disabled;no universal anonymity,CAPTCHA or antifraud bypass guarantee",
+    "browser.free remains on prior version while credential workflow is blocked",
+    "No fresh full network/Canvas/WebGL/Audio matrix on successor;earlier results retain original bindings"
+  ],
+  "verification": {
+    "notarization": {
+      "ZIP": "Accepted",
+      "DMG": "Accepted"
+    },
+    "stapling": {
+      "passed": true
+    },
+    "Gatekeeper": {
+      "passed": true
+    },
+    "DirectDoctor": "13/13PASS",
+    "GUIFingerprint": {
+      "passed": true
+    },
+    "hostedZIP": {
+      "passed": true
+    },
+    "hostedDMG": {
+      "passed": true
+    },
+    "downloadedMCP": {
+      "passed": true
+    },
+    "site": {
+      "passed": false
+    },
+    "nativeUpdater": "Two actual DEBUG QA-copy ACK/install/rollback controlsPASS;not production signed-feed qualification",
+    "downloadedHeaded": "Matching exact published archive/critical inventory reuses original exact headed evidence;no second headed matrix"
+  },
+  "regression": {
+    "fromVersion": "0.8.17",
+    "sameChromiumVersion": true,
+    "runtimeBytesChanged": true,
+    "changes": [
+      "Opt-in system font source policy and variable font provenance",
+      "Manager/MCP fontPolicy configuration",
+      "Additive complete compiled updater record and measured bootstrap digest"
+    ],
+    "retainedEvidence": "Old platform/network results retain their original runtime/source bindings; unchanged source controls are not relabeled as fresh successor tests",
+    "notRerun": [
+      "Full Canvas/WebGL/Audio compatibility matrix",
+      "Full DNS/UDP/background/network-change matrix",
+      "Physical otherMac/macOS14/media/second-display checks"
+    ],
+    "scope": "Feature release,not full1.0 acceptance"
+  },
+  "changes": [
+    "Opt-in system Mac fonts for Chromium profiles;ordinary downloaded web fonts remain supported",
+    "Requested fontPolicy through editor and MCP create/update;legacy profiles defaultnative",
+    "Six source layers and exact runtime/evidence/report pair;mixed records refuse",
+    "Variable-font source correction with actual Skia/font contexts/access controls",
+    "Bootstrap and QA updater use actual measured resource record;QA moved-path correction verified"
+  ],
+  "publicationVerifiedAtUTC": "2026-10-16T00:02:44.050274+00:00"
+}

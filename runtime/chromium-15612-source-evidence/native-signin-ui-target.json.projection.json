@@ -1,0 +1,43 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "9afecafbda9765bb688bfcfc78e78709da779eeb165c699bd3353e06434c1d1b",
+  "payload": {
+    "argsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+    "correctionReceiptSHA256": "d251c11288d296849071949c6018a2f296b7e816d13edcf5d66ebd272f39dcaa",
+    "exitCode": 0,
+    "finishedAt": "2026-10-09T03:23:23.028432+00:00",
+    "jobs": 2,
+    "logSHA256": "3ba8330bfeb5cd6e3c01b798f07e5729dca8a4103ba203c9c8f407b164543da5",
+    "logSizeBytes": 91629,
+    "nativeNinjaSHA256": "6c03e94e3ee141301a7e5151227508ac8cec05c12d79ed9240062a86a0e2d14f",
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "startedAt": "2026-10-09T03:22:34.745243+00:00",
+    "status": "exact-native-signin-targets-passed",
+    "targets": [
+      "obj/chrome/browser/signin/impl/signin_util.o",
+      "obj/chrome/browser/ui/hats/impl/trust_safety_sentiment_service.o",
+      "obj/chrome/browser/ui/webui/bookmarks/bookmarks/bookmark_promo_delegate.o",
+      "obj/chrome/browser/ui/webui/bookmarks/bookmarks/bookmarks_message_handler.o",
+      "obj/chrome/browser/ui/views/app_menu/impl/action_app_menu_manager.o"
+    ]
+  },
+  "payloadType": "json",
+  "receipt": "native-signin-ui-target.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

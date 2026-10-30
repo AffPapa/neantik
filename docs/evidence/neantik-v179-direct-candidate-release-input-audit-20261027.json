@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUTC": "2026-10-26T22:13:23Z",
+  "status": "SIGNED_PRIVATE_BUNDLE_ONLY; RELEASE_TRANSACTION_INPUTS_NOT_YET_PRESENT",
+  "candidate": {
+    "candidateId": "58bd32206a064a4ba40ae9668acaef00",
+    "root": "/private/tmp/neantik-v140-source-snapshot/dist/private/candidates/58bd32206a064a4ba40ae9668acaef00",
+    "preparedBundle": {
+      "bundle": {
+        "architecture": "arm64",
+        "build": "200",
+        "inventorySHA256": "0efb298b53043fb7ee8b39e051cc642745890fcf3dabd6ed5dd41518c9d7f240",
+        "signerSHA1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+        "version": "1.0.0"
+      },
+      "kind": "signed-manager-preparation",
+      "location": "58bd32206a064a4ba40ae9668acaef00",
+      "releaseQualified": false,
+      "schemaVersion": 1,
+      "sourceSHA256": "4b2cc8d68679e3d0ffe3432004e41a651b4b55fb1f3eaf99fe6c66b8a47f9404"
+    },
+    "filesAtRoot": [
+      "NeAntik.app",
+      "location.json",
+      "preparation-source.json",
+      "prepared-bundle.json"
+    ],
+    "requiredReleaseInputs": {
+      "direct-candidate-manifest.json": false,
+      "direct-candidate-source.json": false,
+      "fingerprint-audit.json": false,
+      "fingerprint-audit-summary.json": false
+    }
+  },
+  "pipelineContract": {
+    "notarizeTransactionRequired": [
+      "--app",
+      "--manifest",
+      "--source-binding",
+      "--evidence",
+      "--attestation",
+      "--release-channel"
+    ],
+    "releaseEntry": "Release-NeAntik.command calls Run-NeAntik-Release.command, then notarized DMG workflow and distribution export; direct command does not publish GitHub or Sites."
+  },
+  "releaseState": {
+    "zip": false,
+    "dmg": false,
+    "notarization": false,
+    "gatekeeper": false,
+    "publicMutation": false
+  },
+  "limitation": "The candidate is a signed manager preparation bundle, not yet a complete Direct transaction candidate. Existing V158 Google/Booking evidence and V166 image-source join remain reusable for their exact scope; they do not synthesize absent release manifest, source-binding, fingerprint evidence, or attestation.",
+  "sideEffects": "Read-only inventory and CLI contract review; no app launch, profile access, build, archive, signing, notarization or publication.",
+  "nextAction": "After desktop access is available, complete the existing source-bound Direct release workflow so it generates the exact candidate manifest, source binding, fingerprint evidence and attestation; run its consumer preflight before ZIP notarization and DMG qualification. Keep owned-WebKit proxy qualification in the full goal and resume it after the user-prioritized Direct path."
+}

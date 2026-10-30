@@ -1,0 +1,34 @@
+{
+  "binaryBinding": {
+    "requiredEvidence": "schema-3-runtime-report",
+    "status": "pending-runtime-report"
+  },
+  "buildArgsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+  "dependencyGitCheckoutCount": 150,
+  "dependencyLockSHA256": "13947f0d4f8655664bdffd2a3541f3bf7ac418b88f6874b628f117286c7f6dcf",
+  "devtoolsCompatibilityPatchSHA256": "9eed3c3f43f96a00595163971b120c50accbeefeb07b552939b0ba9ad6ae7bfb",
+  "officialChromiumBase": {
+    "commit": "d331de35ca8ab1358c7a17e4bd41627d55eaef51",
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "156.0.8078.74",
+    "tree": "ffe41d3ec78c520fbe20a43802869358d3e18961"
+  },
+  "schemaVersion": 1,
+  "sourceAdoptionManifestSHA256": "b156785787d6c512e9e33126ba0a560d9c59b2cf3fb3404733d9d3771a0a8dfb",
+  "sourceChecks": {
+    "buildArgs": "verified",
+    "devtoolsPatchApplied": "verified",
+    "mainPatchApplied": "verified",
+    "officialCommitTree": "verified",
+    "pinnedDependencies": "verified",
+    "v8CompatibilityPatchApplied": "verified",
+    "versionFile": "verified"
+  },
+  "sourceContractSHA256": "81c79ee3822f6cd9e27baf0cdba273198ad37561489a9a50b2f3b66250ffbe6f",
+  "sourceMode": "official-chromium-stable-with-reviewed-neantik-patches",
+  "sourcePatchSHA256": "2f48cb944f6e51439322776e3ec0519bd0567e300049253791c60faca46481ea",
+  "status": "source-qualified",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "156.0.8078.74",
+  "v8CompatibilityPatchSHA256": "d06dd32200393a0eacf5dafcf83f6c5dafafc508b97af58013e52cd135d58388"
+}

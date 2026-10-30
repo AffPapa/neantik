@@ -1,0 +1,41 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "caf2b8a77198a8657ddf4f28a792ea16fd2b2bc47a966e03e95e8485c277ed14",
+  "payload": {
+    "argsGN": {
+      "relativePath": "out/NeAntikM156Qualified20261009/args.gn",
+      "sha256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01"
+    },
+    "deletedPathCount": 3248,
+    "deletedPathsSHA256": "659683e99c3a4b56324019e10d45db8e69c06a95789793e22616da32aef299e1",
+    "entriesSHA256": "c6febf65284fcc715e2be19c810b841b235102a90048031ce72f6482eecdacfd",
+    "inventoryDigestAlgorithm": "sha256-canonical-json-v1",
+    "officialChromiumBase": {
+      "commit": "634b046faf2137b83af71c87baf362b533af9104",
+      "tree": "64e212cac2a53bcbd28b0530cf6eb092141bddec"
+    },
+    "provenanceLimit": "Exact current checkout snapshot only; this does not recreate or prove missing historical patch replay evidence.",
+    "recordType": "chromium-source-snapshot",
+    "releaseReady": false,
+    "schemaVersion": 2,
+    "sourceFileCount": 1062644,
+    "targetChromiumVersion": "156.0.8078.12"
+  },
+  "payloadType": "json",
+  "receipt": "m156-postbuild-attempt-9-source-snapshot-compact.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

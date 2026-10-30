@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "name": "NeAntik first-party WebModel environment maps",
+  "license": "BSD-2-Clause",
+  "copyright": "Copyright (c) 2026 NeAntik contributors.",
+  "assetCount": 2,
+  "generator": "generate_environment_maps.py",
+  "generationMethod": "Deterministic analytic cube-map lighting; IEEE-754 binary16 little-endian R16float texels; no source asset samples or external inputs.",
+  "assets": [
+    {
+      "path": "Source/WebCore/Resources/modelDefaultDiffuseData",
+      "replacesSourceSHA256": "29a81b4539dccf31a32618e7b7164a61677ed73abb16a1fbbe17c4c314c9632a",
+      "replacesRuntimeSHA256": "29a81b4539dccf31a32618e7b7164a61677ed73abb16a1fbbe17c4c314c9632a",
+      "sha256": "1c9a94310bb745294484702475c419b4a2fe0027aa71218a7fb1c8c01d7d658d",
+      "bytes": 49152,
+      "dimensions": [64, 64, 6],
+      "format": "R16float",
+      "license": "BSD-2-Clause",
+      "copyright": "Copyright (c) 2026 NeAntik contributors."
+    },
+    {
+      "path": "Source/WebCore/Resources/modelDefaultSpecularData",
+      "replacesSourceSHA256": "64fee6af9089b94448cbb0049763f6f8e7f62cd95042e8d44a6ee6514210458a",
+      "replacesRuntimeSHA256": "64fee6af9089b94448cbb0049763f6f8e7f62cd95042e8d44a6ee6514210458a",
+      "sha256": "4c53b4b6579f33cebb3fc42631e4447e0be9823d949dd2beae4f868c20438cf2",
+      "bytes": 1048572,
+      "dimensions": [256, 128, 64, 32, 16, 8, 4, 2, 1],
+      "facesPerLevel": 6,
+      "format": "R16float",
+      "license": "BSD-2-Clause",
+      "copyright": "Copyright (c) 2026 NeAntik contributors."
+    }
+  ]
+}

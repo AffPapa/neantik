@@ -1,0 +1,27 @@
+{
+  "buildArgsSHA256": "c5251b5689d5d4e8fa37e1008868a5e7dd4c50ee0e420b54111a0c9ee3297f4e",
+  "chromiumVersion": "154.0.8037.98",
+  "evidence": [
+    {
+      "path": "device-memory-hotfix.json",
+      "sha256": "d18430b6230f32b833fddfa30818986d340778ccf3fb2d92356a23dd14170e87"
+    },
+    {
+      "path": "external-build-inputs.json",
+      "sha256": "f7e83b2b1af3de71563e59ab21bb7a369e969d2c9db1ee4e941521780945d3fb"
+    },
+    {
+      "path": "ordered-patch-replay.json",
+      "sha256": "ea9d874404ea61a71cf6f936f4581ed8f75a2a30e21b691ed0bf9a59fe88a782"
+    },
+    {
+      "path": "port-compatibility.json",
+      "sha256": "07d6d83d859b9d1771e791c76f38f86bc7909883a133d9aab0241fae3fc57ef9"
+    }
+  ],
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "sourceInputsReady": true,
+  "sourceSnapshotSHA256": "490fc2007753214f00a5408d9ffd8c2c90a2dff5861a7fcb64acf6212b1bf15b",
+  "status": "source-reconstructed"
+}

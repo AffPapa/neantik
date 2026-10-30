@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T13:22:27.543288+00:00",
+  "status": "build146-exact-Dev-QA-FAIL-closed-on-system-WebKit-image",
+  "archiveSHA256": "515ce37e0ca6919fe519dd744f61195cb2a90820d5637f9b3070c7e5e59950d6",
+  "apple": {
+    "submissionID": "a4f58490-ac65-4b13-bbd1-d3245f1e77fb",
+    "status": "Accepted",
+    "gatekeeper": "accepted; source=Notarized Developer ID"
+  },
+  "launch": {
+    "exactLauncher": "PASS; one-use marker consumed",
+    "managerPID": 46175,
+    "syntheticA": "launch refused before network activation"
+  },
+  "boundedFailure": "failure=runtime-ambiguousImages-owned1-system1-other0-entry0-appkit0 stage=identity-verified",
+  "imageFailure": "runtime-ambiguousImages-owned1-system1-other0-entry0-appkit0",
+  "localFixtureEvents": 0,
+  "conclusion": "NSApplication.finishLaunching caused the host to load a second system WebKit image; existing image attestation correctly refused before profile/page launch. This approach is reverted in source. It does not invalidate build145 named HTTP route evidence.",
+  "cleanup": "alert dismissed; Dev manager quit; fixture stopped; no Dev QA processes at check",
+  "productionQualified": false,
+  "releaseQualified": false,
+  "nextAction": "Build only a changed Dev host/manager with finishLaunching removed and retained QA visible-window/didFinish markers; prove page completion and window visibility without system WebKit image, then diagnose any remaining UI issue."
+}

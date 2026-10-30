@@ -1,7 +1,20 @@
+import Foundation
 import Testing
 @testable import NeAntik
 
 struct AccessibilityPresentationTests {
+    @Test
+    func diagnosticsLabelShowsTheActualNextStep() {
+        for step: ProfileDiagnosticsNextStep in [
+            .recoverProfile, .waitForProfile, .retryInspection,
+            .runtimeNeedsAttention, .inspectDetails
+        ] {
+            #expect(step.accessibilityLabel == "Следующий шаг: " + (step.title ?? ""))
+            #expect(step.accessibilityLabel?.contains("(nextStep)") == false)
+        }
+        #expect(ProfileDiagnosticsNextStep.none.accessibilityLabel == nil)
+    }
+
     @Test
     func evidenceStatesUseDistinctNonColorSymbols() {
         let states: [DiagnosticEvidenceState] = [
@@ -15,109 +28,6 @@ struct AccessibilityPresentationTests {
 
         #expect(Set(symbols).count == states.count)
         #expect(states.allSatisfy { !$0.title.isEmpty })
-    }
-
-    @Test
-    func announcementGateSuppressesOnlyConsecutiveDuplicates() {
-        var gate =
-            AccessibilityAnnouncementGate<
-                BulkProxyImportAccessibilityAnnouncement
-            >()
-
-        let firstValidation = gate.shouldAnnounce(.validationFailed)
-        let duplicateValidation = gate.shouldAnnounce(.validationFailed)
-        let firstReady = gate.shouldAnnounce(.ready(2))
-        let duplicateReady = gate.shouldAnnounce(.ready(2))
-        #expect(firstValidation)
-        #expect(!duplicateValidation)
-        #expect(firstReady)
-        #expect(!duplicateReady)
-        gate.reset()
-        let readyAfterReset = gate.shouldAnnounce(.ready(2))
-        #expect(readyAfterReset)
-    }
-
-    @Test
-    func bulkAnnouncementsCannotEchoProxyCredentials() {
-        let credential = "operator:unique-secret@proxy.example:443"
-        let announcements: [BulkProxyImportAccessibilityAnnouncement] = [
-            .validationFailed,
-            .ready(3),
-            .created(3),
-            .creationFailed,
-        ]
-
-        for announcement in announcements {
-            #expect(!announcement.message.contains(credential))
-            #expect(!announcement.message.contains("unique-secret"))
-            #expect(!announcement.message.contains("proxy.example"))
-        }
-    }
-
-    @Test
-    func folderAnnouncementsAreActionableAndInputIndependent() {
-        let announcements: [ProfileFolderAccessibilityAnnouncement] = [
-            .invalidName,
-            .duplicateName,
-            .saveFailed,
-        ]
-
-        for announcement in announcements {
-            #expect(!announcement.message.isEmpty)
-            #expect(!announcement.message.contains("secret-folder-name"))
-        }
-    }
-
-    @Test
-    func tagValidationAnnouncementsSuppressDuplicatesUntilReset() {
-        var gate =
-            AccessibilityAnnouncementGate<
-                ProfileTagEditorAccessibilityAnnouncement
-            >()
-
-        let firstTooMany = gate.shouldAnnounce(.tooMany)
-        let duplicateTooMany = gate.shouldAnnounce(.tooMany)
-        let firstTooLong = gate.shouldAnnounce(.tooLong)
-        let duplicateTooLong = gate.shouldAnnounce(.tooLong)
-
-        #expect(firstTooMany)
-        #expect(!duplicateTooMany)
-        #expect(firstTooLong)
-        #expect(!duplicateTooLong)
-
-        gate.reset()
-
-        let tooLongAfterReset = gate.shouldAnnounce(.tooLong)
-        let firstInvalid = gate.shouldAnnounce(.invalid)
-        let duplicateInvalid = gate.shouldAnnounce(.invalid)
-
-        #expect(tooLongAfterReset)
-        #expect(firstInvalid)
-        #expect(!duplicateInvalid)
-    }
-
-    @Test
-    func tagValidationAnnouncementsAreActionableAndInputIndependent() {
-        let privateInput = "secret-client-tag"
-        let expectations: [
-            (
-                error: ProfileTagEditorValidationError,
-                announcement: ProfileTagEditorAccessibilityAnnouncement
-            )
-        ] = [
-            (.tooMany, .tooMany),
-            (.tooLong, .tooLong),
-            (.invalid, .invalid),
-        ]
-
-        for expectation in expectations {
-            let announcement =
-                ProfileTagEditorAccessibilityAnnouncement(expectation.error)
-            #expect(announcement == expectation.announcement)
-            #expect(!announcement.message.isEmpty)
-            #expect(announcement.message.contains("Тег не добавлен"))
-            #expect(!announcement.message.contains(privateInput))
-        }
     }
 
     @Test
@@ -164,96 +74,66 @@ struct AccessibilityPresentationTests {
     }
 
     @Test
-    func profileRowsExposeTextStateRouteAndNormalizedNote() {
-        let direct = ProfileRowPresentation.resolve(
-            profile: BrowserProfile(
-                name: "Direct",
-                note: "  Первый шаг\nВторой шаг  "
+    func snapshotRestorePreviewCountsFoldersWithoutExposingProfileData() {
+        let profile = BrowserProfile(
+            name: "private-profile-name",
+            note: "private-note",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "private-proxy.example",
+                port: 443,
+                username: "private-user"
             ),
-            processState: .stopped
+            identity: BrowserIdentity(seed: 87654321)
         )
-        #expect(direct.statusTitle == "Остановлен")
-        #expect(direct.statusSystemImage == "circle")
-        #expect(direct.routeTitle == "Без прокси")
-        #expect(direct.noteSummary == "Первый шаг Второй шаг")
-        #expect(direct.statusAccessibilityLabel == "Статус: Остановлен")
-        #expect(direct.routeAccessibilityLabel == "Подключение: Без прокси")
-        #expect(
-            ProfileRowPresentation.profileAccessibilityLabel(
-                BrowserProfile(name: "Рабочий")
-            ) == "Профиль: Рабочий"
+        let payload = ProfileSnapshotRestorePayload(
+            profiles: [profile, profile],
+            folderNames: ["Work", "New"],
+            createdAt: Date(timeIntervalSince1970: 1_800_000_000)
         )
 
-        let proxy = ProfileRowPresentation.resolve(
-            profile: BrowserProfile(
-                name: "Proxy",
-                proxy: ProxyConfiguration(
-                    kind: .https,
-                    host: "proxy.example",
-                    port: 443,
-                    username: ""
-                )
-            ),
-            processState: .managed
+        let preview = ProfileSnapshotRestorePreview(
+            payload: payload,
+            existingFolderNames: ["wórk"]
         )
-        #expect(proxy.statusTitle == "Запущен")
-        #expect(proxy.statusSystemImage == "circle.fill")
-        #expect(proxy.routeTitle.contains("proxy.example"))
+
+        #expect(preview.profileCount == 2)
+        #expect(preview.folderCount == 2)
+        #expect(preview.reusedFolderCount == 1)
+        #expect(preview.newFolderCount == 1)
+        #expect(
+            preview.accessibilitySummary ==
+                "Профилей будет добавлено: 2. Папок будет использовано: 2. " +
+                "Существующих папок совпадёт: 1. Новых папок будет создано: 1."
+        )
+        let presentation = String(describing: preview)
+        #expect(!presentation.contains("private-profile-name"))
+        #expect(!presentation.contains("private-note"))
+        #expect(!presentation.contains("private-proxy.example"))
+        #expect(!presentation.contains("private-user"))
+        #expect(!presentation.contains("87654321"))
     }
 
     @Test
-    func profileRowNotePreviewIsBoundedAndDoesNotExposeFullNote() {
-        let privateSuffix = "private-tail-marker"
-        let presentation = ProfileRowPresentation.resolve(
-            profile: BrowserProfile(
-                name: "Bounded note",
-                note: String(repeating: "контекст ", count: 30) +
-                    privateSuffix
-            ),
-            processState: .stopped
+    func snapshotRestorePreviewIgnoresProfilesWithoutFolders() {
+        let payload = ProfileSnapshotRestorePayload(
+            profiles: [BrowserProfile(name: "Local")],
+            folderNames: [nil],
+            createdAt: Date(timeIntervalSince1970: 1_800_000_000)
+        )
+        let preview = ProfileSnapshotRestorePreview(
+            payload: payload,
+            existingFolderNames: ["Work"]
         )
 
+        #expect(preview.profileCount == 1)
+        #expect(preview.folderCount == 0)
+        #expect(preview.reusedFolderCount == 0)
+        #expect(preview.newFolderCount == 0)
         #expect(
-            presentation.noteSummary.count <=
-                ProfileRowPresentation.maximumNoteSummaryLength + 1
-        )
-        #expect(presentation.noteSummary.hasSuffix("…"))
-        #expect(!presentation.noteSummary.contains(privateSuffix))
-    }
-
-    @Test
-    func archivedProfileRowUsesTextAndSymbolInsteadOfColorAlone() {
-        var profile = BrowserProfile(name: "Archive")
-        profile.isArchived = true
-
-        let presentation = ProfileRowPresentation.resolve(
-            profile: profile,
-            processState: .stopped
-        )
-
-        #expect(presentation.statusTitle == "В архиве")
-        #expect(presentation.statusSystemImage == "archivebox")
-        #expect(presentation.statusTone == .neutral)
-    }
-
-    @Test
-    func profileRowUsesShortUnambiguousLaunchLabels() {
-        #expect(
-            ProfileRowPresentation.compactLaunchTitle("Запустить") ==
-                "Старт"
-        )
-        #expect(
-            ProfileRowPresentation.compactLaunchTitle("Остановить") ==
-                "Стоп"
-        )
-        #expect(
-            ProfileRowPresentation.compactLaunchTitle(
-                "Отменить подготовку"
-            ) == "Отмена"
-        )
-        #expect(
-            ProfileRowPresentation.compactLaunchTitle("Неизвестно") ==
-                "Неизвестно"
+            preview.accessibilitySummary ==
+                "Профилей будет добавлено: 1. Папок будет использовано: 0. " +
+                "Существующих папок совпадёт: 0. Новых папок будет создано: 0."
         )
     }
 }

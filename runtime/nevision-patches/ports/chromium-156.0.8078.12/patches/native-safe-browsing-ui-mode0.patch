@@ -1,0 +1,13 @@
+--- a/chrome/browser/safe_browsing/BUILD.gn
++++ b/chrome/browser/safe_browsing/BUILD.gn
+@@ -132,7 +132,9 @@
+         [ "//chrome/browser/ui/android/safe_browsing:safe_browsing" ]
+   }
+ 
+-  if (!is_android) {
++  # Native UI dependencies belong to the disabled full Safe Browsing target.
++  # The Enterprise-only mode-0 surface below declares its own dependencies.
++  if (false) {
+     deps += [
+       "//chrome/browser/ui:browser_commands",
+       "//chrome/browser/ui:browser_window_header",

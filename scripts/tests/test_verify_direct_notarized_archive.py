@@ -5,6 +5,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "verify-direct-notarized-archive.py"
@@ -23,6 +24,33 @@ EXPECTED = MODULE.ExpectedAppContract(
 
 
 class DirectNotarizedArchiveVerifierTests(unittest.TestCase):
+    def test_owned_temporary_alias_is_resolved_before_extraction(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            write_info(root, version="1.2.3")
+            archive = write_archive(root)
+            owned = root / "owned"
+            owned.mkdir()
+            alias = root / "alias"
+            alias.symlink_to(owned, target_is_directory=True)
+            extracted = []
+
+            def runner(command):
+                if command[:4] == ["ditto", "-x", "-k", str(archive)]:
+                    destination = Path(command[4])
+                    self.assertEqual(destination, owned)
+                    self.assertFalse(any(parent.is_symlink() for parent in destination.parents))
+                    extracted.append(destination)
+                    write_app_info(destination / "NeAntik.app")
+                if command[:2] == ["codesign", "--display"]:
+                    return MODULE.CommandResult(0, signed_display())
+                return MODULE.CommandResult(0, "ok")
+
+            with patch.object(MODULE.tempfile, "TemporaryDirectory") as factory:
+                factory.return_value.__enter__.return_value = str(alias)
+                MODULE.verify_archive(archive=archive, project_root=root, runner=runner)
+            self.assertEqual(extracted, [owned])
+
     def test_archive_contract_accepts_matching_checksum(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -167,6 +195,63 @@ class DirectNotarizedArchiveVerifierTests(unittest.TestCase):
         self.assertIn("xcrun stapler validate", joined)
         self.assertIn("spctl --assess --type", joined)
 
+    def test_verify_app_runs_owned_webkit_pin_guard_when_runtime_is_present(self) -> None:
+        commands: list[list[str]] = []
+
+        def runner(command):
+            commands.append(command)
+            if command[:2] == ["codesign", "--display"]:
+                return MODULE.CommandResult(0, signed_display())
+            if command and command[0] == sys.executable and command[1].endswith("verify-webkit-host-pin.py"):
+                return MODULE.CommandResult(1, "nested WebKit host executable changed after its manager pin was sealed")
+            return MODULE.CommandResult(0, "ok")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            app = Path(temporary) / "NeAntik.app"
+            write_app_info(app)
+            info_path = app / "Contents" / "Info.plist"
+            info = plistlib.loads(info_path.read_bytes())
+            info["NeAntikWebKitHostV1"] = {"fixture": "present"}
+            info_path.write_bytes(plistlib.dumps(info))
+            with self.assertRaisesRegex(
+                MODULE.DirectNotarizedArchiveError,
+                "nested WebKit host executable changed after its manager pin was sealed",
+            ):
+                MODULE.verify_app(app, expected=EXPECTED, runner=runner)
+
+        self.assertTrue(any(command and command[0] == sys.executable
+                            and command[1].endswith("verify-webkit-host-pin.py")
+                            for command in commands))
+
+    def test_verify_app_requires_owned_webkit_runtime_notice_guard(self) -> None:
+        commands: list[list[str]] = []
+
+        def runner(command):
+            commands.append(command)
+            if command[:2] == ["codesign", "--display"]:
+                return MODULE.CommandResult(0, signed_display())
+            return MODULE.CommandResult(0, "ok")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            app = Path(temporary) / "NeAntik.app"
+            write_app_info(app)
+            host = app / "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
+            host.mkdir(parents=True)
+            frameworks = host / "Contents/Frameworks"
+            frameworks.mkdir(parents=True)
+            info_path = app / "Contents/Info.plist"
+            info = plistlib.loads(info_path.read_bytes())
+            info["NeAntikWebKitHostV1"] = {"fixture": "present"}
+            info_path.write_bytes(plistlib.dumps(info))
+            MODULE.verify_app(app, expected=EXPECTED, runner=runner)
+
+        notice_commands = [command for command in commands
+                           if command and command[0] == sys.executable
+                           and command[1].endswith("webkit_runtime_notices.py")]
+        self.assertEqual(len(notice_commands), 1)
+        self.assertIn("--verify", notice_commands[0])
+        self.assertIn(str(frameworks), notice_commands[0])
+
     def test_verify_app_fails_closed_when_stapler_or_spctl_fails(self) -> None:
         def runner(command):
             if command[:2] == ["codesign", "--display"]:
@@ -235,6 +320,45 @@ class DirectNotarizedArchiveVerifierTests(unittest.TestCase):
                     for command in commands
                 )
             )
+            self.assertTrue(
+                any(
+                    command[1].endswith(
+                        "scripts/verify-public-artifact-privacy.py"
+                    )
+                    for command in commands
+                    if len(command) > 1
+                )
+            )
+
+    def test_archive_fails_when_public_privacy_gate_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_info(root, version="1.2.3")
+            archive = write_archive(root)
+
+            def runner(command):
+                if command[:4] == ["ditto", "-x", "-k", str(archive)]:
+                    write_app_info(Path(command[4]) / "NeAntik.app")
+                if len(command) > 1 and command[1].endswith(
+                    "scripts/verify-public-artifact-privacy.py"
+                ):
+                    return MODULE.CommandResult(
+                        65,
+                        "Public artifact privacy verification failed",
+                    )
+                if command[:2] == ["codesign", "--display"]:
+                    return MODULE.CommandResult(0, signed_display())
+                return MODULE.CommandResult(0, "ok")
+
+            with self.assertRaisesRegex(
+                MODULE.DirectNotarizedArchiveError,
+                "Public artifact privacy verification failed",
+            ):
+                MODULE.verify_archive(
+                    archive=archive,
+                    project_root=root,
+                    runner=runner,
+                )
 
     def test_rejects_stale_or_missing_runtime_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -335,6 +459,12 @@ def write_app_info(
 
 
 def write_archive(root: Path) -> Path:
+    scripts = root / "scripts"
+    scripts.mkdir(parents=True, exist_ok=True)
+    (scripts / "verify-public-artifact-privacy.py").write_text(
+        "# test privacy verifier\n",
+        encoding="utf-8",
+    )
     archive = root / "dist" / "NeAntik-1.2.3-arm64-notarized.zip"
     archive.parent.mkdir(parents=True)
     with zipfile.ZipFile(archive, "w") as zip_file:

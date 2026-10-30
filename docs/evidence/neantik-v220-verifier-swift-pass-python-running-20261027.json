@@ -1,0 +1,17 @@
+{
+  "status": "FULL_SWIFT_PASS_PYTHON_RUNNING",
+  "swift": {
+    "tests": 1841,
+    "suites": 222,
+    "skipped": 82,
+    "sourceUnchanged": true,
+    "receipt": "/private/tmp/neantik-release-v1/.build/neantik-local/test-receipts/20261027T082631Z-50141.json",
+    "receiptSHA256": "a12555667647ab6eff1cb8e912a41a51f9901d7dab778c48511b3e72f9498c1d"
+  },
+  "python": {
+    "status": "RUNNING",
+    "sessionId": 83682
+  },
+  "checker": "private presign binding verification; not shipping runtime or final release qualification",
+  "releaseQualified": false
+}

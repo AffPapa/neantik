@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T13:31:18+00:00",
+  "candidateBuild": "147",
+  "archiveSHA256": "26ec9589f71a2ab5f5fd3bee4f3b33f3e5c37f9943246f56bb631eaf9762cb30",
+  "appleStatus": "Accepted",
+  "gatekeeper": "accepted; Notarized Developer ID",
+  "oneUseLauncher": "LAUNCHED pid=47228; synthetic root",
+  "ownedProfileA": {
+    "windowStage": "stage=qa-window-visible",
+    "navigationStage": "stage=qa-nav-sentinel",
+    "brokerCounts": "inbound=2 loopback=2 connectMethods=2 httpMethods=0 otherMethods=0 parsed=2 authorized=1 bound=1",
+    "fixtureEventCounts": {
+      "proxy-response-complete": 1
+    },
+    "result": "PASS: synthetic named HTTP page completed through proxy, visible WKWebView window and exact DOM text sentinel read"
+  },
+  "visualInspection": "CUA manager showed A running; CUA getApp for owned host timed out; no owned-window screenshot",
+  "scope": "one synthetic HTTP page in isolated owned WebKit; no public HTTPS, external proxy, production profile or release qualification",
+  "cleanup": "manager and host absent from CUA running app inventory; fixture stopped",
+  "retired": true,
+  "changedAfterFreeze": "ContentView now uses engine settingsSummary instead of stale hardcoded proxy unsupported copy; not in build147"
+}

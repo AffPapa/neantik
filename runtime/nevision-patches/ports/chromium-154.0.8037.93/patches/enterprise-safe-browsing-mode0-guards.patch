@@ -1,0 +1,36 @@
+diff --git a/components/enterprise/connectors/core/cloud_content_scanning/files_request_handler_base.cc b/components/enterprise/connectors/core/cloud_content_scanning/files_request_handler_base.cc
+--- a/components/enterprise/connectors/core/cloud_content_scanning/files_request_handler_base.cc
++++ b/components/enterprise/connectors/core/cloud_content_scanning/files_request_handler_base.cc
+@@ -240,7 +240,7 @@
+ void FilesRequestHandlerBase::FinishRequestEarly(
+     std::unique_ptr<BinaryUploadRequest> request,
+     ScanRequestUploadResult result) {
+-#if !BUILDFLAG(IS_IOS)
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_IOS)
+   // We add the request here in case we never actually uploaded anything, so it
+   // wasn't added in OnGetRequestData
+   safe_browsing::WebUIContentInfoSingleton::GetInstance()
+diff --git a/components/enterprise/connectors/core/cloud_content_scanning/multipart_uploader.cc b/components/enterprise/connectors/core/cloud_content_scanning/multipart_uploader.cc
+--- a/components/enterprise/connectors/core/cloud_content_scanning/multipart_uploader.cc
++++ b/components/enterprise/connectors/core/cloud_content_scanning/multipart_uploader.cc
+@@ -309,7 +309,7 @@
+   resource_request->url = base_url_;
+   resource_request->method = "POST";
+   SetRequestHeaders(resource_request.get());
+-#if !BUILDFLAG(IS_IOS)
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_IOS)
+   safe_browsing::WebUIContentInfoSingleton::GetInstance()
+       ->AddHeadersToDeepScanRequests(request_token_, resource_request->headers);
+ #endif
+diff --git a/components/enterprise/connectors/core/cloud_content_scanning/resumable_uploader_base.cc b/components/enterprise/connectors/core/cloud_content_scanning/resumable_uploader_base.cc
+--- a/components/enterprise/connectors/core/cloud_content_scanning/resumable_uploader_base.cc
++++ b/components/enterprise/connectors/core/cloud_content_scanning/resumable_uploader_base.cc
+@@ -274,7 +274,7 @@
+   resource_request->url = base_url_;
+   resource_request->method = "POST";
+   SetMetadataRequestHeaders(resource_request.get());
+-#if !BUILDFLAG(IS_IOS)
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_IOS)
+   safe_browsing::WebUIContentInfoSingleton::GetInstance()
+       ->AddHeadersToDeepScanRequests(request_token_, resource_request->headers);
+ #endif

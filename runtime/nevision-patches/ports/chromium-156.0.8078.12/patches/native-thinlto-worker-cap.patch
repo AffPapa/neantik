@@ -1,0 +1,12 @@
+--- a/build/config/compiler/BUILD.gn
++++ b/build/config/compiler/BUILD.gn
+@@ -835,7 +835,8 @@
+       # and let it use all cores.
+       # TODO(thakis): Check if '=0' (that is, number of cores, instead
+       # of "all" which means number of hardware threads) is faster.
+-      ldflags += [ "-Wl,--thinlto-jobs=all" ]
++      # NeAntik local build: cap linker worker concurrency independently of Ninja.
++      ldflags += [ "-Wl,--thinlto-jobs=2" ]
+ 
+       if (is_chromeos) {
+         # ARM was originally set lower than x86 to keep the size

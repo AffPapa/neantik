@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "status": "source-implemented-and-local-regression-passed;not-released",
+  "issue": "Fresh persisted profile metadata could be returned with a live launch receipt from an older configuration when relay transport was absent",
+  "change": [
+    "Require launch/recorded metadata revision for every session observation, independently of relay transport",
+    "Keep early guard and final persisted publication fence",
+    "Accept the durable launch bookkeeping transition; refuse unknown launch revision"
+  ],
+  "targetedTests": 8,
+  "ordinarySwiftSuites": 173,
+  "swiftSummaryTests": 1611,
+  "swiftSkippedLogLines": 46,
+  "pythonTests": 1508,
+  "pythonSkipped": 19,
+  "controls": [
+    "Real temporary metadata plus synthetic lease reproduces the old predicate returning true for new metadata and old receipt; new fence returns false",
+    "Real markLaunchedWithReceipt transition remains accepted",
+    "Missing launch revision cannot authorize an observation"
+  ],
+  "sourceReview": "read-only independent diff review found no remaining concrete defect",
+  "actualBrowserForThisChange": false,
+  "exactCandidateVerified": false,
+  "published": false,
+  "limitations": [
+    "No real AI client or new exact signed app gate has run for this change",
+    "Chromium route stays notObserved; this is not network-route proof"
+  ],
+  "capturedAt": "2026-10-15T20:23:42.889475+00:00"
+}

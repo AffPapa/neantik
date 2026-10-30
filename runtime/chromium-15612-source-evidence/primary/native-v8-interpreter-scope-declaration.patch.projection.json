@@ -1,0 +1,21 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "8f774fa4d2c1aa1481174594dd481abbdd6aed148d7ee4defc892653edb81408",
+  "payload": "--- a/v8/src/debug/debug-wasm-objects.cc\n+++ b/v8/src/debug/debug-wasm-objects.cc\n@@ -798,6 +798,8 @@\n \n   ScopeType GetType() override { return type_; }\n \n+  bool DeclaresLocals() override { return true; }\n+\n   v8::Local<v8::Object> GetObject() override {\n     Isolate* isolate = frame_->isolate();\n     switch (type_) {\n",
+  "payloadType": "text",
+  "receipt": "native-v8-interpreter-scope-declaration.patch",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v261-live-checkpoint-reconciliation-20261027",
+  "observedAtUTC": "2026-10-27T14:44:37Z",
+  "status": "CHECKPOINT_RECONCILED; RELEASE_NOT_QUALIFIED",
+  "scope": "Read-only evidence reconciliation of CURRENT against exact V252/V255-V260 receipts and candidate pointer; no build, signing, app launch, profile access, notarization or publication.",
+  "priorCurrentSHA256": "031635faa576552bf6f2e8feac2c79b3607589c43bc22fd09af8c46dbb9a09dd",
+  "candidate": {
+    "id": "b96006a994664a80bf89cd757f932eff",
+    "manifestSHA256": "4d10449a7674c908c333f31d81f2b1ce3a5ce0178716ecda0b8daddd6c6924c8",
+    "version": "1.0.0",
+    "build": "200"
+  },
+  "reconciledFacts": {
+    "productionProxy": "V252 remains FAIL for exact b960; no owned HTTPS CONNECT event, no valid upstream marker. V254 remains inconclusive. No unchanged rerun.",
+    "devWebKit": "Exact private Dev ZIP 3bdc4b7646a3d1806c6a0944e187ec442024455de19af7b132452b7e28c10656 passed Direct system-WebKit Google/Booking and its own synthetic owned-WebKit A1/B1/A2; does not transfer to production.",
+    "chromium": "V260 exact b960 Chromium packaged-runtime report/source binding PASS; static consistency only.",
+    "signing": "V258/V259 Developer ID timestamp signing still failed. V229 is a prior control PASS and does not supersede later failures; generic RFC3161 Granted is not codesign PASS.",
+    "source": "V248 binds b960 to source offer and four reviewed image identities only; complete corresponding source, applicable notices/license closure, recipient signed replacement/load remain open. V249 supplement is draft-only; V250/V251 recipe/input gaps remain.",
+    "publication": "No final ZIP/DMG, notarization, GitHub/browser.free release or downloaded-byte verification."
+  },
+  "checkpointCorrections": [
+    "Correct stale production candidate reference 58bd to b960.",
+    "Replace V106-era regression/source summary with current V258/V223/V248/V255 evidence and exact limitations.",
+    "Keep historical attempt keys intact; do not treat them as current instructions."
+  ],
+  "nextAction": "Keep b960 frozen. Continue candidate-bound source/license/notice/relink closure. Diagnose the timestamp discrepancy between V229 PASS and V258/V259 FAIL without an unchanged signing retry. After secure timestamp succeeds, use one fresh diagnostic candidate, exact consumer preflight, and one admitted native run joining manager/host PID, navigation, broker and controlled HTTPS upstream counters. No publication until all gates pass.",
+  "releaseQualified": false
+}

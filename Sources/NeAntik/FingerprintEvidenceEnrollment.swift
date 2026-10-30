@@ -75,60 +75,80 @@ struct FingerprintEvidenceEnrollmentRunner {
         var succeeded = false
         defer {
             if !succeeded && !output.isCommitted {
-                if let enrolledSessionID {
-                    try? authority.abandon(sessionID: enrolledSessionID)
-                }
                 output.rollback()
             }
         }
 
-        let sessionID = sessionIDProvider()
-        let challenge = try challengeProvider()
-        guard challenge.count == 32 else {
-            throw FingerprintEvidenceEnrollmentError.invalidEntropy
-        }
-        let publicKeyX963 = try authority.enroll(sessionID: sessionID)
-        enrolledSessionID = sessionID
-        let binding = FingerprintEvidenceManifestBinding(
-            publicKeyX963: publicKeyX963,
-            sessionID: sessionID,
-            challenge: challenge
-        )
-        let validated = try binding.validated()
-        let signer = try authority.existingSigner(
-            sessionID: sessionID,
-            expectedPublicKeyX963: publicKeyX963
-        )
-        var selfTestTranscript = Self.selfTestDomain
-        selfTestTranscript.append(Data(sessionID.uuidString.utf8))
-        selfTestTranscript.append(challenge)
+        var stage = FingerprintEvidenceEnrollmentFailure.Stage.bindingValidation
         do {
-            let signature = try P256.Signing.ECDSASignature(
-                derRepresentation: signer.signatureDER(
-                    for: selfTestTranscript
-                )
+            let sessionID = sessionIDProvider()
+            let challenge = try challengeProvider()
+            guard challenge.count == 32 else {
+                throw FingerprintEvidenceEnrollmentError.invalidEntropy
+            }
+            let publicKeyX963 = try authority.enroll(sessionID: sessionID)
+            enrolledSessionID = sessionID
+            let binding = FingerprintEvidenceManifestBinding(
+                publicKeyX963: publicKeyX963,
+                sessionID: sessionID,
+                challenge: challenge
             )
-            guard validated.publicKey.isValidSignature(
-                signature,
-                for: selfTestTranscript
-            ) else {
+            stage = .bindingValidation
+            let validated = try binding.validated()
+            stage = .selfTest
+            let signer = try authority.existingSigner(
+                sessionID: sessionID,
+                expectedPublicKeyX963: publicKeyX963
+            )
+            var selfTestTranscript = Self.selfTestDomain
+            selfTestTranscript.append(Data(sessionID.uuidString.utf8))
+            selfTestTranscript.append(challenge)
+            do {
+                let signature = try P256.Signing.ECDSASignature(
+                    derRepresentation: signer.signatureDER(
+                        for: selfTestTranscript
+                    )
+                )
+                guard validated.publicKey.isValidSignature(
+                    signature,
+                    for: selfTestTranscript
+                ) else {
+                    throw FingerprintEvidenceEnrollmentError.selfTestFailed
+                }
+            } catch let error as FingerprintEvidenceEnrollmentError {
+                throw error
+            } catch {
                 throw FingerprintEvidenceEnrollmentError.selfTestFailed
             }
-        } catch let error as FingerprintEvidenceEnrollmentError {
-            throw error
-        } catch {
-            throw FingerprintEvidenceEnrollmentError.selfTestFailed
-        }
 
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [
-            .sortedKeys,
-            .withoutEscapingSlashes
-        ]
-        let data = try encoder.encode(binding)
-        try output.commit(data)
-        succeeded = true
-        return binding
+            stage = .outputCommit
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [
+                .sortedKeys,
+                .withoutEscapingSlashes
+            ]
+            let data = try encoder.encode(binding)
+            try output.commit(data)
+            succeeded = true
+            return binding
+        } catch {
+            // Successful enroll is the ownership boundary. A failed duplicate
+            // never authorizes deletion, and committed output keeps its key.
+            guard let enrolledSessionID, !output.isCommitted else { throw error }
+            var cleanup = FingerprintEvidenceEnrollmentFailure.Cleanup.released
+            var cleanupCode: String?
+            do {
+                try authority.abandon(sessionID: enrolledSessionID)
+            } catch {
+                cleanup = .retained
+                cleanupCode = FingerprintEvidenceEnrollmentFailure.code(for: error)
+            }
+            throw FingerprintEvidenceEnrollmentFailure(
+                stage: stage,
+                primaryCode: FingerprintEvidenceEnrollmentFailure.code(for: error),
+                cleanup: cleanup, cleanupCode: cleanupCode
+            )
+        }
     }
 
     private static func secureRandomChallenge() throws -> Data {

@@ -35,14 +35,53 @@ latest sanitized health outcome. It has no fields for:
 - WebRTC candidates or network addresses;
 - profile notes.
 
-## Future adapters
+## Local MCP foundation
 
-Any future local API, MCP server or SDK must consume this same DTO instead of
-reading JSON files independently. The first acceptable adapter is read-only,
-off by default, loopback-only and authenticated with an ephemeral session
-token. It must not launch/stop browsers, mutate profiles, expose Keychain
-material, expose profile notes or add a network-accessible listener. Those
-capabilities require a separate threat model and product decision.
+`--neantik-mcp-stdio --data-root /absolute/path` is an explicit, read-only
+local stdio mode. It is not started by the GUI and opens no socket. The
+separate process uses the canonical `ProfileStore` decoder on one bounded,
+regular metadata file and returns a still narrower allowlist than
+`WorkspacePublicSnapshotDTO`: ID, name, tags, pin/archive flags, and
+`processState: unverified`. It cannot claim a profile is running because it
+does not own `BrowserProcessManager`'s live reconciliation. It never returns
+notes, proxy details, exact network observations, BrowserData or fingerprint
+material. The mode cannot launch/stop browsers or mutate profiles.
 
-The current source tree provides the shared domain and DTO only. It does not
-start an HTTP listener, MCP server or background service.
+The initial supported MCP methods are `initialize`, `ping`, `tools/list` and
+`tools/call` for `workspace_list_profiles` or `workspace_list_profiles_page`, using the 2025-11-25 or 2025-06-18 JSON-RPC
+stdio protocol. Messages are newline-delimited and requests are limited to
+64 KiB; metadata input is limited to 64 MiB. A malformed or unsafe metadata
+file yields a generic error. Standard output contains protocol messages only.
+Initialize requires protocolVersion, capabilities and clientInfo name/version.
+IDs must be strings or integers, never null/fractions/booleans. Tools declare
+read-only annotations and output schemas; structuredContent matches text JSON.
+Names/tags are untrusted data, never instructions.
+Malformed JSON, invalid request IDs and non-object parameters receive distinct
+JSON-RPC errors. These checks do not grant any write or launch capability.
+Configure the client to execute the absolute path of the signed
+`NeAntik.app/Contents/MacOS/NeAntik` binary with these arguments and a
+deliberately selected, already initialized local data root. A missing
+`profiles.json` is an error rather than an apparently empty workspace. Local
+stdio support varies by chat client; compatibility with Claude, ChatGPT or
+Grok has not yet been certified.
+
+Future create/edit/launch tools require a separate threat model, revision
+checks, process reconciliation and a user-visible confirmation model. The
+current adapter is a foundation for those tools, not browser RPA.
+
+
+### Bounded workspace reads
+
+The adapter reads at most 64 MiB of metadata. Pages accept `limit` (1–100,
+default 50) and an optional `cursor`. The response includes `totalCount` and
+`nextCursor`; pass the cursor unchanged. A metadata change invalidates it,
+so restart from the first page. Both text and structured representations are
+bounded together to 256 KiB. The legacy full-list tool refuses responses
+over 256 KiB and directs the client to pagination. Pages may be smaller than
+the requested limit to stay within that bound. Notes, proxy configuration,
+credentials and browser data remain excluded. Very large workspaces beyond
+the file cap require a separate adapter design rather than an unbounded read.
+
+User-facing setup and troubleshooting: [MCP guide](MCP_GUIDE.md). The in-app
+Help copies the actual executable and resolved workspace root; it never creates
+a second store. The selected AI client may transmit names/tags to its model.

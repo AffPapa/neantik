@@ -1,0 +1,297 @@
+{
+  "schemaVersion": 1,
+  "status": "exact-notice-material-staged-in-private-corresponding-source-offer; offer-incomplete",
+  "candidate": {
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0"
+  },
+  "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+  "sourceOfferFolder": "dist/private/source-offers/1.0.0-manager-955",
+  "sourceOfferManifestSHA256": "3cff212c74d425178de27d9ac080f44ac230ca7b3424f6a22b5a717480f92603",
+  "totalManifestComponents": 60,
+  "newlyStagedComponentCount": 45,
+  "newlyStagedBytes": 127215,
+  "components": [
+    {
+      "path": "notices/webinspector/WebInspectorUI-framework.LICENSE",
+      "bytes": 1354,
+      "sha256": "c1493fcceabb2c162ca8a603fd4505c51a24024d8f9aa35ae75aa72df412fc00",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-process/AuxiliaryProcessMain-BSD-2-Clause.LICENSE",
+      "bytes": 1360,
+      "sha256": "193fa78ff7879bf105a6a1ad66a50ba0355d5068e67ed911e4bcee7eb19dc9af",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webinspector/CSSDocumentation/LICENSE",
+      "bytes": 1074,
+      "sha256": "b5179f780ec212a434efcc989a2295a140deb0bdb17182d2bf9c5f6f1f1a01c4",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webinspector/CodeMirror/LICENSE",
+      "bytes": 1113,
+      "sha256": "168a4becc968f5001e2ee2e0291b6e4daabafc1894a11ade1e11d56e96096e07",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webinspector/Esprima/LICENSE",
+      "bytes": 1303,
+      "sha256": "94bcb9959136723aa4fb36e1a6c4d5c662a2369978cfae344dabfb83ae619e79",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webinspector/three.js/LICENSE",
+      "bytes": 1081,
+      "sha256": "551f06ddc3dc36b56610aa23db680826ba9d9a02e8f89f7bec05d7fa27401a2b",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/MANIFEST.json",
+      "bytes": 15960,
+      "sha256": "deb9fa209c9e572c6857573371137aafa27cbc5a28213145c48fc076979f667d",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/GPUProcess/graphics/Model/ModelBridge.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/GPUProcess/graphics/Model/ModelParameters.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/GPUProcess/graphics/Model/ModelRenderer.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "4151d8bc55cf6b6d8de8a3388a373994d22802bd7f50bb155863c8fd4e86f1f2",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/GPUProcess/graphics/Model/ModelUtils.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/GPUProcess/graphics/Model/USDModel+Deformation.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/GPUProcess/graphics/Model/USDModel.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/AVKit/WKSExperienceController.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "18d291b0c45f5cf1a6af9989abd9dd49b1264a342c6c43200bf6105c16e50c32",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/CredentialUpdaterShim.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "18d291b0c45f5cf1a6af9989abd9dd49b1264a342c6c43200bf6105c16e50c32",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/GroupActivities/WKGroupSession.swift.LICENSE.txt",
+      "bytes": 1353,
+      "sha256": "8af8874a0d9a055ac9c8c497aa2da25a4ba0bdbae36483c20001fd984cbbcc08",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/IdentityDocumentServices/ISO18013MobileDocumentRequest+Extras.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentController.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentError.mm.LICENSE.txt",
+      "bytes": 1355,
+      "sha256": "eca3621dba711335b5249a17e8b10201b4bde9908ddccc2ed1fbda392f94d110",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentMobileDocumentRequest+Extras.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentMobileDocumentRequest.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentOpenID4VPRequest.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "18d291b0c45f5cf1a6af9989abd9dd49b1264a342c6c43200bf6105c16e50c32",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentRawRequest.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentRequest.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentPresentmentResponse.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/IdentityDocumentServices/WKIdentityDocumentRawRequestValidator.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/LinearMediaKit/LinearMediaPlayer.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "4151d8bc55cf6b6d8de8a3388a373994d22802bd7f50bb155863c8fd4e86f1f2",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/LinearMediaKit/LinearMediaTypes.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "4151d8bc55cf6b6d8de8a3388a373994d22802bd7f50bb155863c8fd4e86f1f2",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/MarketplaceKit/WKMarketplaceKit.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "4151d8bc55cf6b6d8de8a3388a373994d22802bd7f50bb155863c8fd4e86f1f2",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/Preview/WKPreviewWindowController.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "4151d8bc55cf6b6d8de8a3388a373994d22802bd7f50bb155863c8fd4e86f1f2",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/RealityKit/WKRKEntity.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "4151d8bc55cf6b6d8de8a3388a373994d22802bd7f50bb155863c8fd4e86f1f2",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/StageMode/WKStageMode.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/TextAnimation/WKTextAnimationManagerIOS.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "4151d8bc55cf6b6d8de8a3388a373994d22802bd7f50bb155863c8fd4e86f1f2",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/WebKitSwift.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/WritingTools/IntelligenceTextEffectChunk.swift.LICENSE.txt",
+      "bytes": 1353,
+      "sha256": "b72801fe54eeb0e6dc388ebf43a949702eb9a3bb9e59cd591bd508db10027b4a",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/WritingTools/IntelligenceTextEffectViewManager.swift.LICENSE.txt",
+      "bytes": 1348,
+      "sha256": "54f9baefc0b7b43321eedf297ac4ec914c7f388c3a10c65171e2de03788631ba",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/WritingTools/PlatformIntelligenceTextEffectView.swift.LICENSE.txt",
+      "bytes": 1353,
+      "sha256": "b72801fe54eeb0e6dc388ebf43a949702eb9a3bb9e59cd591bd508db10027b4a",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/WritingTools/WKIntelligenceReplacementTextEffectCoordinator.swift.LICENSE.txt",
+      "bytes": 1353,
+      "sha256": "b72801fe54eeb0e6dc388ebf43a949702eb9a3bb9e59cd591bd508db10027b4a",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-swift-source-notices/headers/Source/WebKit/WebKitSwift/WritingTools/WKIntelligenceSmartReplyTextEffectCoordinator.swift.LICENSE.txt",
+      "bytes": 1353,
+      "sha256": "b72801fe54eeb0e6dc388ebf43a949702eb9a3bb9e59cd591bd508db10027b4a",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_webinspector-image-notice-map-V20.json",
+      "bytes": 1727,
+      "sha256": "96240de028a35eea2032793c91fa26327bda006c097607cdf20e55ffbe045e80",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_webinspector-notice-integration-V20.json",
+      "bytes": 1376,
+      "sha256": "0bcb0b053a70728696b562ce64d413bdb754e4e838346e487fb35fff90c0d5f7",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_webkitswift-source-header-notice-integration-V20.json",
+      "bytes": 2525,
+      "sha256": "5efcffb7c0c71f95b48af3f1d9f91d78e77b3ec7b564b6300f83fc889a3b4976",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_xpc-entrypoint-notice-map-V20.json",
+      "bytes": 3609,
+      "sha256": "7b942e2df8cf8799f598ea4615527907360464e21b4889376536f1378843ff4f",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_xpc-entrypoint-notice-integration-V20.json",
+      "bytes": 1659,
+      "sha256": "c01e82d0d421ad950ceb4946d1fa8a65175715907c8179dfeff9d7873a2813ea",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_resource-source-header-review-V20.json",
+      "bytes": 49906,
+      "sha256": "c7547eea4e543f246fb52a0a636d05d98ebf8c1d8235c352c200cbd652085e70",
+      "includedInOfferFolder": true
+    }
+  ],
+  "checks": {
+    "allCopiedBytesMatchPinnedSources": true,
+    "manifestSizesAndSHA256Verified": true
+  },
+  "limitations": [
+    "The 94 runtime image/resource applicability rows remain UNKNOWN.",
+    "External dependency closure and compiler implicit inputs remain incomplete.",
+    "No independent recipient relink, clean extraction build, production signature qualification, notarization, or publication is established."
+  ]
+}

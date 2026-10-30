@@ -3,6 +3,98 @@ import Testing
 @testable import NeAntik
 
 struct LaunchIntentTests {
+    @Test func authorityRetirementRequiresExplicitCandidateAndPrivateReceiptName() {
+        let valid = ["/Applications/NeAntik.app/Contents/MacOS/NeAntik",
+                     NeAntikLaunchIntent.fingerprintRetirementArgument,
+                     "--candidate-app", "/private/tmp/owned/NeAntik.app",
+                     "--candidate-manifest", "/private/tmp/owned/manifest.json",
+                     "--output", "/private/tmp/owned/fingerprint-retirement.json"]
+        let parsed = NeAntikLaunchIntent.parse(arguments: valid)
+        #expect(parsed.mode == .fingerprintRetirement(.init(
+            candidateAppURL: URL(fileURLWithPath: valid[3], isDirectory: true),
+            candidateManifestURL: URL(fileURLWithPath: valid[5]), outputURL: URL(fileURLWithPath: valid[7]))))
+        #expect(!parsed.opensAuditWindow && !parsed.opensFingerprintAudit)
+        for index in [3, 5, 7] {
+            for bad in ["relative", "/tmp/../foreign", "/tmp//foreign", valid[5]] {
+                if index == 5 && bad == valid[5] { continue }
+                var args = valid; args[index] = bad
+                #expect(NeAntikLaunchIntent.parse(arguments: args).mode == .invalidControlArguments)
+            }
+        }
+        for args in [Array(valid.dropLast()), valid + ["--session-id", UUID().uuidString],
+                     [valid[0], valid[1] + "=true"], [valid[0], "--candidate-app", valid[3]]] {
+            #expect(NeAntikLaunchIntent.parse(arguments: args).mode == .invalidControlArguments)
+        }
+    }
+    @Test func noninteractiveControlModesNeverRequestAnAuditWindow() {
+        let root = URL(fileURLWithPath: "/private/tmp/neantik-owned-control-test")
+        for mode in [NeAntikLaunchIntent.Mode.invalidControlArguments, .proxyRelayOwner, .webKitHostChild,
+                     .mcpStdio(dataRoot: root), .mcpManagement(dataRoot: root),
+                     .fingerprintEnrollment(outputURL: root.appendingPathComponent("enrollment.json"))] {
+            let intent = NeAntikLaunchIntent(mode: mode)
+            #expect(!intent.opensAuditWindow)
+            #expect(!intent.opensFingerprintAudit)
+        }
+    }
+
+    @Test func webKitHostModeRequiresExactNestedExecutableAndSingleMarker() {
+        let executable = "/Applications/NeAntik.app/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/MacOS/NeAntikWebKitHost"
+        let marker = NeAntikLaunchIntent.webKitHostChildArgument
+        #expect(NeAntikLaunchIntent.parse(arguments: [executable, marker]).mode == .webKitHostChild)
+        for args in [[executable, marker, "--data-root", "/tmp/profile"],
+                     ["/tmp/NeAntikWebKitHost", marker],
+                     [executable.replacingOccurrences(of: "/webkit-v1/", with: "/../webkit-v1/"), marker],
+                     [executable, marker + "=true"]] {
+            #expect(NeAntikLaunchIntent.parse(arguments: args).mode == .invalidControlArguments)
+        }
+        let manager = NeAntikLaunchIntent.parse(arguments: [
+            "/Applications/NeAntik.app/Contents/MacOS/NeAntik", marker])
+        #expect(manager.mode == .invalidControlArguments)
+    }
+
+    @Test func updateAuditUsesAuthenticatedContextWithoutAutomaticFingerprintRun() {
+        let executable = "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
+        let output = "/private/tmp/neantik-update-audit-" + UUID().uuidString.lowercased() + "/update-audit.json"
+        let valid = [executable, NeAntikLaunchIntent.releaseUpdateAuditArgument,
+                     "--candidate-manifest", "/private/tmp/owned-manifest.json", "--output", output]
+        let intent = NeAntikLaunchIntent.parse(arguments: valid)
+        #expect(intent.requiresUpdateAuditAuthority)
+        #expect(intent.releaseFingerprintAuditRequest != nil)
+        #expect(!intent.opensFingerprintAudit)
+        #expect(intent.opensAuditWindow)
+        for bad in ["relative.json", "/private/tmp/update-audit.json", output.replacingOccurrences(of: "update-audit.json", with: "other.json"),
+                    output.replacingOccurrences(of: "/private/tmp/", with: "/tmp/"),
+                    output.replacingOccurrences(of: "neantik-update-audit-", with: "neantik-user-")] {
+            var arguments = valid; arguments[5] = bad
+            #expect(NeAntikLaunchIntent.parse(arguments: arguments).mode == .invalidControlArguments)
+        }
+        for bad in [Array(valid.dropLast()), valid + ["extra"], [executable, NeAntikLaunchIntent.releaseUpdateAuditArgument + "=true"]] {
+            #expect(NeAntikLaunchIntent.parse(arguments: bad).mode == .invalidControlArguments)
+        }
+    }
+    @Test func existingCanonicalPrivateTemporaryBundleKeepsItsKernelPath() throws {
+        let root = URL(fileURLWithPath: "/private/tmp/neantik-launch-layout-" + UUID().uuidString.lowercased())
+        defer { try? FileManager.default.removeItem(at: root) }
+        let app = root.appendingPathComponent("NeAntik.app")
+        let executable = app.appendingPathComponent("Contents/MacOS/NeAntik")
+        try FileManager.default.createDirectory(at: executable.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data().write(to: executable)
+        #expect(NeAntikLaunchIntent.applicationBundleURL(forExecutablePath: executable.path)?.path == app.path)
+        for path in [root.path + "//NeAntik.app/Contents/MacOS/NeAntik",
+                     root.path + "/./NeAntik.app/Contents/MacOS/NeAntik",
+                     root.path + "/../NeAntik.app/Contents/MacOS/NeAntik"] {
+            #expect(NeAntikLaunchIntent.applicationBundleURL(forExecutablePath: path) == nil)
+        }
+    }
+    @Test func relayOwnerRequiresExactReservedModeWithoutUserParameters() {
+        let executable = "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
+        let flag = NeAntikLaunchIntent.proxyRelayOwnerArgument
+        #expect(NeAntikLaunchIntent.parse(arguments: [executable, flag]).mode == .proxyRelayOwner)
+        for arguments in [[executable, flag, "extra"], [executable, flag + "=data"],
+                          [executable, flag, "--neantik-mcp-stdio"], ["relative/NeAntik", flag]] {
+            #expect(NeAntikLaunchIntent.parse(arguments: arguments).mode == .invalidControlArguments)
+        }
+    }
     @Test
     func regularLaunchDoesNotOpenReleaseAudit() {
         let intent = NeAntikLaunchIntent.parse(
@@ -10,6 +102,29 @@ struct LaunchIntentTests {
         )
 
         #expect(!intent.opensFingerprintAudit)
+        #expect(!intent.opensAuditWindow)
+    }
+
+    @Test
+    func mcpStdioRequiresExactFlagAndExplicitCanonicalRoot() {
+        let executable = "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
+        let root = "/private/tmp/neantik-mcp-fixture"
+        #expect(NeAntikLaunchIntent.parse(arguments: [
+            executable, "--neantik-mcp-stdio", "--data-root", root
+        ]).mode == .mcpStdio(dataRoot: URL(fileURLWithPath: root, isDirectory: true)))
+        let devExecutable = FileManager.default.currentDirectoryPath +
+            "/.build/neantik-local/NeAntik-Dev.app/Contents/MacOS/NeAntik"
+        #expect(NeAntikLaunchIntent.parse(arguments: [
+            devExecutable, "--neantik-mcp-stdio", "--data-root", root
+        ]).mode == .mcpStdio(dataRoot: URL(fileURLWithPath: root, isDirectory: true)))
+        for arguments in [
+            [executable, "--neantik-mcp-stdio"],
+            [executable, "--neantik-mcp-stdio", "--data-root", "relative"],
+            [executable, "--neantik-mcp-stdio", "--data-root", "/private/tmp/../unsafe"],
+            [executable, "--neantik-mcp-stdio=true"]
+        ] {
+            #expect(NeAntikLaunchIntent.parse(arguments: arguments).mode == .invalidControlArguments)
+        }
     }
 
     @Test
@@ -30,6 +145,7 @@ struct LaunchIntentTests {
         )
 
         #expect(intent.opensFingerprintAudit)
+        #expect(intent.opensAuditWindow)
         #expect(
             intent.releaseFingerprintAuditRequest ==
                 FingerprintEvidenceReleaseRequest(

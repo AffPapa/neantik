@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v258-production-diagnostic-signing-boundary-20261027",
+  "observedAtUTC": "2026-10-27T14:24:08Z",
+  "status": "DIAGNOSTIC_SOURCE_AND_BUILDS_PASS; APPLE_TIMESTAMP_SIGNATURE_MISSING; NO_NATIVE_LAUNCH",
+  "scope": "Resume from V257. Added a compile-time private production-ID diagnostic mode, isolated production diagnostic data root and Keychain namespace, and closed-vocabulary startup/navigation/window/broker observations. Built manager and standalone host; attempted only private staging packaging. No source runtime rebuild, notarization, publication, or app launch.",
+  "sourceChanges": {
+    "buildMode": "NEANTIK_WEBKIT_PROXY_BUILD_MODE=diagnostic; separate compile-time flag on manager and standalone host",
+    "dataIsolation": "Production diagnostic app requires direct /private/tmp/neantik-production-diagnostic-* owner-only 0700 directory; invalid or missing root fails closed; production diagnostic Keychain namespace is isolated",
+    "observations": "Diagnostic mode records only startup stages, navigation category/code, window visibility, and bounded local broker counters; synthetic trust overrides remain absent",
+    "releasePackaging": "Production host selector accepts only built-production-mode-unqualified receipt with productionProxy=true; diagnostic receipt rejected; production release channel rejects diagnostic build flag"
+  },
+  "verification": {
+    "swift": {
+      "status": "PASS",
+      "tests": 1844,
+      "suites": 222,
+      "skipped": 82,
+      "receipt": "/private/tmp/neantik-release-v1/.build/neantik-local/test-receipts/20261027T141528Z-96385.json",
+      "receiptSHA256": "d9c180626ca46f95558cb6586fea783be708982553e39362be3aeb0727b66755"
+    },
+    "pythonFull": {
+      "status": "2001 pass plus one sandbox/setup error",
+      "ran": 2002,
+      "skipped": 55,
+      "error": "test_live_owned_candidate_refuses_then_accepts_after_exit could not execute /bin/ps: PermissionError(EPERM); tests ran in default sandbox"
+    },
+    "pythonFollowup": {
+      "status": "PASS",
+      "test": "test_live_owned_candidate_refuses_then_accepts_after_exit",
+      "execution": "single test under escalated normal macOS context"
+    },
+    "releasePackagerContracts": {
+      "status": "PASS",
+      "tests": 12,
+      "testFile": "scripts/tests/test_package_owned_webkit_release.py",
+      "diagnosticReceipt": "rejected"
+    },
+    "diagnosticReleaseChannelGuard": {
+      "status": "PASS_EXPECTED_REFUSAL",
+      "command": "NEANTIK_RELEASE_CHANNEL=production ... build-webkit-standalone-host.py --diagnostic-proxy --prepare-only",
+      "exitCode": 2
+    },
+    "diagnosticHostBuild": {
+      "status": "built-private-diagnostic",
+      "sha256": "ab85bbb6cd88d1f71a2d22d8bb23e878cc598cf66b99639faaceb67ebcff56b9"
+    },
+    "diagnosticManagerBuild": {
+      "status": "built-private-diagnostic",
+      "sha256": "9af002c40987c9668b6ed85c4334d58e2d29d8528469e16ed4a0d741b1ff78a1"
+    }
+  },
+  "candidate": {
+    "id": "b96006a994664a80bf89cd757f932eff",
+    "manifestSHA256": "4d10449a7674c908c333f31d81f2b1ce3a5ce0178716ecda0b8daddd6c6924c8",
+    "originalStrictDeepSignature": "PASS",
+    "originalCandidateModified": false
+  },
+  "signingBoundary": {
+    "requiredOption": "codesign --timestamp retained on every Developer ID signing operation",
+    "stagedHostSigning": "FAILED: A timestamp was expected but was not found",
+    "timestampControlSigning": "FAILED with the same message on a disposable host binary",
+    "endpointObservations": {
+      "tcp80": "connected",
+      "httpHead": "302 from timestamp.apple.com, remote 17.157.80.35",
+      "tcp443": "connection refused"
+    },
+    "interpretation": "A basic HTTP connection is reachable but codesign receives no secure timestamp. Network GET is not timestamp evidence; no timestamp requirement was weakened."
+  },
+  "nativeQA": {
+    "appLaunched": false,
+    "dataRootCreated": false,
+    "consumerPreflight": "not reached because nested host did not receive a secure signature",
+    "nativeAdmission": "not consumed",
+    "releaseQualified": false
+  },
+  "publication": {
+    "notarization": false,
+    "github": false,
+    "browserFree": false
+  },
+  "repositoryDocsCodeMismatch": [],
+  "nextAction": "Do not relaunch V252 or repeat unchanged signing. Resume only after the Apple RFC3161 timestamp operation succeeds; then use a fresh exact private production-diagnostic candidate, exact consumer preflight and one fresh native admission. Independently finish outstanding source/image/notice and Chromium release gates in parallel."
+}

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-24T08:03:11Z",
+  "status": "source-build-probe-stopped;verified-official-runtime-route-exists",
+  "scope": "Resolve whether NeAntik 1.0 requires rebuilding Swift CompatibilitySpan from source. No app, runtime tree, signature, or public release was changed.",
+  "pinnedSwiftSource": {
+    "repository": "swiftlang/swift",
+    "commit": "b8189d766d86ad7fc8106787d6ce9e402f38dd72",
+    "sourceArchive": "/private/tmp/swift-6.4.0-RELEASE-b8189d7.tar.gz",
+    "sourceArchiveSHA256": "e8c3a9053c10906b492ceeb175e1e6c2d0693a0863a6fafee638b182ae97d3ee",
+    "target": "stdlib/toolchain/CompatibilitySpan/CMakeLists.txt",
+    "targetGitBlob": "98a9a5940cee5de591087ce040e8ed3ba79bd136",
+    "compiler": "Apple Swift 6.4.0.27.1 / clang-2100.3.27.1"
+  },
+  "probeResult": {
+    "directSwiftc": "FAILED as a toolchain-context probe: compiler crashed while deserializing the SDK Swift module (SILFunction type mismatch). No dylib was emitted.",
+    "cmakeBuildRoute": "Not available in the retained Swift source graph: matching LLVM/Clang CMake packages and generated stdlib build graph are absent, as recorded in webkit-swift64-source-graph-reconciliation-20261021.json.",
+    "interpretation": "A speculative direct compiler invocation is not a valid substitute for Swift's stdlib build graph. Do not repeat the same command or treat this as a Swift source defect."
+  },
+  "existingOfficialRuntime": {
+    "packageReceipt": "webkit-span-package-library-20261020.json",
+    "packageSHA256": "8fd03185b98fe27f54f8f523867e297ca5ff12bf8d4d63a6c627d7c60e286e845",
+    "packageSignatureAndNotary": "Previously verified in an authorized macOS context.",
+    "librarySHA256": "b4256b38185e963651938ed0406c6c8ec54299621c7fa53c5e9a0a325ca5fe4f",
+    "license": "Apache-2.0 WITH Swift Runtime Library Exception; exact upstream license is retained and hash-matched in the repository.",
+    "scopeLimit": "Its inclusion, signature after NeAntik signing, final image binding, minimum-macOS behavior, and legal applicability still require closure in the exact production package."
+  },
+  "remainingRuntimeQuestion": "Static source/toolchain evidence shows nextSpan is SwiftStdlib 6.4, introduced at macOS 27.0, while WebGPU has weak imports and a macOS 15.4 minimum. This is consistent with optional availability rather than a mandatory load edge. Actual owned-WebKit startup/WebGPU behavior on macOS 15.4 remains unqualified.",
+  "decision": "Do not spend another cycle attempting a standalone Swift runtime rebuild. Prefer the already verified official package and its retained source/license material, subject to exact production packaging and minimum-OS qualification. This does not close the broader WebKit notice/source-offer gate.",
+  "notPerformed": [
+    "No CompatibilitySpan dylib was built or staged by this probe.",
+    "No runtime was re-signed, packaged, launched, or notarized.",
+    "No WebKit or proxy QA was repeated.",
+    "No GitHub or browser.free content was changed."
+  ],
+  "weakImportStaticAnalysis": {
+    "webGPUImageSHA256": "e855802d7f5c8ced48b7edde94758ad600921ff45e5198fecf6b920c367802b0",
+    "imageMinimumOS": "macOS 15.4",
+    "weakImports": [
+      "BorrowingIteratorProtocol.nextSpan(maximumCount:).Tj",
+      "BorrowingIteratorProtocol.nextSpan(maximumCount:).Tq"
+    ],
+    "sourceDeclaration": "Swift 6.4 BorrowingSequence.swift marks BorrowingIteratorProtocol and nextSpan as @available(SwiftStdlib 6.4, *).",
+    "sourceSHA256": "e1a2c9471e2c267031e4e80516746a4144d973b447d0e60a291c6957aa13a7be",
+    "toolchainAvailabilityMapping": "Pinned Swift 6.4 CMake availability definitions map SwiftStdlib 6.4 to anyAppleOS 27.0; the exact generated availability response and Xcode 27 Swift interface agree.",
+    "availabilityResponseSHA256": "b9e66159da666439c506e215b9fd61975af48da2b3f59ac0e46973f51b6f81d0",
+    "sdkSwiftInterfaceSHA256": "b6bc57c48371aeddf9528aca2ff1ac33a77b4eda6a0badcf62ea07eadb45748b",
+    "interpretation": "The weak imports are consistent with a newer optional Swift API and do not alone prove a load failure on macOS 15.4. The static evidence does not establish that every WebGPU call path is safely availability-guarded or that the owned WebKit runtime starts and works on macOS 15.4.",
+    "runtimeQualification": "Not performed on macOS 15.4; available native host is macOS 27."
+  }
+}

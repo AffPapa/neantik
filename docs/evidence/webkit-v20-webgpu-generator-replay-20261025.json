@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T02:45:55Z",
+  "status": "exact-pinned-v20-wgsl-generator-replay-matches-production-generated-files;license-applicability-remains-unknown",
+  "candidate": {
+    "build": "139",
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "upstream": {
+    "repository": "WebKit/WebKit",
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f"
+  },
+  "runtimeImage": {
+    "path": "WebGPU.framework/Versions/A/WebGPU",
+    "sha256": "3e1f3814ac782392b2108df9a69eb8d8afde0765ad856683e2cfbc24261a82c2"
+  },
+  "buildRule": {
+    "path": "Source/WebGPU/WGSL/CMakeLists.txt",
+    "command": "ruby generator/main.rb TypeDeclarations.rb <build>/TypeDeclarations.h <build>/TypeOverloads.h",
+    "rubyVersion": "ruby 2.6.10p210",
+    "buildRuleSha256": "51e567aa0497b19a764639777305eab08710ae925902f9a8272996c0839674d4"
+  },
+  "inputs": [
+    {
+      "archivePath": "WebKit/Source/WebGPU/WGSL/TypeDeclarations.rb",
+      "sha256": "e18e6d38fe4f11f97e46c0935b3d7dbbfb7e71e0ab1fd23e90f60994a4b46809",
+      "bytes": 50822,
+      "explicitLicenseHeader": false
+    },
+    {
+      "archivePath": "WebKit/Source/WebGPU/WGSL/generator/main.rb",
+      "sha256": "55e2f00b4506f078d5507d83d3ba0dc1ad9463b03906e0d0d63bee9f75a6d8d6",
+      "bytes": 18065,
+      "explicitLicenseHeader": false
+    },
+    {
+      "archivePath": "WebKit/Source/WebGPU/WGSL/CMakeLists.txt",
+      "sha256": "51e567aa0497b19a764639777305eab08710ae925902f9a8272996c0839674d4",
+      "bytes": 6336,
+      "explicitLicenseHeader": true
+    }
+  ],
+  "outputs": [
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/WebGPU/WGSL/TypeDeclarations.h",
+      "sha256": "70a6d9e56c58f001bea4c81960139f3a8ae7c9deaee7b943dad9f35af43adfbd",
+      "bytes": 3030,
+      "reproducedOutputPath": "/private/tmp/neantik-webgpu-generator-review-20261025/generated/TypeDeclarations.h"
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/WebGPU/WGSL/TypeOverloads.h",
+      "sha256": "11f4ba1c6b1f97dc042b1725598954afcb40d2e89706a06d7666cf8f0b74047a",
+      "bytes": 381605,
+      "reproducedOutputPath": "/private/tmp/neantik-webgpu-generator-review-20261025/generated/TypeOverloads.h"
+    }
+  ],
+  "comparison": {
+    "productionBuildReview": "docs/evidence/webkit-v20-webgpu-image-license-review-20261025.json",
+    "replayedOutputHashesMatchRecordedProductionBuild": true,
+    "headers": 65,
+    "headersWithAppleBSD2Terms": 65
+  },
+  "licenseEvidence": {
+    "CMakeLists": "contains a Google LLC BSD-3-Clause notice",
+    "TypeDeclarations.rb": "no explicit copyright/license header",
+    "generatorMainRuby": "no explicit copyright/license header",
+    "decision": "UNKNOWN"
+  },
+  "decisionBoundary": "The exact pinned Ruby inputs and generated output are reproducible. Official primary licensing materials provide general project/repository rules but do not connect these exact Ruby inputs to a governing license. Keep WebGPU applicability UNKNOWN; no legal conclusion, complete notice, source/relink closure or release qualification is established.",
+  "externalLicenseEvidence": [
+    {
+      "title": "GPU for the Web repository license",
+      "url": "https://github.com/gpuweb/gpuweb/blob/main/LICENSE.md",
+      "finding": "The official repository distinguishes document licensing from software licensing and says software contributions use the GPU for the Web 3-Clause BSD License.",
+      "scopeLimit": "This does not establish that the exact pinned WebKit Ruby generator inputs are contributions covered by that repository license."
+    },
+    {
+      "title": "WebKit licensing documentation",
+      "url": "https://docs.webkit.org/Other/Licensing.html",
+      "finding": "The official guide says new WebKit code uses 2-Clause BSD and moved code keeps its original license.",
+      "scopeLimit": "The pinned Ruby files have no explicit license headers and this guide does not identify their origin or license."
+    },
+    {
+      "title": "WebKit licensing overview",
+      "url": "https://webkit.org/licensing-webkit/",
+      "finding": "The project overview describes WebKit as containing BSD- and LGPL-licensed portions.",
+      "scopeLimit": "It does not determine the exact terms of these inputs."
+    }
+  ]
+}

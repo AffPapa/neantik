@@ -25,7 +25,7 @@ sys.modules[SPEC.name] = GUI_VERIFIER
 SPEC.loader.exec_module(GUI_VERIFIER)
 
 EVIDENCE_SCHEMA_PATH = (
-    PROJECT_ROOT / "scripts" / "fingerprint_evidence_schema8.py"
+    PROJECT_ROOT / "scripts" / "fingerprint_evidence.py"
 )
 EVIDENCE_SCHEMA_SPEC = importlib.util.spec_from_file_location(
     "fingerprint_evidence_schema8_for_candidate_manifest",
@@ -237,6 +237,12 @@ def manifest_payload(
     runtime_executable_relative = runtime_executable.relative_to(app).as_posix()
     runtime_framework_relative = runtime_framework.relative_to(app).as_posix()
     evidence_root = "Contents/Resources/NeAntikRuntimeEvidence"
+    runtime_version = str(runtime_info.get("CFBundleShortVersionString", ""))
+    from chromium_15612_release_evidence import read_object
+    source_contract_name = GUI_VERIFIER.source_contract_name(
+        runtime_version, read_object(
+            regular_bundle_file(app, evidence_root + '/fingerprint-chromium.lock.json'),
+            'runtime candidate lock'))
 
     return {
         "schemaVersion": 3,
@@ -272,7 +278,7 @@ def manifest_payload(
             ),
             "sourceContract": hashed_entry(
                 app,
-                f"{evidence_root}/chromium-152-source-contract.json",
+                f"{evidence_root}/{source_contract_name}",
             ),
             "sourceProvenance": hashed_entry(
                 app,

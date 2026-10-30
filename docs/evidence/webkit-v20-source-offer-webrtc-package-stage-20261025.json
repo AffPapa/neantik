@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25",
+  "status": "v20-webrtc-research-notice-package-staged;source-offer-incomplete",
+  "candidate": {
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0"
+  },
+  "upstreamCommit": "955bc0808a1e1a49d3a9f74f2b02e05af9fee3e2",
+  "sourceOfferFolder": "dist/private/source-offers/1.0.0-manager-955",
+  "priorManifest": {
+    "path": "docs/evidence/webkit-v20-source-offer-manifest-before-webrtc-package-bind-20261025.json",
+    "sha256": "f0a2b403cb3c0197cf82d34da487bea8aaea7a144282b7fec783c51ad95710b4"
+  },
+  "sourceOfferManifestSHA256": "a2c5efa4b5a53dfd2be66ba53d93734a885ec929a4dc965f8fe36ebb2b71e67e",
+  "previousManifestSHA256": "f0a2b403cb3c0197cf82d34da487bea8aaea7a144282b7fec783c51ad95710b4",
+  "addedComponentCount": 42,
+  "addedBytes": 116525,
+  "totalManifestComponents": 123,
+  "physicallyIncludedComponents": 122,
+  "externalComponents": [
+    "../../../../artifacts/neantik/webkit-v20-source-20261025/WebKit-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c.tar.zst"
+  ],
+  "noticePackage": {
+    "manifestSHA256": "4b3b7e454c45ba186ad56ca84a1e1b2e0575117a401eae233969f2687a937100",
+    "candidatePathCount": 40,
+    "sourceBindReceiptSHA256": "a27b4fb812404cdcc4f81c9b3682210b4b93a62e55a35e79aabd98387463e685"
+  },
+  "verification": {
+    "allPriorManifestComponentsVerifiedBeforeMutation": true,
+    "allNewCopiesMatchedSourceHashAndSize": true,
+    "manifestBackupByteExact": true
+  },
+  "limitations": [
+    "No license-applicability decision or legal approval.",
+    "The source offer remains incomplete; full corresponding source, dependency closure and recipient relink are open.",
+    "Frozen production candidate 139 was not modified and does not include this notice integration."
+  ]
+}

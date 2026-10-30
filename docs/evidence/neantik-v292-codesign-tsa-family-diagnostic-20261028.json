@@ -1,0 +1,45 @@
+{
+  "candidate": {
+    "parentCandidate": "/private/tmp/neantik-v193-touch-qualified/dist/private/candidates/b96006a994664a80bf89cd757f932eff",
+    "parentUnmodified": true,
+    "path": "/private/tmp/neantik-release-v1/dist/private/candidates/cac3157c5fdf47f7b77332208648eb68/NeAntik.app",
+    "status": "failed private diagnostic copy; altered only in disposable root; invalid signature; do not launch"
+  },
+  "codesignAttempts": {
+    "managerDefaultHostname": "FAIL A timestamp was expected but was not found",
+    "managerExplicitHostnameHTTP": "FAIL same",
+    "standaloneHostDefault": "FAIL same",
+    "standaloneHostExplicitIPv4AddressA": "FAIL same",
+    "standaloneHostExplicitIPv4AddressB": "FAIL same",
+    "timestampBypass": "not used"
+  },
+  "developerIdCertificate": {
+    "notAfterUTC": "2027-02-01T22:12:15Z",
+    "notBeforeUTC": "2026-07-26T18:29:13Z",
+    "sha1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "status": "valid on observed date"
+  },
+  "id": "V292",
+  "interpretation": "Apple TSA network endpoints answer valid synthetic RFC3161 queries, but the local macOS codesign client does not insert the returned timestamp even when pinned to published Apple IPv4 addresses. A Mac signing/network-extension state reset is the next controlled diagnostic; do not alter network extension or reboot without user authorization.",
+  "localNetworkState": {
+    "changesMade": false,
+    "proxyEnvironment": "none",
+    "systemExtensions": "Tailscale Network Extension activated/enabled version 1.94.2; NeAntik QA deny provider activated/disabled",
+    "systemProxy": "none",
+    "tailscaleBackendState": "NeedsLogin",
+    "tailscaleExitNodeActive": false
+  },
+  "observedAtUTC": "2026-10-27T18:30:00Z",
+  "releaseQualified": false,
+  "scope": "Private timestamp and network-path diagnosis only. No release code changed for signing behavior; no timestamp bypass, launch, notarization, or publication.",
+  "status": "APPLE_TSA_VALID_RFC3161_RESPONSES_PASS; MACOS_CODESIGN_TIMESTAMP_INSERTION_FAILS_ACROSS_HOST_AND_MANAGER",
+  "timestampService": {
+    "ApplePublishedIPv4Range": "17.157.80.0/24",
+    "ApplePublishedIPv6Range": "2620:149:980:500::/64",
+    "curl6HostnameBehavior": "IPv4-mapped 17.157.80.35; not a true IPv6 probe",
+    "directIPv6Literal": "connect failed",
+    "ipv4AddressA": "17.157.80.35",
+    "ipv4AddressB": "17.32.213.161",
+    "rfc3161PostBothIPv4": "HTTP 200 application/timestamp-reply; Granted; OpenSSL verification OK; native timestamping trust check OK"
+  }
+}

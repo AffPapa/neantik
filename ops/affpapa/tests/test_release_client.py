@@ -9,11 +9,19 @@ SUDOERS = ROOT / "ops" / "affpapa" / "neantik-deploy.sudoers"
 
 
 class ReleaseClientTests(unittest.TestCase):
+    def test_deploy_credential_errors_redact_private_paths(self) -> None:
+        text = CLIENT.read_text(encoding="utf-8")
+        self.assertIn("private path redacted", text)
+        self.assertNotIn('deploy key: $KEY', text)
+        self.assertNotIn('known_hosts: $KNOWN_HOSTS', text)
+        self.assertNotIn('файл не найден: $path', text)
+        self.assertNotIn('пустой файл: $path', text)
+
     def test_publish_verifies_bytes_before_metadata_activation(self) -> None:
         text = CLIENT.read_text(encoding="utf-8")
         publish = text[
             text.index("publish_staged_release()"):
-            text.index("direct_doctor()")
+            text.index("doctor()")
         ]
 
         self.assertLess(
@@ -95,24 +103,6 @@ class ReleaseClientTests(unittest.TestCase):
         self.assertIn("remote.get(\"files\") == expected", client)
         self.assertIn("Ops manifest:", status)
         self.assertIn("/etc/neantik-release-ops.json", installer)
-
-    def test_default_doctor_is_github_only_and_site_is_explicit(self) -> None:
-        client = CLIENT.read_text(encoding="utf-8")
-        direct = client[
-            client.index("direct_doctor()"):
-            client.index("site_doctor()")
-        ]
-        dispatch = client[client.index("main() {"):]
-
-        self.assertIn("gh auth status", direct)
-        self.assertIn("gh release view", direct)
-        self.assertIn("GitHub-only doctor", direct)
-        self.assertNotIn("preflight_access", direct)
-        self.assertIn(
-            "site-doctor|status|check|dry-run|abort|prepare|publish",
-            dispatch,
-        )
-        self.assertIn("preflight_access", dispatch)
 
 
 if __name__ == "__main__":

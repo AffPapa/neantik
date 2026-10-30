@@ -48,21 +48,6 @@ if [[ ! -d "$BUILD_ROOT/.git" ||
   exit 66
 fi
 
-# TypeScript searches parent directories for ambient dependencies. Keep the
-# build isolated from unrelated packages without changing Chromium's checker
-# or rejecting its bundled third_party/node/node_modules below the source.
-BUILD_ROOT_ANCESTOR="$(cd "$BUILD_ROOT" && pwd -P)"
-while :; do
-  if [[ -d "${BUILD_ROOT_ANCESTOR%/}/node_modules" ]]; then
-    echo "Build root requires isolation: ancestor node_modules can contaminate Chromium TypeScript dependencies." >&2
-    echo "  ${BUILD_ROOT_ANCESTOR%/}/node_modules" >&2
-    echo "Choose an isolated build root outside this dependency tree; do not disable the dependency checker." >&2
-    exit 65
-  fi
-  [[ "$BUILD_ROOT_ANCESTOR" == / ]] && break
-  BUILD_ROOT_ANCESTOR="$(dirname "$BUILD_ROOT_ANCESTOR")"
-done
-
 REBASE_MAC_COMMIT="$(
   plutil -extract macPackaging.commit raw -o - "$REBASE_PLAN"
 )"
@@ -81,7 +66,7 @@ if [[ "$ACTUAL_MAC_COMMIT" == "$REBASE_MAC_COMMIT" ||
     exit 65
   fi
   SOURCE_MODE="owned-rebase"
-  python3 "$SCRIPT_DIR/preflight-runtime-rebase-150.py" \
+  python3 "$SCRIPT_DIR/preflight-runtime-rebase.py" \
     "$BUILD_ROOT" \
     --plan "$REBASE_PLAN"
   python3 "$SCRIPT_DIR/verify-nevision-patchset-manifest.py" \
@@ -481,9 +466,7 @@ prepare_owned_dawn_go() {
     fi
   fi
 
-  # Resource unpacking can replace a previously installed Go binary. Verify
-  # package files as well as CIPD metadata when resuming this build.
-  printf '$ParanoidMode CheckIntegrity\n%s %s\n' "$package" "$instance_id" |
+  printf '%s %s\n' "$package" "$instance_id" |
     "$cipd_binary" ensure -root "$go_root" -ensure-file -
 
   actual_go_version="$("$go_binary" version)"

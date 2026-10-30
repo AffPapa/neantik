@@ -1,0 +1,129 @@
+import Darwin
+import Foundation
+import CryptoKit
+
+/// Disposable Dev GUI fixtures must not read or write the system Keychain.
+/// This backend is compiled out of release builds. Credentials are deliberately
+/// transient; it is not a replacement for persistence or production testing.
+#if DEBUG
+final class DevelopmentFixtureKeychain: KeychainBackend, @unchecked Sendable {
+    private let lock = NSLock()
+    private var values: [String: Data] = [:]
+    func data(service: String, profileID: UUID) throws -> Data? {
+        lock.lock(); defer { lock.unlock() }
+        return values[service + ":" + profileID.uuidString]
+    }
+    func upsert(_ data: Data, service: String, profileID: UUID) throws {
+        lock.lock(); defer { lock.unlock() }
+        values[service + ":" + profileID.uuidString] = data
+    }
+    func delete(service: String, profileID: UUID) throws {
+        lock.lock(); defer { lock.unlock() }
+        values.removeValue(forKey: service + ":" + profileID.uuidString)
+    }
+}
+#endif
+
+extension KeychainStore {
+    /// macOS Chromium otherwise uses Safe Storage even when manager proxy
+    /// credentials are in memory. Only an explicitly marked disposable DEBUG
+    /// bundle receives the native mock hook; release builds always return [].
+    static func disposableBrowserArguments(
+        environment: NeAntikApplicationEnvironment, paths: AppPaths,
+        fixtureRoot: String? = Bundle.main.object(forInfoDictionaryKey: "NeAntikDevelopmentFixtureRoot") as? String
+    ) -> [String] {
+        #if DEBUG
+        if usesDisposableDevelopmentBackend(environment: environment, paths: paths, fixtureRoot: fixtureRoot) {
+            return ["--use-mock-keychain"]
+        }
+        #endif
+        return []
+    }
+
+    static func applicationStore(
+        environment: NeAntikApplicationEnvironment, paths: AppPaths,
+        fixtureRoot: String? = Bundle.main.object(forInfoDictionaryKey: "NeAntikDevelopmentFixtureRoot") as? String,
+        backend: (any KeychainBackend)? = nil
+    ) -> KeychainStore {
+        #if DEBUG
+        if backend == nil, usesDisposableDevelopmentBackend(environment: environment, paths: paths, fixtureRoot: fixtureRoot) {
+            return KeychainStore(backend: DevelopmentFixtureKeychain(), service: environment.keychainService, legacyService: nil)
+        }
+        #endif
+        let defaultRoot = environment.applicationSupportRoot(environment: [:], developmentFixtureRoot: nil)
+        let scope = workspaceCredentialScope(environment: environment, root: paths.rootDirectory, defaultRoot: defaultRoot)
+        return KeychainStore(backend: backend ?? SecurityKeychainBackend(), service: scope.service, legacyService: scope.legacyService)
+    }
+
+    /// The normal library keeps its existing credentials and migration path.
+    /// An explicit workspace is keyed by its path, never by editable profile
+    /// metadata. It must not read, migrate or delete credentials from another
+    /// library with the same profile UUID. Renamed workspaces need a new password.
+    static func workspaceCredentialScope(
+        environment: NeAntikApplicationEnvironment, root: URL, defaultRoot: URL
+    ) -> (service: String, legacyService: String?) {
+        let path = root.standardizedFileURL.path
+        let legacyRoot = defaultRoot.deletingLastPathComponent().appendingPathComponent(["Ne", "Vision"].joined(), isDirectory: true)
+        let isHistoricalProductionRoot = environment.bundleIdentifier == NeAntikApplicationEnvironment.productionBundleIdentifier &&
+            path == legacyRoot.standardizedFileURL.path
+        if path == defaultRoot.standardizedFileURL.path || isHistoricalProductionRoot {
+            return (environment.keychainService, environment.legacyKeychainService)
+        }
+        let digest = SHA256.hash(data: Data(path.utf8)).map { String(format: "%02x", $0) }.joined()
+        return (environment.keychainService + ".workspaces.v1." + digest, nil)
+    }
+
+    static func usesDisposableDevelopmentBackend(
+        environment: NeAntikApplicationEnvironment, paths: AppPaths, fixtureRoot: String?
+    ) -> Bool {
+        #if DEBUG
+        if environment.isDevelopment,
+           let qualification = try? BackupGUIQualificationContext.resolve(
+               bundleIdentifier: Bundle.main.bundleIdentifier,
+               runID: Bundle.main.object(forInfoDictionaryKey: BackupGUIQualificationContext.runIDKey) as? String,
+               root: Bundle.main.object(forInfoDictionaryKey: BackupGUIQualificationContext.rootKey) as? String
+           ), qualification.root.path == paths.rootDirectory.path {
+            return true
+        }
+        guard environment.isDevelopment, let fixtureRoot, fixtureRoot.hasPrefix("/") else { return false }
+        let root = URL(fileURLWithPath: fixtureRoot, isDirectory: true).standardizedFileURL
+        return paths.rootDirectory.standardizedFileURL.path == root.path &&
+            ["/private/tmp", "/tmp"].contains(root.deletingLastPathComponent().path) &&
+            root.lastPathComponent.hasPrefix("neantik-dev-fixture.")
+        #else
+        return false
+        #endif
+    }
+}
+
+#if DEBUG
+/// Persistent scope only for explicit disposable GUI fixtures. It is not
+/// device-bound and is never a production substitute for Data Protection
+/// Keychain. Separate instances permit own-fixture manager restart tests.
+struct DevelopmentFixtureBackupScope: BackupCompatibilityScopeBackend {
+    let paths: AppPaths
+    private let name = ".browser-data-backup-fixture-scope"
+    func read() throws -> Data? {
+        let directory = try BackupFS.directory(paths.rootDirectory); defer { Darwin.close(directory) }
+        let fd = openat(directory, name, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
+        guard fd >= 0 else { if errno == ENOENT { return nil }; throw BackupFS.posix() }
+        defer { Darwin.close(fd) }
+        let identity = try BackupFS.identity(fd)
+        try identity.validateFile(device: nil)
+        guard identity.size == 32 else { throw BackupCompatibilityScopeError.unavailable }
+        let bytes = try BackupFS.read(fd, at: 0, count: 32)
+        guard try BackupFS.identity(fd) == identity, try BackupFS.entry(directory, name) == identity else { throw BrowserDataBackupStorageError.changed }
+        return bytes
+    }
+    func insertIfAbsent(_ bytes: Data) throws -> Bool {
+        guard bytes.count == 32 else { throw BackupCompatibilityScopeError.unavailable }
+        let directory = try BackupFS.directory(paths.rootDirectory); defer { Darwin.close(directory) }
+        let fd = openat(directory, name, O_WRONLY | O_NOFOLLOW | O_CREAT | O_EXCL | O_CLOEXEC, 0o600)
+        guard fd >= 0 else { if errno == EEXIST { return false }; throw BackupFS.posix() }
+        defer { Darwin.close(fd) }
+        try BackupFS.write(fd, bytes, at: 0)
+        guard fsync(fd) == 0, fsync(directory) == 0 else { throw BackupFS.posix() }
+        return true
+    }
+}
+#endif

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v174-timestamp-local-firewall-triage-20261027",
+  "observedAtUTC": "2026-10-26T22:00:36Z",
+  "status": "NO_STANDARD_LOCAL_FIREWALL_CAUSE_IDENTIFIED; OUTBOUND_PATH_STILL_UNAVAILABLE_OR_UNVERIFIED",
+  "scope": "Read-only local macOS configuration triage after V93/V134 documented TCP refusal to timestamp.apple.com:443. No endpoint probe was repeated; no proxy, DNS, firewall, packet-filter, VPN, system-extension, or profile settings were changed.",
+  "checks": {
+    "applicationFirewall": {
+      "result": "disabled",
+      "command": "/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate",
+      "meaning": "Built-in macOS application firewall is not the local cause indicated by this check."
+    },
+    "mdmEnrollment": {
+      "result": "not_enrolled",
+      "command": "/usr/bin/profiles status -type enrollment"
+    },
+    "manualProxy": {
+      "result": "none_observed_in_prior_V93_read_only_check",
+      "receipt": "neantik-v93-developer-id-timestamp-network-probe-20261026.json",
+      "reused": true
+    },
+    "packetFilter": {
+      "result": "unknown",
+      "command": "/sbin/pfctl -s info",
+      "exit": 1,
+      "meaning": "No status obtained, even in the permitted read-only system context; no inference about PF enabled state."
+    },
+    "systemExtensions": {
+      "result": "partial",
+      "command": "/usr/bin/systemextensionsctl list",
+      "systemContextExit": 0,
+      "activatedCount": 2,
+      "filterNamedLines": 0,
+      "meaning": "Sanitized summary only. It does not prove absence of every possible content-filter implementation."
+    }
+  },
+  "interpretation": "No actionable local macOS firewall, MDM, or manual-proxy correction was found. The standard application firewall is disabled. The Apple timestamp route remains unresolved at the host/network boundary; this does not prove an ISP or router fault.",
+  "sideEffects": {
+    "systemConfigurationChanged": false,
+    "networkProbeRepeated": false,
+    "candidateChanged": false,
+    "signed": false,
+    "notarized": false,
+    "published": false
+  },
+  "nextAction": "Stop repeating timestamp endpoint and signing probes, and do not change local network settings without a diagnosed matching rule. Continue independent release work; resume timestamped signing only after an observable network/environment change."
+}

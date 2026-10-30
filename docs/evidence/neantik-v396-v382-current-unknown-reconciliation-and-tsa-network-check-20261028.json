@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "V396",
+  "createdAt": "2026-10-28T06:53:28Z",
+  "classification": "PARTIAL_V382_CURRENT_NOTICE_PASS; FIVE_LEGACY_RESOURCE_ROWS_ABSENT; FOURTEEN_RESOURCE_ROWS_AND_IMAGE_APPLICABILITY_OPEN; APPLE_TSA_TCP_REFUSED",
+  "scope": "Refresh CURRENT after V395, bind the current source-offer status, reconcile only the existing V373 19-row UNKNOWN review against exact V382 disposable staged bytes, and perform a non-signing connectivity check to Apple timestamp service. No build, package, signature, launch, notarization, or publication.",
+  "sourceOffer": {
+    "root": "/private/tmp/neantik-release-v1/dist/private/source-offers/v382-filtered-model-assets-draft",
+    "manifestSHA256": "e96b51e74894ec9877462105cf03c28bc80c0bc799b5408288d7c0b49c4631a8",
+    "componentCount": 658,
+    "buildReceiptSHA256": "319afbac5c8a7b55daeb54912b3c7614537a4d26315885127d54694dc3bc7a7f",
+    "assetsCarReceiptSHA256": "2eb8974fe8d2441d946d437e2ca0ccf95c144386bb94941ee683f235fdc9a560"
+  },
+  "currentRuntimeImages": [
+    {
+      "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "sha256": "fcfce29db5959a47d549b26c6e8539cc5b24ad63abec114189d3053fb9074238"
+    },
+    {
+      "path": "WebCore.framework/Versions/A/WebCore",
+      "sha256": "eaba91766570f71bf3bc4af0ce7e226e7e7415aa8bd5c90649c530349acfef12"
+    },
+    {
+      "path": "WebKit.framework/Versions/A/WebKit",
+      "sha256": "13b735470dc5e3689d101ca3a207f08c5bed00d7e796d59b3217d78c17fcbeda"
+    },
+    {
+      "path": "libwebrtc.dylib",
+      "sha256": "309d95abf602e59d25bf3dc38abe719edc10829ff79cb6a917027edad43e965f"
+    }
+  ],
+  "legacyUnknownResourceReconciliation": {
+    "priorEvidence": "docs/evidence/neantik-v373-resource-applicability-review-batch-20261028.json",
+    "priorEvidenceSHA256": "a50ebcab70dfc6e613002dca060388602ff55b217dd6b8741f0ad02b6e0abaca",
+    "rowsRechecked": 19,
+    "absentFromCurrentV382Stage": [
+      "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/analytics/coremldata.bin",
+      "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/coremldata.bin",
+      "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/metadata.json",
+      "WebKit.framework/Versions/A/Resources/corePrediction_model",
+      "WebKit.framework/Versions/A/Resources/en.lproj/InfoPlist.strings"
+    ],
+    "absentCount": 5,
+    "stillPresentCount": 14,
+    "decisionEffect": "Current stage bytes are identical to the exact prior UNKNOWN worksheet hashes for all rows still present; retain those decisions unchanged. Absence narrows shipped-byte scope only and does not establish rights for omitted source assets.",
+    "presentRowsExactHashMatches": [
+      {
+        "runtimePath": "WebGPU.framework/Versions/A/Resources/Info.plist",
+        "priorUnknownSHA256": "d1b62a69cb77ccc8cea6b51760021849ab53f472db0781cb6890a1106a7139a6",
+        "currentStageSHA256": "d1b62a69cb77ccc8cea6b51760021849ab53f472db0781cb6890a1106a7139a6",
+        "exactBytesMatch": true
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/Resources/Info.plist",
+        "priorUnknownSHA256": "8682dbe9e031cd97fa92985dee64f99726e4a544a470bb2f69dc99ab6493e135",
+        "currentStageSHA256": "8682dbe9e031cd97fa92985dee64f99726e4a544a470bb2f69dc99ab6493e135",
+        "exactBytesMatch": true
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/Info.plist",
+        "priorUnknownSHA256": "1727040f8d3a09f62bf750648f0388f3f65e6356bc53c3887caef2633609a40d",
+        "currentStageSHA256": "1727040f8d3a09f62bf750648f0388f3f65e6356bc53c3887caef2633609a40d",
+        "exactBytesMatch": true
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/Info.plist",
+        "priorUnknownSHA256": "1733fb8bd8df9a1360d7959150139c69bb14dbdb0bd9f266c742c100e94ebc82",
+        "currentStageSHA256": "1733fb8bd8df9a1360d7959150139c69bb14dbdb0bd9f266c742c100e94ebc82",
+        "exactBytesMatch": true
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/Info.plist",
+        "priorUnknownSHA256": "cf2804905b5ab48951d12b4c9ce0f0984c24821c340597e7af828ba49e073651",
+        "currentStageSHA256": "cf2804905b5ab48951d12b4c9ce0f0984c24821c340597e7af828ba49e073651",
+        "exactBytesMatch": true
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/Info.plist",
+        "priorUnknownSHA256": "707d6ca86c4d1b0c51c721c6cb86a64e35810092773eb8e040f93a73fe58c703",
+        "currentStageSHA256": "707d6ca86c4d1b0c51c721c6cb86a64e35810092773eb8e040f93a73fe58c703",
+        "exactBytesMatch": true
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Info.plist",
+        "priorUnknownSHA256": "95eb37b4bd4a698898b2fa3a894c15bc4b9f5dd4323f04cf446f0d841e6616fc",
+        "currentStageSHA256": "95eb37b4bd4a698898b2fa3a894c15bc4b9f5dd4323f04cf446f0d841e6616fc",
+        "exactBytesMatch": true
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Resources/WebContentProcess.nib",
+        "priorUnknownSHA256": "90306f1e50ac0139b6057dd411b06fd49089cecfb59f01e144690b9cd86583a7",
+        "currentStageSHA256": "90306f1e50ac0139b6057dd411b06fd49089cecfb59f01e144690b9cd86583a7",
+        "exactBytesMatch": true
+      },
+      {
+        "runtimePath": "JavaScriptCore.framework/Versions/A/Resources/Info.plist",
+        "priorUnknownSHA256": "76d18453a418d19a7c98dfd2b45b12b1e8cc8469703ab7b8992476efe6355ad6",
+        "currentStageSHA256": "76d18453a418d19a7c98dfd2b45b12b1e8cc8469703ab7b8992476efe6355ad6",
+        "exactBytesMatch": true
+      },
+      {
+        "runtimePath": "WebCore.framework/Versions/A/Resources/Info.plist",
+        "priorUnknownSHA256": "b38d826b325d9c5cc5fafe47c53988bc908d866578baf529ef9c8f4ae21399e1",
+        "currentStageSHA256": "b38d826b325d9c5cc5fafe47c53988bc908d866578baf529ef9c8f4ae21399e1",
+        "exactBytesMatch": true
+      },
+      {
+        "runtimePath": "WebCore.framework/Versions/A/Resources/audio/Composite.wav",
+        "priorUnknownSHA256": "a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3",
+        "currentStageSHA256": "a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3",
+        "exactBytesMatch": true
+      },
+      {
+        "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/Localizable.strings",
+        "priorUnknownSHA256": "7cd6a1cb1803de65529bd903f173557d024bede8a8d3ff3df3c783aec2575f96",
+        "currentStageSHA256": "7cd6a1cb1803de65529bd903f173557d024bede8a8d3ff3df3c783aec2575f96",
+        "exactBytesMatch": true
+      },
+      {
+        "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/Localizable.stringsdict",
+        "priorUnknownSHA256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+        "currentStageSHA256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+        "exactBytesMatch": true
+      },
+      {
+        "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/modern-media-controls-localized-strings.js",
+        "priorUnknownSHA256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+        "currentStageSHA256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+        "exactBytesMatch": true
+      }
+    ],
+    "exactUnchangedRows": 14
+  },
+  "notices": {
+    "consumer": "scripts/webkit_runtime_notices.py",
+    "consumerSHA256": "55b3a1d48007aad55fc5303debd9c87f0728e9622bba4bcafca2ce8ae19c265e",
+    "currentManifestSHA256": "e96b51e74894ec9877462105cf03c28bc80c0bc799b5408288d7c0b49c4631a8",
+    "disposableVerify": "PASS, 35 result fields on current manifest and staged Frameworks tree",
+    "scopeLimit": "Physical notice bytes and hash bindings on disposable V382 stage only; legal applicability and recipient-owned replacement/load remain open."
+  },
+  "timestampBoundary": {
+    "host": "timestamp.apple.com",
+    "port": 443,
+    "probe": "TCP reachability preflight to the Apple timestamp host; TLS was not reached because connect was refused.",
+    "result": "ConnectionRefusedError: [Errno 61] Connection refused before TLS handshake",
+    "observedAtUTC": "2026-10-28T06:50Z",
+    "decision": "Do not repeat codesign until an observable network/environment change; no current connectivity recovery."
+  },
+  "tests": {
+    "noticeTests": "PASS 67/67 after current manifest pin update",
+    "packageTests": "PASS 18/18 after current manifest pin update",
+    "diffCheck": "PASS"
+  },
+  "releaseQualified": false,
+  "nextAction": "Continue the 14 still-present resource rows and four engine image applicability reviews from primary evidence or source-safe replacements, without re-running the broad worksheet/source inventory. Keep Apple signing idle until timestamp.apple.com connectivity changes; then execute the production package once. Exact candidate runtime, notarization, Gatekeeper, publication, and downloaded-byte gates remain.",
+  "documentationReconciliation": {
+    "status": "Resolved in this checkpoint: V382 sourceOfferAssemblyStatus had said staging/absence preflight was pending after V393/V395 had completed it; it now records exact staged absence and current notice verification. Also V264/V265 omissions were reconciled in V395: V264 superseded, V265/V20 updated."
+  }
+}

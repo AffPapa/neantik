@@ -34,6 +34,16 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
     let appliedTimezoneIdentifier: String?
     let disabledFeatures: Set<String>
 
+    /// Recheck current bytes at the common launch boundary. The cached UI
+    /// capability is not authority after a runtime replacement or edit.
+    static func validateFontPolicy(_ profile: BrowserProfile, runtime: BrowserRuntime? = nil) throws {
+        if profile.fontPolicy == .native { return }
+        guard profile.engine == .chromium, let runtime,
+              runtime.supportsFingerprintIdentity, runtime.supportsSystemFontPolicy,
+              BrowserFontPolicyRuntime.inspect(executableURL: runtime.executableURL) != nil
+        else { throw UnsupportedBrowserFontPolicyError() }
+    }
+
     static func resolve(
         profile: BrowserProfile,
         runtimeCapabilities: BrowserRuntimeCapabilities,
@@ -80,7 +90,7 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
             dns: dns,
             fingerprintSeedConfigured: fingerprintSeedConfigured,
             fingerprintIdentityConfigured: fingerprintIdentityConfigured,
-            fingerprintNoiseArgumentsEnabled: fingerprintSeedConfigured,
+            fingerprintNoiseArgumentsEnabled: false,
             webGPUDisabled: fingerprintSeedConfigured,
             proxyContextIsFresh: proxyContextIsFresh,
             appliedLocaleIdentifier:

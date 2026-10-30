@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v296-native-qa-and-tsa-relay-diagnostic-20261028",
+  "observedAtUTC": "2026-10-27T18:43:46Z",
+  "status": "CHROMIUM_NATIVE_QA_RESOURCE_ELIGIBLE_BUT_EXISTING_APP_RUNNING; TSA_LOOPBACK_RELAY_NOT_REACHED",
+  "scope": "Read-only candidate checks and disposable local diagnostics only. No app launch, profile mutation, app candidate mutation, release action, or timestamp bypass.",
+  "chromiumCandidate": {
+    "candidateId": "b96006a994664a80bf89cd757f932eff",
+    "managerSHA256": "17c767f961de21a14d9720acb01b61cc54a6ccca44e22166ff15a6e28fde964c",
+    "signatureVerification": "codesign --verify --deep --strict PASS",
+    "staticArgumentsPresent": [
+      "--neantik-release-update-audit",
+      "--neantik-mcp-stdio",
+      "--allow-profile-management"
+    ],
+    "nativeQAReadiness": {
+      "status": "not-run",
+      "eligibleForAttempt": true,
+      "memoryPressure": 1,
+      "thermalState": 0,
+      "observer": "one elevated read-only native-qa-readiness.py --check"
+    },
+    "interactiveState": {
+      "applicationRunning": true,
+      "profileWindowVisible": true,
+      "existingUserDataUntouched": true,
+      "candidateQAStarted": false
+    },
+    "decision": "Do not launch a second NeAntik instance or use the visible user profiles. The requested closed-app state was not true at observation time."
+  },
+  "timestampDiagnostic": {
+    "testObject": "temporary copy of the V290 ad-hoc standalone WebKit host; removed after attempt",
+    "method": "codesign timestamp request directed to a loopback HTTP handler that would forward unchanged bytes to official http://timestamp.apple.com/ts01",
+    "codesignResult": "A timestamp was expected but was not found",
+    "loopbackPOSTCount": 0,
+    "upstreamTSAExchange": "none observed; signer never reached the local handler",
+    "interpretation": "Inconclusive about the official TSA response to codesign. Do not repeat this loopback-forwarder approach. Prior direct official RFC3161 synthetic requests and V292/V291 findings remain distinct."
+  },
+  "nextAction": "After saving any NeAntik work, quit the currently running NeAntik app and restart the Mac once. After login, leave NeAntik closed and report ready. Then retry timestamped signing once on a fresh disposable production candidate; separately perform Chromium runtime QA only when no user NeAntik session is open.",
+  "releaseQualified": false,
+  "nativeQAReadinessObservedAtUTC": "2026-10-27T18:41:55.302269Z"
+}

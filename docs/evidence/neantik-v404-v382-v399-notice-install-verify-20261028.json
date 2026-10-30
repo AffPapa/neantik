@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v404-v382-v399-notice-install-verify-20261028",
+  "observedAtUTC": "2026-10-28T07:36:00Z",
+  "status": "PASS_V382_STAGE_V399_NOTICE_INSTALL_AND_VERIFY_ON_DISPOSABLE_APP; NOT_SIGNED_CANDIDATE",
+  "scope": "Install and verify current owned-WebKit notices against retained V395 V382 Frameworks stage on a minimal disposable app scaffold. No user app or production candidate touched.",
+  "inputs": {
+    "installer": "/private/tmp/neantik-release-v1/scripts/webkit_runtime_notices.py",
+    "installerSHA256": "10490f705b9822a1e0e9aad3e4eaa9809a0a5827a0a548d17d12dad35ac68245",
+    "v395RecipeReceipt": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v395-v382-overlay-notice-and-recipient-recipe-closure-20261028.json",
+    "v395SHA256": "be5a138682357846c34bcdcddf269b529aa343113344e6ae75266f59a54910b8",
+    "v402StageIrcamBinding": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v402-v382-stage-ircam-hrtf-notice-binding-20261028.json",
+    "v402SHA256": "0811f9abebde4357a190f3ecc0f6112e0d66405e202bfebf21bafbe039fd7034",
+    "frameworksRoot": "/private/tmp/neantik-v395-package-stage/Frameworks",
+    "frameworksTree": {
+      "entries": 120,
+      "bytes": 226343199,
+      "manifestSHA256": "1ef3967d8e34bf1e3908a8037a0e0941afc6cc416f111c4f1ae2fd0066a49612"
+    },
+    "compositeRuntimeSHA256": "a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3",
+    "sourceOfferRoot": "/private/tmp/neantik-release-v1/dist/private/source-offers/v382-filtered-model-assets-draft",
+    "sourceOfferManifestSHA256": "e96b51e74894ec9877462105cf03c28bc80c0bc799b5408288d7c0b49c4631a8",
+    "sourceArchiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+    "sourceOfferSupplementRoot": "/private/tmp/neantik-release-v1/dist/private/source-offer-supplements/v399-ircam-listen-hrtf",
+    "supplementManifestSHA256": "688c8f4681e8c79cfdc69a6124fb4cf868c32a8e54738b03e6ba732a1a4e5ecd",
+    "fixtureSource": "/private/tmp/neantik-v382-stage-v392/NoticeFixture.app; copied only the two existing notice documents into a fresh minimal scaffold."
+  },
+  "actions": {
+    "noticeInstall": "PASS",
+    "noticeVerify": "PASS",
+    "runtimeLaunch": false,
+    "candidateSigning": false,
+    "notarization": false,
+    "publication": false
+  },
+  "results": {
+    "runtimeNoticesMarkdownSHA256": "f06182dc3d127d2c23eaf2c997170a6e9eac2fb1ddc847ebf135bfda509fcce8",
+    "thirdPartyHTMLSHA256": "c6fe99f95671895dbe9153cde2f2a64a693fb96456ca7c08455c67a79ca97a06",
+    "ircamNoticeSHA256": "98e596a4a8e0cd4d5fcb5d77f8a37d846129dce89d99235dcc3133a22dfdd0a2",
+    "ircamSectionInMarkdown": true,
+    "ircamSectionInHTML": true,
+    "disposableAppTree": {
+      "entries": 166,
+      "bytes": 12212744,
+      "manifestSHA256": "2da964be8c80d9e35da61d64bec8395b1d121845c5a6999f9a749977d8337199"
+    },
+    "cli": "webkit_runtime_notices.py --install then --verify; both returned PASS."
+  },
+  "limitations": [
+    "This proves notice installer/verifier behavior on this exact pre-sign Frameworks stage and disposable app only.",
+    "It does not prove signed candidate notices, complete source-offer combination, recipient rebuild/relink/load, timestamp signing, notarization, publication, or release qualification."
+  ],
+  "releaseQualified": false,
+  "nextAction": "No further unchanged notice or source-offer integrity checks. Resume the one production package flow only after secure timestamp signing has observable environment recovery; otherwise keep the already validated V382 stage and receipts frozen."
+}

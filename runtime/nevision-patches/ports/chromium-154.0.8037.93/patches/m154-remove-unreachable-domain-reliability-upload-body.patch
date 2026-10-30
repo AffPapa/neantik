@@ -1,0 +1,108 @@
+--- a/components/domain_reliability/uploader.cc
++++ b/components/domain_reliability/uploader.cc
+@@ -19,7 +19,6 @@
+ #include "net/base/upload_bytes_element_reader.h"
+ #include "net/http/http_response_headers.h"
+ #include "net/http/http_util.h"
+-#include "net/traffic_annotation/network_traffic_annotation.h"
+ #include "net/url_request/url_request.h"
+ #include "net/url_request/url_request_context.h"
+ 
+@@ -27,7 +26,6 @@
+ 
+ namespace {
+ 
+-const char kJsonMimeType[] = "application/json; charset=utf-8";
+ 
+ // Each DR upload is tagged with an instance of this class, which identifies the
+ // depth of the upload. This is to prevent infinite loops of DR uploads about DR
+@@ -81,85 +79,10 @@
+     if (discard_uploads_)
+       discarded_upload_count_++;
+ 
+-    if (true) {
+-      DVLOG(1) << "Discarding report instead of uploading.";
+-      UploadResult result;
+-      result.status = UploadResult::SUCCESS;
+-      std::move(callback).Run(result);
+-      return;
+-    }
+-
+-    net::NetworkTrafficAnnotationTag traffic_annotation =
+-        net::DefineNetworkTrafficAnnotation("domain_reliability_report_upload",
+-                                            R"(
+-          semantics {
+-            sender: "Domain Reliability"
+-            description:
+-              "If Chromium has trouble reaching certain Google sites or "
+-              "services, Domain Reliability may report the problems back to "
+-              "Google."
+-            trigger: "Failure to load certain Google sites or services."
+-            data:
+-              "Details of the failed request, including the URL, any IP "
+-              "addresses the browser tried to connect to, error(s) "
+-              "encountered loading the resource, and other connection details."
+-            destination: GOOGLE_OWNED_SERVICE
+-          }
+-          policy {
+-            cookies_allowed: NO
+-            setting:
+-              "Users can enable or disable Domain Reliability on desktop, via "
+-              "toggling 'Automatically send usage statistics and crash reports "
+-              "to Google' in Chromium's settings under Privacy. On ChromeOS, "
+-              "the setting is named 'Automatically send diagnostic and usage "
+-              "data to Google'."
+-            chrome_policy {
+-              DomainReliabilityAllowed {
+-                policy_options {mode: MANDATORY}
+-                DomainReliabilityAllowed: false
+-              }
+-            }
+-            chrome_policy {
+-              MetricsReportingEnabled {
+-                policy_options {mode: MANDATORY}
+-                MetricsReportingEnabled: false
+-              }
+-            }
+-          })");
+-    std::unique_ptr<net::URLRequest> request =
+-        url_request_context_->CreateRequest(
+-            upload_url, net::RequestPriority::IDLE, this /* delegate */,
+-            traffic_annotation,
+-            // TODO(crbug.com/527798032): Consider retrieving the correct target
+-            // network from the entity originating this report.
+-            net::handles::kInvalidNetworkHandle);
+-    request->set_method("POST");
+-    request->set_disallow_credentials();
+-    request->SetExtraRequestHeaderByName(net::HttpRequestHeaders::kContentType,
+-                                         kJsonMimeType, true /* overwrite */);
+-    CHECK_EQ(isolation_info.request_type(),
+-             net::IsolationInfo::RequestType::kOther);
+-    CHECK(isolation_info.site_for_cookies().IsNull());
+-    request->set_isolation_info(isolation_info);
+-    // Since this is a POST with an upload body and no identifier, these
+-    // requests automatically bypass the cache, but for consistency set the
+-    // load flags such that caching is explicitly disabled. This does mean we
+-    // also disable the cache if we're redirected and the request becomes a GET,
+-    // but these shouldn't be redirected.
+-    request->SetLoadFlags(request->load_flags() | net::LOAD_DISABLE_CACHE);
+-    std::vector<char> report_data(report_json.begin(), report_json.end());
+-    auto upload_reader =
+-        std::make_unique<net::UploadOwnedBytesElementReader>(&report_data);
+-    request->set_upload(net::ElementsUploadDataStream::CreateWithReader(
+-        std::move(upload_reader)));
+-    request->SetUserData(
+-        UploadDepthData::kUserDataKey,
+-        std::make_unique<UploadDepthData>(max_upload_depth + 1));
+-
+-    auto [it, inserted] = uploads_.insert(
+-        std::make_pair(std::move(request), std::move(callback)));
+-    DCHECK(inserted);
+-    it->first->Start();
++    DVLOG(1) << "Discarding report instead of uploading.";
++    UploadResult result;
++    result.status = UploadResult::SUCCESS;
++    std::move(callback).Run(result);
+   }
+ 
+   void SetDiscardUploads(bool discard_uploads) override {

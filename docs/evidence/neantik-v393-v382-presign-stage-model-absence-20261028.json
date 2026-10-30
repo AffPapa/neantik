@@ -1,0 +1,32 @@
+{
+  "bindings": {
+    "buildReceiptSHA256": "319afbac5c8a7b55daeb54912b3c7614537a4d26315885127d54694dc3bc7a7f",
+    "sourceCrosswalkSHA256": "7a0a90589615ebf7979dfff659e82546dd9770693d8e4ac82f7aa9dafe1f2580",
+    "sourceOfferManifestSHA256": "55d4858987381da122454d4e0869799ae21de9a14bef7ffe81dd6569c7fa28c4"
+  },
+  "checks": {
+    "modelRuntimePaths": [
+      "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/analytics/coremldata.bin",
+      "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/coremldata.bin",
+      "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/metadata.json",
+      "WebKit.framework/Versions/A/Resources/corePrediction_model"
+    ],
+    "modelRuntimePathsAbsent": 4,
+    "networkSandboxPolicyRevision": 13,
+    "networkSandboxSHA256": "e3e8a047e122938338f8e2a37e2d7e59d6f18ba20534c30765aaab9a579d2881",
+    "sourceBuildOutputsMatched": 14
+  },
+  "classification": "PASS_V382_EXACT_PRESIGN_STAGE_HASH_BINDING_AND_FOUR_MODEL_ABSENCE; LAUNCH_UNQUALIFIED",
+  "createdAt": "2026-10-28T06:21:59Z",
+  "id": "V393",
+  "nextAction": "Run exact V382 WebKit notice installer/verifier against a disposable manager-app copy and this staged Frameworks root, then preserve its receipt. Do not mutate the retained build-200 candidate.",
+  "remaining": "Complete exact candidate-bound notice verification, Developer ID timestamp signing, headed runtime/proxy/privacy evidence, Chromium .74 candidate, notarization and Direct Distribution release gates. Model source rights remain UNKNOWN, but excluded assets are absent from this staged runtime; no broader legal clearance is inferred.",
+  "scope": "Isolated pre-sign runtime stage derived from the V382 exact build. No app candidate, Developer ID signature, runtime launch, notarization or publication.",
+  "stageReceipt": {
+    "frameworksRoot": "/private/tmp/neantik-v382-stage-v392/Frameworks",
+    "launchQualified": false,
+    "path": "/private/tmp/neantik-v382-stage-v392/stage-receipt.json",
+    "sha256": "085eb6e50dc5a878e50d821a812ae374fafbb249817f757cfabea86c0d1271a4",
+    "stageDisposition": "pre-sign-only"
+  }
+}

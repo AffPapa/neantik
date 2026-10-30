@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T12:49:57.373008+00:00",
+  "status": "build142-exact-Dev-QA-runtime-FAIL-proxy-A;direct-B-control-PASS;cause-unresolved",
+  "archive": {
+    "sha256": "d00f0c5df2a33583d5baf8bc79d720fd074ced736464de1558d3271f19edf991",
+    "bytes": 247562244,
+    "stageReceipt": "/private/tmp/neantik-owned-webkit-qa-6l1y86am/stage.json"
+  },
+  "apple": {
+    "submissionID": "b8dc9ad0-dddd-45d2-b853-a5d0d6f54e30",
+    "status": "Accepted",
+    "gatekeeper": "accepted; source=Notarized Developer ID"
+  },
+  "launch": {
+    "exactLauncher": "PASS; one-use marker consumed",
+    "resourceAdmission": "eligible true, memory pressure 1, thermal state 0",
+    "managerPID": 42418,
+    "profiles": "2 loaded from model-encoded root; in-app seed normalization separated initial shared identity; no real user profiles touched"
+  },
+  "ownedA": {
+    "managerState": "running after launch",
+    "host": "NeAntikWebKitHost and owned WebContent, GPU and Networking XPC processes observed",
+    "browserUI": "Cua host app AX timed out twice; no reliable rendered page observation",
+    "localFixtureEvents": 0,
+    "brokerCountersOnFirstClose": "inbound=2 loopback=2 parsed=0 authorized=0 bound=0",
+    "navigationStageOnFirstClose": "unknown",
+    "secondLaunch": "startPage selected through synthetic profile UI; no local proxy/origin event; diagnostic files are exclusive and remained first-close evidence",
+    "status": "FAIL; no successful HTTP proxy route; request method or pre-parse failure not yet established"
+  },
+  "systemB": {
+    "localFixtureEvents": [
+      "direct-b-response-complete"
+    ],
+    "window": "WebKit direct control window showed local QA tab and exact URL",
+    "scope": "one system-WebKit direct control; does not qualify owned proxy"
+  },
+  "fixtureVerifier": "REFUSED: A/B, refusal, recovery, exact-authority or no-Direct evidence incomplete",
+  "cleanup": "both synthetic profiles stopped, app quit, loopback fixture process stopped; no owned QA processes remained at check",
+  "diagnosticChange": {
+    "scope": "qualification-only method class counters: CONNECT, HTTP verb, other; no URL, header, bearer or payload stored",
+    "focusedTests": "WebKitProxyConnectCodecTests and WebKitLoopbackBrokerTests PASS 18 tests in 3 suites",
+    "receipt": ".build/neantik-local/test-receipts/20261025T124923Z-42747.json"
+  },
+  "productionQualified": false,
+  "releaseQualified": false,
+  "nextAction": "Build one new Dev manager with qualification-only method-class counters and startPage model-encoded seed; exact package preflight/notary/native attempt only after source is frozen. Diagnose the pre-parse boundary before changing proxy transport or claiming privacy."
+}

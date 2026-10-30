@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "V384",
+  "observedAtUTC": "2026-10-28T05:37:42Z",
+  "status": "PASS_V382_SOURCE_CROSSWALK_AND_NOTICE_SELECTION; PACKAGE_AND_NOTICE_REGRESSIONS_PASS; BUILD_RECEIPT_AND_RUNTIME_OPEN",
+  "scope": "Package and notice consumers now select the filtered WebKit crosswalk only when the exact source-offer manifest carries the V382 binding. The binding validates the filtered archive, provenance, excluded source hashes, and V377/V381/V382 patch hashes. Package validation rejects model source files in either selected source root; notice installation/verification fails closed if any of the four excluded model outputs appear in staged Frameworks. Legacy V122/V135 crosswalk behavior is retained. No full build, stage, app candidate or runtime was produced.",
+  "sourceOffer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v382-filtered-model-assets-draft",
+    "manifestSHA256": "f49fa4010e9a3436c750cec3a714b4f442126393619424c880d3396f65f982bd",
+    "componentCount": 656,
+    "overlayAssets": 64,
+    "archiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+    "crosswalkPath": "docs/evidence/webkit-v20-source-license-crosswalk-v382-filtered-model-assets-20261028.json",
+    "crosswalkSHA256": "7a0a90589615ebf7979dfff659e82546dd9770693d8e4ac82f7aa9dafe1f2580",
+    "unknownExcludedRuntimeRows": 4,
+    "candidateBound": false
+  },
+  "consumers": {
+    "packageCrosswalkSHA256": "7a0a90589615ebf7979dfff659e82546dd9770693d8e4ac82f7aa9dafe1f2580",
+    "noticeCrosswalkSHA256": "7a0a90589615ebf7979dfff659e82546dd9770693d8e4ac82f7aa9dafe1f2580",
+    "sameCrosswalk": true,
+    "sourceOfferComponentsValidated": 656,
+    "overlayAssetsValidated": 64,
+    "sourceCandidateNoticeEntries": 12,
+    "filteredBuildReceiptSupport": "OPEN: load_build_receipt accepts only historical V122/V135 receipts; exact V382 build receipt binding must be added before future package stage"
+  },
+  "tests": {
+    "packageOwnedWebKit": "14/14 PASS",
+    "webkitRuntimeNotices": "66/66 PASS",
+    "newFilteredModelAbsenceTest": "PASS",
+    "sourceOfferExactConsumerPreflight": "PASS"
+  },
+  "sourceCodeSHA256": {
+    "scripts/package-owned-webkit-release.py": "b95b19dbe88fd2a3feba879c389400b81a2610940bad760ec2c965b7c99c453e",
+    "scripts/webkit_runtime_notices.py": "898f7b31da1ccde2adab0798e67d4ad18c19322409ac9f4a6d43c0cb6b1ff830",
+    "scripts/tests/test_package_owned_webkit_release.py": "3ac1fa8d234a13b06078614bce0be03c45faca92a83b561bb73648af88505ee1",
+    "scripts/tests/test_webkit_runtime_notices.py": "3582768a9e6b7240663de3777ba9fac4cff3239da09798c2574ae0cf62e828a6"
+  },
+  "limitations": [
+    "Four model runtime rows remain UNKNOWN until a real full build and exact staged candidate prove every excluded output absent.",
+    "The filtered source offer is private and not release-qualified.",
+    "The package consumer still accepts only historical V122/V135 build receipts; no V382 build receipt exists yet.",
+    "Chromium .74 has no signed candidate.",
+    "Apple secure timestamp control remains failed at V376; do not retry unchanged environment.",
+    "No signing, notarization, publication or downloaded-byte verification."
+  ],
+  "actions": {
+    "fullBuild": false,
+    "stage": false,
+    "candidateMutation": false,
+    "signOrNotarize": false,
+    "publish": false
+  },
+  "nextAction": "Add an exact V382 filtered-build receipt binding to package-owned-webkit-release.py while preserving V122/V135 compatibility; then finish Chromium .74 candidate inputs and run the one planned WebKit build/stage. Bind notice/resource hashes and all four model-path absences to that exact stage before any candidate packaging or signing."
+}

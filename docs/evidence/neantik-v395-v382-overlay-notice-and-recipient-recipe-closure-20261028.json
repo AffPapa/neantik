@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "id": "V395",
+  "createdAt": "2026-10-28T06:46:47Z",
+  "classification": "PASS_V382_OVERLAY_PREPARATION_AND_NOTICE_VERIFICATION; RECIPIENT_RECIPE_RECONCILED; RELEASE_GATES_OPEN",
+  "scope": "Close the V394 packaging/notice integration gap on disposable staging, bind current V382 manifest and recipes, and reduce avoidable signing work. No full browser rebuild, candidate signing, launch, notarization or publication.",
+  "sourceOffer": {
+    "root": "/private/tmp/neantik-release-v1/dist/private/source-offers/v382-filtered-model-assets-draft",
+    "manifestSHA256": "46e53c78c4d634ecdb39195ae0d0b86559753f7cde3edaaac4357a9b0904d5cb",
+    "componentCount": 658,
+    "webkitBuildReceiptSHA256": "319afbac5c8a7b55daeb54912b3c7614537a4d26315885127d54694dc3bc7a7f",
+    "assetCatalogReceiptSHA256": "2eb8974fe8d2441d946d437e2ca0ccf95c144386bb94941ee683f235fdc9a560",
+    "assetCatalogSHA256": "7f12d3e66db0813cdbfbef7125bab3844f5d8d6900d7ed36ea2c49e523e6ae61"
+  },
+  "implementation": {
+    "noticeConsumer": {
+      "path": "/private/tmp/neantik-release-v1/scripts/webkit_runtime_notices.py",
+      "sha256": "478eaae7fd648c68b9e38313a129e52070b11240eb45517b8ab1aa49a2ddb405",
+      "change": "Updated the strict V382 source-offer manifest digest after component-bound recipe updates."
+    },
+    "packageHelper": {
+      "path": "/private/tmp/neantik-release-v1/scripts/package-owned-webkit-release.py",
+      "sha256": "f1ca4565fa6de5e80b88ba16a080c58a34debf0be838d4861f76ddd7ef5212f7",
+      "change": "Applies all 55 hash-pinned static runtime resources and validates the source-bound Assets.car receipt on disposable Frameworks staging before signing. Manager identity/timestamp signing now occurs after stage, overlays and production-host preflight, reducing wasted signing attempts on setup failures."
+    }
+  },
+  "documentation": {
+    "v265RecipeSHA256": "6a3feda39ebe7eaa3218f7528ed2862b0f26e9ae9583d96dd0fd48444abb5f69",
+    "v20RecipeSHA256": "9201e26477fb1ef8f660bdf1e2d0aa24fe19e8eaa5de91925d4bcac1133e2598",
+    "offerManifestComponentHashesUpdated": true,
+    "v264Disposition": "Marked SUPERSEDED and directs recipients to V265; the incomplete historical steps are no longer current instructions.",
+    "mismatch": "V264/V265 omitted 55 source-offer runtime overlays and the warning-color WebKit_Assets rebuild; V265 and V20 now document both and the V264 draft is marked superseded."
+  },
+  "verification": {
+    "disposableNoticeVerify": "PASS, 35 result fields against /private/tmp/neantik-v395-package-stage/Frameworks and /private/tmp/neantik-v382-stage-v392/NoticeFixture.app using the current source checkout and V382 manifest binding.",
+    "webkitRuntimeNoticeTests": "PASS, 67 tests in 23.699 seconds.",
+    "ownedWebkitPackageTests": "PASS, 18 tests in 0.119 seconds.",
+    "diffCheck": "PASS, git diff --check produced no findings.",
+    "pytestProbe": "pytest is unavailable in the system Python; repository unittest files were run directly with Python -B and PYTHONDONTWRITEBYTECODE=1."
+  },
+  "limitations": [
+    "The stage is disposable integration evidence and is not a signed production candidate or browser launch.",
+    "The exact recipient replacement/relink/load is not demonstrated.",
+    "V376 secure timestamp signing remains blocked; do not retry without a new observable environment change.",
+    "Notarization, Gatekeeper, GitHub and browser.free delivery/download verification remain open.",
+    "Public alpha v0.9.0 remains the only public release."
+  ],
+  "releaseQualified": false,
+  "nextAction": "Resume from this checkpoint. First resolve the external secure timestamp signing boundary only after a concrete environment change; then run the package path once, using its source/overlay/catalog/host preflight before signing, and continue exact candidate runtime, notarization, Gatekeeper and Direct Distribution delivery gates. Do not repeat V392/V394 builds or diagnostics."
+}

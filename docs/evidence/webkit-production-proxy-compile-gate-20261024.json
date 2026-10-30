@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-24T07:35:54Z",
+  "surface": "NeAntik owned-WebKit production compile-time allowlist",
+  "status": "pass_compile_only",
+  "source": {
+    "Package.swift": "565ce451fe29cc95ace10c44be44b1547b1eb86274ec4ac8c1fd67715de6c612",
+    "Sources/NeAntik/WebKitProxyConfigurationFactory.swift": "f54be37abc58b5b4f45ce721acf2ed9e6ca2509722ce6221d6ff00f5b32e9593",
+    "Tests/NeAntikTests/WebKitProxyConfigurationFactoryTests.swift": "0ffbd09997a0117492b83160de1a2dae3d69a663d8718d698ae9931b71193e2b",
+    "scripts/build-webkit-standalone-host.py": "3b643edddf854f79b897555783e98fb86f8996c7016eb116662a1322699839ab"
+  },
+  "checks": {
+    "focusedSwift": {
+      "command": "swift test --disable-sandbox --jobs 2 --filter WebKitProxyConfigurationFactoryTests (repository-local SwiftPM and Clang caches)",
+      "result": "7 tests passed"
+    },
+    "optimizedProductionManagerCompile": {
+      "command": "NEANTIK_WEBKIT_PROXY_BUILD_MODE=production swift build --disable-sandbox --jobs 2 --configuration release -debug-info-format none --product NeAntik",
+      "result": "pass",
+      "binarySHA256": "100be8897130da0ce360370a8e97d30f76197737b97053f890757d2907c27816",
+      "qualification": "Compile-only; unsigned SwiftPM product, not an app bundle or public candidate"
+    },
+    "bundleAllowlist": "Explicit unit test: production mode accepts only app.neantik.desktop and app.neantik.desktop.webkit-host; rejects Dev, suffix-lookalike, and nil IDs. Qualification mode rejects production IDs; disabled mode rejects Dev ID.",
+    "releaseWrapper": "Previous focused direct-release wrapper suite remains 18/18 pass; existing Developer ID default and production channel for version 1.0.0 are local changes.",
+    "hostBuilderSyntax": "pass",
+    "optimizedProductionHostCompile": {
+      "command": "python3 scripts/build-webkit-standalone-host.py --configuration release --production-proxy",
+      "result": "pass; host builder reports built-production-mode-unqualified; QA macro false",
+      "binarySHA256": "4ab80d041f5719d54cc81fe5741d32f38a1541c2182da8e29335c9327ef54cf4",
+      "ownedBinarySHA256": "3dbd1d1148ae77a482fb2fe0ab6a35d7c3ae65293976f6f2eeaf8ca4e54459cd",
+      "sourceCount": 25,
+      "qualification": "Unqualified binary only; no signing, runtime package, native launch, or proxy request"
+    }
+  },
+  "limitations": [
+    "scripts/package-app.sh still rejects owned-WebKit host packaging; no host was staged into this compile-gate output.",
+    "No signing, notarization, native launch, proxy request, or public publication occurred.",
+    "QA diagnostics remain controlled by NEANTIK_WEBKIT_PROXY_QUALIFICATION and were not enabled in the production compile."
+  ],
+  "releaseQualified": false
+}

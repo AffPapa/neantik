@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "id": "V385",
+  "observedAtUTC": "2026-10-28T05:40:08Z",
+  "status": "PASS_V382_EXACT_SOURCE_OFFER_CONSUMERS_AND_FILTERED_BUILD_RECEIPT_CONTRACT; REAL_BUILD_OPEN",
+  "scope": "The V382 offer must bind a filtered build receipt as an exact sourceOfferComponents file before packaging. The consumer accepts only the pinned V382 filtered receipt schema and rejects a V122/V135 receipt under a filtered offer. Legacy V122/V135 behavior remains available only for legacy offers. This prepares the package path without creating a build or candidate.",
+  "sourceOffer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v382-filtered-model-assets-draft",
+    "manifestSHA256": "f49fa4010e9a3436c750cec3a714b4f442126393619424c880d3396f65f982bd",
+    "components": 656,
+    "overlayAssets": 64,
+    "archiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+    "crosswalkSHA256": "7a0a90589615ebf7979dfff659e82546dd9770693d8e4ac82f7aa9dafe1f2580",
+    "buildReceiptPath": "NOT_YET_CREATED",
+    "candidateBound": false
+  },
+  "consumerBinding": {
+    "packageAndNoticesSelectSameV382Crosswalk": true,
+    "provenanceAndPatchHashesBound": true,
+    "fourModelRuntimePathsFailClosedInStagedFrameworks": true,
+    "V382BuildReceiptPinnedInsideOfferRequired": true,
+    "historicalBuildReceiptReuseUnderV382Refused": true
+  },
+  "tests": {
+    "packageOwnedWebKit": "17/17 PASS",
+    "webkitRuntimeNotices": "66/66 PASS (same notice-code input as V384)",
+    "sourceOfferComponentAndOverlayPreflight": "PASS at 656 components/64 assets",
+    "dualConsumerCrosswalkBinding": "PASS"
+  },
+  "sourceCodeSHA256": {
+    "scripts/package-owned-webkit-release.py": "c9e32f68fb15fe7d94ca2e8bff02a3912a0cb9c3fa2ae03d3435adf05a939d46",
+    "scripts/webkit_runtime_notices.py": "898f7b31da1ccde2adab0798e67d4ad18c19322409ac9f4a6d43c0cb6b1ff830",
+    "scripts/tests/test_package_owned_webkit_release.py": "217cb97f26e13d72a899b805a61accaed66596ec500bf7f922595438aab59a35",
+    "scripts/tests/test_webkit_runtime_notices.py": "3582768a9e6b7240663de3777ba9fac4cff3239da09798c2574ae0cf62e828a6"
+  },
+  "limitations": [
+    "No V382 full build receipt exists; current manifest intentionally has no buildReceiptPath or buildReceiptSHA256, so package validation refuses to proceed.",
+    "Four model runtime rows are UNKNOWN until an exact staged candidate proves absence.",
+    "No signed Chromium .74 candidate, full WebKit build, candidate, signing, notarization, publication or downloaded-byte verification.",
+    "V376 secure timestamp failure remains the last observation; no retry without observable environment change."
+  ],
+  "actions": {
+    "fullBuild": false,
+    "stage": false,
+    "candidateMutation": false,
+    "signOrNotarize": false,
+    "publish": false
+  },
+  "nextAction": "Reconcile and freeze the exact Chromium .74 runtime/candidate inputs from the existing V340/V341/V364/V365 evidence without repeating their valid checks. Then run the one full WebKit build from the V382 archive and patch chain, add the exact build receipt to the source offer, and bind stage/runtime absence before signing."
+}

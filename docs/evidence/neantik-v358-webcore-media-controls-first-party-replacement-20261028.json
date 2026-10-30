@@ -1,0 +1,291 @@
+{
+  "schemaVersion": 1,
+  "id": "V358",
+  "observedAtUTC": "2026-10-28T03:13:30Z",
+  "status": "PASS_35_FIRST_PARTY_MEDIA_CONTROLS_REPLACEMENTS_BOUND_TO_BUILD200",
+  "scope": "Exact media-controls resource rows for retained signed build-200 candidate. V29 historical worksheet is not rewritten; this does not qualify current Chromium .74 release.",
+  "inputs": {
+    "historicalRightsBoundaryReviewSHA256": "6aefd30127d98c29df1b42c6e56e6ce5bf2e25f4e2380d567220b4e4896b6ef4",
+    "historicalWorksheetV29SHA256": "b5d00e7589a67102c62372a6feddc9e7d06a50c6d0c3b6fde047bd42b9954441",
+    "overlayAttributionSHA256": "f83a70a19410524d8e9f1c9864540f84a4e1f870b2a69a73f16a97390e87af82",
+    "overlayLicenseSHA256": "3ab0de831861966f2c2ec76d3ba1b24473c64ee08cb7699327a2005fca688ff7",
+    "assetGeneratorSHA256": "06be14700dd8bc7cdac9a67ca7029443f8ff9b6bb344cbb68a1b53683f7d9767",
+    "v135BuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "currentCandidateManifestSHA256": "145531171b5d999490a5a94b523cb5623d3f32d58a600925f9d639f946500020",
+    "v315ExactNoticeReceiptSHA256": "ad0f8c719459526960f81f23298136fb401eded043ebb420add333243d00e77c"
+  },
+  "generationEvidence": {
+    "method": "Deterministic local SVG/PNG geometry and pixel generation; generator reads the rights-review rows and no external artwork files.",
+    "license": "BSD-2-Clause",
+    "copyright": "Copyright (c) 2026 NeAntik contributors.",
+    "assetCount": 35
+  },
+  "binding": {
+    "sourceTreeAssetMatches": 35,
+    "v135WebCoreResourceMatches": 35,
+    "build200PackageResourceMatches": 35,
+    "exactPackagedBSD2License": true,
+    "exactPackagedAttribution": true,
+    "historicalReviewRetainedAndHashBound": true,
+    "strictSignedCandidateAndNoticePass": true,
+    "candidateId": "ef2ce9cf159242c3a147027867403460",
+    "candidateBuild": "200",
+    "candidateManifestSHA256": "145531171b5d999490a5a94b523cb5623d3f32d58a600925f9d639f946500020",
+    "v135WebCoreBinarySHA256": "2dfb23280d68b0b89bf493a16de3696a326ccf8cdb88722593998bb00bbdd6a8"
+  },
+  "assetRows": [
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Airplay-fullscreen.svg",
+      "originalRuntimeSHA256": "a205eeab51428db7ebd02bcca10371d81d118e0f6b5d53476f034bc0f5ab32ee",
+      "firstPartySHA256": "3277be164e8e08208b2750274f77fd3f989be5b539567a57161ca15cda1f6a82",
+      "bytes": 400,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Airplay-fullscreen.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Airplay.svg",
+      "originalRuntimeSHA256": "01a3e76dd4c7ef1cf3670df846c56e9f95a3e3daf860af3df4bf5f5d10701a40",
+      "firstPartySHA256": "bb9e3e0d33c5ac39f93188e8fc3f10afb844aad8c1e1a93256f5219d537a52ed",
+      "bytes": 391,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Airplay.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Ellipsis.svg",
+      "originalRuntimeSHA256": "994400892d32ce6f86c1c5907d680c3f552c3e0a76e7715a5d1cee97efee23f4",
+      "firstPartySHA256": "276c02b2956c190cd63e4b3be78c9b863cc06ef8a4ff73579b4ae21f389548a1",
+      "bytes": 390,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Ellipsis.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/EnterFullscreen.svg",
+      "originalRuntimeSHA256": "585fbe6f89a5d7e3a83c9dc6b0cf2d96fcdb71dec4fb4844088452d0e2eba327",
+      "firstPartySHA256": "cb3f4852ea927494964ea146498e192a58a4f666888e1a59fa5717dc045544ac",
+      "bytes": 393,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/EnterFullscreen.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/ExitFullscreen.svg",
+      "originalRuntimeSHA256": "389cf6968410375531876045d87f6d01554ce7bb100854eff3b85b428194e19e",
+      "firstPartySHA256": "09b633c1831106e3d9266b9628dbd03927bb7cd5c44f4bc73b9d8b5515233362",
+      "bytes": 397,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/ExitFullscreen.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Forward.svg",
+      "originalRuntimeSHA256": "e7796fe2caf6a95c24938e77b1a7bc8e0511841566bad00852fef9d6caa364f2",
+      "firstPartySHA256": "24adf44e5ae49295cb389748307c5d666704dbff73251a626bb88b61b19de5f2",
+      "bytes": 387,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Forward.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/MediaSelector-fullscreen.svg",
+      "originalRuntimeSHA256": "8ce86ddc35d989ee22ea8fa5b06d6543c34fd6e4c4ad8ad38f8162e1bf38c426",
+      "firstPartySHA256": "a11e27a0fc2edcc8c3c7e3a70d8763ef30a6e997026af7e9d26350d81efa5d03",
+      "bytes": 392,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/MediaSelector-fullscreen.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/MediaSelector.svg",
+      "originalRuntimeSHA256": "52eae82ea5ba789c9cacebe4a859900a7603dc244227c69c37a2bd0959d451a6",
+      "firstPartySHA256": "088e84b6dad51411ae2e337cdb68256e01c821c7850aa8aea128155e7854eab6",
+      "bytes": 391,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/MediaSelector.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Overflow.svg",
+      "originalRuntimeSHA256": "1e224e0e0c03a7ead095b3bbbff1fcda2d48fc84905db3ceab35ae2be5e2a4cb",
+      "firstPartySHA256": "bfa1c2ef7f599ba8995ac0c8b8cde579289b08a94d1aabf8ab07794dd6742813",
+      "bytes": 394,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Overflow.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Pause.svg",
+      "originalRuntimeSHA256": "b84c8b189b9c215873c3047f521f41d7f39a4dc2d80b5c314448b5aec3d5bbca",
+      "firstPartySHA256": "c130393ece5bd9a80e61fe4c5a44147b0596b2a9b16bcd2ed7f67824b3375b8b",
+      "bytes": 371,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Pause.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/PipIn-fullscreen.svg",
+      "originalRuntimeSHA256": "92d244cf4e1b6944935495824546fe312fcbcd6f64f2fc5a40f6de79cdb21f8c",
+      "firstPartySHA256": "ac3886c96ac16d8fc622ce124f2bf87699ca90eac3dc1dd051cedb7578b81b63",
+      "bytes": 383,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/PipIn-fullscreen.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/PipIn.svg",
+      "originalRuntimeSHA256": "177e90824b6d206dd713c3d864ffa5c02a9d4aa8513eefe78c7e0a5a90c6d9bc",
+      "firstPartySHA256": "8b1761995b5b83e43c7a9945c74b6d938481cae13d0bd754f05d902332937fd0",
+      "bytes": 383,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/PipIn.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Play.svg",
+      "originalRuntimeSHA256": "0c3f0910bde6fa119539e587e2d6dd44e6e4f62cc1267b5348f4ccaa2a70d755",
+      "firstPartySHA256": "766ad004994ed9f9355ca5d220c93bbcefd30b502536612eed70086dc091477a",
+      "bytes": 372,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Play.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Rewind.svg",
+      "originalRuntimeSHA256": "5e3c4d342b9adffcf22718cd7aedc6b05d6ee12f0d1a571026f66eb35e9f092a",
+      "firstPartySHA256": "efba121916bb94cc4c42544ecb756f6562f265e8e94835aeaa466e8b75df31f8",
+      "bytes": 389,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Rewind.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipBack10.svg",
+      "originalRuntimeSHA256": "48237b2391c45965c8d3470a759b35cd5d1822c68c08c52ea4304d39dea99ebd",
+      "firstPartySHA256": "28796301a920ccb17147d7779e777aa5878f05b73049772eca35a705dc4177f7",
+      "bytes": 507,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipBack10.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipBack15.svg",
+      "originalRuntimeSHA256": "3cc8c5dafe25acc9b63350f4f379ff57e0bf6983f37e05eaecc9bb7e70099a69",
+      "firstPartySHA256": "a842d164bee77c169dc1ea591be6ed0e953f8412c7f2a941c6bca0a73a31de20",
+      "bytes": 507,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipBack15.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipForward10.svg",
+      "originalRuntimeSHA256": "d098c6c9cacecc609bc7abead553cdb7e7ccadfdd15ff8a0f804f3f4dc1dbedc",
+      "firstPartySHA256": "3e53e7895a52ba8d84484665516ff333ecafe13395bc1707a6038e9579ccf95c",
+      "bytes": 506,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipForward10.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipForward15.svg",
+      "originalRuntimeSHA256": "38304441d6a259c755e2a40110dd9fdd82ab9381d108df5f8b7b311268c130f3",
+      "firstPartySHA256": "49a76d3d59aa99ab0932d4f2c3a83e791687f2b371d90c438f7b437516bef2f0",
+      "bytes": 506,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipForward15.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume0-RTL.svg",
+      "originalRuntimeSHA256": "12fc441e9a16a6255f8fbad191782f258a81c0c8c58f19bd081f4ab18683ac24",
+      "firstPartySHA256": "0b160b6627711d642315e8de5ed23077e66467deca4ea5dcf0bae87ab63ca4a7",
+      "bytes": 430,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume0-RTL.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume0.svg",
+      "originalRuntimeSHA256": "fef1af73785a6209cd112e012bdc21390bbb24ab315c26716d8b8b7bc3e497e3",
+      "firstPartySHA256": "f80f1dd52c20cab5dd601043110fb077e113aedfdb958a04854fddaa9ebe506c",
+      "bytes": 383,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume0.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume1-RTL.svg",
+      "originalRuntimeSHA256": "985be2fd9f1d308310dfc14e54ccb6b0a088dbabb2372cd3a9bddfd4a9e28000",
+      "firstPartySHA256": "db38fff1fe3fa1e21bff8d52c983c97dbb3008d48775052b5d503188054b149a",
+      "bytes": 560,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume1-RTL.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume1.svg",
+      "originalRuntimeSHA256": "04086b14f4b5a9fd2bb25a2d7198bf372887e8d134ec6d3bf03043a1bf101bcc",
+      "firstPartySHA256": "f80f1dd52c20cab5dd601043110fb077e113aedfdb958a04854fddaa9ebe506c",
+      "bytes": 383,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume1.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume2-RTL.svg",
+      "originalRuntimeSHA256": "8a13ad7dfea2226665a1ba20e7e1a3f8a10152f3723533544532066f176eab40",
+      "firstPartySHA256": "dd3352de7ec76b6acc57d214be7f6d034c9479c27d9aa067933037d0785d4ab7",
+      "bytes": 690,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume2-RTL.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume2.svg",
+      "originalRuntimeSHA256": "67b934fa97245e3a72d44ad8fd1faa5333f5cbdb345b1924a19c069df01348eb",
+      "firstPartySHA256": "f80f1dd52c20cab5dd601043110fb077e113aedfdb958a04854fddaa9ebe506c",
+      "bytes": 383,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume2.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume3-RTL.svg",
+      "originalRuntimeSHA256": "c793810d2462566c8ba0aed3aa458ba4525b75264a95fe9fbee81bae897f270c",
+      "firstPartySHA256": "b6660c865a278b7fa9deb86a53598ba725930ff6d47def5bf6a5fa34a397b07c",
+      "bytes": 820,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume3-RTL.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume3.svg",
+      "originalRuntimeSHA256": "7eb427a1ff559df9053482e721c2af6af6a1c5b24de4658ca4b2ed37c07e0519",
+      "firstPartySHA256": "f80f1dd52c20cab5dd601043110fb077e113aedfdb958a04854fddaa9ebe506c",
+      "bytes": 383,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume3.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/VolumeMuted-RTL.svg",
+      "originalRuntimeSHA256": "820a216222f8cab50166815392a372ccae4950624da5fddb3d63f0da0747dc25",
+      "firstPartySHA256": "51b522be33744fe2b51acb192feb1b17d581ec38532c87a0cc7a992f7fb07183",
+      "bytes": 568,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/VolumeMuted-RTL.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/VolumeMuted.svg",
+      "originalRuntimeSHA256": "51d4758d87c22dfac3f2f9e6785131d7d31b75355fff33c90dab512dc0578431",
+      "firstPartySHA256": "9892be303e4a52fa145e09afcde6d9bc4669acbaf183b88f697a9ab7241dfaae",
+      "bytes": 521,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/VolumeMuted.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/X.svg",
+      "originalRuntimeSHA256": "cf45cbee32f642c830729dd3bb2b182ceef89c8eb33e7e90ccec446dda67e007",
+      "firstPartySHA256": "99766e21f02096d7d5133e941547a37d0230556ecd53836dc5f953a8bdd00c94",
+      "bytes": 369,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/X.svg"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/airplay-placard@1x.png",
+      "originalRuntimeSHA256": "66f9a92669b95249589b3c0f41ffaf0dd6a0f2b94f39977a09fbe4c168062acc",
+      "firstPartySHA256": "65d66673226035ef07aecee2b99d906ba3da40be4d62ae5ea41b6bb63fed84e8",
+      "bytes": 544,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/airplay-placard@1x.png"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/airplay-placard@2x.png",
+      "originalRuntimeSHA256": "027c770c430b673f300b38f11fd6fee49066b8f260b08910344b285a72c4c4e8",
+      "firstPartySHA256": "23c64467783a6fee4a34afcea1650ef8bde7c1318ea2793866a3ca3680ad4d04",
+      "bytes": 930,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/airplay-placard@2x.png"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/invalid-placard@1x.png",
+      "originalRuntimeSHA256": "38c8818439eea65a351b0173a3bd9680b9222575b69db8e31badf5869bf3ac58",
+      "firstPartySHA256": "b3d92f255337e3b5eb60af6ead51690893cf30ba9a9d9a2472d7784722a32b9e",
+      "bytes": 435,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/invalid-placard@1x.png"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/invalid-placard@2x.png",
+      "originalRuntimeSHA256": "5350e4005d0a71c7fa875084050bef398f44c3f44df9ae724b4b44dfe1341be7",
+      "firstPartySHA256": "b7ea37f0d7d0afbe8e6a90a4ae5d37c0a1daf072f1d8366e507f94c0ef105510",
+      "bytes": 661,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/invalid-placard@2x.png"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/pip-placard@1x.png",
+      "originalRuntimeSHA256": "7c1767b84a7c2931be8c902ec07c7d27614a0a2bc30de47a238fda02abbaff1a",
+      "firstPartySHA256": "4d2460a6298c3c4db1d6ff51808df5811026f579e6297d6de927e99ad7ce5f26",
+      "bytes": 397,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/pip-placard@1x.png"
+    },
+    {
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/pip-placard@2x.png",
+      "originalRuntimeSHA256": "c98db6839c47362eb45bcea0a516566169b7c2d3e2b4429a2f803b663ae8761d",
+      "firstPartySHA256": "135301d22275a935c6e809303f1edc639c4270cdbc182cbf7be60742e6345165",
+      "bytes": 762,
+      "packagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/modern-media-controls/images/pip-placard@2x.png"
+    }
+  ],
+  "decision": "The 35 original upstream artwork files remain UNKNOWN as historical source material, but none of those original hashes occupy these exact build-200 runtime paths. Every path contains an explicitly licensed NeAntik first-party replacement matching the source tree, V135 resource output and packaged bytes; exact BSD-2 text and attribution are present. This closes the artwork-rights UNKNOWN for these 35 exact build-200 resource bytes only; factual maintainer disposition, not a legal opinion.",
+  "limits": [
+    "V29 remains immutable and describes its historical candidate.",
+    "Build 200 is not the final 1.0 candidate; rebind these assets and notices to the frozen Chromium .74 candidate.",
+    "Other resource/image license rows, recipient relink and signed replacement/load remain open; no blanket image license or patent clearance is claimed.",
+    "The old rights-boundary review is retained to document the original upstream artwork; the packaged attribution and this receipt identify the replacement bytes."
+  ],
+  "releaseQualified": false
+}

@@ -1,6 +1,11 @@
 import Darwin
 import Foundation
 
+enum ProxyHealthSource: String, Codable, Equatable, Sendable {
+    case ipAPI = "ipapi.co"
+    case crossChecked = "ipwho.is+freeipapi.com"
+}
+
 enum ProxyKind: String, Codable, CaseIterable, Identifiable, Sendable {
     case http
     case https
@@ -81,7 +86,7 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
             !username.contains(":") &&
             username.count <= Self.maximumUsernameLength &&
             username.utf8.count <= Self.maximumUsernameUTF8Bytes &&
-            (kind != .socks5 || username.isEmpty) &&
+            (kind != .socks5 || username.utf8.count <= 255) &&
             (1...65_535).contains(port)
     }
 
@@ -131,6 +136,7 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
 
 struct ProxyContextEvidence: Codable, Equatable, Sendable {
     static let supportedSource = "ipapi.co"
+    static let crossCheckedSource = "ipwho.is+freeipapi.com"
     static let freshnessLifetime: TimeInterval = 30 * 24 * 60 * 60
 
     let source: String
@@ -143,8 +149,26 @@ struct ProxyContextEvidence: Codable, Equatable, Sendable {
         )
     }
 
+    static func crossChecked(observedAt: Date = Date()) -> ProxyContextEvidence {
+        ProxyContextEvidence(
+            source: crossCheckedSource,
+            observedAt: observedAt
+        )
+    }
+
+    static func from(
+        _ source: ProxyHealthSource,
+        observedAt: Date
+    ) -> ProxyContextEvidence {
+        switch source {
+        case .ipAPI: ipAPI(observedAt: observedAt)
+        case .crossChecked: crossChecked(observedAt: observedAt)
+        }
+    }
+
     var isValid: Bool {
-        source == Self.supportedSource &&
+        (source == Self.supportedSource ||
+            source == Self.crossCheckedSource) &&
             observedAt.timeIntervalSinceReferenceDate.isFinite
     }
 
@@ -298,7 +322,7 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         )
         self.timezoneIdentifier =
             Self.validatedTimezone(timezoneIdentifier)
-        self.localeIdentifier = localeIdentifier.flatMap(LocaleIdentifierNormalization.normalize)
+        self.localeIdentifier = localeIdentifier.flatMap(Self.normalizedLocale)
         self.proxyContextEvidence = proxyContextEvidence.flatMap {
             $0.isValid ? $0 : nil
         }
@@ -389,7 +413,7 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         localeIdentifier = try container.decodeIfPresent(
             String.self,
             forKey: .localeIdentifier
-        ).flatMap(LocaleIdentifierNormalization.normalize)
+        ).flatMap(Self.normalizedLocale)
         proxyContextEvidence = try container.decodeIfPresent(
             ProxyContextEvidence.self,
             forKey: .proxyContextEvidence
@@ -453,7 +477,7 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         self.timezoneIdentifier =
             Self.validatedTimezone(timezoneIdentifier)
         self.localeIdentifier =
-            localeIdentifier.flatMap(LocaleIdentifierNormalization.normalize)
+            localeIdentifier.flatMap(Self.normalizedLocale)
         self.proxyContextEvidence = proxyContextEvidence.flatMap {
             $0.isValid ? $0 : nil
         }
@@ -463,6 +487,35 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         value.flatMap {
             TimeZone(identifier: $0) == nil ? nil : $0
         }
+    }
+
+    private static func normalizedLocale(_ value: String) -> String? {
+        let components = value.replacingOccurrences(
+            of: "_",
+            with: "-"
+        ).split(separator: "-", omittingEmptySubsequences: false)
+        guard (1...2).contains(components.count),
+              (2...3).contains(components[0].count),
+              Self.isASCIILetters(components[0])
+        else {
+            return nil
+        }
+        if components.count == 2 {
+            guard components[1].count == 2,
+                  Self.isASCIILetters(components[1])
+            else {
+                return nil
+            }
+            return "\(components[0].lowercased())-\(components[1].uppercased())"
+        }
+        return components[0].lowercased()
+    }
+
+    private static func isASCIILetters(_ value: Substring) -> Bool {
+        value.utf8.count == value.count &&
+            value.utf8.allSatisfy {
+                (65...90).contains($0) || (97...122).contains($0)
+            }
     }
 
     static func migrated(profileID: UUID) -> BrowserIdentity {
@@ -481,38 +534,6 @@ struct BrowserIdentity: Codable, Equatable, Sendable {
         issuanceVersion == BrowserIdentityIssuancePolicy.currentVersion
             ? "Параметры устройства подобраны автоматически"
             : "Совместимость старого профиля"
-    }
-}
-
-enum LocaleIdentifierNormalization {
-    // Callers own whitespace/list handling; identity metadata stays strict.
-    static func normalize(_ value: String) -> String? {
-        let components = value.replacingOccurrences(
-            of: "_",
-            with: "-"
-        ).split(separator: "-", omittingEmptySubsequences: false)
-        guard (1...2).contains(components.count),
-              (2...3).contains(components[0].count),
-              isASCIILetters(components[0])
-        else {
-            return nil
-        }
-        if components.count == 2 {
-            guard components[1].count == 2,
-                  isASCIILetters(components[1])
-            else {
-                return nil
-            }
-            return "\(components[0].lowercased())-\(components[1].uppercased())"
-        }
-        return components[0].lowercased()
-    }
-
-    private static func isASCIILetters(_ value: Substring) -> Bool {
-        value.utf8.count == value.count &&
-            value.utf8.allSatisfy {
-                (65...90).contains($0) || (97...122).contains($0)
-            }
     }
 }
 
@@ -659,6 +680,40 @@ enum ProfileAppearance {
     }
 }
 
+enum BrowserStartupMode: String, Codable, CaseIterable, Sendable {
+    case startPage
+    case restoreSession
+
+    var title: String {
+        switch self {
+        case .startPage: "Стартовая страница"
+        case .restoreSession: "Предыдущие вкладки"
+        }
+    }
+}
+
+/// A separately versioned request, never inferred from a fingerprint seed.
+/// Runtime support is qualified independently before this can be applied.
+enum BrowserFontPolicy: String, Codable, Sendable {
+    case native
+    case systemV1 = "system-v1"
+}
+
+/// A future policy must not be mistaken for corrupted JSON and replaced with
+/// an older recovery snapshot that silently changes the profile environment.
+struct UnsupportedBrowserFontPolicyError: LocalizedError {
+    var errorDescription: String? {
+        "Эта версия NeAntik не может применить выбранную политику шрифтов. Данные сохранены. Открой профиль в версии с проверенной поддержкой этой настройки."
+    }
+}
+
+/// Persistent WebKit data belongs to one runtime family. Changing this value
+/// is a data migration, never a per-launch preference.
+enum WebKitRuntimeGeneration: String, Codable, CaseIterable, Sendable {
+    case system
+    case isolatedV1
+}
+
 struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     static let maximumNameLength = 120
     static let maximumNameUTF8Bytes = 4 * 1_024
@@ -668,7 +723,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     static let maximumNoteLength = 1_000
     static let maximumNoteUTF8Bytes = 4_096
     static let maximumStartURLUTF8Bytes = 16 * 1_024
-    static let defaultStartURL = "about:blank"
+    static let defaultStartURL = "https://aff.top/tools/fingerprint"
 
     var id: UUID
     var name: String
@@ -679,9 +734,12 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     var isPinned: Bool
     var isArchived: Bool
     var startURL: String
-    /// Optional pages opened together on a normal launch. Kept separate from
-    /// `startURL` so existing profiles retain their one-page behaviour.
-    var startupTabs: StartupTabSet
+    var startupMode: BrowserStartupMode
+    var engine: BrowserEngine
+    var webKitRuntimeGeneration: WebKitRuntimeGeneration
+    var webKitMediaPolicy: WebKitMediaPolicy
+    var webKitBlockPeerConnections: Bool
+    var fontPolicy: BrowserFontPolicy
     var proxy: ProxyConfiguration?
     var identity: BrowserIdentity
     var createdAt: Date
@@ -699,7 +757,12 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         isPinned: Bool = false,
         isArchived: Bool = false,
         startURL: String = BrowserProfile.defaultStartURL,
-        startupTabs: StartupTabSet = StartupTabSet(),
+        startupMode: BrowserStartupMode = .startPage,
+        engine: BrowserEngine = .chromium,
+        webKitRuntimeGeneration: WebKitRuntimeGeneration = .system,
+        webKitMediaPolicy: WebKitMediaPolicy = .ask,
+        webKitBlockPeerConnections: Bool = false,
+        fontPolicy: BrowserFontPolicy = .native,
         proxy: ProxyConfiguration? = nil,
         identity: BrowserIdentity = BrowserIdentity(),
         createdAt: Date = Date(),
@@ -717,7 +780,12 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         self.isPinned = isPinned
         self.isArchived = isArchived
         self.startURL = startURL
-        self.startupTabs = startupTabs
+        self.startupMode = startupMode
+        self.engine = engine
+        self.webKitRuntimeGeneration = webKitRuntimeGeneration
+        self.webKitMediaPolicy = webKitMediaPolicy
+        self.webKitBlockPeerConnections = webKitBlockPeerConnections
+        self.fontPolicy = fontPolicy
         self.proxy = proxy
         self.identity = identity
         self.createdAt = createdAt
@@ -785,6 +853,10 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     }
 
     func normalizedForPersistence() -> BrowserProfile? {
+        if engine != .chromium && fontPolicy != .native { return nil }
+        if engine != .webkit && webKitRuntimeGeneration != .system { return nil }
+        if engine != .webkit && (webKitMediaPolicy != .ask || webKitBlockPeerConnections) { return nil }
+        if engine == .webkit { do { try WebKitProfilePolicy.validateConfiguration(self) } catch { return nil } }
         let cleanStartURL = startURL.trimmingCharacters(
             in: .whitespacesAndNewlines
         )
@@ -796,8 +868,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
               cleanStartURL == startURL,
               startURL.utf8.count <= Self.maximumStartURLUTF8Bytes,
               PersistedInlineText.isSafe(startURL),
-              BrowserLaunchBuilder.validatedStartURL(startURL) != nil,
-              startupTabs.isValid,
+              BrowserStartURL.validate(startURL) != nil,
               proxy?.isValid != false
         else {
             return nil
@@ -805,7 +876,6 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         var value = self
         value.tags = cleanTags
         value.note = cleanNote
-        value.startupTabs = StartupTabSet(urls: startupTabs.validURLs.map(\.absoluteString))
         return value
     }
 
@@ -832,23 +902,23 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         return nil
     }
 
-    func duplicated(
-        named requestedName: String? = nil,
-        copyingProxy: Bool = false,
-        at date: Date = Date()
-    ) -> BrowserProfile {
-        let name = requestedName ??
-            Self.nameByAppendingSuffix(" — копия", to: self.name) ??
-            "Копия"
+    func duplicated(at date: Date = Date()) -> BrowserProfile {
+        let suffix = " — копия"
         return BrowserProfile(
-            name: name,
+            name: Self.nameByAppendingSuffix(suffix, to: name) ?? "Копия",
             colorHex: colorHex,
             symbolName: symbolName,
             tags: tags,
             note: "",
             startURL: startURL,
-            startupTabs: startupTabs,
-            proxy: copyingProxy ? proxy : nil,
+            startupMode: startupMode,
+            engine: engine,
+            webKitRuntimeGeneration: webKitRuntimeGeneration,
+            webKitMediaPolicy: webKitMediaPolicy,
+            webKitBlockPeerConnections: webKitBlockPeerConnections,
+            // A copy receives a new identity; policy opt-in is not inherited.
+            fontPolicy: .native,
+            proxy: proxy,
             identity: BrowserIdentity(),
             createdAt: date,
             updatedAt: date
@@ -869,7 +939,12 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         case isPinned
         case isArchived
         case startURL
-        case startupTabs
+        case startupMode
+        case engine
+        case webKitRuntimeGeneration
+        case webKitMediaPolicy
+        case webKitBlockPeerConnections
+        case fontPolicy
         case proxy
         case identity
         case createdAt
@@ -907,10 +982,30 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             forKey: .isArchived
         ) ?? false
         startURL = try container.decode(String.self, forKey: .startURL)
-        startupTabs = try container.decodeIfPresent(
-            StartupTabSet.self,
-            forKey: .startupTabs
-        ) ?? StartupTabSet()
+        // Missing field preserves the established startup contract of old profiles.
+        startupMode = try container.decodeIfPresent(BrowserStartupMode.self, forKey: .startupMode) ?? .startPage
+        engine = try container.decodeIfPresent(BrowserEngine.self, forKey: .engine) ?? .chromium
+        if container.contains(.webKitRuntimeGeneration) {
+            webKitRuntimeGeneration = try container.decode(WebKitRuntimeGeneration.self, forKey: .webKitRuntimeGeneration)
+        } else {
+            webKitRuntimeGeneration = .system
+        }
+        webKitMediaPolicy = try container.decodeIfPresent(WebKitMediaPolicy.self, forKey: .webKitMediaPolicy) ?? .ask
+        webKitBlockPeerConnections = container.contains(.webKitBlockPeerConnections)
+            ? try container.decode(Bool.self, forKey: .webKitBlockPeerConnections) : false
+        if container.contains(.fontPolicy) {
+            do {
+                // Missing is legacy/native; explicit null or unknown is not.
+                fontPolicy = try container.decode(BrowserFontPolicy.self, forKey: .fontPolicy)
+            } catch {
+                throw UnsupportedBrowserFontPolicyError()
+            }
+        } else {
+            fontPolicy = .native
+        }
+        guard engine == .chromium || fontPolicy == .native else {
+            throw UnsupportedBrowserFontPolicyError()
+        }
         proxy = try container.decodeIfPresent(
             ProxyConfiguration.self,
             forKey: .proxy
@@ -946,6 +1041,8 @@ struct BrowserRuntimeCapabilities: OptionSet, Hashable, Sendable {
 
     static let fingerprintSeed = BrowserRuntimeCapabilities(rawValue: 1 << 0)
     static let platformOverride = BrowserRuntimeCapabilities(rawValue: 1 << 1)
+    // BrowserRuntime admits this bit only after exact signed closure inspection.
+    static let systemFontPolicy = BrowserRuntimeCapabilities(rawValue: 1 << 2)
 
     static let fingerprintIdentity: BrowserRuntimeCapabilities = [
         .fingerprintSeed,
@@ -981,6 +1078,13 @@ enum BrowserRuntimeFlavor: String, Codable, CaseIterable, Identifiable, Sendable
     }
 }
 
+struct BrowserRuntimePreference: Codable, Equatable, Sendable {
+    var path: String
+    var flavor: BrowserRuntimeFlavor
+    var updatedAt: Date
+}
+
+#if !NEANTIK_WEBKIT_STANDALONE_HOST
 struct BrowserRuntime: Identifiable, Hashable, Sendable {
     var id: String { executableURL.path }
     let name: String
@@ -989,6 +1093,7 @@ struct BrowserRuntime: Identifiable, Hashable, Sendable {
     let flavor: BrowserRuntimeFlavor
     let capabilities: BrowserRuntimeCapabilities
     let inspection: BrowserRuntimeInspection
+    let fontPolicyQualification: BrowserFontPolicyQualification?
 
     init(
         name: String,
@@ -1002,13 +1107,23 @@ struct BrowserRuntime: Identifiable, Hashable, Sendable {
         self.executableURL = executableURL
         self.source = source
         self.flavor = flavor
-        self.capabilities = capabilities ?? flavor.capabilities
+        var admitted = capabilities ?? flavor.capabilities
+        admitted.remove(.systemFontPolicy)
+        let fontQualification = admitted.contains(.fingerprintIdentity)
+            ? BrowserFontPolicyRuntime.inspect(executableURL: executableURL) : nil
+        self.fontPolicyQualification = fontQualification
+        if fontQualification != nil { admitted.insert(.systemFontPolicy) }
+        self.capabilities = admitted
         self.inspection = inspection ??
             BrowserRuntimeInspector.inspect(executableURL: executableURL)
     }
 
     var supportsFingerprintIdentity: Bool {
         capabilities.contains(.fingerprintIdentity)
+    }
+
+    var supportsSystemFontPolicy: Bool {
+        fontPolicyQualification != nil && capabilities.contains(.systemFontPolicy)
     }
 
     var privacySummary: String {
@@ -1028,6 +1143,7 @@ struct BrowserRuntime: Identifiable, Hashable, Sendable {
         return parts.joined(separator: " · ")
     }
 }
+#endif
 
 enum NeAntikError: LocalizedError {
     case browserNotFound
@@ -1036,7 +1152,6 @@ enum NeAntikError: LocalizedError {
     case profileLimitReached
     case invalidProxy
     case profileArchived
-    case concurrentLaunchLimitReached(Int)
     case runtimeValidationFailed(String)
     case processLaunchFailed(String)
     case proxyTestFailed(String)
@@ -1058,16 +1173,11 @@ enum NeAntikError: LocalizedError {
             "Укажи корректный хост и порт прокси."
         case .profileArchived:
             "Сначала верни профиль из архива."
-        case let .concurrentLaunchLimitReached(limit):
-            "Одновременно можно запускать не больше \(limit) профилей. Останови ненужный браузер и повтори запуск."
         case let .runtimeValidationFailed(message):
             "Браузерный движок не готов: \(message)"
         case let .processLaunchFailed(message):
             if message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                "Не удалось запустить браузер. " +
-                    "Выбери профиль → Среда профиля → Показать подробности; если проверка " +
-                    "не пройдена, переустанови NeAntik из официального DMG. " +
-                    "Данные профиля удалять не нужно."
+                "Не удалось запустить браузер. Проверь целостность приложения и доступ к папке профиля."
             } else {
                 "Не удалось запустить браузер: \(message)"
             }

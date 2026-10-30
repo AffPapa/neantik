@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T17:20:00Z",
+  "status": "SOURCE_HEADERS_VERIFIED; CANDIDATE_139_PACKAGE_NOTICE_ABSENT; WEBKIT_IMAGE_REMAINS_UNKNOWN",
+  "scope": "Correct the V28 WebKit.framework image review after checking actual candidate-139 package bytes. V28 proved source/header mapping and tested installer behavior but did not prove those outputs were present in the candidate package.",
+  "candidateBinding": {
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "runtimeImagePath": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/JavaScriptCore.framework/Versions/A/JavaScriptCore",
+    "runtimeImageSHA256": "b18e6c8575354ec022779494daaa0afc48f5e75d412ed96cadef0edba41f6a56"
+  },
+  "sourceEvidence": {
+    "reviewReceipt": "docs/evidence/webkit-v20-webkit-image-license-review-20261026.json",
+    "reviewReceiptSHA256": "3f527c1d2efc64d26ce455eff1da97af773f9b192ce16f1827355e4eaa07ff26",
+    "sourceHeaderManifestSHA256": "599b1677b25c00a2f14ed4101061c302d75148af27146e6b1894c7f0ebcd9604",
+    "sourceHeaderRows": 193,
+    "sourceHeaderSignals": "193/193 exact BSD-form blocks, source/header hashes revalidated",
+    "noticeInstallerReplay": "94/94 focused tests passed in isolated V27 recipient replay; harness validates installer output, not candidate-139 bytes"
+  },
+  "packageObservation": {
+    "runtimeNoticesMarkdownSHA256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375",
+    "thirdPartyNoticesHTMLSHA256": "d03d7933236f76e10c9892f309f10de3365b5f2b7fe8742558f865e3bfb9ab4a",
+    "requiredResourcePathsAbsent": [
+      "NeAntikRuntimeLicenses/WebKitLinkedSourceHeaders/JavaScriptCore-SOURCE-HEADERS.txt",
+      "NeAntikRuntimeLicenses/WebKitLinkedSourceHeaders/WebCore-SOURCE-HEADERS.txt",
+      "NeAntikRuntimeLicenses/WebKitLinkedSourceHeaders/WebKit-SOURCE-HEADERS.txt",
+      "NeAntikRuntimeLicenses/JavaScriptCore/GeneratedOutputHeaders/GeneratedOutputHeaders.txt"
+    ],
+    "requiredMarkdownOrHTMLMarkers": {
+      "Exact linked JavaScriptCore, WebCore and WebKit source headers": false,
+      "JavaScriptCore generated-output copyright and license headers": false
+    },
+    "sourceCandidateFilesPresent": [
+      "NeAntikRuntimeLicenses/WebKitSourceCandidates/files/Source/JavaScriptCore/COPYING.LIB",
+      "NeAntikRuntimeLicenses/WebKitSourceCandidates/files/Source/JavaScriptCore/disassembler/ARM64/LICENSE-binja.txt"
+    ],
+    "finding": "The immutable candidate app has source candidate license files but does not contain the exact linked source-header bundle or linked-source notice section tested by the V27/V28 installer. Those installer changes have not been applied to this candidate, and it was not rebuilt or resigned."
+  },
+  "correctedDecision": "Keep WebKit.framework/Versions/A/WebKit worksheet decision UNKNOWN for candidate 139. Source license/header classification is supported, but required binary notice placement in the actual app is not present. Re-evaluate only against a new frozen candidate whose actual resource bytes and signature are verified.",
+  "limitations": [
+    "This does not invalidate the source-header map; it corrects the package-presence claim in V28.",
+    "The image row is not resolved by an installer test fixture or a source-offer overlay alone.",
+    "Candidate 139 remains immutable, superseded, unqualified and unpublished.",
+    "No build, install, signing, notarization, user-data mutation or publication occurred."
+  ]
+}

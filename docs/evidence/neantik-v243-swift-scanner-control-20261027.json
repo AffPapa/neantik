@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "status": "SWIFT_SCANNER_WORKS_ON_MINIMAL_CONTROL_WEBKIT_PAL_CONFIGURATION_INCONCLUSIVE",
+  "minimalControl": {
+    "source": "import Foundation",
+    "sdk": "macOS 27.0",
+    "target": "arm64 macOS 15.4",
+    "structuredGraphSHA256": "97e824ca5097032fe06b4038bdb95d54c6ec577a2cac20388f769ed16fd9015a",
+    "structuredGraphBytes": 954496,
+    "moduleRecordCount": 106,
+    "diagnosticErrors": 0
+  },
+  "webkitPALVariant": {
+    "change": "removed incremental dependency scan flag and used new isolated module cache",
+    "exitCode": 0,
+    "graphBytes": 0,
+    "diagnosticErrorOccurrences": 515,
+    "redactedDiagnosticSHA256": "98094c9c61c3d8ba86bcc87151d72d54da210516e05e312eeca483d06c71a541",
+    "status": "inconclusive; module cache/PCH configuration mismatch persists"
+  },
+  "interpretation": "Swift scanner itself can produce a valid graph; the reproduced PAL driver configuration or its imported modules triggers the failure. Removing incremental scan mode alone is insufficient. No full transitive inputs, portability, candidate or release qualification inferred.",
+  "releaseQualified": false
+}

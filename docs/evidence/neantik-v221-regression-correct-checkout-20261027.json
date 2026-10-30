@@ -1,0 +1,20 @@
+{
+  "status": "WRONG_TREE_PYTHON_RUN_INTERRUPTED_CURRENT_TREE_RUN_STARTED",
+  "initialPython": {
+    "sessionId": 83682,
+    "status": "INTERRUPTED",
+    "reason": "dirty release worktree lacks previously repaired provenance and test fixes; results do not qualify current source"
+  },
+  "currentSourceCommit": "c2a0135bf19c464d79bee0a67cf06d808c4edc19",
+  "newUntrackedFiles": {
+    "scripts/verify-webkit-presign-binding.py": "0b1ba23bbaf1ab06acba7cd983f3106db631c05cfb9526db00996b0d5aef062a",
+    "scripts/tests/test_verify_webkit_presign_binding.py": "5d1b3dd5b894590646cb3a7f83403dda98b4a1e91ee42d6b81318a107c36bff9"
+  },
+  "focusedTests": "6/6 PASS in current source checkout",
+  "swift": "V220 PASS; compiled source input digest 0e47751ba095a6b577ec565205f2e6d7688bafb6dfac57a70123c7dc63d51225 matches V199/V184",
+  "python": {
+    "sessionId": 96756,
+    "status": "RUNNING"
+  },
+  "releaseQualified": false
+}

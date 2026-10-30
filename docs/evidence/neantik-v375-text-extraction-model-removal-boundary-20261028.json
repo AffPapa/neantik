@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "V375",
+  "observedAtUTC": "2026-10-28T04:33:11Z",
+  "status": "PASS_TEXT_EXTRACTION_MODEL_REMOVAL_ROUTE_NOT_SUPPORTED_BY_EXISTING_FEATURE_BOUNDARY",
+  "scope": "Bounded static review of the five remaining candidate-139 rows produced from TextExtractionFilter.mlmodel. Determine whether matching the model target to the macOS 15.4 feature macro is enough to justify removal. No source, source-offer, candidate, package, build, signature, runtime, or publication mutation.",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "build": "139",
+    "worksheetSHA256": "b5d00e7589a67102c62372a6feddc9e7d06a50c6d0c3b6fde047bd42b9954441"
+  },
+  "inputs": {
+    "v373ReceiptSHA256": "a50ebcab70dfc6e613002dca060388602ff55b217dd6b8741f0ad02b6e0abaca",
+    "v20ModelRightsBoundarySHA256": "6701baeb9933645c177b6c8a1f6cf03a0d98f1509f6f5f63633278264cef1a09",
+    "v20ModelRemovalReviewSHA256": "2a0c1696808b64e324899203c956faac99a979b24523f5b3d65b73dadb7ba70d",
+    "sourceOfferManifestSHA256": "283dcb3ef84bb6b19a2b67a4e11edd9d75c2555ba2737c26ae230a0ecec87ea4",
+    "upstreamWebKitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "files": [
+      {
+        "path": "Source/WebKit/PlatformCocoa.cmake",
+        "sha256": "7750656cd935f54e5d36a980d2f07b4666700e86326d21864b3bde89a5cfe5b7",
+        "lines": "2588-2605"
+      },
+      {
+        "path": "Source/WTF/wtf/PlatformEnableCocoa.h",
+        "sha256": "b943f9580e5fabc93655318de5a7d93f92f6c04799ff68951f1c43d28ebc8c42",
+        "lines": "1148-1153"
+      },
+      {
+        "path": "Source/WebKit/UIProcess/API/Cocoa/WKWebView+TextExtraction.mm",
+        "sha256": "cc05d22b5214d51f4185520fa19bf69fe0b017568c4a719123ce2d4565db68fb",
+        "lines": "329,386,733,1128"
+      },
+      {
+        "path": "Source/WebKit/UIProcess/API/Cocoa/WKWebView.mm",
+        "sha256": "35f9175605486c7e018b7a1fdc0b24cde2505acfe40465c52f4d9da975b7aad2",
+        "lines": "7430"
+      }
+    ]
+  },
+  "findings": [
+    "For macOS, PlatformEnableCocoa.h enables ENABLE_TEXT_EXTRACTION_FILTER only when the minimum deployment target is at least macOS 26.0; the retained V135 build recipe uses 15.4.",
+    "PlatformCocoa.cmake nevertheless creates WebKitTextExtractionFilterModel as an unconditional ALL target and makes WebKit depend on it.",
+    "WKWebView text-extraction API implementation and WKWebView.mm contain direct TextExtractionFilter singleton prewarm/shouldFilter calls; the inspected call sites do not carry an ENABLE_TEXT_EXTRACTION_FILTER guard.",
+    "Therefore the feature macro alone does not establish that removing the generated model preserves behavior. The earlier two-WebModel-resource removal review is unrelated and already rejects deletion because runtime consumers load those bytes."
+  ],
+  "decision": "Do not remove or gate TextExtractionFilter model outputs based only on the deployment-target feature macro. Keep all three generated runtime rows UNKNOWN. A safe removal would require a source-level consumer/API decision and changed-candidate WebKit behavior qualification, or file-specific rights evidence.",
+  "limitations": [
+    "Static source review only; no preprocessing/compile graph or runtime behavior was tested.",
+    "No applicable file-specific license or exact candidate notice was established.",
+    "Current final .74 production candidate does not exist."
+  ],
+  "candidateMutated": false,
+  "sourceOfferMutated": false,
+  "releaseQualified": false,
+  "nextAction": "Keep the 18 remaining resource rows open. Do not pursue model deletion by CMake gating alone; resolve by file-specific rights/notice evidence or a reviewed source change with matching candidate and runtime evidence."
+}

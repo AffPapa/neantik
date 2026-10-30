@@ -1,0 +1,23 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "0296a8fd64382dc0f400bf087c6ea95b7772db984505eb7d031789c6eca0a631",
+  "payload": {
+    "commit": "634b046faf2137b83af71c87baf362b533af9104",
+    "path": "chrome/browser/ui/views/toolbar/app_menu.cc",
+    "preimages": {
+      "chrome/browser/ui/views/toolbar/app_menu.cc": "1dd2534f2d23b6f46a991d4543ccc433b178b23a32ab1608613aee023cf962eb"
+    },
+    "pristineSHA256": "a1ae686b91a6fe3ec26255fde3105f3edaefa1580884e8d5309918aa0ee48c79",
+    "reason": "Exact M156 has no local GetSigninStatusChipString definition; old removal-only input obsolete after native helper relocation. Existing ordered common Google-account path suppression leaves no references in current app_menu.cc. Preserve relocated declarations/capabilities; not a claim that entire native feature is removed."
+  },
+  "payloadType": "json",
+  "receipt": "m156-signin-chip-local-removal-supersession.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "evidence",
+    "research"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

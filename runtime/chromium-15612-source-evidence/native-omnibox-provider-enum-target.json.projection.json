@@ -1,0 +1,39 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "8015ce560fd5737a38f2108b32e2a229031b8405779633963de87a9805f578a6",
+  "payload": {
+    "argsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+    "correctionReceiptSHA256": "3b76a3870d8357c01bcf00fe1e4ea971b2361c1e17f349e6cd00e8c703912be8",
+    "exitCode": 0,
+    "finishedAt": "2026-10-09T03:35:54.959927+00:00",
+    "jobs": 2,
+    "logSHA256": "e5ca0878663a352484eb88ed4eac8465d25aca2cc612a7bbfd865b8d26201627",
+    "logSizeBytes": 289,
+    "nativeNinjaSHA256": "6c03e94e3ee141301a7e5151227508ac8cec05c12d79ed9240062a86a0e2d14f",
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "startedAt": "2026-10-09T03:35:45.988622+00:00",
+    "status": "exact-native-omnibox-target-passed",
+    "targets": [
+      "obj/components/omnibox/browser/browser/autocomplete_controller.o"
+    ]
+  },
+  "payloadType": "json",
+  "receipt": "native-omnibox-provider-enum-target.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

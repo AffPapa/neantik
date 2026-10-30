@@ -2,12 +2,24 @@ import Darwin
 import Foundation
 
 @_silgen_name("flock")
-func neantikFlock(_ descriptor: Int32, _ operation: Int32) -> Int32
+private func neantikFlock(_ descriptor: Int32, _ operation: Int32) -> Int32
 
 enum PrivateFileEntryKind: Equatable, Sendable {
     case missing
     case regular
     case unsafe
+}
+
+struct ProfileMetadataBusyError: LocalizedError {
+    var errorDescription: String? {
+        "Данные профилей заняты другим действием. Дождись его завершения и повтори."
+    }
+}
+
+struct ProfileProcessBusyError: LocalizedError {
+    var errorDescription: String? {
+        "Профиль занят другим действием. Дождись его завершения и повтори."
+    }
 }
 
 struct PrivateFileEntryIdentity: Equatable, Sendable {
@@ -41,14 +53,38 @@ final class PrivateFileGuardLease: @unchecked Sendable {
         self.descriptor = nil
     }
 
+    /// An async lease must refuse if a foreign writer replaced its lock name:
+    /// the old inode remains locked, while another manager could lock the new
+    /// one. Used at restore admission and immediately before its mutations.
+    func validateHeldFile(at url: URL) throws {
+        lock.lock(); defer { lock.unlock() }
+        guard let descriptor else { throw ProfileProcessBusyError() }
+        var held = stat(), named = stat()
+        guard fstat(descriptor, &held) == 0, lstat(url.path, &named) == 0,
+              held.st_dev == named.st_dev, held.st_ino == named.st_ino,
+              held.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG),
+              named.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG),
+              held.st_uid == geteuid(), named.st_uid == geteuid(),
+              held.st_nlink == 1, named.st_nlink == 1,
+              held.st_mode & 0o077 == 0, named.st_mode & 0o077 == 0 else { throw ProfileProcessBusyError() }
+    }
+
     deinit {
         release()
     }
 }
 
+/// Local fault-injection seams; production paths leave both hooks nil.
+/// They cannot be configured through metadata, environment or MCP inputs.
+struct PrivateGuardAcquisitionHooks: Sendable {
+    var onFirstContention: (@Sendable () -> Void)?
+    var lockAttempt: (@Sendable (Int32, Int32) -> Int32)?
+}
+
 struct AppPaths: Sendable {
     let rootDirectory: URL
     let migrationWarning: String?
+    var guardAcquisitionHooks = PrivateGuardAcquisitionHooks()
 
     init(rootDirectory: URL? = nil) {
         if let rootDirectory {
@@ -108,8 +144,20 @@ struct AppPaths: Sendable {
         rootDirectory.appendingPathComponent("Recovery", isDirectory: true)
     }
 
+    var profileSnapshotsDirectory: URL {
+        rootDirectory.appendingPathComponent("Snapshots", isDirectory: true)
+    }
+
+    var runtimePreferenceFile: URL {
+        rootDirectory.appendingPathComponent("runtime.json")
+    }
+
     var proxyHealthFile: URL {
         rootDirectory.appendingPathComponent("proxy-health.json")
+    }
+
+    var proxyDiagnosticPreferenceFile: URL {
+        rootDirectory.appendingPathComponent("proxy-diagnostic-endpoint.json")
     }
 
     var profilesDirectory: URL {
@@ -155,18 +203,14 @@ struct AppPaths: Sendable {
         )
     }
 
+    var snapshotsGuardFile: URL {
+        processLocksDirectory.appendingPathComponent("Snapshots.guard")
+    }
+
     var bulkCredentialImportGuardFile: URL {
         processLocksDirectory.appendingPathComponent(
             "BulkCredentialImport.guard"
         )
-    }
-
-    var managerSessionsFile: URL {
-        processLocksDirectory.appendingPathComponent("ManagerSessions.json")
-    }
-
-    var managerSessionsGuardFile: URL {
-        processLocksDirectory.appendingPathComponent("ManagerSessions.guard")
     }
 
     func profileDeletionTombstone(for id: UUID) -> URL {
@@ -296,6 +340,7 @@ struct AppPaths: Sendable {
         try createPrivateDirectory(logsDirectory)
         try createPrivateDirectory(fingerprintAuditsDirectory)
         try createPrivateDirectory(profilesRecoveryDirectory)
+        try createPrivateDirectory(profileSnapshotsDirectory)
         try hardenExistingLogs()
     }
 
@@ -306,6 +351,11 @@ struct AppPaths: Sendable {
         // coordination parents are still created explicitly: launches must be
         // safe even when a caller constructs AppPaths before app startup.
         try createPrivateDirectory(rootDirectory)
+        #if NEANTIK_WEBKIT_STANDALONE_HOST
+        try WebKitHostProfileReader.requireNoPending(rootURL: rootDirectory)
+        #else
+        try BrowserDataRestoreTransaction.requireNoPending(rootURL: rootDirectory)
+        #endif
         try createPrivateDirectory(profilesDirectory)
         try createPrivateDirectory(processLocksDirectory)
         try createPrivateDirectory(logsDirectory)
@@ -322,107 +372,6 @@ struct AppPaths: Sendable {
             [.posixPermissions: 0o600],
             ofItemAtPath: url.path
         )
-    }
-
-    /// Reads one private regular file through the descriptor that was actually
-    /// opened. Path validation alone leaves a validate/open race where an
-    /// unrelated local process can replace the entry between `lstat` and
-    /// `Data(contentsOf:)`. `O_NOFOLLOW`, descriptor/path identity checks and
-    /// a stable before/after stat make that replacement fail closed.
-    func readPrivateFile(
-        _ url: URL,
-        maximumBytes: Int
-    ) throws -> Data {
-        try Self.readStableRegularFile(
-            url,
-            maximumBytes: maximumBytes
-        )
-    }
-
-    /// Reads one bounded regular file through the descriptor that was opened.
-    ///
-    /// This static form is also used for private sidecars that are constructed
-    /// from an explicit URL instead of an `AppPaths` root (for example proxy
-    /// health and bundled runtime metadata).
-    static func readStableRegularFile(
-        _ url: URL,
-        maximumBytes: Int
-    ) throws -> Data {
-        guard maximumBytes >= 0 else {
-            throw POSIXError(.EINVAL)
-        }
-        let descriptor = url.path.withCString {
-            Darwin.open($0, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
-        }
-        guard descriptor >= 0 else {
-            throw POSIXError(
-                POSIXErrorCode(rawValue: errno) ?? .EIO
-            )
-        }
-        defer { _ = Darwin.close(descriptor) }
-
-        var openedBefore = stat()
-        var pathBefore = stat()
-        guard Darwin.fstat(descriptor, &openedBefore) == 0,
-              url.path.withCString({ Darwin.lstat($0, &pathBefore) }) == 0,
-              Self.isSamePrivateRegularFile(openedBefore, pathBefore),
-              openedBefore.st_size >= 0,
-              openedBefore.st_size <= off_t(maximumBytes)
-        else {
-            throw POSIXError(
-                openedBefore.st_size > off_t(maximumBytes)
-                    ? .EFBIG
-                    : .ELOOP
-            )
-        }
-
-        var data = Data()
-        data.reserveCapacity(Int(openedBefore.st_size))
-        var buffer = [UInt8](repeating: 0, count: 64 * 1_024)
-        while true {
-            let count = buffer.withUnsafeMutableBytes { bytes in
-                Darwin.read(
-                    descriptor,
-                    bytes.baseAddress,
-                    bytes.count
-                )
-            }
-            if count < 0 {
-                guard errno == EINTR else {
-                    throw POSIXError(
-                        POSIXErrorCode(rawValue: errno) ?? .EIO
-                    )
-                }
-                continue
-            }
-            guard count > 0 else { break }
-            guard data.count <= maximumBytes - count else {
-                throw POSIXError(.EFBIG)
-            }
-            data.append(contentsOf: buffer.prefix(count))
-        }
-
-        var openedAfter = stat()
-        var pathAfter = stat()
-        guard Darwin.fstat(descriptor, &openedAfter) == 0,
-              url.path.withCString({ Darwin.lstat($0, &pathAfter) }) == 0,
-              Self.isSamePrivateRegularFile(openedAfter, pathAfter),
-              openedBefore.st_dev == openedAfter.st_dev,
-              openedBefore.st_ino == openedAfter.st_ino,
-              openedBefore.st_size == openedAfter.st_size,
-              openedBefore.st_mtimespec.tv_sec ==
-                openedAfter.st_mtimespec.tv_sec,
-              openedBefore.st_mtimespec.tv_nsec ==
-                openedAfter.st_mtimespec.tv_nsec,
-              openedBefore.st_ctimespec.tv_sec ==
-                openedAfter.st_ctimespec.tv_sec,
-              openedBefore.st_ctimespec.tv_nsec ==
-                openedAfter.st_ctimespec.tv_nsec,
-              data.count == Int(openedAfter.st_size)
-        else {
-            throw POSIXError(.EBUSY)
-        }
-        return data
     }
 
     func createPrivateFileExclusively(_ data: Data, at url: URL) throws {
@@ -482,9 +431,35 @@ struct AppPaths: Sendable {
         for id: UUID,
         _ operation: () throws -> T
     ) throws -> T {
+        // Launch, recovery and metadata commands run synchronously from UI.
+        // A different manager may hold this authority during a disk operation;
+        // fail closed with a retry action instead of parking the main actor.
         try withPrivateFileGuard(
             at: lockGuardFile(for: id),
+            nonBlocking: true,
+            busyError: ProfileProcessBusyError(),
             operation
+        )
+    }
+
+    /// WebKit launch bookkeeping uses the metadata guard, so session edits
+    /// need a separate immediate fence to avoid blocking their own launcher.
+    func acquireWebKitMetadataGuard(for id: UUID) throws -> PrivateFileGuardLease {
+        try acquirePrivateFileGuard(at: lockGuardFile(for: id).appendingPathExtension("webkit"), waitPolicy: .immediate,
+            busyError: ProfileProcessBusyError())
+    }
+
+    func acquireWebKitSessionGuard(for id: UUID) throws -> PrivateFileGuardLease {
+        try acquirePrivateFileGuard(at: lockGuardFile(for: id), waitPolicy: .immediate,
+            busyError: ProfileProcessBusyError())
+    }
+
+    /// Kept across a stopped profile's off-main maintenance operation. Launch,
+    /// deletion and another manager use the same inode and fail while held.
+    func acquireProcessMaintenanceGuard(for id: UUID) throws -> PrivateFileGuardLease {
+        try acquirePrivateFileGuard(
+            at: lockGuardFile(for: id), waitPolicy: .cancellableOperation,
+            busyError: ProfileProcessBusyError()
         )
     }
 
@@ -493,27 +468,85 @@ struct AppPaths: Sendable {
     ) throws -> T {
         try withPrivateFileGuard(
             at: profilesMetadataGuardFile,
-            operation
-        )
+            nonBlocking: true
+        ) {
+            #if NEANTIK_WEBKIT_STANDALONE_HOST
+            try WebKitHostProfileReader.requireNoPending(rootURL: rootDirectory)
+            #else
+            try BrowserDataRestoreTransaction.requireNoPending(rootURL: rootDirectory)
+            #endif
+            return try operation()
+        }
     }
 
-    func withManagerSessionsGuard<T>(
+    /// The sole pending-fence exception holds an unforgeable, borrowed stopped
+    /// process lease. Ordinary metadata consumers always use the fenced guard.
+    #if !NEANTIK_WEBKIT_STANDALONE_HOST
+    func withProfilesMetadataGuardForRestore<T>(
+        authority: StoppedProfileRestoreAuthority,
         _ operation: () throws -> T
     ) throws -> T {
+        try authority.validate(paths: self)
+        return try withPrivateFileGuard(at: profilesMetadataGuardFile, nonBlocking: true) {
+            try authority.validate(paths: self)
+            return try operation()
+        }
+    }
+    #endif
+
+    func withSnapshotsGuard<T>(_ operation: () throws -> T) throws -> T {
+        try withPrivateFileGuard(at: snapshotsGuardFile, operation)
+    }
+
+    func withProxyDiagnosticGuard<T>(_ operation: () throws -> T) throws -> T {
         try withPrivateFileGuard(
-            at: managerSessionsGuardFile,
+            at: rootDirectory.appendingPathComponent(".proxy-diagnostic-endpoint.lock"),
             operation
         )
     }
 
     func acquireBulkCredentialImportGuard() throws -> PrivateFileGuardLease {
-        try createPrivateDirectory(
-            bulkCredentialImportGuardFile.deletingLastPathComponent()
+        try acquirePrivateFileGuard(
+            at: bulkCredentialImportGuardFile,
+            waitPolicy: .cancellableOperation
         )
-        let descriptor = bulkCredentialImportGuardFile.path.withCString {
+    }
+
+    private func withPrivateFileGuard<T>(
+        at guardURL: URL,
+        nonBlocking: Bool = false,
+        busyError: any Error = ProfileMetadataBusyError(),
+        _ operation: () throws -> T
+    ) throws -> T {
+        let lease = try acquirePrivateFileGuard(
+            at: guardURL,
+            waitPolicy: nonBlocking ? .boundedCommand : .cancellableOperation,
+            busyError: busyError
+        )
+        defer { lease.release() }
+        return try operation()
+    }
+
+    private enum PrivateGuardWaitPolicy: Equatable {
+        case immediate
+        case boundedCommand
+        case cancellableOperation
+    }
+
+    /// Lock the opened inode, then verify that the pathname still names it.
+    /// Every guard uses this validation, including leases held across awaits.
+    /// Cancellation applies to preparation waits; an uncontended command may
+    /// still run in a cancelled task so credential rollback can finish.
+    private func acquirePrivateFileGuard(
+        at guardURL: URL,
+        waitPolicy: PrivateGuardWaitPolicy,
+        busyError: any Error = ProfileMetadataBusyError()
+    ) throws -> PrivateFileGuardLease {
+        try createPrivateDirectory(guardURL.deletingLastPathComponent())
+        let descriptor = guardURL.path.withCString {
             Darwin.open(
                 $0,
-                O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC,
+                O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK,
                 mode_t(S_IRUSR | S_IWUSR)
             )
         }
@@ -522,22 +555,95 @@ struct AppPaths: Sendable {
                 POSIXErrorCode(rawValue: errno) ?? .EIO
             )
         }
-        guard neantikFlock(descriptor, LOCK_EX) == 0 else {
+        var leaseTransferred = false
+        defer {
+            if !leaseTransferred {
+                _ = neantikFlock(descriptor, LOCK_UN)
+                _ = Darwin.close(descriptor)
+            }
+        }
+
+        // Reject non-regular and multiply linked entries before waiting; never
+        // chmod a guard that aliases another file. Check again after flock,
+        // because a waiting descriptor can outlive a replaced pathname.
+        try validatePrivateGuard(descriptor, at: guardURL)
+
+        let lockDeadline = DispatchTime.now().uptimeNanoseconds + 50_000_000
+        var contentionObserved = false
+        while true {
+            if waitPolicy == .cancellableOperation {
+                try Task.checkCancellation()
+            }
+            let lockResult = guardAcquisitionHooks.lockAttempt?(
+                descriptor, LOCK_EX | LOCK_NB
+            ) ?? neantikFlock(descriptor, LOCK_EX | LOCK_NB)
+            if lockResult == 0 { break }
             let lockError = errno
-            _ = Darwin.close(descriptor)
+            if lockError == EWOULDBLOCK {
+                if waitPolicy == .immediate { throw busyError }
+                if !contentionObserved {
+                    contentionObserved = true
+                    guardAcquisitionHooks.onFirstContention?()
+                }
+                if waitPolicy == .boundedCommand {
+                    guard DispatchTime.now().uptimeNanoseconds < lockDeadline else {
+                        throw busyError
+                    }
+                }
+                try Task.checkCancellation()
+                usleep(500)
+                continue
+            }
+            guard lockError == EINTR else {
+                throw POSIXError(
+                    POSIXErrorCode(rawValue: lockError) ?? .EIO
+                )
+            }
+            if waitPolicy == .boundedCommand,
+               DispatchTime.now().uptimeNanoseconds >= lockDeadline {
+                throw busyError
+            }
+        }
+        try validatePrivateGuard(descriptor, at: guardURL)
+        if waitPolicy == .cancellableOperation {
+            try Task.checkCancellation()
+        }
+        guard Darwin.fchmod(
+            descriptor,
+            mode_t(S_IRUSR | S_IWUSR)
+        ) == 0 else {
             throw POSIXError(
-                POSIXErrorCode(rawValue: lockError) ?? .EIO
+                POSIXErrorCode(rawValue: errno) ?? .EACCES
             )
         }
+        leaseTransferred = true
         return PrivateFileGuardLease(descriptor: descriptor)
     }
 
-    private func withPrivateFileGuard<T>(
-        at guardURL: URL,
-        _ operation: () throws -> T
-    ) throws -> T {
-        try createPrivateDirectory(guardURL.deletingLastPathComponent())
-        return try SecureFile.withExclusiveGuard(at: guardURL, policy: .appPaths, operation)
+    private func validatePrivateGuard(
+        _ descriptor: Int32,
+        at guardURL: URL
+    ) throws {
+        var openedStatus = stat()
+        guard Darwin.fstat(descriptor, &openedStatus) == 0 else {
+            throw POSIXError(
+                POSIXErrorCode(rawValue: errno) ?? .EIO
+            )
+        }
+        var pathStatus = stat()
+        let pathResult = guardURL.path.withCString {
+            Darwin.lstat($0, &pathStatus)
+        }
+        guard pathResult == 0,
+              (openedStatus.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG),
+              (pathStatus.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG),
+              openedStatus.st_dev == pathStatus.st_dev,
+              openedStatus.st_ino == pathStatus.st_ino,
+              openedStatus.st_nlink == 1,
+              openedStatus.st_uid == geteuid()
+        else {
+            throw POSIXError(.ELOOP)
+        }
     }
 
     func privateFileEntryKind(_ url: URL) throws -> PrivateFileEntryKind {
@@ -672,18 +778,6 @@ struct AppPaths: Sendable {
             )
         }
         return nil
-    }
-
-    private static func isSamePrivateRegularFile(
-        _ opened: stat,
-        _ path: stat
-    ) -> Bool {
-        (opened.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG) &&
-            (path.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG) &&
-            opened.st_dev == path.st_dev &&
-            opened.st_ino == path.st_ino &&
-            opened.st_nlink == 1 &&
-            path.st_nlink == 1
     }
 
     private struct RootResolution {

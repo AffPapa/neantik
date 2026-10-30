@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "id": "V365",
+  "observedAtUTC": "2026-10-28T03:46:55Z",
+  "status": "PASS_DEPOT_TOOLS_REVISION_LINKED_TO_CHROMIUM_15674_SYNC",
+  "scope": "Resolved the .74 recipient route depot_tools gap using the retained checkout referenced by the V330 sync command. The checkout reflog shows it was cloned before V330 and has no later HEAD movement; exact commit/tree are now pinned in a detached V365 source-offer copy. V364 and V359 remain unchanged.",
+  "sourceOffer": {
+    "baseV364ManifestSHA256": "b53c078a104dfba43c6626ff4d9646195fdc9b6ab032db69ecd6385f8c748e84",
+    "newOfferPath": "/private/tmp/neantik-release-v1/dist/private/source-offers/v365-chromium-15674-depot-tools-pinned-route",
+    "newManifestSHA256": "4f71e4d9a5a8355cf88901b416acb88b547ec47143e7e1780f861d367241a7e7",
+    "componentCount": 636,
+    "candidateBound": false
+  },
+  "depotTools": {
+    "schemaVersion": 1,
+    "status": "PINNED_RETAINED_DEPOT_TOOLS_CHECKOUT_LINKED_TO_V330_SYNC_PATH",
+    "repository": "https://chromium.googlesource.com/chromium/tools/depot_tools.git",
+    "commit": "3218cfc968b246bf2498fd13f707851a0b1cd408",
+    "tree": "9352fd830daa8acf20ca0dcfd9c443d9f46e0e06",
+    "observedBranch": "main",
+    "observedRemoteTracking": "origin/main at same commit",
+    "buildSyncReceipt": {
+      "path": "evidence/neantik-v330-chromium-74-deps-and-build-started-20261028.json",
+      "sha256": "363a4770b50083c457c46958dd5ee0ddf858045d76fc22dd47d0b17302c8258a",
+      "observedAtUTC": "2026-10-27T22:18:16Z",
+      "recordedCommand": "PATH=/private/tmp/neantik-depot-tools:$PATH gclient.py sync --no-history --jobs=4"
+    },
+    "retainedCheckoutHistory": {
+      "checkoutCloneObservedLocal": "2026-10-28 04:08:56 +0700",
+      "checkoutCloneObservedUTC": "2026-10-27T21:08:56Z",
+      "headReflog": "clone: from https://chromium.googlesource.com/chromium/tools/depot_tools.git",
+      "noLaterHeadReflogEntry": true,
+      "currentWorkingTree": "clean",
+      "currentHEAD": "3218cfc968b246bf2498fd13f707851a0b1cd408"
+    },
+    "bindingStrength": "V330 records the exact depot_tools path in PATH; the retained checkout clone preceded V330 by 1h09m20s and its reflog shows no later HEAD movement. V330 did not record the commit directly, so this binds the retained checkout to the sync by path and time evidence rather than a command-captured revision.",
+    "recipientPin": "Clone official repository, checkout this commit detached, disable depot_tools self-update, then run gclient sync with the exact .74 dependency lock.",
+    "releaseQualified": false
+  },
+  "v330ReceiptSHA256": "363a4770b50083c457c46958dd5ee0ddf858045d76fc22dd47d0b17302c8258a",
+  "addedOrUpdatedComponents": [
+    {
+      "path": "overlay/docs/recipient-work/V267-CHROMIUM-15674-SOURCE-AND-BUILD-ROUTE-DRAFT.md",
+      "bytes": 4519,
+      "sha256": "97bd73ff0e669d5131a037bd1242ee47816ee059b71bcf7ba84e00a5755ffbf8",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "overlay/runtime/chromium-15674-depot-tools-lock.json",
+      "bytes": 1644,
+      "sha256": "498375b16142ce26bf9cc17beb982b6c831b2aafef2c92532085db1b64504f23",
+      "includedInOfferFolder": true
+    }
+  ],
+  "verification": {
+    "officialRemote": "PASS",
+    "retainedHEADAndTree": "PASS",
+    "checkoutPrecedesV330Sync": "PASS by reflog/observed timestamps",
+    "noLaterHeadMovement": "PASS reflog contains clone only",
+    "V330PathMatchesRetainedCheckout": "PASS exact path string",
+    "manifestRows": "PASS exact size/SHA and unique paths"
+  },
+  "limitations": [
+    "V330 did not log depot_tools HEAD directly; binding uses exact PATH plus retained checkout reflog/time evidence.",
+    "Independent recipient execution and exact Xcode/SDK build versions remain open.",
+    "No Chromium build, signing, runtime, notarization or release qualification performed."
+  ],
+  "releaseQualified": false,
+  "nextAction": "Use the pinned .74 source offer for one recipient build/relink exercise only when scheduled; do not rebuild the already verified local Chromium or repeat unchanged TSA controls. Keep production lock unpromoted until exact signed .74 privacy tuple QA succeeds."
+}

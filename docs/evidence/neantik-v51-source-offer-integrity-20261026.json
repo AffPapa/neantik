@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T23:31:10+00:00",
+  "status": "PASS_PHYSICAL_SOURCE_OFFER_COMPONENT_INTEGRITY; SOURCE_AND_RUNTIME_QUALIFICATION_OPEN",
+  "manifestPath": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/manifest.json",
+  "manifestSHA256": "1f6ab5bc5c60173173656832a39ef0d811ea5a7f01420cde6c2c4c1cfae357b1",
+  "componentCount": 478,
+  "verifiedComponentCount": 478,
+  "mismatches": [],
+  "overlayReceipt": {
+    "path": "docs/evidence/neantik-v51-webmodel-environment-resource-replacement-20261026.json",
+    "sha256": "eb34af282fa8e2aa7d314c426f11ff1caeb10e1cbae59451ecfd327a25bde64a"
+  },
+  "scope": "Manifest component file sizes and SHA-256 values in the private source-offer folder, including the V51 recipe and first-party WebModel overlay.",
+  "limitations": [
+    "This checks source-offer bytes only.",
+    "No candidate worksheet decision, build, app notice integration, runtime, recipient relink/re-sign/load, signing/notarization, publication, or release gate is closed."
+  ]
+}

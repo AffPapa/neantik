@@ -62,13 +62,16 @@ actor ProxyHealthRepository {
 struct ProxyHealthTestCommit: Equatable, Sendable {
     let state: ProxyHealthState
     let currentIdentity: ProxyHealthIdentity
+    let hasDurableProfileCommit: Bool
 
     init(
         state: ProxyHealthState,
-        currentIdentity: ProxyHealthIdentity
+        currentIdentity: ProxyHealthIdentity,
+        hasDurableProfileCommit: Bool = false
     ) {
         self.state = state
         self.currentIdentity = currentIdentity
+        self.hasDurableProfileCommit = hasDurableProfileCommit
     }
 }
 
@@ -89,8 +92,10 @@ struct ProxyHealthCancellationRollbackError: LocalizedError, Sendable {
     let rollbackDescription: String
 
     var errorDescription: String? {
+        // The underlying persistence error may contain a private file path or
+        // other implementation detail. Keep it out of UI/log surfaces.
         "Проверка прокси отменена, но предыдущее состояние не удалось " +
-            "восстановить: \(rollbackDescription)"
+            "восстановить. Повтори проверку позже."
     }
 }
 
@@ -106,6 +111,7 @@ final class ProxyHealthCoordinator: ObservableObject {
     @Published private(set) var testingProfileIDs: Set<UUID> = []
     @Published private(set) var lastError: String?
 
+    private let updateAdmission: ApplicationUpdateAdmission
     private let fileURL: URL
     private var repository: ProxyHealthRepository?
     private let executionGate: ProxyTestExecutionGate
@@ -113,15 +119,19 @@ final class ProxyHealthCoordinator: ObservableObject {
 
     init(
         fileURL: URL,
+        updateAdmission: ApplicationUpdateAdmission? = nil,
         executionGate: ProxyTestExecutionGate = .appShared,
         commitBoundaryHook: @escaping @Sendable () async -> Void = {}
     ) {
+        self.updateAdmission = updateAdmission ?? .shared
         self.fileURL = fileURL
         self.executionGate = executionGate
         self.commitBoundaryHook = commitBoundaryHook
     }
 
     func reload(profiles: [BrowserProfile]) async {
+        guard let activity = try? updateAdmission.beginActivity() else { return }
+        defer { updateAdmission.finishActivity(activity) }
         let repository: ProxyHealthRepository
         do {
             repository = try resolvedRepository()
@@ -160,6 +170,41 @@ final class ProxyHealthCoordinator: ObservableObject {
 
     func isTesting(profileID: UUID) -> Bool {
         testingProfileIDs.contains(profileID)
+    }
+
+    /// Keep the measured result across successful launch bookkeeping only.
+    /// The health file CAS refuses a newer observation or an intervening removal;
+    /// it neither refreshes the check timestamp nor proves the Chromium route.
+    @discardableResult
+    func recordLaunchMetadata(from original: BrowserProfile, receipt: ProfileLaunchMetadataReceipt) async -> Bool {
+        let recorded = receipt.recorded
+        guard ProxyHealthIdentity(profile: receipt.original) == ProxyHealthIdentity(profile: original),
+              (try? ProfileLaunchMetadataTransition.matches(from: original, to: recorded)) == true,
+              let oldIdentity = ProxyHealthIdentity(profile: original),
+              let newIdentity = ProxyHealthIdentity(profile: recorded),
+              let previous = healthByProfileID[original.id], previous.identity == oldIdentity else { return false }
+        do {
+            let activity = try updateAdmission.beginActivity()
+            defer { updateAdmission.finishActivity(activity) }
+            let repository = try resolvedRepository()
+            let next = ProxyHealthRecord(identity: newIdentity, state: previous.state)
+            // Disk dates have whole-second precision; do not truncate the
+            // in-memory observation paired with the prepared profile identity.
+            let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+            let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+            let persistedPrevious = try decoder.decode(ProxyHealthRecord.self, from: encoder.encode(previous))
+            let changed = try await repository.restore(next, replacing: persistedPrevious, for: original.id)
+            // Another MainActor operation can run during persistence. Do not
+            // overwrite its publication (even when it intentionally cleared it).
+            if healthByProfileID[original.id] == previous {
+                healthByProfileID[original.id] = changed ? next : nil
+            }
+            return changed
+        } catch {
+            if healthByProfileID[original.id] == previous { healthByProfileID[original.id] = nil }
+            lastError = "Результат проверки прокси не удалось сохранить после запуска. Повтори проверку позже."
+            return false
+        }
     }
 
     /// Runs one identity-bound test operation, or returns `nil` when the same
@@ -209,6 +254,8 @@ final class ProxyHealthCoordinator: ObservableObject {
         operation: @escaping @MainActor @Sendable (ProxyHealthState?) async throws ->
             ProxyHealthTestCommit
     ) async throws -> ProxyHealthState? {
+        let activity = try updateAdmission.beginActivity()
+        defer { updateAdmission.finishActivity(activity) }
         guard !testingProfileIDs.contains(profileID) else { return nil }
         testingProfileIDs.insert(profileID)
         defer { testingProfileIDs.remove(profileID) }
@@ -222,7 +269,10 @@ final class ProxyHealthCoordinator: ObservableObject {
                 identity: initialIdentity
             )
             let commit = try await operation(previous)
-            try Task.checkCancellation()
+            // Launch preparation's durable profile save is the commit point.
+            // Complete its paired health record even if cancellation arrives
+            // afterward; the caller still checks cancellation before launching.
+            if !commit.hasDurableProfileCommit { try Task.checkCancellation() }
             guard commit.currentIdentity.proxy == initialIdentity.proxy else {
                 return ProxyHealthTestExecutionResult.stale
             }
@@ -242,7 +292,7 @@ final class ProxyHealthCoordinator: ObservableObject {
                 writtenRecord: persistedRecord
             )
             await commitBoundaryHook()
-            if Task.isCancelled {
+            if Task.isCancelled && !commit.hasDurableProfileCommit {
                 try await Self.restoreAfterCancellation(
                     receipt,
                     profileID: profileID,
@@ -258,7 +308,7 @@ final class ProxyHealthCoordinator: ObservableObject {
         guard case let .committed(result, receipt)? = executionResult else {
             return nil
         }
-        if Task.isCancelled {
+        if Task.isCancelled && !result.hasDurableProfileCommit {
             try await Self.restoreAfterCancellation(
                 receipt,
                 profileID: profileID,
@@ -293,6 +343,8 @@ final class ProxyHealthCoordinator: ObservableObject {
     }
 
     func remove(profileID: UUID) async throws {
+        let activity = try updateAdmission.beginActivity()
+        defer { updateAdmission.finishActivity(activity) }
         let repository = try resolvedRepository()
         try await repository.remove(profileID: profileID)
         healthByProfileID[profileID] = nil

@@ -1,0 +1,350 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T15:12:54Z",
+  "status": "PASS_PINNED_INPUT_HEADER_CLASSIFICATION;7_WEBCORE_INPUT_TERMS_OPEN",
+  "sourceBinding": {
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "webkitPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "runtimePath": "WebCore.framework/Versions/A/WebCore",
+    "runtimeSHA256": "d23bba6a1e368635e781d3f6c795a355ee0e1a43263651f5c86a6fd0ac46aa80"
+  },
+  "generatorLineage": {
+    "path": "/private/tmp/neantik-release-v1/docs/evidence/webkit-v20-webcore-unmarked-generated-lineage-20261025.json",
+    "sha256": "0213b058809cfbb87cd1b369354e5fc3c819aeb96bd40579e49a58218f005d49",
+    "unmarkedGeneratedOutputCount": 12,
+    "physicalInputOccurrences": 71,
+    "uniqueNoticeInputCount": 36,
+    "sourceHashesRevalidated": true
+  },
+  "noticeEvidence": {
+    "path": "/private/tmp/neantik-release-v1/docs/evidence/third-party/webkit-v20-webcore-generated-input-headers.txt",
+    "sha256": "94c29d9a04ff8d1a3090d5bd63a2b6990189f1695ec7ba302b8130e920aa9468",
+    "bytes": 45303,
+    "headerSignalCount": 29,
+    "noticeInputs": 36,
+    "priorFocusedTests": "39/39 PASS per hash-bound next-package installer receipt; not rerun because inputs and harness are unchanged"
+  },
+  "classificationCounts": {
+    "BSD-form": 25,
+    "LGPL-form": 4,
+    "no-recognized-leading-header": 7
+  },
+  "inputs": [
+    {
+      "path": "Source/WebCore/Modules/modern-media-controls/media/CNNCaptionQuirk.js",
+      "sha256": "0e4616b0d70d16fcaad22b7c8bb39b718ff8dddc49e3e4290d19c448183bf166",
+      "bytes": 7430,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "d43540038cdd93373b5198fbb00337a7a3d2ab0180cdd486425bd78d73a62194",
+      "headerBytes": 1355
+    },
+    {
+      "path": "Source/WebCore/Modules/modern-media-controls/media/YouTubeCaptionQuirk.js",
+      "sha256": "94bbb8c3510fe43046337f0d885ae37f5f99b07105d23f4de2eb014bbb9b15c0",
+      "bytes": 11212,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "d43540038cdd93373b5198fbb00337a7a3d2ab0180cdd486425bd78d73a62194",
+      "headerBytes": 1355
+    },
+    {
+      "path": "Source/WebCore/bindings/scripts/preprocessor.pm",
+      "sha256": "02b994b2c85ecceb7a00fc50ec1e5fdc32c6c01c7b2b5996a4f9b31b557089c0",
+      "bytes": 4207,
+      "leadingHeaderClass": "LGPL-form",
+      "headerSHA256": "902aa099782b01557d32d8bb9f591fbcd3800570f97b831fb5ca6aec15ce94ef",
+      "headerBytes": 855
+    },
+    {
+      "path": "Source/WebCore/css/CSSProperties.json",
+      "sha256": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343",
+      "bytes": 690740,
+      "leadingHeaderClass": "no-recognized-leading-header",
+      "headerSHA256": null,
+      "headerBytes": 0
+    },
+    {
+      "path": "Source/WebCore/css/CSSValueKeywords.in",
+      "sha256": "fa5b9337b00c1acadacfd9ce5da60b234ee1a0a74e5be6fcebe93ce266f9621d",
+      "bytes": 29393,
+      "leadingHeaderClass": "no-recognized-leading-header",
+      "headerSHA256": null,
+      "headerBytes": 0
+    },
+    {
+      "path": "Source/WebCore/css/SVGCSSValueKeywords.in",
+      "sha256": "bf79271aa57cb8f68425b767ea9c3be8ef00bf8f7ef6a29add484d04bdd38ef4",
+      "bytes": 3260,
+      "leadingHeaderClass": "no-recognized-leading-header",
+      "headerSHA256": null,
+      "headerBytes": 0
+    },
+    {
+      "path": "Source/WebCore/css/counterStyles.css",
+      "sha256": "b6d86567156d9cf5a4bad090a74f2f511704ddc5000fc429ce5d7d7a6661a332",
+      "bytes": 27476,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "ccfbe25a32d0ce220152a7435b40d6b729b4cf4e37a876e6cee1683362e83875",
+      "headerBytes": 1500
+    },
+    {
+      "path": "Source/WebCore/css/fullscreen.css",
+      "sha256": "961bba1e818a0dd3824c3b1c458bb97d25e237e68e2a8fde69950c48b39b4a02",
+      "bytes": 3042,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "8b2c017b49398a31e76250719d0f8604b9fe9add3b59ae858376e2083cfdd9c4",
+      "headerBytes": 1404
+    },
+    {
+      "path": "Source/WebCore/css/horizontalFormControls.css",
+      "sha256": "23a42bb68bb33fdf0f76d309161f009087a464eaa464fb84dcfa9629fe8c34f9",
+      "bytes": 1532,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "b220e9767ebf6ab508613fab142de63dcd32f2d0719606f3587f1b1960a97e48",
+      "headerBytes": 1261
+    },
+    {
+      "path": "Source/WebCore/css/html.css",
+      "sha256": "3a1fd55b5ef15a401ab288f3c23cf504bab95d14be7a10e5330fb348fb13b578",
+      "bytes": 55041,
+      "leadingHeaderClass": "LGPL-form",
+      "headerSHA256": "10966c5ee695fb84a20badb6a88bef851f584ed78b0f646f7b5ab88d949a1dd4",
+      "headerBytes": 944
+    },
+    {
+      "path": "Source/WebCore/css/htmlSwitchControl.css",
+      "sha256": "aada29e36a2775cc1ff381400db546e32235b08fa838ad8f6cdb32c5ee0127c8",
+      "bytes": 2032,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "fb50d86abb44a24c56b76c5a1aa5108d7ac3d4fccf6bc10ba2e5bc2e36656aed",
+      "headerBytes": 1379
+    },
+    {
+      "path": "Source/WebCore/css/make-css-file-arrays.pl",
+      "sha256": "58c4a95601bdcf636ad5b40dfa11ddf4905968d70ad7b7f202d1e311c4c157ea",
+      "bytes": 3360,
+      "leadingHeaderClass": "LGPL-form",
+      "headerSHA256": "da9e103a5ab07c849ca4c765deb16812f88294f8932b5ccfc8d63df84b445a63",
+      "headerBytes": 914
+    },
+    {
+      "path": "Source/WebCore/css/mathml.css",
+      "sha256": "be9d8f47d99260efb00422334cf11ad1fa95a09bfb82d0bab142df66486ca535",
+      "bytes": 6266,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "cbf9a6fa430032389c5e7dcb4fbeac7b8875fe316975580b66cf5f8dc560c30b",
+      "headerBytes": 1377
+    },
+    {
+      "path": "Source/WebCore/css/mathmlCoreExtras.css",
+      "sha256": "48b18b850cb8771644f1bc95ec54bc6d1a345207b61586fa731c257386f22858",
+      "bytes": 1746,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "16a3b59ff40b828bf75f00dfbf72d826e251a4044faaa4e1b1a0d5c4c16ee3d0",
+      "headerBytes": 1557
+    },
+    {
+      "path": "Source/WebCore/css/mathmlCoreMathvariant.css",
+      "sha256": "9b0b11ea47fa87e6d04e0a2bf3cfcf9f9d885973ab8a7c9712250dad98803a9e",
+      "bytes": 1692,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "73557e2a9cf5b61854530c727201f1e34bd3cc41a2370daa5ac7426e1c10fa3f",
+      "headerBytes": 1576
+    },
+    {
+      "path": "Source/WebCore/css/mathmlFontSizeMath.css",
+      "sha256": "ef0c419c31fc78ce9148080efaa0eb06c737b2a0c522a4316382ce2629e578d5",
+      "bytes": 1722,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "abc4626908dba428f4afc19c59390348721d50c56ff4796b7bf861e95c684121",
+      "headerBytes": 1559
+    },
+    {
+      "path": "Source/WebCore/css/mathmlLegacyFontSizeMath.css",
+      "sha256": "d7678b960a95aa51888bb30ee399e1fd57f447bf38d0195ff9656607d173b3d4",
+      "bytes": 2054,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "426b9e54465353d7824e767e857af0098a532043f2ea32c2176c050f9cdfdfc1",
+      "headerBytes": 1565
+    },
+    {
+      "path": "Source/WebCore/css/popover.css",
+      "sha256": "0c46fec1026f3c6b9b2fa90724cf12c39b3a8628857a30675f39e4f14f6a62a6",
+      "bytes": 662,
+      "leadingHeaderClass": "no-recognized-leading-header",
+      "headerSHA256": null,
+      "headerBytes": 0
+    },
+    {
+      "path": "Source/WebCore/css/quirks.css",
+      "sha256": "65b9247d80cf24391ec2fdf6cd8198c9f64d50ad12e9e681feb491c5c4993ccb",
+      "bytes": 2283,
+      "leadingHeaderClass": "LGPL-form",
+      "headerSHA256": "dca0eea9e793c5999d5f9820b3d310caa25c38156315a8221aadf142a15e1ac9",
+      "headerBytes": 968
+    },
+    {
+      "path": "Source/WebCore/css/scripts/process-css-properties.py",
+      "sha256": "c117ea34b0a8e7f74125da9f92efbf1a17df2dc2d79681e34edd42596c1da5d3",
+      "bytes": 557673,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "1c624850008feca6f05f047dbb0c9eae2fad3fb439a2a056051035f0381e9c29",
+      "headerBytes": 1413
+    },
+    {
+      "path": "Source/WebCore/css/scripts/process-css-values.py",
+      "sha256": "6a08a654b51ede037de31569b714b10e7c4d1e67c0c5c43d6b1f6c173e42bdd8",
+      "bytes": 18734,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "e53f61dd59e7343a02734959d030f0856dde9bc4879ac2c7c0a251801b11309d",
+      "headerBytes": 1403
+    },
+    {
+      "path": "Source/WebCore/css/selectMultipleAndListBox.css",
+      "sha256": "db9e6ddc7c1bcff20e9d03db36ba16ab8fdf83d665c4f817a382db5fbe397567",
+      "bytes": 7709,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "16e50deffdb78e4ddb0188ad04d172a54868e8226026269cc8717126a772783c",
+      "headerBytes": 1640
+    },
+    {
+      "path": "Source/WebCore/css/selectMultipleSelectedContent.css",
+      "sha256": "e2efe72efdc053d9d0f12d24576c805638d8540093e1593db85c9dfd3225594a",
+      "bytes": 1753,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "59c85d1193514203cf5363b7995caad638db09bca580492d4bb4cb8e9431d503",
+      "headerBytes": 1629
+    },
+    {
+      "path": "Source/WebCore/css/svg.css",
+      "sha256": "bc80664ec1dfeb71fef598dd512a6e641916eff0213a9df4d819fc89c30fa0d9",
+      "bytes": 3168,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "4dda9526f58680455d1102b10a3f45f0adc2f9865305ca31f84ec4d8a3d7c02a",
+      "headerBytes": 1449
+    },
+    {
+      "path": "Source/WebCore/css/viewTransitions.css",
+      "sha256": "34aafe2fbb800ef79177f6e318b538ad5f4ed3e61198b35b625337d24b721fde",
+      "bytes": 2529,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "d22efbc6defdf0a5d35facf3f53852654921b1d7182bcd546e458a05bb0df557",
+      "headerBytes": 1325
+    },
+    {
+      "path": "Source/WebCore/html/shadow/attachmentElementShadow.css",
+      "sha256": "ef1e982c726518e5f54c7af9cc5181f2788dc7ea8817861ea054676f0448b137",
+      "bytes": 10514,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "2dccdf913d52fb396c08ce4b0eafe94be74797c3c91b2856bfd31e198b1d4299",
+      "headerBytes": 1261
+    },
+    {
+      "path": "Source/WebCore/html/shadow/detailsElementShadow.css",
+      "sha256": "80a91a87449031f198e29569e7bf224259222ee733013ca4499672c4a810862d",
+      "bytes": 1611,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "4bc29ea396d2eaa68101a47d27ca972853501bd66d77df59af6d4248fda573d4",
+      "headerBytes": 1425
+    },
+    {
+      "path": "Source/WebCore/html/shadow/imageOverlay.css",
+      "sha256": "7a4f3ecb0cd264c24800345fa9a29e5e6f3cbe84847049243c7e98a857585d22",
+      "bytes": 2862,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "f1eec279eaf57a96d880cb531b0172c9ba6ef0a432166378c0ba30c1357b16ad",
+      "headerBytes": 1261
+    },
+    {
+      "path": "Source/WebCore/html/shadow/mac/imageControlsMac.css",
+      "sha256": "d9bd92f0696736ec8f5f92f56057d21dffa2fa7115817393f82de7c16b56b67c",
+      "bytes": 1765,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "86fbf7cac45d95d89eb9faca6b02cb6634190b7d293c8d36e2d019a6c9ea377e",
+      "headerBytes": 1327
+    },
+    {
+      "path": "Source/WebCore/html/shadow/meterElementShadow.css",
+      "sha256": "05fb0074aa91ca58ac5de909d0f3e4e3dcb2e7b3d82ebf5af0e4c2d99fa6f9c9",
+      "bytes": 724,
+      "leadingHeaderClass": "no-recognized-leading-header",
+      "headerSHA256": null,
+      "headerBytes": 0
+    },
+    {
+      "path": "Source/WebCore/html/shadow/spatialImageControls.css",
+      "sha256": "623bb8b8b92cd62656486dfd26065e1d5710dea28292922cb63a2813c3866f0b",
+      "bytes": 8137,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "9b6d295ca56e8fcaf98f0a1a57702cf65419cc56db44a1cb679fbe775bc1c56f",
+      "headerBytes": 1338
+    },
+    {
+      "path": "Source/WebCore/platform/ColorData.gperf",
+      "sha256": "dc1f82bbdc6090f232b5aabd9a86eacb44df1dd23e6f68f4e08e0b378ee8836d",
+      "bytes": 4052,
+      "leadingHeaderClass": "no-recognized-leading-header",
+      "headerSHA256": null,
+      "headerBytes": 0
+    },
+    {
+      "path": "WebKitBuild/neantik-v20-production-arm64/DerivedSources/platform-feature-defines.txt",
+      "sha256": "64f8297fe907ea66889189df9d8b55f278ea3bf0eb9dcd013859c30ffd603249",
+      "bytes": 15255,
+      "leadingHeaderClass": "no-recognized-leading-header",
+      "headerSHA256": null,
+      "headerBytes": 0
+    },
+    {
+      "path": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore.framework/Versions/A/PrivateHeaders/make-js-file-arrays.py",
+      "sha256": "c3a1920baa751a894a24f680fd0b31f6be43601f41843073b3f05beb53efae86",
+      "bytes": 4306,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "1a121891f946880b4003072378bebfeb510e0e1fc4c6840386d3bff3284c896d",
+      "headerBytes": 1352
+    },
+    {
+      "path": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/ModernMediaControls.css",
+      "sha256": "9071c650b9d7114cfd7227e7a9df3fc7b25d4a898031615cf873303bf1e557ab",
+      "bytes": 71513,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "e1a67d16705e548c5a819b93f53f729704dafe876b0443fb1fd2a6c4aeb48b7d",
+      "headerBytes": 1331
+    },
+    {
+      "path": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/ModernMediaControls.js",
+      "sha256": "752ac233fdc7c2a6be14376d05e026458fd6015d3b047356501f535ce8052194",
+      "bytes": 327466,
+      "leadingHeaderClass": "BSD-form",
+      "headerSHA256": "d3059f0ef36450c44006f5f93cbdefdbbb01ffb3c47cee1a4cb077ba2ddc80ad",
+      "headerBytes": 1331
+    }
+  ],
+  "officialPolicy": {
+    "sources": [
+      "https://docs.webkit.org/Other/Licensing.html",
+      "https://webkit.org/contributing-code/"
+    ],
+    "finding": "WebKit uses BSD-2-Clause for new code and retains LGPL for some inherited files. The seven inputs with no recognized leading header cannot be assigned a license from path or neighboring files. Keep their source/resource obligations UNKNOWN until row-specific terms or provenance is established."
+  },
+  "decision": {
+    "resolvedNoticeInputs": "29/36 exact source files have identifiable BSD-form or LGPL-form header text; the exact header material is staged in the next-package notice candidate.",
+    "openInputs": [
+      "CSSProperties.json",
+      "CSSValueKeywords.in",
+      "SVGCSSValueKeywords.in",
+      "popover.css",
+      "meterElementShadow.css",
+      "ColorData.gperf",
+      "platform-feature-defines.txt"
+    ],
+    "interpretation": "The first six are exact source/data inputs; the last is a hash-pinned generated build configuration. No license election is made for any of the seven by this receipt. The 12 generated WebCore leaves therefore do not receive a single image-level license conclusion.",
+    "webCoreImage": "UNKNOWN",
+    "overallUnknownDecisions": 82,
+    "releaseQualified": false
+  },
+  "limitations": [
+    "Header text classification is factual and bounded to the first 3500 bytes; it is not legal advice.",
+    "This does not replay the 12 WebCore generators, complete corresponding-source/relink duties, or resolve the WebCore runtime image.",
+    "No package, runtime image, installed app, user profile, proxy data, signing, notarization or publication was changed."
+  ]
+}

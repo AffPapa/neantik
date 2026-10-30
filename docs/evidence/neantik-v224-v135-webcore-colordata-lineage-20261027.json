@@ -1,0 +1,13 @@
+{
+  "status": "V135_COLORDATA_GENERATOR_SOURCE_AND_REVIEWED_NOTICE_MATCH",
+  "stagedWebCoreSHA256": "2dfb23280d68b0b89bf493a16de3696a326ccf8cdb88722593998bb00bbdd6a8",
+  "reviewSHA256": "a5ae22f75bede6178029073907775bb81e9c9420fe6d58198f71cf70a3661e41",
+  "sourceSHA256": "dc1f82bbdc6090f232b5aabd9a86eacb44df1dd23e6f68f4e08e0b378ee8836d",
+  "noticeSHA256": "c1729f9029d1331d6ee663853411d9dd5f3fa4f2b831880fbc91743c323df401",
+  "generator": "Ninja ColorData.cpp custom command declares the exact ColorData.gperf as input",
+  "linkedObject": "Source/WebCore/CMakeFiles/WebCore.dir/__/__/WebCore/DerivedSources/unified-sources/UnifiedSource-root-1.cpp.o",
+  "linkedObjectDependencyRecord": "contains generated ColorData.cpp",
+  "historicalReviewScope": "row-specific terms and attribution, not full image or independent rights assignment",
+  "noticePackagedForV135": false,
+  "releaseQualified": false
+}

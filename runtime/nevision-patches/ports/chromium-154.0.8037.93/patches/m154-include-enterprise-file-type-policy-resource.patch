@@ -1,0 +1,38 @@
+--- a/components/resources/BUILD.gn
++++ b/components/resources/BUILD.gn
+@@ -5,6 +5,7 @@
+ import("//build/buildflag_header.gni")
+ import("//build/config/android/config.gni")
+ import("//build/config/features.gni")
++import("//components/enterprise/buildflags/buildflags.gni")
+ import("//components/safe_browsing/buildflags.gni")
+ import("//components/site_isolation/site_isolation.gni")
+ import("//components/supervised_user/buildflags.gni")
+@@ -78,6 +79,7 @@
+     "enable_pdf=$enable_pdf",
+     "enable_printing=$enable_printing",
+     "enable_print_preview=$enable_print_preview",
++    "enterprise_cloud_content_analysis=$enterprise_cloud_content_analysis",
+     "enable_private_insights=true",
+     "enable_supervised_users=$enable_supervised_users",
+     "safe_browsing_mode=$safe_browsing_mode",
+@@ -105,7 +107,7 @@
+     deps += [ "//components/resources/ssl/ssl_error_assistant:make_ssl_error_assistant_protobuf" ]
+   }
+ 
+-  if (safe_browsing_mode > 0) {
++  if (safe_browsing_mode > 0 || enterprise_cloud_content_analysis) {
+     deps += [
+       "//components/safe_browsing/content/resources:make_file_types_protobuf",
+     ]
+--- a/components/resources/safe_browsing_resources.grdp
++++ b/components/resources/safe_browsing_resources.grdp
+@@ -3,7 +3,7 @@
+   <if expr="is_android and safe_browsing_mode == '2'">
+     <include name="IDR_REAL_TIME_URL_CHECKS_ALLOWLIST_PB" file="${root_gen_dir}\components\safe_browsing\content\resources\real_time_url_checks_allowlist\real_time_url_checks_allowlist.pb" use_base_dir="false" type="BINDATA" />
+   </if>
+-  <if expr="safe_browsing_mode != 0">
++  <if expr="safe_browsing_mode != '0' or enterprise_cloud_content_analysis == 'true'">
+     <include name="IDR_DOWNLOAD_FILE_TYPES_PB" file="${root_gen_dir}\components\safe_browsing\content\resources\download_file_types.pb" use_base_dir="false" type="BINDATA" compress="gzip" />
+   </if>
+ </grit-part>

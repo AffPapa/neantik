@@ -1,0 +1,31 @@
+--- a/build/config/clang/BUILD.gn
++++ b/build/config/clang/BUILD.gn
+@@ -281,8 +281,6 @@ clang_lib("compiler_builtins") {
+     } else {
+       assert(false, "unsupported target_platform=$target_platform")
+     }
+-  } else if (current_cpu != "ppc64" && current_cpu != "s390x") {
+-    libname = "builtins"
+   }
+ }
+ 
+--- a/build/config/rust.gni
++++ b/build/config/rust.gni
+@@ -57,7 +57,7 @@ declare_args() {
+   # using a *nightly* version of Rust toolchain (see
+   # `docs/rust/unstable_rust_feature_usage.md`) although other projects (e.g.
+   # V8) may be compatible with the stable version of Rust toolchain.
+-  rust_sysroot_absolute = ""
++  rust_sysroot_absolute = "//third_party/rust-toolchain"
+ 
+   # Directory under which to find `bin/bindgen` (a `bin` directory containing
+   # the bindgen exectuable).
+@@ -67,7 +67,7 @@ declare_args() {
+   # set this to the output of `rustc -V`. Changing this string will cause all
+   # Rust targets to be rebuilt, which allows you to update your toolchain and
+   # not break incremental builds.
+-  rustc_version = ""
++  rustc_version = "rustc1990nightly12c36e25320260810"
+ 
+   # Whether artifacts produced by the Rust compiler can participate in ThinLTO.
+   #

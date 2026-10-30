@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "status": "candidate-vs-pinned-package-byte-identity-unproven",
+  "observedAt": "2026-10-25",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": 139,
+    "path": "NeAntik.app/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib",
+    "bytes": 155600,
+    "sha256": "8138aa57f6798a5e16e199d9bdf36fe43a59edf6d4708ce366d6d2597bc8394b"
+  },
+  "pinnedStagedPackageLibrary": {
+    "path": "runtime/owned-webkit/libswiftCompatibilitySpan.dylib",
+    "bytes": 156544,
+    "sha256": "b4256b38185e963651938ed0406c6c8ec54299621c7fa53c5e9a0a325ca5fe4f"
+  },
+  "signatureRemovalProbe": {
+    "method": "copy candidate dylib to /private/tmp and run codesign --remove-signature on the copy only",
+    "copyBytesAfterRemoval": 120592,
+    "copySHA256AfterRemoval": "13fc845d02182eab060f3fff7339709889ea99e35a66ff1bdd184098fb7c4309",
+    "matchesStagedPackageLibrary": false
+  },
+  "interpretation": "The candidate and pinned package report matching architecture/build UUIDs in the earlier provenance receipt, but exact whole-file bytes do not match after the signature-removal probe. UUID evidence alone does not close image-level applicability/source identity; leave reviewerDecision UNKNOWN. Candidate bytes and signature were not changed.",
+  "evidence": {
+    "candidateProvenance": "docs/evidence/webkit-v20-compatibility-span-candidate-provenance-20261025.json",
+    "sourcePackageProvenance": "runtime/owned-webkit/PROVENANCE.json",
+    "officialLicenseURL": "https://www.swift.org/legal/license.html"
+  }
+}

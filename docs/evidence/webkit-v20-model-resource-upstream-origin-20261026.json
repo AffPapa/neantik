@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-26T06:48:00+07:00",
+  "status": "upstream-origin-confirmed; file-specific-license-not-confirmed; worksheet-decisions-unchanged",
+  "scope": "Origin history for the exact WebCore modelDefaultDiffuseData and modelDefaultSpecularData resource inputs used by candidate 139.",
+  "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+  "worksheet": {
+    "path": "docs/evidence/webkit-runtime-package-notice-worksheet-20261026-v29.json",
+    "sha256": "b5d00e7589a67102c62372a6feddc9e7d06a50c6d0c3b6fde047bd42b9954441",
+    "diffuseDecision": "UNKNOWN",
+    "specularDecision": "UNKNOWN"
+  },
+  "upstream": {
+    "repository": "WebKit/WebKit",
+    "commit": "ec18d38b9142750899e62d16a8390995828023bf",
+    "canonicalCommit": "https://commits.webkit.org/305792@main",
+    "repositoryMirrorCommit": "https://chromium.googlesource.com/external/github.com/WebKit/webkit/+/ec18d38b9142750899e62d16a8390995828023bf",
+    "commitMessage": "Refactor USD loading and enable basic animations",
+    "author": "Mike Wyrzykowski <mwyrzykowski@apple.com>",
+    "date": "2026-01-19T03:27:05Z",
+    "changedPaths": [
+      "Source/WebCore/Resources/modelDefaultDiffuseData (added)",
+      "Source/WebCore/Resources/modelDefaultSpecularData (added)"
+    ],
+    "finding": "The upstream commit establishes when and in which repository these exact named resources entered public WebKit. Its commit message and changed-path record provide no file-specific copyright notice, license identifier, provenance of the binary payloads, or permission beyond repository publication. Later WebKit commits modify the specular data for rendering correctness but do not establish its rights."
+  },
+  "localIdentity": {
+    "modelDefaultDiffuseDataSHA256": "29a81b4539dccf31a32618e7b7164a61677ed73abb16a1fbbe17c4c314c9632a",
+    "modelDefaultSpecularDataSHA256": "64fee6af9089b94448cbb0049763f6f8e7f62cd95042e8d44a6ee6514210458a",
+    "sourceLocation": "/private/tmp/neantik-v34-webkit-clean-extracted/WebKit/Source/WebCore/Resources"
+  },
+  "decision": "Treat upstream introduction and Apple employee authorship as provenance leads only. Do not infer that the asset bytes are licensed under WebKit's general source terms. Keep both candidate-139 decisions UNKNOWN until file-specific rights/notice are found or assets are replaced with cleared material and the affected WebModel behavior is qualified.",
+  "releaseGate": false,
+  "limitations": [
+    "The commit is a provenance record, not a license grant or legal opinion.",
+    "No notice, license declaration, source artwork, generation recipe, or payload provenance was found in the cited commit record.",
+    "No source, build, package, or runtime input was changed."
+  ]
+}

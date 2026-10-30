@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "status": "verified",
+  "scope": "Exact Apple BSD-2 source-header notices for 32 source inputs mapped to two WebKitSwift runtime images; not a complete image/dependency license decision or release approval.",
+  "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+  "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+  "sourceLineageEvidence": "docs/evidence/webkit-v20-link-target-input-lineage-addendum-20261025.json",
+  "sourceLineageSHA256": "17cefa1d78f880a43322d7a2acde5010f366b7aebabe7c4adfcd59ce57aa5de2",
+  "noticeManifest": "docs/evidence/third-party/webkit-swift-source-notices/MANIFEST.json",
+  "noticeManifestSHA256": "deb9fa209c9e572c6857573371137aafa27cbc5a28213145c48fc076979f667d",
+  "sourceHeaderNoticeCount": 32,
+  "runtimeImages": [
+    {
+      "path": "WebKit.framework/Versions/A/Frameworks/libWebKitSwift.dylib",
+      "sha256": "dea5f93e41db28c34708ff5bfa7367bbe6e760d3369e250ad772dd04d4c9d46e",
+      "candidatePath": "dist/private/candidates/f3488c08f0b3493dbcee8db94473bacf/NeAntik.app/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebKit.framework/Versions/A/Frameworks/libWebKitSwift.dylib",
+      "candidateHashMatched": true
+    },
+    {
+      "path": "libWebKitSwift.dylib",
+      "sha256": "0eaf8f24e2d534e1461c459dfa098735315143c62879d7eda2726fc59cfe5118",
+      "candidatePath": "dist/private/candidates/f3488c08f0b3493dbcee8db94473bacf/NeAntik.app/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/libWebKitSwift.dylib",
+      "candidateHashMatched": true
+    }
+  ],
+  "generator": "scripts/webkit_runtime_notices.py",
+  "checks": {
+    "sourceHeadersHashAndSizePinned": true,
+    "appleBSD2HeaderMarkersPresent": true,
+    "runtimeImagesBoundByHashAndMachO": true,
+    "packagedDirectoryClosedToUnlistedFiles": true,
+    "unitCommand": "PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest scripts.tests.test_webkit_runtime_notices",
+    "unitResult": "31 tests passed",
+    "preflight": "PASS on an isolated scratch copy of the exact candidate's notice inputs; candidate bundle not modified"
+  },
+  "limitations": [
+    "The notice records source-header terms only; it does not establish the complete license composition of either linked image or its dependencies.",
+    "The production candidate remains unqualified; its separate signature diagnosis and native QA gates remain open.",
+    "No build, signing, notarization, publication, or live-site change occurred."
+  ]
+}

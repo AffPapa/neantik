@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T02:48:59Z",
+  "scope": "Post-reboot NeAntik build-storage audit; no deletion performed because all remaining large artifacts are active candidate/source/build inputs or immutable release/rollback evidence.",
+  "previousCleanupReceipt": "docs/evidence/neantik-build-cleanup-second-pass-20261025.json",
+  "previousCleanupResult": {
+    "removedSupersededAppPayloads": 25,
+    "estimatedAllocatedGiB": 11.59,
+    "freeSpaceDeltaGiB": 0.381,
+    "preservedPublicReleaseAssetsAndReceipts": true
+  },
+  "currentFreeBytes": 180633600000,
+  "currentFreeGiB": 168.23,
+  "retainedPathsBytes": {
+    "recoveredWebKitBuild": 12913061888,
+    "candidate139": 681058304,
+    "failedCandidateAttempt": 681058304,
+    "privateSourceOffer": 1789865984
+  },
+  "sourceOffer": {
+    "manifest": "dist/private/source-offers/1.0.0-manager-955/manifest.json",
+    "manifestSHA256": "85f0e0c7aa69f3f986b7a5be81d666e22c11537f6b695723fa4371b41b5024da",
+    "components": 129,
+    "missing": 0,
+    "mismatched": 0,
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "verified": "all manifest component sizes and SHA-256 values match"
+  },
+  "deletionDecision": {
+    "additionalSafeTargets": 0,
+    "reason": [
+      "CURRENT.json requires preserving both frozen candidate 139 roots and their markers.",
+      "The recovered 12 GiB WebKit build tree is the exact retained tree used for source/build evidence; removing it would force a rebuild.",
+      "The source offer contains the pinned upstream archive and 128 other hash-verified components.",
+      "Historical public ZIP/DMG assets, checksums, notarization records, and rollback candidates are immutable recovery evidence.",
+      "Shared build caches are explicitly protected by AGENTS.md."
+    ],
+    "result": "No further cleanup is safe or needed at 168 GiB free."
+  }
+}

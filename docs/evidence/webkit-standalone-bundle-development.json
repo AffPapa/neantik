@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-19T17:37:05.711704+00:00",
+  "status": "standalone-research-qualified-for-eight-HTTP-controls;not-release-qualified",
+  "productionWebKitProxyEnabled": false,
+  "publicAppRelease": "0.8.25(137)",
+  "upstream": {
+    "revision": "324120@main",
+    "archiveSHA256": "16a396caaa98c9562b22b7de09ca6a9df3ed410de4828976b0711e3ea4bf9728",
+    "version": "627.1.5+",
+    "minimumMacOS": "26.5"
+  },
+  "platform": {
+    "macOS": "27.0",
+    "build": "26A5416b",
+    "architecture": "arm64"
+  },
+  "assembly": {
+    "nestedXPC": "physical internal bundles",
+    "architecture": "arm64 only",
+    "hardenedRuntime": true,
+    "getTaskAllow": false,
+    "disableLibraryValidation": false,
+    "hostEntitlement": "allow-dyld-environment-variables",
+    "frameworkPaths": "fixed own signed Contents/Frameworks;inherited loader paths removed",
+    "strictDeepDeveloperID": "PASS",
+    "secureTimestamp": false,
+    "notarized": false,
+    "bytesWithoutClaimOfProductCompleteness": 306100450,
+    "measuredFiles": {
+      "Contents/MacOS/Host": "1d7975b54ac08e291ce6029d27b34d53aba4bf4de3dd24a289c5e2e0dcf8ac34",
+      "Contents/Frameworks/WebKit.framework/Versions/A/WebKit": "f84570ac4149fe2cd7638b2b8ae793c5025f99dc4b14cd76685e6ff6e3441d92",
+      "Contents/Frameworks/WebKit.framework/Resources/com.apple.WebKit.NetworkProcess.sb": "dab9fcc92df315465d3d735e35fc830ab1fc7a1e20689dddf6251766a6e313c9",
+      "Contents/Frameworks/JavaScriptCore.framework/Versions/A/JavaScriptCore": "0446998a10c0fb21f49da3a99029bb73bcd8cd7c6a5a2ff13067db3e741edd4b",
+      "Contents/Frameworks/WebCore.framework/Versions/A/WebCore": "70c2590f37741a02272e9a1236d2d7f04343c8ca5a400e4d51a1b4343e7da599"
+    }
+  },
+  "baseline": [
+    {
+      "case": "direct-baseline",
+      "pass": true,
+      "code": 0
+    },
+    {
+      "case": "proxy-baseline",
+      "pass": true,
+      "code": 0
+    }
+  ],
+  "controls": [
+    {
+      "case": "independent-direct-ready",
+      "passed": true,
+      "success": true,
+      "code": 0,
+      "directResponses": 1,
+      "relayResponses": 0
+    },
+    {
+      "case": "named-relay-ready",
+      "passed": true,
+      "success": true,
+      "code": 0,
+      "directResponses": 0,
+      "relayResponses": 1
+    },
+    {
+      "case": "private-direct-denied",
+      "passed": true,
+      "success": false,
+      "code": -1,
+      "directResponses": 0,
+      "relayResponses": 0
+    },
+    {
+      "case": "named-relay-refused",
+      "passed": true,
+      "success": false,
+      "code": -1000,
+      "directResponses": 0,
+      "relayResponses": 0
+    },
+    {
+      "case": "private-while-refused",
+      "passed": true,
+      "success": false,
+      "code": -1,
+      "directResponses": 0,
+      "relayResponses": 0
+    },
+    {
+      "case": "independent-direct-during-refusal",
+      "passed": true,
+      "success": true,
+      "code": 0,
+      "directResponses": 1,
+      "relayResponses": 0
+    },
+    {
+      "case": "named-relay-recovered",
+      "passed": true,
+      "success": true,
+      "code": 0,
+      "directResponses": 0,
+      "relayResponses": 1
+    },
+    {
+      "case": "unconfined-configured-proxy-bypass-control",
+      "passed": true,
+      "success": true,
+      "code": 0,
+      "directResponses": 1,
+      "relayResponses": 0
+    }
+  ],
+  "restrictedOwnNetworkingMapped": true,
+  "cleanup": {
+    "hostsNormalExit": [
+      true,
+      true,
+      true
+    ],
+    "relayDrained": true,
+    "originDrained": true,
+    "ownHelpersAbsent": true
+  },
+  "limitations": [
+    "HTTP fixture authenticates CONNECT then serves a marker;not a real TLS/upstream route",
+    "DNS,delegated networking,UDP/WebRTC,IPv6 and other helper paths unqualified",
+    "Fixed QA port is not an implemented multi-profile broker",
+    "QA host uses nonpersistent stores;manager lifecycle/MCP/profile migration not integrated",
+    "macOS26.5 minimum;older supported Macs require a separate runtime compatibility plan",
+    "Not notarized,not timestamped,not Gatekeeper/release-qualified"
+  ],
+  "diagnosedFailures": [
+    "Original development framework external XPC symlinks failed strict validation;materialized only in new copies",
+    "Missing empty WebCore Frameworks target completed in copy",
+    "Raw shader fixtures belong in Resources,not Frameworks nested-code directory",
+    "All real Mach-O code includes nested JavaScriptCore Helpers/jsc;sign inside out",
+    "Rpath-only owned+system framework coexistence caused XPC bootstrap service collisions;fixed own loading restored native baseline",
+    "codesign inline requirements need -R=;host ID must not propagate to nested services",
+    "Loopback fixture shutdown must interrupt accept before close;original failure retained"
+  ]
+}

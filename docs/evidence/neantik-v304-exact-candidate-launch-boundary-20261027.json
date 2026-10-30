@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "attempt": "V304",
+  "createdAt": "2026-10-27T19:26:34Z",
+  "status": "EXACT_CANDIDATE_LAUNCH_BLOCKED_BEFORE_PROCESS_START; QA_FIXTURE_DRAINED",
+  "candidate": {
+    "candidateId": "ef2ce9cf159242c3a147027867403460",
+    "bundlePath": "/private/tmp/neantik-release-v1/dist/private/candidates/ef2ce9cf159242c3a147027867403460/NeAntik.app",
+    "version": "1.0.0",
+    "build": "200",
+    "manifestSHA256": "145531171b5d999490a5a94b523cb5623d3f32d58a600925f9d639f946500020",
+    "managerSHA256": "5df59960da46e634ba81b1cc592b4d2ec8c3b5c6b99913b8ed86987ce569ba9c",
+    "webKitHostSHA256": "ae0a88849e20814f4883dc895459082855eeb53f903920d6957910729124106a"
+  },
+  "isolation": {
+    "mode": "CFFIXED_USER_HOME",
+    "roots": [
+      "/private/tmp/neantik-home-v304",
+      "/private/tmp/neantik-home-v305"
+    ],
+    "profileSeedSHA256": "30202686ce83751f186cea117f598e53e92647254cf1fc76072adb384e4caa40",
+    "seedCopiedToFreshOwnerOnlyHomes": true,
+    "productionProfilesTouched": false,
+    "credentialsUsed": false
+  },
+  "nativeReadiness": {
+    "eligibleForAttempt": true,
+    "memoryPressure": 1,
+    "thermalState": 0,
+    "observedAt": "2026-10-27T19:25:31.417310+00:00",
+    "observerFailure": null
+  },
+  "launchAttempts": [
+    {
+      "method": "NSWorkspace.openApplication",
+      "result": "threw before returned PID",
+      "errorDomain": "NSError; details not captured",
+      "candidateProcessObserved": false
+    },
+    {
+      "method": "NSWorkspace.openApplication",
+      "result": "threw before returned PID",
+      "errorDomain": "NSCocoaErrorDomain",
+      "errorCode": 4,
+      "classification": "file-not-found boundary; setup/Launch Services; not WebKit/network evidence",
+      "candidateProcessObserved": false
+    }
+  ],
+  "staticChecks": {
+    "codesignVerifyDeepStrict": "PASS; exact bundle and nested signatures",
+    "gatekeeperAssessment": "INTERNAL_ERROR_IN_CODE_SIGNING_SUBSYSTEM; no Gatekeeper acceptance claimed"
+  },
+  "syntheticFixture": {
+    "planSHA256": "87badcdd0fda375919841f50bbecf9f686c301099e1aac2afbdaa7fa283cb5ba",
+    "profileSeedSHA256": "30202686ce83751f186cea117f598e53e92647254cf1fc76072adb384e4caa40",
+    "phaseCount": 0,
+    "proxyDNSOriginCounters": {
+      "dnsAccepted": 0,
+      "originAccepted": 0,
+      "originPageResponses": 0,
+      "proxyAAccepted": 0,
+      "proxyBAccepted": 0
+    },
+    "allChannelsDrained": true
+  },
+  "publicStateChanged": false,
+  "releaseQualified": false,
+  "nextAction": "Diagnose the Launch Services file-not-found boundary using a supported exact-bundle launcher; do not rerun browser/network phases until the candidate process PID and isolated root are proven. After launch, perform one A1/B1/A2 plus refusal/recovery run. Continue recipient source/relink/legal and notarization/download gates independently."
+}

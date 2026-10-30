@@ -2,7 +2,6 @@
 
 set -euo pipefail
 umask 077
-export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
@@ -10,6 +9,19 @@ REPORT_PATH="$PROJECT_DIR/dist/fingerprint-audit.json"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
 CANDIDATE_SOURCE_BINDING="$PROJECT_DIR/dist/direct-candidate-source.json"
 SUMMARY_PATH="$PROJECT_DIR/dist/fingerprint-audit-summary.json"
+
+# Only a registered owned location may replace the default candidate paths.
+if [[ -n "${NEANTIK_DIRECT_CANDIDATE_ROOT:-}" ]]; then
+  CANDIDATE_ROOT="$(python3 -I -B "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+    "$PROJECT_DIR/scripts/release_candidate_location.py" \
+    --project-root "$PROJECT_DIR" --validate "$NEANTIK_DIRECT_CANDIDATE_ROOT")"
+  APP_PATH="$CANDIDATE_ROOT/NeAntik.app"
+  CANDIDATE_MANIFEST="$CANDIDATE_ROOT/direct-candidate-manifest.json"
+  CANDIDATE_SOURCE_BINDING="$CANDIDATE_ROOT/direct-candidate-source.json"
+  REPORT_PATH="$CANDIDATE_ROOT/fingerprint-audit.json"
+  SUMMARY_PATH="$CANDIDATE_ROOT/fingerprint-audit-summary.json"
+fi
+
 
 : "${NEANTIK_NOTARY_PROFILE:?Set NEANTIK_NOTARY_PROFILE to a notarytool Keychain profile}"
 case "${NEANTIK_RELEASE_CHANNEL:-}" in

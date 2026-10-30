@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v262-checkpoint-compaction-and-timestamp-setup-20261027",
+  "observedAtUTC": "2026-10-27T14:48:28Z",
+  "status": "CURRENT_COMPACTED_WITH_VERIFIED_ARCHIVE; TSA_CAPTURE_SETUP_UNAVAILABLE; NO_SIGNING_ATTEMPT",
+  "scope": "Preserved expanded CURRENT byte-for-byte, compacted its live dashboard, and attempted to start a narrowly filtered header-only TSA capture. sudo required an interactive password, so codesign was not run. No app/profile/build/candidate/publication action.",
+  "priorCurrentSHA256": "d9efe80350cd0050820f62d4e471ee26b14d2788f26c8462a35e03679af5d1c0",
+  "archivePath": "history/CURRENT-20261027-precompact-v261.json",
+  "archiveSHA256": "d9efe80350cd0050820f62d4e471ee26b14d2788f26c8462a35e03679af5d1c0",
+  "candidateId": "b96006a994664a80bf89cd757f932eff",
+  "captureAttempt": {
+    "interface": "en0",
+    "filter": "single observed Apple TSA IPv4 17.157.80.35 TCP/80",
+    "snapLengthBytes": 54,
+    "payloadStored": false,
+    "setup": "sudo -n tcpdump returned password-required; capture did not start",
+    "codesignAttempted": false
+  },
+  "compaction": "Replaced the 435-key expanded rolling JSON with the compact live checkpoint required by the project skill. All detailed receipts and the complete prior JSON remain preserved.",
+  "releaseQualified": false,
+  "nextAction": "Continue source/license/notice and recipient recipe/relink closure from exact b960 bindings without altering the frozen candidate. Do not repeat signing or V252/V254 runtime attempts unchanged. Revisit timestamp only with an available diagnostic route; after timestamp succeeds, qualify one fresh candidate built from current V255/V258 source via exact consumer preflight and one admitted production-diagnostic runtime run."
+}

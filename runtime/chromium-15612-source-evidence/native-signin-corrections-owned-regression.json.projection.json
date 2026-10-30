@@ -1,0 +1,51 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "06ca981443c791d75df627e014717129fb35aefb7d3b975698d5a1749ce86804",
+  "payload": {
+    "at": "2026-10-09T03:24:22.017232+00:00",
+    "firstHarnessError": "Initial negative fixture altered a line outside the affected hunk and therefore was not a valid broken control; corrected to alter the exact removed include",
+    "negativeControls": 4,
+    "positiveControls": 4,
+    "releaseReady": false,
+    "results": [
+      {
+        "applyExactPostimage": true,
+        "brokenDeletedLineRefused": true,
+        "files": 2,
+        "kind": "preview",
+        "patchSHA256": "dc5e15488deff2a56b66b49d5cbd9ee576291fc7ba5cfdd3d15060ed02151209",
+        "reverseExactPreimage": true,
+        "stalePostimageRefused": true
+      },
+      {
+        "applyExactPostimage": true,
+        "brokenDeletedLineRefused": true,
+        "files": 5,
+        "kind": "ui",
+        "patchSHA256": "3f6661cdb0a9975d31007044eb475ee163773e5d1f4def7af0c2db5eff3ad326",
+        "reverseExactPreimage": true,
+        "stalePostimageRefused": true
+      }
+    ],
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "scope": "Real git-apply forward/reverse in owned fixtures; native targets separately tested; not headed runtime"
+  },
+  "payloadType": "json",
+  "receipt": "native-signin-corrections-owned-regression.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

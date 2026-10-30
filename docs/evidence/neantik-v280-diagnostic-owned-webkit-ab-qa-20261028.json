@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v280-diagnostic-owned-webkit-ab-qa-20261028",
+  "observedAtUTC": "2026-10-27T17:13:07Z",
+  "status": "PARTIAL_RAW_ABA_ROUTE_AND_STORAGE_PASS; PHASE_RECORDER_LATE_CAPTURE; NOT_RELEASE_QUALIFIED",
+  "scope": "One already-authorized private diagnostic headed run; synthetic HTTPS .invalid origin; loopback DNS and HTTP proxies only. No public websites, credentials, real profiles, candidate b960, release artifacts, notarization, or publication changed.",
+  "source": {
+    "branch": "codex/neantik-1-0-prep-20261025",
+    "head": "63c3bc620163ae6354f3dc359b47b9fd72e921d0",
+    "worktree": "/private/tmp/neantik-release-v1",
+    "dirty": "pre-existing unique 1.0 work; preserved"
+  },
+  "binding": {
+    "receipt": "/private/tmp/neantik-webkit-ab-stage-v280-fixed-5S7Jff/prelaunch-binding.json",
+    "receiptSHA256": "80f2414a13b1c17eb9582f4bec81ddfbbc42da71694e53d155501533876ac4a5",
+    "managerSHA256": "5d35aa3e0eb5d1a2ec6043b49bc09b7f507abf84b61772979d2081dbfc0e25ce",
+    "managerCDHash": "45c40ad8bdd7662c06762af068a2d8dc47ca3fee",
+    "hostSHA256": "c6eb09ccbb706dd7d9110c4c1a8f99fc6e09002210eb2086baa19d20aad085ec",
+    "hostCDHash": "2dfe6b6e2d96407fd169192edc4c682c8bce6b5f",
+    "runtimeWebKitSHA256": "db6cb3c0c9eb1179c56bbb947a4b5eb66daf65baf547292dfaac03e14469cb7a",
+    "profileSeedSHA256": "b388debdcf22c4e439b884dc1564856a05b99dc538befcaf762cbb50ecc69211",
+    "diagnosticOnly": true,
+    "releaseQualified": false
+  },
+  "signing": {
+    "strictDeepVerification": "PASS",
+    "manager": "Developer ID signature contains Timestamp=2026-10-28 00:08:57 local; exact staged manager CDHash matches prelaunch binding",
+    "nestedHost": "Developer ID signature reports Signed Time=2026-10-28 00:08:56 local but no Timestamp= field in codesign display; host timestamp gate remains open",
+    "interpretation": "A timestamped private manager launch was possible despite the earlier TCP/443 refusal. This does not establish how the TSA request routed, does not timestamp-qualify the nested host, and does not qualify a release artifact."
+  },
+  "runtime": {
+    "origin": "https://24baef64d74e4dc3ac3ca4466690d5fa.neantik-dns.invalid:64223/",
+    "proxyA": "127.0.0.1:64224",
+    "proxyB": "127.0.0.1:64225",
+    "a1": {
+      "status": "verified",
+      "proxyAOrigins": 2,
+      "proxyBOrigins": 0,
+      "pageResponses": 1,
+      "initialStateResponses": 1,
+      "refusals": 0
+    },
+    "b1": {
+      "status": "verified_from_intermediate_raw_snapshot",
+      "proxyAOriginDelta": 0,
+      "proxyBOriginDelta": 2,
+      "pageResponses": 1,
+      "initialStateResponses": 1,
+      "refusals": 0
+    },
+    "a2": {
+      "status": "verified_from_final_raw_snapshot",
+      "proxyAOriginDelta": 2,
+      "proxyBOriginDelta": 0,
+      "pageResponses": 1,
+      "restoredStateResponses": 1,
+      "refusals": 0
+    },
+    "aggregate": {
+      "dnsAccepted": 6,
+      "originTLSHandshakesComplete": 6,
+      "originResponses": 6,
+      "pageResponses": 3,
+      "initialStateResponses": 2,
+      "restoredStateResponses": 1,
+      "proxyAOrigins": 4,
+      "proxyBOrigins": 2,
+      "refusals": 0,
+      "allChannelsDrained": true
+    },
+    "phaseRecorder": {
+      "A1": "PASS",
+      "B1": "FAIL: phase command ran after A2 traffic and included both B1 and A2 deltas",
+      "A2": "not separately recorded"
+    },
+    "rawEvidence": {
+      "profilesSHA256": "90c2ad561f9532d6a0514b00e7f07f58982a714d258fe1531a29d11883701529",
+      "phaseResultsSHA256": "13a064c90e85522168d683491fde39d4513f515ffc371318e319abf3ed1c1dfc",
+      "profileSessionFiles": "A and B each retained only the synthetic origin URL; A returned with restored-state response"
+    },
+    "qualification": "Diagnostic-only runtime evidence. B1/A2 raw deltas are reconstructed from recorded intermediate/final fixture snapshots and timestamp-ordered origin traces; the harness phase recorder itself did not produce a clean three-phase PASS. No production-candidate proxy PASS is claimed."
+  },
+  "knownRootCauseAndProcessCost": {
+    "fixedSourceBug": "standardizedFileURL rewrites /private/tmp to /tmp; prior diagnostic root validator rejected the alias before DNS. Shared owner-only 0700 root validator now accepts both aliases after canonical-path, owner, type and permissions checks.",
+    "measurementIssue": "UI launch completion preceded synthetic navigation completion; capturing the B1 phase after the later A2 navigation contaminated phase deltas. Use fixture counter barrier before advancing to next phase; do not repeat builds or unrelated gates.",
+    "unchanged": "immutable b960 candidate, public alpha, installed user data, Keychain and release/publication state"
+  },
+  "cleanup": {
+    "profiles": "A and B stopped in manager",
+    "fixture": "stopped; all channels drained",
+    "realNetwork": "none used"
+  },
+  "nextAction": "Do not repeat V280. Correct the phase-capture orchestration using the retained raw evidence, then advance the current candidate's independent source/notices/recipient build-relink gates; keep final WebKit qualification limited to exact signed release bytes. Preserve timestamp requirement for manager and nested host.",
+  "releaseQualified": false
+}

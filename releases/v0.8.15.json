@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "channel": "public-alpha",
+  "architecture": "arm64",
+  "minimumOS": "14.0",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "rebuilt": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815",
+    "safeBrowsingEnabled": false,
+    "architecture": "arm64"
+  },
+  "qualificationEnvironment": {
+    "macOS": "27.0",
+    "architecture": "arm64",
+    "dateUTC": "2026-10-15",
+    "headed": true
+  },
+  "version": "0.8.15",
+  "build": 127,
+  "sourceCommit": "3d433aaedebe00b582739fa631c09ee5d9889b97",
+  "tag": "v0.8.15",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.8.15",
+  "siteUrl": "https://browser.free/",
+  "rollbackRelease": "v0.8.14",
+  "managerSHA256": "c425349ebb1e28455bd8c418196e043a53d3d4615efda3dea177844442f2838d",
+  "candidateManifestSHA256": "c357270dac8267eca3f7731277f0bd4191833b964819efbc76659087cefb5c9e",
+  "candidateSourceBindingSHA256": "d3aeb390942361d7ade46d279abaec603752e7cafa7bbf462c7fef095edfd38b",
+  "artifacts": [
+    {
+      "name": "NeAntik-0.8.15-arm64-notarized.zip",
+      "sha256": "7014aa64db4a199860f011ad663806072a0d1da9ee10ef55b6a05b7a1f83d09c",
+      "sizeBytes": 190408004,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.15/NeAntik-0.8.15-arm64-notarized.zip"
+    },
+    {
+      "name": "NeAntik-0.8.15-arm64-notarized.dmg",
+      "sha256": "080e7b7727628f8a692939d15a9742b2fbfb1c4322678babb03b461f56cba49c",
+      "sizeBytes": 214937891,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.15/NeAntik-0.8.15-arm64-notarized.dmg"
+    }
+  ],
+  "checksumFiles": [
+    {
+      "name": "NeAntik-0.8.15-arm64-notarized.zip.sha256",
+      "sha256": "8620e69e49a2e71c339b73592ba4fa140ec58112c5295a6698ba20254c08c634",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.15/NeAntik-0.8.15-arm64-notarized.zip.sha256"
+    },
+    {
+      "name": "NeAntik-0.8.15-arm64-notarized.dmg.sha256",
+      "sha256": "3d636672783211b5c6761bb6fcb252268be237ac47b33d38a1ab4f628d8e4208",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.15/NeAntik-0.8.15-arm64-notarized.dmg.sha256"
+    }
+  ],
+  "signing": {
+    "teamID": "H6VGU2M6JD",
+    "certificateSHA1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "zipSubmissionID": "f745ca4f-6359-443e-a297-56d640d5fc73",
+    "dmgSubmissionID": "9024fb47-7631-49cd-9ab4-f8c3967e7079",
+    "notarization": "Accepted",
+    "stapling": "pass",
+    "gatekeeper": "accepted"
+  },
+  "checks": {
+    "swiftIntegration": "1553 summary/180 suites;1481 PASS loglines/68 explicit opt-in skips;88.865s; Swift sources unchanged after run",
+    "pythonIntegration": "1456 tests/19 skips PASS188.668s; no repeated full suite",
+    "recovery": "Actual filesystem wrong-profile and stale-stage negative controls retain bytes; matching preview recovers; canonical DEBUG native malformed journal blocks actions with explanation;8 existing files unchanged, expected32byte fixture scope added; own PID exited",
+    "exactSignedHeaded": "Authenticated schema8 PASS; original temporary authority retired by normal signing; normal1/thermal0",
+    "exactSignedWebKit": "Mode startPage: own one then two, close/reopen returns one; no session file while open/after close/quit; exact127, own headed window. Published126 restoreSession/history/autosave evidence retained for unchanged code",
+    "controlledDNS": "Standard analyzer PASS8 observations/3 headed signed-runtime126 sessions, all normal1/thermal0. Owned UDP and HTTPS DoH success/SERVFAIL, stream cut, upstream refusal, recovery, bypass sensitivity and settled own processes; not actual manager/relay or global DNS/UDP qualification",
+    "doctor": "13/13 PASS; exact DeviceMemory JS/HTTP PASS",
+    "updater": "Primary physical bytes exactly prior126 V2; all four CodeDirectories unchanged; newV2 CMS envelope bytes differ. Prior native install/rollback scope retained, no new126-to127 native hop",
+    "sourcePrivacy": "Source recognized-secret scan PASS; published app/archive privacy gates PASS; Sites archive240entries path/type/recognized credential checks PASS; no guarantee for unknown secret formats",
+    "hostedZIP": "hosted-zip-byte-identical-gatekeeper-candidate-and-evidence-verified",
+    "hostedDMG": "Anonymous byte-identical image, signature, notarization, Gatekeeper PASS",
+    "downloadedMCP": "Exact downloaded manager18 management/7read tools; owned Direct metadata create/get/restart persistence PASS; no proxy/password or second full headed run",
+    "site": "Saved152/deployed; build PASS; initial36/37tests, missing disclosure fixed and affected12PASS;6anonymous routes and both exact signed feed objects PASS"
+  },
+  "verification": {
+    "notarization": {
+      "ZIP": "Accepted",
+      "DMG": "Accepted"
+    },
+    "stapling": {
+      "passed": true
+    },
+    "Gatekeeper": {
+      "passed": true
+    },
+    "DirectDoctor": "13/13PASS",
+    "GUIFingerprint": {
+      "passed": true
+    },
+    "downloadedHeaded": "open: no second full headed run; retained exact127 signed evidence after downloaded inventory equality",
+    "MCPExactSigned": "PASS own WebKit metadata seed and exact manager GUI; no real AI-client integration",
+    "downloadedMCP": {
+      "passed": true
+    },
+    "hostedZIP": {
+      "passed": true
+    },
+    "hostedDMG": {
+      "passed": true
+    },
+    "site": {
+      "passed": true
+    },
+    "nativeUpdater": "open: no new126-to127 install; existing helper continuity retained",
+    "nativeRollback": "open: no new126-to127 rollback; prior unchanged helper evidence retained",
+    "tests": {
+      "Swift": "1553 summary/180 suites;1481 PASS loglines/68 explicit opt-in skips;88.865s; Swift sources unchanged after run",
+      "Python": "1456 tests/19 skips PASS188.668s; no repeated full suite",
+      "site": "Saved152/deployed; build PASS; initial36/37tests, missing disclosure fixed and affected12PASS;6anonymous routes and both exact signed feed objects PASS"
+    }
+  },
+  "site": {
+    "status": "pass",
+    "savedVersion": 152,
+    "deploymentID": "appgdep_6ad0b64da7f881919151a664aedfa348",
+    "sourceCommit": "186f20e9437f4e5169a074f921fdca9140bcf6c8",
+    "routes": [
+      {
+        "route": "/",
+        "status": "200",
+        "mime": "text/html; charset=utf-8"
+      },
+      {
+        "route": "/api/release",
+        "status": "200",
+        "mime": "application/json"
+      },
+      {
+        "route": "/api/update-v2.json",
+        "status": "200",
+        "mime": "application/json"
+      },
+      {
+        "route": "/api/update.json",
+        "status": "200",
+        "mime": "application/json"
+      },
+      {
+        "route": "/guides/mcp",
+        "status": "200",
+        "mime": "text/html; charset=utf-8"
+      },
+      {
+        "route": "/release-0.8.15.md",
+        "status": "200",
+        "mime": "text/markdown"
+      }
+    ],
+    "legacyFeedVersion": "0.8.10"
+  },
+  "migrations": {
+    "metadataAndSessionSchemaChanged": false,
+    "profileIdentityChanged": false,
+    "backupArchiveSchemaChanged": false,
+    "recovery": "Confirmed preview context and retained tree must still match current journal before mutation",
+    "rollback": "v0.8.14 immutable assets retained; same metadata/session/backup schema; not crossMac secrets migration"
+  },
+  "limitations": [
+    "Public alpha; major1.0 and hardware/macOS matrix remain open",
+    "System WebKit identity; no full Safari fingerprint replacement, proxy, Chromium extensions, full BrowserData backup, media capture or stdio GUI launch",
+    "Controlled DNS tested raw signed Chromium with own endpoints; manager/relay, idle/background, network-change and global DNS/UDP remain open",
+    "Owned DoH used scoped test SPKI for own self-signed certificate; not OS-default-trusted authenticated HTTPS upstream, which user deferred",
+    "Dev recovery used explicit warning2/thermal0 exception; first exact WebKit attempt refused warning before launch, retried only after normal observation. DNS3sessions/exact fingerprint normal; downloaded QA warning permitted for this exact stage",
+    "No new physical VoiceOver/macOS14/otherMac/second-display/media or crossMac OS-encrypted-secret qualification",
+    "No new126-to127 native install/rollback; signed helper continuity only",
+    "Own synthetic WebKit store retained for supported API cleanup; no private/global store deletion",
+    "Safe Browsing disabled; no anonymity/CAPTCHA/site-policy bypass guarantee"
+  ],
+  "publicationState": "published: GitHub latest v0.8.15 and browser.free152; hosted ZIP/DMG, downloaded isolated manager MCP and6anonymous routes PASS",
+  "changes": [
+    "Recovery confirmation pinned to profile and journal",
+    "Unsafe recovery sheet actions blocked with explanatory copy",
+    "Doctor suppresses executable Python bytecode in descendants"
+  ]
+}

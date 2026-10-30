@@ -1,0 +1,147 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "24edfc8d4795409d529ba6de255e3596a07ea44af3f810dee156b62aea033c08",
+  "payload": {
+    "binaryBindingVerified": false,
+    "closedCorrectionCount": 15,
+    "finishedAt": "2026-10-09T05:58:17.750898+00:00",
+    "inputReportsSHA256": {
+      "m156-nine-early-owned-apply-controls.json": "b3d4ea6df57975435f9cf1d47a6e637453988e3503856b43b1dc6edc604adff5",
+      "m156-subsequent-correction-lineage-attempt-5.json": "07cb351f65c776fc74ba95fad2059518cf7ad8c0bf2bc0c40b0e72ec165e74a9",
+      "m156-subsequent-correction-lineage-attempt-8.json": "b498ae09b259f1530b9a9acca231c0fb7d5b343dfe3b4a24b5306469067984a2",
+      "m156-subsequent-correction-lineage-attempt-9-v2.json": "dd36ec9569f8706f686d568be1e5ec4c72be6b6082bf257373ffe29a84f737f9",
+      "native-fs-storage-key-owned-regression.json": "aed2134b5c58a9ef6b84f9fbe58d2a87f0ae0b57f8a4ac23453f3961def8fdd3"
+    },
+    "orderedApplications": [
+      {
+        "applicationReport": "m156-nine-early-owned-apply-controls.json",
+        "applicationReportSHA256": "b3d4ea6df57975435f9cf1d47a6e637453988e3503856b43b1dc6edc604adff5",
+        "patchSHA256": "645ba0ef2dc8bb91e3547f003ceda136cdc86e6960bd7ecf230fab8bdd6fc1fc",
+        "preimageSource": "retainedDPR",
+        "receipt": "m156-dpr-apply-receipt.json"
+      },
+      {
+        "applicationReport": "m156-nine-early-owned-apply-controls.json",
+        "applicationReportSHA256": "b3d4ea6df57975435f9cf1d47a6e637453988e3503856b43b1dc6edc604adff5",
+        "patchSHA256": "8501908f92cceb20b9ac2eefacc3643aa71479c8418afff881f532d5de6b948f",
+        "preimageSource": "reconstructedFromPinnedFrozenPostimage",
+        "receipt": "m156-gn-mode0-correction.json"
+      },
+      {
+        "applicationReport": "m156-nine-early-owned-apply-controls.json",
+        "applicationReportSHA256": "b3d4ea6df57975435f9cf1d47a6e637453988e3503856b43b1dc6edc604adff5",
+        "patchSHA256": "ff8f9565a46dfc0cd8ef79c2fd379f2c273f38a91219d8ca704f172e8e81383f",
+        "preimageSource": "reconstructedFromPinnedFrozenPostimage",
+        "receipt": "m156-gn-pdf-correction.json"
+      },
+      {
+        "applicationReport": "m156-nine-early-owned-apply-controls.json",
+        "applicationReportSHA256": "b3d4ea6df57975435f9cf1d47a6e637453988e3503856b43b1dc6edc604adff5",
+        "patchSHA256": "ac4e7d04ba1ff40c5034d6e246c7b3ed70af3ae42d022427f9f58a7ba53fbd0c",
+        "preimageSource": "reconstructedFromPinnedFrozenPostimage",
+        "receipt": "m156-enterprise-referrer-correction.json"
+      },
+      {
+        "applicationReport": "m156-nine-early-owned-apply-controls.json",
+        "applicationReportSHA256": "b3d4ea6df57975435f9cf1d47a6e637453988e3503856b43b1dc6edc604adff5",
+        "patchSHA256": "1ad33c59b84b3738de0c6f4ed963ca6705c46401408bbe7fc31b34b1e51aa33c",
+        "preimageSource": "reconstructedFromPinnedFrozenPostimage",
+        "receipt": "m156-bidi-correction.json"
+      },
+      {
+        "applicationReport": "m156-nine-early-owned-apply-controls.json",
+        "applicationReportSHA256": "b3d4ea6df57975435f9cf1d47a6e637453988e3503856b43b1dc6edc604adff5",
+        "patchSHA256": "bbb8c960855b77165545651bf667fa132f7dfc19aff6edf35bd05706368c0c73",
+        "preimageSource": "reconstructedFromPinnedFrozenPostimage",
+        "receipt": "native-devtools-typescript-correction.json"
+      },
+      {
+        "applicationReport": "m156-nine-early-owned-apply-controls.json",
+        "applicationReportSHA256": "b3d4ea6df57975435f9cf1d47a6e637453988e3503856b43b1dc6edc604adff5",
+        "patchSHA256": "54ade99fa16e0a9105d1597779128749b90750f4f8db37a1f281388ac4bfd41a",
+        "preimageSource": "reconstructedFromPinnedFrozenPostimage",
+        "receipt": "native-thinlto-worker-cap-correction.json"
+      },
+      {
+        "applicationReport": "m156-nine-early-owned-apply-controls.json",
+        "applicationReportSHA256": "b3d4ea6df57975435f9cf1d47a6e637453988e3503856b43b1dc6edc604adff5",
+        "patchSHA256": "b69141aa99b5342288e9fa780c9ee55c841e318d774c1e048b2253e4069b37d7",
+        "preimageSource": "reconstructedFromPinnedFrozenPostimage",
+        "receipt": "native-version-info-header-dependency-correction.json"
+      },
+      {
+        "applicationReport": "m156-nine-early-owned-apply-controls.json",
+        "applicationReportSHA256": "b3d4ea6df57975435f9cf1d47a6e637453988e3503856b43b1dc6edc604adff5",
+        "patchSHA256": "8f774fa4d2c1aa1481174594dd481abbdd6aed148d7ee4defc892653edb81408",
+        "preimageSource": "reconstructedFromPinnedFrozenPostimage",
+        "receipt": "native-v8-interpreter-scope-declaration-correction.json"
+      },
+      {
+        "applicationReport": "m156-subsequent-correction-lineage-attempt-5.json",
+        "applicationReportSHA256": "07cb351f65c776fc74ba95fad2059518cf7ad8c0bf2bc0c40b0e72ec165e74a9",
+        "patchSHA256": "aa959175a54598162c839f7b12788ab446d9f2bf354f7c96ed8edae9a3fe3d77",
+        "preimageSource": "retainedExactPaymentsPreimage",
+        "receipt": "native-payments-interface-template-correction.json"
+      },
+      {
+        "applicationReport": "m156-subsequent-correction-lineage-attempt-8.json",
+        "applicationReportSHA256": "b498ae09b259f1530b9a9acca231c0fb7d5b343dfe3b4a24b5306469067984a2",
+        "patchSHA256": "dc5e15488deff2a56b66b49d5cbd9ee576291fc7ba5cfdd3d15060ed02151209",
+        "preimageSource": "retainedExactLatePreimage",
+        "receipt": "native-signin-preview-preferences-correction.json"
+      },
+      {
+        "applicationReport": "m156-subsequent-correction-lineage-attempt-8.json",
+        "applicationReportSHA256": "b498ae09b259f1530b9a9acca231c0fb7d5b343dfe3b4a24b5306469067984a2",
+        "patchSHA256": "3f6661cdb0a9975d31007044eb475ee163773e5d1f4def7af0c2db5eff3ad326",
+        "preimageSource": "retainedExactLatePreimage",
+        "receipt": "native-signin-ui-preferences-correction.json"
+      },
+      {
+        "applicationReport": "m156-subsequent-correction-lineage-attempt-8.json",
+        "applicationReportSHA256": "b498ae09b259f1530b9a9acca231c0fb7d5b343dfe3b4a24b5306469067984a2",
+        "patchSHA256": "0b1a570fedb062d1290503e6622c321d57a5410c6556962224749429b355e0ff",
+        "preimageSource": "retainedExactLatePreimage",
+        "receipt": "native-omnibox-provider-enum-correction.json"
+      },
+      {
+        "applicationReport": "m156-subsequent-correction-lineage-attempt-8.json",
+        "applicationReportSHA256": "b498ae09b259f1530b9a9acca231c0fb7d5b343dfe3b4a24b5306469067984a2",
+        "patchSHA256": "f3d731b7e188cfb05cf243802baf1b59bd8e3156f190e9d708314d72e506fcc1",
+        "preimageSource": "retainedExactLatePreimage",
+        "receipt": "native-pvt-devtools-policy-correction-v2.json"
+      },
+      {
+        "applicationReport": "native-fs-storage-key-owned-regression.json",
+        "applicationReportSHA256": "aed2134b5c58a9ef6b84f9fbe58d2a87f0ae0b57f8a4ac23453f3961def8fdd3",
+        "patchSHA256": "195b9b627842f8a3d5707aa17cd183b92aef0ee88a8b832cf0e0a8021549e5e9",
+        "preimageSource": "retainedExactStorageKeyPreimage",
+        "receipt": "native-fs-storage-key-include-correction.json"
+      }
+    ],
+    "pristineSourceOriginsVerified": false,
+    "producerSHA256": "6d9098ab2d5c9e0b6ddf4fd91b5bd3b5b736ed5c3cdb384000efa75ca602fc40",
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "sourceSnapshotVerified": false,
+    "status": "fifteen-late-patch-applications-bound-to-ordered-image-chain"
+  },
+  "payloadType": "json",
+  "receipt": "m156-late-correction-application-proof.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

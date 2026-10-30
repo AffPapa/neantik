@@ -34,7 +34,7 @@ def write_project(root: Path) -> None:
             "macPackaging": {
                 "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
                 "commit": MAC_COMMIT,
-                "packagedChromiumVersion": "150.0.7871.181",
+                "packagedChromiumVersion": "150.0.7871.186",
             },
             "commonChromium": {
                 "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "status": "factual source notice added; applicability decision remains open",
+  "scope": {
+    "runtimePath": "WebInspectorUI.framework/Versions/A/WebInspectorUI",
+    "signedCandidateSHA256": "b1bb2202335233b4e2c479ba0cc65b5947bd44a2ac2b2173e28d3bdeb6b5b2a1",
+    "buildEvidence": "docs/evidence/webkit-v20-link-target-input-lineage-addendum-20261025.json"
+  },
+  "sourceInput": {
+    "path": "Source/WebInspectorUI/WebInspectorUI.cpp",
+    "sha256": "57893c96cec431ef5fc1f7bef7728980769140e96a776f528aa6de7319b37b07",
+    "preSignImageSHA256": "aa5f2f762b8f02f4679f488b32836e6d8fc099ed9fb0ce0802900bcf5ad47c35"
+  },
+  "noticeText": {
+    "source": "docs/evidence/third-party/webinspector/WebInspectorUI-framework.LICENSE",
+    "sha256": "c1493fcceabb2c162ca8a603fd4505c51a24024d8f9aa35ae75aa72df412fc00",
+    "description": "Exact leading BSD-2-Clause source header extracted from WebInspectorUI.cpp"
+  },
+  "distribution": {
+    "destination": "Contents/Resources/NeAntikRuntimeLicenses/WebInspectorUI-framework-BSD-2-Clause.txt",
+    "markdownAndHtmlNotice": true,
+    "scopeStatement": "Single source input only; not a framework-wide license determination"
+  },
+  "verification": {
+    "sourceTreeSHA256MatchesPinnedEvidence": true,
+    "licenseTextMatchesSourcePrefix": true,
+    "focusedTests": "scripts.tests.test_webkit_runtime_notices: 28 passed"
+  },
+  "limitations": [
+    "This adds a factual source-file notice and does not decide license applicability to the linked framework image.",
+    "The six image and thirteen resource applicability rows remain UNKNOWN.",
+    "The signed production candidate is unchanged; this correction requires a future package rebuild and signature."
+  ]
+}

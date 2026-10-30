@@ -1,0 +1,35 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "9ba21f01fd80f2fac582ac9a7f30463c5e09f80a9a332a6e5d0336ae2cfc1709",
+  "payload": {
+    "applyOutputSHA256": "24b226d8f353cbd6ce8ca84f58d03458496a8887fe654e77b5b9d2d2d8ab3bf1",
+    "label": "native-thinlto-worker-cap",
+    "patchSHA256": "54ade99fa16e0a9105d1597779128749b90750f4f8db37a1f281388ac4bfd41a",
+    "postimages": {
+      "build/config/compiler/BUILD.gn": "8338a2ae12a3f80d518b8a30b0989040a5013b87077308dee974a7ca0b8daae9"
+    },
+    "preimages": {
+      "build/config/compiler/BUILD.gn": "b261a1055d4795c3ad5424d20e4ad578f2f1cab6d0351db8cd37ecf365287cd0"
+    },
+    "releaseReady": false,
+    "review": "Restore reviewed pinned TypeScript7/native wrapper or ThinLTO2 production resource contract; zero-fuzz current native context",
+    "schemaVersion": 1,
+    "status": "source-applied-exact-build-pending"
+  },
+  "payloadType": "json",
+  "receipt": "native-thinlto-worker-cap-correction.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

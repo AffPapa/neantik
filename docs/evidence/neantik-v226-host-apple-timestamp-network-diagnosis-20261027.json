@@ -1,0 +1,21 @@
+{
+  "status": "HOST_APPLE_TIMESTAMP_IPV4_TCP80_REACHABLE_443_REFUSED_NO_SIGNATURE_ATTEMPT",
+  "observedAtUTC": "2026-10-27T10:57:16Z",
+  "scope": "host-context DNS and bounded TCP connections only; no request payload, code signing, credential access or system change",
+  "dns": {
+    "status": "PASS",
+    "IPv4Count": 1,
+    "IPv6Count": 0,
+    "resolvedIPv4InAppleDocumentedRanges": true
+  },
+  "tcp": {
+    "IPv4Port80": "connected",
+    "IPv4Port443": "refused (OS error 61)"
+  },
+  "officialSources": [
+    "https://developer.apple.com/documentation/technotes/tn3161-inside-code-signing-certificates",
+    "https://developer.apple.com/documentation/security/resolving-common-notarization-issues"
+  ],
+  "conclusion": "The host has an IPv4 TCP path on port 80; 443 is refused. Neither observation identifies the cause of the earlier codesign timestamp error or demonstrates timestamp signing recovery. Continue diagnosis; do not label network/router as the proven cause.",
+  "releaseQualified": false
+}

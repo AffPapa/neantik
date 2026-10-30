@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v181-release-v1-four-image-worksheet-packet-and-current-candidate-reconciliation-20261027",
+  "recordedAtUTC": "2026-10-26T22:19:36Z",
+  "status": "WORKSHEET_AND_PACKET_HASHES_REVALIDATED; BUILD200_FOUR_IMAGE_TERMS_SOURCE_HASHES_AND_NOTICES_JOINED; RECIPIENT_PORTABLE_RELINK_AND_RELEASE_OPEN",
+  "scope": "Read-only reconciliation only. No license election beyond the existing open-source maintainer disposition; no build, launch, signing, package, notarization, publication, or candidate mutation.",
+  "releaseV1HistoricalWorksheet": {
+    "path": "/private/tmp/neantik-release-v1/docs/evidence/webkit-runtime-package-notice-worksheet-20261026-v29.json",
+    "sha256": "b5d00e7589a67102c62372a6feddc9e7d06a50c6d0c3b6fde047bd42b9954441",
+    "expectedSHA256": "b5d00e7589a67102c62372a6feddc9e7d06a50c6d0c3b6fde047bd42b9954441",
+    "candidate": "build 139 / f3488c08f0b3493dbcee8db94473bacf",
+    "unknownDecisions": 82,
+    "meaning": "Historical candidate-scoped worksheet; its four image rows and 78 resource rows remain UNKNOWN and must not be rewritten from build-200 evidence."
+  },
+  "releaseV1ReviewPacket": {
+    "path": "/private/tmp/neantik-release-v1/docs/evidence/webkit-v20-license-review-packet-20261025.json",
+    "sha256": "99ec10c609b5a91a2c1b5146295570fea755920ce37a4ae98c71eb529c0ee9e6",
+    "expectedSHA256": "99ec10c609b5a91a2c1b5146295570fea755920ce37a4ae98c71eb529c0ee9e6"
+  },
+  "fourCurrentBuild200Images": [
+    {
+      "image": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "v122SourceBuildSHA256": "34de2ac0d7f7b854966dd0335b7656308e3e22a1f009c79e22b456f840764fcc",
+      "productionRecipientSHA256": "df0a2cc2557e1ee5ba02dde7394fe1b0e2c56f4ef3d90ee23d36c7efb103ff8d",
+      "qaRecipientSHA256": "f3ed9fdfc25eaece67a4892abcc8922259fc66f31af6f958fd4a3d7b5b4e74ad",
+      "samePreSignatureCodeBytes": true,
+      "distributionDisposition": "Distribute only under its exact upstream mixed terms; keep file/header and generated-input attribution, BSD/LGPL texts where applicable, full corresponding source, generator inputs and scripts, plus usable relink materials.",
+      "currentPackageNoticeStatus": "covered by exact build-200 WebKit runtime notice verifier PASS",
+      "remaining": [
+        "Candidate-package exact notice-byte verification",
+        "Full portable recipient rebuild/relink from the exact offer",
+        "Any source row without evidenced owner/notice remains specifically unresolved; do not infer ownership from the engine name."
+      ]
+    },
+    {
+      "image": "WebCore.framework/Versions/A/WebCore",
+      "v122SourceBuildSHA256": "6c894ce051a20dee391a1bfd99648546b3797b51dc46999ba2b83a4644833174",
+      "productionRecipientSHA256": "7589278f8658ed72a26f49caec7c0c662e01ee23d378d742c44389df51b1cb90",
+      "qaRecipientSHA256": "36dbe86e50d2ef6ccde2eb933f2190f833ca6694cb59723f558a0d5ffb9c8016",
+      "samePreSignatureCodeBytes": true,
+      "distributionDisposition": "Distribute under exact upstream mixed terms, preserving BSD, LGPL and nested project/data notices per source lineage; provide full corresponding source and scripts plus LGPL-compatible replacement/relink materials for any applicable linked portions.",
+      "currentPackageNoticeStatus": "covered by exact build-200 WebKit runtime notice verifier PASS",
+      "remaining": [
+        "Candidate-package exact notice-byte verification",
+        "Full portable recipient rebuild/relink from the exact offer",
+        "Unmapped copyright attribution must remain explicit and must not be replaced with a guessed owner."
+      ]
+    },
+    {
+      "image": "WebKit.framework/Versions/A/WebKit",
+      "v122SourceBuildSHA256": "cc304648fd66c205100deca9a7bbcec28858ed4a55226dd1a3810b262d4f2b10",
+      "productionRecipientSHA256": "778d4c2d3222ddef11b827edc8f2bcc401ebf8b8447b2b8d1591e4775c9c826e",
+      "qaRecipientSHA256": "86cb34ebbb1a9079b24a864bd0ef676c5b376e3b8345830a20416e4652bd66eb",
+      "samePreSignatureCodeBytes": true,
+      "distributionDisposition": "Distribute under exact upstream per-file terms; retain all linked-source notices, full corresponding source, build inputs and relink materials. Do not describe the whole image as BSD-only.",
+      "currentPackageNoticeStatus": "covered by exact build-200 WebKit runtime notice verifier PASS",
+      "remaining": [
+        "Candidate-package exact notice-byte verification",
+        "Full portable recipient rebuild/relink from the exact offer."
+      ]
+    },
+    {
+      "image": "libwebrtc.dylib",
+      "v122SourceBuildSHA256": "6f77ced9d634c7379b1a90ea5a078d5aedfa4a9be7e9db57dd6884961aa08a46",
+      "productionRecipientSHA256": "3487b6aa980f7432273e502ee0059a24a6fa03398736a4acc7e0ba036e0dda24",
+      "qaRecipientSHA256": "fa73318000b04fd5245d16916a72aff63773df967a167a48a923b15c3e14ca39",
+      "samePreSignatureCodeBytes": true,
+      "distributionDisposition": "Distribute the pinned WebRTC component only with its upstream license, all pinned nested third-party notices and applicable patent/disclosure files, complete corresponding source/build inputs, and no additional restrictions. Make no blanket patent-clearance claim.",
+      "currentPackageNoticeStatus": "covered by exact build-200 WebKit runtime notice verifier PASS",
+      "remaining": [
+        "Bind the complete matching WebRTC notice set into the exact release package",
+        "Full portable recipient rebuild/relink from the exact offer",
+        "No conclusion that every codec or use is patent-free; conformance/IPR questions remain outside this disposition."
+      ]
+    }
+  ],
+  "currentCandidate": {
+    "candidateId": "58bd32206a064a4ba40ae9668acaef00",
+    "inventorySHA256": "0efb298b53043fb7ee8b39e051cc642745890fcf3dabd6ed5dd41518c9d7f240",
+    "runtimeSourceAndLoadedEvidence": "16/16 source staged, relocated pre-sign, and ARM64 code-byte joins; the four V129 source image hashes match current candidate inputs. Exact signed Dev QA runtime previously loaded synthetic HTTPS A1/B1/A2; not production proxy qualification.",
+    "packageNoticeVerifier": "PASS exact current production candidate (V158; factual byte/manifest checks only)",
+    "sourceOffer": {
+      "manifestSHA256": "51363c5319b7b639e5f35c0c68c667eada730d0f0871da61aca472b08c3e54be",
+      "components": 517,
+      "status": "private-source-offer-draft-not-candidate-bound; image/resource/recipient/release gates open"
+    }
+  },
+  "sourceAndRelinkBoundary": {
+    "v133": "517/517 source-offer components and 64 overlay assets passed exact check-only; source offer is not candidate-bound.",
+    "v135": "fresh same-Mac relocated WebKit build/relink passed 14/14 ARM64 outputs; not independent-host, signed recipient replacement/load, and generated outputs were removed before current V166 join.",
+    "recipientReleaseState": "No candidate-bound corresponding-source archive, portable independent recipient relink/re-sign/load, release ZIP/DMG, notarization, or public publication."
+  },
+  "legalBoundary": {
+    "imageLevelClaim": "No single blanket BSD/Apache license is claimed for any mixed image. Preserve exact upstream per-file terms, copyright/header and generator attributions, applicable license texts, and source/relink materials.",
+    "libwebrtc": "Include exact nested notices, generated input attributions, source/build and patent/disclosure texts; no blanket patent-clearance claim.",
+    "unattributedOwners": "Remain UNKNOWN where evidence does not identify the owner; do not guess.",
+    "legalOpinion": "None."
+  },
+  "evidence": {
+    "v129": {
+      "path": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v129-v122-engine-image-maintainer-disposition-20261026.json",
+      "sha256": "b2249501dd8bfbe308456d94484625f876e7cda90f0057f9ecc7193e7afc04d5"
+    },
+    "v133": {
+      "path": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v133-v132-recipe-and-v122-package-check-only-20261026.json",
+      "sha256": "10c518edadb6fb0411405d9adad46bd070bc76f7d49b1c2ede2c0d9270a26cca"
+    },
+    "v135": {
+      "path": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v135-clean-relocated-v132-webkit-relink-20261026.json",
+      "sha256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4"
+    },
+    "v166": {
+      "path": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v166-build200-v122-image-source-load-join-20261027.json",
+      "sha256": "077770e49c6be89e3ea0bf4f10b5e29c3e400cb7a73e08fe6ebef39909568927"
+    }
+  },
+  "nextAction": "Keep build-139 worksheet immutable. Bind the complete corresponding-source offer and candidate manifest to the final frozen production candidate, establish portable recipient relink/replacement evidence, then complete package, signing/notarization and release gates. Direct build-200 page PASS remains reusable; Mac must be unlocked for current GUI/profile and schema-8 fingerprint enrollment checks."
+}

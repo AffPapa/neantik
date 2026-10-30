@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T14:20:00Z",
+  "status": "PASS_SOURCE_OFFER_NOTICE_REPLAY;JAVASCRIPTCORE_IMAGE_REMAINS_UNKNOWN",
+  "manifest": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/manifest.json",
+    "sha256": "6d87abe0709a1ae140ac89da0d44bdc0e270d8b9453dab17ad7206654050703f",
+    "components": 151
+  },
+  "noticeInstallerOverlay": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/patches/notice-installer-overlay-20261025.patch",
+    "sha256": "f92113ed129644b6032dd72b6e0f393b38a65aa4615f491782524bec0027b0cd",
+    "baseManagerArchiveSHA256": "b880531a56aced46dbf8cda817b3c1c52a8294dc1c38a4b13a2c2177cb556197"
+  },
+  "noticeInputs": {
+    "archive": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/notice-source-inputs-v20.tar",
+    "sha256": "826a1a04a536e5cdc332bea9d1738c95af38727500ecca96e58d203fc16a8bf7",
+    "manifest": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/evidence/NOTICE_SOURCE_INPUTS_MANIFEST_V20.json",
+    "manifestSHA256": "255657278534bff40e9129951aa1b96b3faea26b9773922c001306cf7db60dfb",
+    "files": 85
+  },
+  "licenseTextSHA256": {
+    "MPL-1.1": "f849fc26a7a99981611a3a370e83078deb617d12a45776d6c4cada4d338be469",
+    "GPL-2.0": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6",
+    "manifest": "d2c93f73fcfe5847a40803b3616b59ce47a21b1cd068970e0fdca33d9c2f2a76"
+  },
+  "replay": {
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "webkitPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "noticeInstallerTests": "43/43 PASS",
+    "packageWebKitHostTests": "43/43 PASS",
+    "combined": "86/86 PASS",
+    "method": "Fresh extraction of frozen manager source archive; apply notice overlay; extract 85-file pinned input bundle and official license texts; run focused notice installer and package-host test modules."
+  },
+  "decisionBoundary": "JSDateMath source header and alternative license texts are preserved and hash-verified. No license option, whole JavaScriptCore image applicability, attribution completeness, LGPL relink compliance, signed app, runtime, installation, or release qualification is established. Four runtime images and 78 resources remain UNKNOWN."
+}

@@ -4,6 +4,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -25,6 +26,26 @@ PROMOTION_SPEC.loader.exec_module(PROMOTION)
 
 
 class RuntimeCandidateLockTests(unittest.TestCase):
+    def test_m15680_candidate_lock_refuses_until_completed_build_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = Path(temporary)
+            runtime = fixture / "runtime"
+            runtime.mkdir()
+            (runtime / "chromium-15680-source-adoption-v1.json").write_text(
+                json.dumps({"buildEvidenceSHA256": None}), encoding="utf-8"
+            )
+            provenance = fixture / "source-provenance.json"
+            provenance.write_text(
+                json.dumps({"targetChromiumVersion": "156.0.8078.80"}),
+                encoding="utf-8",
+            )
+            with patch("chromium_15680_release_evidence.verify_contract", return_value={}):
+                with self.assertRaisesRegex(
+                    SOURCE.SourceProvenanceError,
+                    "provenance cannot be accepted before build evidence",
+                ):
+                    CANDIDATE.expected_candidate_lock(provenance, project_root=fixture)
+
     def write_provenance(self, root: Path) -> Path:
         document = SOURCE.expected_static_document(
             project_root=PROJECT_ROOT,
@@ -80,6 +101,50 @@ class RuntimeCandidateLockTests(unittest.TestCase):
         self.assertNotIn("/private/tmp/", text)
         self.assertNotIn("144.0.7559", text)
         self.assertNotIn("6bbb0dbdeae887af207c75c9e5173cceddbd381b", text)
+
+    def test_m154_candidate_requires_its_own_reviewed_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            provenance = self.write_provenance(Path(temporary))
+            document = json.loads(provenance.read_text(encoding="utf-8"))
+            document["targetChromiumVersion"] = SOURCE.CHROMIUM_154_VERSION
+            SOURCE.atomic_write_json(provenance, document)
+            with self.assertRaisesRegex(
+                SOURCE.SourceProvenanceError,
+                "M154 built candidate evidence is missing",
+            ):
+                CANDIDATE.expected_candidate_lock(
+                    provenance,
+                    project_root=Path(temporary),
+                )
+
+    def test_candidate_lock_rejects_unsupported_source_contract_version(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            provenance = self.write_provenance(Path(temporary))
+            document = json.loads(provenance.read_text(encoding="utf-8"))
+            document["targetChromiumVersion"] = "155.0.8100.1"
+            SOURCE.atomic_write_json(provenance, document)
+            with self.assertRaisesRegex(
+                SOURCE.SourceProvenanceError,
+                "Unsupported Chromium source contract version",
+            ):
+                CANDIDATE.expected_candidate_lock(
+                    provenance,
+                    project_root=PROJECT_ROOT,
+                )
+
+    def test_chromium_153_historical_lock_still_binds_its_original_evidence(self) -> None:
+        provenance = PROJECT_ROOT / "runtime" / "chromium-153-port-candidate.json"
+        candidate = PROJECT_ROOT / "runtime" / "fingerprint-chromium-153.lock.json"
+        before = SOURCE.sha256_file(candidate)
+        actual = CANDIDATE.verify_candidate_lock(
+            candidate, provenance, project_root=PROJECT_ROOT,
+        )
+        self.assertEqual(actual, json.loads(candidate.read_text(encoding="utf-8")))
+        self.assertEqual(SOURCE.sha256_file(candidate), before)
+        self.assertNotEqual(
+            actual["ownedManifests"]["securityBaselineSHA256"],
+            SOURCE.sha256_file(PROJECT_ROOT / "runtime" / "security-baseline.json"),
+        )
 
     def test_candidate_hash_has_no_provenance_cycle(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

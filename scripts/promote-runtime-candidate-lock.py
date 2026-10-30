@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from runtime_candidate_lock import PROJECT_ROOT, verify_candidate_lock
+from runtime_build_path import verify_build_args
 from runtime_source_provenance import (
     SourceProvenanceError,
     atomic_write_json,
@@ -46,14 +47,11 @@ def validate_report_binding(
     *,
     project_root: Path = PROJECT_ROOT,
 ) -> None:
-    expected_args = (
-        provenance.parent / "src" / "out" / "Default" / "args.gn"
-    )
-    if args_gn.resolve() != expected_args.resolve():
-        raise SourceProvenanceError(
-            "Candidate promotion requires canonical build-root "
-            "src/out/Default/args.gn"
-        )
+    try:
+        verify_build_args(provenance.parent / "src", args_gn,
+                          load_report(candidate_lock), project_root)
+    except (OSError, ValueError) as error:
+        raise SourceProvenanceError(str(error)) from error
     candidate = verify_candidate_lock(
         candidate_lock,
         provenance,

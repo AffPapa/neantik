@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v200-v199-source-offer-verification-20261027",
+  "observedAtUTC": "2026-10-27T07:58:52Z",
+  "status": "V199_SOURCE_OFFER_COMPONENTS_AND_SCOPED_PRIVACY_CHECK_PASS; SWIFT_REGRESSION_PASS; PYTHON_REGRESSION_RUNNING",
+  "source": {
+    "commit": "536c45b92f451448ebc4711e3490cec6c94ddd34",
+    "archiveSHA256": "a1f50f8a87b2f7644aa7332adcfcf2cfa942e4d6ee04e94c87307873d06ac960",
+    "archiveVsTrackedFiles": "2728/2728 exact",
+    "extractedOpenSourceTree": "PASS 2728 files"
+  },
+  "offer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v199-public-source-offer-draft",
+    "manifestSHA256": "3e728fec4f62d77e27a2019b181c95c55934167f7c19c340c7c178afc166b9bf",
+    "components": "531/531 PASS",
+    "overlayAssets": "64/64 PASS",
+    "metadataPathHashPairs": "44/44 PASS",
+    "knownPinnedInputPreflight": "PASS; no complete dependency or relink qualification",
+    "uncompressedOfferTextPrivacy": "402 files scanned; no recognized violations",
+    "supplementalNoticeTarPrivacy": "151 text files scanned; no recognized violations",
+    "historicalEvidence": "four copies redacted; original and redacted hashes recorded in included ledger",
+    "historicalManagerArchives": "V184 and V193 excluded due local personal paths; private predecessors retained",
+    "candidateBound": false
+  },
+  "secretScan": {
+    "managerArchive": "exact V199 source scanned",
+    "findings": 2414,
+    "classified": 2413,
+    "unresolved": 1,
+    "newChangedFileFindings": 0,
+    "scope": "manager source archive only"
+  },
+  "swiftRegression": {
+    "receipt": "/private/tmp/neantik-v193-touch-qualified/.build/neantik-local/test-receipts/20261027T075446Z-43332.json",
+    "receiptSHA256": "0a3927c0e30e1c54a0de95a2ced2b9dc0d8545ee1467b8056eedd739bb1c5835",
+    "tests": 1841,
+    "suites": 222,
+    "skipped": 82,
+    "status": "PASS",
+    "sourceUnchanged": true
+  },
+  "pythonRegression": {
+    "status": "RUNNING at observation",
+    "sessionId": 26373,
+    "privateLog": "/private/tmp/neantik-v199-python-regression-erwmwyht/unittest.log"
+  },
+  "limitations": [
+    "This private draft is not candidate-bound or a legal, patent, complete dependency, independent recipient-relink or release qualification.",
+    "The 402-file privacy check covers uncompressed offer text; the upstream WebKit archive and final package need their own applicable review.",
+    "One source scan finding remains unresolved; no credential value confirmed.",
+    "Owned-WebKit proxy, secure timestamp, recipient replacement/load, final ZIP/DMG and publication remain open."
+  ],
+  "nextAction": "Poll live Python regression session 26373; do not restart while it is live. On completion record its exact result, then address remaining scan, recipient, proxy and secure timestamp gates."
+}

@@ -1,0 +1,7 @@
+{
+  "path": "content/browser/resources/traces_internals/BUILD.gn",
+  "zeroFuzzZeroOffsetReplay": true,
+  "beforeSHA256": "3f5fcaf8890233ed5c86bed6becb73c51a09e3a87f49f8457ab94747e09bfcfc",
+  "afterSHA256": "202f173aa99826f4218d0bc76dfcbd63afb762a5a96efb6ea0c940c59936f214",
+  "patchSHA256": "eb7a9190e54d38384df04e94e3eda50b546511afadb24094f192da20165b03db"
+}

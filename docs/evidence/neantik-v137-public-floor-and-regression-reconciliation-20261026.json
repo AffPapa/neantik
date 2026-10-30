@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v137-public-floor-and-regression-reconciliation-20261026",
+  "observedAtUTC": "2026-10-26T13:52:44Z",
+  "status": "PASS_PUBLIC_FLOOR_0_9_0_140_BOUND; CANDIDATE_1_0_0_200; FULL_SWIFT_AND_PYTHON_REGRESSIONS_GREEN",
+  "scope": "Corrected stale local public-release floor and production WebKit build identity; synchronized factual release metadata and current docs; full manager and Python regressions. No production app candidate built, signed, launched, notarized, or published.",
+  "publicBaseline": {
+    "version": "0.9.0",
+    "build": 140,
+    "githubTag": "v0.9.0",
+    "publishedAt": "2026-10-25T11:21:00Z",
+    "sourceCommit": "27c569d2799407f1733ee8e30bf269d52f797376",
+    "zipSHA256": "87337e18d7d0e93f14c5ca3d30dfe07b42edb929aa6510c5c015275b50f40b47",
+    "dmgSHA256": "a277cb44b7ce354b6b8fdd1072cd63cef3f9813c1ac58029c62f7f4a55523497",
+    "chromiumVersion": "156.0.8078.48",
+    "sitesVersion": 159,
+    "evidence": "Read-only GitHub Releases API and current CURRENT.publicBaseline; no asset redownload in this slice."
+  },
+  "correction": {
+    "priorLocalReleaseFloor": "0.8.25 (137), stale vs published 0.9.0 (140)",
+    "candidateBuildBefore": "139",
+    "candidateBuildAfter": "200",
+    "reason": "The production WebKit packager already emits managerVersion 1.0.0 (200). Candidate 139 is immutable and superseded; exact 200 is now enforced by the source plist and packager."
+  },
+  "changes": {
+    "releaseBaseline": "releases/v0.9.0.json records exact public GitHub asset sizes/digests and source/runtime metadata",
+    "documentation": "README.md, README.en.md, ROADMAP.md, NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md, NEANTIK_IMPROVEMENT_ROADMAP.md, and CHANGELOG synchronized to the 0.9.0 baseline and 1.0.0 (200) candidate floor",
+    "contract": "scripts/package-owned-webkit-release.py now requires CFBundleVersion 200 and derives its managerVersion output from that constant; test fixture rejects 199 and 201"
+  },
+  "verification": {
+    "planner": {
+      "status": "PASS_PLAN_ONLY_RECOMMENDS_FULL_SWIFT_AND_PYTHON",
+      "changedReasonCount": 417,
+      "releaseGate": false
+    },
+    "swift": {
+      "status": "PASS",
+      "tests": 1841,
+      "suites": 222,
+      "skipped": 82,
+      "parallel": false,
+      "jobs": 2,
+      "receipt": "/private/tmp/neantik-release-v1/.build/neantik-local/test-receipts/20261026T133625Z-27568.json",
+      "receiptSHA256": "52ddf5c0994a58749d2fd8e6eac04db1569bb520e0f4668d4981ac4cc57cfc6f"
+    },
+    "python": {
+      "status": "PASS",
+      "tests": 1993,
+      "skipped": 55,
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s scripts/tests -p test_*.py",
+      "sessionId": 36555,
+      "exitCode": 0,
+      "durationSeconds": 378.089
+    },
+    "targetedAfterRegressionRepair": {
+      "mcpDocumentationUnitTests": "6/6 PASS",
+      "ownedWebKitPackagerTests": "11/11 PASS",
+      "versionFloorTests": "11/11 PASS",
+      "mcpDocumentationVerifier": "PASS 18 management / 7 read tools",
+      "versionBumpVerifier": "PASS 1.0.0 (200) > 0.9.0 (140)",
+      "gitDiffCheck": "PASS"
+    }
+  },
+  "changedFileSHA256": {
+    "Resources/Info.plist": "a898f23d0aed4cd2901f6b722f225f77dd04b3775b69f8e73b13722b4d6d6dec",
+    "scripts/package-owned-webkit-release.py": "776ef7bcfca4f7eef495d748170cc4e0c009a09821e7b1517ab2a7f46e7c79e6",
+    "scripts/tests/test_package_owned_webkit_release.py": "0ffe3bebb33d0a60fefe8e354612626c6215de5f6f7842ecd691f08a235c29ce",
+    "scripts/verify-mcp-documentation.py": "2496e18deb24a3adec6c36306c2e3c7a285b17f3d8932a270acf21a6b7c59f2c",
+    "scripts/tests/test_verify_mcp_documentation.py": "9a578551dd4dac6c48cb35e912539ba3dec60ca38377d606a9ce24c1dc6bbad9",
+    "scripts/tests/test_verify_direct_version_bump.py": "20000b66d58126f54f0214ba76c66183822343a9f911d67f3b5d3619c80daf0b",
+    "releases/v0.9.0.json": "d7262907c5847be373144fcbce5afa12e888b75bea3fc7aa916581a42358debe",
+    "README.md": "c1b0d01db48d15136fd1344410f95b923a6b45ebe72f534d553764f74e19f958",
+    "README.en.md": "4f1bf8abc007d1378bb50fff5a706fa28f9a3c6f549022f0de6edfbc0f85efd9",
+    "docs/ROADMAP.md": "b47a76eb24ddcc1a1bbbe752db211417f5bb7d9c5885edcfd5ff515d9bee0ddf",
+    "docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md": "50f16262321d75619ece7e6b0a7556a88e66d6529a7a91f7e95e4db7fdb71986",
+    "docs/NEANTIK_IMPROVEMENT_ROADMAP.md": "58308fcff069edf00e033fcce844ae2d599bff26ea2d04ad4cfd55f860fb1a2e",
+    "CHANGELOG.md": "610de97b78ffacda998924dd2126abc2576b26a117632bc82a76b6bdf5f5d825"
+  },
+  "candidateChanged": false,
+  "signed": false,
+  "notarized": false,
+  "published": false,
+  "nextAction": "Create a registered private candidate root and run scripts/prepare-direct-manager-update.sh in bundle-only production mode with the existing Developer ID host signing context, exact V122 build receipt/source roots, and V132 source-offer manifest. Verify exact candidate package/notices before native readiness and enrollment."
+}

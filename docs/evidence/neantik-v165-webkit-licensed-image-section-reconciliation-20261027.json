@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v165-webkit-licensed-image-section-reconciliation-20261027",
+  "observedAtUTC": "2026-10-26T20:47:02Z",
+  "status": "CURRENT_BUILD200_WEBKIT_CODE_SECTIONS_DIFFER; PRIOR_IMAGE_REVIEW_NOT_REUSABLE",
+  "scope": "Read-only exact WebKit Mach-O image section comparison; no app build, launch, signature change, candidate mutation, or publication.",
+  "priorReviewedImage": {
+    "path": "/private/tmp/neantik-owned-webkit-qa-ovid9uh5/NeAntik.app/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebKit.framework/Versions/A/WebKit",
+    "bytes": 56178880,
+    "sha256": "876cb2176bc9c722e64b8bbc31f29b1539f435994fda1d4a037c572984943276",
+    "previouslyReviewedSHA256": "876cb2176bc9c722e64b8bbc31f29b1539f435994fda1d4a037c572984943276"
+  },
+  "currentBuild200Image": {
+    "path": "/private/tmp/neantik-v140-source-snapshot/dist/private/candidates/58bd32206a064a4ba40ae9668acaef00/NeAntik.app/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebKit.framework/Versions/A/WebKit",
+    "bytes": 56178880,
+    "sha256": "778d4c2d3222ddef11b827edc8f2bcc401ebf8b8447b2b8d1591e4775c9c826e",
+    "candidateId": "58bd32206a064a4ba40ae9668acaef00",
+    "inventorySHA256": "0efb298b53043fb7ee8b39e051cc642745890fcf3dabd6ed5dd41518c9d7f240"
+  },
+  "comparison": {
+    "method": "Parsed thin little-endian Mach-O 64 LC_SEGMENT_64 section file ranges and SHA-256; code-signature blob excluded by section-based comparison. Zero-fill sections have no file bytes and are omitted.",
+    "priorFileBackedSectionCount": 53,
+    "currentFileBackedSectionCount": 53,
+    "commonSectionCount": 53,
+    "differentSectionCount": 26,
+    "changedSections": [
+      "__DATA,__bss",
+      "__DATA,__common",
+      "__DATA,__data",
+      "__DATA,__objc_const",
+      "__DATA,__objc_data",
+      "__DATA,__objc_selrefs",
+      "__DATA_CONST,__cfstring",
+      "__DATA_CONST,__const",
+      "__DATA_CONST,__got",
+      "__DATA_CONST,__objc_intobj",
+      "__TEXT,__const",
+      "__TEXT,__constg_swiftt",
+      "__TEXT,__cstring",
+      "__TEXT,__eh_frame",
+      "__TEXT,__gcc_except_tab",
+      "__TEXT,__objc_methlist",
+      "__TEXT,__objc_stubs",
+      "__TEXT,__oslogstring",
+      "__TEXT,__stubs",
+      "__TEXT,__swift5_proto",
+      "__TEXT,__swift5_typeref",
+      "__TEXT,__swift_as_cont",
+      "__TEXT,__swift_as_entry",
+      "__TEXT,__swift_as_ret",
+      "__TEXT,__text",
+      "__TEXT,__unwind_info"
+    ],
+    "executableTextSHA256": {
+      "prior": "cf4c50db69907bf9fc346f7ad2f84b9c8e7699949c4bfda2033bffdd7c81b8bd",
+      "current": "f761c2bee8d6b304977fc19a3c85a8b60d3ba040b0038d2cfe9e36c8f72681c9"
+    },
+    "result": "26 of 53 common file-backed sections differ, including __TEXT,__text, __const, __cstring and data/Objective-C sections; exact previous-image source/license attribution cannot be transferred to current image."
+  },
+  "limitation": "This establishes non-equivalence only. It does not classify current build200 source inputs or settle its applicable license/notices; those require exact current source/link/build evidence."
+}

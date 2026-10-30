@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T16:21:29Z",
+  "status": "TERMS_CLASSIFIED_ATTRIBUTION_MAINTAINER_DECISION_RUNTIME_NOTICE_BINDING_OPEN",
+  "scope": "Exact source and upstream history review for the headerless generated WebCore input Source/WebCore/css/popover.css.",
+  "sourceBinding": {
+    "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "patchedSourceSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "sourcePath": "Source/WebCore/css/popover.css",
+    "sourceSHA256": "0c46fec1026f3c6b9b2fa90724cf12c39b3a8628857a30675f39e4f14f6a62a6",
+    "bytes": 662,
+    "runtimeImageSHA256": "d23bba6a1e368635e781d3f6c795a355ee0e1a43263651f5c86a6fd0ac46aa80"
+  },
+  "upstreamIntroduction": {
+    "commit": "d4485d2afa7b018f2b75f15c2050e3b94971881d",
+    "apiURL": "https://api.github.com/repos/WebKit/WebKit/commits/d4485d2afa7b018f2b75f15c2050e3b94971881d",
+    "commitResponseSHA256": "ccbdf5440272408f9c898609b23713adc5ffcab284f1aa8aa09f7e435d00f8f9",
+    "commitPatchSHA256": "5e09800050adb4a072657b9d969f50eefb526d9f372e4f66f2c2a186cb1db9fe",
+    "author": "Tim Nguyen",
+    "date": "2023-02-11T22:32:33Z",
+    "change": "GitHub records this exact path as newly added with 28 lines; no prior file lineage was indicated.",
+    "patchExcerpt": "The 28-line initial file contains UA CSS for HTML popover display, position, backdrop, and colors."
+  },
+  "policy": {
+    "url": "https://docs.webkit.org/Other/Licensing.html",
+    "finding": "WebKit policy states new code contributed to WebKit uses the two-clause BSD license; moving existing code requires retaining original copyright and license.",
+    "classification": "Maintainer classifies this exact new WebKit contribution as BSD-2-Clause based on exact pinned source hash, new-file commit, and official policy. This is not a legal opinion."
+  },
+  "attribution": {
+    "exactSourceHeaderPresent": false,
+    "upstreamAuthor": "Tim Nguyen",
+    "copyrightNotice": "Copyright (C) 2023 Tim Nguyen.",
+    "basis": "Exact first-introducing upstream commit identifies Tim Nguyen as author/committer. WebKit contributing guidance says a new-file author should use the WebCore LICENSE-APPLE template with their own copyright information. Maintainer adopts the individual-author attribution for this notice; this is not a legal opinion or independent confirmation of employment/IP assignment."
+  },
+  "noticeStatus": {
+    "bsd2TermsTextInUpstreamArchive": true,
+    "runtimeLicenseTextSource": "docs/evidence/third-party/webcore/WEBCORE-POPOVER-BSD-2-Clause.txt",
+    "runtimeLicenseTextSHA256": "3c9203d778d97eda6e0433a557232f5303476b77e88fdfd0719b39c26ec9581b",
+    "runtimeNoticeBoundToThisFile": true,
+    "completeWebCoreImageTerms": false
+  },
+  "limitations": [
+    "This is a row-specific maintainer decision for one new WebCore stylesheet, not a legal opinion.",
+    "WebCore image remains UNKNOWN because other linked inputs and resources are unresolved.",
+    "No source file/runtime image bytes changed; only a source notice artifact is derived from the exact pinned BSD-2 template.",
+    "No build, app installation, signing or publication occurred."
+  ],
+  "next": "Resolve remaining WebCore/JSC per-file and generated input attribution, bind all notices to exact runtime images, and close corresponding-source/relink proof."
+}

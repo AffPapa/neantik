@@ -1,0 +1,574 @@
+{
+  "schemaVersion": 1,
+  "status": "eleven-headed-webrtc-boundaries-pass",
+  "observedOnUTC": "2026-10-16",
+  "shippingVersion": "0.8.21",
+  "shippingBuild": 133,
+  "exactDownloadedRuntime": true,
+  "headed": true,
+  "macOS": "27.0",
+  "architecture": "arm64",
+  "runtimeVersion": "156.0.8078.12",
+  "runtimeExecutableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+  "runtimeFrameworkSHA256": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7",
+  "runtimeMachOClosureSHA256": "49d782063dc94b9b89f7057147ca79496d649e2006a9e644d985eb9713885c39",
+  "publishedRuntimeClosureSHA256": "5902be29e448d51ab0e2223d6539fbe5156466fee8967e2882dc1bd122a3ff04",
+  "machOCount": 16,
+  "independentBindingSHA256": "0720844e9cd60dfcd35a01b46a8874ea9b54233de9a0bc41937200b0c88c0142",
+  "cases": [
+    {
+      "id": "direct",
+      "storedPreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "effectivePreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "extension": null,
+      "STUNRequests": 1,
+      "collectorCanary": {
+        "canaryAcknowledged": true,
+        "canaryCount": 1,
+        "resetVerified": true,
+        "countAfterReset": 0
+      },
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "proxyRequests": 0,
+      "rawICEExported": false,
+      "cleanup": {
+        "graceful": true,
+        "exitCode": 0,
+        "signal": null,
+        "forcedTermination": false,
+        "ownedProcessesRemaining": 0,
+        "ownedProfileRemoved": true
+      },
+      "resourceAdmissionNormal": true,
+      "receiptSHA256": "82ed09525443b5c1827c30b9fc754f2f0a59fb11f07f805f44a1d05af475757e"
+    },
+    {
+      "id": "guarded",
+      "storedPreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "effectivePreferences": {
+        "webrtc.ip_handling_policy": "disable_non_proxied_udp",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "extension": null,
+      "STUNRequests": 0,
+      "collectorCanary": {
+        "canaryAcknowledged": true,
+        "canaryCount": 1,
+        "resetVerified": true,
+        "countAfterReset": 0
+      },
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "proxyRequests": 3,
+      "rawICEExported": false,
+      "cleanup": {
+        "graceful": true,
+        "exitCode": 0,
+        "signal": null,
+        "forcedTermination": false,
+        "ownedProcessesRemaining": 0,
+        "ownedProfileRemoved": true
+      },
+      "resourceAdmissionNormal": true,
+      "receiptSHA256": "9075cb56d53da03e2e0231ea95b21a8321afbcd9b74fc9df921d7b604b4cbe48"
+    },
+    {
+      "id": "url-guarded",
+      "storedPreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [
+          {
+            "url": "http://127.0.0.1:*",
+            "handling": "default"
+          }
+        ],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "effectivePreferences": {
+        "webrtc.ip_handling_policy": "disable_non_proxied_udp",
+        "webrtc.ip_handling_url": [
+          {
+            "handling": "default",
+            "url": "http://127.0.0.1:*"
+          }
+        ],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "extension": null,
+      "STUNRequests": 0,
+      "collectorCanary": {
+        "canaryAcknowledged": true,
+        "canaryCount": 1,
+        "resetVerified": true,
+        "countAfterReset": 0
+      },
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "proxyRequests": 3,
+      "rawICEExported": false,
+      "cleanup": {
+        "graceful": true,
+        "exitCode": 0,
+        "signal": null,
+        "forcedTermination": false,
+        "ownedProcessesRemaining": 0,
+        "ownedProfileRemoved": true
+      },
+      "resourceAdmissionNormal": true,
+      "receiptSHA256": "fbb08ba3ccc625c61627f13d521753dffe6e9a4a5fc592e6376f37d59dc57e3c"
+    },
+    {
+      "id": "extension-direct",
+      "storedPreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "effectivePreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "extension": {
+        "policy": false,
+        "operations": [
+          {
+            "set": {
+              "value": "disable_non_proxied_udp",
+              "error": null
+            },
+            "get": {
+              "value": "disable_non_proxied_udp",
+              "levelOfControl": "controlled_by_this_extension",
+              "error": null
+            }
+          },
+          {
+            "set": {
+              "value": "default",
+              "error": null
+            },
+            "get": {
+              "value": "default",
+              "levelOfControl": "controlled_by_this_extension",
+              "error": null
+            }
+          }
+        ],
+        "final": {
+          "value": "default",
+          "levelOfControl": "controlled_by_this_extension",
+          "error": null
+        },
+        "permissions": [
+          "privacy"
+        ],
+        "nonceMatched": true,
+        "runtimeIDMatched": true
+      },
+      "STUNRequests": 1,
+      "collectorCanary": {
+        "canaryAcknowledged": true,
+        "canaryCount": 1,
+        "resetVerified": true,
+        "countAfterReset": 0
+      },
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "proxyRequests": 0,
+      "rawICEExported": false,
+      "cleanup": {
+        "graceful": true,
+        "exitCode": 0,
+        "signal": null,
+        "forcedTermination": false,
+        "ownedProcessesRemaining": 0,
+        "ownedProfileRemoved": true
+      },
+      "resourceAdmissionNormal": true,
+      "receiptSHA256": "8ba4ce353100ef65724d36affe72e4555d95f3a8f7bd7622c4428da9ed3028a4"
+    },
+    {
+      "id": "extension-guarded",
+      "storedPreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "effectivePreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "extension": {
+        "policy": false,
+        "operations": [
+          {
+            "set": {
+              "value": "disable_non_proxied_udp",
+              "error": null
+            },
+            "get": {
+              "value": "disable_non_proxied_udp",
+              "levelOfControl": "controlled_by_this_extension",
+              "error": null
+            }
+          },
+          {
+            "set": {
+              "value": "default",
+              "error": null
+            },
+            "get": {
+              "value": "default",
+              "levelOfControl": "controlled_by_this_extension",
+              "error": null
+            }
+          }
+        ],
+        "final": {
+          "value": "default",
+          "levelOfControl": "controlled_by_this_extension",
+          "error": null
+        },
+        "permissions": [
+          "privacy"
+        ],
+        "nonceMatched": true,
+        "runtimeIDMatched": true
+      },
+      "STUNRequests": 0,
+      "collectorCanary": {
+        "canaryAcknowledged": true,
+        "canaryCount": 1,
+        "resetVerified": true,
+        "countAfterReset": 0
+      },
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "proxyRequests": 3,
+      "rawICEExported": false,
+      "cleanup": {
+        "graceful": true,
+        "exitCode": 0,
+        "signal": null,
+        "forcedTermination": false,
+        "ownedProcessesRemaining": 0,
+        "ownedProfileRemoved": true
+      },
+      "resourceAdmissionNormal": true,
+      "receiptSHA256": "348f1291417a22decda3f424a03082c814a737bfc52e4846f19c5b59a0981fbb"
+    },
+    {
+      "id": "policy-direct",
+      "storedPreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "effectivePreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "extension": {
+        "policy": true,
+        "operations": [],
+        "final": {
+          "value": "default",
+          "levelOfControl": "not_controllable",
+          "error": null
+        },
+        "permissions": [
+          "privacy"
+        ],
+        "nonceMatched": true,
+        "runtimeIDMatched": true
+      },
+      "STUNRequests": 1,
+      "collectorCanary": {
+        "canaryAcknowledged": true,
+        "canaryCount": 1,
+        "resetVerified": true,
+        "countAfterReset": 0
+      },
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "proxyRequests": 0,
+      "rawICEExported": false,
+      "cleanup": {
+        "graceful": true,
+        "exitCode": 0,
+        "signal": null,
+        "forcedTermination": false,
+        "ownedProcessesRemaining": 0,
+        "ownedProfileRemoved": true
+      },
+      "resourceAdmissionNormal": true,
+      "receiptSHA256": "c875a8c3393cb439c60b34414b126ce0a57065bcbb89f618fa826fd18a835fa4"
+    },
+    {
+      "id": "policy-guarded",
+      "storedPreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "effectivePreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "extension": {
+        "policy": true,
+        "operations": [],
+        "final": {
+          "value": "default",
+          "levelOfControl": "not_controllable",
+          "error": null
+        },
+        "permissions": [
+          "privacy"
+        ],
+        "nonceMatched": true,
+        "runtimeIDMatched": true
+      },
+      "STUNRequests": 0,
+      "collectorCanary": {
+        "canaryAcknowledged": true,
+        "canaryCount": 1,
+        "resetVerified": true,
+        "countAfterReset": 0
+      },
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "proxyRequests": 3,
+      "rawICEExported": false,
+      "cleanup": {
+        "graceful": true,
+        "exitCode": 0,
+        "signal": null,
+        "forcedTermination": false,
+        "ownedProcessesRemaining": 0,
+        "ownedProfileRemoved": true
+      },
+      "resourceAdmissionNormal": true,
+      "receiptSHA256": "13477354f046bdfb896bdcf53599d4de9c2ae56976214c3378a1905191140fa0"
+    },
+    {
+      "id": "localip-direct",
+      "storedPreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": [
+          "http://127.0.0.1:*"
+        ]
+      },
+      "effectivePreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": [
+          "http://127.0.0.1:*"
+        ]
+      },
+      "extension": null,
+      "STUNRequests": 1,
+      "collectorCanary": {
+        "canaryAcknowledged": true,
+        "canaryCount": 1,
+        "resetVerified": true,
+        "countAfterReset": 0
+      },
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "proxyRequests": 0,
+      "rawICEExported": false,
+      "cleanup": {
+        "graceful": true,
+        "exitCode": 0,
+        "signal": null,
+        "forcedTermination": false,
+        "ownedProcessesRemaining": 0,
+        "ownedProfileRemoved": true
+      },
+      "resourceAdmissionNormal": true,
+      "receiptSHA256": "10f1756b528ff1af7c7f853c1b8a9621f443deb207d9a86e4903a4b6ff83ac29"
+    },
+    {
+      "id": "localip-guarded",
+      "storedPreferences": {
+        "webrtc.ip_handling_policy": "default",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": [
+          "http://127.0.0.1:*"
+        ]
+      },
+      "effectivePreferences": {
+        "webrtc.ip_handling_policy": "disable_non_proxied_udp",
+        "webrtc.ip_handling_url": [],
+        "webrtc.local_ips_allowed_urls": [
+          "http://127.0.0.1:*"
+        ]
+      },
+      "extension": null,
+      "STUNRequests": 0,
+      "collectorCanary": {
+        "canaryAcknowledged": true,
+        "canaryCount": 1,
+        "resetVerified": true,
+        "countAfterReset": 0
+      },
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "proxyRequests": 3,
+      "rawICEExported": false,
+      "cleanup": {
+        "graceful": true,
+        "exitCode": 0,
+        "signal": null,
+        "forcedTermination": false,
+        "ownedProcessesRemaining": 0,
+        "ownedProfileRemoved": true
+      },
+      "resourceAdmissionNormal": true,
+      "receiptSHA256": "6ec002342aa34487914adb7aa637972ef6427e17b3397e8f0ef19195aea15a70"
+    },
+    {
+      "id": "url-match",
+      "storedPreferences": {
+        "webrtc.ip_handling_policy": "disable_non_proxied_udp",
+        "webrtc.ip_handling_url": [
+          {
+            "url": "http://127.0.0.1:*",
+            "handling": "default"
+          }
+        ],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "effectivePreferences": {
+        "webrtc.ip_handling_policy": "disable_non_proxied_udp",
+        "webrtc.ip_handling_url": [
+          {
+            "handling": "default",
+            "url": "http://127.0.0.1:*"
+          }
+        ],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "extension": null,
+      "STUNRequests": 1,
+      "collectorCanary": {
+        "canaryAcknowledged": true,
+        "canaryCount": 1,
+        "resetVerified": true,
+        "countAfterReset": 0
+      },
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "proxyRequests": 0,
+      "rawICEExported": false,
+      "cleanup": {
+        "graceful": true,
+        "exitCode": 0,
+        "signal": null,
+        "forcedTermination": false,
+        "ownedProcessesRemaining": 0,
+        "ownedProfileRemoved": true
+      },
+      "resourceAdmissionNormal": true,
+      "receiptSHA256": "fe80019fb7cd9b929a9368dbcef81b9787986c1600c165386b8253be05a5071d"
+    },
+    {
+      "id": "url-nonmatch",
+      "storedPreferences": {
+        "webrtc.ip_handling_policy": "disable_non_proxied_udp",
+        "webrtc.ip_handling_url": [
+          {
+            "url": "https://nonmatching.invalid",
+            "handling": "default"
+          }
+        ],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "effectivePreferences": {
+        "webrtc.ip_handling_policy": "disable_non_proxied_udp",
+        "webrtc.ip_handling_url": [
+          {
+            "handling": "default",
+            "url": "https://nonmatching.invalid"
+          }
+        ],
+        "webrtc.local_ips_allowed_urls": []
+      },
+      "extension": null,
+      "STUNRequests": 0,
+      "collectorCanary": {
+        "canaryAcknowledged": true,
+        "canaryCount": 1,
+        "resetVerified": true,
+        "countAfterReset": 0
+      },
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "proxyRequests": 0,
+      "rawICEExported": false,
+      "cleanup": {
+        "graceful": true,
+        "exitCode": 0,
+        "signal": null,
+        "forcedTermination": false,
+        "ownedProcessesRemaining": 0,
+        "ownedProfileRemoved": true
+      },
+      "resourceAdmissionNormal": true,
+      "receiptSHA256": "bb14ddc9bdf1fee68bcf94557b11d1653e5526a8d1e201fe00e29ccb4057d3f5"
+    }
+  ],
+  "sourceSHA256": {
+    "scripts/runtime-network/run-webrtc-boundaries.mjs": "ee7ef25e5de38debeb88b1e57e3713358e828899752dd2dd96e75c503344188d",
+    "scripts/runtime-network/webrtc-boundary-pipe.mjs": "82e172cfe174f16faf22deaa525df1e33a2184dfcd2c488332a13224960553e0",
+    "scripts/runtime-network/webrtc-boundary-semantics.mjs": "6eea99411b743a49d0e7af54257d3a38c9cf720aa7adf4966aaa5c3f893c36c9",
+    "scripts/runtime-network/webrtc-boundary-probe.js": "54d701eece87b799f40217cb0dafb3fe9e4bdefeeb9204e5903ce329004d4551",
+    "scripts/runtime-network/webrtc-extension-receipt.js": "6476b95eb0fc90182911abed4e9688884aed693467d03527ed55b4589614498e",
+    "scripts/runtime-network/webrtc-stun-fixture.mjs": "602d691c76a4c7c0e923c14ec7f44c4fd6f64a32631e20ccbc33b22f7c420ad0",
+    "scripts/runtime-platform/fixtures/font-lifecycle-pipe.mjs": "b9182a6f476ac6ce6e2e74cdaf58011062b8b835e4b75438e554ae62df4ac653",
+    "scripts/runtime-platform/fixtures/qa-browser-environment.mjs": "32d73021fb8514cb55781f4cc56183c0cec7d0d1adcca0865394c3fdf90a6a14",
+    "scripts/runtime-platform/fixtures/font-runtime-closure.mjs": "d1cda06775c3d9e98e30b05f7138e81bf9cbdd9e9dbe7740f0e2d6122c052767",
+    "scripts/native-qa-readiness.py": "6fa865a4f924573608d494bbe3ac4b3600ba3b1698f02419a29831b850fe2a0b"
+  },
+  "controls": {
+    "semanticsPositive": 11,
+    "semanticsNegative": 63,
+    "pipePositive": 6,
+    "pipeNegative": 44,
+    "STUNPositive": 3,
+    "STUNNegative": 4,
+    "plannerTests": 17
+  },
+  "productionProfilesUsed": false,
+  "realKeychainUsed": false,
+  "releaseArtifactsChanged": false,
+  "releaseGate": false,
+  "allPoint21GatesComplete": false,
+  "limitations": [
+    "Own loopback IPv4 STUN and own HTTP proxy only; not manager relay integration or global networking",
+    "Profile-local Chromium test policy provider, not OS-managed policy",
+    "Local IP allowlist value and UDP-boundary test; not complete mDNS/local-IP disclosure coverage",
+    "No IPv6, TURN, external interface/network transition or ordinary Chrome comparison",
+    "Eleven real runs on macOS27 ARM64; other OS/hardware not qualified"
+  ]
+}

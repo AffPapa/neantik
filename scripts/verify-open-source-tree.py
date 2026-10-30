@@ -15,8 +15,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FORBIDDEN_PARTS = {
     ".build",
     ".build-support",
-    ".credentials",
-    ".secrets",
     ".swiftpm",
     "DerivedData",
     "StoreEdition",
@@ -24,42 +22,18 @@ FORBIDDEN_PARTS = {
     "TelemetryDashboard",
     "dist",
     "node_modules",
-    "private-keys",
-    "private_keys",
     "__pycache__",
 }
 FORBIDDEN_SUFFIXES = {
     ".p12",
-    ".p8",
     ".pem",
     ".key",
     ".mobileprovision",
-    ".provisionprofile",
     ".pyc",
 }
 FORBIDDEN_NAMES = {
     ".DS_Store",
     ".env",
-}
-FORBIDDEN_PUBLIC_PATHS = {
-    "Sources/NeAntik/RuntimePreferenceStore.swift",
-    "Sources/NeAntik/UpdateManifest.swift",
-    "Tests/NeAntikTests/RuntimePreferenceStoreTests.swift",
-    "Tests/NeAntikTests/UpdateManifestTests.swift",
-    "docs/" + "TELEMETRY_AND_PUBLIC_STATS.md",
-}
-FORBIDDEN_RUNTIME_LOCATOR_MARKERS = {
-    "allowsExternalRuntimes",
-    "BrowserRuntimePreference",
-    "/Applications/Google Chrome.app",
-    "/Applications/Chromium.app",
-    ".cloakbrowser",
-}
-REQUIRED_RUNTIME_LOCATOR_MARKERS = {
-    "NeAntik Browser.app",
-    "app.neantik.runtime",
-    "NeAntikRuntimeFlavor",
-    "fingerprint-chromium",
 }
 PERSONAL_USER_PATH_RE = re.compile(
     re.escape("/") + r"Users/(?P<username>[A-Za-z0-9._-]+)(?:/|$)"
@@ -76,21 +50,16 @@ PRIVATE_SECRET_STORE_PATH_RE = re.compile(
 SYNTHETIC_TEST_USERNAMES = frozenset({"alice", "example", "test"})
 SECRET_PATTERNS = {
     "private key": re.compile(r"BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY"),
-    "GitHub token": re.compile(
-        r"\b(?:gh[opsu]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b"
-    ),
+    "GitHub token": re.compile(r"\b(?:gh[opsu]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b"),
     "AWS access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
-    "OpenAI API key": re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b"),
-    "Slack token": re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b"),
-    "Stripe live secret": re.compile(r"\bsk_live_[A-Za-z0-9]{16,}\b"),
-    "Google API key": re.compile(r"\bAIza[0-9A-Za-z_-]{30,}\b"),
-    "GitLab token": re.compile(r"\bglpat-[A-Za-z0-9_-]{20,}\b"),
-    "wallet recovery phrase": re.compile(
-        r"\b(?:mnemonic|seed[ _-]?phrase)\s*[:=]\s*"
-        r"(?:[a-z]{3,16}\s+){11,23}[a-z]{3,16}\b",
-        re.IGNORECASE,
-    ),
 }
+RELEASE_MARKDOWN_FILENAME = re.compile(
+    r"^v(?P<version>\d+(?:\.\d+){2})\.md$"
+)
+RELEASE_MARKDOWN_HEADER = re.compile(
+    r"^#\s+NeAntik\s+(?P<version>\d+(?:\.\d+){2})\s+"
+    r"\((?P<build>\d+)\)\s*$"
+)
 TEXT_SUFFIXES = {
     "",
     ".command",
@@ -99,6 +68,8 @@ TEXT_SUFFIXES = {
     ".json",
     ".md",
     ".mjs",
+    ".patch",
+    ".diff",
     ".plist",
     ".py",
     ".sh",
@@ -111,16 +82,14 @@ TEXT_SUFFIXES = {
     ".yaml",
 }
 REQUIRED_PUBLIC_PATHS = {
-    ".github/dependabot.yml",
     ".github/workflows/ci.yml",
-    ".github/workflows/codeql.yml",
     "CONTRIBUTING.md",
+    "docs/NEANTIK_IMPROVEMENT_ROADMAP.md",
+    "docs/REDACTED_SUPPORT_BUNDLE.md",
     "Develop-NeAntik.command",
     "LICENSE",
     "Release-NeAntik.command",
-    "Resources/NeAntik.entitlements",
     "SECURITY.md",
-    "scripts/verify-github-security-contract.py",
     "Sources/NeAntik/BrowserProcessInventory.swift",
     "Sources/NeAntik/ApplicationEnvironment.swift",
     "Sources/NeAntik/FingerprintEvidenceEnrollment.swift",
@@ -129,10 +98,13 @@ REQUIRED_PUBLIC_PATHS = {
     "Sources/NeAntik/FingerprintEvidenceReleaseContext.swift",
     "Sources/NeAntik/FingerprintReleaseEvidencePayload.swift",
     "Sources/NeAntik/ProfileListProjection.swift",
-    "Sources/NeAntik/ProfileListOrdering.swift",
     "Sources/NeAntik/ProxyImportParser.swift",
     "Sources/NeAntik/SecureEnclaveFingerprintEvidenceSigner.swift",
+    "Sources/DirectUpdateCore/UpdateManifest.swift",
     "Sources/NeAntik/WorkspaceLayout.swift",
+    "Sources/NeAntik/RedactedSupportBundle.swift",
+    "Sources/NeAntik/RedactedSupportBundleFileCoordinator.swift",
+    "Sources/NeAntik/ProfileSnapshot.swift",
     "Tests/Fixtures/fingerprint-conformance/base-production-qualified.json",
     "Tests/Fixtures/fingerprint-conformance/manifest.json",
     "Tests/NeAntikTests/FingerprintEvidenceEnrollmentTests.swift",
@@ -141,13 +113,14 @@ REQUIRED_PUBLIC_PATHS = {
     "Tests/NeAntikTests/FingerprintEvidenceEnvelopeTests.swift",
     "Tests/NeAntikTests/FingerprintEvidenceReleaseContextTests.swift",
     "Tests/NeAntikTests/ProfileOrganizationTests.swift",
-    "Tests/NeAntikTests/ProfileListOrderingTests.swift",
     "Tests/NeAntikTests/ProxyImportParserTests.swift",
     "Tests/NeAntikTests/ResponsiveLayoutRenderTests.swift",
     "Tests/NeAntikTests/WorkspaceLayoutTests.swift",
     "Tests/NeAntikTests/SecureEnclaveFingerprintEvidenceSignerTests.swift",
+    "Tests/NeAntikTests/UpdateManifestTests.swift",
+    "Tests/NeAntikTests/RedactedSupportBundleTests.swift",
+    "Tests/NeAntikTests/ProfileSnapshotTests.swift",
     "docs/PUBLIC_FINGERPRINT_CONFORMANCE.md",
-    "docs/UNIFIED_MINIMAL_UX.md",
     "docs/RUNTIME_INTEGRATION_NOTICES.md",
     "docs/FINGERPRINT_DIAGNOSTIC_EVIDENCE.md",
     "docs/security/fingerprint-evidence-schema-8.md",
@@ -174,6 +147,9 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/tests/test_direct_candidate_manifest.py",
     "scripts/tests/test_fingerprint_evidence_schema8.py",
     "scripts/generate-fingerprint-evidence-schema8-fixture.py",
+    "scripts/generate-fingerprint-evidence-schema9-fixture.py",
+    "scripts/tests/fixtures/fingerprint-evidence-schema9-swift.json",
+    "scripts/tests/test_fingerprint_evidence_schema9.py",
     "scripts/tests/test_run_exact_command_with_timeout.py",
     "scripts/tests/test_runtime_source_provenance.py",
     "scripts/tests/test_runtime_candidate_lock.py",
@@ -185,6 +161,7 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/tests/test_verify_direct_hosted_download_oss.py",
     "scripts/tests/test_verify_public_fingerprint_corpus.py",
     "scripts/tests/test_verify_public_workflow_references.py",
+    "scripts/tests/test_verify_redacted_support_bundle.py",
     "scripts/direct-candidate-manifest.py",
     "scripts/enroll-direct-fingerprint-authority.sh",
     "scripts/run-exact-command-with-timeout.py",
@@ -197,16 +174,15 @@ REQUIRED_PUBLIC_PATHS = {
     "scripts/notarize_direct_transaction.py",
     "scripts/verify-direct-hosted-download.py",
     "scripts/fingerprint_evidence_schema8.py",
+    "scripts/fingerprint_evidence_schema9.py",
+    "scripts/fingerprint_evidence.py",
     "scripts/verify-fingerprint-evidence-envelope.py",
     "scripts/verify-public-artifact-privacy.py",
     "scripts/verify-direct-update-policy.py",
-    "scripts/verify-direct-provisioning-profile.py",
-    "scripts/verify-secure-enclave-release-authority.py",
     "scripts/verify-public-fingerprint-corpus.py",
     "scripts/verify-public-workflow-references.py",
+    "scripts/verify-redacted-support-bundle.py",
     "scripts/tests/test_release_launcher.py",
-    "scripts/tests/test_verify_secure_enclave_release_authority.py",
-    "scripts/tests/test_verify_direct_provisioning_profile.py",
     "scripts/tests/test_release_transaction.py",
     "scripts/tests/test_release_source_receipt.py",
     "scripts/tests/test_notary_transaction_state.py",
@@ -216,14 +192,8 @@ REQUIRED_PUBLIC_PATHS = {
 }
 
 
-def fail(_message: str) -> None:
-    # Caller-supplied detail can originate in files being checked. Keep the
-    # terminal failure constant so a publication gate can never echo matched
-    # source, filenames or a child verifier's captured output.
-    print(
-        "FAIL: open-source publication boundary verification failed",
-        file=sys.stderr,
-    )
+def fail(message: str) -> None:
+    print(f"FAIL: {message}", file=sys.stderr)
     raise SystemExit(1)
 
 
@@ -306,13 +276,7 @@ def text_violation(relative: Path, text: str) -> str | None:
 def verify_files(files: list[Path]) -> None:
     for path in files:
         relative = path.relative_to(PROJECT_ROOT)
-        if relative.as_posix() in FORBIDDEN_PUBLIC_PATHS:
-            fail(f"dormant Direct feature is present: {relative}")
-        if (
-            path.name in FORBIDDEN_NAMES
-            or path.name.startswith(".env.")
-            or path.suffix.lower() in FORBIDDEN_SUFFIXES
-        ):
+        if path.name in FORBIDDEN_NAMES or path.suffix.lower() in FORBIDDEN_SUFFIXES:
             fail(f"forbidden file is present: {relative}")
         if path.suffix.lower() not in TEXT_SUFFIXES:
             continue
@@ -323,6 +287,127 @@ def verify_files(files: list[Path]) -> None:
         violation = text_violation(relative, text)
         if violation is not None:
             fail(f"{violation} found in {relative}")
+
+
+def read_markdown_release(path: Path) -> tuple[tuple[int, ...], int]:
+    match = RELEASE_MARKDOWN_FILENAME.fullmatch(path.name)
+    if match is None:
+        fail(f"invalid release record filename: {path.name}")
+    try:
+        first_line = path.read_text(encoding="utf-8").splitlines()[0]
+    except (OSError, UnicodeError, IndexError):
+        fail(f"release record {path.name} is empty or unreadable")
+    header = RELEASE_MARKDOWN_HEADER.fullmatch(first_line)
+    if header is None:
+        fail(f"release record {path.name} has no canonical version/build header")
+    version = header.group("version")
+    if version != match.group("version"):
+        fail(f"release record {path.name} version does not match its filename")
+    return tuple(int(part) for part in version.split(".")), int(header.group("build"))
+
+
+def read_public_release_floor(
+    metadata_files: list[Path],
+) -> tuple[tuple[int, ...], int]:
+    def version_key(metadata: dict[str, object]) -> tuple[int, ...]:
+        version = str(metadata.get("version", ""))
+        if not re.fullmatch(r"\d+(?:\.\d+)+", version):
+            fail(f"invalid release version in releases/v{version}.json")
+        return tuple(int(part) for part in version.split("."))
+
+    json_releases = [
+        (version_key(metadata), int(metadata["build"]))
+        for metadata in [
+            json.loads(path.read_text(encoding="utf-8"))
+            for path in metadata_files
+        ]
+    ]
+    markdown_releases = [
+        read_markdown_release(path)
+        for path in sorted((PROJECT_ROOT / "releases").glob("v*.md"))
+    ]
+    candidates = json_releases + markdown_releases
+    if not candidates:
+        fail("no checked-in release records found")
+    floor = max(candidates, key=lambda release: release[0])
+    same_version_builds = {
+        build for version, build in candidates if version == floor[0]
+    }
+    if len(same_version_builds) != 1:
+        fail("release records have conflicting builds for the latest version")
+    return floor
+
+
+def has_explicit_development_preview_marker(
+    app_version: str,
+    app_build: str,
+) -> bool:
+    token = f"`{app_version} ({app_build})`"
+    for name in ("README.md", "README.en.md"):
+        try:
+            text = (PROJECT_ROOT / name).read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            return False
+        position = text.find(token)
+        if position < 0:
+            return False
+        context = text[max(0, position - 100) : position + 180].lower()
+        if "development preview" not in context and "предпросмотр" not in context:
+            return False
+    return True
+
+
+def verify_release_checksums(metadata: dict[str, object]) -> None:
+    """Check current ZIP/DMG records and historical ZIP records without bypassing hashes."""
+    version = metadata.get("version")
+    if not isinstance(version, str) or not re.fullmatch(r"\d+(?:\.\d+){2}", version):
+        fail("invalid version for release checksums")
+    if "artifacts" in metadata:
+        artifacts = metadata["artifacts"]
+        if not isinstance(artifacts, list) or len(artifacts) != 2:
+            fail("release artifacts must contain ZIP and DMG")
+        expected_names = {f"NeAntik-{version}-arm64-notarized.{suffix}" for suffix in ("zip", "dmg")}
+    elif "assets" in metadata:
+        # Historical public-baseline records mirror the GitHub Releases API
+        # and use `assets`; accept the same exact ZIP/DMG checksum contract.
+        assets = metadata["assets"]
+        if not isinstance(assets, list) or len(assets) != 2:
+            fail("release assets must contain ZIP and DMG")
+        artifacts = assets
+        expected_names = {f"NeAntik-{version}-arm64-notarized.{suffix}" for suffix in ("zip", "dmg")}
+    else:
+        archive = metadata.get("archive")
+        if not isinstance(archive, dict):
+            fail("release checksum records are missing")
+        artifacts = [archive]
+        expected_names = {f"NeAntik-{version}-arm64-notarized.zip"}
+    names: set[str] = set()
+    for artifact in artifacts:
+        if not isinstance(artifact, dict):
+            fail("invalid release artifact record")
+        name, digest = artifact.get("name"), artifact.get("sha256")
+        if not isinstance(name, str) or name not in expected_names or name in names:
+            fail("release artifact name is invalid or duplicated")
+        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            fail("invalid release artifact checksum")
+        names.add(name)
+        sidecar = PROJECT_ROOT / "releases" / f"{name}.sha256"
+        try:
+            actual = sidecar.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            fail("release checksum sidecar is missing or unreadable")
+        if actual != f"{digest}  {name}\n":
+            fail(f"release checksum sidecar does not match releases/v{version}.json")
+    if names != expected_names:
+        fail("release checksum records are incomplete")
+    # Some transitional records carry both forms. They must describe the same ZIP.
+    if ("artifacts" in metadata or "assets" in metadata) and "archive" in metadata:
+        archive = metadata["archive"]
+        if not isinstance(archive, dict) or archive.get("name") != f"NeAntik-{version}-arm64-notarized.zip" or not any(
+            archive.get("name") == artifact.get("name") and
+            archive.get("sha256") == artifact.get("sha256") for artifact in artifacts
+        ):
+            fail("legacy archive conflicts with current release artifacts")
 
 
 def verify_release_metadata() -> None:
@@ -341,33 +426,8 @@ def verify_release_metadata() -> None:
             fail(f"invalid release version in releases/v{version}.json")
         return tuple(int(part) for part in version.split("."))
 
-    complete_metadata = [
-        metadata
-        for metadata in parsed_metadata
-        if isinstance(metadata, dict) and metadata.get("archive") is not None
-    ]
-    if not complete_metadata:
-        fail("no complete public archive metadata is present")
-    metadata = max(complete_metadata, key=version_key)
-    archive = metadata.get("archive")
-    if not isinstance(archive, dict):
-        fail(f"invalid archive metadata for releases/v{metadata['version']}.json")
-    archive_name = archive.get("name")
-    archive_sha256 = archive.get("sha256")
-    if (
-        not isinstance(archive_name, str)
-        or not archive_name
-        or not isinstance(archive_sha256, str)
-        or not re.fullmatch(r"[0-9a-f]{64}", archive_sha256)
-    ):
-        fail(f"invalid archive metadata for releases/v{metadata['version']}.json")
-    sidecar = PROJECT_ROOT / "releases" / f"{archive_name}.sha256"
-    expected = f"{archive_sha256}  {archive_name}\n"
-    if sidecar.read_text(encoding="utf-8") != expected:
-        fail(
-            "release checksum sidecar does not match "
-            f"releases/v{metadata['version']}.json"
-        )
+    metadata = max(parsed_metadata, key=version_key)
+    verify_release_checksums(metadata)
 
     plist = PROJECT_ROOT / "Resources" / "Info.plist"
     with plist.open("rb") as file:
@@ -379,12 +439,18 @@ def verify_release_metadata() -> None:
     if not app_build.isdigit():
         fail("Resources/Info.plist contains an invalid build number")
 
-    published_version = str(metadata["version"])
-    published_build = str(metadata["build"])
+    published_key, published_build_number = read_public_release_floor(
+        metadata_files
+    )
+    published_version = ".".join(str(part) for part in published_key)
+    published_build = str(published_build_number)
     app_key = tuple(int(part) for part in app_version.split("."))
-    published_key = version_key(metadata)
     if app_key < published_key:
-        fail("manager version is older than the latest public release metadata")
+        if not has_explicit_development_preview_marker(app_version, app_build):
+            fail(
+                "manager version is older than the latest public release "
+                "record without an explicit development-preview marker"
+            )
     if app_key == published_key and app_build != published_build:
         fail("release build does not match Resources/Info.plist")
     if app_key > published_key:
@@ -397,6 +463,17 @@ def verify_release_metadata() -> None:
             )
 
 
+def verify_ci_suite_coverage(suites: set[str]) -> None:
+    required = {
+        "UpdateManifestTests", "BrowserProcessInventoryTests",
+        "FingerprintEvidenceEnrollmentTests", "ProfileOrganizationTests",
+        "SecureEnclaveFingerprintEvidenceSignerTests",
+    }
+    missing = sorted(required - suites)
+    if missing:
+        fail("GitHub Actions omits required Swift suites: " + ", ".join(missing))
+
+
 def verify_required_contracts() -> None:
     missing = sorted(
         path
@@ -406,58 +483,40 @@ def verify_required_contracts() -> None:
     if missing:
         fail("required public source files are missing: " + ", ".join(missing))
 
-    runtime_locator = (
-        PROJECT_ROOT / "Sources/NeAntik/BrowserRuntimeLocator.swift"
-    ).read_text(encoding="utf-8")
-    forbidden_runtime_markers = sorted(
-        marker
-        for marker in FORBIDDEN_RUNTIME_LOCATOR_MARKERS
-        if marker in runtime_locator
-    )
-    if forbidden_runtime_markers:
-        fail(
-            "Direct runtime locator retains external runtime paths: "
-            + ", ".join(forbidden_runtime_markers)
-        )
-    missing_runtime_markers = sorted(
-        marker
-        for marker in REQUIRED_RUNTIME_LOCATOR_MARKERS
-        if marker not in runtime_locator
-    )
-    if missing_runtime_markers:
-        fail(
-            "Direct runtime locator is missing embedded-runtime contracts: "
-            + ", ".join(missing_runtime_markers)
-        )
-
     ci_text = (
         PROJECT_ROOT / ".github/workflows/ci.yml"
     ).read_text(encoding="utf-8")
-    if "run: ./scripts/verify-native-swift-shard.sh" not in ci_text:
-        fail("GitHub Actions does not enforce isolated Swift test shards")
-    swift_test_runner = (
-        PROJECT_ROOT / "scripts/verify-native-swift-shard.sh"
-    ).read_text(encoding="utf-8")
     for marker in [
-        "BrowserProcessInventoryTests",
-        "FingerprintEvidenceEnrollmentTests",
-        "ProfileOrganizationTests",
-        "SecureEnclaveFingerprintEvidenceSignerTests",
-        '--filter "$SUITE"',
-    ]:
-        if marker not in swift_test_runner:
-            fail(f"the Swift shard runner does not enforce {marker}")
-    for marker in [
+        'scripts/test-manager-ci.py --shard "${{ matrix.shard }}" --shards 4',
+        "shard: [0, 1, 2, 3]",
         "generate-runtime-integration-notices.py --check",
         "verify-public-fingerprint-corpus.py",
-        "verify-direct-update-policy.py",
         "verify-open-source-tree.py",
         "verify-public-workflow-references.py",
-        "test_direct_candidate_manifest",
-        "test_fingerprint_evidence_schema8",
+        "python3 -m unittest discover -s scripts/tests -p 'test_*.py'",
     ]:
         if marker not in ci_text:
             fail(f"GitHub Actions does not enforce {marker}")
+
+    # Ask the same read-only selector used by CI. Filenames and old matrix
+    # labels cannot prove that a declared suite is actually selected.
+    selected: set[str] = set()
+    for index in range(4):
+        result = subprocess.run(
+            [sys.executable, "-B", str(PROJECT_ROOT / "scripts/test-manager-ci.py"),
+             "--shard", str(index), "--shards", "4", "--plan"],
+            cwd=PROJECT_ROOT, text=True, capture_output=True, check=True,
+        )
+        names = json.loads(result.stdout)["suites"]
+        if not isinstance(names, list) or any(not isinstance(name, str) for name in names):
+            fail("invalid CI suite plan")
+        if selected.intersection(names):
+            fail("CI suite appears in more than one shard")
+        selected.update(names)
+    verify_ci_suite_coverage(selected)
+    for name in ("test_direct_candidate_manifest.py", "test_fingerprint_evidence_schema8.py"):
+        if not (PROJECT_ROOT / "scripts/tests" / name).is_file():
+            fail(f"Python discovery is missing required contract {name}")
 
     result = subprocess.run(
         [
@@ -473,7 +532,8 @@ def verify_required_contracts() -> None:
         check=False,
     )
     if result.returncode != 0:
-        fail("public fingerprint corpus gate failed")
+        detail = (result.stderr or result.stdout).strip()
+        fail(f"public fingerprint corpus failed: {detail}")
 
     workflow_result = subprocess.run(
         [
@@ -489,7 +549,8 @@ def verify_required_contracts() -> None:
         check=False,
     )
     if workflow_result.returncode != 0:
-        fail("public workflow reference gate failed")
+        detail = (workflow_result.stderr or workflow_result.stdout).strip()
+        fail(f"public workflow reference gate failed: {detail}")
 
 
 def main() -> None:

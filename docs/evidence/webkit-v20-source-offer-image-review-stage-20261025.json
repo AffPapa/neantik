@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25",
+  "status": "two-current-image-review-receipts-staged;source-offer-incomplete",
+  "candidate": {
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0"
+  },
+  "priorManifestSHA256": "9fe769f36bae43efdbbf594db68c981b92d0ebdc5f419176f98e9d65dfca281c",
+  "sourceOfferManifestSHA256": "da68047dac4349de56ea29ddb2d8f7a68ef405a41f5cd512816c71b3b1625f79",
+  "componentCount": 78,
+  "physicallyIncludedComponentCount": 77,
+  "addedComponents": [
+    {
+      "path": "evidence/WEBKIT_webgpu-image-license-review-V20.json",
+      "bytes": 19608,
+      "sha256": "e85793e756b6dd3b64e4346d4768a2321d7fd0abd7eb0c9e4929921751687ed1",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_compatibility-span-package-payload-review-V20.json",
+      "bytes": 2879,
+      "sha256": "2e1d3985c0904ddb9d00c2f137a8ed8cec6ad232e903d7fb6f8d83b225f28748",
+      "includedInOfferFolder": true
+    }
+  ],
+  "remainingUnknownDecisions": 83,
+  "scopeLimit": "This only stages reviewer evidence in the private source offer. It does not close legal applicability, complete corresponding-source/build/relink obligations, qualify the signed candidate, or authorize publication."
+}

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25",
+  "status": "draft-build-recipe-counts-reconciled;all-runtime-and-release-gates-remain-open",
+  "candidate": {
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "sourceCommit": "955bc0808a1e1a49d3a9f74f2b02e05af9fee3e2",
+    "version": "1.0.0"
+  },
+  "scope": "Documentation and source-offer metadata only. Frozen candidate binaries, WebKit runtime images, source inputs, signing, and publication were not changed.",
+  "priorRecipeSHA256": "dfd5729dd33ad6e2df552282dc4e41d7156b2cbc65cdc26d67097ac3a2aeb213",
+  "priorManifestRecipeSHA256": "1f7cd35532ef2ae2ba0e914605f20b0ef64cd92bb852a27428659d9212ca8364",
+  "currentRecipeSHA256": "a657234e7c545ad925f92db33cd952e341c8c6f89bb84c66b859b988059d42db",
+  "sourceOfferManifest": {
+    "path": "dist/private/source-offers/1.0.0-manager-955/manifest.json",
+    "priorSHA256": "151446884ed0af5542d1ed5c34fd60eb4792c4d4026d3c2c667654a4cfc8a726",
+    "currentSHA256": "5687601db32269237bc3cd5bd9e6f0a4f2229ab53abaec9e21c892d581d7c389",
+    "componentCount": 131,
+    "allSourceOfferComponentsUnchanged": true
+  },
+  "worksheet": {
+    "path": "docs/evidence/webkit-runtime-package-notice-worksheet-20261025.json",
+    "sha256": "a08aa8d605f1fcb716f91b8360d885ba37d9d2b5af16c3c6958f3bba117f0b4b",
+    "unknown": 82,
+    "unknownImages": 4,
+    "unknownResources": 78,
+    "boundedImageReviews": 12,
+    "boundedResourceReviews": 6
+  },
+  "reviewPacket": {
+    "path": "docs/evidence/webkit-v20-license-review-packet-20261025.json",
+    "sha256": "f157cb072465e5555fc0bd9b90e0d5900d0cfff20cb008693f3199a334b5bbf8",
+    "rows": 82
+  },
+  "change": "Corrected stale draft counts and rebound the recipe SHA-256 in manifest. Prior manifest recipe hash did not match the previously pinned file; the old and new values are recorded here.",
+  "notEstablished": [
+    "legal applicability approval",
+    "complete source or notice offer",
+    "recipient clean build/relink",
+    "frozen candidate qualification",
+    "production package, notarization, GitHub publication, or browser.free publication"
+  ]
+}

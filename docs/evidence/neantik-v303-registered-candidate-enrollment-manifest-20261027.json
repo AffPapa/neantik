@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "attempt": "V303",
+  "createdAt": "2026-10-27T19:17:14Z",
+  "status": "REGISTERED_SIGNED_CANDIDATE_ENROLLED; PRODUCTION_MANIFEST_VERIFIED; NATIVE_QA_PREPARATION_IN_PROGRESS",
+  "candidate": {
+    "candidateId": "ef2ce9cf159242c3a147027867403460",
+    "root": "/private/tmp/neantik-release-v1/dist/private/candidates/ef2ce9cf159242c3a147027867403460",
+    "appPath": "/private/tmp/neantik-release-v1/dist/private/candidates/ef2ce9cf159242c3a147027867403460/NeAntik.app",
+    "releaseChannel": "production",
+    "version": "1.0.0",
+    "build": "200",
+    "managerSHA256": "5df59960da46e634ba81b1cc592b4d2ec8c3b5c6b99913b8ed86987ce569ba9c",
+    "webKitHostSHA256": "ae0a88849e20814f4883dc895459082855eeb53f903920d6957910729124106a",
+    "manifestPath": "/private/tmp/neantik-release-v1/dist/private/candidates/ef2ce9cf159242c3a147027867403460/direct-candidate-manifest.json",
+    "manifestSHA256": "145531171b5d999490a5a94b523cb5623d3f32d58a600925f9d639f946500020"
+  },
+  "inputs": {
+    "sourceV302App": "/private/tmp/neantik-v193-touch-qualified/dist/private/candidates/production-webkit-v135-20261028/NeAntik.app",
+    "copyVerification": "1448 entries identical, including regular-file SHA-256, modes and symlink targets",
+    "sourceOfferManifestSHA256": "73b83130fc540e65dc238f6fe510e831654b39a93fb691690de1532335ebcc42",
+    "webkitBuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4"
+  },
+  "verified": {
+    "registeredCandidateLocation": "PASS",
+    "managerAndNestedHostCodeSignature": "PASS after enrollment",
+    "fingerprintEnrollment": "PASS; new mode-0700 parent, output owner-only mode 0600, 477 bytes",
+    "fingerprintEnrollmentProcess": "dedicated control mode exited before normal ProfileStore init",
+    "candidateManifest": "PASS; exact signed app and candidate-scoped enrollment bound; production channel",
+    "webkitQATemplate": "created by exact candidate MCP management in a private isolated data root; one blank WebKit profile; no browser launched",
+    "ordinaryUserNeAntik": "closed",
+    "leftoverV280DiagnosticQA": "exact temporary PID gracefully stopped; drain PASS",
+    "nativeReadiness": "eligible; memory pressure 1; thermal state 0 at 2026-10-27T19:16:39.889106Z"
+  },
+  "open": {
+    "exactCandidateBrowserRuntime": "not yet launched",
+    "proxyAndPageQA": "not yet run",
+    "notarizationAndDistribution": "not yet run",
+    "releaseQualified": false
+  },
+  "publicStateChanged": false,
+  "releaseBuildMade": false,
+  "candidateLaunchedInInteractiveMode": false
+}

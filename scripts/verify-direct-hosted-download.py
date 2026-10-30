@@ -8,6 +8,7 @@ import json
 import os
 import plistlib
 import subprocess
+import stat
 import sys
 import tempfile
 from pathlib import Path
@@ -42,10 +43,46 @@ assert SNAPSHOT_SPEC and SNAPSHOT_SPEC.loader
 SNAPSHOT = importlib.util.module_from_spec(SNAPSHOT_SPEC)
 sys.modules[SNAPSHOT_SPEC.name] = SNAPSHOT
 SNAPSHOT_SPEC.loader.exec_module(SNAPSHOT)
+PRIVACY_SPEC = importlib.util.spec_from_file_location(
+    "public_artifact_privacy_for_hosted_preflight",
+    PROJECT_ROOT / "scripts" / "verify-public-artifact-privacy.py",
+)
+assert PRIVACY_SPEC and PRIVACY_SPEC.loader
+PRIVACY = importlib.util.module_from_spec(PRIVACY_SPEC)
+sys.modules[PRIVACY_SPEC.name] = PRIVACY
+PRIVACY_SPEC.loader.exec_module(PRIVACY)
 
 
 class HostedDownloadError(RuntimeError):
     pass
+
+
+def preflight_public_attestation(path: Path, release_channel: str) -> None:
+    """Reject wrong input before archive work; authenticated binding runs later."""
+    def unique_object(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate public attestation key")
+            result[key] = value
+        return result
+
+    try:
+        with path.open("rb") as stream:
+            raw = stream.read(65537)
+        if len(raw) > 65536:
+            raise ValueError("oversized public attestation")
+        payload = json.loads(raw, object_pairs_hook=unique_object)
+        PRIVACY.validate_authenticated_public_attestation(payload)
+        if payload["releaseChannel"] != release_channel:
+            raise ValueError("public attestation channel mismatch")
+    except (OSError, ValueError, RecursionError, PRIVACY.PublicArtifactPrivacyError):
+        # Date/schema errors can quote input. Do not chain raw JSON values into
+        # a release log, even for a rejected or accidentally private input.
+        raise HostedDownloadError(
+            "public fingerprint attestation preflight failed; "
+            "supply the validated fingerprint-audit-summary.json"
+        ) from None
 
 
 def sha256_file(path: Path) -> str:
@@ -113,7 +150,8 @@ def download_with_curl(
 ) -> None:
     completed = subprocess.run(
         [
-            "curl",
+            "/usr/bin/curl",
+            "--disable",
             "--fail",
             "--location",
             "--proto",
@@ -135,11 +173,14 @@ def download_with_curl(
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
+        # This is an anonymous artifact check. Ambient proxy credentials,
+        # curl config, TLS overrides and key-log destinations are not inputs.
+        env={key: value for key, value in os.environ.items()
+             if key in {"PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "LC_CTYPE", "USER", "LOGNAME"}},
     )
     if completed.returncode != 0:
-        detail = completed.stderr.strip()
         raise HostedDownloadError(
-            f"download failed with curl exit {completed.returncode}: {detail}"
+            f"download failed with curl exit {completed.returncode}"
         )
 
 
@@ -321,6 +362,7 @@ def _verify_pinned_hosted_download(
         ):
             if not path.is_file() or path.is_symlink():
                 raise HostedDownloadError(f"{label} is missing or unsafe")
+        preflight_public_attestation(fingerprint_attestation, release_channel)
         release_evidence_verifier = (
             release_evidence_verifier
             or (
@@ -460,6 +502,80 @@ def _verify_pinned_hosted_download(
     }
 
 
+def _distribution_file_identity(value):
+    return (value.st_dev, value.st_ino, value.st_size, value.st_nlink, value.st_mtime_ns, value.st_ctime_ns)
+
+
+def _bound_distribution_digest(project_root: Path, archive: Path, archive_name: str) -> str:
+    return _bound_distribution_record(project_root, archive, archive_name)[0]
+
+
+def _bound_distribution_record(project_root: Path, archive: Path, archive_name: str):
+    """Bind an independent upload copy to the exact qualified dist bytes.
+
+    This receipt is a copy attestation, not qualification. The normal archive,
+    candidate, evidence, signing and hosted gates still run on pinned copies.
+    """
+    if archive.parent.parent != project_root / "dist" / "distribution":
+        raise HostedDownloadError("local archive must be the final dist artifact or its bound distribution copy")
+    for directory in (project_root / "dist", archive.parent.parent, archive.parent):
+        if directory.is_symlink() or not directory.is_dir():
+            raise HostedDownloadError("distribution directory is unsafe")
+    receipt = archive.parent / "distribution.json"
+    try:
+        fd = os.open(receipt, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC | os.O_NOFOLLOW)
+        try:
+            before = os.fstat(fd)
+            if (not stat.S_ISREG(before.st_mode) or before.st_uid != os.geteuid()
+                or before.st_nlink != 1 or before.st_mode & 0o022
+                or not 0 < before.st_size <= 64 * 1024):
+                raise HostedDownloadError("distribution receipt is unsafe")
+            data = os.read(fd, 64 * 1024 + 1)
+            after = os.fstat(fd)
+            named = os.stat(receipt, follow_symlinks=False)
+            if (len(data) != before.st_size or _distribution_file_identity(before) != _distribution_file_identity(after)
+                or _distribution_file_identity(after) != _distribution_file_identity(named)):
+                raise HostedDownloadError("distribution receipt changed")
+            document = json.loads(data)
+        finally:
+            os.close(fd)
+    except (OSError, ValueError, UnicodeError) as error:
+        raise HostedDownloadError("distribution receipt is unreadable") from error
+    if not isinstance(document, dict):
+        raise HostedDownloadError("distribution receipt is invalid")
+    records = document.get("files")
+    if document.get("schemaVersion") != 1 or not isinstance(records, list) or len(records) != 4:
+        raise HostedDownloadError("distribution receipt is invalid")
+    matches = [item for item in records if isinstance(item, dict) and item.get("name") == archive_name]
+    if len(matches) != 1:
+        raise HostedDownloadError("distribution receipt archive is ambiguous")
+    record = matches[0]
+    source = project_root / "dist" / archive_name
+    fd = os.open(source, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC | os.O_NOFOLLOW)
+    try:
+        before = os.fstat(fd)
+        if (not stat.S_ISREG(before.st_mode) or before.st_uid != os.geteuid()
+            or before.st_nlink not in (1, 2) or before.st_mode & 0o022
+            or not 0 < before.st_size <= 16 * 1024 * 1024 * 1024):
+            raise HostedDownloadError("qualified distribution source is unsafe")
+        digest = hashlib.sha256()
+        count = 0
+        while chunk := os.read(fd, 1024 * 1024):
+            count += len(chunk)
+            if count > 16 * 1024 * 1024 * 1024:
+                raise HostedDownloadError("qualified distribution source exceeds bound")
+            digest.update(chunk)
+        after = os.fstat(fd)
+        named = os.stat(source, follow_symlinks=False)
+        if _distribution_file_identity(before) != _distribution_file_identity(after) or _distribution_file_identity(after) != _distribution_file_identity(named):
+            raise HostedDownloadError("qualified distribution source changed")
+        if record.get("sha256") != digest.hexdigest() or record.get("bytes") != before.st_size:
+            raise HostedDownloadError("distribution copy is not bound to qualified dist bytes")
+        return digest.hexdigest(), _distribution_file_identity(before)
+    finally:
+        os.close(fd)
+
+
 def verify_hosted_download(
     *,
     project_root: Path = PROJECT_ROOT,
@@ -485,19 +601,14 @@ def verify_hosted_download(
     expected_input_lexical = (
         project_root_lexical / "dist" / archive_name
     )
+    distribution_digest = None
+    distribution_source_identity = None
     if archive_input_lexical != expected_input_lexical:
-        raise HostedDownloadError(
-            "local archive must be the final dist artifact"
-        )
+        distribution_digest, distribution_source_identity = _bound_distribution_record(project_root_lexical, archive_input_lexical, archive_name)
     project_root = project_root.resolve()
     expected_archive = project_root / "dist" / archive_name
     archive_input = expected_archive if archive is None else archive
-    archive_lexical = expected_archive
-    expected_lexical = expected_archive.absolute()
-    if archive_lexical != expected_lexical:
-        raise HostedDownloadError(
-            f"local archive must be the final dist artifact: {expected_archive}"
-        )
+    archive_lexical = archive_input_lexical if distribution_digest else expected_archive
     if (
         (project_root_lexical / "dist").is_symlink()
         or archive_input_lexical.is_symlink()
@@ -548,6 +659,8 @@ def verify_hosted_download(
                 transaction_root / archive_name,
                 maximum_bytes=snapshot_limits["archive"],
             )
+            if distribution_digest and archive_snapshot.sha256 != distribution_digest:
+                raise HostedDownloadError("distribution copy changed after binding")
             sidecar_snapshot = SNAPSHOT.snapshot_release_input(
                 archive_source.with_suffix(
                     archive_source.suffix + ".sha256"
@@ -629,6 +742,9 @@ def verify_hosted_download(
             raise HostedDownloadError(
                 "release input changed during hosted verification"
             ) from error
+        if distribution_digest:
+            if _bound_distribution_record(project_root_lexical, archive_input_lexical, archive_name) != (distribution_digest, distribution_source_identity):
+                raise HostedDownloadError("qualified distribution source changed during hosted verification")
         return result
 
 

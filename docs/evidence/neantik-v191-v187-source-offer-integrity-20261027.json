@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v191-v187-source-offer-integrity-20261027",
+  "status": "PASS_EXACT_522_COMPONENTS_AND_64_FIRST_PARTY_OVERLAY_ASSETS; NOT_CANDIDATE_BOUND_OR_RELEASE_QUALIFIED",
+  "observedAtUTC": "2026-10-27T07:26:17Z",
+  "verifier": {
+    "file": "scripts/package-owned-webkit-release.py",
+    "function": "source_offer_replacements",
+    "sha256": "3fa4082a7cb7a8601cc40e26797a61db1e25e68dd5193e0846b304379224f941",
+    "origin": "/private/tmp/neantik-v184-proxy-qualification"
+  },
+  "sourceOffer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v187-proxy-source-offer-draft",
+    "manifestSHA256": "e56430557f5fc231918fb80719a9a4c1099d1854bc670438dcc35a3fd48bdc87",
+    "componentCount": 522,
+    "overlayAssetCount": 64,
+    "result": "Every manifest component matched its recorded size and SHA-256; all 8 overlay manifests and 64 first-party overlay assets matched their bound hashes."
+  },
+  "scope": "Read-only verification of the exact private V187 offer tree after V189/V190 evidence and recipe updates. The verifier checks component paths, sizes, hashes, overlay manifests and overlay assets.",
+  "limitations": [
+    "The offer is still private and not candidate-bound.",
+    "This check does not close full transitive dependency/build closure, item-level license applicability, source attribution, patents, recipient replacement/re-sign/load, app/archive notice binding, timestamp signing, notarization, publication or download-byte verification.",
+    "The Gitleaks scan covers only the exact V184 manager source archive, not all 522 components."
+  ],
+  "mutation": false,
+  "appBuild": false,
+  "signing": false,
+  "notarization": false,
+  "publication": false,
+  "nextAction": "Continue source/license/notice closure and recipient replacement/load gates; keep proxy runtime QA pending the existing secure timestamp signing boundary."
+}

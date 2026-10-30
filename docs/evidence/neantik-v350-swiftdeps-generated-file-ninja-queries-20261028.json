@@ -1,0 +1,2481 @@
+{
+  "schemaVersion": 1,
+  "id": "V350",
+  "buildNinjaSHA256": "2a28e27f417390a2f24e8dfe28b5e094e30eee2b22aae165cfbeba308dd38836",
+  "swiftdepsManifestSHA256": "34e6c4e2f5b0b25210eae181228461ae6c5ef92b5d3e1ba7b5f69af5a0167ae7",
+  "ninjaVersion": "1.13.2",
+  "records": [
+    {
+      "path": "ICU/Headers/unicode/parseerr.h",
+      "canonicalTarget": "ICU/Headers/unicode/parseerr.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/platform.h",
+      "canonicalTarget": "ICU/Headers/unicode/platform.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/ptypes.h",
+      "canonicalTarget": "ICU/Headers/unicode/ptypes.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/putil.h",
+      "canonicalTarget": "ICU/Headers/unicode/putil.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/stringoptions.h",
+      "canonicalTarget": "ICU/Headers/unicode/stringoptions.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/ubidi.h",
+      "canonicalTarget": "ICU/Headers/unicode/ubidi.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/ubrk.h",
+      "canonicalTarget": "ICU/Headers/unicode/ubrk.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/ucal.h",
+      "canonicalTarget": "ICU/Headers/unicode/ucal.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/uchar.h",
+      "canonicalTarget": "ICU/Headers/unicode/uchar.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/ucnv.h",
+      "canonicalTarget": "ICU/Headers/unicode/ucnv.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/ucnv_err.h",
+      "canonicalTarget": "ICU/Headers/unicode/ucnv_err.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/ucol.h",
+      "canonicalTarget": "ICU/Headers/unicode/ucol.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/ucoleitr.h",
+      "canonicalTarget": "ICU/Headers/unicode/ucoleitr.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/uconfig.h",
+      "canonicalTarget": "ICU/Headers/unicode/uconfig.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/ucpmap.h",
+      "canonicalTarget": "ICU/Headers/unicode/ucpmap.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/ucsdet.h",
+      "canonicalTarget": "ICU/Headers/unicode/ucsdet.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/ucurr.h",
+      "canonicalTarget": "ICU/Headers/unicode/ucurr.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/udat.h",
+      "canonicalTarget": "ICU/Headers/unicode/udat.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/udatpg.h",
+      "canonicalTarget": "ICU/Headers/unicode/udatpg.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/udisplaycontext.h",
+      "canonicalTarget": "ICU/Headers/unicode/udisplaycontext.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/uenum.h",
+      "canonicalTarget": "ICU/Headers/unicode/uenum.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/ufieldpositer.h",
+      "canonicalTarget": "ICU/Headers/unicode/ufieldpositer.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/uformattable.h",
+      "canonicalTarget": "ICU/Headers/unicode/uformattable.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/uidna.h",
+      "canonicalTarget": "ICU/Headers/unicode/uidna.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/uiter.h",
+      "canonicalTarget": "ICU/Headers/unicode/uiter.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/uloc.h",
+      "canonicalTarget": "ICU/Headers/unicode/uloc.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/umachine.h",
+      "canonicalTarget": "ICU/Headers/unicode/umachine.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/umisc.h",
+      "canonicalTarget": "ICU/Headers/unicode/umisc.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/unorm.h",
+      "canonicalTarget": "ICU/Headers/unicode/unorm.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/unorm2.h",
+      "canonicalTarget": "ICU/Headers/unicode/unorm2.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/unum.h",
+      "canonicalTarget": "ICU/Headers/unicode/unum.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/unumberoptions.h",
+      "canonicalTarget": "ICU/Headers/unicode/unumberoptions.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/urename.h",
+      "canonicalTarget": "ICU/Headers/unicode/urename.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/uscript.h",
+      "canonicalTarget": "ICU/Headers/unicode/uscript.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/usearch.h",
+      "canonicalTarget": "ICU/Headers/unicode/usearch.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/uset.h",
+      "canonicalTarget": "ICU/Headers/unicode/uset.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/ustring.h",
+      "canonicalTarget": "ICU/Headers/unicode/ustring.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/utext.h",
+      "canonicalTarget": "ICU/Headers/unicode/utext.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/utf.h",
+      "canonicalTarget": "ICU/Headers/unicode/utf.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/utf16.h",
+      "canonicalTarget": "ICU/Headers/unicode/utf16.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/utf8.h",
+      "canonicalTarget": "ICU/Headers/unicode/utf8.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/utf_old.h",
+      "canonicalTarget": "ICU/Headers/unicode/utf_old.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/utypes.h",
+      "canonicalTarget": "ICU/Headers/unicode/utypes.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/uvernum.h",
+      "canonicalTarget": "ICU/Headers/unicode/uvernum.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "ICU/Headers/unicode/uversion.h",
+      "canonicalTarget": "ICU/Headers/unicode/uversion.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "JavaScriptCore.framework/Modules/module.modulemap",
+      "canonicalTarget": "JavaScriptCore.framework/Versions/A/Modules/module.modulemap",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "JavaScriptCore.framework/Modules/module.private.modulemap",
+      "canonicalTarget": "JavaScriptCore.framework/Versions/A/Modules/module.private.modulemap",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "Source/WebCore/PAL/pal/PAL_SwiftRebuildTrigger.swift",
+      "canonicalTarget": "Source/WebCore/PAL/pal/PAL_SwiftRebuildTrigger.swift",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "Source/WebCore/WebCore_SwiftRebuildTrigger.swift",
+      "canonicalTarget": "Source/WebCore/WebCore_SwiftRebuildTrigger.swift",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "Source/WebGPU/WebGPU/WebGPU_SwiftRebuildTrigger.swift",
+      "canonicalTarget": "Source/WebGPU/WebGPU/WebGPU_SwiftRebuildTrigger.swift",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "Source/WebKit/WebKit.swiftmodule",
+      "canonicalTarget": "Source/WebKit/WebKit.swiftmodule",
+      "status": "edge",
+      "rule": "Swift_COMPILER__WebKit_unscanned_Release",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "Source/WebKit/WebKit_SwiftRebuildTrigger.swift",
+      "canonicalTarget": "Source/WebKit/WebKit_SwiftRebuildTrigger.swift",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebCore.framework/Modules/module.modulemap",
+      "canonicalTarget": "WebCore.framework/Versions/A/Modules/module.modulemap",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebCore.framework/Modules/module.private.modulemap",
+      "canonicalTarget": "WebCore.framework/Versions/A/Modules/module.private.modulemap",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebCore/WebKitAvailability.h",
+      "canonicalTarget": "WebCore/WebKitAvailability.h",
+      "status": "no-edge",
+      "rule": null,
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebGPU.framework/Modules/module.modulemap",
+      "canonicalTarget": "WebGPU.framework/Versions/A/Modules/module.modulemap",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebGPU.framework/Modules/module.private.modulemap",
+      "canonicalTarget": "WebGPU.framework/Versions/A/Modules/module.private.modulemap",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOM.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOM.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMAbstractView.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMAbstractView.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMAttr.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMAttr.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMBlob.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMBlob.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCDATASection.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCDATASection.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSS.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSS.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSSCharsetRule.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSSCharsetRule.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSSFontFaceRule.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSSFontFaceRule.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSSImportRule.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSSImportRule.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSSMediaRule.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSSMediaRule.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSSPageRule.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSSPageRule.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSSPrimitiveValue.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSSPrimitiveValue.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSSRule.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSSRule.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSSRuleList.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSSRuleList.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSSStyleDeclaration.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSSStyleDeclaration.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSSStyleRule.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSSStyleRule.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSSStyleSheet.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSSStyleSheet.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSSUnknownRule.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSSUnknownRule.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSSValue.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSSValue.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCSSValueList.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCSSValueList.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCharacterData.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCharacterData.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMComment.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMComment.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCore.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCore.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMCounter.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMCounter.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMDocument.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMDocument.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMDocumentFragment.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMDocumentFragment.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMDocumentType.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMDocumentType.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMEntity.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMEntity.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMEntityReference.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMEntityReference.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMEvent.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMEvent.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMEventException.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMEventException.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMEventListener.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMEventListener.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMEventTarget.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMEventTarget.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMEvents.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMEvents.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMException.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMException.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMExtensions.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMExtensions.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMFile.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMFile.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMFileList.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMFileList.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTML.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTML.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLAnchorElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLAnchorElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLAppletElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLAppletElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLAreaElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLAreaElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLBRElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLBRElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLBaseElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLBaseElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLBaseFontElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLBaseFontElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLBodyElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLBodyElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLButtonElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLButtonElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLCollection.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLCollection.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLDListElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLDListElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLDirectoryElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLDirectoryElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLDivElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLDivElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLDocument.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLDocument.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLEmbedElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLEmbedElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLFieldSetElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLFieldSetElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLFontElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLFontElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLFormElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLFormElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLFrameElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLFrameElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLFrameSetElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLFrameSetElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLHRElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLHRElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLHeadElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLHeadElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLHeadingElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLHeadingElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLHtmlElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLHtmlElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLIFrameElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLIFrameElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLImageElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLImageElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLInputElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLInputElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLLIElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLLIElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLLabelElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLLabelElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLLegendElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLLegendElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLLinkElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLLinkElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLMapElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLMapElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLMarqueeElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLMarqueeElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLMenuElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLMenuElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLMetaElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLMetaElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLModElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLModElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLOListElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLOListElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLObjectElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLObjectElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLOptGroupElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLOptGroupElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLOptionElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLOptionElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLOptionsCollection.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLOptionsCollection.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLParagraphElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLParagraphElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLParamElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLParamElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLPreElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLPreElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLQuoteElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLQuoteElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLScriptElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLScriptElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLSelectElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLSelectElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLStyleElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLStyleElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLTableCaptionElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLTableCaptionElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLTableCellElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLTableCellElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLTableColElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLTableColElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLTableElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLTableElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLTableRowElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLTableRowElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLTableSectionElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLTableSectionElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLTextAreaElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLTextAreaElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLTitleElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLTitleElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMHTMLUListElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMHTMLUListElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMImplementation.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMImplementation.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMKeyboardEvent.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMKeyboardEvent.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMMediaList.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMMediaList.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMMouseEvent.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMMouseEvent.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMMutationEvent.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMMutationEvent.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMNamedNodeMap.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMNamedNodeMap.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMNode.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMNode.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMNodeFilter.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMNodeFilter.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMNodeIterator.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMNodeIterator.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMNodeList.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMNodeList.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMObject.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMObject.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMOverflowEvent.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMOverflowEvent.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMProcessingInstruction.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMProcessingInstruction.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMProgressEvent.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMProgressEvent.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMRGBColor.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMRGBColor.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMRange.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMRange.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMRangeException.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMRangeException.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMRanges.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMRanges.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMRect.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMRect.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMStyleSheet.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMStyleSheet.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMStyleSheetList.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMStyleSheetList.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMStylesheets.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMStylesheets.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMText.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMText.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMTraversal.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMTraversal.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMTreeWalker.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMTreeWalker.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMUIEvent.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMUIEvent.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMViews.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMViews.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMWheelEvent.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMWheelEvent.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMXPath.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMXPath.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMXPathException.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMXPathException.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMXPathExpression.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMXPathExpression.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMXPathNSResolver.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMXPathNSResolver.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/DOMXPathResult.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/DOMXPathResult.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WKWebView.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WKWebView.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebArchive.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebArchive.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebBackForwardList.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebBackForwardList.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebDOMOperations.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebDOMOperations.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebDataSource.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebDataSource.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebDocument.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebDocument.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebDownload.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebDownload.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebEditingDelegate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebEditingDelegate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebFrame.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebFrame.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebFrameLoadDelegate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebFrameLoadDelegate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebFrameView.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebFrameView.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebHistory.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebHistory.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebHistoryItem.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebHistoryItem.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebKitAvailability.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebKitAvailability.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebKitErrors.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebKitErrors.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebPlugin.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebPlugin.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebPluginContainer.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebPluginContainer.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebPluginViewFactory.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebPluginViewFactory.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebPolicyDelegate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebPolicyDelegate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebPreferences.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebPreferences.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebResource.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebResource.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebResourceLoadDelegate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebResourceLoadDelegate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebScriptObject.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebScriptObject.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebUIDelegate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebUIDelegate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Headers/WebView.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/Headers/WebView.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Modules/WebKit.swiftcrossimport/SwiftUI.swiftoverlay",
+      "canonicalTarget": "WebKit.framework/Versions/A/Modules/WebKit.swiftcrossimport/SwiftUI.swiftoverlay",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Modules/module.modulemap",
+      "canonicalTarget": "WebKit.framework/Versions/A/Modules/module.modulemap",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/Modules/module.private.modulemap",
+      "canonicalTarget": "WebKit.framework/Versions/A/Modules/module.private.modulemap",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/DOMDocumentFragmentPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/DOMDocumentFragmentPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/DOMDocumentPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/DOMDocumentPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/DOMHTMLCanvasElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/DOMHTMLCanvasElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/DOMHTMLElementPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/DOMHTMLElementPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/DOMHTMLInputElementPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/DOMHTMLInputElementPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/DOMHTMLMediaElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/DOMHTMLMediaElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/DOMHTMLVideoElement.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/DOMHTMLVideoElement.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/DOMMediaError.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/DOMMediaError.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/DOMNodePrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/DOMNodePrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/DOMPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/DOMPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/DOMTextEvent.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/DOMTextEvent.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/DOMTimeRanges.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/DOMTimeRanges.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WKPreferencesPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WKPreferencesPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WKWebViewPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WKWebViewPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebAllowDenyPolicyListener.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebAllowDenyPolicyListener.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebAutocapitalizeTypes.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebAutocapitalizeTypes.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebBackForwardListPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebBackForwardListPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebCache.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebCache.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebCoreStatistics.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebCoreStatistics.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebCreateFragmentInternal.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebCreateFragmentInternal.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebDOMOperationsPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebDOMOperationsPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebDataSourcePrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebDataSourcePrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebDatabaseManagerPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebDatabaseManagerPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebDatabaseQuotaManager.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebDatabaseQuotaManager.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebDefaultPolicyDelegate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebDefaultPolicyDelegate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebDeviceOrientation.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebDeviceOrientation.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebDeviceOrientationProvider.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebDeviceOrientationProvider.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebDeviceOrientationProviderMock.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebDeviceOrientationProviderMock.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebDocumentPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebDocumentPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebDynamicScrollBarsView.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebDynamicScrollBarsView.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebEditingDelegatePrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebEditingDelegatePrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebFeature.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebFeature.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebFormDelegate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebFormDelegate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebFormDelegatePrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebFormDelegatePrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebFrameLoadDelegatePrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebFrameLoadDelegatePrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebFramePrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebFramePrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebFrameViewPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebFrameViewPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebGeolocationPosition.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebGeolocationPosition.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebHTMLRepresentation.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebHTMLRepresentation.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebHTMLRepresentationPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebHTMLRepresentationPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebHTMLView.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebHTMLView.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebHTMLViewPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebHTMLViewPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebHistoryItemPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebHistoryItemPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebHistoryPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebHistoryPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebIconDatabase.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebIconDatabase.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebInspector.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebInspector.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebInspectorPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebInspectorPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebJavaScriptTextInputPanel.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebJavaScriptTextInputPanel.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebKitErrorsPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebKitErrorsPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebKitNSStringExtras.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebKitNSStringExtras.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebKitStatistics.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebKitStatistics.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebLocalizableStrings.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebLocalizableStrings.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebNSEventExtras.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebNSEventExtras.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebNSFileManagerExtras.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebNSFileManagerExtras.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebNSPasteboardExtras.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebNSPasteboardExtras.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebNSURLExtras.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebNSURLExtras.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebNSUserDefaultsExtras.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebNSUserDefaultsExtras.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebNSViewExtras.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebNSViewExtras.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebNSWindowExtras.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebNSWindowExtras.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebNavigationData.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebNavigationData.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebNotification.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebNotification.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebPanelAuthenticationHandler.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebPanelAuthenticationHandler.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebPluginContainerPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebPluginContainerPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebPluginDatabase.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebPluginDatabase.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebPluginPackagePrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebPluginPackagePrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebPluginViewFactoryPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebPluginViewFactoryPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebPolicyDelegatePrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebPolicyDelegatePrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebPreferenceKeysPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebPreferenceKeysPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebPreferencesPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebPreferencesPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebQuotaManager.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebQuotaManager.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebResourceLoadDelegatePrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebResourceLoadDelegatePrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebResourcePrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebResourcePrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebScriptDebugDelegate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebScriptDebugDelegate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebScriptWorld.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebScriptWorld.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebSecurityOriginPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebSecurityOriginPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebStorageManagerPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebStorageManagerPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebStringTruncator.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebStringTruncator.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebTextIterator.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebTextIterator.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebUIDelegatePrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebUIDelegatePrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebURLsWithTitles.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebURLsWithTitles.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebUserContentURLPattern.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebUserContentURLPattern.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit.framework/PrivateHeaders/WebViewPrivate.h",
+      "canonicalTarget": "WebKit.framework/Versions/A/PrivateHeaders/WebViewPrivate.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit/DerivedSources/GeneratedSerializers.h",
+      "canonicalTarget": "WebKit/DerivedSources/GeneratedSerializers.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit/DerivedSources/IPCTesterReceiverMessageReceiver.swift",
+      "canonicalTarget": "WebKit/DerivedSources/IPCTesterReceiverMessageReceiver.swift",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit/DerivedSources/IPCTesterReceiverMessages.h",
+      "canonicalTarget": "WebKit/DerivedSources/IPCTesterReceiverMessages.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit/DerivedSources/MessageNames.h",
+      "canonicalTarget": "WebKit/DerivedSources/MessageNames.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit/DerivedSources/SharedPreferencesForWebProcess.h",
+      "canonicalTarget": "WebKit/DerivedSources/SharedPreferencesForWebProcess.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit/DerivedSources/WebBackForwardListMessageReceiver.swift",
+      "canonicalTarget": "WebKit/DerivedSources/WebBackForwardListMessageReceiver.swift",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit/DerivedSources/WebBackForwardListMessages.h",
+      "canonicalTarget": "WebKit/DerivedSources/WebBackForwardListMessages.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit/DerivedSources/WebDriverBidiBackendDispatchers.h",
+      "canonicalTarget": "WebKit/DerivedSources/WebDriverBidiBackendDispatchers.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit/DerivedSources/WebDriverBidiProtocolObjects.h",
+      "canonicalTarget": "WebKit/DerivedSources/WebDriverBidiProtocolObjects.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit/DerivedSources/WebKitLogDefinitions.h",
+      "canonicalTarget": "WebKit/DerivedSources/WebKitLogDefinitions.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    },
+    {
+      "path": "WebKit/DerivedSources/WebPreferencesDefinitions.h",
+      "canonicalTarget": "WebKit/DerivedSources/WebPreferencesDefinitions.h",
+      "status": "edge",
+      "rule": "CUSTOM_COMMAND",
+      "inputs": [],
+      "returnCode": 0
+    }
+  ],
+  "counts": {
+    "no-edge": 46,
+    "edge": 262
+  },
+  "rules": {
+    "CUSTOM_COMMAND": 261,
+    "Swift_COMPILER__WebKit_unscanned_Release": 1
+  }
+}

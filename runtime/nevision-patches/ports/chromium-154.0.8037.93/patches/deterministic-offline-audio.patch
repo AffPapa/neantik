@@ -1,0 +1,61 @@
+diff --git a/third_party/blink/renderer/modules/webaudio/offline_audio_context.cc b/third_party/blink/renderer/modules/webaudio/offline_audio_context.cc
+--- a/third_party/blink/renderer/modules/webaudio/offline_audio_context.cc
++++ b/third_party/blink/renderer/modules/webaudio/offline_audio_context.cc
+@@ -25,8 +25,12 @@
+ 
+ #include "third_party/blink/renderer/modules/webaudio/offline_audio_context.h"
+ 
++#include <algorithm>
++#include <cmath>
++
+ #include "base/metrics/histogram_functions.h"
+ #include "base/metrics/histogram_macros.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "media/base/audio_glitch_info.h"
+ #include "third_party/blink/public/platform/platform.h"
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise_resolver.h"
+@@ -55,6 +58,36 @@ namespace blink {
+ 
+ namespace {
+ 
++// Keep OfflineAudio output stable for a profile without changing the reported
++// sample rate, frame count, or audio graph. The perturbation is deterministic,
++// bounded far below audible amplitude, and applied only to sparse samples
++// after rendering has completed.
++void ApplyNeAntikOfflineAudioFingerprint(AudioBuffer* buffer) {
++  if (!buffer || !ungoogled::nevision::GetProfileSeed()) {
++    return;
++  }
++  constexpr size_t kSampleStride = 128;
++  constexpr float kNoiseStep = 0.0000001f;
++  for (unsigned channel = 0; channel < buffer->numberOfChannels(); ++channel) {
++    auto channel_data = buffer->getChannelData(channel);
++    if (!channel_data) {
++      continue;
++    }
++    auto samples = channel_data->AsSpan();
++    for (size_t index = 0; index < samples.size(); index += kSampleStride) {
++      if (!std::isfinite(samples[index])) {
++        continue;
++      }
++      const uint32_t salt_index =
++          static_cast<uint32_t>(index) ^ (channel * 0x9e3779b9u);
++      const int bucket = ungoogled::nevision::GetProfileByte(
++          "offline-audio-sample", salt_index, 9);
++      const float noise = static_cast<float>(bucket - 4) * kNoiseStep;
++      samples[index] = std::clamp(samples[index] + noise, -1.0f, 1.0f);
++    }
++  }
++}
++
+ OfflineAudioContext* CreateOfflineAudioContext(
+     ExecutionContext* context,
+     unsigned number_of_channels,
+@@ -429,6 +462,7 @@ void OfflineAudioContext::FireCompletionEvent() {
+     if (!rendered_buffer) {
+       return;
+     }
++    ApplyNeAntikOfflineAudioFingerprint(rendered_buffer);
+ 
+     // Call the offline rendering completion event listener and resolve the
+     // promise too.

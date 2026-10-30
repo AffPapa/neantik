@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v265-recipient-branding-lock-contract-review-20261027",
+  "observedAtUTC": "2026-10-27T15:00:45Z",
+  "status": "RECIPIENT_CHROMIUM_BRANDING_LOCK_BRIDGE_AND_RECIPE_CONTRACTS_PASS; SOURCE_OFFER_AND_END_TO_END_RECIPIENT_BUILD_OPEN",
+  "scope": "Narrow workflow correction and temporary fixture validation. No Chromium/WebKit build, production candidate mutation, signing identity or key use, browser launch, notarization or publication.",
+  "draftPath": "/private/tmp/neantik-release-v1/docs/recipient-work/V265-RECIPIENT-PRODUCTION-RECIPE-DRAFT.md",
+  "draftSHA256": "0fad9cac34f675dbf6b0582d33af345006a5131364f7ecc2c0a0381c42472158",
+  "inputSHA256": {
+    "scripts/brand-runtime-integration.sh": "8c009709e756b0be089fa83a8aa97bef33c4a8d21241449a6613db4ce858985d",
+    "scripts/package-integrated-app.sh": "49122b057d71481f121048dc190c56a3af55d0b384d80398a13089b496db1697",
+    "docs/RUNTIME_INTEGRATION_BUILD.md": "6ec6dce7cfc58a1e81444b4e5ccd67bc605231e162ba0c7b1b41bdba503bc337"
+  },
+  "contractChecks": {
+    "rawChromiumBrandStep": true,
+    "explicitLockAccepted": true,
+    "lockValidatedBeforeUse": true,
+    "candidateVersionCompared": true,
+    "packagingUsesBrandedApp": true,
+    "packagerAcceptsMatchingInputs": true,
+    "legacyModeDisclosed": true,
+    "historicalDocsCorrected": true,
+    "frozenOfferBoundaryDisclosed": true
+  },
+  "fixtureChecks": {
+    "bashSyntax": "PASS",
+    "explicit156048Lock": "PASS",
+    "mismatchedLockRejectedBeforeCopy": "PASS",
+    "fixtureSigning": "ad-hoc temporary app only"
+  },
+  "releaseBoundary": "The recipe remains outside immutable V246/b960. Independent Chromium source/build acquisition, final source/notices closure, owned-WebKit recipient build, recipient signing/relink/load, final timestamped ZIP/DMG, notarization and public delivery remain open.",
+  "releaseQualified": false
+}

@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "channel": "public-alpha",
+  "architecture": "arm64",
+  "minimumOS": "14.0",
+  "version": "0.8.21",
+  "build": 133,
+  "sourceCommit": "3ed353b0c963fe9db4a06ac5b79b147a252be101",
+  "tag": "v0.8.21",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.8.21",
+  "siteUrl": "https://browser.free/",
+  "rollbackRelease": "v0.8.20",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "sourceVariant": "component-completion-v1",
+    "rebuilt": true,
+    "builtDuringPackaging": false,
+    "executableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+    "frameworkSHA256": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7",
+    "closureSHA256": "5902be29e448d51ab0e2223d6539fbe5156466fee8967e2882dc1bd122a3ff04",
+    "evidenceClosureSHA256": "dbebc0c252584fb6c087eaffefecf158556ec29e01670d090681dddf7713a726",
+    "safeBrowsingEnabled": false,
+    "latestEarlyStable": false,
+    "sourceContractSHA256": "a7e6ee9d61543784d74d4b8b1ee0aaa155dd4b97db8bb30aaf27e239486fb10e",
+    "backportedFixes": 8,
+    "sourceReviewedFixes": 10
+  },
+  "qualificationEnvironment": {
+    "macOS": "27.0",
+    "architecture": "arm64",
+    "dateUTC": "2026-10-16",
+    "headed": true
+  },
+  "managerSHA256": "f912efaeddad22aaea3f13957af125662bcfb8ac068b13c5177579d38b2585d9",
+  "candidateManifestSHA256": "a707f4c1a2ce68f599e9c517c162c2f61e2e40a466e04f9fdc578f7a919b3bdf",
+  "candidateSourceBindingSHA256": "37f065dbe11753e3d9bdbd1e7f0604422ddc938a23fcb894cb9deda622b4b16f",
+  "artifacts": [
+    {
+      "name": "NeAntik-0.8.21-arm64-notarized.zip",
+      "sha256": "f9822d901b46b9388851e20dff916c0e3ea86e5579229ec325559adc126ca6e0",
+      "sizeBytes": 191318235,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.21/NeAntik-0.8.21-arm64-notarized.zip"
+    },
+    {
+      "name": "NeAntik-0.8.21-arm64-notarized.dmg",
+      "sha256": "e2cd541c7680bac4f71dc5f9f262ff5969f41279f9312ca077298d73ec1f2ba9",
+      "sizeBytes": 216026681,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.21/NeAntik-0.8.21-arm64-notarized.dmg"
+    }
+  ],
+  "checksumFiles": [
+    {
+      "name": "NeAntik-0.8.21-arm64-notarized.zip.sha256",
+      "sha256": "9e97c77914b091bcbee9b010e0a1f862e3e3f282391093bc0c06cae0dbe39aab",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.21/NeAntik-0.8.21-arm64-notarized.zip.sha256"
+    },
+    {
+      "name": "NeAntik-0.8.21-arm64-notarized.dmg.sha256",
+      "sha256": "c313d4246bf95db795d6ba64966899c0651b40d8fb4ec3d1845d3978f9465747",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.21/NeAntik-0.8.21-arm64-notarized.dmg.sha256"
+    }
+  ],
+  "checks": {
+    "exactHeaded": "First attempt schema8/9 collected and verified; exact133 app; DeviceMemory JS/navigation/subresource hints all8; owned processes drained",
+    "updaterNative": "Two newsource DEBUG signed QA controls PASS: real commit and preACK rollback; both slots retained; children exited; NOT installed132 shipping feed hop",
+    "doctor": "13/13PASS",
+    "localDirect": "ZIP/DMG signatures, Apple Accepted, stapling, Gatekeeper and integrity PASS",
+    "hostedZIP": "Anonymous SHA256/size equal;candidate/evidence binding,privacy,notarization,Gatekeeper PASS",
+    "hostedDMG": "Anonymous SHA256/size equal;image/signature/notarization/Gatekeeper PASS",
+    "downloadedMCP": "Exact downloaded133 stdio18management/7read;requestedfontPolicy create/edit/persist/restart PASS;no browserheaded repeat;applied policy evidence separate",
+    "publicChecksums": "Both anonymous sidecars byte-identical to qualified export",
+    "tagAndLatest": "Anonymous Latestv0.8.21/release414571115/tag3ed353b0c963fe9db4a06ac5b79b147a252be101 PASS",
+    "sourceSwift": "Full1642/194/71skip had one introduced historical/publication fixture error; corrected exact saved publication review; affected14/14PASS. Original fullFAIL retained; no full rerun.",
+    "sourcePython": "Full1609/19skip PASS562.296s; loopback/ownPID preflight; native opt-in environment excluded",
+    "securityResearch": "Prior132 bounded9 controls retained; security source postimages and tools preserved by new fullFD; not replayed or all upstream native suites",
+    "fontResearch": "Prior132 configured422 checks retained; font postimages/tools preserved; new exact133 headed gate separate; no repeated422 claim",
+    "runtimeEvidence": "One363.537s jobs2 browser/focused-test build; actual4Cpp PASS and old4FAIL; fullFD1062659/83COPY/3changes;16signedMachO; headed2 local refusal/no requests, not route/CUP/globalDNS proof",
+    "site": "Anonymous API still0.8.16/build128;automaticcredentialtransportreviewblock unchanged;no workaround",
+    "secrets": "Recognized secret/path scans: current1894files PASS; prior reachable history6316blobs/10853objects PASS; new staged contents scanned; no absolute privacy guarantee"
+  },
+  "signing": {
+    "teamID": "H6VGU2M6JD",
+    "certificateSHA1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "notarization": "Accepted",
+    "stapling": "pass",
+    "gatekeeper": "accepted",
+    "zipSubmissionID": "b8c43159-20b3-49dc-bbfb-4e5b17bf97ba",
+    "dmgSubmissionID": "1820064d-01c0-4c16-91bd-130ad2fb25c6"
+  },
+  "migrations": {
+    "metadataSchemaChanged": false,
+    "profileIdentitySeedRegenerated": false,
+    "browserDataFormatChanged": false,
+    "backupArchiveSchemaChanged": false,
+    "rollback": "Public132 retained; same Chromium base, no metadata/data/identity migration. Quit before replacing app; preserve profile folders."
+  },
+  "site": {
+    "status": "blocked-by-automatic-approval-review",
+    "previousSavedVersion": 153,
+    "previousAppVersion": "0.8.16",
+    "liveVersion": "0.8.16",
+    "liveBuild": 128,
+    "liveCheckedDateUTC": "2026-10-16"
+  },
+  "publicationState": "GitHub-published-and-hosted-verified;Site153/app128blocked",
+  "limitations": [
+    "Public alpha; mandatory1.0 acceptance remains open",
+    "Chromium156.0.8078.12 plus inherited8backports/10fix source review; not latest Early Stable or universal security qualification",
+    "Component refusal/no-request evidence covers bounded foreground fixture, not all global DNS/UDP/background traffic",
+    "Qualified on macOS27 ARM64 only; otherhardware/macOS14/secondarydisplay/media remain open",
+    "Installed132 updater has no component record; manual signed DMG/ZIP bootstrap. Newsource QA controls are not a shipping feed hop",
+    "WebKit remains preview/systemidentity; no full fingerprint substitution claim",
+    "Safe Browsing disabled; no universal undetectability claim",
+    "Sites publication separately blocked; recheck live metadata after GitHub publication"
+  ],
+  "releaseQualified": true,
+  "major1_0Complete": false
+}

@@ -3,24 +3,42 @@ import Foundation
 struct NeAntikLaunchIntent: Equatable, Sendable {
     static let releaseFingerprintAuditArgument =
         "--neantik-release-fingerprint-audit"
+    static let releaseUpdateAuditArgument = "--neantik-release-update-audit"
     static let fingerprintEnrollmentArgument =
         "--neantik-enroll-fingerprint-evidence"
+    static let fingerprintRetirementArgument = "--neantik-retire-fingerprint-evidence"
+    static let candidateAppArgument = "--candidate-app"
     static let candidateManifestArgument = "--candidate-manifest"
     static let outputArgument = "--output"
+    static let mcpStdioArgument = "--neantik-mcp-stdio"
+    static let mcpManagementArgument = "--allow-profile-management"
+    static let dataRootArgument = "--data-root"
+    static let proxyRelayOwnerArgument = "--neantik-proxy-relay-owner-v1"
+    static let webKitHostChildArgument = "--neantik-webkit-host-child-v1"
 
     enum Mode: Equatable, Sendable {
         case interactive(
-            releaseFingerprintAudit: FingerprintEvidenceReleaseRequest?
+            releaseFingerprintAudit: FingerprintEvidenceReleaseRequest?,
+            automaticallyOpensFingerprintAudit: Bool = true
         )
         case fingerprintEnrollment(outputURL: URL)
+        case fingerprintRetirement(FingerprintEvidenceRetirementRequest)
+        case mcpStdio(dataRoot: URL)
+        case mcpManagement(dataRoot: URL)
+        case proxyRelayOwner
+        case webKitHostChild
         case invalidControlArguments
     }
 
     let mode: Mode
 
+    /// Both audit modes need a visible manager window. Authentication of the
+    /// selected release context still happens before the app creates scenes.
+    var opensAuditWindow: Bool { releaseFingerprintAuditRequest != nil }
+
     var opensFingerprintAudit: Bool {
-        if case let .interactive(releaseFingerprintAudit) = mode {
-            return releaseFingerprintAudit != nil
+        if case let .interactive(request, automatic) = mode {
+            return request != nil && automatic
         }
         return false
     }
@@ -28,10 +46,17 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     var releaseFingerprintAuditRequest:
         FingerprintEvidenceReleaseRequest?
     {
-        if case let .interactive(request) = mode {
+        if case let .interactive(request, _) = mode {
             return request
         }
         return nil
+    }
+
+    var requiresUpdateAuditAuthority: Bool {
+        if case let .interactive(request, automatic) = mode {
+            return request != nil && !automatic
+        }
+        return false
     }
 
     static func applicationBundleURL(
@@ -56,6 +81,46 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     }
 
     static func parse(arguments: [String]) -> Self {
+        if arguments.count == 8,
+           isCanonicalAbsoluteExecutablePath(arguments[0]),
+           arguments[1] == fingerprintRetirementArgument,
+           arguments[2] == candidateAppArgument,
+           isCanonicalAbsoluteFilePath(arguments[3]),
+           arguments[3].hasSuffix("/NeAntik.app"),
+           arguments[4] == candidateManifestArgument,
+           isCanonicalAbsoluteFilePath(arguments[5]),
+           arguments[6] == outputArgument,
+           isCanonicalAbsoluteFilePath(arguments[7]),
+           URL(fileURLWithPath: arguments[7]).lastPathComponent == "fingerprint-retirement.json",
+           arguments[5] != arguments[7] {
+            return Self(mode: .fingerprintRetirement(.init(
+                candidateAppURL: URL(fileURLWithPath: arguments[3], isDirectory: true),
+                candidateManifestURL: URL(fileURLWithPath: arguments[5]),
+                outputURL: URL(fileURLWithPath: arguments[7]))))
+        }
+        if arguments.count == 2, isCanonicalAbsoluteExecutablePath(arguments[0]), arguments[1] == proxyRelayOwnerArgument {
+            return Self(mode: .proxyRelayOwner)
+        }
+        if arguments.count == 2,
+           isCanonicalWebKitHostExecutablePath(arguments[0]),
+           arguments[1] == webKitHostChildArgument {
+            return Self(mode: .webKitHostChild)
+        }
+        if arguments.count == 5, arguments[4] == mcpManagementArgument,
+           isCanonicalAbsoluteExecutablePath(arguments[0]), arguments[1] == mcpStdioArgument,
+           arguments[2] == dataRootArgument, isSafeAbsoluteMCPRoot(arguments[3]) {
+            return Self(mode: .mcpManagement(dataRoot: URL(fileURLWithPath: arguments[3], isDirectory: true)))
+        }
+        if arguments.count == 4,
+           isCanonicalAbsoluteExecutablePath(arguments[0]),
+           arguments[1] == mcpStdioArgument,
+           arguments[2] == dataRootArgument,
+           isSafeAbsoluteMCPRoot(arguments[3])
+        {
+            return Self(mode: .mcpStdio(
+                dataRoot: URL(fileURLWithPath: arguments[3], isDirectory: true)
+            ))
+        }
         if arguments.count == 4,
            isCanonicalAbsoluteExecutablePath(arguments[0]),
            arguments[1] == fingerprintEnrollmentArgument,
@@ -78,13 +143,17 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         }
         if arguments.count == 6,
            isCanonicalAbsoluteExecutablePath(arguments[0]),
-           arguments[1] == releaseFingerprintAuditArgument,
+           [releaseFingerprintAuditArgument, releaseUpdateAuditArgument].contains(arguments[1]),
            arguments[2] == candidateManifestArgument,
            isCanonicalAbsoluteFilePath(arguments[3]),
            arguments[4] == outputArgument,
            isCanonicalAbsoluteFilePath(arguments[5]),
            arguments[3] != arguments[5]
         {
+            let updateAudit = arguments[1] == releaseUpdateAuditArgument
+            if updateAudit && !isUpdateAuditOutput(arguments[5]) {
+                return Self(mode: .invalidControlArguments)
+            }
             return Self(
                 mode: .interactive(
                     releaseFingerprintAudit:
@@ -95,15 +164,22 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
                             evidenceOutputURL: URL(
                                 fileURLWithPath: arguments[5]
                             )
-                        )
+                        ),
+                    automaticallyOpensFingerprintAudit: !updateAudit
                 )
             )
         }
         if arguments.contains(where: {
-            $0 == outputArgument ||
+            $0.hasPrefix("--neantik-qualify-backup-scope") || $0.hasPrefix("--neantik-qualify-relay-owner") || $0.hasPrefix(proxyRelayOwnerArgument) || $0.hasPrefix(webKitHostChildArgument) || $0.hasPrefix(mcpManagementArgument) ||
+                $0 == outputArgument ||
+                $0 == dataRootArgument ||
+                $0.hasPrefix(mcpStdioArgument) ||
                 $0 == candidateManifestArgument ||
                 $0.hasPrefix(fingerprintEnrollmentArgument) ||
-                $0.hasPrefix(releaseFingerprintAuditArgument)
+                $0.hasPrefix(fingerprintRetirementArgument) ||
+                $0 == candidateAppArgument ||
+                $0.hasPrefix(releaseFingerprintAuditArgument) ||
+                $0.hasPrefix(releaseUpdateAuditArgument)
         }) {
             return Self(mode: .invalidControlArguments)
         }
@@ -112,10 +188,29 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         )
     }
 
+    private static func isUpdateAuditOutput(_ path: String) -> Bool {
+        let url = URL(fileURLWithPath: path)
+        guard url.lastPathComponent == "update-audit.json" else { return false }
+        let parent = url.deletingLastPathComponent()
+        let prefix = "neantik-update-audit-"
+        guard parent.deletingLastPathComponent().path == "/private/tmp",
+              parent.lastPathComponent.hasPrefix(prefix) else { return false }
+        let identifier = String(parent.lastPathComponent.dropFirst(prefix.count))
+        return UUID(uuidString: identifier)?.uuidString.lowercased() == identifier
+    }
+
     private static func isCanonicalAbsoluteOutputPath(
         _ path: String
     ) -> Bool {
         isCanonicalAbsoluteFilePath(path)
+    }
+
+    private static func isSafeAbsoluteMCPRoot(_ path: String) -> Bool {
+        guard path.hasPrefix("/"), path != "/",
+              !path.hasSuffix("/"), !path.contains("\u{0}")
+        else { return false }
+        return path.split(separator: "/", omittingEmptySubsequences: false)
+            .dropFirst().allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." }
     }
 
     private static func isCanonicalAbsoluteFilePath(
@@ -145,8 +240,25 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     private static func isCanonicalAbsoluteExecutablePath(
         _ path: String
     ) -> Bool {
-        path.hasPrefix("/") &&
+        // Pure syntax check: the lifecycle resolves the actual kernel path
+        // independently. Foundation standardization can rewrite an existing
+        // /private/tmp app to /tmp and reject that valid realpath spelling.
+        let components = path.split(separator: "/", omittingEmptySubsequences: false)
+        return path.hasPrefix("/") &&
             path.hasSuffix("/Contents/MacOS/NeAntik") &&
-            URL(fileURLWithPath: path).standardizedFileURL.path == path
+            components.dropFirst().allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." } &&
+            !path.unicodeScalars.contains { $0.value < 32 || $0.value == 127 }
+    }
+
+    private static func isCanonicalWebKitHostExecutablePath(_ path: String) -> Bool {
+        let suffix = "/" + WebKitHostCodeIdentity.hostExecutableRelativePath
+        guard path.hasPrefix("/"), path.hasSuffix(suffix),
+              !path.unicodeScalars.contains(where: { $0.value < 32 || $0.value == 127 })
+        else { return false }
+        let components = path.split(separator: "/", omittingEmptySubsequences: false)
+        guard components.first == "",
+              components.dropFirst().allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." })
+        else { return false }
+        return URL(fileURLWithPath: path).standardizedFileURL.path == path
     }
 }

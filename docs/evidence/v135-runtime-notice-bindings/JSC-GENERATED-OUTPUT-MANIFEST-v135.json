@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "status": "hash-bound-generated-output-header-notice-inputs; image-level decision remains separate",
+  "runtimeImage": {
+    "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+    "sha256": "8e6d73e593ee32196767b35a236cffc1f172bd12f23073cdc35ef290f506ef63"
+  },
+  "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+  "webkitPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+  "generatorLineage": {
+    "path": "docs/evidence/webkit-v20-jsc-generated-input-lineage-20261025.json",
+    "sha256": "d50c37630550bd85d2685e9ef3046b19ecac83baca18a9503dde142c25e7a9cf"
+  },
+  "headerBundle": {
+    "path": "docs/evidence/third-party/webkit-v20-jsc-generated-output-notice-headers.txt",
+    "sha256": "eba2a7319405fa1ac2eacd09c4146aab12afac07578a617d0528d8d869d7119a",
+    "bytes": 11017
+  },
+  "outputs": [
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/BytecodeDumperGenerated.cpp",
+      "sourceGroup": "bytecode",
+      "generatorRule": "JavaScriptCore/CMakeLists.txt:289-294",
+      "outputSHA256": "4f860a56589c3ece7615c453bc050fe68c23e7063b2a44df68e17e6bf2077035",
+      "outputBytes": 30117,
+      "headerSHA256": "0d895b9bcc6f8d996f96703fc0630e85b137193642efcdd9c32529b9821a7c09",
+      "headerBytes": 1405
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/JSCBuiltins.cpp",
+      "sourceGroup": "jscBuiltins",
+      "generatorRule": "JavaScriptCore/CMakeLists.txt:358-408",
+      "outputSHA256": "87844646c19a3e0890b3c06050155b34b4c67f739cb5e06e9c739135baf7aaf0",
+      "outputBytes": 724963,
+      "headerSHA256": "2e3ce6a2e368fe9231bb67f451166b941cddce127b33fb17df1d4fda776fe9bf",
+      "headerBytes": 2295
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/inspector/InspectorBackendDispatchers.cpp",
+      "sourceGroup": "inspector",
+      "generatorRule": "JavaScriptCore/CMakeLists.txt:1707-1784; CombinedDomains.json generation precedes protocol binding",
+      "outputSHA256": "054eece05924974bb2f17083ec1658e367b49be2467eb1c7c9884bcb7e7ef84f",
+      "outputBytes": 365673,
+      "headerSHA256": "84496fed5bccf0ec44a53e2db96a02ddb640f37b69300d356190573a0fd34abd",
+      "headerBytes": 1484
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/inspector/InspectorFrontendDispatchers.cpp",
+      "sourceGroup": "inspector",
+      "generatorRule": "JavaScriptCore/CMakeLists.txt:1707-1784; CombinedDomains.json generation precedes protocol binding",
+      "outputSHA256": "6af6baf6fbfb5c19d23b89e5f23964ed8698dc6af1472e96e90a871cd4141781",
+      "outputBytes": 73200,
+      "headerSHA256": "84496fed5bccf0ec44a53e2db96a02ddb640f37b69300d356190573a0fd34abd",
+      "headerBytes": 1484
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/inspector/InspectorProtocolObjects.cpp",
+      "sourceGroup": "inspector",
+      "generatorRule": "JavaScriptCore/CMakeLists.txt:1707-1784; CombinedDomains.json generation precedes protocol binding",
+      "outputSHA256": "1dff9b050b63a1cf2a9b122c6842f7441cfaba8ad32cadd945baa0d492770684",
+      "outputBytes": 94147,
+      "headerSHA256": "84496fed5bccf0ec44a53e2db96a02ddb640f37b69300d356190573a0fd34abd",
+      "headerBytes": 1484
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/yarr/YarrCanonicalizeUnicode.cpp",
+      "sourceGroup": "yarr",
+      "generatorRule": "JavaScriptCore/CMakeLists.txt:1687-1692",
+      "outputSHA256": "f014f6e3a42b46da22d17832d688f39d07999bf0295bbee472fc039fcf66af22",
+      "outputBytes": 34016,
+      "headerSHA256": "ab0a885b14d87b83b7e418b07954b70710f9609e134968a47dd14e8b341e17cf",
+      "headerBytes": 1327
+    }
+  ],
+  "scopeLimit": "Contains exact leading copyright/license blocks from six hash-verified generated outputs. It does not elect the licenses of all JavaScriptCore image inputs, resolve missing input attributions, or prove recipient replacement/relink.",
+  "outputsV122BuildTree": [
+    {
+      "path": "JavaScriptCore/DerivedSources/BytecodeDumperGenerated.cpp",
+      "sha256": "4f860a56589c3ece7615c453bc050fe68c23e7063b2a44df68e17e6bf2077035",
+      "bytes": 30117
+    },
+    {
+      "path": "JavaScriptCore/DerivedSources/JSCBuiltins.cpp",
+      "sha256": "87844646c19a3e0890b3c06050155b34b4c67f739cb5e06e9c739135baf7aaf0",
+      "bytes": 724963
+    },
+    {
+      "path": "JavaScriptCore/DerivedSources/inspector/InspectorBackendDispatchers.cpp",
+      "sha256": "054eece05924974bb2f17083ec1658e367b49be2467eb1c7c9884bcb7e7ef84f",
+      "bytes": 365673
+    },
+    {
+      "path": "JavaScriptCore/DerivedSources/inspector/InspectorFrontendDispatchers.cpp",
+      "sha256": "6af6baf6fbfb5c19d23b89e5f23964ed8698dc6af1472e96e90a871cd4141781",
+      "bytes": 73200
+    },
+    {
+      "path": "JavaScriptCore/DerivedSources/inspector/InspectorProtocolObjects.cpp",
+      "sha256": "1dff9b050b63a1cf2a9b122c6842f7441cfaba8ad32cadd945baa0d492770684",
+      "bytes": 94147
+    },
+    {
+      "path": "JavaScriptCore/DerivedSources/yarr/YarrCanonicalizeUnicode.cpp",
+      "sha256": "f014f6e3a42b46da22d17832d688f39d07999bf0295bbee472fc039fcf66af22",
+      "bytes": 34016
+    }
+  ],
+  "v122BuildBinding": {
+    "buildReceiptSHA256": "804a60911bf67912d8f17665958f88051b3085a175f145db0fd76fa7ea23bd9c",
+    "buildID": "neantik-v122-fresh-owned-webkit-build-and-staging-20261026",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "sourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "overlayApplicationLogSHA256": "1492e55293943dc85c3f624742daeae30f727796e90f673cebc46ae0e12b19de",
+    "cmakeCacheSHA256": "d79a82d81ca422e1f75cd5a3175065c6992d25ab89c33cea6cbf25660ef68d42",
+    "buildNinjaSHA256": "99284c39a6e3f96eca852c293d7d3f877568d460fb2e31e01f9fd6428a60da34",
+    "buildLogSHA256": "08c476869d46850f8efe6f74794a12943a9ca5ea2d6bfab1f4d299bcb30e988e"
+  },
+  "v135Binding": {
+    "buildReceiptPath": "docs/evidence/neantik-v135-clean-relocated-v132-webkit-relink-20261026.json",
+    "buildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "webkitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "mainSourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "scope": "Exact runtime output identity only; preserves referenced historical source/license reviews without expanding their legal scope."
+  }
+}

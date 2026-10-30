@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "id": "V397",
+  "createdAt": "2026-10-28T06:56:08Z",
+  "classification": "PASS_EXACT_14_CURRENT_RESOURCE_HASH_REBIND; LICENSE_DECISIONS_REMAIN_UNKNOWN",
+  "scope": "Targeted review of the 14 V373 unresolved resource rows still present in the current V382 disposable stage. Reuse the existing 19-row review; no broad inventory, build, source modification, signature, launch or publication.",
+  "inputs": {
+    "priorReview": "docs/evidence/neantik-v373-resource-applicability-review-batch-20261028.json",
+    "priorReviewSHA256": "a50ebcab70dfc6e613002dca060388602ff55b217dd6b8741f0ad02b6e0abaca",
+    "sourceArchiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+    "sourceOfferManifestSHA256": "e96b51e74894ec9877462105cf03c28bc80c0bc799b5408288d7c0b49c4631a8",
+    "runtimeRoot": "/private/tmp/neantik-v395-package-stage/Frameworks",
+    "sourceRoot": "/private/tmp/neantik-v382-filtered-webkit-source-20261028/WebKit"
+  },
+  "findings": {
+    "stillPresentRows": 14,
+    "exactByteMatchesToPriorUnknownRows": 14,
+    "rows": [
+      {
+        "runtimePath": "WebGPU.framework/Versions/A/Resources/Info.plist",
+        "runtimeSHA256": "d1b62a69cb77ccc8cea6b51760021849ab53f472db0781cb6890a1106a7139a6",
+        "sourcePath": "Source/WebGPU/Info.plist",
+        "sourceSHA256": "99f7685c28e18f82935817519f9ef6e5ebd63af453c7c3414df591f34078a4af",
+        "sourceBytes": 1633,
+        "priorWorksheetSHA256": "d1b62a69cb77ccc8cea6b51760021849ab53f472db0781cb6890a1106a7139a6",
+        "matchesPriorUnknownBytes": true,
+        "priorDecision": "UNKNOWN"
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/Resources/Info.plist",
+        "runtimeSHA256": "8682dbe9e031cd97fa92985dee64f99726e4a544a470bb2f69dc99ab6493e135",
+        "sourcePath": "Source/WebKit/Info.plist",
+        "sourceSHA256": "2693d09b3ce4fa4d9dc05a4dd99043bd2e07f3cc9c12c7eaba4b19e3f9a61eac",
+        "sourceBytes": 1140,
+        "priorWorksheetSHA256": "8682dbe9e031cd97fa92985dee64f99726e4a544a470bb2f69dc99ab6493e135",
+        "matchesPriorUnknownBytes": true,
+        "priorDecision": "UNKNOWN"
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/Info.plist",
+        "runtimeSHA256": "1727040f8d3a09f62bf750648f0388f3f65e6356bc53c3887caef2633609a40d",
+        "sourcePath": "Source/WebKit/GPUProcess/EntryPoint/Cocoa/XPCService/GPUService/Info-OSX.plist",
+        "sourceSHA256": "7d4ce5ace213693923213b0b8e88a7df4aa9a461f2f9276d47fed7d9959bc0d1",
+        "sourceBytes": 1461,
+        "priorWorksheetSHA256": "1727040f8d3a09f62bf750648f0388f3f65e6356bc53c3887caef2633609a40d",
+        "matchesPriorUnknownBytes": true,
+        "priorDecision": "UNKNOWN"
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/Info.plist",
+        "runtimeSHA256": "1733fb8bd8df9a1360d7959150139c69bb14dbdb0bd9f266c742c100e94ebc82",
+        "sourcePath": "Source/WebKit/NetworkProcess/EntryPoint/Cocoa/XPCService/NetworkService/Info-OSX.plist",
+        "sourceSHA256": "848d7eec33274e1f0054da75853b0cb150b66f075f16100a2b52f9b54eabaf81",
+        "sourceBytes": 1327,
+        "priorWorksheetSHA256": "1733fb8bd8df9a1360d7959150139c69bb14dbdb0bd9f266c742c100e94ebc82",
+        "matchesPriorUnknownBytes": true,
+        "priorDecision": "UNKNOWN"
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/Info.plist",
+        "runtimeSHA256": "cf2804905b5ab48951d12b4c9ce0f0984c24821c340597e7af828ba49e073651",
+        "sourcePath": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+        "sourceSHA256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+        "sourceBytes": 1746,
+        "priorWorksheetSHA256": "cf2804905b5ab48951d12b4c9ce0f0984c24821c340597e7af828ba49e073651",
+        "matchesPriorUnknownBytes": true,
+        "priorDecision": "UNKNOWN"
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/Info.plist",
+        "runtimeSHA256": "707d6ca86c4d1b0c51c721c6cb86a64e35810092773eb8e040f93a73fe58c703",
+        "sourcePath": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+        "sourceSHA256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+        "sourceBytes": 1746,
+        "priorWorksheetSHA256": "707d6ca86c4d1b0c51c721c6cb86a64e35810092773eb8e040f93a73fe58c703",
+        "matchesPriorUnknownBytes": true,
+        "priorDecision": "UNKNOWN"
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Info.plist",
+        "runtimeSHA256": "95eb37b4bd4a698898b2fa3a894c15bc4b9f5dd4323f04cf446f0d841e6616fc",
+        "sourcePath": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+        "sourceSHA256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+        "sourceBytes": 1746,
+        "priorWorksheetSHA256": "95eb37b4bd4a698898b2fa3a894c15bc4b9f5dd4323f04cf446f0d841e6616fc",
+        "matchesPriorUnknownBytes": true,
+        "priorDecision": "UNKNOWN"
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Resources/WebContentProcess.nib",
+        "runtimeSHA256": "90306f1e50ac0139b6057dd411b06fd49089cecfb59f01e144690b9cd86583a7",
+        "sourcePath": "Source/WebKit/Resources/WebContentProcess.xib",
+        "sourceSHA256": "0583e5f26322ca810b6d84bcab7dfce7aa3c8e8cea9e4ca150fb8a98bf47ef36",
+        "sourceBytes": 582,
+        "priorWorksheetSHA256": "90306f1e50ac0139b6057dd411b06fd49089cecfb59f01e144690b9cd86583a7",
+        "matchesPriorUnknownBytes": true,
+        "priorDecision": "UNKNOWN"
+      },
+      {
+        "runtimePath": "JavaScriptCore.framework/Versions/A/Resources/Info.plist",
+        "runtimeSHA256": "76d18453a418d19a7c98dfd2b45b12b1e8cc8469703ab7b8992476efe6355ad6",
+        "sourcePath": "Source/JavaScriptCore/Info.plist",
+        "sourceSHA256": "07b2d1b5035d5a0dd88c7a958c1538479bbc94c3596256cb81c53648807d272b",
+        "sourceBytes": 1343,
+        "priorWorksheetSHA256": "76d18453a418d19a7c98dfd2b45b12b1e8cc8469703ab7b8992476efe6355ad6",
+        "matchesPriorUnknownBytes": true,
+        "priorDecision": "UNKNOWN"
+      },
+      {
+        "runtimePath": "WebCore.framework/Versions/A/Resources/Info.plist",
+        "runtimeSHA256": "b38d826b325d9c5cc5fafe47c53988bc908d866578baf529ef9c8f4ae21399e1",
+        "sourcePath": "Source/WebCore/Info.plist",
+        "sourceSHA256": "c97eaceb531cce1eaefc0860e4277e137527f3b8b8ac27fd8034410889cfce8d",
+        "sourceBytes": 1953,
+        "priorWorksheetSHA256": "b38d826b325d9c5cc5fafe47c53988bc908d866578baf529ef9c8f4ae21399e1",
+        "matchesPriorUnknownBytes": true,
+        "priorDecision": "UNKNOWN"
+      },
+      {
+        "runtimePath": "WebCore.framework/Versions/A/Resources/audio/Composite.wav",
+        "runtimeSHA256": "a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3",
+        "sourcePath": "Source/WebCore/platform/audio/resources/Composite.wav",
+        "sourceSHA256": "a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3",
+        "sourceBytes": 245804,
+        "priorWorksheetSHA256": "a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3",
+        "matchesPriorUnknownBytes": true,
+        "priorDecision": "UNKNOWN"
+      },
+      {
+        "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/Localizable.strings",
+        "runtimeSHA256": "7cd6a1cb1803de65529bd903f173557d024bede8a8d3ff3df3c783aec2575f96",
+        "sourcePath": "Source/WebCore/en.lproj/Localizable.strings",
+        "sourceSHA256": "7cd6a1cb1803de65529bd903f173557d024bede8a8d3ff3df3c783aec2575f96",
+        "sourceBytes": 93705,
+        "priorWorksheetSHA256": "7cd6a1cb1803de65529bd903f173557d024bede8a8d3ff3df3c783aec2575f96",
+        "matchesPriorUnknownBytes": true,
+        "priorDecision": "UNKNOWN"
+      },
+      {
+        "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/Localizable.stringsdict",
+        "runtimeSHA256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+        "sourcePath": "Source/WebCore/en.lproj/Localizable.stringsdict",
+        "sourceSHA256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+        "sourceBytes": 2179,
+        "priorWorksheetSHA256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+        "matchesPriorUnknownBytes": true,
+        "priorDecision": "UNKNOWN"
+      },
+      {
+        "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/modern-media-controls-localized-strings.js",
+        "runtimeSHA256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+        "sourcePath": "Source/WebCore/en.lproj/modern-media-controls-localized-strings.js",
+        "sourceSHA256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+        "sourceBytes": 2001,
+        "priorWorksheetSHA256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+        "matchesPriorUnknownBytes": true,
+        "priorDecision": "UNKNOWN"
+      }
+    ],
+    "excludedRowsFromPriorBatch": 5,
+    "excludedSummary": "Four model runtime paths and the empty WebKit en.lproj/InfoPlist.strings are absent from current stage. Their rights are not resolved; they are outside the staged runtime."
+  },
+  "officialPolicy": {
+    "url": "https://docs.webkit.org/Other/Licensing.html",
+    "finding": "WebKit documents that inherited code may be LGPL, new code BSD-2, and moved code retains its original license; this project-level guidance does not assign terms to these 14 exact files.",
+    "decision": "Keep all 14 worksheet decisions UNKNOWN. Do not infer a component-wide license from file type or neighboring license texts."
+  },
+  "nextAction": "For each of these 14 files, either locate exact upstream per-file licensing/history evidence or create a source-offer-bound first-party replacement/removal that preserves bundle/resource contracts, followed by the narrowest relevant build/package and owned-WebKit runtime qualification. Prioritize grouping duplicate XPC Info.plist outputs by their shared exact source path; do not repeat the broad 19-row inventory.",
+  "releaseQualified": false
+}

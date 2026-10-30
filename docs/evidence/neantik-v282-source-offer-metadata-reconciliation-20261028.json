@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v282-source-offer-metadata-reconciliation-20261028",
+  "observedAtUTC": "2026-10-27T17:25:15Z",
+  "status": "PASS_V282_METADATA_RECONCILIATION_AND_PACKAGE_CONSUMER; SOURCE_RECIPIENT_LEGAL_AND_RELEASE_GATES_OPEN",
+  "scope": "Private cloned source offer metadata reconciliation and one exact package source-offer consumer check. No build, candidate mutation, launch, signing, publication or release qualification.",
+  "inputs": {
+    "v269ManifestSHA256": "080113344b7b4616bcf879a32fce448a0a0762c6ace8612344242d07671b2252",
+    "v282ManifestSHA256": "6a600e21ef358e5bd43ec96180d25140bf22929aaa589ea1d6aaa5287f096d62",
+    "v282StatusDocumentSHA256": "6f213279a66d3c9f0a518a05beaea6fcd6305ce7e329360d218f04d1565449b0",
+    "consumerScriptSHA256": "12a6e631361214bb4313f2eab87b772e0372dd6ef08797e1ef28a7e27defd4f6"
+  },
+  "result": {
+    "v269Preserved": true,
+    "v282ComponentCount": 570,
+    "overlayAttributionManifests": 8,
+    "firstPartyOverlayAssets": 64,
+    "packageConsumer": "pass"
+  },
+  "reconciledMismatch": {
+    "v269TopLevelStatus": "stale V199",
+    "v269TopLevelScope": "stale V125",
+    "v282Status": "V282 metadata reconciled; unresolved gates stated",
+    "v282Scope": "private corresponding-source draft, not candidate/release"
+  },
+  "reusedEvidenceLimits": {
+    "V272": "Exact source tree/framework layout pass; Ninja graph covers all declared Swift source/module inputs (106 hashed paths, zero missing); implicit Swift imports/plugins, some host inputs, and recipient signed-load remain open.",
+    "V135": "14/14 ARM64 outputs for pinned archive and patches in same-Mac clean relocated rebuild; not independent recipient signed-load.",
+    "V274": "153 refreshed-copy runtime notice files pass; original b960 JavaScriptCore/WebCore notice payloads remain stale and candidate rebinding open."
+  },
+  "remainingGates": [
+    "Swift implicit compiler imports/plugins and some host inputs outside the pinned SDK remain unclosed; all 105 Swift object declared Ninja inputs are mapped and present.",
+    "All 13 target-codegen outputs are mapped to generator rules and direct inputs; generator replay remains open.",
+    "Four-image applicability and final package notices remain open; no legal/patent clearance claim.",
+    "Candidate binding, recipient signed-load, production runtime, signing, notarization, publication and downloaded-byte verification remain open."
+  ],
+  "releaseQualified": false
+}

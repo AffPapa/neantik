@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "V417",
+  "createdAt": "2026-10-28T09:08:00Z",
+  "kind": "source-rebound-signed-manager-bundle",
+  "source": {
+    "commit": "2fac0fb9b8c25578fe5a6874ae32b0b06678ee0b",
+    "tree": "0084e23427266cd6d5d1c5469d1d8769d98e808a",
+    "closureSHA256": "bcefb81ecd9f2dc02fb17d38eb4906e2f3cafa28419389280b4c43cb79f74c67",
+    "worktreeState": "clean"
+  },
+  "candidate": {
+    "root": "25aea06ab1f84885a5e35f2a75623322",
+    "appPath": "25aea06ab1f84885a5e35f2a75623322/NeAntik.app",
+    "version": "1.0.0",
+    "build": "201",
+    "inventorySHA256": "5af632a0b0fce9e04e8e9875301f906d3d4027e6b683bde344957fa5b8e42a12",
+    "sourceReceiptSHA256": "48da24f50b214dcbd455144dc153fdb5e013678cabe8cae7110264ff64a07485",
+    "preparationReceiptSHA256": "a57965bea40604dcf79406208e209c85d22c8526f3b7371e1cc36f5d7bb3874a",
+    "matchesV414AppInventory": true
+  },
+  "result": "PASS: begin/finish/verify succeeded; exact signed app inventory matches V414; source receipt binds clean 2fac0fb.",
+  "scope": "No engine/app build, app mutation, launch, enrollment, network QA, notarization, or publication.",
+  "limitations": [
+    "Runtime WebKit/proxy gates remain open.",
+    "82 license UNKNOWN decisions and recipient relink/load remain open.",
+    "Native enrollment has not yet been attempted for this refreshed prepared bundle.",
+    "No anonymity claim."
+  ],
+  "priorCurrent": {
+    "path": "[local checkpoint path redacted]",
+    "sha256": "75685895200d26549566c30e0c69582889a0786de213a2bab367c364ef9a9dcc",
+    "bytes": 27393
+  },
+  "portableRedaction": {
+    "originalReceiptSHA256": "c1acbd34efea02fb3f04b789c58a708d0fc865a9f5526a3d182f5a6918e3fa9d",
+    "redactedFields": [
+      "priorCurrent.path",
+      "candidate.root",
+      "candidate.appPath"
+    ],
+    "scope": "Local paths only; all other fields preserved."
+  }
+}

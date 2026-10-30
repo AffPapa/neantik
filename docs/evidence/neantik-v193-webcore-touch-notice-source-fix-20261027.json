@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v193-webcore-touch-notice-source-fix-20261027",
+  "observedAtUTC": "2026-10-27T07:34:33Z",
+  "status": "SOURCE_FIX_COMMITTED; FOCUSED_NOTICE_TESTS_AND_V122_DISPOSABLE_PREFLIGHT_PASS; FULL_REGRESSION_AND_FINAL_CANDIDATE_OPEN",
+  "finding": "V122 WebCore links JSTouch.cpp, JSTouchEvent.cpp and JSTouchList.cpp. All three V122 generated-source hashes match V58 evidence, but build-200 packaged generated-header notice bundle SHA 94c29d9a04ff8d1a3090d5bd63a2b6990189f1695ec7ba302b8130e920aa9468 does not contain their names/headers. The old candidate is not modified.",
+  "source": {
+    "repository": "/private/tmp/neantik-v193-touch-qualified",
+    "branch": "codex/neantik-v193-touch-notices",
+    "commit": "50fd09c7407f38f41f18ed7563d08837603458f4",
+    "parent": "8e2148d03c75c565a561b31344efc2b18c6243fa",
+    "clean": true,
+    "changedFiles": {
+      "scripts/webkit_runtime_notices.py": "adc4b1c4295f9d3153907e0a79008e34444c05edef4c43e7c84e4d470112a559",
+      "scripts/tests/test_webkit_runtime_notices.py": "572d2e2a9c60ac6b503fdb1b586f20547365c2b826b5b257e88f1edad7823a6a",
+      "docs/evidence/third-party/webkit-v20-webcore-generated-input-headers.txt": "93d9ce3e3f3b35465749b4494e55633000e703551115363129fc2afd65ab6aa8"
+    },
+    "sourceArchiveStatus": "V187 binds the prior V184 source and must be refreshed before candidate binding"
+  },
+  "linkedGeneratedSources": {
+    "JSTouch.cpp": "151e05402cb374947603b38001a628fe45142d876bc58b611e0c751ee3b65988",
+    "JSTouchEvent.cpp": "6d5260cff65f5f59e1d6013e1c6d34f03909503db562fa8ade2d93b3788eff4d",
+    "JSTouchList.cpp": "a0fc1a43d317c8a1dc3bb38d72781f90c2dea5f6773c30897d4f1a82c2cd4458"
+  },
+  "linkEvidence": "Ninja dependency records bind each generated file to its WebCore object; Ninja object query shows each object linked into WebCore.framework/Versions/A/WebCore.",
+  "verification": {
+    "focusedNoticeTests": "60/60 PASS in source tree byte-identical to all 2723 tracked files of this commit",
+    "sourceTreeIdentity": "2723/2723 tracked files byte-identical between tested extraction and clean committed clone",
+    "disposableRuntimeNoticePreflight": "PASS with exact V122 pre-sign Frameworks and copied notice inputs; candidate app not modified",
+    "fullRegression": "pending; planner selects full Swift and Python",
+    "releaseCandidateNoticeBytes": "not built or verified"
+  },
+  "limitations": [
+    "This prepares source and corresponding notice inputs only; it does not close full WebCore license applicability or all other notices.",
+    "Proxy runtime, one Gitleaks metadata finding, source offer candidate binding, signing, notarization and publication remain open."
+  ],
+  "nextAction": "Run planner-selected full Swift and Python regressions in the required host context, then refresh the private source offer to this exact commit and prepare the final candidate after proxy QA and secure timestamp signing become possible."
+}

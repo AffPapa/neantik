@@ -1,0 +1,262 @@
+import Foundation
+import Network
+
+/// Loopback listener owned by a signed authenticated profile session.
+/// A caller must supply a bounded, revocable browser-session admission
+/// function; loopback address and anonymous SOCKS method are not authority.
+final class ProxyRelayLoopbackServer: @unchecked Sendable {
+    struct Peer: Sendable, CustomStringConvertible, CustomReflectable {
+        let clientPort: UInt16
+        let relayPort: UInt16
+        var description: String { "ProxyRelayPeer(<redacted>)" }
+        var customMirror: Mirror { Mirror(self, children: [:]) }
+    }
+    enum Failure: Error { case invalidLimit, unavailable, closed, refused, malformed }
+    #if DEBUG
+    private var tlsQualification: ProxyRelayTLSQualification.Configuration?
+    #endif
+    private let listener: NWListener
+    private let queue = DispatchQueue(label: "app.neantik.relay.loopback")
+    private let upstreamKind: ProxyKind
+    private let upstream: ProxyRelayDestination
+    private let credentials: ProxyRelayCredentials?
+    private let admit: @Sendable (Peer) throws -> Bool
+    private let waitForBinding: @Sendable () async throws -> Void
+    private let limit: Int
+    private var sessions: [UUID: Task<Void, Never>] = [:]
+    private var port: UInt16?
+    private var stopped = false
+    private var stopError: Error?
+    private var starting = false
+    private var startFinish: ((Result<UInt16, Error>) -> Void)?
+    private var startDeadline: DispatchWorkItem?
+    private let activity = BrowserRelayActivity()
+    private let routeProbe: BrowserRouteProbe.Session?
+
+    init(upstreamKind: ProxyKind, upstream: ProxyRelayDestination, credentials: ProxyRelayCredentials?,
+         maximumConnections: Int = 8,
+         routeProbe: BrowserRouteProbe.Session? = nil,
+         waitForBinding: @escaping @Sendable () async throws -> Void = {},
+         admit: @escaping @Sendable (Peer) throws -> Bool) throws {
+        guard (1...64).contains(maximumConnections) else { throw Failure.invalidLimit }
+        self.upstreamKind = upstreamKind; self.upstream = upstream; self.credentials = credentials
+        limit = maximumConnections; self.admit = admit; self.routeProbe = routeProbe
+        self.waitForBinding = waitForBinding
+        let parameters = NWParameters.tcp
+        parameters.requiredLocalEndpoint = .hostPort(host: .init("127.0.0.1"), port: .any)
+        listener = try NWListener(using: parameters)
+    }
+    #if DEBUG
+    convenience init(qualification: ProxyRelayTLSQualification.Configuration,
+                     upstream: ProxyRelayDestination, credentials: ProxyRelayCredentials?,
+                     routeProbe: BrowserRouteProbe.Session? = nil,
+                     waitForBinding: @escaping @Sendable () async throws -> Void,
+                     admit: @escaping @Sendable (Peer) throws -> Bool) throws {
+        // Validate before constructing a listener; configuration is assigned
+        // once, before start exposes any connection or detached task.
+        _ = try qualification.parameters(for: upstream)
+        try self.init(upstreamKind: .https, upstream: upstream, credentials: credentials,
+                      routeProbe: routeProbe, waitForBinding: waitForBinding, admit: admit)
+        tlsQualification = qualification
+    }
+    #endif
+    func start() async throws -> UInt16 {
+        try await withTaskCancellationHandler {
+            try Task.checkCancellation()
+            return try await withCheckedThrowingContinuation { continuation in
+                queue.async {
+                    guard !self.stopped, !self.starting else { continuation.resume(throwing: self.stopError ?? Failure.closed); return }
+                    self.starting = true
+                    self.startFinish = { continuation.resume(with: $0) }
+                    let deadline = DispatchWorkItem { [weak self] in self?.stopOnQueue(error: Failure.unavailable) }
+                    self.startDeadline = deadline; self.queue.asyncAfter(deadline: .now() + 5, execute: deadline)
+                    self.listener.stateUpdateHandler = { [weak self] state in
+                        guard let self, !self.stopped else { return }
+                        switch state {
+                        case .ready:
+                            guard let port = self.listener.port?.rawValue, port > 0 else { self.stopOnQueue(error: Failure.unavailable); return }
+                            self.port = port; self.startDeadline?.cancel(); self.startDeadline = nil
+                            let finish = self.startFinish; self.startFinish = nil; finish?(.success(port))
+                        case .failed: self.stopOnQueue(error: Failure.unavailable)
+                        case .cancelled: self.stopOnQueue(error: Failure.closed)
+                        default: break
+                        }
+                    }
+                    self.listener.newConnectionHandler = { [weak self] connection in
+                        guard let self else { connection.cancel(); return }
+                        self.accept(connection)
+                    }
+                    self.listener.start(queue: self.queue)
+                }
+            }
+        } onCancel: { self.cancel() }
+    }
+    func cancel() { queue.async { self.stopOnQueue(error: CancellationError()) } }
+    func stop() async {
+        let tasks: [Task<Void, Never>] = await withCheckedContinuation { continuation in
+            queue.async { let tasks = Array(self.sessions.values); self.stopOnQueue(error: CancellationError()); continuation.resume(returning: tasks) }
+        }
+        for task in tasks { await task.value }
+        // Each session enqueues removal before its Task completes. Fence that
+        // queue so stop returning also proves those entries are released.
+        await withCheckedContinuation { continuation in queue.async { continuation.resume() } }
+    }
+    func activeConnectionCount() async -> Int {
+        await withCheckedContinuation { continuation in queue.async { continuation.resume(returning: self.sessions.count) } }
+    }
+    /// Internal, unauthenticated scalar only. The persistent owner must bind
+    /// any IPC reply; callers cannot treat this as a browser request verdict.
+    func activitySnapshot() -> BrowserRelayActivity.Snapshot { activity.snapshot() }
+    private func stopOnQueue(error: Error) {
+        guard !stopped else { return }
+        stopped = true; stopError = error; startDeadline?.cancel(); startDeadline = nil
+        activity.listenerDidStop(); routeProbe?.cancel()
+        listener.stateUpdateHandler = nil; listener.newConnectionHandler = nil; listener.cancel()
+        let finish = startFinish; startFinish = nil; finish?(.failure(error))
+        for task in sessions.values { task.cancel() }
+    }
+    private func accept(_ connection: NWConnection) {
+        guard !stopped, let port, sessions.count < limit,
+              case .hostPort(let host, let clientPort) = connection.endpoint,
+              host == NWEndpoint.Host("127.0.0.1"), clientPort.rawValue > 0
+        else { connection.cancel(); return }
+        let peer = Peer(clientPort: clientPort.rawValue, relayPort: port), id = UUID()
+        let front = ProxyRelayUpstreamTransport(accepted: connection)
+        let back: ProxyRelayUpstreamTransport
+        #if DEBUG
+        if let tlsQualification {
+            guard let qualified = try? ProxyRelayUpstreamTransport(qualification: tlsQualification, upstream: upstream)
+            else { front.cancel(); return }
+            back = qualified
+        } else { back = ProxyRelayUpstreamTransport(kind: upstreamKind, upstream: upstream) }
+        #else
+        back = ProxyRelayUpstreamTransport(kind: upstreamKind, upstream: upstream)
+        #endif
+        sessions[id] = Task.detached { [self] in
+            defer { front.cancel(); back.cancel(); queue.async { self.sessions.removeValue(forKey: id) } }
+            var ticket: BrowserRelayActivity.Ticket?
+            var failure = BrowserRelayActivity.End.localSetupFailed
+            do {
+                try await withTaskCancellationHandler {
+                    try Task.checkCancellation()
+                    let handshakeDeadline = Double(DispatchTime.now().uptimeNanoseconds) / 1_000_000_000 + 10
+                    func remaining() throws -> TimeInterval {
+                        let value = handshakeDeadline - Double(DispatchTime.now().uptimeNanoseconds) / 1_000_000_000
+                        guard value > 0 else { throw ProxyRelayTransportError.timeout }
+                        return value
+                    }
+                    try await waitForBinding()
+                    _ = try remaining()
+                    try Task.checkCancellation()
+                    guard try admit(peer) else { throw Failure.refused }
+                    guard let admitted = activity.begin() else { throw Failure.closed }
+                    ticket = admitted
+                    try await front.open(timeout: remaining())
+                    failure = .clientNegotiationFailed
+                    var buffer = Data()
+                    func more() async throws {
+                        let chunk = try await front.receive(maximumBytes: 1024, timeout: remaining())
+                        guard !chunk.data.isEmpty, buffer.count + chunk.data.count <= 4096 else { throw Failure.malformed }
+                        buffer.append(chunk.data)
+                    }
+                    var greeting: ProxyRelayClientWireCodec.Greeting?
+                    while greeting == nil { greeting = try ProxyRelayClientWireCodec.greeting(buffer); if greeting == nil { try await more() } }
+                    let method = greeting!.selectedMethod; buffer.removeFirst(greeting!.consumed)
+                    try await front.send(Data([5, method]), timeout: remaining())
+                    guard method == 0 else { throw Failure.refused }
+                    var request: ProxyRelayClientWireCodec.Connect?
+                    while request == nil { request = try ProxyRelayClientWireCodec.connect(buffer); if request == nil { try await more() } }
+                    let destination = request!.destination; buffer.removeFirst(request!.consumed)
+                    // Repeat admission after parsing and immediately before
+                    // the only operation that may send upstream credentials.
+                    failure = .admissionRevoked
+                    try Task.checkCancellation(); guard try admit(peer) else { throw Failure.refused }
+                    // Only an admitted browser may address the fixed virtual
+                    // diagnostic resource. No credential-bearing upstream is
+                    // opened for local entry/callback requests.
+                    if let routeProbe, routeProbe.isVirtual(destination) {
+                        failure = .browserReplyFailed
+                        let boundFrame = try ProxyRelayWireCodec.socksConnect(.init(host: "127.0.0.1", port: Int(peer.relayPort)))
+                        try await front.send(Data([5,0,0]) + boundFrame.dropFirst(3), timeout: remaining())
+                        failure = .clientNegotiationFailed
+                        while try BrowserRouteProbe.HTTP.target(buffer) == nil {
+                            guard buffer.count < BrowserRouteProbe.HTTP.maximumBytes else { throw Failure.malformed }
+                            let chunk = try await front.receive(maximumBytes: BrowserRouteProbe.HTTP.maximumBytes - buffer.count, timeout: remaining())
+                            guard !chunk.data.isEmpty else { throw Failure.malformed }; buffer.append(chunk.data)
+                        }
+                        failure = .admissionRevoked
+                        try Task.checkCancellation(); guard try admit(peer) else { throw Failure.refused }
+                        failure = .clientNegotiationFailed
+                        let response = try routeProbe.respond(to: buffer)
+                        failure = .browserReplyFailed
+                        try await front.send(response.bytes, timeout: remaining()); try await front.finishWrite(timeout: remaining())
+                        return
+                    }
+                    failure = .upstreamNegotiationFailed
+                    let early = try await back.establish(destination: destination, credentials: credentials, timeout: remaining(),
+                                                         authorizeCredentials: { try self.admit(peer) })
+                    activity.established(admitted)
+                    routeProbe?.observeTunnel(destination)
+                    let requestObservation = routeProbe.map { HTTPForwardObservation(probe: $0, destination: destination) }
+                    failure = .browserReplyFailed
+                    let bound = try await back.localBoundEndpoint()
+                    let boundFrame = try ProxyRelayWireCodec.socksConnect(bound)
+                    try await front.send(Data([5,0,0]) + boundFrame.dropFirst(3), timeout: remaining())
+                    activity.replySent(admitted)
+                    failure = .streamFailed
+                    if !early.isEmpty { try await front.send(early) }
+                    if !buffer.isEmpty { try await back.send(buffer); requestObservation?.sent(buffer) }
+                    try await withThrowingTaskGroup(of: Void.self) { group in
+                        group.addTask { try await Self.copy(front, back, observeSent: { requestObservation?.sent($0) }) }
+                        group.addTask { try await Self.copy(back, front) }
+                        do { while try await group.next() != nil {} }
+                        catch { front.cancel(); back.cancel(); group.cancelAll(); throw error }
+                    }
+                } onCancel: { front.cancel(); back.cancel() }
+                if let ticket { activity.finish(ticket, as: Task.isCancelled ? .cancelled : .completed) }
+            } catch {
+                if let ticket {
+                    activity.finish(ticket, as: .failure(error, during: failure))
+                }
+                // No payload, destinations, credentials or native errors logged.
+            }
+        }
+    }
+    /// Bounded HTTP header observation only for the explicitly approved probe
+    /// endpoint. TLS and ordinary browsing payloads are never inspected.
+    private final class HTTPForwardObservation: @unchecked Sendable {
+        private let lock = NSLock()
+        private let probe: BrowserRouteProbe.Session
+        private let destination: ProxyRelayDestination
+        private var header = Data()
+        private var finished: Bool
+        init(probe: BrowserRouteProbe.Session, destination: ProxyRelayDestination) {
+            self.probe = probe; self.destination = destination
+            finished = !probe.matchesHTTP(destination)
+        }
+        func sent(_ data: Data) {
+            lock.lock(); defer { lock.unlock() }
+            guard !finished else { return }
+            guard header.count + data.count <= BrowserRouteProbe.HTTP.maximumBytes else { finished = true; header.removeAll(); return }
+            header.append(data)
+            do {
+                if try BrowserRouteProbe.HTTP.target(header) != nil {
+                    probe.observeForwardedHTTP(header, destination: destination); finished = true; header.removeAll()
+                }
+            } catch { finished = true; header.removeAll() }
+        }
+    }
+    private static func copy(_ from: ProxyRelayUpstreamTransport, _ to: ProxyRelayUpstreamTransport,
+                             observeSent: (@Sendable (Data) -> Void)? = nil) async throws {
+        while true {
+            try Task.checkCancellation()
+            // The owning session cancels both directions. A quiet established
+            // stream may be a valid WebSocket; only the handshake has an idle
+            // deadline. Production browser/session revocation is still a
+            // separate gate before this development listener can be enabled.
+            let chunk = try await from.receive(timeout: nil)
+            if !chunk.data.isEmpty { try await to.send(chunk.data); observeSent?(chunk.data) }
+            if chunk.endOfStream { try await to.finishWrite(); return }
+        }
+    }
+}

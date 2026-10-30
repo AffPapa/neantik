@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T12:12:57.359584+00:00",
+  "priorManifestSHA256": "9ebe7cf9efe14eb09f0d95dbd04d4dd6bd7b95aa4fc4ce35fbe58c5f9c6ee442",
+  "manifestSHA256": "a02e54a22a45001a42485454bacc543d225d8a6334e6189952b51eb905c2a214",
+  "componentCount": 143,
+  "recipeSHA256": "14a9cad53f341b675a5fb11137fc15868adbf6c2f417e8353422d32576d3d692",
+  "generatedLineageSHA256": "d938fc1beb978016db36304f91476142b1dc07658bfe394ff1811a23b322f376",
+  "generatedHeaderEvidenceSHA256": "2c2b6e367d0ebb979dd17462ee63dbc449f822ce3219b9f2881e048f11dcda85",
+  "generatedHeaderNoticeSHA256": "c21fcb2fb91fe612f85385407fc2289846ee4aa2155b9bd179f6868a6c29665b",
+  "noticeTests": "41/41 PASS after WebCore and libwebrtc generated-input header installer/tamper checks",
+  "status": "source-only-and-next-package-installer-stage;no-binary-or-UNKNOWN-decision-change"
+}

@@ -1,0 +1,29 @@
+{
+  "observedAt": "2026-10-27",
+  "status": "DIRECT_SMOKE_CONFIRMED_FOR_PRIVATE_DEV_QA_ONLY; PRODUCTION_RUNTIME_UNVERIFIED",
+  "observations": {
+    "currentInstallSearch": "No NeAntik.app found in /Applications or ~/Applications; mdfind returned no app. This is limited to those searched locations and does not prove no copy exists elsewhere.",
+    "bundleIDResolution": "CUA resolution by app.neantik.desktop was ambiguous across retained historical extracted copies; no arbitrary copy was launched.",
+    "userDataSafety": "Read-only inspection of ApplicationEnvironment.swift confirms the production bundle resolves to ~/Library/Application Support/NeAntik; Development can use a disposable fixture root. No actual profile files, proxy credentials, logs, or browser stores were read or changed."
+  },
+  "binaryIdentity": {
+    "privateDevQA": {
+      "appPath": "/private/tmp/neantik-owned-webkit-qa-x77ltbpd/NeAntik.app",
+      "bundleID": "app.neantik.desktop.dev",
+      "version": "1.0.0",
+      "build": "200",
+      "managerExecutableSHA256": "9822346c0d0e73af4f1ba4810fa64fe178404f1531f847684c8800e5f96044d6",
+      "directGoogleBookingSmoke": "PASS"
+    },
+    "privateProductionCandidate": {
+      "appPath": "/private/tmp/neantik-v140-source-snapshot/dist/private/candidates/fdc8390317094147aef6173cefbb9ebb/NeAntik.app",
+      "bundleID": "app.neantik.desktop",
+      "version": "1.0.0",
+      "build": "200",
+      "managerExecutableSHA256": "7cdd92371d6f21e25ec534912db34970d36641c378447fc9da4c4356b4e73864",
+      "directGoogleBookingSmoke": "NOT_RUN"
+    }
+  },
+  "releaseBoundary": "Do not transfer the Dev QA page-load result to the production executable; production candidate remains unarchived, unnotarized, and release-unqualified.",
+  "next": "Use a freshly prepared disposable QA build bound to the manager binary/source intended for production, or defer exact production-runtime proof to final frozen-candidate qualification. Never launch an arbitrary historical app or point a production bundle at the real profile store for this test."
+}

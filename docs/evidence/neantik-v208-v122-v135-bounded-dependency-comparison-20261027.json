@@ -1,0 +1,291 @@
+{
+  "schemaVersion": 1,
+  "status": "RECORDED_DEPENDENCY_BYTES_MATCH_AFTER_BUILD_ROOT_NORMALIZATION",
+  "comparison": [
+    {
+      "target": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "linkedObjects": 430,
+      "bothHaveDependencyRecords": 430,
+      "matchingRecordedDependencyPaths": 430,
+      "dependencyFiles": {
+        "source": {
+          "equal": 4333,
+          "different": 0,
+          "missing": 0,
+          "large-skipped": 0
+        },
+        "build": {
+          "equal": 881,
+          "different": 4,
+          "missing": 0,
+          "large-skipped": 0
+        }
+      }
+    },
+    {
+      "target": "WebCore.framework/Versions/A/WebCore",
+      "linkedObjects": 154,
+      "bothHaveDependencyRecords": 152,
+      "matchingRecordedDependencyPaths": 152,
+      "dependencyFiles": {
+        "source": {
+          "equal": 12358,
+          "different": 0,
+          "missing": 0,
+          "large-skipped": 0
+        },
+        "build": {
+          "equal": 4146,
+          "different": 10,
+          "missing": 0,
+          "large-skipped": 0
+        }
+      }
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "linkedObjects": 180,
+      "bothHaveDependencyRecords": 118,
+      "matchingRecordedDependencyPaths": 118,
+      "dependencyFiles": {
+        "source": {
+          "equal": 8169,
+          "different": 0,
+          "missing": 0,
+          "large-skipped": 0
+        },
+        "build": {
+          "equal": 1317,
+          "different": 16,
+          "missing": 0,
+          "large-skipped": 0
+        }
+      }
+    },
+    {
+      "target": "libwebrtc.dylib",
+      "linkedObjects": 1988,
+      "bothHaveDependencyRecords": 1988,
+      "matchingRecordedDependencyPaths": 1988,
+      "dependencyFiles": {
+        "source": {
+          "equal": 4062,
+          "different": 0,
+          "missing": 0,
+          "large-skipped": 0
+        },
+        "build": {
+          "equal": 134,
+          "different": 2,
+          "missing": 0,
+          "large-skipped": 0
+        }
+      }
+    }
+  ],
+  "differentGeneratedFiles": [
+    {
+      "target": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "category": "build",
+      "path": "Source/JavaScriptCore/CMakeFiles/JavaScriptCore.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "category": "build",
+      "path": "Source/JavaScriptCore/CMakeFiles/JavaScriptCoreJIT.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "category": "build",
+      "path": "Source/WTF/wtf/CMakeFiles/WTF.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "category": "build",
+      "path": "Source/WTF/wtf/CMakeFiles/WTF.dir/cmake_pch.objcxx.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebCore.framework/Versions/A/WebCore",
+      "category": "build",
+      "path": "Source/WebCore/CMakeFiles/WebCore.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebCore.framework/Versions/A/WebCore",
+      "category": "build",
+      "path": "Source/WebCore/CMakeFiles/WebCore.dir/cmake_pch.objcxx.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebCore.framework/Versions/A/WebCore",
+      "category": "build",
+      "path": "Source/WebCore/CMakeFiles/WebCoreAVFoundation.dir/cmake_pch.objcxx.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebCore.framework/Versions/A/WebCore",
+      "category": "build",
+      "path": "Source/WebCore/CMakeFiles/WebCoreDOMAndRendering.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebCore.framework/Versions/A/WebCore",
+      "category": "build",
+      "path": "Source/WebCore/CMakeFiles/WebCoreDOMAndRendering.dir/cmake_pch.objcxx.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebCore.framework/Versions/A/WebCore",
+      "category": "build",
+      "path": "Source/WebCore/CMakeFiles/WebCoreInspector.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebCore.framework/Versions/A/WebCore",
+      "category": "build",
+      "path": "Source/WebCore/CMakeFiles/WebCoreJSBindings.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebCore.framework/Versions/A/WebCore",
+      "category": "build",
+      "path": "Source/WebCore/CMakeFiles/WebCoreStyle.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebCore.framework/Versions/A/WebCore",
+      "category": "build",
+      "path": "Source/WebCore/PAL/pal/CMakeFiles/PAL.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebCore.framework/Versions/A/WebCore",
+      "category": "build",
+      "path": "WebCore/DerivedSources/ColorData.cpp",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKit.dir/cmake_pch.objcxx.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKitARC.dir/cmake_pch.objcxx.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKitGPUProcess.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKitGPUProcess.dir/cmake_pch.objcxx.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKitNetworkProcess.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKitNetworkProcess.dir/cmake_pch.objcxx.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKitPlatform.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKitPlatform.dir/cmake_pch.objcxx.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKitPlatformARC.dir/cmake_pch.objcxx.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKitShared.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKitShared.dir/cmake_pch.objcxx.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKitUIProcess.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKitUIProcess.dir/cmake_pch.objcxx.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKitWebProcess.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "category": "build",
+      "path": "Source/WebKit/CMakeFiles/WebKitWebProcess.dir/cmake_pch.objcxx.hxx",
+      "result": "different"
+    },
+    {
+      "target": "libwebrtc.dylib",
+      "category": "build",
+      "path": "Source/ThirdParty/libwebrtc/CMakeFiles/webrtc.dir/cmake_pch.hxx",
+      "result": "different"
+    },
+    {
+      "target": "libwebrtc.dylib",
+      "category": "build",
+      "path": "Source/ThirdParty/libwebrtc/CMakeFiles/webrtc.dir/cmake_pch.objcxx.hxx",
+      "result": "different"
+    }
+  ],
+  "differentGeneratedCount": 32,
+  "equalAfterBuildRootNormalization": 32,
+  "comparisonScriptSHA256": "3548cf9832877a9fd9359c19d1afd472a7ecdfd71f86167c2712822ba9978f7a",
+  "rawResultSHA256": "0026ba4a8372150a0b4cfd7fdb717fe6f21b4461a60400e56df956b2ee39583b",
+  "limits": [
+    "2 WebCore and 62 WebKit linked objects lacked records in both Ninja databases",
+    "source and generated dependency files only; external SDK files excluded",
+    "files above 16 MiB excluded (none in compared source or build dependency files)",
+    "recorded dependencies do not establish complete inputs, compile execution, licensing, signing or runtime"
+  ],
+  "releaseQualified": false
+}

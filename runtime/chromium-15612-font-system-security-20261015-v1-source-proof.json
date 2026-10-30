@@ -1,0 +1,716 @@
+{
+  "base": {
+    "fullFDObservationSHA256": "11965553ae0535091f130a7caac97ed107ef99fd0980903847b2f708defe35e0",
+    "fullInventorySHA256": "f3ab19815b0767d42277531a7e795243ce0ff3ef76d35acd5aca701fa4cc3378",
+    "sourceContractSHA256": "e0eea87dd2bfbaa8561d199f89f366c02238df252666dad37cb4ff61d98d5f4b",
+    "sourceDeltaProofSHA256": "8a86c02e8727790658626c501219a3c2f5b384372eee7e1e1d3c524a462844dc",
+    "sourceSnapshotSHA256": "489a80d9646f6280329bff4444cf493934b760140b01551f27162cc329e9eb9e"
+  },
+  "build": {
+    "argsSHA256": "428054a30abeb212aa3784f524bb27ef4bc0068ab7ebef149866b2b8bff30a3c",
+    "binaryBinding": {
+      "architecture": "arm64",
+      "argsGNSHA256": "428054a30abeb212aa3784f524bb27ef4bc0068ab7ebef149866b2b8bff30a3c",
+      "candidateExecutableSHA256": "ba55caca9436c6f16fd6f3e4f7578d87515f161e51c2d0f8f138729086d761f0",
+      "candidateFrameworkSHA256": "517b449aceece7242fff9ff61ff6a60dcb6b8e3486268807bf9203223567e64e",
+      "candidateInfoPlistSHA256": "de8aa8559bfb4ab271ab6d8cadb8cfc22f883e4bf1c22355cf82ee504d39c52c",
+      "executableBytes": 52096,
+      "frameworkBytes": 274603040,
+      "sourceVersion": "156.0.8078.12",
+      "status": "bound-to-built-candidate",
+      "targetArchitecture": "arm64"
+    },
+    "exitCode": 0,
+    "jobs": 2,
+    "logSHA256": "2419fc2c81015b82e4a8703d7af6c075b67a7d122e59d8eec6bd6bc6bf10465f",
+    "oldRuntimeAndArgsUnchanged": true,
+    "receiptSHA256": "eabb1f2d91a3ef1cb4017af1489d8978e4198542b2c25758ab4e87f64292f400",
+    "sourceManifestUnchanged": true,
+    "sourcePostimages": {
+      "chrome/BUILD.gn": "6579c47209ab7a8e5d2586d86105163bb0e23db61888b74603ea12a66b1adcbd",
+      "chrome/app/BUILD.gn": "6616fb9894602668d37e0eb7a7de772048720fcfa901a1469eddf556e962c1f3",
+      "chrome/app/chrome_main_delegate.cc": "99a2cf41ec3e5aee711babef3a7f118f8054cee1b6abdff1cf5430f8ac5ecf59",
+      "chrome/browser/mac/code_sign_clone_manager.mm": "1d3b89ced774829ff5711789acc935f2b6ef47fec0951faec87d344b4d02ee49",
+      "chrome/common/chrome_paths_mac.mm": "77bfc7bbf2a3b3cb02af613490a28d8395ddd301d399b2845d5f5e317e2b80a3",
+      "components/ungoogled/BUILD.gn": "73adccfca4b5b9a8e3949b58135565c11e0f941dcd5eec2a51fcf27fd3995f6d",
+      "components/ungoogled/font_qa_witness_mac.h": "8ca7da89806eda46345d01e1d659f332763e0a262f784543fa6c5add4b8fd8e3",
+      "components/ungoogled/font_qa_witness_mac.mm": "ba4877033bb9fd55a82520dab874bd28e2632b2e651a643dc7c79b98e8031b91",
+      "components/ungoogled/system_font_policy_mac.cc": "79ec0a54c2494082cff801cbd226191ed20a31b5303cbc754aafe674db26890f",
+      "components/ungoogled/system_font_policy_mac.h": "80e257a26c7fdb1ea94e8e839f37aade0494717fda68a3c8e69ae63915ac5d66",
+      "components/ungoogled/system_font_source.cc": "a9a7bcdb47fac744895cd7bb04025813ab5aba70b50ee42875a8810f7693b627",
+      "components/ungoogled/system_font_source.h": "7d297bc1064a50fbcf1191502c1b5fc6de9cb5dfeed4127a29b3ebf18dbc4da5",
+      "content/browser/BUILD.gn": "d82666c1ea242b7aa020b11b85ae78d09529f36d39ecdb5a258e314c03d895b6",
+      "content/browser/font_access/font_enumeration_data_source_mac.mm": "5fddf858aa8227662737370dff5487344ca3f693ded7bee4bbdb665ea178014d",
+      "content/browser/preloading/prerender/prerender_browsertest.cc": "9cb20c691f6b263ff47c8ad85e8853fe8d6e86414059a2e94bc49003d65150d8",
+      "content/browser/renderer_host/navigation_request.cc": "3dc5b386c55559a6fb3c11b617012b1ae37b687c99498e21e1dc084dc0bf56b3",
+      "content/browser/renderer_host/text_input_manager.cc": "feec096dcc4221af882e4106b6e1080215231331730e4cd38a25b9d0bc17a1bb",
+      "content/browser/renderer_host/text_input_manager.h": "5f9c1b858a8e5be3b4029dffd593382b2f72f77fc0e65575545819c362a09172",
+      "content/browser/renderer_host/text_input_manager_unittest.cc": "849d2554b5803630bbd2e01e2ae207a61aec57f6d90f97fe80450a07dcbb6cba",
+      "content/browser/worker_host/dedicated_worker_host.cc": "1059947e94acf9ae2d738f37a677048a528104dce3dd9f9ab5b53b35f4291e60",
+      "content/browser/worker_host/dedicated_worker_host.h": "810dfce6cfb38dc65daa68196673c45e15546caeeb83f7ded144f6dbbe56c065",
+      "content/browser/worker_host/dedicated_worker_service_impl_unittest.cc": "748d2e01df6982e246f6bc3cf406e2585ec78920bffe6898443a4d3fd7a9b639",
+      "content/browser/worker_host/shared_worker_host.cc": "5a400cd44f961e2d29ef28af847e7abbb065d7aa9e78bba0562e63b3efdff660",
+      "content/browser/worker_host/shared_worker_host_unittest.cc": "6e3df861c38a777c3414408fe27d601b1ef7c8c458d2f2b89af7000bb07ef30d",
+      "content/browser/worker_host/worker_script_fetcher.cc": "61f4f378df80f9f6ef7ad997f46b02b421a97607551d2fb36f61f46df79118aa",
+      "content/browser/worker_host/worker_script_fetcher.h": "d9657bec69927ebb658ef62ac03f74aeb3e48b603f0cdb67b2b9439edb8bc048",
+      "content/browser/worker_host/worker_script_fetcher_unittest.cc": "ebae33bf36e3f42386afb4e8092fcabaf9585feb90470cb97e27600a9342aa5d",
+      "content/common/features.cc": "03263e4aec84f206161fdb5a19e6fb33b3175cb1b4d26ef81b93fa9b49ff7697",
+      "content/common/features.h": "41eb5abf26a153193078a8289d562706f370b141e7d916a8215d4680eddf07d6",
+      "content/renderer/BUILD.gn": "7af5dced4436033ef53a35a6780728b32837f4ba94a8ae52af4edf4a05c73ae5",
+      "content/renderer/renderer_main.cc": "63535f2dd7bf1eb5cf5231416ef56467c7e0ddce158ea2a771c8c20545112ba7",
+      "skia/BUILD.gn": "93b498a964250eb93d018cb32dc4d176754ce907d2629fd59c87e2a5a1f3ff7e",
+      "third_party/blink/renderer/core/dom/element.cc": "a5b9e3ffc77f8a1d73c1775da6adad3f1942c686d220c6709721f22bee6025f8",
+      "third_party/blink/renderer/core/svg/svg_resource.cc": "9daa2db1fd2bf11d120ea111f332f57f4209acd3f12153b55e7dee26f9d7f464",
+      "third_party/blink/renderer/core/workers/worker_settings.cc": "5f150428ab8617f088f9001c944cb7fe97906dec13ce853e6dbeb086dc6db089",
+      "third_party/blink/renderer/platform/BUILD.gn": "c62be39226f0a96a7bd674b82acf81411b3aa8e78601f8dd29bcb20dcf724ac2",
+      "third_party/blink/renderer/platform/fonts/generic_font_family_settings.cc": "16c68a6470fc0b08c2ccfefe458e574109485e5b0d769d62019d9f09cee09c4c",
+      "third_party/blink/renderer/platform/fonts/mac/font_cache_mac.mm": "02a168b7e443c9e93a624fa76ff3854f8f1b1e3acdb83f859bcaaa042d23f04a",
+      "third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm": "584718b5cbd03aab84758b4e13cb93776264a1e2def4c205a9cfa180c9fcb075",
+      "third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm": "4a941c7e89bb007a4ec0ef34f59bf82e189fc785e4a4483956adaca3205fb89e",
+      "third_party/blink/renderer/platform/fonts/neantik_system_generic_defaults.h": "8a483ceec214af118355323c5fb6148aa906f5447fbe33500049720f4cc60bf2",
+      "third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-credentialless.tentative.https.any.worker-expected.txt": null,
+      "third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-require-corp.tentative.https.any.worker-expected.txt": null,
+      "third_party/blink/web_tests/external/wpt/html/semantics/forms/the-datalist-element/list-id-insertion-crash.html": "4873bd28a655ddc69f4149d571b0239c54078956493a45ecb8cbb34fb721eee2",
+      "third_party/skia/src/ports/SkFontMgr_mac_ct.cpp": "2b45571117d403402a7a6ef27acc6062f7feddb66ac9faf00f2456e01a2eb1ba",
+      "v8/src/codegen/compiler.cc": "0cd4c4b3421835473543da1443c74a1ead6ff7d971cf4b6409b0b3c939977f8b",
+      "v8/src/codegen/compiler.h": "718b8ce8705db0ecbbd529e4f8df869664a68e11b67cd8304534771fce5e75b5",
+      "v8/src/compiler/js-generic-lowering.cc": "1a864183e0cdc4526ab3a2bdea678c4604c6329ea0463c528fbde0b7f014eaf7",
+      "v8/src/compiler/js-intrinsic-lowering.cc": "5318a383ed858415e39abd2e279d8cf3200d6c5dc98a8bb928345d0aef520623",
+      "v8/src/compiler/js-operator.cc": "f72dfae3776214a6fb4fa92e567bd8a0dc09fc52c54bd11bc2054947e93262e0",
+      "v8/src/compiler/operator-properties.cc": "5d42e856941981753953067bde5b5112c9e991fbb6f4cd0ff03ee7c55c8c2300",
+      "v8/src/maglev/maglev-graph-builder.cc": "7324e5934240486a05c4215b543c3cfe08e86e3934b5fdd49d4d422ded32ba7d",
+      "v8/src/snapshot/code-serializer.cc": "fd5d59e06771283ee3ea21add0cf5977d180b1912e015f678819ca81295a70db",
+      "v8/src/snapshot/code-serializer.h": "b42a2c001c7c41d4f4035413f8c6e1edb75b088aec24223c6b6451d80a33ff34",
+      "v8/test/mjsunit/compiler/regress-569659194-1.js": "7ffb14d330d3e22a2124ec9fdb5917fa2d266ad0004b70a8878e2c9f314df2dc",
+      "v8/test/mjsunit/compiler/regress-569659194-2.js": "54c5624fd8a3f3a5b278a5d5706e841f032d12ff046a163cc1c98a5fcac3d23e",
+      "v8/test/mjsunit/compiler/regress-569659194-3.js": "e450e23e470c36b77420091f3f19e87a8fd75038bf28700060d901a62566b769",
+      "v8/test/mjsunit/maglev/regress-569286602-1.js": "229c10c31d2374c1453061e17eaacbea0896a1015c5a94911e64fa3a42b8b364",
+      "v8/test/mjsunit/maglev/regress-569286602-2.js": "4d53270f8b66ee3c6f3d04f3675c4a50ae3d9b30075bcd91d9a65c142f14ee50",
+      "v8/test/unittests/api/deserialize-unittest.cc": "1d3fb2324300b5c04596ba493d063a88638f06a6bc8a648730c273845b0ec5ce"
+    },
+    "sourcePostimagesUnchanged": true,
+    "target": "chrome",
+    "toolHashes": {
+      "buildtools/mac/gn": "8b50f57cfac9eba62f07ce5d9ad15d738c6bfeb6e58de33fe2b586800545bee6",
+      "third_party/llvm-build/Release+Asserts/bin/clang": "a0acdda5df49257a38004653c4689a76be76e90bdf01393be2055848528069fd",
+      "third_party/ninja/ninja": "6c03e94e3ee141301a7e5151227508ac8cec05c12d79ed9240062a86a0e2d14f",
+      "third_party/rust-toolchain/bin/bindgen": "b29fedc4a718ace0a7beaa73e95301247a7b4d8ad67465d3bca0a9252bcadae8",
+      "third_party/rust-toolchain/bin/cc_bindings_from_rs": "2ad8ff14e11986b321150952422de1b23e706b26824ba01ff375668c4d8edbd1",
+      "third_party/rust-toolchain/bin/rustc": "ea97a97cdfa70463afb5408af91d48aad1b58792037432319ac07b1a445f686b"
+    },
+    "toolsUnchanged": true
+  },
+  "changes": [
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/preloading/prerender/prerender_browsertest.cc",
+        "sha256": "9cb20c691f6b263ff47c8ad85e8853fe8d6e86414059a2e94bc49003d65150d8",
+        "sizeBytes": 835311
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/preloading/prerender/prerender_browsertest.cc",
+        "sha256": "b59d16accde3a863cd523060d555c7905556735ce8f46f9fc6fcf19dca371786",
+        "sizeBytes": 831817
+      },
+      "path": "content/browser/preloading/prerender/prerender_browsertest.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/renderer_host/navigation_request.cc",
+        "sha256": "3dc5b386c55559a6fb3c11b617012b1ae37b687c99498e21e1dc084dc0bf56b3",
+        "sizeBytes": 596274
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/renderer_host/navigation_request.cc",
+        "sha256": "8658ddec0c4ca3690b2d606a4b883965080ff1e280478f67b88f49c28896b396",
+        "sizeBytes": 596016
+      },
+      "path": "content/browser/renderer_host/navigation_request.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/renderer_host/text_input_manager.cc",
+        "sha256": "feec096dcc4221af882e4106b6e1080215231331730e4cd38a25b9d0bc17a1bb",
+        "sizeBytes": 25814
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/renderer_host/text_input_manager.cc",
+        "sha256": "22f9a5fd103252ea2b8fa375607eb749e3bc46f22c2f50d50570242b9aead29f",
+        "sizeBytes": 25119
+      },
+      "path": "content/browser/renderer_host/text_input_manager.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/renderer_host/text_input_manager.h",
+        "sha256": "5f9c1b858a8e5be3b4029dffd593382b2f72f77fc0e65575545819c362a09172",
+        "sizeBytes": 15433
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/renderer_host/text_input_manager.h",
+        "sha256": "b6acd10944e89623c056bbadfc4367b5f7678eddc23532a782d6fcdfeec2be16",
+        "sizeBytes": 15332
+      },
+      "path": "content/browser/renderer_host/text_input_manager.h"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/renderer_host/text_input_manager_unittest.cc",
+        "sha256": "849d2554b5803630bbd2e01e2ae207a61aec57f6d90f97fe80450a07dcbb6cba",
+        "sizeBytes": 19461
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/renderer_host/text_input_manager_unittest.cc",
+        "sha256": "5bba7eddae6bfcfb7d4c20fd5d8182624b3651daf5a0d18873bb58aa7783cfc0",
+        "sizeBytes": 14418
+      },
+      "path": "content/browser/renderer_host/text_input_manager_unittest.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/dedicated_worker_host.cc",
+        "sha256": "1059947e94acf9ae2d738f37a677048a528104dce3dd9f9ab5b53b35f4291e60",
+        "sizeBytes": 56177
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/dedicated_worker_host.cc",
+        "sha256": "7e43fa2a8d99d62d2b3150ad66a559db5bd4b07b9d4dc94acd74e20b960783fa",
+        "sizeBytes": 55673
+      },
+      "path": "content/browser/worker_host/dedicated_worker_host.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/dedicated_worker_host.h",
+        "sha256": "810dfce6cfb38dc65daa68196673c45e15546caeeb83f7ded144f6dbbe56c065",
+        "sizeBytes": 21192
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/dedicated_worker_host.h",
+        "sha256": "b81a594160850734ac3c36c534a7a83b9541a977b3fb75e051a774ab95ef343a",
+        "sizeBytes": 21144
+      },
+      "path": "content/browser/worker_host/dedicated_worker_host.h"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/dedicated_worker_service_impl_unittest.cc",
+        "sha256": "748d2e01df6982e246f6bc3cf406e2585ec78920bffe6898443a4d3fd7a9b639",
+        "sizeBytes": 39088
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/dedicated_worker_service_impl_unittest.cc",
+        "sha256": "f385961858b78447b4a853bc1b87cc5e7e22773cee1c17ede5ad748195669684",
+        "sizeBytes": 34925
+      },
+      "path": "content/browser/worker_host/dedicated_worker_service_impl_unittest.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/shared_worker_host.cc",
+        "sha256": "5a400cd44f961e2d29ef28af847e7abbb065d7aa9e78bba0562e63b3efdff660",
+        "sizeBytes": 53781
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/shared_worker_host.cc",
+        "sha256": "85c95af160a0fdd426844f33daa2aca00047989d3999347970d2d75cf63fb4bf",
+        "sizeBytes": 52779
+      },
+      "path": "content/browser/worker_host/shared_worker_host.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/shared_worker_host_unittest.cc",
+        "sha256": "6e3df861c38a777c3414408fe27d601b1ef7c8c458d2f2b89af7000bb07ef30d",
+        "sizeBytes": 34722
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/shared_worker_host_unittest.cc",
+        "sha256": "7dfbacbb15c04fc369ed247c130fa7d39966f1e714aadb302c700cb21aa0ecc2",
+        "sizeBytes": 33542
+      },
+      "path": "content/browser/worker_host/shared_worker_host_unittest.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/worker_script_fetcher.cc",
+        "sha256": "61f4f378df80f9f6ef7ad997f46b02b421a97607551d2fb36f61f46df79118aa",
+        "sizeBytes": 40114
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/worker_script_fetcher.cc",
+        "sha256": "c9f93076f6c081df5e28eeff37a6ac16e195b779d49025e42317e041aef1573a",
+        "sizeBytes": 38764
+      },
+      "path": "content/browser/worker_host/worker_script_fetcher.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/worker_script_fetcher.h",
+        "sha256": "d9657bec69927ebb658ef62ac03f74aeb3e48b603f0cdb67b2b9439edb8bc048",
+        "sizeBytes": 12145
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/worker_script_fetcher.h",
+        "sha256": "187bda5bcd039e937110d5ef409f508a05029d9208ea13098362ac6f88dbf708",
+        "sizeBytes": 11904
+      },
+      "path": "content/browser/worker_host/worker_script_fetcher.h"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/worker_script_fetcher_unittest.cc",
+        "sha256": "ebae33bf36e3f42386afb4e8092fcabaf9585feb90470cb97e27600a9342aa5d",
+        "sizeBytes": 5747
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/browser/worker_host/worker_script_fetcher_unittest.cc",
+        "sha256": "2f244b8e23430d4d32326bac607717933d560c02a26439fb1dfe768534e66bcf",
+        "sizeBytes": 3094
+      },
+      "path": "content/browser/worker_host/worker_script_fetcher_unittest.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/common/features.cc",
+        "sha256": "03263e4aec84f206161fdb5a19e6fb33b3175cb1b4d26ef81b93fa9b49ff7697",
+        "sizeBytes": 41297
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/common/features.cc",
+        "sha256": "72a1756ae91f9ebbfd7c514728d1c92aca337047d0415d8801e0d09a77de7ddd",
+        "sizeBytes": 41150
+      },
+      "path": "content/common/features.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/common/features.h",
+        "sha256": "41eb5abf26a153193078a8289d562706f370b141e7d916a8215d4680eddf07d6",
+        "sizeBytes": 13852
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "content/common/features.h",
+        "sha256": "2046d8d71a6733468e0815f27b214280a690cd64e79047f512632fe97046583f",
+        "sizeBytes": 13763
+      },
+      "path": "content/common/features.h"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/blink/renderer/core/dom/element.cc",
+        "sha256": "a5b9e3ffc77f8a1d73c1775da6adad3f1942c686d220c6709721f22bee6025f8",
+        "sizeBytes": 544406
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/blink/renderer/core/dom/element.cc",
+        "sha256": "4730e00a37a3df058cd8825352c8c5c062108201a10a394522fe617fdbf29283",
+        "sizeBytes": 544067
+      },
+      "path": "third_party/blink/renderer/core/dom/element.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/blink/renderer/core/svg/svg_resource.cc",
+        "sha256": "9daa2db1fd2bf11d120ea111f332f57f4209acd3f12153b55e7dee26f9d7f464",
+        "sizeBytes": 15611
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/blink/renderer/core/svg/svg_resource.cc",
+        "sha256": "589d2be518853b8282802aa8ab1cbd7e6747e914ade5e9a1183a284842ff4019",
+        "sizeBytes": 15339
+      },
+      "path": "third_party/blink/renderer/core/svg/svg_resource.cc"
+    },
+    {
+      "after": null,
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-credentialless.tentative.https.any.worker-expected.txt",
+        "sha256": "48c947834d76271a32cf9a2aaf96d2b51045997cb3383db44e755cf39c84a984",
+        "sizeBytes": 173
+      },
+      "path": "third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-credentialless.tentative.https.any.worker-expected.txt"
+    },
+    {
+      "after": null,
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-require-corp.tentative.https.any.worker-expected.txt",
+        "sha256": "fa426d488cbf51b51930f0bbf7bbba56bdbe815fadc3f91b265407534d6508ed",
+        "sizeBytes": 169
+      },
+      "path": "third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-require-corp.tentative.https.any.worker-expected.txt"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "third_party/blink/web_tests/external/wpt/html/semantics/forms/the-datalist-element/list-id-insertion-crash.html",
+        "sha256": "4873bd28a655ddc69f4149d571b0239c54078956493a45ecb8cbb34fb721eee2",
+        "sizeBytes": 1044
+      },
+      "before": null,
+      "path": "third_party/blink/web_tests/external/wpt/html/semantics/forms/the-datalist-element/list-id-insertion-crash.html"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/codegen/compiler.cc",
+        "sha256": "0cd4c4b3421835473543da1443c74a1ead6ff7d971cf4b6409b0b3c939977f8b",
+        "sizeBytes": 197378
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/codegen/compiler.cc",
+        "sha256": "d56c6a7c49355d807cc3cc753b7eb87a500fb2aa91387db2cda3f3e04e35ee0e",
+        "sizeBytes": 197102
+      },
+      "path": "v8/src/codegen/compiler.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/codegen/compiler.h",
+        "sha256": "718b8ce8705db0ecbbd529e4f8df869664a68e11b67cd8304534771fce5e75b5",
+        "sizeBytes": 30140
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/codegen/compiler.h",
+        "sha256": "34a6cbf6a2dc2f984ea293ccd5678d4df36420b566950604261e695600d18bd1",
+        "sizeBytes": 30156
+      },
+      "path": "v8/src/codegen/compiler.h"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/compiler/js-generic-lowering.cc",
+        "sha256": "1a864183e0cdc4526ab3a2bdea678c4604c6329ea0463c528fbde0b7f014eaf7",
+        "sizeBytes": 50036
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/compiler/js-generic-lowering.cc",
+        "sha256": "0d8848d89a8f5fb2cc4662563fb8b521ffd9a1e912e1a4c085f896e11118eedd",
+        "sizeBytes": 50072
+      },
+      "path": "v8/src/compiler/js-generic-lowering.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/compiler/js-intrinsic-lowering.cc",
+        "sha256": "5318a383ed858415e39abd2e279d8cf3200d6c5dc98a8bb928345d0aef520623",
+        "sizeBytes": 18426
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/compiler/js-intrinsic-lowering.cc",
+        "sha256": "e2803d89d4ed78307bc90e541704bf1f6a1a47b94efa2afe48880fc7569014be",
+        "sizeBytes": 18375
+      },
+      "path": "v8/src/compiler/js-intrinsic-lowering.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/compiler/js-operator.cc",
+        "sha256": "f72dfae3776214a6fb4fa92e567bd8a0dc09fc52c54bd11bc2054947e93262e0",
+        "sizeBytes": 72286
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/compiler/js-operator.cc",
+        "sha256": "f17f1b6a00c95ecbb965a2a6716f7604e9fe7cff5c8f4326827b3d75a88cb991",
+        "sizeBytes": 72243
+      },
+      "path": "v8/src/compiler/js-operator.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/compiler/operator-properties.cc",
+        "sha256": "5d42e856941981753953067bde5b5112c9e991fbb6f4cd0ff03ee7c55c8c2300",
+        "sizeBytes": 10436
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/compiler/operator-properties.cc",
+        "sha256": "bea0d6a90c0ed5bf795ea6c7693a2bf53d823b965b6be11c889eeabc1e41c7fa",
+        "sizeBytes": 10527
+      },
+      "path": "v8/src/compiler/operator-properties.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/maglev/maglev-graph-builder.cc",
+        "sha256": "7324e5934240486a05c4215b543c3cfe08e86e3934b5fdd49d4d422ded32ba7d",
+        "sizeBytes": 727141
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/maglev/maglev-graph-builder.cc",
+        "sha256": "535ed5a427cc4915b1af4e77b9a97df4f13b27bef8e0ab08dc5bbd1eeaa3a5a4",
+        "sizeBytes": 726963
+      },
+      "path": "v8/src/maglev/maglev-graph-builder.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/snapshot/code-serializer.cc",
+        "sha256": "fd5d59e06771283ee3ea21add0cf5977d180b1912e015f678819ca81295a70db",
+        "sizeBytes": 38399
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/snapshot/code-serializer.cc",
+        "sha256": "3bde9c526e0412f07762b0812c9b3ec1b5670d64e9bb0bcd0d20aa287150c741",
+        "sizeBytes": 36780
+      },
+      "path": "v8/src/snapshot/code-serializer.cc"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/snapshot/code-serializer.h",
+        "sha256": "b42a2c001c7c41d4f4035413f8c6e1edb75b088aec24223c6b6451d80a33ff34",
+        "sizeBytes": 7387
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/src/snapshot/code-serializer.h",
+        "sha256": "2f6b770181738757a86e0cc1c7227083427d9c398247ea996649b547d71afa65",
+        "sizeBytes": 6626
+      },
+      "path": "v8/src/snapshot/code-serializer.h"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/test/mjsunit/compiler/regress-569659194-1.js",
+        "sha256": "7ffb14d330d3e22a2124ec9fdb5917fa2d266ad0004b70a8878e2c9f314df2dc",
+        "sizeBytes": 1682
+      },
+      "before": null,
+      "path": "v8/test/mjsunit/compiler/regress-569659194-1.js"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/test/mjsunit/compiler/regress-569659194-2.js",
+        "sha256": "54c5624fd8a3f3a5b278a5d5706e841f032d12ff046a163cc1c98a5fcac3d23e",
+        "sizeBytes": 1144
+      },
+      "before": null,
+      "path": "v8/test/mjsunit/compiler/regress-569659194-2.js"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/test/mjsunit/compiler/regress-569659194-3.js",
+        "sha256": "e450e23e470c36b77420091f3f19e87a8fd75038bf28700060d901a62566b769",
+        "sizeBytes": 2377
+      },
+      "before": null,
+      "path": "v8/test/mjsunit/compiler/regress-569659194-3.js"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/test/mjsunit/maglev/regress-569286602-1.js",
+        "sha256": "229c10c31d2374c1453061e17eaacbea0896a1015c5a94911e64fa3a42b8b364",
+        "sizeBytes": 624
+      },
+      "before": null,
+      "path": "v8/test/mjsunit/maglev/regress-569286602-1.js"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/test/mjsunit/maglev/regress-569286602-2.js",
+        "sha256": "4d53270f8b66ee3c6f3d04f3675c4a50ae3d9b30075bcd91d9a65c142f14ee50",
+        "sizeBytes": 631
+      },
+      "before": null,
+      "path": "v8/test/mjsunit/maglev/regress-569286602-2.js"
+    },
+    {
+      "after": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/test/unittests/api/deserialize-unittest.cc",
+        "sha256": "1d3fb2324300b5c04596ba493d063a88638f06a6bc8a648730c273845b0ec5ce",
+        "sizeBytes": 61812
+      },
+      "before": {
+        "kind": "file",
+        "mode": 420,
+        "path": "v8/test/unittests/api/deserialize-unittest.cc",
+        "sha256": "fe6da5cfada6346d4f3a2207f18b1621f7731b39fe7de3115e8772ab8724047d",
+        "sizeBytes": 55497
+      },
+      "path": "v8/test/unittests/api/deserialize-unittest.cc"
+    }
+  ],
+  "kind": "security-backport-executed-build-and-postbuild-source-proof",
+  "limitations": [
+    "Source/build/sign lineage only;no headed security regression or manager/release qualification claimed.",
+    "Sequential full FD traversal requires exclusive source custody;not an atomic filesystem snapshot.",
+    "Chromium base156.0.8078.12 plus8official security backports;not a newly tagged upstream version.",
+    "Native Core/Prerender C++ regression tests are included in source but have not been executed."
+  ],
+  "postbuildObservation": {
+    "ancestorFullSHA256": "f3ab19815b0767d42277531a7e795243ce0ff3ef76d35acd5aca701fa4cc3378",
+    "atomicFilesystemSnapshot": false,
+    "deletedPathCount": 3250,
+    "deletedPathsSHA256": "5e0f5abbd884d9c3c03885807e89ee14a70101c473f5092d83afd59f3f4f0036",
+    "exclusiveSourceCustodyRequired": true,
+    "fullInventorySHA256": "072e98b4d18c302d1faa007921a675580e619e123b824d8971495da741bca209",
+    "historicalBuildObservationRelabeled": false,
+    "observation": {
+      "entriesSHA256": "621fd983951f4b13eeddd86a7cc95a340608b6f66973d6c297cb76a593aa6265",
+      "exactCoverageVerified": true,
+      "explicitCopyGroupsObserved": 83,
+      "fdSafeFullObservationVerified": true,
+      "observedDirectoryCount": 94535,
+      "sourceFileCount": 1062659,
+      "unknownHardlinksRejected": true
+    },
+    "receiptSHA256": "55b974bd1c908f92fa7944339489cedbe5afd655b140553ff28545b9890ae97b",
+    "sourceExecution": false
+  },
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "securityPatchManifestSHA256": "c35cd893abe1a98284c2146db542c82605c4d0fd7f159f965e0cd88cf0f36cd1",
+  "signing": {
+    "buildReceiptSHA256": "eabb1f2d91a3ef1cb4017af1489d8978e4198542b2c25758ab4e87f64292f400",
+    "rawInputUnchanged": true,
+    "receiptSHA256": "a0949548d6605387623b0c86114d2dc1e4a771daa72ca1c047044239adf5bb45",
+    "runtimeTree": {
+      "bytes": 411230673,
+      "digest": "6dfde85080a3fde010869cc00d6ac35f60cec32165725b5743f2b558070a2638",
+      "entries": 948,
+      "machoCount": 16
+    },
+    "signedCodeClosure": {
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Alerts).app/Contents/MacOS/NeAntik Browser Helper (Alerts)": "4d80039d50324326c45fa2658533d65653a783b613377578ccfe2d28b110a969",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Aperitif Alerts).app/Contents/MacOS/NeAntik Browser Helper (Aperitif Alerts)": "b745f34ab604729f3e5d05e0dec6cf88459034f56a9ce4062b4e2ef2fababfdf",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Aperitif GPU).app/Contents/MacOS/NeAntik Browser Helper (Aperitif GPU)": "540c55c8fe5d93ff211f9f9c412a2717219cb99228f10735b3d2f28b5d5a05bc",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Aperitif Renderer).app/Contents/MacOS/NeAntik Browser Helper (Aperitif Renderer)": "8e1da2f4dc6b5c6a910f1d2fd257bdaa68b0f04296352429e896201626895dac",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Aperitif).app/Contents/MacOS/NeAntik Browser Helper (Aperitif)": "df47e194e3bac238bea99af3a120a6fb2d084804376e3c85778709f82baa4761",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (GPU).app/Contents/MacOS/NeAntik Browser Helper (GPU)": "018590dafa55ed7b1923ca7e37429d622e2e7ea84811d4f1014305ffcec9aa0b",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper (Renderer).app/Contents/MacOS/NeAntik Browser Helper (Renderer)": "e2cb774f0d6fd0ec755c98c049f920a9d43d93dc5537ba3f7f360aa5306834d1",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/NeAntik Browser Helper.app/Contents/MacOS/NeAntik Browser Helper": "436773a871260ad0fff3c708746ad84db4c0600da9a3ad22f2849a7395a92e36",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/app_mode_loader": "207ade402203ddc129b60a6d3110ce65fa5862e27ed0a69384d9cab768600d2e",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/chrome_crashpad_handler": "715b0c2d4fd017fd4f622c88f976fe94a48e1fae16cf4d45c287e2bfa092305c",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Helpers/web_app_shortcut_copier": "6ee6c3a2e4d5d48c202b2beca2a06f17823c39343d3b4926d1ee36aa977023d6",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Libraries/libaperitif.dylib": "9b5fa3b31cec8af0391576ed9c77521f80beed5e55c6caf280cf92890259496a",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Libraries/libvk_swiftshader.dylib": "fb007a88895b53a473487445915918e233af71cb495960b346e312a30bcae774",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/Libraries/libvulkan.dylib": "fe0d53836823ea0746df3b382e2f3c2537703dd9ba3db74e69d50518d69abf02",
+      "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/NeAntik Browser Framework": "4774c5ef3d9048b7faf9f26307ce07f29be7696a9951e6e179e3e5f8b01d046f",
+      "Contents/MacOS/NeAntik Browser": "cf3bbc56ddbcac264363f33bac4d3f92ac66cf164038c9409651db22708a6941"
+    },
+    "signerIdentity": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "status": "signed-research-only"
+  },
+  "sourceSnapshotSHA256": "b2922280ad1114c3180780b7d563c2aaaaa0e267f7c53c7d3b6c1afe479128c7",
+  "sourceVariant": "font-system-security-20261015-v1",
+  "targetChromiumVersion": "156.0.8078.12"
+}

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "Chromium 156.0.8078.80 source rebase plan",
+  "chromiumVersion": "156.0.8078.80",
+  "targetArchitecture": "arm64",
+  "sourceMode": "official-chromium-stable-with-reviewed-neantik-patches",
+  "releaseReady": false,
+  "officialChromiumBase": {
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "156.0.8078.80",
+    "commit": "fb096c0011f9d50f0a264a9376420cdea9c421e3",
+    "tree": "9daca4c0f1670a0ead9a94888c1bfe4ace733f4d"
+  },
+  "sourceInputs": {
+    "patchSHA256": "2f48cb944f6e51439322776e3ec0519bd0567e300049253791c60faca46481ea",
+    "devtoolsCompatibilityPatchSHA256": "9eed3c3f43f96a00595163971b120c50accbeefeb07b552939b0ba9ad6ae7bfb",
+    "v8CompatibilityPatchSHA256": "d06dd32200393a0eacf5dafcf83f6c5dafafc508b97af58013e52cd135d58388",
+    "dependencyLockSHA256": "34ad8b0055c563997a26b1e1e2ee763bcac1ec56635da2d41527f621b7791e65",
+    "gclientConfigSHA256": "d7b653802f655ed185c922874fb46b9e46f9a3a9951356a28f864bbffd67c74e",
+    "gclientEntriesSHA256": "4673c17615effc9d67e0b4939fc52e7a13043dad0a2c476953efec67dad03108",
+    "gcsEntriesSHA256": "e11982ac9535a4d0f2f5155bed98b3b2c481ac3e1624dede93710a61a2bffd89",
+    "buildArgsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+    "dependencyGitCheckoutCount": 150,
+    "nonGitInputCount": 89,
+    "depsFileSHA256": "c4d60cae7b46d4ae476e3409226d89bf72c1fd61e1d97d64027ebae4356f23ae"
+  },
+  "sourceEvidence": {
+    "v900ReceiptSHA256": "aba9d8114cfcafd2164c76b3eb21b220f9698d8ff308fac0bc2a59cdf80bbe75",
+    "v904ReceiptSHA256": "9a66170b38e403fc0b325226ecb7eacfc477b1a62ab565906bf77d15bcf5f6ae",
+    "v907ManifestSHA256": "8e3b1f53ebd6b041195c216a01d4a8a5a1bf2d5fae1b3108f253e5bce9689951",
+    "v921GNAcceptanceReceiptSHA256": "64249eb8d2a7987fa1b5007934692afba7f89fc878624babda5541482f0171a3",
+    "v922BuildProgressReceiptSHA256": "a46c0f054b855a7b368b2a32c1d24f88352d57b5e3148123b5aaf6f2f4701d6a",
+    "v923ContractGapReceiptSHA256": "bf5d51453400fcfd9bc79ee0ae81b1558b81aea53747a1ffa384b112954c06a7"
+  },
+  "buildEvidence": {
+    "status": "pending-active-Ninja-session",
+    "file": "runtime/chromium-15680-build-evidence.json",
+    "releaseReady": false
+  }
+}

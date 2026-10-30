@@ -1,0 +1,60 @@
+{
+  "boundaries": [
+    "b960 immutable and unchanged",
+    "V246 source offer unchanged",
+    "no launch or network request",
+    "no publication or signing/notarization"
+  ],
+  "changedSources": {
+    "Sources/NeAntik/WebKitHostChildRuntime.swift": "c11cb634ab2f499da588716b9de770eb9c9abb43d92d578bb581500b362949a8",
+    "Sources/NeAntik/WebKitProfileBrowser.swift": "216849a309be75c818ba46bf7f78e16a7d7f5b66e97ac51d3c29a46ae6b1eede",
+    "scripts/package-owned-webkit-release.py": "4ddbe63a94e12303345cdfb7e53b8b839378baf3d0459f565a5882be138cb5d9",
+    "scripts/package-webkit-host.py": "02555300feff4b6cee9c1cdcde4b47ee04e012b44ba6cf687b2e6fcddbdc242e",
+    "scripts/tests/test_package_owned_webkit_release.py": "7786a99c525388fa8e0ac3e1bd3648404b887e2d2eaf3909487a3f570a317591",
+    "scripts/tests/test_package_webkit_host.py": "fefac8bebfdab6df8d8c52c564f73b6c094adfa6d2683bf35231582c88b7d41c"
+  },
+  "id": "neantik-v276-diagnostic-tls-scope-and-regression-20261027",
+  "nextAction": "Assemble a fresh private production-ID diagnostic app from the newly built manager and host, bind owner-only root and exact synthetic CA/origin, verify release packager refusal on that marked copy, check native QA admission once, then run the single planned synthetic HTTPS route.",
+  "observedAtUTC": "2026-10-27T16:03:13Z",
+  "schemaVersion": 1,
+  "scope": "Private source and diagnostic-only TLS trust path; no public candidate, b960, V246, runtime framework, ZIP/DMG, notarization, upload, or user profile changed.",
+  "source": {
+    "branch": "codex/neantik-1-0-prep-20261025",
+    "dirty": true,
+    "head": "63c3bc620163ae6354f3dc359b47b9fd72e921d0",
+    "worktree": "/private/tmp/neantik-release-v1"
+  },
+  "status": "DIAGNOSTIC_TLS_SCOPE_IMPLEMENTED_AND_TESTED; APP_ASSEMBLY_AND_RUNTIME_OPEN",
+  "verification": {
+    "derivedHost": "PASS: prepare-only re-copied exact current host source before diagnostic build",
+    "diagnosticHost": {
+      "binarySHA256": "b5306db87753c12b94f80fe082cbfe8f1333275a9d819b7a16720e18d4e098fe",
+      "ownedSHA256": "4fa957485d862c1f1951885006f25a79c884b36b320c3ec08f46b347413c08c5",
+      "status": "built-private-diagnostic"
+    },
+    "diagnosticManager": {
+      "binarySHA256": "1818de9f6523a0c3a162266d399875bd321ca57e15c2f1021bbfb60380101a82",
+      "status": "build-complete"
+    },
+    "fullPython": {
+      "initialRun": "one test could not execute /bin/ps in sandbox",
+      "skipped": 55,
+      "status": "PASS_AFTER_TARGETED_ENVIRONMENT_RETRY",
+      "targetedRetry": "PASS with process-inspection permission: RuntimeDrainTests.test_live_owned_candidate_refuses_then_accepts_after_exit",
+      "tests": 2013
+    },
+    "fullSwift": {
+      "buildMode": "diagnostic",
+      "inputSHA256": "ca4fe78fd8d05dc7f58133ba0182005e213bde03cc74b45f3021a4ce5857d274",
+      "receipt": "/private/tmp/neantik-release-v1/.build/neantik-local/test-receipts/20261027T155305Z-10482.json",
+      "receiptSHA256": "5183d678a490454be8b2f555578ca747241b1847769e127c18f937ea63fdcf17",
+      "skipped": 82,
+      "status": "PASS",
+      "suites": 222,
+      "tests": 1844
+    },
+    "releaseGuard": "PASS: production manager packaging rejects diagnostic and QA trust metadata",
+    "runtime": "NOT RUN: no isolated headed app bundle has been assembled",
+    "targetedPython": "PASS: 58 package WebKit host and owned WebKit release contract tests"
+  }
+}

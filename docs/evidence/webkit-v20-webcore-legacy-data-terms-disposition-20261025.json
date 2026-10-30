@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T15:42:36Z",
+  "status": "PARTIAL_TERMS_CLASSIFIED_ATTRIBUTION_AND_NOTICE_CLOSURE_OPEN",
+  "scope": "Maintainer source-lineage disposition for four headerless WebCore generator inputs; read-only source/evidence review. No worksheet row, source file, offer component, build, test or publication changed.",
+  "sourceBinding": {
+    "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "patchedSourceSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "files": {
+      "Source/WebCore/css/CSSProperties.json": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343",
+      "Source/WebCore/css/CSSValueKeywords.in": "fa5b9337b00c1acadacfd9ce5da60b234ee1a0a74e5be6fcebe93ce266f9621d",
+      "Source/WebCore/css/SVGCSSValueKeywords.in": "bf79271aa57cb8f68425b767ea9c3be8ef00bf8f7ef6a29add484d04bdd38ef4",
+      "Source/WebCore/platform/ColorData.gperf": "dc1f82bbdc6090f232b5aabd9a86eacb44df1dd23e6f68f4e08e0b378ee8836d"
+    }
+  },
+  "policy": {
+    "url": "https://docs.webkit.org/Other/Licensing.html",
+    "finding": "WebKit documents LGPL for much code inherited from KHTML, BSD-2 for new WebKit code, and retention of original copyright/license when moving existing code."
+  },
+  "evidence": {
+    "CSSPropertiesConversion": "https://github.com/WebKit/WebKit/commit/e3191baa3d42b9c15fa44c7b7ea21726a64ce968",
+    "CSSValueRename": "https://github.com/WebKit/WebKit/commit/621f9cebf499307403af4fb00193e77cad1dcf39",
+    "KSVG2Import": "https://github.com/WebKit/WebKit/commit/c5046b37da159eb6b4b4ec9a483af29b23339285",
+    "KSVG2Move": "https://github.com/WebKit/WebKit/commit/f21933ab8d8e07f1ca52d0962f9cea643cae6842",
+    "ColorDataOrigin": "https://github.com/WebKit/WebKit/commit/5f5a2bc50fe448d0881140493bfd7786025ef8e9",
+    "KDEPortAnnouncement": "https://dot.kde.org/2005/07/11/next-generation-kde-technologies-ported-webcore/"
+  },
+  "noticeCoverage": {
+    "LGPLText": {
+      "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/notices/webcore/WebCore-LICENSE-LGPL-2.txt",
+      "sha256": "7555fa34bc131a75ca56d65c40cc1ea8f9515d23e353d4c15d58573a042f7805"
+    },
+    "WebCoreAppleLicense": {
+      "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/notices/webrtc-v20-notices-candidate-v3/files/Source/WebCore/LICENSE-APPLE",
+      "sha256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4"
+    },
+    "sourceOfferManifest": {
+      "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/manifest.json",
+      "sha256": "8cd91c3f9222d061183f0380e2b07569627903296be2744f52997340ef0bb3fa"
+    },
+    "interpretation": "The exact license texts are present in the private source offer. Their presence does not by itself restore missing per-file copyright statements or prove that every headerless file is fully attributed."
+  },
+  "reviewedInputs": [
+    {
+      "path": "Source/WebCore/css/CSSProperties.json",
+      "sha256": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343",
+      "lineage": "Created by e3191baa3d42b9c15fa44c7b7ea21726a64ce968 as conversion of CSSPropertyNames.in. Prior blame had no KHTML path; current blame: 16,523 lines, 14,169 direct Source/WebCore/css/CSSProperties.json and 2,354 commit ranges without a recovered path.",
+      "termsFinding": "BSD-2-Clause for WebCore-native contributions under WebKit new-code policy; maintainer classification, not legal opinion.",
+      "notice": "Source/WebCore/LICENSE-APPLE exists in private source-offer components; exact per-file copyright attribution/header remains not explicit in this JSON."
+    },
+    {
+      "path": "Source/WebCore/css/CSSValueKeywords.in",
+      "sha256": "fa5b9337b00c1acadacfd9ce5da60b234ee1a0a74e5be6fcebe93ce266f9621d",
+      "lineage": "At pinned WebKit source commit, blame: 2,045 lines; 124 trace to WebCore/khtml/css/cssvalues.in, 179 to WebCore/css/CSSValueKeywords.in, 1,597 to Source/WebCore/css/CSSValueKeywords.in, 145 ranges lack recovered path. Historical cssvalues.in was renamed at 100% similarity in 621f9cebf499307403af4fb00193e77cad1dcf39.",
+      "termsFinding": "Mixed terms: LGPL-2.0-or-later for identifiable KHTML-derived portions and BSD-2-Clause for WebKit-authored additions under WebKit policy.",
+      "notice": "Source offer contains WebCore LGPL-2 text and WebCore/LICENSE-APPLE; source file has no recognized header. Per-file copyright attribution for inherited portions remains open."
+    },
+    {
+      "path": "Source/WebCore/css/SVGCSSValueKeywords.in",
+      "sha256": "bf79271aa57cb8f68425b767ea9c3be8ef00bf8f7ef6a29add484d04bdd38ef4",
+      "lineage": "Pinned-source blame: 271 lines; 160 trace to KSVG2 import commit c5046b37da159eb6b4b4ec9a483af29b23339285, 110 to current Source/WebCore path, 1 to WebCore/css path. The file was later moved from WebCore/ksvg2/css in f21933ab8d8e07f1ca52d0962f9cea643cae6842. KDE historical announcement confirms KSVG2 was ported into WebCore.",
+      "termsFinding": "Mixed terms: LGPL-2 for KSVG2-derived content and BSD-2-Clause for later WebKit contributions, as a maintainer classification from exact lineage plus WebKit policy.",
+      "notice": "Source offer contains WebCore LGPL-2 text and WebCore/LICENSE-APPLE; no per-file source header. KSVG2 copyright-holder attribution remains open."
+    },
+    {
+      "path": "Source/WebCore/platform/ColorData.gperf",
+      "sha256": "dc1f82bbdc6090f232b5aabd9a86eacb44df1dd23e6f68f4e08e0b378ee8836d",
+      "lineage": "Current blame: 187 lines; 171 trace to WebCore/platform/ColorData.gperf, 15 to Source/WebCore/platform/ColorData.gperf, 1 range lacks path. The 2002 initial file-add commit 5f5a2bc50fe448d0881140493bfd7786025ef8e9 added all 151 lines and identifies Darin Adler as author.",
+      "termsFinding": "BSD-2-Clause for WebCore-native contribution under WebKit new-code policy; maintainer classification, not legal opinion.",
+      "notice": "Source offer contains WebCore/LICENSE-APPLE; exact file has no recognized header. File-level copyright attribution is not explicit in the source and remains open."
+    }
+  ],
+  "decision": "The license-term layer is now row-specific for the four files: CSSProperties and ColorData are classified BSD-2; CSSValueKeywords and SVGCSSValueKeywords are classified mixed LGPL-2-or-later/LGPL-2 inherited portions plus BSD-2 WebKit additions. Missing per-file attribution/header coverage remains a release blocker. No public runtime-image license decision is changed; all 82 worksheet image/resource UNKNOWNs remain UNKNOWN. This is maintainer technical classification, not legal advice.",
+  "next": "Resolve the missing per-file attribution/notice coverage using primary upstream copyright evidence or replace/downgrade the affected inputs; then continue JSC source notices and the 82 image/resource decisions. Keep recipient replacement/re-sign/load open."
+}

@@ -1,0 +1,37 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "69fa7a5d2c6cdf8f02a0b6394866aa2485aa4a24bd99989ba0f86dd4d0616664",
+  "payload": {
+    "label": "native-safe-browsing-ui-mode0",
+    "patchSHA256": "8501908f92cceb20b9ac2eefacc3643aa71479c8418afff881f532d5de6b948f",
+    "policyChanged": false,
+    "postimages": {
+      "chrome/browser/safe_browsing/BUILD.gn": "ea7d99f603b38b42b72f59e8a498102e4bcddbc7e87eec8f0ab82455543f0e09"
+    },
+    "preimages": {
+      "chrome/browser/safe_browsing/BUILD.gn": "a7f6ec2512eb3d71460888cbef56e6909d04e12f72d4a3729a40ae0513c63fec"
+    },
+    "reason": "M156 newly adds native full-SB UI deps outside common disabled block, before Enterprise deps initialization; preserve disabled full SB and existing Enterprise-only dependency surface",
+    "releaseReady": false,
+    "reproduction": "m156-gn-generation-1.log",
+    "schemaVersion": 1,
+    "status": "source-applied-gn-and-native-build-pending"
+  },
+  "payloadType": "json",
+  "receipt": "m156-gn-mode0-correction.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

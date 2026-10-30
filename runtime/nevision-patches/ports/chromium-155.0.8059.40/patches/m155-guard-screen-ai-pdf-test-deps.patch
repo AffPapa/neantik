@@ -1,0 +1,21 @@
+--- a/chrome/browser/pdf/BUILD.gn
++++ b/chrome/browser/pdf/BUILD.gn
+@@ -247,11 +247,15 @@
+       deps += [
+         "//chrome/browser/download:test_support",
+         "//chrome/browser/permissions",
+-        "//chrome/browser/screen_ai:screen_ai_install_state",
+-        "//chrome/browser/screen_ai:screen_ai_service_router_factory",
+-        "//services/screen_ai/public/cpp:utilities",
+         "//ui/accessibility:test_support",
+       ]
++      if (enable_screen_ai_browsertests) {
++        deps += [
++          "//chrome/browser/screen_ai:screen_ai_install_state",
++          "//chrome/browser/screen_ai:screen_ai_service_router_factory",
++          "//services/screen_ai/public/cpp:utilities",
++        ]
++      }
+ 
+       if (enable_printing) {
+         sources += [ "pdf_extension_printing_test.cc" ]

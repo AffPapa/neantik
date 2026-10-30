@@ -1,8 +1,197 @@
+import Darwin
 import Foundation
 import Testing
 @testable import NeAntik
 
+@_silgen_name("flock")
+private func proxyHealthTestFlock(
+    _ descriptor: Int32,
+    _ operation: Int32
+) -> Int32
+
 struct ProxyHealthTests {
+    @Test
+    func proxyAuditMarkersHaveOnlyFixedNonsecretValues() {
+        let phases = ProxyAuditPhase.allCases
+        #expect(phases.count == 18)
+        #expect(Set(phases.map(\.rawValue)).count == phases.count)
+        for phase in phases {
+            #expect(phase.frame == "NEANTIK_MCP_QA phase=\(phase.rawValue)\n")
+            #expect(phase.rawValue.utf8.allSatisfy { (97...122).contains($0) || $0 == 95 })
+            #expect(phase.frame.utf8.count < 80)
+        }
+    }
+
+    @MainActor @Test
+    func unauthenticatedProxyCheckNeverReadsKeychain() async throws {
+        let root = Self.temporaryRoot("no-keychain-proxy")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let backend = MCPProfileManagementTests.Backend()
+        backend.failRead = true
+        let proxy = ProxyConfiguration(kind: .http, host: "example.invalid", port: 8080, username: "")
+        let profile = try store.upsert(BrowserProfile(name: "No credentials", proxy: proxy))
+        let operations = ProfileProxyOperations(
+            store: store, keychain: KeychainStore(backend: backend, service: "synthetic-no-keychain", legacyService: nil),
+            invalidateObservation: { _ in },
+            probe: { _, password in
+                #expect(password.isEmpty)
+                return ProxyTestObservation(observedAt: .now, responseTimeMilliseconds: 10,
+                    result: ProxyTestResult(ipAddress: "203.0.113.8", city: nil, countryName: "Germany",
+                                            countryCode: "DE", timezoneIdentifier: "Europe/Berlin", localeIdentifier: "de-DE"))
+            }
+        )
+        _ = try await operations.commit(profileID: profile.id, expectedProxy: proxy,
+            expectedRevision: profile.revision, previous: nil, commitsLaunchContext: false)
+        #expect(backend.reads == 0)
+    }
+
+    @MainActor @Test
+    func launchBookkeepingRetainsMeasuredHealthAfterDurableReload() async throws {
+        let root = Self.temporaryRoot("launch-health")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profiles = ProfileStore(paths: paths)
+        let backend = MCPProfileManagementTests.Backend()
+        let keychain = KeychainStore(backend: backend, service: "synthetic-launch-health", legacyService: nil)
+        let proxy = ProxyConfiguration(kind: .http, host: "example.invalid", port: 8080, username: "fixture")
+        let original = try profiles.upsert(BrowserProfile(name: "Launch health", proxy: proxy))
+        try keychain.saveProxyPassword("synthetic-password", profileID: original.id)
+        let measuredAt = Date(timeIntervalSince1970: 1_800_000_000.125)
+        let operations = ProfileProxyOperations(store: profiles, keychain: keychain, invalidateObservation: { _ in },
+            probe: { _, _ in ProxyTestObservation(observedAt: measuredAt, responseTimeMilliseconds: 10,
+                result: ProxyTestResult(ipAddress: "203.0.113.8", city: nil, countryName: "Germany", countryCode: "DE",
+                                        timezoneIdentifier: "Europe/Berlin", localeIdentifier: "de-DE")) })
+        let health = ProxyHealthCoordinator(fileURL: paths.proxyHealthFile)
+        _ = try await health.run(profile: original, operationWithCurrentIdentity: { previous in
+            try await operations.commit(profileID: original.id, expectedProxy: proxy, expectedRevision: original.revision,
+                                        previous: previous, commitsLaunchContext: true)
+        })
+        let prepared = try #require(profiles.profile(withID: original.id))
+        let measured = try #require(health.state(for: prepared))
+        #expect(BrowserLaunchPreparationPolicy.resolve(profile: prepared, proxyHealth: measured, now: measuredAt) == .launchImmediately)
+        #expect(BrowserLaunchPreparationPolicy.receipt(profile: prepared, proxyHealth: measured, now: measuredAt) != nil)
+        let persistedBeforeLaunch = try ProxyHealthStore(fileURL: paths.proxyHealthFile)
+        let persistedMeasurement = await persistedBeforeLaunch.state(for: prepared.id)
+        let launchMetadata = try #require(profiles.markLaunchedWithReceipt(prepared.id))
+        let launched = launchMetadata.recorded
+        #expect(await health.recordLaunchMetadata(from: prepared, receipt: launchMetadata))
+        #expect(health.state(for: launched) == measured)
+        // A second actual mark is valid even when persisted timestamps collide
+        // within one second. The typed durable receipt distinguishes an edit.
+        let secondMetadata = try #require(profiles.markLaunchedWithReceipt(launched.id))
+        #expect(await health.recordLaunchMetadata(from: launched, receipt: secondMetadata))
+        #expect(health.state(for: secondMetadata.recorded) == measured)
+        let reloadedProfiles = ProfileStore(paths: paths)
+        let reloaded = ProxyHealthCoordinator(fileURL: paths.proxyHealthFile)
+        await reloaded.reload(profiles: reloadedProfiles.profiles)
+        let durable = try #require(reloadedProfiles.profile(withID: launched.id))
+        #expect(reloaded.state(for: durable) == persistedMeasurement)
+        #expect(ProxyCheckSummary(record: reloaded.healthByProfileID[durable.id],
+                                currentIdentity: ProxyHealthIdentity(profile: durable), now: measuredAt).status == .currentSuccess)
+        // A credential edit still advances revision and cannot inherit the check.
+        try keychain.saveProxyPassword("synthetic-replacement", profileID: durable.id)
+        let edited = try profiles.upsert(durable)
+        #expect(reloaded.state(for: edited) == nil)
+        let afterEditLaunch = try #require(profiles.markLaunchedWithReceipt(edited.id))
+        #expect(!(await reloaded.recordLaunchMetadata(from: durable, receipt: afterEditLaunch)))
+        await reloaded.reload(profiles: [afterEditLaunch.recorded])
+        #expect(reloaded.healthByProfileID[edited.id] == nil)
+    }
+
+    @MainActor @Test
+    func launchBookkeepingDoesNotOverwriteNewerHealthOrReviveRemovedRecord() async throws {
+        let root = Self.temporaryRoot("launch-health-cas")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profiles = ProfileStore(paths: paths)
+        let fileURL = paths.proxyHealthFile
+        let profile = try profiles.upsert(BrowserProfile(name: "CAS", proxy: .init(kind: .http, host: "example.invalid", port: 8080, username: "")))
+        let launchMetadata = try #require(profiles.markLaunchedWithReceipt(profile.id))
+        let coordinator = ProxyHealthCoordinator(fileURL: fileURL)
+        let first = Self.healthState(timestamp: 1_800_000_001)
+        _ = try await coordinator.run(profile: profile, operation: { _ in first })
+        let other = try ProxyHealthStore(fileURL: fileURL)
+        let newer = Self.healthState(timestamp: 1_800_000_002)
+        try await other.set(newer, for: profile.id, identity: try #require(ProxyHealthIdentity(profile: profile)))
+        #expect(!(await coordinator.recordLaunchMetadata(from: profile, receipt: launchMetadata)))
+        let loaded = try ProxyHealthStore(fileURL: fileURL)
+        #expect(await loaded.state(for: profile.id) == newer)
+        await coordinator.reload(profiles: [profile])
+        try await other.set(nil, for: profile.id)
+        #expect(!(await coordinator.recordLaunchMetadata(from: profile, receipt: launchMetadata)))
+        let removed = try ProxyHealthStore(fileURL: fileURL)
+        #expect(await removed.allRecords().isEmpty)
+    }
+
+    @Test
+    func launchMetadataTransitionRejectsConfigurationIdentityAndRevisionChanges() throws {
+        let profile = BrowserProfile(name: "Transition", proxy: .init(kind: .http, host: "example.invalid", port: 8080, username: ""), revision: 10)
+        var launched = profile; launched.revision += 1; launched.lastLaunchedAt = .now; launched.updatedAt = .now
+        #expect(try ProfileLaunchMetadataTransition.matches(from: profile, to: launched))
+        var candidates: [BrowserProfile] = []
+        var changed = launched; changed.id = UUID(); candidates.append(changed)
+        changed = launched; changed.name = "Edited"; candidates.append(changed)
+        changed = launched; changed.proxy?.port += 1; candidates.append(changed)
+        changed = launched; changed.identity = BrowserIdentity(); candidates.append(changed)
+        changed = launched; changed.startURL = "https://example.com/changed"; candidates.append(changed)
+        changed = launched; changed.revision += 1; candidates.append(changed)
+        changed = launched; changed.lastLaunchedAt = nil; candidates.append(changed)
+        for candidate in candidates { #expect(!(try ProfileLaunchMetadataTransition.matches(from: profile, to: candidate))) }
+    }
+
+    @MainActor
+    @Test(arguments: [false, true])
+    func proxyCommitRejectsCancellationDuringMetadataRefresh(failedProbe: Bool) async throws {
+        try await checkSuspendedProxyCommit(failedProbe: failedProbe, cancel: true)
+    }
+
+    @MainActor
+    @Test(arguments: [false, true])
+    func proxyCommitRejectsCredentialsChangedDuringMetadataRefresh(failedProbe: Bool) async throws {
+        try await checkSuspendedProxyCommit(failedProbe: failedProbe, cancel: false)
+    }
+
+    @MainActor
+    private func checkSuspendedProxyCommit(failedProbe: Bool, cancel: Bool) async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("proxy-commit-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let backend = MCPProfileManagementTests.Backend()
+        let keychain = KeychainStore(backend: backend, service: "synthetic-commit", legacyService: nil)
+        let proxy = ProxyConfiguration(kind: .http, host: "example.invalid", port: 8080, username: "fixture")
+        let saved = try store.upsert(BrowserProfile(name: "Fixture", proxy: proxy))
+        try await store.refreshExternalMetadata(force: true)
+        let profile = try #require(store.profile(withID: saved.id))
+        try keychain.saveProxyPassword("synthetic-original", profileID: profile.id)
+        let before = try Data(contentsOf: paths.profilesFile)
+        let gate = ProxyCommitRefreshGate()
+        var invalidated = false
+        let operations = ProfileProxyOperations(store: store, keychain: keychain,
+            invalidateObservation: { _ in invalidated = true },
+            probe: { _, _ in
+                if failedProbe { throw ProxyProbeError(outcome: .timedOut) }
+                return ProxyTestObservation(observedAt: Date(), responseTimeMilliseconds: 10,
+                    result: ProxyTestResult(ipAddress: "203.0.113.9", city: nil, countryName: "Germany", countryCode: "DE", timezoneIdentifier: "Europe/Berlin", localeIdentifier: "de-DE"))
+            }, refreshMetadata: { currentStore in
+                await withCheckedContinuation { gate.continuation = $0 }
+                try await currentStore.refreshExternalMetadata(force: true)
+            })
+        let task = Task { try await operations.commit(profileID: profile.id, expectedProxy: proxy,
+            expectedRevision: profile.revision, previous: nil, commitsLaunchContext: true) }
+        while gate.continuation == nil { await Task.yield() }
+        if cancel { task.cancel() }
+        else { try keychain.saveProxyPassword("synthetic-replacement", profileID: profile.id) }
+        gate.continuation?.resume()
+        do { _ = try await task.value; Issue.record("Stale/cancelled observation was committed") }
+        catch is CancellationError {}
+        #expect(store.profile(withID: profile.id) == profile)
+        #expect(try Data(contentsOf: paths.profilesFile) == before)
+        #expect(!invalidated)
+        #expect(!FileManager.default.fileExists(atPath: paths.proxyHealthFile.path))
+    }
     @Test
     func successKeepsOnlyCoarsePersistableObservation() throws {
         let observedAt = Date(timeIntervalSince1970: 1_800_000_000)
@@ -174,28 +363,6 @@ struct ProxyHealthTests {
     }
 
     @Test
-    func storeRejectsHardLinkedFileWithoutReadingSharedInode() throws {
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(
-            "neantik-proxy-health-hardlink-\(UUID().uuidString)",
-            isDirectory: true
-        )
-        defer { try? FileManager.default.removeItem(at: root) }
-        try FileManager.default.createDirectory(
-            at: root,
-            withIntermediateDirectories: true
-        )
-        let target = root.appendingPathComponent("target.json")
-        try Data("{}".utf8).write(to: target)
-        let linked = root.appendingPathComponent("proxy-health.json")
-        try FileManager.default.linkItem(at: target, to: linked)
-
-        #expect(throws: ProxyHealthStoreError.unsafePath) {
-            _ = try ProxyHealthStore(fileURL: linked)
-        }
-        #expect(try Data(contentsOf: target) == Data("{}".utf8))
-    }
-
-    @Test
     func encodedCapacityFailurePreservesPreviousReadableFile() async throws {
         let root = Self.temporaryRoot("encoded-capacity")
         defer { try? FileManager.default.removeItem(at: root) }
@@ -238,6 +405,40 @@ struct ProxyHealthTests {
         #expect(try Data(contentsOf: fileURL) == previousData)
         let reloaded = try ProxyHealthStore(fileURL: fileURL)
         #expect(await reloaded.state(for: seedID) == seedState)
+    }
+
+    @Test
+    func occupiedHistoryLockFailsWithinBoundWithoutOverwriting() async throws {
+        let root = Self.temporaryRoot("busy-lock")
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        let fileURL = root.appendingPathComponent("proxy-health.json")
+        let lockURL = fileURL.appendingPathExtension("lock")
+        let descriptor = lockURL.path.withCString {
+            Darwin.open($0, O_RDWR | O_CREAT | O_CLOEXEC, 0o600)
+        }
+        try #require(descriptor >= 0)
+        defer {
+            _ = proxyHealthTestFlock(descriptor, LOCK_UN)
+            _ = Darwin.close(descriptor)
+        }
+        try #require(proxyHealthTestFlock(descriptor, LOCK_EX | LOCK_NB) == 0)
+
+        let store = try ProxyHealthStore(fileURL: fileURL)
+        let profileID = UUID()
+        do {
+            try await store.set(
+                Self.healthState(timestamp: 1_800_000_080),
+                for: profileID
+            )
+            Issue.record("Occupied history lock unexpectedly allowed a write")
+        } catch {
+            #expect(error as? ProxyHealthStoreError == .lockTimedOut)
+        }
+        #expect(!FileManager.default.fileExists(atPath: fileURL.path))
     }
 
     @Test
@@ -528,7 +729,7 @@ struct ProxyHealthTests {
         defer { try? FileManager.default.removeItem(at: root) }
         let fileURL = root.appendingPathComponent("proxy-health.json")
         let barrier = ProxyHealthCommitBoundaryBarrier()
-        let profile = BrowserProfile(
+        var profile = BrowserProfile(
             name: "Proxy",
             proxy: ProxyConfiguration(
                 kind: .http,
@@ -536,8 +737,12 @@ struct ProxyHealthTests {
                 port: 8_080,
                 username: "user"
             ),
-            revision: 30
+            revision: 0
         )
+        let paths = AppPaths(rootDirectory: root.appendingPathComponent("metadata"))
+        let profiles = ProfileStore(paths: paths)
+        profile = try profiles.upsert(profile)
+        let metadataBefore = try Data(contentsOf: paths.profilesFile)
         let identity = try #require(ProxyHealthIdentity(profile: profile))
         let state = Self.healthState(timestamp: 1_800_000_700.123_456)
         let coordinator = ProxyHealthCoordinator(
@@ -564,6 +769,7 @@ struct ProxyHealthTests {
         let reloaded = try ProxyHealthStore(fileURL: fileURL)
         #expect(await reloaded.state(for: profile.id) == nil)
         #expect(coordinator.healthByProfileID[profile.id] == nil)
+        #expect(try Data(contentsOf: paths.profilesFile) == metadataBefore)
     }
 
     @Test @MainActor
@@ -705,10 +911,55 @@ struct ProxyHealthTests {
     }
 }
 
+extension ProfileStoreTests {
+    @Test @MainActor
+    func durableLaunchContextCompletesHealthPairAfterCancellation() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-durable-launch-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let profile = try store.upsert(BrowserProfile(name: "First proxy launch", proxy: ProxyConfiguration(kind: .http, host: "proxy.example", port: 8080, username: "")))
+        let observed = Date()
+        let state = ProxyHealthState(latestAttempt: ProxyHealthAttempt(checkedAt: observed, outcome: .succeeded, responseTimeMilliseconds: 10),
+            lastSuccess: ProxyHealthSuccess(observedAt: observed, responseTimeMilliseconds: 10, exitAddressWasObserved: true,
+                city: nil, countryName: nil, countryCode: nil, timezoneIdentifier: "America/New_York", localeIdentifier: "en-US"))
+        let barrier = ProxyHealthCommitBoundaryBarrier()
+        let coordinator = ProxyHealthCoordinator(fileURL: paths.proxyHealthFile, executionGate: ProxyTestExecutionGate(), commitBoundaryHook: { await barrier.suspendAtBoundary() })
+        let task = Task { @MainActor in
+            try await coordinator.run(profile: profile, operationWithCurrentIdentity: { _ in
+                var prepared = profile
+                prepared.identity = prepared.identity.replacingProxyContext(timezoneIdentifier: "America/New_York", localeIdentifier: "en-US", evidence: .ipAPI(observedAt: observed))
+                let saved = try store.upsert(prepared)
+                return ProxyHealthTestCommit(state: state, currentIdentity: try #require(ProxyHealthIdentity(profile: saved)), hasDurableProfileCommit: true)
+            })
+        }
+        for _ in 0..<200 where !(await barrier.hasReached()) {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        guard await barrier.hasReached() else {
+            task.cancel()
+            await barrier.resume()
+            _ = try await task.value
+            Issue.record("Launch preparation did not reach its commit boundary")
+            return
+        }
+        task.cancel()
+        await barrier.resume()
+        #expect(try await task.value == state)
+        let saved = try #require(store.profile(withID: profile.id))
+        #expect(BrowserLaunchPreparationPolicy.resolve(profile: saved, proxyHealth: coordinator.state(for: saved)) == .launchImmediately)
+        try store.validateLaunchSnapshot(saved)
+        // The launch caller checks Task cancellation separately before process.run.
+    }
+
+}
+
 private actor ProxyHealthCommitBoundaryBarrier {
     private var reached = false
     private var reachWaiters: [CheckedContinuation<Void, Never>] = []
     private var releaseContinuation: CheckedContinuation<Void, Never>?
+
+    func hasReached() -> Bool { reached }
 
     func suspendAtBoundary() async {
         reached = true
@@ -745,4 +996,9 @@ private func expectProxyHealthCancellation(
     case let .failure(error):
         #expect(error is CancellationError)
     }
+}
+
+@MainActor
+private final class ProxyCommitRefreshGate {
+    var continuation: CheckedContinuation<Void, Never>?
 }

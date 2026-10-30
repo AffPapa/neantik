@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "V349",
+  "observedAtUTC": "2026-10-28T02:53:00Z",
+  "status": "PASS_SWIFTDEP_PATH_EVIDENCE_INTEGRATED_IN_SEPARATE_RECIPE_DRAFT; GENERATED_INPUT_RECONCILIATION_OPEN",
+  "scope": "Create a detached recipe supplement from existing V343/V346/V348 receipts only. No frozen offer, source/build output, browser, signature, or publication changed.",
+  "draft": {
+    "path": "/private/tmp/neantik-release-v1/docs/recipient-work/V349-swift-dependency-recipe-supplement.md",
+    "sha256": "1c1596c4677b5b3a478a8f22480abda9d3f0fdeca3a15fb5a684c7f80785452d"
+  },
+  "sourceOfferManifestSHA256": "73b83130fc540e65dc238f6fe510e831654b39a93fb691690de1532335ebcc42",
+  "swiftdepsManifestReceiptSHA256": "34e6c4e2f5b0b25210eae181228461ae6c5ef92b5d3e1ba7b5f69af5a0167ae7",
+  "boundedResult": "106 existing compiler dependency records; 11,415 unique literal paths; all exist; 0 unclassified; Xcode SDK/toolchain/platform paths are external host prerequisites.",
+  "remaining": "Map 6,458 generated-build paths to source/generator inputs and preflight a detached V288 offer revision. This does not prove complete corresponding source, independent recipient relink/load, license applicability, or release qualification.",
+  "releaseQualified": false,
+  "nextAction": "Use V348 path entries to map generated build dependencies against the exact V288 source archive, crosswalk, and generator evidence. Keep V288 frozen; run the source-offer consumer preflight only on a detached revised offer. Continue timestamped candidate signing independently after a fresh verified Apple timestamp."
+}

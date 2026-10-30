@@ -7,9 +7,7 @@ enum ProfileEditorField: String, Hashable, Sendable {
     case startURL
     case proxyHost
     case proxyPort
-    case proxyUsername
     case proxyPassword
-    case proxyImport
 }
 
 struct ProfileNotePresentation: Equatable, Sendable {
@@ -68,29 +66,6 @@ struct ProfileEditorValidationIssue: Equatable, Sendable {
 }
 
 enum ProfileEditorValidation {
-    static func nameMessage(for value: String) -> String? {
-        let clean = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !BrowserProfile.isValidName(clean) else { return nil }
-        if clean.isEmpty { return "Введи название профиля." }
-        if clean.count > BrowserProfile.maximumNameLength {
-            return "Сократи название до \(BrowserProfile.maximumNameLength) символов."
-        }
-        if clean.utf8.count > BrowserProfile.maximumNameUTF8Bytes {
-            return "Название занимает слишком много места. Сократи его или используй более простые символы."
-        }
-        return "Убери переносы строк и скрытые управляющие символы из названия."
-    }
-
-    static func pendingProxyImportIssue(_ text: String) -> ProfileEditorValidationIssue? {
-        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return nil
-        }
-        return ProfileEditorValidationIssue(
-            field: .proxyImport,
-            message: "Осталась строка прокси. Включи прокси или очисти строку."
-        )
-    }
-
     static func firstIssue(
         name: String,
         tags: [String],
@@ -103,10 +78,13 @@ enum ProfileEditorValidation {
         proxyUsername: String,
         proxyPassword: String = ""
     ) -> ProfileEditorValidationIssue? {
-        if let message = nameMessage(for: name) {
+        let cleanName = name.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+        guard BrowserProfile.isValidName(cleanName) else {
             return ProfileEditorValidationIssue(
                 field: .name,
-                message: message
+                message: "Введи название профиля."
             )
         }
 
@@ -131,11 +109,21 @@ enum ProfileEditorValidation {
         guard BrowserLaunchBuilder.validatedStartURL(startURL) != nil else {
             return ProfileEditorValidationIssue(
                 field: .startURL,
-                message: "Введи адрес сайта или about:blank для пустой страницы."
+                message: "Проверь адрес стартовой страницы."
             )
         }
 
         guard usesProxy else { return nil }
+
+        // Validate exactly the login persisted below. Password whitespace is
+        // significant and must never be normalized like a host or login.
+        let cleanUsername = proxyUsername.trimmingCharacters(in: .whitespacesAndNewlines)
+        if proxyKind == .socks5,
+           (!cleanUsername.isEmpty || !proxyPassword.isEmpty),
+           (cleanUsername.isEmpty || cleanUsername.utf8.count > 255 || proxyPassword.isEmpty || proxyPassword.utf8.count > 255) {
+            return ProfileEditorValidationIssue(field: .proxyPassword,
+                message: "Для SOCKS5 нужны логин и пароль длиной до 255 байт UTF-8 каждый.")
+        }
 
         let cleanHost = proxyHost.trimmingCharacters(
             in: .whitespacesAndNewlines
@@ -158,32 +146,16 @@ enum ProfileEditorValidation {
             kind: proxyKind,
             host: cleanHost,
             port: port,
-            username: proxyKind == .socks5
-                ? ""
-                : proxyUsername.trimmingCharacters(
-                    in: .whitespacesAndNewlines
-                )
+            username: cleanUsername
         )
-        var endpointOnly = proxy
-        endpointOnly.username = ""
-        guard endpointOnly.isValid else {
+        guard proxy.isValid else {
             return ProfileEditorValidationIssue(
                 field: .proxyHost,
                 message: "Проверь адрес прокси."
             )
         }
-        guard proxy.isValid else {
-            let exceedsLimit = proxy.username.count > ProxyConfiguration.maximumUsernameLength ||
-                proxy.username.utf8.count > ProxyConfiguration.maximumUsernameUTF8Bytes
-            return ProfileEditorValidationIssue(
-                field: .proxyUsername,
-                message: exceedsLimit
-                    ? "Сократи логин прокси до \(ProxyConfiguration.maximumUsernameLength) символов и \(ProxyConfiguration.maximumUsernameUTF8Bytes) байт UTF-8."
-                    : "Удали из логина прокси двоеточие и недопустимые управляющие символы."
-            )
-        }
 
-        if proxyKind != .socks5 {
+        do {
             guard !proxyPassword.contains("\0") else {
                 return ProfileEditorValidationIssue(
                     field: .proxyPassword,
@@ -203,5 +175,25 @@ enum ProfileEditorValidation {
             }
         }
         return nil
+    }
+}
+
+/// Keeps a configured proxy on either engine while limiting proxy-derived
+/// locale/timezone context to Chromium, which can actually apply that context.
+struct ProfileEditorProxySettings: Equatable {
+    let configuration: ProxyConfiguration?
+    let appliesProxyContext: Bool
+
+    static func resolve(
+        engine: BrowserEngine,
+        usesProxy: Bool,
+        configuration: ProxyConfiguration?,
+        detectedProxy: ProxyConfiguration?
+    ) -> Self {
+        let retained = usesProxy ? configuration : nil
+        return Self(
+            configuration: retained,
+            appliesProxyContext: engine == .chromium && retained != nil && retained == detectedProxy
+        )
     }
 }

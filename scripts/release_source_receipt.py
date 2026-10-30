@@ -45,7 +45,6 @@ class ReleaseSourceSnapshot:
 
 
 RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
-    ("Resources/NeAntik.entitlements", "release-entitlements"),
     ("runtime/apple-device-tuples.json", "reviewed-policy"),
     ("runtime/browser-identity-issuance.json", "reviewed-policy"),
     ("runtime/chromium-152-source-contract.json", "reviewed-policy"),
@@ -53,22 +52,24 @@ RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
     ("runtime/nevision-patches/series.json", "reviewed-policy"),
     ("runtime/security-baseline.json", "reviewed-policy"),
     ("scripts/direct-candidate-manifest.py", "candidate-manifest"),
-    ("scripts/enroll-direct-fingerprint-authority.sh", "hardware-enrollment"),
+    ("scripts/fingerprint_evidence.py", "evidence-schema-dispatch"),
     ("scripts/fingerprint_evidence_schema8.py", "evidence-schema"),
+    ("scripts/fingerprint_evidence_schema9.py", "evidence-schema"),
     ("scripts/notarize-direct-candidate.sh", "release-entrypoint"),
     ("scripts/notarize_direct_transaction.py", "orchestrator"),
     ("scripts/notary_transaction_inspector.py", "transaction-diagnostics"),
     ("scripts/notary_transaction_state.py", "transaction-state"),
-    ("scripts/prepare-direct-manager-update.sh", "candidate-builder"),
-    ("scripts/prepare-direct-runtime-candidate.sh", "runtime-candidate-builder"),
+    ("scripts/prepared_manager_bundle.py", "manager-preparation"),
+    ("scripts/qualify-prepared-manager.sh", "manager-qualification"),
     ("scripts/release-direct.sh", "release-entrypoint"),
+    ("scripts/release_candidate_location.py", "candidate-location"),
     ("scripts/release_input_snapshot.py", "input-snapshot"),
     ("scripts/release_source_receipt.py", "source-provenance"),
     ("scripts/release_transaction.py", "transaction"),
     ("scripts/run-isolated-release-python.py", "execution-bootstrap"),
+    ("scripts/runtime_compliance_coverage.py", "license-gate"),
     ("scripts/verify-browser-identity-issuance.py", "fingerprint-gate"),
     ("scripts/verify-direct-notarized-archive.py", "release-gate"),
-    ("scripts/verify-direct-provisioning-profile.py", "entitlements-gate"),
     ("scripts/verify-direct-telemetry-disabled.py", "privacy-gate"),
     ("scripts/verify-direct-update-policy.py", "release-gate"),
     ("scripts/verify-direct-version-bump.py", "release-gate"),
@@ -77,9 +78,9 @@ RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
     ("scripts/verify-integrated-release.sh", "release-gate"),
     ("scripts/verify-public-artifact-privacy.py", "privacy-gate"),
     ("scripts/verify-public-fingerprint-corpus.py", "fingerprint-gate"),
+    ("scripts/verify-runtime-compliance.sh", "license-gate"),
     ("scripts/verify-runtime-security-baseline.py", "security-gate"),
     ("scripts/verify-runtime-security-reference.py", "security-gate"),
-    ("scripts/verify-secure-enclave-release-authority.py", "release-gate"),
 )
 
 _MAXIMUM_SOURCE_FILE_BYTES = 32 * 1024 * 1024

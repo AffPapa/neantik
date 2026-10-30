@@ -8,6 +8,15 @@ PATCH_SERIES_FILE="$SCRIPT_DIR/../runtime/nevision-patches/series.json"
 DEVICE_TUPLES_FILE="$SCRIPT_DIR/../runtime/apple-device-tuples.json"
 SECURITY_BASELINE_FILE="$SCRIPT_DIR/../runtime/security-baseline.json"
 SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-152-source-contract.json"
+IS_CHROMIUM_153=0
+IS_CHROMIUM_154=0
+IS_CHROMIUM_15498=0
+IS_CHROMIUM_15540=0
+IS_CHROMIUM_15612=0
+IS_CHROMIUM_15648=0
+IS_CHROMIUM_15674=0
+IS_CHROMIUM_15680=0
+M154_SOURCE_SNAPSHOT_VERIFIED=0
 
 usage() {
   echo "Usage: $0 /absolute/path/to/Chromium.app [report.json] [args.gn] [source-provenance.json] [runtime-candidate-lock.json]" >&2
@@ -27,6 +36,60 @@ CANDIDATE_LOCK_PATH="${5:-}"
 if [[ "$APP_PATH" != /* || ! -d "$APP_PATH" ]]; then
   echo "Chromium.app must be an existing absolute path." >&2
   exit 66
+fi
+
+# Chromium 153 uses the owned source-qualified port contract. Keep the
+# historical 152 contract as the default for older candidates and fixtures.
+LOCK_VERSION_SOURCE="$LOCK_FILE"
+if [[ -n "$CANDIDATE_LOCK_PATH" ]]; then
+  LOCK_VERSION_SOURCE="$CANDIDATE_LOCK_PATH"
+fi
+LOCK_VERSION="$(
+  plutil -extract fingerprintChromium.chromiumVersion raw -o - \
+    "$LOCK_VERSION_SOURCE" 2>/dev/null || true
+)"
+if [[ "$LOCK_VERSION" == 153.* ]]; then
+  IS_CHROMIUM_153=1
+  if [[ -z "$CANDIDATE_LOCK_PATH" ]]; then
+    LOCK_FILE="$SCRIPT_DIR/../runtime/fingerprint-chromium-153.lock.json"
+  fi
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-153-port-status.json"
+elif [[ "$LOCK_VERSION" == 152.* ]]; then
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-152-source-contract.json"
+elif [[ "$LOCK_VERSION" == "154.0.8037.58" ]]; then
+  IS_CHROMIUM_154=0
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-154-source-contract.json"
+elif [[ "$LOCK_VERSION" == "154.0.8037.93" ]]; then
+  IS_CHROMIUM_154=1
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-154-source-contract.json"
+elif [[ "$LOCK_VERSION" == "154.0.8037.98" ]]; then
+  IS_CHROMIUM_15498=1
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-15498-source-contract.json"
+elif [[ "$LOCK_VERSION" == "155.0.8059.40" ]]; then
+  IS_CHROMIUM_15540=1
+  M155_EVIDENCE_PREFIX="$(python3 "$SCRIPT_DIR/chromium_15540_variant.py" "$LOCK_VERSION_SOURCE")"
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/${M155_EVIDENCE_PREFIX}-source-contract.json"
+elif [[ "$LOCK_VERSION" == "156.0.8078.12" ]]; then
+  IS_CHROMIUM_15612=1
+  M156_EVIDENCE_PREFIX="$(python3 "$SCRIPT_DIR/chromium_15612_variant.py" "$LOCK_VERSION_SOURCE")"
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/${M156_EVIDENCE_PREFIX}-source-contract.json"
+  if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ||
+        "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-security-20261015-v1" ||
+        "$M156_EVIDENCE_PREFIX" == "chromium-15612-component-completion-v1" ]]; then
+    SECURITY_BASELINE_FILE="$(python3 "$SCRIPT_DIR/chromium_15612_font_report.py" --baseline --variant-prefix "$M156_EVIDENCE_PREFIX")"
+  fi
+elif [[ "$LOCK_VERSION" == "156.0.8078.48" ]]; then
+  IS_CHROMIUM_15648=1
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-15648-source-contract.json"
+elif [[ "$LOCK_VERSION" == "156.0.8078.74" ]]; then
+  IS_CHROMIUM_15674=1
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-15674-source-contract.json"
+elif [[ "$LOCK_VERSION" == "156.0.8078.80" ]]; then
+  IS_CHROMIUM_15680=1
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-15680-source-contract.json"
+else
+  echo "Unsupported Chromium runtime version for release verification: $LOCK_VERSION" >&2
+  exit 65
 fi
 
 INFO_PLIST="$APP_PATH/Contents/Info.plist"
@@ -109,17 +172,72 @@ if [[ -n "$SOURCE_PROVENANCE_PATH" ]]; then
   fi
   PROVENANCE_VERIFY_ARGS=("$SOURCE_PROVENANCE_PATH")
   if [[ -n "$BUILD_ARGS_PATH" ]]; then
-    POSSIBLE_SOURCE_ROOT="$(
-      cd "$(dirname "$BUILD_ARGS_PATH")/../.." 2>/dev/null && pwd -P || true
-    )"
+    # Integrated bundles carry a copy of args.gn, not the source checkout.
+    # The packaging entrypoint explicitly supplies the original checkout.
+    if [[ -n "${NEANTIK_CHROMIUM_SOURCE_ROOT:-}" ]]; then
+      POSSIBLE_SOURCE_ROOT="$(
+        cd "$NEANTIK_CHROMIUM_SOURCE_ROOT" 2>/dev/null && pwd -P || true
+      )"
+    else
+      POSSIBLE_SOURCE_ROOT="$(
+        cd "$(dirname "$BUILD_ARGS_PATH")/../.." 2>/dev/null && pwd -P || true
+      )"
+    fi
     if [[ -n "$POSSIBLE_SOURCE_ROOT" &&
           -f "$POSSIBLE_SOURCE_ROOT/chrome/VERSION" &&
-          -d "$(dirname "$(dirname "$POSSIBLE_SOURCE_ROOT")")/.git" ]]; then
+          ( -e "$POSSIBLE_SOURCE_ROOT/.git" ||
+            -f "$(dirname "$POSSIBLE_SOURCE_ROOT")/.git" ) ]]; then
       PROVENANCE_VERIFY_ARGS+=(--source-root "$POSSIBLE_SOURCE_ROOT")
     fi
   fi
-  python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" \
-    "${PROVENANCE_VERIFY_ARGS[@]}"
+  if (( IS_CHROMIUM_153 == 1 )); then
+    if ! cmp -s \
+      "$SOURCE_PROVENANCE_PATH" \
+      "$SCRIPT_DIR/../runtime/chromium-153-port-candidate.json"; then
+      echo "Chromium 153 source candidate evidence does not match the project candidate." >&2
+      exit 65
+    fi
+  elif (( IS_CHROMIUM_154 == 1 )); then
+    if [[ -z "${PROVENANCE_VERIFY_ARGS[1]:-}" ||
+          "${PROVENANCE_VERIFY_ARGS[1]}" != --source-root ]]; then
+      echo "Chromium 154 verification requires the live source root." >&2
+      exit 66
+    fi
+    python3 "$SCRIPT_DIR/verify-chromium-154-source-snapshot.py" \
+      "${PROVENANCE_VERIFY_ARGS[2]}" \
+      "$SOURCE_PROVENANCE_PATH"
+    M154_SOURCE_SNAPSHOT_VERIFIED=1
+  elif (( IS_CHROMIUM_15612 == 1 )); then
+    if [[ -n "$REPORT_PATH" && "$M156_EVIDENCE_PREFIX" == "chromium-15612" ]]; then
+      : "${NEANTIK_CHROMIUM_SOURCE_ROOT:?New M156 reports require the unchanged native build root}"
+      : "${NEANTIK_M156_BUILD_EVIDENCE:?New M156 reports require the executed final9 private evidence}"
+      python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE_PATH" \
+        --built-source-root "$NEANTIK_CHROMIUM_SOURCE_ROOT" --build-evidence "$NEANTIK_M156_BUILD_EVIDENCE"
+    else
+      python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE_PATH"
+    fi
+    if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ||
+          "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-security-20261015-v1" ||
+        "$M156_EVIDENCE_PREFIX" == "chromium-15612-component-completion-v1" ]]; then
+      python3 "$SCRIPT_DIR/chromium_15612_variant.py" "$LOCK_VERSION_SOURCE" --signed-runtime "$APP_PATH" >/dev/null
+    fi
+    M154_SOURCE_SNAPSHOT_VERIFIED=1
+  elif (( IS_CHROMIUM_15498 == 1 || IS_CHROMIUM_15540 == 1 || IS_CHROMIUM_15648 == 1 || IS_CHROMIUM_15674 == 1 || IS_CHROMIUM_15680 == 1 )); then
+    if [[ -n "$REPORT_PATH" &&
+          ( -z "${PROVENANCE_VERIFY_ARGS[1]:-}" ||
+            "${PROVENANCE_VERIFY_ARGS[1]}" != --source-root ) ]]; then
+      echo "A new Chromium $LOCK_VERSION runtime report requires the live source root." >&2
+      exit 66
+    fi
+    # Public bundle verification uses the frozen project source snapshot;
+    # creating a new report additionally requires the live checkout above.
+    python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" \
+      "${PROVENANCE_VERIFY_ARGS[@]}"
+    M154_SOURCE_SNAPSHOT_VERIFIED=1
+  else
+    python3 "$SCRIPT_DIR/verify-runtime-source-provenance.py" \
+      "${PROVENANCE_VERIFY_ARGS[@]}"
+  fi
   SOURCE_PROVENANCE_SHA256="$(
     shasum -a 256 "$SOURCE_PROVENANCE_PATH" | awk '{print $1}'
   )"
@@ -129,10 +247,23 @@ if [[ -n "$CANDIDATE_LOCK_PATH" ]]; then
     echo "Candidate lock verification requires source provenance." >&2
     exit 66
   fi
-  python3 "$SCRIPT_DIR/verify-runtime-candidate-lock.py" \
-    "$CANDIDATE_LOCK_PATH" \
-    "$SOURCE_PROVENANCE_PATH"
+  if (( IS_CHROMIUM_153 == 1 )); then
+    if ! cmp -s \
+      "$CANDIDATE_LOCK_PATH" \
+      "$SCRIPT_DIR/../runtime/fingerprint-chromium-153.lock.json"; then
+      echo "Chromium 153 candidate lock does not match the project lock." >&2
+      exit 65
+    fi
+  else
+    python3 "$SCRIPT_DIR/verify-runtime-candidate-lock.py" \
+      "$CANDIDATE_LOCK_PATH" \
+      "$SOURCE_PROVENANCE_PATH"
+  fi
   CANDIDATE_LOCK_SHA256="$SOURCE_LOCK_SHA256"
+fi
+if [[ "$LOCK_VERSION" == "154.0.8037.58" && -n "$REPORT_PATH" ]]; then
+  echo "Chromium 154.0.8037.58 has diagnostic-only evidence and cannot produce a release runtime report." >&2
+  exit 66
 fi
 for provenance_file in \
   "$PATCH_SERIES_FILE" \
@@ -219,8 +350,8 @@ while IFS= read -r binary; do
     otool -l "$MACHO_INSPECTION_PATH" |
       awk '
         $1 == "cmd" && $2 == "LC_SYMTAB" { in_symtab = 1; next }
-        in_symtab && $1 == "cmd" { exit }
-        in_symtab && $1 == "stroff" { print $2; exit }
+        in_symtab && !found && $1 == "stroff" { print $2; found = 1 }
+        in_symtab && $1 == "cmd" && $2 != "LC_SYMTAB" { in_symtab = 0 }
       '
   )"
   if [[ -n "$string_table_offset" ]] &&
@@ -337,7 +468,18 @@ SOURCE_POSTIMAGES_VERIFIED=0
 if [[ -n "$BUILD_ARGS_PATH" ]]; then
   SOURCE_ROOT="$(cd "$(dirname "$BUILD_ARGS_PATH")/../.." && pwd -P)"
   SERIES_FILE="$PATCH_SERIES_FILE"
-  if [[ -f "$SOURCE_ROOT/components/ungoogled/BUILD.gn" ]]; then
+  if (( IS_CHROMIUM_153 == 1 )); then
+    # Chromium 153 is an independently source-qualified owned packaging
+    # port. Its candidate evidence binds that source; historical 152 patch
+    # postimages are not evidence for this port.
+    SOURCE_POSTIMAGES_VERIFIED=1
+  elif (( IS_CHROMIUM_154 == 1 || IS_CHROMIUM_15498 == 1 || IS_CHROMIUM_15540 == 1 || IS_CHROMIUM_15612 == 1 || IS_CHROMIUM_15648 == 1 || IS_CHROMIUM_15674 == 1 || IS_CHROMIUM_15680 == 1 )); then
+    if (( M154_SOURCE_SNAPSHOT_VERIFIED != 1 )); then
+      echo "Chromium source snapshot verification is required." >&2
+      exit 66
+    fi
+    SOURCE_POSTIMAGES_VERIFIED=1
+  elif [[ -f "$SOURCE_ROOT/components/ungoogled/BUILD.gn" ]]; then
     if [[ ! -f "$SERIES_FILE" ]]; then
       echo "NeAntik patch series manifest is missing: $SERIES_FILE" >&2
       exit 66
@@ -445,6 +587,9 @@ if [[ -n "$REPORT_PATH" ]]; then
   SOURCE_CONTRACT_SHA256="$SOURCE_CONTRACT_SHA256" \
   SOURCE_PROVENANCE_SHA256="$SOURCE_PROVENANCE_SHA256" \
   BUILD_ARGS_SHA256="$BUILD_ARGS_SHA256" \
+  IS_CHROMIUM_15612="$IS_CHROMIUM_15612" \
+  M156_SOURCE_LOCK="$LOCK_VERSION_SOURCE" \
+  M156_SCRIPT_DIR="$SCRIPT_DIR" \
   python3 - <<'PY'
 import datetime
 import json
@@ -481,14 +626,23 @@ report = {
     "codeSignatureKind": os.environ["SIGNATURE_KIND"],
     "fingerprintProtocolStrings": "verified",
 }
+if os.environ["IS_CHROMIUM_15612"] == "1":
+    import sys
+    script_dir = Path(os.environ['M156_SCRIPT_DIR']).resolve()
+    sys.path.insert(0, str(script_dir))
+    from chromium_15612_variant import report_source_fields
+    from chromium_15612_release_evidence import read_object
+    report.update(report_source_fields(read_object(Path(os.environ['M156_SOURCE_LOCK']), 'M156 report lock'),
+                                       project_root=script_dir.parent))
 if os.environ["BUILD_ARGS_SHA256"]:
     report["buildArguments"] = {
         "sha256": os.environ["BUILD_ARGS_SHA256"],
     }
-Path(os.environ["REPORT_PATH"]).write_text(
-    json.dumps(report, indent=2, sort_keys=True) + "\n",
-    encoding="utf-8",
-)
+content = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("utf-8")
+if report.get('sourceVariant') in ('font-system-v1', 'font-system-security-20261015-v1', 'component-completion-v1'):
+    from chromium_15612_font_report import preserved_report_bytes
+    content = preserved_report_bytes(report, script_dir.parent)
+Path(os.environ["REPORT_PATH"]).write_bytes(content)
 PY
   chmod 600 "$REPORT_PATH"
 fi

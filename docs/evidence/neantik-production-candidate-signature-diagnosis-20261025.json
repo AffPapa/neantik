@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "status": "signature-integrity-slots-and-cms-verified-codesign-still-fails-mac-locked",
+  "observedAt": "2026-10-25",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "teamIdentifier": "H6VGU2M6JD",
+    "bundleIdentifier": "app.neantik.desktop"
+  },
+  "copies": [
+    {
+      "root": "dist/private/candidates/f3488c08f0b3493dbcee8db94473bacf/NeAntik.app",
+      "cdhash": "d31939af1e109f4354a49f6b6fb2567867d4162a",
+      "codesignVerify": "FAIL: invalid signature (code or signature have been modified)",
+      "exitCode": 1,
+      "codeResourcesEntries": 578,
+      "codeResourcesDigestMismatches": 0
+    },
+    {
+      "root": "dist/private/candidates/fc69725e8c7d44c18c97bbf30ca74cce/NeAntik.app",
+      "cdhash": "d31939af1e109f4354a49f6b6fb2567867d4162a",
+      "codesignVerify": "FAIL: invalid signature (code or signature have been modified)",
+      "exitCode": 1,
+      "codeResourcesEntries": 578,
+      "codeResourcesDigestMismatches": 0
+    }
+  ],
+  "environment": {
+    "cuaNativeApps": "unavailable: Mac locked; automatic unlock could not unlock it",
+    "securityFindIdentity": "sandbox-scoped command reported zero valid identities; per NEANTIK_SIGNING_IDENTITY.md this is not evidence the login-keychain identity is missing"
+  },
+  "interpretation": "Both preserved copies share the same CDHash and fail the same signature check. The sealed-resource digest walk found no resource hash mismatches, so this does not localize the invalid signature to a particular Mach-O/code-directory slot. Cause remains undetermined. No re-sign, rebuild, enrollment, notarization, or launch was attempted.",
+  "nextAction": "When macOS is unlocked, run one candidate-bound codesign --verify --strict and system trust evaluation in the authorized local security context. If trust still fails, capture its precise per-certificate error before any signing or package action. Do not rebuild or repeat v21/v22 QA.",
+  "integrityAnalysis": {
+    "scope": "Exact preserved candidate 1.0.0 (139), root arm64 NeAntik executable and root bundle signature only.",
+    "machO": {
+      "architecture": "arm64",
+      "executableBytes": 19666400,
+      "codeSignatureOffset": 19608832,
+      "codeSignatureBytes": 57568
+    },
+    "codeDirectory": {
+      "version": "0x20500",
+      "hash": "SHA-256",
+      "pageBytes": 16384,
+      "codeLimitBytes": 19608832,
+      "codeSlots": 1197,
+      "expectedCodeSlots": 1197,
+      "mismatchedCodeSlots": 0
+    },
+    "specialSlots": {
+      "Info.plist": "MATCH",
+      "requirements": "MATCH",
+      "CodeResources": "MATCH",
+      "entitlements": "MATCH",
+      "DER entitlements": "MATCH"
+    },
+    "cms": {
+      "result": "cryptographic signature verification successful",
+      "command": "openssl cms -verify -binary -inform DER -noverify -content CodeDirectory",
+      "trustChainVerified": false
+    },
+    "embeddedLeafCertificate": {
+      "sha1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+      "teamIdentifier": "H6VGU2M6JD",
+      "notBeforeUTC": "2026-07-26T18:29:13Z",
+      "notAfterUTC": "2027-02-01T22:12:15Z"
+    },
+    "codesignDisplay": {
+      "result": "signature metadata readable; Authority unavailable",
+      "rootStrictVerify": "FAIL: invalid signature (code or signature have been modified)",
+      "ignoreResourcesVerify": "FAIL (same generic error)"
+    },
+    "interpretation": "Executable code-page hashes, all inspected CodeDirectory special slots, and CMS signature over the embedded CodeDirectory match. The embedded Developer ID leaf fingerprint matches the pinned identity and its encoded validity interval includes the observation date. The local Security trust probe failed with OSStatus -26276, while codesign reports Authority unavailable. The exact trust/policy cause remains unresolved; do not infer executable tampering or a missing private key.",
+    "certificateTrustProbe": {
+      "command": "security verify-cert with the embedded leaf, supplied intermediate, explicit root, codeSign policy, local-only evaluation",
+      "result": "FAIL: NSOSStatusErrorDomain -26276; TrustResultValue=0",
+      "interpretation": "The current macOS Security trust evaluation did not accept/complete this chain. This is an environment trust-evaluation result; it does not identify which certificate or trust input caused the failure and does not invalidate the successful standalone CMS math check.",
+      "networkFetch": "disabled for this diagnostic"
+    }
+  }
+}

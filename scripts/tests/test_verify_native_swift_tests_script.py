@@ -1,5 +1,7 @@
 from pathlib import Path
+import json
 import re
+import importlib.util
 import subprocess
 import unittest
 
@@ -12,10 +14,6 @@ RELEASE_SCRIPT = (
 SUITE_SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "verify-native-swift-suite.sh"
-)
-SHARD_SCRIPT = (
-    Path(__file__).resolve().parents[1]
-    / "verify-native-swift-shard.sh"
 )
 LIVE_SCRIPT = (
     Path(__file__).resolve().parents[1]
@@ -32,6 +30,11 @@ OPEN_SOURCE_VERIFIER = (
     / "verify-open-source-tree.py"
 )
 SWIFT_TESTS = Path(__file__).resolve().parents[2] / "Tests" / "NeAntikTests"
+RUNTIME_FIXTURE_SUITES = Path(__file__).resolve().parents[1] / "swift-runtime-fixture-suites.json"
+
+CI_SPEC = importlib.util.spec_from_file_location("ci_contract", SCRIPT.parent / "test-manager-ci.py")
+CI_RUNNER = importlib.util.module_from_spec(CI_SPEC)
+CI_SPEC.loader.exec_module(CI_RUNNER)
 
 
 class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
@@ -62,55 +65,79 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         self.assertIn("/private/tmp/nevision-swift-cache-*", text)
         self.assertIn("rm -rf \"$SWIFT_TEST_ROOT\"", text)
 
-    def test_ci_suite_runner_excludes_removed_dormant_suites(self) -> None:
+    def test_suite_runner_has_safe_opt_in_incremental_cache(self) -> None:
         text = SUITE_SCRIPT.read_text(encoding="utf-8")
 
-        self.assertNotIn("UpdateManifestTests", text)
-        self.assertNotIn("TelemetryTests", text)
-        self.assertNotIn("RuntimePreferenceStoreTests", text)
+        self.assertIn("NEANTIK_SWIFT_SUITE_CACHE_DIR", text)
+        self.assertIn('EXPECTED_CACHE_ROOT="$PROJECT_DIR/.build"', text)
+        self.assertIn('PERSISTENT_CACHE=1', text)
+        self.assertIn('PERSISTENT_CACHE=0', text)
+        self.assertIn('"$PERSISTENT_CACHE" == 0', text)
+
+    def test_ci_suite_runner_includes_signed_update_tests(self) -> None:
+        text = SUITE_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("UpdateManifestTests|", text)
         self.assertIn('--filter "$SUITE"', text)
 
-    def test_ci_runs_four_isolated_swift_shards(self) -> None:
+    def test_ci_shards_include_authenticated_evidence_and_use_separate_processes(self) -> None:
+        chosen = CI_RUNNER.catalog()
+        self.assertIn("FingerprintEvidenceEnvelopeTests", chosen)
+        self.assertIn("SecureEnclaveFingerprintEvidenceSignerTests", chosen)
+        workflow = CI_WORKFLOW.read_text()
+        self.assertIn('shard: [0, 1, 2, 3]', workflow)
+        self.assertIn('scripts/test-manager-ci.py', workflow)
+        self.assertNotIn('Authenticated fingerprint evidence contract', workflow)
+        self.assertIn("unittest discover -s scripts/tests", workflow)
+
+    def test_ci_runs_every_non_live_swift_suite_and_excludes_live_suites(
+        self,
+    ) -> None:
         workflow = CI_WORKFLOW.read_text(encoding="utf-8")
-
-        self.assertIn(
-            'run: ./scripts/verify-native-swift-shard.sh "${{ matrix.shard }}"',
-            workflow,
-        )
-        for shard in ["foundation", "fingerprint", "profiles-a", "profiles-b"]:
-            self.assertIn(f"- {shard}", workflow)
-
-    def test_ci_shards_cover_every_non_live_suite_exactly_once(self) -> None:
-        runner = SHARD_SCRIPT.read_text(encoding="utf-8")
-        shard_suites = re.findall(
-            r"^\s+([A-Za-z][A-Za-z0-9]+Tests)$",
-            runner,
-            flags=re.MULTILINE,
-        )
-        discovered_suites = {
-            path.stem
-            for path in SWIFT_TESTS.glob("*Tests.swift")
+        runner = SUITE_SCRIPT.read_text(encoding="utf-8")
+        matrix_suites = set(CI_RUNNER.catalog())
+        # A file may extend an existing suite or declare several suites.
+        # Coverage follows actual types, never a guessed filename filter.
+        discovered_suites = set()
+        for path in SWIFT_TESTS.glob("*.swift"):
+            discovered_suites.update(re.findall(r"\b(?:struct|class|actor|enum)\s+([A-Za-z_][A-Za-z0-9_]*Tests)\b", path.read_text()))
+        live_suites = {
+            suite for suite in discovered_suites if suite.startswith("Live")
         }
-        non_live_suites = {
-            suite
-            for suite in discovered_suites
-            if not suite.startswith("Live")
-        }
+        # Explicit, wholly opt-in research suites require an owned headed
+        # runtime or local socket fixtures; ordinary CI cannot claim those ran.
+        fixtures = json.loads(RUNTIME_FIXTURE_SUITES.read_text())
+        self.assertIsInstance(fixtures, dict)
+        self.assertTrue(set(fixtures).issubset(discovered_suites))
+        for suite, flags in fixtures.items():
+            matches = []
+            for path in SWIFT_TESTS.glob("*.swift"):
+                source = path.read_text()
+                declaration = re.search(r"\b(?:struct|class|actor|enum)\s+" + re.escape(suite) + r"\b", source)
+                if declaration:
+                    # Several suites may share one file; test gates belong to the
+                    # actual suite, not a guessed basename or unrelated suite.
+                    tail = source[declaration.end():]
+                    tail = re.split(r"\n@Suite\b", tail, maxsplit=1)[0]
+                    matches.append(tail)
+            self.assertEqual(len(matches), 1)
+            text = matches[0]
+            declarations = re.findall(r"@Test([^\n]*)", text)
+            self.assertGreater(len(declarations), 0)
+            self.assertGreater(len(flags), 0)
+            for flag in flags:
+                self.assertRegex(flag, r"^NEANTIK_[A-Z_]+$")
+                self.assertIn(f'["{flag}"]', text)
+            for declaration in declarations:
+                self.assertIn(".enabled(if:", declaration)
+                self.assertTrue(any(f'environment["{flag}"]' in declaration for flag in flags))
+        live_suites |= set(fixtures)
+        non_live_suites = discovered_suites - live_suites
 
-        self.assertEqual(len(shard_suites), len(set(shard_suites)))
-        self.assertEqual(set(shard_suites), non_live_suites)
-        self.assertIn('--filter "$SUITE"', runner)
-
-    def test_ci_shard_runner_rejects_unknown_shard_before_building(self) -> None:
-        result = subprocess.run(
-            [str(SHARD_SCRIPT), "unknown"],
-            capture_output=True,
-            check=False,
-            text=True,
-        )
-
-        self.assertEqual(result.returncode, 64)
-        self.assertIn("Unknown Swift test shard", result.stderr)
+        self.assertEqual(matrix_suites, non_live_suites)
+        self.assertTrue(live_suites.isdisjoint(matrix_suites))
+        shards = [CI_RUNNER.partition(sorted(matrix_suites), i, 4) for i in range(4)]
+        self.assertEqual(len([s for shard in shards for s in shard]), len(non_live_suites))
 
     def test_suite_runner_requires_a_positive_test_count(self) -> None:
         runner = SUITE_SCRIPT.read_text(encoding="utf-8")
@@ -119,20 +146,6 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         self.assertRegex(
             runner,
             r"Test run with \[1-9\]\[0-9\]\* tests\?",
-        )
-
-    def test_shard_runner_accepts_positive_xctest_count_but_rejects_zero(
-        self,
-    ) -> None:
-        runner = SHARD_SCRIPT.read_text(encoding="utf-8")
-
-        self.assertIn(
-            r"Executed [1-9][0-9]* tests?, with 0 failures",
-            runner,
-        )
-        self.assertIn(
-            r"Test run with [1-9][0-9]* tests? in [1-9][0-9]* suites? passed",
-            runner,
         )
 
     def test_live_runner_is_explicit_local_and_fail_closed(self) -> None:

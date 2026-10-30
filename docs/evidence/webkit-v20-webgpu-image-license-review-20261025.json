@@ -1,0 +1,487 @@
+{
+  "schemaVersion": 1,
+  "status": "bounded-factual-maintainer-review;image-applicability-remains-unknown",
+  "observedAt": "2026-10-25",
+  "reviewerRole": "NeAntik maintainer technical source/link review; not legal advice or legal opinion",
+  "candidate": {
+    "version": "1.0.0",
+    "build": "139",
+    "inventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "signerSHA1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60"
+  },
+  "upstream": {
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f"
+  },
+  "runtimeImage": {
+    "path": "WebGPU.framework/Versions/A/WebGPU",
+    "sha256": "3e1f3814ac782392b2108df9a69eb8d8afde0765ad856683e2cfbc24261a82c2",
+    "reviewerDecision": "UNKNOWN"
+  },
+  "linkage": {
+    "configuredLinkNode": "WebGPU.framework/Versions/A/WebGPU",
+    "internalStaticLibrary": "libWGSLCore.a",
+    "internalStaticLibraryDependencies": [],
+    "mappedUniquePrimaryInputs": 9,
+    "compiledLeafSourceCount": 65,
+    "compiledLeafSourcesWithAppleBSD2Headers": 65,
+    "sourceFiles": [
+      {
+        "path": "Source/WebGPU/WGSL/AST/ASTBinaryExpression.cpp",
+        "sha256": "3c16c6b3d778f030563eb399214ca0f6c4fc0bac21575806e41f2908f3de5045",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/AST/ASTBuilder.cpp",
+        "sha256": "8b21b04edf18a3fca9042c2d14f36a482d1549050282a5929087d7be8b34b3a6",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/AST/ASTDecrementIncrementStatement.cpp",
+        "sha256": "31c25b7a00ee248b52816a50ef7b20df8b23928f46652de638bbdbf7d851aff9",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/AST/ASTStringDumper.cpp",
+        "sha256": "a74462b801b39a51056c83fd1d68c6ec0599f01ef4ace7f85e8be6e60a957d56",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/AST/ASTUnaryExpression.cpp",
+        "sha256": "e9748d3f7ff19728f826913578d0ee3b6b162b6d93e802fb683192f1b743e39e",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/AST/ASTVisitor.cpp",
+        "sha256": "90e2da87eeece500d3322c3c7a4b533c1259b0d147179a7ec271a36c5ce1e4ab",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/AliasAnalysis.cpp",
+        "sha256": "d364dcac434a8ea996dc5d51f3d7c01a8528308c47cb5571d1e4ad491758fe09",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/AttributeValidator.cpp",
+        "sha256": "2d4ac009cc839ebf387286aa563eacae5d03c0c4376fe30e2e6061c2efc1cb14",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/BoundsCheck.cpp",
+        "sha256": "adb2bc0c008e7891b8455c71c412e8cf390204a8cd4dee4c95aee9e7395a7453",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/CallGraph.cpp",
+        "sha256": "610a2ec3662ee70dd0bef59c32b15e8d7f266a3ae4cd788068c85e4b14302a0e",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/CompilationMessage.cpp",
+        "sha256": "e1c3b773ee7f76231dec5d101d31a0dbd53315d39b7423355417f712d48f9a6b",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/CompilationScope.cpp",
+        "sha256": "9952f9b7e8804614cb6f7b79e57593a2ecde7bb567ebee59275a05760c4d1727",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/ConstantValue.cpp",
+        "sha256": "3cb374181350c306af02b7d4b66fbfe71136dba1e00194d45e12d4371619c52b",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/Constraints.cpp",
+        "sha256": "8e9c2b69ab91837cf71deb77807c140f301ee78d2b36756166b0faf5939047cf",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/EntryPointRewriter.cpp",
+        "sha256": "c1bd6b6bef5c124e654a7a14d53a3c9d847e592cef92573a5169361946fe7b55",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/EvaluationOrderRewriter.cpp",
+        "sha256": "08ee4fe8ed73b58e4e68c82c7d158537af4684f2b1a196b9f68f260f6c3f17f4",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/GlobalSorting.cpp",
+        "sha256": "4f6b18b6c255a0f2fafdf3c01cc15aab23ba761b9313c229446db8c4ff24d236",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/GlobalVariableRewriter.cpp",
+        "sha256": "a27383d920203f8f6ed669f2388382bff54b6881d9dc9254311a442d4a5e33db",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/IOValidator.cpp",
+        "sha256": "8c30c6e72de5e27eb3b4eee574ae26256f4bbb788991399353b49ab28c473012",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/Lexer.cpp",
+        "sha256": "8cc217587703bc5b405c9abc44fd67024d81579f054817eef54b9c219509ffce",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/MangleNames.cpp",
+        "sha256": "7710a01b83145b0622be55d35cbe66126c57a11b7e035caaa3e9d08dd97a9c74",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/Metal/MetalCodeGenerator.cpp",
+        "sha256": "5b1ac1c50bb9f91d08e30603d58f2f38dff1c479193dd2d5bb6306422b89d254",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/Metal/MetalFunctionWriter.cpp",
+        "sha256": "401ccfa94cfb8a3e99f01d990cc6413f9c3bc517871a0eba2b5994b3a0ce6956",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/Overload.cpp",
+        "sha256": "1b86187001ca0daebe1d4c581b99860e518b687f6514a2aee71a0ba59b2d5f9e",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/Parser.cpp",
+        "sha256": "3db91b2fde6e27a6a10c45db905a9e58f83357229bcda0bbc154b78aa9f9ae1d",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/PointerRewriter.cpp",
+        "sha256": "7449c54021a86d70a8f35bfdaf514734b184bbcfefda7d4df019184b0093eea3",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/Token.cpp",
+        "sha256": "cdfcc22cedee6496f5024920858d7fe68de013d8d1841f78a5fb422c257ac5d5",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/TypeCheck.cpp",
+        "sha256": "b6f3ee13b403d049b8c06cda04da3674ad2b35805bdfaa61f709d678ce999ec7",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/TypeStore.cpp",
+        "sha256": "9ba061594408d95c296ce71a90f38e25019c7fa495f6db269acbce0fe3f7f80c",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/Types.cpp",
+        "sha256": "fd32850eeee98aeda01b00b3bc5f8e22841df9dc8dcfefea3007c9b9a10b4e03",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/UniformityAnalysis.cpp",
+        "sha256": "1ebd5ec36ca0611e2dde445cda8c056cb5c7b9765af1aee0fe0cf72bad71e0be",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/VisibilityValidator.cpp",
+        "sha256": "c55cc0985449319eff5cedf77a6941a8c2a1838e08a1d83a25f0b2d33d7b7d39",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/WGSL.cpp",
+        "sha256": "2b6edce8bf975e68e7af6a5b51011a86a59cacd57efbaf0ebd16139d7a767570",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/WGSLEnums.cpp",
+        "sha256": "1f119ea8e72652154580324fffbc177576f8eec2cad961c7fabc33f77e331a48",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WGSL/WGSLShaderModule.cpp",
+        "sha256": "bc3505622ce4ef972a10c7568e57804370e4e10c6280acd21997b0f654da1bcd",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/Adapter.mm",
+        "sha256": "936cc760fe539b6a85752c1d5ce613a3bde1d4dbda2a8041aae86f26cdae1ef5",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/BindGroup.mm",
+        "sha256": "3236e8a8f44669683c503ff079fea646581a8bda5e1c61f3ad854c95cd771db7",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/BindGroupLayout.mm",
+        "sha256": "01afcd06b0fdcf0d3d903e600c4df9bc3dc0b9335abdaecc6989a89e135c1b15",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/Buffer.swift",
+        "sha256": "fc4d370d9f67a4dd1076703cf3dc0a5f8f802ec3ee73c51914688fe8dbaf2cea",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/CommandBuffer.mm",
+        "sha256": "abc4ac7bf16fb1a65c735c266a79a7aa043087c4979a66e27d43d185c2cf03dc",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/CommandsMixin.mm",
+        "sha256": "f054c5833039f944a48277be94a94a49c3b2c888ce9982c8b1d7475e51f92b54",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/ComputePassEncoder.mm",
+        "sha256": "fc8c039becc84ab6408b6c24069aa205faa5dc5a955e560c680a6cb1e2e94569",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/ComputePipeline.mm",
+        "sha256": "8b9c9120a5fb66259cdec7e084f6908686c3e9bc139208b1c8a7d7e05a9ff7c3",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/Device.mm",
+        "sha256": "c151fdb552bcc37f9f23785748b39f2091b037a454df82cb5b419dd524794d75",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/ExternalTexture.mm",
+        "sha256": "25c326cd4e7cc51ef4b6590c7ec62103fe273a0d8432114bd31ef4e6f02dbd4c",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/HardwareCapabilities.mm",
+        "sha256": "a6fe45e6dff306d67e7e92a40213eb520bd7c453f41fa9f857484b19045c9a69",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/Instance.mm",
+        "sha256": "79bd0c8e336f53b76428a3aed3e84694a2979a415cd95d7f92a3449b5c73c5c1",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/Pipeline.mm",
+        "sha256": "caa3650e95c07cd297c62098920aee6f4e3e79d8cf645072fcf5798777833212",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/PipelineLayout.mm",
+        "sha256": "5fc89debd894355abec67ca07f997b3cae575efc48f4b9c1cb56c2b5064b4632",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/PresentationContext.mm",
+        "sha256": "5aed406f768ae4af75ea7c992c12fc91860fa5494d0b4456dfb77b00c13ea29e",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/PresentationContextIOSurface.mm",
+        "sha256": "aaf631b3938d6bfce166f817eb2ce2c447d7608c783cec2cb41907b320fdf164",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/QuerySet.mm",
+        "sha256": "3ace2c587aa96c94d307f44c0fa07c39cf6705a72ca8396fb876cf8c70681b0d",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/RenderBundle.mm",
+        "sha256": "60883e0e9860196f3558f3a1ace70aad0f78686a0dccb8f842a7be6ffc97f5d5",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/RenderBundleEncoder.mm",
+        "sha256": "05afae2fdbd4fd2aea8342c4e2eda9977acbd6afcd0e7c147d3cd00e1f487d19",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/RenderPassEncoder.mm",
+        "sha256": "a266d9e1f21399c3f43d725f1c0780a03e67b70f334ba3ec6278cc9eecc95d9d",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/RenderPipeline.mm",
+        "sha256": "f31ef13afeabfb77dde1a0f4d1ce427767b738e6ca2ec8b44c1f5efa407d7e26",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/Sampler.mm",
+        "sha256": "54c83ee5142f7a9bd54b17346d6160c16b5f2fc58b1c200a35af94a1a6838697",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/ShaderModule.mm",
+        "sha256": "07eab6ef7662ec6b10759be01c2b690d5ea4edd39e34297e2adc29c494350d37",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/Texture.mm",
+        "sha256": "5d660e92ebfb438a00b878f7b111b466a1ee2afb9a2efebd88718b0ec70d43d4",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/TextureView.mm",
+        "sha256": "10dbe152a6581df37255933340187eb448df229ea8704ef2c80825e571c886a5",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/WebGPUCppBridge.mm",
+        "sha256": "27be406b2078281cd73efbe11036252c7aa1a482d89ffd7bbb2c502e8c4a0c21",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/XRBinding.mm",
+        "sha256": "90c3cbe3d86ffe0a952c302332107509dcf5493bee5559734cd0a9971105bdf3",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/XRProjectionLayer.mm",
+        "sha256": "ec88caa0a4e4c9eab9e363c9f18e238cfa5d609db0b0dd4ac32a1f5267297007",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/XRSubImage.mm",
+        "sha256": "0ad2a4845894b1ec56a9e68a170df2db52c68699321aa76b90ea7800fddfe17c",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      },
+      {
+        "path": "Source/WebGPU/WebGPU/XRView.mm",
+        "sha256": "4194bf45adfa7506973257cdc911241e494d9fb9c8c99e76c3f8b9e505e5023e",
+        "appleHeader": true,
+        "bsd2TermsInHeader": true
+      }
+    ]
+  },
+  "generatedInputs": [
+    {
+      "path": "Source/WebGPU/WGSL/TypeDeclarations.rb",
+      "sha256": "e18e6d38fe4f11f97e46c0935b3d7dbbfb7e71e0ab1fd23e90f60994a4b46809",
+      "bytes": 50822,
+      "hasExplicitCopyrightOrLicenseHeader": false
+    },
+    {
+      "path": "Source/WebGPU/WGSL/generator/main.rb",
+      "sha256": "55e2f00b4506f078d5507d83d3ba0dc1ad9463b03906e0d0d63bee9f75a6d8d6",
+      "bytes": 18065,
+      "hasExplicitCopyrightOrLicenseHeader": false
+    },
+    {
+      "path": "Source/WebGPU/WGSL/CMakeLists.txt",
+      "sha256": "51e567aa0497b19a764639777305eab08710ae925902f9a8272996c0839674d4",
+      "bytes": 6336,
+      "hasExplicitCopyrightOrLicenseHeader": true
+    },
+    {
+      "path": "WebKitBuild/neantik-v20-production-arm64/Source/WebGPU/WGSL/TypeDeclarations.h",
+      "sha256": "70a6d9e56c58f001bea4c81960139f3a8ae7c9deaee7b943dad9f35af43adfbd",
+      "bytes": 3030,
+      "hasExplicitCopyrightOrLicenseHeader": false
+    },
+    {
+      "path": "WebKitBuild/neantik-v20-production-arm64/Source/WebGPU/WGSL/TypeOverloads.h",
+      "sha256": "11f4ba1c6b1f97dc042b1725598954afcb40d2e89706a06d7666cf8f0b74047a",
+      "bytes": 381605,
+      "hasExplicitCopyrightOrLicenseHeader": false
+    }
+  ],
+  "evidence": {
+    "runtimeImageSourceClosure": {
+      "path": "docs/evidence/webkit-v20-runtime-image-source-closure-20261025.json",
+      "sha256": "6e9a5a634e7e78fcb23d4e2b0d10bbda676bd264cc9b4127f4ce4d833c2e2304"
+    },
+    "productionLinkInputClosure": {
+      "path": "docs/evidence/webkit-v20-production-link-input-closure-20261025.json",
+      "sha256": "2aa173e04b793973469c261a3a7d7d573ba94e5d1ad814c863ab1f2b7d51be73"
+    },
+    "productionLinkDependencyClosure": {
+      "path": "docs/evidence/webkit-v20-production-link-dependency-closure-20261025.json",
+      "sha256": "2c56298246c7d044633ec790f2e9e1b39f6f6ac3c1ee65a751bf75d011c841c9"
+    }
+  },
+  "findings": [
+    "The exact mapped 65 compiled leaf source files all contain Apple copyright and the two BSD redistribution conditions in their source headers.",
+    "The configured link graph contains WebGPU.framework and internal libWGSLCore.a; the archive has no additional internal static-library dependency.",
+    "TypeDeclarations.rb and generator/main.rb generate TypeDeclarations.h and TypeOverloads.h consumed by compiled WGSL inputs. The generator sources and generated outputs do not carry an explicit license header in the inspected bytes.",
+    "WebGPU Info.plist is a separate runtime resource row and is not resolved by this code-image review.",
+    "Official GPUWeb license materials distinguish specification documents from software contributions; their presence does not resolve the exact provenance/license of the Apple-pinned generator or generated WGSL tables, so reviewerDecision remains UNKNOWN."
+  ],
+  "decisionBoundary": "Keep this image UNKNOWN: mapped compiled leaf sources have Apple BSD-2 headers, while the generator and generated WGSL declaration tables have no explicit license header. GPUWeb/W3C licensing documents are leads but the exact source-to-generated-code relationship and applicable notice are not established. No legal conclusion, complete source/relink offer, or release qualification is made.",
+  "externalLicenseEvidence": [
+    {
+      "title": "GPU for the Web repository license",
+      "url": "https://github.com/gpuweb/gpuweb/blob/main/LICENSE.md",
+      "finding": "The repository distinguishes its document license from its software license. This is a lead only; it does not by itself establish the license of Apple-pinned TypeDeclarations.rb or its generated output."
+    },
+    {
+      "title": "W3C GPU for the Web Working Group charter",
+      "url": "https://gpuweb.github.io/admin/wg-charter.html",
+      "finding": "The group states that deliverables use the W3C Software and Document License. The exact derivative/source relationship for this generated implementation remains unproven."
+    }
+  ]
+}

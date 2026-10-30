@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "status": "SIXTEEN_RUNTIME_IMAGES_CODE_MATCH_PREVIOUSLY_TESTED_DEV_QA",
+  "productionCandidate": "66f4338eb3374569817d1964d57cfedb",
+  "productionInventorySHA256": "c4081c051286df3bdbbcd8de3f907298234e2ee0af99a78ae703211bd728787b",
+  "devQAArchiveSHA256": "267ece584736d02ceb38517612aa36ec9c1a0d838f0aa8a738b953ff66a5d890",
+  "devQAScope": "synthetic proxy refusal, stop, recovery, restart and HTTPS page",
+  "counts": {
+    "images": 16,
+    "matchingStaged": 16,
+    "matchingRelocatedPreSign": 16,
+    "matchingArm64CodeBeforeSignature": 16,
+    "matchingEntireSignedFiles": 0
+  },
+  "checks": "Both signed files per image match their respective recipient signing receipt. Thin arm64 Mach-O or arm64 slice of universal file is hashed before LC_CODE_SIGNATURE.",
+  "sourceOfferManifestSHA256": "821828b9261d9678ef196a9dc14d006d002fd89a9fb926e80c51d7b69a3b21a0",
+  "limitations": [
+    "QA and production manager and host differ; production routing and profile isolation are not proved by code matches",
+    "synthetic HTTPS fixture is not proof of real sites or general leak resistance",
+    "code comparison excludes signature and is not proof of recipient build/relink or complete notices"
+  ],
+  "images": [
+    {
+      "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "WebCore.framework/Versions/A/WebCore",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "WebGPU.framework/Versions/A/WebGPU",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "WebInspectorUI.framework/Versions/A/WebInspectorUI",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "WebKit.framework/Versions/A/Frameworks/libWebKitSwift.dylib",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "WebKit.framework/Versions/A/WebKit",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "WebKitLegacy.framework/Versions/A/WebKitLegacy",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "libANGLE-shared.dylib",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "libWebKitSwift.dylib",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "libswiftCompatibilitySpan.dylib",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    },
+    {
+      "path": "libwebrtc.dylib",
+      "stagedMatch": true,
+      "relocatedPreSignMatch": true,
+      "signedCodeBeforeSignatureMatch": true,
+      "signedWholeFileMatch": false
+    }
+  ],
+  "releaseQualified": false
+}

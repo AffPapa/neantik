@@ -1,0 +1,37 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "afb5a5860c8c0da628b429062d3b474380056ed18ee29bf23fcf48f1fabab5c8",
+  "payload": {
+    "featurePolicyChanged": false,
+    "label": "native-pdf-screen-ai-test-deps",
+    "patchSHA256": "ff8f9565a46dfc0cd8ef79c2fd379f2c273f38a91219d8ca704f172e8e81383f",
+    "postimages": {
+      "chrome/browser/pdf/BUILD.gn": "241cc64c7ae2fb07bb5df48701651d2d63b7b2c81e53aa46672e84fe8b80bb2d"
+    },
+    "preimages": {
+      "chrome/browser/pdf/BUILD.gn": "a75c3b90143e3d553a9e230f9b407556d13032fa6ac35b351054937be6706028"
+    },
+    "reason": "Match optional ScreenAI GN deps to existing ENABLE_SCREEN_AI_BROWSERTESTS guarded C++ PDF integration tests; preserve native new browser_manager_service dep",
+    "releaseReady": false,
+    "reproduction": "m156-gn-generation-2.log",
+    "schemaVersion": 1,
+    "status": "source-applied-gn-and-native-build-pending"
+  },
+  "payloadType": "json",
+  "receipt": "m156-gn-pdf-correction.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

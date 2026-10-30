@@ -20,63 +20,48 @@ sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
 
 
-class DirectTelemetryContractTests(unittest.TestCase):
+class DirectTelemetryDisabledTests(unittest.TestCase):
     def test_accepts_disabled_identifier_free_contract(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = make_project(Path(temporary))
             MODULE.verify(root)
 
-    def test_rejects_any_telemetry_configuration_key(self) -> None:
+    def test_rejects_endpoint_or_stable_identifier(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = make_project(Path(temporary))
-            info_path = root / "Resources/Info.plist"
-            with info_path.open("wb") as file:
-                plistlib.dump({"NeAntikTelemetryEndpoint": "http://insecure"}, file)
+            root = make_project(Path(temporary), endpoint="https://example.test")
             with self.assertRaisesRegex(
                 MODULE.DirectTelemetryError,
-                "missing or insecure",
+                "endpoint",
             ):
                 MODULE.verify(root)
 
-    def test_rejects_dormant_telemetry_source(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = make_project(Path(temporary))
             source = root / "Sources/NeAntik/Telemetry.swift"
-            source.write_text("struct TelemetryController {}", encoding="utf-8")
+            source.write_text("let installationHash = \"x\"", encoding="utf-8")
             with self.assertRaisesRegex(
                 MODULE.DirectTelemetryError,
-                "dormant telemetry marker",
-            ):
-                MODULE.verify(root)
-
-    def test_rejects_missing_source_directory(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            root = make_project(Path(temporary))
-            (root / "Sources/NeAntik/Telemetry.swift").unlink()
-            (root / "Sources/NeAntik").rmdir()
-            with self.assertRaisesRegex(
-                MODULE.DirectTelemetryError,
-                "source directory is missing",
+                "installationHash",
             ):
                 MODULE.verify(root)
 
 
-def make_project(root: Path) -> Path:
+def make_project(root: Path, endpoint: str = "") -> Path:
     resources = root / "Resources"
     resources.mkdir(parents=True)
     with (resources / "Info.plist").open("wb") as file:
-        plistlib.dump({"NeAntikTelemetryEndpoint": "https://example.test/api/ingest"}, file)
+        plistlib.dump({"NeAntikTelemetryEndpoint": endpoint}, file)
     with (resources / "PrivacyInfo.xcprivacy").open("wb") as file:
         plistlib.dump(
             {
                 "NSPrivacyTracking": False,
-                "NSPrivacyCollectedDataTypes": [{}],
+                "NSPrivacyCollectedDataTypes": [],
             },
             file,
         )
-    source_dir = root / "Sources/NeAntik"
-    source_dir.mkdir(parents=True)
-    (source_dir / "Telemetry.swift").write_text("struct SafeTelemetry {}", encoding="utf-8")
+    source = root / "Sources/NeAntik/Telemetry.swift"
+    source.parent.mkdir(parents=True)
+    source.write_text("struct Payload { let eventID: String }", encoding="utf-8")
     return root
 
 

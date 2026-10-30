@@ -1,0 +1,286 @@
+{
+  "src": {
+    "src/third_party/js_code_coverage/node_modules": [
+      "js_code_coverage/e932c86d2d4f250416970dc270002a9cb6acecbec034998cdadf9a394d0f1abc"
+    ],
+    "src/build/linux/debian_bullseye_amd64-sysroot": [
+      "52d61d4446ffebfaa3dda2cd02da4ab4876ff237853f46d273e7f9b666652e1d"
+    ],
+    "src/build/linux/debian_bullseye_arm64-sysroot": [
+      "c7176a4c7aacbf46bda58a029f39f79a68008d3dee6518f154dcf5161a5486d8"
+    ],
+    "src/build/linux/debian_bullseye_armhf-sysroot": [
+      "b45a7f586a107380ca6141b00d74321922b41d6d327dc33e74a2f82fd454304c"
+    ],
+    "src/build/linux/debian_bullseye_i386-sysroot": [
+      "3de724b0d63478e1ae35f07b95d02261581a66e05c19aebe4e443d76179a565e"
+    ],
+    "src/build/linux/debian_bullseye_mips64el-sysroot": [
+      "c847a32ae492aa14688be47fa696026e8dae8d9f4f589ec42fad29862bf311b3"
+    ],
+    "src/build/linux/debian_bullseye_mipsel-sysroot": [
+      "82e930d6fa5d5ab1172cabc63b911ec800b182b4f8c14a273a89596541fe8658"
+    ],
+    "src/build/linux/debian_bullseye_ppc64el-sysroot": [
+      "8b37b8eefac38284c327146c05fa315b392c90a559888790a12b05a28fbcee40"
+    ],
+    "src/build/linux/debian_bullseye_s390x-sysroot": [
+      "46d561a32665a7ef4db334d66ba10b0db7750eea3fed1fee4896c2f5c4f87167"
+    ],
+    "src/build/linux/debian_trixie_riscv64-sysroot": [
+      "2df6a2698a25258871b45a50d8b5079947b1ad1c63920c944690dfc2a71aab51"
+    ],
+    "src/buildtools/win-format": [
+      "fb0bcaf406ad6f0bd6b4a6347d2abe78a94fb13e"
+    ],
+    "src/buildtools/mac-format": [
+      "35ddc571ab654a4f58d7b35f394b04835d0b98f9"
+    ],
+    "src/buildtools/mac_arm64-format": [
+      "945e45cbcb5443c3e569d5e0783fd012154fc4a7"
+    ],
+    "src/buildtools/linux64-format": [
+      "f5485c39451137ee943021a0fb63738b306c5026"
+    ],
+    "src/third_party/node/linux": [
+      "744e6926ffdd4a4fb2080ae2b9ce4575490261e7"
+    ],
+    "src/third_party/node/mac": [
+      "9202c05a8e7c67cb2bb2fec1e50fb6188d26f281"
+    ],
+    "src/third_party/node/mac_arm64": [
+      "6661e9b9bd7df6b45daf506c82d06d303597cb27"
+    ],
+    "src/third_party/node/win": [
+      "2f710ced2db2beb7c3debf6097196c35ee5adb74"
+    ],
+    "src/third_party/node/node_modules": [
+      "44f845cd5bd9d805cb1c73a98d5726b38ed8662a"
+    ],
+    "src/third_party/chromium-bidi/node_modules": [
+      "chromium-bidi/028c7baf9de02f6ae103b1911ab13d1aeb48f0ddd8fa702f9c150cdaf8cb5f5b"
+    ],
+    "src/third_party/llvm-build/Release+Asserts": [
+      "Linux_x64/clang-android-runtime-library-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Linux_x64/clang-linux-runtime-library-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Linux_x64/clang-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Linux_x64/clang-tidy-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Linux_x64/clangd-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Linux_x64/llvm-code-coverage-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Linux_x64/llvmobjdump-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Mac/clang-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Mac/clang-mac-runtime-library-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Mac/clang-tidy-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Mac/clangd-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Mac/llvm-code-coverage-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Mac/llvmobjdump-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Mac_arm64/clang-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Mac_arm64/clang-tidy-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Mac_arm64/clangd-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Mac_arm64/llvm-code-coverage-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Mac_arm64/llvmobjdump-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Win/clang-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Win/clang-tidy-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Win/clang-win-runtime-library-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Win/clangd-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Win/llvm-code-coverage-llvmorg-24-init-7747-g62397f8b-53.tar.xz",
+      "Win/llvmobjdump-llvmorg-24-init-7747-g62397f8b-53.tar.xz"
+    ],
+    "src/third_party/rust-toolchain": [
+      "Linux_x64/rust-toolchain-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz",
+      "Mac/rust-toolchain-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz",
+      "Mac_arm64/rust-toolchain-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz",
+      "Win/rust-toolchain-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz"
+    ],
+    "src/third_party/llvm-libclang": [
+      "Linux_x64/rust-libclang-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz",
+      "Mac/rust-libclang-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz",
+      "Mac_arm64/rust-libclang-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz",
+      "Win/rust-libclang-1edd55dcfcd573872c727fa3e086369a71661ee0-2-llvmorg-24-init-7747-g62397f8b.tar.xz"
+    ],
+    "src/content/test/data/gpu/meet_effects": [
+      "meet-gpu-tests/989382331.tar.gz"
+    ],
+    "src/third_party/blink/renderer/core/css/perftest_data": [
+      "e9ce994346c62f8c9fd6d0cecb2b2b0b93b4c2d8",
+      "756068da5e551516b23b0ba133e55c144f623d38",
+      "314e4e0d5e89ea9e9e9a234c617b4413adf48aa9",
+      "3a19b42a7c46257b716d55d6733f070c87180b1e",
+      "fdc43ee18cbd65487249441849f58aa13484aaef",
+      "7fc9338af75b7d9d185c91ddf262a356def5623d",
+      "c2d7e9ce67522dad138c7feb0a6911b828bfb130",
+      "031d5599c8a21118754e30dbea141be66104f556",
+      "8aac3db2a8c9e44babec81e539a3d60aeab4985c"
+    ],
+    "src/tools/perf/page_sets/maps_perf_test/dataset": [
+      "e6bf26977c2fd80c18789d1f279d474096a7b0d1"
+    ],
+    "src/third_party/opus/tests/resources": [
+      "009a3ee778767c2402b1d2c920bc2449265f5a2c"
+    ],
+    "src/base/tracing/test/data": [
+      "test_data/chrome_fcp_lcp_navigations.pftrace-ae01d849fbd75a98be1b7ddd5a8873217c377b393a1d5bbd788ed3364f7fefc3",
+      "test_data/chrome_input_with_frame_view.pftrace-a93548822e481508c728ccc5da3ad34afcd0aec02ca7a7a4dad84ff340ee5975",
+      "test_data/scroll_offsets_trace_2.pftrace-2ddd9f78d91d51e39c72c520bb54fdc9dbf1333ae722e87633fc345159296289",
+      "test_data/top_level_java_choreographer_slices-8001e73b2458e94f65a606bb558a645ba5bca553b57fe416001f6c2175675a8a",
+      "test_data/chrome_page_load_all_categories_not_extended.pftrace.gz-6586e9e2bbc0c996caddb321a0374328654983733e6ffd7f4635ac07db32a493",
+      "test_data/jetstream_3.pftrace.gz-8b5915cdf7f4182a74345cc080c34ce190835e5b46c30e921ce81433119acfda",
+      "test_data/speedometer_21.perfetto_trace.gz-8a159b354d74a3ca0d38ce9cd071ef47de322db4261ee266bfafe04d70310529",
+      "test_data/speedometer_3.perfetto_trace.gz-b2c77fbe2c17363432a1ad0c05c1c1c20d3ebc62bda92c041d39918011af6f02",
+      "test_data/scroll_jank_with_pinch.pftrace-8587d2016fdb5d39b5f852704b6e3925e9e6527af01696396be767bed04d4a45",
+      "test_data/cpu_powerups_1.pb-70f5511ba0cd6ce1359e3cadb4d1d9301fb6e26be85158e3384b06f41418d386",
+      "test_data/chrome_5672_histograms.pftrace.gz-a09bd44078ac71bcfbc901b0544750e8344d0d0f6f96e220f700a5a53fa932ee",
+      "test_data/chrome_custom_navigation_trace.gz-ff68279e3cec94076b69259d756eed181a63eaf834d8b956a7f4ba665fabf939",
+      "test_data/scroll_offsets.pftrace-62101edb5204fec8bea30124f65d4e49bda0808d7b036e95f89445aaad6d8d98",
+      "test_data/chrome_input_with_frame_view_new.pftrace-e901ad9577088e62c921dd8bfcb43d652ecf49fa69b5b57f81bb3d27dbe94e12",
+      "test_data/scroll_m131.pftrace-14171c9e502a65a454f39fe14fce8b313c7012a2c14394bed496fc93b1644b0d",
+      "test_data/scroll_m132.pftrace-779e1fa6cab1abc0ab2dcafa4bbbf826ea8fc052878886ab168c783ca32f3bbe",
+      "test_data/scroll_m132_with_atrace.pftrace-b1fe189738a4a714cef7dd13b12318c89d6c4345fbe65096b4680ffa79f2872a",
+      "test_data/scroll_m133beta.pftrace-2acc70545be1caeb3fb43218ab52872c2c749b49577b973cb8400057c680fc19",
+      "test_data/scroll_with_input_not_forwarded_to_renderer.pftrace-ceb2ff3cb64c99ddb28a29867bc82f1491c4b413bfacd8638551b80936240faf",
+      "test_data/scroll_m144.pftrace-6a3426ee6a441cf71ec8b634b662fe800700b8c3d2d1e9f247feaba890315843",
+      "test_data/loadline2_phone_perfetto_trace.pb.gz-446e12518282e078360cb1ab55ebb3e3788c3863b269601d2392c9e5d058a92c"
+    ],
+    "src/third_party/subresource-filter-ruleset/data": [
+      "22a0a5fc9e38d0de4e68eaf7e961dbbd2bebf234bebffbcd21bd496c0813fcde"
+    ],
+    "src/third_party/test_fonts/test_fonts": [
+      "9c07d19d9c5ee1ff94f717e6fb17e0c8c354e6f9"
+    ],
+    "src/buildtools/android/doclava": [
+      "1931becb8a8e21685f39c62854e9e814d64ccf1a"
+    ]
+  },
+  "src/third_party/angle": {
+    "src/third_party/angle/third_party/llvm-build/Release+Asserts": [
+      "Linux_x64/clang-android-runtime-library-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Linux_x64/clang-linux-runtime-library-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Linux_x64/clang-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Linux_x64/clang-tidy-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Linux_x64/clangd-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Linux_x64/llvm-code-coverage-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Linux_x64/llvmobjdump-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Mac/clang-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Mac/clang-mac-runtime-library-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Mac/clang-tidy-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Mac/clangd-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Mac/llvm-code-coverage-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Mac/llvmobjdump-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Mac_arm64/clang-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Mac_arm64/clang-tidy-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Mac_arm64/clangd-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Mac_arm64/llvm-code-coverage-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Mac_arm64/llvmobjdump-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Win/clang-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Win/clang-tidy-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Win/clang-win-runtime-library-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Win/clangd-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Win/llvm-code-coverage-llvmorg-24-init-7747-g62397f8b-42.tar.xz",
+      "Win/llvmobjdump-llvmorg-24-init-7747-g62397f8b-42.tar.xz"
+    ]
+  },
+  "src/third_party/dawn": {
+    "src/third_party/dawn/build/linux/debian_bullseye_armhf-sysroot": [
+      "b45a7f586a107380ca6141b00d74321922b41d6d327dc33e74a2f82fd454304c"
+    ],
+    "src/third_party/dawn/build/linux/debian_bullseye_arm64-sysroot": [
+      "c7176a4c7aacbf46bda58a029f39f79a68008d3dee6518f154dcf5161a5486d8"
+    ],
+    "src/third_party/dawn/build/linux/debian_bullseye_i386-sysroot": [
+      "3de724b0d63478e1ae35f07b95d02261581a66e05c19aebe4e443d76179a565e"
+    ],
+    "src/third_party/dawn/build/linux/debian_bullseye_mipsel-sysroot": [
+      "82e930d6fa5d5ab1172cabc63b911ec800b182b4f8c14a273a89596541fe8658"
+    ],
+    "src/third_party/dawn/build/linux/debian_bullseye_mips64el-sysroot": [
+      "c847a32ae492aa14688be47fa696026e8dae8d9f4f589ec42fad29862bf311b3"
+    ],
+    "src/third_party/dawn/build/linux/debian_bullseye_amd64-sysroot": [
+      "52d61d4446ffebfaa3dda2cd02da4ab4876ff237853f46d273e7f9b666652e1d"
+    ]
+  },
+  "src/third_party/devtools-frontend/src": {
+    "src/third_party/devtools-frontend/src/third_party/node/linux": [
+      "744e6926ffdd4a4fb2080ae2b9ce4575490261e7"
+    ],
+    "src/third_party/devtools-frontend/src/third_party/node/mac": [
+      "9202c05a8e7c67cb2bb2fec1e50fb6188d26f281"
+    ],
+    "src/third_party/devtools-frontend/src/third_party/node/mac_arm64": [
+      "6661e9b9bd7df6b45daf506c82d06d303597cb27"
+    ],
+    "src/third_party/devtools-frontend/src/scripts/ai_assistance/suite/outputs": [
+      "2c91e963a2a3cd91e1c693437244faf1a134b0517894c34886e203beb7794400"
+    ],
+    "src/third_party/devtools-frontend/src/third_party/chrome/chrome-win": [
+      "156.0.8075.0/win64/chrome-win64.zip"
+    ],
+    "src/third_party/devtools-frontend/src/third_party/chrome/chrome-mac-x64": [
+      "156.0.8075.0/mac-x64/chrome-mac-x64.zip"
+    ],
+    "src/third_party/devtools-frontend/src/third_party/chrome/chrome-mac-arm64": [
+      "156.0.8075.0/mac-arm64/chrome-mac-arm64.zip"
+    ],
+    "src/third_party/devtools-frontend/src/third_party/chrome/chrome-linux": [
+      "156.0.8075.0/linux64/chrome-linux64.zip"
+    ],
+    "src/third_party/devtools-frontend/src/third_party/node/win": [
+      "2f710ced2db2beb7c3debf6097196c35ee5adb74"
+    ]
+  },
+  "src/third_party/openscreen/src": {
+    "src/third_party/openscreen/src/third_party/llvm-build/Release+Asserts": [
+      "Linux_x64/clang-android-runtime-library-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Linux_x64/clang-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Linux_x64/clang-tidy-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Linux_x64/clangd-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Linux_x64/llvm-code-coverage-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Linux_x64/llvmobjdump-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Mac/clang-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Mac/clang-mac-runtime-library-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Mac/clang-tidy-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Mac/clangd-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Mac/llvm-code-coverage-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Mac/llvmobjdump-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Mac_arm64/clang-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Mac_arm64/clang-tidy-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Mac_arm64/clangd-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Mac_arm64/llvm-code-coverage-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Mac_arm64/llvmobjdump-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Win/clang-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Win/clang-tidy-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Win/clang-win-runtime-library-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Win/clangd-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Win/llvm-code-coverage-llvmorg-24-init-7747-g62397f8b-27.tar.xz",
+      "Win/llvmobjdump-llvmorg-24-init-7747-g62397f8b-27.tar.xz"
+    ]
+  },
+  "src/third_party/webpagereplay": {
+    "src/third_party/webpagereplay/buildtools/win-format": [
+      "565cab9c66d61360c27c7d4df5defe1a78ab56d3"
+    ],
+    "src/third_party/webpagereplay/buildtools/mac-format": [
+      "7d46d237f9664f41ef46b10c1392dcb559250f25"
+    ],
+    "src/third_party/webpagereplay/buildtools/mac_arm64-format": [
+      "8503422f469ae56cc74f0ea2c03f2d872f4a2303"
+    ],
+    "src/third_party/webpagereplay/buildtools/linux64-format": [
+      "79a7b4e5336339c17b828de10d80611ff0f85961"
+    ]
+  },
+  "src/third_party/openscreen/src/buildtools": {
+    "src/third_party/openscreen/src/buildtools/win-format": [
+      "fb0bcaf406ad6f0bd6b4a6347d2abe78a94fb13e"
+    ],
+    "src/third_party/openscreen/src/buildtools/mac-format": [
+      "35ddc571ab654a4f58d7b35f394b04835d0b98f9"
+    ],
+    "src/third_party/openscreen/src/buildtools/mac_arm64-format": [
+      "945e45cbcb5443c3e569d5e0783fd012154fc4a7"
+    ],
+    "src/third_party/openscreen/src/buildtools/linux64-format": [
+      "f5485c39451137ee943021a0fb63738b306c5026"
+    ]
+  }
+}

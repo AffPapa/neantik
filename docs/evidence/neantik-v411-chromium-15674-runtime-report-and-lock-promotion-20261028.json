@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "attempt": "V411",
+  "createdAt": "2026-10-28T08:02:43.829339Z",
+  "status": "PASS_SIGNED_CHROMIUM_156_0_8078_74_RUNTIME_REPORT_AND_SOURCE_LOCK_PROMOTION",
+  "scope": "Signed the retained ARM64 Chromium 156.0.8078.74 build in the V410-authorized host context; no rebuild, no application launch, no release packaging or publication.",
+  "inputs": {
+    "unsignedAppMainExecutableSHA256": "f680cafc46eb202845aeeebfe51c65542eaa201f75637ead26b14a7240ce0648",
+    "runtimeCandidateLockSHA256": "1233efc428bf2789e2b9f557e8c97c1d02efad8c12aab78c532466613583a31e",
+    "sourceProvenanceSHA256": "bd2b25cb232a12b226d3a540a751f8af1f2fbc3e8ebf5ea0a9e94027c2dd57a2",
+    "buildArgumentsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01"
+  },
+  "signedRuntime": {
+    "path": "/private/tmp/neantik-chromium-15674-stage/signed-v411/NeAntik Browser.app",
+    "version": "156.0.8078.74",
+    "architecture": "arm64",
+    "mainExecutableSHA256": "864e14b1605bc0e9502af276da8247692f31677be2edf4c32ce9c2ee4fe1fbb4",
+    "frameworkSHA256": "cce7be0654afbd3d32ae74336c0c6cd19a11edc208086fcd85794b27391ee85e",
+    "runtimeReport": "/private/tmp/neantik-chromium-15674-stage/chromium-15674-runtime-report-v411.json",
+    "runtimeReportSHA256": "272adbedb3a59f7928c652bdc329d95d51ad670fad3f78572bcdfb029f849091",
+    "codeSignature": "verified",
+    "codeSignatureKind": "developer-id",
+    "outerAuthority": "Developer ID Application: Евгений Иванов (H6VGU2M6JD)",
+    "outerTimestamp": "2026-10-28 15:02:24 +07:00",
+    "uniqueARM64MachOCount": 16,
+    "MachOPathCountIncludingFrameworkSymlink": 17,
+    "everyUniqueMachOHasDeveloperIDAndTimestamp": true,
+    "strictDeepSignatureVerification": "PASS",
+    "GatekeeperAssessment": "accepted, source=Developer ID",
+    "gpuMode": "metal"
+  },
+  "promotion": {
+    "path": "/private/tmp/neantik-release-v1/runtime/fingerprint-chromium.lock.json",
+    "sha256": "1233efc428bf2789e2b9f557e8c97c1d02efad8c12aab78c532466613583a31e",
+    "matchesCandidateLock": true
+  },
+  "notReleaseQualified": true,
+  "remainingGates": [
+    "coherent production tuple/privacy evidence",
+    "integrated manager and owned WebKit candidate",
+    "source/license/transitive closure and recipient relink",
+    "exact app/ZIP/DMG qualification",
+    "notarization, stapling and Gatekeeper on release artifacts",
+    "GitHub/browser.free publication and downloaded-byte verification"
+  ]
+}

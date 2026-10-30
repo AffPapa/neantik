@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-24T21:41:13Z",
+  "status": "exact-source-commit-recovered-and-patched;offer-incomplete",
+  "repository": "https://github.com/WebKit/WebKit",
+  "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+  "tree": "86b6ee8faf130e81a149280914e4ea5718f60129",
+  "sourceArchive": "artifacts/neantik/webkit-v20-source-20261025/WebKit-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c.tar.zst",
+  "sourceArchiveBytes": 1748508866,
+  "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+  "zstdTest": "PASS",
+  "patch": "artifacts/neantik/webkit-v20-source-20261025/webkit-v20-source-modifications.patch",
+  "patchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+  "patchPaths": 29,
+  "applyCheck": "PASS",
+  "appliedToExactCommit": "PASS",
+  "diffCheck": "PASS",
+  "persistentCopyHashChecks": "PASS after moving from temporary retrieval directory",
+  "notClaimed": [
+    "complete corresponding-source offer",
+    "final production image/resource binding",
+    "notice applicability approval",
+    "production package/release qualification"
+  ]
+}

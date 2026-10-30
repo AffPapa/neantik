@@ -1,0 +1,36 @@
+{
+  "id": "V402",
+  "timestampUTC": "2026-10-28T07:25:48Z",
+  "status": "PASS_V382_PRESIGN_HRTF_NOTICE_BINDING; NO_CANDIDATE_OR_RELEASE_QUALIFICATION",
+  "scope": "Run the changed IRCAM HRTF notice binding helper against the exact retained V382 pre-sign Frameworks stage. Read-only; no application package, profile, runtime launch or release artifact changed.",
+  "priorCheckpoint": {
+    "receipt": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v401-v382-13-resource-upstream-history-batch-20261028.json",
+    "sha256": "92b241dcfb62daecb6240b15b16e8050f6ed960aa997aed732aab248e05e9e6f",
+    "currentSHA256": "bd6854e04fe6bcdc24508a39c4c7cd71f7f5b8e416ad624f4692041c2d261a6a"
+  },
+  "inputs": {
+    "frameworksRoot": "/private/tmp/neantik-v395-package-stage/Frameworks",
+    "runtimePath": "WebCore.framework/Versions/A/Resources/audio/Composite.wav",
+    "runtimeSHA256": "a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3",
+    "noticeSource": "/private/tmp/neantik-release-v1/docs/evidence/third-party/ircam/IRCAM-LISTEN-HRTF-NOTICE.txt",
+    "noticeSHA256": "98e596a4a8e0cd4d5fcb5d77f8a37d846129dce89d99235dcc3133a22dfdd0a2",
+    "installerScript": "/private/tmp/neantik-release-v1/scripts/webkit_runtime_notices.py",
+    "installerScriptSHA256": "10490f705b9822a1e0e9aad3e4eaa9809a0a5827a0a548d17d12dad35ac68245"
+  },
+  "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B -c import webkit_runtime_notices; call _ircam_listen_hrtf_notice(project_root, V382 Frameworks)",
+  "result": "PASS: helper accepted the exact V382 staged Composite.wav hash and pinned notice hash.",
+  "limitations": [
+    "This checks the resource-to-notice binding function only.",
+    "V399 installer tests pass on isolated fixtures; no full V382 app notice install was performed in this receipt.",
+    "13 other current V382 resource rows remain UNKNOWN.",
+    "This is not a signed candidate, runtime QA, recipient relink/load proof or release qualification."
+  ],
+  "worktree": {
+    "path": "/private/tmp/neantik-release-v1",
+    "branch": "codex/neantik-1-0-prep-20261025",
+    "HEAD": "63c3bc620163ae6354f3dc359b47b9fd72e921d0",
+    "dirty": true,
+    "preserveUniqueChanges": true
+  },
+  "releaseQualified": false
+}

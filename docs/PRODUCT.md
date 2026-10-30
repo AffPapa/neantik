@@ -1,4 +1,4 @@
-# NeAntik 0.4 candidate product contract
+# NeAntik 0.3 product contract
 
 ## Outcome
 
@@ -7,18 +7,6 @@ sign in to a website, close the browser, and later return to the same session.
 Profiles must not share cookies or local storage. When a compatible patched
 runtime is selected, every profile must also retain a stable distinct browser
 identity.
-
-The 0.4 candidate proposes a readable unique name and exposes Create and open
-in the ordinary editor. Creation persists atomically before the editor closes;
-opening then re-reads the saved profile and uses normal guarded launch. A
-failed opening leaves the profile available to retry. Only create is also
-available. Valid pasted proxy input resolves at submit; manual connection
-fields and optional diagnostics are disclosed on demand.
-
-New profiles use a blank local startup page. Existing saved/custom startup
-URLs remain unchanged. A running profile's primary row action returns to its
-verified window; Stop remains an explicit separate action. This does not
-promise automatic restoration of closed tabs or indefinitely valid logins.
 
 On an empty workspace, the primary action creates and opens one permanent
 local profile with a stable identity. It states that the initial route is
@@ -42,10 +30,8 @@ Direct before the click; the full editor remains a secondary action.
   note.
 - Notes use progressive disclosure: the full editor row opens a multiline
   plaintext field, the selected profile reveals its text in the detail pane,
-  and compact profile rows show one normalized, truncated plaintext line.
-  Notes remain ordinary local profile metadata: no rich text, cloud sync or
-  Keychain storage. The editor warns not to store passwords, API keys or seed
-  phrases there.
+  and compact profile rows show only a note glyph. Notes remain ordinary
+  local profile metadata: no rich text, cloud sync or Keychain storage.
 - Tags keep their text label and receive a stable dynamic system-color marker
   as a secondary visual cue; status red, orange and green remain reserved.
 - Move-to-folder menus stay bounded to eight useful choices. Larger
@@ -53,7 +39,7 @@ Direct before the click; the full editor remains a secondary action.
   folder always kept in the quick list.
 - One-click first-profile bootstrap that persists before launch and leaves the
   profile available when runtime launch fails.
-- HTTP and HTTPS proxy settings; unauthenticated SOCKS5 in Direct.
+- HTTP, HTTPS and SOCKS5 proxy authentication through a separate local relay per profile. HTTPS upstream uses macOS default certificate validation before credentials are sent. Availability preflight is separate from Chromium route evidence.
 - Proxy verification through `curl` with credentials supplied over stdin.
 - Explicit single and bounded three-at-a-time bulk proxy health checks with a
   timestamp, response time and sanitized outcome. Persisted health never
@@ -98,8 +84,12 @@ Direct before the click; the full editor remains a secondary action.
   context is described as automatic, while observed failures expose one
   relevant action.
 - One immutable workspace projection and an allowlisted read-only DTO for the
-  native UI and future local API/MCP/SDK adapters. There is no listener or
-  write API in this version.
+  native UI. An opt-in local MCP stdio mode provides 18 management tools (7 in
+  read mode), including saved-template reuse and owned browser lifecycle.
+  Generated connections enable management; legacy configurations retain read
+  permissions. WebKit lifecycle uses an explicitly enabled local Unix socket in
+  the already-open GUI, with connection/profile consent. No TCP listener, BrowserData or credential output, arbitrary
+  shell/JS execution, or page automation is provided. See MCP_GUIDE.md.
 
 ## Explicitly excluded
 
@@ -108,7 +98,8 @@ Direct before the click; the full editor remains a secondary action.
 - Cloud accounts and team sync.
 - Browser automation and RPA.
 - Network-accessible, automatically enabled or unauthenticated APIs.
-- API/MCP/SDK methods that launch browsers or mutate/delete profiles.
+- MCP profile deletion, arbitrary page automation, credential extraction and
+  adopting another session's browser for termination.
 - Mobile emulation.
 - Claims of being undetectable or anonymous against every service.
 - JavaScript-based fingerprint injection.
@@ -126,18 +117,12 @@ Direct before the click; the full editor remains a secondary action.
 ### Judge
 
 - The profile creation form has no nonessential settings.
-- The creation order is name, visible optional note and optional proxy;
-  folders, tags, start URL and appearance stay under one additional-settings
-  disclosure.
 - The empty workspace exposes `Create and open`, states `Direct connection`
   before launch, and keeps `Configure...` as the secondary path.
 - The main screen exposes create, edit, start, stop, reveal, and delete.
 - An optional note can be opened by clicking the whole editor row, accepts
-  multiline plaintext, is readable from the selected profile, searchable and
-  represented by a normalized one-line preview in the compact profile row. A
-  clone has no note.
-- Every profile row exposes state and route as text plus a symbol and keeps a
-  labelled launch/stop action visible without relying on color alone.
+  multiline plaintext, is readable from the selected profile and searchable
+  without increasing the compact profile-row height. A clone has no note.
 - Proxy credentials are absent from `profiles.json` and process arguments.
 - Foreground profile reconciliation does not perform the process-table or
   full argument-buffer scan on the main thread. A stale or cancelled

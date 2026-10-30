@@ -1,0 +1,46 @@
+--- a/third_party/blink/renderer/core/loader/frame_fetch_context.cc
++++ b/third_party/blink/renderer/core/loader/frame_fetch_context.cc
+@@ -44,6 +44,8 @@
+ #include "base/metrics/histogram_functions.h"
+ #include "base/metrics/histogram_macros.h"
+ #include "build/build_config.h"
++#include "components/ungoogled/neantik_apple_device_tuples.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "mojo/public/cpp/bindings/associated_remote.h"
+ #include "net/http/structured_headers.h"
+ #include "services/network/public/cpp/client_hints.h"
+@@ -145,6 +147,14 @@
+ 
+ namespace {
+ 
++float DeviceMemoryForClientHint() {
++  if (const auto seed = ungoogled::nevision::GetProfileSeed()) {
++    return ungoogled::nevision::GetAppleDeviceTuple(*seed)
++        .web_device_memory_gb;
++  }
++  return ApproximatedDeviceMemory::GetApproximatedDeviceMemory();
++}
++
+ // Creates a serialized AtomicString header value out of the input string, using
+ // structured headers as described in
+ // https://www.rfc-editor.org/rfc/rfc8941.html.
+@@ -676,8 +686,7 @@
+                            hints_preferences)) {
+     request.SetHttpHeaderField(
+         http_names::kDeviceMemory_DEPRECATED,
+-        AtomicString(String::Number(
+-            ApproximatedDeviceMemory::GetApproximatedDeviceMemory())));
++        AtomicString(String::Number(DeviceMemoryForClientHint())));
+   }
+ 
+   if (ShouldSendClientHint(*policy, resource_origin,
+@@ -685,8 +694,7 @@
+                            hints_preferences)) {
+     request.SetHttpHeaderField(
+         http_names::kDeviceMemory,
+-        AtomicString(String::Number(
+-            ApproximatedDeviceMemory::GetApproximatedDeviceMemory())));
++        AtomicString(String::Number(DeviceMemoryForClientHint())));
+   }
+ 
+   if (ShouldSendClientHint(*policy, resource_origin,

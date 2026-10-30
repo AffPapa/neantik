@@ -60,6 +60,8 @@ spctl \
   "$DMG_PATH"
 
 TEMP_ROOT="$(mktemp -d -t neantik-dmg-verification)"
+# mktemp -t can return macOS's /var alias even with a canonical TMPDIR.
+TEMP_ROOT="$(cd "$TEMP_ROOT" && pwd -P)"
 MOUNT_POINT="$TEMP_ROOT/mount"
 MOUNTED=0
 
@@ -103,6 +105,7 @@ ACTUAL_BUILD="$(
   fail "mounted app version/build is $ACTUAL_VERSION ($ACTUAL_BUILD), expected $EXPECTED_VERSION ($EXPECTED_BUILD)"
 
 "$PROJECT_DIR/scripts/verify-integrated-release.sh" "$APP_PATH"
+python3 "$PROJECT_DIR/scripts/verify-public-artifact-privacy.py" "$APP_PATH"
 xcrun stapler validate "$APP_PATH"
 spctl --assess --type execute --verbose=4 "$APP_PATH"
 

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T12:41:07.645735+00:00",
+  "status": "build141-native-harness-failure-diagnosed;build142-private-ZIP-exact-preflight-PASS;no-build142-Apple-submission-or-launch",
+  "supersededDev141": {
+    "archiveSHA256": "59e47bc715493a36f4240a777966551d98d07886c700527303638d915e4127e5",
+    "appleSubmissionID": "77fdccd3-5e1b-4d06-8c47-4fd553e88c24",
+    "appleStatus": "Accepted",
+    "gatekeeper": "accepted Notarized Developer ID",
+    "launchedPID": 41743,
+    "finding": "manually assembled schema-5 JSON omitted required BrowserProfile properties; app refused profiles and preserved data. No owned-WebKit/proxy runtime conclusion. One-use marker consumed; do not relaunch or resubmit these bytes.",
+    "cleanup": "owned app processes and two loopback fixture servers stopped"
+  },
+  "correctedSeed": {
+    "root": "/private/tmp/neantik-devqa142-final-20261025",
+    "sha256": "2656b7a75736ed34b2f369c01f19b78d9b90a5052010574f3f9b977ea1074e42",
+    "origin": "NeAntik BrowserProfile and ProfileStore.encodeProfiles inside opt-in Swift test, not a UI-created profile",
+    "diagnostic": "PASS 3/3 on disposable byte-identical copy; ProfileStore decode, normalization and trusted metadata tested; original final root remains two equal owner-only seed files",
+    "recipientShape": "PASS; A isolatedV1 proxy, B system WebKit direct control"
+  },
+  "dev142": {
+    "archive": "/private/tmp/neantik-owned-webkit-qa-6l1y86am/NeAntik-1.0.0-142-dev-owned-webkit-qa.zip",
+    "sha256": "d00f0c5df2a33583d5baf8bc79d720fd074ced736464de1558d3271f19edf991",
+    "bytes": 247562244,
+    "stageReceipt": "/private/tmp/neantik-owned-webkit-qa-6l1y86am/stage.json",
+    "runPlan": "/private/tmp/neantik-owned-webkit-qa-6l1y86am/run-plan.json",
+    "staticChecks": "source app deep strict signature, notices, host/runtime/network pin, exact ZIP verifier, launcher --check-only PASS"
+  },
+  "appleSubmission142": false,
+  "appLaunched142": false,
+  "releaseQualified": false,
+  "nextAction": "Use only build142 exact ZIP for one Apple notarization and one bounded native QA; preserve model-encoded seed provenance in result. Continue source/license/relink before production."
+}

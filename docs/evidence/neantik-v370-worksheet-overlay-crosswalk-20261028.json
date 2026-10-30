@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "V370",
+  "observedAtUTC": "2026-10-28T04:08:36Z",
+  "status": "PASS_56_OF_81_LEGACY_UNKNOWN_ROWS_HAVE_EXACT_V369_OVERLAY_SOURCE_CROSSWALK",
+  "scope": "Cross-referenced the immutable candidate-139 worksheet V29 UNKNOWN rows against exact source paths and replaced runtime hashes in the V369 source-offer overlay attribution manifests. This avoids repeating source investigations for 56 rows when preparing the next candidate, while preserving all candidate-139 UNKNOWN decisions.",
+  "sourceOffer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v370-worksheet-overlay-crosswalk",
+    "baseV369ManifestSHA256": "2700a82c6ed417402b0c65694cfce883c4e43e2476286384013ae12df353f6be",
+    "manifestSHA256": "adebbd16a38629fab073067da032cba7f9527d58942462ee864449fee0b43aaf",
+    "componentCount": 645,
+    "candidateBound": false
+  },
+  "worksheet": {
+    "path": "docs/evidence/webkit-runtime-package-notice-worksheet-20261026-v29.json",
+    "sha256": "b5d00e7589a67102c62372a6feddc9e7d06a50c6d0c3b6fde047bd42b9954441",
+    "unknownRows": 81,
+    "rowsWithOverlayMatches": 56,
+    "rowsWithoutOverlayMatches": 25,
+    "distinctOverlayAssets": 64
+  },
+  "consumerPreflight": {
+    "status": "PASS",
+    "script": "scripts/package-owned-webkit-release.py::source_offer_replacements",
+    "scriptSHA256": "69e9f39db424ca1c8f2810d8cd31b620d01d8e6370c2b17b9678c166db22d4cd",
+    "components": 645,
+    "overlayManifests": 8,
+    "firstPartyOverlayAssets": 64,
+    "manifestSHA256": "adebbd16a38629fab073067da032cba7f9527d58942462ee864449fee0b43aaf"
+  },
+  "embeddedReceiptSHA256": "17223e31f034ca3ee33218249f3138db2869a0830dbb7ec920c39d1fad1bc22c",
+  "productionCandidateChanged": false,
+  "releaseArtifactsChanged": false,
+  "sourceCheckoutChanged": false,
+  "releaseQualified": false,
+  "nextAction": "Review the 25 no-overlay rows against their exact source/license and conditional/generated-input evidence; keep the 56 mapped rows for final-candidate replacement rebinding rather than re-investigating them."
+}

@@ -219,6 +219,35 @@ struct ProfileEnvironmentPresentationTests {
     }
 
     @Test
+    func fingerprintAuditNeverEscalatesIntoCompactOverview() {
+        let resolution = DiagnosticResolution(
+            key: .fingerprintAudit,
+            mode: .actionRequired,
+            action: .runFingerprintAudit
+        )
+        let snapshot = makeSnapshot(
+            sections: [
+                EnvironmentDiagnosticSection(
+                    id: "fingerprint",
+                    title: "Fingerprint",
+                    fields: [
+                        field(
+                            id: "fingerprint.observation",
+                            severity: .failure,
+                            resolution: resolution
+                        )
+                    ]
+                )
+            ]
+        )
+
+        #expect(
+            ProfileEnvironmentPresentation.recommendedAction(in: snapshot) ==
+                .runFingerprintAudit
+        )
+    }
+
+    @Test
     func mixedSeverityRootCauseCountsOnlyItsHighestSeverity() {
         let attentionResolution = DiagnosticResolution(
             key: .proxyContext,
@@ -304,12 +333,22 @@ struct ProfileEnvironmentPresentationTests {
                 failureCount: 0,
                 attentionCount: 0,
                 hasAutomaticLaunchFix: true
-            ) == "Настроено · прокси проверится при запуске"
+            ) == "Настроено · проверка прокси при запуске"
+        )
+        #expect(
+            ProfileEnvironmentPresentation.rollupSeverity(
+                highestSeverity: .success
+            ) == .neutral
+        )
+        #expect(
+            ProfileEnvironmentPresentation.rollupSeverity(
+                highestSeverity: .failure
+            ) == .failure
         )
     }
 
     @Test
-    func overviewCompactsRuntimeAndUsesReadyLanguage() {
+    func overviewCompactsRuntimeAndUsesConfigurationLanguage() {
         let snapshot = makeSnapshot(
             sections: [
                 EnvironmentDiagnosticSection(
@@ -337,7 +376,40 @@ struct ProfileEnvironmentPresentationTests {
                 highestSeverity: .success,
                 failureCount: 0,
                 attentionCount: 0
-            ) == "Среда настроена"
+            ) == "Настройки готовы"
+        )
+    }
+
+    @Test
+    func successfulPreflightDoesNotQualifyUnobservedBrowserConnectivity() {
+        let fields = [
+            EnvironmentDiagnosticField(
+                id: "route.last-probe", title: "Последняя проверка",
+                value: "Проверка прошла", state: .observed, severity: .success
+            ),
+            EnvironmentDiagnosticField(
+                id: "route.chromium-http", title: "HTTP-маршрут Chromium",
+                value: "Не измерялся", state: .unverified, severity: .neutral
+            ),
+            EnvironmentDiagnosticField(
+                id: "route.dns", title: "DNS",
+                value: "Не измерялся", state: .unverified, severity: .neutral
+            ),
+        ]
+        let highest = ProfileEnvironmentPresentation.highestSeverity(in: fields)
+        // The leaf records a real historical success; it cannot qualify the
+        // currently open browser's network or turn the whole overview green.
+        #expect(highest == .success)
+        #expect(fields[0].severity == .success)
+        #expect(
+            ProfileEnvironmentPresentation.rollupSeverity(
+                highestSeverity: highest
+            ) == .neutral
+        )
+        #expect(
+            ProfileEnvironmentPresentation.rollupTitle(
+                highestSeverity: highest, failureCount: 0, attentionCount: 0
+            ) == "Настройки готовы"
         )
     }
 

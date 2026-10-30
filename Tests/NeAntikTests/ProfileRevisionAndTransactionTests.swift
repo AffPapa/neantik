@@ -4,192 +4,78 @@ import Testing
 @testable import NeAntik
 
 @MainActor
-extension ProfileRevisionAndTransactionTests {
-    @Test
-    func noteUpdateRejectsConcurrentNoteButPreservesOtherMetadataEdits() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let paths = AppPaths(rootDirectory: root)
-        let firstWindow = ProfileStore(paths: paths)
-        var draft = BrowserProfile(name: "Original")
-        draft.note = "Initial note"
-        let saved = try firstWindow.upsert(draft)
-        let secondWindow = ProfileStore(paths: paths)
-        try secondWindow.mutateProfile(withID: saved.id) { $0.name = "Renamed" }
-        let changed = try firstWindow.updateNote(
-            "First edit", for: saved.id, expectedNote: saved.note
-        )
-        #expect(changed.name == "Renamed")
-        #expect(changed.note == "First edit")
-
-        #expect(throws: ProfileNoteConflictError.self) {
-            try secondWindow.updateNote(
-                "Stale edit", for: saved.id, expectedNote: saved.note
-            )
-        }
-        let reloaded = ProfileStore(paths: paths)
-        #expect(reloaded.profile(withID: saved.id)?.note == "First edit")
-        #expect(reloaded.profile(withID: saved.id)?.revision == changed.revision)
-    }
-
-    @Test
-    func noteUpdateValidatesAndDoesNotRecreateMissingProfile() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
-        #expect(throws: BrowserProfileDeletedError.self) {
-            try store.updateNote("Draft", for: UUID(), expectedNote: "")
-        }
-        let profile = try store.upsert(BrowserProfile(name: "Note validation"))
-        #expect(throws: NeAntikError.self) {
-            try store.updateNote(
-                String(repeating: "x", count: BrowserProfile.maximumNoteLength + 1),
-                for: profile.id, expectedNote: ""
-            )
-        }
-        #expect(store.profile(withID: profile.id)?.note == "")
-        let saved = try store.updateNote("  New\r\nNote  ", for: profile.id, expectedNote: "")
-        #expect(saved.note == "New\nNote")
-    }
-
-    @Test
-    func folderSelectionFailureIsRetryableAndSuccessClearsError() {
-        var state = ProfileFolderPickerCommitState()
-        let destination = UUID()
-        let didFail = state.commit(folderID: destination) { selected in
-            #expect(selected == destination)
-            throw CocoaError(.fileWriteOutOfSpace)
-        }
-        #expect(!didFail)
-        #expect(state.errorMessage != nil)
-        let didSucceed = state.commit(folderID: nil) { selected in
-            #expect(selected == nil)
-        }
-        #expect(didSucceed)
-        #expect(state.errorMessage == nil)
-    }
-
-    @Test
-    func undoKeepsReceiptForStorageFailureButNotConflict() {
-        #expect(!ProfileBatchUndoFailurePolicy.invalidatesReceipt(CocoaError(.fileWriteOutOfSpace)))
-        #expect(!ProfileBatchUndoFailurePolicy.invalidatesReceipt(CocoaError(.fileReadNoPermission)))
-        #expect(ProfileBatchUndoFailurePolicy.invalidatesReceipt(ProfileBatchMutationError.undoConflict))
-    }
-
-    @Test
-    func folderUndoStorageFailureLeavesReceiptRetryable() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        var failWrite = false
-        let store = ProfileStore(
-            paths: AppPaths(rootDirectory: root),
-            beforeOrganizationPersist: {
-                if failWrite { throw CocoaError(.fileWriteOutOfSpace) }
-            }
-        )
-        let profile = try store.upsert(BrowserProfile(name: "Retry Undo"))
-        let folder = try store.createFolder(named: "Destination")
-        let receipt = try store.assignProfilesRecordingUndo([profile.id], toFolderID: folder.id)
-        failWrite = true
-        #expect(throws: CocoaError.self) { try store.undoFolderAssignments(receipt) }
-        #expect(store.folderID(forProfileID: profile.id) == folder.id)
-        failWrite = false
-        try store.undoFolderAssignments(receipt)
-        #expect(store.folderID(forProfileID: profile.id) == nil)
-    }
-}
-
-
-@MainActor
 struct ProfileRevisionAndTransactionTests {
     @Test
-    func readinessRecoveryAllowsPendingErrorsButNeverReplacesActualModal() {
-        #expect(WorkspaceSheetRequest.canPresent(
-            .readiness, hasBlockingModal: false, hasWorkspaceAlert: true,
-            recoveringWorkspaceAlert: true
-        ))
-        #expect(!WorkspaceSheetRequest.canPresent(
-            .readiness, hasBlockingModal: true, hasWorkspaceAlert: true,
-            recoveringWorkspaceAlert: true
-        ))
-        #expect(!WorkspaceSheetRequest.canPresent(
-            .readiness, hasBlockingModal: false, hasWorkspaceAlert: true
-        ))
-        #expect(!WorkspaceSheetRequest.canPresent(
-            .note(BrowserProfile(name: "Existing")),
-            hasBlockingModal: false, hasWorkspaceAlert: true,
-            recoveringWorkspaceAlert: true
-        ))
-        #expect(WorkspaceSheetRequest.canPresent(
-            .readiness, hasBlockingModal: false, hasWorkspaceAlert: false
-        ))
+    func configurationCopyRejectsSourceChangedByAnotherManager() throws {
+        let fixture = try TransactionFixture()
+        let original = try fixture.store.upsert(BrowserProfile(name: "Original", startURL: "https://example.com/"))
+        let other = ProfileStore(paths: fixture.paths)
+        var edit = original
+        edit.startURL = "https://example.org/"
+        let current = try other.upsert(edit)
+        let count = fixture.store.profiles.count
+        #expect(throws: BrowserProfileRevisionConflictError.self) {
+            try fixture.store.duplicateProfile(original, name: "Copy")
+        }
+        #expect(fixture.store.profiles.count == count)
+        #expect(fixture.store.profile(withID: original.id)?.revision == current.revision)
+        #expect(fixture.store.profile(withID: original.id)?.startURL == "https://example.org/")
+    }
+
+    @Test
+    func configurationCopyInheritsLatestFolderAndNeverWebsiteData() throws {
+        let fixture = try TransactionFixture()
+        let folder = try fixture.store.createFolder(named: "Project")
+        let original = try fixture.store.upsert(BrowserProfile(name: "Original", tags: ["Work"], note: "Private note"))
+        let other = ProfileStore(paths: fixture.paths)
+        try other.assignProfile(original.id, toFolderID: folder.id)
+        let marker = fixture.paths.browserDataDirectory(for: original.id).appendingPathComponent("owned-data")
+        try FileManager.default.createDirectory(at: marker.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("original website fixture".utf8).write(to: marker)
+        let copy = try fixture.store.duplicateProfile(original, name: "Copy")
+        #expect(copy.id != original.id)
+        #expect(copy.identity.runtimeSeed != original.identity.runtimeSeed)
+        #expect(copy.tags == original.tags)
+        #expect(copy.note.isEmpty)
+        #expect(fixture.store.folderID(forProfileID: copy.id) == folder.id)
+        #expect(!FileManager.default.fileExists(atPath: fixture.paths.browserDataDirectory(for: copy.id).appendingPathComponent("owned-data").path))
+        #expect(try Data(contentsOf: marker) == Data("original website fixture".utf8))
+    }
+
+    @Test
+    func configurationCopyCredentialFailureRollsBackProfileFolderAndNewDirectory() throws {
+        let fixture = try TransactionFixture()
+        let folder = try fixture.store.createFolder(named: "Project")
+        let original = try fixture.store.upsert(BrowserProfile(name: "Original"), toFolderID: folder.id)
+        var copyID: UUID?
+        #expect(throws: TransactionTestError.self) {
+            try fixture.store.duplicateProfile(original, name: "Copy") { saved in
+                copyID = saved.id
+                throw TransactionTestError.forced
+            }
+        }
+        let failedID = try #require(copyID)
+        #expect(fixture.store.profiles.map(\.id) == [original.id])
+        #expect(fixture.store.folderID(forProfileID: original.id) == folder.id)
+        #expect(fixture.store.folderID(forProfileID: failedID) == nil)
+        #expect(!FileManager.default.fileExists(atPath: fixture.paths.profileDirectory(for: failedID).path))
+        let reloaded = ProfileStore(paths: fixture.paths)
+        #expect(reloaded.profiles.map(\.id) == [original.id])
+        #expect(reloaded.folderID(forProfileID: failedID) == nil)
     }
 
     @Test
     func bulkRequestRetainsFolderCapturedAtPresentation() {
         let folderID = UUID()
         var selectedFolderID: UUID? = folderID
-        let request = WorkspaceSheetRequest(
-            destination: .proxyImport(targetFolderID: selectedFolderID)
+        let request = BulkProxyImportRequest(
+            targetFolderID: selectedFolderID
         )
 
         selectedFolderID = nil
 
-        guard case let .proxyImport(capturedFolderID) = request.destination else {
-            Issue.record("Expected proxy import destination")
-            return
-        }
-        #expect(capturedFolderID == folderID)
+        #expect(request.targetFolderID == folderID)
         #expect(selectedFolderID == nil)
-    }
-
-    @Test
-    func sheetPresentationKeepsProfileNoteAndRevisionSnapshot() {
-        var profile = BrowserProfile(name: "Original")
-        profile.note = "Original note"
-        let request = WorkspaceSheetRequest(destination: .note(profile))
-        let editor = WorkspaceSheetRequest(destination: .editor(EditorRequest(
-            profile: profile,
-            openedProcessState: .stopped
-        )))
-        profile.name = "Changed"
-        profile.note = "Changed note"
-        profile.revision += 1
-
-        guard case let .note(captured) = request.destination,
-              case let .editor(capturedEditor) = editor.destination else {
-            Issue.record("Expected note and editor destinations")
-            return
-        }
-        #expect(captured.name == "Original")
-        #expect(captured.note == "Original note")
-        #expect(captured.revision + 1 == profile.revision)
-        #expect(capturedEditor.profile == captured)
-        #expect(capturedEditor.openedProcessState == .stopped)
-    }
-
-    @Test
-    func sheetPresentationKeepsBatchSelectionAndFreshIdentity() {
-        let firstID = UUID()
-        var selection: Set<UUID> = [firstID]
-        let folder = WorkspaceSheetRequest(destination: .folderPicker(selection))
-        let tags = WorkspaceSheetRequest(destination: .batchTags(selection))
-        selection.removeAll()
-        guard case let .folderPicker(folderIDs) = folder.destination,
-              case let .batchTags(tagIDs) = tags.destination else {
-            Issue.record("Expected folder and tag destinations")
-            return
-        }
-        #expect(folderIDs == [firstID])
-        #expect(tagIDs == [firstID])
-        #expect(!folder.isReadiness)
-        let readiness = WorkspaceSheetRequest(destination: .readiness)
-        #expect(readiness.isReadiness)
-        #expect(readiness.id != WorkspaceSheetRequest(destination: .readiness).id)
-        #expect(folder.id != WorkspaceSheetRequest(destination: folder.destination).id)
     }
 
     @Test
@@ -245,6 +131,38 @@ struct ProfileRevisionAndTransactionTests {
         #expect(persisted.tags == ["Current"])
         #expect(persisted.note == "Current note")
         #expect(persisted.revision == current.revision)
+    }
+
+    @Test
+    func staleDeleteCannotRemoveNewerProfileOrBrowserData() throws {
+        let fixture = try TransactionFixture()
+        let original = try fixture.store.upsert(BrowserProfile(name: "Original"))
+        let marker = fixture.paths.browserDataDirectory(for: original.id)
+            .appendingPathComponent("synthetic-session-marker")
+        try Data("keep".utf8).write(to: marker)
+        let otherWindow = ProfileStore(paths: fixture.paths)
+        var edited = try #require(otherWindow.profile(withID: original.id))
+        edited.name = "Edited in another window"
+        let current = try otherWindow.upsert(edited)
+        let manager = BrowserProcessManager(
+            paths: fixture.paths,
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+
+        #expect(throws: ProfileDeleteRevisionConflictError.self) {
+            try fixture.store.delete(original, processManager: manager)
+        }
+        let reloaded = ProfileStore(paths: fixture.paths)
+        #expect(reloaded.profile(withID: original.id)?.name == current.name)
+        #expect(reloaded.profile(withID: original.id)?.revision == current.revision)
+        #expect(FileManager.default.fileExists(atPath: marker.path))
+        #expect(!FileManager.default.fileExists(
+            atPath: fixture.paths.profileDeletionTombstone(for: original.id).path
+        ))
+        #expect(!FileManager.default.fileExists(
+            atPath: fixture.paths.profileCredentialCleanupMarker(for: original.id).path
+        ))
     }
 
     @Test

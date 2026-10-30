@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "status": "scoped-manager-relay-webrtc-observations-pass",
+  "observedOnUTC": "2026-10-16",
+  "shippingVersion": "0.8.21",
+  "shippingBuild": 133,
+  "managerSHA256": "f912efaeddad22aaea3f13957af125662bcfb8ac068b13c5177579d38b2585d9",
+  "runtimeVersion": "156.0.8078.12",
+  "runtimeExecutableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+  "runtimeFrameworkSHA256": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7",
+  "exactDownloadedApp": true,
+  "headedShippingManager": true,
+  "CDPUsed": false,
+  "launchPolicyModified": false,
+  "productionProfilesUsed": false,
+  "realKeychainUsed": false,
+  "memoryOnlyDummyProxyPassword": true,
+  "cases": [
+    {
+      "phase": "proxy-success",
+      "CLIWebRTCPolicy": "disable_non_proxied_udp",
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "STUNRequests": 0,
+      "invalidSTUNRequests": 0,
+      "independentCanaryAcknowledged": true,
+      "finalUDPCounters": true,
+      "HTTPCompletionSocketCustody": true,
+      "UDPProcessCustody": false
+    },
+    {
+      "phase": "direct-control",
+      "CLIWebRTCPolicy": "default_public_interface_only",
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "STUNRequests": 1,
+      "invalidSTUNRequests": 0,
+      "independentCanaryAcknowledged": true,
+      "finalUDPCounters": true,
+      "HTTPCompletionSocketCustody": true,
+      "UDPProcessCustody": true
+    },
+    {
+      "phase": "proxy-repeat",
+      "CLIWebRTCPolicy": "disable_non_proxied_udp",
+      "ICEComplete": true,
+      "ICETimedOut": false,
+      "STUNRequests": 0,
+      "invalidSTUNRequests": 0,
+      "independentCanaryAcknowledged": true,
+      "finalUDPCounters": true,
+      "HTTPCompletionSocketCustody": true,
+      "UDPProcessCustody": false
+    }
+  ],
+  "protectedSessionUnchangedOnRepeat": true,
+  "attemptedPermissiveUserPreferences": [
+    "global default",
+    "matching URL exception",
+    "local-IP allowlist"
+  ],
+  "cleanup": {
+    "managerExitCode": 0,
+    "browserMainExits": [
+      {
+        "terminationReason": 1,
+        "terminationStatus": 0,
+        "launchCount": 1,
+        "logSHA256": "c318bdb36fb972ba5c3eca161967812ee371ab0278765f75defd078df7f65605"
+      },
+      {
+        "terminationReason": 1,
+        "terminationStatus": 0,
+        "launchCount": 1,
+        "logSHA256": "19e27c8697c428133401450089e1921c27979ff42cd41b98d3e18cc888a8faf6"
+      }
+    ],
+    "fixtureSignaledMainProcesses": 0,
+    "ownedProcessesRemaining": 0,
+    "serverThreadsDrained": true,
+    "authorityRetired": true,
+    "retirementReceiptSHA256": "79a17fd26637903f4ac95d0f2544b2d8c2810b5c0b6c590ba0a8c8e11d8dfc90",
+    "syntheticDataRetainedPrivatelyForEvidence": true
+  },
+  "HTTPDiagnosticCounts": {
+    "proxy-operation-failure": 2,
+    "webrtc-origin-refused": 2
+  },
+  "allHTTPCleanQualified": false,
+  "harnessCorrection": {
+    "originalAnalysis": "refused on generic HTTP diagnostics; original refusal retained",
+    "diagnosis": "own socket-only control reproduces favicon CONNECT leaving an empty origin connection; native refused request targets were not retained and remain unclassified",
+    "correction": "offline scope correction only; all nonce/ICE/UDP/socket/generation/exit requirements retained",
+    "nativeRetries": 0
+  },
+  "inputSHA256": {
+    "fixture-ledger.json": "d2dca343cf48ce4468883ac1d8de86e28abbe022ce4323b4e486e1a3754cfb9e",
+    "webrtc-custody-before-launch.json": "c03ff3f8516fafdbe490baf87b1b48f87562367ee2e245cb1674dbffdb8b234f",
+    "webrtc-custody-proxy-success.json": "90770f9451d47848f8fea5e008e2aab68518681ca8188bdf89500de8f7a815f4",
+    "webrtc-custody-direct-control.json": "ed53b0e188ddeb620acf2aa7496b82d6e60df5577cca4352e9376c9ed3621f33",
+    "webrtc-custody-proxy-repeat.json": "9a462332af90d2e599689bbe170a0c07e9050ae207245f3b86828d5b9e5ab6ee",
+    "webrtc-custody-cleanup.json": "4f46b960101adcc59d3a20924b1431936f63c6080297afb336562cb23e377f9b"
+  },
+  "analyzerSHA256": "69a1bee251c3fabde81af71dadebb9a02abddb49d7b058db770d363364b1216d",
+  "sourceSHA256": {
+    "manager-route-fixture.py": "c5fb7d17aebd0fc520f2b3fcc9ea0ee45b6d32093f6d1fecdceddc5544935aba",
+    "manager-webrtc-fixture.py": "affefef6f1b54f7014bfc923dfc6a1596d5ba46a1611c697240c64a4f6430930",
+    "manager-webrtc-probe.js": "a8442efb645749d17a3d31633af0fcad57accd241deea2c585df13df86167eb0",
+    "collect-manager-dns.py": "eee4024b0e7cb52f431ac2b10782715bc860bdb49e24c0ff8561ae6e844ae4bc",
+    "collect-manager-webrtc.py": "06c2475c4b321b696de0fea78f8589dcdb1ee7d9325abf57cb5d2b9000cc9f7f"
+  },
+  "releaseArtifactsChanged": false,
+  "allPoint21GatesComplete": false,
+  "releaseGate": false,
+  "limitations": [
+    "Own loopback IPv4 STUN and HTTP-auth upstream through actual manager SOCKS5 relay",
+    "No OS-managed policy, IPv6/TURN, external interface/network transition or other hardware/macOS qualification",
+    "Two unclassified refused HTTP connections remain diagnostics; no all-HTTP-clean or new no-fallback claim",
+    "Browser main normal exit/status0 recorded by signed manager; not all renderer exit statuses or a general data-save proof"
+  ]
+}

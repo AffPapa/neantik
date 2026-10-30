@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "status": "candidate-and-pinned-package-unsigned-payload-byte-identical",
+  "observedAt": "2026-10-25",
+  "reviewerRole": "NeAntik maintainer factual package/runtime review; not legal advice or legal opinion",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": 139,
+    "runtimePath": "NeAntik.app/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib",
+    "signedBytes": 155600,
+    "signedSHA256": "8138aa57f6798a5e16e199d9bdf36fe43a59edf6d4708ce366d6d2597bc8394b",
+    "machOUUIDs": {
+      "x86_64": "034FCEB0-ACED-3DF6-BFC2-89BFE6210407",
+      "arm64": "2A907B24-D19C-3996-857E-9194BD4C09A7"
+    }
+  },
+  "pinnedPackage": {
+    "packageURL": "https://download.swift.org/swift-6.4.0-release/xcode/swift-6.4.0-RELEASE/swift-6.4.0-RELEASE-osx.pkg",
+    "packageSHA256": "8fd03185b98fe27f54f8f523867e297ca5ff12bf8d4d63a6c627d7c60e286e845",
+    "packageLibraryPath": "runtime/owned-webkit/libswiftCompatibilitySpan.dylib",
+    "signedBytes": 156544,
+    "signedSHA256": "b4256b38185e963651938ed0406c6c8ec54299621c7fa53c5e9a0a325ca5fe4f"
+  },
+  "comparison": {
+    "method": "copy both files to a disposable temporary directory, run codesign --remove-signature on each copy, compare full unsigned file size and SHA-256",
+    "candidateUnsignedBytes": 120592,
+    "candidateUnsignedSHA256": "13fc845d02182eab060f3fff7339709889ea99e35a66ff1bdd184098fb7c4309",
+    "packageUnsignedBytes": 120592,
+    "packageUnsignedSHA256": "13fc845d02182eab060f3fff7339709889ea99e35a66ff1bdd184098fb7c4309",
+    "payloadEqual": true,
+    "originalCandidateUntouched": true,
+    "originalPackageUntouched": true
+  },
+  "license": {
+    "declaredSPDX": "Apache-2.0 WITH Swift Runtime Library Exception",
+    "candidateNoticePath": "Contents/Resources/NeAntikRuntimeLicenses/Swift-6.4.0-Runtime-Library-Exception-LICENSE.txt",
+    "noticeSHA256": "770af8291f708538d8ff885a0bbc4e045cd700531741c4f99528d435c14d7f55",
+    "noticeMatchesPinnedPackageText": true,
+    "officialLicenseURL": "https://www.swift.org/legal/license.html",
+    "retainedRequirement": "Keep the complete pinned license and runtime exception text; official exception states that it removes Apache attribution requirements under 4(a), 4(b), and 4(d)."
+  },
+  "priorProbeCorrection": "The earlier disposable probe compared the unsigned candidate copy against the still-signed package library, so its mismatch was not an apples-to-apples payload comparison. This receipt corrects that method by removing signatures from both disposable copies.",
+  "decision": "PASS_FACTUAL_MAINTAINER_REVIEW for this exact image/package payload equivalence and bundled notice only; not a legal opinion, general WebKit notice closure, source-offer completion, signature qualification, runtime QA, or release qualification."
+}

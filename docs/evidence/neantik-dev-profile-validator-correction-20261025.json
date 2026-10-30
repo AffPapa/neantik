@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T12:25:10.264011+00:00",
+  "status": "existing-embedded-profile-MATCH;producer-validation-fixed;no-new-app-or-zip",
+  "finding": "Prior Dev-profile mismatch was a validator defect: it checked iOS application-identifier instead of macOS com.apple.application-identifier and rejected a team-scoped keychain wildcard. The existing embedded macOS Developer ID profile authorizes the exact Dev App ID and signed exact keychain group, contains the existing signer certificate, and is unexpired.",
+  "applePrimarySource": "https://developer.apple.com/documentation/technotes/tn3125-inside-code-signing-provisioning-profiles",
+  "existingProfile": {
+    "path": "/private/tmp/neantik-c139-assembled-qa-20261025/NeAntik.app/Contents/embedded.provisionprofile",
+    "sha256": "44d486a839fddcbf59f30ff9e267903083b7946e76079bb3b68feff19897d365",
+    "validation": "PASS by security cms decode plus corrected pure validator; no private key read or replacement identity"
+  },
+  "oldApp": "retired build 139, still refused by source-app build>139 check; not a QA candidate",
+  "changedInputs": {
+    "scripts/prepare-owned-webkit-dev-qa.py": "60baf41f094aad6885600fbc6c778350c218e64009d2f7f128e3371d96a62197",
+    "scripts/tests/test_prepare_owned_webkit_dev_qa.py": "3be690c4912a482c8e1f64e3b07fe4ffc2337398e8a988e48ffb7dd4a0c21800"
+  },
+  "contractTests": "3/3 PASS, focused pure Python; actual newly assembled Dev app/ZIP, Apple acceptance and runtime remain untested",
+  "nextAction": "Assemble current signed Dev app build>139 with owned WebKit and current notices, using this existing profile; run producer exact-byte preflight before Apple or native QA.",
+  "releaseGate": false
+}

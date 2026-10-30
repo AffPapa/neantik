@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25",
+  "status": "INCONCLUSIVE_SWIFT_SCAN_PILOT;NO_DEPENDENCY_CLOSURE_CLAIM",
+  "target": "PAL Swift module only",
+  "inputBuildNinjaSHA256": "691f704d4a75b80b5f4e8652a1d758b78e135f83b089b61a378df3c20bffc570",
+  "toolchain": "Xcode 27.0 / Swift 6.4 / macOS SDK 27.0",
+  "method": "Derived a dependency-only invocation from the exact PAL module Ninja command; removed object/header output flags and redirected the module cache to a temporary directory. No compile or link actions were invoked; candidate 139 and recovered build outputs were not modified.",
+  "observations": {
+    "compilerExitCode": 0,
+    "parsedModuleGraphRecords": 42,
+    "moduleGraphSHA256": "39e538b9dd1b4c60c375ff36b8c04901a5d9ef51d931010f93cb6a6d8e78dfd3",
+    "diagnosticErrorLines": 162,
+    "diagnosticLogSHA256": "cacc7e422b5c30f8e99e23988f01d2a3504c6a9dbf2e29108730533b2732caad",
+    "diagnosticSummary": "Clang dependency scans rejected cached PCM/PCH configuration mismatches and several SDK Swift interface dependencies could not resolve. The driver exited 0 despite diagnostics, and emitted only a partial graph; result is not a pass."
+  },
+  "decision": "Do not reuse this as compiler/module dependency closure. Do not repeat the same PAL scan with the same transformed invocation. A trustworthy closure needs a scan configuration that matches WebKit PCH/Clang importer settings, or a different authoritative build-system dependency source."
+}

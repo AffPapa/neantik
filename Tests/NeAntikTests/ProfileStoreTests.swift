@@ -1,87 +1,360 @@
+import Darwin
 import Foundation
 import Testing
 @testable import NeAntik
 
+private func profileStoreLargeImportBenchmarkHasDescriptorBudget() -> Bool {
+    var limits = rlimit()
+    guard getrlimit(RLIMIT_NOFILE, &limits) == 0,
+          limits.rlim_cur >= 16_024 else { return false }
+    // 5000 owned creations hold three descriptors each until commit/rollback.
+    // Never raise process/system limits to force an unavailable benchmark.
+    var kernelLimit: Int32 = 0
+    var size = MemoryLayout<Int32>.size
+    guard sysctlbyname("kern.maxfilesperproc", &kernelLimit, &size, nil, 0) == 0,
+          size == MemoryLayout<Int32>.size, kernelLimit > 0 else { return false }
+    return kernelLimit >= 16_024
+}
+
 @MainActor
+@Suite(.serialized)
 struct ProfileStoreTests {
-    @Test
-    func recoverableDocumentMissingAndPreviousBackupPolicies() throws {
-        for policy in [RecoverableDocumentStorage<Data>.EntryPolicy.profiles, .organization] {
-            let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-            let paths = AppPaths(rootDirectory: root)
-            try paths.prepareBaseDirectories()
-            defer { try? FileManager.default.removeItem(at: root) }
-            let document = RecoverableDocumentStorage<Data>(
-                paths: paths, current: paths.profilesFile, backup: paths.profilesBackupFile,
-                maximumBytes: 32, policy: policy, decode: { $0 }
-            )
-            try document.ensureSnapshot()
-            #expect(!FileManager.default.fileExists(atPath: paths.profilesBackupFile.path))
-            let first = Data("first".utf8)
-            let empty = Data("empty".utf8)
-            try document.persist(first, synchronize: false) { policy == .profiles ? first : empty }
-            #expect(try paths.readPrivateFile(paths.profilesBackupFile, maximumBytes: 32) == (policy == .profiles ? first : empty))
-            try document.persist(Data("second".utf8), synchronize: false) {
-                Issue.record("Existing document must not invoke missing-backup policy")
-                return Data()
-            }
-            #expect(try paths.readPrivateFile(paths.profilesBackupFile, maximumBytes: 32) == first)
-            let before = try paths.readPrivateFile(paths.profilesBackupFile, maximumBytes: 32)
-            try document.ensureSnapshot()
-            #expect(try paths.readPrivateFile(paths.profilesBackupFile, maximumBytes: 32) == before)
+    @Test(arguments: ["single", "folder", "batch"])
+    func synchronousCreationRollbackPreservesForeignDirectoryReplacement(kind: String) throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-sync-ownership-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root), profile = BrowserProfile(name: "Own sync rollback fixture")
+        let original = paths.profileDirectory(for: profile.id), held = root.appendingPathComponent("RetainedOwnedCreate")
+        let marker = original.appendingPathComponent("preserve-foreign-fixture"), store = ProfileStore(paths: paths)
+        let fail: () throws -> Void = {
+            try FileManager.default.moveItem(at: original, to: held)
+            try FileManager.default.createDirectory(at: original, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+            try Data("foreign synthetic bytes".utf8).write(to: marker)
+            throw ProfileStoreTestError()
         }
-    }
-
-    @Test
-    func recoverableDocumentDecodeFailureNeverOverwritesCurrentOrBackup() throws {
-        for rejected in ["corrupt", "unsupported"] {
-            let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-            let paths = AppPaths(rootDirectory: root)
-            try paths.prepareBaseDirectories()
-            defer { try? FileManager.default.removeItem(at: root) }
-            let current = Data(rejected.utf8), backup = Data("previous".utf8)
-            try paths.writePrivateFile(current, to: paths.profilesFile)
-            try paths.writePrivateFile(backup, to: paths.profilesBackupFile)
-            let document = RecoverableDocumentStorage<Data>(
-                paths: paths, current: paths.profilesFile, backup: paths.profilesBackupFile,
-                maximumBytes: 32, policy: .organization,
-                decode: { _ in throw POSIXError(.EINVAL) }
-            )
-            #expect(throws: POSIXError(.EINVAL)) {
-                try document.persist(Data("new".utf8), synchronize: false) { Data() }
-            }
-            #expect(try paths.readPrivateFile(paths.profilesFile, maximumBytes: 32) == current)
-            #expect(try paths.readPrivateFile(paths.profilesBackupFile, maximumBytes: 32) == backup)
+        #expect(throws: (any Error).self) {
+            if kind == "single" { _ = try store.upsert(profile, afterPersist: { _ in try fail() }) }
+            else if kind == "folder" { _ = try store.upsert(profile, toFolderID: nil, afterPersist: { _ in try fail() }) }
+            else { _ = try store.insertNewProfiles([profile], afterPersist: { _ in try fail() }) }
         }
+        #expect(FileManager.default.fileExists(atPath: marker.path))
+        if FileManager.default.fileExists(atPath: marker.path) { #expect(try Data(contentsOf: marker) == Data("foreign synthetic bytes".utf8)) }
+        #expect(FileManager.default.fileExists(atPath: held.appendingPathComponent("BrowserData").path))
+        #expect(store.profiles.isEmpty)
     }
-
-    @Test
-    func recoverableDocumentSnapshotDecodePolicyAndUnsafeBackup() throws {
+    @Test func backgroundImportRollbackPreservesForeignDirectoryReplacement() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-import-ownership-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root), profile = BrowserProfile(name: "Own import rollback fixture")
+        let original = paths.profileDirectory(for: profile.id), held = root.appendingPathComponent("RetainedOwnedImport")
+        let marker = original.appendingPathComponent("preserve-foreign-fixture")
+        let store = ProfileStore(paths: paths, beforeBackgroundImportOrganizationPersist: {
+            try FileManager.default.moveItem(at: original, to: held)
+            try FileManager.default.createDirectory(at: original, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+            try Data("foreign synthetic bytes".utf8).write(to: marker)
+            throw ProfileStoreTestError()
+        })
+        await #expect(throws: (any Error).self) {
+            try await store.insertImportedProfilesOffMainActor([profile], folderNames: ["Own import folder"])
+        }
+        #expect(FileManager.default.fileExists(atPath: marker.path))
+        if FileManager.default.fileExists(atPath: marker.path) { #expect(try Data(contentsOf: marker) == Data("foreign synthetic bytes".utf8)) }
+        #expect(FileManager.default.fileExists(atPath: held.appendingPathComponent("BrowserData").path))
+        #expect(store.profiles.isEmpty && store.organization == .empty)
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profiles.isEmpty && reloaded.organization == .empty)
+    }
+    @Test func launchSnapshotCanonicalizesNestedEvidenceDates() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        var profile = BrowserProfile(name: "Fractional context")
+        profile.identity = profile.identity.replacingProxyContext(timezoneIdentifier: "America/New_York", localeIdentifier: "en-US", evidence: .from(.ipAPI, observedAt: Date(timeIntervalSince1970: 1800000700.123456)))
+        let saved = try store.upsert(profile)
+        var reserved = false
+        try ProfileStore.withValidatedLaunchSnapshot(saved, paths: paths) { reserved = true }
+        #expect(reserved)
+    }
+
+    @Test func relayCommitSnapshotRefusesStaleRevisionAndKeepsWritersOut() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root), store = ProfileStore(paths: AppPaths(rootDirectory: root))
+        let original = try store.upsert(BrowserProfile(name: "Relay activation"))
+        let snapshot = original
+        let excludedWriter = try await Task.detached {
+            try ProfileStore.withPersistedLaunchSnapshot(snapshot, paths: paths) {
+                do { try paths.withProfilesMetadataGuard {}; return false }
+                catch { return true }
+            }
+        }.value
+        #expect(excludedWriter)
+        var changed = original; changed.startURL = "https://example.com/changed"
+        _ = try store.upsert(changed)
+        let refused = await Task.detached {
+            do { try ProfileStore.withPersistedLaunchSnapshot(snapshot, paths: paths) { return true }; return false }
+            catch { return error is BrowserProfileRevisionConflictError }
+        }.value
+        #expect(refused)
+    }
+
+    @Test
+    func persistedBlankStartPageRemainsReadableAcrossRestart() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
         let paths = AppPaths(rootDirectory: root)
         try paths.prepareBaseDirectories()
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        let profile = BrowserProfile(name: "Synthetic blank", startURL: "about:blank")
+        let data = try encoder.encode([profile])
+        try paths.writePrivateFile(data, to: paths.profilesFile)
+        let store = ProfileStore(paths: paths)
+        #expect(store.hasTrustedMetadata)
+        #expect(store.profile(withID: profile.id)?.startURL == "about:blank")
+        #expect(try Data(contentsOf: paths.profilesFile) == data)
+    }
+
+    @Test
+    func existingLegacyRevisionZeroCanReceiveProxyWithoutReplacingOtherData() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
-        let raw = Data("raw corrupt bytes".utf8)
-        try paths.writePrivateFile(raw, to: paths.profilesFile)
-        func document(_ policy: RecoverableDocumentStorage<Data>.EntryPolicy) -> RecoverableDocumentStorage<Data> {
-            RecoverableDocumentStorage(
-                paths: paths, current: paths.profilesFile, backup: paths.profilesBackupFile,
-                maximumBytes: 32, policy: policy, decode: { _ in throw POSIXError(.EINVAL) }
-            )
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let legacy = BrowserProfile(
+            name: "Legacy",
+            note: "keep this note",
+            revision: 0
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try paths.writePrivateFile(
+            encoder.encode([legacy]),
+            to: paths.profilesFile
+        )
+
+        let store = ProfileStore(paths: paths)
+        guard var loaded = store.profile(withID: legacy.id) else {
+            Issue.record("Legacy profile was not loaded")
+            return
         }
-        #expect(throws: POSIXError(.EINVAL)) { try document(.organization).ensureSnapshot() }
-        #expect(!FileManager.default.fileExists(atPath: paths.profilesBackupFile.path))
-        try document(.profiles).ensureSnapshot()
-        #expect(try paths.readPrivateFile(paths.profilesBackupFile, maximumBytes: 32) == raw)
-        try FileManager.default.removeItem(at: paths.profilesBackupFile)
-        let target = root.appendingPathComponent("target")
-        try paths.writePrivateFile(Data("untouched".utf8), to: target)
-        try FileManager.default.createSymbolicLink(at: paths.profilesBackupFile, withDestinationURL: target)
+        #expect(loaded.revision == 0)
+        loaded.proxy = ProxyConfiguration(
+            kind: .http,
+            host: "proxy.example",
+            port: 8080,
+            username: "user"
+        )
+        let saved = try store.upsert(loaded)
+        let reloaded = ProfileStore(paths: paths)
+        #expect(saved.revision == 1)
+        #expect(reloaded.profile(withID: legacy.id)?.proxy == loaded.proxy)
+        #expect(reloaded.profile(withID: legacy.id)?.note == "keep this note")
+    }
+
+    @Test
+    func createsFirstProfileInFreshWorkspaceThroughFolderAwarePath() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        #expect(store.hasTrustedMetadata)
+
+        let saved = try store.upsert(
+            BrowserProfile(name: "Первый"),
+            toFolderID: nil
+        )
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.hasTrustedMetadata)
+        #expect(reloaded.profiles.map(\.id) == [saved.id])
+    }
+
+    @Test
+    func missingPrimaryRestoresProfilesBeforeAnotherSave() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let firstStore = ProfileStore(paths: paths)
+        let original = try firstStore.upsert(BrowserProfile(name: "Original"))
+        let backupData = try Data(contentsOf: paths.profilesBackupFile)
+        let marker = paths.browserDataDirectory(for: original.id)
+            .appendingPathComponent("session-marker")
+        try Data("keep".utf8).write(to: marker)
+        try FileManager.default.removeItem(at: paths.profilesFile)
+
+        let recovered = ProfileStore(paths: paths)
+        #expect(recovered.hasTrustedMetadata)
+        #expect(recovered.profile(withID: original.id) != nil)
+        #expect(recovered.recoveryNotice?.profileMetadataRecovered == true)
+        #expect(try Data(contentsOf: paths.profilesFile) == backupData)
+        _ = try recovered.upsert(BrowserProfile(name: "Second"))
+        #expect(ProfileStore(paths: paths).profile(withID: original.id) != nil)
+        #expect(try Data(contentsOf: marker) == Data("keep".utf8))
+    }
+
+    @Test
+    func missingPrimaryRestoresFolderAssignmentsBeforeAnotherSave() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let firstStore = ProfileStore(paths: paths)
+        let profile = try firstStore.upsert(BrowserProfile(name: "Assigned"))
+        let folder = try firstStore.createFolder(named: "Original folder")
+        try firstStore.assignProfile(profile.id, toFolderID: folder.id)
+        let backupData = try Data(contentsOf: paths.profileOrganizationFile)
+        try paths.writePrivateFile(
+            backupData,
+            to: paths.profileOrganizationBackupFile
+        )
+        try FileManager.default.removeItem(at: paths.profileOrganizationFile)
+
+        let recovered = ProfileStore(paths: paths)
+        #expect(recovered.hasTrustedOrganization)
+        #expect(recovered.folderID(forProfileID: profile.id) == folder.id)
+        #expect(recovered.recoveryNotice?.folderMetadataRecovered == true)
+        #expect(try Data(contentsOf: paths.profileOrganizationFile) == backupData)
+        _ = try recovered.createFolder(named: "Second folder")
+        #expect(ProfileStore(paths: paths).folderID(forProfileID: profile.id) == folder.id)
+    }
+
+    @Test
+    func missingPrimaryWithInvalidBackupFailsClosed() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let invalid = Data("{broken".utf8)
+        try paths.writePrivateFile(invalid, to: paths.profilesBackupFile)
+
+        let store = ProfileStore(paths: paths)
+        #expect(!store.hasTrustedMetadata)
         #expect(throws: (any Error).self) {
-            try document(.profiles).persist(Data("new".utf8), synchronize: true) { Data() }
+            try store.upsert(BrowserProfile(name: "Must not save"))
         }
-        #expect(try paths.readPrivateFile(paths.profilesFile, maximumBytes: 32) == raw)
-        #expect(try paths.readPrivateFile(target, maximumBytes: 32) == Data("untouched".utf8))
+        #expect(try Data(contentsOf: paths.profilesBackupFile) == invalid)
+        #expect(try paths.privateFileEntryKind(paths.profilesFile) == .missing)
+    }
+
+    @Test
+    func missingOrganizationWithInvalidBackupPreservesProfilesAndBlocksFolderWrites() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let firstStore = ProfileStore(paths: paths)
+        let profile = try firstStore.upsert(BrowserProfile(name: "Keep profile"))
+        let invalid = Data("{broken".utf8)
+        try paths.writePrivateFile(invalid, to: paths.profileOrganizationBackupFile)
+        if try paths.privateFileEntryKind(paths.profileOrganizationFile) == .regular {
+            try FileManager.default.removeItem(at: paths.profileOrganizationFile)
+        }
+
+        let store = ProfileStore(paths: paths)
+        #expect(store.hasTrustedMetadata)
+        #expect(!store.hasTrustedOrganization)
+        #expect(store.profile(withID: profile.id) != nil)
+        #expect(throws: (any Error).self) {
+            try store.createFolder(named: "Must not save")
+        }
+        #expect(try Data(contentsOf: paths.profileOrganizationBackupFile) == invalid)
+        #expect(try paths.privateFileEntryKind(paths.profileOrganizationFile) == .missing)
+    }
+
+    @Test
+    func readsLegacyV1EnvelopeAndPreservesItAsRecoverySnapshotOnWrite() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let original = BrowserProfile(name: "Старый профиль")
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let array = try JSONSerialization.jsonObject(
+            with: encoder.encode([original])
+        )
+        let legacy = try JSONSerialization.data(
+            withJSONObject: ["schemaVersion": 1, "profiles": array]
+        )
+        try paths.writePrivateFile(legacy, to: paths.profilesFile)
+        try paths.writePrivateFile(legacy, to: paths.profilesBackupFile)
+
+        let store = ProfileStore(paths: paths)
+        #expect(store.hasTrustedMetadata)
+        #expect(store.profiles.map(\.id) == [original.id])
+        #expect(try Data(contentsOf: paths.profilesFile) == legacy)
+        _ = try store.upsert(BrowserProfile(name: "Новый"), toFolderID: nil)
+        #expect(try Data(contentsOf: paths.profilesBackupFile) == legacy)
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.hasTrustedMetadata)
+        #expect(reloaded.profiles.count == 2)
+        #expect(reloaded.profile(withID: original.id) != nil)
+    }
+
+    @Test(arguments: ["[]", "{}", "null"])
+    func unsupportedEnvelopeNeverFallsBackToOlderBackupOrOverwritesData(payload: String) throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let future = Data("{\"schemaVersion\":99,\"profiles\":\(payload)}".utf8)
+        let backup = Data("[]".utf8)
+        try paths.writePrivateFile(future, to: paths.profilesFile)
+        try paths.writePrivateFile(backup, to: paths.profilesBackupFile)
+
+        let store = ProfileStore(paths: paths)
+        #expect(!store.hasTrustedMetadata)
+        #expect(store.lastError?.contains("не поддерживается") == true)
+        #expect(throws: (any Error).self) {
+            try store.upsert(BrowserProfile(name: "Не создавать"))
+        }
+        #expect(try Data(contentsOf: paths.profilesFile) == future)
+        #expect(try Data(contentsOf: paths.profilesBackupFile) == backup)
+    }
+
+    @Test
+    func corruptPrimaryRecoversLegacyV1BackupWithoutChangingBrowserData() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let original = BrowserProfile(name: "Сохранённый")
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let array = try JSONSerialization.jsonObject(
+            with: encoder.encode([original])
+        )
+        let legacy = try JSONSerialization.data(
+            withJSONObject: ["schemaVersion": 1, "profiles": array]
+        )
+        let damaged = Data("{incomplete".utf8)
+        try paths.writePrivateFile(damaged, to: paths.profilesFile)
+        try paths.writePrivateFile(legacy, to: paths.profilesBackupFile)
+        let browserData = paths.browserDataDirectory(for: original.id)
+        try FileManager.default.createDirectory(
+            at: browserData, withIntermediateDirectories: true
+        )
+        let marker = browserData.appendingPathComponent("keep.txt")
+        try Data("keep".utf8).write(to: marker)
+
+        let recovered = ProfileStore(paths: paths)
+        #expect(recovered.hasTrustedMetadata)
+        #expect(recovered.profile(withID: original.id) != nil)
+        #expect(try Data(contentsOf: paths.profilesFile) == legacy)
+        #expect(try Data(contentsOf: marker) == Data("keep".utf8))
+        let recoveryFiles = try FileManager.default.contentsOfDirectory(
+            at: paths.profilesRecoveryDirectory,
+            includingPropertiesForKeys: nil
+        )
+        #expect(recoveryFiles.count == 1)
+        #expect(try Data(contentsOf: recoveryFiles[0]) == damaged)
     }
 
     @Test
@@ -89,8 +362,7 @@ struct ProfileStoreTests {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
-        let paths = AppPaths(rootDirectory: root)
-        let store = ProfileStore(paths: paths)
+        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
 
         #expect(throws: NeAntikError.self) {
             try store.upsert(BrowserProfile(name: "строка\nвторая"))
@@ -142,233 +414,354 @@ struct ProfileStoreTests {
             (directoryAttributes[.posixPermissions] as? NSNumber)?.intValue ==
                     0o700
         )
-        let document = try #require(
-            try JSONSerialization.jsonObject(
-                with: Data(contentsOf: paths.profilesFile)
-            ) as? [String: Any]
-        )
-        #expect(document["schemaVersion"] as? Int == 1)
-        #expect((document["profiles"] as? [[String: Any]])?.count == 1)
     }
 
     @Test
-    func legacyProfileArrayMigratesToVersionedDocument() throws {
+    func importedProfilesShareFolderNamesAndReloadAtomically() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
-        let paths = AppPaths(rootDirectory: root)
-        try paths.prepareBaseDirectories()
-        let profile = BrowserProfile(name: "Legacy document")
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        let legacyData = try encoder.encode([profile])
-        try paths.writePrivateFile(
-            legacyData,
-            to: paths.profilesFile
-        )
 
+        let paths = AppPaths(rootDirectory: root)
         let store = ProfileStore(paths: paths)
+        let first = BrowserProfile(name: "Импорт первый")
+        let second = BrowserProfile(name: "Импорт второй")
+        let third = BrowserProfile(name: "Без папки")
 
-        #expect(store.hasTrustedMetadata)
-        #expect(store.profiles.map(\.id) == [profile.id])
-        let migrated = try #require(
-            try JSONSerialization.jsonObject(
-                with: Data(contentsOf: paths.profilesFile)
-            ) as? [String: Any]
+        let saved = try await store.insertImportedProfilesOffMainActor(
+            [first, second, third],
+            folderNames: ["Работа", "работа", nil]
         )
-        #expect(migrated["schemaVersion"] as? Int == 1)
-        #expect((migrated["profiles"] as? [[String: Any]])?.count == 1)
-        let downgradeRecovery = try paths.readPrivateFile(
-            paths.profilesBackupFile,
-            maximumBytes: ProfileStore.maximumProfilesMetadataBytes
-        )
-        #expect(downgradeRecovery == legacyData)
-        let legacyDecoder = JSONDecoder()
-        legacyDecoder.dateDecodingStrategy = .iso8601
-        let legacyProfiles = try legacyDecoder.decode(
-            [BrowserProfile].self,
-            from: downgradeRecovery
-        )
-        #expect(legacyProfiles.map(\.id) == [profile.id])
-    }
 
-    @Test
-    func unknownProfileDocumentSchemaFailsClosedWithoutRewrite() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let paths = AppPaths(rootDirectory: root)
-        try paths.prepareBaseDirectories()
-        let unsupported = try JSONSerialization.data(
-            withJSONObject: [
-                "schemaVersion": 999,
-                "profiles": "must-not-be-decoded",
-            ]
-        )
-        try paths.writePrivateFile(unsupported, to: paths.profilesFile)
+        #expect(saved.count == 3)
+        #expect(store.organization.folders.count == 1)
+        let folder = try #require(store.organization.folders.first)
+        #expect(folder.name == "Работа")
+        #expect(store.folderID(forProfileID: saved[0].id) == folder.id)
+        #expect(store.folderID(forProfileID: saved[1].id) == folder.id)
+        #expect(store.folderID(forProfileID: saved[2].id) == nil)
 
-        let store = ProfileStore(paths: paths)
-
-        #expect(!store.hasTrustedMetadata)
-        #expect(store.profiles.isEmpty)
-        #expect(try Data(contentsOf: paths.profilesFile) == unsupported)
-        #expect(store.lastError?.contains("не поддерживается") == true)
-    }
-
-    @Test
-    func oversizedProfileDocumentFailsBeforeDecode() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let paths = AppPaths(rootDirectory: root)
-        try paths.prepareBaseDirectories()
-        try paths.createPrivateFileExclusively(
-            Data(),
-            at: paths.profilesFile
-        )
-        let handle = try FileHandle(forWritingTo: paths.profilesFile)
-        try handle.truncate(
-            atOffset: UInt64(ProfileStore.maximumProfilesMetadataBytes + 1)
-        )
-        try handle.close()
-
-        let store = ProfileStore(paths: paths)
-
-        #expect(ProfileStore.maximumProfilesMetadataBytes == 128 * 1_024 * 1_024)
-        #expect(!store.hasTrustedMetadata)
-        #expect(store.profiles.isEmpty)
-    }
-
-    @Test
-    func profileDocumentAndRecoveryUseExplicitSymmetricByteBoundaries() {
+        let reloaded = ProfileStore(paths: paths)
         #expect(
-            ProfilesMetadataStorage.encodedByteCountIsAllowed(
-                ProfilesMetadataStorage.maximumBytes
-            )
+            Set(reloaded.profiles.map(\.id)) == Set(saved.map(\.id))
         )
-        #expect(
-            !ProfilesMetadataStorage.encodedByteCountIsAllowed(
-                ProfilesMetadataStorage.maximumBytes + 1
+        #expect(reloaded.organization.folders.map(\.name) == ["Работа"])
+        for profile in saved {
+            #expect(
+                reloaded.folderID(forProfileID: profile.id) ==
+                    store.folderID(forProfileID: profile.id)
             )
-        )
-        #expect(
-            ProfileRecoveryRetention.shouldPreserveRejectedFile(
-                byteCount: Int(ProfileRecoveryRetention.maximumTotalBytes)
-            )
-        )
-        #expect(
-            !ProfileRecoveryRetention.shouldPreserveRejectedFile(
-                byteCount:
-                    Int(ProfileRecoveryRetention.maximumTotalBytes) + 1
-            )
-        )
-    }
-
-    @Test
-    func recoveryRetentionDeletesOnlyManagedRegularFiles() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let paths = AppPaths(rootDirectory: root)
-        try paths.prepareBaseDirectories()
-        let now = Date(timeIntervalSince1970: 2_000_000)
-        var recentFiles: [URL] = []
-        for index in 0..<(ProfileRecoveryRetention.maximumFileCount + 2) {
-            let file = paths.profilesRecoveryDirectory.appendingPathComponent(
-                "profiles-rejected-\(UUID().uuidString).json"
-            )
-            try Data("recovery-\(index)".utf8).write(to: file)
-            try FileManager.default.setAttributes(
-                [.modificationDate: now.addingTimeInterval(-Double(index))],
-                ofItemAtPath: file.path
-            )
-            recentFiles.append(file)
         }
-        let expired = paths.profilesRecoveryDirectory.appendingPathComponent(
-            "profile-organization-rejected-\(UUID().uuidString).json"
-        )
-        try Data("expired".utf8).write(to: expired)
-        try FileManager.default.setAttributes(
-            [
-                .modificationDate:
-                    now.addingTimeInterval(
-                        -ProfileRecoveryRetention.maximumAge - 1
-                    )
-            ],
-            ofItemAtPath: expired.path
-        )
-        let oversized = paths.profilesRecoveryDirectory.appendingPathComponent(
-            "profiles-rejected-\(UUID().uuidString).json"
-        )
-        try Data().write(to: oversized)
-        let oversizedHandle = try FileHandle(forWritingTo: oversized)
-        try oversizedHandle.truncate(
-            atOffset: UInt64(ProfileRecoveryRetention.maximumTotalBytes + 1)
-        )
-        try oversizedHandle.close()
-        try FileManager.default.setAttributes(
-            [.modificationDate: now.addingTimeInterval(60)],
-            ofItemAtPath: oversized.path
-        )
-        let unrelated = paths.profilesRecoveryDirectory
-            .appendingPathComponent("user-notes.json")
-        try Data("keep".utf8).write(to: unrelated)
-        let outside = root.appendingPathComponent("outside.json")
-        try Data("outside".utf8).write(to: outside)
-        let symlink = paths.profilesRecoveryDirectory.appendingPathComponent(
-            "profiles-rejected-\(UUID().uuidString).json"
-        )
-        try FileManager.default.createSymbolicLink(
-            at: symlink,
-            withDestinationURL: outside
-        )
-
-        try ProfileRecoveryRetention.prune(
-            directory: paths.profilesRecoveryDirectory,
-            preserving: oversized,
-            now: now
-        )
-
-        let retainedRecent = recentFiles.count {
-            FileManager.default.fileExists(atPath: $0.path)
-        }
-        #expect(retainedRecent == ProfileRecoveryRetention.maximumFileCount)
-        #expect(!FileManager.default.fileExists(atPath: expired.path))
-        #expect(!FileManager.default.fileExists(atPath: oversized.path))
-        #expect(FileManager.default.fileExists(atPath: unrelated.path))
-        #expect(
-            try FileManager.default.destinationOfSymbolicLink(
-                atPath: symlink.path
-            ) == outside.path
-        )
-        #expect(try Data(contentsOf: outside) == Data("outside".utf8))
     }
 
     @Test
-    func markingLaunchDoesNotRewriteLastUserModificationDate() throws {
+    func backgroundImportCommitsProfilesFoldersAndPublishesReloadedState() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
+
         let paths = AppPaths(rootDirectory: root)
         let store = ProfileStore(paths: paths)
-        let editedAt = Date(timeIntervalSince1970: 1_000)
-        let profile = try store.upsert(
-            BrowserProfile(
-                name: "Recency",
-                createdAt: editedAt,
-                updatedAt: editedAt
-            )
+        let profiles = [
+            BrowserProfile(name: "Z background"),
+            BrowserProfile(name: "A background")
+        ]
+        let saved = try await store.insertImportedProfilesOffMainActor(
+            profiles,
+            folderNames: ["Folder Z", "Folder A"]
+        )
+
+        #expect(saved.count == 2)
+        #expect(Set(store.profiles.map(\.id)) == Set(saved.map(\.id)))
+        #expect(store.organization.folders.count == 2)
+        let folderIDByName = Dictionary(
+            uniqueKeysWithValues: store.organization.folders.map {
+                ($0.name, $0.id)
+            }
+        )
+        #expect(
+            store.folderID(forProfileID: saved[0].id) ==
+                folderIDByName["Folder Z"]
+        )
+        #expect(
+            store.folderID(forProfileID: saved[1].id) ==
+                folderIDByName["Folder A"]
         )
         let reloaded = ProfileStore(paths: paths)
-        let beforeLaunch = try #require(
-            reloaded.profile(withID: profile.id)
+        #expect(Set(reloaded.profiles.map(\.id)) == Set(saved.map(\.id)))
+        #expect(reloaded.organization.folders.count == 2)
+    }
+
+    @Test
+    func backgroundImportRollsBackProfilesWhenFolderPersistenceFails() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(
+            paths: paths,
+            beforeBackgroundImportOrganizationPersist: {
+                throw ProfileStoreTestError()
+            }
+        )
+        let profile = BrowserProfile(name: "Background rollback")
+
+        await #expect(throws: ProfileStoreTestError.self) {
+            try await store.insertImportedProfilesOffMainActor(
+                [profile],
+                folderNames: ["Rollback folder"]
+            )
+        }
+        #expect(store.profiles.isEmpty)
+        #expect(store.organization == .empty)
+        #expect(
+            try paths.privateFileEntryKind(
+                paths.profileDirectory(for: profile.id)
+            ) == .missing
+        )
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profiles.isEmpty)
+        #expect(reloaded.organization == .empty)
+    }
+
+    @Test
+    func backgroundImportFailurePublishesMetadataRepairedBeforeValidation() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let sharedID = UUID()
+        let persistedProfiles = [
+            BrowserProfile(
+                id: sharedID,
+                name: "First persisted",
+                identity: BrowserIdentity(seed: 100)
+            ),
+            BrowserProfile(
+                id: sharedID,
+                name: "Second persisted",
+                identity: BrowserIdentity(seed: 100)
+            )
+        ]
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try paths.withProfilesMetadataGuard {
+            try paths.writePrivateFile(
+                encoder.encode(persistedProfiles),
+                to: paths.profilesFile
+            )
+        }
+
+        await #expect(throws: ProfileOrganizationError.invalidFolderName) {
+            try await store.insertImportedProfilesOffMainActor(
+                [BrowserProfile(name: "Rejected import")],
+                folderNames: ["  \n  "]
+            )
+        }
+
+        #expect(store.profiles.count == 2)
+        #expect(Set(store.profiles.map(\.id)).count == 2)
+        #expect(Set(store.profiles.map(\.identity.seed)).count == 2)
+        let reloaded = ProfileStore(paths: paths)
+        #expect(store.profiles == reloaded.profiles)
+        #expect(store.organization == reloaded.organization)
+    }
+
+    @Test
+    func synchronousMutationsFailFastWhileBackgroundImportOwnsMetadata() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let enteredOrganizationPersist = DispatchSemaphore(value: 0)
+        let continueOrganizationPersist = DispatchSemaphore(value: 0)
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(
+            paths: paths,
+            beforeBackgroundImportOrganizationPersist: {
+                enteredOrganizationPersist.signal()
+                continueOrganizationPersist.wait()
+            }
+        )
+        let secondWindowStore = ProfileStore(paths: paths)
+        let importTask = Task {
+            try await store.insertImportedProfilesOffMainActor(
+                [BrowserProfile(name: "Gated background import")],
+                folderNames: ["Gate"]
+            )
+        }
+        defer { continueOrganizationPersist.signal() }
+        try await Task.detached {
+            try waitForProfileStoreTestSignal(enteredOrganizationPersist)
+        }.value
+
+        #expect(throws: ProfileMetadataMutationInProgressError.self) {
+            try secondWindowStore.createFolder(named: "Concurrent folder")
+        }
+        // Admission belongs to this workspace, not to every isolated Dev/test root.
+        let otherRoot = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: otherRoot) }
+        let otherStore = ProfileStore(paths: AppPaths(rootDirectory: otherRoot))
+        #expect(throws: Never.self) { try otherStore.upsert(BrowserProfile(name: "Independent workspace")) }
+        continueOrganizationPersist.signal()
+        let saved = try await importTask.value
+        #expect(saved.count == 1)
+        #expect(store.profiles.map(\.id) == saved.map(\.id))
+        #expect(store.organization.folders.map(\.name) == ["Gate"])
+    }
+
+    @Test(arguments: [false, true])
+    func moveAndFolderUndoFailFastDuringImport(undo: Bool) async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let entered = DispatchSemaphore(value: 0)
+        let resume = DispatchSemaphore(value: 0)
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths, beforeBackgroundImportOrganizationPersist: {
+            entered.signal()
+            resume.wait()
+        })
+        let profile = try store.upsert(BrowserProfile(name: "Existing"))
+        let folder = try store.createFolder(named: "Existing folder")
+        _ = try store.moveProfileWithUndo(profile, toFolderID: folder.id)
+        let task = Task {
+            try await store.insertImportedProfilesOffMainActor([BrowserProfile(name: "Imported")], folderNames: ["Imported folder"])
+        }
+        defer { resume.signal() }
+        try await Task.detached { try waitForProfileStoreTestSignal(entered) }.value
+        // Bound the unfixed lock wait so this regression can never deadlock QA.
+        let release = Task.detached {
+            try? await Task.sleep(for: .milliseconds(200))
+            resume.signal()
+        }
+        #expect(throws: ProfileMetadataMutationInProgressError.self) {
+            if undo { try store.undoLastMetadataChange() }
+            else { _ = try store.moveProfileWithUndo(profile, toFolderID: nil) }
+        }
+        await release.value
+        _ = try await task.value
+    }
+
+    @Test
+    func cancellingCallerStillPublishesCompletedBackgroundImport() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let enteredOrganizationPersist = DispatchSemaphore(value: 0)
+        let continueOrganizationPersist = DispatchSemaphore(value: 0)
+        let store = ProfileStore(
+            paths: paths,
+            beforeBackgroundImportOrganizationPersist: {
+                enteredOrganizationPersist.signal()
+                continueOrganizationPersist.wait()
+            }
+        )
+        let profile = BrowserProfile(name: "Cancelled caller import")
+        let importTask = Task {
+            try await store.insertImportedProfilesOffMainActor(
+                [profile],
+                folderNames: ["Durable folder"]
+            )
+        }
+
+        defer { continueOrganizationPersist.signal() }
+        let reachedOrganizationPersist = try await Task.detached {
+            try waitForProfileStoreTestSignal(enteredOrganizationPersist)
+            return true
+        }.value
+        #expect(reachedOrganizationPersist)
+
+        importTask.cancel()
+        #expect(importTask.isCancelled)
+        continueOrganizationPersist.signal()
+        let saved = try await importTask.value
+
+        #expect(saved.map(\.id) == [profile.id])
+        #expect(store.profiles.map(\.id) == [profile.id])
+        let folderID = try #require(store.folderID(forProfileID: profile.id))
+        #expect(store.folder(withID: folderID)?.name == "Durable folder")
+
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profiles.map(\.id) == [profile.id])
+        #expect(
+            reloaded.folderID(forProfileID: profile.id) == folderID
+        )
+    }
+
+    @Test(.enabled(if: profileStoreLargeImportBenchmarkHasDescriptorBudget(),
+                   "5000-profile filesystem benchmark requires known inherited and OS descriptor capacity >=16024. Separate low-budget refusal tests remain mandatory."))
+    func importingThousandsOfDistinctFoldersBatchesOrganizationSorting() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let count = 5_000
+        let profiles = (0..<count).map { index in
+            BrowserProfile(
+                name: "Imported \(index)",
+                identity: BrowserIdentity(seed: UInt32(index + 1))
+            )
+        }
+        let folderNames = (0..<count).map { "Folder \($0)" }
+
+        let startedAt = Date()
+        let saved = try await store.insertImportedProfilesOffMainActor(
+            profiles,
+            folderNames: folderNames
+        )
+        let elapsed = Date().timeIntervalSince(startedAt)
+        let budget: TimeInterval = _isDebugAssertConfiguration() ? 5 : 3
+
+        print(
+            "ProfileStore import benchmark: profiles=\(count), " +
+                "distinctFolders=\(count), elapsed=\(elapsed)s"
+        )
+        #expect(elapsed < budget)
+        #expect(saved.count == count)
+        #expect(store.organization.folders.count == count)
+        #expect(
+            store.folderID(forProfileID: saved[0].id) != nil
+        )
+        #expect(
+            store.folderID(forProfileID: saved[count - 1].id) != nil
+        )
+    }
+
+    @Test
+    func importedProfilesRollBackWhenFolderPersistenceFails() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(
+            paths: paths,
+            beforeBackgroundImportOrganizationPersist: {
+                throw ProfileStoreTestError()
+            }
+        )
+        let profile = BrowserProfile(name: "Откат импорта")
+
+        await #expect(throws: ProfileStoreTestError.self) {
+            try await store.insertImportedProfilesOffMainActor(
+                [profile],
+                folderNames: ["Новая папка"]
+            )
+        }
+        #expect(store.profiles.isEmpty)
+        #expect(store.organization == .empty)
+        #expect(
+            !FileManager.default.fileExists(
+                atPath: paths.profileDirectory(for: profile.id).path
+            )
         )
 
-        #expect(reloaded.markLaunched(profile.id))
-        let launched = try #require(reloaded.profile(withID: profile.id))
-        #expect(launched.lastLaunchedAt != nil)
-        #expect(launched.updatedAt == beforeLaunch.updatedAt)
-        #expect(launched.revision == beforeLaunch.revision + 1)
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profiles.isEmpty)
+        #expect(reloaded.organization == .empty)
     }
 
     @Test
@@ -831,15 +1224,15 @@ struct ProfileStoreTests {
             browserDataProcessInspector: { _ in .absent }
         )
 
-        let outcome = try store.delete(
-            profile,
-            processManager: processManager
-        ) { _ in
-            try keychain.deleteProxyPassword(profileID: profile.id)
+        #expect(throws: ProfileCredentialCleanupPendingError.self) {
+            try store.delete(
+                profile,
+                processManager: processManager
+            ) { _ in
+                try keychain.deleteProxyPassword(profileID: profile.id)
+            }
         }
 
-        #expect(outcome == .credentialCleanupPending)
-        #expect(outcome.warningDescription?.contains("уже удалены") == true)
         #expect(store.profile(withID: profile.id) == nil)
         #expect(store.folderID(forProfileID: profile.id) == nil)
         #expect(store.folder(withID: folder.id) != nil)
@@ -931,6 +1324,7 @@ struct ProfileStoreTests {
             restoreTrashedDirectory: restore
         )
         let processManager = BrowserProcessManager(
+            launchAdmission: ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal }),
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -939,7 +1333,7 @@ struct ProfileStoreTests {
         try deletingStore.delete(
             profile,
             processManager: processManager
-        ) { _ in }
+        )
         #expect(
             try paths.privateFileEntryKind(
                 paths.profileCredentialCleanupMarker(for: profile.id)
@@ -947,6 +1341,7 @@ struct ProfileStoreTests {
         )
 
         let staleManager = BrowserProcessManager(
+            launchAdmission: ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal }),
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -1028,17 +1423,14 @@ struct ProfileStoreTests {
             BrowserProfile(name: "Unknown Trash result")
         )
         let manager = BrowserProcessManager(
+            launchAdmission: ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal }),
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
         )
 
         do {
-            try store.delete(
-                profile,
-                processManager: manager,
-                credentialCleanup: { _ in }
-            )
+            try store.delete(profile, processManager: manager)
             Issue.record("Удаление должно было завершиться ошибкой")
         } catch let error as ProfileDeleteRollbackError {
             #expect(error.rollbackError != nil)
@@ -1100,17 +1492,14 @@ struct ProfileStoreTests {
             BrowserProfile(name: "Restore failure")
         )
         let manager = BrowserProcessManager(
+            launchAdmission: ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal }),
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
         )
 
         do {
-            try store.delete(
-                profile,
-                processManager: manager,
-                credentialCleanup: { _ in }
-            )
+            try store.delete(profile, processManager: manager)
             Issue.record("Откат должен был завершиться ошибкой")
         } catch let error as ProfileDeleteRollbackError {
             #expect(error.rollbackError != nil)
@@ -1200,6 +1589,14 @@ struct ProfileStoreTests {
                 "Previous revision"
         )
         #expect(recovered.lastError?.contains("Recovery") == true)
+        #expect(
+            recovered.recoveryNotice == ProfileRecoveryNotice(
+                profileMetadataRecovered: true,
+                folderMetadataRecovered: false
+            )
+        )
+        recovered.lastError = nil
+        #expect(recovered.recoveryNotice?.profileMetadataRecovered == true)
         #expect(FileManager.default.fileExists(atPath: marker.path))
         let recoveryFiles = try FileManager.default.contentsOfDirectory(
             at: paths.profilesRecoveryDirectory,
@@ -1605,140 +2002,13 @@ struct ProfileStoreTests {
         let reloaded = ProfileStore(paths: paths)
         #expect(reloaded.profiles == repaired.profiles)
     }
-
-    @Test
-    func batchMetadataMutationPersistsOnceAndUndoRestoresEveryProfile() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let paths = AppPaths(rootDirectory: root)
-        let store = ProfileStore(paths: paths)
-        let first = try store.upsert(BrowserProfile(name: "First"))
-        let second = try store.upsert(BrowserProfile(name: "Second"))
-        let untouched = try store.upsert(BrowserProfile(name: "Untouched"))
-        let committedAt = Date(timeIntervalSince1970: 1_000)
-
-        let receipt = try store.applyBatch(
-            .setPinned(true),
-            to: [first.id, second.id],
-            at: committedAt
-        )
-
-        #expect(receipt.affectedCount == 2)
-        #expect(receipt.canUndo)
-        #expect(store.profile(withID: first.id)?.isPinned == true)
-        #expect(store.profile(withID: second.id)?.isPinned == true)
-        #expect(store.profile(withID: untouched.id)?.isPinned == false)
-        #expect(store.profile(withID: first.id)?.updatedAt == committedAt)
-        #expect(store.profile(withID: first.id)?.revision == 2)
-
-        let reloaded = ProfileStore(paths: paths)
-        #expect(reloaded.profile(withID: first.id)?.isPinned == true)
-        #expect(reloaded.profile(withID: second.id)?.isPinned == true)
-
-        let undoneAt = Date(timeIntervalSince1970: 2_000)
-        try reloaded.undoBatch(receipt, at: undoneAt)
-
-        #expect(reloaded.profile(withID: first.id)?.isPinned == false)
-        #expect(reloaded.profile(withID: second.id)?.isPinned == false)
-        #expect(reloaded.profile(withID: untouched.id)?.revision == 1)
-        #expect(reloaded.profile(withID: first.id)?.revision == 3)
-        #expect(reloaded.profile(withID: first.id)?.updatedAt == undoneAt)
-    }
-
-    @Test
-    func batchUndoRejectsNewerRevisionWithoutPartialRollback() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
-        let first = try store.upsert(BrowserProfile(name: "First"))
-        let second = try store.upsert(BrowserProfile(name: "Second"))
-        let receipt = try store.applyBatch(
-            .setPinned(true),
-            to: [first.id, second.id]
-        )
-        _ = try store.mutateProfile(withID: first.id) {
-            $0.note = "Newer note"
-        }
-
-        #expect(throws: ProfileBatchMutationError.self) {
-            try store.undoBatch(receipt)
-        }
-        #expect(store.profile(withID: first.id)?.isPinned == true)
-        #expect(store.profile(withID: first.id)?.note == "Newer note")
-        #expect(store.profile(withID: second.id)?.isPinned == true)
-    }
-
-    @Test
-    func batchTagLimitFailureChangesNoProfile() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
-        let available = try store.upsert(BrowserProfile(name: "Available"))
-        let full = try store.upsert(
-            BrowserProfile(
-                name: "Full",
-                tags: (0..<BrowserProfile.maximumTagCount).map {
-                    "Tag \($0)"
-                }
-            )
-        )
-
-        #expect(throws: ProfileBatchMutationError.self) {
-            try store.applyBatch(
-                .addTag("Campaign"),
-                to: [available.id, full.id]
-            )
-        }
-        #expect(store.profile(withID: available.id)?.tags.isEmpty == true)
-        #expect(
-            store.profile(withID: full.id)?.tags.count ==
-                BrowserProfile.maximumTagCount
-        )
-        let reloaded = ProfileStore(paths: store.paths)
-        #expect(reloaded.profile(withID: available.id)?.tags.isEmpty == true)
-    }
-
-    @Test
-    func batchFolderAssignmentCanBeUndoneAndRejectsConflicts() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
-        let first = try store.upsert(BrowserProfile(name: "First"))
-        let second = try store.upsert(BrowserProfile(name: "Second"))
-        let source = try store.createFolder(named: "Source")
-        let target = try store.createFolder(named: "Target")
-        try store.assignProfile(first.id, toFolderID: source.id)
-
-        let receipt = try store.assignProfilesRecordingUndo(
-            [first.id, second.id],
-            toFolderID: target.id
-        )
-        #expect(receipt.affectedCount == 2)
-        #expect(store.folderID(forProfileID: first.id) == target.id)
-        #expect(store.folderID(forProfileID: second.id) == target.id)
-
-        try store.undoFolderAssignments(receipt)
-        #expect(store.folderID(forProfileID: first.id) == source.id)
-        #expect(store.folderID(forProfileID: second.id) == nil)
-
-        let conflictingReceipt = try store.assignProfilesRecordingUndo(
-            [first.id, second.id],
-            toFolderID: target.id
-        )
-        try store.assignProfile(second.id, toFolderID: nil)
-        #expect(throws: ProfileBatchMutationError.self) {
-            try store.undoFolderAssignments(conflictingReceipt)
-        }
-        #expect(store.folderID(forProfileID: first.id) == target.id)
-        #expect(store.folderID(forProfileID: second.id) == nil)
-    }
 }
 
 private struct ProfileStoreTestError: Error {}
+
+private func waitForProfileStoreTestSignal(_ semaphore: DispatchSemaphore) throws {
+    guard semaphore.wait(timeout: .now() + 5) == .success else { throw ProfileStoreTestError() }
+}
 
 private final class ProfileDeleteKeychainBackend:
     KeychainBackend,

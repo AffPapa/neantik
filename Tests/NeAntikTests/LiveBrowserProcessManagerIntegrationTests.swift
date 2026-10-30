@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import Testing
 @testable import NeAntik
 
@@ -39,11 +40,12 @@ struct LiveBrowserProcessManagerIntegrationTests {
         }
         let paths = AppPaths(rootDirectory: temporaryRoot)
         try paths.prepareBaseDirectories()
-        let profile = BrowserProfile(
+        var profile = BrowserProfile(
             name: "Ordinary manager smoke",
-            startURL: "http://127.0.0.1:9",
+            startURL: "about:blank",
             identity: BrowserIdentity(seed: 21)
         )
+        profile = try ProfileStore(paths: paths).upsert(profile)
         try paths.prepareProfileDirectories(for: profile.id)
 
         let runtime = BrowserRuntime(
@@ -86,6 +88,26 @@ struct LiveBrowserProcessManagerIntegrationTests {
         #expect(browserBecameReady)
         #expect(manager.processState(for: profile.id) == .managed)
 
+        let lockDecoder = JSONDecoder()
+        lockDecoder.dateDecodingStrategy = .iso8601
+        let lockData = try Data(contentsOf: paths.lockFile(for: profile.id))
+        let lock = try lockDecoder.decode(BrowserProcessLock.self, from: lockData)
+        let runningApplication = NSRunningApplication(processIdentifier: lock.pid)
+        let observedExecutable = runningApplication?.executableURL?
+            .resolvingSymlinksInPath().path
+        #expect(
+            observedExecutable == runtimeExecutable.resolvingSymlinksInPath().path
+        )
+        var guiReady = false
+        for _ in 0..<40 {
+            if runningApplication?.isFinishedLaunching == true {
+                guiReady = true
+                break
+            }
+            try await Task.sleep(nanoseconds: 125_000_000)
+        }
+        #expect(guiReady)
+
         manager.stop(profileID: profile.id)
         var browserStopped = false
         for _ in 0..<160 {
@@ -94,6 +116,9 @@ struct LiveBrowserProcessManagerIntegrationTests {
                 break
             }
             try await Task.sleep(nanoseconds: 125_000_000)
+        }
+        if !browserStopped {
+            Issue.record("Browser stop timed out; manager error: \(manager.lastError ?? "none")")
         }
         #expect(browserStopped)
         #expect(manager.processState(for: profile.id) == .stopped)

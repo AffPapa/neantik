@@ -194,6 +194,24 @@ private final class PassiveInventoryGate: @unchecked Sendable {
 }
 
 struct BrowserProcessInventoryTests {
+    @Test func malformedLeaseRecoveryDoesNotExemptSignedRelayOwners() {
+        let owner = BrowserProcessArguments(executablePath: "/owned/NeAntik.app/Contents/MacOS/NeAntik", arguments: ["/owned/NeAntik.app/Contents/MacOS/NeAntik", "--neantik-proxy-relay-owner-v1"])
+        let inventory = BrowserProcessInventory(processes: [123: owner], relayOwnerCodeValidator: { _, _, _ in true })
+        #expect(inventory.inspectPotentialRelayOwnerProcesses() == .found)
+        #expect(BrowserProcessInventory(processes: [:]).inspectPotentialRelayOwnerProcesses() == .absent)
+        #expect(BrowserProcessInventory(processes: [:], unreadableLiveProcessExists: true).inspectPotentialRelayOwnerProcesses() == .unknown)
+        #expect(BrowserProcessInventory(processes: [:], available: false).inspectPotentialRelayOwnerProcesses() == .unknown)
+    }
+
+    @Test
+    func managerExecutableKeysIncludeHistoricalCaseVariantsAndExcludeHelpers() {
+        for name in ["NeAntik", "NeVision", "NEANTIK", "nevision"] {
+            #expect(BrowserProcessInventory.isManagerExecutable("/Applications/Fixture.app/Contents/MacOS/" + name))
+        }
+        for name in ["NeAntik Browser", "NeAntik Browser Helper", "Other", "NeAntik-Dev"] {
+            #expect(!BrowserProcessInventory.isManagerExecutable("/Applications/Fixture.app/Contents/MacOS/" + name))
+        }
+    }
     @Test
     func liveProviderCanProveUnusedTemporaryPathWhenRequested() {
         guard ProcessInfo.processInfo.environment[
@@ -442,6 +460,128 @@ struct BrowserProcessInventoryTests {
         manager.reconcile(profiles: [])
 
         #expect(sequence.captureCount == 0)
+    }
+
+    @MainActor
+    @Test
+    func changedMetadataObservationPreservesStoppedRowsAndSkipsUnchangedPayloads() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("metadata-observation-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let first = try store.upsert(BrowserProfile(name: "External"))
+        let unrelated = try store.upsert(BrowserProfile(name: "Unrelated"))
+        try paths.prepareProfileDirectories(for: first.id)
+        try paths.prepareProfileDirectories(for: unrelated.id)
+        let dataPath = paths.browserDataDirectory(for: first.id).path
+        let process = BrowserProcessArguments(executablePath: "/Applications/NeAntik Browser",
+            arguments: ["/Applications/NeAntik Browser", "--user-data-dir=\(dataPath)"])
+        let gate = MetadataObservationInventoryGate(inventory: BrowserProcessInventory(processes: [getpid(): process]))
+        let manager = BrowserProcessManager(paths: paths,
+            processIdentityInspector: { _ in .unknown }, processLivenessValidator: { _ in false },
+            browserDataProcessInspector: { _ in .unknown }, processInventoryProvider: { gate.capture() })
+        manager.reconcile(profiles: store.profiles)
+        #expect(await waitUntil { manager.processState(for: first.id) == .stopped })
+        let otherStore = ProfileStore(paths: paths)
+        _ = otherStore.markLaunched(first.id)
+        let foreignLease = BrowserProcessLock(pid: getpid(), executablePath: process.executablePath,
+            browserDataPath: dataPath, createdAt: Date())
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try paths.writePrivateFile(encoder.encode(foreignLease), to: paths.lockFile(for: first.id))
+        try await store.refreshExternalMetadata(force: true)
+        manager.refreshAfterExternalMetadataChange(profiles: store.profiles)
+        #expect(await waitUntil { gate.captureCount == 2 })
+        #expect(manager.processState(for: unrelated.id) == .stopped)
+        manager.refreshAfterExternalMetadataChange(profiles: store.profiles)
+        #expect(gate.captureCount == 2)
+        gate.releaseObservation.signal()
+        #expect(await waitUntil { manager.processState(for: first.id) != .stopped })
+        #expect(manager.processState(for: unrelated.id) == .stopped)
+        _ = try store.createFolder(named: "Folder only")
+        manager.refreshAfterExternalMetadataChange(profiles: store.profiles)
+        #expect(gate.captureCount == 2)
+        manager.suspendPassiveObservations()
+    }
+
+    @MainActor
+    @Test
+    func transientLeaseContentionRetriesFreshInventory() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let paths = AppPaths(rootDirectory: root)
+        let profile = BrowserProfile(name: "Owned busy inventory")
+        let acquired = DispatchSemaphore(value: 0)
+        let release = DispatchSemaphore(value: 0)
+        let finished = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            defer { finished.signal() }
+            try? paths.withProcessLockGuard(for: profile.id) {
+                acquired.signal()
+                _ = release.wait(timeout: .now() + 3)
+            }
+        }
+        defer {
+            release.signal()
+            _ = finished.wait(timeout: .now() + 3)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try #require(acquired.wait(timeout: .now() + 2) == .success)
+        let sequence = InventorySequence((0..<3).map { _ in BrowserProcessInventory(processes: [:]) })
+        let manager = BrowserProcessManager(
+            paths: paths, processIdentityInspector: { _ in .unknown },
+            processLivenessValidator: { _ in false },
+            browserDataProcessInspector: { _ in .unknown },
+            processInventoryProvider: { sequence.capture() }
+        )
+        manager.reconcile(profiles: [profile])
+        try #require(await waitUntil { sequence.captureCount == 1 })
+        #expect(manager.processState(for: profile.id) != .stopped)
+        release.signal()
+        #expect(await waitUntil { manager.processState(for: profile.id) == .stopped })
+        #expect(sequence.captureCount >= 2 && sequence.captureCount <= 3)
+        #expect(!sequence.anyCaptureOnMainThread)
+        manager.suspendPassiveObservations()
+    }
+
+    @MainActor
+    @Test(arguments: [false, true])
+    func busyInventoryRetriesAreBoundedAndCancellationInvalidatesThem(cancel: Bool) async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let paths = AppPaths(rootDirectory: root)
+        let profile = BrowserProfile(name: "Owned bounded inventory")
+        let acquired = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        let finished = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            defer { finished.signal() }
+            try? paths.withProcessLockGuard(for: profile.id) {
+                acquired.signal(); release.wait()
+            }
+        }
+        let sequence = InventorySequence((0..<5).map { _ in BrowserProcessInventory(processes: [:]) })
+        let manager = BrowserProcessManager(
+            paths: paths, processIdentityInspector: { _ in .unknown },
+            processLivenessValidator: { _ in false }, browserDataProcessInspector: { _ in .unknown },
+            processInventoryProvider: { sequence.capture() }
+        )
+        defer {
+            release.signal(); _ = finished.wait(timeout: .now() + 3)
+            manager.suspendPassiveObservations()
+            try? FileManager.default.removeItem(at: root)
+        }
+        try #require(acquired.wait(timeout: .now() + 2) == .success)
+        manager.reconcile(profiles: [profile])
+        try #require(await waitUntil { sequence.captureCount == 1 })
+        if cancel { manager.suspendPassiveObservations() }
+        else { try #require(await waitUntil { manager.processState(for: profile.id) == .recoveryRequired }) }
+        try await Task.sleep(nanoseconds: 400_000_000)
+        #expect(sequence.captureCount == (cancel ? 1 : 3))
+        #expect(manager.processState(for: profile.id) != .stopped)
+        release.signal()
+        // Foreground reconciliation uses a new generation and fresh evidence.
+        manager.reconcile(profiles: [profile])
+        #expect(await waitUntil { manager.processState(for: profile.id) == .stopped })
+        #expect(sequence.captureCount == (cancel ? 2 : 4))
     }
 
     @MainActor
@@ -851,5 +991,20 @@ struct BrowserProcessInventoryTests {
             try? await Task.sleep(nanoseconds: 10_000_000)
         }
         return false
+    }
+}
+
+private final class MetadataObservationInventoryGate: @unchecked Sendable {
+    let releaseObservation = DispatchSemaphore(value: 0)
+    private let lock = NSLock()
+    private var count = 0
+    private let inventory: BrowserProcessInventory
+    init(inventory: BrowserProcessInventory) { self.inventory = inventory }
+    var captureCount: Int { lock.lock(); defer { lock.unlock() }; return count }
+    func capture() -> BrowserProcessInventory {
+        lock.lock(); count += 1; let n = count; lock.unlock()
+        if n == 1 { return BrowserProcessInventory(processes: [:]) }
+        releaseObservation.wait()
+        return inventory
     }
 }

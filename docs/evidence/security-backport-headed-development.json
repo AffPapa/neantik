@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "status": "scoped-headed-observed",
+  "dateUTC": "2026-10-16",
+  "headed": true,
+  "runtime": {
+    "version": "156.0.8078.12",
+    "executableSHA256": "cf3bbc56ddbcac264363f33bac4d3f92ac66cf164038c9409651db22708a6941",
+    "frameworkSHA256": "4774c5ef3d9048b7faf9f26307ce07f29be7696a9951e6e179e3e5f8b01d046f",
+    "runtimeTree": {
+      "bytes": 411230673,
+      "digest": "6dfde85080a3fde010869cc00d6ac35f60cec32165725b5743f2b558070a2638",
+      "entries": 948,
+      "machoCount": 16
+    }
+  },
+  "sourceContractSHA256": "5da10213b79c97a4bc3b13a0fd6af5e26d6034179bcdbe160bd244463a06f903",
+  "privateReceiptSHA256": "3fb4a3c20bdcaedcc887401b3fb9c01ff3f2be22aeedff2bf2a0a56c92fb3fb7",
+  "controllerSHA256": "df1870717f69755be245b6966bf47ae8e03b48941696ee250c9023cf539bed2d",
+  "sourceHashes": {
+    "/case-0.js": "229c10c31d2374c1453061e17eaacbea0896a1015c5a94911e64fa3a42b8b364",
+    "/case-1.js": "4d53270f8b66ee3c6f3d04f3675c4a50ae3d9b30075bcd91d9a65c142f14ee50",
+    "/case-2.js": "7ffb14d330d3e22a2124ec9fdb5917fa2d266ad0004b70a8878e2c9f314df2dc",
+    "/case-3.js": "54c5624fd8a3f3a5b278a5d5706e841f032d12ff046a163cc1c98a5fcac3d23e",
+    "/case-4.js": "e450e23e470c36b77420091f3f19e87a8fd75038bf28700060d901a62566b769",
+    "/mjsunit.js": "dc86536762d93db74ef2085ff01969f49c99ac460aee503484fc2038ecd02e08",
+    "dom": "4873bd28a655ddc69f4149d571b0239c54078956493a45ecb8cbb34fb721eee2"
+  },
+  "harnessSources": {
+    "scripts/runtime-network/run-controlled-dns.mjs": "9c69c3a49672e03397520a2bfc2906ac0604430ea47e1828d51de9a8bff9cfda",
+    "scripts/runtime-platform/fixtures/qa-browser-environment.mjs": "32d73021fb8514cb55781f4cc56183c0cec7d0d1adcca0865394c3fdf90a6a14",
+    "scripts/native-qa-readiness.py": "6fa865a4f924573608d494bbe3ac4b3600ba3b1698f02419a29831b850fe2a0b"
+  },
+  "admission": {
+    "memoryPressure": 1,
+    "thermalState": 0,
+    "warningExceptionUsed": false
+  },
+  "cases": [
+    {
+      "id": "broken-assert",
+      "status": "caught"
+    },
+    {
+      "id": "broken-missing-result",
+      "status": "caught"
+    },
+    {
+      "id": "dom",
+      "status": "pass"
+    },
+    {
+      "id": "v8-0",
+      "status": "pass"
+    },
+    {
+      "id": "v8-1",
+      "status": "pass"
+    },
+    {
+      "id": "v8-2",
+      "status": "pass"
+    },
+    {
+      "id": "v8-3",
+      "status": "pass"
+    },
+    {
+      "id": "v8-4",
+      "status": "pass"
+    },
+    {
+      "id": "workers",
+      "status": "pass"
+    }
+  ],
+  "workerContexts": [
+    "DedicatedWorker",
+    "SharedWorker",
+    "ServiceWorker"
+  ],
+  "cleanup": {
+    "ownedProcessesRemaining": 0,
+    "ownedProfileRemoved": true,
+    "fixtureClosed": true,
+    "gracefulBrowserClose": true,
+    "exitCode": 0
+  },
+  "runtimeHashesRechecked": true,
+  "releaseQualified": false,
+  "limitations": [
+    "Fixed local regression pages on the signed research copy;not the packaged manager or final Direct artifact.",
+    "V8 regression session explicitly enables allow-natives-syntax and maglev;these are research flags,not production launch settings.",
+    "Basic worker lifecycle is not a CSP sandbox/service-worker-handle security regression.",
+    "Core/Prerender C++ regression tests and V8 deserialize native unit were not executed.",
+    "No browser network-route or nine-realm fingerprint qualification is claimed by this run."
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "status": "exact-tested-executable-and-runtime-bytes-match-frozen-candidate;outer-inventory-field-label-reconciled",
+  "observedAt": "2026-10-25",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "outerBundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "preparedBundleSHA256": "0d83fb232927b8e492924e9f666cee6344547e47fd078a4aadff3d140b2f1917"
+  },
+  "projectionReport": {
+    "path": "docs/evidence/neantik-candidate139-chromium15648-11tuple-projection-20261025.json",
+    "sha256": "cefb3f708dcbb2cab73d8024a5bae6374c1449826a365be9a3e56f95b454458c",
+    "reportedBundleInventorySHA256": "024aef348a454bd7eb89cce33a87000ecfb77e3046d08b08e9251a27085a8c2f",
+    "criticalManifestSHA256": "024aef348a454bd7eb89cce33a87000ecfb77e3046d08b08e9251a27085a8c2f",
+    "interpretation": "The report field named bundleInventorySHA256 equals its criticalManifestSHA256, not the outer prepared-bundle inventory. This is a metadata-label mismatch; the immutable report was not edited."
+  },
+  "exactCandidateByteMatches": {
+    "managerExecutableSHA256": "e68054fa1254a6480506f25bda9e331e7bbf3186dff85352958a1b7464a1c2ff",
+    "runtimeExecutableSHA256": "2fca4f8c3b7bd452e65d9fdf527a9ebcfd39d7e7de2cb3975add2d61db627b6b",
+    "runtimeFrameworkSHA256": "2b0209cdaa85a455df8bc012659718242905a78f20fdd9bd9b163f383743842c"
+  },
+  "scope": "Read-only file hash reconciliation only. Confirms the manager executable and Chromium runtime executable/framework tested by the finite projection are exact files in candidate 139. It does not prove all candidate files matched the projection run environment, extend projection coverage, qualify full browser APIs/manager UI/proxy, or authorize release.",
+  "noRepeat": "The 11 tuple projections are not rerun; their semantic scope and no-repeat boundary remain unchanged."
+}

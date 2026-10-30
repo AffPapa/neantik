@@ -1,0 +1,17 @@
+{
+  "cachePath": "build/toolchain/__pycache__/whole_archive.cpython-314.pyc",
+  "cacheSHA256": "e62b2a6bf86894ed996ea25a5d8e89a48618eefcdc05ad221f2a9daf4439e102",
+  "freshCompiledCodeMatches": true,
+  "kind": "source-derived-build-cache",
+  "mode": 420,
+  "postBuildSnapshotSHA256": "81fe001ace5160375ee7446eefdd1ae9cddf9488af0cbdb80bec32b86b3f38d8",
+  "prebuildCacheAbsent": true,
+  "pythonVersion": "3.14",
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "semanticCorrectionSet": "canvas-audio-webgl-native-webrtc-v3",
+  "sizeBytes": 2178,
+  "sourcePath": "build/toolchain/whole_archive.py",
+  "sourceSHA256": "bf50036f79643f17efd30f79f9b1e479f623f322e7a37f9dccbbea2b69b34a02",
+  "sourceTimestampAndLengthMatch": true
+}

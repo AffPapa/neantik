@@ -1,0 +1,366 @@
+{
+  "schemaVersion": 1,
+  "status": "complete-source-inclusion-reviewed;not-release-qualified",
+  "dateUTC": "2026-10-16",
+  "sourceCommit": "634b046faf2137b83af71c87baf362b533af9104",
+  "sourceContractSHA256": "a7e6ee9d61543784d74d4b8b1ee0aaa155dd4b97db8bb30aaf27e239486fb10e",
+  "sourceVariant": "component-completion-v1",
+  "sourceProofSHA256": "ec437a25085a5ae1087acc3c5550608891c615903a35e7e0c0a0f048d0e72d39",
+  "securityReference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_01886704284.html",
+  "baseChromiumVersion": "156.0.8078.12",
+  "securityPatchManifestSHA256": "c35cd893abe1a98284c2146db542c82605c4d0fd7f159f965e0cd88cf0f36cd1",
+  "fixes": {
+    "568719351": {
+      "status": "included",
+      "reference": "https://chromium.googlesource.com/chromium/src/+/d50992ebe4421079a6f9782c7e8a4d0eb3f14c5f",
+      "inclusion": "complete upstream patch applied andcompiled;postbuild FD source proof",
+      "commit": "d50992ebe4421079a6f9782c7e8a4d0eb3f14c5f",
+      "patchSHA256": "7fc8d7af3ff614bbe7d8991927460db1c973481832c71a86749fa2703126dcd7",
+      "sourceFiles": [
+        {
+          "path": "content/browser/preloading/prerender/prerender_browsertest.cc",
+          "change": "modify",
+          "postimageSHA256": "9cb20c691f6b263ff47c8ad85e8853fe8d6e86414059a2e94bc49003d65150d8"
+        },
+        {
+          "path": "content/browser/renderer_host/navigation_request.cc",
+          "change": "modify",
+          "postimageSHA256": "3dc5b386c55559a6fb3c11b617012b1ae37b687c99498e21e1dc084dc0bf56b3"
+        }
+      ]
+    },
+    "567638392": {
+      "status": "included",
+      "reference": "https://chromium.googlesource.com/chromium/src/+/6f8bd0510049073dacc94db8968ba350678da324",
+      "inclusion": "complete upstream patch applied andcompiled;postbuild FD source proof",
+      "commit": "6f8bd0510049073dacc94db8968ba350678da324",
+      "patchSHA256": "8dfd33f67a23428ee1a1215cce9c3b043fdd03b8032f06e58e0c5a827aabc996",
+      "sourceFiles": [
+        {
+          "path": "third_party/blink/renderer/core/dom/element.cc",
+          "change": "modify",
+          "postimageSHA256": "a5b9e3ffc77f8a1d73c1775da6adad3f1942c686d220c6709721f22bee6025f8"
+        },
+        {
+          "path": "third_party/blink/web_tests/external/wpt/html/semantics/forms/the-datalist-element/list-id-insertion-crash.html",
+          "change": "add",
+          "postimageSHA256": "4873bd28a655ddc69f4149d571b0239c54078956493a45ecb8cbb34fb721eee2"
+        }
+      ]
+    },
+    "568831769": {
+      "status": "included",
+      "reference": "https://chromium.googlesource.com/v8/v8/+/4e469dd5830b78b8fea1318cbabe95c2682e974b",
+      "inclusion": "complete upstream patch applied andcompiled;postbuild FD source proof",
+      "commit": "4e469dd5830b78b8fea1318cbabe95c2682e974b",
+      "patchSHA256": "7d39cbdaa85422e88358bdbd5a603ce14ce17d552d41c92c14608e12ca548b9c",
+      "sourceFiles": [
+        {
+          "path": "v8/src/codegen/compiler.cc",
+          "change": "modify",
+          "postimageSHA256": "0cd4c4b3421835473543da1443c74a1ead6ff7d971cf4b6409b0b3c939977f8b"
+        },
+        {
+          "path": "v8/src/codegen/compiler.h",
+          "change": "modify",
+          "postimageSHA256": "718b8ce8705db0ecbbd529e4f8df869664a68e11b67cd8304534771fce5e75b5"
+        },
+        {
+          "path": "v8/src/snapshot/code-serializer.cc",
+          "change": "modify",
+          "postimageSHA256": "fd5d59e06771283ee3ea21add0cf5977d180b1912e015f678819ca81295a70db"
+        },
+        {
+          "path": "v8/src/snapshot/code-serializer.h",
+          "change": "modify",
+          "postimageSHA256": "b42a2c001c7c41d4f4035413f8c6e1edb75b088aec24223c6b6451d80a33ff34"
+        },
+        {
+          "path": "v8/test/unittests/api/deserialize-unittest.cc",
+          "change": "modify",
+          "postimageSHA256": "1d3fb2324300b5c04596ba493d063a88638f06a6bc8a648730c273845b0ec5ce"
+        }
+      ]
+    },
+    "568937999": {
+      "status": "included",
+      "reference": "https://chromium.googlesource.com/chromium/src/+/eb3f43746d10e5627368c2340cab1ed76d494973",
+      "inclusion": "complete upstream patch applied andcompiled;postbuild FD source proof",
+      "commit": "eb3f43746d10e5627368c2340cab1ed76d494973",
+      "patchSHA256": "bf05c1dbec3a8ab9fc38fe08e41910ca70653827f19ac34b0217004547cb90e7",
+      "sourceFiles": [
+        {
+          "path": "content/browser/renderer_host/text_input_manager.cc",
+          "change": "modify",
+          "postimageSHA256": "feec096dcc4221af882e4106b6e1080215231331730e4cd38a25b9d0bc17a1bb"
+        },
+        {
+          "path": "content/browser/renderer_host/text_input_manager.h",
+          "change": "modify",
+          "postimageSHA256": "5f9c1b858a8e5be3b4029dffd593382b2f72f77fc0e65575545819c362a09172"
+        },
+        {
+          "path": "content/browser/renderer_host/text_input_manager_unittest.cc",
+          "change": "modify",
+          "postimageSHA256": "849d2554b5803630bbd2e01e2ae207a61aec57f6d90f97fe80450a07dcbb6cba"
+        }
+      ]
+    },
+    "569038297": {
+      "status": "included",
+      "reference": "https://chromium.googlesource.com/chromium/src/+/54a60b5c28c32cbec956fb83af92142cd5b08568",
+      "inclusion": "complete upstream patch applied andcompiled;postbuild FD source proof",
+      "commit": "54a60b5c28c32cbec956fb83af92142cd5b08568",
+      "patchSHA256": "d23978e0ba55f0ce9cceb17ebf09d5465e1deea92f231cc31b2e1f6e48e0c7da",
+      "sourceFiles": [
+        {
+          "path": "third_party/blink/renderer/core/svg/svg_resource.cc",
+          "change": "modify",
+          "postimageSHA256": "9daa2db1fd2bf11d120ea111f332f57f4209acd3f12153b55e7dee26f9d7f464"
+        }
+      ]
+    },
+    "569286602": {
+      "status": "included",
+      "reference": "https://chromium.googlesource.com/v8/v8/+/8dd66e1f4f687e137d9a6cfa6628268a1ba7869c",
+      "inclusion": "complete upstream patch applied andcompiled;postbuild FD source proof",
+      "commit": "8dd66e1f4f687e137d9a6cfa6628268a1ba7869c",
+      "patchSHA256": "48f7de2c897914cc76351838aa840ba31f6ae2dc25ee6333bc90af31df08d189",
+      "sourceFiles": [
+        {
+          "path": "v8/src/maglev/maglev-graph-builder.cc",
+          "change": "modify",
+          "postimageSHA256": "7324e5934240486a05c4215b543c3cfe08e86e3934b5fdd49d4d422ded32ba7d"
+        },
+        {
+          "path": "v8/test/mjsunit/maglev/regress-569286602-1.js",
+          "change": "add",
+          "postimageSHA256": "229c10c31d2374c1453061e17eaacbea0896a1015c5a94911e64fa3a42b8b364"
+        },
+        {
+          "path": "v8/test/mjsunit/maglev/regress-569286602-2.js",
+          "change": "add",
+          "postimageSHA256": "4d53270f8b66ee3c6f3d04f3675c4a50ae3d9b30075bcd91d9a65c142f14ee50"
+        }
+      ]
+    },
+    "569659194": {
+      "status": "included",
+      "reference": "https://chromium.googlesource.com/v8/v8/+/d399837d2a9e790736fc05cb36d679215396bd1c",
+      "inclusion": "complete upstream patch applied andcompiled;postbuild FD source proof",
+      "commit": "d399837d2a9e790736fc05cb36d679215396bd1c",
+      "patchSHA256": "1f85c39998504bd47b105791d7b71e29e438b0d49578f103025e0808d621500e",
+      "sourceFiles": [
+        {
+          "path": "v8/src/compiler/js-generic-lowering.cc",
+          "change": "modify",
+          "postimageSHA256": "1a864183e0cdc4526ab3a2bdea678c4604c6329ea0463c528fbde0b7f014eaf7"
+        },
+        {
+          "path": "v8/src/compiler/js-intrinsic-lowering.cc",
+          "change": "modify",
+          "postimageSHA256": "5318a383ed858415e39abd2e279d8cf3200d6c5dc98a8bb928345d0aef520623"
+        },
+        {
+          "path": "v8/src/compiler/js-operator.cc",
+          "change": "modify",
+          "postimageSHA256": "f72dfae3776214a6fb4fa92e567bd8a0dc09fc52c54bd11bc2054947e93262e0"
+        },
+        {
+          "path": "v8/src/compiler/operator-properties.cc",
+          "change": "modify",
+          "postimageSHA256": "5d42e856941981753953067bde5b5112c9e991fbb6f4cd0ff03ee7c55c8c2300"
+        },
+        {
+          "path": "v8/test/mjsunit/compiler/regress-569659194-1.js",
+          "change": "add",
+          "postimageSHA256": "7ffb14d330d3e22a2124ec9fdb5917fa2d266ad0004b70a8878e2c9f314df2dc"
+        },
+        {
+          "path": "v8/test/mjsunit/compiler/regress-569659194-2.js",
+          "change": "add",
+          "postimageSHA256": "54c5624fd8a3f3a5b278a5d5706e841f032d12ff046a163cc1c98a5fcac3d23e"
+        },
+        {
+          "path": "v8/test/mjsunit/compiler/regress-569659194-3.js",
+          "change": "add",
+          "postimageSHA256": "e450e23e470c36b77420091f3f19e87a8fd75038bf28700060d901a62566b769"
+        }
+      ]
+    },
+    "501886301": {
+      "status": "included",
+      "reference": "https://chromium.googlesource.com/chromium/src/+/90430e752b9669b5054a31d2d4f539cd50ff75e4",
+      "inclusion": "preexisting production fix;exact source hash andretainedproductionreversecheck",
+      "sourceFiles": [
+        {
+          "path": "chrome/browser/new_tab_page/modules/v2/calendar/google_calendar_page_handler.cc",
+          "postimageSHA256": "b3d3f007ceb3b8064897cb901ce211aa68216bbadb8c945f41d74f82f2f8296b"
+        }
+      ],
+      "priorReceiptSHA256": "510cf2442e17d601e3728730639d329eed974e27f96ced1d2ffadc359fb03a10",
+      "limitation": "upstream unittestcontext differs;not executed"
+    },
+    "556272421": {
+      "status": "included",
+      "reference": "https://chromium.googlesource.com/chromium/src/+/f06e60e56d7f62632ed78bdfd414d89097669734",
+      "inclusion": "preexisting13file reversecheck pluscompleteuint64writerfunction compare oncurrent12source;not target43claim",
+      "sourceFiles": [
+        {
+          "path": "cc/paint/paint_op_buffer_unittest.cc",
+          "postimageSHA256": "cb8903e5af8e49b3d965a8011cfcf7a6e05453a9a6822137e5a303ab4b568da8"
+        },
+        {
+          "path": "cc/paint/paint_op_helper_unittest.cc",
+          "postimageSHA256": "9c6382c288afbfcd1832fed7705af4ff5ffb53f776f19315583a8795f5830212"
+        },
+        {
+          "path": "cc/paint/paint_op_reader.cc",
+          "postimageSHA256": "a7cf7656c1ce25fc72e149cc31b01aa5dd8c8fdd63fbbcb59a9d1420d66039fc"
+        },
+        {
+          "path": "cc/paint/paint_op_writer.cc",
+          "postimageSHA256": "a895955fdbc9ff1d942ca2f5660d235fee74cbd53a47ea18d3e3220d73e3cc96"
+        },
+        {
+          "path": "cc/paint/paint_op_writer.h",
+          "postimageSHA256": "c677c16c051b9e9fb0452fb2700293f3fd9b5ab35d0cb36441dfcde2af6c6813"
+        },
+        {
+          "path": "cc/paint/paint_shader.cc",
+          "postimageSHA256": "b4decce6fd7be52a9a7383f87dc5ac2c4107949704240130d8605dade4a8d49b"
+        },
+        {
+          "path": "cc/paint/paint_shader.h",
+          "postimageSHA256": "0cec8266f594a0002f49cb20ff3e319b941a276aa821cac4b358358bbdf1d2b2"
+        },
+        {
+          "path": "cc/paint/transfer_cache_deserialize_helper.h",
+          "postimageSHA256": "fe91b391ca8c29bdf8f6768b3d98b2338f9c16a24da75d111e54f7cf4200f956"
+        },
+        {
+          "path": "cc/test/transfer_cache_test_helper.cc",
+          "postimageSHA256": "e2a6cd269cfa63d3541ee1481a205f68fd07ee6e9fc424001845111cc948fa14"
+        },
+        {
+          "path": "cc/test/transfer_cache_test_helper.h",
+          "postimageSHA256": "69eae08242b555fd98279345d30cca459944c66968b8881600af41729d0b6891"
+        },
+        {
+          "path": "gpu/command_buffer/service/raster_decoder.cc",
+          "postimageSHA256": "07c23505c6bd89cc9f7e2ef8c62a8a22bad9576fa94543edadfdd708f75e43b7"
+        },
+        {
+          "path": "gpu/command_buffer/service/service_transfer_cache.cc",
+          "postimageSHA256": "8bf09a36666a2064fcd58c8f994bbf5edc306e86690a035d04a7d9a3b1ff3e33"
+        },
+        {
+          "path": "gpu/command_buffer/service/service_transfer_cache.h",
+          "postimageSHA256": "7a06db1a0e7b90bce76b0eeafc051ac109a838aefc6002f8704552e58bd839d0"
+        },
+        {
+          "path": "gpu/command_buffer/service/service_transfer_cache_unittest.cc",
+          "postimageSHA256": "0674a01dd6a1f9423fedcd402c1a9babe5426e2c1ee99587bfd3eb48598efa84"
+        }
+      ],
+      "writerCompleteFunctionSHA256": "7eb64aae51d2bc73329c7c2aae074020765ebb3b1bcd98e48f5e91b55455001b",
+      "writerHighWordRemovalNegativeDetected": true,
+      "prior13FileReceiptSHA256": "3fca38ff327f8ba532a7a29a7fc21e021ae0ba3460462d9de6ffb3a2a1e84a59",
+      "limitation": "fullpatch reversecontext differs in unrelatedfollowingSkPath IDdeclaration;native C++tests not executed"
+    },
+    "563194341": {
+      "status": "included",
+      "reference": "https://chromium.googlesource.com/chromium/src/+/08f529c57faad9e8bf7cb3881576d0c5fa4b984e",
+      "inclusion": "complete upstream patch applied andcompiled;postbuild FD source proof",
+      "commit": "08f529c57faad9e8bf7cb3881576d0c5fa4b984e",
+      "patchSHA256": "d9e263b871949b14ce41b8c9d859235ed9a439c0eb52864b6bb1a2ee60b7bad7",
+      "sourceFiles": [
+        {
+          "path": "content/browser/worker_host/dedicated_worker_host.cc",
+          "change": "modify",
+          "postimageSHA256": "1059947e94acf9ae2d738f37a677048a528104dce3dd9f9ab5b53b35f4291e60"
+        },
+        {
+          "path": "content/browser/worker_host/dedicated_worker_host.h",
+          "change": "modify",
+          "postimageSHA256": "810dfce6cfb38dc65daa68196673c45e15546caeeb83f7ded144f6dbbe56c065"
+        },
+        {
+          "path": "content/browser/worker_host/dedicated_worker_service_impl_unittest.cc",
+          "change": "modify",
+          "postimageSHA256": "748d2e01df6982e246f6bc3cf406e2585ec78920bffe6898443a4d3fd7a9b639"
+        },
+        {
+          "path": "content/browser/worker_host/shared_worker_host.cc",
+          "change": "modify",
+          "postimageSHA256": "5a400cd44f961e2d29ef28af847e7abbb065d7aa9e78bba0562e63b3efdff660"
+        },
+        {
+          "path": "content/browser/worker_host/shared_worker_host_unittest.cc",
+          "change": "modify",
+          "postimageSHA256": "6e3df861c38a777c3414408fe27d601b1ef7c8c458d2f2b89af7000bb07ef30d"
+        },
+        {
+          "path": "content/browser/worker_host/worker_script_fetcher.cc",
+          "change": "modify",
+          "postimageSHA256": "61f4f378df80f9f6ef7ad997f46b02b421a97607551d2fb36f61f46df79118aa"
+        },
+        {
+          "path": "content/browser/worker_host/worker_script_fetcher.h",
+          "change": "modify",
+          "postimageSHA256": "d9657bec69927ebb658ef62ac03f74aeb3e48b603f0cdb67b2b9439edb8bc048"
+        },
+        {
+          "path": "content/browser/worker_host/worker_script_fetcher_unittest.cc",
+          "change": "modify",
+          "postimageSHA256": "ebae33bf36e3f42386afb4e8092fcabaf9585feb90470cb97e27600a9342aa5d"
+        },
+        {
+          "path": "content/common/features.cc",
+          "change": "modify",
+          "postimageSHA256": "03263e4aec84f206161fdb5a19e6fb33b3175cb1b4d26ef81b93fa9b49ff7697"
+        },
+        {
+          "path": "content/common/features.h",
+          "change": "modify",
+          "postimageSHA256": "41eb5abf26a153193078a8289d562706f370b141e7d916a8215d4680eddf07d6"
+        },
+        {
+          "path": "third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-credentialless.tentative.https.any.worker-expected.txt",
+          "change": "delete",
+          "postimageSHA256": null
+        },
+        {
+          "path": "third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-require-corp.tentative.https.any.worker-expected.txt",
+          "change": "delete",
+          "postimageSHA256": null
+        }
+      ]
+    }
+  },
+  "headedEvidence": "docs/evidence/security-backport-headed-development.json",
+  "headedEvidenceSHA256": "fe6f0949fc539d95a1f77fbac221f43e54d3fccdc920ddb79a47c903759ccd40",
+  "releaseQualified": false,
+  "publication131Permitted": false,
+  "limitations": [
+    "Fixed local regression pages on the signed research copy;not the packaged manager or final Direct artifact.",
+    "V8 regression session explicitly enables allow-natives-syntax and maglev;these are research flags,not production launch settings.",
+    "Basic worker lifecycle is not a CSP sandbox/service-worker-handle security regression.",
+    "Core/Prerender C++ regression tests and V8 deserialize native unit were not executed.",
+    "No browser network-route or nine-realm fingerprint qualification is claimed by this run."
+  ],
+  "parentSourceReview": {
+    "path": "docs/evidence/security-backport-source-review-development.json",
+    "sha256": "d33c51212e5a21754b4d22ade6687fbafcaa23708dd655865e6ebc6c40b48ab2"
+  },
+  "successorScope": {
+    "changedPaths": [
+      "components/update_client/BUILD.gn",
+      "components/update_client/update_checker.cc",
+      "components/update_client/update_checker_unittest.cc"
+    ],
+    "securitySourcePostimagesPreserved": true,
+    "fullFDObservationSHA256": "9c3f31babf923ffb23114fe3b92df565db971d223756528b641e3b4aa8846e3d",
+    "boundary": "Same10 source-included fixes preserved; no new upstream version or final release qualification."
+  }
+}

@@ -1,0 +1,37 @@
+diff --git a/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.h b/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.h
+--- a/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.h
++++ b/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.h
+@@ -173,8 +173,7 @@
+       mojo::PendingRemote<read_anything::mojom::UntrustedPage> page,
+       mojo::PendingReceiver<read_anything::mojom::UntrustedPageHandler>
+           receiver,
+-      content::WebUI* web_ui,
+-      bool use_screen_ai_service
++      content::WebUI* web_ui
+ #if BUILDFLAG(IS_CHROMEOS)
+       ,
+       std::unique_ptr<ChromeOsExtensionWrapper> extension_wrapper =
+diff --git a/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.cc b/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.cc
+--- a/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.cc
++++ b/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.cc
+@@ -348,8 +348,7 @@
+ ReadAnythingUntrustedPageHandler::ReadAnythingUntrustedPageHandler(
+     mojo::PendingRemote<UntrustedPage> page,
+     mojo::PendingReceiver<UntrustedPageHandler> receiver,
+-    content::WebUI* web_ui,
+-    bool use_screen_ai_service
++    content::WebUI* web_ui
+ #if BUILDFLAG(IS_CHROMEOS)
+     ,
+     std::unique_ptr<ChromeOsExtensionWrapper> extension_wrapper
+diff --git a/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler_browsertest.cc b/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler_browsertest.cc
+--- a/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler_browsertest.cc
++++ b/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler_browsertest.cc
+@@ -204,7 +204,6 @@
+       : ReadAnythingUntrustedPageHandler(std::move(page),
+                                          std::move(receiver),
+                                          test_web_ui,
+-                                         /*use_screen_ai_service=*/false,
+                                          std::move(extension_wrapper)) {}
+ #else
+   explicit TestReadAnythingUntrustedPageHandler(

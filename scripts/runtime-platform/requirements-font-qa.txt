@@ -1,0 +1,2 @@
+# QA-only canary generation; never installed into NeAntik or a system Python.
+fonttools==4.67.0 --hash=sha256:4304f03ed7f4ba000a8dcc941ad854bfa52e2f3b6112b8f099b6f431cf98e701

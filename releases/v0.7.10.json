@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.10",
+  "version": "0.7.10",
+  "build": 73,
+  "releasedAt": "2026-09-24",
+  "channel": "public-alpha",
+  "platform": "macOS",
+  "minimumSystemVersion": "14.0",
+  "architecture": "arm64",
+  "runtime": {
+    "name": "NeAntik Browser",
+    "chromiumVersion": "153.0.8010.52",
+    "gpuMode": "metal",
+    "rebuilt": false,
+    "securityCurrent": false
+  },
+  "archive": {
+    "name": "NeAntik-0.7.10-arm64-notarized.zip",
+    "sizeBytes": 191920009,
+    "sha256": "d2188a9f445e9a945a6d9b6cb77fed4fd26b5efbd8b2948a830403489e4ff439"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.10-arm64-notarized.dmg",
+    "sizeBytes": 218355870,
+    "sha256": "db74105f22a2c3c00b30ae3511d458e1bb0de4492fb78adf202cabe37371d220"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "accepted",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "hostedDownload": "passed: fresh ZIP SHA-256 and notarized archive verifier",
+    "hostedDmg": "asset digest matches local artifact; fresh DMG download not repeated",
+    "fingerprint": "public-alpha-qualified",
+    "strictProductionFingerprintCoherence": "incomplete",
+    "physicalVoiceOver": "not independently verified",
+    "tests": {
+      "swift": 630,
+      "swiftSuites": 70,
+      "python": 684,
+      "pythonSkipped": 1,
+      "site": 22
+    }
+  },
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.10",
+  "siteUrl": "https://browser.free",
+  "siteVersion": 91,
+  "siteSourceCommit": "1cfa8ab427835fad0f4bb389a2cf5a34d3046d1e",
+  "sourceCommit": "1ab08efa286888245a43c4fd4f328c7e9e277600",
+  "candidateManifestSHA256": "fcc83dbaa9b21384e3488846d1e7c1b8aea64bbafe94b44bdca9e041c8488586",
+  "candidateSourceBindingSHA256": "019558c0027a9f79d00ec424408d1d7a77615ccb5d7591c0debf3178cc1051fb",
+  "rollbackRelease": "v0.7.9"
+}

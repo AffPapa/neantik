@@ -75,7 +75,22 @@ PUBLIC_ALPHA_REQUIRED_KEYS = (
     + PUBLIC_ALPHA_COHERENCE_CONTEXT_KEYS
 )
 PRODUCTION_REQUIRED_KEYS = PUBLIC_ALPHA_REQUIRED_KEYS + PRODUCTION_EXTENDED_CONTEXT_KEYS
-CURRENT_AUDIT_SCHEMA_VERSION = 7
+# These fields are privacy-safe, bounded diagnostics emitted by the current
+# Swift coordinator. They are optional for qualification so older reports
+# remain valid, but a current report must not be rejected merely because the
+# coordinator recorded them.
+OPTIONAL_PRIVACY_DIAGNOSTIC_KEYS = [
+    "media_devices",
+    "media_device_count",
+    "permissions_api",
+    "permission_camera",
+    "permission_microphone",
+    "speech_synthesis",
+    "speech_voice_count",
+    "worker_audio",
+    "worker_client_rects",
+]
+CURRENT_AUDIT_SCHEMA_VERSION = 8
 CURRENT_IDENTITY_CATALOG_VERSION = 1
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 REPORT_KEYS = {
@@ -104,7 +119,7 @@ CAPTURE_KEYS = {
     "identityCode",
     "values",
 }
-VALUE_KEYS = set(PRODUCTION_REQUIRED_KEYS)
+VALUE_KEYS = set(PRODUCTION_REQUIRED_KEYS + OPTIONAL_PRIVACY_DIAGNOSTIC_KEYS)
 
 
 @dataclass(frozen=True)
@@ -275,6 +290,40 @@ def _runtime_framework(runtime_app: Path) -> Path:
     return framework
 
 
+def source_contract_name(runtime_version: str, candidate_lock: dict | None = None) -> str:
+    if not isinstance(runtime_version, str) or re.fullmatch(r"[0-9]{1,8}(?:\.[0-9]{1,8}){3}", runtime_version) is None:
+        raise FingerprintReportError("Invalid runtime version for source evidence")
+    if runtime_version in {"154.0.8037.93", "154.0.8037.98"}:
+        return "chromium-154-source-contract.json"
+    if runtime_version == "155.0.8059.40":
+        if candidate_lock is not None:
+            from chromium_15540_variant import reviewed_lock_prefix
+            return reviewed_lock_prefix(candidate_lock) + "-source-contract.json"
+        return "chromium-15540-source-contract.json"
+    if runtime_version == "156.0.8078.12":
+        if candidate_lock is not None:
+            from chromium_15612_variant import reviewed_lock_prefix
+            try:
+                return reviewed_lock_prefix(candidate_lock) + '-source-contract.json'
+            except ValueError as error:
+                raise FingerprintReportError('M156 candidate source contract mismatch') from error
+        return "chromium-15612-source-contract.json"
+    if runtime_version == "156.0.8078.48":
+        return "chromium-15648-source-contract.json"
+    if runtime_version == "156.0.8078.74":
+        return "chromium-15674-source-contract.json"
+    if runtime_version == "156.0.8078.80":
+        return "chromium-15680-source-contract.json"
+    # A new major cannot borrow a historical diagnostic contract. Explicit
+    # source/provenance dispatch must be implemented before qualifying it.
+    if int(runtime_version.split(".")[0]) >= 154:
+        raise FingerprintReportError("Unsupported runtime version for source evidence")
+    if runtime_version.startswith("153."):
+        return "chromium-153-port-status.json"
+    # Preserve the legacy diagnostic report route; it does not qualify a release.
+    return "chromium-152-source-contract.json"
+
+
 def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
     runtime_app = (
         integrated_app
@@ -307,12 +356,15 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
         raise FingerprintReportError(
             "Embedded runtime verification report must use provenance schema 3"
         )
+    source_contract = evidence_root / source_contract_name(
+        str(runtime_info.get("CFBundleShortVersionString", "")),
+        json.loads((evidence_root / "fingerprint-chromium.lock.json").read_text(encoding="utf-8")),
+    )
     provenance_files = {
         "sourceLockSHA256": evidence_root / "fingerprint-chromium.lock.json",
         "candidateLockSHA256":
             evidence_root / "fingerprint-chromium.lock.json",
-        "sourceContractSHA256":
-            evidence_root / "chromium-152-source-contract.json",
+        "sourceContractSHA256": source_contract,
         "sourceProvenanceSHA256":
             evidence_root / "source-provenance.json",
         "neantikPatchManifestSHA256": evidence_root / "neantik-patch-series.json",
@@ -865,6 +917,8 @@ def tuple_for_identity(identity_code: object) -> AppleDeviceTuple | None:
     if not re.match(r"^NA-[0-9A-Fa-f]{8}$", identity_code):
         return None
     seed = int(identity_code[3:], 16)
+    if not 1 <= seed <= 0x7FFFFFFF:
+        return None
     return APPLE_DEVICE_TUPLES[seed % len(APPLE_DEVICE_TUPLES)]
 
 
@@ -891,7 +945,8 @@ def device_tuple_issues(
     for key, expected in expected_values.items():
         if v.get(key) != expected:
             issues.append(f"The {label} {key} value does not match device tuple {tuple_.id}.")
-    if f"Apple {tuple_.gpu_model}" not in v.get("webgl_renderer", ""):
+    expected_renderer = f"ANGLE (Apple, ANGLE Metal Renderer: Apple {tuple_.gpu_model}, Unspecified Version)"
+    if v.get("webgl_renderer") != expected_renderer:
         issues.append(f"The {label} WebGL renderer does not match device tuple {tuple_.id}.")
 
     try:
@@ -1031,7 +1086,7 @@ def public_alpha_release_issues(
         issues.append("The report does not bind the runtime framework SHA-256.")
     if expected_runtime is not None:
         issues.extend(runtime_lock_issues(report, expected_runtime))
-    if report.get("auditSchemaVersion", 1) != CURRENT_AUDIT_SCHEMA_VERSION:
+    if report.get("auditSchemaVersion", 1) not in (7, CURRENT_AUDIT_SCHEMA_VERSION):
         issues.append("The report does not use the current fingerprint audit schema.")
     if report.get("identityCatalogVersion") != CURRENT_IDENTITY_CATALOG_VERSION:
         issues.append("The report does not use the current immutable identity catalog.")
@@ -1056,8 +1111,15 @@ def public_alpha_release_issues(
 
     changed_critical = changed_critical_keys(first, second, repeat)
     unstable_critical = [key for key in CRITICAL_KEYS if first.get(key) != repeat.get(key)]
-    if unstable_critical or len(changed_critical) < 2:
-        issues.append("The critical-surface verdict is not verified.")
+    if report.get("auditSchemaVersion") == 7:
+        # Historical evidence keeps its original interpretation. Never promote
+        # old captures to the new semantic policy without a fresh audit.
+        if unstable_critical or len(changed_critical) < 2:
+            issues.append("The critical-surface verdict is not verified.")
+        if "webgl_pixels" not in changed_critical:
+            issues.append("WebGL pixels did not differ between profiles.")
+    elif unstable_critical:
+        issues.append("The critical observations are unavailable or unstable.")
 
     unavailable = unavailable_required_keys(
         first,
@@ -1074,8 +1136,6 @@ def public_alpha_release_issues(
     )
     if unstable:
         issues.append("Required browser surfaces are unstable: " + ", ".join(unstable) + ".")
-    if "webgl_pixels" not in changed_critical:
-        issues.append("WebGL pixels did not differ between profiles.")
 
     try:
         direct_control_capture = capture(report, "webrtcDirectControl")

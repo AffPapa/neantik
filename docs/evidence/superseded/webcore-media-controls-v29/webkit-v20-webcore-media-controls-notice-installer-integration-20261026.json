@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T20:13:23Z",
+  "status": "PASS_SOURCE_NOTICE_INSTALLER_INTEGRATION_TESTS_52_OF_52; PACKAGE_BYTES_NOT_YET_GENERATED_OR_VERIFIED",
+  "scope": "The v20 source notice installer copies the complete BSD-2 WebCore license text and exact 35-resource attribution review into app resources and writes Markdown/HTML notices. This verifies source-level installer behavior only.",
+  "bindings": {
+    "reviewReceipt": "/private/tmp/neantik-release-v1/docs/evidence/webkit-v20-webcore-media-controls-assets-bsd2-review-20261026.json",
+    "reviewSHA256": "72040852b3278ef4ee6194f1d910bb5c311d66476c2aa717f0f30593f5729cc3",
+    "licensePath": "/private/tmp/neantik-release-v1/docs/evidence/third-party/webcore/WebCore-LICENSE-APPLE.txt",
+    "licenseSHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+    "installerPath": "/private/tmp/neantik-release-v1/scripts/webkit_runtime_notices.py",
+    "installerSHA256": "822af630323192294dc877ca29e999e37005a260ed2ddb8ed1d4fbe81c50ad2e",
+    "testPath": "/private/tmp/neantik-release-v1/scripts/tests/test_webkit_runtime_notices.py",
+    "testSHA256": "be4ecf50ea6a5ee73e33078171199f04c1fa272f496519c363ca605770d0cb8f"
+  },
+  "verification": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/tests/test_webkit_runtime_notices.py",
+    "result": "PASS",
+    "tests": "52/52",
+    "scope": "Unit tests validate notice installation, exact file bytes, Markdown/HTML markers, and rejection before writes when the pinned 35-row review is corrupted."
+  },
+  "attemptHistory": [
+    {
+      "result": "FAIL",
+      "cause": "The new installer helper initially expected the pre-integration status string after the receipt was updated. No product/package state was mutated."
+    },
+    {
+      "result": "PASS",
+      "cause": "The expected state was corrected; complete suite passed 52/52."
+    }
+  ],
+  "actions": {
+    "sourceFilesChanged": true,
+    "worksheetChanged": false,
+    "candidate139Changed": false,
+    "build": false,
+    "package": false,
+    "install": false,
+    "signOrNotarize": false,
+    "publish": false
+  }
+}

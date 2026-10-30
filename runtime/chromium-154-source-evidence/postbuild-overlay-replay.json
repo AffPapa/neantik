@@ -1,0 +1,111 @@
+{
+  "scope": "Exact replay of eight incremental overlays only; not whole source or release qualification",
+  "releaseReady": false,
+  "overlays": [
+    {
+      "name": "chromium_d3_types_index",
+      "patchSHA256": "9b183cb19d5015d26e385bc86b10a6131fbc3bf43d275eb5310315b4371f4c8c",
+      "zeroFuzzZeroOffsetReplay": true,
+      "livePostimagesMatch": true,
+      "files": [
+        {
+          "sourcePath": "third_party/node/node_modules/@types/d3/index.d.ts",
+          "beforeSHA256": "32e5beeefac1493f9dbf2498eb4de6b5ef69a411eb1b9321cdf25a6f37086361",
+          "afterSHA256": "c8fbdee2b5bffd2316b5994ee841a2a99d4a312dea22bea56383c0775a135a0d"
+        }
+      ]
+    },
+    {
+      "name": "lit_html",
+      "patchSHA256": "4fa5dd62024ad0c4574823b51c6a078cca5460bfefe548abb19d2ebeff1f71c5",
+      "zeroFuzzZeroOffsetReplay": true,
+      "livePostimagesMatch": true,
+      "files": [
+        {
+          "sourcePath": "third_party/node/node_modules/lit-html/lit-html.js",
+          "beforeSHA256": "3e0445299f606a16670a068e5cac0170a4b6e9f31f3cc9cce1676f5fe166f393",
+          "afterSHA256": "5f3f13ce43b1c71998ec279a2eaab3e30b5cdbf140db9cd627c5c227f25da66f"
+        }
+      ]
+    },
+    {
+      "name": "lit_reactive_element",
+      "patchSHA256": "e2a4a3606d007b8034c01ed705d77c7b9f8d96b70042168476f37d1863a42047",
+      "zeroFuzzZeroOffsetReplay": true,
+      "livePostimagesMatch": true,
+      "files": [
+        {
+          "sourcePath": "third_party/node/node_modules/@lit/reactive-element/reactive-element.d.ts",
+          "beforeSHA256": "f206bd1d2a6f53adfe1f60ab7005fb1683b7565b88f66153ab5b8de621f2a0ec",
+          "afterSHA256": "2bce9e7a1068c1a913abaeea530ecfcdf100e801dc4fa5b3f96d324826751186"
+        }
+      ]
+    },
+    {
+      "name": "types_trusted_types",
+      "patchSHA256": "b6ac377af03d849852876c2d9c3d1d189272df869b36250d1a2ad8c1a67ae733",
+      "zeroFuzzZeroOffsetReplay": true,
+      "livePostimagesMatch": true,
+      "files": [
+        {
+          "sourcePath": "third_party/node/node_modules/@types/trusted-types/index.d.ts",
+          "beforeSHA256": "2c3b8be03577c98530ef9cb1a76e2c812636a871f367e9edf4c5f3ce702b77f8",
+          "afterSHA256": "cd05fb7a0d2d8f84781594a4affac005ba5f0cf72688374512ac2f39766f41a4"
+        }
+      ]
+    },
+    {
+      "name": "typescript",
+      "patchSHA256": "894efe30aaadf1d482a9560e41026c9c63a3707d14f667b83a594ab8fb1d5916",
+      "zeroFuzzZeroOffsetReplay": true,
+      "livePostimagesMatch": true,
+      "files": [
+        {
+          "sourcePath": "third_party/node/node_modules/typescript/lib/lib.dom.d.ts",
+          "beforeSHA256": "d6b1eba8496bdd0eed6fc8a685768fe01b2da4a0388b5fe7df558290bffcf32f",
+          "afterSHA256": "d56b273cb8a607374fa9bb57087034453b95aa5fa71b068d4907c384d62bc59c"
+        }
+      ]
+    },
+    {
+      "name": "ts_poet",
+      "patchSHA256": "28b16d4fb3acd776a3c26abbe48648e9c63b1b0cedab0d5e0345964a4a4c60c7",
+      "zeroFuzzZeroOffsetReplay": true,
+      "livePostimagesMatch": true,
+      "files": [
+        {
+          "sourcePath": "third_party/node/node_modules/ts-poet/build/Code.js",
+          "beforeSHA256": "31b2b686836743f4a1bcd6114c4096f1344964d3aaeeb5d4c038eaf2e13adebe",
+          "afterSHA256": "67bffa10c16e5b0a824332314b9da5ee6f64bb9301885ce2ec2d9a60c0fcb323"
+        }
+      ]
+    },
+    {
+      "name": "m154-css-device-screen-coherence",
+      "patchSHA256": "07f8f2b7319a6952a935f31bd8071c02ae045180dee103df5c6b2a528886ff15",
+      "zeroFuzzZeroOffsetReplay": true,
+      "livePostimagesMatch": true,
+      "files": [
+        {
+          "sourcePath": "third_party/blink/renderer/core/css/media_values.cc",
+          "beforeSHA256": "92f60cddfa313d0d334ddc8add812489c26d11d77cd496cb925fb60849c1634a",
+          "afterSHA256": "e98ca2df38a06f2c7e4c5cfc987f58c29e9e3cf52e9cf73996a6e768be4df629"
+        }
+      ]
+    },
+    {
+      "name": "m154-bounded-framework-lto",
+      "patchSHA256": "131876aa81695c5c5ca1300409c6017f466f212394b27b45212d6950b77988b6",
+      "zeroFuzzZeroOffsetReplay": true,
+      "livePostimagesMatch": true,
+      "files": [
+        {
+          "sourcePath": "chrome/BUILD.gn",
+          "beforeSHA256": "c9c137f9403363b94b082f44dfae965cfa2da7fb728f69a61b51de03892bfd17",
+          "afterSHA256": "8fc84724d5b88d4c9e9fa8cc05f943cc268280e069f992ca316c548b93c9b35b"
+        }
+      ]
+    }
+  ],
+  "scriptSHA256": "5dbaa64f4c01a4657dbaf5934cf971f3581a138a22fb42abd19e1abb767af313"
+}

@@ -9,7 +9,7 @@ usage() {
   echo "Usage: $0 /absolute/path/to/chromium/src /absolute/output/directory /absolute/path/to/runtime-candidate-lock.json" >&2
 }
 
-if [[ $# -ne 3 ]]; then
+if [[ $# -lt 3 || $# -gt 4 ]]; then
   usage
   exit 64
 fi
@@ -17,6 +17,7 @@ fi
 SOURCE_ROOT="$1"
 OUTPUT_DIR="$2"
 LOCK_FILE="$3"
+BUILD_ARGS="${4:-$SOURCE_ROOT/out/Default/args.gn}"
 
 if [[ "$SOURCE_ROOT" != /* || ! -d "$SOURCE_ROOT" ]]; then
   echo "Chromium source root must be an existing absolute path." >&2
@@ -35,7 +36,8 @@ VERSION="$(
   plutil -extract fingerprintChromium.chromiumVersion raw -o - "$LOCK_FILE"
 )"
 LICENSE_TOOL="$SOURCE_ROOT/tools/licenses/licenses.py"
-CREDITS_SOURCE="$SOURCE_ROOT/out/Default/gen/components/resources/about_credits.html"
+VERIFIED_ARGS="$(python3 "$SCRIPT_DIR/runtime_build_path.py" "$SOURCE_ROOT" "$BUILD_ARGS" "$LOCK_FILE")"
+CREDITS_SOURCE="$(dirname "$VERIFIED_ARGS")/gen/components/resources/about_credits.html"
 
 if [[ ! -f "$LICENSE_TOOL" || ! -f "$CREDITS_SOURCE" ]]; then
   echo "Chromium license generator or built credits artifact is missing." >&2
@@ -55,7 +57,9 @@ SOURCE_LOCK_SHA256="$(
 DOCUMENT_NAMESPACE="https://neantik.app/spdx/chromium-$VERSION-$SOURCE_LOCK_SHA256"
 SOURCE_LINK="https://chromium.googlesource.com/chromium/src/+/refs/tags/$VERSION"
 
-python3 "$LICENSE_TOOL" license_file \
+# The Chromium source snapshot includes the license tool's import tree.
+# Keep its imports from writing __pycache__ into the frozen source checkout.
+python3 -B "$LICENSE_TOOL" license_file \
   --scan-root "$SOURCE_ROOT" \
   --target-os mac \
   --format spdx \

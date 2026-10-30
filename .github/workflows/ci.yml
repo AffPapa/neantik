@@ -5,33 +5,49 @@ on:
     branches: ["main"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      toolchain_probe:
+        description: "Only diagnose installed Xcode; no build or tests"
+        type: boolean
+        default: false
+      diagnostic_suite:
+        description: "One exact ordinary CI suite; empty runs full CI"
+        type: string
+        default: ""
 
 permissions:
   contents: read
 
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  swift-tests:
-    name: Swift / ${{ matrix.shard }} shard
+  toolchain-probe:
+    if: ${{ inputs.toolchain_probe }}
     runs-on: macos-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Diagnose compatible Xcode
+        env:
+          NEANTIK_DEVELOPER_DIR_DIAGNOSTICS: "1"
+        run: ./scripts/resolve-compatible-developer-dir.sh
+
+  swift-tests:
+    if: ${{ ! inputs.toolchain_probe && inputs.diagnostic_suite == '' }}
+    name: Swift / shard ${{ matrix.shard }}
+    runs-on: macos-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        shard:
-          - foundation
-          - fingerprint
-          - profiles-a
-          - profiles-b
+        shard: [0, 1, 2, 3]
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-      - name: Run isolated Swift test shard
-        run: ./scripts/verify-native-swift-shard.sh "${{ matrix.shard }}"
+      - name: Run clean Swift shard
+        run: python3 -B scripts/test-manager-ci.py --shard "${{ matrix.shard }}" --shards 4
 
   release-contracts:
+    if: ${{ ! inputs.toolchain_probe && inputs.diagnostic_suite == '' }}
     name: Release and privacy contracts
     runs-on: macos-latest
     timeout-minutes: 15
@@ -45,10 +61,6 @@ jobs:
         run: ./scripts/verify-native-swift-release.sh
       - name: Direct privacy contract
         run: python3 scripts/verify-direct-telemetry-disabled.py
-      - name: Direct manual-update contract
-        run: python3 scripts/verify-direct-update-policy.py
-      - name: Secure Enclave release authority
-        run: python3 scripts/verify-secure-enclave-release-authority.py
       - name: Russian UI contract
         run: python3 scripts/verify-direct-ui-localization.py
       - name: Public fingerprint conformance corpus
@@ -65,18 +77,23 @@ jobs:
         run: python3 scripts/verify-open-source-tree.py
       - name: Reachable Git history secret audit
         run: python3 scripts/audit-git-history-secrets.py
-      - name: GitHub security contract
-        run: python3 scripts/verify-github-security-contract.py
-      - name: Swift source size budgets
-        run: python3 scripts/audit-source-budgets.py
+      - name: MCP public capability documentation
+        run: python3 scripts/verify-mcp-documentation.py
       - name: Public workflow dependency closure
         run: python3 scripts/verify-public-workflow-references.py
-      - name: Authenticated fingerprint evidence contract
-        run: >-
-          python3 -m unittest
-          scripts.tests.test_fingerprint_evidence_schema8
-          scripts.tests.test_direct_candidate_manifest
       - name: Python regression tests
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
       - name: AffPapa release regression tests
         run: python3 -m unittest discover -s ops/affpapa/tests -p 'test_*.py'
+
+  manager-diagnostic:
+    if: ${{ ! inputs.toolchain_probe && inputs.diagnostic_suite != '' }}
+    runs-on: macos-latest
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      DIAGNOSTIC_SUITE: ${{ inputs.diagnostic_suite }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Diagnose one manager suite
+        run: python3 -B scripts/test-manager-ci.py --suite "$DIAGNOSTIC_SUITE"

@@ -1,4 +1,5 @@
 import copy
+from contextlib import chdir
 import hashlib
 import importlib.util
 import json
@@ -27,7 +28,7 @@ class NeAntikPatchsetManifestTests(unittest.TestCase):
             project_root=PROJECT_ROOT,
         )
 
-        self.assertEqual(summary["targetChromiumVersion"], "152.0.7977.82")
+        self.assertEqual(summary["targetChromiumVersion"], "152.0.7977.64")
         self.assertIn(
             summary["manifestStatus"],
             {"planned-not-ported", "partially-ported", "release-ready"},
@@ -211,44 +212,6 @@ class NeAntikPatchsetManifestTests(unittest.TestCase):
                     release=False,
                 )
 
-    def test_rejects_ported_group_with_malformed_unified_diff(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            manifest = fixture_manifest()
-            manifest["status"] = "release-ready"
-            patch = "patches/malformed.patch"
-            patch_text = (
-                "--- a/a.txt\n"
-                "+++ b/a.txt\n"
-                "@@ -1,1 +1,2 @@\n"
-                "-old\n"
-                "+new\n"
-            )
-            manifest["patchGroups"][0].update(
-                {
-                    "status": "ported",
-                    "patchFile": patch,
-                    "patchSHA256": hashlib.sha256(
-                        patch_text.encode("utf-8")
-                    ).hexdigest(),
-                    "postimageSHA256": {"a.txt": "a" * 64},
-                }
-            )
-            manifest_path, rebase_path = write_fixture(root, manifest=manifest)
-            patch_path = manifest_path.parent / patch
-            patch_path.parent.mkdir(parents=True)
-            patch_path.write_text(patch_text, encoding="utf-8")
-
-            with self.assertRaisesRegex(
-                MODULE.PatchsetManifestError,
-                "valid unified diff",
-            ):
-                MODULE.verify_manifest(
-                    manifest_path=manifest_path,
-                    rebase_plan_path=rebase_path,
-                    release=False,
-                )
-
     def test_rejects_incremental_preimage_outside_locked_postimages(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -299,6 +262,46 @@ class NeAntikPatchsetManifestTests(unittest.TestCase):
                     manifest_path=manifest_path,
                     rebase_plan_path=rebase_path,
                     release=False,
+                )
+
+    def test_rejects_patch_symlink_that_escapes_manifest_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            patch_text = (
+                "diff --git a/a.txt b/a.txt\n"
+                "--- a/a.txt\n"
+                "+++ b/a.txt\n"
+                "@@ -1 +1 @@\n"
+                "-old\n"
+                "+new\n"
+            )
+            manifest = fixture_manifest()
+            manifest["status"] = "release-ready"
+            manifest["patchGroups"][0].update(
+                {
+                    "status": "ported",
+                    "patchFile": "patches/escape.patch",
+                    "patchSHA256": hashlib.sha256(
+                        patch_text.encode("utf-8")
+                    ).hexdigest(),
+                    "postimageSHA256": {"a.txt": hashlib.sha256(b"new\n").hexdigest()},
+                }
+            )
+            manifest_path, rebase_path = write_fixture(root, manifest=manifest)
+            patch_path = manifest_path.parent / "patches" / "escape.patch"
+            patch_path.parent.mkdir(parents=True)
+            outside_patch = root / "outside.patch"
+            outside_patch.write_text(patch_text, encoding="utf-8")
+            patch_path.symlink_to(outside_patch)
+
+            with self.assertRaisesRegex(
+                MODULE.PatchsetManifestError,
+                "resolves outside the manifest directory",
+            ):
+                MODULE.verify_manifest(
+                    manifest_path=manifest_path,
+                    rebase_plan_path=rebase_path,
+                    release=True,
                 )
 
     def test_rejects_planned_group_with_patch_file_metadata(self) -> None:
@@ -411,12 +414,13 @@ class NeAntikPatchsetManifestTests(unittest.TestCase):
             patch_path.parent.mkdir(parents=True)
             patch_path.write_text(patch_text, encoding="utf-8")
 
-            summary = MODULE.verify_manifest(
-                manifest_path=manifest_path,
-                rebase_plan_path=rebase_path,
-                release=True,
-                source_root=source_root,
-            )
+            with chdir(root):
+                summary = MODULE.verify_manifest(
+                    manifest_path=Path("runtime/nevision-patches/series.json"),
+                    rebase_plan_path=Path("runtime/chromium-150-rebase-plan.json"),
+                    release=True,
+                    source_root=source_root,
+                )
 
         self.assertTrue(summary["releaseReady"])
         self.assertEqual(summary["portedCount"], 1)

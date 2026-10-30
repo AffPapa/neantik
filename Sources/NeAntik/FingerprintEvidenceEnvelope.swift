@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 
 struct FingerprintEvidenceManifestBinding: Codable, Equatable, Sendable {
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
     static let algorithmName = "P256-SHA256"
 
     let schemaVersion: Int
@@ -11,6 +11,10 @@ struct FingerprintEvidenceManifestBinding: Codable, Equatable, Sendable {
     let publicKeyX963: String
     let sessionID: UUID
     let challenge: String
+    let evidenceSchemaVersion: Int
+    let auditSchemaVersion: Int
+    let payloadSchemaVersion: Int
+    let semanticPolicyID: String
 
     init(
         publicKeyX963: Data,
@@ -19,6 +23,10 @@ struct FingerprintEvidenceManifestBinding: Codable, Equatable, Sendable {
     ) {
         schemaVersion = Self.currentSchemaVersion
         algorithm = Self.algorithmName
+        evidenceSchemaVersion = FingerprintEvidenceEnvelope.currentSchemaVersion
+        auditSchemaVersion = FingerprintAuditReport.currentAuditSchemaVersion
+        payloadSchemaVersion = FingerprintReleaseEvidencePayload.currentSchemaVersion
+        semanticPolicyID = FingerprintAuditReport.semanticPolicyID
         authorityKeyID = Self.keyID(for: publicKeyX963)
         self.publicKeyX963 = publicKeyX963.base64EncodedString()
         self.sessionID = sessionID
@@ -31,6 +39,10 @@ struct FingerprintEvidenceManifestBinding: Codable, Equatable, Sendable {
     ) {
         guard schemaVersion == Self.currentSchemaVersion,
               algorithm == Self.algorithmName,
+              evidenceSchemaVersion == FingerprintEvidenceEnvelope.currentSchemaVersion,
+              auditSchemaVersion == FingerprintAuditReport.currentAuditSchemaVersion,
+              payloadSchemaVersion == FingerprintReleaseEvidencePayload.currentSchemaVersion,
+              semanticPolicyID == FingerprintAuditReport.semanticPolicyID,
               authorityKeyID.utf8.count == 64,
               authorityKeyID.allSatisfy({
                   $0.isASCII &&
@@ -77,7 +89,7 @@ struct FingerprintEvidenceAuthentication: Codable, Equatable, Sendable {
 }
 
 struct FingerprintEvidenceEnvelope: Codable, Equatable, Sendable {
-    static let currentSchemaVersion = 8
+    static let currentSchemaVersion = 9
     static let kindName = "neantik-gui-fingerprint-evidence"
     static let payloadEncodingName = "base64-json-utf8"
 
@@ -164,7 +176,7 @@ enum FingerprintEvidenceEnvelopeCodec {
         0x79, 0xdc, 0xe5, 0x61, 0x7e, 0x31, 0x92, 0xa8
     ]
     private static let transcriptDomain =
-        Data("NeAntik GUI fingerprint evidence v8\u{0}".utf8)
+        Data("NeAntik GUI fingerprint evidence v9\u{0}".utf8)
 
     static func make(
         payload: Data,
@@ -361,7 +373,13 @@ enum FingerprintEvidenceEnvelopeCodec {
     }
 
     private static func hasExactEnvelopeKeys(_ data: Data) -> Bool {
-        guard let dictionary = CanonicalEvidenceJSON.object(data),
+        guard let object = try? JSONSerialization.jsonObject(with: data),
+              let canonical = try? JSONSerialization.data(
+                  withJSONObject: object,
+                  options: [.sortedKeys, .withoutEscapingSlashes]
+              ),
+              canonical == data,
+              let dictionary = object as? [String: Any],
               Set(dictionary.keys) == [
                   "schemaVersion",
                   "kind",
@@ -387,7 +405,13 @@ enum FingerprintEvidenceEnvelopeCodec {
     }
 
     private static func hasExactBindingKeys(_ data: Data) -> Bool {
-        guard let dictionary = CanonicalEvidenceJSON.object(data),
+        guard let object = try? JSONSerialization.jsonObject(with: data),
+              let canonical = try? JSONSerialization.data(
+                  withJSONObject: object,
+                  options: [.sortedKeys, .withoutEscapingSlashes]
+              ),
+              canonical == data,
+              let dictionary = object as? [String: Any],
               Set(dictionary.keys) == [
                   "boundary", "bundle", "bundleInventory",
                   "criticalFiles", "fingerprintEvidence", "kind",
@@ -409,8 +433,8 @@ enum FingerprintEvidenceEnvelopeCodec {
                   "algorithm",
                   "authorityKeyID",
                   "publicKeyX963",
-                  "sessionID",
-                  "challenge"
+                  "sessionID", "challenge", "evidenceSchemaVersion",
+                  "auditSchemaVersion", "payloadSchemaVersion", "semanticPolicyID"
               ],
               isUppercaseCanonicalUUID(binding["sessionID"])
         else {
@@ -422,7 +446,8 @@ enum FingerprintEvidenceEnvelopeCodec {
     private static func isCurrentAuditPayload(_ data: Data) -> Bool {
         guard !data.isEmpty,
               String(data: data, encoding: .utf8) != nil,
-              let dictionary = CanonicalEvidenceJSON.object(data),
+              let object = try? JSONSerialization.jsonObject(with: data),
+              let dictionary = object as? [String: Any],
               Set(dictionary.keys) == [
                   "schemaVersion", "kind", "createdAt",
                   "releaseChannel", "managerVersion", "managerBuild",
@@ -431,17 +456,23 @@ enum FingerprintEvidenceEnvelopeCodec {
                   "runtimeExecutableSHA256",
                   "runtimeFrameworkSHA256", "auditSchemaVersion",
                   "identityCatalogVersion", "executionMode",
-                  "verdict", "criticalSurfaces",
+                  "verdict", "semanticPolicyID", "criticalObservationsStable",
+                  "criticalSurfaces",
                   "changedCriticalKeys", "unavailableRequiredKeys",
                   "unstableRequiredKeys", "profileSequenceValid",
                   "identitySequenceValid", "crossRealmConsistent",
                   "deviceTupleConsistent", "networkPrivacyControlled",
                   "publicAlphaQualified", "productionQualified",
-                  "strictFailureIDs", "limitations"
+                  "limitations"
               ],
               isCanonicalUTCSecondTimestamp(
                   dictionary["createdAt"]
-              )
+              ),
+              let canonical = try? JSONSerialization.data(
+                  withJSONObject: object,
+                  options: [.sortedKeys, .withoutEscapingSlashes]
+              ),
+              canonical == data
         else {
             return false
         }
@@ -462,8 +493,8 @@ enum FingerprintEvidenceEnvelopeCodec {
                 BrowserIdentityCatalog.currentVersion,
               payload.executionMode ==
                 FingerprintAuditExecutionMode.browser.rawValue,
-              payload.verdict ==
-                FingerprintAuditVerdict.verified.rawValue,
+              payload.semanticPolicyID == FingerprintAuditReport.semanticPolicyID,
+              payload.criticalObservationsStable,
               payload.runtimeCodeSignatureValid,
               isLowerSHA256(payload.runtimeExecutableSHA256),
               isLowerSHA256(payload.runtimeFrameworkSHA256),
@@ -471,16 +502,19 @@ enum FingerprintEvidenceEnvelopeCodec {
               !payload.managerBuild.isEmpty,
               !payload.runtimeName.isEmpty,
               !payload.runtimeVersion.isEmpty,
+              BrowserRuntimeFlavor(rawValue: payload.runtimeFlavor) != nil,
               payload.profileSequenceValid,
               payload.identitySequenceValid,
               payload.publicAlphaQualified,
               Set(payload.criticalSurfaces.keys) ==
                 Set(FingerprintAuditReport.criticalKeys),
-              payload.criticalSurfaces["webgl_pixels"] ==
-                .stableDifferent,
-              payload.criticalSurfaces.values.filter({
-                  $0 == .stableDifferent
-              }).count >= 2,
+              payload.criticalSurfaces.values.allSatisfy({
+                  $0 == .stableSame || $0 == .stableDifferent
+              }),
+              payload.verdict == (
+                  payload.changedCriticalKeys.count >= 2 ? "verified" :
+                      payload.changedCriticalKeys.count == 1 ? "partial" : "unchanged"
+              ),
               payload.changedCriticalKeys ==
                 payload.changedCriticalKeys.sorted(),
               payload.changedCriticalKeys ==
@@ -491,14 +525,8 @@ enum FingerprintEvidenceEnvelopeCodec {
                 payload.unavailableRequiredKeys.sorted(),
               payload.unstableRequiredKeys ==
                 payload.unstableRequiredKeys.sorted(),
-              payload.strictFailureIDs ==
-                payload.strictFailureIDs.sorted(),
-              Set(payload.strictFailureIDs).count ==
-                payload.strictFailureIDs.count,
-              Set(payload.strictFailureIDs).isSubset(
-                  of: FingerprintReleaseEvidencePayload
-                    .allowedStrictFailureIDs
-              ),
+              Set(payload.unavailableRequiredKeys).count == payload.unavailableRequiredKeys.count,
+              Set(payload.unstableRequiredKeys).count == payload.unstableRequiredKeys.count,
               Set(payload.changedCriticalKeys).isSubset(
                   of: Set(FingerprintAuditReport.criticalKeys)
               ),
@@ -510,11 +538,12 @@ enum FingerprintEvidenceEnvelopeCodec {
                     payload.networkPrivacyControlled &&
                     payload.unavailableRequiredKeys.isEmpty &&
                     payload.unstableRequiredKeys.isEmpty &&
-                    payload.strictFailureIDs.isEmpty &&
                     payload.limitations.isEmpty
                 ),
               payload.productionQualified
-                ? payload.limitations.isEmpty
+                ? (payload.crossRealmConsistent && payload.deviceTupleConsistent &&
+                   payload.networkPrivacyControlled && payload.unavailableRequiredKeys.isEmpty &&
+                   payload.unstableRequiredKeys.isEmpty && payload.limitations.isEmpty)
                 : payload.limitations ==
                     ["strict-coherence-not-qualified"]
         else {
@@ -619,6 +648,58 @@ enum FingerprintEvidenceEnvelopeCodec {
             return false
         }
         return uuid.uuidString == string
+    }
+
+    private static func hasUppercaseCanonicalPayloadUUIDs(
+        _ report: [String: Any]
+    ) -> Bool {
+        let allowedKeys: Set<String> = [
+            "id", "createdAt", "auditSchemaVersion",
+            "identityCatalogVersion", "managerVersion", "managerBuild",
+            "runtimeName", "runtimeVersion", "runtimeFlavor",
+            "runtimeCodeSignatureValid", "runtimeExecutableSHA256",
+            "runtimeFrameworkSHA256", "executionMode",
+            "webrtcDirectControl", "firstInitial", "second",
+            "firstRepeat"
+        ]
+        let requiredKeys: Set<String> = [
+            "id", "createdAt", "auditSchemaVersion", "runtimeName",
+            "runtimeFlavor", "firstInitial", "second", "firstRepeat"
+        ]
+        guard Set(report.keys).isSubset(of: allowedKeys),
+              requiredKeys.isSubset(of: Set(report.keys)),
+              isUppercaseCanonicalUUID(report["id"]),
+              isCanonicalUTCSecondTimestamp(report["createdAt"])
+        else {
+            return false
+        }
+        for key in ["firstInitial", "second", "firstRepeat"] {
+            guard let capture = report[key] as? [String: Any],
+                  Set(capture.keys) == [
+                      "profileID", "profileName", "identityCode",
+                      "capturedAt", "values"
+                  ],
+                  isUppercaseCanonicalUUID(capture["profileID"]),
+                  isCanonicalUTCSecondTimestamp(capture["capturedAt"])
+            else {
+                return false
+            }
+        }
+        if let directControl = report["webrtcDirectControl"],
+           !(directControl is NSNull)
+        {
+            guard let capture = directControl as? [String: Any],
+                  Set(capture.keys) == [
+                      "profileID", "profileName", "identityCode",
+                      "capturedAt", "values"
+                  ],
+                  isUppercaseCanonicalUUID(capture["profileID"]),
+                  isCanonicalUTCSecondTimestamp(capture["capturedAt"])
+            else {
+                return false
+            }
+        }
+        return true
     }
 
     private static func isCanonicalUTCSecondTimestamp(

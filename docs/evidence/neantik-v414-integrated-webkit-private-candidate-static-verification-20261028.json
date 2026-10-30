@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v414-integrated-webkit-private-candidate-static-verification-20261028",
+  "status": "PRIVATE_CANDIDATE_PACKAGE_AND_STATIC_VERIFICATION_PASS; RUNTIME_AND_RELEASE_QUALIFICATION_OPEN",
+  "timestampUTC": "2026-10-28T08:45:45Z",
+  "scope": "Private ARM64 production-signed NeAntik 1.0.0 build 201 bundle assembled from V414 integrated Chromium 156.0.8078.74 and current V409/V382/V399 owned-WebKit inputs. Static bundle/package evidence only; no browser launch, site navigation, proxy traffic, notarization or publication.",
+  "candidate": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/candidates/55ec7c3b8cf04fb3a02313a4a0edb59f/NeAntik.app",
+    "candidateID": "55ec7c3b8cf04fb3a02313a4a0edb59f",
+    "version": "1.0.0",
+    "build": "201",
+    "architecture": "arm64",
+    "sourceHead": "63c3bc620163ae6354f3dc359b47b9fd72e921d0",
+    "worktree": "dirty; production source receipt refused; this private bundle was assembled directly with exact pinned package inputs and is not a source-frozen release candidate",
+    "manifest": "/private/tmp/neantik-v414-candidate-manifest.json",
+    "manifestSHA256": "ebc2ac2c1b3e64aa676c57c1f26728382cea1f908d351cfe2651e7bc79a280b6",
+    "managerExecutableSHA256": "01d5fa46da9f950fe0638d94ee63906a7cb5fd669a788833b902b6c03f7af04f",
+    "ownedWebKitHostSHA256": "594c6dc4c969372094ece59d1e7343059eeb9bddd3187d27af1ed5f9f4f24afd",
+    "chromiumRuntimeReportSHA256": "1fb1b799be66071afe2fbcc6db43c0058c4c334111caa9b08943c87ef3a37eec",
+    "chromiumComplianceManifestSHA256": "d611f35d93044ce9c15b4a7e218753cb43d56e95f70e5f8c7ebf2cd6ffd1ca35",
+    "sourceOfferManifestSHA256": "a81640f1e15c4addf804a0e36aed343cc8e67bf91c504f1e78e32108cfb58291"
+  },
+  "verification": {
+    "integratedReleaseVerifier": "PASS; exact Chromium .74 runtime/compliance, WebKit host pin, WebKit notices using exact V409 source-offer root, Direct policy, public conformance, branding and Russian localization",
+    "publicArtifactPrivacy": "PASS; 794 entries; 684626641 bytes",
+    "directBrandingResidue": "PASS",
+    "deepStrictCodeSignature": "PASS; app valid on disk and satisfies designated requirement",
+    "focusedTests": "PASS; 36 tests across test_package_manager_release_baseline, test_package_integrated_app_script, test_package_app_script_contract, test_release_direct_script",
+    "runtime": "NOT RUN; package/static verification does not establish that Google/Booking open or that proxy routing works on this exact candidate"
+  },
+  "efficiencyAndFailureClassification": {
+    "confirmedSlowBoundary": "release_source_receipt.py correctly refuses the dirty implementation worktree; prepare-direct-manager-update.sh therefore cannot create a source-frozen release candidate until exact source is frozen in a clean checkout",
+    "wrapperAttempt": "bundle-only path reached prepared_manager_bundle.begin and failed at release source receipt; no release receipt was bypassed or claimed",
+    "privateCandidate": "direct package-owned-webkit-release.py invocation created a private test bundle from exact integrated app and pinned WebKit offer; not release qualification",
+    "verifierCorrection": "verify-integrated-release.sh now accepts and requires NEANTIK_WEBKIT_SOURCE_OFFER_ROOT for owned-WebKit notice verification; exact V409 source offer is passed through",
+    "repeatPolicy": "Do not repeat package, static verifier, privacy, code-signature or focused tests without changed bytes or an invalidation reason."
+  },
+  "releaseGatesStillOpen": [
+    "safe authenticated isolated QA launch and exact-candidate site/runtime navigation (Google/Booking as explicitly requested); profile proxy routing and fail-closed recovery on exact candidate",
+    "production source freeze and source receipt matching candidate bytes",
+    "full dependency closure, reviewer disposition for unresolved applicability, recipient-owned clean rebuild/relink/load and candidate-bound final notices",
+    "privacy/profile isolation evidence beyond packaged artifacts; no anonymity claim",
+    "notarization, stapling, Gatekeeper check on final archives, GitHub/browser.free publication and downloaded-byte verification"
+  ],
+  "releaseQualified": false,
+  "nextAction": "Resolve the source-freeze workflow in a separate clean checkout without touching this dirty worktree; then schedule one isolated exact-candidate runtime qualification with authenticated QA isolation. Do not package or repeat static gates again; only after clean-source receipt and legal/relink gates pass should ZIP/DMG notarization and Direct Distribution be attempted."
+}

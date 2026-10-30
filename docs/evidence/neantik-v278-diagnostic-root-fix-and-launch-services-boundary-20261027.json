@@ -1,0 +1,63 @@
+{
+  "id": "neantik-v278-diagnostic-root-fix-and-launch-services-boundary-20261027",
+  "nextAction": "Apple TSA route is unavailable, and Launch Services rejects the no-timestamp diagnostic app. Resume native WebKit route only after timestamp.apple.com becomes reachable; sign the fresh private diagnostic copy with timestamp, then repeat the one exact signed-bundle launch and synthetic HTTPS A/B/A route. Continue independent recipient/source-license work while this network gate is closed.",
+  "observedAtUTC": "2026-10-27T16:18:27Z",
+  "preserved": {
+    "V246": "unchanged",
+    "b960": "unchanged",
+    "installedNeAntik": "unchanged"
+  },
+  "schemaVersion": 1,
+  "scope": "Diagnostic source correction and one isolated local launch investigation. No public release artifact, b960/V246, real profile, public site, or notarization changed.",
+  "source": {
+    "branch": "codex/neantik-1-0-prep-20261025",
+    "changed": {
+      "Sources/NeAntik/ApplicationEnvironment.swift": "17ff086aa4c1aac8a32f0473be9bc0278c4bc0e50bf53a469663c5993b5dd920",
+      "Tests/NeAntikTests/ApplicationEnvironmentTests.swift": "cf6aea84394225348cef99b5ce67abb8631f77d42c720329028fbff64dbdf830",
+      "scripts/package-owned-webkit-release.py": "12a6e631361214bb4313f2eab87b772e0372dd6ef08797e1ef28a7e27defd4f6",
+      "scripts/tests/test_package_owned_webkit_release.py": "e8d38a7b8bd2c8c33ab4f12b8e64612880bfea48c2efb562b893b5b1eadf8aaf"
+    },
+    "dirty": true,
+    "head": "63c3bc620163ae6354f3dc359b47b9fd72e921d0",
+    "worktree": "/private/tmp/neantik-release-v1"
+  },
+  "status": "DIAGNOSTIC_ROOT_FIX_AND_FULL_SWIFT_PASS; LAUNCH_SERVICES_REQUIRES_TIMESTAMP; APPLE_TSA_ROUTE_UNAVAILABLE",
+  "verification": {
+    "appleNetwork": {
+      "dns": "timestamp.apple.com resolves",
+      "route": "no interface/gateway returned for host route",
+      "systemProxy": "none reported",
+      "tcp443": "connection failed"
+    },
+    "cleanup": "PASS: unregistered and removed exact ~/Applications diagnostic copy, private app copy, and bootstrap roots; reusable build cache and immutable candidates retained",
+    "fullPython": "2013 tests/55 skipped; one sandbox process-inspection error later passed on exact authorized retry (V276 evidence)",
+    "fullSwift": {
+      "inputSHA256": "a276d5db1e41e4a55acd5ac8a4e269a9b1a4dd77a2070db7af878dc3fa795e8d",
+      "mode": "diagnostic",
+      "receipt": "/private/tmp/neantik-release-v1/.build/neantik-local/test-receipts/20261027T161339Z-15565.json",
+      "receiptSHA256": "221c10dc124c06db0d43877a961ed79e836f48fa3c9d459c2ad674abe2ff44ed",
+      "skipped": 82,
+      "status": "PASS",
+      "suites": 222,
+      "tests": 1844
+    },
+    "launchServices": {
+      "attempts": [
+        "/private/tmp staging copy",
+        "registered ~/Applications unique copy"
+      ],
+      "directExecutable": "AppKit RegisterApplication SIGABRT; not a supported GUI launch path",
+      "exactError": "kLSNoExecutableErr (-10827)",
+      "signature": "codesign --verify --deep --strict PASS before launch",
+      "status": "failed"
+    },
+    "managerBuild": {
+      "mode": "diagnostic",
+      "sha256": "616d18f3386ad613d5cda6dbd2ad2439a8f6047263ad8904296fd5242168caad",
+      "status": "build-complete"
+    },
+    "rootContract": "PASS at unit level: signed marker or exact env root, both validated owner-only; release package rejects diagnostic markers",
+    "runtime": "NOT RUN: no app window or owned-WebKit navigation; no external website requests",
+    "targetedPython": "PASS: 62 package-host, release-guard, and A/B fixture tests"
+  }
+}

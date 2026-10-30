@@ -4,44 +4,19 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 CONTENT = ROOT / "Sources" / "NeAntik" / "ContentView.swift"
-PROFILE_LIST_HEADER = (
-    ROOT / "Sources" / "NeAntik" / "ProfileListHeaderView.swift"
-)
-WORKSPACE_TOOLBAR = (
-    ROOT / "Sources" / "NeAntik" / "WorkspaceToolbarContent.swift"
-)
-PROFILE_WORKSPACE_VIEWS = (
-    ROOT / "Sources" / "NeAntik" / "ProfileWorkspaceViews.swift"
-)
 EDITOR = ROOT / "Sources" / "NeAntik" / "ProfileEditorView.swift"
-PROFILE_NOTE_EDITOR = (
-    ROOT / "Sources" / "NeAntik" / "ProfileNoteEditorView.swift"
-)
 AUDIT = ROOT / "Sources" / "NeAntik" / "FingerprintAuditView.swift"
 BULK_IMPORT = ROOT / "Sources" / "NeAntik" / "BulkProxyImport.swift"
 MODELS = ROOT / "Sources" / "NeAntik" / "Models.swift"
 PROFILE_LIST_PROJECTION = (
     ROOT / "Sources" / "NeAntik" / "ProfileListProjection.swift"
 )
-PROFILE_ROW_PRESENTATION = (
-    ROOT / "Sources" / "NeAntik" / "ProfileRowPresentation.swift"
-)
 WORKSPACE_DOMAIN = ROOT / "Sources" / "NeAntik" / "WorkspaceDomain.swift"
-WORKSPACE_READINESS = (
-    ROOT / "Sources" / "NeAntik" / "WorkspaceReadiness.swift"
-)
-WORKSPACE_READINESS_VIEW = (
-    ROOT / "Sources" / "NeAntik" / "WorkspaceReadinessView.swift"
-)
 PROFILE_ENVIRONMENT = (
     ROOT / "Sources" / "NeAntik" / "ProfileEnvironmentView.swift"
 )
 APP = ROOT / "Sources" / "NeAntik" / "NeAntikApp.swift"
 PROFILE_COMMANDS = ROOT / "Sources" / "NeAntik" / "ProfileCommands.swift"
-SHORTCUT_CATALOG = (
-    ROOT / "Sources" / "NeAntik" / "NeAntikShortcutCatalog.swift"
-)
-SETTINGS_VIEW = ROOT / "Sources" / "NeAntik" / "NeAntikSettingsView.swift"
 FOLDER_PICKER = (
     ROOT / "Sources" / "NeAntik" / "ProfileFolderPickerSheet.swift"
 )
@@ -63,120 +38,48 @@ ROADMAP = ROOT / "docs" / "ROADMAP.md"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
-    def test_small_settings_search_has_explicit_hit_target(self):
-        settings = SETTINGS_VIEW.read_text()
-        icon = settings.split('Image(systemName: "magnifyingglass")', 1)[1].split('.buttonStyle', 1)[0]
-        self.assertIn('.frame(width: 28, height: 28)', icon)
-        self.assertIn('.contentShape(Rectangle())', icon)
+    def test_app_does_not_issue_custom_voiceover_announcements(self) -> None:
+        sources = ROOT / "Sources" / "NeAntik"
+        forbidden = ("NSAccessibility.post", ".announcementRequested")
+        for path in sources.glob("*.swift"):
+            text = path.read_text(encoding="utf-8")
+            for marker in forbidden:
+                self.assertNotIn(marker, text, f"{marker} remains in {path.name}")
 
-    def test_search_help_describes_existing_fields(self):
-        header = PROFILE_LIST_HEADER.read_text()
-        self.assertIn('по названию, заметке, тегам, папке и адресу прокси', header)
+    def test_interactive_workspace_and_sheets_remain_accessible(self) -> None:
+        app = APP.read_text(encoding="utf-8")
+        content = CONTENT.read_text(encoding="utf-8")
+        self.assertNotRegex(app, r"(?s)ContentView\(.*?\n\s{12}\)\n\s{12}\.accessibilityHidden\(true\)")
+        sheets = content.split("private var workspaceSheets", 1)[1].split("private var workspaceToolbar", 1)[0]
+        self.assertNotIn(".accessibilityHidden(true)", sheets)
 
-    def test_batch_selection_exposes_selected_trait(self):
-        row = PROFILE_WORKSPACE_VIEWS.read_text()
-        self.assertIn('.accessibilityAddTraits(isBatchSelected ? .isSelected : [])', row)
-
-    def test_profile_columns_control_native_list_margins(self):
-        content = (ROOT / "Sources/NeAntik/ContentView.swift").read_text()
-        self.assertIn('.contentMargins(.horizontal, 0, for: .scrollContent)', content)
-        self.assertIn('.listRowInsets(EdgeInsets(', content)
-        self.assertIn('.padding(.horizontal, ProfileRowLayout.rowContentHorizontalInset)', content)
-        self.assertIn('} header: {\n                                profileTableHeader', content)
-        self.assertNotIn('profileRowHorizontalGeometry', content)
-
-    def test_settings_reference_is_secondary_but_search_remains_discoverable(self):
-        settings = SETTINGS_VIEW.read_text(encoding="utf-8")
-        self.assertIn('@State private var showsShortcutReference = false', settings)
-        self.assertIn('DisclosureGroup("Справочник команд", isExpanded: $showsShortcutReference)', settings)
-        self.assertLess(settings.index('.id("shortcutSearch")'), settings.index('DisclosureGroup("Справочник команд"'))
-        reveal = settings.split('private func revealShortcutReference', 1)[1].split('private func clearShortcutSearch', 1)[0]
-        self.assertLess(reveal.index('showsShortcutReference = true'), reveal.index('scrollProxy.scrollTo'))
-        self.assertIn('.onChange(of: shortcutQuery)', settings)
-        self.assertIn('.keyboardShortcut("f", modifiers: .command)', settings)
-
-    def test_header_menus_keep_intrinsic_width_while_search_can_expand(self):
-        header = PROFILE_LIST_HEADER.read_text()
-        for menu in ("createProfileMenu", "actionsMenu", "filtersMenu"):
-            self.assertRegex(
-                header,
-                menu + r"\s+\.fixedSize\(horizontal: true, vertical: false\)",
-            )
-        self.assertNotRegex(header, r"searchField\s+\.fixedSize")
-
-    def test_settings_reference_navigation_and_clear_field_identity(self):
-        settings = SETTINGS_VIEW.read_text(encoding="utf-8")
-        self.assertNotIn('Button("Вернуть удобную плотность")', settings)
-        self.assertIn('.pickerStyle(.segmented)', settings)
-        self.assertIn('ScrollViewReader { scrollProxy in', settings)
-        self.assertIn('.id("shortcutSearch")', settings)
-        self.assertIn('.onAppear { revealShortcutReference(using: scrollProxy) }', settings)
-        self.assertIn('.onChange(of: preferences.shortcutReferenceRequest)', settings)
-        self.assertIn('consumeShortcutReferenceRequest()', settings)
-        self.assertIn('В поиске Escape сначала очищает запрос', settings)
+    def test_keyboard_focus_and_shortcuts_remain_available(self) -> None:
+        content = CONTENT.read_text(encoding="utf-8")
         editor = EDITOR.read_text(encoding="utf-8")
-        self.assertIn('Text("Стартовая страница")', editor)
-        self.assertIn('.focused($focusedField, equals: .startURL)', editor)
-        note = (ROOT / "Sources/NeAntik/ProfileNoteEditorView.swift").read_text(encoding="utf-8")
-        self.assertIn('.help(profileName)', note)
+        folder = (ROOT / "Sources" / "NeAntik" / "ProfileFolderNameSheet.swift")
+        folder_text = folder.read_text(encoding="utf-8")
+        bulk = BULK_IMPORT.read_text(encoding="utf-8")
 
-    def test_profile_name_and_pending_proxy_drafts_reach_save_validation(self):
-        source = EDITOR.read_text()
-        name_change = source.split('.onChange(of: editorDraft.name)', 1)[1].split('Text(', 1)[0]
-        self.assertNotIn('name =', name_change)
-        self.assertNotIn('prefix(', name_change)
-        self.assertIn('.focused($focusedField, equals: .proxyImport)', source)
-        self.assertIn('.id(ProfileEditorField.proxyImport)', source)
-        self.assertIn('editorDraft.saveIssue(pendingProxyText: proxyImportText', source)
-        self.assertIn('ProfilePendingProxyImportRecovery(text: $proxyImportText', source)
-        navigation = source.split('private func presentValidation(', 1)[1].split('private func', 1)[0]
-        self.assertNotIn('usesProxy = true', navigation)
-        import_action = source.split('private func importProxy()', 1)[1].split('private func', 1)[0]
-        success, failure = import_action.split('} catch {', 1)
-        self.assertIn('proxyImportText = ""', success)
-        self.assertNotIn('proxyImportText = ""', failure)
+        self.assertIn("@FocusState private var profileSearchIsFocused", content)
+        self.assertIn(".focused($profileSearchIsFocused)", content)
+        self.assertIn("@FocusState private var focusedField", editor)
+        self.assertIn(".focused($focusedField, equals: .name)", editor)
+        self.assertIn(".keyboardShortcut(.cancelAction)", editor)
+        self.assertIn(".keyboardShortcut(.defaultAction)", editor)
+        self.assertIn("@FocusState private var nameIsFocused", folder_text)
+        self.assertIn(".keyboardShortcut(.cancelAction)", folder_text)
+        self.assertIn(".keyboardShortcut(.defaultAction)", folder_text)
+        self.assertIn("@FocusState private var proxyInputIsFocused", bulk)
+        self.assertIn(".keyboardShortcut(.cancelAction)", bulk)
 
-    def test_bulk_invalid_base_name_has_visible_keyboard_correction_target(self):
-        source = BULK_IMPORT.read_text()
-        self.assertIn('.focused($baseNameIsFocused)', source)
-        status = source.split('private var previewStatus:', 1)[1].split('private var previewRows:', 1)[0]
-        self.assertIn('showsOptions = true', status)
-        self.assertIn('baseNameIsFocused = true', status)
-        self.assertIn('baseNameValidationMessage(baseName)', status)
-        self.assertIn('baseNameIsValid ? "\\(previewName)…" : "Исправь основу названия"', source)
-
-    def test_batch_tag_save_preserves_draft_on_failure(self):
-        sheet = (ROOT / 'Sources/NeAntik/ProfileBatchTagSheet.swift').read_text()
-        content = CONTENT.read_text()
-        self.assertIn('let onApply: (ProfileMetadataBatchAction) throws -> Void', sheet)
-        self.assertIn('try performBatchMetadata(action, to: profileIDs)', content)
-        operation = sheet.split('private func apply()', 1)[1]
-        success, failure = operation.split('} catch {', 1)
-        self.assertIn('try onApply', success)
-        self.assertIn('dismiss()', success)
-        self.assertNotIn('dismiss()', failure)
-        self.assertIn('errorMessage = error.localizedDescription', failure)
-        self.assertNotIn('tag = ""', failure)
-
-    def test_proxy_password_has_explicit_temporary_reveal_control(self) -> None:
-        source = EDITOR.read_text(encoding="utf-8")
-        self.assertIn("SensitiveRevealLeaseState()", source)
-        self.assertIn("SensitiveRevealLeaseState.defaultLifetime", source)
-        self.assertIn("NSApplication.willResignActiveNotification", source)
-        self.assertIn('"Показать пароль прокси"', source)
-        self.assertIn('"Скрыть пароль прокси"', source)
-        self.assertIn("proxyPasswordRevealLease.isRevealed", source)
-
-    def test_workspace_uses_native_list_first_navigation_and_optional_inspector(
+    def test_workspace_uses_native_three_column_navigation_without_titlebar_hacks(
         self,
     ) -> None:
         text = CONTENT.read_text(encoding="utf-8")
         self.assertNotIn(".safeAreaInset(edge: .top", text)
         self.assertNotIn(".padding(.top, 46)", text)
         self.assertNotIn("windowTitlebarInset", text)
-        navigation_start = text.index("private var workspaceBase")
-        sheets_start = text.index("private var workspaceSheets")
-        self.assertNotIn("GeometryReader", text[navigation_start:sheets_start])
+        self.assertIn("GeometryReader", text)
         self.assertIn(
             "NavigationSplitView(columnVisibility: $columnVisibility)",
             text,
@@ -184,19 +87,11 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("workspaceSources", text)
         self.assertIn("profileListPane", text)
         self.assertIn("} detail: {", text)
-        self.assertIn(".inspector(isPresented: $showsProfileInspector)", text)
-        self.assertIn(
-            "detail\n                .workspaceKeyboardRegion(.inspector)\n                .inspectorColumnWidth(",
-            text,
-        )
         self.assertIn("WorkspaceLayout.minimumSourceColumnWidth", text)
         self.assertIn("WorkspaceLayout.minimumProfileColumnWidth", text)
-        self.assertIn("WorkspaceLayout.minimumInspectorWidth", text)
-        self.assertIn("WorkspaceLayout.idealInspectorWidth", text)
-        self.assertIn("WorkspaceLayout.maximumInspectorWidth", text)
+        self.assertIn("WorkspaceLayout.minimumDetailColumnWidth", text)
         self.assertIn(".navigationSplitViewStyle(.balanced)", text)
-        self.assertIn(".toolbar {", text)
-        self.assertIn("WorkspaceToolbarContent(", text)
+        self.assertIn(".toolbar { workspaceToolbar }", text)
 
     def test_workspace_sources_expose_profiles_folders_tags_and_keyboard_navigation(
         self,
@@ -206,9 +101,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         list_start = text.index("private func profileListPane(")
         sources = text[sources_start:list_start]
 
-        self.assertIn('Text("Профили")', sources)
-        self.assertIn("Color(nsColor: .secondaryLabelColor)", sources)
-        self.assertIn("Color(nsColor: .labelColor)", text)
+        self.assertIn('Section("Профили")', sources)
         self.assertIn('title: "Все профили"', sources)
         self.assertIn('title: "Закреплённые"', sources)
         self.assertIn('title: "Папки"', sources)
@@ -225,128 +118,35 @@ class ResponsiveUIContractTests(unittest.TestCase):
             2,
         )
 
-    def test_list_first_header_owns_actions_and_toolbar_toggles_inspector(
+    def test_workspace_toolbar_owns_profile_actions_and_dead_sidebar_is_absent(
         self,
     ) -> None:
         text = CONTENT.read_text(encoding="utf-8")
-        workspace_views = PROFILE_WORKSPACE_VIEWS.read_text(encoding="utf-8")
-        toolbar = WORKSPACE_TOOLBAR.read_text(encoding="utf-8")
+        toolbar_start = text.index(
+            "private var workspaceToolbar: some ToolbarContent"
+        )
+        toolbar_end = text.index(
+            "private func recoverDeletedProfileCredentials()",
+            toolbar_start,
+        )
+        toolbar = text[toolbar_start:toolbar_end]
 
-        self.assertIn("ToolbarItem(placement: .primaryAction)", toolbar)
-        self.assertIn('Label("Помощь", systemImage: "questionmark.circle")', toolbar)
-        self.assertIn('"Диагностика приложения…"', toolbar)
-        self.assertIn("onPresentReadiness", toolbar)
-        self.assertIn("Button(action: onToggleInspector)", toolbar)
-        self.assertIn('systemImage: "sidebar.right"', toolbar)
-        self.assertNotIn(".keyboardShortcut", toolbar)
-        self.assertIn(".disabled(!ProfileInspectorPolicy.canToggle(", toolbar)
-        self.assertIn("isPresented: showsProfileInspector", toolbar)
-        self.assertIn("hasSelectedProfile: hasSelectedProfile", toolbar)
-        self.assertNotIn("profileCommandSet(", toolbar)
-
-        commands = PROFILE_COMMANDS.read_text(encoding="utf-8")
-        shortcuts = SHORTCUT_CATALOG.read_text(encoding="utf-8")
-        settings = SETTINGS_VIEW.read_text(encoding="utf-8")
-        self.assertIn("NeAntikShortcut.toggleInspector.keyEquivalent", commands)
-        self.assertIn("NeAntikShortcut.toggleSelectedProfile.keyEquivalent", commands)
-        self.assertIn('CommandMenu("Рабочее пространство")', commands)
-        self.assertIn('case toggleSelectedProfile', shortcuts)
-        self.assertIn('case editSelectedNote', shortcuts)
-        self.assertIn('Section("Сочетания клавиш")', settings)
-        self.assertIn("$preferences.rowDensity", settings)
-        self.assertIn("var accessibilityChord: String", shortcuts)
-        self.assertIn("shortcut.accessibilityChord", settings)
-
-        header = PROFILE_LIST_HEADER.read_text(encoding="utf-8")
-        self.assertIn('Label("Создать профиль", systemImage: "plus")', header)
-        self.assertIn("ViewThatFits(in: .horizontal)", header)
-        self.assertIn("commandRow.labelStyle(.iconOnly)", header)
+        self.assertIn("ToolbarItem(placement: .automatic)", toolbar)
         self.assertIn(
-            ".fixedSize(horizontal: true, vertical: false)",
-            header,
+            "ToolbarItemGroup(placement: .primaryAction)", toolbar
         )
-        self.assertIn(".buttonStyle(.borderedProminent)", header)
-        self.assertIn(".tint(.accentColor)", header)
-        self.assertIn(
-            'Label("Действия", systemImage: "ellipsis.circle")',
-            header,
-        )
-        self.assertIn(
-            '"Дополнительные действия со списком профилей"',
-            header,
-        )
-        self.assertIn("filtersMenu", header)
-        self.assertIn("operationalFilterBar", header)
-        self.assertIn("ProfileOperationalFilter.allCases", header)
-        self.assertIn("summary.count(for: filter)", header)
-        self.assertIn(
-            ".accessibilityAddTraits(isSelected ? .isSelected : [])",
-            header,
-        )
-        self.assertIn("ProfileOperationalProjection.resolve", text)
-        self.assertNotIn("processes.runningProfileIDs.contains($0.id)", header)
-        self.assertIn('"Создать из списка прокси…"', header)
-        self.assertIn('"Проверить прокси (\\(bulkProxyAction.count))"', header)
-        self.assertIn("if !bulkProxyTestIsRunning", header)
-        self.assertIn("if bulkProxyTestIsRunning", header)
-        self.assertLess(
-            header.index(
-                'Label("Действия", systemImage: "ellipsis.circle")'
-            ),
-            header.index('Label("Создать профиль", systemImage: "plus")'),
-        )
-
-        self.assertIn("private func profileTableHeader", text)
-        self.assertIn("ProfileRowLayout.minimumWideWidth", text)
-        self.assertIn("GeometryReader", text)
-        self.assertIn('Image(systemName: "checkmark.square")', text)
-        self.assertIn('Text("Запуск")', text)
-        for start, end in (("private func wideRow", "private func compactRow"),
-                           ("private func compactRow", "private var batchSelectionButton")):
-            row = workspace_views.split(start, 1)[1].split(end, 1)[0]
-            self.assertLess(row.index("actionsMenu"), row.index("launchButton(presentation)"))
-            self.assertLess(row.index("batchSelectionButton"), row.index("launchButton(presentation)"))
-        self.assertIn('Text("Подключение")', text)
-        self.assertIn('Text("Заметка / активность")', text)
-        self.assertIn("wideRow(presentation)", workspace_views)
-        self.assertIn("compactRow(presentation)", workspace_views)
-        self.assertIn("ProfileRowLayout.minimumIdentityWidth", workspace_views)
-        self.assertIn("maxWidth: .infinity", workspace_views)
-        self.assertIn("private var actionsMenu", workspace_views)
-        self.assertIn("private var profileListViewMenu", text)
-        self.assertIn('Picker("Сортировка"', text)
-        self.assertIn('Picker("Подключение"', text)
-        self.assertIn(
-            'accessibilityLabel("Вид списка: сортировка, подключение и плотность")', text
-        )
-        list_menu_start = text.index("private var profileListViewMenu")
-        list_menu_end = text.index(
-            "private var profileRouteFilterBinding", list_menu_start
-        )
-        list_menu = text[list_menu_start:list_menu_end]
-        self.assertIn(
-            'Label("Вид списка", systemImage: "line.3.horizontal.decrease")',
-            list_menu,
-        )
-        self.assertNotIn("ViewThatFits", list_menu)
-        self.assertIn("profileRouteFilter = .all", text)
-        self.assertIn("profileRouteFilter != .all", text)
-        self.assertIn("profileRouteFilter = decision.routeFilter", text)
-        self.assertIn("ProfileListEmptyStatePresentation.resolve", text)
-        self.assertIn("Text(empty.message)", text)
-        self.assertIn('.accessibilityLabel("Убрать фильтр \\(title)")', text)
-        self.assertIn('Image(systemName: "info.circle")', header)
-        self.assertIn('Text("Поиск по полям")', header)
-        self.assertIn("ProfileSearchSyntaxHelp.examples", header)
-
-        active_filters_start = text.index(
-            "private var activeFiltersBar"
-        )
-        active_filters_end = text.index(
-            "private func filterChip", active_filters_start
-        )
-        active_filters = text[active_filters_start:active_filters_end]
-        self.assertNotIn("profileOperationalFilter", active_filters)
+        self.assertIn("if let profile = selectedProfile", toolbar)
+        self.assertIn("profileCommandSet(", toolbar)
+        self.assertIn("commands.presentation.launchTitle", toolbar)
+        for action in (
+            '"Новый профиль…"',
+            '"Изменить…"',
+            '"Показать папку данных в Finder"',
+            '"Другие действия с профилем"',
+            '"Удалить профиль"',
+        ):
+            self.assertIn(action, toolbar)
+        self.assertIn("profileOrganizationActions(commands)", toolbar)
 
         for dead_symbol in (
             "isSidebarVisible",
@@ -361,67 +161,6 @@ class ResponsiveUIContractTests(unittest.TestCase):
             "onToggleSidebar",
         ):
             self.assertNotIn(dead_symbol, text)
-
-    def test_v4_workspace_keeps_notes_visible_and_direct_route_explicit(
-        self,
-    ) -> None:
-        content = CONTENT.read_text(encoding="utf-8")
-        editor = EDITOR.read_text(encoding="utf-8")
-
-        self.assertIn('"Добавить заметку…"', content)
-        self.assertIn('"Изменить заметку…"', content)
-        self.assertIn(
-            ".onChange(of: processes.runningProfileIDs)", content
-        )
-        self.assertIn(
-            ".onChange(of: processes.processStateRevision)", content
-        )
-        self.assertIn(
-            ".onChange(of: proxyHealthCoordinator.healthByProfileID)",
-            content,
-        )
-        self.assertIn(
-            "initialOperationalFilter: ProfileOperationalFilter = .all",
-            content,
-        )
-        self.assertIn("workspacePreferences.rowDensity", content)
-        self.assertIn('"Прямое подключение"', editor)
-        self.assertIn(
-            '"Сайты увидят обычный публичный адрес этого Mac или "',
-            editor,
-        )
-        self.assertIn(
-            '"системного VPN. Для профиля не настроен отдельный прокси."',
-            editor,
-        )
-
-    def test_readiness_center_is_local_actionable_and_redacted(self) -> None:
-        content = CONTENT.read_text(encoding="utf-8")
-        readiness = WORKSPACE_READINESS.read_text(encoding="utf-8")
-        view = WORKSPACE_READINESS_VIEW.read_text(encoding="utf-8")
-
-        self.assertIn("WorkspaceReadinessSystemInspector.inspect", content)
-        self.assertIn("Task.detached(priority: .userInitiated)", content)
-        self.assertIn("processes.reconcile(profiles: store.profiles)", content)
-        self.assertIn('"Проверить снова"', view)
-        self.assertIn('"Скопировать путь"', view)
-        self.assertIn('"Показать в Finder"', view)
-        self.assertIn(
-            "Не добавляй вложенный NeAntik Browser.app",
-            view,
-        )
-        self.assertIn(
-            "Диагностика не содержит пароли, адреса прокси",
-            view,
-        )
-        self.assertNotIn("URLSession", readiness)
-        self.assertNotIn("NWConnection", readiness)
-        diagnostic_start = readiness.index(
-            "private static func diagnosticText("
-        )
-        diagnostic = readiness[diagnostic_start:]
-        self.assertNotIn("bundlePath", diagnostic)
-        self.assertNotIn("message", diagnostic)
 
     def test_app_is_single_window_and_profile_commands_are_focus_aware(
         self,
@@ -443,12 +182,12 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('CommandMenu("Профиль")', commands)
         for action in (
             '"Изменить…"',
-            '"Создать похожий"',
+            '"Копировать настройки"',
             '"Переместить в папку"',
             '"Показать папку данных в Finder"',
             '"Удалить профиль"',
         ):
-            self.assertIn(action, commands + (ROOT / "Sources/NeAntik/ProfileActionMenu.swift").read_text())
+            self.assertIn(action, commands)
 
     def test_commands_are_modal_aware_and_folder_move_is_bounded(self) -> None:
         content = CONTENT.read_text(encoding="utf-8")
@@ -457,34 +196,13 @@ class ResponsiveUIContractTests(unittest.TestCase):
 
         self.assertIn("private var isWorkspaceModalPresented", content)
         self.assertIn("guard !isWorkspaceModalPresented", content)
-        self.assertIn("forceStopRequest != nil", content)
         self.assertIn("workspaceCommandSet", content)
         self.assertIn("static let unavailable = WorkspaceCommandSet", commands)
         self.assertNotIn("neAntikCreateProfile", content)
         self.assertNotIn("neAntikCreateProfile", APP.read_text(encoding="utf-8"))
-        self.assertIn("state == .stopped || state.isConfirmedRunning", content)
-        self.assertIn("appliesOnNextLaunch", content)
-        self.assertIn("noteIsEnabled", commands)
-        self.assertIn(
-            ".disabled(!resolved.presentation.noteIsEnabled)", commands
-        )
+        self.assertIn("presentedProcessState(for: profile).isRunning", content)
         self.assertIn("ProfileFolderCommandProjection.resolve", content)
         self.assertIn("static let defaultLimit = 8", commands)
-        batch_actions = (
-            ROOT / "Sources" / "NeAntik" / "ProfileBatchActions.swift"
-        ).read_text(encoding="utf-8")
-        self.assertIn("ViewThatFits(in: .horizontal)", batch_actions)
-        self.assertIn("compactActionBar", batch_actions)
-        self.assertIn(
-            'Label("Действия", systemImage: "ellipsis.circle")',
-            batch_actions,
-        )
-        self.assertIn('Button("Снять выделение"', batch_actions)
-        self.assertNotIn("ScrollView(.horizontal", batch_actions)
-        self.assertNotIn(
-            '.keyboardShortcut("z", modifiers: [.command])',
-            batch_actions,
-        )
         projection_start = commands.index(
             "struct ProfileFolderCommandProjection"
         )
@@ -496,15 +214,9 @@ class ResponsiveUIContractTests(unittest.TestCase):
             ".sorted",
             commands[projection_start:projection_end],
         )
-        actions = (ROOT / "Sources/NeAntik/ProfileActionMenu.swift").read_text()
-        self.assertIn('"Выбрать другую папку…"', actions)
-        self.assertIn('ProfileOrganizationActions(commands: commands)', content)
-        self.assertIn('ProfileOrganizationActions(commands: resolved, registersShortcuts: true)', commands)
-        self.assertIn('var registersShortcuts = false', actions)
-        self.assertIn('.disabled(!commands.presentation.archiveIsEnabled)', actions)
+        self.assertIn('"Выбрать другую папку…"', commands)
         self.assertIn('TextField("Поиск папок"', picker)
-        self.assertIn("ProfileFolder.comparisonKey(searchText.trimmingCharacters", picker)
-        self.assertIn("ProfileFolder.comparisonKey($0.name).contains(query)", picker)
+        self.assertIn("localizedCaseInsensitiveContains", picker)
         self.assertIn(
             "let visibleFolders = presentation.filteredFolders",
             picker,
@@ -516,10 +228,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
 
     def test_tag_color_is_stable_supplemental_and_schema_free(self) -> None:
         appearance = TAG_APPEARANCE.read_text(encoding="utf-8")
-        content = (
-            CONTENT.read_text(encoding="utf-8")
-            + PROFILE_WORKSPACE_VIEWS.read_text(encoding="utf-8")
-        )
+        content = CONTENT.read_text(encoding="utf-8")
 
         self.assertIn("stableHash(tagID.rawValue)", appearance)
         self.assertIn("ProfileTagID(displayName: displayName)", appearance)
@@ -545,16 +254,16 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         empty_state = text[empty_start:empty_end]
 
-        self.assertIn("FirstProfileOnboardingView(", empty_state)
-        self.assertIn(
-            "onCreateAndOpen: createAndOpenProfileQuickly", empty_state
-        )
-        self.assertIn("onConfigure: beginCreatingProfile", empty_state)
+        self.assertIn("основной области окна", empty_state)
+        self.assertNotIn("createAndOpenFirstProfile()", empty_state)
+        self.assertNotIn('Button("Создать профиль")', empty_state)
+        self.assertIn("FirstProfileOnboardingView(", text)
+        self.assertIn("onCreateAndOpen: createAndOpenFirstProfile", text)
 
-        self.assertIn('"Создать и открыть"', onboarding)
-        self.assertIn('Button("Выбрать название…"', onboarding)
+        self.assertIn('"Сразу создать и открыть без прокси"', onboarding)
+        self.assertIn('Text("Создать профиль с настройками…")', onboarding)
         self.assertIn("FirstProfileBootstrap.routeSummary", onboarding)
-        self.assertIn("ViewThatFits(in: .horizontal)", onboarding)
+        self.assertIn("VStack(spacing: 8)", onboarding)
         self.assertIn(".buttonStyle(.borderedProminent)", onboarding)
         create_button_start = onboarding.index(
             "private var createAndOpenButton: some View"
@@ -564,7 +273,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
             create_button_start,
         )
         create_button = onboarding[create_button_start:configure_button_start]
-        self.assertIn(".keyboardShortcut(.defaultAction)", create_button)
+        self.assertIn(".keyboardShortcut(.defaultAction)", onboarding[configure_button_start:])
         self.assertIn(
             ".disabled(!presentation.primaryIsEnabled)",
             create_button,
@@ -578,44 +287,9 @@ class ResponsiveUIContractTests(unittest.TestCase):
             onboarding,
         )
         self.assertIn('primaryTitle: "Повторить проверку"', onboarding)
-        self.assertIn("terminalAccessibilityAnnouncement", onboarding)
-        self.assertIn("Ваши входы на сайты и данные сохранятся в этом рабочем месте.", onboarding)
-
-    def test_ordinary_sheet_route_preserves_open_modal_and_readiness_refresh(self):
-        text = CONTENT.read_text(encoding="utf-8")
-        presentation = text.split("private func presentWorkspaceSheet(", 1)[1].split(
-            "private var workspaceAlerts:", 1
-        )[0]
-        self.assertLess(
-            presentation.index("guard WorkspaceSheetRequest.canPresent("),
-            presentation.index("workspaceSheetRequest = WorkspaceSheetRequest("),
-        )
-        self.assertEqual(text.count("workspaceSheetRequest = WorkspaceSheetRequest("), 1)
-        self.assertIn("hasBlockingModal: isWorkspaceSheetOrConfirmationPresented", presentation)
-        self.assertIn("hasWorkspaceAlert: workspaceAlert != nil", presentation)
-        self.assertEqual(text.count(".sheet(item: $workspaceSheetRequest, onDismiss: openSavedProfileAfterEditor)"), 1)
-        self.assertIn("private func openSavedProfileAfterEditor()", text)
-        self.assertIn("beginEditing(profile, focusing: .proxyImport)", text)
-        self.assertIn("initialFocus: request.initialFocus", text)
-        modal_guard = text.split("private var isWorkspaceModalPresented:", 1)[1].split(
-            "private var workspaceCommandSet:", 1
-        )[0]
-        for condition in [
-            "workspaceSheetRequest != nil", "showingReleaseFingerprintAudit",
-            "showingDeleteConfirmation", "folderPendingDelete != nil",
-            "forceStopRequest != nil", "launchIssue != nil",
-            "workspaceAlert != nil",
-        ]:
-            self.assertIn(condition, modal_guard)
-        self.assertIn("if workspaceSheetRequest?.isReadiness == true {", text)
-        self.assertIn("presentWorkspaceReadiness(recoveringWorkspaceAlert: true)", text)
-        binding = text.split("private var workspaceAlertBinding:", 1)[1].split("var body:", 1)[0]
-        self.assertIn("workspaceSheetRequest?.isReadiness == true ? nil : workspaceAlert", binding)
-        self.assertIn("guard workspaceSheetRequest?.isReadiness != true", binding)
-        self.assertNotIn("processes.lastError = nil", presentation)
-        self.assertNotIn("store.lastError = nil", presentation)
-        self.assertIn("expectedNote: profile.note", text)
-        self.assertIn("expectedSourceRevision: request.source.revision", text)
+        self.assertIn(".accessibilityHint(presentation.primaryAccessibilityHint)", onboarding)
+        self.assertNotIn("terminalAccessibilityAnnouncement", onboarding)
+        self.assertIn("постоянный локальный профиль браузера", onboarding)
 
     def test_fingerprint_audit_separates_manual_reports_from_release_authority(
         self,
@@ -625,11 +299,10 @@ class ResponsiveUIContractTests(unittest.TestCase):
             ".sheet(isPresented: $showingReleaseFingerprintAudit)"
         )
         manual_start = text.index(
-            "case let .fingerprintAudit(request):"
+            ".sheet(item: $fingerprintAuditRequest)"
         )
         manual_end = text.index('.alert(\n            "Удалить профиль?"')
-        release_end = text.index("private func workspaceSheet(", release_start)
-        release_sheet = text[release_start:release_end]
+        release_sheet = text[release_start:manual_start]
         manual_sheet = text[manual_start:manual_end]
 
         self.assertIn("releaseContext: fingerprintEvidenceReleaseContext", release_sheet)
@@ -639,7 +312,7 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("fingerprintObservationStore.record", manual_sheet)
         self.assertNotIn("releaseContext:", manual_sheet)
         self.assertIn("private func beginFingerprintAudit()", text)
-        self.assertIn("presentWorkspaceSheet(.fingerprintAudit(FingerprintAuditRequest(", text)
+        self.assertIn("fingerprintAuditRequest = FingerprintAuditRequest(", text)
         self.assertIn("onRunFingerprintAudit:", text)
         self.assertEqual(
             text.count("showingReleaseFingerprintAudit = true"),
@@ -658,48 +331,55 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self,
     ) -> None:
         text = EDITOR.read_text(encoding="utf-8")
-        self.assertIn('Label("Вставить прокси"', text)
-        self.assertIn('Label("Проверить прокси"', text)
-        self.assertIn("private func importProxy()", text)
+        self.assertIn('Label("Заполнить из буфера"', text)
+        self.assertIn(
+            'Label(engine == .webkit ? "Предварительно проверить прокси" : "Проверить прокси"',
+            text,
+        )
+        self.assertIn("private func importProxy(source: String)", text)
         self.assertNotIn("importProxyAndTest", text)
-        import_start = text.index("private func importProxy()")
+        import_start = text.index("private func importProxy(source: String)")
         test_start = text.index("private func startProxyTest(")
         import_body = text[import_start:test_start]
         self.assertNotIn("startProxyTest(", import_body)
+        endpoint_start = text.index("private func currentProtocolEndpoint()")
+        detector_start = text.index("private func detectProxyProtocol()", endpoint_start)
+        endpoint = text[endpoint_start:detector_start]
+        self.assertIn("guard usesProxy else", endpoint)
+        self.assertNotIn("engine == .chromium", endpoint)
 
     def test_advanced_editor_row_has_explicit_button(self) -> None:
         text = EDITOR.read_text(encoding="utf-8")
-        heading = (ROOT / "Sources/NeAntik/ProfileEditorSavePresentation.swift").read_text()
-        self.assertIn('title: "Новое рабочее место"', heading)
-        self.assertIn('title: "Настройки рабочего места"', heading)
-        self.assertIn("ProfileEditorHeadingPresentation.resolve(", text)
-        self.assertIn(".accessibilityHeading(.h1)", text)
+        advanced_start = text.index("showsAdvancedOptions.toggle()")
+        advanced_end = text.index("if showsAdvancedOptions {", advanced_start)
+        advanced = text[advanced_start:advanced_end]
+        self.assertIn("showsAdvancedOptions.toggle()", advanced)
+        self.assertIn("maxWidth: .infinity", advanced)
+        self.assertIn("minHeight: 28", advanced)
+        self.assertIn(".contentShape(Rectangle())", advanced)
+        self.assertIn(".accessibilityHidden(true)", advanced)
         self.assertIn(
-            'static let summary = "Стартовая страница, папка, теги и оформление"',
+            '.accessibilityLabel("Запуск и оформление профиля")',
+            advanced,
+        )
+        self.assertIn(
+            'showsAdvancedOptions ? "Развёрнуто" : "Свёрнуто"',
+            advanced,
+        )
+        self.assertIn(".accessibilityHint(", advanced)
+        self.assertNotIn(
+            'DisclosureGroup(\n            "Дополнительно"',
             text,
         )
-        advanced = text[text.index("private var advancedOptionsSection"):text.index("private var appearanceIconGrid")]
-        style = (ROOT / "Sources/NeAntik/NeAntikDisclosureStyle.swift").read_text()
-        self.assertIn("DisclosureGroup(isExpanded: Binding(", advanced)
-        self.assertIn("showsAdvancedOptions = expanded", advanced)
-        self.assertIn("focusedField = nil", advanced)
-        self.assertIn(".disclosureGroupStyle(NeAntikDisclosureStyle())", advanced)
-        self.assertIn('.accessibilityLabel("Дополнительные настройки профиля")', advanced)
-        self.assertIn("maxWidth: .infinity", style)
-        self.assertIn("minimumHeight: CGFloat = 28", style)
-        self.assertIn(".contentShape(Rectangle())", style)
-        self.assertIn(".accessibilityHidden(true)", style)
-        self.assertIn('configuration.isExpanded ? "Развёрнуто" : "Свёрнуто"', style)
-        self.assertIn("accessibilityReduceMotion", style)
         self.assertNotIn(".onSubmit(save)", text)
 
     def test_profile_note_is_progressively_disclosed_from_a_full_row(
         self,
     ) -> None:
         editor = EDITOR.read_text(encoding="utf-8")
-        profile_start = editor.index('Section("Рабочее место")')
-        network_start = editor.index('Section("Сеть")', profile_start)
-        profile = editor[profile_start:network_start]
+        organization_start = editor.index('if showsAdvancedOptions {')
+        organization_end = editor.index('        .formStyle(.grouped)', organization_start)
+        organization = editor[organization_start:organization_end]
         note_editor_start = editor.index("private var noteEditor")
         note_editor_end = editor.index(
             "private var proxyImportOrderPicker",
@@ -707,101 +387,55 @@ class ResponsiveUIContractTests(unittest.TestCase):
         )
         note_editor = editor[note_editor_start:note_editor_end]
 
-        self.assertIn("noteEditor", profile)
-        self.assertLess(
-            profile.index('TextField("Название"'),
-            profile.index("noteEditor"),
-        )
-        self.assertLess(profile_start, network_start)
-        advanced_call = editor.index("advancedOptionsSection", network_start)
-        self.assertLess(network_start, advanced_call)
-        advanced_definition = editor.index(
-            "private var advancedOptionsSection"
-        )
-        advanced = editor[advanced_definition:note_editor_start]
-        self.assertIn('Text("Организация")', advanced)
-        self.assertIn("folderControl", advanced)
-        self.assertIn("ProfileTagEditor(", advanced)
-        self.assertIn('TextField("Стартовая страница"', advanced)
-        self.assertIn('Label("Заметка (необязательно)", systemImage: "note.text")', note_editor)
-        self.assertNotIn('systemImage: "editorDraft.', editor)
-        self.assertIn(
-            '.accessibilityLabel("Необязательная заметка профиля")',
-            note_editor,
-        )
-        self.assertRegex(
-            note_editor,
-            r'\.accessibilityLabel\(\s*notePresentation\.collapsedSummary\.isEmpty'
-            r'\s*\? "Необязательная заметка профиля, не добавлена"'
-            r'\s*: "Необязательная заметка профиля, добавлена"\s*\)',
-        )
-        self.assertIn(
-            "initialValue: initialFocus == .note",
-            editor,
-        )
+        self.assertIn("noteEditor", organization)
+        self.assertIn('Text("Заметка")', note_editor)
         self.assertIn('"Не добавлена"', note_editor)
         self.assertIn('"Добавлена"', note_editor)
-        self.assertIn("DisclosureGroup(isExpanded: Binding(", note_editor)
+        self.assertIn("Button", note_editor)
         self.assertIn("TextEditor(text:", note_editor)
-        self.assertIn(
-            '"Без паролей, ключей и seed-фраз"',
-            note_editor,
-        )
-        self.assertIn(".disclosureGroupStyle(NeAntikDisclosureStyle())", note_editor)
-        self.assertIn("showsNoteEditor = expanded", note_editor)
-        self.assertIn("focusedField = .note", note_editor)
+        self.assertIn(".frame(maxWidth: .infinity", note_editor)
+        self.assertIn(".contentShape(Rectangle())", note_editor)
+        self.assertNotIn("DisclosureGroup", note_editor)
+
+    def test_proxy_badge_expiry_uses_a_clock_without_new_checks(self) -> None:
+        content = CONTENT.read_text(encoding="utf-8")
+        start = content.index("private struct ProfileRow")
+        end = content.index("struct ProfileDetailView", start)
+        row = content[start:end]
+        clock_start = row.index("TimelineView(")
+        clock_end = row.index("ViewThatFits", clock_start)
+        badge = row[clock_start:clock_end]
+        self.assertIn(".periodic(from: .now, by: 60)", badge)
+        self.assertIn("now: context.date", badge)
+        self.assertIn("record: proxyHealth", badge)
+        self.assertIn("summary.status == .currentSuccess", badge)
+        for side_effect in (".task", ".onChange", "await ", "Task {",
+                            "onToggleRunning(", "checkProxy("):
+            self.assertNotIn(side_effect, badge)
 
     def test_profile_note_stays_compact_but_readable_and_searchable(
         self,
     ) -> None:
-        content = PROFILE_WORKSPACE_VIEWS.read_text(encoding="utf-8")
-        workspace_content = CONTENT.read_text(encoding="utf-8")
+        content = CONTENT.read_text(encoding="utf-8")
         projection = PROFILE_LIST_PROJECTION.read_text(encoding="utf-8")
-        row_presentation = PROFILE_ROW_PRESENTATION.read_text(
-            encoding="utf-8"
-        )
 
-        row_start = content.index("struct ProfileRow")
+        row_start = content.index("private struct ProfileRow")
         detail_start = content.index("struct ProfileDetailView", row_start)
         row = content[row_start:detail_start]
-        self.assertIn("presentation.noteSummary", row)
-        self.assertIn('? "square.and.pencil" : "note.text"', row)
-        self.assertIn("Button(action: onEditNote)", row)
-        self.assertIn('summary.isEmpty ? "Добавить заметку"', row)
-        self.assertNotIn("isNoteEditingEnabled", row)
-        self.assertIn('.accessibilityValue(summary.isEmpty ? "Заметки нет" : summary)', row)
-        self.assertIn("presentation.statusTitle", row)
-        self.assertIn("presentation.routeTitle", row)
-        self.assertIn("launchAction.title", row)
-        self.assertIn(".buttonStyle(.borderedProminent)", row)
-        self.assertIn(".privacySensitive()", row)
-        self.assertNotIn(".help(presentation.noteSummary)", row)
-        self.assertIn("processState.title", row_presentation)
-        self.assertIn(
-            'profile.proxy?.displayName ?? "Без прокси"',
-            row_presentation,
-        )
-        self.assertIn(
-            "ProfileNotePresentation.resolve(", row_presentation
-        )
-        self.assertIn("profile.note", row_presentation)
-        self.assertIn(
-            "static let maximumNoteSummaryLength = 120",
-            row_presentation,
-        )
+        self.assertIn("profile.note", row)
+        self.assertIn('systemName: "note.text"', row)
 
         detail_content_start = content.index(
             "private var detailContent: some View",
             detail_start,
         )
         detail_content_end = content.index(
-            "private var networkSummary: some View",
+            "private func networkSummary(summary: ProxyCheckSummary?) -> some View",
             detail_content_start,
         )
         detail = content[detail_content_start:detail_content_end]
         self.assertIn("profile.note", detail)
         self.assertIn('Label("Заметка", systemImage: "note.text")', detail)
-        self.assertIn('Text("Не добавлена")', detail)
         self.assertIn(".lineLimit(", detail)
         self.assertIn(
             "notePresentation.shouldOfferExpansion &&",
@@ -813,32 +447,22 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn('"Показать полностью"', detail_view)
         self.assertIn('"Свернуть"', detail_view)
         self.assertIn('"Изменить заметку…"', detail_view)
-        self.assertIn('"Добавить заметку…"', detail_view)
 
-        search = PROFILE_LIST_HEADER.read_text(encoding="utf-8")
-        self.assertIn('"Профиль или заметка"', search)
+        search_start = content.index("private var profileSearchField")
+        search_end = content.index(
+            "private var runtimeReadinessBanner",
+            search_start,
+        )
+        search = content[search_start:search_end]
         self.assertIn(
-            '"Поиск профилей, маршрутов, заметок, тегов и папок"',
+            '"Поиск профилей, заметок, тегов и папок"',
             search,
         )
         self.assertIn(
-            '"Можно уточнить запрос: имя, заметка, ид, тег, папка, прокси или статус.',
+            'accessibilityLabel("Поиск профилей, заметок, тегов и папок")',
             search,
         )
         self.assertGreaterEqual(projection.count("profile.note"), 2)
-
-        note_editor = PROFILE_NOTE_EDITOR.read_text(encoding="utf-8")
-        self.assertIn("struct ProfileNoteEditorView: View", note_editor)
-        self.assertIn('TextEditor(text: $note)', note_editor)
-        self.assertIn(
-            '"Заметка хранится локально открытым текстом. Не сохраняй здесь пароли, API-ключи или seed-фразы."',
-            note_editor,
-        )
-        self.assertIn("BrowserProfile.normalizedNote", note_editor)
-        self.assertIn("ProfileNoteDraftSnapshot", note_editor)
-        self.assertIn(".interactiveDismissDisabled(hasUnsavedChanges)", note_editor)
-        self.assertIn('"Отменить изменения заметки?"', note_editor)
-        self.assertIn("requestDismiss()", note_editor)
 
     def test_profile_note_clone_and_public_dto_boundaries_are_explicit(
         self,
@@ -873,17 +497,17 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("preview.issueLineNumbers", text)
         self.assertIn("issuePreviewRows", text)
         self.assertIn("Исправь \\(issueCountTitle", text)
-        self.assertIn("DisclosureGroup(isExpanded: $showsOptions)", text)
-        self.assertIn("NeAntikDisclosureStyle(minimumHeight: 32)", text)
+        self.assertNotIn("DisclosureGroup(isExpanded: $showsOptions)", text)
+        self.assertIn("showsOptions.toggle()", text)
+        self.assertIn("maxWidth: .infinity", text)
+        self.assertIn("minHeight: 32", text)
+        self.assertIn(".contentShape(Rectangle())", text)
         self.assertIn('.accessibilityLabel("Параметры импорта")', text)
-        self.assertIn(".focused($proxyInputIsFocused)", text)
-        self.assertIn("BulkProxyImportDraftSnapshot", text)
         self.assertIn(
-            ".interactiveDismissDisabled(isCreating || hasUnsavedChanges)",
+            'showsOptions ? "Развёрнуто" : "Свёрнуто"',
             text,
         )
-        self.assertIn('"Отменить импорт?"', text)
-        self.assertIn("requestDismiss()", text)
+        self.assertIn(".focused($proxyInputIsFocused)", text)
         self.assertIn("будет автоматически проверяться", normalized)
         self.assertIn("перед каждым запуском профиля", normalized)
         self.assertIn("Эта проверка не", normalized)
@@ -894,43 +518,37 @@ class ResponsiveUIContractTests(unittest.TestCase):
     def test_narrow_proxy_and_audit_controls_have_fallbacks(self) -> None:
         editor = EDITOR.read_text(encoding="utf-8")
         audit = AUDIT.read_text(encoding="utf-8")
-        proxy_fields = editor.split('DisclosureGroup("Параметры подключения"', 1)[1]
-        self.assertIn("ViewThatFits(in: .horizontal)", proxy_fields)
-        self.assertIn("VStack(alignment: .leading, spacing: 8)", proxy_fields)
+        self.assertGreaterEqual(editor.count("ViewThatFits"), 2)
         self.assertGreaterEqual(audit.count("ViewThatFits"), 2)
         self.assertIn(".focused($primaryActionIsFocused)", audit)
-
-    def test_editor_footer_remains_visible_at_minimum_height(self) -> None:
-        editor = EDITOR.read_text(encoding="utf-8")
-        footer_start = editor.index('Button("Отмена")')
-        frame_start = editor.index(
-            ".frame(\n      minWidth: 460",
-            footer_start,
-        )
-        footer = editor[footer_start:frame_start]
-
-        self.assertIn(".fixedSize(horizontal: false, vertical: true)", footer)
-        self.assertIn(".background(.bar)", footer)
-        self.assertIn(
-            ".frame(minHeight: 0, maxHeight: .infinity)",
-            editor[:footer_start],
-        )
-        self.assertIn(".layoutPriority(-1)", editor[:footer_start])
 
     def test_environment_section_uses_the_full_row_as_disclosure_control(
         self,
     ) -> None:
         text = PROFILE_ENVIRONMENT.read_text(encoding="utf-8")
-        self.assertIn("DisclosureGroup(isExpanded: $showingDetails)", text)
-        self.assertIn("diagnosticSection(", text)
-        self.assertIn("setSectionExpanded(section.id, isExpanded: $0)", text)
-        self.assertIn("get: { expandedSectionIDs.contains(section.id) }", text)
-        self.assertIn("NeAntikDisclosureStyle(minimumHeight: 32)", text)
-        self.assertIn("initialExpandedSectionID(", text)
-        style = (ROOT / "Sources/NeAntik/NeAntikDisclosureStyle.swift").read_text()
-        self.assertIn("maxWidth: .infinity", style)
-        self.assertIn(".contentShape(Rectangle())", style)
-        self.assertIn('configuration.isExpanded ? "Развёрнуто" : "Свёрнуто"', style)
+        details_start = text.index("if showingDetails {")
+        details_end = text.index(
+            ".padding(.top, 4)",
+            details_start,
+        )
+        details = text[details_start:details_end]
+        button_start = text.index(
+            "private func diagnosticSectionButton("
+        )
+        button_end = text.index(
+            "private var overview: some View",
+            button_start,
+        )
+        button = text[button_start:button_end]
+
+        self.assertNotIn("DisclosureGroup(", details)
+        self.assertIn("diagnosticSection(", details)
+        self.assertIn("setSectionExpanded(", button)
+        self.assertIn("maxWidth: .infinity", button)
+        self.assertIn("minHeight: 32", button)
+        self.assertIn(".contentShape(Rectangle())", button)
+        self.assertIn(".onHover", button)
+        self.assertIn('isExpanded ? "Развёрнуто" : "Свёрнуто"', button)
 
     def test_environment_overview_hides_optional_unavailable_actions(self) -> None:
         text = PROFILE_ENVIRONMENT.read_text(encoding="utf-8")
@@ -938,8 +556,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
         tools_start = text.index("private var diagnosticTools: some View")
         overview = text[overview_start:tools_start]
 
-        self.assertIn("if hasOverviewAction", overview)
-        self.assertIn("recommendedAction", overview)
+        self.assertIn("overviewFacts", overview)
+        self.assertIn("criticalFindings", overview)
         self.assertNotIn("snapshot.limitations.last", overview)
         self.assertNotIn("fingerprintDisabledReason", overview)
         self.assertIn('Text("Дополнительные проверки")', text)

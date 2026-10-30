@@ -1,0 +1,2065 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T12:11:44.957666+00:00",
+  "scope": "124 exact linked generated libwebrtc assembly outputs and 62 BoringSSL generator inputs; factual source-header candidate only",
+  "lineagePath": "/private/tmp/neantik-release-v1/docs/evidence/webkit-v20-libwebrtc-unmapped-generated-lineage-20261025.json",
+  "lineageSHA256": "d938fc1beb978016db36304f91476142b1dc07658bfe394ff1811a23b322f376",
+  "sourceRootObserved": "/private/tmp/neantik-v20-production-rebuild/WebKit",
+  "outputCount": 124,
+  "uniquePhysicalInputs": 62,
+  "apache20HeaderCount": 62,
+  "noticePath": "/private/tmp/neantik-release-v1/docs/evidence/third-party/webkit-v20-libwebrtc-generated-input-headers.txt",
+  "noticeSHA256": "c21fcb2fb91fe612f85385407fc2289846ee4aa2155b9bd179f6868a6c29665b",
+  "noticeBytes": 156841,
+  "outputs": [
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aes-gcm-avx2-x86_64-apple.S",
+      "outputSHA256": "e28af65edcc42ad07b66470f5d586f6bdb7f8d61fef807e30157e5d9b3b5c944",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aes-gcm-avx2-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aes-gcm-avx2-x86_64-linux.S",
+      "outputSHA256": "b0c905c08852e1a229bbb8101a4e1fdb1914d6c943f1391ce818af07efd6dfc3",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aes-gcm-avx2-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aes-gcm-avx512-x86_64-apple.S",
+      "outputSHA256": "7a2acfce605f0611b64e0bde1b1c1429b0e92d4a3a672b462e00c3909a12b663",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aes-gcm-avx512-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aes-gcm-avx512-x86_64-linux.S",
+      "outputSHA256": "f69f7c074fba679730afde5592eb794773dd3fdcb4a394594036d5b75194171f",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aes-gcm-avx512-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aesni-gcm-x86_64-apple.S",
+      "outputSHA256": "7e4fb7a1f9879eeb461db010c2711a4de6c7538ab113188631e472cb2ac864e4",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesni-gcm-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aesni-gcm-x86_64-linux.S",
+      "outputSHA256": "1ce94e9b3b1b144354b525ee1c00dd32181ae52b1dbd88ad750e74d70f710ba3",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesni-gcm-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aesni-x86-apple.S",
+      "outputSHA256": "2696f0e9f5d883f16509da53ad0ba10e4976375772b3af1f765213a13aa7112a",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesni-x86.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aesni-x86-linux.S",
+      "outputSHA256": "1dab126b1ab515ff05a27bd967cd31a3952c87e087dc51e9265b0345bc41a34f",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesni-x86.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aesni-x86_64-apple.S",
+      "outputSHA256": "df0b3778546fecac8f24e8586505ce3c139c36d1a7f0fa997e828e6dc812c507",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesni-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aesni-x86_64-linux.S",
+      "outputSHA256": "7c7436743a5e223afa08e6533e922fad436e06e8c2cf6370a639c778e952f043",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesni-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aesv8-armv7-linux.S",
+      "outputSHA256": "ae2a61467be1f6bcf1258ce0b3196bb410c0a847f90cb41ae8a392862b651d29",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesv8-armx.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aesv8-armv8-apple.S",
+      "outputSHA256": "b4dd875cf80e25f30ca621e2787376c6836b8aca3a17c736218e3326e0492d3f",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesv8-armx.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aesv8-armv8-linux.S",
+      "outputSHA256": "aeb9425d000d0d1be890858a85ee09e5257a355b56fc86aaab96eab5b55375a0",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesv8-armx.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aesv8-armv8-win.S",
+      "outputSHA256": "c9a916bd7b5005076d1b5fc249254bc15e89f510e6608f48b3079e02155a0598",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesv8-armx.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aesv8-gcm-armv8-apple.S",
+      "outputSHA256": "e2636df4e53e24a86b616be2668746af8c960bb8004cdd2680d9d2d151564e28",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesv8-gcm-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aesv8-gcm-armv8-linux.S",
+      "outputSHA256": "ff7842f3c15a0b58f4fd0cd7b629cc731200a3242835808fbc755328f2512e86",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesv8-gcm-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/aesv8-gcm-armv8-win.S",
+      "outputSHA256": "304cd105a5d045c42a0012ee93e6263981f21985bfed618ff3135c55945fde77",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesv8-gcm-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/armv4-mont-linux.S",
+      "outputSHA256": "ba0ef4604fa5706d2d8edd857d1047a133f3c019a0179ab9289131fcdba8cecf",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/armv4-mont.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/armv8-mont-apple.S",
+      "outputSHA256": "cc1e9e73a7bee08826fc03e951947ab90d79ea6770dc0c22009bc94614c3c68b",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/armv8-mont.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/armv8-mont-linux.S",
+      "outputSHA256": "094cf0bdada4de6a69ce32e38cf17aadd668cea2db09f2d7352edd4b569acf34",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/armv8-mont.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/armv8-mont-win.S",
+      "outputSHA256": "ac46c2538f66d49d36642bc202f2f12c39f1fbb799e201c38254e4c8d09995e8",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/armv8-mont.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/bn-586-apple.S",
+      "outputSHA256": "bec7178728d6b1556b9643bfcfa6405e5ec358075f14ada036fc373b8742ca16",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/bn-586.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/bn-586-linux.S",
+      "outputSHA256": "3e138d063cb3690851f50aab1eb3eb4ddb117e0562a063b3f6432a90ece68791",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/bn-586.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/bn-armv8-apple.S",
+      "outputSHA256": "9d3c8869075e9cc7b71f3ec7e63d5933a4474f7ac3b659f872ea67c9a2321c30",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/bn-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/bn-armv8-linux.S",
+      "outputSHA256": "47449ce0a45109288e308c1e09376f77bac04ca9a81f2864db0d92ce8cf2fa4e",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/bn-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/bn-armv8-win.S",
+      "outputSHA256": "f9f64c12b842d426cb19e660a658c2bca262ec776ca62618c945ec08fb2c7ece",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/bn-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/bsaes-armv7-linux.S",
+      "outputSHA256": "73a73165e2b04c8815e83e616b9dcd48f23ec7f26c5c36a23aa944c5293a1731",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/bsaes-armv7.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/chacha/chacha-armv4-linux.S",
+      "outputSHA256": "ff6dea0d95bd6e881ab1983c819ea8f6812632386bcaf21012e05436a6d204c1",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-armv4.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/chacha/chacha-armv8-apple.S",
+      "outputSHA256": "743149a4ef17771c80b0d84ac7488f37d8a4e9c6ca039590cdd364a29612d58f",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/chacha/chacha-armv8-linux.S",
+      "outputSHA256": "54fecd4949e323140fa771a97fc08e1b3ac575a547059eeb4ff9382a1d0c416c",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/chacha/chacha-armv8-win.S",
+      "outputSHA256": "a4a3c0da5c49693fb0eb69205517075c5eb43bf8e7c43b6d91427f18a95a2336",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/chacha/chacha-x86-apple.S",
+      "outputSHA256": "dd9ac95a23da033d1e209805311554e2f1979bbed5ea7cb359aebd8db8a0d661",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-x86.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/chacha/chacha-x86-linux.S",
+      "outputSHA256": "f2efefa813de26ae2808de9d25594ed2653e1524f0a6a8fa6bbb65a5aeb664cd",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-x86.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/chacha/chacha-x86_64-apple.S",
+      "outputSHA256": "c7ddfd0fdf537c8356e5186260a9a4313c511e631bbd04f54c28a77d273aaa65",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/chacha/chacha-x86_64-linux.S",
+      "outputSHA256": "8f227399b22c0ce2091a7538c1587e725d7be35154b9e1483d8a0604bf759405",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/cipher/aes128gcmsiv-x86_64-apple.S",
+      "outputSHA256": "dfbfd1ebd368f80e4a9ba6b486ca3d3f418c435bdffa91f1e6aeeff4f20202d5",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/cipher/asm/aes128gcmsiv-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/cipher/aes128gcmsiv-x86_64-linux.S",
+      "outputSHA256": "5084b313018005656cba8564c0db65997891f7c14c24afed0323713b6b2c017e",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/cipher/asm/aes128gcmsiv-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/cipher/chacha20_poly1305_armv8-apple.S",
+      "outputSHA256": "bcbe3d27d3522f5aca97b9f940953d751471dd5b918c66c54560686c3d256125",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/cipher/asm/chacha20_poly1305_armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/cipher/chacha20_poly1305_armv8-linux.S",
+      "outputSHA256": "e6da71dd2c1c2cdfce61b0f95e3195cf9dea3ed885ca72f9eb691f9331479dcb",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/cipher/asm/chacha20_poly1305_armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/cipher/chacha20_poly1305_armv8-win.S",
+      "outputSHA256": "1fdb3ed18fcbafe523203547a06671650efe791d4779a91b83e5b49ec59fb42b",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/cipher/asm/chacha20_poly1305_armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/cipher/chacha20_poly1305_x86_64-apple.S",
+      "outputSHA256": "d09cc22ad81dd137686d85dc7ec1784d96e750d9a5691967153b347c3de4f86f",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/cipher/asm/chacha20_poly1305_x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/cipher/chacha20_poly1305_x86_64-linux.S",
+      "outputSHA256": "c09abf9669e3eed1fc6d6db91199d2d1d1336fe1356a1f6afb6df4ca9adce1ba",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/cipher/asm/chacha20_poly1305_x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/co-586-apple.S",
+      "outputSHA256": "bb434ac021fe85c493a9adf8ec602c1588a679c8a0222fd12cec57d1600f2649",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/co-586.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/co-586-linux.S",
+      "outputSHA256": "58c78b9c7fe0b2c89bf340b3617e598c3d0ac7b8e16c9a5777475caae0ab1172",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/co-586.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghash-armv4-linux.S",
+      "outputSHA256": "00dc5cde3688d79c1e002a47c1eaa53a0c1251f79be200d3ef9401e75a541995",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-armv4.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghash-neon-armv8-apple.S",
+      "outputSHA256": "db50e7579dfcc423d1b384d10ce5a8aa6fccdc70445e6aeac2c0818f8de95dc5",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-neon-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghash-neon-armv8-linux.S",
+      "outputSHA256": "58d5982a4b95214b21851b0443104d97657dad262f78911d0e31dbee2af6612d",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-neon-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghash-neon-armv8-win.S",
+      "outputSHA256": "01fe4c56b0b5b1fd57e831bf8124c5750d2355ff899cd788ace9229bd220fbff",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-neon-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghash-ssse3-x86-apple.S",
+      "outputSHA256": "f0d2472e5a568e79813e0fb1fb8a945049a33e3e980d72a34caa544e945f51af",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-ssse3-x86.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghash-ssse3-x86-linux.S",
+      "outputSHA256": "8f41c60047481d2acd0fa2b3f58712c34005638f834bee9cc41ec9da8774eb8f",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-ssse3-x86.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghash-ssse3-x86_64-apple.S",
+      "outputSHA256": "0fd61c55b48b6d01694a62d21ef6e6b6b18d698613ead1eec3c57ee619bfae34",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-ssse3-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghash-ssse3-x86_64-linux.S",
+      "outputSHA256": "5a7d7648eac095d96c49b48274d6896a4e371ec149353349ccedadd1248e9908",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-ssse3-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghash-x86-apple.S",
+      "outputSHA256": "0ebd8e7ee76f16c03b016831ca50f34e4b45e104bf5b673c1f01ed4fe7d072a4",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-x86.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghash-x86-linux.S",
+      "outputSHA256": "3807e0c026f0ab775457de73969f23a37f2b4e79c567c302420506c229c28b9b",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-x86.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghash-x86_64-apple.S",
+      "outputSHA256": "06d0c56b7b164baf3aa3ba515cddb37206125d21afc7031e7575fcaa3ceea343",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghash-x86_64-linux.S",
+      "outputSHA256": "d600642c3133453ad9ae17f2856d13f2fcf3f4f968b24b7aefcba4d0464677be",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghashv8-armv7-linux.S",
+      "outputSHA256": "1b7f939bc363e79a1849f9bc0ffd2b91eda97c89eeb65a687b7ba954361e13ec",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghashv8-armx.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghashv8-armv8-apple.S",
+      "outputSHA256": "8643e412da758a390db5fae8857bd70e6314343735a8dc9a89ea49c73e1c9db1",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghashv8-armx.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghashv8-armv8-linux.S",
+      "outputSHA256": "f8efdb8e96aca7003c28ae9ef939d06d4abfff34aa3f36d86160aabde93de8a5",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghashv8-armx.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/ghashv8-armv8-win.S",
+      "outputSHA256": "42a2daae75a9860198df6600a649506c07d82abd5259c661232b9f37f9c209a6",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghashv8-armx.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/md5-586-apple.S",
+      "outputSHA256": "12227c5c826fd2f801f7949a8dc0607c4bc4f4a6f882cf21561a3ed4cd4ac174",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/md5/asm/md5-586.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/md5-586-linux.S",
+      "outputSHA256": "631828aeb527dd203153fb1d467af3e85f9e2a4042cc41cb2fb202971f356025",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/md5/asm/md5-586.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/md5-x86_64-apple.S",
+      "outputSHA256": "f57f1d39670a81247038a34b9812a217d9d93dbe45fc62db8594773d5fa65830",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/md5/asm/md5-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/md5-x86_64-linux.S",
+      "outputSHA256": "d6f9ca9a1ec665e2d2fb73bbf94e143eaec5a9d9c7aa3971ac6b6785492f29fa",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/md5/asm/md5-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/p256-armv8-asm-apple.S",
+      "outputSHA256": "f554918f9275528380cc3b4cb82f7fedf66707bca3e3b14b5e9371ec8014879b",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256-armv8-asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/p256-armv8-asm-linux.S",
+      "outputSHA256": "89d924572219066ba3ad9c6810de71d834228fd7cd80a913001f9b15bc964222",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256-armv8-asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/p256-armv8-asm-win.S",
+      "outputSHA256": "487ae3e252ac37522350f2df66a07aab5c8d255714ddcd641fc8d81e1d20e9a3",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256-armv8-asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/p256-x86_64-asm-apple.S",
+      "outputSHA256": "910c9fda1c174188fe2caae56e600cd0cdd8bca3b6b6dd35a02ffd9027d934c2",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256-x86_64-asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/p256-x86_64-asm-linux.S",
+      "outputSHA256": "5157fda7b007fdcdfa6b8992a04e8d98e45eacee39cd69caa81b06ceab4e209a",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256-x86_64-asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/p256_beeu-armv8-asm-apple.S",
+      "outputSHA256": "b15456600db466c14224561611328cc18beb1c1ab811d416b5f0674ad8e76cbb",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256_beeu-armv8-asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/p256_beeu-armv8-asm-linux.S",
+      "outputSHA256": "a7c775ade84b7b9c477837519ae625de67c66a428b3211ffa62fce90acb6d2aa",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256_beeu-armv8-asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/p256_beeu-armv8-asm-win.S",
+      "outputSHA256": "727df9eadf29aca4ab1323f6665abf7bd3fe3451eb760a353ed4349d85d2a8bc",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256_beeu-armv8-asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/p256_beeu-x86_64-asm-apple.S",
+      "outputSHA256": "c2daf1333be15cd73d1253b3b0d39f062d4617a2f820aab43773621d3044abd0",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256_beeu-x86_64-asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/p256_beeu-x86_64-asm-linux.S",
+      "outputSHA256": "6889d449d99183a22375132138a4e9ac6c02501fa814f2ce026e3e7a35aa01d8",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256_beeu-x86_64-asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/rdrand-x86_64-apple.S",
+      "outputSHA256": "1ddc5242138700fb1c3d5b459d6aed3b64c839c4cfc93cf90982c903e29f7be4",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/rand/asm/rdrand-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/rdrand-x86_64-linux.S",
+      "outputSHA256": "c7ab216a421dd5f120fee6841092aa13624e2701265883d537b6f620bee23009",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/rand/asm/rdrand-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/rsaz-avx2-apple.S",
+      "outputSHA256": "2a1d10db43a2701206234925210e76a8c7d5838a605a98025459d62de5ba24b2",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/rsaz-avx2.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/rsaz-avx2-linux.S",
+      "outputSHA256": "a2f92bc5062da6d9ca84b4b902a148060766e116211f0e8ffd978fff085d0b7b",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/rsaz-avx2.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha1-586-apple.S",
+      "outputSHA256": "9c412355d850b90d21b8ba298916d915ae4074a9cbd105a7d7fbb9c0499451be",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-586.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha1-586-linux.S",
+      "outputSHA256": "66ba55bb40e902e55cd301c3e3c713e35600d8ee70adec45343051327d4d971a",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-586.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha1-armv4-large-linux.S",
+      "outputSHA256": "caad5972722e08798bc62c7b361ae6ae17dd6fe19ba99ac41b99eb7c85d65c93",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-armv4-large.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha1-armv8-apple.S",
+      "outputSHA256": "b70a2d3496b99838b13ee87f62ddee56c2047c8a5fad5b63f7351d0eb62afe2a",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha1-armv8-linux.S",
+      "outputSHA256": "38cd9aa0c1ad9228eb1ea2535adfa7cc0b17446fe04f720d60bd1a53839ce2fd",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha1-armv8-win.S",
+      "outputSHA256": "44d6ad4864aebb54c3a79bd3b9f22c5905d57163aeee41bde1660d74ceb3ed4a",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha1-x86_64-apple.S",
+      "outputSHA256": "b66dc9fd50744e4750cb6f7769ad7b89eb02345239510f3cdbf26abaa4a9fd4f",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha1-x86_64-linux.S",
+      "outputSHA256": "c9bc2a90ba8019063b10afa3cb28a5c4b8cdeaf426e1ba823df70da550d02537",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha256-586-apple.S",
+      "outputSHA256": "5f036753786f77761076100d93f0bcc97219e5a8f75fce4fcd6ae06bdfc2d5d8",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha256-586.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha256-586-linux.S",
+      "outputSHA256": "75a4bd320e66110bd5baa195af49c3c83223ab4d779cbb93540a187cea37cda1",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha256-586.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha256-armv4-linux.S",
+      "outputSHA256": "c7606aa4c508da72a6e4fc70d98871582d9d9aed96cc7da2b492ac106233d6f6",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha256-armv4.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha256-armv8-apple.S",
+      "outputSHA256": "49d138cd4db246e94a56f79db919e0499d174185521087190d235e1079f91e02",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha256-armv8-linux.S",
+      "outputSHA256": "69c58ea900dc362acd89c060cee1106450af6e91a1571a1c2e0aa1f5f1a51aec",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha256-armv8-win.S",
+      "outputSHA256": "128997e4cc4782808eb729610ce9b980364f1091165fdd418e49582148b4cdab",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha256-x86_64-apple.S",
+      "outputSHA256": "1342e1db629dc3d092e26f6f3a4d64da15030d104237071e8d970a02f07ce1e4",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha256-x86_64-linux.S",
+      "outputSHA256": "b73045c6bf833da46818e4dfb336eeb7d4e9353df129ebf53e4b7b0c8b4914a2",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha512-586-apple.S",
+      "outputSHA256": "f3046fcfe86f603921e9311b9720924596c8352647e768fc141e9c4cf88922b0",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-586.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha512-586-linux.S",
+      "outputSHA256": "a73c1a252e778afab04e9c5e8d1f92152e3a0b29a51bda57f252748f2dcf85ad",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-586.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha512-armv4-linux.S",
+      "outputSHA256": "256dce08b3db51707919866af6115bfa1c28276b15001cbd7132f3d413ae2de9",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-armv4.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha512-armv8-apple.S",
+      "outputSHA256": "e043798618d3804e4fe135036d24fc4e812bec040eacfed95bc79f99ec180fa0",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha512-armv8-linux.S",
+      "outputSHA256": "86a7a06d16f2e0f5a35d1a25a417b4d7f990a20f5bab8a17f7f4af0ab4b81e9f",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha512-armv8-win.S",
+      "outputSHA256": "547de0651c970f55b486e9dd52d071df121f674ca5bd98e7c1d047afb6015f40",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha512-x86_64-apple.S",
+      "outputSHA256": "cc23e1d9366a40560eac4f80162914da53c06355303e9a586143aab5bd9de6a1",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/sha512-x86_64-linux.S",
+      "outputSHA256": "6020dd7f4202f4e30d615dc46d12428ea517a74b42b5891b0ab4a5a3b7aca0ce",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/test/trampoline-armv4-linux.S",
+      "outputSHA256": "9d7caca1a9992ddb3875f03a1ce863e4ea25a2af589b2b1543764754fc827f3a",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-armv4.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/test/trampoline-armv8-apple.S",
+      "outputSHA256": "81410e45d17cc8aeafe2ed2212566583ccf2f5e0491a5751186b7d87466e0e9e",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/test/trampoline-armv8-linux.S",
+      "outputSHA256": "4efc9f70d26370c99b9e25add8a138b145b384a1fda2f2a042ba7e7d326d2ad0",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/test/trampoline-armv8-win.S",
+      "outputSHA256": "cdffbcbfc7efd2c5809d0e31dc1e5785260ea06d56cbb6015290faf9bee2f408",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/test/trampoline-x86-apple.S",
+      "outputSHA256": "009c1a3192907304a63ff995114356f784c3b50e6e753894ae9b47f445fbb230",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-x86.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/test/trampoline-x86-linux.S",
+      "outputSHA256": "22ed22fff830ab5d49675cb3dfa36d775bccd665a02196b863e253e5d5cfcd4e",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-x86.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/test/trampoline-x86_64-apple.S",
+      "outputSHA256": "d9d07dc8e3fbe4e5663169cbf5482a6739ac16bc9b91611e3a7ba2d618ce124c",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/test/trampoline-x86_64-linux.S",
+      "outputSHA256": "bbabf47da0421dd2b0b0455ab09b679c1ab433cf3e0dff6437926bf140eee37d",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/vpaes-armv7-linux.S",
+      "outputSHA256": "d0f5e0bb6a57c4ae5c6f46969a6d6ce533ad16ada100cd1beb324f3aac9ba6be",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-armv7.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/vpaes-armv8-apple.S",
+      "outputSHA256": "f7bb519dc20ec1784133df6b52d69ae6de9100eb3a79ac2bdb88ea8e6aed87ff",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/vpaes-armv8-linux.S",
+      "outputSHA256": "af1d62ac030858f7e12313c67c3fed4a93e0662c3d147fc0dd7fd54a25bd16ae",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/vpaes-armv8-win.S",
+      "outputSHA256": "e21ae48a2b9ed2cb1c6f8044c3eab21ec4a234da413434b22bcb28a4bd5e0487",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-armv8.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/vpaes-x86-apple.S",
+      "outputSHA256": "0abe123c09c5ca6606191d25b7a295e7c1e4972f8adbe0ab24a21a23ec4bba20",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-x86.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/vpaes-x86-linux.S",
+      "outputSHA256": "0807d4191b11d80de8fbf06f5a8447341150312020a63427dd24c6e4700951a2",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-x86.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/vpaes-x86_64-apple.S",
+      "outputSHA256": "d3cd9e2dd76e016ea38a9f5f74e7c625ae016ebba1c76e9562ce41e36818cb36",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/vpaes-x86_64-linux.S",
+      "outputSHA256": "9a5136b16379addf2f4abbdf4378c1c5295c5b4bfa565f6c371cd10145fd44ca",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-x86_64.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/x86-mont-apple.S",
+      "outputSHA256": "87afab60d1ec32640527e627ca8b4340b533d6a202f034f66d792db6491cc42c",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/x86-mont.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/x86-mont-linux.S",
+      "outputSHA256": "228c225fd1a73713c4c97305b708c4236ff420d6eff4eda1a87df22896724454",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/x86-mont.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/x86_64-mont-apple.S",
+      "outputSHA256": "061060e1143010fb812dcae06f28f63f18568b027dc17e02241a7a96cbd81ca6",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/x86_64-mont.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/x86_64-mont-linux.S",
+      "outputSHA256": "fb0b3ddd156e14fbbaeaa36444b3f316cc7b5df85b0088c934e17a07ee6632e2",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/x86_64-mont.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/x86_64-mont5-apple.S",
+      "outputSHA256": "a6c7abfa9172ac35c01003cf59fab99b3acb2725202b45ee04ba33d5f84b5a04",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/x86_64-mont5.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc/x86_64-mont5-linux.S",
+      "outputSHA256": "ffcb77a9dc24a598ce5050ca67855aa9f5717b81516d6395fb1050c77c502bb5",
+      "physicalInputs": [
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/x86_64-mont5.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+        "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl"
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-armv4.pl",
+      "sha256": "d0c8b27f91874d3dd2bd531584e8625d149b72b328258ce2b11a992974c9cc56",
+      "headerSHA256": "89365cf0f1620b35b37468d3c3f5ece79b09f092093e1b29215ba7704439526a",
+      "headerBytes": 1490,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-armv8.pl",
+      "sha256": "28b1552719406d03e7f967b3391cbd85a995165eee49aaa847d7bd0f9891631f",
+      "headerSHA256": "cfe1caef6eec3ab2b60872de51635a904121f7fa3a220dcd065155977eae198f",
+      "headerBytes": 1498,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-x86.pl",
+      "sha256": "b8b8061e7162cd9e106b91278d6292713b0d0609cbc901a57508ba231820c486",
+      "headerSHA256": "88b6f54cbf3b18546c9d0885d3fc355597215162c88a79b2e9ca5722789e60c6",
+      "headerBytes": 1397,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-x86_64.pl",
+      "sha256": "b39cdaa7317209fb094c80a5d9b8dfc6d112da08a741629dc7fdfa7817acef56",
+      "headerSHA256": "639daf86631fc6ab2b129ebf99698cb15a04275057f2e896c397ee0079b9e9a9",
+      "headerBytes": 2195,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/cipher/asm/aes128gcmsiv-x86_64.pl",
+      "sha256": "42ba2e50f59d82f67330b2836373d2cdcbe640b32de3dc0ff78c4464e05238cb",
+      "headerSHA256": "9adb4491947fc27381a1791a5636388f0d79cb25d0e9f555d5f08801d779d44a",
+      "headerBytes": 642,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/cipher/asm/chacha20_poly1305_armv8.pl",
+      "sha256": "8105f8d748f487829121b140a5c98f2867c9ab5443fc8edcc8ea2a8863ce1112",
+      "headerSHA256": "920d3a08c77a3ba81ab4923fc07422e6907d28bb2b90be396d2852664ddb68ca",
+      "headerBytes": 1002,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/cipher/asm/chacha20_poly1305_x86_64.pl",
+      "sha256": "ce69e1153e39b00f3935b7c1a33d57331e0e6911f8125fa69b97c4b53eac71a4",
+      "headerSHA256": "2af076daa9a719ede824527cb79b16eaf747dd2c62810099a54aeed4081878ad",
+      "headerBytes": 1002,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aes-gcm-avx2-x86_64.pl",
+      "sha256": "e927f0ffa828c8200ad25e7c3fd1bb5cc9621c1e4bbd7c52becc0553391c4dce",
+      "headerSHA256": "b28ccfe6c413c4319a509b00cc6b2939717d0609ee14bcdbc26d86ab0f036678",
+      "headerBytes": 1874,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aes-gcm-avx512-x86_64.pl",
+      "sha256": "55f00c82804622a2cceb36359505bacd9ef8fae9fc2c76558921b278a29583b8",
+      "headerSHA256": "479993f47bff5c5f0e0900ff48236d3efaa784d9d726f1ba9dea896665814a8e",
+      "headerBytes": 1741,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesni-gcm-x86_64.pl",
+      "sha256": "44254d0bf68ccf3e694aa9eebd9dfe33970f5a9b1a7dd266c5aea5def3f2b2e4",
+      "headerSHA256": "47e3a3eb31aedf1f920e4c6778c964224d0d1fb54837a1257324c856454aaf7b",
+      "headerBytes": 2143,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesni-x86.pl",
+      "sha256": "5946d7dcf50cd102f188624081dfaee5afba5eccde7847962ce4dd20cc05b861",
+      "headerSHA256": "3d810dfc993e099a71b5f718fd6afdc367075b6292f4d6a028f7223554154c5a",
+      "headerBytes": 2939,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesni-x86_64.pl",
+      "sha256": "4ae0b34e2609cbdfe5b461ba01ac70252662d0ff836852297e7d9a7665f06a54",
+      "headerSHA256": "88b80e038f18b65b80056f8765c78c7cc00687fc3d26e16cfa8a1f71704545b9",
+      "headerBytes": 9630,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesv8-armx.pl",
+      "sha256": "d0ffbe025d102275c5bb6202a48534d08008beeba1fa832b23acb489fbb0312a",
+      "headerSHA256": "80790e6f12bfc221aca2af070f58b309d9933ccb6f6ec1a45fa0595764b0f173",
+      "headerBytes": 1991,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesv8-gcm-armv8.pl",
+      "sha256": "3cdacb252aad4ea1068a8412932f17ecaa5139b1e766d271246673fa2dde79fe",
+      "headerSHA256": "cc86bae4a0c9b30ca29fe785ef317150fc67e4d77b16120b5f56dffc584e7e0f",
+      "headerBytes": 10267,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/bsaes-armv7.pl",
+      "sha256": "8b3bcd22a715cee65f71e204b23c7993920585be8e77caae2d2a3643c9043c43",
+      "headerSHA256": "7598d8f540bcc4c891e444561122e1b32635d85286455b86634180d71cc3d53d",
+      "headerBytes": 2284,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-armv4.pl",
+      "sha256": "da4ca6f0b774f9eafa8a5fd553e7849b167e8593a411e96a777d02e9e1fb1067",
+      "headerSHA256": "04d068434f5c0101d6a35d0661183e6e3d88898810428eec6d6bf98da29d5dda",
+      "headerBytes": 3774,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-neon-armv8.pl",
+      "sha256": "0e8980f6f0f23655ef31983aac8c3041f05f8973d1b3ead3294aaaa6d91d874b",
+      "headerSHA256": "9feb7dda07fd83c2bfa56edfa154197e5e5c645064db773f8dc28046bb0d193e",
+      "headerBytes": 2451,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-ssse3-x86.pl",
+      "sha256": "9f316b2e399fe6e741a6e47bc8448e7e51dbad70a553c98c738ae3ac2793e9bd",
+      "headerSHA256": "edeedc698912fa05a419e94bee16eb5b3ccab2f28f95e14b299743435fd1a1bc",
+      "headerBytes": 3031,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-ssse3-x86_64.pl",
+      "sha256": "cf88c3c5b2a5718a242d9ea66a73326a67519f6c1679169ccfdcea7836eb0ac9",
+      "headerSHA256": "a43501a30daad7ef280159e65807c84fb5e52b12af3ca0c847e38cf7093d9e79",
+      "headerBytes": 3034,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-x86.pl",
+      "sha256": "ce7dcf2df26f2004ef2876a6566e1b7d70cc2c3d420a54d335f0fbef5de11a2c",
+      "headerSHA256": "ba9712c55841853afd2e6a18aaf3b401db2845c43735edfb155682e2bb5fa880",
+      "headerBytes": 7001,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-x86_64.pl",
+      "sha256": "5fc403c9b2d581076f9f745d27f14c7e3f91f41a9362e11a1b4e2a26bf9ce430",
+      "headerSHA256": "fca43821ff0272aede1142405851a5493a14adbe14be495e801b97cc61a9a058",
+      "headerBytes": 4060,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghashv8-armx.pl",
+      "sha256": "53c9a6a9845f275be5c5e549157bccaf48570c8d125d375854f7a41a09291cf5",
+      "headerSHA256": "2648295ebf370c428367b99b1f8fbc985620b4b3035d3dec1ab12638b5d24cbd",
+      "headerBytes": 1737,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-armv7.pl",
+      "sha256": "d65bea325df6c3d765731c260540c3d9970e841be803756771b6ae6c42f5d25c",
+      "headerSHA256": "1574e4ad817f284575c2a6a0c0449e7200441be05ee33fc26b6234f832426f24",
+      "headerBytes": 5017,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-armv8.pl",
+      "sha256": "808c3f8254b153d77e06a3409c6c56433a66a96614576b7deec2f13676cc64d6",
+      "headerSHA256": "42e84a47dced868f78466b099fd49e4113121d9ae9888bd8fe7c33422836e012",
+      "headerBytes": 1964,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-x86.pl",
+      "sha256": "4dfef90c1549528052df37982cc4940cfa8532b1c59c8e818cd63885beb3fc55",
+      "headerSHA256": "be8b41de20d60f49a622fa19d0dea49fd593f37dde7256c092602487c44dec51",
+      "headerBytes": 2439,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-x86_64.pl",
+      "sha256": "b33a281b7a48845eb04653836a5a5ce5bccbf3dc15ea61352b1ba4648d672c12",
+      "headerSHA256": "3d65fd3f2876b0465598d52cb95255b097ca26199f4a9cadd6d24697a1c32aa2",
+      "headerBytes": 2464,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/armv4-mont.pl",
+      "sha256": "04a95cb260f4478f92b261f4360058088f96a4f63b5be6745a536453e4bc1b6c",
+      "headerSHA256": "fcdfd32ecf56972ffbb7c66dc19701af95dedcd68db6201b7637416fb902d1d5",
+      "headerBytes": 2751,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/armv8-mont.pl",
+      "sha256": "f298b027a36f7ec26bacc8dc1d699f245c69371b6de65b0de9d1c8745bee8bc6",
+      "headerSHA256": "c38d14c641f8db33740166886255b271a94e35faca477f3c0c35dac0f41ceadc",
+      "headerBytes": 2212,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/bn-586.pl",
+      "sha256": "a7e21fc851411988214733b7f6e2ffbe056c435d6773d7f539a49dbe225a458e",
+      "headerSHA256": "78d5bb9540bcc73029fe2868ff6e13b0bd56ae67cd0446dd0eda55e681100d32",
+      "headerBytes": 640,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/bn-armv8.pl",
+      "sha256": "067b8dcb85687beb0251ef6d5b9417f9b16cc3bf36fec8cef8310bad5441be35",
+      "headerSHA256": "82a53e817d0bbeccdc56357b41e67757806d2218966a01ea75f9744d2b72c7b3",
+      "headerBytes": 606,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/co-586.pl",
+      "sha256": "b7e59ab48a27a8b9e31097cda74777dfbab86fa0780821e3b95e6e3f76b30816",
+      "headerSHA256": "78d5bb9540bcc73029fe2868ff6e13b0bd56ae67cd0446dd0eda55e681100d32",
+      "headerBytes": 640,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/rsaz-avx2.pl",
+      "sha256": "3b77a4a5914c1c9bdaf2298626d559d88812791b1cc5d5327be0ae1b6fb211ae",
+      "headerSHA256": "fdf622f81a1a185717648e618a4ef0216c401c6a8f1c9f84b1ce93052c78f29f",
+      "headerBytes": 2181,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/x86-mont.pl",
+      "sha256": "d27070f7bbf2e238903f587b81bc8534f9db48853e42b42c8b7383b411f2871e",
+      "headerSHA256": "e30135bd5d89fd56ffc53a3eadf8101b6147474457ff8c5c3dd6cb35cd83a241",
+      "headerBytes": 1752,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/x86_64-mont.pl",
+      "sha256": "0b0e7ab0a34c5f04d09da47c8082397c82bcee6c8932bbeb48c07fc24c1ec2fc",
+      "headerSHA256": "b5e9f2b2e9b32f1b23259494cd3fc465537d2c62fa02e04a3df1d79f5a354d03",
+      "headerBytes": 2021,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/x86_64-mont5.pl",
+      "sha256": "41d4709dcb1c694997491c5ecaabb94791ee53af96dffe039539ecbd1c624de7",
+      "headerSHA256": "abc159efa898cadacc657d17d559dbfc72bd801e7197e8e7c56d6f9eed0880b4",
+      "headerBytes": 1573,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256-armv8-asm.pl",
+      "sha256": "8037f2deefa4a53a44883e10d56478fdc7ddc4762a78bac83bfabc55457348a1",
+      "headerSHA256": "057fda3b79fb77458eff09cb44e48c4c6c78c628fe6008fb9e58ab59362df844",
+      "headerBytes": 1421,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256-x86_64-asm.pl",
+      "sha256": "f627647ccf7ec2988492f12822235f6e3aee6e4d334168e40ffa63c2ad98a6ff",
+      "headerSHA256": "5dffd75512d306575e0fe0ee01c1d9fa3c989fa421e26f91b7a6328ff39dabe0",
+      "headerBytes": 1882,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256_beeu-armv8-asm.pl",
+      "sha256": "dea71deab50c8a2efac96d57af90eb1de8ecc7c62537f2cb34105b44f76eb909",
+      "headerSHA256": "e62406725acb5f5fbec49ab05937e6c7fa838a3d9ce89cc6cc87d6cd89dc82e7",
+      "headerBytes": 787,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256_beeu-x86_64-asm.pl",
+      "sha256": "3bfd1b854c838b56af34cdc8e376a40bd1bc01272773c64f1ab4080e5f6abcad",
+      "headerSHA256": "4c686099aac5b640ca9ffd1e479eb6ebf649834adc6f7797a712b37e860a9d39",
+      "headerBytes": 735,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/rand/asm/rdrand-x86_64.pl",
+      "sha256": "a8cbb94a6f4449363788ed8609b231f89048f2d5e3ba788be1b5df6f29ac9c71",
+      "headerSHA256": "cfc9e519b854ca2d281c1e0552da58e0643fbdc94c91d7081ce3933eb2755c42",
+      "headerBytes": 607,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-586.pl",
+      "sha256": "89b45cc3134bed48d6c77df5cc25a15ed4b1ce0f9de43688fc595caa93f44a8a",
+      "headerSHA256": "fd06e1e32b59df189d45aa51556b9ca1e0636fb7244287bfd489e690b9d4144e",
+      "headerBytes": 5269,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-armv4-large.pl",
+      "sha256": "ac98ca0bbff45bcecaed45893564174038d729a32b166d5a08d7ef06307c12ea",
+      "headerSHA256": "693ec48f4c3d1b18e080f316858c4149cbb11ae824b75e7f83ea00923db0ca30",
+      "headerBytes": 3420,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-armv8.pl",
+      "sha256": "a9813252a7acbf80ecc87a2f14d722f2c9395ad551f8aeeb2efbc0701ba63a58",
+      "headerSHA256": "62ee51155636cacd6a9c7eb5d69afeec09abdc08db89781a2b20a13548beec6a",
+      "headerBytes": 1421,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-x86_64.pl",
+      "sha256": "eb794afe1f68aa5ae27a1b74992eecf000134601810dc7d57adc02def07a5059",
+      "headerSHA256": "c53d796f407826f22f6cb66e22a3a83b75f9d1f046813eef95b1ab3ae23eb51b",
+      "headerBytes": 3866,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha256-586.pl",
+      "sha256": "fc3ed031e8686d70f2b9d3f86be79a5cc6205b3f8d23c9a9f301bbe711f603c7",
+      "headerSHA256": "9cdf1e595e6efc6542709fcb959c1071707e4839a2926ef972a9de1aad7ee715",
+      "headerBytes": 2784,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha256-armv4.pl",
+      "sha256": "09a01c24871adbd911862be62f4381b537c0a1fee12b22d761df921d4f42f66c",
+      "headerSHA256": "dd0121a1e1e4b6bb0f0fa738c9d58a3e6a6cb2fbe81cc7388d659d97d1b457c3",
+      "headerBytes": 1773,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-586.pl",
+      "sha256": "d8a8a6595a88a5cb537bd8abc04ecdf8ea401b554ef613529b924b0e74d311b4",
+      "headerSHA256": "995519a2f5d338a912068dcfc1aea724c14f9ee9fa39f65777320d70981aaa91",
+      "headerBytes": 2401,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-armv4.pl",
+      "sha256": "e5b6cc84602f2fd6058dca78a89b99e9b8587038cb03aa67d380f5b327bd6705",
+      "headerSHA256": "3075d8ebc555bdb86e733781011ea64ccf136cfe56b62d325a9c756f73257f11",
+      "headerBytes": 2290,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-armv8.pl",
+      "sha256": "8342665105035a16c71c073dec6fe6fdcb76f5ac0132b62298c92879ec9c317b",
+      "headerSHA256": "51e3eb2406336723f657ec51211ec607ba94934910ce9df2b6ca21b6dbe54220",
+      "headerBytes": 1828,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-x86_64.pl",
+      "sha256": "9b146261941ad283055307951a5bddbbdd138ffce5935809d931ddf92773e5db",
+      "headerSHA256": "bf92f82f90fd53d86bdbd5c9782d6fd37a0768ce10cbeabd27e6b2a71c549cae",
+      "headerBytes": 5775,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/md5/asm/md5-586.pl",
+      "sha256": "e85f94eaefdaad297bcba8f6afcfa032deb54f50d2da103dc4c1fbd9d06f4863",
+      "headerSHA256": "183265ec6e8c49e6ef797e0ffc6a498f639d6e64b9899f4a0bd555764f636280",
+      "headerBytes": 776,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/md5/asm/md5-x86_64.pl",
+      "sha256": "c35b3b5fa3d93378d920efe4d2fc2fb447ee5e2397ba576834b00058b792fd80",
+      "headerSHA256": "7505be05ec88b57f2f0184daa63f472d359162199ce2654b20dcde1c0c44859b",
+      "headerBytes": 715,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl",
+      "sha256": "83716f395f43284b107c69303c91078ce2ef4a4cf02f9b59c01cedced5dc54ba",
+      "headerSHA256": "e8f9f0245cb25739da34251afe4411e3345cef45b31170975566f7d1a0313f9a",
+      "headerBytes": 640,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl",
+      "sha256": "b5ef5c8ffadfcaad4e8a0730299b24331b584cf50f6c9ead6e8bc7e8399fdbc1",
+      "headerSHA256": "ca102f706607bf0d9b60a13cb02cd70b75d3d30d861d40e11f84bd0b8819bba8",
+      "headerBytes": 3389,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl",
+      "sha256": "c0b66ab63490be2386ae173d50c26e27ed825bbaacf3bc047bddc9bf2e2ed35f",
+      "headerSHA256": "d8aa6a4651c6d8cf1b864501613d801a9450b47ede08ef7b56317f2a789c6730",
+      "headerBytes": 770,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl",
+      "sha256": "ab0479ca77ee1658b37f2bb6a3b0dcb4e1a49e5fe0266f5c7d4eb7fa423e4cc2",
+      "headerSHA256": "3ef15f79d7863560863fd4c6d14ff2597ca34d83a01100b1d1b4f67ca1f2619d",
+      "headerBytes": 640,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl",
+      "sha256": "b97055030e4bd1ca23a061ce8b82cb2621c1a2994d1e612cc1aa137c8937120b",
+      "headerSHA256": "3ef15f79d7863560863fd4c6d14ff2597ca34d83a01100b1d1b4f67ca1f2619d",
+      "headerBytes": 640,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl",
+      "sha256": "ce63871fd50e440802f755c293ddbe6382609dc688cff80847c26211b9fbeba3",
+      "headerSHA256": "bd63cf39ad5653167c25c869a2d4ca71dd5ff4964bbf3cb276aa9f3b8790253f",
+      "headerBytes": 640,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-armv4.pl",
+      "sha256": "72a9e27e6489f044a76b4a2a04bccd1745911a8611975b4b1b965376cad65e2b",
+      "headerSHA256": "d57f13aeac7c8ebfd38fc6f2b426592974a681acd5fd16766f7a946db654ac21",
+      "headerBytes": 1564,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-armv8.pl",
+      "sha256": "3ba406620a34ae94aedac1192d92f9d310f2b9311bddded5653b4d09ec18885c",
+      "headerSHA256": "80f049c1a2b28faa5c26b9fa73525b0b92e171e74f7b6ffbdfaefb07f9b0b72f",
+      "headerBytes": 1316,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-x86.pl",
+      "sha256": "f4796ca89b0d9c04397d13827fd5c0c63bfd87279df2cc61e66abc936095e830",
+      "headerSHA256": "8100f2a791655cbe179c46ddda0d7e90705ffb38b697a15a2491f5b63672b11a",
+      "headerBytes": 1225,
+      "hasApache20Header": true
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-x86_64.pl",
+      "sha256": "5b9f506e53fe6e889d2e3cdc76399cfd72196e1a20d9b66b7d79bfd2afc58618",
+      "headerSHA256": "78f05268ba035a2b9828edd2ace4a137c98f8aa011ad59508ae3e99dafef3cb5",
+      "headerBytes": 1241,
+      "hasApache20Header": true
+    }
+  ],
+  "decision": "UNKNOWN; component/patent and complete notice scope open"
+}

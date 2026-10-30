@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "V369",
+  "observedAtUTC": "2026-10-28T04:04:55Z",
+  "status": "PASS_3127_LINKED_SOURCE_HEADERS_AND_INCLUDED_LICENSE_TEXTS_REBOUND_TO_V369_OFFER",
+  "scope": "V135 linked-source header manifest and assembled JSC, WebCore, and WebKit notices are reverified against the retained exact source tree and included in the detached V369 offer. Source archive/patch identities match V368. No license applicability, recipient relink/load, final signed .74 package, signing, runtime, or release qualification is claimed.",
+  "sourceOffer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v369-linked-image-header-rebind",
+    "baseV368ManifestSHA256": "739442d5aae1aef1cbbca2c1b9f90a6897c2adf0d012f8d198ed911ad26b0248",
+    "manifestSHA256": "2700a82c6ed417402b0c65694cfce883c4e43e2476286384013ae12df353f6be",
+    "componentCount": 643,
+    "candidateBound": false,
+    "v368Immutable": true
+  },
+  "sourceMap": {
+    "v124ReceiptSHA256": "2b54b1a8cd7d1d9a7f670f4cbfd292e91ce766420c120245c845c22f306bbb90",
+    "v135ManifestSHA256": "0f49b2e49d78d7052245d4916d52b5421097a0970ff83e1ce6c788709133eea2",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "sourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "verifiedImages": 3,
+    "verifiedSourceAndHeaderRows": 3127,
+    "rowsByImage": {
+      "JavaScriptCore": 906,
+      "WebCore": 2028,
+      "WebKit": 193
+    },
+    "conditionalExclusions": {
+      "WebCore": 2,
+      "WebKit": 1
+    },
+    "includedLicenseTextComponents": 8
+  },
+  "consumerPreflight": {
+    "status": "PASS",
+    "script": "scripts/package-owned-webkit-release.py::source_offer_replacements",
+    "scriptSHA256": "69e9f39db424ca1c8f2810d8cd31b620d01d8e6370c2b17b9678c166db22d4cd",
+    "manifestSHA256": "2700a82c6ed417402b0c65694cfce883c4e43e2476286384013ae12df353f6be",
+    "components": 643,
+    "overlayManifests": 8,
+    "firstPartyAssets": 64
+  },
+  "embeddedReceiptSHA256": "8a7896f6a3e86da9945ec2043d664cc447cefce0cb939fff23fc73fb0a3fdca2",
+  "docSHA256": "6a111c9f877e5aa98529ba56de574199fdc9a03c25ef24b7b8664ca2f39ad956",
+  "productionCandidateChanged": false,
+  "releaseArtifactsChanged": false,
+  "sourceCheckoutChanged": false,
+  "timestampSigningAttempted": false,
+  "publicationAttempted": false,
+  "releaseQualified": false,
+  "nextAction": "Reconcile remaining file-level license applicability and build/relink duties from existing evidence, then bind notices to the exact .74 candidate only after the timestamped candidate exists; do not repeat source-header inventory."
+}

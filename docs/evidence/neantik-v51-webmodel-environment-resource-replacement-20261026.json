@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T23:30:41+00:00",
+  "status": "PASS_DETERMINISTIC_FIRST_PARTY_SOURCE_OVERLAY; NOTICE_INSTALLER_AND_RUNTIME_BIND_OPEN",
+  "scope": "Two WebCore model environment resources; exact source inputs, generator output, BSD-2-Clause terms and isolated application only.",
+  "sourceTree": "/private/tmp/neantik-v34-webkit-clean-extracted/WebKit",
+  "sourceInputs": {
+    "diffuseSHA256": "29a81b4539dccf31a32618e7b7164a61677ed73abb16a1fbbe17c4c314c9632a",
+    "specularSHA256": "64fee6af9089b94448cbb0049763f6f8e7f62cd95042e8d44a6ee6514210458a"
+  },
+  "overlay": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/overlays/neantik-webmodel-ibl-v1",
+    "attributionSHA256": "76648e94a8529fb300d66c34021227a4630383b3a93e960930bcfa1906afe3a0",
+    "licenseSHA256": "3ab0de831861966f2c2ec76d3ba1b24473c64ee08cb7699327a2005fca688ff7",
+    "generatorSHA256": "58e982dd73f2068100c7baad6b2806fa740ebb8358b1e22d5331cce520ecfeca",
+    "assets": [
+      {
+        "path": "Source/WebCore/Resources/modelDefaultDiffuseData",
+        "replacesSourceSHA256": "29a81b4539dccf31a32618e7b7164a61677ed73abb16a1fbbe17c4c314c9632a",
+        "replacesRuntimeSHA256": "29a81b4539dccf31a32618e7b7164a61677ed73abb16a1fbbe17c4c314c9632a",
+        "sha256": "1c9a94310bb745294484702475c419b4a2fe0027aa71218a7fb1c8c01d7d658d",
+        "bytes": 49152,
+        "dimensions": [
+          64,
+          64,
+          6
+        ],
+        "format": "R16float",
+        "license": "BSD-2-Clause",
+        "copyright": "Copyright (c) 2026 NeAntik contributors."
+      },
+      {
+        "path": "Source/WebCore/Resources/modelDefaultSpecularData",
+        "replacesSourceSHA256": "64fee6af9089b94448cbb0049763f6f8e7f62cd95042e8d44a6ee6514210458a",
+        "replacesRuntimeSHA256": "64fee6af9089b94448cbb0049763f6f8e7f62cd95042e8d44a6ee6514210458a",
+        "sha256": "4c53b4b6579f33cebb3fc42631e4447e0be9823d949dd2beae4f868c20438cf2",
+        "bytes": 1048572,
+        "dimensions": [
+          256,
+          128,
+          64,
+          32,
+          16,
+          8,
+          4,
+          2,
+          1
+        ],
+        "facesPerLevel": 6,
+        "format": "R16float",
+        "license": "BSD-2-Clause",
+        "copyright": "Copyright (c) 2026 NeAntik contributors."
+      }
+    ]
+  },
+  "acceptance": {
+    "generatedBytesReplay": "PASS",
+    "byteLengths": "49152 diffuse; 1048572 specular",
+    "format": "R16float IEEE-754 binary16 little-endian; 6 cube faces; specular 9 mip levels (256 down to 1)",
+    "guardedPreflight": "PASS against exact pinned-source hashes",
+    "isolatedFixtureApplication": "PASS; both replacement hashes verified after apply",
+    "pinnedSourceTreeChanged": false,
+    "offerManifestBackup": {
+      "path": "manifest.before-webmodel-envmaps-v51-20261026.json",
+      "sha256": "b9aca30cd708da24e387e6490e1c1c1caf6c08e7a5f22076c1e5cea080ba1360"
+    },
+    "offerManifestComponentCount": 478,
+    "offerManifestSHA256": "1f6ab5bc5c60173173656832a39ef0d811ea5a7f01420cde6c2c4c1cfae357b1",
+    "buildRecipeSHA256": "66e5a4b3d65cbe3dae3d3e9f024327380757b6e6aa42e39ed94f3d2470728f23"
+  },
+  "limitations": [
+    "No build, package, signing, notarization, publication, or runtime test.",
+    "Package notice installer integration remains open.",
+    "Default WebModel lighting/reflections intentionally change; visual and functional qualification is required.",
+    "Candidate139 worksheet remains immutable and both rows remain UNKNOWN until exact new runtime and notice bytes bind."
+  ],
+  "nextAction": "Integrate this first-party BSD-2-Clause notice into the runtime notice installer with exact runtime-hash gating; apply the overlay only on a future candidate and qualify WebModel output before release."
+}

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v201-v135-rebuilt-runtime-notice-preflight-boundary-20261027",
+  "observedAtUTC": "2026-10-27T08:00:33Z",
+  "status": "V135_REBUILT_RUNTIME_REFUSED_BY_V122_BOUND_NOTICE_PREFLIGHT; REDACTED_EVIDENCE_SCOPE_VERIFIED; PYTHON_REGRESSION_RUNNING",
+  "preflight": {
+    "installerSourceCommit": "536c45b92f451448ebc4711e3490cec6c94ddd34",
+    "appCandidate": "58bd32206a064a4ba40ae9668acaef00",
+    "frameworks": "V135 clean-rebuilt pre-sign staging; 14/14 source outputs exact",
+    "result": "REFUSED: recipient-signed WebGPU image binding does not match pinned source/build inputs",
+    "classification": "Expected guard for mismatched V135 pre-sign images paired with V122-bound app evidence. This does not constitute a signed recipient replacement attempt.",
+    "candidateModified": false,
+    "signed": false,
+    "launched": false
+  },
+  "priorStaticChecks": {
+    "v135Relocation": "15 images relocated on disposable copy; no remaining relocation changes",
+    "noSystemWebKitFallback": "PASS static code check only",
+    "recipientLoad": "not attempted"
+  },
+  "sourceOffer": {
+    "manifestSHA256": "3e728fec4f62d77e27a2019b181c95c55934167f7c19c340c7c178afc166b9bf",
+    "components": "531/531 PASS",
+    "overlayAssets": "64/64 PASS",
+    "metadataHashPairs": "44/44 PASS",
+    "redactionSemanticCheck": "four historical JSON copies differ from originals only at the five declared path fields",
+    "secretScan": "one metadata finding unresolved",
+    "candidateBound": false
+  },
+  "pythonRegression": {
+    "status": "RUNNING at observation",
+    "sessionId": 26373,
+    "privateLog": "/private/tmp/neantik-v199-python-regression-erwmwyht/unittest.log"
+  },
+  "limitations": [
+    "The V122-pinned preflight refusal is not a completed recipient signing/load test.",
+    "V135 rebuilt binaries need appropriate source/build/notice evidence and signing before an exact recipient replacement can be qualified; do not weaken existing V122 guards.",
+    "License and patent applicability, exact proxy runtime, timestamp signing, notarization and release remain open."
+  ],
+  "nextAction": "Poll existing Python regression session 26373. Prepare a rebuild-specific image/notice binding for V135 without relaxing production pins; after secure timestamp signing is available, perform an exact recipient replacement/load and proxy QA."
+}

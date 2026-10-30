@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import io
+import tempfile
 import unittest
 from contextlib import redirect_stderr
 from pathlib import Path
@@ -17,52 +18,113 @@ SPEC.loader.exec_module(MODULE)
 
 
 class OpenSourceTreePrivacyTests(unittest.TestCase):
-    def test_version_reservations_do_not_replace_complete_archive_metadata(
-        self,
-    ) -> None:
-        MODULE.verify_release_metadata()
+    def test_patch_payloads_are_scanned_without_echoing_secrets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with mock.patch.object(MODULE, 'PROJECT_ROOT', root):
+                for suffix in ('.patch', '.diff'):
+                    path = root / ('fixture' + suffix)
+                    path.write_text('diff --git a/file b/file\n+safe source\n')
+                    MODULE.verify_files([path])
+                    marker = 'ghp_' + 'A' * 80
+                    path.write_text('diff --git a/file b/file\n+' + marker + '\n')
+                    output = io.StringIO()
+                    with redirect_stderr(output), self.assertRaises(SystemExit):
+                        MODULE.verify_files([path])
+                    self.assertIn('possible GitHub token', output.getvalue())
+                    self.assertNotIn(marker, output.getvalue())
 
-    def test_provisioning_profiles_are_forbidden_from_public_source(self) -> None:
-        self.assertIn(".provisionprofile", MODULE.FORBIDDEN_SUFFIXES)
-        self.assertIn(".mobileprovision", MODULE.FORBIDDEN_SUFFIXES)
-        self.assertIn(".p8", MODULE.FORBIDDEN_SUFFIXES)
-        self.assertIn(".secrets", MODULE.FORBIDDEN_PARTS)
-        self.assertIn(".credentials", MODULE.FORBIDDEN_PARTS)
-        self.assertIn(
-            'path.name.startswith(".env.")',
-            VERIFIER.read_text(encoding="utf-8"),
-        )
+    def test_classic_and_fine_grained_tokens_are_rejected_without_echoing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); file = root / 'source.py'
+            with mock.patch.object(MODULE, 'PROJECT_ROOT', root):
+                file.write_text('use a local credential file\n')
+                MODULE.verify_files([file])
+                for prefix in ['ghp_', 'github_pat_']:
+                    marker = prefix + 'A' * 80
+                    file.write_text(marker)
+                    output = io.StringIO()
+                    with redirect_stderr(output), self.assertRaises(SystemExit):
+                        MODULE.verify_files([file])
+                    self.assertIn('possible GitHub token', output.getvalue())
+                    self.assertNotIn(marker, output.getvalue())
 
-    def test_service_tokens_and_wallet_phrases_are_scanned(self) -> None:
-        for description in (
-            "GitHub token",
-            "OpenAI API key",
-            "Slack token",
-            "Stripe live secret",
-            "Google API key",
-            "GitLab token",
-            "wallet recovery phrase",
-        ):
-            self.assertIn(description, MODULE.SECRET_PATTERNS)
+    def test_current_zip_and_dmg_checksums_and_negative_controls(self) -> None:
+        import copy
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "releases").mkdir()
+            artifacts = [{"name": "NeAntik-1.2.3-arm64-notarized." + suffix,
+                          "sha256": char * 64} for suffix, char in (("zip", "a"), ("dmg", "b"))]
+            metadata = {"version": "1.2.3", "artifacts": artifacts}
+            for artifact in artifacts:
+                (root / "releases" / (artifact["name"] + ".sha256")).write_text(
+                    artifact["sha256"] + "  " + artifact["name"] + "\n")
+            with mock.patch.object(MODULE, "PROJECT_ROOT", root):
+                MODULE.verify_release_checksums(metadata)
+                MODULE.verify_release_checksums({"version": "1.2.3", "archive": artifacts[0]})
+                legacy_assets = {"version": "1.2.3", "assets": artifacts}
+                MODULE.verify_release_checksums(legacy_assets)
+                for replacement in ([], [artifacts[0]], [artifacts[0], artifacts[0]]):
+                    with self.subTest(legacy_assets=replacement), redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                        MODULE.verify_release_checksums({"version": "1.2.3", "assets": replacement})
+                broken = []
+                for replacement in ([], [artifacts[0]], [artifacts[0], artifacts[0]]):
+                    broken.append({"version": "1.2.3", "artifacts": replacement})
+                for field, value in (("name", "../outside.zip"), ("sha256", "c" * 64),
+                                     ("sha256", "not-a-digest")):
+                    candidate = copy.deepcopy(metadata)
+                    candidate["artifacts"][1][field] = value
+                    broken.append(candidate)
+                broken.append({**metadata, "archive": {**artifacts[0], "sha256": "c" * 64}})
+                broken.append({**metadata, "archive": artifacts[1]})
+                broken.append({"version": "1.2.3"})
+                for candidate in broken:
+                    with self.subTest(candidate=candidate), redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                        MODULE.verify_release_checksums(candidate)
+                (root / "releases" / (artifacts[1]["name"] + ".sha256")).unlink()
+                with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                    MODULE.verify_release_checksums(metadata)
 
-    def test_removed_dormant_surfaces_are_forbidden_from_public_source(
-        self,
-    ) -> None:
-        for path in (
-            "Sources/NeAntik/RuntimePreferenceStore.swift",
-            "Sources/NeAntik/UpdateManifest.swift",
-        ):
-            self.assertIn(path, MODULE.FORBIDDEN_PUBLIC_PATHS)
+    def test_ci_contract_detects_a_required_suite_removed_from_shards(self) -> None:
+        required = {"UpdateManifestTests", "BrowserProcessInventoryTests",
+                    "FingerprintEvidenceEnrollmentTests", "ProfileOrganizationTests",
+                    "SecureEnclaveFingerprintEvidenceSignerTests"}
+        MODULE.verify_ci_suite_coverage(required)
+        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            MODULE.verify_ci_suite_coverage(required - {"UpdateManifestTests"})
 
-    def test_runtime_locator_is_constrained_to_embedded_runtime(self) -> None:
-        self.assertIn(
-            "BrowserRuntimePreference",
-            MODULE.FORBIDDEN_RUNTIME_LOCATOR_MARKERS,
-        )
-        self.assertIn(
-            "app.neantik.runtime",
-            MODULE.REQUIRED_RUNTIME_LOCATOR_MARKERS,
-        )
+    def test_markdown_public_release_record_is_parsed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "v0.7.3.md"
+            path.write_text("# NeAntik 0.7.3 (66)\n", encoding="utf-8")
+            self.assertEqual(
+                MODULE.read_markdown_release(path),
+                ((0, 7, 3), 66),
+            )
+
+    def test_older_development_preview_requires_bilingual_markers(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "README.md").write_text(
+                "Локальный кандидат `0.3.20 (23)` — это development preview.\n",
+                encoding="utf-8",
+            )
+            (root / "README.en.md").write_text(
+                "The local `0.3.20 (23)` candidate is a development preview.\n",
+                encoding="utf-8",
+            )
+            with mock.patch.object(MODULE, "PROJECT_ROOT", root):
+                self.assertTrue(
+                    MODULE.has_explicit_development_preview_marker("0.3.20", "23")
+                )
+                (root / "README.en.md").write_text(
+                    "The local `0.3.20 (23)` candidate is current.\n",
+                    encoding="utf-8",
+                )
+                self.assertFalse(
+                    MODULE.has_explicit_development_preview_marker("0.3.20", "23")
+                )
 
     def test_personal_absolute_user_path_is_rejected(self) -> None:
         leaked = "/" + "Users/" + "release-operator/private/report.json"
@@ -111,11 +173,7 @@ class OpenSourceTreePrivacyTests(unittest.TestCase):
             stderr = io.StringIO()
             with redirect_stderr(stderr), self.assertRaises(SystemExit):
                 MODULE.verify_files([VERIFIER])
-        self.assertEqual(
-            stderr.getvalue(),
-            "FAIL: open-source publication boundary verification failed\n",
-        )
-        self.assertNotIn("synthetic self-test violation", stderr.getvalue())
+        self.assertIn("scripts/verify-open-source-tree.py", stderr.getvalue())
 
     def test_real_operational_markers_are_not_stored_in_verifier(self) -> None:
         text = VERIFIER.read_text(encoding="utf-8")

@@ -1,0 +1,525 @@
+{
+  "schemaVersion": 1,
+  "status": "bounded-factual-maintainer-review;BSD-and-LGPL2-inputs-traced;candidate-notices-present;source-relink-gate-open",
+  "observedAt": "2026-10-25",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "runtimeImage": {
+    "path": "WebKitLegacy.framework/Versions/A/WebKitLegacy",
+    "sha256": "9f4bdf7e49a9aee7d5f8ec90468689f50e0ab1d90d873cf3dfddb0d9d5f00299",
+    "primaryCompileInputCount": 30,
+    "sourceClosureStatus": "configured link node plus mapped internal static archives"
+  },
+  "inputs": {
+    "sourceClosure": {
+      "path": "docs/evidence/webkit-v20-runtime-image-source-closure-20261025.json",
+      "sha256": "6e9a5a634e7e78fcb23d4e2b0d10bbda676bd264cc9b4127f4ce4d833c2e2304"
+    },
+    "sourceLicenseCandidateMap": {
+      "path": "docs/evidence/webkit-v20-link-source-license-candidates-20261025.json",
+      "sha256": "70a07ede311458659ba1a9d5b91a90a6bfbd130d809dfe19865bc684cf952f6a"
+    },
+    "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f"
+  },
+  "sourceClassification": {
+    "directBSDSourceInputs": [
+      {
+        "path": "Source/WebKitLegacy/mac/DefaultDelegates/WebDefaultEditingDelegate.mm",
+        "sha256": "f6d0d9c8b0340afcfd18b40006ae205987d28f5f385cd826f4d0a5f1c39de988",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/History/WebURLsWithTitles.mm",
+        "sha256": "b0c73a8ab8e2e945a545501ac6a328c29c8d6f3b9b4e5d2112ab0720919d19d1",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/Misc/WebKitErrors.mm",
+        "sha256": "db2e356b222ce08d6a7a5d78a4367a076975f7dd932cf9cbd67ff88e30c35ab8",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/Misc/WebKitLogging.m",
+        "sha256": "1128385fc4765552a8828921aec20bc491c06ad6529090d55088c039f77d5aca",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/Misc/WebKitStatistics.m",
+        "sha256": "b157e571b4b06674f4b0a20f836f6420f9d1df63c00df7b296fb22636001a082",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/Misc/WebNSControlExtras.m",
+        "sha256": "f92d6008b360389a050fe750259540c730afad6238abdbabfbb9332dd0ce620f",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/Misc/WebNSDictionaryExtras.mm",
+        "sha256": "c7e4ee8633887c2e3f82b9a72fc6c8fb91cbc39514e6b77693e18befc77edcd6",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/Misc/WebNSEventExtras.m",
+        "sha256": "65def0a394e5b06f95166e8efff7c1984cadc33744ba1b4fcd3c187d6b8691b3",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/Misc/WebNSImageExtras.mm",
+        "sha256": "bfd202e94d53e8767755920c13332ff78c405a759d2bb889958d2fd320a8cc98",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/Misc/WebNSPrintOperationExtras.m",
+        "sha256": "94d36162760d787827c350e9ebd76bb8c21f237ec7b8fcd52fdd1ea9421c7cee",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/Misc/WebNSURLRequestExtras.m",
+        "sha256": "c2f79a430bcab980077f27c37f49f7d8d8bb3e90d7ea4800bbaf8dfcefca95e6",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/Misc/WebNSViewExtras.mm",
+        "sha256": "c911cf801fda77319c15ab84f8e89f3117265e570b471613964a652f963d4cf3",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/Misc/WebNSWindowExtras.m",
+        "sha256": "3ac3d9964d2c327b949f6293daa0e2f15dfc8402452bbd03b8ebac11eb7d3167",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/Panels/WebAuthenticationPanel.mm",
+        "sha256": "535abcd4c70276440bb5374341591773ca36101ab4c8480ed054776e52b716ab",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/Panels/WebPanelAuthenticationHandler.mm",
+        "sha256": "f4e48d7dce917971b601cf835ff586f1a8b6c61e9a57aeed6035b719ad26c7c0",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/WebCoreSupport/WebJavaScriptTextInputPanel.mm",
+        "sha256": "a858d5e21014a62e8ce44504fa6af36e5f4760517760385f181a32e10231d400",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/WebView/WebFeature.mm",
+        "sha256": "d4cc3b3e60d9ad5efa70f095f2352d03d0e79c9b5ca8a4b0b444ac8e6774f691",
+        "licenseHeaderClass": "BSD-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/WebView/WebFormDelegate.mm",
+        "sha256": "18674406e281439db264e99eb845963fc3bf85315b3ebbf2b8062b6c719fe75a",
+        "licenseHeaderClass": "BSD-2"
+      }
+    ],
+    "pinnedGeneratedUnityUnits": [
+      {
+        "path": "WebKitBuild/neantik-v20-production-arm64/WebKitLegacy/DerivedSources/unified-sources/UnifiedSource-Storage-1.cpp",
+        "sha256": "ad1dedb2c5938b69669d6ed8e16e105f529036eeff2e8ed8c5ea9fa86b15f77f",
+        "includeCount": 9,
+        "includes": [
+          "Source/WebKitLegacy/Storage/InProcessIDBServer.cpp",
+          "Source/WebKitLegacy/Storage/StorageAreaImpl.cpp",
+          "Source/WebKitLegacy/Storage/StorageAreaSync.cpp",
+          "Source/WebKitLegacy/Storage/StorageNamespaceImpl.cpp",
+          "Source/WebKitLegacy/Storage/StorageSyncManager.cpp",
+          "Source/WebKitLegacy/Storage/StorageThread.cpp",
+          "Source/WebKitLegacy/Storage/StorageTracker.cpp",
+          "Source/WebKitLegacy/Storage/WebDatabaseProvider.cpp",
+          "Source/WebKitLegacy/Storage/WebStorageNamespaceProvider.cpp"
+        ]
+      },
+      {
+        "path": "WebKitBuild/neantik-v20-production-arm64/WebKitLegacy/DerivedSources/unified-sources/UnifiedSource-WebCoreSupport-1-nonARC.mm",
+        "sha256": "3be909a1b4f8b8afc2dd56faa668dcfed02473d33ffb0050fa288ae0beeffabd",
+        "includeCount": 3,
+        "includes": [
+          "Source/WebKitLegacy/WebCoreSupport/WebResourceLoadScheduler.mm",
+          "Source/WebKitLegacy/WebCoreSupport/WebCryptoClient.mm",
+          "Source/WebKitLegacy/WebCoreSupport/WebViewGroup.mm"
+        ]
+      },
+      {
+        "path": "WebKitBuild/neantik-v20-production-arm64/WebKitLegacy/DerivedSources/unified-sources/UnifiedSource-WebCoreSupport-1.cpp",
+        "sha256": "ddc0e6e8b01d49221e56ccb7c08771157ec80912a490c12a945c0ecbc317cc3b",
+        "includeCount": 10,
+        "includes": [
+          "Source/WebKitLegacy/WebCoreSupport/LegacySocketProvider.cpp",
+          "Source/WebKitLegacy/WebCoreSupport/NetworkStorageSessionMap.cpp",
+          "Source/WebKitLegacy/WebCoreSupport/SocketStreamHandle.cpp",
+          "Source/WebKitLegacy/WebCoreSupport/SocketStreamHandleImpl.cpp",
+          "Source/WebKitLegacy/WebCoreSupport/SocketStreamHandleImplCFNet.cpp",
+          "Source/WebKitLegacy/WebCoreSupport/WebBroadcastChannelRegistry.cpp",
+          "Source/WebKitLegacy/WebCoreSupport/WebResourceLoadScheduler.cpp",
+          "Source/WebKitLegacy/WebCoreSupport/WebSocketChannel.cpp",
+          "Source/WebKitLegacy/WebCoreSupport/LegacyWebPageDebuggable.cpp",
+          "Source/WebKitLegacy/WebCoreSupport/LegacyWebPageInspectorController.cpp"
+        ]
+      },
+      {
+        "path": "WebKitBuild/neantik-v20-production-arm64/WebKitLegacy/DerivedSources/unified-sources/UnifiedSource-cf-1.cpp",
+        "sha256": "4a34a723e594ed9fccef36a9a0f00f7efe0d41730656e2bfc1cee0fa4a836be0",
+        "includeCount": 1,
+        "includes": [
+          "Source/WebKitLegacy/cf/WebCoreSupport/WebInspectorClientCF.cpp"
+        ]
+      },
+      {
+        "path": "WebKitBuild/neantik-v20-production-arm64/WebKitLegacy/DerivedSources/unified-sources/UnifiedSource-mac-1-nonARC.mm",
+        "sha256": "f017158f9261460bca98969c42819cd917465eca8002c85b855837fcc3bcbbc2",
+        "includeCount": 106,
+        "includes": [
+          "Source/WebKitLegacy/mac/DOM/DOM.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMAbstractView.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMAttr.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMBlob.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCDATASection.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSS.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSSCharsetRule.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSSFontFaceRule.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSSImportRule.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSSMediaRule.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSSPageRule.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSSPrimitiveValue.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSSRule.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSSRuleList.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSSStyleDeclaration.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSSStyleRule.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSSStyleSheet.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSSUnknownRule.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSSValue.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCSSValueList.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCharacterData.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMComment.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCounter.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMCustomXPathNSResolver.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMDocument.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMDocumentFragment.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMDocumentType.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMEntity.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMEntityReference.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMEvent.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMEvents.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMFile.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMFileList.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTML.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLAnchorElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLAppletElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLAreaElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLBRElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLBaseElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLBaseFontElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLBodyElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLButtonElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLCanvasElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLCollection.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLDListElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLDirectoryElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLDivElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLDocument.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLEmbedElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLFieldSetElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLFontElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLFormElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLFrameElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLFrameSetElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLHRElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLHeadElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLHeadingElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLHtmlElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLIFrameElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLImageElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLInputElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLLIElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLLabelElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLLegendElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLLinkElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLMapElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLMarqueeElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLMediaElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLMenuElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLMetaElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLModElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLOListElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLObjectElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLOptGroupElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLOptionElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLOptionsCollection.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLParagraphElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLParamElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLPreElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLQuoteElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLScriptElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLSelectElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLStyleElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLTableCaptionElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLTableCellElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLTableColElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLTableElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLTableRowElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLTableSectionElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLTextAreaElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLTitleElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLUListElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMHTMLVideoElement.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMImplementation.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMInternal.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMKeyboardEvent.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMMediaError.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMMediaList.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMMouseEvent.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMMutationEvent.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMNamedNodeMap.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMNode.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMNodeIterator.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMNodeList.mm"
+        ]
+      },
+      {
+        "path": "WebKitBuild/neantik-v20-production-arm64/WebKitLegacy/DerivedSources/unified-sources/UnifiedSource-mac-1.cpp",
+        "sha256": "b6368d4272673c83d71b8f2281d81a8a48e7e11e2520ea0d226de6864597d74b",
+        "includeCount": 1,
+        "includes": [
+          "Source/WebKitLegacy/mac/History/BinaryPropertyList.cpp"
+        ]
+      },
+      {
+        "path": "WebKitBuild/neantik-v20-production-arm64/WebKitLegacy/DerivedSources/unified-sources/UnifiedSource-mac-2-nonARC.mm",
+        "sha256": "d965c524e5c1275e2d6608927f37c765adcddb0c79de771329fe166438a1ff2b",
+        "includeCount": 61,
+        "includes": [
+          "Source/WebKitLegacy/mac/DOM/DOMObject.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMOverflowEvent.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMProcessingInstruction.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMProgressEvent.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMRGBColor.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMRange.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMRect.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMStyleSheet.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMStyleSheetList.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMText.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMTextEvent.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMTimeRanges.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMTokenList.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMTreeWalker.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMUIEvent.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMUIKitExtensions.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMUtility.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMWheelEvent.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMXPath.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMXPathExpression.mm",
+          "Source/WebKitLegacy/mac/DOM/DOMXPathResult.mm",
+          "Source/WebKitLegacy/mac/DOM/ExceptionHandlers.mm",
+          "Source/WebKitLegacy/mac/DOM/ObjCEventListener.mm",
+          "Source/WebKitLegacy/mac/DOM/ObjCNodeFilterCondition.mm",
+          "Source/WebKitLegacy/mac/DOM/WebDOMOperations.mm",
+          "Source/WebKitLegacy/mac/DefaultDelegates/WebDefaultContextMenuDelegate.mm",
+          "Source/WebKitLegacy/mac/DefaultDelegates/WebDefaultPolicyDelegate.mm",
+          "Source/WebKitLegacy/mac/DefaultDelegates/WebDefaultUIDelegate.mm",
+          "Source/WebKitLegacy/mac/History/WebBackForwardList.mm",
+          "Source/WebKitLegacy/mac/History/BackForwardList.mm",
+          "Source/WebKitLegacy/mac/History/HistoryPropertyList.mm",
+          "Source/WebKitLegacy/mac/History/WebHistory.mm",
+          "Source/WebKitLegacy/mac/History/WebHistoryItem.mm",
+          "Source/WebKitLegacy/mac/Misc/WebSharingServicePickerController.mm",
+          "Source/WebKitLegacy/mac/Misc/WebCache.mm",
+          "Source/WebKitLegacy/mac/Misc/WebCoreStatistics.mm",
+          "Source/WebKitLegacy/mac/Misc/WebDownload.mm",
+          "Source/WebKitLegacy/mac/Misc/WebElementDictionary.mm",
+          "Source/WebKitLegacy/mac/Misc/WebIconDatabase.mm",
+          "Source/WebKitLegacy/mac/Misc/WebKitLogInitialization.mm",
+          "Source/WebKitLegacy/mac/Misc/WebKitNSStringExtras.mm",
+          "Source/WebKitLegacy/mac/Misc/WebKitVersionChecks.mm",
+          "Source/WebKitLegacy/mac/Misc/WebLocalizableStrings.mm",
+          "Source/WebKitLegacy/mac/Misc/WebLocalizableStringsInternal.mm",
+          "Source/WebKitLegacy/mac/Misc/WebNSDataExtras.mm",
+          "Source/WebKitLegacy/mac/Misc/WebNSFileManagerExtras.mm",
+          "Source/WebKitLegacy/mac/Misc/WebNSObjectExtras.mm",
+          "Source/WebKitLegacy/mac/Misc/WebNSPasteboardExtras.mm",
+          "Source/WebKitLegacy/mac/Misc/WebNSURLExtras.mm",
+          "Source/WebKitLegacy/mac/Misc/WebNSUserDefaultsExtras.mm",
+          "Source/WebKitLegacy/mac/Misc/WebStringTruncator.mm",
+          "Source/WebKitLegacy/mac/Misc/WebUserContentURLPattern.mm",
+          "Source/WebKitLegacy/mac/Plugins/WebBasePluginPackage.mm",
+          "Source/WebKitLegacy/mac/Plugins/WebPluginContainerCheck.mm",
+          "Source/WebKitLegacy/mac/Plugins/WebPluginController.mm",
+          "Source/WebKitLegacy/mac/Plugins/WebPluginDatabase.mm",
+          "Source/WebKitLegacy/mac/Plugins/WebPluginPackage.mm",
+          "Source/WebKitLegacy/mac/Storage/WebDatabaseManager.mm",
+          "Source/WebKitLegacy/mac/Storage/WebDatabaseManagerClient.mm",
+          "Source/WebKitLegacy/mac/Storage/WebDatabaseProvider.mm",
+          "Source/WebKitLegacy/mac/Storage/WebDatabaseQuotaManager.mm"
+        ]
+      },
+      {
+        "path": "WebKitBuild/neantik-v20-production-arm64/WebKitLegacy/DerivedSources/unified-sources/UnifiedSource-mac-3-nonARC.mm",
+        "sha256": "ad14b98fcc9e0082ba764e7cbd1473c9a14aae9dc2f6c9d30118624caa65f66f",
+        "includeCount": 45,
+        "includes": [
+          "Source/WebKitLegacy/mac/Storage/WebStorageManager.mm",
+          "Source/WebKitLegacy/mac/Storage/WebStorageTrackerClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/TextIndicatorWindow.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebFrameLoaderClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/CorrectionPanel.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/LegacyHistoryItemClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/PopupMenuMac.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/SearchPopupMenuMac.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebAlternativeTextClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebChromeClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebContextMenuClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebDragClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebEditorClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebFrameNetworkingContext.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebGeolocationClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebInspectorClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebKitFullScreenListener.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebMediaKeySystemClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebNotificationClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebOpenPanelResultListener.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebPaymentCoordinatorClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebPlatformStrategies.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebPluginInfoProvider.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebProgressTrackerClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebSecurityOrigin.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebSelectionServiceController.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebValidationMessageClient.mm",
+          "Source/WebKitLegacy/mac/WebCoreSupport/WebVisitedLinkStore.mm",
+          "Source/WebKitLegacy/mac/WebInspector/WebInspector.mm",
+          "Source/WebKitLegacy/mac/WebInspector/WebInspectorFrontend.mm",
+          "Source/WebKitLegacy/mac/WebInspector/WebNodeHighlight.mm",
+          "Source/WebKitLegacy/mac/WebInspector/WebNodeHighlightView.mm",
+          "Source/WebKitLegacy/mac/WebInspector/WebNodeHighlighter.mm",
+          "Source/WebKitLegacy/mac/WebView/WebClipView.mm",
+          "Source/WebKitLegacy/mac/WebView/WebDataSource.mm",
+          "Source/WebKitLegacy/mac/WebView/WebFrame.mm",
+          "Source/WebKitLegacy/mac/WebView/WebFrameView.mm",
+          "Source/WebKitLegacy/mac/WebView/WebFullScreenController.mm",
+          "Source/WebKitLegacy/mac/WebView/WebHTMLView.mm",
+          "Source/WebKitLegacy/mac/WebView/WebImmediateActionController.mm",
+          "Source/WebKitLegacy/mac/WebView/WebPDFRepresentation.mm",
+          "Source/WebKitLegacy/mac/WebView/WebPDFView.mm",
+          "Source/WebKitLegacy/mac/WebView/WebScriptDebugDelegate.mm",
+          "Source/WebKitLegacy/mac/WebView/WebScriptDebugger.mm",
+          "Source/WebKitLegacy/mac/WebView/WebScriptWorld.mm"
+        ]
+      },
+      {
+        "path": "WebKitBuild/neantik-v20-production-arm64/WebKitLegacy/DerivedSources/unified-sources/UnifiedSource-mac-4-nonARC.mm",
+        "sha256": "a8b54ada30f40ffd78286e3a35497126af0705c974ab444073269bd098f4231c",
+        "includeCount": 24,
+        "includes": [
+          "Source/WebKitLegacy/mac/WebView/WebView.mm",
+          "Source/WebKitLegacy/mac/WebView/WebViewRenderingUpdateScheduler.mm",
+          "Source/WebKitLegacy/mac/WebView/WebArchive.mm",
+          "Source/WebKitLegacy/mac/WebView/WebDelegateImplementationCaching.mm",
+          "Source/WebKitLegacy/mac/WebView/WebDeviceOrientation.mm",
+          "Source/WebKitLegacy/mac/WebView/WebDeviceOrientationProviderMock.mm",
+          "Source/WebKitLegacy/mac/WebView/WebDocumentLoaderMac.mm",
+          "Source/WebKitLegacy/mac/WebView/WebDynamicScrollBarsView.mm",
+          "Source/WebKitLegacy/mac/WebView/WebGeolocationPosition.mm",
+          "Source/WebKitLegacy/mac/WebView/WebHTMLRepresentation.mm",
+          "Source/WebKitLegacy/mac/WebView/WebIndicateLayer.mm",
+          "Source/WebKitLegacy/mac/WebView/WebMediaPlaybackTargetPicker.mm",
+          "Source/WebKitLegacy/mac/WebView/WebNavigationData.mm",
+          "Source/WebKitLegacy/mac/WebView/WebNotification.mm",
+          "Source/WebKitLegacy/mac/WebView/WebPDFDocumentExtras.mm",
+          "Source/WebKitLegacy/mac/WebView/WebPolicyDelegate.mm",
+          "Source/WebKitLegacy/mac/WebView/WebPreferences.mm",
+          "Source/WebKitLegacy/mac/WebView/WebPreferencesDefaultValues.mm",
+          "Source/WebKitLegacy/mac/WebView/WebResource.mm",
+          "Source/WebKitLegacy/mac/WebView/WebTextCompletionController.mm",
+          "Source/WebKitLegacy/mac/WebView/WebTextIterator.mm",
+          "Source/WebKitLegacy/mac/WebView/WebVideoFullscreenController.mm",
+          "Source/WebKitLegacy/mac/WebView/WebViewData.mm",
+          "Source/WebKitLegacy/mac/WebView/WebWindowAnimation.mm"
+        ]
+      },
+      {
+        "path": "WebKitBuild/neantik-v20-production-arm64/WebKitLegacy/DerivedSources/unified-sources/UnifiedSource-root-1-nonARC.mm",
+        "sha256": "cedf85df631c962c3085c403dbaa27e38d73f0a9a9fede8d44155a7b67c0196d",
+        "includeCount": 3,
+        "includes": [
+          "WebKitBuild/neantik-v20-production-arm64/WebKitLegacy/DerivedSources/WebPreferencesExperimentalFeatures.mm",
+          "WebKitBuild/neantik-v20-production-arm64/WebKitLegacy/DerivedSources/WebPreferencesInternalFeatures.mm",
+          "WebKitBuild/neantik-v20-production-arm64/WebKitLegacy/DerivedSources/WebViewPreferencesChangedGenerated.mm"
+        ]
+      }
+    ],
+    "unityIncludeTotals": {
+      "uniqueInputs": 263,
+      "BSD2HeaderInputs": 257,
+      "LGPL2HeaderInputs": 3,
+      "generatedBSD2FromPinnedTemplates": 3
+    },
+    "LGPL2Files": [
+      {
+        "path": "Source/WebKitLegacy/WebCoreSupport/WebResourceLoadScheduler.cpp",
+        "sha256": "ad8492cc99d3b3f552f796654de3e61af20cb135f09ba4a4b66205948787ce51",
+        "licenseHeaderClass": "LGPL-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/WebCoreSupport/PopupMenuMac.mm",
+        "sha256": "8f31a45b9f5e499aa5344cc745f4d10171a3da8c2fa2876200f518ac2423dce0",
+        "licenseHeaderClass": "LGPL-2"
+      },
+      {
+        "path": "Source/WebKitLegacy/mac/WebCoreSupport/SearchPopupMenuMac.mm",
+        "sha256": "ab20b589b7b85671960474ea2cff1f47fbd490699ab97de71e7a3824d9ab3005",
+        "licenseHeaderClass": "LGPL-2"
+      }
+    ],
+    "pchWrappers": [
+      {
+        "path": "WebKitBuild/neantik-v20-production-arm64/Source/WebKitLegacy/WebKitLegacy_pch_obj.cpp",
+        "sha256": "e456d887a97898c171f88ece076fe833d4ca4a95e1441b96db2748e58dec637f",
+        "content": "// PCH object for WebKitLegacy (CXX)"
+      },
+      {
+        "path": "WebKitBuild/neantik-v20-production-arm64/Source/WebKitLegacy/WebKitLegacy_pch_obj.mm",
+        "sha256": "467f9833da712f776ae527616375b205d2eca71fbbc84a55f4818bc64c45c0b6",
+        "content": "// PCH object for WebKitLegacy (OBJCXX)"
+      }
+    ],
+    "nestedLicenseFilesUnderSourceWebKitLegacy": [
+      "Source/WebKitLegacy/LICENSE"
+    ]
+  },
+  "candidateLicenseTexts": [
+    {
+      "component": "WebKitLegacy BSD-2",
+      "upstreamPath": "Source/WebKitLegacy/LICENSE",
+      "upstreamSHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+      "candidateCopyPath": "Contents/Resources/NeAntikRuntimeLicenses/WebKitSourceCandidates/files/Source/WebKitLegacy/LICENSE",
+      "candidateCopySHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+      "noticeMarkdownSHA256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375"
+    },
+    {
+      "component": "WebCore LGPL-2",
+      "upstreamPath": "Source/WebCore/LICENSE-LGPL-2",
+      "upstreamSHA256": "7555fa34bc131a75ca56d65c40cc1ea8f9515d23e353d4c15d58573a042f7805",
+      "candidateCopyPath": "Contents/Resources/NeAntikRuntimeLicenses/WebCore-LICENSE-LGPL-2.txt",
+      "candidateCopySHA256": "7555fa34bc131a75ca56d65c40cc1ea8f9515d23e353d4c15d58573a042f7805",
+      "noticeMarkdownSHA256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375"
+    }
+  ],
+  "maintainerDecision": {
+    "applicableLicense": "For this runtime image only, the traced linked inputs include Apple BSD-2-Clause source headers and three LGPL-2 source inputs (WebResourceLoadScheduler.cpp, PopupMenuMac.mm, SearchPopupMenuMac.mm); three generated preference sources map to BSD-2-Clause templates. The exact BSD-2 and LGPL-2 texts are present in the candidate notice bundle.",
+    "noticeLocation": "NeAntikRuntimeNotices.md and exact copies at NeAntikRuntimeLicenses/WebKitSourceCandidates/files/Source/WebKitLegacy/LICENSE and NeAntikRuntimeLicenses/WebCore-LICENSE-LGPL-2.txt.",
+    "requiredNotice": "Retain both complete license texts. Preserve matching source, build/patch inputs and a workable LGPL relink path; the latter source-offer/relink gate is not yet closed.",
+    "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact runtime hash, 30 primary inputs, all unity include paths, generated-template lineage, BSD/LGPL source markers, and byte-matched candidate license copies are evidenced for WebKitLegacy only. This is not legal advice or legal opinion."
+  },
+  "limitations": [
+    "The whole WebKit corresponding-source and recipient relink offer remains incomplete; this receipt does not prove LGPL compliance or a successful relink.",
+    "Other runtime images and resource rows remain outside this review.",
+    "Candidate 139 remains unqualified; signature, native qualification, notarization and publication are open."
+  ]
+}

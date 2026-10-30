@@ -1,0 +1,20 @@
+{
+  "status": "BOUNDED_V135_LIBWEBRTC_NOTICE_BUNDLE_SOURCE_COMPARISON",
+  "stagedLibwebrtcSHA256": "dbed8455ea0c93bdd7c20c5ce79723a545a23d12dd22e9da92277d13a4b6efae",
+  "sourceNoticeManifestSHA256": "cb37e67480e7feb9e900e1932a2879cf7bd0ed4c6bad365d8fb670095ba5b376",
+  "noticeFiles": 60,
+  "allNoticeHashesMatchManifest": true,
+  "exactPinnedWebKitSourceMatches": 58,
+  "generatedLicenseIndex": {
+    "count": 1,
+    "explicitlyMarkedGenerated": true,
+    "hashMatchesManifest": true
+  },
+  "integrationStubMPLText": {
+    "count": 1,
+    "stubContainsMPLReference": true,
+    "noticeMatchesProjectMPLReference": true
+  },
+  "scope": "60 candidate notice files and pinned source copies; not complete notice applicability, full third-party license or patent determination, signed package or runtime test",
+  "releaseQualified": false
+}

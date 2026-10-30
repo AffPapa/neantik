@@ -1,0 +1,47 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "d251c11288d296849071949c6018a2f296b7e816d13edcf5d66ebd272f39dcaa",
+  "payload": {
+    "at": "2026-10-09T03:22:14.530888+00:00",
+    "cause": "M156 port dropped include-removal hunks and added account-aware promotions dependent on removed Google sign-in preferences",
+    "license": "Independent correction to BSD Chromium source; no AGPL helper copied",
+    "notChanged": "uncompiled sync migration/service_impl and Android/iOS/test-only sources",
+    "patchSHA256": "3f6661cdb0a9975d31007044eb475ee163773e5d1f4def7af0c2db5eff3ad326",
+    "postimages": {
+      "chrome/browser/signin/signin_util.cc": "f529ba2a257610330c3d52f1b3b063ef45b3d71e110033819b5c1b0582c494c0",
+      "chrome/browser/ui/hats/trust_safety_sentiment_service.cc": "0e69e8a2323200b4ba6df7da51138ffcdc651315dfc871a6d61966c92473bc27",
+      "chrome/browser/ui/views/app_menu/action_app_menu_manager.cc": "64fa73f08c356003a55be401c74c534f69f70efbb79940be08615317af2eacbe",
+      "chrome/browser/ui/webui/bookmarks/bookmark_promo_delegate.cc": "f1ea15bd9e5a5586170e119916cff405cff92700c23b1069aa418fe38008b27b",
+      "chrome/browser/ui/webui/bookmarks/bookmarks_message_handler.cc": "ba4c886bdc5f6ab4533dba2944249cd139470cf57645b368efb27c9885f73d8c"
+    },
+    "preimages": {
+      "chrome/browser/signin/signin_util.cc": "9ff6d17c43593a304c2e32c5abf60b3a108b92ad88c6453c43e86b56681a8855",
+      "chrome/browser/ui/hats/trust_safety_sentiment_service.cc": "379740c9746713859bbee10954fad7a84612df78b6f137af6b7b7b1ed717d9b1",
+      "chrome/browser/ui/views/app_menu/action_app_menu_manager.cc": "f77dea2423a0ede29aa08f87760e36cda73067c02b338f50cab0d28a2a813565",
+      "chrome/browser/ui/webui/bookmarks/bookmark_promo_delegate.cc": "9262bc119209754d38803505925e194c7321eab8ba8717277ad781cb0dd74f1d",
+      "chrome/browser/ui/webui/bookmarks/bookmarks_message_handler.cc": "81340305aa885e995527adb0731aea0dce8e39d1dee70575a0ebc66bffe4e5a7"
+    },
+    "preserved": "ordinary bookmarks, observers, profile submenu, and unrelated policy/preferences",
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "status": "source-corrected-native-target-required"
+  },
+  "payloadType": "json",
+  "receipt": "native-signin-ui-preferences-correction.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

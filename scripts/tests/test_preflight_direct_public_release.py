@@ -4,9 +4,15 @@ import json
 import os
 import plistlib
 import sys
+import contextlib
+import io
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from unittest import mock
 
 
@@ -29,6 +35,150 @@ VERIFIER_SPEC.loader.exec_module(VERIFIER_FIXTURES)
 
 
 class DirectPublicReleasePreflightTests(unittest.TestCase):
+    def test_m15680_preflight_requires_exact_source_contract_and_args(self):
+        import chromium_15680_release_evidence
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            contract_path = root / "contract.json"
+            contract_path.write_text('{"schemaVersion":1}')
+            args = root / "args.gn"
+            args.write_text("angle_enable_metal = true\n")
+            provenance = {"sourceContractSHA256": MODULE.sha256_file(contract_path),
+                          "buildArgsSHA256": MODULE.sha256_file(args)}
+            kwargs = dict(runtime_version="156.0.8078.80", contract={"schemaVersion": 1},
+                          contract_path=contract_path, provenance=provenance,
+                          candidate_lock={}, project_root=root, args_gn=args)
+            with mock.patch.object(chromium_15680_release_evidence, "verify_provenance") as verifier:
+                MODULE.verify_source_contract_binding(**kwargs)
+                verifier.assert_called_once_with(provenance, root)
+                args.write_text("angle_enable_metal = false\n")
+                with self.assertRaisesRegex(ValueError, "packaged args differ"):
+                    MODULE.verify_source_contract_binding(**kwargs)
+                args.write_text("angle_enable_metal = true\n")
+                contract_path.write_text('{"schemaVersion":1,"changed":true}')
+                with self.assertRaisesRegex(ValueError, "not bound to embedded source contract"):
+                    MODULE.verify_source_contract_binding(**kwargs)
+
+    def test_doctor_refuses_current_runtime_cross_branch_without_source_review(self):
+        root = SCRIPT.parents[1]
+        baseline = json.loads((root / "runtime/security-baseline.json").read_text())
+        lock = root / "runtime/fingerprint-chromium-15540.lock.json"
+        with self.assertRaisesRegex(ValueError, "security branch"):
+            MODULE.verify_runtime_security_branch("155.0.8059.40", lock, baseline)
+        # A mismatched lock cannot supply a review for another binary version.
+        with self.assertRaisesRegex(ValueError, "does not match"):
+            MODULE.verify_runtime_security_branch("156.0.8078.39", lock, baseline)
+
+    def test_doctor_cli_prevents_real_descendant_bytecode_even_without_parent_environment(self):
+        with tempfile.TemporaryDirectory(prefix='neantik-own-doctor-child-') as directory:
+            root = Path(directory)
+            (root/'owned_doctor_module.py').write_text('value = 17\n')
+            def import_child():
+                result = subprocess.run([sys.executable, '-c', 'import owned_doctor_module; print(owned_doctor_module.value)'],
+                                        cwd=root, capture_output=True, text=True, check=True)
+                self.assertEqual(result.stdout.strip(), '17')
+            with mock.patch.dict(os.environ, {}, clear=True):
+                # Broken-propagation control performs an actual child import.
+                import_child()
+                self.assertTrue((root/'__pycache__').is_dir())
+                shutil.rmtree(root/'__pycache__')  # This test owns the entire temporary root.
+                def own_plan(**_):
+                    import_child()
+                    return []
+                with mock.patch.object(sys, 'argv', [str(SCRIPT), '--json']), \
+                     mock.patch.object(MODULE, 'read_plist', return_value={'CFBundleShortVersionString':'0.0.1'}), \
+                     mock.patch.object(MODULE.NOTARY_INSPECTOR, 'inspect_dist', return_value={}), \
+                     mock.patch.object(MODULE, 'verify_direct_public_release_plan', side_effect=own_plan), \
+                     mock.patch.object(MODULE, 'results_to_json', return_value={'fixtureOnly':True}), \
+                     contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(MODULE.main(), 0)
+                self.assertFalse((root/'__pycache__').exists())
+
+    def test_m154_preflight_uses_candidate_verifier_and_checks_packaged_args(self) -> None:
+        import chromium_154_release_evidence
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            contract_path = root / "contract.json"
+            contract_path.write_text('{"schemaVersion": 2}')
+            args = root / "args.gn"
+            args.write_text("angle_enable_metal=true\n")
+            provenance = {
+                "sourceContractSHA256": MODULE.sha256_file(contract_path),
+                "binaryBinding": {"argsGNSHA256": MODULE.sha256_file(args)},
+            }
+            with mock.patch.object(chromium_154_release_evidence, "verify_candidate_lock") as verifier:
+                kwargs = dict(runtime_version="154.0.8037.93", contract={"schemaVersion": 2},
+                              contract_path=contract_path, provenance=provenance,
+                              candidate_lock={}, project_root=root, args_gn=args)
+                MODULE.verify_source_contract_binding(**kwargs)
+                verifier.assert_called_once_with({}, provenance=provenance, project_root=root)
+
+    def test_m15648_preflight_binds_source_contract_and_current_args(self) -> None:
+        import chromium_15648_release_evidence
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            contract_path = root / "contract.json"
+            contract_path.write_text('{"schemaVersion":1}')
+            args = root / "args.gn"
+            args.write_text("angle_enable_metal = true\n")
+            provenance = {
+                "sourceContractSHA256": MODULE.sha256_file(contract_path),
+                "binaryBinding": {"argsGNSHA256": MODULE.sha256_file(args)},
+            }
+            kwargs = dict(runtime_version="156.0.8078.48", contract={"schemaVersion":1},
+                          contract_path=contract_path, provenance=provenance,
+                          candidate_lock={}, project_root=root, args_gn=args)
+            with mock.patch.object(chromium_15648_release_evidence, "verify_provenance") as verifier:
+                MODULE.verify_source_contract_binding(**kwargs)
+                verifier.assert_called_once_with(provenance, root)
+                args.write_text("angle_enable_metal=false\n")
+                with self.assertRaisesRegex(ValueError, "packaged args differ"):
+                    MODULE.verify_source_contract_binding(**kwargs)
+
+    def test_m15498_preflight_uses_separate_candidate_verifier(self) -> None:
+        import chromium_15498_release_evidence
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            contract_path = root / "contract.json"
+            contract_path.write_text('{"schemaVersion": 2}')
+            args = root / "args.gn"
+            args.write_text("angle_enable_metal=true\n")
+            provenance = {
+                "sourceContractSHA256": MODULE.sha256_file(contract_path),
+                "binaryBinding": {"argsGNSHA256": MODULE.sha256_file(args)},
+            }
+            kwargs = dict(runtime_version="154.0.8037.98", contract={"schemaVersion": 2},
+                          contract_path=contract_path, provenance=provenance,
+                          candidate_lock={}, project_root=root, args_gn=args)
+            with mock.patch.object(chromium_15498_release_evidence, "verify_candidate_lock") as verifier:
+                MODULE.verify_source_contract_binding(**kwargs)
+                verifier.assert_called_once_with({}, provenance=provenance, project_root=root)
+                args.write_text("angle_enable_metal=false\n")
+                with self.assertRaisesRegex(ValueError, "packaged args differ"):
+                    MODULE.verify_source_contract_binding(**kwargs)
+
+    def test_m15540_preflight_uses_separate_candidate_verifier(self) -> None:
+        import chromium_15540_release_evidence
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            contract_path = root / "contract.json"
+            contract_path.write_text('{"schemaVersion": 2}')
+            args = root / "args.gn"
+            args.write_text("angle_enable_metal=true\n")
+            provenance = {
+                "sourceContractSHA256": MODULE.sha256_file(contract_path),
+                "binaryBinding": {"argsGNSHA256": MODULE.sha256_file(args)},
+            }
+            kwargs = dict(runtime_version="155.0.8059.40", contract={"schemaVersion": 2},
+                          contract_path=contract_path, provenance=provenance,
+                          candidate_lock={}, project_root=root, args_gn=args)
+            with mock.patch.object(chromium_15540_release_evidence, "verify_candidate_lock") as verifier:
+                MODULE.verify_source_contract_binding(**kwargs)
+                verifier.assert_called_once_with({}, provenance=provenance, project_root=root)
+                args.write_text("angle_enable_metal=false\n")
+                with self.assertRaisesRegex(ValueError, "packaged args differ"):
+                    MODULE.verify_source_contract_binding(**kwargs)
+
     def test_current_project_blocks_without_external_release_inputs(self) -> None:
         results = MODULE.verify_direct_public_release_plan(
             project_root=Path(__file__).resolve().parents[2],
@@ -59,6 +209,21 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
         blocked = {result.name for result in results if not result.passed}
         self.assertIn("Developer ID signing environment", blocked)
         self.assertIn("Notary profile environment", blocked)
+        # The checked-in source can itself be the latest public release
+        # baseline. In that case preflight must reject it as a release
+        # candidate until Resources/Info.plist is deliberately version-bumped.
+        version, build = MODULE.VERSION_BUMP.read_candidate(
+            Path(__file__).resolve().parents[2]
+        )
+        published_version, published_build = MODULE.VERSION_BUMP.read_published(
+            Path(__file__).resolve().parents[2]
+        )
+        if MODULE.VERSION_BUMP.version_tuple(version) <= MODULE.VERSION_BUMP.version_tuple(
+            published_version
+        ) or build <= published_build:
+            self.assertIn("Public version/build floor", blocked)
+        else:
+            self.assertNotIn("Public version/build floor", blocked)
         if not (
             Path(__file__).resolve().parents[2] / "dist" / "fingerprint-audit.json"
         ).is_file():
@@ -374,6 +539,19 @@ def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
         json.dumps({"minimumPublicChromiumVersion": "150.0.7871.186"}),
         encoding="utf-8",
     )
+    releases = root / "releases"
+    releases.mkdir(parents=True)
+    (releases / "v1.2.2.json").write_text(
+        json.dumps(
+            {
+                "schemaVersion": 1,
+                "tag": "v1.2.2",
+                "version": "1.2.2",
+                "build": 6,
+            }
+        ),
+        encoding="utf-8",
+    )
     integrated = root / "dist" / "NeAntik-Integrated.app"
     write_plist(
         integrated / "Contents" / "Info.plist",
@@ -408,7 +586,7 @@ def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
     executable.write_bytes(b"runtime executable")
     framework.write_bytes(b"runtime framework")
     embedded_report = args_gn.parent / "runtime-verification.json"
-    source_contract = root / "runtime" / "chromium-152-source-contract.json"
+    source_contract = root / "runtime" / "chromium-150-source-contract.json"
     source_contract.write_text(
         json.dumps(
             {
@@ -419,8 +597,15 @@ def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
         ),
         encoding="utf-8",
     )
-    embedded_contract = args_gn.parent / "chromium-152-source-contract.json"
+    embedded_contract = args_gn.parent / "chromium-150-source-contract.json"
     embedded_contract.write_bytes(source_contract.read_bytes())
+    # The schema-8 GUI fixture carries a frozen candidate manifest from the
+    # Chromium 152 test corpus. Keep its referenced file available so that
+    # fixture integrity can be checked; release preflight must still select
+    # the source contract that matches this fixture's lock (Chromium 150).
+    (args_gn.parent / "chromium-152-source-contract.json").write_bytes(
+        source_contract.read_bytes()
+    )
     source_provenance = args_gn.parent / "source-provenance.json"
     source_provenance.write_text(
         json.dumps(

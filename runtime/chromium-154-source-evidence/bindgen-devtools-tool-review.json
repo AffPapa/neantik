@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "reviewer": "independent provenance_recovery agent; parent runtime smoke",
+  "bindgen": {
+    "sourceCommit": "d874de8d646d9b8a3e7ba2db2bcd52f2fba8f1f5",
+    "sourceClean": true,
+    "scriptPinMatches": true,
+    "cargoLockMatchesHEAD": true,
+    "cargoLockSHA256": "cedf9ea814df3738a24594d15083f3487b761786501651ba03c30d5e59dab5cc",
+    "buildScriptSHA256": "5a5290589ccc4f78acc7e3cc7ae031005e574c09329d6d9f45671c80ad899bba",
+    "binarySHA256": "248d37ada2a8ee0294be173256d717839035d1e75f7d708b37629f77b471695c",
+    "installedMatchesBuildOutput": true,
+    "buildLogSHA256": "ad9f334e8d6337b3d99266a72b1a0356ef0b906186af1d84ef6a7382e73e0da9",
+    "runtimeSmoke": "bindgen0.72.1 --version succeeds with actual LLVM DYLD_LIBRARY_PATH",
+    "warning": "rust-objcopy stripping failed due missing libLLVM.dylib; cargo release build succeeded. Build-tool debug size only; not browser runtime proof."
+  },
+  "devtoolsTypescript": {
+    "version": "6.0.2",
+    "ownerCommit": "66df492aaa0129d090937e933dd44c5389ab24d2",
+    "packageAndEntryMatchHEAD": true,
+    "compilerScript": "lib/_tsc.js",
+    "compilerSHA256": "a0830d427fa0faa4e466e72900b41d15503d7d1cfdc7929458da490883aa6f22",
+    "compilerChanges": "Two independently replayed domain substitutions; see dependency-domain-replay.json"
+  },
+  "releaseReady": false
+}

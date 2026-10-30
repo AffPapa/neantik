@@ -35,6 +35,121 @@ VERIFIER_SPEC.loader.exec_module(VERIFIER_FIXTURES)
 
 
 class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
+    def test_copying_lib_license_is_scanned_as_text(self) -> None:
+        self.assertTrue(MODULE.is_text_entry("JavaScriptCore/COPYING.LIB"))
+        self.assertTrue(MODULE.is_text_entry("WebCore/LICENSE-LGPL-2.1"))
+        self.assertTrue(MODULE.is_text_entry("third_party/LICENSE.Emscripten"))
+        self.assertTrue(MODULE.is_text_entry("WebInspectorUI-framework.LICENSE"))
+        self.assertTrue(MODULE.is_text_entry("codec/README.chromium"))
+        self.assertTrue(MODULE.is_text_entry(
+            "docs/history/security-baseline.json.before-v139-security-baseline-refresh-20261026"))
+        self.assertFalse(MODULE.is_text_entry("JavaScriptCore/opaque.lib"))
+
+    def test_synthetic_user_paths_are_recognized_in_source_archive_root(self) -> None:
+        self.assertTrue(MODULE.is_synthetic_test_user_path(
+            "NeAntik-source/scripts/tests/test_fixture.py", "alice"
+        ))
+        self.assertFalse(MODULE.is_synthetic_test_user_path(
+            "NeAntik-source/docs/evidence/fixture.json", "alice"
+        ))
+
+    def test_only_exact_synthetic_fingerprint_corpus_bytes_are_pinned(self) -> None:
+        for relative in MODULE.SYNTHETIC_CORPUS_ENTRIES:
+            payload = (SCRIPT.parents[1] / relative).read_bytes()
+            with self.subTest(relative=relative):
+                self.assertTrue(MODULE.is_pinned_synthetic_corpus_entry(relative, payload))
+                self.assertTrue(MODULE.is_pinned_synthetic_corpus_entry(
+                    "NeAntik-source/" + relative, payload
+                ))
+                self.assertFalse(MODULE.is_pinned_synthetic_corpus_entry(
+                    relative, payload + b"changed"
+                ))
+
+    def test_pinned_webmodel_cube_map_is_checked_as_exact_binary(self) -> None:
+        for name in (
+            "docs/evidence/third-party/neantik-webmodel-ibl/runtime-resources/modelDefaultDiffuseData",
+            "docs/evidence/third-party/neantik-webmodel-ibl/runtime-resources/modelDefaultSpecularData",
+        ):
+            with self.subTest(name=name):
+                payload = (SCRIPT.parents[1] / name).read_bytes()
+                self.assertFalse(MODULE.is_text_entry(name))
+                MODULE.validate_safe_binary(name, payload)
+                with self.assertRaises(MODULE.PublicArtifactPrivacyError):
+                    MODULE.validate_safe_binary(name, payload + b"changed")
+
+    def test_pinned_owned_canary_font_is_checked_as_exact_binary(self) -> None:
+        for name in (
+            "runtime/font-policy-v1/witness/fonts/owned-canary.ttf",
+            "runtime/font-policy-v1/witness/fonts/owned-family-collision.ttf",
+        ):
+            with self.subTest(name=name):
+                payload = (SCRIPT.parents[1] / name).read_bytes()
+                self.assertFalse(MODULE.is_text_entry(name))
+                MODULE.validate_safe_binary(name, payload)
+                with self.assertRaises(MODULE.PublicArtifactPrivacyError):
+                    MODULE.validate_safe_binary(name, payload + b"changed")
+
+    def test_pinned_swift_runtime_library_is_checked_as_exact_binary(self) -> None:
+        name = "runtime/owned-webkit/libswiftCompatibilitySpan.dylib"
+        payload = (SCRIPT.parents[1] / name).read_bytes()
+        MODULE.validate_safe_binary(name, payload)
+        MODULE.validate_safe_binary("NeAntik-source/" + name, payload)
+        with self.assertRaises(MODULE.PublicArtifactPrivacyError):
+            MODULE.validate_safe_binary(name, payload + b"changed")
+        provenance = json.loads(
+            (SCRIPT.parents[1] / "runtime/owned-webkit/PROVENANCE.json").read_text()
+        )
+        self.assertEqual(provenance["library"]["sha256"],
+                         hashlib.sha256(payload).hexdigest())
+        license_path = SCRIPT.parents[1] / provenance["license"]["path"]
+        self.assertEqual(provenance["license"]["sha256"],
+                         hashlib.sha256(license_path.read_bytes()).hexdigest())
+
+    def test_only_pinned_attributed_font_is_accepted(self) -> None:
+        relative = "scripts/runtime-platform/fixtures/vector-semantics/own-ahem.woff2"
+        payload = (SCRIPT.parents[1] / relative).read_bytes()
+        MODULE.validate_safe_binary(relative, payload)
+        MODULE.validate_safe_binary("neantik-source/" + relative, payload)
+        for name, data in [(relative, payload[:-1]),
+                           (relative, payload + b"secret"),
+                           (relative, b"fake" + payload[4:]),
+                           (relative.replace("own-ahem", "other"), payload),
+                           ("uploads/own-ahem.woff2", payload)]:
+            with self.subTest(name=name, size=len(data)):
+                with self.assertRaises(MODULE.PublicArtifactPrivacyError):
+                    MODULE.validate_safe_binary(name, data)
+
+    def test_large_text_is_scanned_completely_and_still_bounded(self) -> None:
+        prefix = b" " * (20 * 1024 * 1024)
+        clean = MODULE.ArtifactEntry(name="projection.json", payload=prefix + b'{"schemaVersion":1}')
+        self.assertEqual(MODULE.inspect_entry(clean), [])
+        secret = MODULE.ArtifactEntry(name="projection.json", payload=prefix + b'{"proxyPassword":"late-fixture-secret"}')
+        self.assertTrue(MODULE.inspect_entry(secret))
+        oversized = MODULE.ArtifactEntry(name="projection.json", payload=b" " * (MODULE.MAX_TEXT_FILE_BYTES + 1))
+        with self.assertRaises(MODULE.PublicArtifactPrivacyError):
+            MODULE.inspect_entry(oversized)
+
+    def test_compiled_help_examples_pass_existing_binary_privacy_rules(self) -> None:
+        # Help strings ship in the executable. Apply the same opaque-binary
+        # scanner here, so illustrative credentials cannot block packaging.
+        help_source = SCRIPT.parents[1] / "Sources/NeAntik/HelpContent.swift"
+        entry = MODULE.ArtifactEntry(
+            name="Contents/MacOS/NeAntik",
+            payload=help_source.read_bytes(),
+        )
+        self.assertEqual(MODULE.inspect_binary(entry), [])
+
+    def test_native_manifest_and_source_text_formats_are_scanned_for_credentials(self):
+        for suffix in (".xcprivacy", ".strings", ".patch", ".metal", ".php", ".sb", ".in", ".notice",
+                       ".list", ".sha256", ".sudoers", ".tsv", ".zlist"):
+            with self.subTest(suffix=suffix), tempfile.TemporaryDirectory() as temporary:
+                path = Path(temporary) / ("public" + suffix)
+                path.write_text("Public fixture without sensitive values\n")
+                MODULE.verify_public_artifact_privacy(artifact=path)
+                path.write_text("http://real-user:actual-password@proxy.invalid\n")
+                with self.assertRaises(MODULE.PublicArtifactPrivacyError):
+                    MODULE.verify_public_artifact_privacy(artifact=path)
+
     def test_single_public_file_is_verified_without_parent_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -104,7 +219,7 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
                 json.dumps(
                     {
                         "firstInitial": {
-                            "identityCode": "NA-DEADBEEF",
+                            "identityCode": "NA-" + "DEADBEEF",
                             "values": {"canvas": "private"},
                         }
                     }
@@ -174,7 +289,7 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
                     {
                         "firstInitial": {
                             "capturedAt": "2026-07-30T00:00:00Z",
-                            "identityCode": "NA-13579BDF",
+                            "identityCode": "NA-" + "13579BDF",
                             "profileID": "private-profile-id",
                             "values": {
                                 "canvas": "private-canvas-hash",
@@ -223,11 +338,23 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
             self.assertNotIn("real-password-value", message)
             self.assertNotIn("another-password", message)
 
-    def test_plain_secret_and_test_values_are_not_safe_markers(self) -> None:
-        for candidate in ("secret", "test"):
-            with self.subTest(candidate=candidate):
-                self.assertFalse(MODULE.safe_secret(candidate))
-                self.assertTrue(MODULE.sensitive_value_present(candidate))
+    def test_plain_secret_and_test_password_values_are_not_placeholders(self) -> None:
+        for password in ("secret", "test"):
+            with self.subTest(password=password):
+                with tempfile.TemporaryDirectory() as temporary:
+                    public = Path(temporary)
+                    (public / "release.json").write_text(
+                        json.dumps({"proxy": {"password": password}}),
+                        encoding="utf-8",
+                    )
+
+                    with self.assertRaisesRegex(
+                        MODULE.PublicArtifactPrivacyError,
+                        "sensitive user, profile, browser or proxy data",
+                    ):
+                        MODULE.verify_public_artifact_privacy(
+                            artifact=public
+                        )
 
     def test_rejects_ini_proxy_password_and_absolute_path(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -469,6 +596,21 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
                             artifact=archive
                         )
 
+    def test_opaque_packaged_resources_ignore_ui_key_value_labels(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            archive = Path(temporary) / "public.zip"
+            resource = (
+                "public/App.app/Contents/Frameworks/Test.framework/"
+                "Versions/1/Resources/en.lproj/locale.pak"
+            )
+            with zipfile.ZipFile(archive, "w") as output:
+                output.writestr(
+                    resource,
+                    b"cookies: enabled\\x00credentials: managed\\x00",
+                )
+
+            MODULE.verify_public_artifact_privacy(artifact=archive)
+
     def test_rejects_normalized_sensitive_json_classes_without_echoing_values(self) -> None:
         sensitive = {
             "cookies": ["cookie-secret"],
@@ -528,6 +670,107 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
                     MODULE.PublicArtifactPrivacyError
                 ):
                     MODULE.validate_public_attestation(candidate)
+
+    def test_semantic_public_attestation_rejects_wrong_policy_and_malformed_summary(self):
+        fixture_path = Path(__file__).resolve().parent / "fixtures" / "fingerprint-evidence-schema9-swift.json"
+        fixture = json.loads(fixture_path.read_text())
+        manifest = base64.b64decode(fixture["manifestBase64"], validate=True)
+        envelope = base64.b64decode(fixture["envelopeBase64"], validate=True)
+        verified = MODULE.EVIDENCE_SCHEMA.verify_fingerprint_evidence(candidate_manifest_raw=manifest, envelope_raw=envelope)
+        payload = json.loads(verified.payload)
+        attestation = MODULE.expected_authenticated_public_attestation(payload, verified)
+        self.assertEqual(attestation["schemaVersion"], 4)
+        MODULE.validate_public_attestation(attestation)
+        for key, bad in (("semanticPolicyID", "unknown"), ("criticalObservationsStable", False),
+                         ("schemaVersion", 3), ("auditSchemaVersion", 7),
+                         ("changedCriticalKeys", None), ("changedCriticalKeys", "canvas"),
+                         ("changedCriticalKeys", ["unknown"]), ("verdict", "verified")):
+            item = dict(attestation); item[key] = bad
+            with self.assertRaises(MODULE.PublicArtifactPrivacyError, msg=key):
+                MODULE.validate_public_attestation(item)
+
+    def test_authenticated_attestation_reverifies_exact_schema9(self) -> None:
+        fixture_path = (
+            Path(__file__).resolve().parent
+            / "fixtures"
+            / "fingerprint-evidence-schema9-swift.json"
+        )
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        manifest_raw = base64.b64decode(
+            fixture["manifestBase64"],
+            validate=True,
+        )
+        envelope_raw = base64.b64decode(
+            fixture["envelopeBase64"],
+            validate=True,
+        )
+        verified = MODULE.EVIDENCE_SCHEMA.verify_fingerprint_evidence(
+            candidate_manifest_raw=manifest_raw,
+            envelope_raw=envelope_raw,
+        )
+        payload = MODULE.EVIDENCE_SCHEMA.load_canonical_json(
+            verified.payload,
+            maximum_bytes=MODULE.EVIDENCE_SCHEMA.MAXIMUM_PAYLOAD_BYTES,
+            label="Fingerprint evidence payload",
+        )
+        attestation = MODULE.expected_authenticated_public_attestation(
+            payload,
+            verified,
+        )
+        expected_runtime = {
+            "managerVersion": payload["managerVersion"],
+            "managerBuild": payload["managerBuild"],
+            "runtimeVersion": payload["runtimeVersion"],
+            "runtimeExecutableSHA256":
+                payload["runtimeExecutableSHA256"],
+            "runtimeFrameworkSHA256":
+                payload["runtimeFrameworkSHA256"],
+        }
+        with mock.patch.object(
+            MODULE.GUI_VERIFIER,
+            "expected_runtime_evidence_from_app",
+            return_value=expected_runtime,
+        ):
+            result = (
+                MODULE.verify_evidence_attestation_payload_binding(
+                    private_payload=envelope_raw,
+                    public_payload=attestation,
+                    integrated_app=Path("/private/tmp/NeAntik.app"),
+                    release_channel="public-alpha",
+                    candidate_manifest_sha256=hashlib.sha256(
+                        manifest_raw
+                    ).hexdigest(),
+                    candidate_manifest_raw=manifest_raw,
+                )
+            )
+        self.assertEqual(
+            result,
+            fixture["expected"]["transportSHA256"],
+        )
+
+        tampered = dict(attestation)
+        tampered["payloadSHA256"] = "0" * 64
+        with mock.patch.object(
+            MODULE.GUI_VERIFIER,
+            "expected_runtime_evidence_from_app",
+            return_value=expected_runtime,
+        ):
+            with self.assertRaisesRegex(
+                MODULE.PublicArtifactPrivacyError,
+                "do not match",
+            ):
+                MODULE.verify_evidence_attestation_payload_binding(
+                    private_payload=envelope_raw,
+                    public_payload=tampered,
+                    integrated_app=Path(
+                        "/private/tmp/NeAntik.app"
+                    ),
+                    release_channel="public-alpha",
+                    candidate_manifest_sha256=hashlib.sha256(
+                        manifest_raw
+                    ).hexdigest(),
+                    candidate_manifest_raw=manifest_raw,
+                )
 
     def test_authenticated_attestation_reverifies_exact_schema8(self) -> None:
         fixture_path = (
@@ -727,6 +970,47 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 MODULE.PublicArtifactPrivacyError,
                 "ZIP symlink",
+            ):
+                MODULE.verify_public_artifact_privacy(artifact=archive)
+
+    def test_accepts_self_contained_macos_framework_symlinks(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            archive = Path(temporary) / "public.zip"
+            framework = "public/App.app/Contents/Frameworks/Test.framework"
+            current = zipfile.ZipInfo(f"{framework}/Versions/Current")
+            current.create_system = 3
+            current.external_attr = (stat.S_IFLNK | 0o777) << 16
+            resources = zipfile.ZipInfo(f"{framework}/Resources")
+            resources.create_system = 3
+            resources.external_attr = (stat.S_IFLNK | 0o777) << 16
+            with zipfile.ZipFile(archive, "w") as output:
+                output.writestr("public/release.json", '{"version":"0.7.3"}')
+                output.writestr(
+                    f"{framework}/Versions/1/Resources/readme.txt",
+                    "clean",
+                )
+                output.writestr(current, "1")
+                output.writestr(resources, "Versions/Current/Resources")
+
+            result = MODULE.verify_public_artifact_privacy(artifact=archive)
+
+            self.assertEqual(result.scanned_entries, 2)
+
+    def test_rejects_framework_symlink_with_external_target(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            archive = Path(temporary) / "public.zip"
+            link = zipfile.ZipInfo(
+                "public/App.app/Contents/Frameworks/Test.framework/Resources"
+            )
+            link.create_system = 3
+            link.external_attr = (stat.S_IFLNK | 0o777) << 16
+            with zipfile.ZipFile(archive, "w") as output:
+                output.writestr("public/release.json", '{"version":"0.7.3"}')
+                output.writestr(link, "/Users/alice/private")
+
+            with self.assertRaisesRegex(
+                MODULE.PublicArtifactPrivacyError,
+                "ZIP symlink target is unsafe",
             ):
                 MODULE.verify_public_artifact_privacy(artifact=archive)
 

@@ -1,0 +1,40 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "1fc071052a9fbf83f1832efbe4ebe59009efc0539211d98eeeda10c6a591e58a",
+  "payload": {
+    "argsUnchanged": true,
+    "at": "2026-10-08T21:23:11.459556+00:00",
+    "firstFailedLogSHA256": "1057f7a32bd448e6fed539af54c0a16e08b5562d52331d488df5d7c98fcd57a6",
+    "label": "native-version-info-header-dependency",
+    "noClean": true,
+    "patchSHA256": "b69141aa99b5342288e9fa780c9ee55c841e318d774c1e048b2253e4069b37d7",
+    "postimages": {
+      "components/version_info/version_info_with_user_agent.h": "1d29b038e54515687831dcafc74741c013fd080cc6bd7947d05c5f27133cee80"
+    },
+    "preimages": {
+      "components/version_info/version_info_with_user_agent.h": "c65215cdd8722e7b4d27ab11142327dbcd4cf62b972009b67fa4ca4622612914"
+    },
+    "reason": "M156 own header uses PRODUCT_VERSION in static_assert before cc later includes version_info. Add explicit existing native generated values dependency; keep version identity assertion. Generated version_info_values itself includes build_config. Existing GN dependency already supplies generation.",
+    "releaseReady": false,
+    "schemaVersion": 1,
+    "status": "source-applied-incremental-build-pending",
+    "versionUnchanged": true
+  },
+  "payloadType": "json",
+  "receipt": "native-version-info-header-dependency-correction.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

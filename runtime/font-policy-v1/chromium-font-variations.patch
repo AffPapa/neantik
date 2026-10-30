@@ -1,0 +1,108 @@
+--- a/components/ungoogled/system_font_source.cc
++++ b/components/ungoogled/system_font_source.cc
+@@ -86,6 +86,61 @@
+     OwnedCF<CFDataRef> a(CTFontCopyTable(actual, tag, kCTFontTableOptionNoOptions));
+     OwnedCF<CFDataRef> b(CTFontCopyTable(counterpart, tag, kCTFontTableOptionNoOptions));
+     if (!a.get() || !b.get() || !CFEqual(a.get(), b.get())) return false;
++  }
++  return true;
++}
++
++// Validate variation coordinates against the independently loaded file face.
++// Metadata from the submitted font cannot authorize an unsupported axis.
++bool VariationValue(CFTypeRef value, double* result) {
++  return value && CFGetTypeID(value) == CFNumberGetTypeID() &&
++      CFNumberGetValue(static_cast<CFNumberRef>(value), kCFNumberDoubleType, result) &&
++      std::isfinite(*result);
++}
++
++bool SupportedVariation(CFDictionaryRef variation, CFArrayRef axes) {
++  if (!variation || CFGetTypeID(variation) != CFDictionaryGetTypeID() ||
++      CFDictionaryGetCount(variation) > 64 || !axes || CFArrayGetCount(axes) > 64) return false;
++  const CFIndex count = CFDictionaryGetCount(variation);
++  std::vector<const void*> keys(count), values(count);
++  CFDictionaryGetKeysAndValues(variation, keys.data(), values.data());
++  for (CFIndex i = 0; i < count; ++i) {
++    double value = 0;
++    if (!keys[i] || CFGetTypeID(keys[i]) != CFNumberGetTypeID() ||
++        !VariationValue(values[i], &value)) return false;
++    bool supported = false;
++    for (CFIndex j = 0; j < CFArrayGetCount(axes); ++j) {
++      auto axis = static_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(axes, j));
++      if (!axis || CFGetTypeID(axis) != CFDictionaryGetTypeID()) return false;
++      auto tag = CFDictionaryGetValue(axis, kCTFontVariationAxisIdentifierKey);
++      double minimum = 0, maximum = 0, fallback = 0;
++      if (!tag || CFGetTypeID(tag) != CFNumberGetTypeID() ||
++          !VariationValue(CFDictionaryGetValue(axis, kCTFontVariationAxisMinimumValueKey), &minimum) ||
++          !VariationValue(CFDictionaryGetValue(axis, kCTFontVariationAxisMaximumValueKey), &maximum) ||
++          !VariationValue(CFDictionaryGetValue(axis, kCTFontVariationAxisDefaultValueKey), &fallback) ||
++          minimum > fallback || fallback > maximum) return false;
++      if (CFEqual(keys[i], tag)) { supported = minimum <= value && value <= maximum; break; }
++    }
++    if (!supported) return false;
++  }
++  return true;
++}
++
++bool SameEffectiveVariation(CFDictionaryRef requested, CTFontRef counterpart, CFArrayRef axes) {
++  OwnedCF<CFDictionaryRef> applied(CTFontCopyVariation(counterpart));
++  if (applied.get() && !SupportedVariation(applied.get(), axes)) return false;
++  for (CFIndex i = 0; i < CFArrayGetCount(axes); ++i) {
++    auto axis = static_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(axes, i));
++    auto tag = CFDictionaryGetValue(axis, kCTFontVariationAxisIdentifierKey);
++    double fallback = 0;
++    if (!VariationValue(CFDictionaryGetValue(axis, kCTFontVariationAxisDefaultValueKey), &fallback)) return false;
++    double a = fallback, b = fallback;
++    auto x = CFDictionaryGetValue(requested, tag);
++    auto y = applied.get() ? CFDictionaryGetValue(applied.get(), tag) : nullptr;
++    if ((x && !VariationValue(x, &a)) || (y && !VariationValue(y, &b))) return false;
++    // A font's fixed-point design coordinate has 16 fractional bits. Never
++    // accept a different effective instance merely because its name matches.
++    if (std::abs(a - b) > 1.0 / 65536.0) return false;
+   }
+   return true;
+ }
+@@ -154,14 +209,40 @@
+   if (!name.get() || !attribute.get() || CFGetTypeID(attribute.get()) != CFURLGetTypeID()) return false;
+   OwnedCF<CFArrayRef> descriptors(CTFontManagerCreateFontDescriptorsFromURL(static_cast<CFURLRef>(attribute.get())));
+   if (!descriptors.get()) return false;
++  OwnedCF<CFDictionaryRef> variation(CTFontCopyVariation(font));
++  if (variation.get() && CFGetTypeID(variation.get()) != CFDictionaryGetTypeID()) return false;
++  const bool varied = variation.get() && CFDictionaryGetCount(variation.get()) > 0;
+   for (CFIndex i = 0; i < CFArrayGetCount(descriptors.get()); ++i) {
+     auto descriptor = static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(descriptors.get(), i));
+     OwnedCF<CFTypeRef> candidate_name(CTFontDescriptorCopyAttribute(descriptor, kCTFontNameAttribute));
+-    if (!candidate_name.get() || !CFEqual(name.get(), candidate_name.get())) continue;
+-    OwnedCF<CTFontRef> counterpart(CTFontCreateWithFontDescriptor(descriptor, CTFontGetSize(font), nullptr));
++    if (!candidate_name.get() || (!varied && !CFEqual(name.get(), candidate_name.get()))) continue;
++    OwnedCF<CTFontRef> base(CTFontCreateWithFontDescriptor(descriptor, CTFontGetSize(font), nullptr));
++    if (!base.get()) continue;
++    // Preserve the previously qualified exact-face/all-table proof. Some
++    // default UI instances expose variation metadata only through the alias.
++    auto base_source = InspectFont(base.get());
++    if (base_source.origin != Origin::kProtectedSystemFile ||
++        base_source.device != origin.device || base_source.inode != origin.inode) continue;
++    if (CFEqual(name.get(), candidate_name.get()) && EqualTables(font, base.get())) return true;
++    OwnedCF<CFArrayRef> axes(varied ? CTFontCopyVariationAxes(base.get()) : nullptr);
++    if (varied && !SupportedVariation(variation.get(), axes.get())) continue;
++    const void* key = kCTFontVariationAttribute;
++    const void* value = variation.get();
++    OwnedCF<CFDictionaryRef> attributes(varied ? CFDictionaryCreate(kCFAllocatorDefault,
++        &key, &value, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks) : nullptr);
++    OwnedCF<CTFontDescriptorRef> adjusted(varied ?
++        CTFontDescriptorCreateCopyWithAttributes(descriptor, attributes.get()) : nullptr);
++    if (varied && (!attributes.get() || !adjusted.get())) continue;
++    OwnedCF<CTFontRef> counterpart(varied ?
++        CTFontCreateWithFontDescriptor(adjusted.get(), CTFontGetSize(font), nullptr) :
++        static_cast<CTFontRef>(CFRetain(base.get())));
++    if (!counterpart.get()) continue;
++    OwnedCF<CFStringRef> actual_name(CTFontCopyPostScriptName(counterpart.get()));
++    if (!actual_name.get() || !CFEqual(name.get(), actual_name.get())) continue;
+     auto actual_source = InspectFont(counterpart.get());
+     if (actual_source.origin == Origin::kProtectedSystemFile && actual_source.device == origin.device &&
+-        actual_source.inode == origin.inode && EqualTables(font, counterpart.get())) return true;
++        actual_source.inode == origin.inode && (!varied || SameEffectiveVariation(variation.get(), counterpart.get(), axes.get())) &&
++        EqualTables(font, counterpart.get())) return true;
+   }
+   return false;
+ }

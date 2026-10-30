@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "status": "source-controls-and-delivered-binary;fullWebKitbackup-unavailable",
+  "version": "0.8.24",
+  "build": 136,
+  "appSource": "1da05e8929dcafaaae85d49b2a1229f430af322e",
+  "compiledFromSource": "5ce4d5d791760e853c8a0e45ffc357277f485862",
+  "managerSHA256": "e4640e423a2582af96fdeaf3bd575e02d9610bcff384491c34378bcdbbe4561f",
+  "releaseReport": "../../releases/v0.8.24.json",
+  "sourceControls": "webkit-backup-admission-development.json",
+  "localSwiftCases": 50,
+  "localPythonCases": 35,
+  "oldCodeNegativeControlIssues": 12,
+  "exactSignedPrivateBackupBranchInvoked": false,
+  "exactCandidateQualificationScope": "Headed baseline, signed artifact provenance and public downloaded bytes;not a direct full backup operation",
+  "fullWebKitBackup": false,
+  "runtimeChanged": false,
+  "profileDataSchemaChanged": false,
+  "full1_0": false
+}

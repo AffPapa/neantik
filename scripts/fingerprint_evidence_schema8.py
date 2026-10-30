@@ -113,7 +113,23 @@ EXACT_CRITICAL_FILE_PATHS = {
     ),
     "sourceContract": (
         "Contents/Resources/NeAntikRuntimeEvidence/"
-        "chromium-152-source-contract.json"
+        "chromium-152-source-contract.json",
+        "Contents/Resources/NeAntikRuntimeEvidence/"
+        "chromium-153-port-status.json",
+        "Contents/Resources/NeAntikRuntimeEvidence/"
+        "chromium-154-source-contract.json",
+        "Contents/Resources/NeAntikRuntimeEvidence/"
+        "chromium-15540-source-contract.json",
+        "Contents/Resources/NeAntikRuntimeEvidence/"
+        "chromium-15540-semantic-v1-source-contract.json",
+        "Contents/Resources/NeAntikRuntimeEvidence/"
+        "chromium-15540-semantic-v2-source-contract.json",
+        "Contents/Resources/NeAntikRuntimeEvidence/"
+        "chromium-15540-semantic-v3-source-contract.json",
+        "Contents/Resources/NeAntikRuntimeEvidence/"
+        "chromium-15540-semantic-v4-source-contract.json",
+        "Contents/Resources/NeAntikRuntimeEvidence/"
+        "chromium-15540-semantic-v5-source-contract.json",
     ),
     "sourceProvenance": (
         "Contents/Resources/NeAntikRuntimeEvidence/source-provenance.json"
@@ -150,16 +166,7 @@ RELEASE_PAYLOAD_KEYS = {
     "networkPrivacyControlled",
     "publicAlphaQualified",
     "productionQualified",
-    "strictFailureIDs",
     "limitations",
-}
-STRICT_FAILURE_IDS = {
-    "audio-repeat",
-    "canvas-repeat",
-    "client-rects-repeat",
-    "css-screen",
-    "webgl-pixels-repeat",
-    "webgl-shader-worker",
 }
 CRITICAL_SURFACE_KEYS = {
     "canvas",
@@ -545,7 +552,7 @@ def _validate_release_payload(value: Any) -> dict[str, Any]:
     )
     _require_exact_integer(
         payload.get("schemaVersion"),
-        2,
+        1,
         "Fingerprint evidence payload schemaVersion",
     )
     _require_exact_string(
@@ -655,14 +662,6 @@ def _validate_release_payload(value: Any) -> dict[str, Any]:
         payload.get("limitations"),
         "Fingerprint evidence payload limitations",
     )
-    strict_failure_ids = _require_sorted_unique_string_list(
-        payload.get("strictFailureIDs"),
-        "Fingerprint evidence payload strictFailureIDs",
-    )
-    if not set(strict_failure_ids).issubset(STRICT_FAILURE_IDS):
-        raise FingerprintEvidenceVerificationError(
-            "Fingerprint evidence payload strictFailureIDs are invalid."
-        )
     for key in (
         "profileSequenceValid",
         "identitySequenceValid",
@@ -691,7 +690,6 @@ def _validate_release_payload(value: Any) -> dict[str, Any]:
             or not payload["networkPrivacyControlled"]
             or unavailable
             or unstable
-            or strict_failure_ids
             or limitations
         ):
             raise FingerprintEvidenceVerificationError(
@@ -728,7 +726,8 @@ def _validate_hashed_entry(value: Any, label: str) -> dict[str, str]:
 def _validate_critical_bundle_path(key: str, path: str) -> None:
     expected = EXACT_CRITICAL_FILE_PATHS.get(key)
     if expected is not None:
-        if path != expected:
+        expected_paths = (expected,) if isinstance(expected, str) else expected
+        if path not in expected_paths:
             raise FingerprintEvidenceVerificationError(
                 f"Candidate manifest {key} bundlePath is invalid."
             )

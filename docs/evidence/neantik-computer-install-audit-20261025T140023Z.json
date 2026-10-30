@@ -1,0 +1,27 @@
+{
+  "observedAt": "2026-10-25T14:00:23Z",
+  "scope": "NeAntik app-bundle inventory and installability recheck; no app/profile mutation",
+  "commands": [
+    "find /Applications \"$HOME/Applications\" -maxdepth 3 -name NeAntik.app -print",
+    "read CFBundleIdentifier, CFBundleVersion, CFBundleShortVersionString from /Applications/NeAntik.app/Contents/Info.plist",
+    "pgrep -afil NeAntik|WebKit|Chromium (OS process inventory unavailable: sysmond request failed; pgrep could not access process list)",
+    "enumerate existing private NeAntik 1.0 ZIP/DMG candidates in /private/tmp/neantik-release-v1 and /private/tmp"
+  ],
+  "installedApps": [
+    {
+      "path": "/Applications/NeAntik.app",
+      "bundleID": "app.neantik.desktop",
+      "version": "0.7.18",
+      "build": "81"
+    }
+  ],
+  "installableProductionCandidate": null,
+  "retiredQAArtifact": {
+    "path": "/private/tmp/neantik-owned-webkit-qa-vw48xl6o/NeAntik-1.0.0-148-dev-owned-webkit-qa.zip",
+    "sha256": "ba20cac53d97656175777373c193770a7527bf1211c9159dfcca22807a4c10ce",
+    "status": "retired synthetic QA; fixture-root-bound; unsuitable as user installation"
+  },
+  "disposition": "No browser bundle or profile removed, no install attempted. Preserve 0.7.18 and user data because no production 1.0 replacement or verified rollback package exists. Process running state unverified because OS process inventory was denied by the sandbox.",
+  "acceptedEvidence": "Reuse exact build148 scoped HTTPS/DNS proxy QA receipt; it is not production or installation evidence.",
+  "result": "replacement_absent; destructive cleanup and fresh install are not currently safe or possible"
+}

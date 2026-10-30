@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T14:59:06Z",
+  "scope": "Regression after Unicode notice integration and release-workflow consistency fixes; no app/runtime build",
+  "attempts": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s scripts/tests -p test_*.py",
+      "result": "initial diagnostic run: 1977 tests; 8 errors and 1 failure",
+      "disposition": "identified stale synthetic Chromium floor, docs-verifier mismatch, missing WebKit proxy helper executable bit, and sandbox process-inspection denial; fixed the first three; process denial classified setup"
+    },
+    {
+      "command": "same full Python suite after fixes",
+      "result": "1977 tests, 55 skipped, one error in test_live_owned_candidate_refuses_then_accepts_after_exit because /bin/ps returned EPERM",
+      "seconds": 367.311,
+      "status": "partial; environment/setup error, not a product PASS"
+    }
+  ],
+  "affectedModuleRerun": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest scripts.tests.test_wait_for_neantik_runtime_drain",
+    "environment": "one exact run with required elevated read-only process observation",
+    "result": "6/6 PASS"
+  },
+  "otherVerification": {
+    "webkitRuntimeNoticeFocused": "46/46 PASS in implementation and canonical checkout",
+    "sourceOfferReplay": "89/89 PASS: 46 notice installer + 43 package host, clean extraction from frozen manager archive",
+    "directDocsSigningWorkflowFocused": "20/20 PASS",
+    "swiftFullSuite": {
+      "tests": 1841,
+      "suites": 222,
+      "passed": true,
+      "skipped": 82,
+      "receipt": "/private/tmp/neantik-release-v1/.build/neantik-local/test-receipts/20261025T143829Z-54426.json",
+      "receiptSHA256": "3a36309ebbc2087ce32e09693e1a3eeef8b3ed7d08fff4247240555c5aba42d2",
+      "inputSHA256": "05eba89b1dc0862ef86db90a76cf54129b43f7f7564bd7389650f05d6711c35f",
+      "seconds": 108.619
+    }
+  },
+  "changesInScope": [
+    "Added hash-pinned Unicode License v3 and JSC CaseFolding lineage notice to owned WebKit notice installer and tests.",
+    "Added versioned 88-file v21 notice source bundle and consolidated overlay; preserved v20 artifacts.",
+    "Updated source-offer recipe/manifest and added JSC Unicode notice integration receipt.",
+    "Updated synthetic direct-signing fixture to current pinned Chromium 156.0.8078.48 floor.",
+    "Aligned release-document verifier with CURRENT.json routing and historical snapshots.",
+    "Restored executable mode on scripts/resolve-webkit-proxy-build-mode.sh and added explicit unpublished build139 changelog status."
+  ],
+  "limitation": "Full Python suite is not reported green because the sandbox blocked /bin/ps in one integration test; that module passed alone under the authorized read-only observer context.",
+  "releaseGate": false
+}

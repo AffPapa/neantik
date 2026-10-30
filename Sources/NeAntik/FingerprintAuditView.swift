@@ -48,6 +48,20 @@ struct ManualFingerprintReportDeliveryGate: Equatable {
     }
 }
 
+enum FingerprintAuditReportPresentationPolicy {
+    static func showsManualReportAction(
+        isReleaseAudit: Bool,
+        technicalDetailsAreExpanded: Bool,
+        hasReportURL: Bool
+    ) -> Bool {
+        !isReleaseAudit && technicalDetailsAreExpanded && hasReportURL
+    }
+
+    static let manualReportLabel = "Открыть локальный отчёт для отладки"
+    static let manualReportCaption =
+        "Файл остаётся на этом Mac и предназначен только для инженерной диагностики."
+}
+
 struct FingerprintAuditView: View {
     let profiles: [BrowserProfile]
     let runtime: BrowserRuntime
@@ -83,12 +97,14 @@ struct FingerprintAuditView: View {
         self.onReport = onReport
         isReleaseAudit = releaseContext != nil
 
-        let firstID = profiles.first(where: { $0.id == initialFirstID })?.id ??
-            profiles.first?.id ?? UUID()
-        let secondID = profiles.first(where: { $0.id != firstID })?.id ??
-            firstID
-        _firstID = State(initialValue: firstID)
-        _secondID = State(initialValue: secondID)
+        let first =
+            profiles.first(where: { $0.id == initialFirstID }) ??
+            profiles.first!
+        let second =
+            profiles.first(where: { $0.id != first.id }) ??
+            first
+        _firstID = State(initialValue: first.id)
+        _secondID = State(initialValue: second.id)
         _coordinator = StateObject(
             wrappedValue: FingerprintAuditCoordinator(
                 paths: paths,
@@ -175,6 +191,12 @@ struct FingerprintAuditView: View {
             if coordinator.isRunning {
                 coordinator.cancel()
             }
+            if releaseAuditTerminationScheduled {
+                Task { @MainActor in
+                    await Task.yield()
+                    NSApplication.shared.terminate(nil)
+                }
+            }
         }
         .onAppear {
             normalizeSelection()
@@ -205,11 +227,6 @@ struct FingerprintAuditView: View {
             firstID = profiles.first(where: { $0.id != selectedID })?.id ??
                 firstID
         }
-        .onChange(of: coordinator.isRunning) { _, isRunning in
-            if isRunning {
-                announce("Проверка профилей началась.")
-            }
-        }
         .onChange(of: coordinator.report?.id) { _, _ in
             guard let report = coordinator.report else { return }
             if manualReportDeliveryGate.shouldDeliver(
@@ -218,11 +235,6 @@ struct FingerprintAuditView: View {
             ) {
                 onReport(report)
             }
-            announce(
-                report.isPublicAlphaReleaseQualified
-                    ? "Проверка завершена: профиль работает правильно."
-                    : "Проверка завершена: требуется внимание."
-            )
         }
         .onChange(of: coordinator.releaseEvidenceIsReady) { _, ready in
             guard ready else { return }
@@ -248,22 +260,9 @@ struct FingerprintAuditView: View {
                 try? FileHandle.standardError.write(contentsOf: data)
             }
         }
-        Task { @MainActor in
-            await Task.yield()
-            NSApplication.shared.terminate(nil)
-        }
-    }
-
-    @MainActor
-    private func announce(_ message: String) {
-        NSAccessibility.post(
-            element: NSApp as Any,
-            notification: .announcementRequested,
-            userInfo: [
-                .announcement: message,
-                .priority: NSAccessibilityPriorityLevel.medium.rawValue
-            ]
-        )
+        // AppKit cannot complete termination while the SwiftUI audit sheet
+        // remains presented. The onDisappear handler terminates after dismiss.
+        dismiss()
     }
 
     private var header: some View {
@@ -311,11 +310,14 @@ struct FingerprintAuditView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityElement(children: .combine)
 
-                    DisclosureGroup("Изменить профили", isExpanded: $profileSelectionIsExpanded) {
+                    disclosureButton(
+                        "Изменить профили",
+                        isExpanded: $profileSelectionIsExpanded
+                    )
+                    if profileSelectionIsExpanded {
                         profilePickers
                             .padding(.top, 8)
                     }
-                    .disclosureGroupStyle(NeAntikDisclosureStyle())
                 }
             }
             .padding(.vertical, 4)
@@ -467,21 +469,36 @@ struct FingerprintAuditView: View {
             }
             .accessibilityElement(children: .combine)
 
-            DisclosureGroup("Технические подробности", isExpanded: $technicalDetailsAreExpanded) {
+            disclosureButton(
+                "Технические подробности",
+                isExpanded: $technicalDetailsAreExpanded
+            )
+            if technicalDetailsAreExpanded {
                 detailedResult(report)
                     .padding(.top, 12)
-                if let reportURL = coordinator.reportURL {
+                if FingerprintAuditReportPresentationPolicy.showsManualReportAction(
+                    isReleaseAudit: isReleaseAudit,
+                    technicalDetailsAreExpanded: technicalDetailsAreExpanded,
+                    hasReportURL: coordinator.reportURL != nil
+                ), let reportURL = coordinator.reportURL {
                     Button {
                         NSWorkspace.shared.activateFileViewerSelecting([
                             reportURL
                         ])
                     } label: {
-                        Label("Показать JSON-отчёт", systemImage: "doc.text")
+                        Label(
+                            FingerprintAuditReportPresentationPolicy.manualReportLabel,
+                            systemImage: "doc.text"
+                        )
                     }
                     .padding(.top, 8)
+                    Text(
+                        FingerprintAuditReportPresentationPolicy.manualReportCaption
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
             }
-            .disclosureGroupStyle(NeAntikDisclosureStyle())
         }
     }
 
@@ -502,6 +519,11 @@ struct FingerprintAuditView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+
+            Text(report.criticalObservationsStable
+                 ? "Измерения доступны и повторяемы. Совпадающий результат между профилями допустим; различия показаны отдельно. Это не подтверждает изоляцию данных или сетевой маршрут."
+                 : "Часть измерений недоступна или изменилась при повторе. Проверка не подтверждена.")
+                .foregroundStyle(.secondary)
 
             GroupBox("Критичные поверхности") {
                 VStack(spacing: 9) {
@@ -570,7 +592,12 @@ struct FingerprintAuditView: View {
                         value: report.safeRuntimeSignatureSummary
                     )
 
-                    DisclosureGroup("Безопасная диагностическая сводка", isExpanded: $safeDiagnosticSummaryIsExpanded) {
+                    disclosureButton(
+                        "Безопасная диагностическая сводка",
+                        isExpanded: $safeDiagnosticSummaryIsExpanded,
+                        font: .caption
+                    )
+                    if safeDiagnosticSummaryIsExpanded {
                         Text(report.safeDiagnosticSummary)
                             .font(.caption.monospaced())
                             .foregroundStyle(.secondary)
@@ -580,7 +607,6 @@ struct FingerprintAuditView: View {
                                 "Безопасная диагностическая сводка проверки"
                             )
                     }
-                    .disclosureGroupStyle(NeAntikDisclosureStyle())
 
                     Text(
                         "Текст можно выделить и скопировать. В нём нет имён и идентификаторов профилей, настроек прокси или измеренных значений сайтов."
@@ -601,13 +627,13 @@ struct FingerprintAuditView: View {
                         )
                         if report.isProductionReleaseQualified {
                             statusLabel(
-                                "Строгая согласованность production подтверждена",
+                                "Базовая согласованность page/worker подтверждена",
                                 systemImage: "checkmark.shield.fill",
                                 color: .green
                             )
                         } else {
                             statusLabel(
-                                "Строгая согласованность production пока не подтверждена",
+                                "Базовая согласованность page/worker не подтверждена",
                                 systemImage: "exclamationmark.shield.fill",
                                 color: .orange
                             )
@@ -636,6 +662,9 @@ struct FingerprintAuditView: View {
                         .foregroundStyle(.secondary)
                     }
                     Divider()
+                    Text("Это базовое сравнение страницы и Web Worker. Девять контекстов, реальные медиаоперации и другие проверки входят в отдельную квалификацию версии; этот экран не подтверждает весь план 1.0.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     LabeledContent(
                         "Фактический HTTP-маршрут",
                         value: "Не измерялся"
@@ -649,6 +678,40 @@ struct FingerprintAuditView: View {
                 .padding(.vertical, 4)
             }
         }
+    }
+
+    private func disclosureButton(
+        _ title: String,
+        isExpanded: Binding<Bool>,
+        font: Font = .body
+    ) -> some View {
+        Button {
+            isExpanded.wrappedValue.toggle()
+        } label: {
+            HStack(spacing: 6) {
+                Image(
+                    systemName: isExpanded.wrappedValue
+                        ? "chevron.down"
+                        : "chevron.right"
+                )
+                .font(.caption2.weight(.semibold))
+                .accessibilityHidden(true)
+                Text(title)
+                    .font(font)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, minHeight: 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityValue(
+            isExpanded.wrappedValue ? "Развёрнуто" : "Свёрнуто"
+        )
+        .accessibilityHint(
+            isExpanded.wrappedValue
+                ? "Скрывает раздел"
+                : "Показывает раздел"
+        )
     }
 
     private var runningProfileBlocker: some View {
@@ -712,6 +775,9 @@ struct FingerprintAuditView: View {
     }
 
     private func localizedIssue(_ issue: String) -> String {
+        if issue.contains("Font rendering evidence") {
+            return "Нужна новая проверка шрифтов по измерениям DOM и Canvas. Старый список названий не подтверждает отображение и fallback."
+        }
         if issue.contains("browser mode") ||
             issue.contains("diagnostic mode") {
             return "Отчёт получен не в обычном режиме браузера."

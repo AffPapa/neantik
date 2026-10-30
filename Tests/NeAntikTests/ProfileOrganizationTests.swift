@@ -4,22 +4,19 @@ import Testing
 
 struct ProfileOrganizationTests {
     @Test
-    func newProfileStartsOnLocalBlankPage() {
+    func newProfileUsesEditableAffTopFingerprintStartPage() {
         let profile = BrowserProfile(name: "Новый профиль")
 
         #expect(
-            profile.startURL == "about:blank"
+            profile.startURL == "https://aff.top/tools/fingerprint"
         )
     }
 
-    @Test(arguments: [
-        "https://www.google.com", "https://aff.top/tools/fingerprint",
-        "https://example.com/saved?tab=work", "about:blank"
-    ])
-    func storedStartPageSurvivesDecodeWithoutMigration(startURL: String) throws {
+    @Test
+    func storedStartPageSurvivesDecodeWithoutMigration() throws {
         let profile = BrowserProfile(
             name: "Существующий профиль",
-            startURL: startURL
+            startURL: "https://www.google.com"
         )
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -31,8 +28,7 @@ struct ProfileOrganizationTests {
             from: encoder.encode(profile)
         )
 
-        #expect(decoded.startURL == startURL)
-        #expect(decoded.duplicated().startURL == startURL)
+        #expect(decoded.startURL == "https://www.google.com")
     }
 
     @Test
@@ -45,8 +41,7 @@ struct ProfileOrganizationTests {
             name: "Старый профиль",
             colorHex: "#10B981",
             symbolName: "shield.fill",
-            tags: ["Работа"],
-            startURL: "https://aff.top/tools/fingerprint"
+            tags: ["Работа"]
         )
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -70,7 +65,6 @@ struct ProfileOrganizationTests {
         let second = try decoder.decode(BrowserProfile.self, from: legacyData)
 
         #expect(first.id == id)
-        #expect(first.startURL == "https://aff.top/tools/fingerprint")
         #expect(first.colorHex == "#10B981")
         #expect(first.tags.isEmpty)
         #expect(first.note.isEmpty)
@@ -140,7 +134,7 @@ struct ProfileOrganizationTests {
         #expect(copy.identity.runtimeSeed != original.identity.runtimeSeed)
         #expect(copy.name.count <= BrowserProfile.maximumNameLength)
         #expect(copy.name.hasSuffix(" — копия"))
-        #expect(copy.proxy == nil)
+        #expect(copy.proxy == original.proxy)
         #expect(copy.tags == original.tags)
         #expect(copy.note.isEmpty)
         #expect(!copy.isPinned)

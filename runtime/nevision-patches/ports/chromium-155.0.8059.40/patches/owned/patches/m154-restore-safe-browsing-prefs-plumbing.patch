@@ -1,0 +1,27 @@
+--- a/components/safe_browsing/core/common/BUILD.gn
++++ b/components/safe_browsing/core/common/BUILD.gn
+@@ -5,8 +5,22 @@
+ import("//components/safe_browsing/buildflags.gni")
+ import("//mojo/public/tools/bindings/mojom.gni")
+ 
+-group("safe_browsing_prefs") {
+-  # SafeBrowsing prefs are disabled
++static_library("safe_browsing_prefs") {
++  sources = [
++    "safe_browsing_prefs.cc",
++    "safe_browsing_prefs.h",
++  ]
++
++  configs += [ "//build/config/compiler:wexit_time_destructors" ]
++
++  deps = [
++    ":features",
++    "//components/pref_registry",
++    "//components/prefs",
++    "//net",
++  ]
++
++  public_deps = [ "//base" ]
+ }
+ 
+ source_set("safe_browsing_policy_handler") {

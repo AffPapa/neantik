@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.14",
+  "version": "0.7.14",
+  "build": 77,
+  "releasedAt": "2026-10-04",
+  "channel": "production",
+  "sourceCommit": "5f2a57562a4b314d5ae18899a600b4dc942aecde",
+  "runtime": {
+    "chromiumVersion": "154.0.8037.93",
+    "architecture": "arm64",
+    "rebuilt": true,
+    "scope": "Two exact M154 Device Memory Client Hints paths; GN args, compiler flags and runtime version unchanged",
+    "safeBrowsingEnabled": false
+  },
+  "archive": {
+    "name": "NeAntik-0.7.14-arm64-notarized.zip",
+    "sizeBytes": 175064505,
+    "sha256": "7f97f91671bf2b09c7daa1f1201c1eda1a9629ae390db463a2bd0dc51f3e5441"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.14-arm64-notarized.dmg",
+    "sizeBytes": 197868410,
+    "sha256": "08691607e9e7d4055fe7f929d7da8561e2383b527b9c5e142774e45e901e7eea"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "accepted ZIP and DMG",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "privacy": "exact app, final ZIP and mounted DMG passed",
+    "deviceMemory": "navigator.deviceMemory=8; navigation modern/legacy=8/8; subresource modern/legacy=8/8",
+    "fingerprint": "authenticated exact-candidate production-qualified A-B-A",
+    "sessionPersistence": "synthetic persistent cookies, localStorage and IndexedDB passed before final manager strip; runtime unchanged by strip",
+    "hostedDownload": "fresh ZIP and DMG downloads matched local sizes/SHA256 and passed full artifact verification",
+    "swiftTests": "667 tests/76 suites passed before package-only strip",
+    "pythonTests": "804 passed, 1 skipped before package-only strip; targeted strip regression passed after",
+    "siteTests": "26/26 passed after release metadata update",
+    "physicalVoiceOver": "not claimed"
+  },
+  "siteVersion": 107,
+  "siteSourceCommit": "d86defe4b8c478d5b90917621e43dc70bd9de6a2",
+  "siteDeploymentId": "appgdep_6ac26b70bed48191bb003a01992a65c0",
+  "siteDeploymentStatus": "succeeded",
+  "siteUrl": "https://browser.free",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.14",
+  "rollbackRelease": "v0.7.13",
+  "candidateManifestSHA256": "c53407cad7f185e45b7b065127f62f7e194784e5f7484620bfd97ac3e3ef76d8",
+  "candidateSourceBindingSHA256": "92090a13f302e2ed2e8a4c295ad0d2b56f70e21540886576750ece044ef3deec",
+  "limitations": [
+    "Reporter’s original macOS 26 device, installed app bytes and unified log were not directly tested; AMFI failure class reproduced on a synthetic macOS 27 control.",
+    "Proxy route was not qualified in this release.",
+    "Safe Browsing remains disabled; no anonymity, CAPTCHA or site-rule bypass claim.",
+    "Session cookies may expire after clean close.",
+    "Physical VoiceOver and full keyboard pass were not repeated on the final stripped manager; source/UI behavior was unchanged by stripping DWARF.",
+    "Retired privacy-rejected Apple submission remains in private transaction history with verified accepted-not-published reconciliation."
+  ]
+}

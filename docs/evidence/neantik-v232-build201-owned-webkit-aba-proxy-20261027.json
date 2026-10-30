@@ -1,0 +1,55 @@
+{
+  "status": "SYNTHETIC_OWNED_WEBKIT_ABA_ROUTE_AND_STORAGE_PASS_CLEANUP_REPORT_FAILED",
+  "archiveSHA256": "c166e76025d3784cd9489db57264aa317af26b6c91d185ee2da9bbfe2375f533",
+  "stageReceiptSHA256": "bbaa4d9f9003e5481734d2b1938a76792d77b0cf83c2fa1defa1453e81b8ae8b",
+  "fixturePhaseResultsSHA256": "fd73ef31cd01f65c1aa777c830e4f8e28edba11e23e7a66d0dc2c14cfe33feb9",
+  "fixtureCandidateField": null,
+  "candidateBinding": "exact archived bytes checked by producer and launcher; launcher returned Dev manager PID 59632; isolated fixture UI identity and phase results observed in this run; fixture result itself did not record candidate hash",
+  "phases": [
+    {
+      "phase": "A1",
+      "routeBoundary": "PASS",
+      "storageBoundary": "PASS",
+      "originResponses": 1,
+      "stateInitial": 1,
+      "stateRestored": 0,
+      "proxyAAuthorizedOriginDelta": 2,
+      "proxyBAuthorizedOriginDelta": 0
+    },
+    {
+      "phase": "B1",
+      "routeBoundary": "PASS",
+      "storageBoundary": "PASS",
+      "originResponses": 1,
+      "stateInitial": 1,
+      "stateRestored": 0,
+      "proxyAAuthorizedOriginDelta": 0,
+      "proxyBAuthorizedOriginDelta": 2
+    },
+    {
+      "phase": "A2",
+      "routeBoundary": "PASS",
+      "storageBoundary": "PASS",
+      "originResponses": 1,
+      "stateInitial": 0,
+      "stateRestored": 1,
+      "proxyAAuthorizedOriginDelta": 2,
+      "proxyBAuthorizedOriginDelta": 0
+    }
+  ],
+  "cleanup": {
+    "fixtureStopExit": 1,
+    "fixtureErrorCategory": "bad-file-descriptor",
+    "allChannelsDrainedReported": false,
+    "loopbackListenersClosed": true,
+    "recordedFixtureAndManagerPIDsExited": true
+  },
+  "limitations": [
+    "only synthetic HTTPS origin and loopback HTTP proxies; no external site or real proxy",
+    "not a comprehensive DNS/WebRTC/leak test or universal anonymity proof",
+    "refusal/recovery not performed in this run",
+    "fixture cleanup report failed; observed listeners closed and processes exited",
+    "private Dev QA archive not notarized and not a release candidate"
+  ],
+  "releaseQualified": false
+}

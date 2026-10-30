@@ -1,0 +1,35 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "aed2134b5c58a9ef6b84f9fbe58d2a87f0ae0b57f8a4ac23453f3961def8fdd3",
+  "payload": {
+    "allPermissionMethodBytesUnchanged": true,
+    "applyExactPostimage": true,
+    "brokenContextRefused": true,
+    "negativeControls": 2,
+    "onlyOneDirectIncludeAdded": true,
+    "patchSHA256": "195b9b627842f8a3d5707aa17cd183b92aef0ee88a8b832cf0e0a8021549e5e9",
+    "positiveControls": 2,
+    "releaseReady": false,
+    "reverseExactPreimage": true,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "stalePostimageRefused": true
+  },
+  "payloadType": "json",
+  "receipt": "native-fs-storage-key-owned-regression.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

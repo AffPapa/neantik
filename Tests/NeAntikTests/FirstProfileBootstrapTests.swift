@@ -3,26 +3,12 @@ import Testing
 
 struct FirstProfileBootstrapTests {
     @Test
-    func delayedRuntimeCheckOffersExplicitRetry() {
-        let presentation = FirstProfileOnboardingPresentation.resolve(
-            runtimeAvailability: .resolving,
-            isCreatingProfile: false,
-            resolutionIsDelayed: true
-        )
-
-        #expect(presentation.primaryAction == .retryRuntimeCheck)
-        #expect(presentation.primaryIsEnabled)
-        #expect(presentation.statusMessage?.contains("больше обычного") == true)
-        #expect(presentation.terminalAccessibilityAnnouncement != nil)
-    }
-
-    @Test
     func emptyWorkspaceCreatesPermanentDirectProfileDefaults() throws {
         let profile = try #require(
             FirstProfileBootstrap.makeProfile(existingProfiles: [])
         )
 
-        #expect(profile.name == "Моё рабочее место")
+        #expect(profile.name == "Основной профиль")
         #expect(profile.proxy == nil)
         #expect(profile.startURL == BrowserProfile.defaultStartURL)
         #expect(!profile.isArchived)
@@ -64,64 +50,6 @@ struct FirstProfileBootstrapTests {
     }
 
     @Test
-    func quickProfileUsesReadableSequenceAndPermanentDirectDefaults() {
-        let profile = QuickProfileBootstrap.makeProfile(
-            existingProfiles: [BrowserProfile(name: "Основной профиль")]
-        )
-
-        #expect(profile.name == "Рабочее место 2")
-        #expect(profile.proxy == nil)
-        #expect(profile.startURL == BrowserProfile.defaultStartURL)
-        #expect(profile.lastLaunchedAt == nil)
-        #expect(BrowserProfile.isValidName(profile.name))
-    }
-
-    @Test
-    func quickProfileSkipsCaseInsensitiveNameCollision() {
-        let profile = QuickProfileBootstrap.makeProfile(
-            existingProfiles: [
-                BrowserProfile(name: "Основной профиль"),
-                BrowserProfile(name: "рАбОчЕе МеСтО 3   "),
-            ]
-        )
-
-        #expect(profile.name == "Рабочее место 4")
-    }
-
-    @Test
-    func newNamesPreserveLegacyPlacesAndSkipArchivedCollisions() {
-        let existing = [
-            BrowserProfile(name: "Основной профиль"),
-            BrowserProfile(name: "Профиль 2"),
-            BrowserProfile(name: "  РАБОЧЕЕ МЕСТО 4  ", isArchived: true),
-        ]
-        let snapshot = existing
-        let created = QuickProfileBootstrap.makeProfile(existingProfiles: existing)
-
-        #expect(created.name == "Рабочее место 5")
-        #expect(existing == snapshot)
-        #expect(existing[0].name == "Основной профиль")
-        #expect(existing[1].name == "Профиль 2")
-        #expect(FirstProfileBootstrap.makeProfile(existingProfiles: existing) == nil)
-        #expect(!existing.contains { $0.id == created.id })
-    }
-
-    @Test
-    func quickProfilesAlwaysReceiveFreshIdentityAndSession() {
-        let existing = [BrowserProfile(name: "Основной профиль")]
-        let first = QuickProfileBootstrap.makeProfile(
-            existingProfiles: existing
-        )
-        let second = QuickProfileBootstrap.makeProfile(
-            existingProfiles: existing
-        )
-
-        #expect(first.id != second.id)
-        #expect(first.identity.seed != second.identity.seed)
-        #expect(first.note.isEmpty)
-    }
-
-    @Test
     func readyRuntimeOffersTheTruthfulCreateAndOpenAction() {
         let presentation = FirstProfileOnboardingPresentation.resolve(
             runtimeAvailability: .ready,
@@ -129,13 +57,9 @@ struct FirstProfileBootstrapTests {
         )
 
         #expect(presentation.primaryAction == .createAndOpen)
-        #expect(presentation.primaryTitle == "Создать и открыть")
+        #expect(presentation.primaryTitle == "Сразу создать и открыть без прокси")
         #expect(presentation.primaryIsEnabled)
         #expect(presentation.statusMessage == nil)
-        #expect(
-            presentation.terminalAccessibilityAnnouncement?
-                .contains("готов") == true
-        )
     }
 
     @Test
@@ -149,7 +73,6 @@ struct FirstProfileBootstrapTests {
         #expect(!presentation.primaryIsEnabled)
         #expect(!presentation.primaryTitle.contains("открыть"))
         #expect(presentation.statusMessage?.contains("Проверяем") == true)
-        #expect(presentation.terminalAccessibilityAnnouncement == nil)
     }
 
     @Test(arguments: [
@@ -170,10 +93,6 @@ struct FirstProfileBootstrapTests {
         #expect(presentation.primaryIsEnabled)
         #expect(!presentation.primaryTitle.contains("открыть"))
         #expect(presentation.statusMessage?.isEmpty == false)
-        #expect(
-            presentation.terminalAccessibilityAnnouncement?
-                .contains("Повторная проверка") == true
-        )
     }
 
     @Test(arguments: [

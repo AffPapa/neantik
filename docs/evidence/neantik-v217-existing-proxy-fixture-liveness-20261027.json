@@ -1,0 +1,13 @@
+{
+  "status": "SYNTHETIC_FIXTURE_LISTENERS_ALIVE_AND_TLS_IDENTITY_MATCHED",
+  "observedAtUTC": "2026-10-27T08:24:29Z",
+  "priorFixtureReceiptSHA256": "d8ba2ed0948521879266b3d41e444786cf4cb4139b8db34afd895868bc15d907",
+  "fixtureRoot": "/private/tmp/neantik-webkit-ab-root-8xar13ky",
+  "stage": "/private/tmp/neantik-webkit-ab-stage-cuto7cvk",
+  "allThreeLoopbackListeners": "present; same Python process",
+  "tlsLeafMatchesFixture": "PASS",
+  "rootCAHashMatchesPriorReceipt": "PASS",
+  "scope": "liveness and TLS identity only; no browser launch, no proxy behavior or leak test; liveness may change at any time",
+  "signatureGate": "still open",
+  "releaseQualified": false
+}

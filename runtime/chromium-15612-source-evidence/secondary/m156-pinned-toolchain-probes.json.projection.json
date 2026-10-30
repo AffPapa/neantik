@@ -1,0 +1,35 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "4e5409179227750c7dffc2f3e0b67f1b75d21540383113bd182820d5b39ffea8",
+  "payload": {
+    "nativeBuildStarted": false,
+    "probes": {
+      "clang": {
+        "executableSHA256": "a0acdda5df49257a38004653c4689a76be76e90bdf01393be2055848528069fd",
+        "exitCode": 0,
+        "logSHA256": "c45899f1786e41ada13f803e6f0836676b9bfbbd741a5c9312fc8ffd4ba2bdbe"
+      },
+      "crubit": {
+        "executableSHA256": "2ad8ff14e11986b321150952422de1b23e706b26824ba01ff375668c4d8edbd1",
+        "exitCode": 0,
+        "logSHA256": "fe779053abcc7b03ecd2c48f8152cc4d01e399cce3a0158a5fea3c210e74e68e"
+      },
+      "rustc": {
+        "executableSHA256": "ea97a97cdfa70463afb5408af91d48aad1b58792037432319ac07b1a445f686b",
+        "exitCode": 0,
+        "logSHA256": "de6863dac1b2ed4da06b4489bfc8187b8fc3458b7ea6c5919b5da61ab8c61d6f"
+      }
+    },
+    "releaseReady": false
+  },
+  "payloadType": "json",
+  "receipt": "m156-pinned-toolchain-probes.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "evidence",
+    "research"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

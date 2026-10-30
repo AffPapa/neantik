@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T12:00:33.462207+00:00",
+  "status": "private source-offer notice/tool stage; release qualification still open",
+  "before": {
+    "path": "docs/evidence/webkit-v20-source-offer-manifest-before-linked-header-stage-20261025.json",
+    "sha256": "c45c9851a174c81b79664ab89a27f8fcf8638fae874a47c3f5b327019b7dde00",
+    "components": 132
+  },
+  "after": {
+    "path": "dist/private/source-offers/1.0.0-manager-955/manifest.json",
+    "sha256": "fcd7471e2f63f3fcea57c2362b3b1544c07ef8c80bbbf406fc5c2853fcf170e0",
+    "components": 138
+  },
+  "added": [
+    {
+      "path": "notices/webkit-linked-source-headers/MANIFEST.json",
+      "bytes": 1197106,
+      "sha256": "599b1677b25c00a2f14ed4101061c302d75148af27146e6b1894c7f0ebcd9604",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-linked-source-headers/JavaScriptCore-SOURCE-HEADERS.txt",
+      "bytes": 1265763,
+      "sha256": "d3060d740022138adadfe3f95a9001e90e1c5772e9c03a74af115ef98d0bcf66",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-linked-source-headers/WebCore-SOURCE-HEADERS.txt",
+      "bytes": 2920371,
+      "sha256": "51076aa2647dbb00c9d8091ae32f313cc7f504459f45f14983a75b5773166d5f",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webkit-linked-source-headers/WebKit-SOURCE-HEADERS.txt",
+      "bytes": 276515,
+      "sha256": "b8923c87281b420e4150cf1bde7571dea3c276517879ab1a8a582a942f146eeb",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/webrtc/NeAntik-usage_exit_stub-MPL-2.0.txt",
+      "bytes": 16726,
+      "sha256": "3f3d9e0024b1921b067d6f7f88deb4a60cbe7a78e76c64e3f1d7fc3b779b9d04",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "tools/verify-webkit-linked-source-headers.py",
+      "bytes": 3347,
+      "sha256": "7a18d57bcd61421284a14bbfcee32ac154f8bc246b9364f547b132f6adb9658e",
+      "includedInOfferFolder": true
+    }
+  ],
+  "scopeLimit": "No engine build, candidate139 mutation, signed app, package admission or public release. Four image and 78 resource license decisions remain UNKNOWN."
+}

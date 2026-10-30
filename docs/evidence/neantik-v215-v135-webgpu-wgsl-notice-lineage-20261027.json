@@ -1,0 +1,14 @@
+{
+  "status": "BOUNDED_V135_WEBGPU_WGSL_SOURCE_AND_GENERATOR_REPLAY",
+  "stagedWebGPUImageSHA256": "42e1a8d4205948576032c04a428788cd737d06512aac044cc04acb1608b0dc23",
+  "historicalSourceReviewSHA256": "e85793e756b6dd3b64e4346d4768a2321d7fd0abd7eb0c9e4929921751687ed1",
+  "historicalGeneratorReplaySHA256": "4f6052b1840541556c0ded75ea7024674fdcc266f2766f9ca0a8abc26a6afb0d",
+  "reviewedSourceFiles": 65,
+  "exactSourceHashMatches": 65,
+  "ninjaRecordedLinkedObjectDependencyFiles": 64,
+  "ninjaDeclaredSwiftCompilerInputFiles": 1,
+  "generatorInputsMatched": 3,
+  "generatedOutputsMatched": 2,
+  "scope": "reviewed 65 leaf sources and generator inputs/outputs only; does not prove complete image notices, license applicability, signature or runtime",
+  "releaseQualified": false
+}

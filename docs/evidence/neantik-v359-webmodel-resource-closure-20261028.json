@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "V359",
+  "observedAtUTC": "2026-10-28T03:14:59Z",
+  "status": "PASS_2_WEBMODEL_FIRST_PARTY_RESOURCES_BOUND_TO_BUILD200",
+  "scope": "Exact WebCore WebModel environment resource rows in retained build-200 candidate; the historical worksheet is unchanged and Chromium .74 release binding remains open.",
+  "inputs": {
+    "overlayAttributionSHA256": "76648e94a8529fb300d66c34021227a4630383b3a93e960930bcfa1906afe3a0",
+    "overlayLicenseSHA256": "3ab0de831861966f2c2ec76d3ba1b24473c64ee08cb7699327a2005fca688ff7",
+    "candidateManifestSHA256": "145531171b5d999490a5a94b523cb5623d3f32d58a600925f9d639f946500020",
+    "v135BuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "v315ExactNoticeReceiptSHA256": "ad0f8c719459526960f81f23298136fb401eded043ebb420add333243d00e77c"
+  },
+  "binding": {
+    "assetCount": 2,
+    "sourceTreeMatches": 2,
+    "v135BuildMatches": 2,
+    "build200PackageMatches": 2,
+    "licenseExact": true,
+    "attributionExact": true,
+    "candidateId": "ef2ce9cf159242c3a147027867403460",
+    "candidateBuild": "200",
+    "candidateManifestSHA256": "145531171b5d999490a5a94b523cb5623d3f32d58a600925f9d639f946500020"
+  },
+  "assets": [
+    {
+      "path": "modelDefaultDiffuseData",
+      "sha256": "1c9a94310bb745294484702475c419b4a2fe0027aa71218a7fb1c8c01d7d658d",
+      "bytes": 49152
+    },
+    {
+      "path": "modelDefaultSpecularData",
+      "sha256": "4c53b4b6579f33cebb3fc42631e4447e0be9823d949dd2beae4f868c20438cf2",
+      "bytes": 1048572
+    }
+  ],
+  "decision": "The two WebModel environment maps in these exact build-200 resource paths are first-party BSD-2 replacements. Source, V135 build, candidate package, license text and attribution all match exact hashes. This closes these two asset rows for build200 only; no broader WebCore image clearance is claimed.",
+  "limitations": [
+    "Rebind to final frozen Chromium .74 candidate.",
+    "No blanket license or legal opinion.",
+    "Other staged replacements still lack exact package notice integration or compiled-resource binding."
+  ],
+  "releaseQualified": false
+}

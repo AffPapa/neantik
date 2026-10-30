@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "status": "scoped-finite-projection-pass-not-release-qualified",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "024aef348a454bd7eb89cce33a87000ecfb77e3046d08b08e9251a27085a8c2f",
+    "managerExecutableSHA256": "e68054fa1254a6480506f25bda9e331e7bbf3186dff85352958a1b7464a1c2ff",
+    "runtimeVersion": "156.0.8078.48",
+    "runtimeExecutableSHA256": "2fca4f8c3b7bd452e65d9fdf527a9ebcfd39d7e7de2cb3975add2d61db627b6b",
+    "runtimeFrameworkSHA256": "2b0209cdaa85a455df8bc012659718242905a78f20fdd9bd9b163f383743842c"
+  },
+  "harness": {
+    "path": "scripts/runtime-platform/qualify-cohorts.py",
+    "sha256": "95b87df100bb09e33ba1270bdb9dc11f40fe63fd402a826132131439ed8684d1",
+    "managerPolicySourceSHA256": "815fa8e1fe2c2105d395aa256ac5fdd2b529ac99f773c1b8b16609b1a06eee09",
+    "runPlanSHA256": "ab83a033302626871c22f1267a9fccacb1eed049f39196fc62c3f3cc34ef23e6",
+    "criticalManifestSHA256": "024aef348a454bd7eb89cce33a87000ecfb77e3046d08b08e9251a27085a8c2f",
+    "bindingSHA256": "13bdcd538902329dc338b2b3c5fc6f7d555d7628f228ee9e2efd09aa5a176cc7",
+    "summarySHA256": "1d128d8a849b1936489b40d31664bc4b39f1f9a41ea338701d9d9cfa7b3a6911",
+    "tupleCatalogSourceSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2"
+  },
+  "result": {
+    "label": "finite-cohort-projection-pass",
+    "headed": true,
+    "releaseGate": false,
+    "scope": "11 synthetic tuple projections: CPU, web memory, screen/DPR, platform hints, canonical GPU and repeat reads",
+    "tuples": [
+      {
+        "tupleID": "macbook-air-m1",
+        "result": "scoped-projection-pass",
+        "captureSHA256": "aa0d1f6e30c719e66ffda62fefbd49eb2cdd671988edfa339f23dca99b825b83",
+        "negativeControlCount": 11
+      },
+      {
+        "tupleID": "macbook-pro-m1-pro",
+        "result": "scoped-projection-pass",
+        "captureSHA256": "f7c166f0af8f36e21ec6abd0a863977616d6e42c0a6c2af5fb31152c3fa7be99",
+        "negativeControlCount": 11
+      },
+      {
+        "tupleID": "macbook-air-m2",
+        "result": "scoped-projection-pass",
+        "captureSHA256": "550713f7d94296948dcf98f548c8686e40b830c44d2f389621c22411b654075d",
+        "negativeControlCount": 11
+      },
+      {
+        "tupleID": "macbook-pro-m2-max",
+        "result": "scoped-projection-pass",
+        "captureSHA256": "34c93269a24509e0ac3e2011079b4ae204ee6fd566fad380fb4e76022aa1fb08",
+        "negativeControlCount": 11
+      },
+      {
+        "tupleID": "macbook-pro-m2-pro",
+        "result": "scoped-projection-pass",
+        "captureSHA256": "58d5ceba2f13c662b3fc9e07c810ea93b6a8ca75a0b473671c02250a54b20d99",
+        "negativeControlCount": 11
+      },
+      {
+        "tupleID": "macbook-air-m3",
+        "result": "scoped-projection-pass",
+        "captureSHA256": "cba9f88b8cc42b65514fdd85c9fedb70409908da966ca472a6c1f0adb1ce7d7a",
+        "negativeControlCount": 11
+      },
+      {
+        "tupleID": "macbook-pro-m3-max",
+        "result": "scoped-projection-pass",
+        "captureSHA256": "dc4eb68fd0fd207f937354fa0b60e3ff999e7af97b235072427fd1143a7469ca",
+        "negativeControlCount": 11
+      },
+      {
+        "tupleID": "macbook-pro-m3-pro",
+        "result": "scoped-projection-pass",
+        "captureSHA256": "c1356b902dd442c8432a592cb9b3147dcdc2e7fc92b121e0e23268a39f10f233",
+        "negativeControlCount": 11
+      },
+      {
+        "tupleID": "macbook-air-m4",
+        "result": "scoped-projection-pass",
+        "captureSHA256": "981d94f0e8afef676317c67d68fe4657e260a4a08443f4de9b145f58de9bb540",
+        "negativeControlCount": 11
+      },
+      {
+        "tupleID": "macbook-pro-m4-max",
+        "result": "scoped-projection-pass",
+        "captureSHA256": "5754dd43ef5b323f493b6588fe3cd61f37d7a3ca502c0f146dbe36b294158432",
+        "negativeControlCount": 11
+      },
+      {
+        "tupleID": "macbook-pro-m4-pro",
+        "result": "scoped-projection-pass",
+        "captureSHA256": "2803e8e01a7afd971c45046211eff48b8908a5b5a7392027f2090199ae3565e8",
+        "negativeControlCount": 11
+      }
+    ],
+    "cleanup": [
+      {
+        "tupleID": "macbook-air-m1",
+        "cleanupVerified": true,
+        "gracefulParentExit": true,
+        "parentExitCode": 0
+      },
+      {
+        "tupleID": "macbook-pro-m1-pro",
+        "cleanupVerified": true,
+        "gracefulParentExit": true,
+        "parentExitCode": 0
+      },
+      {
+        "tupleID": "macbook-air-m2",
+        "cleanupVerified": true,
+        "gracefulParentExit": true,
+        "parentExitCode": 0
+      },
+      {
+        "tupleID": "macbook-pro-m2-max",
+        "cleanupVerified": true,
+        "gracefulParentExit": true,
+        "parentExitCode": 0
+      },
+      {
+        "tupleID": "macbook-pro-m2-pro",
+        "cleanupVerified": true,
+        "gracefulParentExit": true,
+        "parentExitCode": 0
+      },
+      {
+        "tupleID": "macbook-air-m3",
+        "cleanupVerified": true,
+        "gracefulParentExit": true,
+        "parentExitCode": 0
+      },
+      {
+        "tupleID": "macbook-pro-m3-max",
+        "cleanupVerified": true,
+        "gracefulParentExit": true,
+        "parentExitCode": 0
+      },
+      {
+        "tupleID": "macbook-pro-m3-pro",
+        "cleanupVerified": true,
+        "gracefulParentExit": true,
+        "parentExitCode": 0
+      },
+      {
+        "tupleID": "macbook-air-m4",
+        "cleanupVerified": true,
+        "gracefulParentExit": true,
+        "parentExitCode": 0
+      },
+      {
+        "tupleID": "macbook-pro-m4-max",
+        "cleanupVerified": true,
+        "gracefulParentExit": true,
+        "parentExitCode": 0
+      },
+      {
+        "tupleID": "macbook-pro-m4-pro",
+        "cleanupVerified": true,
+        "gracefulParentExit": true,
+        "parentExitCode": 0
+      }
+    ],
+    "open": [
+      "full API operations reused only from matching archived receipts",
+      "font policy",
+      "voices locales/events",
+      "codec/PDF compatibility",
+      "HTTPS identity",
+      "other OS/hardware"
+    ]
+  },
+  "limits": [
+    "Does not qualify complete browser APIs, fonts, speech, codecs/PDF, HTTPS identity, other OS/hardware, manager UI, or proxy routing.",
+    "Does not resolve 82 WebKit license applicability decisions or recipient source/relink qualification.",
+    "Does not authorize notarization or publication; signed candidate bytes remain unchanged."
+  ],
+  "noRepeat": "Do not rerun these 11 tuple projections unless candidate/runtime/harness/environment changes or a concrete failure invalidates the matching evidence."
+}

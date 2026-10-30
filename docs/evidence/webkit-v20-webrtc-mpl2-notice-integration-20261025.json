@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T11:53:32.064747+00:00",
+  "status": "partial: exact linked NeAntik libwebrtc MPL-2.0 shim notice staged by installer; four runtime image and 78 resource worksheet decisions remain UNKNOWN",
+  "source": "Source/ThirdParty/libwebrtc/cmake/usage_exit_stub.c",
+  "sourceLicense": "MPL-2.0",
+  "copyright": "Copyright (c) 2026 NeAntik contributors",
+  "licenseTextURL": "https://www.mozilla.org/media/MPL/2.0/index.f75d2927d3c1.txt",
+  "appDestination": "Contents/Resources/NeAntikRuntimeLicenses/WebRTC/NeAntik-usage_exit_stub-MPL-2.0.txt",
+  "sources": {
+    "noticeInstaller": {
+      "path": "scripts/webkit_runtime_notices.py",
+      "sha256": "3e84ab6f800984fca8183b17fb487776d2abad3d654e332b48fda76713e3ef9c",
+      "bytes": 99958
+    },
+    "noticeTests": {
+      "path": "scripts/tests/test_webkit_runtime_notices.py",
+      "sha256": "8125a6fbb866503f971b60cf29fe5fb70ca0c2816d8916530b56e9ae144bd005",
+      "bytes": 35204
+    },
+    "mplText": {
+      "path": "docs/evidence/third-party/MPL-2.0-mozilla.txt",
+      "sha256": "3f3d9e0024b1921b067d6f7f88deb4a60cbe7a78e76c64e3f1d7fc3b779b9d04",
+      "bytes": 16726
+    },
+    "pinnedPatch": {
+      "path": "dist/private/source-offers/1.0.0-manager-955/webkit-v20-source-modifications.patch",
+      "sha256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+      "bytes": 37950
+    }
+  },
+  "verification": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest scripts.tests.test_webkit_runtime_notices",
+    "result": "PASS 35 tests; source and packaged tamper controls included",
+    "scope": "disposable app fixture, no engine build or signed package"
+  },
+  "remaining": "Old candidate139 and 132-component source offer unchanged. Integrate into next frozen app/source offer and complete all linked-component notices before libwebrtc row can leave UNKNOWN."
+}

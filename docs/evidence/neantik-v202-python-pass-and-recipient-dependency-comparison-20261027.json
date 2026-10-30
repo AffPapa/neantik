@@ -1,0 +1,51 @@
+{
+  "status": "FULL_V199_PYTHON_PASS_AND_RECORDED_DEPENDENCY_PATHS_MATCH",
+  "commit": "536c45b92f451448ebc4711e3490cec6c94ddd34",
+  "python": {
+    "tests": 2002,
+    "skipped": 55,
+    "status": "PASS",
+    "sourceUnchanged": true,
+    "logSHA256": "1b798e0c870d33a7f03aa23f6e20466ef27263de119b8f0ee65a3b62c318dbe2",
+    "privateLog": "/private/tmp/neantik-v199-python-regression-erwmwyht/unittest.log"
+  },
+  "swift": {
+    "tests": 1841,
+    "suites": 222,
+    "skipped": 82,
+    "status": "PASS"
+  },
+  "sourceOffer": {
+    "manifestSHA256": "32e7cc65202a170da91cb5f739d219ab395e0ef43cfa04ebc4d05e3c05472b78",
+    "componentsVerified": 531,
+    "status": "PRIVATE_DRAFT_NOT_CANDIDATE_BOUND"
+  },
+  "dependencyPaths": [
+    {
+      "target": "JavaScriptCore",
+      "linkedObjects": 430,
+      "recordsBoth": 430,
+      "matched": 430
+    },
+    {
+      "target": "WebCore",
+      "linkedObjects": 154,
+      "recordsBoth": 152,
+      "matched": 152
+    },
+    {
+      "target": "WebKit",
+      "linkedObjects": 180,
+      "recordsBoth": 118,
+      "matched": 118
+    },
+    {
+      "target": "libwebrtc",
+      "linkedObjects": 1988,
+      "recordsBoth": 1988,
+      "matched": 1988
+    }
+  ],
+  "dependencyScope": "ninja recorded normalized dependency path sets only; missing records not inferred; not file content, signatures, legal attribution or runtime",
+  "releaseQualified": false
+}

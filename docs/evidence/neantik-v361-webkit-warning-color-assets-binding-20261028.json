@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "V361",
+  "observedAtUTC": "2026-10-28T03:26:13Z",
+  "status": "PASS_COMPILED_WEBKIT_WARNING_COLORS_BOUND_TO_BUILD200",
+  "scope": "Bound the nine first-party WebKit warning-color source catalog files and BSD-2 license/attribution to exact build200 WebKit Assets.car. assetutil reported all seven named colors in light/dark variants and each compiled sRGB RGBA value matched the pinned catalog input. Integrated the binding into notice installation and verification.",
+  "inputs": {
+    "sourceOffer": "dist/private/source-offers/v359-webmodel-resource-closure",
+    "sourceOfferManifestSHA256": "b9404c2eb5c67ea5b6c6f3afc175a1fb6539f11ab6ec9a35aad73f4662750644",
+    "warningColorAttributionSHA256": "d32332a470fdd45e4b95e83bc53758b34676c3254af94b0e401ac905fa7437cb",
+    "warningColorLicenseSHA256": "a8d20bbe0dc85256b9837b293af6921269f0c64362674069e63aee5e24ada814",
+    "runtimeAssetsCarPath": "/private/tmp/neantik-release-v1/dist/private/candidates/ef2ce9cf159242c3a147027867403460/NeAntik.app/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebKit.framework/Versions/A/Resources/Assets.car",
+    "runtimeAssetsCarSHA256": "7f12d3e66db0813cdbfbef7125bab3844f5d8d6900d7ed36ea2c49e523e6ae61",
+    "runtimeAssetsCarBytes": 22824,
+    "compiledColorSets": 7,
+    "compiledAppearanceVariants": 14,
+    "sourceCatalogFiles": 9,
+    "installerSHA256": "560b1f96d46e3fea6375974a2a1d5dac6189ef17e74af0eb632319ab56294c5c",
+    "testSHA256": "56bf60c93358bcd927a5682a6164d1c86f1b8928474ce9c86dca243081303847",
+    "candidateManifestSHA256": "145531171b5d999490a5a94b523cb5623d3f32d58a600925f9d639f946500020"
+  },
+  "verification": {
+    "assetutil": "PASS; 7 exact named colors, 14 light/dark values, sRGB RGBA compared with source catalog",
+    "focusedNoticeSuite": "PASS; 65 tests",
+    "integration": "PASS; package installer and verifier wrote/checked all first-party WebCore and WebKit notice pairs on an isolated fixture; second install byte-identical",
+    "negativeControl": "PASS; tampered WebCore runtime resource rejected",
+    "pythonCompilation": "PASS",
+    "gitDiffCheck": "PASS"
+  },
+  "nonActions": [
+    "No browser/runtime build",
+    "No production candidate mutation",
+    "No signing or notarization",
+    "No publication",
+    "No external-site navigation"
+  ],
+  "limitations": [
+    "All current resource binding is exact to retained build200; final Chromium .74 production candidate must pass fresh notice verification.",
+    "Complete source applicability, recipient build/relink/replacement/load, secure timestamp signing, notarization, publication and downloaded-byte gates remain open."
+  ],
+  "nextAction": "Rebind all first-party notices to the eventual signed Chromium .74 candidate; resume candidate signing only after a fresh standard Developer ID timestamp control succeeds."
+}

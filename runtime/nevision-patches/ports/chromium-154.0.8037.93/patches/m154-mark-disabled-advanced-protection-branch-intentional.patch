@@ -1,0 +1,11 @@
+--- a/chrome/browser/safe_browsing/advanced_protection_status_manager_desktop.cc
++++ b/chrome/browser/safe_browsing/advanced_protection_status_manager_desktop.cc
+@@ -70,7 +70,7 @@
+   RecordStartupUma(is_under_advanced_protection_);
+   NotifyObserversStatusChanged();
+ 
+-  if (false) {
++  if ((false)) {
+     if (is_under_advanced_protection_) {
+       ScheduleNextRefresh();
+     }

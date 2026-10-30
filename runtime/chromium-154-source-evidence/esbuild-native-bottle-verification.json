@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "version": "0.28.2",
+  "platform": "arm64_golden_gate",
+  "bottleSHA256": "b76a1b50c9590ba4dcadc8b84e47460f6a291f63c7a1022d4414cde737cd13bb",
+  "cachedOCIIndexSHA256": "c49b3c2900ba460c531a97164b9ba37fd1d3e9a182f7628a3a74e5d0a8985d3a",
+  "nativeBinarySHA256": "162cd5b74d36fc7e5cd6ce5143bf114342aa41f66764b34c5cbe88d97ab4c6b5",
+  "bottleMember": "esbuild/0.28.2/bin/esbuild",
+  "bottleDigestMatchesCachedOCIIndex": true,
+  "installedBinaryMatchesBottle": true,
+  "scope": "Installed binary matches Homebrew bottle whose digest matches the live official OCI index. Explicit esbuild0.28.2 build-tool override; not Chromium CIPD0.25.1 or reproducible-source proof.",
+  "remoteOCIIndexSHA256": "c49b3c2900ba460c531a97164b9ba37fd1d3e9a182f7628a3a74e5d0a8985d3a",
+  "remoteOCIIndexURL": "https://ghcr.io/v2/homebrew/core/esbuild/manifests/0.28.2",
+  "bottleDigestMatchesRemoteOCIIndex": true
+}

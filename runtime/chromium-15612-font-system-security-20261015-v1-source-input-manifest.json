@@ -1,0 +1,13 @@
+{
+  "baseSourceInputManifestSHA256": "5a091945d6b08412f1464f7e4287a3e35d117f6e96bf5a5099b1b63fef04cbcb",
+  "buildArgsSHA256": "428054a30abeb212aa3784f524bb27ef4bc0068ab7ebef149866b2b8bff30a3c",
+  "chromiumVersion": "156.0.8078.12",
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "securityPatchManifestSHA256": "c35cd893abe1a98284c2146db542c82605c4d0fd7f159f965e0cd88cf0f36cd1",
+  "sourceDeltaProofSHA256": "ac345eb85cd0f622e2dac36b5d14b43ad28a4d0e4b19ed967815e54f15226dfc",
+  "sourceInputsReady": true,
+  "sourceSnapshotSHA256": "b2922280ad1114c3180780b7d563c2aaaaa0e267f7c53c7d3b6c1afe479128c7",
+  "sourceVariant": "font-system-security-20261015-v1",
+  "status": "source-qualified"
+}

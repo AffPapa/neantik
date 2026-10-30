@@ -18,9 +18,9 @@ The candidate runtime is Chromium `152.0.7977.64`, ARM64-only:
 
 The source contract deliberately says `binaryBindingStatus:
 pending-new-build`. Source evidence is not binary evidence. The checked
-`runtime/fingerprint-chromium.lock.json` continues to describe the last
-verified Chromium `151.0.7922.108` runtime until a new Chromium
-`152.0.7977.64` Metal bundle is built, verified and explicitly promoted.
+`runtime/fingerprint-chromium.lock.json` is therefore a source-qualified,
+non-attested candidate description; it must not be read as proof that a
+Chromium `152.0.7977.64` Metal bundle has already been built or promoted.
 
 Do not edit the checked runtime lock merely to make version gates green.
 
@@ -140,7 +140,7 @@ bundle, verifies it, promotes the exact candidate lock and regenerates notices:
 
 ```sh
 NEANTIK_RELEASE_CHANNEL=public-alpha \
-NEANTIK_SIGNING_IDENTITY="40-HEX-SHA1-OF-DEVELOPER-ID-CERTIFICATE" \
+NEANTIK_SIGNING_IDENTITY="Developer ID Application: …" \
 scripts/prepare-direct-runtime-candidate.sh \
   "/absolute/path/to/NeAntik Browser.app" \
   /absolute/path/to/out/Default/args.gn \

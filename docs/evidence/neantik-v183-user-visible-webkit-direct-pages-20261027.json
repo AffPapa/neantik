@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v183-user-visible-webkit-direct-public-pages-20261027",
+  "recordedAtUTC": "2026-10-27T06:43:01Z",
+  "status": "USER_VISIBLE_SYSTEM_WEBKIT_DIRECT_PROFILE_CREATED; GOOGLE_AND_BOOKING_HOME_PAGES_LOADED; FULL_1_0_PROXY_RELEASE_OPEN",
+  "scope": "Headed UI verification in the currently visible NeAntik app; system WebKit, profile with proxy disabled. No login, account creation, search submission, booking transaction, or browser permission grant.",
+  "activeApp": {
+    "versionShownInAbout": "0.8.26",
+    "buildShownInAbout": "138",
+    "bundleIdentifier": "app.neantik.desktop",
+    "exactRunningBundlePath": "not established by CUA"
+  },
+  "priorSelectedProfileSurface": {
+    "engine": "Chromium 156",
+    "proxy": "configured; endpoint omitted",
+    "status": "not used for this WebKit page check"
+  },
+  "createdProfile": {
+    "name": "WebKit Direct",
+    "engine": "system WebKit (Safari engine)",
+    "configuredProxy": false,
+    "startupURL": "https://www.google.com/",
+    "appProfileCountBefore": 34,
+    "appProfileCountAfter": 35,
+    "data": "separate WebKit profile data; profile remains available in the running app"
+  },
+  "pages": [
+    {
+      "origin": "https://www.google.com/",
+      "result": "PASS",
+      "visibleEvidence": [
+        "Google homepage DOM",
+        "search field",
+        "search button"
+      ]
+    },
+    {
+      "origin": "https://www.booking.com/",
+      "result": "PASS",
+      "visibleEvidence": [
+        "Booking.com Russian homepage DOM",
+        "accommodation search controls",
+        "travel listings"
+      ],
+      "accountPrompt": "dismissed without login"
+    }
+  ],
+  "limitations": [
+    "This is system WebKit on app version 0.8.26 build 138, not the owned WebKit proxy runtime.",
+    "The current app states in profile creation that WebKit proxy is unsupported in this build; it fails closed instead of falling back to Direct.",
+    "No network packet/egress measurement was made; Direct is established by the profile proxy setting being off.",
+    "This does not qualify Chromium proxy, owned-WebKit proxy, profile A/B/A isolation, notarization, ZIP/DMG, or public release."
+  ],
+  "sideEffects": "Created one persistent no-proxy WebKit profile named WebKit Direct in the currently running user app. Existing profiles and saved proxy settings were not modified. The WebKit window remains open on Booking.com.",
+  "nextAction": "Keep this profile as the user-visible Direct browsing path. Continue the full 1.0 candidate with current proxy source, sign and qualify owned WebKit separately, then finish final candidate source binding, fingerprint evidence, ZIP/DMG, notarization and authorized GitHub/browser.free publication."
+}

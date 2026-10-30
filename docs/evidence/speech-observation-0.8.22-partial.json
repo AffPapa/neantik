@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "status": "partially-verified;three-observations-pending",
+  "scope": "raw headed downloaded134;not manager locale plumbing or full point14 completion",
+  "case": {
+    "mode": "configured",
+    "locale": "en-US",
+    "seed": 21
+  },
+  "environment": {
+    "architecture": "arm64",
+    "macOS": "27.0"
+  },
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "sourceVariant": "component-completion-v1",
+    "rebuilt": false,
+    "builtDuringPackaging": false,
+    "executableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+    "frameworkSHA256": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7",
+    "closureSHA256": "5902be29e448d51ab0e2223d6539fbe5156466fee8967e2882dc1bd122a3ff04",
+    "evidenceClosureSHA256": "dbebc0c252584fb6c087eaffefecf158556ec29e01670d090681dddf7713a726",
+    "safeBrowsingEnabled": false,
+    "latestEarlyStable": false,
+    "sourceContractSHA256": "a7e6ee9d61543784d74d4b8b1ee0aaa155dd4b97db8bb30aaf27e239486fb10e",
+    "backportedFixes": 8,
+    "sourceReviewedFixes": 10
+  },
+  "publicAppSource": "9c6c204e6e6d37c585eafbf7c085f21cd845ef05",
+  "releaseReportSHA256": "f5346b24d972680cc5f73a31a30ab19c21054cbabdfc276e809425ae98b85c8e",
+  "harnessSHA256": {
+    "run-headed.mjs": "16b3d7711c3e282b17e25db990cbfb94b3d3f529834355725e5752a3f596cf85",
+    "probe.mjs": "f4e02a79a8a5fb93ffa2e56a1c55f62d59527e3a43587aeba8294028fdf7e870",
+    "semantics.mjs": "4c37023315c8a3e1fe629fea32105642d1a15103bff98cafb4dc587cfe10d652",
+    "speech-pipe.mjs": "86a7bb2c7fc634025657d1734ae2bac7a73350888f73ea1a94cd5912d3dbf04d",
+    "cleanup.mjs": "630ec6befbb578a9b48a8063d1b9d967bc38835395b586077a0b20eb28e46bf8",
+    "../runtime-platform/fixtures/font-lifecycle-pipe.mjs": "b9182a6f476ac6ce6e2e74cdaf58011062b8b835e4b75438e554ae62df4ac653",
+    "../runtime-platform/fixtures/qa-browser-environment.mjs": "32d73021fb8514cb55781f4cc56183c0cec7d0d1adcca0865394c3fdf90a6a14",
+    "../native-qa-readiness.py": "6fa865a4f924573608d494bbe3ac4b3600ba3b1698f02419a29831b850fe2a0b"
+  },
+  "admission": {
+    "memory": 1,
+    "thermal": 1,
+    "warningExceptionUsed": false
+  },
+  "actualBrowser": true,
+  "documentCustody": true,
+  "checks": {
+    "navigatorExactMatchesRequested": true,
+    "navigatorPlatformIsMac": true,
+    "listenerBeforeFirstRead": true,
+    "voiceLanguagesValid": true,
+    "defaultFlagsBoolean": true,
+    "localServiceFlagsBoolean": true,
+    "defaultCountPolicyValid": true,
+    "repeatStable": true,
+    "syntheticEventSeparatelyDispatched": true,
+    "listenerRemoved": true,
+    "timerSettled": true
+  },
+  "verdict": {
+    "status": "verified-scoped-voice-observation",
+    "issues": [],
+    "nativeDelivery": true,
+    "loadedFromEmpty": true,
+    "nativeEventMeaning": "native-list-delivery; not proof of installed-catalog change",
+    "catalogChangeProven": false,
+    "requestedVoiceLanguagePresent": true
+  },
+  "cleanup": {
+    "graceful": true,
+    "browserExit": 0,
+    "browserSignal": null,
+    "ownedProfileRemoved": true,
+    "ownedProcessesRemaining": 0
+  },
+  "pending": [
+    "configured fr-FR",
+    "configured en-US return",
+    "unconfigured fr-FR control"
+  ],
+  "deferredNextCase": {
+    "actualBrowser": false,
+    "memory": 2,
+    "thermal": 1,
+    "ownedProcessesRemaining": 0
+  },
+  "privacy": "No voice names/URIs read;no speech playback;no catalog/voice counts in public summary;own temporary root and mock Keychain",
+  "releaseQualified": false
+}

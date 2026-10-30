@@ -1,0 +1,1078 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T14:31:22Z",
+  "status": "PASS_PINNED_GENERATOR_INPUT_HASH_MAP;OUTPUT_REPLAY_AND_LICENSE_DISPOSITION_OPEN",
+  "runtimeImage": {
+    "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+    "sha256": "b18e6c8575354ec022779494daaa0afc48f5e75d412ed96cadef0edba41f6a56"
+  },
+  "pinnedInputs": {
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "webkitPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "sourceCMakePath": "Source/JavaScriptCore/CMakeLists.txt",
+    "sourceCMakeSHA256": "2fb739be4112fbf0319628c0b76a2e0d88af57f93d85314b776577b41135307d",
+    "unityLeavesReceiptSHA256": "652320b200a4484541365c92e676fb1be45fd4b700110cb9304b682f99dd99f2",
+    "runtimeSourceClosureSHA256": "6e9a5a634e7e78fcb23d4e2b0d10bbda676bd264cc9b4127f4ce4d833c2e2304",
+    "cleanRelinkLogSHA256": "dc94ae790524ff06d6508bfc9da2bd8bb82e631581423c2e50021910db0918af"
+  },
+  "generatorGroups": {
+    "bytecode": {
+      "inputCount": 17,
+      "sourcePaths": [
+        "WebKit/Source/JavaScriptCore/generator/Argument.rb",
+        "WebKit/Source/JavaScriptCore/generator/Assertion.rb",
+        "WebKit/Source/JavaScriptCore/generator/Checkpoints.rb",
+        "WebKit/Source/JavaScriptCore/generator/DSL.rb",
+        "WebKit/Source/JavaScriptCore/generator/Fits.rb",
+        "WebKit/Source/JavaScriptCore/generator/GeneratedFile.rb",
+        "WebKit/Source/JavaScriptCore/generator/Metadata.rb",
+        "WebKit/Source/JavaScriptCore/generator/Opcode.rb",
+        "WebKit/Source/JavaScriptCore/generator/OpcodeGroup.rb",
+        "WebKit/Source/JavaScriptCore/generator/Options.rb",
+        "WebKit/Source/JavaScriptCore/generator/Section.rb",
+        "WebKit/Source/JavaScriptCore/generator/Template.rb",
+        "WebKit/Source/JavaScriptCore/generator/Type.rb",
+        "WebKit/Source/JavaScriptCore/generator/Wasm.rb",
+        "WebKit/Source/JavaScriptCore/generator/main.rb",
+        "WebKit/Source/JavaScriptCore/bytecode/BytecodeList.rb",
+        "WebKit/Source/JavaScriptCore/wasm/wasm.json"
+      ]
+    },
+    "jscBuiltins": {
+      "inputCount": 37,
+      "sourcePaths": [
+        "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/wkbuiltins.py",
+        "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generator.py",
+        "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_model.py",
+        "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_templates.py",
+        "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_combined_header.py",
+        "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_combined_implementation.py",
+        "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_separate_header.py",
+        "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_separate_implementation.py",
+        "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_wrapper_header.py",
+        "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_wrapper_implementation.py",
+        "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_internals_wrapper_header.py",
+        "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_internals_wrapper_implementation.py",
+        "WebKit/Source/JavaScriptCore/Scripts/generate-js-builtins.py",
+        "WebKit/Source/JavaScriptCore/Scripts/lazywriter.py",
+        "WebKit/Source/JavaScriptCore/builtins/ArrayConstructor.js",
+        "WebKit/Source/JavaScriptCore/builtins/ArrayIteratorPrototype.js",
+        "WebKit/Source/JavaScriptCore/builtins/ArrayPrototype.js",
+        "WebKit/Source/JavaScriptCore/builtins/AsyncDisposableStackPrototype.js",
+        "WebKit/Source/JavaScriptCore/builtins/AsyncIteratorPrototype.js",
+        "WebKit/Source/JavaScriptCore/builtins/DisposableStackPrototype.js",
+        "WebKit/Source/JavaScriptCore/builtins/FunctionPrototype.js",
+        "WebKit/Source/JavaScriptCore/builtins/GeneratorPrototype.js",
+        "WebKit/Source/JavaScriptCore/builtins/IteratorHelpers.js",
+        "WebKit/Source/JavaScriptCore/builtins/JSIteratorConstructor.js",
+        "WebKit/Source/JavaScriptCore/builtins/JSIteratorHelperPrototype.js",
+        "WebKit/Source/JavaScriptCore/builtins/JSIteratorPrototype.js",
+        "WebKit/Source/JavaScriptCore/builtins/MapConstructor.js",
+        "WebKit/Source/JavaScriptCore/builtins/MapPrototype.js",
+        "WebKit/Source/JavaScriptCore/builtins/ObjectConstructor.js",
+        "WebKit/Source/JavaScriptCore/builtins/PromiseConstructor.js",
+        "WebKit/Source/JavaScriptCore/builtins/ProxyHelpers.js",
+        "WebKit/Source/JavaScriptCore/builtins/ReflectObject.js",
+        "WebKit/Source/JavaScriptCore/builtins/SetPrototype.js",
+        "WebKit/Source/JavaScriptCore/builtins/TypedArrayConstructor.js",
+        "WebKit/Source/JavaScriptCore/builtins/TypedArrayPrototype.js",
+        "WebKit/Source/JavaScriptCore/builtins/WrapForValidIteratorPrototype.js",
+        "WebKit/Source/JavaScriptCore/inspector/InjectedScriptSource.js"
+      ]
+    },
+    "inspector": {
+      "inputCount": 43,
+      "sourcePaths": [
+        "WebKit/Source/JavaScriptCore/inspector/scripts/generate-inspector-protocol-bindings.py",
+        "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/cpp_generator.py",
+        "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/cpp_generator_templates.py",
+        "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generate_js_backend_commands.py",
+        "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generate_cpp_backend_dispatcher_header.py",
+        "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generate_cpp_backend_dispatcher_implementation.py",
+        "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generate_cpp_frontend_dispatcher_header.py",
+        "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generate_cpp_frontend_dispatcher_implementation.py",
+        "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generate_cpp_protocol_types_header.py",
+        "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generate_cpp_protocol_types_implementation.py",
+        "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generator.py",
+        "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generator_templates.py",
+        "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/__init__.py",
+        "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/models.py",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Animation.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Audit.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Browser.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/CPUProfiler.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/CSS.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Canvas.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Console.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/DOM.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/DOMDebugger.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/DOMStorage.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Debugger.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/GenericTypes.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Heap.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/IndexedDB.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Inspector.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/LayerTree.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Memory.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Network.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Page.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Recording.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Runtime.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/ScriptProfiler.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Security.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/ServiceWorker.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Storage.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Target.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Timeline.json",
+        "WebKit/Source/JavaScriptCore/inspector/protocol/Worker.json",
+        "WebKit/Source/JavaScriptCore/Scripts/generate-combined-inspector-json.py"
+      ]
+    },
+    "yarr": {
+      "inputCount": 2,
+      "sourcePaths": [
+        "WebKit/Source/JavaScriptCore/yarr/generateYarrCanonicalizeUnicode",
+        "WebKit/Source/JavaScriptCore/ucd/CaseFolding.txt"
+      ]
+    }
+  },
+  "generatedOutputs": [
+    {
+      "output": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/BytecodeDumperGenerated.cpp",
+      "sha256": "4f860a56589c3ece7615c453bc050fe68c23e7063b2a44df68e17e6bf2077035",
+      "generatorRule": "JavaScriptCore/CMakeLists.txt:289-294",
+      "sourceGroup": "bytecode"
+    },
+    {
+      "output": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/JSCBuiltins.cpp",
+      "sha256": "87844646c19a3e0890b3c06050155b34b4c67f739cb5e06e9c739135baf7aaf0",
+      "generatorRule": "JavaScriptCore/CMakeLists.txt:358-408",
+      "sourceGroup": "jscBuiltins"
+    },
+    {
+      "output": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/inspector/InspectorBackendDispatchers.cpp",
+      "sha256": "054eece05924974bb2f17083ec1658e367b49be2467eb1c7c9884bcb7e7ef84f",
+      "generatorRule": "JavaScriptCore/CMakeLists.txt:1707-1784; CombinedDomains.json generation precedes protocol binding",
+      "sourceGroup": "inspector"
+    },
+    {
+      "output": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/inspector/InspectorFrontendDispatchers.cpp",
+      "sha256": "6af6baf6fbfb5c19d23b89e5f23964ed8698dc6af1472e96e90a871cd4141781",
+      "generatorRule": "JavaScriptCore/CMakeLists.txt:1707-1784; CombinedDomains.json generation precedes protocol binding",
+      "sourceGroup": "inspector"
+    },
+    {
+      "output": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/inspector/InspectorProtocolObjects.cpp",
+      "sha256": "1dff9b050b63a1cf2a9b122c6842f7441cfaba8ad32cadd945baa0d492770684",
+      "generatorRule": "JavaScriptCore/CMakeLists.txt:1707-1784; CombinedDomains.json generation precedes protocol binding",
+      "sourceGroup": "inspector"
+    },
+    {
+      "output": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/yarr/YarrCanonicalizeUnicode.cpp",
+      "sha256": "f014f6e3a42b46da22d17832d688f39d07999bf0295bbee472fc039fcf66af22",
+      "generatorRule": "JavaScriptCore/CMakeLists.txt:1687-1692",
+      "sourceGroup": "yarr"
+    }
+  ],
+  "inputRecords": [
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/generate-combined-inspector-json.py",
+      "sha256": "bb7e64687ddd7309b22df574928a94f52094b0d3bc8c1397dd8975321039399d",
+      "bytes": 3179,
+      "headerPrefixSHA256": "488bc8350632443ba432956c1ed36aa9a1173be224152ed6f17cbb366d6fb209",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/generate-js-builtins.py",
+      "sha256": "afca03f5dfc004f2f6c178784afd30a0b8bf5e45d9d145b1b5feb7873505e41d",
+      "bytes": 8402,
+      "headerPrefixSHA256": "02979887d9891b006a8909903aa806d1d1bd5a6972cab213f95f45d48c4a0547",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/lazywriter.py",
+      "sha256": "e3803856284a436a199c9c1b8798cd2a7d1f0fd7d3198c52cd130e11cb51af79",
+      "bytes": 2430,
+      "headerPrefixSHA256": "2f302bbf95e81d87d89c9bcdeffb504b94b4153b63590f18ef5682f6c9db0709",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_combined_header.py",
+      "sha256": "e55dad091e22eb55c77d89e6070d52426f3a8ab506a1f1ddd83a8b50f2af8cd1",
+      "bytes": 7983,
+      "headerPrefixSHA256": "ee81ed2fa2304c36eb6f746a945598b59e77ea7f0ed7b9605314f3389bd1113a",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_combined_implementation.py",
+      "sha256": "552e65dbe2521a097ba3dd5ea8d3c2ae1dfa2ac2c0766a57ebc895b6f6cdef07",
+      "bytes": 6109,
+      "headerPrefixSHA256": "4902fdbc9d0d76d55dc8f8554c0c206d857d2184a2db0456815f97e2a06cf413",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_internals_wrapper_header.py",
+      "sha256": "2e9735987e41b9536e01c0fac864756dec1035dc12c2b5b6dbb43076f8f00eb2",
+      "bytes": 4800,
+      "headerPrefixSHA256": "8c9f84dbe623b0401e785c9298116ab667f0cef96e70087461ee4fb229178a2f",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_internals_wrapper_implementation.py",
+      "sha256": "cee9f385f2215530fb27a7b8c74ee5cb16bf622c843133bea99d4538240d8b94",
+      "bytes": 6781,
+      "headerPrefixSHA256": "4511e4274ca05c07029f13e04494e52d7912659012989b96633ae07d3b3a5faa",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_separate_header.py",
+      "sha256": "8ff5f31e4f2daa6fddb5ffabe2c819dfcd8ff955d6d959dc1556c30604e0fcc8",
+      "bytes": 8524,
+      "headerPrefixSHA256": "955e365ab4c98b73a9afdef4fcc597aaaeff9f12285dab5627e49c2d58be8a53",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_separate_implementation.py",
+      "sha256": "53aeda4dcb860ec930430b190c10630ca101a5151b4bbb41ebbfb0d1e7a244c8",
+      "bytes": 4778,
+      "headerPrefixSHA256": "8b367d96f2b053d0bbcc5fd41183273d28fab264f5dd65926b38af3d1f427bee",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_wrapper_header.py",
+      "sha256": "0cf30eb0dd1de5c39cb3cb2887c9b1428ab5c22d32645e4399b6fa32310996cf",
+      "bytes": 5182,
+      "headerPrefixSHA256": "38121619a9cc45fcff3596a46fdd0abd5e16c1fbda898d5b518d474ced220c37",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generate_wrapper_implementation.py",
+      "sha256": "8c55ebdf9be03f2d1aca9007c214051fb23c67cb71b63689743ed6fac4c42215",
+      "bytes": 2486,
+      "headerPrefixSHA256": "f921913d3d6b1ddd36bccf7260ae4353ffe3c07ddbb4c2b9edc74eb7f0effb28",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_generator.py",
+      "sha256": "d4cde35266c38a07824940fabe04b98735a0cea5088b4f02228282f50a7cadd0",
+      "bytes": 10579,
+      "headerPrefixSHA256": "767104836ea1159a6c2d0081eb5fa54fbc4318f9fafa7d7554f9698098c1b510",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_model.py",
+      "sha256": "ab6f6bf811e40789191e13f55669b42b2d0731ca215424a5364f51be1b8f55e5",
+      "bytes": 15489,
+      "headerPrefixSHA256": "34d9f2b52d66ed9bf8ae2a02543ae8b06457f4bbf9c110713b48301809568804",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/builtins_templates.py",
+      "sha256": "9eb7e98bb68f37ca2684aecfa225973359d7560ed7657f9e0c14139e6734d523",
+      "bytes": 10258,
+      "headerPrefixSHA256": "d0a55ffcd7d63848b24a8818f137ced20bb9a96cf8e3d26f9101398a12f2869c",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/wkbuiltins.py",
+      "sha256": "f5ca2aab8844b05fbd80de51e9d61d90d17a65803fb7352e5f24723df0954b6e",
+      "bytes": 704,
+      "headerPrefixSHA256": "f5ca2aab8844b05fbd80de51e9d61d90d17a65803fb7352e5f24723df0954b6e",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/ArrayConstructor.js",
+      "sha256": "9cca0f5891a6fc7ad33aadba2f2889721ee1dc7f99626377f7e74e63f30e263c",
+      "bytes": 8966,
+      "headerPrefixSHA256": "7b8a7ccce3bb01ccfc835ee9b2adf0a3fb85c7652e7b7fe8ac8586578796282d",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/ArrayIteratorPrototype.js",
+      "sha256": "88fc2f121a35001d659b2ee7312614954d468bd5b5bdd464e16a830272e27422",
+      "bytes": 3008,
+      "headerPrefixSHA256": "08359182aeafb9b2bac1ec6a36d645b360dcb60fd17134b6a41d08ea46bd3e46",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/ArrayPrototype.js",
+      "sha256": "9d71eab02503aea69426119d9dd9dc18ccd363bdacffd3762907034e2c33dd98",
+      "bytes": 10787,
+      "headerPrefixSHA256": "559208e22a0e880796dfad1d323ee96a75f016d43d6302591f19f2ac91f60ead",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/AsyncDisposableStackPrototype.js",
+      "sha256": "04c2710c470a0813c1396b426ec8c6d35468d745fed192c5b5511378cbc6abeb",
+      "bytes": 7573,
+      "headerPrefixSHA256": "7cfca9927543cbdb3c1a82fd67304e625284f91a59b060c80a9a7df5cf611e05",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/AsyncIteratorPrototype.js",
+      "sha256": "d7901a0c72c8862d83ad7a995d4aa95e1f166bb20b29c5324528b42b1b0856ce",
+      "bytes": 2146,
+      "headerPrefixSHA256": "414b25bc89de6da300dc01beb2405375a869439a23c9943ff5d4858af03781ff",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/DisposableStackPrototype.js",
+      "sha256": "b6b8e607e236fa1fb378d181814a7fbc25761aca4a7055c603e0c908523912b8",
+      "bytes": 8992,
+      "headerPrefixSHA256": "45b3b1e7751f6369e1b9213a71c5b954d6fa4a7961735012dd90d168de92307c",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/FunctionPrototype.js",
+      "sha256": "9b12cf303a058a7817270085815c4072b5f66703ee3669ce7d2cc3f47be7739e",
+      "bytes": 1734,
+      "headerPrefixSHA256": "9b12cf303a058a7817270085815c4072b5f66703ee3669ce7d2cc3f47be7739e",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/GeneratorPrototype.js",
+      "sha256": "0ca16e0fa60ac69cc320ef48fe821a508e184adb20c7db63e651ac791fd39219",
+      "bytes": 3854,
+      "headerPrefixSHA256": "80570a5345a78b9fce22775e1f24de5ceab5a4fa205141fdafbbfe676e033652",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/IteratorHelpers.js",
+      "sha256": "c0734a47df19042f58dc958189871d2f2158db9356b362788c978e3cbbe1f5e2",
+      "bytes": 3598,
+      "headerPrefixSHA256": "bc54ea01ac863da3d7a5057f2eee45aba30616af0ef99dae530dc7fec5fc9614",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/JSIteratorConstructor.js",
+      "sha256": "50e8ebb7f5501f090f726429d3a6db0a48eb48364b8c90eb5871be01b944a80d",
+      "bytes": 26857,
+      "headerPrefixSHA256": "e1ea03c2763f90d5587f1beff4a36089f8532727b5c8ce9613b5fa43b5b00b21",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/JSIteratorHelperPrototype.js",
+      "sha256": "d78576ed30377ea0d237726388074587e77093667d037d16289fc4917dcea878",
+      "bytes": 2878,
+      "headerPrefixSHA256": "0c1fcee1e7d798adbcbe8339c553a075f55addbc84f4fdfb7eea95b2cfdcb11c",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/JSIteratorPrototype.js",
+      "sha256": "1b5528756464ed71860146eb691f25549f07a74fd9254fcd56047bfd0a35912f",
+      "bytes": 15353,
+      "headerPrefixSHA256": "f788cb706977908736e0d215632a17c0f58f077730b6c3af69d4b0813dc29dd8",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/MapConstructor.js",
+      "sha256": "80345c9bb06b19d14e5cebdf64f824fd25bb29e16fab45c26041530ab56190c0",
+      "bytes": 2725,
+      "headerPrefixSHA256": "a4c0f7dd23bb28ebbd2592f2ae2d5ef1b8a5586aeeb21c1b61affd61d3bd8192",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/MapPrototype.js",
+      "sha256": "a60d1b677db01870b2e04015943beb33b770a993048ead6cc02c8881113bd5ba",
+      "bytes": 2006,
+      "headerPrefixSHA256": "a60d1b677db01870b2e04015943beb33b770a993048ead6cc02c8881113bd5ba",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/ObjectConstructor.js",
+      "sha256": "4ce999bde26a42353184a99526c582265e1ab923215b03499195c185fb709046",
+      "bytes": 3334,
+      "headerPrefixSHA256": "1be1d3853fa31422bebbd9afdac3d0753ec48c37a8f78e9f59cbef0b37b9e7c6",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/PromiseConstructor.js",
+      "sha256": "103c675dfc78108baf088585d39a108c9ec7b47853145e40781745631da1fad7",
+      "bytes": 2470,
+      "headerPrefixSHA256": "3d3be1d79afa3d8e11bdf65d792b594c8e5a5c598c82b3af10ea7c759ff0e314",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/ProxyHelpers.js",
+      "sha256": "945201b9f47c4847c4111a7c1efaadf64c4e24a0739c56d7a8685aad3d698cae",
+      "bytes": 8585,
+      "headerPrefixSHA256": "a3c981d6f0b2eb9184dc23b7a92b3c6d7a4819a47c85ab08d694874c877c1ed8",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/ReflectObject.js",
+      "sha256": "9d37d471f2e61e8cca1135b3c015e05e26ebb1be911bda98c66ed4e9732ec404",
+      "bytes": 2801,
+      "headerPrefixSHA256": "09dadc28c8939165e5ca3aff236340bbc6cdb16034cb5d837e36ff0f686e7f35",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/SetPrototype.js",
+      "sha256": "a90bb6bf1b967db44bd2c019582ca298bc43f2b75b0afeffc7628a2b1d74e6a1",
+      "bytes": 1995,
+      "headerPrefixSHA256": "a90bb6bf1b967db44bd2c019582ca298bc43f2b75b0afeffc7628a2b1d74e6a1",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/TypedArrayConstructor.js",
+      "sha256": "4fc097782bdfbd9d2dece663e63a9521f266e8f7a2f83d5009e8a2ae98997143",
+      "bytes": 4349,
+      "headerPrefixSHA256": "c15c532111725a2acc84c2f9a8e10da9c5e56f6b1ea6a1752562180173b8c53a",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/TypedArrayPrototype.js",
+      "sha256": "24283729a8dd4b757f88642741c8a68aceaf274992ee34d6cf90cf8af1873a6f",
+      "bytes": 2125,
+      "headerPrefixSHA256": "743e99d1f512b2635db63eab5abe4a41eab68dc736e2d26daf8b997bd6a84835",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/builtins/WrapForValidIteratorPrototype.js",
+      "sha256": "7210befd5f891d5293804e348615630f2926fc306bac0732ad3e4f05c09060c1",
+      "bytes": 3111,
+      "headerPrefixSHA256": "e2bc7882b8deff3eee21ae0ecd69d891d3d1f55461c6822eade29500d174b196",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/bytecode/BytecodeList.rb",
+      "sha256": "64e0c0642143d73a0b95bcb8c60b62cf67e225916ae3eb95a8340f7b5dbbc555",
+      "bytes": 37923,
+      "headerPrefixSHA256": "de0ad5cf65e3bc844e6847e4bb0af91ca7940ce014296fe5464aba7b0c036c45",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/Argument.rb",
+      "sha256": "992d8e555c55d8d6fdf421053000b7ed5341242d3f92f280352c4339bf4a106d",
+      "bytes": 3244,
+      "headerPrefixSHA256": "cd98d34d0d85147e81a546f9c728cb68b6d5a13b5f4f700cb6f944d44d2159b7",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/Assertion.rb",
+      "sha256": "3c04d660745e7901d3dbdeba8cc54de66a81c8d4e3710bb88bddb4ca1b312d5e",
+      "bytes": 1485,
+      "headerPrefixSHA256": "3c04d660745e7901d3dbdeba8cc54de66a81c8d4e3710bb88bddb4ca1b312d5e",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/Checkpoints.rb",
+      "sha256": "0fd047267b37db8d9af8ac2224ce8ebc4cc1d2c86e0ae51be08eee5d2fd8535a",
+      "bytes": 2196,
+      "headerPrefixSHA256": "e9c24d2f8356ee848b8ed69e35fb5b62f118b16c4a37e8a8fe1f8b26f2b7e77d",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/DSL.rb",
+      "sha256": "ff9546b0a7384fe64ce9ba4fdd75df38c18f29befaefb55a22fb2db611a02929",
+      "bytes": 10423,
+      "headerPrefixSHA256": "413cb89fb35c08a9708fd0a6e36d111bc683c1326db8ce16c4f47b536c68eae3",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/Fits.rb",
+      "sha256": "a77e24e380ebb45ebef45f95f8245bfbde868926883b94a7467e1bb47ac23ff6",
+      "bytes": 1546,
+      "headerPrefixSHA256": "a77e24e380ebb45ebef45f95f8245bfbde868926883b94a7467e1bb47ac23ff6",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/GeneratedFile.rb",
+      "sha256": "f12404161adda8925d0b13c67ffe123dd872e09b5f8eba6df9852acb2db50412",
+      "bytes": 4352,
+      "headerPrefixSHA256": "d9d5a5c698d7b146e194fff511846f91237aedb325a681ffb46e6d036c9944f0",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/Metadata.rb",
+      "sha256": "550ed7e378774609f5f8796e153282c0929bc2f20c0b3be3acc78f003c1b64c3",
+      "bytes": 4075,
+      "headerPrefixSHA256": "4872167208e86337b304ddf638c3268e809b8874c9be1837f7abb3d100dcccd7",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/Opcode.rb",
+      "sha256": "66e884798ea2b6ac6b47420c7d37dc134b409a9a99d3cd6b30497cf8bfcc79f4",
+      "bytes": 13282,
+      "headerPrefixSHA256": "7bd9ae7d79b64d7ae633dc640428d84f0c7e1a889023da788a89a4003e1cbfee",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/OpcodeGroup.rb",
+      "sha256": "0994fdcc0cca2b44df6bff2ffeed4894fc73bab4ace58037073dfc37038dae37",
+      "bytes": 1607,
+      "headerPrefixSHA256": "0994fdcc0cca2b44df6bff2ffeed4894fc73bab4ace58037073dfc37038dae37",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/Options.rb",
+      "sha256": "8e54ab4a4b7ff00ebbfac882307050e824917996d4bfb3b2289250ebb0fb4d5c",
+      "bytes": 3304,
+      "headerPrefixSHA256": "3593c94ffaccf890b12dc20e352a2bb1f3b9ec125648b5b05084907ec5657c17",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/Section.rb",
+      "sha256": "c0718da3ac0f275348cb6415a34b5314f1b5daef05ab20a5b06aa36a2fbaa274",
+      "bytes": 6957,
+      "headerPrefixSHA256": "ece403a217db6a06e161a26bf90293a39c6ea63f778b7d4ceca0b3e5eb16e276",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/Template.rb",
+      "sha256": "b0d7e90bd5a81b628a727035c77485ab48e136ca9f11e9953cb49fe64387ef82",
+      "bytes": 1456,
+      "headerPrefixSHA256": "b0d7e90bd5a81b628a727035c77485ab48e136ca9f11e9953cb49fe64387ef82",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/Type.rb",
+      "sha256": "7165465708ee407beffca8108f00a15e7f9494e438e55ed6992d68fe291ee550",
+      "bytes": 1485,
+      "headerPrefixSHA256": "7165465708ee407beffca8108f00a15e7f9494e438e55ed6992d68fe291ee550",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/Wasm.rb",
+      "sha256": "03d1c91d1a100e954a3393b7d0ccf03a505c1008fe34714b9c67cbfc35e41769",
+      "bytes": 516,
+      "headerPrefixSHA256": "03d1c91d1a100e954a3393b7d0ccf03a505c1008fe34714b9c67cbfc35e41769",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/main.rb",
+      "sha256": "e80eadc3f93319b2fe9b692e7386096eaa9d1c5103c384501addb47e6f311261",
+      "bytes": 1641,
+      "headerPrefixSHA256": "e80eadc3f93319b2fe9b692e7386096eaa9d1c5103c384501addb47e6f311261",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/InjectedScriptSource.js",
+      "sha256": "9022f58eb60950068fb6e00d21557df2f9bd4f474b9c34c7922e569f93068890",
+      "bytes": 64436,
+      "headerPrefixSHA256": "c8f7d8194331f876b7318d443b096ea5cbe046e80ae97f8adae1df3bd2c9ed6e",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Animation.json",
+      "sha256": "b331e29ca59252aa44ff078f0322b1229064b754cd17f2c73a7a391fa7cf0a63",
+      "bytes": 8542,
+      "headerPrefixSHA256": "ef6575725ee7397a954008ecb42d2e8486a2e2a14b837940412d069b6b8d4d3c",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Audit.json",
+      "sha256": "0ee790fa148880cc10b4e405d94da46125737646d245d04719cb23a68e9d6554",
+      "bytes": 2229,
+      "headerPrefixSHA256": "1c48cb8b8c25fd7ba7245dbae466ff11c8e8d15dfe1a4262be11cbbe955893e3",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Browser.json",
+      "sha256": "08b6f4170e6c225bade1fcefe391a1751a00b0bcad4dd7b8694c0b8aadad09a9",
+      "bytes": 1557,
+      "headerPrefixSHA256": "08b6f4170e6c225bade1fcefe391a1751a00b0bcad4dd7b8694c0b8aadad09a9",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/CPUProfiler.json",
+      "sha256": "ed857e8a4ff4243886b931b2b0624be6686dec24f1ecaa1f09c0ff37f34fe2b6",
+      "bytes": 2558,
+      "headerPrefixSHA256": "ef88c4dec2dd4a2aed966eb9d14fc9ebad3430a4e85d4d72de198144d02666d9",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/CSS.json",
+      "sha256": "939aee6d6b5a9de5cca7b7785d515c55511b8a90aed4b88b70472b37ea037362",
+      "bytes": 33245,
+      "headerPrefixSHA256": "be5c80ba46751b5a5b21873d7e1fccf03f013e4874e21ccfa06152548c12d61b",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Canvas.json",
+      "sha256": "5220dfa2ed3665ec63f626157b58468ee041fcc597603e0f6b6dd109154e922a",
+      "bytes": 14345,
+      "headerPrefixSHA256": "0d3db6f516d61b37ff6045986108649111104bc6e0fdb74944ade594d345093e",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Console.json",
+      "sha256": "f511e25026b8cb316b4bc6ca3c81afe8bb0ea445bae89b2c7a121bb43c87ade2",
+      "bytes": 9087,
+      "headerPrefixSHA256": "8fe3f4c8f858c6cd868bcdbd481885dfdddc5725192d106b7dcd9127d174260d",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/DOM.json",
+      "sha256": "cda62440f05a5a6fa65fe4f5137f6663c77d5e248cba3199f6f0ed27df98b77a",
+      "bytes": 67754,
+      "headerPrefixSHA256": "90630781b53aaffde6635096eb11542dc8afca62dd6c34fdf2a109703d9e8710",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/DOMDebugger.json",
+      "sha256": "9ed434164cdf5cd045f8b3c6c53824b750b16c8bd6cc593b1bd1a082f72109ca",
+      "bytes": 4731,
+      "headerPrefixSHA256": "7aea92c7d561541b09c176e4c1193b601cc8ffe6b3fa24b8335edc6467c7bedb",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/DOMStorage.json",
+      "sha256": "76a043bd79a991d041aa4c5c1f0ab1a515aa5ffa807ca56283cd69cb76d0a4cb",
+      "bytes": 3123,
+      "headerPrefixSHA256": "ff49865d082b56d28395716fb87044cc344a71163b84f28bacbfb25cd7dac191",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Debugger.json",
+      "sha256": "0c90f53d52a3a0e5039d89d78d4c82b411ccb32a5417535b55b55707bef78d15",
+      "bytes": 28935,
+      "headerPrefixSHA256": "821ca96505f4a9460e058a679ada66d5b627edf29c2c3aa1cd5ba25b412dc4d6",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/GenericTypes.json",
+      "sha256": "a914a4c6c7e46fa6ad647fdd9db513f53ea993a4517eb3720d4c79eb5fd375da",
+      "bytes": 805,
+      "headerPrefixSHA256": "a914a4c6c7e46fa6ad647fdd9db513f53ea993a4517eb3720d4c79eb5fd375da",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Heap.json",
+      "sha256": "5aac84c0f6eda17598ffc799068916ce68dd3fe9de4592074ab5e48e78335575",
+      "bytes": 4223,
+      "headerPrefixSHA256": "c55f221c8a9f81c6decde3e1b74884489784f7b48f2eccc2526ae227621cacfa",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/IndexedDB.json",
+      "sha256": "2939dd21d91f865f39e67e63733d6144b8296112b3b56b3cc342c2aeebaf2d6a",
+      "bytes": 7269,
+      "headerPrefixSHA256": "5237e9fc80ead0a2d82c122308bc64639932ef7262279b11ac7576fc0727e9c0",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Inspector.json",
+      "sha256": "05377ff0c0de268cd028d68e9fa909050759fa19ff82df010ba8ac6fa8a20482",
+      "bytes": 1039,
+      "headerPrefixSHA256": "05377ff0c0de268cd028d68e9fa909050759fa19ff82df010ba8ac6fa8a20482",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/LayerTree.json",
+      "sha256": "39b44ab88f4b5ce70af457dcd540d8238832334a60dc60ab6638b86d93227db8",
+      "bytes": 10277,
+      "headerPrefixSHA256": "1848397805d4cee5ac7754052f2a2ef71c5fb6456f91a6905ad66224960cc020",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Memory.json",
+      "sha256": "b0c0e363d021d2e675b5b2197beca04217eb8e4784bc8ade28009ee0fc2b2146",
+      "bytes": 2556,
+      "headerPrefixSHA256": "b3ab9a9c6aad5022037c5227a570820b4f011251db8a61c9fc6ecd97093ba637",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Network.json",
+      "sha256": "99d52095b3368c60e7b2ef79e7c0aaa36de17a8ab6c93e65a643a584db6b4588",
+      "bytes": 32341,
+      "headerPrefixSHA256": "2297cd6deb918ab1a60c5cfd354eaf7399ed04852d0647c35a7b17bcb6966c3e",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Page.json",
+      "sha256": "7b91fc694a847dca30edb2875273b55d8863bbf6e99c973cde1100752fd0da36",
+      "bytes": 19616,
+      "headerPrefixSHA256": "65c5ad2b03f75395e784487790fd981e20bdb463d1641fb9a54fc6b9b40bca68",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Recording.json",
+      "sha256": "ff5065961136e62e024036d008b5c020a92aef48f6b597e1cf2815fb5289e97f",
+      "bytes": 3503,
+      "headerPrefixSHA256": "0601296466a1c788aedb45cafba7af96bca28b508efaebc84f9d6654a79583cd",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Runtime.json",
+      "sha256": "5e0758337714ba89c3e1168d8c82bb800466ae752412c998e5b8eadcedd5ec1f",
+      "bytes": 32648,
+      "headerPrefixSHA256": "17965e2affbbd170132b483796af9295435b02a9126fbae6ffe5209bcc2c5fb5",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/ScriptProfiler.json",
+      "sha256": "0f2dc16e486851f361b7d4640a75ccdcf503bca1130343846ef9fb023f49ce9e",
+      "bytes": 3748,
+      "headerPrefixSHA256": "a3b41be78e0ff21a617b65d2a321c99296b866f5a9d0f4698ca4f537dbfa6c65",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Security.json",
+      "sha256": "5dc8d92c0c1cd5ae50206925f1d582de10760281e2c9669a5c606a663cad3de0",
+      "bytes": 1869,
+      "headerPrefixSHA256": "5dc8d92c0c1cd5ae50206925f1d582de10760281e2c9669a5c606a663cad3de0",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/ServiceWorker.json",
+      "sha256": "66e3b59ed76b17d1864027f81c7e07b599500f51a0f4d347980ade9911f9047a",
+      "bytes": 1027,
+      "headerPrefixSHA256": "66e3b59ed76b17d1864027f81c7e07b599500f51a0f4d347980ade9911f9047a",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Storage.json",
+      "sha256": "9a9302688b29bcf8b85d82c05be89e82a0d5ab58e80a01dccab3c17fc60eb8ed",
+      "bytes": 7034,
+      "headerPrefixSHA256": "7a27b89f6b70ee5ca5d6d3549eee41cfdc8c078f0495bf5bfed75d6126e012a5",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Target.json",
+      "sha256": "b13176a366ed8d9ef4e70cd2f7235a0873cc188ce5d11fc079238fc10673f8c8",
+      "bytes": 3117,
+      "headerPrefixSHA256": "d6ad45f79d8e4aaf85107edc2495b71dfb127ca3908f4b74f2c0de2c9964098b",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Timeline.json",
+      "sha256": "d21e87755ca55d92a2f90a1714b69a8ad0ee0e429f70590848e358781aae44d0",
+      "bytes": 5034,
+      "headerPrefixSHA256": "a40766ca4fb3b813bcd0afb7af7cb79f2d933117a2b8f65c23571d785b6bff09",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Worker.json",
+      "sha256": "5eda858703a9ef01a87783abc940f3829d8fa62272d07fdf37f49a72c1f13b7a",
+      "bytes": 1894,
+      "headerPrefixSHA256": "5eda858703a9ef01a87783abc940f3829d8fa62272d07fdf37f49a72c1f13b7a",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/__init__.py",
+      "sha256": "faf73581039ead7a88fd926d4e45cc004ce8b883b38df5a7224ee8dd9d431b05",
+      "bytes": 1184,
+      "headerPrefixSHA256": "faf73581039ead7a88fd926d4e45cc004ce8b883b38df5a7224ee8dd9d431b05",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/cpp_generator.py",
+      "sha256": "8d8a75ca77c23853d84671e5f17760fe336dc08a79d172793ba85a2f21191063",
+      "bytes": 13929,
+      "headerPrefixSHA256": "04193628f1c29ef8235e40885980a09a2a7f2c0cffdca2c412be85208780a579",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/cpp_generator_templates.py",
+      "sha256": "cad24856c403d94360548a3a197f8f747f935bfee7233e50a8961aa8309aaa5e",
+      "bytes": 9817,
+      "headerPrefixSHA256": "5c5003b30b39b7a013b973252a41664c1a6eda45a9229233c5d433d5eda5cbcb",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generate_cpp_backend_dispatcher_header.py",
+      "sha256": "1fd7fb4f5b24b52486982b32b37ec39b897791728ce6ea884cea4be91e4140fd",
+      "bytes": 12135,
+      "headerPrefixSHA256": "3e019fc062c74ca88746f9b787610828f73195c4779a7d11df89f4b42f394866",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generate_cpp_backend_dispatcher_implementation.py",
+      "sha256": "d37aaf966688e76d4a35ec7b06df457c798243299d06bd00ac1d04a1a7cd7e4f",
+      "bytes": 22728,
+      "headerPrefixSHA256": "4783dd3a6a144e6d99ee29d4f100917ac6ec8e217867ea973736a8f88dc23304",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generate_cpp_frontend_dispatcher_header.py",
+      "sha256": "5c3fadff610d3dbabfe2fb35198a2449cca540943f9acbc0a53d7c4f839acbf8",
+      "bytes": 6373,
+      "headerPrefixSHA256": "5d23cd538ff3baf969df527c240f8dd892ee97df82a45805fdd4304c919b046b",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generate_cpp_frontend_dispatcher_implementation.py",
+      "sha256": "28a6f2341c9eb46bf170f4c95ade967fc935d7192846b80966b1d4e111b538aa",
+      "bytes": 7436,
+      "headerPrefixSHA256": "63b49d8392580cdd94d7f35e60d9575ee6069718f6d700a1bade83b1e44d5ee3",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generate_cpp_protocol_types_header.py",
+      "sha256": "eec3bbdca75c99393657b6491221825530a7c3f67f71a5dbc24ff75f36d01b8d",
+      "bytes": 25436,
+      "headerPrefixSHA256": "890decf9a87e602c6b1145630b4e39c541ca87aae249e20aa19cec616518a578",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generate_cpp_protocol_types_implementation.py",
+      "sha256": "06bd79d8c77ec8bdde02f808a0bb4d4df60a232414b9a4329a2590635fed7e93",
+      "bytes": 13344,
+      "headerPrefixSHA256": "09e989ff267752e16f5e1dfc7f45a4678a9c9477ddcc3d6c3f22307b4b82258c",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generate_js_backend_commands.py",
+      "sha256": "ea13ef410c4e4c2e7c1c9bc3aebe64e4a51a9b1e017e0a1318df5911db38b2e6",
+      "bytes": 8335,
+      "headerPrefixSHA256": "953dc9babff3ccd087665437cea5916a3658db1bf304516315963bef604e40a9",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generator.py",
+      "sha256": "75a4eb4b85fa075a20ef2c0231ad276f57934cd1ec9f2064e1f488a45b9c3da2",
+      "bytes": 13192,
+      "headerPrefixSHA256": "7c6e920ca95e0eec3136b8b0bbd48c073b53475349ac6ed3bbb332b6ec55ebff",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/generator_templates.py",
+      "sha256": "facd6f52189656fd5af28604b8e58f7b080409514bd4c97cc70247b891fbf2c5",
+      "bytes": 3287,
+      "headerPrefixSHA256": "4bbb17ad3ab9c84b3aea2531929eeacbeb49f2008277cb673bff9f9e75a34538",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/models.py",
+      "sha256": "2f193f7d48ef4cde1806cd1061e450c7d4e74483f04a4f851c75ee7851f2a152",
+      "bytes": 32901,
+      "headerPrefixSHA256": "26769389fa2f9fa47173bbd2d886dcbd9220794d8c8a9f3d4b398e014f01b5e2",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/generate-inspector-protocol-bindings.py",
+      "sha256": "ad672eef5b7e180e18cf5c8c1d2bd3a48501a538726238be9a9989e3adb44c29",
+      "bytes": 16371,
+      "headerPrefixSHA256": "14bdb5eec5255bcfd13ab2244c1ea1562bca2a9a4cbc040a9d67df57146ba681",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/ucd/CaseFolding.txt",
+      "sha256": "ff8d8fefbf123574205085d6714c36149eb946d717a0c585c27f0f4ef58c4183",
+      "bytes": 87539,
+      "headerPrefixSHA256": "d1fa111eaa7508150b27a1dfeecfe48f1da6e77243c070a85dd1ad7b8e1724a7",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/wasm/wasm.json",
+      "sha256": "4f0b9ec4475a3c88cb21e00a4e1d34b4346b6ece542ecf0701b7f6e0825f2aae",
+      "bytes": 88508,
+      "headerPrefixSHA256": "b562dd5a209624a96abd986ab81db50eb06375af289452da92a421ef214d7ad2",
+      "headerSignals": [
+        "no recognized explicit header in first 8 KiB"
+      ]
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/yarr/generateYarrCanonicalizeUnicode",
+      "sha256": "24cb6ea08461808ce3fec42bc36f1a91c6b65e5c9f71118aaef6bbc5c9e01b45",
+      "bytes": 8131,
+      "headerPrefixSHA256": "bd331b32ec045ba706d4bafebc5cfe8a29d10a0fc0e0b0d63f2737176b00536e",
+      "headerSignals": [
+        "BSD-form"
+      ]
+    }
+  ],
+  "summary": {
+    "uniqueGeneratorInputFiles": 99,
+    "filesWithBSDHeaderSignal": 66,
+    "filesWithMPLHeaderSignal": 0,
+    "filesWithLGPLHeaderSignal": 0,
+    "filesWithNoRecognizedHeader": 33
+  },
+  "scopeLimit": "CMake generator rules and all 99 named WebKit source inputs are hash-bound to the exact pinned archive. The existing link maps bind six generated source outputs to output hashes; the historical clean relink log confirms the generation actions. This does not rerun the generators, prove byte-for-byte output reproduction, resolve whether data/code fragments are incorporated under an input license, supply app notices, or prove recipient relink/re-sign/load."
+}

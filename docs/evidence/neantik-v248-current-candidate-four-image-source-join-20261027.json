@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "status": "CURRENT_BUNDLE_SOURCE_OFFER_AND_REVIEWED_STAGED_IMAGES_BOUND",
+  "candidate": "b96006a994664a80bf89cd757f932eff",
+  "sourceOfferManifestSHA256": "6240d928c933b9b44d6d5376cadc66fee0a1107cd9e1528281a016363ad7c59c",
+  "priorJoinSHA256": "7b3fdda135662b2d894a4842b0d30937ca16b9c3d019e513714b3b956252b545",
+  "signingReceiptSHA256": "dd7cd2dc6661674f69aba69760a4d9c1ec4914bcb3b8415e737083933c2c5cf6",
+  "imageBindingSHA256": "141e62ad88c78a8fc6892abb68075c83592013b34f32f032e0c42fbabb748d0f",
+  "buildReceiptSHA256": "804a60911bf67912d8f17665958f88051b3085a175f145db0fd76fa7ea23bd9c",
+  "signedImageMatches": 16,
+  "fourReviewedImages": [
+    {
+      "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "stagedSHA256": "34de2ac0d7f7b854966dd0335b7656308e3e22a1f009c79e22b456f840764fcc",
+      "signedSHA256": "44a06500d7c107819589d77378b06234ae42ec023b74985b189275c4f6cf652e"
+    },
+    {
+      "path": "WebCore.framework/Versions/A/WebCore",
+      "stagedSHA256": "6c894ce051a20dee391a1bfd99648546b3797b51dc46999ba2b83a4644833174",
+      "signedSHA256": "de91cfa2b6ce93713b5dc74d5fa9bf39946130da96e17429ffc49501dc7016ee"
+    },
+    {
+      "path": "WebKit.framework/Versions/A/WebKit",
+      "stagedSHA256": "cc304648fd66c205100deca9a7bbcec28858ed4a55226dd1a3810b262d4f2b10",
+      "signedSHA256": "db6cb3c0c9eb1179c56bbb947a4b5eb66daf65baf547292dfaac03e14469cb7a"
+    },
+    {
+      "path": "libwebrtc.dylib",
+      "stagedSHA256": "6f77ced9d634c7379b1a90ea5a078d5aedfa4a9be7e9db57dd6884961aa08a46",
+      "signedSHA256": "0ec877c97e59c6843491f8f2cbb4833fcb035c9411a9ca9d13d897044a05042c"
+    }
+  ],
+  "scope": "Current signed bundle bytes and prior four staged-image provenance only. Does not prove complete corresponding source, recipient modification/relink/load, final archive notices, patent clearance, proxy runtime or release qualification.",
+  "releaseQualified": false
+}

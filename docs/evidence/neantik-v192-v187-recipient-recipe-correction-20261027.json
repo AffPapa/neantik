@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v192-v187-recipient-recipe-correction-20261027",
+  "observedAtUTC": "2026-10-27T07:29:54Z",
+  "status": "RECIPE_PATCH_PREIMAGE_CORRECTED; 522_COMPONENTS_AND_64_OVERLAYS_PASS; ONE_SECRET_SCAN_FINDING_UNRESOLVED",
+  "scope": "Read-only forward/reverse patch checks on exact extracted V184 manager source and disposable V34 patch replay on two copied files; correction of private V187 recipe and V190 scan-triage receipt. No production source, app, signing, notarization or publication change.",
+  "managerArchiveSHA256": "ce9fb37eeed73e752c5829213ea688a59a871afe521e042baef435b0f1787e1e",
+  "preflight": {
+    "scriptSHA256": "5c87a0dc91efb2b2ef5f58e2e259ece7428536ad2479d233e7b4e12fa4cc0f84",
+    "scriptMatchesV184Commit": true,
+    "historicalCompanionPatch": {
+      "forward": "FAIL",
+      "reverse": "PASS"
+    },
+    "meaning": "Explicit manifest is already required; do not reapply the historical companion patch."
+  },
+  "noticePatches": {
+    "V30": {
+      "forward": "FAIL",
+      "reverse": "FAIL"
+    },
+    "V31": {
+      "forward": "FAIL",
+      "reverse": "FAIL"
+    },
+    "V32": {
+      "forward": "FAIL",
+      "reverse": "FAIL"
+    },
+    "V33": {
+      "forward": "FAIL",
+      "reverse": "PASS"
+    },
+    "V34": {
+      "forward": "PASS",
+      "reverse": "FAIL",
+      "sha256": "da0461fc1bf6ef3fd86191a0c285e789d907a8b8e9df754a73e10c17292d5d9f",
+      "disposableReplay": "PASS application and reverse check",
+      "patchedInstallerSHA256": "adc4b1c4295f9d3153907e0a79008e34444c05edef4c43e7c84e4d470112a559",
+      "patchedTestSHA256": "572d2e2a9c60ac6b503fdb1b586f20547365c2b826b5b257e88f1edad7823a6a",
+      "bothMatchActiveReleaseWorktree": false
+    }
+  },
+  "gitleaksCorrection": {
+    "originalReceiptSHA256": "afb84e591cdbdc004365a8828b84ba1d98c5c6a8fef7920874bbd1ee9fb2303d",
+    "correctedReceiptSHA256": "520793d755ea0966ec457a10e702076d265d8520958764217cf1f5390f3e5e43",
+    "classified": 2413,
+    "unresolved": 1,
+    "counts": {
+      "sourcePathDigestMappings": 2392,
+      "sha256LabelledEvidenceFields": 16,
+      "syntheticFixtureIdentifiers": 2,
+      "sourceKeyTypeDeclarations": 3,
+      "releaseMetadataUnresolved": 1
+    },
+    "reason": "A format-only heuristic does not establish that the release-metadata string is non-sensitive; the previous fully-triaged claim was too strong."
+  },
+  "offerVerification": {
+    "manifestSHA256": "75e01dbb994f9efb895303180d9b78e0c4a909c87fa13aa4d3fe5af618d9920e",
+    "components": "522/522",
+    "overlayAssets": "64/64",
+    "verifier": "package-owned-webkit-release.py::source_offer_replacements",
+    "verifierSHA256": "3fa4082a7cb7a8601cc40e26797a61db1e25e68dd5193e0846b304379224f941",
+    "status": "PASS"
+  },
+  "limitations": [
+    "V34 is source-only and not bound to a final app or release.",
+    "One secret scan match remains unresolved; the scan covered the manager archive only.",
+    "Complete source/dependency closure, item-level licenses/notices/patent applicability, recipient replacement/load, proxy runtime, secure timestamp signing, notarization and publication remain open."
+  ],
+  "nextAction": "Resolve the remaining scan finding without exposing it, reconcile V34 with the actual final manager candidate, then continue recipient replacement and owned-WebKit proxy qualification when secure timestamp signing is available."
+}

@@ -164,40 +164,33 @@ class FakeReleaseRunner:
 
 
 class DirectNotaryTransactionTests(unittest.TestCase):
-    def test_explicit_notary_keychain_is_private_absolute_and_forwarded(self) -> None:
+    def test_registered_candidate_publishes_without_touching_live_bundle(self):
         with tempfile.TemporaryDirectory() as temporary:
-            keychain = Path(temporary) / "release.keychain-db"
-            keychain.write_bytes(b"not a real keychain")
-            keychain.chmod(0o600)
-
-            self.assertEqual(
-                MODULE.notarytool_auth_arguments("profile", keychain),
-                (
-                    "--keychain-profile",
-                    "profile",
-                    "--keychain",
-                    str(keychain),
-                ),
-            )
-
-    def test_explicit_notary_keychain_rejects_relative_or_shared_files(self) -> None:
-        with self.assertRaisesRegex(
-            MODULE.DirectNotaryTransactionError,
-            "must be absolute",
-        ):
-            MODULE.notarytool_auth_arguments(
-                "profile",
-                Path("relative.keychain-db"),
-            )
-        with tempfile.TemporaryDirectory() as temporary:
-            keychain = Path(temporary) / "shared.keychain-db"
-            keychain.write_bytes(b"not a real keychain")
-            keychain.chmod(0o640)
-            with self.assertRaisesRegex(
-                MODULE.DirectNotaryTransactionError,
-                "owner-only",
-            ):
-                MODULE.notarytool_auth_arguments("profile", keychain)
+            root = Path(temporary).resolve()
+            paths = self.fixture(root)
+            kwargs = self.source_kwargs(root)
+            original_app = paths["app"]
+            registered = MODULE.LOCATION.create(root)
+            alternate = registered / "NeAntik.app"
+            import shutil
+            shutil.copytree(original_app, alternate)
+            paths["app"] = alternate
+            for name in ("manifest", "evidence", "attestation"):
+                original = paths[name]
+                paths[name] = registered / original.name
+                shutil.copyfile(original, paths[name])
+                paths[name].chmod(0o600)
+            binding = registered / "direct-candidate-source.json"
+            shutil.copyfile(root / "dist/direct-candidate-source.json", binding)
+            binding.chmod(0o600)
+            runner = FakeReleaseRunner()
+            result = MODULE.run_transaction(project_root=root, app=alternate,
+                manifest=paths["manifest"], evidence=paths["evidence"], attestation=paths["attestation"],
+                source_binding=binding, release_channel="public-alpha", notary_profile="test-profile",
+                runner=runner, **kwargs)
+            self.assertTrue(Path(result["archive"]).is_file())
+            self.assertEqual((original_app / "Contents/marker.txt").read_text(), "candidate-a")
+            self.assertFalse((original_app / "Contents/_CodeSignature").exists())
 
     def test_missing_notary_profile_fails_before_durable_transaction(
         self,

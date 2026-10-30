@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v271-diagnostic-binaries-build-pass-20261027",
+  "observedAtUTC": "2026-10-27T15:34:00Z",
+  "status": "DIAGNOSTIC_MANAGER_AND_HOST_BUILDS_PASS; PRIVATE_APP_BUNDLE_AND_HEADED_TLS_HARNESS_OPEN",
+  "scope": "Private diagnostic compilation from the existing dirty release worktree only. No candidate, release artifact, runtime Framework, ZIP/DMG, or public channel changed.",
+  "source": {
+    "worktree": "/private/tmp/neantik-release-v1",
+    "branch": "codex/neantik-1-0-prep-20261025",
+    "head": "63c3bc620163ae6354f3dc359b47b9fd72e921d0",
+    "dirty": true
+  },
+  "builds": [
+    {
+      "target": "NeAntikWebKitHost",
+      "mode": "diagnostic",
+      "status": "built-private-diagnostic",
+      "binarySHA256": "c3d8c3912f084450b8dcc5a0600c01aa676a87164dc7a65574147a82a40b1707",
+      "bytes": 5148416
+    },
+    {
+      "target": "NeAntik",
+      "mode": "diagnostic",
+      "status": "build-complete",
+      "binarySHA256": "d06ec8edf666c3556e2c2d30b7993f676119a2fe7588de63be94fa81a52c4258",
+      "bytes": 37889376
+    }
+  ],
+  "guard": {
+    "test": "scripts.tests.test_package_owned_webkit_release.OwnedWebKitReleaseContractTests.test_rejects_private_diagnostic_host_receipt",
+    "result": "PASS",
+    "exitCode": 0
+  },
+  "observations": [
+    "The diagnostic manager contains the owner-only production diagnostic root guard.",
+    "The diagnostic host contains startup-stage instrumentation.",
+    "The current qualification-only synthetic TLS trust scope is absent from the production-ID diagnostic host. A headed synthetic HTTPS route requires a separately reviewed diagnostic-only trust path or equivalent trusted local fixture; do not weaken release TLS behavior."
+  ],
+  "nextAction": "Finish an isolated diagnostic app assembler and synthetic TLS trust scope with explicit diagnostic-only compilation and a production packaging refusal, then bind launch/PID/window/profile/host/counters. Do not run the unmodified b960 app against the real production data root.",
+  "releaseQualified": false
+}

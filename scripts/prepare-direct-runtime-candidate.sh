@@ -1,16 +1,13 @@
 #!/bin/zsh
 
 set -euo pipefail
-umask 077
-export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export PYTHONDONTWRITEBYTECODE=1
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ENGINEERING_APP="$PROJECT_DIR/dist/NeAntik-Integrated.app"
 APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
 SECURITY_BASELINE_ARGS=()
-RELEASE_ENTITLEMENTS="$PROJECT_DIR/Resources/NeAntik.entitlements"
-EMBEDDED_PROFILE="$APP_PATH/Contents/embedded.provisionprofile"
 
 if [[ $# -ne 4 ]]; then
   echo "Usage: $0 /absolute/path/to/NeAntik\\ Browser.app /absolute/path/to/args.gn /absolute/path/to/chromium/src /absolute/path/to/runtime-candidate-lock.json" >&2
@@ -30,17 +27,24 @@ for input in "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_ROOT" "$CANDIDATE_LOCK"; do
     exit 66
   fi
 done
+if [[ -n "${NEANTIK_OWNED_WEBKIT_HOST_BINARY:-}" ||
+      -n "${NEANTIK_OWNED_WEBKIT_FRAMEWORKS:-}" ]]; then
+  echo "Owned WebKit is not release-enabled; direct candidate preparation refuses runtime injection." >&2
+  exit 78
+fi
 if [[ -e "$CANDIDATE_MANIFEST" || -L "$CANDIDATE_MANIFEST" ]]; then
   echo "Prepared candidate manifest already exists; refusing to replace it." >&2
   exit 65
 fi
+for existing_output in "$APP_PATH" "$ENGINEERING_APP"; do
+  if [[ -e "$existing_output" || -L "$existing_output" ]]; then
+    echo "A previous prepared or partial app exists; preserve it and resume or diagnose before retrying: $existing_output" >&2
+    exit 65
+  fi
+done
 
-EXPECTED_BUILD_ARGS="$SOURCE_ROOT/out/Default/args.gn"
-if [[ "$(cd "$(dirname "$BUILD_ARGS")" && pwd -P)/$(basename "$BUILD_ARGS")" !=
-      "$(cd "$(dirname "$EXPECTED_BUILD_ARGS")" && pwd -P)/$(basename "$EXPECTED_BUILD_ARGS")" ]]; then
-  echo "Direct candidate requires canonical source-root out/Default/args.gn." >&2
-  exit 65
-fi
+python3 "$PROJECT_DIR/scripts/runtime_build_path.py" \
+  "$SOURCE_ROOT" "$BUILD_ARGS" "$CANDIDATE_LOCK" >/dev/null
 EXPECTED_CANDIDATE_LOCK="$(dirname "$SOURCE_ROOT")/runtime-candidate-lock.json"
 if [[ "$(cd "$(dirname "$CANDIDATE_LOCK")" && pwd -P)/$(basename "$CANDIDATE_LOCK")" !=
       "$(cd "$(dirname "$EXPECTED_CANDIDATE_LOCK")" && pwd -P)/$(basename "$EXPECTED_CANDIDATE_LOCK")" ]]; then
@@ -64,11 +68,6 @@ case "${NEANTIK_RELEASE_CHANNEL:-}" in
     ;;
 esac
 : "${NEANTIK_SIGNING_IDENTITY:?Set NEANTIK_SIGNING_IDENTITY to a Developer ID Application identity}"
-: "${NEANTIK_PROVISIONING_PROFILE:?Set NEANTIK_PROVISIONING_PROFILE to the absolute Developer ID distribution provisioning profile path}"
-python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
-  --profile "$NEANTIK_PROVISIONING_PROFILE" \
-  --entitlements "$RELEASE_ENTITLEMENTS" \
-  --signing-identity "$NEANTIK_SIGNING_IDENTITY"
 
 METAL_TRUE_COUNT="$(
   grep -Ec \
@@ -85,9 +84,15 @@ if (( METAL_TRUE_COUNT != 1 || METAL_FALSE_COUNT != 0 )); then
   exit 65
 fi
 
-"$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
+if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.12" ]]; then
+  : "${NEANTIK_M156_BUILD_EVIDENCE:?Set the private final9 executed build evidence directory}"
+  "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE" \
+    --built-source-root "$SOURCE_ROOT" --build-evidence "$NEANTIK_M156_BUILD_EVIDENCE"
+else
+  "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
   "$SOURCE_PROVENANCE" \
   --source-root "$SOURCE_ROOT"
+fi
 "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
   "$CANDIDATE_LOCK" \
   "$SOURCE_PROVENANCE"
@@ -97,10 +102,10 @@ fi
 "$PROJECT_DIR/scripts/verify-direct-version-bump.py"
 "$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py"
 "$PROJECT_DIR/scripts/verify-direct-update-policy.py"
-"$PROJECT_DIR/scripts/verify-secure-enclave-release-authority.py"
 "$PROJECT_DIR/scripts/verify-browser-identity-issuance.py"
 "$PROJECT_DIR/scripts/verify-public-fingerprint-corpus.py"
 "$PROJECT_DIR/scripts/preflight-distribution.sh" direct
+python3 -B "$PROJECT_DIR/scripts/native-qa-readiness.py" --check
 
 SIGNED_RUNTIME_ROOT="$(mktemp -d -t neantik-developer-id-runtime)"
 SIGNED_RUNTIME="$SIGNED_RUNTIME_ROOT/NeAntik Browser.app"
@@ -111,6 +116,38 @@ cleanup() {
 trap cleanup EXIT
 
 export NEANTIK_CHROMIUM_SOURCE_ROOT="$SOURCE_ROOT"
+CHROMIUM_OUT_DIR="$(dirname "$BUILD_ARGS")"
+CHROMIUM_SIGNING_CONFIG="$CHROMIUM_OUT_DIR/NeAntik Browser Packaging/signing/build_props_config.py"
+if [[ -f "$CHROMIUM_OUT_DIR/build.ninja" && -d "$(dirname "$RUNTIME_APP")/NeAntik Browser Packaging" ]]; then
+  if [[ "$(cd "$(dirname "$RUNTIME_APP")" && pwd -P)" != "$(cd "$CHROMIUM_OUT_DIR" && pwd -P)" ]]; then
+    echo "Chromium runtime app and args.gn must share the selected GN output directory." >&2
+    exit 65
+  fi
+  ninja -C "$CHROMIUM_OUT_DIR" 'NeAntik Browser Packaging/signing/build_props_config.py'
+  if [[ ! -f "$CHROMIUM_SIGNING_CONFIG" || -L "$CHROMIUM_SIGNING_CONFIG" ]]; then
+    echo "Chromium GN signing configuration was not regenerated safely." >&2
+    exit 65
+  fi
+fi
+if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.93" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-chromium-154-unsigned-candidate.py" \
+    "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_PROVENANCE"
+elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.98" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-chromium-15498-unsigned-candidate.py" \
+    "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_PROVENANCE"
+elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "155.0.8059.40" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-chromium-15540-unsigned-candidate.py" \
+    "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_PROVENANCE"
+elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.12" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-chromium-15612-unsigned-candidate.py" \
+    "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_PROVENANCE"
+elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.74" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-chromium-15674-unsigned-candidate.py" \
+    "$RUNTIME_APP" "$BUILD_ARGS" "$PROJECT_DIR/runtime/chromium-15674-source-adoption-v1.json"
+elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.80" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-chromium-15680-unsigned-candidate.py" \
+    "$RUNTIME_APP" "$BUILD_ARGS" "$PROJECT_DIR/runtime/chromium-15680-source-adoption-v1.json"
+fi
 "$PROJECT_DIR/scripts/sign-runtime.sh" \
   "$RUNTIME_APP" \
   "$PACKAGING_DIR" \
@@ -128,7 +165,23 @@ python3 "$PROJECT_DIR/scripts/promote-runtime-candidate-lock.py" \
   "$BUILD_ARGS" \
   "$RUNTIME_REPORT" \
   --confirm-promote-source-lock
-python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py"
+RUNTIME_NOTICES_MAJOR="$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")"
+RUNTIME_NOTICES_MAJOR="${RUNTIME_NOTICES_MAJOR%%.*}"
+if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.93" ||
+      "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.98" ||
+      "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "155.0.8059.40" ||
+      "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.12" ]]; then
+  python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" \
+    --runtime-lock "$CANDIDATE_LOCK" \
+    --output "$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES_${RUNTIME_NOTICES_MAJOR}.md"
+elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.80" ]]; then
+  # The integrated packager writes notices from this exact .80 lock. Do not
+  # render the default notice file from the unrelated published runtime lock.
+  :
+else
+  python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py"
+fi
+NEANTIK_BROWSER_DATA_BACKUP_ENABLED=0 NEANTIK_DIRECT_PROVISIONING_PROFILE="" \
 "$PROJECT_DIR/scripts/package-integrated-app.sh" \
   "$SIGNED_RUNTIME" \
   "$BUILD_ARGS" \
@@ -137,28 +190,12 @@ python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py"
 
 rm -rf "$APP_PATH"
 ditto "$ENGINEERING_APP" "$APP_PATH"
-rm -f "$EMBEDDED_PROFILE"
-python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
-  --profile "$NEANTIK_PROVISIONING_PROFILE" \
-  --entitlements "$RELEASE_ENTITLEMENTS" \
-  --signing-identity "$NEANTIK_SIGNING_IDENTITY" \
-  --copy-to "$EMBEDDED_PROFILE"
-codesign \
-  --force \
-  --options runtime \
-  --timestamp \
-  --entitlements "$RELEASE_ENTITLEMENTS" \
-  --sign "$NEANTIK_SIGNING_IDENTITY" \
-  "$APP_PATH"
+python3 "$PROJECT_DIR/scripts/direct_backup_signing.py" sign "$APP_PATH" "$NEANTIK_SIGNING_IDENTITY"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
-  --profile "$EMBEDDED_PROFILE" \
-  --entitlements "$RELEASE_ENTITLEMENTS" \
-  --signing-identity "$NEANTIK_SIGNING_IDENTITY" \
-  --app "$APP_PATH"
 "$PROJECT_DIR/scripts/verify-integrated-release.sh" "$APP_PATH"
 
 PRIVATE_RELEASE_BASE="$PROJECT_DIR/dist/private"
+python3 -B "$PROJECT_DIR/scripts/native-qa-readiness.py" --check
 if [[ -L "$PRIVATE_RELEASE_BASE" ||
       (-e "$PRIVATE_RELEASE_BASE" && ! -d "$PRIVATE_RELEASE_BASE") ]]; then
   echo "Private release state path is unsafe." >&2

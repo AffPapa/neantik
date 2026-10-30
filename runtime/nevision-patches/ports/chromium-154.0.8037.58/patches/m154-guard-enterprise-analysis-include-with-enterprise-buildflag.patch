@@ -1,0 +1,17 @@
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+index c9a965ac0d..35a38a77ac 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+@@ -113,8 +113,11 @@
+ #include "chrome/browser/safe_browsing/safe_browsing_service.h"
+ #endif
+ 
+-#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
++#if BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS)
+ #include "chrome/browser/enterprise/connectors/analysis/content_analysis_delegate.h"
++#endif
++
++#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
+ #include "chrome/browser/safe_browsing/download_protection/download_protection_util.h"
+ #include "chrome/browser/ui/file_system_access/file_system_access_dangerous_file_dialog.h"
+ #include "components/safe_browsing/content/common/file_type_policies.h"

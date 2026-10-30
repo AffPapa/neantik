@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "scope": "Private signed Dev QA; synthetic HTTPS origin and loopback proxy A; recovery after profile restart, not transparent retry or general leak proof",
+  "archiveSHA256": "267ece584736d02ceb38517612aa36ec9c1a0d838f0aa8a738b953ff66a5d890",
+  "managerSHA256": "3ad4ce47ffb373420e23af642c118cf01816b273f6b6561b9a688944fbcd812e",
+  "hostSHA256": "82028af65b7b98c8755fc573ff03b4e2904d38f71dde06dc1f1c327a32d79e4a",
+  "fixtureSourceSHA256": "3eaefbb429d24399fc1914c0c81a834da682eefe48a00034807b4df9748d2712",
+  "refusal": {
+    "proxyARefused": 2,
+    "originPageResponses": 0,
+    "proxyBAuthorizedOrigins": 0
+  },
+  "afterStop": {
+    "savedConfiguredInitialURL": true,
+    "savedAboutBlank": false
+  },
+  "afterRecoveryAndRestart": {
+    "proxyAAuthorizedOrigins": 2,
+    "proxyBAuthorizedOrigins": 0,
+    "originPageResponses": 1,
+    "initialState": 1
+  },
+  "cleanup": {
+    "fixtureExit": 0,
+    "allChannelsDrained": true,
+    "managerLauncherPID": 61665
+  },
+  "limitations": [
+    "Previous sessions already saved as about:blank are not automatically changed",
+    "Not production runtime qualification, notarization or publication"
+  ],
+  "recordedUTC": "2026-10-27T11:20:14.924347+00:00"
+}

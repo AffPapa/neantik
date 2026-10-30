@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-scoped-chromium-identity-aba;not-full-release-qualified",
+  "observedAt": "2026-10-25T07:29:42Z",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "runtime": {
+    "chromiumVersion": "156.0.8078.48",
+    "architecture": "arm64",
+    "executableSHA256": "2fca4f8c3b7bd452e65d9fdf527a9ebcfd39d7e7de2cb3975add2d61db627b6b",
+    "frameworkSHA256": "2b0209cdaa85a455df8bc012659718242905a78f20fdd9bd9b163f383743842c",
+    "packagedRuntimeReport": "PASS: exact packaged report matched runtime under authorized local context"
+  },
+  "managerPolicy": {
+    "sourceCommit": "955bc0808a1e1a49d3a9f74f2b02e05af9fee3e2",
+    "sourceSHA256": "815fa8e1fe2c2105d395aa256ac5fdd2b529ac99f773c1b8b16609b1a06eee09",
+    "focusedReceiptTest": "PASS: PlatformCohortLaunchReceiptTests; source-bound seed-21 policy receipt",
+    "receiptSHA256": "770ebdaec8dd42e6b79b1fceda4bf29c2ac467ffac0e8921764dd0b11dc7d1fd"
+  },
+  "A-B-A": {
+    "A1": {
+      "runtime": "NeAntik candidate Chromium 156.0.8078.48",
+      "mode": "neantik-configured",
+      "seed": 21,
+      "captureSHA256": "689e4639a0e01da3d8483260b7a2b1745e1ba869024a380da74bb2a1a222503c"
+    },
+    "B": {
+      "runtime": "Google Chrome 156.0.8078.47",
+      "mode": "unconfigured",
+      "captureSHA256": "086c4aa7285431466d09bbbd5359955dac180576959279e70628b7167ec0d7a2",
+      "executableSHA256": "2346fb044448ef1e7aef6593a19c0d258b194694e37c214f0bbd39e68e5ea881"
+    },
+    "A2": {
+      "runtime": "NeAntik candidate Chromium 156.0.8078.48",
+      "mode": "neantik-configured",
+      "seed": 21,
+      "captureSHA256": "ebbf94b70909b821c6df0d24e67f39f992cc1b242182b71d0b0aaa5f084ad4c8"
+    },
+    "candidateIdentityProjectionStable": true,
+    "allOwnedFixtureProcessesCleaned": true
+  },
+  "identityVerifier": {
+    "status": "PASS",
+    "checks": 33,
+    "issues": [],
+    "negativeControlsQualified": true,
+    "negativeControlCount": 11,
+    "verificationSHA256": "8215dbd332a0aa65a484ab3157c1a81bb57938875273147f81fdc86a2f41c295",
+    "workerUnavailableHighEntropyHeaders": "observed absent in both candidate and ordinary Chrome worker contexts"
+  },
+  "isolation": {
+    "keychain": "--use-mock-keychain",
+    "browserData": "fresh private synthetic roots per run",
+    "network": "127.0.0.1 fixture only; no external endpoints",
+    "productionProfilesUsed": false,
+    "candidateBytesChanged": false
+  },
+  "scopeLimits": [
+    "Direct launch of the exact signed Chromium sub-bundle with source-bound manager launch policy; NeAntik manager UI enrollment was not exercised.",
+    "This verifies one configured tuple seed (21), not all 11 catalog tuples.",
+    "Does not qualify owned-WebKit proxy or the WebKit source/notice/relink gates.",
+    "Not notarization, public packaging, or release qualification."
+  ],
+  "privateEvidence": {
+    "root": "/private/tmp/neantik-m15648-one-shot-25635xbf",
+    "candidateA1SHA256": "689e4639a0e01da3d8483260b7a2b1745e1ba869024a380da74bb2a1a222503c",
+    "ordinaryChromeSHA256": "086c4aa7285431466d09bbbd5359955dac180576959279e70628b7167ec0d7a2",
+    "candidateA2SHA256": "ebbf94b70909b821c6df0d24e67f39f992cc1b242182b71d0b0aaa5f084ad4c8",
+    "chromeReferenceBindingSHA256": "d0fb252c227ea4b1dbfa8863280adcb4f006af272332d1d2dfd7c303b132c13a",
+    "candidateBindingSHA256": "9ed3172ba5aeced3c7153d8b6034486fdc3d1283913d4a051d4cfa11f72ef8d0",
+    "runnerA2SHA256": "022a1ca6db7f677b589d1c7547a76c93b3f48c1166b516786203bd16c174b94d"
+  }
+}

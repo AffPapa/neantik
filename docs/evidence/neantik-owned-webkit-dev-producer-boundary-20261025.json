@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T12:15:51.746872+00:00",
+  "status": "static-producer-contract-gap;no-package-created",
+  "inputs": {
+    "scripts/run-local-manager.sh": "b3af1d2c73957d8764320794f8453fff17388daefe9a071238dfab64a62eca17",
+    "scripts/package-owned-webkit-release.py": "99e6c4fa611b4e9a9eaad08a782ed0de931c83243453c8a11488d51d97d20c77",
+    "scripts/package-webkit-host.py": "01e5e72a9e82587e582032244525b35009e99a3b0d0a685972709bd0e1890381",
+    "scripts/direct_backup_signing.py": "a25938e725b85f5a852e47a953b3f5658254f7602d43ee78837752232c9de510",
+    "scripts/verify_owned_webkit_qa_archive.py": "5ff6bd63a8b2da828c36c45067c6da391884b06a5993cf40a6ec1469eb742d7e",
+    "scripts/runtime-network/launch-owned-webkit-qa.swift": "1d099131c52363a244fa7c6a6dbf16741985fbd864a40914f70559bf427d9d16"
+  },
+  "findings": [
+    {
+      "boundary": "local Dev builder",
+      "evidence": "run-local-manager.sh refuses NEANTIK_WEBKIT_HOST_ENABLED=1 and signs its disposable Dev app ad hoc; --fixture does embed NeAntikDevelopmentFixtureRoot but cannot produce the required Developer ID owned-WebKit ZIP"
+    },
+    {
+      "boundary": "owned release packager",
+      "evidence": "package-owned-webkit-release.py requires production bundle app.neantik.desktop and pinned candidate139 WebKit image hashes; it does not accept a Dev bundle"
+    },
+    {
+      "boundary": "host package helper",
+      "evidence": "package-webkit-host.py supports --development-qa for app.neantik.desktop.dev and separately signed owned runtime, but expects a signed manager, host binary and staged Frameworks supplied by caller"
+    },
+    {
+      "boundary": "manager signing helper",
+      "evidence": "direct_backup_signing.py sign requires production bundle ID; a Dev producer needs an explicit, scoped Developer ID signing path with Dev entitlements and no backup capability"
+    },
+    {
+      "boundary": "consumer preflight",
+      "evidence": "verify_owned_webkit_qa_archive.py verifies exact archive SHA, embedded fixture root, manager/host bytes and owned image presence; launch-owned-webkit-qa.swift --check-only additionally requires owner-only stage/root, matching extracted manager and profile seed"
+    }
+  ],
+  "nextImplementation": "Build a disposable Dev producer that embeds the fixture root before Developer ID signing, assembles the Dev host/runtime with --development-qa from reviewed inputs, signs the outer Dev app, writes an exact ZIP and stage/seed receipts, then passes the existing ZIP verifier and one-use launcher check-only. Do not reuse retired candidate139 or its accepted ZIP.",
+  "releaseQualified": false
+}

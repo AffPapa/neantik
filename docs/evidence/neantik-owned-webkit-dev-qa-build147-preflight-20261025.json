@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "status": "exact-signed-dev-qa-zip-preflight-pass;not-notarized-or-runtime-qualified",
+  "candidate": {
+    "stage": "/private/tmp/neantik-owned-webkit-qa-32a67fp_",
+    "root": "/private/tmp/neantik-devqa147-final-20261025",
+    "app": "/private/tmp/neantik-owned-webkit-qa-32a67fp_/NeAntik.app",
+    "archive": "/private/tmp/neantik-owned-webkit-qa-32a67fp_/NeAntik-1.0.0-147-dev-owned-webkit-qa.zip",
+    "sha256": "26ec9589f71a2ab5f5fd3bee4f3b33f3e5c37f9943246f56bb631eaf9762cb30",
+    "profileSeedSHA256": "e4e6200c97b6c552d8577ae41228dc0e12b555351a953767cefb4cacc24fef34",
+    "managerSignedSHA256": "993b686da3c4a4479891e0ab7354b7f6c12d7d0683b5107c9f13297070282ddd",
+    "hostSHA256": "b3bb2c217da7c8581be34678de5191410410d816851b6eb4b9ec558dad5251f7",
+    "version": "1.0.0",
+    "build": "147",
+    "proxyTargetHost": "neantik-proxy-qa.invalid"
+  },
+  "sourceChanges": [
+    "QA-only visible-window stage",
+    "navigation didFinish stage",
+    "QA-only exact synthetic page DOM sentinel"
+  ],
+  "focusedTests": "WebKitHostChildBootstrapTests 30/30 PASS; NamedProxyQASeedDiagnosticTests generate 1/1 PASS",
+  "ownedWebKitImageSHA256": "876cb2176bc9c722e64b8bbc31f29b1539f435994fda1d4a037c572984943276",
+  "sourceHostSHA256": "8fd502c80ebeedfcb62be4e52d41c5254fd86843ca3dbbc82ef0f9d56443904c",
+  "appleSubmission": {
+    "id": "a2b867f4-aa7c-47ae-bcb7-b84a2bf98043",
+    "status": "Accepted"
+  },
+  "appLaunched": false,
+  "acceptance": "Window visible, owned WKNavigation finished, and exact QA DOM sentinel observed on the same A session; route fixture response without direct fallback",
+  "invalidationReason": "Build146 finishLaunching loaded system WebKit; reverted lifecycle call and added bounded page visibility/completion/DOM markers to changed qualification host",
+  "gatekeeper": "accepted; source=Notarized Developer ID",
+  "nativeReadiness": "eligibleForAttempt=true; memoryPressure=1; thermalState=0"
+}

@@ -1,0 +1,92 @@
+{
+  "id": "V399",
+  "timestampUTC": "2026-10-28T07:15:07Z",
+  "status": "PARTIAL_IRCAM_LISTEN_PERMISSION_AND_NOTICE_INTEGRATION; 13_OTHER_RESOURCE_ROWS_UNKNOWN; SOURCE_OFFER_INTEGRATION_OPEN",
+  "scope": "Exact V382 current WebCore Composite.wav rights attribution trail and local runtime-notice installer integration. No app build, runtime launch, signing, notarization, publication, or unrelated inventory.",
+  "priorCheckpoint": {
+    "receipt": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v398-webkit-hrtf-primary-rights-and-process-recheck-20261028.json",
+    "sha256": "7f911c43048313dc833c1a8c2e185340460b041585df13dd95de20880366afa4",
+    "currentSHA256": "1ecd22e944d316f49f875714943bc493773d34de1758d1bf99990641df77d919"
+  },
+  "resource": {
+    "runtimePath": "WebCore.framework/Versions/A/Resources/audio/Composite.wav",
+    "sourcePath": "Source/WebCore/platform/audio/resources/Composite.wav",
+    "runtimeSHA256": "a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3",
+    "decision": "IRCAM LISTEN dataset permission states public and available for any use; IRCAM copyright retained and acknowledgement requested. This is a distinct data permission, not an SPDX license and not a license for WebCore/WebKit/NeAntik code.",
+    "noticeSHA256": "98e596a4a8e0cd4d5fcb5d77f8a37d846129dce89d99235dcc3133a22dfdd0a2",
+    "evidence": [
+      {
+        "url": "https://doc.sccode.org/Other/ATKLicensing.html",
+        "finding": "IRCAM LISTEN section states copyright (c) 2002 IRCAM, database is public and available for any use, and acknowledgement is requested."
+      },
+      {
+        "url": "https://lists.w3.org/Archives/Public/public-audio/2012OctDec/0337.html",
+        "finding": "WebAudio participant identifies WebKit HRTF as a composite derived from measurements in IRCAM LISTEN."
+      },
+      {
+        "url": "https://bugs.webkit.org/show_bug.cgi?id=69703",
+        "finding": "WebKit history documents Composite.wav consolidation of 240 HRTF WAV resources into a single runtime file."
+      },
+      {
+        "url": "https://docs.webkit.org/Other/Licensing.html",
+        "finding": "WebKit licensing remains file-specific; this permission does not relicense surrounding code."
+      }
+    ]
+  },
+  "implementation": {
+    "changedFiles": [
+      {
+        "path": "scripts/webkit_runtime_notices.py",
+        "sha256": "10490f705b9822a1e0e9aad3e4eaa9809a0a5827a0a548d17d12dad35ac68245",
+        "change": "Validate exact HRTF bytes and notice; install standalone permission text; verify packaged bytes and rendered Markdown/HTML."
+      },
+      {
+        "path": "scripts/tests/test_webkit_runtime_notices.py",
+        "sha256": "de60ef5ff10b8c976a1e9b12331dec388cb424f76f8cc9a29da4a8c19ff7ab20",
+        "change": "Fixture coverage for tampered runtime bytes and notice; package installer suite covers notice installation/verification."
+      },
+      {
+        "path": "docs/evidence/third-party/ircam/IRCAM-LISTEN-HRTF-NOTICE.txt",
+        "sha256": "98e596a4a8e0cd4d5fcb5d77f8a37d846129dce89d99235dcc3133a22dfdd0a2",
+        "change": "Scoped rights and attribution statement."
+      }
+    ],
+    "verification": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest scripts.tests.test_webkit_runtime_notices",
+      "result": "PASS: 68 tests in 23.241 seconds",
+      "scope": "Notice tooling only; does not qualify current release candidate."
+    }
+  },
+  "sourceOffer": {
+    "status": "OPEN_NOT_REBOUND",
+    "finding": "V382 draft source-offer manifest was not edited. New notice must be added to a successor offer revision and bound to a future exact candidate before release."
+  },
+  "remainingUnknowns": {
+    "V397CurrentStageRows": 14,
+    "rightsPermissionAndNoticeAddressed": 1,
+    "otherRowsStillUnknown": 13,
+    "status": "No other row reclassified."
+  },
+  "releaseGates": {
+    "sourceLicenseNoticeRelink": "PARTIAL: HRTF permission/notice and installer code closed locally; V382 offer integration, exact-candidate notices, 13 other rows, corresponding-source recipient rebuild/relink/load and modified-image proof remain open.",
+    "timestampSigning": "UNCHANGED_BLOCKED: last observed V376/V396 TSA boundary; no retry or signing attempt.",
+    "releaseQualified": false
+  },
+  "processRecheck": {
+    "focusedNoticeSuiteRepeated": true,
+    "reason": "Source and installer changed to add the rights notice; focused suite invalidated and rerun.",
+    "browserBuildRepeated": false,
+    "runtimeLaunchRepeated": false,
+    "signingProbeRepeated": false,
+    "publicationAttempted": false,
+    "dirtyWorktreePreserved": true
+  },
+  "worktree": {
+    "path": "/private/tmp/neantik-release-v1",
+    "branch": "codex/neantik-1-0-prep-20261025",
+    "HEAD": "63c3bc620163ae6354f3dc359b47b9fd72e921d0",
+    "dirty": true,
+    "preserveUniqueChanges": true
+  },
+  "nextAction": "Create a successor V382 source-offer revision that includes the IRCAM notice and corresponding-source binding, then rebind only on the next exact candidate. Continue the other 13 resource rows selectively. Do not repeat unchanged app builds, runtime QA, or TSA probes."
+}

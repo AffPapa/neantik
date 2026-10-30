@@ -1,0 +1,14 @@
+{
+  "status": "V135_LINKED_TOUCH_GENERATED_INPUTS_MATCH_NOTICE_BUNDLE",
+  "generatedSources": {
+    "JSTouch.cpp": "151e05402cb374947603b38001a628fe45142d876bc58b611e0c751ee3b65988",
+    "JSTouchEvent.cpp": "6d5260cff65f5f59e1d6013e1c6d34f03909503db562fa8ade2d93b3788eff4d",
+    "JSTouchList.cpp": "a0fc1a43d317c8a1dc3bb38d72781f90c2dea5f6773c30897d4f1a82c2cd4458"
+  },
+  "linkedObjectPathTemplate": "Source/WebCore/CMakeFiles/WebCore.dir/__/__/WebCore/DerivedSources/<filename>.o",
+  "eachLinkedObjectFoundInWebCoreNinjaTargetAndDependencyRecord": true,
+  "sourceBundleSHA256": "93d9ce3e3f3b35465749b4494e55633000e703551115363129fc2afd65ab6aa8",
+  "scope": "three generated Touch files and corresponding notice headers, not complete WebCore licensing or packaged-app notice verification",
+  "releaseQualified": false,
+  "generatedLicenseCommentMatchesBundleExactly": "3/3 byte-equivalent UTF-8 text"
+}

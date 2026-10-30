@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "modeRestorationsMatched": 588,
+  "addedCachesVerified": 40,
+  "existingContentChanges": 0,
+  "releaseReady": false,
+  "restorationReportSHA256": "2e6a2f0ec677e3b0315adc859e3b340d3128dc901a9f389c5f2fa5539ecb1407",
+  "cacheVerificationSHA256": "1fc6b55091745aedfcbed69133d34c28977fe5ecfb456a1bf9b734f60df916fa",
+  "postbuildSnapshotSHA256": "31aee208eb26d8f6b9bc667eb549844c645b2b4987d4f2579783e68caa164c74"
+}

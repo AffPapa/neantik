@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T11:55:33.874302+00:00",
+  "status": "scoped conditional exclusion for two unmarked WebCore/PAL source leaves in candidate139",
+  "image": {
+    "path": "dist/private/candidates/f3488c08f0b3493dbcee8db94473bacf/NeAntik.app/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/WebCore",
+    "sha256": "d23bba6a1e368635e781d3f6c795a355ee0e1a43263651f5c86a6fd0ac46aa80"
+  },
+  "configuration": {
+    "cmakeCacheSHA256": "bf38a4db6cf695dbc6b88d878c379521a97b87d7ea93c1ef493c0f9b929ea17c",
+    "cmakeConfigHeaderSHA256": "9acf7eb2c6591eac435ec3805b42cd29db8ec85c61b8c836ef6e065c17259c3e",
+    "ENABLE_WEBXR": "OFF / 0"
+  },
+  "sources": [
+    {
+      "path": "Source/WebCore/PAL/pal/cocoa/CompositorServicesSoftLink.mm",
+      "sha256": "f9ff6249f76d18c2948299a43059db6f904c8f9e9e06f5c1320b3f27a7b44fb6",
+      "guard": "#if ENABLE(WEBXR)"
+    },
+    {
+      "path": "Source/WebCore/platform/xr/cocoa/PlatformXRPose.cpp",
+      "sha256": "74711d213ad9fae7454c4dad06a53247575a190514d102b38a3b8b167bc1185f",
+      "guard": "#if ENABLE(WEBXR)"
+    }
+  ],
+  "symbolCheck": {
+    "command": "nm -j exact WebCore image",
+    "matchingSymbolCounts": {
+      "PlatformXRPose": 0,
+      "CompositorServices": 0
+    },
+    "exitCode": 0
+  },
+  "limit": "No per-file license decision for source distribution or other generated/conditional leaves; absence of these symbols is scoped to exact image and configuration."
+}

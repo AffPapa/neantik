@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "status": "exact-shared-BSD-2-source-header-bound-to-five-WebKit-XPC-images",
+  "observedAt": "2026-10-25T01:37:12Z",
+  "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+  "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+  "sourcePath": "Source/WebKit/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp",
+  "sourceSHA256": "5363ad87e3e7049a31497f886ba8e8af496dcee316845997b31592d79ed44755",
+  "headerNoticePath": "docs/evidence/third-party/webkit-process/AuxiliaryProcessMain-BSD-2-Clause.LICENSE",
+  "headerNoticeSHA256": "193fa78ff7879bf105a6a1ad66a50ba0355d5068e67ed911e4bcee7eb19dc9af",
+  "headerNoticeBytes": 1360,
+  "headerTerms": "Exact source header states Apple BSD two-condition redistribution terms.",
+  "runtimeImages": [
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development",
+      "runtimeSHA256": "3ecf2f2b7650e65257e561ccd93187f58b7ed9559356ad412baf03bea8f736a0",
+      "sourcePath": "Source/WebKit/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp",
+      "sourceSHA256": "5363ad87e3e7049a31497f886ba8e8af496dcee316845997b31592d79ed44755"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development",
+      "runtimeSHA256": "4ff32a6b2068f4383fc9ca0d09a27f1f161374a919e2fb416a34491af1314f9e",
+      "sourcePath": "Source/WebKit/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp",
+      "sourceSHA256": "5363ad87e3e7049a31497f886ba8e8af496dcee316845997b31592d79ed44755"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development",
+      "runtimeSHA256": "95e5eb9fd76d4525ed22b0ecec74ab531fd3abcb067886a5469f682021586e75",
+      "sourcePath": "Source/WebKit/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp",
+      "sourceSHA256": "5363ad87e3e7049a31497f886ba8e8af496dcee316845997b31592d79ed44755"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development",
+      "runtimeSHA256": "1c3ff4505f7bfb597fb042f4ba2b8b277377bc87671da11d3dc9902b3eb0f0bb",
+      "sourcePath": "Source/WebKit/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp",
+      "sourceSHA256": "5363ad87e3e7049a31497f886ba8e8af496dcee316845997b31592d79ed44755"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development",
+      "runtimeSHA256": "b031d2c898581f1b83e744eaad83316621fe4e7eaef91c1b242a7b4fe11d7d8a",
+      "sourcePath": "Source/WebKit/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp",
+      "sourceSHA256": "5363ad87e3e7049a31497f886ba8e8af496dcee316845997b31592d79ed44755"
+    }
+  ],
+  "distributionDestination": "Contents/Resources/NeAntikRuntimeLicenses/AuxiliaryProcessMain-BSD-2-Clause.txt",
+  "limitations": [
+    "The source linkage is technical provenance for each XPC binary, not a full dependency-license determination.",
+    "Notice generator output will be incorporated into the next package; signed candidate 139 remains unchanged.",
+    "Reviewer decision and the other 94 applicability rows remain open."
+  ],
+  "v135Binding": {
+    "buildReceiptPath": "docs/evidence/neantik-v135-clean-relocated-v132-webkit-relink-20261026.json",
+    "buildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "webkitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "mainSourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "scope": "Exact runtime output identity only; preserves referenced historical source/license reviews without expanding their legal scope."
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-26T00:26:38Z",
+  "status": "PASS_SOURCE_ONLY_EXACT_HASH_GATED_WEBCORE_GENERATED_TOUCH_OUTPUT_HEADERS; FULL_WEBCORE_IMAGE_AND_RECIPIENT_RELINK_OPEN",
+  "scope": "Adds exact license headers for three linked generated WebCore Touch outputs to the existing hash-gated notice bundle and source-offer patch chain. No runtime/package/candidate changed; no legal conclusion for the full WebCore image.",
+  "candidate": {
+    "build": "149",
+    "archiveSHA256": "2a30759b8b38f1354b8163b6408763b2ed3fa0d0346a012e48e9a607d6928c76",
+    "webCoreImageSHA256": "d23bba6a1e368635e781d3f6c795a355ee0e1a43263651f5c86a6fd0ac46aa80"
+  },
+  "linkedGeneratedOutputs": [
+    {
+      "path": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/JSTouch.cpp",
+      "sha256": "151e05402cb374947603b38001a628fe45142d876bc58b611e0c751ee3b65988",
+      "bytes": 22272
+    },
+    {
+      "path": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/JSTouchEvent.cpp",
+      "sha256": "6d5260cff65f5f59e1d6013e1c6d34f03909503db562fa8ade2d93b3788eff4d",
+      "bytes": 29457
+    },
+    {
+      "path": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/JSTouchList.cpp",
+      "sha256": "a0fc1a43d317c8a1dc3bb38d72781f90c2dea5f6773c30897d4f1a82c2cd4458",
+      "bytes": 22799
+    }
+  ],
+  "generator": {
+    "path": "Source/WebCore/bindings/scripts/generate-bindings.pl",
+    "sha256": "012eb5f3965ad516b104203813fd6736bf79846fb7a188da3acf77d2941f989f"
+  },
+  "noticeBundle": {
+    "path": "docs/evidence/third-party/webkit-v20-webcore-generated-input-headers.txt",
+    "sha256": "93d9ce3e3f3b35465749b4494e55633000e703551115363129fc2afd65ab6aa8",
+    "bytes": 49709,
+    "containsExactHeaders": "3/3",
+    "webCoreLGPL2Text": "separately present and hash-pinned"
+  },
+  "installer": {
+    "baseScriptSHA256": "b5833eb0175af4165bb9e2fd1a8df434c18acc2f2ccb410f9212a23c2b668aa4",
+    "patchedScriptSHA256": "0b3142b7c2109453d39337bda064183f74f2ce43bb25e3a3e1bfe940972548cb",
+    "baseTestSHA256": "c82603cdbf7da02b1f411abab74e1c7d23a55c8d2bd3b5ee0c9a4df71b8bac00",
+    "patchedTestSHA256": "143a7e1f6b0c009ef89394a211d0d7c8380ad876c6320ac3b000438e049cff91"
+  },
+  "sourceOfferOverlay": {
+    "patch": "patches/notice-installer-overlay-v34-20261026.patch",
+    "patchSHA256": "da0461fc1bf6ef3fd86191a0c285e789d907a8b8e9df754a73e10c17292d5d9f",
+    "appliesAfter": "notice-installer-overlay-v33-20261026.patch"
+  },
+  "supplementalInputs": {
+    "archive": "notice-source-inputs-v33.tar",
+    "archiveSHA256": "33f79b15d35e3b24e097cebc3e6c086e1af4e04a555531c2d3a06fa3a96f7239",
+    "manifest": "evidence/NOTICE_SOURCE_INPUTS_MANIFEST_V33.json",
+    "manifestSHA256": "ba30807fefca3fc680d890b3dccfa2412afd7ec00d40b220cf8b456deee6883d",
+    "fileCount": 170
+  },
+  "verification": {
+    "result": "57/57 PASS",
+    "scope": "Exact NeAntik-source-955bc08.tar.zst replay with notice-installer overlays V30 through V34, V33 supplemental inputs, and the staged exact source-offer notice files.",
+    "harness": "PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/tests/test_webkit_runtime_notices.py"
+  },
+  "worksheetDisposition": "candidate139 unchanged; all 82 UNKNOWN rows retained; WebCore remains UNKNOWN",
+  "actions": {
+    "build": false,
+    "package": false,
+    "signOrNotarize": false,
+    "launch": false,
+    "publish": false
+  }
+}

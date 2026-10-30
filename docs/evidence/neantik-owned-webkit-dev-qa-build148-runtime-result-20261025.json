@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T13:45:57+00:00",
+  "build": "148",
+  "archiveSHA256": "ba20cac53d97656175777373c193770a7527bf1211c9159dfcca22807a4c10ce",
+  "appleNotary": {
+    "id": "264b5f59-7406-4708-80b6-9a775e1de8b6",
+    "status": "Accepted"
+  },
+  "gatekeeper": "accepted; Notarized Developer ID",
+  "oneUseLauncher": "LAUNCHED pid=48869 exact signed Dev QA app",
+  "ownedWebKitA": {
+    "windowStage": "stage=qa-window-visible",
+    "navigationStage": "stage=qa-nav-sentinel",
+    "tlsStage": "stage=qa-tls-accepted",
+    "brokerCounts": "inbound=4 loopback=4 connectMethods=4 httpMethods=0 otherMethods=0 parsed=4 authorized=2 bound=2"
+  },
+  "fixtureFinal": {
+    "dnsAccepted": 6,
+    "dnsRefused": 2,
+    "proxyTunnelsAccepted": 10,
+    "proxyTunnelsAuthenticated": 6,
+    "proxyRefused": 4,
+    "tlsHandshakeComplete": 6,
+    "tlsFailures": 0,
+    "httpsPageResponses": 3,
+    "httpsPageRefused": 0,
+    "profileStateInitial": 1,
+    "profileStateRestored": 2,
+    "allChannelsDrained": true
+  },
+  "behavior": "One initial HTTPS load; proxy refusal did not increase origin page responses; proxy recovery loaded again and restored profile state; DNS refusal did not increase origin responses; DNS recovery loaded again and restored profile state. QA certificate trusted only the exact synthetic .invalid origin.",
+  "visualInspection": "Owned host CUA attachment timed out; bounded native markers show window.isVisible, WKNavigation didFinish, and page DOM sentinel. Manager UI showed A running/stopped around each fault control.",
+  "scope": "one synthetic DNS/TLS HTTPS route through a profile-scoped HTTP proxy; no external provider, real website, user profile, or production release qualification",
+  "cleanup": "A profile stopped; fixture allChannelsDrained; owned host absent from running app inventory; Dev manager remains running with profile stopped",
+  "retired": true
+}

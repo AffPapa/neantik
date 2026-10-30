@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v405-v382-v399-combined-source-offer-20261028",
+  "observedAtUTC": "2026-10-28T07:42:00Z",
+  "status": "PASS_V405_COMBINED_SOURCE_OFFER_COMPONENT_AND_CONSUMER_PREFLIGHT; NOT_CANDIDATE_BOUND",
+  "scope": "Create an immutable successor folder from the exact V382 source offer and include the V399 permission/attribution supplement. The V382 base offer and original V399 supplement remain unchanged.",
+  "inputs": {
+    "frozenV382Root": "/private/tmp/neantik-release-v1/dist/private/source-offers/v382-filtered-model-assets-draft",
+    "frozenV382ManifestSHA256": "e96b51e74894ec9877462105cf03c28bc80c0bc799b5408288d7c0b49c4631a8",
+    "frozenV382SourceArchiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+    "V399SupplementRoot": "/private/tmp/neantik-release-v1/dist/private/source-offer-supplements/v399-ircam-listen-hrtf",
+    "V399SupplementManifestSHA256": "688c8f4681e8c79cfdc69a6124fb4cf868c32a8e54738b03e6ba732a1a4e5ecd",
+    "V399NoticeSHA256": "98e596a4a8e0cd4d5fcb5d77f8a37d846129dce89d99235dcc3133a22dfdd0a2",
+    "packageConsumer": "/private/tmp/neantik-release-v1/scripts/package-owned-webkit-release.py",
+    "packageConsumerSHA256": "3050d56cddeb05681dee5cac279cf3cba6354411724e62432ab3cddaec9233a9",
+    "supplementChecker": "/private/tmp/neantik-release-v1/scripts/check-source-offer-supplement.py",
+    "supplementCheckerSHA256": "e2e934906da24761d3a95f72639ebbf495526c15e0b9fe4762e830c36ed4206b",
+    "V382BuildReceiptSHA256": "319afbac5c8a7b55daeb54912b3c7614537a4d26315885127d54694dc3bc7a7f",
+    "preflightCheckpointSHA256": "27a3e42028bfb611f0857a923fd2a7c27b6510d0ad147c85fb0dbc5e29feda04"
+  },
+  "output": {
+    "root": "/private/tmp/neantik-release-v1/dist/private/source-offers/v405-v382-v399-combined-draft",
+    "manifestSHA256": "5c03656e822ef3bb69ab4bf14c0c2d2efa118b85bbbd3e3be4661391ae2c37ca",
+    "componentCount": 662,
+    "baseComponentCount": 658,
+    "addedComponents": [
+      {
+        "path": "frozen-base/manifest.json",
+        "sha256": "e96b51e74894ec9877462105cf03c28bc80c0bc799b5408288d7c0b49c4631a8",
+        "bytes": 221423
+      },
+      {
+        "path": "frozen-base/upstream/WebKit-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c.tar.zst",
+        "sha256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+        "bytes": 1603356903
+      },
+      {
+        "path": "supplements/v399-ircam-listen-hrtf/supplement-manifest.json",
+        "sha256": "688c8f4681e8c79cfdc69a6124fb4cf868c32a8e54738b03e6ba732a1a4e5ecd",
+        "bytes": 1086
+      },
+      {
+        "path": "supplements/v399-ircam-listen-hrtf/notices/IRCAM-LISTEN-HRTF-NOTICE.txt",
+        "sha256": "98e596a4a8e0cd4d5fcb5d77f8a37d846129dce89d99235dcc3133a22dfdd0a2",
+        "bytes": 1545
+      }
+    ],
+    "creation": "Copy-on-write clone of V382; frozen base manifest copied byte-for-byte; duplicate archive hardlinked within the private successor; supplement files copied unchanged."
+  },
+  "verification": {
+    "packageSourceOfferConsumer": "PASS: source_offer_replacements verified all 662 listed components, all 64 runtime overlays and filtered V382 metadata.",
+    "filteredBuildReceiptBinding": "PASS: exact V382 14-output build receipt resolved inside successor offer and hash-matched.",
+    "sourceCrosswalkBinding": "PASS: exact filtered V382 crosswalk selected.",
+    "supplementIntegrity": "PASS: V399 supplement verifier matched the preserved e96 base manifest, source archive, supplement manifest and notice.",
+    "supplementCheckerStatus": "The checker labels the supplement itself incomplete by design; V405 embeds it alongside the verified complete V382 component set.",
+    "frozenV382ManifestUnchanged": "e96b51e74894ec9877462105cf03c28bc80c0bc799b5408288d7c0b49c4631a8",
+    "releaseQualified": false,
+    "candidateBound": false,
+    "recipientRelinkLoad": false
+  },
+  "sideEffects": {
+    "V382BaseChanged": false,
+    "V399SupplementChanged": false,
+    "appBuild": false,
+    "runtimeLaunch": false,
+    "signing": false,
+    "notarization": false,
+    "publication": false
+  },
+  "nextAction": "Once timestamp.apple.com secure-timestamp signing is observably available, run the production package flow once against the exact V405 manifest, then complete candidate-bound recipient relink/load, notarization, Gatekeeper and Direct Distribution delivery. Do not repeat unchanged V382/V399 integrity checks."
+}

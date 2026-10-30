@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-16",
+  "publishedAt": "2026-10-15",
+  "maximumAgeDays": 0,
+  "minimumPublicChromiumVersion": "155.0.8059.85",
+  "alsoObservedPublicChromiumVersions": [
+    "155.0.8059.84"
+  ],
+  "channel": "Desktop Stable",
+  "platforms": [
+    "macOS"
+  ],
+  "securityFixCount": 10,
+  "reference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_01886704284.html",
+  "referenceTitle": "Stable Channel Update for Desktop",
+  "sourceLabel": "Chrome Releases",
+  "releaseBoundary": "This is a manually pinned primary-source security baseline. It is not a live updater. Refresh checkedAt, versions, securityFixCount and reference on the day of every public Direct release. A zero securityFixCount means the official Stable post did not enumerate security fixes; it never means that the version is exempt from the minimum-version gate.",
+  "policy": "New public NeAntik Direct builds must meet the latest widely deployed macOS Desktop Stable security baseline. The official October15 update lists155.0.8059.84/.85 and10 security fixes. M156 Early Stable remains a limited rollout, tracked separately. Refresh on publication day; historical provenance binds archived baseline bytes independently. A numeric baseline pass is not proof that an older Early Stable branch contains every later security fix. A different Chromium branch requires an exact source-contract-bound review of every listed security fix; public alpha does not waive this gate.",
+  "earlyStableObservation": {
+    "observedAt": "2026-10-16",
+    "publishedAt": "2026-10-14",
+    "versions": [
+      "156.0.8078.35",
+      "156.0.8078.36"
+    ],
+    "reference": "https://chromereleases.googleblog.com/2026/10/early-stable-update-for-desktop_01549127219.html",
+    "status": "available-upstream;not-rebuilt-or-qualified-in-NeAntik",
+    "boundary": "Current NeAntik156.0.8078.12 is not the latest Early Stable;no security-fix inclusion claim from cross-major numeric comparison"
+  },
+  "requiredSecurityFixes": [
+    "568719351",
+    "567638392",
+    "568831769",
+    "568937999",
+    "569038297",
+    "569286602",
+    "569659194",
+    "501886301",
+    "556272421",
+    "563194341"
+  ],
+  "reviewedSecurityBranches": {
+    "156.0.8078": {
+      "status": "verified",
+      "minimumVersion": "156.0.8078.12",
+      "sourceCommit": "634b046faf2137b83af71c87baf362b533af9104",
+      "sourceContractSHA256": "5da10213b79c97a4bc3b13a0fd6af5e26d6034179bcdbe160bd244463a06f903",
+      "securityReference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_01886704284.html",
+      "reviewedAt": "2026-10-16",
+      "reviewScope": "complete source inclusion for10publishedfixes;not finalsignedrelease qualification",
+      "sourceReview": "docs/evidence/security-backport-source-review-development.json",
+      "sourceReviewSHA256": "d33c51212e5a21754b4d22ade6687fbafcaa23708dd655865e6ebc6c40b48ab2",
+      "fixes": {
+        "568719351": {
+          "status": "included",
+          "reference": "https://chromium.googlesource.com/chromium/src/+/d50992ebe4421079a6f9782c7e8a4d0eb3f14c5f"
+        },
+        "567638392": {
+          "status": "included",
+          "reference": "https://chromium.googlesource.com/chromium/src/+/6f8bd0510049073dacc94db8968ba350678da324"
+        },
+        "568831769": {
+          "status": "included",
+          "reference": "https://chromium.googlesource.com/v8/v8/+/4e469dd5830b78b8fea1318cbabe95c2682e974b"
+        },
+        "568937999": {
+          "status": "included",
+          "reference": "https://chromium.googlesource.com/chromium/src/+/eb3f43746d10e5627368c2340cab1ed76d494973"
+        },
+        "569038297": {
+          "status": "included",
+          "reference": "https://chromium.googlesource.com/chromium/src/+/54a60b5c28c32cbec956fb83af92142cd5b08568"
+        },
+        "569286602": {
+          "status": "included",
+          "reference": "https://chromium.googlesource.com/v8/v8/+/8dd66e1f4f687e137d9a6cfa6628268a1ba7869c"
+        },
+        "569659194": {
+          "status": "included",
+          "reference": "https://chromium.googlesource.com/v8/v8/+/d399837d2a9e790736fc05cb36d679215396bd1c"
+        },
+        "501886301": {
+          "status": "included",
+          "reference": "https://chromium.googlesource.com/chromium/src/+/90430e752b9669b5054a31d2d4f539cd50ff75e4"
+        },
+        "556272421": {
+          "status": "included",
+          "reference": "https://chromium.googlesource.com/chromium/src/+/f06e60e56d7f62632ed78bdfd414d89097669734"
+        },
+        "563194341": {
+          "status": "included",
+          "reference": "https://chromium.googlesource.com/chromium/src/+/08f529c57faad9e8bf7cb3881576d0c5fa4b984e"
+        }
+      }
+    }
+  }
+}

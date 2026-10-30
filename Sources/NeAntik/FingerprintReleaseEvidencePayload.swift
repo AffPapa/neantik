@@ -21,14 +21,6 @@ struct FingerprintReleaseEvidencePayload:
 {
     static let currentSchemaVersion = 2
     static let kindName = "neantik-fingerprint-release-result"
-    static let allowedStrictFailureIDs: Set<String> = [
-        "audio-repeat",
-        "canvas-repeat",
-        "client-rects-repeat",
-        "css-screen",
-        "webgl-pixels-repeat",
-        "webgl-shader-worker"
-    ]
 
     let schemaVersion: Int
     let kind: String
@@ -46,6 +38,8 @@ struct FingerprintReleaseEvidencePayload:
     let identityCatalogVersion: Int
     let executionMode: String
     let verdict: String
+    let semanticPolicyID: String
+    let criticalObservationsStable: Bool
     let criticalSurfaces:
         [String: FingerprintReleaseCriticalSurfaceState]
     let changedCriticalKeys: [String]
@@ -58,7 +52,6 @@ struct FingerprintReleaseEvidencePayload:
     let networkPrivacyControlled: Bool
     let publicAlphaQualified: Bool
     let productionQualified: Bool
-    let strictFailureIDs: [String]
     let limitations: [String]
 
     init(
@@ -97,6 +90,8 @@ struct FingerprintReleaseEvidencePayload:
         self.identityCatalogVersion = identityCatalogVersion
         executionMode = FingerprintAuditExecutionMode.browser.rawValue
         verdict = report.verdict.rawValue
+        semanticPolicyID = FingerprintAuditReport.semanticPolicyID
+        criticalObservationsStable = report.criticalObservationsStable
         criticalSurfaces = Dictionary(
             uniqueKeysWithValues:
                 FingerprintAuditReport.criticalKeys.map {
@@ -146,7 +141,6 @@ struct FingerprintReleaseEvidencePayload:
             report.isPublicAlphaReleaseQualified
         productionQualified =
             report.isProductionReleaseQualified
-        strictFailureIDs = report.strictContextFailureIDs
         limitations =
             publicAlphaQualified && !productionQualified
             ? ["strict-coherence-not-qualified"]

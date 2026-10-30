@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T08:55:00Z",
+  "status": "REMOVED_TASK_OWNED_SCRATCH_TREE",
+  "path": "/private/tmp/neantik-recipient-relink-v20-20261025",
+  "approximateBytesReclaimed": "12 GiB",
+  "freeDiskBeforeGiB": 153,
+  "freeDiskAfterGiB": 166,
+  "retainedEvidence": [
+    "neantik-open-source/artifacts/neantik/looper-goals/20261020-webkit-1_0/recipient-clean-relink-20261025/configure.log",
+    "neantik-open-source/artifacts/neantik/looper-goals/20261020-webkit-1_0/recipient-clean-relink-20261025/relink-j2.log",
+    "docs/evidence/webkit-v20-clean-relocated-recipient-relink-20261025.json"
+  ],
+  "scope": "Only the exact temporary source/build tree created for the clean relocated relink was removed after verifying the receipt and preserved log files. Retained source, candidate, source offer, release artifacts and prior rollback were not removed."
+}

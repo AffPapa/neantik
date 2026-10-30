@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.31",
+  "version": "0.7.31",
+  "build": 94,
+  "releasedAt": "2026-10-12",
+  "channel": "public-alpha",
+  "sourceCommit": "78ea3558f786e950b14dca5119df96eb821486d9",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "archive": {
+    "name": "NeAntik-0.7.31-arm64-notarized.zip",
+    "sizeBytes": 188608744,
+    "sha256": "42461acdd38694d2c6908c2e1c5f363395a4d4ea6f00efe792126947958eff57"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.31-arm64-notarized.dmg",
+    "sizeBytes": 212881219,
+    "sha256": "ce3bdc7a8e95132f650a36a9840aa7d5f12ea5097c1270c2832fb00a2da7fe32"
+  },
+  "verification": {
+    "developerId": "passed same pinned certificate",
+    "notarization": "Accepted ZIP and DMG",
+    "zipNotarySubmissionId": "8a1f5837-1bce-452e-b50c-f0f864421f1e",
+    "dmgNotarySubmissionId": "f5a9c985-e4d4-4ed3-a673-b388475a2a26",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "swiftTests": {
+      "reportedTests": 1254,
+      "suites": 144,
+      "seconds": 207.39,
+      "status": "passed"
+    },
+    "fingerprint": "fresh authenticated headed exact candidate isolation; JS/HTTP DeviceMemory8/8; owned processes drained",
+    "exactCandidateMCP": "18management/7read, metadata create/update/startupMode, stale revision and invalid enum refusals, readonly denial/reconnect/EOF PASS",
+    "managerSHA256": "a00f8b8a1c9c351a46209dd61260034ba80f7c219c7c5f88c25787cff7067405",
+    "updater": "actual isolated signed QA install/ACK/continue/recovery + keyboard GUI PASS; public installer disabled",
+    "privacy": "recognized-format source scan1468files and history4895blobs/8273objectsPASS; final artifact privacy passed. Not proof for all unknown formats.",
+    "hostedDownload": "PASS: independently downloaded ZIP/DMG, exact hash/size, mounted signing/stapling/Gatekeeper/provenance/privacy",
+    "downloadedHeaded": "PASS: fresh enrollment, all critical files equal, authenticated headed profile isolation, processes drained",
+    "downloadedMCP": "PASS:18management/7read, metadata and negative revision/enum/access controls, reconnect/EOF; no browser/proxy/Keychain operations",
+    "siteTests": "PASS:32tests and Vinext build",
+    "liveAPI": "not verified: IAB net::ERR_BLOCKED_BY_CLIENT; previous ordinary HTTPS403; no bypass used"
+  },
+  "siteUrl": "https://browser.free",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.31",
+  "rollbackRelease": "v0.7.30",
+  "candidateManifestSHA256": "38599bd69ecf04d825916a11636cc4e97309895c9bd64a025af05e7159aa3f70",
+  "candidateSourceBindingSHA256": "3731945afb2fbe8ba52e0f731c2b003f6a1d8cf4a4fb05919a290cd0bdba9017",
+  "changes": [
+    "Canonical ordinary startup path fix with positive/negative controls",
+    "App root ctime-only custody correction without relaxing descendant/ACL/content checks",
+    "Independent update owner signed transaction/ACK/recovery/ordinary GUI continuation foundation; public updater remains disabled"
+  ],
+  "limitations": [
+    "Public alpha; full production hardware cohorts open.",
+    "macOS27beta ARM64 tests, not every Mac/OS or physical VoiceOver.",
+    "Safe Browsing disabled; no anonymity/CAPTCHA/site-rule bypass guarantee.",
+    "Continuous browser-session route measurement and OS-default trusted HTTPS relay not production-qualified.",
+    "Backup BrowserData-only for original stopped profile/Mac/Keychain/exact runtime, not cross-Mac OS secret portability. Prior matching isolated QA restore evidence retained; no production Keychain used.",
+    "CRX native packed installation qualification and product installer remain open; existing extension center retained.",
+    "Atomic updater public admission/feed/install-location/notarized transaction/rollback gates remain open; Release QA command disabled."
+  ],
+  "publicationScope": {
+    "channels": [
+      "GitHub",
+      "browser.free"
+    ],
+    "affpapa": "excluded by explicit user instruction; user updates manually"
+  },
+  "sitePublication": {
+    "status": "succeeded",
+    "projectId": "appgprj_6a643e28baa08191bf23bf4803345907",
+    "versionNumber": 132,
+    "versionId": "appgprj_6a643e28baa08191bf23bf4803345907~appgver_ff29468105a8819185e32c3117c51361",
+    "sourceCommit": "f977b43b9ec297cfef3dbed93cd840bc8286a269",
+    "deploymentId": "appgdep_6acbc75856788191a75c6480de90a00f",
+    "nativeURL": "https://neantik-browser.iryadom.chatgpt.site",
+    "customDomain": "https://browser.free/",
+    "liveUI": "PASS: fresh reload and visible0.7.31(94) download links",
+    "liveAPI": "not verified: IAB net::ERR_BLOCKED_BY_CLIENT; previous ordinary HTTPS403; no bypass used",
+    "audience": "public unchanged"
+  },
+  "distributionDirectory": "dist/distribution/v0.7.31-94-20261011T172020Z-88653",
+  "githubPublication": {
+    "status": "published",
+    "releaseId": 409810650,
+    "tag": "v0.7.31",
+    "targetCommit": "78ea3558f786e950b14dca5119df96eb821486d9",
+    "assetsImmutable": true
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "aggregateKiB": 7179464,
+  "classification": "PRIOR_QA_STAGING_PRESERVED_AS_EVIDENCE",
+  "createdAt": "2026-10-28T05:45:45Z",
+  "directories": [
+    {
+      "path": "/private/tmp/neantik-webkit-ab-stage-clean-Q8Ietl",
+      "sizeKiB": 673808
+    },
+    {
+      "path": "/private/tmp/neantik-webkit-ab-stage-clean-bcrXPu",
+      "sizeKiB": 673828
+    },
+    {
+      "path": "/private/tmp/neantik-webkit-ab-stage-clean-iFQd2A",
+      "sizeKiB": 673840
+    },
+    {
+      "path": "/private/tmp/neantik-webkit-ab-stage-clean-nSgMwP",
+      "sizeKiB": 449156
+    },
+    {
+      "path": "/private/tmp/neantik-webkit-ab-stage-clean-s2Ihjk",
+      "sizeKiB": 673808
+    },
+    {
+      "path": "/private/tmp/neantik-webkit-ab-stage-clean-zm5fgz",
+      "sizeKiB": 673808
+    },
+    {
+      "path": "/private/tmp/neantik-webkit-ab-stage-ghgox7bj",
+      "sizeKiB": 673824
+    },
+    {
+      "path": "/private/tmp/neantik-webkit-ab-stage-v280-fixed-5S7Jff",
+      "sizeKiB": 671844
+    },
+    {
+      "path": "/private/tmp/neantik-webkit-ab-stage-v280-root-3dqGzj",
+      "sizeKiB": 671848
+    },
+    {
+      "path": "/private/tmp/neantik-webkit-ab-stage-v280-rtyiuX",
+      "sizeKiB": 671852
+    },
+    {
+      "path": "/private/tmp/neantik-webkit-ab-stage-v280-scope-1ze3BY",
+      "sizeKiB": 671848
+    }
+  ],
+  "disposition": "Preserve these test artifacts. Their exact evidence linkage and lifecycle are not sufficient to classify them as disposable, and reclaiming the space still would not establish safe peak capacity for the full WebKit build.",
+  "id": "V389",
+  "nextAction": "Keep candidate/source/QA evidence intact. Resume full V382 build only after measured peak-space bound or verified separate capacity is available; then add the exact build receipt to the source offer.",
+  "observedContents": [
+    "signed NeAntik.app staging copies",
+    "manager/host package signing logs",
+    "profiles.seed.json",
+    "prelaunch-binding.json",
+    "run-plan.json"
+  ],
+  "scope": "Read-only review of isolated WebKit A/B QA staging directories; no files removed, moved, launched, or modified."
+}

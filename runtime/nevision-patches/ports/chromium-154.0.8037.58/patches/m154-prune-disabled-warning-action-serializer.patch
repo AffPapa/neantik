@@ -1,0 +1,37 @@
+--- a/chrome/browser/download/download_warning_desktop_hats_utils.cc
++++ b/chrome/browser/download/download_warning_desktop_hats_utils.cc
+@@ -106,34 +106,6 @@
+ }
+ 
+ 
+-// Produces a string consisting of comma-separated action events, each of which
+-// consists of the surface, action, and relative timestamp (ms) separated by
+-// colons. The first SHOWN event is included, and is the basis of all
+-// timestamps, however subsequent SHOWN events are not included.
+-std::string SerializeWarningActionEvents(
+-    DownloadItemWarningData::WarningSurface warning_first_shown_surface,
+-    const std::vector<DownloadItemWarningData::WarningActionEvent>& events) {
+-  // The first SHOWN event is not stored by DownloadItemWarningData, so we
+-  // construct it here.
+-  std::string first_event_string =
+-      DownloadItemWarningData::WarningActionEvent{
+-          warning_first_shown_surface,
+-          DownloadItemWarningData::WarningAction::SHOWN, 0,
+-          /*is_terminal_action=*/false}
+-          .ToString();
+-
+-  std::vector<std::string> event_strings;
+-  event_strings.reserve(events.size() + 1);
+-  event_strings.push_back(std::move(first_event_string));
+-  std::ranges::transform(
+-      events.begin(), events.end(), std::back_inserter(event_strings),
+-      [](const DownloadItemWarningData::WarningActionEvent& event) {
+-        return event.ToString();
+-      });
+-
+-  return base::JoinString(std::move(event_strings), ",");
+-}
+-
+ }  // namespace
+ 
+ DownloadWarningHatsProductSpecificData::DownloadWarningHatsProductSpecificData(

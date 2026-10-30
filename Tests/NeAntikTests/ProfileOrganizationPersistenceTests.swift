@@ -4,8 +4,26 @@ import Testing
 
 @MainActor
 struct ProfileOrganizationPersistenceTests {
+    @Test(arguments: ["[]", "{}", "null"])
+    func futureOrganizationDoesNotRecoverOlderBackup(payload: String) throws {
+        let fixture = try OrganizationFixture()
+        let profile = try fixture.store.upsert(BrowserProfile(name: "Preserved"))
+        _ = try fixture.store.createFolder(named: "Preserved folder")
+        let backup = try Data(contentsOf: fixture.paths.profileOrganizationFile)
+        let future = Data("{\"schemaVersion\":99,\"folders\":\(payload),\"assignments\":[]}".utf8)
+        try fixture.paths.writePrivateFile(backup, to: fixture.paths.profileOrganizationBackupFile)
+        try fixture.paths.writePrivateFile(future, to: fixture.paths.profileOrganizationFile)
+        let reloaded = ProfileStore(paths: fixture.paths)
+        #expect(reloaded.hasTrustedMetadata)
+        #expect(reloaded.profile(withID: profile.id) != nil)
+        #expect(!reloaded.hasTrustedOrganization)
+        #expect(throws: (any Error).self) { try reloaded.createFolder(named: "Refused") }
+        #expect(try Data(contentsOf: fixture.paths.profileOrganizationFile) == future)
+        #expect(try Data(contentsOf: fixture.paths.profileOrganizationBackupFile) == backup)
+    }
+
     @Test
-    func missingSidecarKeepsVersionedProfilesByteCompatible() throws {
+    func missingSidecarKeepsLegacyProfilesByteCompatible() throws {
         let fixture = try OrganizationFixture()
         let profile = BrowserProfile(name: "Legacy")
         try fixture.store.upsert(profile)
@@ -25,7 +43,9 @@ struct ProfileOrganizationPersistenceTests {
         let reloaded = ProfileStore(paths: fixture.paths)
 
         #expect(reloaded.profiles.map(\.id) == [profile.id])
-        #expect(reloaded.organization == .empty)
+        #expect(reloaded.organization.folders.isEmpty)
+        #expect(reloaded.organization.assignmentsByProfileID.isEmpty)
+        #expect(reloaded.organization.mutationRevision == nil)
         #expect(reloaded.hasTrustedOrganization)
         #expect(try Data(contentsOf: fixture.paths.profilesFile) == profilesData)
         #expect(
@@ -33,12 +53,8 @@ struct ProfileOrganizationPersistenceTests {
                 fixture.paths.profileOrganizationFile
             ) == .missing
         )
-        let json = try #require(
-            JSONSerialization.jsonObject(with: profilesData)
-                as? [String: Any]
-        )
-        #expect(json["schemaVersion"] as? Int == 1)
-        #expect((json["profiles"] as? [[String: Any]])?.count == 1)
+        let json = try JSONSerialization.jsonObject(with: profilesData)
+        #expect(json is [[String: Any]])
     }
 
     @Test
@@ -182,7 +198,9 @@ struct ProfileOrganizationPersistenceTests {
 
         let reloaded = ProfileStore(paths: fixture.paths)
         #expect(reloaded.profiles.count == 2)
-        #expect(reloaded.organization == .empty)
+        #expect(reloaded.organization.folders.isEmpty)
+        #expect(reloaded.organization.assignmentsByProfileID.isEmpty)
+        #expect(reloaded.organization.mutationRevision != nil)
     }
 
     @Test
@@ -238,6 +256,14 @@ struct ProfileOrganizationPersistenceTests {
         #expect(recovered.hasTrustedOrganization)
         #expect(recovered.organization.folders.map(\.name) == ["Первая"])
         #expect(recovered.lastError?.contains("восстановил") == true)
+        #expect(
+            recovered.recoveryNotice == ProfileRecoveryNotice(
+                profileMetadataRecovered: false,
+                folderMetadataRecovered: true
+            )
+        )
+        recovered.lastError = nil
+        #expect(recovered.recoveryNotice?.folderMetadataRecovered == true)
         #expect(try Data(contentsOf: fixture.paths.profilesFile) == profilesData)
         let rejected = try FileManager.default.contentsOfDirectory(
             at: fixture.paths.profilesRecoveryDirectory,
@@ -252,7 +278,7 @@ struct ProfileOrganizationPersistenceTests {
     }
 
     @Test
-    func unrecoverableFolderCorruptionDoesNotBlockProfileStorage() throws {
+    func unrecoverableFolderCorruptionDoesNotBlockProfileStorage() async throws {
         let fixture = try OrganizationFixture()
         let first = BrowserProfile(name: "First")
         try fixture.store.upsert(first)
@@ -270,7 +296,15 @@ struct ProfileOrganizationPersistenceTests {
 
         #expect(reloaded.hasTrustedMetadata)
         #expect(!reloaded.hasTrustedOrganization)
-        #expect(reloaded.organization == .empty)
+        #expect(reloaded.organization.folders.isEmpty)
+        #expect(reloaded.organization.assignmentsByProfileID.isEmpty)
+        #expect(reloaded.organization.mutationRevision == nil)
+        do {
+            try await reloaded.refreshExternalMetadata(force: true)
+            Issue.record("Corrupted folders must remain unavailable")
+        } catch {}
+        #expect(reloaded.hasTrustedMetadata)
+        #expect(!reloaded.hasTrustedOrganization)
         #expect(throws: ProfileOrganizationError.self) {
             try reloaded.createFolder(named: "Blocked")
         }
@@ -300,7 +334,7 @@ struct ProfileOrganizationPersistenceTests {
     }
 
     @Test
-    func symlinkedSidecarFailsClosedWithoutBlockingProfiles() throws {
+    func symlinkedSidecarFailsClosedWithoutBlockingProfiles() async throws {
         let fixture = try OrganizationFixture()
         let first = BrowserProfile(name: "First")
         try fixture.store.upsert(first)
@@ -314,6 +348,12 @@ struct ProfileOrganizationPersistenceTests {
 
         let reloaded = ProfileStore(paths: fixture.paths)
 
+        #expect(reloaded.hasTrustedMetadata)
+        #expect(!reloaded.hasTrustedOrganization)
+        do {
+            try await reloaded.refreshExternalMetadata(force: true)
+            Issue.record("Symlinked folders must remain unavailable")
+        } catch {}
         #expect(reloaded.hasTrustedMetadata)
         #expect(!reloaded.hasTrustedOrganization)
         #expect(throws: ProfileOrganizationError.self) {

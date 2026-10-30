@@ -1,0 +1,44 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "7da31c55093d99224e8b6b660db5077a1081c0b2ba617c4c8777f6aa2f3cf898",
+  "payload": {
+    "at": "2026-10-09T03:50:37.594382+00:00",
+    "cause": "New M156 DevTools Storage graph reintroduced PVT service whose Rust dependencies were removed by existing disabled-PVT policy patch",
+    "license": "Independent correction to BSD Chromium code; no AGPL copied",
+    "patchSHA256": "f3d731b7e188cfb05cf243802baf1b59bd8e3156f190e9d708314d72e506fcc1",
+    "postimages": {
+      "chrome/browser/devtools/BUILD.gn": "7f41d5d6462e3720005eba2cb7c869833c33b1c421cfaaab5da707590661f7e1",
+      "chrome/browser/devtools/protocol/storage_handler.cc": "077dc0c8785f9c9508d1a36a8edde5002f42245b23e39a6e859741c20df26065",
+      "chrome/browser/devtools/protocol/storage_handler.h": "bddc6a75a761cf37e886830bed1dfab4a8cf6f15c236418400e832269b77a810"
+    },
+    "preimages": {
+      "chrome/browser/devtools/BUILD.gn": "a89ff36525038ac327d7dafe4cec60b1129debcd90bc995ba0fa35e70bd7cf45",
+      "chrome/browser/devtools/protocol/storage_handler.cc": "835052365368fb42badfe5c212fdcf4ac7b3edcd61825b4dc3cf3af9c1ec7004",
+      "chrome/browser/devtools/protocol/storage_handler.h": "2c67126332a9c2f65b36a3b5de64ba0a15994f62d1af987bc552496cd3224db2"
+    },
+    "preserved": "All five CDP PVT command signatures return existing native disabled-service ServerError; BTM and Storage.Disable fallthrough unchanged; no Rust stub or feature restoration",
+    "releaseReady": false,
+    "revisionReason": "Explicit BindOnce include after removing service transitive include; remove unused PVT frontend",
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "status": "source-corrected-native-target-required",
+    "supersedesUnfrozenReceiptSHA256": "db416c22bdd1218dd8b76ec7e79f3758338b5a56be83e323ec9be23670e86053"
+  },
+  "payloadType": "json",
+  "receipt": "native-pvt-devtools-policy-correction-v2.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

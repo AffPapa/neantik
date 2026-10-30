@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "status": "EXISTING_SOURCE_APP_RUNTIME_REPORT_AND_BACKUP_PREFLIGHT_PASS",
+  "sourceApp": "/private/tmp/neantik-v140-source-snapshot/dist/private/candidates/58bd32206a064a4ba40ae9668acaef00/NeAntik.app",
+  "runtimeVersion": "156.0.8078.48",
+  "evidence": {
+    "sourceProvenanceSHA256": "c37cfcd0ddb4104f1e94ee9d12b109e957f210ad2cf430ffd4709d863ff2ef59",
+    "candidateLockSHA256": "5d1236a1320b5d9ee5bcf0e758e6b19437cf673b1edcee6ee4fe9e46f60b0d16",
+    "runtimeReportSHA256": "51a30c7ced1da59c7dea0a88186c5f4c3278c74f62e23c4dc0e205e092fc232e",
+    "runtimeExecutableSHA256": "2fca4f8c3b7bd452e65d9fdf527a9ebcfd39d7e7de2cb3975add2d61db627b6b",
+    "buildArgsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01"
+  },
+  "checks": {
+    "sourceProvenance": "PASS",
+    "candidateLock": "PASS",
+    "packagedRuntimeReport": "PASS against source app runtime and evidence",
+    "backupProvisioning": "PASS with existing profile; initial omission refused before mutation"
+  },
+  "limits": [
+    "does not qualify a newly prepared candidate",
+    "source offer must be refreshed to include baseline/provenance fix",
+    "not signed new archive or release"
+  ]
+}

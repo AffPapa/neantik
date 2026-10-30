@@ -94,7 +94,6 @@ struct KeychainStore: Sendable {
     }
 
     func saveProxyPassword(_ password: String, profileID: UUID) throws {
-        let credentialData = try validatedCredentialData(password)
         let previousCurrent = try backend.data(
             service: service,
             profileID: profileID
@@ -104,7 +103,7 @@ struct KeychainStore: Sendable {
         }
         do {
             try backend.upsert(
-                credentialData,
+                Data(password.utf8),
                 service: service,
                 profileID: profileID
             )
@@ -149,7 +148,6 @@ struct KeychainStore: Sendable {
         _ password: String?,
         profileID: UUID
     ) throws {
-        let credentialData = try password.map(validatedCredentialData)
         let previousCurrent = try backend.data(
             service: service,
             profileID: profileID
@@ -158,9 +156,9 @@ struct KeychainStore: Sendable {
             try backend.data(service: $0, profileID: profileID)
         }
         do {
-            if let credentialData {
+            if let password {
                 try backend.upsert(
-                    credentialData,
+                    Data(password.utf8),
                     service: service,
                     profileID: profileID
                 )
@@ -192,6 +190,14 @@ struct KeychainStore: Sendable {
             }
             throw operationError
         }
+    }
+
+    /// Editing or copying a profile only needs Keychain when its configured
+    /// proxy uses authentication. Direct and unauthenticated profiles must
+    /// remain usable when Keychain is locked or unavailable.
+    func configuredProxyPassword(for profile: BrowserProfile) throws -> String? {
+        guard let proxy = profile.proxy, !proxy.username.isEmpty else { return nil }
+        return try proxyPassword(profileID: profile.id)
     }
 
     func proxyPassword(profileID: UUID) throws -> String? {
@@ -237,6 +243,19 @@ struct KeychainStore: Sendable {
         return value
     }
 
+    /// Preflight only: observe the existing credential without changing either
+    /// Keychain namespace. A proxy check must not migrate or delete an item.
+    func proxyPasswordWithoutMigration(profileID: UUID) throws -> String? {
+        if let current = try backend.data(service: service, profileID: profileID) {
+            return try decode(current)
+        }
+        guard let legacyService,
+              let legacy = try backend.data(service: legacyService, profileID: profileID) else {
+            return nil
+        }
+        return try decode(legacy)
+    }
+
     func deleteProxyPassword(profileID: UUID) throws {
         var failures = 0
         for service in [service, legacyService].compactMap({ $0 }) {
@@ -257,24 +276,10 @@ struct KeychainStore: Sendable {
     }
 
     private func decode(_ data: Data) throws -> String {
-        guard data.count <= ProxyImportParser.maximumPasswordBytes else {
-            throw KeychainCredentialValidationError.tooLarge
-        }
         guard let value = String(data: data, encoding: .utf8) else {
-            throw KeychainCredentialValidationError.invalidEncoding
+            throw KeychainDataError()
         }
-        _ = try validatedCredentialData(value)
         return value
-    }
-
-    private func validatedCredentialData(_ value: String) throws -> Data {
-        guard ProxyImportParser.passwordIsWithinLimits(value) else {
-            throw KeychainCredentialValidationError.tooLarge
-        }
-        guard PersistedInlineText.isSafe(value) else {
-            throw KeychainCredentialValidationError.unsafeCharacters
-        }
-        return Data(value.utf8)
     }
 
     private func restoreStrictly(
@@ -387,19 +392,8 @@ struct KeychainError: LocalizedError {
     }
 }
 
-enum KeychainCredentialValidationError: LocalizedError, Equatable {
-    case tooLarge
-    case unsafeCharacters
-    case invalidEncoding
-
+private struct KeychainDataError: LocalizedError {
     var errorDescription: String? {
-        switch self {
-        case .tooLarge:
-            "Пароль прокси превышает безопасный лимит Связки ключей."
-        case .unsafeCharacters:
-            "Пароль прокси содержит недопустимые управляющие символы."
-        case .invalidEncoding:
-            "Сохранённый пароль прокси повреждён и не может быть прочитан."
-        }
+        "Сохранённый пароль прокси повреждён и не может быть прочитан."
     }
 }

@@ -1,0 +1,39 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "dcee9386e112b56223515b397c1a7d57869e23705ae3dfbf1b740bdad6d278ef",
+  "payload": {
+    "argsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+    "correctionReceiptSHA256": "71544c0b2b869730ccd1aebc1c52e83238e59a1e6febb1ebacc3769527ca376d",
+    "exitCode": 0,
+    "finishedAt": "2026-10-09T05:32:53.972166+00:00",
+    "jobs": 2,
+    "logSHA256": "f3c1492ad55a4b96c140d31b0cbdda24675db3e7cc5707009c25821f89366d9d",
+    "logSizeBytes": 314,
+    "nativeNinjaSHA256": "6c03e94e3ee141301a7e5151227508ac8cec05c12d79ed9240062a86a0e2d14f",
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "startedAt": "2026-10-09T05:32:43.885012+00:00",
+    "status": "exact-native-fs-storage-key-target-passed",
+    "targets": [
+      "obj/chrome/browser/file_system_access/impl/chrome_file_system_access_permission_context.o"
+    ]
+  },
+  "payloadType": "json",
+  "receipt": "native-fs-storage-key-target.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

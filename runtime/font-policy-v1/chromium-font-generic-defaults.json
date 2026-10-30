@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "status": "source-prepared;not-built",
+  "feature": "explicit system-v1 COMMON generic defaults for standalone SharedWorker and ServiceWorker",
+  "parentManifest": "chromium-font-cleanup-cstring.json",
+  "parentManifestSHA256": "80803d1a9a2256fa052cc8962da1e226f134e162ddabaa241d923d3229f4aeb4",
+  "patchFile": "chromium-font-generic-defaults.patch",
+  "patchSHA256": "09fceb85a71743dfeae4073634c666127682cfd5456f05db7620da2df8cb7646",
+  "files": [
+    {
+      "path": "third_party/blink/renderer/platform/BUILD.gn",
+      "preimageSHA256": "a8396236f88319a78a8bc500480c8414cfc591635fe9c2ffea207e41cb244582",
+      "postimageSHA256": "c62be39226f0a96a7bd674b82acf81411b3aa8e78601f8dd29bcb20dcf724ac2"
+    },
+    {
+      "path": "third_party/blink/renderer/platform/fonts/generic_font_family_settings.cc",
+      "preimageSHA256": "4ddc22ff2179a348a2cc01ea839e278ffe12e889a74745ff933f266eee393941",
+      "postimageSHA256": "16c68a6470fc0b08c2ccfefe458e574109485e5b0d769d62019d9f09cee09c4c"
+    },
+    {
+      "path": "third_party/blink/renderer/core/workers/worker_settings.cc",
+      "preimageSHA256": "13f8ac1e14bde95d3d796b5b3bd83de923f2826d829e42c1ae6409fe69fd9f01",
+      "postimageSHA256": "5f150428ab8617f088f9001c944cb7fe97906dec13ce853e6dbeb086dc6db089"
+    },
+    {
+      "path": "third_party/blink/renderer/platform/fonts/neantik_system_generic_defaults.h",
+      "preimageSHA256": null,
+      "postimageSHA256": "8a483ceec214af118355323c5fb6148aa906f5447fbe33500049720f4cc60bf2"
+    }
+  ],
+  "reason": "font-nine-native1 actual Shared/SW monospace mismatch; upstream empty generic maps and Times fallback verified; native control retained",
+  "defaultsSource": "chrome/app/resources/locale_settings_mac.grd:153-190",
+  "defaults": {
+    "Standard": "Times",
+    "Fixed": "Menlo",
+    "Serif": "Times",
+    "SansSerif": "Helvetica",
+    "Cursive": "Apple Chancery",
+    "Fantasy": "Papyrus",
+    "Math": "STIX Two Math"
+  },
+  "scope": "COMMON defaults only; existing/per-script maps preserved; not full browser-profile preference plumbing",
+  "nativeAndSeedOnlyUnchanged": true,
+  "releaseReady": false,
+  "actualBrowserForThisChange": false,
+  "defaultsSourceSHA256": "934e2fc8734c66b58eb1951e1b70dfb152a424f3f6eabcff3b029029d1d5f019"
+}

@@ -1,0 +1,369 @@
+import CryptoKit
+import Foundation
+
+package enum NeAntikPublicHostPolicy {
+    package static let approvedHosts: Set<String> = [
+        "affpapa.org",
+        "browser.free",
+        "github.com"
+    ]
+
+    package static func allows(_ value: String) -> Bool {
+        approvedHosts.contains(value.lowercased())
+    }
+}
+
+package struct UpdateChannelConfiguration: Equatable, Sendable {
+    package static let enabledKey = "NeAntikUpdateChannelEnabled"
+    package static let manifestURLKey = "NeAntikUpdateManifestURL"
+    package static let publicKeyIDKey = "NeAntikUpdatePublicKeyID"
+    package static let publicKeyKey = "NeAntikUpdatePublicKeyBase64"
+
+    package let isEnabled: Bool
+    package let manifestURL: URL?
+    package let publicKeyID: String?
+    package let publicKey: Data?
+
+    package static func fromBundle(_ bundle: Bundle = .main) -> Self {
+        fromInfoDictionary(bundle.infoDictionary ?? [:])
+    }
+
+    package static func fromInfoDictionary(_ dictionary: [String: Any]) -> Self {
+        let enabled = dictionary[enabledKey] as? Bool ?? false
+        let manifestURL = (dictionary[manifestURLKey] as? String)
+            .flatMap(validatedManifestURL)
+        let keyID = (dictionary[publicKeyIDKey] as? String)
+            .flatMap(validatedKeyID)
+        let publicKey = (dictionary[publicKeyKey] as? String)
+            .flatMap { Data(base64Encoded: $0) }
+            .flatMap { $0.count == 32 ? $0 : nil }
+
+        guard enabled,
+              manifestURL != nil,
+              keyID != nil,
+              publicKey != nil
+        else {
+            return Self(
+                isEnabled: false,
+                manifestURL: nil,
+                publicKeyID: nil,
+                publicKey: nil
+            )
+        }
+        return Self(
+            isEnabled: true,
+            manifestURL: manifestURL,
+            publicKeyID: keyID,
+            publicKey: publicKey
+        )
+    }
+
+    private static func validatedManifestURL(_ value: String) -> URL? {
+        guard let components = URLComponents(string: value),
+              components.scheme == "https",
+              let host = components.host,
+              isPublicManifestHost(host),
+              components.user == nil,
+              components.password == nil,
+              components.fragment == nil,
+              components.query == nil,
+              components.path.hasSuffix(".json")
+        else {
+            return nil
+        }
+        return components.url
+    }
+
+    private static func isPublicManifestHost(_ value: String) -> Bool {
+        NeAntikPublicHostPolicy.allows(value)
+    }
+
+    private static func validatedKeyID(_ value: String) -> String? {
+        guard (1...64).contains(value.count),
+              value.allSatisfy({
+                  $0.isASCII &&
+                      ($0.isLetter || $0.isNumber || "._-".contains($0))
+              })
+        else {
+            return nil
+        }
+        return value
+    }
+}
+
+package struct SignedUpdateEnvelope: Codable, Equatable, Sendable {
+    package let schemaVersion: Int
+    package let algorithm: String
+    package let keyID: String
+    package let payload: String
+    package let signature: String
+}
+
+package struct UpdateManifestPayload: Codable, Equatable, Sendable {
+    package let schemaVersion: Int
+    package let product: String
+    package let edition: String
+    package let version: String
+    package let build: Int
+    package let issuedAt: Date
+    package let expiresAt: Date
+    package let archiveName: String
+    package let downloadURL: String
+    package let sha256: String
+    package let minimumOS: String
+    package let architecture: String
+    package let artifactKind: String
+    package let publicReleaseState: String
+    package let chromiumVersion: String
+}
+
+package struct VerifiedUpdateManifest: Equatable, Sendable {
+    package let payload: UpdateManifestPayload
+    package let isNewerThanInstalled: Bool
+}
+
+package enum UpdateManifestError: LocalizedError, Equatable {
+    case channelDisabled
+    case malformedEnvelope
+    case unsupportedEnvelope
+    case invalidSignature
+    case malformedPayload
+    case expired
+    case invalidReleaseContract
+
+    package var errorDescription: String? {
+        switch self {
+        case .channelDisabled:
+            "Подписанный канал обновлений не настроен."
+        case .malformedEnvelope:
+            "Манифест обновления повреждён."
+        case .unsupportedEnvelope:
+            "Манифест подписан неизвестным ключом или алгоритмом."
+        case .invalidSignature:
+            "Подпись обновления недействительна."
+        case .malformedPayload:
+            "Подписанные данные обновления повреждены."
+        case .expired:
+            "Манифест обновления устарел."
+        case .invalidReleaseContract:
+            "Обновление не прошло проверку версии, архива или платформы."
+        }
+    }
+}
+
+package enum UpdateManifestVerifier {
+    private static let maximumLifetime: TimeInterval = 14 * 24 * 60 * 60
+    private static let clockSkew: TimeInterval = 5 * 60
+    private static let minimumPublicChromiumVersion =
+        NeAntikRuntimeSecurityBaseline.minimumPublicChromiumVersion
+
+    package static func verify(
+        _ data: Data,
+        configuration: UpdateChannelConfiguration,
+        installedVersion: String,
+        installedBuild: Int,
+        now: Date = Date()
+    ) throws -> VerifiedUpdateManifest {
+        guard data.count <= 128 * 1_024 else {
+            throw UpdateManifestError.malformedEnvelope
+        }
+        guard configuration.isEnabled,
+              let expectedKeyID = configuration.publicKeyID,
+              let publicKeyData = configuration.publicKey
+        else {
+            throw UpdateManifestError.channelDisabled
+        }
+
+        let envelope: SignedUpdateEnvelope
+        do {
+            envelope = try JSONDecoder().decode(
+                SignedUpdateEnvelope.self,
+                from: data
+            )
+        } catch {
+            throw UpdateManifestError.malformedEnvelope
+        }
+        guard envelope.schemaVersion == 1,
+              envelope.algorithm == "Ed25519",
+              envelope.keyID == expectedKeyID
+        else {
+            throw UpdateManifestError.unsupportedEnvelope
+        }
+        guard envelope.payload.utf8.count <= 96 * 1_024,
+              envelope.signature.utf8.count <= 128,
+              let payloadData = Data(base64Encoded: envelope.payload),
+              payloadData.count <= 64 * 1_024,
+              let signature = Data(base64Encoded: envelope.signature),
+              signature.count == 64
+        else {
+            throw UpdateManifestError.malformedEnvelope
+        }
+
+        let publicKey: Curve25519.Signing.PublicKey
+        do {
+            publicKey = try Curve25519.Signing.PublicKey(
+                rawRepresentation: publicKeyData
+            )
+        } catch {
+            throw UpdateManifestError.unsupportedEnvelope
+        }
+        guard publicKey.isValidSignature(signature, for: payloadData) else {
+            throw UpdateManifestError.invalidSignature
+        }
+
+        let payload: UpdateManifestPayload
+        do {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            payload = try decoder.decode(
+                UpdateManifestPayload.self,
+                from: payloadData
+            )
+        } catch {
+            throw UpdateManifestError.malformedPayload
+        }
+
+        let lifetime = payload.expiresAt.timeIntervalSince(payload.issuedAt)
+        guard payload.issuedAt <= now.addingTimeInterval(clockSkew),
+              payload.expiresAt >= now.addingTimeInterval(-clockSkew),
+              lifetime > 0,
+              lifetime <= maximumLifetime
+        else {
+            throw UpdateManifestError.expired
+        }
+        guard validReleaseContract(payload) else {
+            throw UpdateManifestError.invalidReleaseContract
+        }
+
+        return VerifiedUpdateManifest(
+            payload: payload,
+            isNewerThanInstalled: compare(
+                version: payload.version,
+                build: payload.build,
+                installedVersion: installedVersion,
+                installedBuild: installedBuild
+            ) == .orderedDescending
+        )
+    }
+
+    private static func validReleaseContract(
+        _ payload: UpdateManifestPayload
+    ) -> Bool {
+        guard payload.schemaVersion == 1,
+              payload.product == "NeAntik",
+              payload.edition == "Direct",
+              payload.version.utf8.count <= 32,
+              payload.chromiumVersion.utf8.count <= 32,
+              payload.archiveName.utf8.count <= 200,
+              payload.downloadURL.utf8.count <= 2_048,
+              payload.minimumOS.utf8.count <= 16,
+              payload.build > 0,
+              semanticVersion(payload.version) != nil,
+              let chromiumVersion = semanticVersion(payload.chromiumVersion),
+              versionComponents(
+                  chromiumVersion,
+                  areAtLeast: minimumPublicChromiumVersion
+              ),
+              let minimumOS = operatingSystemVersion(payload.minimumOS),
+              versionComponents(minimumOS, areAtLeast: [14, 0, 0]),
+              payload.architecture == "arm64",
+              payload.artifactKind == "public-notarized",
+              payload.publicReleaseState == "public-ready",
+              payload.sha256.range(
+                  of: #"^[0-9a-f]{64}$"#,
+                  options: .regularExpression
+              ) != nil,
+              payload.archiveName ==
+                "NeAntik-\(payload.version)-arm64-notarized.zip",
+              let components = URLComponents(string: payload.downloadURL),
+              components.scheme == "https",
+              let host = components.host,
+              isPublicReleaseHost(host),
+              components.user == nil,
+              components.password == nil,
+              components.fragment == nil,
+              components.query == nil,
+              components.url?.lastPathComponent == payload.archiveName
+        else {
+            return false
+        }
+        return true
+    }
+
+    private static func isPublicReleaseHost(_ value: String) -> Bool {
+        NeAntikPublicHostPolicy.allows(value)
+    }
+
+    private static func versionComponents(
+        _ value: [Int],
+        areAtLeast minimum: [Int]
+    ) -> Bool {
+        let width = max(value.count, minimum.count)
+        let left = value + Array(repeating: 0, count: width - value.count)
+        let right = minimum +
+            Array(repeating: 0, count: width - minimum.count)
+        for (candidate, required) in zip(left, right)
+            where candidate != required {
+            return candidate > required
+        }
+        return true
+    }
+
+    private static func compare(
+        version: String,
+        build: Int,
+        installedVersion: String,
+        installedBuild: Int
+    ) -> ComparisonResult {
+        guard let candidate = semanticVersion(version),
+              let installed = semanticVersion(installedVersion)
+        else {
+            return .orderedAscending
+        }
+        for (left, right) in zip(candidate, installed) where left != right {
+            return left > right ? .orderedDescending : .orderedAscending
+        }
+        if build == installedBuild {
+            return .orderedSame
+        }
+        return build > installedBuild ? .orderedDescending : .orderedAscending
+    }
+
+    private static func semanticVersion(_ value: String) -> [Int]? {
+        let parts = value.split(
+            separator: ".",
+            omittingEmptySubsequences: false
+        )
+        guard (3...4).contains(parts.count) else { return nil }
+        let numbers = parts.compactMap { part -> Int? in
+            guard !part.isEmpty,
+                  part.allSatisfy(\.isNumber),
+                  (part.count == 1 || part.first != "0")
+            else {
+                return nil
+            }
+            return Int(part)
+        }
+        guard numbers.count == parts.count else { return nil }
+        return numbers + Array(repeating: 0, count: 4 - numbers.count)
+    }
+
+    private static func operatingSystemVersion(_ value: String) -> [Int]? {
+        let parts = value.split(
+            separator: ".",
+            omittingEmptySubsequences: false
+        )
+        guard (1...3).contains(parts.count) else { return nil }
+        // Signed metadata still needs canonical syntax. Int alone accepts
+        // signs/leading zeros, including a negative patch component that can
+        // pass a lexicographic minimum-version comparison.
+        let numbers = parts.compactMap { part -> Int? in
+            guard !part.isEmpty,
+                  part.utf8.allSatisfy({ (48...57).contains($0) }),
+                  part.utf8.count == 1 || part.first != "0"
+            else { return nil }
+            return Int(part)
+        }
+        return numbers.count == parts.count ? numbers : nil
+    }
+}

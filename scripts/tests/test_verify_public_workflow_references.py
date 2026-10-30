@@ -64,6 +64,18 @@ class PublicWorkflowReferenceTests(unittest.TestCase):
                     entrypoints=("scripts/entry.py",),
                 )
 
+    def test_sdk_probe_source_is_a_required_non_executable_dependency(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixtures = root / "scripts/fixtures"; fixtures.mkdir(parents=True)
+            entry = root / "scripts/entry.sh"
+            entry.write_text('PROBE_SOURCE="$PROJECT_DIR/scripts/fixtures/probe.swift"\n')
+            entry.chmod(0o755)
+            with self.assertRaisesRegex(MODULE.PublicWorkflowReferenceError, "probe.swift"):
+                MODULE.verify_public_workflow_references(project_root=root, entrypoints=("scripts/entry.sh",))
+            (fixtures / "probe.swift").write_text('import Foundation\n')
+            self.assertEqual(MODULE.verify_public_workflow_references(project_root=root, entrypoints=("scripts/entry.sh",)), (2, 1))
+
     def test_missing_local_markdown_link_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-16",
+  "status": "development;QA3 installed and app rule saved;strict isolation not qualified;loopback Direct observed;private control inconclusive",
+  "shippingWebKitProxy": false,
+  "mechanism": "Dedicated per-profile host with kernel per-app NEAppProxyProvider system extension;not transparent proxy",
+  "sourceFiles": {
+    "Experiments/WebKitIsolation/Package.swift": "6a0a1fe05d891c0a048cdee50a72c9650fc66fa47e794dd5aeb6792e0378e683",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/IsolationLedger.swift": "b36c20aa7e3af56807810aae18280de80e8e849bc069cc3734986929a6150a82",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/OwnedQATargetPolicy.swift": "5bf6f9a44e0702ed440e2a00bb241d0af3047a550e110d73142accce9928d85d",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/ProviderLifetime.swift": "3a25b88bfaaa477ae9e4d4183d0c8846f1bf5c7fe0c9d1059fbb16bf9623fe50",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/QAOperationFence.swift": "e4bf1e1a63519e3cec7daecd1e02159803e15bfce7383e3eb3d2c39ef8d04fe6",
+    "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/FailClosedAppProxyProvider.swift": "8db3fdd9f15ad48a4309c8eef1ac3591b6c8b0756d4615b236c80d7bc136cdd7",
+    "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/IsolatedTCPFlowRouter.swift": "8459a88294bf25366b1147d0e94003a9f834d6de1db58473d260b71ca8659f5a",
+    "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/SignedHostPin.swift": "21dc596cddbbc71b5914a6daa1e818276fde9bf6c55f54a354a2116e30ef5639",
+    "Experiments/WebKitIsolation/Sources/IsolationQAController/Entry.swift": "f1f0fed67689622afc8b11e333619fccc580a0be9d3dada28d5cad89c86458f9",
+    "Experiments/WebKitIsolation/Sources/IsolationQADenyProvider/Entry.swift": "3a6197904b0a1f79d396381205da75b98e24d2ad1bdd4613c2d39a6c44325164",
+    "Experiments/WebKitIsolation/Sources/IsolationQAHost/Entry.swift": "24d3c9825ff46c2185f0cde2c267e43251e1d8cdfece0320266bc02539102ee7",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/IsolationLedgerTests.swift": "85201950c23a0f9820d355b1b1d23a1663c4d45fc26e00e861cc88815264001c",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/ProviderLifetimeTests.swift": "887ee0c35cf943a8350d80fecc809b4b6fc561857886ce0cb7625cb84ef9ecda",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/QAScopeTests.swift": "10ca4abacaeb788bae119f3cd5135e3341435719e0b41a9ad99816a15da1b97e",
+    "Experiments/WebKitIsolation/prepare-qa.py": "e1535f0abb5d9ea93122dd42210a8677f3e8b4da3d887cd1d7fda84b53422a33",
+    "Experiments/WebKitIsolation/test-prepare-qa.py": "071e4077d884de77b8ac0c4929204890884a6cdf9ba1e948c7eed2b173ac2cb4",
+    "Experiments/WebKitIsolation/Sources/IsolationCore/QAObservationIdentity.swift": "6674bfcbd56de6abf3893a27ffb6533a1dc6874c632109fd51c7d222ff4fb9c2",
+    "Experiments/WebKitIsolation/Tests/IsolationCoreTests/QAObservationIdentityTests.swift": "d547aa3a59cd5fd7118699f6263c1a340b3d37ae6c6e25cf683812874dd0865c"
+  },
+  "modelTests": {
+    "receiptInputSHA256": "fb910d4755fe3f0540439ae23ceb17f6ff0f61a69f437046f120236cfe1c7302",
+    "tests": 12,
+    "suites": 1,
+    "seconds": 6.810580958030187,
+    "status": "PASS",
+    "scope": "pure ownership/revocation/expiry/replay controls;no kernel/browser/NE execution"
+  },
+  "adapterBuildOnly": {
+    "inputSHA256": "d69b9f19564e77a2bf9d1d94233b7732ebfac928552910c7e921844683d94574",
+    "seconds": 1.022038417053409,
+    "status": "PASS",
+    "reason": "Source review:attach inert tunnel cancellation before handshake;preserve clean TCP half-close;unchanged 12 core tests not repeated",
+    "nativeRun": false
+  },
+  "profileInventory": {
+    "existingProfilesDecoded": 65,
+    "appProxySystemExtensionAuthorized": 0,
+    "systemExtensionInstallAuthorized": 0,
+    "newCertificatesCreated": 0,
+    "observedBeforeNewQAProfileIssuance": true
+  },
+  "appleAccountAction": {
+    "status": "two exact QA IDs/profiles approved and issued;no production changes",
+    "registered": true,
+    "requestedQAIdentifiers": [
+      "app.neantik.desktop.network-qa",
+      "app.neantik.desktop.network-qa.proxy"
+    ],
+    "productionIdentifierChanged": false,
+    "profileIssued": true,
+    "newCertificatesCreated": 0
+  },
+  "notImplemented": [
+    "Actual kernel owner attribution and strict fail-closed route acceptance",
+    "Production dedicated profile host extraction",
+    "Authenticated production control IPC and actual kernel owner attribution",
+    "Concrete fixed-upstream tunnel integration",
+    "Kernel failure/DNS/UDP/IPv6/loopback and persistent WebKit qualification"
+  ],
+  "notRun": [
+    "Full kernel audit-token attribution not established",
+    "No working authenticated proxy data plane integrated",
+    "No prior Chromium/app-release gates replayed"
+  ],
+  "acceptance": "Enable only after supported non-MDM Direct deployment, real flow attribution, fixed-upstream data plane and zero Direct for owned targets/provider failure/revoke with independentB;then signed candidate/release gates",
+  "releaseUnchanged": {
+    "version": "0.8.23",
+    "build": 135
+  },
+  "additionalLifecycleControls": {
+    "status": "PASS",
+    "tests": 6,
+    "seconds": 1.8266058749286458,
+    "inputSHA256": "4bddb3198015ccf9de0464095c5097f43eb5e92cc315748cab026813f97768d2",
+    "scope": "Pure provider lifetime and callback-order fence,including deliberate broken ordering;adapter compiled;unchanged12 ledger models not repeated",
+    "previousFiveControlRun": "PASS preserved;subset of final6,not counted as5additional unique tests"
+  },
+  "uniquePureControls": 29,
+  "reviewCorrections": [
+    "Factory outside state lock",
+    "Generation-bound shared stop/drain with callbacks only after drain",
+    "Serialized start/stop framework completions and explicit broken-order control",
+    "Inert tunnel factory;attach cancellation before network handshake",
+    "Clean normal TCP EOF instead of refused error",
+    "Strict whole-literal IP parser rejects DNS suffix trick",
+    "Exclusive QA launch/mutation fence through async completion;fresh absence check before cleanup",
+    "Read-only provider counter request cannot block cleanup;late reply cannot restore removed manager"
+  ],
+  "knownHarnessWarnings": [
+    "Swift Testing #require macro passes a closure without Sendable annotation in two new test assertions;no product adapter Sendable warning in final compile",
+    "SwiftPM native build-system deprecation"
+  ],
+  "preparedKernelQA": {
+    "status": "Exact QA3 notarized/stapled/Gatekeeper PASS;installed and activated;scope saved;strict route qualification failed/incomplete",
+    "controller": "Separate QA-only controller;source-application routing required;refuses global/stale/domain-exception scope;no automatic preference saves or install",
+    "hosts": "Dedicated nonpersistent A and independent B;only explicit owned QA-run local HTTP navigation",
+    "provider": "Deny-only NEAppProxyProvider,observes known/unknown kernel host attribution;does not forward or provide proxy function",
+    "buildInputSHA256": "3d4c4992a671028a30fc87c760df405c69bdd10898bf1a180f1db139b7a26848",
+    "buildSeconds": 1.5958212499972433,
+    "build": "PASS",
+    "firstBuild": "FAIL Swift5 explicit-self capture requirements;diagnosed source repair only;original report retained",
+    "assemblyRefusals": "existing output,failed build,symlink receipt:3 expected refusals;original unsigned output unchanged",
+    "signature": "exact claims/certificate/hardened runtime/strict nested PASS",
+    "kernelRun": "one scoped QA3 native stage;A/B loopback direct,private controls inconclusive",
+    "newCertificate": false,
+    "productionTouched": false,
+    "scopeTestCompileFailure": "Swift Testing mutating struct call macro expansion;harness evaluated calls before assertions;original FAIL retained",
+    "operationFence": "Pending NSWorkspace launch and extension/config changes serialize;hosts rechecked before mutations;pure controls only",
+    "counterRead": "Readonly response cannot retain mutation fence or restore removed configuration",
+    "certificateSHA1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "archiveSHA256": "e59014677ac6493e72528e1e498dbe824b8b56f35337664cd64cc45fb7343fa9",
+    "archiveBytes": 609958,
+    "allowlistedFiles": 14
+  },
+  "additionalQAScopeControls": {
+    "status": "PASS",
+    "tests": 7,
+    "suites": 1,
+    "seconds": 1.3060302919475362,
+    "inputSHA256": "248b6f358d9bbfd770dce766d83fd83210e0e4425ea9a83f5e69006687c47f37",
+    "scope": "Pure fixture URL policy and launch/configuration fence only;actual Host uses the tested policy;no browser/kernel execution"
+  },
+  "sourceOnlyDelivery": "No shipping app/runtime/archive/version change;production WebKit proxy remains disabled",
+  "qaProfileAuthentication": {
+    "status": "PASS",
+    "profiles": 2,
+    "authenticatedBy": "exact macOS provisioning CMS signing policy",
+    "actualSignedContentMutationsRefused": 2,
+    "exactReleaseCertificate": true,
+    "macOSDeveloperIDAllDevicesExactTeamAndIDs": true,
+    "requiredAppProxySystemExtensionGrant": true,
+    "systemExtensionInstall": "container only",
+    "keychainClaimsAdded": false
+  },
+  "nextExternalGate": "Manual disable gate resolved;no new native retry authorized. Strict loopback/private-control architecture remains unqualified.",
+  "firstInstalledQAAttempt": {
+    "notary": "Accepted",
+    "staple": "PASS",
+    "gatekeeper": "PASS",
+    "activation": "setup refusal;network extension missing its own NSSystemExtensionUsageDescription",
+    "AOrBOpened": false,
+    "ruleSaved": false,
+    "controllerExited": true,
+    "ownOriginsClosed": true,
+    "matchingQAExtensionsAfterCleanup": 0,
+    "networkAcceptance": "not run;zero A observations is not PASS"
+  },
+  "metadataRecipeCorrection": {
+    "status": "implemented;3pure controls PASS;actual old provider Info negative",
+    "compiledExecutablesUnchanged": 4,
+    "entitlementsUnchanged": true,
+    "newInternalQABuild": 2,
+    "SwiftOrChromiumRebuilt": false,
+    "correctedSignedNativeAcceptance": "pending"
+  },
+  "secondInstalledQAAttempt": {
+    "archiveSHA256": "ee2d110e714a5b9eb82f0270c2f8ebf414eda7e6b708f257d51d25c72e504887",
+    "archiveBytes": 610129,
+    "notary": "Accepted",
+    "staple": "PASS",
+    "gatekeeper": "PASS",
+    "activation": "setup refusal;NEMachServiceName requires prefix matching a declared App Group entitlement",
+    "AOrBOpened": false,
+    "ruleSaved": false,
+    "controllerExited": true,
+    "originsStarted": false,
+    "matchingQAExtensionsAfterCleanup": 0,
+    "installedCopyRetiredIntact": true,
+    "networkAcceptance": "not run"
+  },
+  "machServiceRecipeCorrection": {
+    "status": "signed and OS activation accepted in QA3",
+    "providerOnlyQAGroup": "H6VGU2M6JD.app.neantik.desktop.network-qa",
+    "productionOrKeychainGroupsAdded": false,
+    "signedWithNewEntitlement": true,
+    "compiledExecutablesUnchanged": 4,
+    "newInternalQABuild": 3,
+    "SwiftOrChromiumRebuilt": false,
+    "nativeAcceptance": "setup accepted;strict confinement not qualified",
+    "officialBasis": "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.application-groups"
+  },
+  "nativeQA3": {
+    "observedSourceHEAD": "97afbb51bf02694f861046a2b3424dce832f9650",
+    "compiledInputSHA256": "3d4c4992a671028a30fc87c760df405c69bdd10898bf1a180f1db139b7a26848",
+    "internalBuild": 3,
+    "archiveSHA256": "0f4cdc51e99ba2d11700f79ecc165a6f70aa077c2778d65768dec472736214d3",
+    "archiveBytes": 610137,
+    "Apple": "Accepted",
+    "staple": "PASS",
+    "Gatekeeper": "PASS",
+    "activation": "activated enabled",
+    "sourceApplicationScopeSavedAndReread": true,
+    "providerProcessAndJournalConnected": true,
+    "controlledRequests": 8,
+    "originCounts": {
+      "server-control-loop": 1,
+      "server-control-private": 1,
+      "a-active-loop": 1,
+      "a-active-private": 0,
+      "b-active-loop": 1,
+      "b-active-private": 0,
+      "a-stopped-loop": 1,
+      "a-stopped-private": 0,
+      "b-stopped-loop": 1,
+      "b-stopped-private": 0
+    },
+    "loopback": "A and B each delivered one request before and after stop request;strict zero Direct not met",
+    "privateIP": "A and B navigation failed;Python Direct control reached endpoint;not selective-blocking PASS",
+    "attribution": "not proved;counter spelling contract defect",
+    "stop": "system journal confirms stopProxy and disconnected state;request timestamps not retained",
+    "cleanup": {
+      "AAndBExited": true,
+      "HostADelayedExit": true,
+      "signalsSent": 0,
+      "controllerExited": true,
+      "providerExited": true,
+      "HTTPServersClosed": 2,
+      "QAConfig": "removed through exact System Settings named QA card after controller scope guard refused",
+      "controllerCleanupGuard": "preserved;no authority weakening;future source adds refusal flags",
+      "deactivationRequest": "Original controller removal refused AuthorizationRequired13;later QA-only System Settings switch+Done disabled successfully",
+      "systemSettingsOffAttempt": "Latest requested switch+Done durably confirmed activated disabled by systemextensionsctl and sysextd",
+      "remaining": "Inactive QA extension registration and installed QA bundle retained;not uninstalled;no QA rule/live process",
+      "verifiedDisabled": true
+    },
+    "nativeResourceAdmission": "normal;warning exception not used",
+    "fixtureDelay": "CUA bindingA1128.984s/B149.810s;first origin expired unused;fresh fixture after both windows bound;no app restart",
+    "noProductionEnable": true
+  },
+  "postQA3ObservationCorrection": {
+    "status": "source implemented and compiled;4new pure controls PASS;no new native run",
+    "inputSHA256": "ece4ac49956937c6480d526915e63f20b2524e705e048a3684ac7cadeaf5c72a",
+    "seconds": 5.61293145804666,
+    "negativeControl": "actual Foundation UUID serialization is rejected by former exact-string comparator",
+    "scope": "counter run identity and safer error/refusal diagnostics only;no routing or cleanup guard weakening"
+  }
+}

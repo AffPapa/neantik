@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "observedOn": "2026-10-18",
+  "version": "0.8.23",
+  "build": 135,
+  "macOS": "27.0",
+  "architecture": "arm64",
+  "result": {
+    "status": "same-cohort-seed-and-storage-isolation-pass",
+    "actualNativeSessions": 4,
+    "nativeNegativeControls": 1,
+    "sameCohort": "macbook-air-m1",
+    "persistedStores": [
+      "cookie",
+      "localStorage",
+      "indexedDB",
+      "cacheStorage",
+      "serviceWorker"
+    ],
+    "sessionStorageRestored": false,
+    "equalCanvasForOwnDrawing": true,
+    "releaseQualified": false,
+    "scope": "Raw published runtime;two own user-data roots,synthetic seeds11/22 and controlled wrong-root refusal. Not manager/WebKit/multi-Mac/full1.0 qualification."
+  },
+  "binding": {
+    "nativeBindingSHA256": "0720844e9cd60dfcd35a01b46a8874ea9b54233de9a0bc41937200b0c88c0142",
+    "runtimeExecutableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+    "runtimeFrameworkSHA256": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7"
+  },
+  "nativeSources": {
+    "run-isolation.mjs": "621e2102d4164785bfa4adcd9c0a40da25a8d9fdeab77eacbe7fec70199a92a6",
+    "isolation-probe.js": "cdef3602d14c7a4dc6dfd783dfd7fc9d047b31fa76d1391717df0dad249e5b16",
+    "isolation-verify.mjs": "a956e03e729127b3d4fa88720ef6e16c078a05c04e370090eee9f52528c1be3d"
+  },
+  "offlineAnalysis": {
+    "originalProducerStatus": "failed",
+    "originalFailureSHA256": "97c40c6009ccfdcc84e39004e7548e92e322c10a853f86dbb6ed80c08fa7eccd",
+    "correction": "Offline only:remove unsupported per-drawing cross-seed uniqueness requirement;all storage,seed,cohort,repeat,lifecycle and cleanup gates retained",
+    "originalFailureRetained": true,
+    "nativeReplayed": false,
+    "sourceEvidence": {
+      "M156ReplaySHA256": "c91858efda029fec0630f3a09534c5e2fc43e539061edf4667ac44331b786edf",
+      "semanticCanvasPatchSHA256": "116b00e14257746036ece3551314b4849c988b1a0817b6dba8ff165eb80b1d8c"
+    },
+    "currentAnalyzerSHA256": "33feb2c204545353f893749c92a8b9c82268fed4e3eabf9745616bc4e1591571",
+    "currentVerifierSHA256": "fab0fef143401c65d8f9e386ff980faa69024092794a97c79bcffc71f9e11e4b"
+  },
+  "rowCaptures": [
+    {
+      "id": "a-write",
+      "sha256": "a341deb36ee9742a0be80b6123ece63cb797034f139683f81ff636056633e048",
+      "normalExit0": true
+    },
+    {
+      "id": "wrong-root",
+      "sha256": "35bd7565d0fbc1f192b00aeeeb088c9606cede8ed76da6b64888b3b6d8000b2d",
+      "normalExit0": true
+    },
+    {
+      "id": "b-write",
+      "sha256": "835cf87e6d06feaf5584e386e153271de721f796a6b26cfeb3cbb8b31c4bd1c9",
+      "normalExit0": true
+    },
+    {
+      "id": "a-return",
+      "sha256": "ae132bc1cb13c96018f9207456ec4b2ea246a57df74f79c3712786c4dc537915",
+      "normalExit0": true
+    }
+  ],
+  "controls": {
+    "modeledPositive": 3,
+    "modeledNegative": 23,
+    "actualCaptureOfflineNegative": 23,
+    "nativeWrongRootControl": 1
+  },
+  "cleanup": {
+    "serversClosed": true,
+    "processesRemaining": 0,
+    "ownRootRemoved": true
+  },
+  "productBytesChanged": false,
+  "managerQualified": false,
+  "releaseQualified": false,
+  "privacy": "Own synthetic markers only;raw values,Canvas hashes,temporary paths and captures stay private",
+  "limits": [
+    "Raw runtime with own A/B directories,not manager-mediated profile creation",
+    "One physical Mac;not WebKit/concurrent/multiMac/OS-encrypted secret portability",
+    "Identical Canvas output for this drawing is permitted;distinct seeds are not a uniqueness/anonymity guarantee",
+    "Original FAIL was harness requirement and misclassification;no product fix or repeated native session claimed"
+  ]
+}

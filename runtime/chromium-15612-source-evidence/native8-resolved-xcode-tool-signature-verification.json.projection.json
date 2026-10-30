@@ -1,0 +1,50 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "7b38850f09f8d1d9b3a4b40c5d787a883339d7f73b5dc5386306994389d1a07f",
+  "payload": {
+    "at": "2026-10-09T04:17:46.954139+00:00",
+    "attempt": 8,
+    "classification": "sandbox-trust-check-limitation-resolved-by-read-only-elevated-verification",
+    "limitations": [
+      "Resolved tool identities are not proof of actual invocation by build",
+      "Metal compiler/metallib actual consumed closure remains open"
+    ],
+    "previousObservationSHA256": "687303c26650e1e47a7a4b2f91613b68d832942a12785c3380d3ac0f1f2db169",
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "tools": [
+      {
+        "elevatedStrictVerificationExitCode": 0,
+        "sandboxDiagnostic": "CSSMERR_TP_NOT_TRUSTED",
+        "sandboxVerificationExitCode": 1,
+        "sha256AfterElevatedVerification": "607b61b7b349503b312409b920d73c92aa62900d6fd19c4fd91b779e9dd89a8a",
+        "tool": "dsymutil"
+      },
+      {
+        "elevatedStrictVerificationExitCode": 0,
+        "sandboxDiagnostic": "CSSMERR_TP_NOT_TRUSTED",
+        "sandboxVerificationExitCode": 1,
+        "sha256AfterElevatedVerification": "886302503cb24f3a96aff5f3b3bbf258eac1b7aecf52c3263c97d3fb4e903472",
+        "tool": "metal"
+      }
+    ]
+  },
+  "payloadType": "json",
+  "receipt": "native8-resolved-xcode-tool-signature-verification.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

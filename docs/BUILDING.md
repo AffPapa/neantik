@@ -22,6 +22,23 @@ Run:
 ./scripts/verify-native-swift-release.sh
 ```
 
+The native test scripts explicitly run suites serially (`--no-parallel`) while
+compilation uses two jobs. This avoids launching hundreds of independent
+process and disk fixtures together. Tests of concurrent operations still create
+their own controlled workers; cancellation latency limits remain unchanged.
+
+For repeated local targeted suites, reuse the ignored SwiftPM cache inside this
+checkout instead of paying a clean compile for every suite:
+
+```bash
+NEANTIK_SWIFT_SUITE_CACHE_DIR="$PWD/.build" \
+  ./scripts/verify-native-swift-suite.sh WebKitProxyConfigurationFactoryTests
+```
+
+The suite runner accepts only this checkout's exact `.build` path and never removes it.
+CI and one-off runs keep their isolated temporary cache unless this opt-in is
+set. SwiftPM still validates source and toolchain changes normally.
+
 For day-to-day SwiftUI and manager work, use the isolated fast loop instead:
 
 ```bash
@@ -39,6 +56,18 @@ If an engineering or cached runtime is invalid, only the copy inside
 `NeAntik-Dev.app` is repaired with a local ad-hoc signature. This is not
 Developer ID signing or notarization. The command never creates or mutates a
 release candidate.
+
+Use `./Develop-NeAntik.command --fixture` for a new empty temporary workspace.
+This preserves previous Dev data and makes empty-state QA independent of it.
+Never replace a failed-read workspace with empty data or call that recovery.
+For populated UI QA, create an empty directory under
+`/private/tmp/neantik-dev-fixture.*`, set `NEANTIK_POPULATE_DEV_FIXTURE` to it,
+and run the targeted Swift test `populatedDevelopmentWorkspaceSurvivesRestart`.
+Then launch the Dev executable with `NEANTIK_DEVELOPMENT_DATA_ROOT` set to that
+same directory. The test creates eight synthetic profiles with tags, a folder,
+pinning, an archive and long names; no accounts or proxy credentials are used.
+The same fixture is validated and removed during ordinary tests. A preserved
+Dev workspace containing `about:blank` profiles is supported without migration.
 
 Live browser checks are deliberately separate from normal CI because they
 require a locally built `NeAntik-Dev.app` and an active macOS GUI session.
@@ -83,7 +112,7 @@ performed only with a complete rebuild and new binary evidence.
 Prepare and build in a separate disposable directory with ample free space:
 
 ```bash
-./scripts/preflight-runtime-rebase-150.py \
+./scripts/preflight-runtime-rebase.py \
   --plan runtime/chromium-152-rebase-plan.json \
   /absolute/path/to/build-root
 ./scripts/build-runtime.sh /absolute/path/to/build-root prepare
@@ -134,7 +163,7 @@ the repository or GitHub Actions secrets for the initial public workflow.
 The local release path is:
 
 ```bash
-export NEANTIK_SIGNING_IDENTITY="40-HEX-SHA1-OF-DEVELOPER-ID-CERTIFICATE"
+export NEANTIK_SIGNING_IDENTITY="Developer ID Application: …"
 export NEANTIK_NOTARY_PROFILE="your-keychain-profile"
 export NEANTIK_RELEASE_CHANNEL="public-alpha" # or production
 export NEXT_PUBLIC_NEANTIK_DOWNLOAD_URL="https://example.com/NeAntik-VERSION-arm64-notarized.zip"
@@ -150,11 +179,6 @@ export NEXT_PUBLIC_NEANTIK_DOWNLOAD_URL="https://example.com/NeAntik-VERSION-arm
 # Then collect that explicit schema-8 file against the same manifest/channel.
 ./scripts/release-direct.sh
 ```
-
-The external Developer ID provisioning profile must list that same certificate
-under `DeveloperCertificates`. A display name is accepted only when it resolves
-to one installed identity; use the certificate SHA-1 whenever two identities
-have the same name.
 
 The first phase signs and freshly verifies the built runtime, promotes the
 candidate source lock only after the Metal binary report matches, regenerates

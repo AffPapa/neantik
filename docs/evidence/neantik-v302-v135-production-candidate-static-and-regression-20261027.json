@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "attempt": "V302",
+  "createdAt": "2026-10-27T19:13:50Z",
+  "candidate": {
+    "id": "production-webkit-v135-20261028",
+    "appPath": "/private/tmp/neantik-v193-touch-qualified/dist/private/candidates/production-webkit-v135-20261028/NeAntik.app",
+    "version": "1.0.0",
+    "build": "200",
+    "managerSHA256": "5df59960da46e634ba81b1cc592b4d2ec8c3b5c6b99913b8ed86987ce569ba9c",
+    "ownedWebKitHostSHA256": "ae0a88849e20814f4883dc895459082855eeb53f903920d6957910729124106a",
+    "chromiumRuntimeReportSHA256": "5ed171e3147b11861908939c3b53a7e5a651c8a340391231fe8f7fda1beb3065"
+  },
+  "inputs": {
+    "parentCandidate": "b96006a994664a80bf89cd757f932eff",
+    "ownedWebKitBuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "sourceOfferSupplement": "/private/tmp/neantik-release-v1/dist/private/source-offers/v288-v135-webkit-host-source-supplement",
+    "sourceOfferManifestSHA256": "73b83130fc540e65dc238f6fe510e831654b39a93fb691690de1532335ebcc42"
+  },
+  "verified": {
+    "provisioningPreflight": "PASS; signer input used private copy to avoid aliasing embedded output",
+    "outerManagerDeveloperIDTimestampSignature": "PASS",
+    "ownedWebKitHostDeveloperIDTimestampSignature": "PASS",
+    "deepStrictSignatureAndHostPin": "PASS",
+    "ownedWebKitRuntimeNotices": "PASS; 35 evidence values verified against exact runtime and V288 source-offer root",
+    "chromiumPackagedRuntimeReport": "PASS; exact distributed runtime report matches",
+    "integratedDirectReleaseStaticGate": "PASS; version/build 1.0.0/200 ARM64",
+    "publicArtifactPrivacy": "PASS; 789 entries, 685536466 bytes",
+    "webkitRuntimeNoticePythonTests": "PASS; 63/63",
+    "pythonFullRegression": "2024 tests, 55 skipped; one /bin/ps PermissionError in sandbox; exact failed test passed 1/1 with process-inspection access",
+    "swiftFullRegression": "1843/1844 passed, 222 suites, one test assumption failed because plain suite compilation defaults to build mode disabled; corrected test passed targeted 8/8",
+    "diffCheck": "PASS"
+  },
+  "open": {
+    "candidateManifestAndRunPlan": "not created; bind from this exact candidate before native launch",
+    "exactCandidateRuntime": "not run; CUA confirmed regular NeAntik app still running with user profiles",
+    "webKitProxyAndPageSmoke": "not qualified on these bytes; Google/Booking direct plus owned-WebKit synthetic A/B/A and refusal/recovery remain",
+    "candidateFinalZIPDMGNotarizationGatekeeper": "not run",
+    "GitHubBrowserFreePublicationAndDownloadedBytes": "not run",
+    "releaseQualified": false
+  },
+  "testDiagnosis": {
+    "swiftFailure": "Tests/NeAntikTests/WebKitProxyConfigurationFactoryTests.swift asserted compile-time buildMode == diagnostic even though Package.swift defaults to disabled; removed only the invalid environment assumption; targeted suite passed 8/8.",
+    "pythonFailure": "read-only runtime drain test could not execute /bin/ps in sandbox; exact same test passed when rerun once with process inspection allowed."
+  },
+  "worktree": {
+    "path": "/private/tmp/neantik-release-v1",
+    "branch": "codex/neantik-1-0-prep-20261025",
+    "head": "63c3bc620163ae6354f3dc359b47b9fd72e921d0",
+    "state": "dirty; preserve unique work"
+  },
+  "publicStateChanged": false,
+  "newReleaseBuildMade": false,
+  "candidateLaunched": false
+}

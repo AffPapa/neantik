@@ -1,9 +1,8 @@
-import AppKit
 import Foundation
 import SwiftUI
 
 enum FirstProfileBootstrap {
-    static let defaultName = "Моё рабочее место"
+    static let defaultName = "Основной профиль"
     static let routeSummary = "Прямое подключение"
 
     static func makeProfile(
@@ -11,46 +10,6 @@ enum FirstProfileBootstrap {
     ) -> BrowserProfile? {
         guard existingProfiles.isEmpty else { return nil }
         return BrowserProfile(name: defaultName)
-    }
-}
-
-/// A bounded fast path for an existing workspace.
-///
-/// It deliberately creates only a permanent Direct profile. Proxy, note, tags
-/// and appearance stay at safe defaults, while BrowserProfile issues a fresh
-/// identifier and identity for every invocation. The workspace may still put
-/// the result into the currently selected folder.
-enum QuickProfileBootstrap {
-    static let namePrefix = "Рабочее место"
-
-    static func makeProfile(
-        existingProfiles: [BrowserProfile]
-    ) -> BrowserProfile {
-        BrowserProfile(
-            name: nextAvailableName(existingProfiles: existingProfiles)
-        )
-    }
-
-    static func nextAvailableName(
-        existingProfiles: [BrowserProfile]
-    ) -> String {
-        let existingNames = Set(existingProfiles.map {
-            comparisonKey($0.name)
-        })
-        var number = max(2, existingProfiles.count + 1)
-        while existingNames.contains(
-            comparisonKey("\(namePrefix) \(number)")
-        ) {
-            number += 1
-        }
-        return "\(namePrefix) \(number)"
-    }
-
-    private static func comparisonKey(_ value: String) -> String {
-        value.trimmingCharacters(in: .whitespacesAndNewlines).folding(
-            options: [.caseInsensitive, .diacriticInsensitive],
-            locale: Locale(identifier: "ru_RU")
-        )
     }
 }
 
@@ -68,12 +27,10 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
     let primaryAccessibilityHint: String
     let statusMessage: String?
     let statusSystemImage: String?
-    let terminalAccessibilityAnnouncement: String?
 
     static func resolve(
         runtimeAvailability: BrowserRuntimeAvailability,
-        isCreatingProfile: Bool,
-        resolutionIsDelayed: Bool = false
+        isCreatingProfile: Bool
     ) -> Self {
         if isCreatingProfile {
             return Self(
@@ -85,28 +42,12 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
                     "Дождись создания постоянного профиля",
                 statusMessage:
                     "Создаём постоянный локальный профиль.",
-                statusSystemImage: "hourglass",
-                terminalAccessibilityAnnouncement: nil
+                statusSystemImage: "hourglass"
             )
         }
 
         switch runtimeAvailability {
         case .resolving:
-            if resolutionIsDelayed {
-                return Self(
-                    primaryAction: .retryRuntimeCheck,
-                    primaryTitle: "Повторить проверку",
-                    primarySystemImage: "arrow.clockwise",
-                    primaryIsEnabled: true,
-                    primaryAccessibilityHint:
-                        "Запускает новую проверку встроенного браузерного движка",
-                    statusMessage:
-                        "Проверка занимает больше обычного. Можно повторить её, не закрывая окно.",
-                    statusSystemImage: "clock.badge.exclamationmark",
-                    terminalAccessibilityAnnouncement:
-                        "Проверка браузерного движка задержалась. Повторная проверка доступна."
-                )
-            }
             return Self(
                 primaryAction: .unavailable,
                 primaryTitle: "Проверяем браузер…",
@@ -116,24 +57,20 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
                     "Кнопка станет доступна после проверки",
                 statusMessage:
                     "Проверяем встроенный браузерный движок.",
-                statusSystemImage: "hourglass",
-                terminalAccessibilityAnnouncement: nil
+                statusSystemImage: "hourglass"
             )
 
         case .ready:
             return Self(
                 primaryAction: .createAndOpen,
-                primaryTitle: "Создать и открыть",
+                primaryTitle: "Сразу создать и открыть без прокси",
                 primarySystemImage: "play.fill",
                 primaryIsEnabled: true,
                 primaryAccessibilityHint:
                     "Создаёт постоянный профиль с прямым подключением " +
                     "и сразу запускает его",
                 statusMessage: nil,
-                statusSystemImage: nil,
-                terminalAccessibilityAnnouncement:
-                    "Браузерный движок готов. " +
-                    "Можно создать и открыть профиль."
+                statusSystemImage: nil
             )
 
         case .missing:
@@ -141,10 +78,7 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
                 message:
                     "Встроенный браузерный движок не найден. " +
                     "Переустанови NeAntik из официального DMG или ZIP, " +
-                    "затем повтори проверку.",
-                announcement:
-                    "Браузерный движок не найден. " +
-                    "Повторная проверка доступна."
+                    "затем повтори проверку."
             )
 
         case let .invalid(message):
@@ -154,18 +88,12 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
             let explanation = detail.isEmpty
                 ? "Браузерный движок не готов. Повтори проверку."
                 : "Браузерный движок не готов: \(detail)"
-            return unavailableRuntime(
-                message: explanation,
-                announcement:
-                    "Браузерный движок не готов. " +
-                    "Повторная проверка доступна."
-            )
+            return unavailableRuntime(message: explanation)
         }
     }
 
     private static func unavailableRuntime(
-        message: String,
-        announcement: String
+        message: String
     ) -> Self {
         Self(
             primaryAction: .retryRuntimeCheck,
@@ -175,15 +103,12 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
             primaryAccessibilityHint:
                 "Повторно проверяет встроенный браузерный движок",
             statusMessage: message,
-            statusSystemImage: "exclamationmark.triangle.fill",
-            terminalAccessibilityAnnouncement: announcement
+            statusSystemImage: "exclamationmark.triangle.fill"
         )
     }
 }
 
 struct FirstProfileOnboardingView: View {
-    @State private var runtimeResolutionIsDelayed = false
-
     let runtimeAvailability: BrowserRuntimeAvailability
     let isCreatingProfile: Bool
     let onCreateAndOpen: () -> Void
@@ -193,22 +118,21 @@ struct FirstProfileOnboardingView: View {
     private var presentation: FirstProfileOnboardingPresentation {
         FirstProfileOnboardingPresentation.resolve(
             runtimeAvailability: runtimeAvailability,
-            isCreatingProfile: isCreatingProfile,
-            resolutionIsDelayed: runtimeResolutionIsDelayed
+            isCreatingProfile: isCreatingProfile
         )
     }
 
     var body: some View {
         ContentUnavailableView {
             Label(
-                "Первое рабочее место",
+                "Создай первый профиль",
                 systemImage: "person.crop.rectangle.stack"
             )
         } description: {
             VStack(spacing: 6) {
                 Text(
-                    "Ваши входы на сайты и данные сохранятся в этом рабочем месте. " +
-                        "Можно сразу открыть браузер — настройки не обязательны."
+                    "NeAntik создаст постоянный локальный профиль браузера " +
+                        "со стабильными настройками среды."
                 )
                 Label(
                     "Сеть: \(FirstProfileBootstrap.routeSummary)",
@@ -219,73 +143,27 @@ struct FirstProfileOnboardingView: View {
                 if let statusMessage = presentation.statusMessage,
                    let statusSystemImage = presentation.statusSystemImage
                 {
-                    UserNoticeLabel(
-                        notice: UserNotice(
-                            statusMessage,
-                            level: runtimeAvailability == .resolving &&
-                                !runtimeResolutionIsDelayed
-                                ? .information
-                                : .warning
+                    Label(statusMessage, systemImage: statusSystemImage)
+                        .font(.caption)
+                        .foregroundStyle(
+                            runtimeAvailability == .missing
+                                ? Color.red
+                                : Color.secondary
                         )
-                    )
-                    .accessibilityHint(
-                        statusSystemImage == "hourglass"
-                            ? "Проверка выполняется"
-                            : "Можно повторить проверку"
-                    )
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(statusMessage)
                 }
             }
             .frame(maxWidth: 440)
         } actions: {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) {
-                    createAndOpenButton
-                    configureButton
-                }
-                VStack(spacing: 8) {
-                    createAndOpenButton
-                    configureButton
-                }
+            VStack(spacing: 8) {
+                configureButton
+                createAndOpenButton
             }
+            .frame(minWidth: 260)
         }
         .padding(.horizontal, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .task(id: runtimeAvailability) {
-            runtimeResolutionIsDelayed = false
-            guard runtimeAvailability == .resolving else { return }
-            try? await Task.sleep(for: .seconds(8))
-            guard !Task.isCancelled,
-                  runtimeAvailability == .resolving
-            else { return }
-            runtimeResolutionIsDelayed = true
-            if let message = presentation.terminalAccessibilityAnnouncement {
-                NSAccessibility.post(
-                    element: NSApp as Any,
-                    notification: .announcementRequested,
-                    userInfo: [
-                        .announcement: message,
-                        .priority: NSAccessibilityPriorityLevel.medium.rawValue
-                    ]
-                )
-            }
-        }
-        .onChange(of: runtimeAvailability) { previous, current in
-            guard previous == .resolving,
-                  let message = FirstProfileOnboardingPresentation.resolve(
-                      runtimeAvailability: current,
-                      isCreatingProfile: false
-                  ).terminalAccessibilityAnnouncement
-            else { return }
-            NSAccessibility.post(
-                element: NSApp as Any,
-                notification: .announcementRequested,
-                userInfo: [
-                    .announcement: message,
-                    .priority:
-                        NSAccessibilityPriorityLevel.medium.rawValue
-                ]
-            )
-        }
     }
 
     private var createAndOpenButton: some View {
@@ -294,23 +172,30 @@ struct FirstProfileOnboardingView: View {
                 presentation.primaryTitle,
                 systemImage: presentation.primarySystemImage
             )
+            .lineLimit(2)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
             .frame(minHeight: 28)
         }
-        .buttonStyle(.borderedProminent)
-        .fixedSize(horizontal: true, vertical: false)
-        .keyboardShortcut(.defaultAction)
+        .buttonStyle(.bordered)
         .disabled(!presentation.primaryIsEnabled)
         .accessibilityLabel(presentation.primaryTitle)
         .accessibilityHint(presentation.primaryAccessibilityHint)
     }
 
     private var configureButton: some View {
-        Button("Выбрать название…", action: onConfigure)
+        Button(action: onConfigure) {
+            Text("Создать профиль с настройками…")
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
             .frame(minHeight: 28)
-            .fixedSize(horizontal: true, vertical: false)
+            .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.defaultAction)
             .disabled(isCreatingProfile)
             .accessibilityHint(
-                "Открывает выбор названия и назначения рабочего места"
+                "Открывает полную настройку профиля и прокси"
             )
     }
 
@@ -323,5 +208,19 @@ struct FirstProfileOnboardingView: View {
         case .unavailable:
             break
         }
+    }
+}
+
+struct ProfileStorageUnavailableView: View {
+    var body: some View {
+        ContentUnavailableView {
+            Label("Профили временно недоступны", systemImage: "externaldrive.badge.exclamationmark")
+        } description: {
+            Text(
+                "NeAntik не смог прочитать сохранённые профили и не будет заменять их пустым списком. Перезапусти приложение. Если ошибка повторится, сохрани файлы данных и обратись в поддержку."
+            )
+            .frame(maxWidth: 460)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

@@ -1,0 +1,26 @@
+{
+  "binaryBindingStatus": "pending-new-build",
+  "buildArgsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+  "chromiumLicenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
+  "dependencyLockSHA256": "31e0017e19a60a9d44540152266e2e3abfdd0c30ecf49124ee539428cc1c69e2",
+  "devtoolsCompatibilityPatchSHA256": "39272ebfee0371ba7afe048d24f634730cfb86d10b7ccd095dd3f7bcfa9519b9",
+  "officialChromiumBase": {
+    "commit": "d0c02bfad08ec92a6ffcf989e53cd995e6381a4c",
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "156.0.8078.48",
+    "tree": "7f8057b292482977d1eb92dfab20d3b129af4134"
+  },
+  "ownedPatchGroupCount": 1,
+  "rebasePlanSHA256": "ce749a3a1ffbe068c81ffe685ddca1e0d93047ad084aa4ce97c87a3ebb043ea4",
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "securityBaselineSHA256": "66446fb6a7cdd00e783c5596fcd82cfeb7b900d8be2931ad5b1e8db028a3f6c8",
+  "sourceAdoptionManifest": "runtime/chromium-15648-source-adoption-v3.json",
+  "sourceAdoptionManifestSHA256": "97aae1b192339d834bc5b0a91e2c1f6a1f71bfb9bcee0f9b83e6d56e880152cf",
+  "sourceMode": "official-chromium-stable-with-reviewed-neantik-patches",
+  "sourcePatchSHA256": "0befae3e9af29233e9af3b36260d924ee63840d91960701d1d5a8be6541612c6",
+  "status": "source-qualified-chromium-build-complete-webkit-production-binding-pending",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "156.0.8078.48",
+  "v8CompatibilityPatchSHA256": "9952fba47636d6079545cfcf097309250168ad7991242516292eb4d32b931686"
+}

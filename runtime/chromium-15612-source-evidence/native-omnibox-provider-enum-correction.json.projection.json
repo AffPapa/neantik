@@ -1,0 +1,46 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "3b76a3870d8357c01bcf00fe1e4ea971b2361c1e17f349e6cd00e8c703912be8",
+  "payload": {
+    "at": "2026-10-09T03:35:43.287939+00:00",
+    "cause": "M156 native AutocompleteProvider migrated to scoped enum Type; retained filter patch referenced obsolete TYPE_* constants",
+    "license": "Independent compatibility correction to BSD Chromium code; no AGPL copied",
+    "maskBits": {
+      "kBookmark": 1,
+      "kBuiltin": 2,
+      "kHistoryUrl": 8,
+      "kKeyword": 16,
+      "kSearch": 32
+    },
+    "patchSHA256": "0b1a570fedb062d1290503e6622c321d57a5410c6556962224749429b355e0ff",
+    "postimages": {
+      "components/omnibox/browser/autocomplete_controller.cc": "02f4f9f7a9fe17f2eef22db4ded621eccb964870e2d288ae1008d036b568921a"
+    },
+    "preimages": {
+      "components/omnibox/browser/autocomplete_controller.cc": "6c3a70ecafbf1f501409a566710ea095e8789c746e12f363868d3ea3a7d3edbd"
+    },
+    "preserved": "same int provider_types bit masks, incoming disabled-provider restriction, flag parsing and filter semantics",
+    "releaseReady": false,
+    "replacedReferences": 7,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "status": "source-corrected-native-target-required"
+  },
+  "payloadType": "json",
+  "receipt": "native-omnibox-provider-enum-correction.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

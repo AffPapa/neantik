@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-26T06:40:00+07:00",
+  "status": "removal-not-supported; license-applicability-UNKNOWN; no-source-build-or-package-change",
+  "scope": "Two candidate-139 WebCore resource rows: modelDefaultDiffuseData and modelDefaultSpecularData. This review addresses whether removing them is a supportable source mitigation; it does not decide licensing.",
+  "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+  "worksheet": {
+    "path": "docs/evidence/webkit-runtime-package-notice-worksheet-20261026-v29.json",
+    "sha256": "b5d00e7589a67102c62372a6feddc9e7d06a50c6d0c3b6fde047bd42b9954441",
+    "bothRowsRemain": "UNKNOWN"
+  },
+  "sourceEvidence": {
+    "sourceTree": "/private/tmp/neantik-v34-webkit-clean-extracted/WebKit",
+    "Mesh.h": {
+      "path": "Source/WebKit/WebProcess/Model/Mesh.h",
+      "sha256": "cd7a395295778bf3924c918df93092976e6a6c59a41532d813b37f79ebeed028",
+      "lines": "122-135",
+      "finding": "WEBMODEL_WEB_MODEL_PLAYER_DECLARE_DIFFUSE_AND_SPECULAR_TEXTURES calls loadData() for both named resources and defines cube texture dimensions/formats. Removing these files without a valid replacement breaks WebKit WebModel default texture data consumers."
+    },
+    "PlatformCocoa.cmake": {
+      "path": "Source/WebCore/PlatformCocoa.cmake",
+      "sha256": "4116216b38a21967b91ee498c651ef2338dc393859e6c435fd9b2559ea342b45",
+      "lines": "1665-1666, 1833-1834",
+      "finding": "Both files are packaged as WebCore framework resources by the Cocoa build rules."
+    },
+    "resourceSHA256": {
+      "modelDefaultDiffuseData": "29a81b4539dccf31a32618e7b7164a61677ed73abb16a1fbbe17c4c314c9632a",
+      "modelDefaultSpecularData": "64fee6af9089b94448cbb0049763f6f8e7f62cd95042e8d44a6ee6514210458a"
+    }
+  },
+  "decision": "Do not stage deletion as a license mitigation. Keep both runtime rows UNKNOWN until file-specific rights/notice evidence is found or a legally cleared replacement is prepared and its affected WebXR rendering is verified in a changed candidate.",
+  "releaseGate": false,
+  "limitations": [
+    "No file-specific license or attribution was established.",
+    "No replacement was generated or staged.",
+    "No build, package, or runtime test was performed.",
+    "This source checkout is used only for source-reference evidence; findings do not qualify candidate bytes."
+  ]
+}

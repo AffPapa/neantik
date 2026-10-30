@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-18",
+  "status": "QA7 expected-identity clauses fail;no production isolation",
+  "shippingWebKitProxy": false,
+  "reboot": "User reboot removed priorQA3 registration;newboot verified",
+  "candidate": {
+    "internalBuild": 7,
+    "signedArchiveSHA256": "b6979cb7730d715cab58ada2679b153cea7c084dcf7d547a2fc07ae086919fdc",
+    "sourceHEAD": "b6e3f39d9b781a5bd6d4f0a6707064d7bc32524d",
+    "notarization": "Accepted",
+    "stapleAndGatekeeper": "PASS",
+    "newCertificate": false,
+    "newRights": false
+  },
+  "conclusion": "Both QA7 measured flows resolve to an integrity-valid Apple-anchored dynamic guest;expected QA Developer ID/team/identifier/CDHash all fail. Actual guest identity not collected;no profile ownership or working WebKit proxy established.",
+  "skipped": "Provider-unavailable matrix not run because active selective confinement failed",
+  "cleanup": "ownfilter absent/readback;QA7activateddisabled;6ownPIDs/listenersgone;normalQuitmenu;oldQA5/6inactivependingOSrebootcleanup",
+  "next": "Source-backed supported original-app/profile attribution before any new native candidate;do not substitute creating-process/shared-helper/team-only checks or replayQA7.",
+  "sources": [
+    "https://developer.apple.com/documentation/networkextension/nefilterflow/sourceappaudittoken",
+    "https://developer.apple.com/documentation/networkextension/nefilterflow/sourceprocessaudittoken"
+  ],
+  "limits": [
+    "Owned port IPv4/IPv6 only;no DNS/UDP/external tunnel proof",
+    "No provider crash/failure proof",
+    "No production proxy feature or release qualification",
+    "No real user data or Keychain used"
+  ],
+  "diagnosticChange": {
+    "implemented": "Redacted missing/malformed token,guest lookup OSStatus,missing guest and exact requirement OSStatus stages;unknown-owner still disqualifies",
+    "compile": "PASS;jobs2;13.3534 seconds;58725a9e3b64bcd3db62e76c399b3ee3c088aed113bec1d8dfe5d68774ba7134",
+    "nativeExecuted": true,
+    "frozenQA5Modified": false
+  },
+  "previousCandidateQA5": {
+    "internalBuild": 5,
+    "signedArchiveSHA256": "045c410332bbcc2aa2a169e64452393341d0b81d599ad09226663b267369859b",
+    "compiledSignedOrNotarizedAgain": false
+  },
+  "QA6": {
+    "baselineRequests": 2,
+    "activeRequests": 2,
+    "allReachedOwnOrigin": true,
+    "providerSuccessfulApplyCodePIDRunAndUUIDBound": true,
+    "twoUnknownOwnerFlowsMatchActiveIntervals": true,
+    "dynamicTokenParsed": true,
+    "dynamicGuestLookupSucceeded": true,
+    "requirementOSStatus": -67050,
+    "meaning": "code failed to satisfy specified code requirement(s)",
+    "staticOwnPinsPass": 2,
+    "staticCrossPinsRefuse": 2,
+    "normalHostExitVerified": false,
+    "cleanup": "ownfilter absent/readback;QA6activateddisabled;6ownPIDs/listenersgone;normalQuitmenu used",
+    "oldQA5": "terminated waiting uninstallonreboot;inactive",
+    "canonicalContainerInodeRetained": true
+  },
+  "QA5HistoricalControls": {
+    "newBootBaseline": {
+      "requests": 4,
+      "loaded200": 4,
+      "reason": "Boot changed monotonic clock epoch;oldbaseline preserved historically"
+    },
+    "active": {
+      "requests": 4,
+      "loaded200": 4,
+      "AReachedOriginIPv4": true,
+      "AReachedOriginIPv6": true,
+      "providerSuccessfulApply": true,
+      "providerCodePIDRunBound": true,
+      "unknownOwnerAllowEvents": 4
+    }
+  },
+  "QA5LaunchServicesFollowUp": {
+    "status": "Two new headed A/B IPv4 requests completed with sameQA5 and actual applied provider:both loaded200;two unknown-owner allow events;FAIL",
+    "hypothesis": "LaunchServices did not resolve the observed attribution failure. It does not prove which token/guest/requirement gate failed.",
+    "officialBasis": "https://developer.apple.com/videos/play/wwdc2023/10266/",
+    "preparedNext": "No same-byte replay. Qualify stage diagnostics on a separately versioned candidate before deciding ownership correction.",
+    "networkChangesInFollowUp": true,
+    "newCompileOnly": "Explicit QA Quit menu routes through existing applicationShouldTerminate fence;not native verified",
+    "exitStatusBoundary": "open -W returns launcher status,not independently measured app exit status. Earlier baseline proves reachability and observed host termination only. Prepared driver now records launcherExitCode separately,hostExitCode:null and normalHostExitVerified:false;no full qualification from that field.",
+    "readOnlyResponsibilityProbe": "Two own-host sample captures succeeded but neither exposed Responsible metadata. No network-flow identity inferred;no additional profiler/admin attempt planned.",
+    "normalHostExitVerified": false,
+    "cleanup": "Ownfilter absent by GUI readback;QA5 activateddisabled;ownprovider/controller/hosts/listeners gone"
+  },
+  "QA7Preparation": {
+    "status": "compiled;not native qualified",
+    "internalBuild": 7,
+    "change": "Fixed expected-clause OSStatus diagnostics after both full A/B checks reject;no ownership predicate change",
+    "compileSeconds": 3.6047,
+    "swiftPureReplacementTests": 2,
+    "pythonPackagingTests": 2,
+    "maxDiagnosticMessageBytes": 395,
+    "actualIdentityExported": false,
+    "newRights": false,
+    "newCertificate": false,
+    "notarized": true,
+    "installed": true,
+    "nativeExecuted": true,
+    "signed": true,
+    "archiveSHA256": "b6979cb7730d715cab58ada2679b153cea7c084dcf7d547a2fc07ae086919fdc",
+    "archiveBytes": 761545,
+    "sourceHEAD": "b6e3f39d9b781a5bd6d4f0a6707064d7bc32524d",
+    "strictSignature": "PASS",
+    "archiveCoreFiles": 14,
+    "ownedLoopbackFilterIncluded": true,
+    "providerClasses": ["NEAppProxyProvider", "NEFilterDataProvider"]
+  },
+  "QA6Historical": {
+    "candidate": {
+      "internalBuild": 6,
+      "signedArchiveSHA256": "5daf61cce16a6cf01d6fa25a236fe3e1552c776d1cbdf2e3c94239a616423b04",
+      "sourceHEAD": "27e38cefde7aa3659b7b7c8bdad42cc2c6044bca",
+      "notarization": "Accepted",
+      "stapleAndGatekeeper": "PASS",
+      "newCertificate": false,
+      "newRights": false
+    },
+    "result": {
+      "baselineRequests": 2,
+      "activeRequests": 2,
+      "allReachedOwnOrigin": true,
+      "providerSuccessfulApplyCodePIDRunAndUUIDBound": true,
+      "twoUnknownOwnerFlowsMatchActiveIntervals": true,
+      "dynamicTokenParsed": true,
+      "dynamicGuestLookupSucceeded": true,
+      "requirementOSStatus": -67050,
+      "meaning": "code failed to satisfy specified code requirement(s)",
+      "staticOwnPinsPass": 2,
+      "staticCrossPinsRefuse": 2,
+      "normalHostExitVerified": false,
+      "cleanup": "ownfilter absent/readback;QA6activateddisabled;6ownPIDs/listenersgone;normalQuitmenu used",
+      "oldQA5": "terminated waiting uninstallonreboot;inactive",
+      "canonicalContainerInodeRetained": true
+    }
+  },
+  "QA7": {
+    "baselineRequests": 2,
+    "activeRequests": 2,
+    "bothActiveReachedOrigin": true,
+    "providerApplyPIDCodeUUIDRunAndIntervalsBound": true,
+    "clauseChecksPerPin": 7,
+    "expectedClauseRows": [
+      {
+        "role": "B",
+        "host": {
+          "full": -67050,
+          "integrity": 0,
+          "apple": 0,
+          "developer-id": -67050,
+          "team": -67050,
+          "identifier": -67050,
+          "cdhash": -67050
+        },
+        "control": {
+          "full": -67050,
+          "integrity": 0,
+          "apple": 0,
+          "developer-id": -67050,
+          "team": -67050,
+          "identifier": -67050,
+          "cdhash": -67050
+        },
+        "providerPIDCodeAndUUIDMatched": true
+      },
+      {
+        "role": "A",
+        "host": {
+          "full": -67050,
+          "integrity": 0,
+          "apple": 0,
+          "developer-id": -67050,
+          "team": -67050,
+          "identifier": -67050,
+          "cdhash": -67050
+        },
+        "control": {
+          "full": -67050,
+          "integrity": 0,
+          "apple": 0,
+          "developer-id": -67050,
+          "team": -67050,
+          "identifier": -67050,
+          "cdhash": -67050
+        },
+        "providerPIDCodeAndUUIDMatched": true
+      }
+    ],
+    "actualGuestIdentityExported": false,
+    "normalHostExitVerified": false,
+    "ownFilterAbsentReadback": true,
+    "QA7KernelState": "activated disabled",
+    "ownPIDsObservedGone": 6,
+    "ownListeners": 0,
+    "TailscaleOBSUnchanged": true,
+    "canonicalContainerInodeRetained": true,
+    "limitations": [
+      "Original-app identity and confinement not established",
+      "Provider-unavailable matrix not attempted after failed attribution",
+      "Settings by-application sheet showed misleading off;by-category actual on disabled and kernel state verified",
+      "First no-info journal capture empty;only collector fixed",
+      "Report wrapper requested wrong key;only offline correction"
+    ],
+    "providerAttribution": "The owner-clause rows and Direct reaches are from the supplemental NEFilterDataProvider path, whose unknown-owner branch allows the scoped diagnostic flow. QA7 also packaged an NEAppProxyProvider that returns false for captured flows, but the retained native result does not show it captured these requests.",
+    "appProxyCaptureOfMeasuredRequests": "not established"
+  }
+}

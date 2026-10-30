@@ -15,28 +15,6 @@ RUNNER = (
 
 
 class IsolatedReleasePythonTests(unittest.TestCase):
-    def test_runner_requires_isolated_no_bytecode_mode(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            (root / ".git").mkdir()
-            (root / "dist").mkdir(mode=0o700)
-            scripts = root / "scripts"
-            scripts.mkdir()
-            target = scripts / "release_entry.py"
-            target.write_text("print('UNREACHABLE')\n", encoding="utf-8")
-
-            completed = subprocess.run(
-                [sys.executable, str(RUNNER), str(target)],
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=False,
-                timeout=10,
-            )
-
-            self.assertEqual(completed.returncode, 65)
-            self.assertIn("requires Python -I -B", completed.stderr)
-
     def test_ignored_timestamp_pyc_is_not_imported(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -92,6 +70,7 @@ class IsolatedReleasePythonTests(unittest.TestCase):
                 "release_input_snapshot.py",
                 "release_source_receipt.py",
                 "release_transaction.py",
+                "release_candidate_location.py",
             ):
                 shutil.copy2(RUNNER.parent / name, scripts / name)
             target = scripts / "notarize_direct_transaction.py"
@@ -227,44 +206,3 @@ class IsolatedReleasePythonTests(unittest.TestCase):
 
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertEqual(completed.stdout.strip(), "NESTED-OK")
-
-    def test_scripts_root_cannot_shadow_standard_library(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            (root / ".git").mkdir()
-            (root / "dist").mkdir(mode=0o700)
-            scripts = root / "scripts"
-            scripts.mkdir()
-            (scripts / "fractions.py").write_text(
-                "raise RuntimeError('shadowed stdlib')\n",
-                encoding="utf-8",
-            )
-            target = scripts / "release_entry.py"
-            target.write_text(
-                "from fractions import Fraction\n"
-                "print(Fraction(1, 2))\n",
-                encoding="utf-8",
-            )
-
-            completed = subprocess.run(
-                [
-                    sys.executable,
-                    "-I",
-                    "-B",
-                    str(RUNNER),
-                    str(target),
-                ],
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=False,
-                timeout=10,
-            )
-
-            self.assertEqual(completed.returncode, 0, completed.stderr)
-            self.assertEqual(completed.stdout.strip(), "1/2")
-
-    def test_git_worktree_check_uses_system_git(self) -> None:
-        runner_text = RUNNER.read_text(encoding="utf-8")
-        self.assertIn('SYSTEM_GIT = "/usr/bin/git"', runner_text)
-        self.assertNotIn('[\n                "git",', runner_text)

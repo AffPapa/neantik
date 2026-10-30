@@ -1,0 +1,557 @@
+{
+  "actions": {
+    "build": false,
+    "package": false,
+    "install": false,
+    "signOrNotarize": false,
+    "publish": false,
+    "worksheetChanged": false
+  },
+  "assetRows": [
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2017-06-06T08:10:39Z",
+      "originCommit": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Airplay-fullscreen.svg",
+      "runtimeSHA256": "a205eeab51428db7ebd02bcca10371d81d118e0f6b5d53476f034bc0f5ab32ee",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Airplay-fullscreen.svg",
+      "sourceSHA256": "a205eeab51428db7ebd02bcca10371d81d118e0f6b5d53476f034bc0f5ab32ee"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2017-06-06T08:10:39Z",
+      "originCommit": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Airplay.svg",
+      "runtimeSHA256": "01a3e76dd4c7ef1cf3670df846c56e9f95a3e3daf860af3df4bf5f5d10701a40",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Airplay.svg",
+      "sourceSHA256": "01a3e76dd4c7ef1cf3670df846c56e9f95a3e3daf860af3df4bf5f5d10701a40"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2022-06-27T09:13:33Z",
+      "originCommit": "f3f693605e2361d756076e47b231222c5223705b",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Ellipsis.svg",
+      "runtimeSHA256": "994400892d32ce6f86c1c5907d680c3f552c3e0a76e7715a5d1cee97efee23f4",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Ellipsis.svg",
+      "sourceSHA256": "994400892d32ce6f86c1c5907d680c3f552c3e0a76e7715a5d1cee97efee23f4"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2017-06-06T08:10:39Z",
+      "originCommit": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/EnterFullscreen.svg",
+      "runtimeSHA256": "585fbe6f89a5d7e3a83c9dc6b0cf2d96fcdb71dec4fb4844088452d0e2eba327",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/EnterFullscreen.svg",
+      "sourceSHA256": "585fbe6f89a5d7e3a83c9dc6b0cf2d96fcdb71dec4fb4844088452d0e2eba327"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2017-06-06T08:10:39Z",
+      "originCommit": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/ExitFullscreen.svg",
+      "runtimeSHA256": "389cf6968410375531876045d87f6d01554ce7bb100854eff3b85b428194e19e",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/ExitFullscreen.svg",
+      "sourceSHA256": "389cf6968410375531876045d87f6d01554ce7bb100854eff3b85b428194e19e"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2017-06-06T08:10:39Z",
+      "originCommit": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Forward.svg",
+      "runtimeSHA256": "e7796fe2caf6a95c24938e77b1a7bc8e0511841566bad00852fef9d6caa364f2",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Forward.svg",
+      "sourceSHA256": "e7796fe2caf6a95c24938e77b1a7bc8e0511841566bad00852fef9d6caa364f2"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2017-06-06T08:10:39Z",
+      "originCommit": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/MediaSelector-fullscreen.svg",
+      "runtimeSHA256": "8ce86ddc35d989ee22ea8fa5b06d6543c34fd6e4c4ad8ad38f8162e1bf38c426",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/MediaSelector-fullscreen.svg",
+      "sourceSHA256": "8ce86ddc35d989ee22ea8fa5b06d6543c34fd6e4c4ad8ad38f8162e1bf38c426"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2017-06-06T08:10:39Z",
+      "originCommit": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/MediaSelector.svg",
+      "runtimeSHA256": "52eae82ea5ba789c9cacebe4a859900a7603dc244227c69c37a2bd0959d451a6",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/MediaSelector.svg",
+      "sourceSHA256": "52eae82ea5ba789c9cacebe4a859900a7603dc244227c69c37a2bd0959d451a6"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Devin Rousso",
+      "date": "2021-02-17T17:32:12Z",
+      "originCommit": "98e595bc7cc48896c064a0fc3066b93fde0e009e",
+      "reviewer": "Eric Carlson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Overflow.svg",
+      "runtimeSHA256": "1e224e0e0c03a7ead095b3bbbff1fcda2d48fc84905db3ceab35ae2be5e2a4cb",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Overflow.svg",
+      "sourceSHA256": "1e224e0e0c03a7ead095b3bbbff1fcda2d48fc84905db3ceab35ae2be5e2a4cb"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2017-06-06T08:10:39Z",
+      "originCommit": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Pause.svg",
+      "runtimeSHA256": "b84c8b189b9c215873c3047f521f41d7f39a4dc2d80b5c314448b5aec3d5bbca",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Pause.svg",
+      "sourceSHA256": "b84c8b189b9c215873c3047f521f41d7f39a4dc2d80b5c314448b5aec3d5bbca"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2017-06-06T08:10:39Z",
+      "originCommit": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/PipIn-fullscreen.svg",
+      "runtimeSHA256": "92d244cf4e1b6944935495824546fe312fcbcd6f64f2fc5a40f6de79cdb21f8c",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/PipIn-fullscreen.svg",
+      "sourceSHA256": "92d244cf4e1b6944935495824546fe312fcbcd6f64f2fc5a40f6de79cdb21f8c"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2017-06-06T08:10:39Z",
+      "originCommit": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/PipIn.svg",
+      "runtimeSHA256": "177e90824b6d206dd713c3d864ffa5c02a9d4aa8513eefe78c7e0a5a90c6d9bc",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/PipIn.svg",
+      "sourceSHA256": "177e90824b6d206dd713c3d864ffa5c02a9d4aa8513eefe78c7e0a5a90c6d9bc"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2017-06-06T08:10:39Z",
+      "originCommit": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Play.svg",
+      "runtimeSHA256": "0c3f0910bde6fa119539e587e2d6dd44e6e4f62cc1267b5348f4ccaa2a70d755",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Play.svg",
+      "sourceSHA256": "0c3f0910bde6fa119539e587e2d6dd44e6e4f62cc1267b5348f4ccaa2a70d755"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2017-06-06T08:10:39Z",
+      "originCommit": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Rewind.svg",
+      "runtimeSHA256": "5e3c4d342b9adffcf22718cd7aedc6b05d6ee12f0d1a571026f66eb35e9f092a",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Rewind.svg",
+      "sourceSHA256": "5e3c4d342b9adffcf22718cd7aedc6b05d6ee12f0d1a571026f66eb35e9f092a"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Devin Rousso",
+      "date": "2022-04-13T03:15:43Z",
+      "originCommit": "1a7ae37390e4a126e0fc6064888efa4a4a106d7c",
+      "reviewer": "Eric Carlson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipBack10.svg",
+      "runtimeSHA256": "48237b2391c45965c8d3470a759b35cd5d1822c68c08c52ea4304d39dea99ebd",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipBack10.svg",
+      "sourceSHA256": "48237b2391c45965c8d3470a759b35cd5d1822c68c08c52ea4304d39dea99ebd"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2017-06-06T08:10:39Z",
+      "originCommit": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipBack15.svg",
+      "runtimeSHA256": "3cc8c5dafe25acc9b63350f4f379ff57e0bf6983f37e05eaecc9bb7e70099a69",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipBack15.svg",
+      "sourceSHA256": "3cc8c5dafe25acc9b63350f4f379ff57e0bf6983f37e05eaecc9bb7e70099a69"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Devin Rousso",
+      "date": "2022-04-13T03:15:43Z",
+      "originCommit": "1a7ae37390e4a126e0fc6064888efa4a4a106d7c",
+      "reviewer": "Eric Carlson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipForward10.svg",
+      "runtimeSHA256": "d098c6c9cacecc609bc7abead553cdb7e7ccadfdd15ff8a0f804f3f4dc1dbedc",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipForward10.svg",
+      "sourceSHA256": "d098c6c9cacecc609bc7abead553cdb7e7ccadfdd15ff8a0f804f3f4dc1dbedc"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2017-06-06T08:10:39Z",
+      "originCommit": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipForward15.svg",
+      "runtimeSHA256": "38304441d6a259c755e2a40110dd9fdd82ab9381d108df5f8b7b311268c130f3",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipForward15.svg",
+      "sourceSHA256": "38304441d6a259c755e2a40110dd9fdd82ab9381d108df5f8b7b311268c130f3"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Devin Rousso",
+      "date": "2021-02-04T18:01:36Z",
+      "originCommit": "b8a7d1c6cd1c287dad2acd67d2a702f0ac8c896b",
+      "reviewer": "Eric Carlson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume0-RTL.svg",
+      "runtimeSHA256": "12fc441e9a16a6255f8fbad191782f258a81c0c8c58f19bd081f4ab18683ac24",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume0-RTL.svg",
+      "sourceSHA256": "12fc441e9a16a6255f8fbad191782f258a81c0c8c58f19bd081f4ab18683ac24"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Devin Rousso",
+      "date": "2021-02-04T18:01:36Z",
+      "originCommit": "b8a7d1c6cd1c287dad2acd67d2a702f0ac8c896b",
+      "reviewer": "Eric Carlson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume0.svg",
+      "runtimeSHA256": "fef1af73785a6209cd112e012bdc21390bbb24ab315c26716d8b8b7bc3e497e3",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume0.svg",
+      "sourceSHA256": "fef1af73785a6209cd112e012bdc21390bbb24ab315c26716d8b8b7bc3e497e3"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Devin Rousso",
+      "date": "2021-02-04T18:01:36Z",
+      "originCommit": "b8a7d1c6cd1c287dad2acd67d2a702f0ac8c896b",
+      "reviewer": "Eric Carlson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume1-RTL.svg",
+      "runtimeSHA256": "985be2fd9f1d308310dfc14e54ccb6b0a088dbabb2372cd3a9bddfd4a9e28000",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume1-RTL.svg",
+      "sourceSHA256": "985be2fd9f1d308310dfc14e54ccb6b0a088dbabb2372cd3a9bddfd4a9e28000"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Devin Rousso",
+      "date": "2021-02-04T18:01:36Z",
+      "originCommit": "b8a7d1c6cd1c287dad2acd67d2a702f0ac8c896b",
+      "reviewer": "Eric Carlson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume1.svg",
+      "runtimeSHA256": "04086b14f4b5a9fd2bb25a2d7198bf372887e8d134ec6d3bf03043a1bf101bcc",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume1.svg",
+      "sourceSHA256": "04086b14f4b5a9fd2bb25a2d7198bf372887e8d134ec6d3bf03043a1bf101bcc"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Devin Rousso",
+      "date": "2021-02-04T18:01:36Z",
+      "originCommit": "b8a7d1c6cd1c287dad2acd67d2a702f0ac8c896b",
+      "reviewer": "Eric Carlson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume2-RTL.svg",
+      "runtimeSHA256": "8a13ad7dfea2226665a1ba20e7e1a3f8a10152f3723533544532066f176eab40",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume2-RTL.svg",
+      "sourceSHA256": "8a13ad7dfea2226665a1ba20e7e1a3f8a10152f3723533544532066f176eab40"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Devin Rousso",
+      "date": "2021-02-04T18:01:36Z",
+      "originCommit": "b8a7d1c6cd1c287dad2acd67d2a702f0ac8c896b",
+      "reviewer": "Eric Carlson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume2.svg",
+      "runtimeSHA256": "67b934fa97245e3a72d44ad8fd1faa5333f5cbdb345b1924a19c069df01348eb",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume2.svg",
+      "sourceSHA256": "67b934fa97245e3a72d44ad8fd1faa5333f5cbdb345b1924a19c069df01348eb"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Devin Rousso",
+      "date": "2021-02-04T18:01:36Z",
+      "originCommit": "b8a7d1c6cd1c287dad2acd67d2a702f0ac8c896b",
+      "reviewer": "Eric Carlson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume3-RTL.svg",
+      "runtimeSHA256": "c793810d2462566c8ba0aed3aa458ba4525b75264a95fe9fbee81bae897f270c",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume3-RTL.svg",
+      "sourceSHA256": "c793810d2462566c8ba0aed3aa458ba4525b75264a95fe9fbee81bae897f270c"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Devin Rousso",
+      "date": "2021-02-04T18:01:36Z",
+      "originCommit": "b8a7d1c6cd1c287dad2acd67d2a702f0ac8c896b",
+      "reviewer": "Eric Carlson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume3.svg",
+      "runtimeSHA256": "7eb427a1ff559df9053482e721c2af6af6a1c5b24de4658ca4b2ed37c07e0519",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume3.svg",
+      "sourceSHA256": "7eb427a1ff559df9053482e721c2af6af6a1c5b24de4658ca4b2ed37c07e0519"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Devin Rousso",
+      "date": "2021-02-04T18:01:36Z",
+      "originCommit": "b8a7d1c6cd1c287dad2acd67d2a702f0ac8c896b",
+      "reviewer": "Eric Carlson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/VolumeMuted-RTL.svg",
+      "runtimeSHA256": "820a216222f8cab50166815392a372ccae4950624da5fddb3d63f0da0747dc25",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/VolumeMuted-RTL.svg",
+      "sourceSHA256": "820a216222f8cab50166815392a372ccae4950624da5fddb3d63f0da0747dc25"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Devin Rousso",
+      "date": "2021-02-04T18:01:36Z",
+      "originCommit": "b8a7d1c6cd1c287dad2acd67d2a702f0ac8c896b",
+      "reviewer": "Eric Carlson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/VolumeMuted.svg",
+      "runtimeSHA256": "51d4758d87c22dfac3f2f9e6785131d7d31b75355fff33c90dab512dc0578431",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/VolumeMuted.svg",
+      "sourceSHA256": "51d4758d87c22dfac3f2f9e6785131d7d31b75355fff33c90dab512dc0578431"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2021-09-24T18:44:03Z",
+      "originCommit": "da5583e4a852c004475db30a3ec5493c7f0c1992",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/X.svg",
+      "runtimeSHA256": "cf45cbee32f642c830729dd3bb2b182ceef89c8eb33e7e90ccec446dda67e007",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/X.svg",
+      "sourceSHA256": "cf45cbee32f642c830729dd3bb2b182ceef89c8eb33e7e90ccec446dda67e007"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2016-10-10T21:17:47Z",
+      "originCommit": "a6cdb30ac1ecc0f5f58f18af509e415f9d72d204",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/airplay-placard@1x.png",
+      "runtimeSHA256": "66f9a92669b95249589b3c0f41ffaf0dd6a0f2b94f39977a09fbe4c168062acc",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/airplay-placard@1x.png",
+      "sourceSHA256": "66f9a92669b95249589b3c0f41ffaf0dd6a0f2b94f39977a09fbe4c168062acc"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2016-10-10T21:17:47Z",
+      "originCommit": "a6cdb30ac1ecc0f5f58f18af509e415f9d72d204",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/airplay-placard@2x.png",
+      "runtimeSHA256": "027c770c430b673f300b38f11fd6fee49066b8f260b08910344b285a72c4c4e8",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/airplay-placard@2x.png",
+      "sourceSHA256": "027c770c430b673f300b38f11fd6fee49066b8f260b08910344b285a72c4c4e8"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2016-11-30T03:05:55Z",
+      "originCommit": "61289d318b157c1cca8faba9652e4f923fc09c1b",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/invalid-placard@1x.png",
+      "runtimeSHA256": "38c8818439eea65a351b0173a3bd9680b9222575b69db8e31badf5869bf3ac58",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/invalid-placard@1x.png",
+      "sourceSHA256": "38c8818439eea65a351b0173a3bd9680b9222575b69db8e31badf5869bf3ac58"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2016-11-30T03:05:55Z",
+      "originCommit": "61289d318b157c1cca8faba9652e4f923fc09c1b",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/invalid-placard@2x.png",
+      "runtimeSHA256": "5350e4005d0a71c7fa875084050bef398f44c3f44df9ae724b4b44dfe1341be7",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/invalid-placard@2x.png",
+      "sourceSHA256": "5350e4005d0a71c7fa875084050bef398f44c3f44df9ae724b4b44dfe1341be7"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2016-10-10T21:17:47Z",
+      "originCommit": "a6cdb30ac1ecc0f5f58f18af509e415f9d72d204",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/pip-placard@1x.png",
+      "runtimeSHA256": "7c1767b84a7c2931be8c902ec07c7d27614a0a2bc30de47a238fda02abbaff1a",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/pip-placard@1x.png",
+      "sourceSHA256": "7c1767b84a7c2931be8c902ec07c7d27614a0a2bc30de47a238fda02abbaff1a"
+    },
+    {
+      "addedDiffContainsCopyrightOrLicenseText": false,
+      "author": "Antoine Quint",
+      "date": "2016-10-10T21:17:47Z",
+      "originCommit": "a6cdb30ac1ecc0f5f58f18af509e415f9d72d204",
+      "reviewer": "Dean Jackson",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/pip-placard@2x.png",
+      "runtimeSHA256": "c98db6839c47362eb45bcea0a516566169b7c2d3e2b4429a2f803b663ae8761d",
+      "sourceEqualsRuntimeBytes": true,
+      "sourcePath": "Source/WebCore/Modules/modern-media-controls/images/macOS/pip-placard@2x.png",
+      "sourceSHA256": "c98db6839c47362eb45bcea0a516566169b7c2d3e2b4429a2f803b663ae8761d"
+    }
+  ],
+  "bindings": {
+    "commitDetails": [
+      {
+        "addedAssetCount": 1,
+        "apiResponseSHA256": "8effa0ed98f080a0dfe39eac634fa269636a5931603e0c2d4930ffba24151693",
+        "author": "Antoine Quint",
+        "date": "2022-06-27T09:13:33Z",
+        "reviewer": "Dean Jackson",
+        "sha": "f3f693605e2361d756076e47b231222c5223705b",
+        "subject": "[media-controls] add a plain variant of the overflow icon"
+      },
+      {
+        "addedAssetCount": 2,
+        "apiResponseSHA256": "7ee494687937a2be7faa334e7e92796beba2e2df8a9136f7deb7a6cbc61ef152",
+        "author": "Devin Rousso",
+        "date": "2022-04-13T03:15:43Z",
+        "reviewer": "Eric Carlson",
+        "sha": "1a7ae37390e4a126e0fc6064888efa4a4a106d7c",
+        "subject": "[Modern Media Controls] allow skipping by durations other than 15s"
+      },
+      {
+        "addedAssetCount": 10,
+        "apiResponseSHA256": "7ecb351677ba399cdbe16975f73e3f6bf687d2b5150f30a2145c7c12d5fcc591",
+        "author": "Devin Rousso",
+        "date": "2021-02-04T18:01:36Z",
+        "reviewer": "Eric Carlson",
+        "sha": "b8a7d1c6cd1c287dad2acd67d2a702f0ac8c896b",
+        "subject": "Add intermediate volume icon states between \"mute\" and \"max\""
+      },
+      {
+        "addedAssetCount": 1,
+        "apiResponseSHA256": "945388697c4f28036622bc31b914c4df753edca4f781160f2c6a7306c8094fc7",
+        "author": "Antoine Quint",
+        "date": "2021-09-24T18:44:03Z",
+        "reviewer": "Dean Jackson",
+        "sha": "da5583e4a852c004475db30a3ec5493c7f0c1992",
+        "subject": "[Media Controls] Allow for a close button"
+      },
+      {
+        "addedAssetCount": 4,
+        "apiResponseSHA256": "f8cc7e97fa79f47e3f8d824588dc59ceafd2833b17ad64859f3f3630b5efce91",
+        "author": "Antoine Quint",
+        "date": "2016-10-10T21:17:47Z",
+        "reviewer": "Dean Jackson",
+        "sha": "a6cdb30ac1ecc0f5f58f18af509e415f9d72d204",
+        "subject": "[Modern Media Controls] Placards"
+      },
+      {
+        "addedAssetCount": 2,
+        "apiResponseSHA256": "9f33d6d7acde44fa9191e8a27063fe234fbc16f326e58040bb49e52a74811c09",
+        "author": "Antoine Quint",
+        "date": "2016-11-30T03:05:55Z",
+        "reviewer": "Dean Jackson",
+        "sha": "61289d318b157c1cca8faba9652e4f923fc09c1b",
+        "subject": "[Modern Media Controls] Show an invalid placard when we fail to load a media file"
+      },
+      {
+        "addedAssetCount": 1,
+        "apiResponseSHA256": "8d9128410fc105a072d56a9af4170773cca13bb1d02ea85169f89b1e8fa5fd77",
+        "author": "Devin Rousso",
+        "date": "2021-02-17T17:32:12Z",
+        "reviewer": "Eric Carlson",
+        "sha": "98e595bc7cc48896c064a0fc3066b93fde0e009e",
+        "subject": "[iOS] Add an overflow button that's shown when controls are dropped so that it's still possible to trigger the dropped button's actions"
+      },
+      {
+        "addedAssetCount": 17,
+        "apiResponseSHA256": "7d9308c57347a626e60ee987359f4e14b5e04e499f933e95586c59615059ec72",
+        "author": "Antoine Quint",
+        "date": "2017-06-06T08:10:39Z",
+        "reviewer": "Dean Jackson",
+        "sha": "4c1de631a1cacc65a4651d6d183214d02f4e5765",
+        "subject": "Update media controls to match latest design specs"
+      }
+    ],
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "sourceOriginAuditV2SHA256": "ee23f85c9eee468f69611ca504dcd05b35ff50a364d02ba965402b46b17d6fcb",
+    "sourceRevision": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "upstreamRepository": "WebKit/WebKit",
+    "worksheetSHA256": "b5d00e7589a67102c62372a6feddc9e7d06a50c6d0c3b6fde047bd42b9954441"
+  },
+  "policyBoundary": {
+    "contributionGuide": "https://webkit.org/contributing-code/",
+    "decision": "Keep the 35 rows UNKNOWN pending a documented per-asset rights/attribution basis and package notice placement.",
+    "finding": "The upstream commit history identifies source contribution events, authors, and some reviewers, while source files and available add diffs have no per-file license or copyright line. Official policy describes BSD-2 for new code and source/script header guidance; it does not clearly settle license applicability and copyright attribution for these artwork resources.",
+    "licensingOverview": "https://docs.webkit.org/Other/Licensing.html"
+  },
+  "schemaVersion": 1,
+  "scope": "Read-only history reconciliation for all 35 V29 WebCore macOS modern-media-controls image resources. Each file is tied to a first observed add event in pinned WebKit Git history and matches the exact candidate resource bytes. Does not alter V29 decisions.",
+  "status": "EXACT_ORIGIN_HISTORY_CONFIRMED; OFFICIAL_WEBKIT_POLICY_REQUIRES_APPLICABLE_PROJECT_TERMS; PER_ASSET_TERMS_AND_COPYRIGHT_ATTRIBUTION_NOT_ESTABLISHED; UNKNOWN RETAINED",
+  "summary": {
+    "distinctOriginCommits": 8,
+    "licenseOrCopyrightTextInAddedDiffs": 0,
+    "perFileLicenseOrCopyrightLinesInSource": 0,
+    "resourceRows": 35,
+    "sourceToRuntimeExactMatches": 35,
+    "uniqueSourcePaths": 35,
+    "worksheetDecisionsChanged": 0,
+    "worksheetUnknownsPreserved": 78
+  },
+  "supersedesOriginReceipt": {
+    "path": "docs/evidence/neantik-v29-webcore-media-assets-origin-review-20261026.json",
+    "sha256": "c200d68d6b3ac1d880e8f3f947644a23e06046a950635ea992db2e0cbcf91273",
+    "scope": "origin mapping only"
+  },
+  "additionalOfficialEvidence": [
+    {
+      "url": "https://docs.webkit.org/Other/Licensing.html",
+      "finding": "The official WebKit policy says new contributed code uses BSD-2-Clause, while inherited/moved code may remain BSD or LGPL by file. It does not explicitly assign the code rule to image artwork."
+    },
+    {
+      "url": "https://webkit.org/terms-of-use/",
+      "finding": "WebKit states hosted Source Projects are governed by licenses accompanying or otherwise applicable to that project and that hosting grants no implied rights. This confirms repository presence alone is not a new asset-specific grant."
+    },
+    {
+      "url": "https://webkit.org/contributing-code/",
+      "finding": "The contribution guide directs new source code and scripts to contain license text; it does not specify a copyright or license election for these image resources."
+    }
+  ],
+  "maintainerDisposition": {
+    "applicableLicense": "UNKNOWN",
+    "requiredCopyrightAttribution": "UNKNOWN",
+    "reason": "All 35 assets are exact source copies with upstream origin commits and reviewers, but the official material located does not state whether BSD-2-Clause applies to these artwork/data files or identify a complete copyright notice. Do not elevate source origin or repository presence into a license grant.",
+    "nextAction": "Keep the 35 image resources out of a qualified release until row-level applicable terms and attribution are established, or replace them in the source with original NeAntik artwork carrying an explicit project license and verify the rebuilt media controls."
+  }
+}

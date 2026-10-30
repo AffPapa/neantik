@@ -1,0 +1,292 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T15:08:32Z",
+  "status": "PASS_JSC_GENERATOR_REPLAY;32_HEADERLESS_INPUT_LICENSE_DISPOSITIONS_OPEN",
+  "sourceBinding": {
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "webkitPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "runtimeImage": {
+      "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "sha256": "b18e6c8575354ec022779494daaa0afc48f5e75d412ed96cadef0edba41f6a56"
+    },
+    "generatorLineageReceipt": "/private/tmp/neantik-release-v1/docs/evidence/webkit-v20-jsc-generated-input-lineage-20261025.json",
+    "generatorLineageSHA256": "d50c37630550bd85d2685e9ef3046b19ecac83baca18a9503dde142c25e7a9cf"
+  },
+  "inputVerification": {
+    "sourceInputCount": 99,
+    "allPinnedInputHashesMatch": true,
+    "hashesRecheckedAgainst": "/private/tmp/neantik-v20-production-rebuild/WebKit"
+  },
+  "isolatedGeneratorReplay": {
+    "outputRoot": "/private/tmp/neantik-jsc-generator-replay-uvar6yex",
+    "runtimeCompileOrLink": false,
+    "appBuildOrInstall": false,
+    "generatedOutputs": [
+      {
+        "output": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/BytecodeDumperGenerated.cpp",
+        "sha256": "4f860a56589c3ece7615c453bc050fe68c23e7063b2a44df68e17e6bf2077035",
+        "bytes": 30117,
+        "matchesPinnedProductionOutput": true
+      },
+      {
+        "output": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/JSCBuiltins.cpp",
+        "sha256": "87844646c19a3e0890b3c06050155b34b4c67f739cb5e06e9c739135baf7aaf0",
+        "bytes": 724963,
+        "matchesPinnedProductionOutput": true
+      },
+      {
+        "output": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/inspector/InspectorBackendDispatchers.cpp",
+        "sha256": "054eece05924974bb2f17083ec1658e367b49be2467eb1c7c9884bcb7e7ef84f",
+        "bytes": 365673,
+        "matchesPinnedProductionOutput": true
+      },
+      {
+        "output": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/inspector/InspectorFrontendDispatchers.cpp",
+        "sha256": "6af6baf6fbfb5c19d23b89e5f23964ed8698dc6af1472e96e90a871cd4141781",
+        "bytes": 73200,
+        "matchesPinnedProductionOutput": true
+      },
+      {
+        "output": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/inspector/InspectorProtocolObjects.cpp",
+        "sha256": "1dff9b050b63a1cf2a9b122c6842f7441cfaba8ad32cadd945baa0d492770684",
+        "bytes": 94147,
+        "matchesPinnedProductionOutput": true
+      },
+      {
+        "output": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore/DerivedSources/yarr/YarrCanonicalizeUnicode.cpp",
+        "sha256": "f014f6e3a42b46da22d17832d688f39d07999bf0295bbee472fc039fcf66af22",
+        "bytes": 34016,
+        "matchesPinnedProductionOutput": true
+      }
+    ],
+    "combinedDomainsIntermediate": {
+      "sha256": "4de6eed199e21b4fa55262e7a932b99cd38ae5fa065dcf73ce0d5af55c54a2f3",
+      "bytes": 314366,
+      "matchesRetainedBuildIntermediate": true
+    }
+  },
+  "licenseReview": {
+    "officialSources": [
+      {
+        "url": "https://docs.webkit.org/Other/Licensing.html",
+        "finding": "New code contributed to WebKit uses BSD-2-Clause; existing code can be BSD or LGPL; changing a file license requires permission."
+      },
+      {
+        "url": "https://webkit.org/contributing-code/",
+        "finding": "New source and script files are expected to carry license text; preferred text is Source/WebCore/LICENSE-APPLE."
+      }
+    ],
+    "disposition": "The project-wide policy does not assign exact terms to these specific hash-bound headerless files. Do not infer BSD from path or absence of a marker. Preserve UNKNOWN pending row-specific provenance/maintainer terms. The separately identified Unicode CaseFolding input has its Unicode v3 notice integrated under the existing receipt.",
+    "unresolvedHeaderlessInputCount": 32,
+    "countsByGeneratorGroup": {
+      "bytecode": 2,
+      "jscBuiltins": 1,
+      "inspector": 29,
+      "yarr": 0
+    },
+    "files": [
+      {
+        "path": "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/wkbuiltins.py",
+        "sha256": "f5ca2aab8844b05fbd80de51e9d61d90d17a65803fb7352e5f24723df0954b6e",
+        "bytes": 704,
+        "generatorGroup": "jscBuiltins"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/generator/Wasm.rb",
+        "sha256": "03d1c91d1a100e954a3393b7d0ccf03a505c1008fe34714b9c67cbfc35e41769",
+        "bytes": 516,
+        "generatorGroup": "bytecode"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Animation.json",
+        "sha256": "b331e29ca59252aa44ff078f0322b1229064b754cd17f2c73a7a391fa7cf0a63",
+        "bytes": 8542,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Audit.json",
+        "sha256": "0ee790fa148880cc10b4e405d94da46125737646d245d04719cb23a68e9d6554",
+        "bytes": 2229,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Browser.json",
+        "sha256": "08b6f4170e6c225bade1fcefe391a1751a00b0bcad4dd7b8694c0b8aadad09a9",
+        "bytes": 1557,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/CPUProfiler.json",
+        "sha256": "ed857e8a4ff4243886b931b2b0624be6686dec24f1ecaa1f09c0ff37f34fe2b6",
+        "bytes": 2558,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/CSS.json",
+        "sha256": "939aee6d6b5a9de5cca7b7785d515c55511b8a90aed4b88b70472b37ea037362",
+        "bytes": 33245,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Canvas.json",
+        "sha256": "5220dfa2ed3665ec63f626157b58468ee041fcc597603e0f6b6dd109154e922a",
+        "bytes": 14345,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Console.json",
+        "sha256": "f511e25026b8cb316b4bc6ca3c81afe8bb0ea445bae89b2c7a121bb43c87ade2",
+        "bytes": 9087,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/DOM.json",
+        "sha256": "cda62440f05a5a6fa65fe4f5137f6663c77d5e248cba3199f6f0ed27df98b77a",
+        "bytes": 67754,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/DOMDebugger.json",
+        "sha256": "9ed434164cdf5cd045f8b3c6c53824b750b16c8bd6cc593b1bd1a082f72109ca",
+        "bytes": 4731,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/DOMStorage.json",
+        "sha256": "76a043bd79a991d041aa4c5c1f0ab1a515aa5ffa807ca56283cd69cb76d0a4cb",
+        "bytes": 3123,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Debugger.json",
+        "sha256": "0c90f53d52a3a0e5039d89d78d4c82b411ccb32a5417535b55b55707bef78d15",
+        "bytes": 28935,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/GenericTypes.json",
+        "sha256": "a914a4c6c7e46fa6ad647fdd9db513f53ea993a4517eb3720d4c79eb5fd375da",
+        "bytes": 805,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Heap.json",
+        "sha256": "5aac84c0f6eda17598ffc799068916ce68dd3fe9de4592074ab5e48e78335575",
+        "bytes": 4223,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/IndexedDB.json",
+        "sha256": "2939dd21d91f865f39e67e63733d6144b8296112b3b56b3cc342c2aeebaf2d6a",
+        "bytes": 7269,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Inspector.json",
+        "sha256": "05377ff0c0de268cd028d68e9fa909050759fa19ff82df010ba8ac6fa8a20482",
+        "bytes": 1039,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/LayerTree.json",
+        "sha256": "39b44ab88f4b5ce70af457dcd540d8238832334a60dc60ab6638b86d93227db8",
+        "bytes": 10277,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Memory.json",
+        "sha256": "b0c0e363d021d2e675b5b2197beca04217eb8e4784bc8ade28009ee0fc2b2146",
+        "bytes": 2556,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Network.json",
+        "sha256": "99d52095b3368c60e7b2ef79e7c0aaa36de17a8ab6c93e65a643a584db6b4588",
+        "bytes": 32341,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Page.json",
+        "sha256": "7b91fc694a847dca30edb2875273b55d8863bbf6e99c973cde1100752fd0da36",
+        "bytes": 19616,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Recording.json",
+        "sha256": "ff5065961136e62e024036d008b5c020a92aef48f6b597e1cf2815fb5289e97f",
+        "bytes": 3503,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Runtime.json",
+        "sha256": "5e0758337714ba89c3e1168d8c82bb800466ae752412c998e5b8eadcedd5ec1f",
+        "bytes": 32648,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/ScriptProfiler.json",
+        "sha256": "0f2dc16e486851f361b7d4640a75ccdcf503bca1130343846ef9fb023f49ce9e",
+        "bytes": 3748,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Security.json",
+        "sha256": "5dc8d92c0c1cd5ae50206925f1d582de10760281e2c9669a5c606a663cad3de0",
+        "bytes": 1869,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/ServiceWorker.json",
+        "sha256": "66e3b59ed76b17d1864027f81c7e07b599500f51a0f4d347980ade9911f9047a",
+        "bytes": 1027,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Storage.json",
+        "sha256": "9a9302688b29bcf8b85d82c05be89e82a0d5ab58e80a01dccab3c17fc60eb8ed",
+        "bytes": 7034,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Target.json",
+        "sha256": "b13176a366ed8d9ef4e70cd2f7235a0873cc188ce5d11fc079238fc10673f8c8",
+        "bytes": 3117,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Timeline.json",
+        "sha256": "d21e87755ca55d92a2f90a1714b69a8ad0ee0e429f70590848e358781aae44d0",
+        "bytes": 5034,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Worker.json",
+        "sha256": "5eda858703a9ef01a87783abc940f3829d8fa62272d07fdf37f49a72c1f13b7a",
+        "bytes": 1894,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/__init__.py",
+        "sha256": "faf73581039ead7a88fd926d4e45cc004ce8b883b38df5a7224ee8dd9d431b05",
+        "bytes": 1184,
+        "generatorGroup": "inspector"
+      },
+      {
+        "path": "WebKit/Source/JavaScriptCore/wasm/wasm.json",
+        "sha256": "4f0b9ec4475a3c88cb21e00a4e1d34b4346b6ece542ecf0701b7f6e0825f2aae",
+        "bytes": 88508,
+        "generatorGroup": "bytecode"
+      }
+    ],
+    "runtimeImageLicenseStatus": "UNKNOWN",
+    "releaseDecision": "No license row closed by this replay."
+  },
+  "sideEffectAudit": {
+    "scope": "A first command-selection attempt invoked the exact Inspector bindings generator against the retained build intermediate before a later isolated rerun hit a bad temporary-path reference. The generated build-tree outputs were rehashed: three compiled outputs match the pinned lineage hashes; four generated headers match the recorded production-link dependency closure hashes. InspectorBackendCommands.js has no pre-run digest in the retained link-closure receipt; its current regenerated hash is recorded in the isolated replay directory. No WebKit image, app binary, installed application, user profile or proxy data was touched. Do not treat that auxiliary file as a pre-run baseline."
+  },
+  "limitations": [
+    "This proves byte-identical JSC code generation from the pinned inputs on the recorded toolchain, not per-file license applicability.",
+    "No full WebKit compile/link, recipient replacement/re-sign/load, package qualification, notarization or publication was performed.",
+    "The 82 source/runtime applicability UNKNOWN decisions remain open."
+  ]
+}

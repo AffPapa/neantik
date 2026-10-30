@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-19T18:19:49.305862+00:00",
+  "status": "development-UDP-boundary-observations;latest-two-control-phase-PASS;not-shipping-qualified",
+  "productionWebKitProxyEnabled": false,
+  "publicAppRelease": "0.8.25(137)",
+  "upstreamDeclaredSource": {
+    "archiveRevision": "324120@main",
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "officialCommitURL": "https://commits.webkit.org/324120@main/json",
+    "binaryReproducibilityVerified": false
+  },
+  "runtimeReference": "webkit-standalone-bundle-development.json",
+  "profileAndTrustScope": "own nonpersistent stores,own TLS CA in QA process only;no user data,Keychain or global resolver change",
+  "sourceHardening": {
+    "networkProcessOnly": true,
+    "deniedMachEndpoints": [
+      "com.apple.dnssd.service",
+      "com.apple.system.opendirectoryd.libinfo"
+    ],
+    "DNSOnWireQualified": false
+  },
+  "observationsAcrossPhases": [
+    {
+      "case": "unconfined-direct-STUN-positive",
+      "passed": true,
+      "proxyIntentionallyCleared": false,
+      "stunRequests": 1,
+      "invalidPackets": 0,
+      "observation": {
+        "closed": true,
+        "timedOut": false,
+        "available": true,
+        "candidates": {
+          "srflx": 1,
+          "other": 0,
+          "host": 0,
+          "relay": 0,
+          "prflx": 0
+        },
+        "secureContext": true,
+        "offerCreated": true,
+        "errorCodes": [],
+        "gatheringComplete": false
+      }
+    },
+    {
+      "case": "restricted-proxy-STUN-denied",
+      "passed": false,
+      "proxyIntentionallyCleared": false,
+      "stunRequests": 0,
+      "invalidPackets": 0,
+      "observation": {
+        "closed": true,
+        "timedOut": false,
+        "available": true,
+        "candidates": {
+          "srflx": 0,
+          "other": 0,
+          "host": 0,
+          "relay": 0,
+          "prflx": 0
+        },
+        "errorCodes": [],
+        "offerCreated": true,
+        "secureContext": true,
+        "gatheringComplete": true
+      }
+    },
+    {
+      "case": "unconfined-missing-proxy-STUN-positive-control",
+      "passed": true,
+      "proxyIntentionallyCleared": true,
+      "actualObservationCase": "unconfined-missing-proxy-STUN-positive-control",
+      "stunRequests": 1,
+      "invalidPackets": 0,
+      "observation": {
+        "closed": true,
+        "timedOut": false,
+        "available": true,
+        "candidates": {
+          "srflx": 1,
+          "other": 0,
+          "host": 0,
+          "relay": 0,
+          "prflx": 0
+        },
+        "secureContext": true,
+        "offerCreated": true,
+        "errorCodes": [],
+        "gatheringComplete": false
+      }
+    },
+    {
+      "case": "restricted-missing-proxy-STUN-denied",
+      "passed": true,
+      "proxyIntentionallyCleared": true,
+      "actualObservationCase": "restricted-missing-proxy-STUN-denied",
+      "stunRequests": 0,
+      "invalidPackets": 0,
+      "observation": {
+        "closed": true,
+        "gatheringComplete": true,
+        "timedOut": false,
+        "available": true,
+        "candidates": {
+          "srflx": 0,
+          "other": 0,
+          "host": 0,
+          "relay": 0,
+          "prflx": 0
+        },
+        "errorCodes": [],
+        "secureContext": true,
+        "offerCreated": true
+      }
+    }
+  ],
+  "evidencePhases": [
+    {
+      "scope": "first Node/native resource contract",
+      "status": "FAIL-before-observation;original native NSError not retained",
+      "correction": "Node control confirms Promise expression versus undefined;void resource subsequently delivers real native receipts;no Host recompilation"
+    },
+    {
+      "scope": "full-ICE unconfined baseline",
+      "status": "FAIL",
+      "wireRequests": 4,
+      "srflxObserved": 1,
+      "timedOut": true,
+      "retroactivelyPassed": false
+    },
+    {
+      "scope": "target STUN positive and configured restricted observation",
+      "status": "FAIL",
+      "reason": "Positive STUN finished;restricted gathering actually completed with zero candidates/UDP but predicate unnecessarily required701",
+      "retroactivelyPassed": false
+    },
+    {
+      "scope": "remaining proxy-removal controls",
+      "status": "PASS",
+      "count": 2,
+      "signedBytesUnchangedFromPreviousPhase": true,
+      "sourceSnapshotHashMatches": true
+    }
+  ],
+  "acceptanceControls": {
+    "STUNWire": 3,
+    "contextAndTargetPredicates": 9,
+    "embeddedScriptReturnContract": "correct undefined return+old Promise negative control"
+  },
+  "restrictedOwnNetworkingMapped": true,
+  "cleanup": {
+    "hostsNormalExit": [],
+    "stunStopped": true,
+    "relayDrained": true,
+    "originDrained": true,
+    "ownHelpersAbsent": true,
+    "ephemeralKeysRemoved": true
+  },
+  "rawICEOrAddressesExported": false,
+  "sourceInputs": {
+    "Host.m": "34aec0b78c473b40232039344a0ca3fbe36bc94189acf4c1f2cf0ecd650322e1",
+    "TLSHost.m": "aca86f7374c542aeddf0984c18e18f97f037544c2c2fa53e19843556a44b8174",
+    "NetworkHost.m": "1f2f00a19788057dc634316878ed20ff8e598d43f63815cf8a0aa23ca6f4c951",
+    "network_observation.js": "5afc913b7886d2c2d3340be49b9e7cd92c4c69a67080098cbbf03227c4981f55"
+  },
+  "measuredFiles": {
+    "restrictedHostSHA256": "69982b79de76f74c8d2a6960fbe315afa5329b4cb318b21336c972ad1ac00c2a",
+    "unconfinedHostSHA256": "8abdad27049a063ccc5283407bcc9f18b61d4aa7eb844d8ed097a8cc3d682098",
+    "policySHA256": "72b30f4db14e168eb71a5b23deab4d89848b78c27e147f97e54beb73d2be3bf6",
+    "finalHarnessSHA256": "4487f2ec9de0b368fae4fbb05b95328389f21fb7bfa6564c2ad89d4f6054a668"
+  },
+  "limitations": [
+    "This combines development phases,not one final release-candidate matrix",
+    "Direct full ICE gathering timed out earlier;STUN-target response and peer closure do not prove full ICE negotiation or a real media/data call",
+    "Only own UDP4 STUN tested;IPv6,TURN/TCP/media/WebSocket remain open",
+    "Native proxy clearing is fault injection at the public store setter;no separate NetworkProcess setter-ack measurement",
+    "Two DNS delegation Mach routes denied in the owned resource;controlled DNS-on-wire,trust-service delegation and background route proof remain open",
+    "No manager/MCP/persistent profile integration or immutable multi-profile broker yet",
+    "macOS26.5 runtime,not timestamped/notarized or Gatekeeper-qualified for NeAntik release"
+  ]
+}

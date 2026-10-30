@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25",
+  "status": "internal-proof-reused;no-repeat-gate-recorded",
+  "candidate": {
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "evidence": {
+    "patchBuildLoadReconciliation": {
+      "path": "docs/evidence/webkit-modified-webcore-build-load-reconciliation-20261024.json",
+      "sha256": "5066012201c3a8672e9ef2d96c536ec68f9e888e872033c449c457fc02787b41",
+      "scope": "v20 patch reverse replay, 29 paths, fresh-source compile/link, modified image loaded by Dev build 138"
+    },
+    "headedLoad": {
+      "path": "docs/evidence/webkit-modified-webcore-load-qa-20261024.json",
+      "sha256": "58d9ecfc8e4f9ccfd85ed5f04a0b96da2db9732f00242ca3b4a068f548bf2c0a",
+      "candidateBuild": "138",
+      "notCandidate139": true
+    },
+    "markerFreeRebuild": {
+      "path": "docs/evidence/webkit-v20-production-marker-free-rebuild-20261025.json",
+      "sha256": "69fc8bdfdc89b99e44b1c713b8d4ff105c9a2197beff4649e26d16dd628b6409",
+      "status": "pass_marker_free_rebuild_only"
+    }
+  },
+  "sourceOfferDraft": {
+    "recipePath": "dist/private/source-offers/1.0.0-manager-955/WEBKIT_BUILD_RECIPE_V20_DRAFT.md",
+    "priorRecipeSHA256": "a657234e7c545ad925f92db33cd952e341c8c6f89bb84c66b859b988059d42db",
+    "currentRecipeSHA256": "3e95d8798f2c05158dd44ceae88610ca6e394bc3cd0d0b56e8854ef1d26de4f4",
+    "manifestPath": "dist/private/source-offers/1.0.0-manager-955/manifest.json",
+    "priorManifestSHA256": "5687601db32269237bc3cd5bd9e6f0a4f2229ab53abaec9e21c892d581d7c389",
+    "currentManifestSHA256": "25011b5dc42b98882f6668969bc90640aebdcf8385bc30e49b448c891dc2b332",
+    "components": 131,
+    "sourceOfferComponentsChanged": false
+  },
+  "decision": "Do not repeat the existing internal build/load proof. It does not prove candidate 139 production qualification or independent recipient relink.",
+  "releaseQualified": false
+}

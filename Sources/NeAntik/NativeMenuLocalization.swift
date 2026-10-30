@@ -15,7 +15,6 @@ enum NativeMenuLocalization {
         "Window": "Окно",
         "Help": "Справка",
         "Services": "Службы",
-        "Settings…": "Настройки…",
         "Services Settings…": "Настройки служб…",
         "Hide Others": "Скрыть остальные",
         "Show All": "Показать все",

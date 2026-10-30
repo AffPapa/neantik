@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T12:22:20.612604+00:00",
+  "status": "model-provenance-confirmed;license-applicability-UNKNOWN;no-build-or-package-change",
+  "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+  "sourceCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+  "inputEvidence": {
+    "path": "docs/evidence/webkit-v20-14-unassigned-resource-boundary-20261025.json",
+    "sha256": "9228c66099c780a48fc3c11cbd7f48eb9af0c255d16241a92196739eb939d862"
+  },
+  "models": [
+    {
+      "sourcePath": "Source/WebKit/Resources/ResourceLoadStatistics/corePrediction_model",
+      "sourceSHA256": "221555a2cdd2e957f18d478c4b9fd01f308c1613e6e10840cce924e5f543091a",
+      "runtimeRows": [
+        "WebKit.framework/Versions/A/Resources/corePrediction_model"
+      ],
+      "originCommit": "ed7cf4a8eb922eee21b1d1554b42163da2fb5072",
+      "originURL": "https://github.com/WebKit/WebKit/commit/ed7cf4a8eb922eee21b1d1554b42163da2fb5072",
+      "originFinding": "Added in 2017 Resource Load Statistics CorePrediction classifier commit; commit describes model but does not state a file-specific license.",
+      "buildFinding": "PlatformCocoa.cmake copies model into WebKit.framework Resources as an ALL target; classifier code loads corePrediction_model.",
+      "decision": "UNKNOWN"
+    },
+    {
+      "sourcePath": "Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+      "sourceSHA256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f",
+      "runtimeRows": [
+        "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/analytics/coremldata.bin",
+        "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/coremldata.bin",
+        "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/metadata.json"
+      ],
+      "originCommit": "9903df3c16330e59d8d2b35cf0e3e1c1e72b3443",
+      "originURL": "https://github.com/WebKit/WebKit/commit/9903df3c16330e59d8d2b35cf0e3e1c1e72b3443",
+      "buildFixCommit": "7d54cf9d99d270678870c1bcef0d49ddd428cc22",
+      "buildFixURL": "https://github.com/WebKit/WebKit/commit/7d54cf9d99d270678870c1bcef0d49ddd428cc22",
+      "originFinding": "June 2026 WebKit commit states model was upstreamed from WebKitAdditions for text extraction filtering; original license/rights of moved model are not stated in this commit.",
+      "buildFinding": "PlatformCocoa.cmake compiles model with coremlc into three mlmodelc files as an ALL target; TextExtractionFilter.mm looks for model in com.apple.WebKit bundle.",
+      "decision": "UNKNOWN"
+    }
+  ],
+  "officialPolicy": {
+    "licensing": "https://docs.webkit.org/Other/Licensing.html",
+    "terms": "https://webkit.org/terms-of-use/",
+    "finding": "WebKit says inherited code retains its original notice/license when moved and software project rights depend on applicable licenses. Neither page establishes file-specific rights for these model bytes."
+  },
+  "nextAction": "Obtain file-specific applicable terms for both models from accompanying source history/license evidence or remove/replace them in a new candidate with changed-runtime verification; preserve four UNKNOWN worksheet rows until that proof exists.",
+  "releaseGate": false
+}

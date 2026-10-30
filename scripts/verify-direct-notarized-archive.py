@@ -284,6 +284,21 @@ def verify_app(
     display = run_checked(["codesign", "--display", "--verbose=4", str(app)], runner=runner)
     parse_codesign_display(display, expected=expected)
     run_checked(["codesign", "--verify", "--deep", "--strict", "--verbose=2", str(app)], runner=runner)
+    # If an owned WebKit helper is present, verify its byte and CodeDirectory
+    # pins after the final nested signing pass. A later deep re-sign can change
+    # the helper executable while leaving the manager's sealed pin stale.
+    with (app / "Contents" / "Info.plist").open("rb") as file:
+        manager_info = plistlib.load(file)
+    owned_host = app / "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
+    if "NeAntikWebKitHostV1" in manager_info or owned_host.exists() or owned_host.is_symlink():
+        pin_verifier = Path(__file__).resolve().with_name("verify-webkit-host-pin.py")
+        run_checked([sys.executable, str(pin_verifier), str(app)], runner=runner)
+        notice_verifier = Path(__file__).resolve().with_name("webkit_runtime_notices.py")
+        runtime_frameworks = owned_host / "Contents/Frameworks"
+        run_checked([
+            sys.executable, str(notice_verifier), "--verify", "--app", str(app),
+            "--runtime-frameworks", str(runtime_frameworks),
+        ], runner=runner)
     run_policy_tool(
         ["xcrun", "stapler", "validate", str(app)],
         runner=runner,
@@ -293,6 +308,23 @@ def verify_app(
         ["spctl", "--assess", "--type", "execute", "--verbose=4", str(app)],
         runner=runner,
         allow_local_policy_tool_unavailable=allow_local_policy_tool_unavailable,
+    )
+
+
+def verify_public_artifact_privacy(
+    app: Path,
+    *,
+    project_root: Path,
+    runner=default_runner,
+) -> None:
+    verifier = project_root / "scripts" / "verify-public-artifact-privacy.py"
+    if not verifier.is_file() or verifier.is_symlink():
+        raise DirectNotarizedArchiveError(
+            "public artifact privacy verifier is missing or unsafe"
+        )
+    run_checked(
+        [sys.executable, str(verifier), str(app)],
+        runner=runner,
     )
 
 
@@ -315,7 +347,14 @@ def verify_archive(
     )
     assert_zip_has_no_finder_metadata(archive)
     with tempfile.TemporaryDirectory(prefix="nevision-notarized-verify-") as temporary:
-        app = extract_archive(archive, Path(temporary), runner=runner)
+        # macOS may return /var for its own temporary directories. Resolve only
+        # this freshly owned root; externally supplied paths remain strict.
+        app = extract_archive(archive, Path(temporary).resolve(), runner=runner)
+        verify_public_artifact_privacy(
+            app,
+            project_root=project_root,
+            runner=runner,
+        )
         verify_app(
             app,
             expected=expected,

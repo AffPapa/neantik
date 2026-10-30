@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "status": "bounded-CoreText-experiment-complete",
+  "scope": "one native probe compilation;three process-scoped original-font cases and three fresh cleanup observers;not a browser",
+  "warningException": "one explicit user-authorized experiment;consumed;no other native authorization",
+  "compiledProbeSHA256": "ffd11141b33fb098424efb5eb38e3f9709702797717f9178c26ff51a105e2587",
+  "probeSourceSHA256": "68da5268f61cc757fe9cd44b93ad3d05acab3840c5591f4e92142f83978a035a",
+  "policySourceSHA256": "4983e3753f65c27860673c9a7beb496dd633a2b32a0c9435f8da875ba6e8ec24",
+  "cases": [
+    {
+      "case": "data-unique",
+      "status": "registration-unavailable",
+      "completed": true,
+      "registrationErrors": 1,
+      "actualOwnedFaceSelected": false,
+      "selectedSourceDenied": false,
+      "unregisterAttempted": false,
+      "unregisterCompleted": false,
+      "unregisterErrors": 0,
+      "freshObserverOwnFaceExposed": false,
+      "fontSHA256": "f442b055b908db3c277bb603d0ad188c385e2050312b0ee6a6ae6512c3b266de"
+    },
+    {
+      "case": "data-family",
+      "status": "registration-unavailable",
+      "completed": true,
+      "registrationErrors": 1,
+      "actualOwnedFaceSelected": false,
+      "selectedSourceDenied": false,
+      "unregisterAttempted": false,
+      "unregisterCompleted": false,
+      "unregisterErrors": 0,
+      "freshObserverOwnFaceExposed": false,
+      "fontSHA256": "9932ad8299abfa1ab4fb565fd0bf3a211c2818678ff30cb8ac3355602ae27c56"
+    },
+    {
+      "case": "url-full-postscript",
+      "status": "native-registration-control-passed",
+      "completed": true,
+      "registrationErrors": 0,
+      "actualOwnedFaceSelected": true,
+      "selectedSourceDenied": true,
+      "unregisterAttempted": true,
+      "unregisterCompleted": true,
+      "unregisterErrors": 0,
+      "freshObserverOwnFaceExposed": false,
+      "fontSHA256": "c39b6ef98a25f2026b8f7ccbe7abe279eb1003bb9b842e86e9361125fea760e8"
+    }
+  ],
+  "inMemoryWitnessFeasibleHere": false,
+  "decision": "Use fixed pinned bundle resources for browser/renderer witness;do not implement descriptor-data registration as fallback",
+  "limitations": [
+    "No sandboxed renderer or headed browser ran",
+    "No Canvas/DOM drawing qualification in this experiment",
+    "Other OS/hardware conditions not measured",
+    "One exception does not authorize Chromium build or browser launch under warning"
+  ],
+  "realProfilesOrKeychainUsed": false,
+  "fontInstallationScope": "process only",
+  "actualBrowser": false,
+  "releaseQualified": false,
+  "capturedAt": "2026-10-15T19:37:48.476748+00:00"
+}

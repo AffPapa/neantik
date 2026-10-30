@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "id": "neantik-v170-build200-proxy-config-transition-diagnosis-20261027",
+  "observedAtLocal": "2026-10-27",
+  "status": "SOURCE_REGRESSION_CANDIDATE_IDENTIFIED; NOT_RUNTIME_ROOT_CAUSE",
+  "scope": "Read-only comparison of source-bound build-200 proxy configuration, the prior committed API shape, current contract tests and exact runtime evidence.",
+  "sourceBinding": {
+    "candidateId": "58bd32206a064a4ba40ae9668acaef00",
+    "inventorySHA256": "0efb298b53043fb7ee8b39e051cc642745890fcf3dabd6ed5dd41518c9d7f240",
+    "sourceSnapshotCommit": "02a2913057faaaecab1cc9be67519df884cbec5a",
+    "sourceSnapshotFactorySHA256": "f54be37abc58b5b4f45ce721acf2ed9e6ca2509722ce6221d6ff00f5b32e9593",
+    "managerSHA256": "dd1285055673ec08e19ee08e61e5dca84e0dfb96234c190677952546d56d04f7"
+  },
+  "finding": {
+    "priorCommittedFactory": "2dfccc39 configured the public Network.ProxyConfiguration API, with matchDomains=[] and excludedDomains=[].",
+    "candidateFactory": "The source bound into build-200 uses the Network C API nw_proxy_config_t, clears match domains, then adds the empty string as a domain suffix; it also configures credentials through the C API.",
+    "candidateComment": "Source itself calls this a candidate catch-all and says native matching remains unqualified.",
+    "contractTest": "Current unit test proves only that the API enumerates [\"\"]; it does not exercise WebKit host matching or a real request.",
+    "runtime": "Exact signed build-200 with Google and synthetic .invalid targets produced no observed upstream loopback connection; no browser DOM or child window was observed. Prior build-149 proxy PASS binds different manager bytes and does not prove build-200 behavior."
+  },
+  "assessment": "The empty-suffix selector/API transition is a concrete regression candidate consistent with the symptom, but available evidence cannot distinguish it from an early navigation or child-window failure. Do not claim it is the root cause or change the route solely on inference.",
+  "workflowBoundary": "Project AGENTS.md requires neantik-development/SKILL.md for substantive Swift/manager changes. Searched the instructed project and skill roots; the file is absent. No source or test files were edited in this diagnosis turn.",
+  "next": "Restore or locate the required development skill, then change the proxy-domain configuration to match the broad per-store contract and add a focused no-blank-suffix contract test. Run targeted tests and exact private package preflight. Native retest requires changed signed QA bytes and bounded navigation/window/broker counters; preserve secure timestamp policy.",
+  "publicMutation": false,
+  "releaseQualified": false
+}

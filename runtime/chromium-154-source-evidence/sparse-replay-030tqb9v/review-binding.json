@@ -1,0 +1,8 @@
+{
+  "reportSHA256": "0c15e5299b37e9fd61f1681b7ca14dc3d1f351f22aeaea8f96e74ad5eed10dbf",
+  "previousOffsetReviewSHA256": "478a4679a84afb4272c77b25c5dfe542af8364aabf00cbe14d5d72e27647de1e",
+  "sameReviewedOffsetHunks": true,
+  "all815PostimagesMatch": true,
+  "wholeTreeQualified": false,
+  "additionalWebUIReview": "TrustedHTML objects and sanitizers preserved; eager static-types policy import needs runtime CSP smoke; HTML wrapper18 tests passed."
+}

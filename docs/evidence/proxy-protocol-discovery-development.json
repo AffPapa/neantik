@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "status": "development-source-and-Dev-verified;exact-signed-candidate-pending",
+  "version": "0.8.23",
+  "build": 135,
+  "runtimeChanged": false,
+  "profileDataFormatChanged": false,
+  "scope": "explicit credential-free protocol discovery in Chromium profile editor;not route/auth/HTTPS validation",
+  "protocol": {
+    "requestOnlyOnClick": true,
+    "detectorInput": "host/port only",
+    "socksGreetingBytes": [
+      5,
+      2,
+      0,
+      2
+    ],
+    "httpTarget": "neantik-protocol-probe.invalid:443",
+    "httpEvidence": "407 plus well-formed Proxy-Authenticate only",
+    "unknownResponses": "HTTP200/TLS/ambiguous/malformed/oversized remain unknown",
+    "timeoutSeconds": 4,
+    "maximumResponseBytes": 4096,
+    "apply": "explicit same generation/endpoint only"
+  },
+  "tests": {
+    "fullSwift": {
+      "tests": 1673,
+      "suites": 200,
+      "result": "failed one existing5000-profile import performance budget",
+      "failures": 1,
+      "explicitSkipLogLines": 73
+    },
+    "focusedSwift": {
+      "tests": 82,
+      "suites": 6,
+      "result": "same one aggregate benchmark failure;all detector/editor controls passed"
+    },
+    "isolatedOriginalBenchmark": {
+      "result": "pass",
+      "elapsedSeconds": 1.5780919790267944,
+      "budgetSeconds": 5,
+      "thresholdChanged": false,
+      "sourceMethodChanged": false,
+      "fullFailuresRetained": true,
+      "limit": "aggregate-suite sensitivity; precise preceding-test influence not established"
+    },
+    "diagnosticFilesystemOnly": {
+      "directTransactionSeconds": 2.0348665,
+      "freshManagerPathSeconds": 1.605133958,
+      "productGuardsChanged": false
+    },
+    "fullPython": "stopped after11min;NOT PASS;unchanged runtime provenance family",
+    "relatedPython": {
+      "modules": 5,
+      "tests": 85,
+      "result": "pass"
+    },
+    "plannerControls": {
+      "tests": 30,
+      "result": "pass",
+      "unknownFallbackPreserved": true
+    },
+    "speechControls": {
+      "pythonTests": 2,
+      "javascriptTests": 17,
+      "result": "pass"
+    },
+    "inventoryAfterDiagnosticAddition": {
+      "tests": 11,
+      "result": "pass"
+    }
+  },
+  "actualDev": {
+    "pasteBeforeClickConnections": 0,
+    "socksFound": true,
+    "explicitApplyOnly": true,
+    "http407Found": true,
+    "http200Unknown": true,
+    "editedEndpointClearsOldResult": true,
+    "cancelClosesPeerBeforeFixtureCleanup": true,
+    "allReceivedFramesExpectedAndCredentialFree": true,
+    "noProfileAutoSave": true,
+    "staleHTTPParseSummaryFoundAndFixed": true,
+    "onlyChangedApplyCaseRepeatedAfterFix": true,
+    "ownProcessesAndConnectionsAfterExit": 0,
+    "inMemoryKeychain": true
+  },
+  "qualifications": {
+    "exactSigned135": false,
+    "AppleNotarization135": false,
+    "hosted135": false,
+    "site135": false
+  },
+  "limitations": [
+    "HTTPS and ambiguous no-auth HTTP require manual selection",
+    "Protocol detection is not authentication, internet reachability, GeoIP or Chromium route evidence",
+    "WebKit proxy remains disabled pending independent native gate",
+    "Stopped full Python and aggregate Swift performance failures are not relabelled PASS",
+    "Not full1.0 or universal anonymity qualification"
+  ],
+  "sourceSHA256": {
+    "Sources/NeAntik/ProxyProtocolDetector.swift": "1817c5c9aa49e57bea18a54fa3cbef32342d5ded1477015ce8c9509998eb24f8",
+    "Sources/NeAntik/ProfileEditorView.swift": "2e6e5c204f6005c9cc8de05ca9efdf1997e1c2c1aca85ef50682c61baa175338",
+    "Tests/NeAntikTests/ProxyProtocolDetectorTests.swift": "1f8afba59ff2323e314896cd530d34ea6b427eea91ca49cd49748912617ce6ad",
+    "scripts/plan-manager-checks.py": "0e55476c3af5ae09e4733d4c1f6c308d1e9d2015c6c2a9cafba4905c5054416e"
+  },
+  "releaseQualified": false
+}

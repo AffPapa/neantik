@@ -25,81 +25,69 @@ private final class RuntimeInspectionRecorder: @unchecked Sendable {
 }
 
 struct BrowserLaunchBuilderTests {
-    @Test
-    func returningWorkplaceRestoresTabsWithoutAnExtraBlankWindow() {
-        let data = URL(fileURLWithPath: "/tmp/workplace-a")
-        var profile = BrowserProfile(name: "Workplace A")
-        let first = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: data)
-        #expect(first.contains("--new-window"))
-        #expect(first.last == "about:blank")
-        profile.lastLaunchedAt = Date()
-        let returning = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: data)
-        #expect(returning.contains("--restore-last-session"))
-        #expect(!returning.contains("--new-window"))
-        #expect(!returning.contains("about:blank"))
-        #expect(returning.contains("--user-data-dir=/tmp/workplace-a"))
-        let explicit = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: data,
-            startURLOverride: URL(string: "https://example.com"))
-        #expect(!explicit.contains("--restore-last-session"))
-        #expect(explicit.last == "https://example.com")
-        let audit = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: data,
-            startURLOverride: URL(string: "http://127.0.0.1:32123/"),
-            purpose: .fingerprintAudit(httpLoopbackPort: 32123))
-        #expect(!audit.contains("--restore-last-session"))
-        #expect(audit.last == "http://127.0.0.1:32123/")
-        profile.startURL = "https://example.org"
-        let custom = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: data)
-        #expect(!custom.contains("--restore-last-session"))
-        #expect(custom.last == "https://example.org")
+    @Test func bareHostPortsWorkWithoutAllowingUnknownSchemesOrCredentials() {
+        for value in ["example.com:8443/path?x=1#part", "localhost:8080", "127.0.0.1:8080", "[::1]:8080/path", "[2001:db8::1]:443"] {
+            #expect(BrowserLaunchBuilder.validatedStartURL(value)?.absoluteString == "https://" + value)
+        }
+        for value in ["javascript:1234", "mailto:1234", "file:1234", "custom:1234", "example.com:0", "example.com:65536", "example.com:-1", "example.com:１２３", "example.com:443junk", "example.com:443@evil.example", "user:pass@example.com:443", "[example.com]:443", "[::1]:", "[::1]:443:1", "2001:db8::1:443", "https://example.com:65536"] {
+            #expect(BrowserLaunchBuilder.validatedStartURL(value) == nil)
+        }
+        #expect(BrowserLaunchBuilder.validatedStartURL("http://localhost:8080")?.absoluteString == "http://localhost:8080")
+        #expect(BrowserLaunchBuilder.validatedStartURL("https://singlelabel:8443")?.absoluteString == "https://singlelabel:8443")
+    }
+    @Test func extensionsTargetPreservesProfileDataAndProxyIsolation() {
+        let directory = URL(fileURLWithPath: "/private/tmp/neantik-owned-extension-data")
+        for kind in [nil, ProxyKind.http, .https, .socks5] as [ProxyKind?] {
+            let proxy = kind.map { ProxyConfiguration(kind: $0, host: "owned-upstream.test", port: 1080, username: "fixture-user") }
+            let profile = BrowserProfile(name: "Owned extension fixture", startURL: "https://owned.test/start", proxy: proxy)
+            for relay in [nil, UInt16(4321)] as [UInt16?] {
+                let normal = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: directory, proxyTransportOverride: relay)
+                let extensions = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: directory,
+                    startURLOverride: BrowserUserLaunchTarget.extensions.startURLOverride, proxyTransportOverride: relay)
+                #expect(extensions.last == "about:blank")
+                #expect(Array(extensions.dropLast()) == Array(normal.dropLast()))
+                #expect(extensions.contains("--user-data-dir=" + directory.path))
+                #expect(!extensions.joined().contains("fixture-user"))
+                #expect(profile.startURL == "https://owned.test/start")
+            }
+        }
+        #expect(BrowserLaunchBuilder.validatedStartURL("chrome://extensions/") == nil)
+    }
+    @Test func relayChangesOnlyTransportAndPreservesFailClosedProfilePolicy() {
+        for kind in [ProxyKind.http, .https, .socks5] {
+            let profile = BrowserProfile(name: "Synthetic relay", startURL: "http://owned.test/",
+                proxy: .init(kind: kind, host: "upstream.test", port: 1234, username: "fixture-user"))
+            let arguments = BrowserLaunchBuilder.arguments(profile: profile,
+                browserDataDirectory: URL(fileURLWithPath: "/tmp/owned-relay-fixture"), proxyTransportOverride: 4321)
+            #expect(arguments.filter { $0.hasPrefix("--proxy-server=") } == ["--proxy-server=socks5://127.0.0.1:4321"])
+            #expect(arguments.contains("--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"))
+            #expect(arguments.contains("--proxy-bypass-list=<-loopback>"))
+            #expect(arguments.contains("--disable-quic"))
+            #expect(arguments.contains("--webrtc-ip-handling-policy=disable_non_proxied_udp"))
+            #expect(!arguments.contains("--no-proxy-server"))
+            #expect(!arguments.joined().contains("fixture-user"))
+            #expect(!arguments.joined().contains("upstream.test"))
+            #expect(arguments.last == "http://owned.test/")
+        }
+    }
+    private func testRuntimeLocator() -> BrowserRuntimeLocator {
+        BrowserRuntimeLocator(
+            runtimeInspector: { _ in
+                BrowserRuntimeInspection(
+                    version: "150.0.7871.186",
+                    architectures: ["arm64"],
+                    codeSignatureValid: true
+                )
+            },
+            allowsExternalRuntimes: true
+        )
     }
 
-    @Test
-    func startupTabsReplaceSessionRestoreAndOpenInDeclaredOrder() {
-        let data = URL(fileURLWithPath: "/tmp/workplace-startup-tabs")
-        var profile = BrowserProfile(
-            name: "Campaign",
-            startupTabs: StartupTabSet(urls: [
-                "https://example.com/one",
-                "https://example.org/two"
-            ])
-        )
-        profile.lastLaunchedAt = Date()
-
-        let arguments = BrowserLaunchBuilder.arguments(
-            profile: profile,
-            browserDataDirectory: data
-        )
-
-        #expect(arguments.contains("--new-window"))
-        #expect(!arguments.contains("--restore-last-session"))
-        #expect(arguments.suffix(2) == [
-            "https://example.com/one",
-            "https://example.org/two"
-        ])
-    }
-
-    @Test
-    func cleanLaunchNeverRestoresSavedSessionOrStartupTabs() {
-        let data = URL(fileURLWithPath: "/tmp/neantik-clean")
-        var profile = BrowserProfile(
-            name: "Clean",
-            startupTabs: StartupTabSet(urls: [
-                "https://saved.example/one",
-                "https://saved.example/two"
-            ])
-        )
-        profile.lastLaunchedAt = Date()
-
-        let arguments = BrowserLaunchBuilder.arguments(
-            profile: profile,
-            browserDataDirectory: data,
-            purpose: .clean
-        )
-
-        #expect(arguments.contains("--new-window"))
-        #expect(!arguments.contains("--restore-last-session"))
-        #expect(!arguments.contains("https://saved.example/one"))
-        #expect(arguments.last == BrowserProfile.defaultStartURL)
+    @Test func onlyInertBlankSpecialPageIsAccepted() {
+        #expect(BrowserLaunchBuilder.validatedStartURL("about:blank")?.absoluteString == "about:blank")
+        for value in ["about:config", "about:blank?script=1", "about:blank#x", "file:///etc/passwd", "javascript:alert(1)"] {
+            #expect(BrowserLaunchBuilder.validatedStartURL(value) == nil)
+        }
     }
 
     @Test
@@ -289,9 +277,9 @@ struct BrowserLaunchBuilderTests {
             )
         )
         #expect(!arguments.contains { $0.hasPrefix("--fingerprint=") })
-        #expect(arguments.contains("--fingerprinting-client-rects-noise"))
-        #expect(arguments.contains("--fingerprinting-canvas-measuretext-noise"))
-        #expect(arguments.contains("--fingerprinting-canvas-image-data-noise"))
+        #expect(!arguments.contains("--fingerprinting-client-rects-noise"))
+        #expect(!arguments.contains("--fingerprinting-canvas-measuretext-noise"))
+        #expect(!arguments.contains("--fingerprinting-canvas-image-data-noise"))
         #expect(
             arguments.contains(
                 "--disable-features=AsyncDns,DnsOverHttpsUpgrade,WebGPUService"
@@ -366,25 +354,8 @@ struct BrowserLaunchBuilderTests {
         #expect(
             BrowserLaunchBuilder
                 .normalizedStartURL("javascript:alert(1)")
-                .absoluteString == "about:blank"
+                .absoluteString == "https://www.google.com"
         )
-    }
-
-    @Test
-    func permitsOnlyTheBlankInternalStartPage() {
-        #expect(
-            BrowserLaunchBuilder.validatedStartURL("about:blank")?
-                .absoluteString == "about:blank"
-        )
-        for value in [
-            "about:config", "about:blank#fragment", "about:blank?query=1",
-            "about://blank", "about:blank/", "about:bl%61nk",
-            "chrome://settings", "chrome-extension://abc/page.html",
-            "file:///tmp/private", "data:text/html,<script>alert(1)</script>",
-            "javascript:alert(1)"
-        ] {
-            #expect(BrowserLaunchBuilder.validatedStartURL(value) == nil)
-        }
     }
 
     @Test
@@ -436,9 +407,9 @@ struct BrowserLaunchBuilderTests {
 
         #expect(!firstLaunch.contains { $0.hasPrefix("--fingerprint=") })
         #expect(!firstLaunch.contains { $0.hasPrefix("--fingerprint-platform=") })
-        #expect(firstLaunch.contains("--fingerprinting-client-rects-noise"))
-        #expect(firstLaunch.contains("--fingerprinting-canvas-measuretext-noise"))
-        #expect(firstLaunch.contains("--fingerprinting-canvas-image-data-noise"))
+        #expect(!firstLaunch.contains("--fingerprinting-client-rects-noise"))
+        #expect(!firstLaunch.contains("--fingerprinting-canvas-measuretext-noise"))
+        #expect(!firstLaunch.contains("--fingerprinting-canvas-image-data-noise"))
         #expect(
             firstLaunch.contains {
                 $0.hasPrefix("--disable-features=") &&
@@ -855,9 +826,11 @@ struct BrowserLaunchBuilderTests {
             kind: .socks5,
             host: "proxy.example",
             port: 1_080,
-            username: "unsupported"
+            username: "synthetic-user"
         )
-        #expect(!authenticatedSOCKS.isValid)
+        #expect(authenticatedSOCKS.isValid)
+        var tooLongSOCKS = authenticatedSOCKS; tooLongSOCKS.username = String(repeating: "é", count: 128)
+        #expect(!tooLongSOCKS.isValid)
 
         let ambiguousHTTPUsername = ProxyConfiguration(
             kind: .http,
@@ -880,12 +853,12 @@ struct BrowserLaunchBuilderTests {
         #expect(
             BrowserLaunchBuilder
                 .normalizedStartURL("https://")
-                .absoluteString == "about:blank"
+                .absoluteString == "https://www.google.com"
         )
         #expect(
             BrowserLaunchBuilder
                 .normalizedStartURL("https://user:pass@example.com")
-                .absoluteString == "about:blank"
+                .absoluteString == "https://www.google.com"
         )
         #expect(BrowserLaunchBuilder.validatedStartURL("https://") == nil)
         #expect(
@@ -898,6 +871,82 @@ struct BrowserLaunchBuilderTests {
                 .validatedStartURL("example.com")?
                 .absoluteString == "https://example.com"
         )
+    }
+
+    @Test
+    func locatesCustomExecutableFirst() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let executable = directory.appendingPathComponent("Chromium")
+        FileManager.default.createFile(
+            atPath: executable.path,
+            contents: Data([
+                0xCF, 0xFA, 0xED, 0xFE,
+                0x0C, 0x00, 0x00, 0x01
+            ])
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: executable.path
+        )
+
+        let preference = BrowserRuntimePreference(
+            path: executable.path,
+            flavor: .standard,
+            updatedAt: Date()
+        )
+        let runtime = testRuntimeLocator().preferredRuntime(
+            preference: preference
+        )
+
+        #expect(runtime?.executableURL.standardizedFileURL == executable.standardizedFileURL)
+        #expect(runtime?.source == "Выбран вручную")
+        #expect(runtime?.supportsFingerprintIdentity == false)
+    }
+
+    @Test
+    func directLocatorIgnoresPersistedExternalRuntime() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let executable = directory.appendingPathComponent("Chromium")
+        FileManager.default.createFile(
+            atPath: executable.path,
+            contents: Data([
+                0xCF, 0xFA, 0xED, 0xFE,
+                0x0C, 0x00, 0x00, 0x01
+            ])
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: executable.path
+        )
+
+        let preference = BrowserRuntimePreference(
+            path: executable.path,
+            flavor: .fingerprintChromium,
+            updatedAt: Date()
+        )
+        let locator = BrowserRuntimeLocator { _ in
+            BrowserRuntimeInspection(
+                version: "150.0.7871.186",
+                architectures: ["arm64"],
+                codeSignatureValid: true
+            )
+        }
+
+        #expect(locator.preferredRuntime(preference: preference) == nil)
     }
 
     @Test
@@ -944,6 +993,11 @@ struct BrowserLaunchBuilderTests {
             to: contents.appendingPathComponent("Info.plist")
         )
 
+        let preference = BrowserRuntimePreference(
+            path: "/Applications/Google Chrome.app",
+            flavor: .standard,
+            updatedAt: Date()
+        )
         let locator = BrowserRuntimeLocator(
             runtimeInspector: { _ in
                 BrowserRuntimeInspection(
@@ -955,7 +1009,7 @@ struct BrowserLaunchBuilderTests {
             resourceURL: root
         )
 
-        let runtime = locator.preferredRuntime()
+        let runtime = locator.preferredRuntime(preference: preference)
         #expect(runtime?.executableURL == executable)
         #expect(runtime?.source == "Встроен")
         #expect(runtime?.supportsFingerprintIdentity == true)
@@ -1012,6 +1066,177 @@ struct BrowserLaunchBuilderTests {
 
         #expect(preferred?.executableURL == first)
         #expect(recorder.paths == [first.standardizedFileURL.path])
+    }
+
+    @Test
+    func explicitlyCompatibleCustomRuntimeEnablesIdentityProtocol() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let executable = directory.appendingPathComponent("Patched Chromium")
+        FileManager.default.createFile(
+            atPath: executable.path,
+            contents: Data([
+                0xCF, 0xFA, 0xED, 0xFE,
+                0x0C, 0x00, 0x00, 0x01
+            ])
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: executable.path
+        )
+
+        let preference = BrowserRuntimePreference(
+            path: executable.path,
+            flavor: .fingerprintChromium,
+            updatedAt: Date()
+        )
+        let runtime = testRuntimeLocator().preferredRuntime(
+            preference: preference
+        )
+
+        #expect(runtime?.supportsFingerprintIdentity == true)
+        #expect(runtime?.flavor == .fingerprintChromium)
+    }
+
+    @Test
+    func recognizesBrandedNeAntikRuntimeWithoutManualFlavorToggle() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "\(UUID().uuidString)/NeAntik Browser.app",
+                isDirectory: true
+            )
+        let contents = root.appendingPathComponent(
+            "Contents",
+            isDirectory: true
+        )
+        let macOS = contents.appendingPathComponent(
+            "MacOS",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: macOS,
+            withIntermediateDirectories: true
+        )
+        defer {
+            try? FileManager.default.removeItem(
+                at: root.deletingLastPathComponent()
+            )
+        }
+
+        let executable = macOS.appendingPathComponent("NeAntik Browser")
+        FileManager.default.createFile(
+            atPath: executable.path,
+            contents: Data([
+                0xCF, 0xFA, 0xED, 0xFE,
+                0x0C, 0x00, 0x00, 0x01
+            ])
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: executable.path
+        )
+
+        let plist = try PropertyListSerialization.data(
+            fromPropertyList: [
+                "CFBundleExecutable": "NeAntik Browser",
+                "CFBundleIdentifier": "app.neantik.runtime",
+                "CFBundleShortVersionString": "144.0.7559.132",
+                "NeAntikRuntimeFlavor": "fingerprint-chromium"
+            ],
+            format: .xml,
+            options: 0
+        )
+        try plist.write(
+            to: contents.appendingPathComponent("Info.plist")
+        )
+
+        let locator = testRuntimeLocator()
+        #expect(
+            locator.recommendedFlavor(for: root) ==
+                .fingerprintChromium
+        )
+
+        let preference = BrowserRuntimePreference(
+            path: root.path,
+            flavor: .standard,
+            updatedAt: Date()
+        )
+        let runtime = locator.preferredRuntime(preference: preference)
+        #expect(runtime?.name == "NeAntik Browser")
+        #expect(runtime?.flavor == .fingerprintChromium)
+        #expect(runtime?.supportsFingerprintIdentity == true)
+        #expect(runtime?.executableURL == executable)
+    }
+
+    @Test
+    func unflavoredNeAntikBundleDoesNotImplyFingerprintIdentity() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "\(UUID().uuidString)/NeAntik Browser.app",
+                isDirectory: true
+            )
+        let contents = root.appendingPathComponent(
+            "Contents",
+            isDirectory: true
+        )
+        let macOS = contents.appendingPathComponent(
+            "MacOS",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: macOS,
+            withIntermediateDirectories: true
+        )
+        defer {
+            try? FileManager.default.removeItem(
+                at: root.deletingLastPathComponent()
+            )
+        }
+
+        let executable = macOS.appendingPathComponent("NeAntik Browser")
+        FileManager.default.createFile(
+            atPath: executable.path,
+            contents: Data([
+                0xCF, 0xFA, 0xED, 0xFE,
+                0x0C, 0x00, 0x00, 0x01
+            ])
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: executable.path
+        )
+
+        let plist = try PropertyListSerialization.data(
+            fromPropertyList: [
+                "CFBundleExecutable": "NeAntik Browser",
+                "CFBundleIdentifier": "app.neantik.runtime",
+                "CFBundleShortVersionString": "144.0.7559.132"
+            ],
+            format: .xml,
+            options: 0
+        )
+        try plist.write(
+            to: contents.appendingPathComponent("Info.plist")
+        )
+
+        let locator = testRuntimeLocator()
+        #expect(locator.recommendedFlavor(for: root) == .standard)
+
+        let preference = BrowserRuntimePreference(
+            path: root.path,
+            flavor: .standard,
+            updatedAt: Date()
+        )
+        let runtime = locator.preferredRuntime(preference: preference)
+        #expect(runtime?.flavor == .standard)
+        #expect(runtime?.supportsFingerprintIdentity == false)
+        #expect(runtime?.executableURL == executable)
     }
 
     @Test

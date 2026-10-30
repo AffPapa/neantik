@@ -1,0 +1,38 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "653260452a4f3a98a9043cab1ce8af74761c93a288b9bc56c77daaac72995970",
+  "payload": {
+    "applyOutputSHA256": "091baf173e628a39af34f35c397daaab9d8228d9c510417a3b7899c64ed0fd3d",
+    "label": "native-devtools-typescript",
+    "patchSHA256": "bbb8c960855b77165545651bf667fa132f7dfc19aff6edf35bd05706368c0c73",
+    "postimages": {
+      "third_party/devtools-frontend/src/scripts/build/typescript/typescript_vars.gni": "6e834d2ba894b4596fe3a425f220a8389bc0917bf73d13fb19206c4ef9c4b718",
+      "third_party/devtools-frontend/src/third_party/typescript/typescript.py": "ef6417d77e1251888aeb356e2afffbd395e158b6ee06a13a59ca0788bebda636"
+    },
+    "preimages": {
+      "third_party/devtools-frontend/src/scripts/build/typescript/typescript_vars.gni": "0b63cfb14137c5ec48fa3469dea15d5288b6e2f8d71ececf36d877bfb620144f",
+      "third_party/devtools-frontend/src/third_party/typescript/typescript.py": "e00f6393532933d834496d51e9ca8f183ee232fd53dc1e37c71f9d478c789c65"
+    },
+    "releaseReady": false,
+    "review": "Restore reviewed pinned TypeScript7/native wrapper or ThinLTO2 production resource contract; zero-fuzz current native context",
+    "schemaVersion": 1,
+    "status": "source-applied-exact-build-pending"
+  },
+  "payloadType": "json",
+  "receipt": "native-devtools-typescript-correction.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

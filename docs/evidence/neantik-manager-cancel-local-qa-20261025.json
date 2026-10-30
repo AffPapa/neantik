@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-25",
+  "scope": "Manager launch-preparation cancellation and local disposable Dev-app packaging only.",
+  "source": {
+    "worktree": "/private/tmp/neantik-release-v1",
+    "branch": "codex/neantik-1-0-prep-20261025",
+    "baseCommit": "63c3bc620163ae6354f3dc359b47b9fd72e921d0",
+    "managerExecutableSHA256": "9be0d1155ab044025f1a22f96ac5314687e91a332a0320dca5f6d87e2679ff77",
+    "files": {
+      "Sources/NeAntik/ContentView.swift": "3025f4b7da1d115518d9acc1600d80ca06276f65e7efce7bb49df236d24ea85a",
+      "Sources/NeAntik/ManagerLaunchAdmission.swift": "028df4f2de20ffdc881061c730a261a6364425592cd8679bae633a3c7624470b",
+      "Tests/NeAntikTests/ManagerLaunchAdmissionTests.swift": "c8c30ae20305f4068308d9663591a0f32344f7aeb927561107d5da0c29d9f7a7",
+      "scripts/run-local-manager.sh": "b3af1d2c73957d8764320794f8453fff17388daefe9a071238dfab64a62eca17",
+      "scripts/tests/test_local_manager_script.py": "7f8abd7e65f6f2a8fa434d12c9db42b1817af9189cf41d92426a3b779c8e1a06"
+    }
+  },
+  "checks": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest scripts.tests.test_local_manager_script",
+      "result": "PASS",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "command": "swift test --filter ManagerLaunchAdmissionTests",
+      "result": "PASS",
+      "passed": 5,
+      "failed": 0,
+      "includes": ["activePreparationCanBeCancelledWithoutReleasingItsAdmissionEarly"]
+    },
+    {
+      "command": "NEANTIK_DEV_SOURCE_APP=dist/NeAntik-Integrated.app ./Develop-NeAntik.command --fixture --no-open",
+      "result": "PASS",
+      "elapsedSeconds": 1,
+      "appIdentifier": "app.neantik.desktop.dev",
+      "version": "1.0.0",
+      "build": "139",
+      "codesignDeepStrict": "PASS",
+      "opened": false,
+      "productionBundleMutated": false
+    }
+  ],
+  "invalidationDiagnosed": "The initial disposable app failed final deep signature verification because its nested manager helpers retained their prior signatures after the manager bundle was relabeled and re-signed. The Dev-only wrapper now deep ad-hoc-signs the disposable Dev app; source and production bundles are untouched.",
+  "limits": [
+    "No Dev app window or WebKit host was launched.",
+    "This does not qualify the owned-WebKit ZIP, proxy route, production runtime, notarization, or public release.",
+    "Accepted Dev ZIP d4f385093cb3a450dd4c253035a45f9d56a54069228041bd662abeb860341e39 remains unusable for headed QA because its embedded fixture root fails the launcher precondition; do not resubmit or bypass it."
+  ],
+  "nextAction": "Codify the actual signed owned-WebKit QA ZIP producer and run the exact archive verifier plus launcher --check-only before any Apple submission. Separately resolve 82 UNKNOWN WebKit notice-applicability rows in one qualified-review batch or remove/replace the affected shipped components."
+}

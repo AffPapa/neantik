@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "status": "INCONCLUSIVE_NO_FIXTURE_EVENT_AND_HOST_UI_UNAVAILABLE",
+  "candidate": "b96006a994664a80bf89cd757f932eff",
+  "testOrigin": "https://example.com/",
+  "ui": "selected synthetic QA WebKit proxy profile showed running; configured start URL was example.com; profile was stopped through manager UI",
+  "fixtureEvents": [],
+  "visibility": "CUA could not inspect the nested WebKit host window; no page rendering claim",
+  "cleanup": {
+    "serverThreadsDrained": true,
+    "ownedRuntimeProcessesRemaining": 0,
+    "syntheticProfileStopped": true,
+    "userProfilesTouched": false
+  },
+  "interpretation": "No request reached the controlled proxy fixture, but without host page visibility or a direct-arrival counter this run cannot distinguish a navigation failure from external direct routing. It adds no proxy PASS and no definitive product defect beyond V252.",
+  "next": "Instrument and repair test-window/process custody so page result and proxy CONNECT/direct-arrival counters are observable in one exact, isolated run; investigate V252 tunnel absence. Do not repeat this same setup."
+}

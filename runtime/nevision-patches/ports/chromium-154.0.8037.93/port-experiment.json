@@ -1,0 +1,683 @@
+{
+  "generatedAppleTupleOverlay": {
+    "applyLogPath": "/private/tmp/neantik-m154-clean-replay-20260930/tuple-overlay.log",
+    "applyLogSHA256": "cc20b761ca3be689d3402daacb1db5dc9d7cf467654d09f628e31b9b468ddea1",
+    "canonicalTupleCount": 11,
+    "catalogPath": "runtime/apple-device-tuples.json",
+    "catalogSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+    "postimageSHA256": {
+      "components/embedder_support/BUILD.gn": "1c37df24e83fae9ae7a04c6e12ce830d54d01f5a2cdc045a960aaf3f7418ddac",
+      "components/embedder_support/user_agent_utils.cc": "6849c382d3bf1ca5d8fa2320d945547d429c45a5c7e8638428cd2e9856e3a996",
+      "components/ungoogled/neantik_apple_device_tuples.h": "3ef1b5bf96166edcde85177ba4ba14fac9aabf724cb8cb0e14c1076b0648214b",
+      "third_party/blink/renderer/core/frame/local_dom_window.cc": "9a6916b77dd58f5860a7b7b2fc2124615b0a5db0c2a73e56134380f59212a087",
+      "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc": "ebc2b259e2fc467733904e2eac27621a2e2cd0a415934f94ab1739ee27f0d5aa",
+      "third_party/blink/renderer/core/frame/navigator_device_memory.cc": "c627f44995fb92e3db4ba43eb75bd91fd53defa8f59f8a18a0b9ce8153d38a8a",
+      "third_party/blink/renderer/core/frame/screen.cc": "82efdc31e4bae7a895e53bc54f33dc1797fdd05361136430e0655c06fc7f8d48",
+      "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": "ff4756e11005c719c4cfeaee06ad783a073d8b5a02b9290aba59879d184a26b7"
+    },
+    "releaseEvidence": false,
+    "scratchRoot": "/private/tmp/neantik-m154-clean-replay-20260930/src",
+    "scriptPath": "scripts/apply-owned-runtime-device-tuples-154.py",
+    "scriptSHA256": "aafcf30798d6dd9baab1eeb61b74969baeff0077ff2ed197ea4b1ec8a175e47c",
+    "selectionContract": "C++ GetAppleDeviceTuple(seed) indexes seed % 11, matching Sources/NeAntik/FingerprintAudit.swift Int(seed % UInt32(appleDeviceTuples.count)); the M154 overlay test asserts both contracts.",
+    "sourceCommit": "f89f3a4363808e117c592adedcf9947882ac3b79",
+    "sourceTree": "658e81c77627fcf91e6784bd353e0d31a4ca70b5",
+    "sourceVersion": "154.0.8037.93",
+    "verification": "Applied to src-macos-packaging-cleanprobe; exact M154 pre/postimage checks pass; verify-apple-device-tuples.py passes; GN regenerated and gn check //chrome:chrome passes."
+  },
+  "m154MacPackagingSeriesReplay": {
+    "applied": 20,
+    "applyLogPath": "/private/tmp/neantik-m154-clean-replay-20260930/macos.log",
+    "applyLogSHA256": "dec73f039eb8be93a64db4b471d1887c0c4946bf189469e6c21c03ca29f816ba",
+    "checkedAt": "2026-09-30",
+    "failed": 0,
+    "method": "Applied the 20 pinned upstream packaging patches to the same disposable .93 source before the 72 owned groups; exact log retained.",
+    "missingTouchedFiles": 0,
+    "patchCount": 20,
+    "patchSHA256": {
+      "ungoogled-chromium/macos/bindgen-disable-static.patch": "92ab8ef8a9bfd63b49bc431554daaae832ea90db4410bc4b8c024d06c543805a",
+      "ungoogled-chromium/macos/build-bindgen-target-override.patch": "a34d9f345974f2a53214fe782b72efd4ccc449c9624674f18da0db3919efa26c",
+      "ungoogled-chromium/macos/build-bindgen.patch": "f4a3b542d338cc0976286fb2f71a39d7a686ba6db3a7f123253e7fe3cf1aa9da",
+      "ungoogled-chromium/macos/disable-clang-version-check.patch": "1ec9d36202a5627f462305f7dd9e2857bfcbae203f24be154cd719b38800171d",
+      "ungoogled-chromium/macos/disable-crashpad-handler.patch": "c398174bb146e6f4e5f28ac79d3019e1886bb0d383c4c7c549ecb69f25fc821b",
+      "ungoogled-chromium/macos/disable-symbol-order-verification.patch": "4880cde4c84e0bca67e96b77ff2bb93b64b7ee3b5f53dbf05839473b72ac9da7",
+      "ungoogled-chromium/macos/fix-anyappleos-availability.patch": "242ecabba4db1f799aaef4f5db953e80bed29d9b5d62ad349c83aa6f1243931e",
+      "ungoogled-chromium/macos/fix-build-with-rust.patch": "92c2627e253cabc8b678981f14619744ba5853c7302f15d7606cf6912249b958",
+      "ungoogled-chromium/macos/fix-build-without-crubit.patch": "9e650d883ef34e1f526476054d5f67472705e5cf8f661ac97aaa59be854348d3",
+      "ungoogled-chromium/macos/fix-clang-format-path.patch": "9c17ec553026025ba994cf8c4395e1249751a49e7dd554165d2cc5af25fda644",
+      "ungoogled-chromium/macos/fix-disable-verification-token.patch": "89133df06c62adcbc7dff04e6164ecf9bbe807dbf1363106fd66eb671d14da2a",
+      "ungoogled-chromium/macos/fix-disabling-safebrowsing.patch": "cdf94a992c21e466d439fdb2a04c64ef11bd7a1b543473353d3dc06db5ae70e6",
+      "ungoogled-chromium/macos/fix-dsymutil.patch": "c2ce394fdcb1b22328ab5cf161f9b72a76da537fc3ddb6fbb3229617191a0f2c",
+      "ungoogled-chromium/macos/fix-esbuild.patch": "db050704d0beaa1da438e91a03275a7a511ad734614716c3df4aeb2f179f90bd",
+      "ungoogled-chromium/macos/fix-nasm-build-config.patch": "7edab94489ce48ceac4d1c682c698e8663df563aa319d709abfe7f9afc277297",
+      "ungoogled-chromium/macos/fix-typescript.patch": "48176806bc7822099940fe75bba5c79bce6c46d66a7824b5cb04cea077df8679",
+      "ungoogled-chromium/macos/no-unknown-warnings.patch": "fe1734ec4bef5b7eb7ca2d772b04afd93e7a8c738e309f0eaaf47380a4bcf6e1",
+      "ungoogled-chromium/macos/revert-v8-sanitizer-changes.patch": "d5e9d1a096d0939a02332afd970e466f836cc77826c5029bd1cc10ff77415996",
+      "ungoogled-chromium/macos/set-rustc-nightly-capability.patch": "0c02a139dc5db01a167fe4740dbd4eeffec748ad7b83bce2136934a340137ea8",
+      "ungoogled-chromium/macos/use-system-python.patch": "2a79214f80cd0d1851dc7b759bf87029a0c00affa8213a02f002df2ae7a5f65a"
+    },
+    "releaseReady": false,
+    "scope": "Applicability check only; it does not verify a complete source tree, downstream patch postimages, compile, runtime, or release.",
+    "scratchRoot": "/private/tmp/neantik-m154-clean-replay-20260930/src",
+    "seriesSHA256": "f432ba4b0188b9e4dd4bbe9e1d21760f76048c70df69e70b2d2881ede6378510",
+    "sourceBase": "Chromium 154.0.8037.93 plus the pinned Chromium 154.0.8037.57-1 common overlay",
+    "sourceCommit": "f89f3a4363808e117c592adedcf9947882ac3b79",
+    "sourceTree": "658e81c77627fcf91e6784bd353e0d31a4ca70b5",
+    "sourceVersion": "154.0.8037.93",
+    "touchedFileCount": 58,
+    "upstreamCommit": "3241dc9cacee393621d277ec936376072f0cb3c5",
+    "upstreamTag": "154.0.8037.57-1.1"
+  },
+  "officialChromiumBase": {
+    "commit": "f89f3a4363808e117c592adedcf9947882ac3b79",
+    "tree": "658e81c77627fcf91e6784bd353e0d31a4ca70b5"
+  },
+  "ownedPatchApplyCheck": {
+    "applied": 73,
+    "failed": 0,
+    "groups": [
+      {
+        "id": "profile-seed-contract",
+        "order": 1,
+        "patchFile": "patches/profile-seed-contract.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "936d823ea8374ff96b5a77478d34a9a4bcd44a73f981e7b788a785788e8e75b4"
+      },
+      {
+        "id": "deterministic-rendered-surfaces",
+        "order": 2,
+        "patchFile": "patches/deterministic-rendered-surfaces.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "32046d721722653b9484469283902577d360bb075b178c7bc4b1f32b69e3365e"
+      },
+      {
+        "id": "deterministic-offline-audio",
+        "order": 3,
+        "patchFile": "patches/deterministic-offline-audio.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "9d59d33d4cb16c89795349c64b44c11963c4137e2f10d2f112612a87a5611652"
+      },
+      {
+        "id": "deterministic-webgl-pixels",
+        "order": 4,
+        "patchFile": "patches/deterministic-webgl-pixels.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "751faad4e1d01bd28f65c4510f1612d3bd1648bd41efa9a8d47a7f7b623806d0"
+      },
+      {
+        "id": "timezone-locale-network-context",
+        "order": 5,
+        "patchFile": "patches/timezone-locale-network-context.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "b90aab37047d35e0c0e4bbe1938eaac965779bc7b241f534d27b9debf930985b"
+      },
+      {
+        "id": "real-browser-version-contract",
+        "order": 6,
+        "patchFile": "patches/real-browser-version-contract.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "368a83a9f6b042f117c631ce7a8b8b6291dcf4043b93bd226a17a22f563109ce"
+      },
+      {
+        "id": "minimal-apple-device-tuple",
+        "order": 7,
+        "patchFile": "patches/minimal-apple-device-tuple.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "7b13ccd09c4cec5d2fb685252d312f4c8fd9c27186c8e684d5aaba8b3b0254d7"
+      },
+      {
+        "id": "neantik-branding-and-source-lock",
+        "order": 8,
+        "patchFile": "patches/neantik-branding-and-source-lock.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "8a2c36bec88fa99554f6a48aacfce864ed917804508bfa35d6e0d3a705952f87"
+      },
+      {
+        "id": "official-lite-archive-build-contract",
+        "order": 9,
+        "patchFile": "patches/official-lite-archive-build-contract.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "4d6bf38dbd7d15539b29ebbddf090e64b82bc34f3f8d496063bc1fb1c41e26c3"
+      },
+      {
+        "id": "private-runtime-config-environment",
+        "order": 10,
+        "patchFile": "patches/private-runtime-config-environment.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "30881d9440c3c02f32d340595f7b3d1c07f11010921337482dcef65348dd4fd1"
+      },
+      {
+        "id": "cached-runtime-profile-seed",
+        "order": 11,
+        "patchFile": "patches/cached-runtime-profile-seed.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "45717ea4ecabb3cb81a391df9badd51571e8ffe010ee2c1fcbc05d63adfaef9b"
+      },
+      {
+        "id": "m154-unused-signin-helpers",
+        "order": 12,
+        "patchFile": "patches/m154-unused-signin-helpers.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "05e16c61c527b40f21d59784504387d43ad191b4d1a654907777f26b65abde92"
+      },
+      {
+        "id": "m154-remove-unreachable-disabled-gcm-body",
+        "order": 13,
+        "patchFile": "patches/m154-remove-unreachable-disabled-gcm-body.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "39c2fac5ab57d17e07d830b03969fa262c2b36773ce8f4229d6f8c0f550e553b"
+      },
+      {
+        "id": "m154-remove-unreachable-domain-reliability-upload-body",
+        "order": 14,
+        "patchFile": "patches/m154-remove-unreachable-domain-reliability-upload-body.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "f359a7265dba9ffc5c2a4e01aad2f91a13a3de36fc5b65f5bddab6bc626f8428"
+      },
+      {
+        "id": "m154-template-url-service-init-order",
+        "order": 15,
+        "patchFile": "patches/m154-template-url-service-init-order.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "0ecc9192845a88690e0428b39993faf5b3c71e01aeccaf076a0678498d07f032"
+      },
+      {
+        "id": "enterprise-cloud-archive-analysis-mode0-common-overlay",
+        "order": 16,
+        "patchFile": "patches/enterprise-cloud-archive-analysis-mode0-common-overlay.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "06e2ca25388163e3300b05cb50ee90ca3a7c2ed2939f85f13de9ac07e2d3df75"
+      },
+      {
+        "id": "m154-remove-unreachable-assist-ranker-body",
+        "order": 17,
+        "patchFile": "patches/m154-remove-unreachable-assist-ranker-body.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "3a6a19a56acd5709d3431614da1c0ecebdaba5e76c9ef7463c40c91642b76c92"
+      },
+      {
+        "id": "m154-remove-unreachable-translate-ranker-body",
+        "order": 18,
+        "patchFile": "patches/m154-remove-unreachable-translate-ranker-body.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "e9e78dc06fa5a078fa213c2af21c84c8d3faf1f39ce7ca7189f9c2de255a6ff4"
+      },
+      {
+        "id": "m154-prune-disabled-autofill-network-helpers",
+        "order": 19,
+        "patchFile": "patches/m154-prune-disabled-autofill-network-helpers.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "2ef2ef8060f538b53e1f661c7307e9a7d7620f2da80829ee0c54973e64d6549d"
+      },
+      {
+        "id": "m154-remove-disabled-safe-move-activation-field",
+        "order": 20,
+        "patchFile": "patches/m154-remove-disabled-safe-move-activation-field.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "5e84a629c25a599c172abc7e621f7f97b573b3749db29b0f8ef4587a4432452e"
+      },
+      {
+        "id": "restore-download-quarantine-provenance",
+        "order": 21,
+        "patchFile": "patches/restore-download-quarantine-provenance.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "e46f0c1beb8af118faa78b845edf484a75f836fb3cff0218800ac5957ab5668b"
+      },
+      {
+        "id": "m154-file-system-access-quarantine-provenance-test",
+        "order": 22,
+        "patchFile": "patches/m154-file-system-access-quarantine-provenance-test.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "35ac40363df829f2899d792921278f0801d142932ff722b2e36a5143f17b64d7"
+      },
+      {
+        "id": "m154-prune-disabled-ssl-interstitial-prefs-helper",
+        "order": 23,
+        "patchFile": "patches/m154-prune-disabled-ssl-interstitial-prefs-helper.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "b6a35a6ec88459461f2d1c7368f1c9db40264f72d96099b2ea5061b13599ec3f"
+      },
+      {
+        "id": "m154-disable-nonlinux-crashpad-unreachable-body",
+        "order": 24,
+        "patchFile": "patches/m154-disable-nonlinux-crashpad-unreachable-body.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "befab35f324679ac2693587026822eadb839fd51ffba2ae71ebf917ab38591fd"
+      },
+      {
+        "id": "m154-prune-disabled-safe-browsing-metrics-helpers",
+        "order": 25,
+        "patchFile": "patches/m154-prune-disabled-safe-browsing-metrics-helpers.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "ce4a290cf183e08b37569cb50abc030bf5e3d4eea22caadd23f35758f49140dd"
+      },
+      {
+        "id": "m154-restore-safe-browsing-prefs-declarations-include",
+        "order": 26,
+        "patchFile": "patches/m154-restore-safe-browsing-prefs-declarations-include.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "7532382a17a3d5967531bd9a241389d3f095c5b396e8ddd4c4db880563bff749"
+      },
+      {
+        "id": "m154-prune-disabled-webstore-download-helper",
+        "order": 27,
+        "patchFile": "patches/m154-prune-disabled-webstore-download-helper.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "5723a1a77a250cef9165c5e02ca5ef97cda0e59e5dafc01a03cc27ff830835b4"
+      },
+      {
+        "id": "m154-prune-disabled-omaha-action-flag",
+        "order": 28,
+        "patchFile": "patches/m154-prune-disabled-omaha-action-flag.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "ad7535d9258ca8140219694a9a5b7af5e08bf35a05a0a8139a7167a5179563dd"
+      },
+      {
+        "id": "m154-prune-disabled-bound-session-helper-state",
+        "order": 29,
+        "patchFile": "patches/m154-prune-disabled-bound-session-helper-state.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "8b959bb3d9c482759b68fbd33cc425271b983fd75fb1bc299e3b9faf7a090b63"
+      },
+      {
+        "id": "m154-prune-disabled-signin-promo-metric-state",
+        "order": 30,
+        "patchFile": "patches/m154-prune-disabled-signin-promo-metric-state.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "771e6ac5ac3c5fd228364175ed7d43bdf0e663396dc135843bede4a695ee5f1c"
+      },
+      {
+        "id": "m154-prune-disabled-mdns-helpers-and-client-init",
+        "order": 31,
+        "patchFile": "patches/m154-prune-disabled-mdns-helpers-and-client-init.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "2fa8ba537577c66765e742c0a675dae3c2378369844bcc321c6e56f0f853b773"
+      },
+      {
+        "id": "m154-mark-disabled-advanced-protection-branch-intentional",
+        "order": 32,
+        "patchFile": "patches/m154-mark-disabled-advanced-protection-branch-intentional.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "f208b169165a8c7a2c41461ab8b8f7c67229813ca7dad6f29dbdae76020292a5"
+      },
+      {
+        "id": "m154-include-enterprise-file-type-policy-resource",
+        "order": 33,
+        "patchFile": "patches/m154-include-enterprise-file-type-policy-resource.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "f15e0fb204874f902932b080d79c214584fe683a4ddaf71995d4219d62581cab"
+      },
+      {
+        "id": "m154-remove-dead-ntp-collection-fetch-body",
+        "order": 34,
+        "patchFile": "patches/m154-remove-dead-ntp-collection-fetch-body.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "701d7aa05d4e7a3fd4b122aedb9af22bf6fe1328bba8e96bdae36979cc207bdd"
+      },
+      {
+        "id": "m154-include-safe-browsing-prefs-in-enterprise-upload",
+        "order": 35,
+        "patchFile": "patches/m154-include-safe-browsing-prefs-in-enterprise-upload.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "a507447c8353ce7c4bc14bb5bb975c721219f65c7b33d3eded47c6456a08d961"
+      },
+      {
+        "id": "m154-prune-disabled-supervised-ntp-helpers",
+        "order": 36,
+        "patchFile": "patches/m154-prune-disabled-supervised-ntp-helpers.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "9cef1c7c47288860bb8126acebfe4e1a2123ffa57ba888baeb6b1df8525b82f5"
+      },
+      {
+        "id": "m154-prune-disabled-sync-builder-helpers",
+        "order": 37,
+        "patchFile": "patches/m154-prune-disabled-sync-builder-helpers.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "8a7f111ad1a320cdd9060030c14efed591076e18f16b48ed97014beaed54df75"
+      },
+      {
+        "id": "m154-prune-disabled-sync-service-helpers",
+        "order": 38,
+        "patchFile": "patches/m154-prune-disabled-sync-service-helpers.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "8aff1e11e5b4e8e1469c4fd639ddfda177c6f745a82535ebe4e5129075eba6ac"
+      },
+      {
+        "id": "m154-prune-disabled-offstore-safety-helper",
+        "order": 39,
+        "patchFile": "patches/m154-prune-disabled-offstore-safety-helper.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "4fac4af67fa9ee4bd56f7d76d3337f03cbc97dd53fb055c6caf2fe1f2bb51c9b"
+      },
+      {
+        "id": "m154-guard-force-save-cloud-helper",
+        "order": 40,
+        "patchFile": "patches/m154-guard-force-save-cloud-helper.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "d03af5514e15223ae053be14ab5fc2bb6c14298fca4fb2c5c3457d3fe1083df4"
+      },
+      {
+        "id": "m154-prune-disabled-download-warning-surface-local",
+        "order": 41,
+        "patchFile": "patches/m154-prune-disabled-download-warning-surface-local.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "54aaa31d472f478d274874d0756f02ef7124bcf41a75ddbd313c0ad6bf68a8d1"
+      },
+      {
+        "id": "m154-prune-disabled-warning-action-serializer",
+        "order": 42,
+        "patchFile": "patches/m154-prune-disabled-warning-action-serializer.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "c97f14d7bb656126ff9e03b0aab81f9dca6567e39d30c38158a98b318eeb0f15"
+      },
+      {
+        "id": "m154-restore-enterprise-context-realtime-url-mode",
+        "order": 43,
+        "patchFile": "patches/m154-restore-enterprise-context-realtime-url-mode.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "d698f7e1ebd3657435e77d9c39f37f8e08709cd7d0008b1461387abdd8468b85"
+      },
+      {
+        "id": "m154-populate-enterprise-profile-id",
+        "order": 44,
+        "patchFile": "patches/m154-populate-enterprise-profile-id.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "0d3ed40044102114bea3013947a59875e2e114817362914ac2795a14aa0e41fa"
+      },
+      {
+        "id": "m154-honor-download-bypass-justification-policy",
+        "order": 45,
+        "patchFile": "patches/m154-honor-download-bypass-justification-policy.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "219602699989c695d84e23369ce11ae28954f00c94cc98c2b5d38a01f3daac93"
+      },
+      {
+        "id": "m154-complete-disabled-one-google-bar-callback",
+        "order": 46,
+        "patchFile": "patches/m154-complete-disabled-one-google-bar-callback.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "071b3e9e6d2a89bb8211ef4e222798787b92ebfaff71666ddabeeb38a98bd683"
+      },
+      {
+        "id": "m154-prune-disabled-one-google-account-consistency-state",
+        "order": 47,
+        "patchFile": "patches/m154-prune-disabled-one-google-account-consistency-state.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "e6dfac839a4e7ccb852ab0560734ba11a71081ee5cea4654e2e7161fc67dca9c"
+      },
+      {
+        "id": "m154-prune-disabled-page-annotation-helpers",
+        "order": 48,
+        "patchFile": "patches/m154-prune-disabled-page-annotation-helpers.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "d40f5f68daea3176c678e0109841e9df92394dcf1f8042a5f5b517af4c22ea66"
+      },
+      {
+        "id": "m154-prune-disabled-avatar-url-constant",
+        "order": 49,
+        "patchFile": "patches/m154-prune-disabled-avatar-url-constant.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "055555bf28aa26c79e5c7081dd4adbb81cbceb901d0da7333cda36643aa6ee9d"
+      },
+      {
+        "id": "m154-prune-disabled-account-consistency-entry",
+        "order": 50,
+        "patchFile": "patches/m154-prune-disabled-account-consistency-entry.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "e729347e83e4453e734f2409c678b0ee76618cc5235ea007e52ca2b53a025f50"
+      },
+      {
+        "id": "m154-prune-disabled-signin-promo-helpers",
+        "order": 51,
+        "patchFile": "patches/m154-prune-disabled-signin-promo-helpers.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "56cda7edb6775c6b053e442118aecc39e6ce2b96f1e72c68173c6ba96022f560"
+      },
+      {
+        "id": "m154-prune-inactive-signin-promo-helper-chain",
+        "order": 52,
+        "patchFile": "patches/m154-prune-inactive-signin-promo-helper-chain.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "7228f791ff7e744829852078dbfa0149657933b0f85e00477413edb11f08210e"
+      },
+      {
+        "id": "m154-prune-unused-https-first-pref-local",
+        "order": 53,
+        "patchFile": "patches/m154-prune-unused-https-first-pref-local.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "32515dd258d1703e7700d9f847233c32e7c1ef6b723df772e08650d2ff75e367"
+      },
+      {
+        "id": "m154-rename-shadowed-extension-anchor-view",
+        "order": 54,
+        "patchFile": "patches/m154-rename-shadowed-extension-anchor-view.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "0d04d6aa4b8a3bbfd3ba27bb31d2caaed50eab3224d316c0479b8531b78433ae"
+      },
+      {
+        "id": "m154-prune-disabled-signout-sync-lookup",
+        "order": 55,
+        "patchFile": "patches/m154-prune-disabled-signout-sync-lookup.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "8308537c612ddc6d20623846a105ac5818373133ba13ae42370797d6ce12d8e5"
+      },
+      {
+        "id": "m154-prune-disabled-sync-menu-title-helper",
+        "order": 56,
+        "patchFile": "patches/m154-prune-disabled-sync-menu-title-helper.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "c408f47d246022f3ec2ad83f3d0514597380db9962e73aa46e1c1d66019d1e4a"
+      },
+      {
+        "id": "m154-prune-disabled-signin-status-chip-helper",
+        "order": 57,
+        "patchFile": "patches/m154-prune-disabled-signin-status-chip-helper.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "afb89c67e5b6286d597609746e315175d1bb24009ca5739620fbc2f77acf9dc7"
+      },
+      {
+        "id": "m154-handle-safe-browsing-settings-command",
+        "order": 58,
+        "patchFile": "patches/m154-handle-safe-browsing-settings-command.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "091dc9af5b48723404c68b087396f4a8f8c85b6ca7466f795bed6e5d92023ca0"
+      },
+      {
+        "id": "m154-include-safe-browsing-command-prefs",
+        "order": 59,
+        "patchFile": "patches/m154-include-safe-browsing-command-prefs.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "f229f67c83e3210e9ad6685edfdcd6b48673252655d83e61c753417ce5153562"
+      },
+      {
+        "id": "m154-remove-unused-read-anything-screen-ai-parameter",
+        "order": 60,
+        "patchFile": "patches/m154-remove-unused-read-anything-screen-ai-parameter.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "c1cc766f46e08db87f072c541488ff8bc7b23d7501d4ce6e6490634e56cc93f9"
+      },
+      {
+        "id": "m154-remove-remaining-read-anything-screen-ai-parameter",
+        "order": 61,
+        "patchFile": "patches/m154-remove-remaining-read-anything-screen-ai-parameter.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "6786ba60ab42b38f5df13fd53a3c3dc6395832943589499a3365e7c9cebbfcc1"
+      },
+      {
+        "id": "m154-remove-unreferenced-protego-sampling-constant",
+        "order": 62,
+        "patchFile": "patches/m154-remove-unreferenced-protego-sampling-constant.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "12caf756cb9fb5df60d4f6c5b2686ddbbca82adda4abf1091dfa4e52a5c1fbb6"
+      },
+      {
+        "id": "m154-guard-enterprise-analysis-include-with-enterprise-buildflag",
+        "order": 63,
+        "patchFile": "patches/m154-guard-enterprise-analysis-include-with-enterprise-buildflag.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "f87538f85404fa2e1a160afe8380b489e25a779c73f83d48e928549ce2c97328"
+      },
+      {
+        "id": "m154-prune-unreferenced-navigation-predictor-helpers",
+        "order": 64,
+        "patchFile": "patches/m154-prune-unreferenced-navigation-predictor-helpers.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "6a9de052ca32dc581c8146f778e7510f0400ff438521a56d1fc9f8349cc9a157"
+      },
+      {
+        "id": "m154-restore-safe-browsing-prefs-plumbing",
+        "order": 65,
+        "patchFile": "patches/m154-restore-safe-browsing-prefs-plumbing.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "51ffee29032e0f3a311d16316a230df1aa6317b54717fd9eb5ee07d3158f2bef"
+      },
+      {
+        "id": "m154-include-content-settings-prefs-in-js-optimizer-tests",
+        "order": 66,
+        "patchFile": "patches/m154-include-content-settings-prefs-in-js-optimizer-tests.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "cff2b738b6ef49cb25e08fe31ff6b1e7c7bf07fab9fc12e605e3cee820398afd"
+      },
+      {
+        "id": "m154-fix-blocklist-state-fetcher-test-seam",
+        "order": 67,
+        "patchFile": "patches/m154-fix-blocklist-state-fetcher-test-seam.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "b87023e10c4f4e2cdb221c8ee2727640447f0bb286edb948102ef8bb8133ca7c"
+      },
+      {
+        "id": "m154-prune-disabled-testing-browser-process-members",
+        "order": 68,
+        "patchFile": "patches/m154-prune-disabled-testing-browser-process-members.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "794361e5f6a09e4c07c43e6f77261b2937d3230e14548edbf2828d95d38794d9"
+      },
+      {
+        "id": "m154-include-safe-browsing-prefs-in-notification-telemetry-test",
+        "order": 69,
+        "patchFile": "patches/m154-include-safe-browsing-prefs-in-notification-telemetry-test.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "c188779c0a823a211db3e067fb5f3df30657e77fff288bec1d3e80a011a6721c"
+      },
+      {
+        "id": "m154-include-safe-browsing-prefs-in-advanced-protection-test",
+        "order": 70,
+        "patchFile": "patches/m154-include-safe-browsing-prefs-in-advanced-protection-test.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "b977609cd5136705ba7073238666129e3a0150ad563d7e47363009f9b550063d"
+      },
+      {
+        "id": "m154-resolve-sdkroot-symlink-for-apple-build-tools",
+        "order": 71,
+        "patchFile": "patches/m154-resolve-sdkroot-symlink-for-apple-build-tools.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "712fd430b3090969330b4100d56ffba237a371f2d893a2c3a4f527ecb0569d2c"
+      },
+      {
+        "id": "m154-use-deps-pinned-devtools-node-tools",
+        "order": 72,
+        "patchFile": "patches/m154-use-pinned-devtools-node-tools.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "15452c59a6657a6408d8e42ef8d3fba71035012219247bef6bcd04228e8f2b33"
+      },
+      {
+        "id": "m154-use-pinned-xnu-mig-definitions-when-sdk-omits-them",
+        "order": 73,
+        "patchFile": "patches/m154-use-pinned-xnu-mig-definitions-when-sdk-omits-them.patch",
+        "sequentialApplyCheck": "passed",
+        "sha256": "66dec147745b26d5b5346c7752ac086a7674e5d6d57f65a6a458b29cac8d5293"
+      }
+    ],
+    "latestOrderedAttempt": {
+      "appliedGroupCount": 73,
+      "commonApplyLogSHA256": "3066f86c6196d094464ec759bc0b16409096a7ac2d7512791f05c55ffac871a8",
+      "dependencyRevisionMapSHA256": "cf2e1f865c9c6977c83fb4b1998d1e38376593c367a7ba678655f19df75cfe89",
+      "macPackagingApplyLogSHA256": "dec73f039eb8be93a64db4b471d1887c0c4946bf189469e6c21c03ca29f816ba",
+      "orderedGroupCount": 73,
+      "orderedReplayContinuationLogPath": "/private/tmp/neantik-m154-clean-replay-20260930/owned-replay-plus-group73.log",
+      "orderedReplayContinuationLogSHA256": "5f42d347b520459fd753b2a807514a23800143d5444994f84454196f059b092f",
+      "presentPruningListSHA256": "0864f1b5e20829fe36e3d67d1e3dea805a417a2aff8eeda29c0a3fc691768bf4",
+      "pruneMode": "keep-contingent-paths",
+      "pruningListSHA256": "6ce85bb896bfd45c55ceb032c4dd843e4e3ccdcc42a2dbab4a7fa6ec22c7f5fb",
+      "qualificationLimit": "Source replay and diagnostic build evidence only. Runtime, security, integrated app, signing, notarization, Gatekeeper, publication, and release gates remain open.",
+      "recordedAtUTC": "2026-09-30T11:10:00Z",
+      "rejectedArtifactCount": 0,
+      "releaseQualified": false,
+      "status": "72-group clean .93 replay plus group73 appended and verified; focused Crashpad MIG outputs generated with Xcode Beta; full build resumable",
+      "tupleOverlayApplyLogSHA256": "cc20b761ca3be689d3402daacb1db5dc9d7cf467654d09f628e31b9b468ddea1",
+      "wholeTreePostimageManifestPath": "/private/tmp/neantik-m154-clean-replay-20260930/whole-tree-postimage-15493.jsonl",
+      "wholeTreePostimageManifestSHA256": "07ffe02e40e4145132b9d8fdc9fe5631ca1675031bc7e4e9994603d4d9a5a313"
+    },
+    "method": "Pinned Chromium .93 source: 72 owned groups replayed cleanly, then group73 applied sequentially with zero-fuzz check; GN regenerated and Crashpad MIG generated all three interfaces using pinned XNU definitions. This is diagnostic source/build evidence only.",
+    "pending": 0,
+    "preSatisfied": 0
+  },
+  "policy": "Diagnostic source replay evidence only; it is not build, runtime, security, signing, notarization, Gatekeeper, publication, or release qualification.",
+  "provenance": {
+    "argsGNSHA256": "6ee5395fc7136ef525e25dddfc0258a3a1d754b39bb68661fcb1e924de1edcb1",
+    "buildOutput": "out/NeAntikM154Release15493",
+    "buildStatus": "resumable-after-mig-toolchain-blocker",
+    "dawnDepsSHA256": "10f41005ac318946aa6e79eb86fdcdabcca34141d3804c60ce0d7eecd172ce65",
+    "depsSHA256": "4d567fffba5e7b64c777c16211a66763aa410e9b4de13ad9ac57686cfd0e3888",
+    "sourceRoot": "/private/tmp/neantik-m154-clean-replay-20260930/src",
+    "sourceVersionFileSHA256": "0838e54a19e727519fdb0949f4fd88487ac93187a7f66fe4d3eeeb8c9243a3fc",
+    "toolchainLockPath": "runtime/chromium-154-toolchain-lock.json"
+  },
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "sourceToolchain": {
+    "status": "Xcode Beta identity verified; system-selected, not hermetic; not release-qualified"
+  },
+  "status": "diagnostic-not-release-ready",
+  "targetChromiumVersion": "154.0.8037.93",
+  "upstreamCommonOverlay": {
+    "applied": 109,
+    "applyLogScan": "Fresh .93 clean replay log has no fuzz, offset, FAILED, ignored, missing-file, or reject-file findings.",
+    "cleanReplayRoot": "/private/tmp/neantik-m154-clean-replay-20260930/src",
+    "commit": "800d0bb5078472e4442c1fd73373172754a60939",
+    "conflicts": 0,
+    "dependencyRevisionCount": 240,
+    "dependencyRevisionMapPath": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/revinfo-locked.txt",
+    "dependencyRevisionMapSHA256": "cf2e1f865c9c6977c83fb4b1998d1e38376593c367a7ba678655f19df75cfe89",
+    "presentPruningListPath": "/private/tmp/neantik-m154-clean-ordered-68-preserve-tests-20260928/pruning-present.list",
+    "presentPruningListSHA256": "0864f1b5e20829fe36e3d67d1e3dea805a417a2aff8eeda29c0a3fc691768bf4",
+    "pruneMode": "keep-contingent-paths",
+    "pruningListPath": "/private/tmp/neantik-ungoogled-common-154.0.8037.57-1/pruning.list",
+    "pruningListSHA256": "6ce85bb896bfd45c55ceb032c4dd843e4e3ccdcc42a2dbab4a7fa6ec22c7f5fb",
+    "replayMethod": "Pinned common commit/series verified by hash; full DEPS sync locked by 240-entry revinfo text; exact upstream pruning list filtered to present files; official --keep-contingent-paths prune; 109 patches applied without fuzz/offset.",
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
+    "seriesPath": "/private/tmp/neantik-ungoogled-common-154.0.8037.57-1/patches/series",
+    "seriesSHA256": "4ff99a455ee8e0b6f66c167ebb0b79ec063daa1038ce5bc659a485965d7abae7",
+    "sourceRepositoryPath": "/private/tmp/neantik-ungoogled-common-154.0.8037.57-1",
+    "tag": "154.0.8037.57-1",
+    "tree": "b94932e613bbbb63656c285c614145ef1255d358",
+    "upstreamApplyLogPath": "/private/tmp/neantik-m154-clean-replay-20260930/common.log",
+    "upstreamApplyLogSHA256": "3066f86c6196d094464ec759bc0b16409096a7ac2d7512791f05c55ffac871a8",
+    "upstreamPruneLogPath": "/private/tmp/neantik-m154-clean-replay-20260930/prune.log",
+    "upstreamPruneLogSHA256": "7e2b56337cab07b28479e9b86c8ef849e23bbb4ef2679d96b5f94c00d0fe38e2"
+  },
+  "upstreamMacPackagingCurrent": {
+    "checkedAt": "2026-09-30",
+    "commonSubmoduleCommit": "800d0bb5078472e4442c1fd73373172754a60939",
+    "qualification": "Verified upstream source availability and immutable source pins only. Local source replay, postimage manifest, toolchain, runtime, signing, and release remain separate gates.",
+    "releaseCommit": "3241dc9cacee393621d277ec936376072f0cb3c5",
+    "releasePublishedAtUTC": "2026-09-28T05:03:35Z",
+    "releaseReady": false,
+    "releaseTag": "154.0.8037.57-1.1",
+    "releaseTree": "ef5ef849ed78edb7d8c07773df6bbb6753efe9ea",
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos",
+    "seriesBytes": 1084,
+    "seriesGitBlobSHA1": "106434335706003ebe86ed2b0fdace9e07f83886",
+    "seriesPatchCount": 20,
+    "seriesPath": "patches/series",
+    "seriesSHA256": "f432ba4b0188b9e4dd4bbe9e1d21760f76048c70df69e70b2d2881ede6378510",
+    "tagRefType": "commit",
+    "verificationSource": [
+      "https://api.github.com/repos/ungoogled-software/ungoogled-chromium-macos/git/ref/tags/154.0.8037.57-1.1",
+      "https://api.github.com/repos/ungoogled-software/ungoogled-chromium-macos/git/commits/3241dc9cacee393621d277ec936376072f0cb3c5",
+      "https://api.github.com/repos/ungoogled-software/ungoogled-chromium-macos/contents/ungoogled-chromium?ref=154.0.8037.57-1.1",
+      "https://api.github.com/repos/ungoogled-software/ungoogled-chromium-macos/contents/patches/series?ref=154.0.8037.57-1.1",
+      "https://raw.githubusercontent.com/ungoogled-software/ungoogled-chromium-macos/154.0.8037.57-1.1/patches/series"
+    ]
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v197-v135-recipient-output-recovery-and-v193-qa-build-reuse-20261027",
+  "observedAtUTC": "2026-10-27T07:44:42Z",
+  "status": "V135_14_OUTPUTS_RECOVERED_AND_STAGED; RELOCATION_APPLIED_TO_COPY; V184_QA_BINARIES_INPUTS_UNCHANGED; NO_SIGN_OR_LOAD",
+  "v135": {
+    "receipt": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v135-clean-relocated-v132-webkit-relink-20261026.json",
+    "receiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "outputRoot": "/private/tmp/neantik-v132-recipient-relink-20261026/build",
+    "outputs": "14/14 present and SHA-256 exact",
+    "priorStateCorrection": "V153 reported that these outputs had later been removed. At this observation the matching 14 outputs are present; do not assume they are absent or infer when they returned."
+  },
+  "staging": {
+    "frameworks": "/private/tmp/neantik-v197-v135-recipient-staging/Frameworks",
+    "stagingReceipt": "/private/tmp/neantik-v197-v135-recipient-staging/staging.json",
+    "stagingReceiptSHA256": "1a2a890f459e1f771fd69ea9629e0a171964d8d9272fded535aaf2933f76e007",
+    "runtimeImages": 16,
+    "v135OutputMatches": "14/14",
+    "networkSandboxPolicyRevision": 13,
+    "status": "pre-sign only",
+    "relocationCheckCopy": "/private/tmp/neantik-v197-v135-recipient-staging/Frameworks-relocation-check",
+    "relocationPlanSHA256": "f48760908aed14f784d2dbdbab7733a9c675c0af0e83c3be317a57a2137123c8",
+    "relocationAppliedReceiptSHA256": "c306d3cfc4a69166a3d5b94756a76585944faf1f614fc53d212437fc00740838",
+    "imagesRelocated": 15,
+    "remainingRelocationChanges": 0,
+    "originalStagingPreserved": true,
+    "signed": false,
+    "loaded": false
+  },
+  "qaBuildReuse": {
+    "v184SourceCommit": "8e2148d03c75c565a561b31344efc2b18c6243fa",
+    "v193SourceCommit": "50fd09c7407f38f41f18ed7563d08837603458f4",
+    "changedPaths": [
+      "docs/evidence/third-party/webkit-v20-webcore-generated-input-headers.txt",
+      "scripts/tests/test_webkit_runtime_notices.py",
+      "scripts/webkit_runtime_notices.py"
+    ],
+    "swiftInputSHA256": "0e47751ba095a6b577ec565205f2e6d7688bafb6dfac57a70123c7dc63d51225",
+    "swiftInputDigestMatchesV184AndV193": true,
+    "v184QAManagerSHA256": "83f020287f4a77bdd2af6b95d4677177011e9993ef98848766f01564120233c2",
+    "v184QAHostSHA256": "51f88ceee150ad24735660321572ec88fa973dc47338b896b26ede9a3da8c534",
+    "scope": "Compilation inputs unchanged and retained QA binaries match V185 hashes. This is not a V193 package, final source binding, signing, or runtime qualification."
+  },
+  "offer": {
+    "manifestSHA256": "007cfb7c97437cd30a7647d1e9c4ae0dfa182a90d6091772e83242df67507866",
+    "status": "V193 private draft 527 components and 64 overlay assets verified; not candidate-bound"
+  },
+  "pythonRegression": {
+    "status": "RUNNING at observation",
+    "sessionId": 2883,
+    "privateLog": "/private/tmp/neantik-v193-python-regression-ysjj0wmd/unittest.log"
+  },
+  "limitations": [
+    "Recipient-signed replacement and loading of the V135 rebuilt outputs are still unproved.",
+    "Secure timestamp signing remains the recorded boundary; no unchanged signing probe was repeated.",
+    "One metadata scan finding, license/notice applicability, proxy runtime, final source binding, notarization and publication remain open."
+  ],
+  "nextAction": "Poll live Python regression session 2883. Preserve the exact V135 staging; after secure timestamp signing is available, perform the recipient-sign/replacement/load and changed proxy QA on appropriately preflighted private candidates."
+}

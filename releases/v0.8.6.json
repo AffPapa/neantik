@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.8.6",
+  "version": "0.8.6",
+  "build": 117,
+  "channel": "public-alpha",
+  "sourceCommit": "bb02709352b2e44cde336741317cd02ab20f9c0e",
+  "workflowCommit": "bb02709352b2e44cde336741317cd02ab20f9c0e",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.8.6",
+  "siteUrl": "https://browser.free",
+  "publicationScope": {
+    "channels": [
+      "GitHub",
+      "browser.free"
+    ],
+    "affpapa": "excluded by explicit user instruction; user updates manually"
+  },
+  "rollbackRelease": "v0.8.5",
+  "distributionDirectory": "dist/distribution/v0.8.6-117-bb02709",
+  "candidateManifestSHA256": "48e71a17674968a0b0b855e5364028c23fd2b5dcddc6470ad2666c2b176e7042",
+  "candidateSourceBindingSHA256": "28994899a04349b911a9cec82eb0d9c3e3ec8de1a7d2d81ecec70cf30fd08583",
+  "managerSHA256": "09a50ff141eabd2d9a7079d89b3b7c9ff8bcc4633ab99dfe014f2abb6a64c2aa",
+  "changes": [
+    "Real WKDownload with chosen destination, per-profile progress/cancellation/Finder reveal.",
+    "Exclusive atomic final publication preserves WebKit quarantine and never overwrites existing files.",
+    "Hold profile/quit guards until pending policy conversions and actual download cancellation settle.",
+    "Compact top-aligned download list displays the chosen destination filename."
+  ],
+  "limitations": [
+    "Public alpha; major1.0 and complete hardware/macOS qualification remain open.",
+    "Headed ARM64/macOS27 tests do not prove execution on every Mac, macOS14 or physical VoiceOver.",
+    "Safe Browsing disabled; no anonymity/CAPTCHA/site-rule bypass guarantee.",
+    "OS-default-trusted authenticated HTTPS upstream positive deferred explicitly by user; private-anchor QA and HTTPS destination are distinct evidence.",
+    "Encrypted BrowserData backup requires original stopped Chromium profile, Mac, Keychain and exact runtime; no cross-Mac OS-secret portability. Existing separate signed QA recovery/interruption evidence retained, production secrets not used for tests.",
+    "Own verified packed CRX native install/restart/disable/enable/remove and profile isolation passed; cancel-install dialog unobserved; not universal third-party extension compatibility.",
+    "Bounded actual shipping HTTP/HTTPS/refusal observations and separate signed DEBUG DNS NXDOMAIN controls do not prove continuous whole-system DNS/UDP isolation. Product DNS remains notObserved.",
+    "Updater .46→.47 installation/rollback evidence retained; no fresh .82→.83 install qualification yet.",
+    "WebKit experimental/direct-only: downloads and tabs work; no proxy, session restore, Chromium extensions, full backup, deletion or stdio MCP launch. No download crash resume.",
+    "MCP exact/downloaded tests cover18management/7read metadata, revision/access controls and WebKit refusals, not every AI client or page automation.",
+    "Full local Swift1490reported169suites,60skip log lines;1347Python first run3docs errors, corrected5affected checksPASS. Native WK fixture expanded afterward; no claim new full cloud CI was run."
+  ],
+  "artifacts": [
+    {
+      "name": "NeAntik-0.8.6-arm64-notarized.zip",
+      "sha256": "0d948ca7fc35c220256a49fdace6199c31f846c8694da56b1f7c1dd539224154",
+      "sizeBytes": 189706310,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.6/NeAntik-0.8.6-arm64-notarized.zip"
+    },
+    {
+      "name": "NeAntik-0.8.6-arm64-notarized.dmg",
+      "sha256": "6d4f928cebfe1a0165efa80c776112217429eb266f7ef6fffdc0817bbc23210e",
+      "sizeBytes": 213957685,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.6/NeAntik-0.8.6-arm64-notarized.dmg"
+    }
+  ],
+  "verification": {
+    "developerId": "same pinned474F7C78F33EE324C24F6F5AE0443EB713E85E60; existing macOS provisioning contract",
+    "notarization": {
+      "ZIP": "Accepted",
+      "ZIPSubmission": "f640e103-9269-48c5-8550-96c7595c313a",
+      "DMG": "Accepted",
+      "DMGSubmission": "bd7a3fdc-fe9e-4f53-b8fa-32078830fdab"
+    },
+    "stapling": "PASS",
+    "Gatekeeper": "PASS: Notarized Developer ID",
+    "DirectDoctor": {
+      "passed": 13,
+      "blocked": 0,
+      "channel": "public-alpha"
+    },
+    "tests": {
+      "reported": 1490,
+      "suites": 169,
+      "seconds": 110.09,
+      "jobs": 2,
+      "parallel": false,
+      "result": "PASS",
+      "scope": "full local Swift with60skip lines; later expanded native fixture separately PASS"
+    },
+    "Python": {
+      "executed": 1347,
+      "skipped": 19,
+      "initialErrors": 3,
+      "initialResult": "not all-green",
+      "cause": "stale documentation release headers",
+      "correction": "5affected checksPASS; full run not repeated for prose only"
+    },
+    "exactWebKitDownloads": {
+      "status": "PASS",
+      "version": "0.8.6",
+      "build": 117,
+      "managerSHA256": "09a50ff141eabd2d9a7079d89b3b7c9ff8bcc4633ab99dfe014f2abb6a64c2aa",
+      "candidateManifestSHA256": "48e71a17674968a0b0b855e5364028c23fd2b5dcddc6470ad2666c2b176e7042",
+      "headed": true,
+      "normalSavePanel": true,
+      "chosenFilenameMatches": true,
+      "actualSyntheticFileSHA256": "1c71698c39a644ed4184857e42a9c04f69ff96e16ec67c5c66f087dc2b3ea6b9",
+      "xattrNames": [
+        "com.apple.provenance",
+        "com.apple.quarantine"
+      ],
+      "activeCancelGUI": true,
+      "separateProfileDownloadLists": true,
+      "CmdQDuringActiveTransfer": true,
+      "managerExit": 0,
+      "cancelledAndQuitFinalFilesAbsent": true,
+      "ownedStagingAbsent": true,
+      "mockKeychain": true,
+      "productionProfilesUsed": false,
+      "limitations": [
+        "own HTTP UI scope; no default-system-trusted TLS upstream qualification",
+        "no claim full macOS/hardware compatibility, download crash resume or native binary installation"
+      ]
+    },
+    "MCPExactSigned": {
+      "result": "PASS",
+      "managementTools": 18,
+      "readTools": 7,
+      "scope": "metadata/revision/refusals; no real secrets"
+    },
+    "GUIFingerprint": "fresh headed schema8 A→B→A PASS; public-alpha, not full1.0hardware coherence",
+    "DeviceMemory": "fresh exact JS/navigation/subresource hints all8 coherent; owned processes drained",
+    "hostedZIP": {
+      "archiveName": "NeAntik-0.8.6-arm64-notarized.zip",
+      "downloadURL": "https://github.com/AffPapa/neantik/releases/download/v0.8.6/NeAntik-0.8.6-arm64-notarized.zip",
+      "sha256": "0d948ca7fc35c220256a49fdace6199c31f846c8694da56b1f7c1dd539224154",
+      "sizeBytes": 189706310,
+      "status": "hosted-zip-byte-identical-gatekeeper-candidate-and-evidence-verified",
+      "retainedDownloadSHA256": "0d948ca7fc35c220256a49fdace6199c31f846c8694da56b1f7c1dd539224154"
+    },
+    "hostedDMG": {
+      "status": "PASS",
+      "sha256": "6d4f928cebfe1a0165efa80c776112217429eb266f7ef6fffdc0817bbc23210e",
+      "sizeBytes": 213957685,
+      "anonymousDownload": true,
+      "integritySigningStaplingGatekeeper": "PASS",
+      "version": "0.8.6",
+      "build": 117
+    },
+    "downloadedHeaded": {
+      "status": "PASS",
+      "version": "0.8.6",
+      "build": 117,
+      "runtimeVersion": "156.0.8078.12",
+      "archiveSHA256": "0d948ca7fc35c220256a49fdace6199c31f846c8694da56b1f7c1dd539224154",
+      "headed": true,
+      "freshEnrollment": true,
+      "allCriticalFilesMatch": true,
+      "ownedProcessesDrained": true,
+      "productionProfilesUsed": false,
+      "scope": "isolated authenticated headed fingerprint audit; not final manager relay qualification"
+    },
+    "downloadedMCP": {
+      "pass": true,
+      "managementTools": 18,
+      "readTools": 7,
+      "allOwnedMCPProcessesExited": true,
+      "scope": "Exact signed release executable; owned temporary workspace; metadata-only; no proxy credentials, browser launch, Keychain operations or network"
+    },
+    "liveSite": {
+      "status": "PASS",
+      "site": "https://browser.free",
+      "version": "0.8.6",
+      "build": 117,
+      "anonymousHTTPS": true,
+      "signedManifestVerified": true,
+      "keyID": "neantik-direct-20261012-v1",
+      "downloadLinksMatch": true,
+      "scope": "anonymous routes/content/download links/authenticated offline signed feed; native downloaded bytes checked separately"
+    },
+    "unchangedPriorNativeEvidence": {
+      "backup": "signed stopped Chromium cookie/LS/IDB/tabs restore and real process interruption; original Mac/Keychain only",
+      "CRX": "own packed native install/restart/disable/enable/remove and profile B absence; unchanged runtime",
+      "updater": "actual .46→.47 install, controlled failure/pre-ACK rollback, automatic relaunch and retained metadata; unchanged install services, no fresh .81→.82 claim"
+    },
+    "draftAssetDigests": "all4 authenticated draft digests verified before public publication"
+  },
+  "sitePublication": {
+    "status": "succeeded",
+    "projectID": "appgprj_6a643e28baa08191bf23bf4803345907",
+    "version": 143,
+    "savedVersionID": "appgprj_6a643e28baa08191bf23bf4803345907~appgver_da5bf1305118819199b5ec88b2d451bf",
+    "deploymentID": "appgdep_6acec8f717d48191868b5bf2fade5543",
+    "sourceCommit": "cfa8b87fef8c5cc6ab914ce675fd9f2fcd0487c0",
+    "url": "https://browser.free",
+    "origin": "https://neantik-browser.iryadom.chatgpt.site",
+    "audience": "public"
+  },
+  "migrations": {
+    "profileIdentity": "unchanged",
+    "metadataSchema": "unchanged",
+    "runtime": "unchanged",
+    "rollback": "previous0.8.5 retained; backup real data before downgrade; no universal secret portability"
+  }
+}

@@ -33,6 +33,41 @@ struct ProxyImportParserTests {
         #expect(draft.password.isEmpty)
     }
 
+    @Test func explicitURLSchemeSelectsProxyProtocol() throws {
+        let http = try ProxyImportParser.parse(
+            "http://user:secret@proxy.example:8080",
+            kind: .https
+        )
+        #expect(http.configuration.kind == .http)
+        #expect(http.configuration.username == "user")
+        #expect(http.password == "secret")
+
+        let https = try ProxyImportParser.parse(
+            "HTTPS://proxy.example:443",
+            kind: .http
+        )
+        #expect(https.configuration.kind == .https)
+        #expect(https.configuration.username.isEmpty)
+
+        let socks = try ProxyImportParser.parse(
+            "socks5://proxy.example:1080",
+            kind: .http
+        )
+        #expect(socks.configuration.kind == .socks5)
+    }
+
+    @Test func unknownSchemeFailsClosedAndAuthenticatedSocksParses() throws {
+        #expect(throws: ProxyImportError.invalid) {
+            try ProxyImportParser.parse(
+                "ftp://proxy.example:21",
+                kind: .http
+            )
+        }
+        let socks = try ProxyImportParser.parse("socks5://user:secret@proxy.example:1080", kind: .http)
+        #expect(socks.configuration.kind == .socks5 && socks.configuration.username == "user")
+        #expect(socks.password == "secret")
+    }
+
     @Test func bracketedIPv6IsSupported() throws {
         let draft = try ProxyImportParser.parse(
             "user:pass@[2001:db8::1]:1080",
@@ -103,7 +138,7 @@ struct ProxyImportParserTests {
 
     @Test func malformedOrUnsafeInputIsRejected() {
         for value in [
-            "https://proxy.example:443",
+            "ftp://proxy.example:443",
             "user:bad%@proxy.example:443",
             "user:pass@proxy.example:0",
             "user:pass@proxy.example:65536",
@@ -118,15 +153,37 @@ struct ProxyImportParserTests {
         }
     }
 
-    @Test func socksCredentialsHaveClearFailure() {
-        #expect(
-            throws: ProxyImportError.socksAuthenticationUnsupported
-        ) {
-            try ProxyImportParser.parse(
-                "user:secret@proxy.example:1080",
-                kind: .socks5
-            )
+    @Test func socksCredentialsRespectRFC1929ByteBoundaries() throws {
+        let boundary = String(repeating: "a", count: 255)
+        #expect(try ProxyImportParser.parse("user:\(boundary)@proxy.example:1080", kind: .socks5).password == boundary)
+        for password in ["", boundary + "a", String(repeating: "é", count: 128)] {
+            #expect(throws: (any Error).self) { try ProxyImportParser.parse("user:\(password)@proxy.example:1080", kind: .socks5) }
         }
+        #expect(throws: (any Error).self) { try ProxyImportParser.parse("\(boundary)a:secret@proxy.example:1080", kind: .socks5) }
+    }
+
+    @Test func diagnosticRepresentationsDoNotRevealImportedCredentials() throws {
+        let username = "qa-credential-user"
+        let password = "qa-credential-password"
+        let host = "qa-private-endpoint.example"
+        let draft = try ProxyImportParser.parse("\(username):\(password)@\(host):8443", kind: .https)
+        var dumped = ""
+        dump(draft, to: &dumped)
+        let diagnostics = [String(describing: draft), String(reflecting: draft), dumped]
+        for value in diagnostics {
+            #expect(!value.contains(username))
+            #expect(!value.contains(password))
+            #expect(!value.contains(host))
+        }
+        #expect(Mirror(reflecting: draft).children.isEmpty)
+        // Redaction must not alter the values the importer actually saves.
+        #expect(draft.configuration.username == username)
+        #expect(draft.configuration.host == host)
+        #expect(draft.password == password)
+        #expect(draft == (try ProxyImportParser.parse("\(username):\(password)@\(host):8443", kind: .https)))
+        // Negative control: the same diagnostic check notices an unredacted container.
+        struct Unredacted { let password: String }
+        #expect(String(reflecting: Unredacted(password: password)).contains(password))
     }
 
     @Test func summariesAndErrorsNeverRevealPassword() throws {

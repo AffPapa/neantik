@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "id": "V364",
+  "observedAtUTC": "2026-10-28T03:45:01Z",
+  "status": "PASS_SOURCE_ROUTE_COMPONENT_BINDING; RECIPIENT_TOOLCHAIN_AND_RUNTIME_QUALIFICATION_OPEN",
+  "scope": "Created an APFS copy-on-write detached source-offer revision V364 from V359 and integrated the exact Chromium 156.0.8078.74 source contract, adoption manifest, dependency lock, patches, GN args, build evidence, security baseline, focused verifiers and a recipient build-route draft. V359 was not modified. Only new/replaced components were hashed in this step; unchanged base component bytes are reused from the previously verified detached offer.",
+  "baseOffer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v359-webmodel-resource-closure",
+    "manifestSHA256": "b9404c2eb5c67ea5b6c6f3afc175a1fb6539f11ab6ec9a35aad73f4662750644",
+    "componentCount": 623
+  },
+  "newOffer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v364-chromium-15674-recipient-route",
+    "manifestSHA256": "b53c078a104dfba43c6626ff4d9646195fdc9b6ab032db69ecd6385f8c748e84",
+    "componentCount": 635,
+    "componentBytes": 1935296764,
+    "candidateBound": false
+  },
+  "chromium15674": {
+    "officialCommit": "d331de35ca8ab1358c7a17e4bd41627d55eaef51",
+    "officialTree": "ffe41d3ec78c520fbe20a43802869358d3e18961",
+    "sourceAdoptionSHA256": "81c79ee3822f6cd9e27baf0cdba273198ad37561489a9a50b2f3b66250ffbe6f",
+    "buildEvidenceSHA256": "949eb774c329290d091d07baeca62a85b0a221c5e3a5093489ce846f259102f9",
+    "buildActions": 29717,
+    "buildOutputDirectory": "out/NeAntikStable156_48",
+    "version": "156.0.8078.74",
+    "depotToolsRevision": "not captured; unresolved recipient-reproducibility input"
+  },
+  "addedOrReplacedComponents": [
+    {
+      "path": "overlay/runtime/chromium-15674-source-contract.json",
+      "bytes": 1611,
+      "sha256": "81c79ee3822f6cd9e27baf0cdba273198ad37561489a9a50b2f3b66250ffbe6f",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "overlay/runtime/chromium-15674-source-adoption-v1.json",
+      "bytes": 2856,
+      "sha256": "b156785787d6c512e9e33126ba0a560d9c59b2cf3fb3404733d9d3771a0a8dfb",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "overlay/runtime/chromium-15674-deps-lock.json",
+      "bytes": 25084,
+      "sha256": "13947f0d4f8655664bdffd2a3541f3bf7ac418b88f6874b628f117286c7f6dcf",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "overlay/runtime/chromium-15674-build-evidence.json",
+      "bytes": 1044,
+      "sha256": "949eb774c329290d091d07baeca62a85b0a221c5e3a5093489ce846f259102f9",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "overlay/runtime/chromium-15674-rebase-plan.json",
+      "bytes": 3216,
+      "sha256": "4ceb4ebd7f8c79c5a36b02e1a502907ff8cecd3237dc1833ca03badceb5f1112",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "overlay/runtime/chromium-15674-args.gn",
+      "bytes": 1134,
+      "sha256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "overlay/runtime/chromium-15674-neantik.patch",
+      "bytes": 1295951,
+      "sha256": "2f48cb944f6e51439322776e3ec0519bd0567e300049253791c60faca46481ea",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "overlay/runtime/chromium-15674-devtools-typescript6.patch",
+      "bytes": 1401,
+      "sha256": "9eed3c3f43f96a00595163971b120c50accbeefeb07b552939b0ba9ad6ae7bfb",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "overlay/runtime/chromium-15674-v8-scope-iterator-compat.patch",
+      "bytes": 511,
+      "sha256": "d06dd32200393a0eacf5dafcf83f6c5dafafc508b97af58013e52cd135d58388",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "overlay/runtime/security-baseline.json",
+      "bytes": 1526,
+      "sha256": "7f056eb8f0ec05f9baf8397854cdda36193fba787835563631341a1c45a4dfce",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "overlay/scripts/chromium_15674_release_evidence.py",
+      "bytes": 11087,
+      "sha256": "82bb399dadb425171a33756bc3184d46ea346d1b92d660c0265d3e87760a1ac6",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "overlay/scripts/verify-chromium-15674-unsigned-candidate.py",
+      "bytes": 3729,
+      "sha256": "d77121972c421580cff5d2283401c16861df7e8332324fff7df8ed08bf8a8a53",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "overlay/docs/recipient-work/V267-CHROMIUM-15674-SOURCE-AND-BUILD-ROUTE-DRAFT.md",
+      "bytes": 3934,
+      "sha256": "c06a324f27d77cf8bd73e957db376ae2b055777b7dc71cb62478afd8f8ec145d",
+      "includedInOfferFolder": true
+    }
+  ],
+  "verification": {
+    "baseManifestCopiedByteIdenticallyBeforeEdit": true,
+    "unchangedBaseComponentRecordsPreserved": true,
+    "newAndReplacedComponentHashesSizes": "PASS",
+    "componentPathUniqueness": "PASS",
+    "noKnownLocalAbsolutePathsInNewComponents": "PASS",
+    "fullUnchangedBaseRehash": "NOT_RUN; prior exact manifest verification reused"
+  },
+  "nonActions": [
+    "No Chromium or WebKit build",
+    "No runtime launch, signing, notarization, publication or user data changes",
+    "No modification to the signed build200 candidate or V359 source offer"
+  ],
+  "limitations": [
+    "The V267 route is a draft because the exact .74 depot_tools revision was not captured.",
+    "Chromium .74 has no exact runtime report or coherent Apple device tuple evidence; production lock promotion remains blocked.",
+    "Recipient signed replacement/relink/load, final WebKit notice binding and all release gates remain open."
+  ],
+  "releaseQualified": false,
+  "nextAction": "Find and bind the exact .74 depot_tools/toolchain revision from existing build provenance without rebuilding. Keep the production lock unpromoted until exact .74 runtime tuple evidence exists; do not retry timestamp signing until the environment changes."
+}

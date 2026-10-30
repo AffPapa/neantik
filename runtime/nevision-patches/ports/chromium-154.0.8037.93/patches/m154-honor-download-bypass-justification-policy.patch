@@ -1,0 +1,32 @@
+--- a/chrome/browser/enterprise/connectors/analysis/content_analysis_downloads_delegate.cc
++++ b/chrome/browser/enterprise/connectors/analysis/content_analysis_downloads_delegate.cc
+@@ -129,7 +129,7 @@
+ }
+ 
+ bool ContentAnalysisDownloadsDelegate::BypassRequiresJustification() const {
+-  return false;
++  return bypass_justification_required_;
+ }
+ 
+ std::u16string ContentAnalysisDownloadsDelegate::GetBypassJustificationLabel()
+--- a/chrome/browser/enterprise/connectors/analysis/content_analysis_downloads_delegate_unittest.cc
++++ b/chrome/browser/enterprise/connectors/analysis/content_analysis_downloads_delegate_unittest.cc
+@@ -44,6 +44,18 @@
+   base::OnceClosure quit_closure_;
+ };
+ 
++TEST_F(ContentAnalysisDownloadsDelegateTest, BypassRequiresJustification) {
++  ContentAnalysisDownloadsDelegate required_delegate(
++      u"", u"", GURL(), true, {}, {}, nullptr,
++      CreateSampleCustomRuleMessage(u"", ""), u"");
++  EXPECT_TRUE(required_delegate.BypassRequiresJustification());
++
++  ContentAnalysisDownloadsDelegate optional_delegate(
++      u"", u"", GURL(), false, {}, {}, nullptr,
++      CreateSampleCustomRuleMessage(u"", ""), u"");
++  EXPECT_FALSE(optional_delegate.BypassRequiresJustification());
++}
++
+ TEST_F(ContentAnalysisDownloadsDelegateTest, TestOpenFile) {
+   ContentAnalysisDownloadsDelegate delegate(
+       u"", u"", GURL(), true,

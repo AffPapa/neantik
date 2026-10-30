@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.7",
+  "version": "0.7.7",
+  "build": 70,
+  "releasedAt": "2026-09-24",
+  "channel": "public-alpha",
+  "platform": "macOS",
+  "minimumSystemVersion": "14.0",
+  "architecture": "arm64",
+  "runtime": {
+    "name": "NeAntik Browser",
+    "chromiumVersion": "153.0.8010.52",
+    "gpuMode": "metal",
+    "rebuilt": false
+  },
+  "archive": {
+    "name": "NeAntik-0.7.7-arm64-notarized.zip",
+    "sizeBytes": 191772754,
+    "sha256": "18aae618dcaf2e7237360f8b8726736e6271e4d5470ca634d926338f493e638c"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.7-arm64-notarized.dmg",
+    "sizeBytes": 218069022,
+    "sha256": "56a36631bebe8fbaa51aec9746b3ebcbc895d6a3016e3011bd90e6ac5449f85e"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "accepted",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "hostedDownload": "passed",
+    "fingerprint": "public-alpha-qualified",
+    "strictProductionFingerprintCoherence": "incomplete",
+    "tests": {
+      "swift": 604,
+      "python": 675,
+      "pythonSkipped": 1,
+      "affpapa": 43,
+      "site": 22
+    }
+  },
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.7",
+  "sourceCommit": "1fcd32d85c6a0bc971484d76c648e57ed5af66cd",
+  "candidateManifestSHA256": "f2a78317c01cd99732029b70f0de1d5d37e8318ec0a6f858f70d93381da5df3e",
+  "rollbackRelease": "v0.7.6"
+}

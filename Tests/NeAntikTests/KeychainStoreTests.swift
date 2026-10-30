@@ -3,85 +3,99 @@ import Testing
 @testable import NeAntik
 
 struct KeychainStoreTests {
-    @Test
-    func keychainBoundaryRejectsOversizedAndControlPasswordsBeforeWrite() {
+    @Test func customWorkspaceCannotReadOrMutateDefaultCredentials() throws {
+        let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop")
         let backend = MemoryKeychainBackend()
-        let store = KeychainStore(backend: backend)
-        let profileID = UUID()
-        let oversized = String(
-            repeating: "a",
-            count: ProxyImportParser.maximumPasswordLength + 1
-        )
-
-        #expect(throws: KeychainCredentialValidationError.tooLarge) {
-            try store.saveProxyPassword(oversized, profileID: profileID)
-        }
-        #expect(throws: KeychainCredentialValidationError.unsafeCharacters) {
-            try store.updateProxyPasswordForProfileEdit(
-                "line\nfeed",
-                profileID: profileID
-            )
-        }
+        let id = UUID()
+        backend.set("owned-default-current", service: environment.keychainService, profileID: id)
+        backend.set("owned-default-legacy", service: try #require(environment.legacyKeychainService), profileID: id)
+        let custom = KeychainStore.applicationStore(environment: environment,
+            paths: AppPaths(rootDirectory: URL(fileURLWithPath: "/private/tmp/neantik-mcp-scope-a")),
+            fixtureRoot: nil, backend: backend)
+        #expect(try custom.proxyPassword(profileID: id) == nil)
         #expect(backend.upsertCallCount == 0)
         #expect(backend.deleteCallCount == 0)
+        try custom.saveProxyPassword("owned-custom", profileID: id)
+        #expect(try custom.proxyPassword(profileID: id) == "owned-custom")
+        try custom.deleteProxyPassword(profileID: id)
+        #expect(backend.string(service: environment.keychainService, profileID: id) == "owned-default-current")
+        #expect(backend.string(service: try #require(environment.legacyKeychainService), profileID: id) == "owned-default-legacy")
     }
 
-    @Test
-    func keychainBoundaryPreservesOrdinaryZWJPassword() throws {
+    @Test func customWorkspacesPersistSeparatelyDespiteMatchingProfileID() throws {
+        let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop")
         let backend = MemoryKeychainBackend()
-        let store = KeychainStore(backend: backend)
-        let profileID = UUID()
-        let password = String(repeating: "👨‍👩‍👧‍👦", count: 512)
-
-        try store.saveProxyPassword(password, profileID: profileID)
-
-        #expect(try store.proxyPassword(profileID: profileID) == password)
+        let id = UUID()
+        func workspace(_ name: String) -> KeychainStore {
+            KeychainStore.applicationStore(environment: environment,
+                paths: AppPaths(rootDirectory: URL(fileURLWithPath: "/private/tmp/" + name)),
+                fixtureRoot: nil, backend: backend)
+        }
+        let first = workspace("neantik-mcp-scope-a"), second = workspace("neantik-mcp-scope-b")
+        try first.saveProxyPassword("owned-first", profileID: id)
+        #expect(try second.proxyPassword(profileID: id) == nil)
+        try second.saveProxyPassword("owned-second", profileID: id)
+        #expect(try workspace("neantik-mcp-scope-a").proxyPassword(profileID: id) == "owned-first")
+        #expect(try second.proxyPassword(profileID: id) == "owned-second")
     }
 
-    @Test
-    func keychainReadBoundaryRejectsOversizedAndControlData() {
-        let oversizedBackend = MemoryKeychainBackend()
-        let oversizedID = UUID()
-        oversizedBackend.set(
-            Data(
-                repeating: 0x61,
-                count: ProxyImportParser.maximumPasswordBytes + 1
-            ),
-            service: KeychainStore.currentService,
-            profileID: oversizedID
-        )
-        let oversizedStore = KeychainStore(backend: oversizedBackend)
+    @Test func workspaceScopeNormalizesURLAliasesWithoutExposingPath() {
+        let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop")
+        let defaultRoot = URL(fileURLWithPath: "/private/tmp/neantik-default-test")
+        let root = URL(fileURLWithPath: "/private/tmp/neantik-custom-test")
+        let first = KeychainStore.workspaceCredentialScope(environment: environment, root: root, defaultRoot: defaultRoot)
+        let alias = KeychainStore.workspaceCredentialScope(environment: environment,
+            root: root.appendingPathComponent("unused/.."), defaultRoot: defaultRoot)
+        #expect(first.service == alias.service)
+        #expect(first.legacyService == nil)
+        #expect(!first.service.contains(root.path))
+        #expect(first.service.hasPrefix(environment.keychainService + ".workspaces.v1."))
+    }
 
-        #expect(throws: KeychainCredentialValidationError.tooLarge) {
-            try oversizedStore.proxyPassword(profileID: oversizedID)
+    @Test func historicalLibraryFallbacksRetainCredentialCompatibility() throws {
+        let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop")
+        for hasEmptyCurrent in [false, true] {
+            let support = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: support) }
+            let legacy = support.appendingPathComponent(["Ne", "Vision"].joined(), isDirectory: true)
+            let current = support.appendingPathComponent("NeAntik", isDirectory: true)
+            try FileManager.default.createDirectory(at: legacy, withIntermediateDirectories: true)
+            try Data("[]".utf8).write(to: legacy.appendingPathComponent("profiles.json"))
+            if hasEmptyCurrent { try FileManager.default.createDirectory(at: current, withIntermediateDirectories: true) }
+            let paths = AppPaths(applicationSupportDirectory: support, moveLegacy: { _, _ in throw MemoryKeychainError() })
+            #expect(paths.rootDirectory.standardizedFileURL == legacy.standardizedFileURL)
+            let scope = KeychainStore.workspaceCredentialScope(environment: environment, root: paths.rootDirectory, defaultRoot: current)
+            #expect(scope.service == environment.keychainService)
+            #expect(scope.legacyService == environment.legacyKeychainService)
+            let backend = MemoryKeychainBackend(), id = UUID()
+            backend.set("owned-historical", service: try #require(scope.legacyService), profileID: id)
+            #expect(try KeychainStore(backend: backend, service: scope.service, legacyService: scope.legacyService).proxyPassword(profileID: id) == "owned-historical")
         }
+    }
 
-        let invalidUTF8Backend = MemoryKeychainBackend()
-        let invalidUTF8ID = UUID()
-        invalidUTF8Backend.set(
-            Data([0xC3, 0x28]),
-            service: KeychainStore.currentService,
-            profileID: invalidUTF8ID
-        )
-        let invalidUTF8Store = KeychainStore(backend: invalidUTF8Backend)
-
-        #expect(throws: KeychainCredentialValidationError.invalidEncoding) {
-            try invalidUTF8Store.proxyPassword(profileID: invalidUTF8ID)
+    @Test func arbitraryLegacyNamesAndDevelopmentSiblingRemainIsolated() {
+        let production = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop")
+        let development = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop.dev")
+        let defaultRoot = URL(fileURLWithPath: "/private/tmp/neantik-synthetic-support/NeAntik")
+        for (environment, root) in [(production, URL(fileURLWithPath: "/private/tmp/neantik-other-support/NeVision")),
+                                   (development, defaultRoot.deletingLastPathComponent().appendingPathComponent("NeVision"))] {
+            let scope = KeychainStore.workspaceCredentialScope(environment: environment, root: root, defaultRoot: defaultRoot)
+            #expect(scope.service != environment.keychainService)
+            #expect(scope.legacyService == nil)
         }
+    }
 
-        let controlBackend = MemoryKeychainBackend()
-        let controlID = UUID()
-        controlBackend.set(
-            "secret\u{0}tail",
-            service: KeychainStore.currentService,
-            profileID: controlID
-        )
-        let controlStore = KeychainStore(backend: controlBackend)
-
-        #expect(throws: KeychainCredentialValidationError.unsafeCharacters) {
-            try controlStore.proxyPassword(profileID: controlID)
-        }
-        #expect(controlBackend.deleteCallCount == 0)
+    @Test func defaultWorkspaceRetainsExistingLegacyMigration() throws {
+        let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop")
+        let backend = MemoryKeychainBackend()
+        let id = UUID()
+        backend.set("owned-legacy", service: try #require(environment.legacyKeychainService), profileID: id)
+        let defaultRoot = environment.applicationSupportRoot(environment: [:], developmentFixtureRoot: nil)
+        let store = KeychainStore.applicationStore(environment: environment,
+            paths: AppPaths(rootDirectory: defaultRoot), fixtureRoot: nil, backend: backend)
+        #expect(try store.proxyPassword(profileID: id) == "owned-legacy")
+        #expect(backend.string(service: environment.keychainService, profileID: id) == "owned-legacy")
+        #expect(backend.string(service: try #require(environment.legacyKeychainService), profileID: id) == nil)
     }
 
     @Test
@@ -108,6 +122,37 @@ struct KeychainStoreTests {
                 profileID: profileID
             ) == nil
         )
+    }
+
+    @Test
+    func proxyPreflightReadsCurrentThenLegacyWithoutMutatingEither() throws {
+        let backend = MemoryKeychainBackend()
+        let profileID = UUID()
+        let store = KeychainStore(backend: backend)
+        backend.set("synthetic-legacy", service: KeychainStore.legacyService, profileID: profileID)
+        #expect(try store.proxyPasswordWithoutMigration(profileID: profileID) == "synthetic-legacy")
+        #expect(backend.upsertCallCount == 0)
+        #expect(backend.deleteCallCount == 0)
+        #expect(backend.string(service: KeychainStore.currentService, profileID: profileID) == nil)
+        backend.set("synthetic-current", service: KeychainStore.currentService, profileID: profileID)
+        #expect(try store.proxyPasswordWithoutMigration(profileID: profileID) == "synthetic-current")
+        #expect(backend.string(service: KeychainStore.legacyService, profileID: profileID) == "synthetic-legacy")
+        #expect(backend.upsertCallCount == 0)
+        #expect(backend.deleteCallCount == 0)
+    }
+
+    @Test
+    func proxyPreflightDoesNotFallBackFromCorruptCurrentCredential() throws {
+        let backend = MemoryKeychainBackend()
+        let profileID = UUID()
+        backend.set(Data([0xFF]), service: KeychainStore.currentService, profileID: profileID)
+        backend.set("synthetic-legacy", service: KeychainStore.legacyService, profileID: profileID)
+        let store = KeychainStore(backend: backend)
+        #expect(throws: (any Error).self) {
+            try store.proxyPasswordWithoutMigration(profileID: profileID)
+        }
+        #expect(backend.upsertCallCount == 0)
+        #expect(backend.deleteCallCount == 0)
     }
 
     @Test
@@ -376,6 +421,122 @@ struct KeychainStoreTests {
                 profileID: profileID
             )
         }
+    }
+
+    @Test @MainActor
+    func existingProfileProxyAssignmentRollsBackMetadataWhenKeychainFails() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profiles = ProfileStore(paths: paths)
+        let original = try profiles.upsert(BrowserProfile(name: "Existing"))
+        let persistedBefore = ProfileStore(paths: paths)
+            .profile(withID: original.id)
+        let browserData = paths.browserDataDirectory(for: original.id)
+        let marker = browserData.appendingPathComponent("untouched.txt")
+        try Data("keep".utf8).write(to: marker)
+
+        let backend = MemoryKeychainBackend()
+        backend.upsertAlwaysFails = true
+        let keychain = KeychainStore(backend: backend)
+        var edited = original
+        edited.proxy = ProxyConfiguration(
+            kind: .http,
+            host: "proxy.example",
+            port: 8080,
+            username: "user"
+        )
+
+        #expect(throws: MemoryKeychainError.self) {
+            try profiles.upsert(edited, toFolderID: nil) { saved in
+                try keychain.updateProxyPasswordForProfileEdit(
+                    "synthetic-password",
+                    profileID: saved.id
+                )
+            }
+        }
+
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profile(withID: original.id) == persistedBefore)
+        #expect(backend.string(
+            service: KeychainStore.currentService,
+            profileID: original.id
+        ) == nil)
+        #expect(try Data(contentsOf: marker) == Data("keep".utf8))
+    }
+
+    @Test @MainActor
+    func staleExistingProfileProxyAssignmentCannotOverwriteNewerEdit() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let firstWindow = ProfileStore(paths: paths)
+        let original = try firstWindow.upsert(BrowserProfile(name: "Existing"))
+        let secondWindow = ProfileStore(paths: paths)
+        var newer = original
+        newer.note = "edited elsewhere"
+        _ = try secondWindow.upsert(newer)
+
+        var stale = original
+        stale.proxy = ProxyConfiguration(
+            kind: .http,
+            host: "proxy.example",
+            port: 8080,
+            username: "user"
+        )
+        var credentialCallbackRan = false
+        #expect(throws: BrowserProfileRevisionConflictError.self) {
+            try firstWindow.upsert(stale, toFolderID: nil) { _ in
+                credentialCallbackRan = true
+            }
+        }
+
+        let reloaded = ProfileStore(paths: paths)
+        #expect(reloaded.profile(withID: original.id)?.note == "edited elsewhere")
+        #expect(reloaded.profile(withID: original.id)?.proxy == nil)
+        #expect(!credentialCallbackRan)
+    }
+
+    @Test @MainActor
+    func existingProfileProxyAssignmentPersistsOnlySelectedProfile() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profiles = ProfileStore(paths: paths)
+        let selected = try profiles.upsert(BrowserProfile(name: "Selected"))
+        let untouched = try profiles.upsert(BrowserProfile(name: "Untouched"))
+        let untouchedBefore = ProfileStore(paths: paths)
+            .profile(withID: untouched.id)
+        let marker = paths.browserDataDirectory(for: selected.id)
+            .appendingPathComponent("untouched.txt")
+        try Data("keep".utf8).write(to: marker)
+
+        let backend = MemoryKeychainBackend()
+        let keychain = KeychainStore(backend: backend)
+        var edited = selected
+        edited.proxy = ProxyConfiguration(
+            kind: .http,
+            host: "proxy.example",
+            port: 8080,
+            username: "user"
+        )
+        let saved = try profiles.upsert(edited, toFolderID: nil) { profile in
+            try keychain.updateProxyPasswordForProfileEdit(
+                "synthetic-password",
+                profileID: profile.id
+            )
+        }
+
+        let reloaded = ProfileStore(paths: paths)
+        #expect(saved.revision == selected.revision + 1)
+        #expect(reloaded.profile(withID: selected.id)?.proxy == edited.proxy)
+        #expect(reloaded.profile(withID: untouched.id) == untouchedBefore)
+        #expect(try keychain.proxyPassword(profileID: selected.id) ==
+            "synthetic-password")
+        #expect(try Data(contentsOf: marker) == Data("keep".utf8))
     }
 
     @Test

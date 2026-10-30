@@ -86,6 +86,17 @@ struct ProxyTestOperationRegistry: Equatable, Sendable {
 /// Revalidating the exact proxy revision therefore prevents another window's
 /// edit from being overwritten by a result that was suspended in persistence.
 struct ProxyTestCommitPolicy {
+    static func permitsPublication(
+        expectedProxy: ProxyConfiguration,
+        currentProxy: ProxyConfiguration?,
+        tokenIsCurrent: Bool,
+        taskIsCancelled: Bool
+    ) -> Bool {
+        tokenIsCurrent &&
+            !taskIsCancelled &&
+            currentProxy == expectedProxy
+    }
+
     static func matchesSnapshot(
         expectedProxy: ProxyConfiguration,
         currentProxy: ProxyConfiguration?,

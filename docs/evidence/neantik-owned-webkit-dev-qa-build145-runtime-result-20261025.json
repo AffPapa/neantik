@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T13:14:59.229809+00:00",
+  "status": "build145-exact-Dev-QA-named-HTTP-route-PASS;owned-window-render-unverified",
+  "archiveSHA256": "6cfacdd64c1ac38b1573f09726665c3c4f6b1f83845138b9ec5e7ea74549dc29",
+  "apple": {
+    "submissionID": "a99895e8-5a89-4208-a46f-b794512a36bd",
+    "status": "Accepted",
+    "gatekeeper": "accepted; source=Notarized Developer ID"
+  },
+  "launch": {
+    "exactLauncher": "PASS; one-use marker consumed",
+    "resourceAdmission": "eligible true, memory pressure 1, thermal 0",
+    "managerPID": 45221,
+    "profiles": "2 synthetic model-encoded profiles; A named .invalid origin via HTTP proxy, B direct system WebKit"
+  },
+  "ownedA": {
+    "managerState": "running/stop, refused/stop, recovered/stop",
+    "firstCloseBrokerCounters": "inbound=4 loopback=4 connectMethods=4 httpMethods=0 otherMethods=0 parsed=4 authorized=2 bound=2",
+    "firstCloseNavigationStage": "stage=qa-nav-started",
+    "fixtureProxyResponses": 3,
+    "fixtureProxyRefusals": 2,
+    "directFallbacks": 0,
+    "authorityMismatches": 0,
+    "scope": "exact synthetic named HTTP origin and loopback upstream; host window could not be inspected by CUA (timeout); visual sentinel A unverified"
+  },
+  "systemB": {
+    "fixtureDirectResponses": 1,
+    "window": "system WebKit control displayed QA tab and direct-b address"
+  },
+  "fixtureVerifier": "PASS: A proxy responses, B direct, refusal then recovery, exact authority, no direct fallback",
+  "hostVisibilityInvestigation": {
+    "cua": "exact host bundle and bundle ID both timed out while host process running",
+    "mainThreadSample": "3-second sample showed main AppKit event loop idle waiting for events; no evidence of CPU hang",
+    "hypothesis": "custom AppKit pump may lack finishLaunching/AX registration; not yet proven"
+  },
+  "cleanup": "A and B stopped; Dev manager quit; loopback fixture interrupted; pgrep found no Dev QA or fixture process",
+  "productionQualified": false,
+  "releaseQualified": false,
+  "nextAction": "Diagnose/fix owned host window lifecycle and prove page completion/visible window with exact synthetic QA; then broaden HTTPS/DNS/isolation; source/license gates remain open."
+}

@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "status": "source-only-verified",
+  "implementationCommit": "c2b18dbd5a6a950f901d4dad3b0c91c01eace98c",
+  "scope": "source-only read/hash of preserved downloaded135; no browser/signing/qualification replay",
+  "runtimeVariant": "component-completion-v1",
+  "preservedRelease": {
+    "version": "0.8.23",
+    "build": 135,
+    "url": "https://github.com/AffPapa/neantik/releases/tag/v0.8.23",
+    "runtimeReportSHA256": "55206b4fd1f84dd889e0e80737c78325fa257ad4bc67e0eef7cb35c58761ad6c"
+  },
+  "measurement": {
+    "harnessSHA256": "f784247127c55f3914b53e7146fdd5be8f4441f5b7ee908161efd9961281dc3d",
+    "stages": [
+      {
+        "name": "old-copy",
+        "seconds": 23.168350375024602,
+        "result": "PASS"
+      },
+      {
+        "name": "old-report",
+        "seconds": 4.478957665967755,
+        "result": "PASS"
+      },
+      {
+        "name": "old-runtime",
+        "seconds": 4.727722667041235,
+        "result": "PASS"
+      },
+      {
+        "name": "new-source-context",
+        "seconds": 5.861588708939962,
+        "result": "PASS"
+      },
+      {
+        "name": "new-copy",
+        "seconds": 1.1954910419881344,
+        "result": "PASS"
+      },
+      {
+        "name": "new-report",
+        "seconds": 1.10132979194168,
+        "result": "PASS"
+      },
+      {
+        "name": "new-runtime",
+        "seconds": 1.358094499912113,
+        "result": "PASS"
+      }
+    ],
+    "oldFullSourceEntryCalls": 3,
+    "newFullSourceEntryCalls": 1,
+    "oldSeconds": 32.37503070803359,
+    "newSeconds": 9.51650404278189,
+    "falseReportRefused": true,
+    "failedContextReuseRefused": true
+  },
+  "controls": {
+    "contextTests": 16,
+    "contextSeconds": 13.316,
+    "reportTests": 18,
+    "runtimeBoundaryTests": 2,
+    "matchingUnchangedVariantTestsReused": 4,
+    "remainingSourcePlannerTests": 47,
+    "remainingSourcePlannerSeconds": 267.02575595793314,
+    "failures": 0,
+    "initialMissingPythonPath": "setup import errors retained; only affected modules rerun with PYTHONPATH",
+    "negativeControls": [
+      "copy bytes, missing/link/extra namespace",
+      "FD/path replacement during read",
+      "source/module/lock/interpreter/import/environment drift",
+      "mid-validation edit, interruption and poisoned context",
+      "runtime closure cannot be skipped",
+      "unknown workflow still full regression"
+    ]
+  },
+  "limitations": [
+    "One ordered old/new timing observation; OS caches and load can affect duration. No overall Direct speedup percentage claimed.",
+    "No cross-process reuse. Every later source-checker invocation validates again.",
+    "No browser launch, app build, signing, notarization or new artifact qualification. Existing135 native warning exception remains consumed.",
+    "Public site update remains separately blocked; source optimization does not update the site."
+  ]
+}

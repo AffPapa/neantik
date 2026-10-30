@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "V378",
+  "observedAtUTC": "2026-10-28T04:53:00Z",
+  "status": "PASS_DETACHED_SOURCE_OFFER_PATCH_AND_COMPONENT_BINDING; UNSIGNED_BUILD_AND_LEGAL_BINDING_OPEN",
+  "scope": "Integrated the V377 macOS TextExtractionFilter deployment gate and updated recipient recipe into a detached copy-on-write derivation of immutable V372. Verified all 651 source-offer components and all 64 first-party overlay assets with the existing consumer preflight. No source checkout, build tree, stage, candidate, package, signature, runtime, or publication changed.",
+  "offer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v378-text-extraction-deployment-gate-draft",
+    "manifestSHA256": "7c65b9b4f1382ac986d25964a92fd937e2c5db8bfc97e0d168040dd1749d5f88",
+    "componentCount": 651,
+    "overlayAssetCount": 64,
+    "candidateBound": false,
+    "releaseQualified": false
+  },
+  "baseOffer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v372-webkitlegacy-resource-license-binding",
+    "manifestSHA256": "283dcb3ef84bb6b19a2b67a4e11edd9d75c2555ba2737c26ae230a0ecec87ea4",
+    "unchanged": true
+  },
+  "patch": {
+    "path": "patches/webkit-text-extraction-filter-macos-deployment-gate-v377.patch",
+    "sha256": "a3a8e43188e6f0fcd3a603e0f3e6a814283da6f56a268f206b10f7fc97416ee2",
+    "basis": "V377 dry-run passed against exact V135 source; CMake gate checks OFF for 15.4 and ON for 26.0"
+  },
+  "sourceArchive": {
+    "sha256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "unchanged": true,
+    "modelSourceRights": "UNRESOLVED"
+  },
+  "openItems": [
+    "Three TextExtractionFilter runtime rows remain UNKNOWN until exact new unsigned build/stage and candidate binding.",
+    "Upstream model source remains in the WebKit source archive; file-specific rights remain unresolved.",
+    "Complete source/relink, recipient load, full notices, signing/notarization and release qualification remain open."
+  ],
+  "processCorrection": "Secure timestamp is required for signing, but does not gate a separately isolated unsigned source/build/stage proof. No timestamp retry is authorized without a new observed environmental change.",
+  "actions": {
+    "build": false,
+    "stage": false,
+    "candidateMutation": false,
+    "signOrNotarize": false,
+    "publish": false
+  }
+}

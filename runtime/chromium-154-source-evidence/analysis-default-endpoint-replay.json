@@ -1,0 +1,11 @@
+{
+  "path": "components/enterprise/connectors/core/analysis_service_settings_base.cc",
+  "beforeSHA256": "637649281a540867b7c79c54be66cf0a2c43eab7ce5164a004bbc2c24c8d44b8",
+  "afterSHA256": "3bdbaf03eacc52dc990ba62bbdcbf0ca314ddda3f36f292c7beb1b847459586f",
+  "patchSHA256": "99c88fc0f50756c4af1005c941ec6bb05a7bb06fc5e57e83306642c9bd3def39",
+  "scope": "Initialize default substituted cloud URL before existing validity CHECK; no regional endpoint selection and no network unblock",
+  "requiresRuntimeRebuild": true,
+  "zeroFuzzZeroOffsetReplay": true,
+  "currentPostimageMatches": true,
+  "releaseReady": false
+}

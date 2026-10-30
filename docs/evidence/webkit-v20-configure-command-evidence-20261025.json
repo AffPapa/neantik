@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "status": "pass-captured-v20-configure-command;recipient-build-relink-not-proved",
+  "observedAt": "2026-10-25T00:42:40Z",
+  "source": {
+    "webkitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "archiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "patchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735"
+  },
+  "configureLog": {
+    "source": "/private/tmp/neantik-v20-production-rebuild/configure.log",
+    "sha256": "32df0a6f2424c275351477576195c86c728ee77c5ca2ebfc9b84fae362a0d5f5",
+    "bytes": 10188,
+    "commandLine": 1
+  },
+  "normalizedConfigureCommand": "xcrun --sdk macosx27.0 cmake -DPORT=\"Cocoa\" -DCMAKE_OSX_SYSROOT=\"macosx27.0\" -DCMAKE_BUILD_TYPE=Release -G Ninja -DCMAKE_MAKE_PROGRAM=\"<WEBKIT_SOURCE_ROOT>/Source/cmake/ninja-wrapper\" -DSHOW_BINDINGS_GENERATION_PROGRESS=1 -DDEVELOPER_MODE=ON -DENABLE_GPU_PROCESS=ON -DENABLE_WEBXR=OFF -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=15.4 -DUSE_SYSTEM_MALLOC=OFF -DENABLE_WRITING_TOOLS=OFF -DCMAKE_Swift_FLAGS=\"-module-cache-path <WEBKIT_SOURCE_ROOT>/WebKitBuild/neantik-v20-production-arm64/SwiftModuleCache\" \"<WEBKIT_SOURCE_ROOT>\"",
+  "workingDirectory": "<BUILD_ROOT>",
+  "toolchain": {
+    "xcode": "27.0 (27A5228h)",
+    "cmake": "4.4.3",
+    "ninja": "1.13.2",
+    "sdk": "macosx27.0",
+    "architecture": "arm64",
+    "deploymentTarget": "15.4",
+    "python": "3.15.0",
+    "ruby": "2.6.10",
+    "perl": "5.34.1"
+  },
+  "buildEvidence": {
+    "buildLogSHA256": "a9ddd39c99ddfc9dbe991004b0f172992b18b3661a80e580bb4888fc2c0cb229",
+    "finalObservedAction": "[1311/1311] Linking Swift shared library libWebKitSwift.dylib; Code signing WebKitSwift",
+    "requestedLinkOutputs": 14,
+    "outputInventory": "docs/evidence/webkit-v20-output-target-inventory-20261025.json"
+  },
+  "scopeLimit": "The exact configure command and successful final link action are now recoverable without rerunning CMake or Ninja. The command embeds source/build paths and must be relocated by a recipient. This does not enumerate/offer every external transitive dependency, prove a clean recipient build/relink, or settle the 94 runtime notice applicability decisions."
+}

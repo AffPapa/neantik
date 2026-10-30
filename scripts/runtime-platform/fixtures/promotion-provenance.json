@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "origin": "NeAntik own 20261008-fury-major research fixtures; original bytes before maintenance adaptations",
+  "files": [
+    {
+      "path": "qa-browser-environment.mjs",
+      "sha256": "2eeca6fa0bbb87246265326eeef71405837d64700f7107254806a8836b1bda49",
+      "bytes": 1958
+    },
+    {
+      "path": "fixture-source-provenance.mjs",
+      "sha256": "db7594137931818c4ff3bb0e6e125e96f0610bbb953a8532a6dc13ebfc1dcf67",
+      "bytes": 5669
+    },
+    {
+      "path": "vector-semantics/run-headed-m156.mjs",
+      "sha256": "16b7381ab94ab3d0bb415a086089a29e563aee1976814b0726afdfcd13c3decf",
+      "bytes": 34686
+    },
+    {
+      "path": "vector-semantics/run-headed-m156-window.mjs",
+      "sha256": "73c4d9cb657221d2366184466e986429bb04fabbde8133ebf3b300f4880dcdb5",
+      "bytes": 37333
+    },
+    {
+      "path": "vector-semantics/run-headed-m156-sw-identity.mjs",
+      "sha256": "f8fc739c1bf24fb88ce04f468088dc452b4d9daf8c7e774404665a7da53a1643",
+      "bytes": 34979
+    },
+    {
+      "path": "vector-semantics/context-lifecycle-recorder.mjs",
+      "sha256": "e78a03f15b036f419c74bd49e2589765733372c2348fe5821073bd5508110d0d",
+      "bytes": 7227
+    },
+    {
+      "path": "vector-semantics/download-observer.mjs",
+      "sha256": "478bb263a73c4584d90880b329eae476147363f62c1d53c20b2620659c4d0fba",
+      "bytes": 5169
+    },
+    {
+      "path": "vector-semantics/disabled-pvt-cdp-hook-m156.mjs",
+      "sha256": "257271b2dbcbc7a9ca555b0a441ef504c95198502aac066a5acd8c7cd6d1f869",
+      "bytes": 3081
+    },
+    {
+      "path": "vector-semantics/owned-raw-cdp.mjs",
+      "sha256": "00704410c5d44c4bcbdafdfa7e84a8f9c6e3473b2802a636b99bf6cf44932992",
+      "bytes": 2132
+    },
+    {
+      "path": "vector-semantics/realm-capture.js",
+      "sha256": "0550b844f1d0004674cd2c7dd86a714e7237dcc38c8e563ff2e889656a95712d",
+      "bytes": 1962
+    },
+    {
+      "path": "vector-semantics/realm-operations-capture.js",
+      "sha256": "2639a15ab08b75cbe525f02d51e26776bc44caf7949e2655b2ec4dfff93333d4",
+      "bytes": 5954
+    },
+    {
+      "path": "vector-semantics/identity-sw-worker.js",
+      "sha256": "279b2c6ed1b29ecb717674fd2d2db9ebe883a7b85d71828d3e01f85333dc7912",
+      "bytes": 587
+    },
+    {
+      "path": "vector-semantics/page-probe.js",
+      "sha256": "4924e2622689120a3613a25eecc88be3ae3fa6776bb3612d255c3fd64dde7a9c",
+      "bytes": 2379
+    },
+    {
+      "path": "vector-semantics/context-operations-probe.js",
+      "sha256": "4829948aefcc5730eaffeb153f5289799f0e714ca3d6ab07e861cbd972724194",
+      "bytes": 7432
+    },
+    {
+      "path": "vector-semantics/webgl-probe.js",
+      "sha256": "6558949795cc4747e4625c813bb9c2d7c05a3ab0e2685afefc92e75b4613db97",
+      "bytes": 5860
+    },
+    {
+      "path": "vector-semantics/webgl-capabilities-probe.js",
+      "sha256": "e8a3b70c64e755eded6d5cae1567470e6896b3f42a649d5eef03702173b9f5d0",
+      "bytes": 7980
+    },
+    {
+      "path": "vector-semantics/audio-complete-probe.js",
+      "sha256": "7b7e9103ff9e740b0080f5aaf1050a03d2c2148cbf776b20940628f26a363ea4",
+      "bytes": 5483
+    },
+    {
+      "path": "vector-semantics/audio-event-probe.js",
+      "sha256": "6cbd6e825889c3290e0f93410f4691d813b36ca0eddfdc11a528a3cff085306f",
+      "bytes": 3186
+    },
+    {
+      "path": "vector-semantics/audio-lifetime-probe.js",
+      "sha256": "73bbc2314abc4fc71da5e1d56559a16fcf550a6321d901b4bf71d9780201b27e",
+      "bytes": 2515
+    },
+    {
+      "path": "vector-semantics/identity-probe.js",
+      "sha256": "e441f69465c38f3a1b3de997e2427793ca80e6907c01687c7e59401fa4e0fc6e",
+      "bytes": 1006
+    },
+    {
+      "path": "vector-semantics/identity-sw-probe.js",
+      "sha256": "93a186807a0726f9d3659d455bdb235cb6e2b05982179a87e1f7457928ea1eb7",
+      "bytes": 2349
+    },
+    {
+      "path": "vector-semantics/window-geometry-probe.js",
+      "sha256": "d9f0aa5d2bb2a1c2a2cca4cbb501c9ca04f3ff5b4fac0211c83c754bea2cc666",
+      "bytes": 3869
+    },
+    {
+      "path": "vector-semantics/webgpu-observation-probe.js",
+      "sha256": "44a6306e131ecd03ab1cda26b60dd4aa3481288e5d9ac03e22265e37c9f049ea",
+      "bytes": 1814
+    },
+    {
+      "path": "vector-semantics/webgpu-operations-probe.js",
+      "sha256": "6fdfd998ea500cdcdf77d3d34ab5292c4600f52398b19b94b5329c01af694cf6",
+      "bytes": 4378
+    },
+    {
+      "path": "vector-semantics/platform-state-operations-probe.js",
+      "sha256": "8b1dc62b358605a5fe08ab51f29e328c1c0352e333c7f42fab7fb07b0b53ea66",
+      "bytes": 5290
+    },
+    {
+      "path": "vector-semantics/speech-observation-probe.js",
+      "sha256": "cfbe48366c2479dd686f7bb0b401eb1c6ee1f99ced22f8f49f4d8def7a0fa62d",
+      "bytes": 2167
+    },
+    {
+      "path": "vector-semantics/geometry-font-probe.js",
+      "sha256": "e95d873efa7e48f95fa3a77b09dca630cb2a048bd67bdff8b28259472b246c96",
+      "bytes": 1960
+    },
+    {
+      "path": "vector-semantics/own-ahem.woff2",
+      "sha256": "d8a849ee88febbe343f153a61b105aa542b997b8cd5c4e0839d468477aa17fb0",
+      "bytes": 1684
+    },
+    {
+      "path": "vector-semantics/verify.py",
+      "sha256": "ef4034022eb2f3b51ff17efe3997b063a40edbc2ede768cfb384e0aad3673c1c",
+      "bytes": 10331
+    },
+    {
+      "path": "vector-semantics/verify-contexts.py",
+      "sha256": "7840a83bfeed3e5a4f144fd73b538dc7533056d43ab7ee9d1c7d445523ec6315",
+      "bytes": 5768
+    },
+    {
+      "path": "vector-semantics/verify-context-lifecycle.py",
+      "sha256": "8acca421c139afba25e68a5393a32a8fb333f0c613041ffc59043385f7ae0556",
+      "bytes": 2927
+    },
+    {
+      "path": "vector-semantics/verify-realm-operations.py",
+      "sha256": "48e72bc702921163e58679b2e69439d5a450acb2dd1459453b2dc77740e3a9bd",
+      "bytes": 7513
+    },
+    {
+      "path": "vector-semantics/verify-webgl.py",
+      "sha256": "baf05effeeaabf1ccea479ad88e5ac3c2ce7c2c90547b3d1462365d2f83fe0ff",
+      "bytes": 3401
+    },
+    {
+      "path": "vector-semantics/verify-webgl-capabilities.py",
+      "sha256": "f1db343ec4b4c89aeb12b29644b46a18dcb72e27aaac8811320f4860d41429bd",
+      "bytes": 4419
+    },
+    {
+      "path": "vector-semantics/verify-audio-complete.py",
+      "sha256": "1605f8f666e49082f68fe132739c6361f1b3bd4a9da2b416d6b220c4424e7524",
+      "bytes": 4221
+    },
+    {
+      "path": "vector-semantics/verify-audio-events.py",
+      "sha256": "6f5ee5d666afdfe912c379707f29ff5f6b6e47619e1c4e6193b4d5f50e4156d6",
+      "bytes": 3223
+    },
+    {
+      "path": "vector-semantics/verify-audio-lifetime.py",
+      "sha256": "0efc476a075bd809c59e1fa0953cb281424d7a0be5d4034eb68afdaca6ca17e9",
+      "bytes": 2734
+    },
+    {
+      "path": "vector-semantics/verify-identity-m156.py",
+      "sha256": "cd05e5109836989e1ffbe1d22a719e431913ae0a38aee36b037a429925323836",
+      "bytes": 5427
+    },
+    {
+      "path": "vector-semantics/verify-identity-sw-m156.py",
+      "sha256": "1efcf8074730737153e5644d27676c9fbabe97452c407eaeb74e3de0c5c209fa",
+      "bytes": 6368
+    },
+    {
+      "path": "vector-semantics/verify-window-geometry-m156.py",
+      "sha256": "507145548003b88bdb55dd5d75e6e41c8c39f276825db597385a243d29d806ed",
+      "bytes": 7484
+    },
+    {
+      "path": "vector-semantics/verify-geometry-font.py",
+      "sha256": "1d1567ff308f6eb9b4ec9f866acf6c2b927466722a5c14aa30f9989214eff9ee",
+      "bytes": 2354
+    },
+    {
+      "path": "vector-semantics/verify-platform-state-operations.mjs",
+      "sha256": "e44f0ce6c79f165b7eeb2b075f24234996f1a912de3deed69fad08b68bda33cc",
+      "bytes": 6004
+    },
+    {
+      "path": "vector-semantics/verify-webgpu-operations.mjs",
+      "sha256": "fc1861c2139b8b797ffc09c524df98ff010b18fb7d344bca64bd4b75c8f63355",
+      "bytes": 2534
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "V357",
+  "observedAtUTC": "2026-10-28T03:08:30Z",
+  "status": "PASS_SOURCE_OFFER_INTEGRITY_WITH_V294_FOUR_IMAGE_DISPOSITIONS",
+  "scope": "Added the existing V294 source-bound four-image disposition receipt to the detached V288-derived source offer; verified all component hashes/sizes and exact directory inventory. No source/build/candidate mutation.",
+  "offer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v353-swiftdeps-supplement-draft",
+    "manifestSHA256": "9377d03f0b495539883b6bb8133a8409fd2b3843983df8eff10287a081f7a38b",
+    "componentCount": 621,
+    "componentBytes": 1933922253,
+    "treeInventoryExact": true,
+    "allHashesAndSizesMatch": true
+  },
+  "addedEvidence": {
+    "path": "evidence/neantik-v294-v135-four-image-maintainer-disposition-20261028.json",
+    "sha256": "c0972a488f10453c237841f71ca0547b3db4ebe0d6acf833c0217e35a08d1c5e",
+    "imageCount": 4,
+    "boundSourceBuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "rightsBoundary": "Exact upstream mixed per-file terms; no engine-wide license, legal opinion, or blanket patent clearance."
+  },
+  "preservation": {
+    "frozenV288ManifestSHA256": "73b83130fc540e65dc238f6fe510e831654b39a93fb691690de1532335ebcc42",
+    "historicalV29WorksheetUnchanged": true
+  },
+  "remaining": [
+    "V294 requires exact final-candidate notice bytes, portable recipient rebuild/relink/replacement/load, and specific resolution of any source row lacking evidenced owner/notice.",
+    "This receipt does not qualify the release or resolve all resource-level decisions."
+  ],
+  "releaseQualified": false
+}

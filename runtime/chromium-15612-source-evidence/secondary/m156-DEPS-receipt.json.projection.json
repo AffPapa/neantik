@@ -1,0 +1,105 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "afd64acb2504007f5b37ae8e9a490e72cfd22009d27fb776a81b1dfc7bfb6c82",
+  "payload": {
+    "commit": "634b046faf2137b83af71c87baf362b533af9104",
+    "gitBlob": "19853add1b3d9b0a93a1ebc13909c89f62dc4c6e",
+    "references": {
+      "devtools-frontend": [
+        [
+          418,
+          "  # the commit queue can handle CLs rolling devtools-frontend"
+        ],
+        [
+          2234,
+          "  'src/third_party/devtools-frontend/src':"
+        ],
+        [
+          2235,
+          "    Var('chromium_git') + '/devtools/devtools-frontend' + '@' + Var('devtools_frontend_revision'),"
+        ],
+        [
+          5011,
+          "  'src/third_party/devtools-frontend/src',"
+        ]
+      ],
+      "nasm": [
+        [
+          2775,
+          "  'src/third_party/nasm': {"
+        ],
+        [
+          2776,
+          "      'url': Var('chromium_git') + '/chromium/deps/nasm.git' + '@' +"
+        ]
+      ],
+      "search_engines_data": [
+        [
+          3084,
+          "  'src/third_party/search_engines_data/resources':"
+        ],
+        [
+          3085,
+          "    Var('chromium_git') + '/external/search_engines_data.git' + '@' + '5dc9f1afd38a8ac2b26b1972eb4fc1bbd5754e8c',"
+        ],
+        [
+          3087,
+          "  'src/third_party/search_engines_data/resources_internal': {"
+        ],
+        [
+          3088,
+          "    'url': Var('chrome_git') + '/external/search_engines_data_internal.git' + '@' + '7c90875a405251ca4b5407fff7759f08bc8069d1',"
+        ]
+      ],
+      "v8": [
+        [
+          120,
+          "  # are used to post-process raw v8 coverage reports into IstanbulJS compliant"
+        ],
+        [
+          344,
+          "  'v8_revision': '4b33f15d4d172248a95629d6aa9917b20a79ad76',"
+        ],
+        [
+          1808,
+          "    Var('chromium_git') + '/v8/fuzzer_wasm_corpus.git' + '@' +  '1df5e50a45db9518a56ebb42cb020a94a090258b',"
+        ],
+        [
+          3042,
+          "              'version': 'kzCVQZYn5qKR-4wEJ9__4yrIWrCS9VFv8kPharQ-WMgC',"
+        ],
+        [
+          3362,
+          "  'src/v8':"
+        ],
+        [
+          3363,
+          "    Var('chromium_git') + '/v8/v8.git' + '@' +  Var('v8_revision'),"
+        ],
+        [
+          4243,
+          "  'v8',"
+        ],
+        [
+          4852,
+          "                'src/v8/tools/builtins-pgo/download_profiles.py',"
+        ],
+        [
+          4856,
+          "                '--check-v8-revision',"
+        ]
+      ]
+    },
+    "sha256": "b4de748ba5abac43952bdc0945795d9c3a07238d18b37ae0f82231669f68fc94"
+  },
+  "payloadType": "json",
+  "receipt": "m156-DEPS-receipt.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "evidence",
+    "research"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

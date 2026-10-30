@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v166-build200-v122-image-source-load-join-20261027",
+  "observedAtUTC": "2026-10-26T21:37:45Z",
+  "status": "CURRENT_BUILD200_16_OF_16_RUNTIME_SOURCE_AND_LOADED_QA_CODE_BOUND; FOUR_IMAGE_MAINTAINER_DISPOSITIONS_AND_CURRENT_PACKAGE_NOTICES_JOINED; RELEASE_STILL_OPEN",
+  "scope": "Read-only join of the exact private production build-200 app, its recipient runtime-image receipt, the exact V122 source-build inputs, V129 four-image maintainer dispositions, and the exact signed Dev QA ZIP already exercised in V153. No launch, build, resign, archive mutation, or publication.",
+  "productionCandidate": {
+    "candidateId": "58bd32206a064a4ba40ae9668acaef00",
+    "appPath": "/private/tmp/neantik-v140-source-snapshot/dist/private/candidates/58bd32206a064a4ba40ae9668acaef00/NeAntik.app",
+    "inventorySHA256": "0efb298b53043fb7ee8b39e051cc642745890fcf3dabd6ed5dd41518c9d7f240",
+    "signedRuntimeReceiptSHA256": "3b7c7dd3fd327b36d4bec384242a4a24cf3773a5ff1a2ea102423eabe4dd301c",
+    "sourceOfferManifestStatus": "private-source-offer-draft-not-candidate-bound; image/resource/recipient/release gates open",
+    "embeddedSourceOfferEvidenceSHA256": "51363c5319b7b639e5f35c0c68c667eada730d0f0871da61aca472b08c3e54be",
+    "v132SourceOfferManifestSHA256": "51363c5319b7b639e5f35c0c68c667eada730d0f0871da61aca472b08c3e54be",
+    "v132SourceOfferComponentCount": 517
+  },
+  "sourceBuild": {
+    "buildReceiptSHA256": "804a60911bf67912d8f17665958f88051b3085a175f145db0fd76fa7ea23bd9c",
+    "sourceOfferManifestSHA256": "51363c5319b7b639e5f35c0c68c667eada730d0f0871da61aca472b08c3e54be",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "mainPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "resourcePatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "sourceOfferComponents": 517,
+    "checkOnlyEvidence": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v133-v132-recipe-and-v122-package-check-only-20261026.json",
+    "cleanRelinkEvidence": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v135-clean-relocated-v132-webkit-relink-20261026.json"
+  },
+  "loadedQACandidate": {
+    "archiveSHA256": "3bdc4b7646a3d1806c6a0944e187ec442024455de19af7b132452b7e28c10656",
+    "archivePath": "/private/tmp/neantik-owned-webkit-qa-x77ltbpd/NeAntik-1.0.0-200-dev-owned-webkit-qa.zip",
+    "recipientRuntimeReceiptSHA256": "a99ce27072a911ca9bb08deb259d1e6244f8a9bcc96eeab605da8a600536a9cd",
+    "runtimeEvidence": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v153-v122-recipient-resign-load-reconciliation-20261027.json",
+    "qualification": "same exact 16 owned-runtime images loaded for synthetic HTTPS A1/B1/A2; this does not qualify the production manager proxy path or public sites"
+  },
+  "comparison": {
+    "runtimeImageCount": 16,
+    "identicalSourceStagedImageHashes": 16,
+    "identicalRelocatedPreSignHashes": 16,
+    "identicalARM64PreSignatureCodeBytes": 16,
+    "identicalRecipientWholeFileHashes": 0,
+    "fourV129SourceBuildImageHashesMatchCurrentStagedInputs": 4,
+    "rows": [
+      {
+        "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+        "sourceBuiltStagedSHA256": "34de2ac0d7f7b854966dd0335b7656308e3e22a1f009c79e22b456f840764fcc",
+        "relocatedPreSignSHA256": "335b7fe681d0ece538b2ca61fecd9f25100a6f9acf27c2faa50790d0550edd7f",
+        "qaRecipientSHA256": "f3ed9fdfc25eaece67a4892abcc8922259fc66f31af6f958fd4a3d7b5b4e74ad",
+        "productionRecipientSHA256": "df0a2cc2557e1ee5ba02dde7394fe1b0e2c56f4ef3d90ee23d36c7efb103ff8d",
+        "qaARM64PreSignatureSHA256": "491507dd38c08e6d4617aedf2b0796728bfcb44b70cbffb31e74c2710c7de78a",
+        "productionARM64PreSignatureSHA256": "491507dd38c08e6d4617aedf2b0796728bfcb44b70cbffb31e74c2710c7de78a",
+        "sameSourceBuildAndARM64Code": true,
+        "v129MaintainerDispositionSourceImageSHA256": "34de2ac0d7f7b854966dd0335b7656308e3e22a1f009c79e22b456f840764fcc",
+        "v129SourceImageExactMatch": true
+      },
+      {
+        "path": "WebCore.framework/Versions/A/WebCore",
+        "sourceBuiltStagedSHA256": "6c894ce051a20dee391a1bfd99648546b3797b51dc46999ba2b83a4644833174",
+        "relocatedPreSignSHA256": "4cf76b0636ad7316754ee22970445d456758e53392d3bb8b70bd6c9cc6860745",
+        "qaRecipientSHA256": "36dbe86e50d2ef6ccde2eb933f2190f833ca6694cb59723f558a0d5ffb9c8016",
+        "productionRecipientSHA256": "7589278f8658ed72a26f49caec7c0c662e01ee23d378d742c44389df51b1cb90",
+        "qaARM64PreSignatureSHA256": "1f4d41e291981b1d23758692745d5d57621b8049d0779bd28e4117407a8be677",
+        "productionARM64PreSignatureSHA256": "1f4d41e291981b1d23758692745d5d57621b8049d0779bd28e4117407a8be677",
+        "sameSourceBuildAndARM64Code": true,
+        "v129MaintainerDispositionSourceImageSHA256": "6c894ce051a20dee391a1bfd99648546b3797b51dc46999ba2b83a4644833174",
+        "v129SourceImageExactMatch": true
+      },
+      {
+        "path": "WebGPU.framework/Versions/A/WebGPU",
+        "sourceBuiltStagedSHA256": "033f978342498b2dbeba3ec265ace4ac6995b7454f496d8dd6396c73de9bb684",
+        "relocatedPreSignSHA256": "07dc5f16fdd54974bbec3498a67eb3b52c11c4279adf79cee3bfd2c7ef466ec6",
+        "qaRecipientSHA256": "7c1bb109ccf2c648191c405f8050a9fb5a210f3cf766f2ad3069ef7973ec65ef",
+        "productionRecipientSHA256": "d180a3f060c99cf6c17c2f04e583da2702e224c14024cd067dcc8779755b5dca",
+        "qaARM64PreSignatureSHA256": "ca997e429e74061ccb1e185bca3fabb8a9e733c922f68ac5a068fa752aadd4c7",
+        "productionARM64PreSignatureSHA256": "ca997e429e74061ccb1e185bca3fabb8a9e733c922f68ac5a068fa752aadd4c7",
+        "sameSourceBuildAndARM64Code": true
+      },
+      {
+        "path": "WebInspectorUI.framework/Versions/A/WebInspectorUI",
+        "sourceBuiltStagedSHA256": "aa5f2f762b8f02f4679f488b32836e6d8fc099ed9fb0ce0802900bcf5ad47c35",
+        "relocatedPreSignSHA256": "7d0d466bef5ac9be77ee61b3d83f800466385a52b330495277c52090df73c4c8",
+        "qaRecipientSHA256": "3f4bbd69d29c7409b5bc9d6c501cf816235650a471bdcd81910a3e6bfd92a24d",
+        "productionRecipientSHA256": "4f4d0ce3f786c84329e146c876f509c4478eb56ea9945ecf3884398f944fce79",
+        "qaARM64PreSignatureSHA256": "3371b03610fc88c9a5fbe1cad32077fc178af0f44424a66dd742e101cf03e19e",
+        "productionARM64PreSignatureSHA256": "3371b03610fc88c9a5fbe1cad32077fc178af0f44424a66dd742e101cf03e19e",
+        "sameSourceBuildAndARM64Code": true
+      },
+      {
+        "path": "WebKit.framework/Versions/A/Frameworks/libWebKitSwift.dylib",
+        "sourceBuiltStagedSHA256": "da72c4500d1cffde43309c664c660cb1a29f75493c32960c59dd157016fb977d",
+        "relocatedPreSignSHA256": "31b0e581b53fec87b9232c854cb962c90559aceab6f91ebc7d8ffe45a0893b8d",
+        "qaRecipientSHA256": "53e8476380d3131a19a525c6ee9ab65590003a57a85309283eb3c04a5f928ead",
+        "productionRecipientSHA256": "7bba47bf756506ee0ff5b3a815f8c6bb27e3a792bdb2e4e73d52206cb9e8bf6d",
+        "qaARM64PreSignatureSHA256": "354cd48ee4c3343737bc780a7154e1332047de18061d82f87a8a14eccc67d125",
+        "productionARM64PreSignatureSHA256": "354cd48ee4c3343737bc780a7154e1332047de18061d82f87a8a14eccc67d125",
+        "sameSourceBuildAndARM64Code": true
+      },
+      {
+        "path": "WebKit.framework/Versions/A/WebKit",
+        "sourceBuiltStagedSHA256": "cc304648fd66c205100deca9a7bbcec28858ed4a55226dd1a3810b262d4f2b10",
+        "relocatedPreSignSHA256": "d1900095115f045ce65ba1083a2113eb9401909ddb4242fd97cffdf947b75f14",
+        "qaRecipientSHA256": "86cb34ebbb1a9079b24a864bd0ef676c5b376e3b8345830a20416e4652bd66eb",
+        "productionRecipientSHA256": "778d4c2d3222ddef11b827edc8f2bcc401ebf8b8447b2b8d1591e4775c9c826e",
+        "qaARM64PreSignatureSHA256": "27fcee5d20274b7f69cd7415f8428c7276e0f162b08b18621532e584ed4280ec",
+        "productionARM64PreSignatureSHA256": "27fcee5d20274b7f69cd7415f8428c7276e0f162b08b18621532e584ed4280ec",
+        "sameSourceBuildAndARM64Code": true,
+        "v129MaintainerDispositionSourceImageSHA256": "cc304648fd66c205100deca9a7bbcec28858ed4a55226dd1a3810b262d4f2b10",
+        "v129SourceImageExactMatch": true
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development",
+        "sourceBuiltStagedSHA256": "a3cd278dc6698279dc18509e94fe9215d5c28cb8cf266db5435fefdbea4e87ea",
+        "relocatedPreSignSHA256": "9df832f849c636d0b85896f99922f70a527f642b39d642f862aca316be982e0e",
+        "qaRecipientSHA256": "23b5ba2cc793e885b03e1826bbb77344021f543aa802e55e0a608895a45bf9e2",
+        "productionRecipientSHA256": "36edb50560eecb41da2144c4bc96ad24fe930c19527d0ee3ef14993dd4627f7b",
+        "qaARM64PreSignatureSHA256": "cc10cc0a6a5cb995a9ae34aae64c72f8a7f161eaed838e37669e3b19263b0b2e",
+        "productionARM64PreSignatureSHA256": "cc10cc0a6a5cb995a9ae34aae64c72f8a7f161eaed838e37669e3b19263b0b2e",
+        "sameSourceBuildAndARM64Code": true
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development",
+        "sourceBuiltStagedSHA256": "8f98151a1c7b63d01f07d43b9bf74bdca80979a0fd78d43e3682660d8dc29da2",
+        "relocatedPreSignSHA256": "7927b9605e8ec93ddcdfc97a2c3a2311a2ded05c031205f4ca914427f448033d",
+        "qaRecipientSHA256": "090e7e2c50e555a61c1fcdf56194768d518c414b5f4283c6840c7af4a491e768",
+        "productionRecipientSHA256": "732d3cc16a2d08440bdfe5070ef28e6190b4283c32579c795a52e90d5954621f",
+        "qaARM64PreSignatureSHA256": "693d059e0b87032190f5ed525aa256f383795592940b22b3af46c21c3e9b4f5b",
+        "productionARM64PreSignatureSHA256": "693d059e0b87032190f5ed525aa256f383795592940b22b3af46c21c3e9b4f5b",
+        "sameSourceBuildAndARM64Code": true
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development",
+        "sourceBuiltStagedSHA256": "84ba15a2dcf13e501c83c37397ea23ea847212ae9cf824e9099d29c8021eac3e",
+        "relocatedPreSignSHA256": "0fddc51c56f464d153889f418751df57c37a9f3190fc4912f5ace683ee5c3fc9",
+        "qaRecipientSHA256": "095627cb850498d802cb695f52af11a2d98fdb06bbf6b1e52b97ab7c5dc9e637",
+        "productionRecipientSHA256": "dc61479cc151c2327d7504a576eb09d4c7a42d34043bebbb84fa04b6ed6d214c",
+        "qaARM64PreSignatureSHA256": "3bd58cfdebfdca38733474009a7020fbf95adf2fdcd8a83384fc8981c9d8e4cc",
+        "productionARM64PreSignatureSHA256": "3bd58cfdebfdca38733474009a7020fbf95adf2fdcd8a83384fc8981c9d8e4cc",
+        "sameSourceBuildAndARM64Code": true
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development",
+        "sourceBuiltStagedSHA256": "69ec9f07be19faef49309970529d4b1205cbb326c1f211f199d7b3cd8cfab268",
+        "relocatedPreSignSHA256": "b9f9f4293809dd2d468847c9c86382a347a8f22710af74a975f04a5bfa6b308d",
+        "qaRecipientSHA256": "509df74efa21d2b340e3570388b326232e1ba169a9f6c723dc90688175cec7e8",
+        "productionRecipientSHA256": "300d3574cba73f600b0abc0c23828ba65839cd85730dfd9fe04e667a25d11642",
+        "qaARM64PreSignatureSHA256": "e3e4fe193c7698ad60e955379f2b3dde1aaff715385f9d80b07a7f32afb44aa5",
+        "productionARM64PreSignatureSHA256": "e3e4fe193c7698ad60e955379f2b3dde1aaff715385f9d80b07a7f32afb44aa5",
+        "sameSourceBuildAndARM64Code": true
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development",
+        "sourceBuiltStagedSHA256": "d6faada789dd871fd82f191e4ebdc24f9d581fc6c0894645cafd90fd12f8df4f",
+        "relocatedPreSignSHA256": "10723b0db97479a77de8b1d374ee8a2727eca2b8016cf3e295cebcb4b9fab58c",
+        "qaRecipientSHA256": "95f45a2bb36b394a0eb8378879cb7bf01d17cb410023f9d38281f863a28cca97",
+        "productionRecipientSHA256": "7ef8fd089ce0bd593db53d52b463804d2d5f0640e164449a56e8ce774b0b26d4",
+        "qaARM64PreSignatureSHA256": "4fe55a0a796ef1f6c2907e98cd451bcc7e083325b92c3a87c3293b098faecc4c",
+        "productionARM64PreSignatureSHA256": "4fe55a0a796ef1f6c2907e98cd451bcc7e083325b92c3a87c3293b098faecc4c",
+        "sameSourceBuildAndARM64Code": true
+      },
+      {
+        "path": "WebKitLegacy.framework/Versions/A/WebKitLegacy",
+        "sourceBuiltStagedSHA256": "ac933f33b9aeaa88eefa0fdfabacafa41f0248a833dd30ca5b0543a6687bc696",
+        "relocatedPreSignSHA256": "da65f6c832bd979b8acda4af896f3c6bb27fcf32ef262eed9cc8c8a1685b53bc",
+        "qaRecipientSHA256": "9f80c703c532540a7f9e124bfd122ba4921ac122b1aaf940576c58c8db4aecff",
+        "productionRecipientSHA256": "8084ec6ffed0514474829c4a8b0e6d01644c61d7a2de6305ca64e1551f74f1d7",
+        "qaARM64PreSignatureSHA256": "eef843367f0832f9f52d11d054fbd13fd5c6f0a78faf74e6f5c6e35fbd90185d",
+        "productionARM64PreSignatureSHA256": "eef843367f0832f9f52d11d054fbd13fd5c6f0a78faf74e6f5c6e35fbd90185d",
+        "sameSourceBuildAndARM64Code": true
+      },
+      {
+        "path": "libANGLE-shared.dylib",
+        "sourceBuiltStagedSHA256": "f18d667d32fc89247986e8a878682db4b8f6b150862c7db8cb6583d0c44addb1",
+        "relocatedPreSignSHA256": "98f2fdaad80933c5225f1c830baed2c44ed6ff2f87dae25fffb171b3731e680c",
+        "qaRecipientSHA256": "43ff05292e469a6af95d2a852fc9c061f86bc2fe0cbb7d8485230c4816a3c977",
+        "productionRecipientSHA256": "7c093cfdb8225e55b7fd492d1a57228125e8c5dafa33ca8db9a18ac7dd341516",
+        "qaARM64PreSignatureSHA256": "89f62249acbed177620ed727b240511273ed788bad5e595992985b079226ef27",
+        "productionARM64PreSignatureSHA256": "89f62249acbed177620ed727b240511273ed788bad5e595992985b079226ef27",
+        "sameSourceBuildAndARM64Code": true
+      },
+      {
+        "path": "libWebKitSwift.dylib",
+        "sourceBuiltStagedSHA256": "da72c4500d1cffde43309c664c660cb1a29f75493c32960c59dd157016fb977d",
+        "relocatedPreSignSHA256": "bbbf45732cfc0b0ab66591206b8232535bb77dcca74c678d86c363fd0561bcf9",
+        "qaRecipientSHA256": "5c101aebb1d97e575767b8fb3231305407369c09d554139d459fe1527ca4d1e1",
+        "productionRecipientSHA256": "325fc768210b327d1ea67973803485f17cbff1aaf52b62b7a3e8d82b70b6b4cd",
+        "qaARM64PreSignatureSHA256": "e1888537e7854bc02dd22d09e77b9533e7b88ecf49bf2c24cc1bc49d45b8ad8e",
+        "productionARM64PreSignatureSHA256": "e1888537e7854bc02dd22d09e77b9533e7b88ecf49bf2c24cc1bc49d45b8ad8e",
+        "sameSourceBuildAndARM64Code": true
+      },
+      {
+        "path": "libswiftCompatibilitySpan.dylib",
+        "sourceBuiltStagedSHA256": "b4256b38185e963651938ed0406c6c8ec54299621c7fa53c5e9a0a325ca5fe4f",
+        "relocatedPreSignSHA256": "b4256b38185e963651938ed0406c6c8ec54299621c7fa53c5e9a0a325ca5fe4f",
+        "qaRecipientSHA256": "04586457ec02d6926fd1e6b4bc5ec57b263270692cb66aaa225a4571a9d6c8ef",
+        "productionRecipientSHA256": "2897683dea9917efe6690012aa97047c78dcb5120d46cd3ed33e97e104bbdacb",
+        "qaARM64PreSignatureSHA256": "9edfd1c9d0f1962e96fbf5f49ab9c7f455343c320b8dc383ee7f8c5318dd49da",
+        "productionARM64PreSignatureSHA256": "9edfd1c9d0f1962e96fbf5f49ab9c7f455343c320b8dc383ee7f8c5318dd49da",
+        "sameSourceBuildAndARM64Code": true
+      },
+      {
+        "path": "libwebrtc.dylib",
+        "sourceBuiltStagedSHA256": "6f77ced9d634c7379b1a90ea5a078d5aedfa4a9be7e9db57dd6884961aa08a46",
+        "relocatedPreSignSHA256": "9e80ab747981ff50fb187408500b7a1db71bcd68d7b353b56d474e599e5591a8",
+        "qaRecipientSHA256": "fa73318000b04fd5245d16916a72aff63773df967a167a48a923b15c3e14ca39",
+        "productionRecipientSHA256": "3487b6aa980f7432273e502ee0059a24a6fa03398736a4acc7e0ba036e0dda24",
+        "qaARM64PreSignatureSHA256": "8cdbe46367aaf15807f55c0d5602d36836313c70e9854b2b7f73f5be51f9e626",
+        "productionARM64PreSignatureSHA256": "8cdbe46367aaf15807f55c0d5602d36836313c70e9854b2b7f73f5be51f9e626",
+        "sameSourceBuildAndARM64Code": true,
+        "v129MaintainerDispositionSourceImageSHA256": "6f77ced9d634c7379b1a90ea5a078d5aedfa4a9be7e9db57dd6884961aa08a46",
+        "v129SourceImageExactMatch": true
+      }
+    ]
+  },
+  "fourImageDistributionDisposition": {
+    "JavaScriptCore": "Use exact upstream mixed per-file terms; retain linked-source headers, generated-input attributions, complete applicable BSD/LGPL/Apache texts, full corresponding source and build/relink materials. Do not infer untracked copyright ownership.",
+    "WebCore": "Use exact upstream mixed per-file terms and nested data notices; retain linked-source headers, applicable BSD/LGPL texts, full source and usable replacement/relink materials. Do not infer unattributed owners.",
+    "WebKit": "Use exact upstream mixed per-file terms; retain all linked-source headers/notices, full corresponding source and build/relink materials. No whole-image BSD-only claim.",
+    "libwebrtc": "Include pinned upstream license, 60-file nested third-party notice set, generated-input attributions, source/build materials and patent/disclosure files; make no blanket patent-clearance claim."
+  },
+  "packageNoticeEvidence": {
+    "currentCandidateInventorySHA256": "0efb298b53043fb7ee8b39e051cc642745890fcf3dabd6ed5dd41518c9d7f240",
+    "webkitRuntimeNoticeVerifier": "PASS exact current production candidate (V158; factual byte/manifest checks only)",
+    "limitation": "Pass confirms configured notice material presence/bindings; it does not make legal conclusions beyond the pinned per-image maintainer dispositions."
+  },
+  "limitations": [
+    "Candidate139 V29 worksheet remains immutable at its historical 82 UNKNOWN decisions; this receipt is candidate-specific for build200.",
+    "The clean V135 build/relink outputs were removed and do not become the loaded bytes; build200 and the tested Dev ZIP instead use the exact V122 source-build image inputs.",
+    "QA and production manager bundle hashes/signatures differ; exact production proxy/public-network page behavior remains unqualified.",
+    "No independent third-party rebuild/relink or patent clearance is established."
+  ],
+  "releaseQualified": false,
+  "publicMutation": false
+}

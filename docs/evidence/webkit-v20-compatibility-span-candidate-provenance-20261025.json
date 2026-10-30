@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "status": "candidate-runtime-build-identity-and-license-file-match;legal-applicability-review-open",
+  "observedAt": "2026-10-25T01:33:04Z",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": 139,
+    "runtimePath": "libswiftCompatibilitySpan.dylib",
+    "runtimeSHA256": "8138aa57f6798a5e16e199d9bdf36fe43a59edf6d4708ce366d6d2597bc8394b",
+    "bytes": 155600,
+    "architectures": [
+      "arm64",
+      "x86_64"
+    ],
+    "machOUUIDs": {
+      "x86_64": "034FCEB0-ACED-3DF6-BFC2-89BFE6210407",
+      "arm64": "2A907B24-D19C-3996-857E-9194BD4C09A7"
+    }
+  },
+  "pinnedSwiftPackage": {
+    "packageURL": "https://download.swift.org/swift-6.4.0-release/xcode/swift-6.4.0-RELEASE/swift-6.4.0-RELEASE-osx.pkg",
+    "packageSHA256": "8fd03185b98fe27f54f8f523867e297ca5ff12bf8d4d63a6c627d7c60e286e845",
+    "packageBytes": 1590830585,
+    "sourcePackagePath": "usr/lib/swift-6.2/macosx/libswiftCompatibilitySpan.dylib",
+    "extractedLibrarySHA256": "b4256b38185e963651938ed0406c6c8ec54299621c7fa53c5e9a0a325ca5fe4f",
+    "extractedLibraryBytes": 156544,
+    "machOUUIDs": {
+      "x86_64": "034FCEB0-ACED-3DF6-BFC2-89BFE6210407",
+      "arm64": "2A907B24-D19C-3996-857E-9194BD4C09A7"
+    },
+    "declaredSPDX": "Apache-2.0 WITH Swift Runtime Library Exception"
+  },
+  "noticeFile": {
+    "candidatePath": "Contents/Resources/NeAntikRuntimeLicenses/Swift-6.4.0-Runtime-Library-Exception-LICENSE.txt",
+    "sha256": "770af8291f708538d8ff885a0bbc4e045cd700531741c4f99528d435c14d7f55",
+    "bytes": 11751,
+    "matchesPinnedText": true
+  },
+  "method": "Read-only compare of the pinned official package extraction, the frozen candidate dylib Mach-O architecture/build UUIDs, and the exact license text inside the candidate. No candidate bytes or signatures were modified.",
+  "scopeLimit": "Matching architecture and Mach-O UUIDs bind the candidate binary to the same compiler build identity as the pinned Swift package payload; candidate and package-extracted dylib SHA-256 values differ because the candidate copy is signed. UUID equality is not byte-for-byte identity proof or legal advice. This evidence does not resolve notice obligations, reviewerDecision, overall licensing, candidate signature verification, runtime load, or release qualification.",
+  "officialLicenseReference": {
+    "title": "Swift License",
+    "url": "https://www.swift.org/legal/license.html",
+    "verifiedFinding": "The official Swift license page states the Runtime Library Exception removes attribution requirements under Apache-2.0 sections 4(a), 4(b), and 4(d). The complete pinned license text remains included with the candidate."
+  }
+}

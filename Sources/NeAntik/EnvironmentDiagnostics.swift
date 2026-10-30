@@ -100,6 +100,7 @@ struct ProfileEnvironmentSnapshot: Equatable, Sendable {
     let generatedAt: Date
     let sections: [EnvironmentDiagnosticSection]
     let limitations: [String]
+    var siteCompatibility: SiteCompatibilityAssessment? = nil
 }
 
 enum FingerprintObservedRoute: Equatable, Sendable {
@@ -202,6 +203,7 @@ enum ProfileEnvironmentInspector {
         proxyHealth: ProxyHealthState?,
         fingerprintObservation:
             ValidatedProfileFingerprintObservation? = nil,
+        siteCompatibility: SiteCompatibilityAssessment? = nil,
         now: Date = Date()
     ) -> ProfileEnvironmentSnapshot {
         let capabilities = runtime?.capabilities ?? []
@@ -233,7 +235,8 @@ enum ProfileEnvironmentInspector {
             sections: [
                 routeSection(
                     policy: policy,
-                    proxyHealth: proxyHealth
+                    proxyHealth: proxyHealth,
+                    now: now
                 ),
                 fingerprintSection(
                     profile: profile,
@@ -249,7 +252,8 @@ enum ProfileEnvironmentInspector {
                 geolocationSection(
                     profile: profile,
                     policy: policy,
-                    proxyHealth: proxyHealth
+                    proxyHealth: proxyHealth,
+                    now: now
                 )
             ],
             limitations: [
@@ -259,13 +263,17 @@ enum ProfileEnvironmentInspector {
                     "маршрут запущенного Chromium.",
                 "Фактические HTTP, DNS, QUIC и публичный " +
                     "WebRTC-маршруты не измеряются."
-            ]
+            ],
+            siteCompatibility: siteCompatibility?.isUsable(
+                for: profile, runtime: runtime, now: now
+            ) == true ? siteCompatibility : nil
         )
     }
 
     private static func routeSection(
         policy: BrowserLaunchPolicy,
-        proxyHealth: ProxyHealthState?
+        proxyHealth: ProxyHealthState?,
+        now: Date
     ) -> EnvironmentDiagnosticSection {
         let routeValue: String
         switch policy.route {
@@ -284,8 +292,9 @@ enum ProfileEnvironmentInspector {
             )
         ]
         if let attempt = proxyHealth?.latestAttempt {
-            let routeContextIsComplete =
-                proxyHealth?.hasCompleteRouteContext == true
+            let routeContextIsComplete = proxyHealth.map {
+                ProxyCheckSummary.status(for: $0, now: now) == .currentSuccess
+            } == true
             let probeSucceeded = attempt.outcome == .succeeded
             let probeSeverity: DiagnosticFindingSeverity =
                 probeSucceeded && routeContextIsComplete
@@ -311,9 +320,9 @@ enum ProfileEnvironmentInspector {
                     id: "route.last-probe",
                     title: "Последняя проверка",
                     value: attempt.outcome == .succeeded
-                        ? responseSummary(
-                            milliseconds: attempt.responseTimeMilliseconds
-                          )
+                        ? (routeContextIsComplete
+                            ? responseSummary(milliseconds: attempt.responseTimeMilliseconds)
+                            : "Результат устарел или его время не подтверждено")
                         : attempt.outcome.userSummary,
                     state: .observed,
                     severity: probeSeverity,
@@ -675,7 +684,8 @@ enum ProfileEnvironmentInspector {
     private static func geolocationSection(
         profile: BrowserProfile,
         policy: BrowserLaunchPolicy,
-        proxyHealth: ProxyHealthState?
+        proxyHealth: ProxyHealthState?,
+        now: Date
     ) -> EnvironmentDiagnosticSection {
         guard case .proxied = policy.route else {
             return EnvironmentDiagnosticSection(
@@ -696,8 +706,9 @@ enum ProfileEnvironmentInspector {
 
         var fields: [EnvironmentDiagnosticField] = []
         if let success = proxyHealth?.lastSuccess {
-            let routeContextIsComplete =
-                proxyHealth?.hasCompleteRouteContext == true
+            let routeContextIsComplete = proxyHealth.map {
+                ProxyCheckSummary.status(for: $0, now: now) == .currentSuccess
+            } == true
             let contextResolution = routeContextIsComplete
                 ? nil
                 : DiagnosticResolution(
@@ -709,7 +720,7 @@ enum ProfileEnvironmentInspector {
                 EnvironmentDiagnosticField(
                     id: "geolocation.source",
                     title: "Источник",
-                    value: "ipapi.co через проверку прокси",
+                    value: "\(success.source.rawValue) через проверку прокси",
                     state: .observed,
                     severity: routeContextIsComplete
                         ? .success
@@ -729,8 +740,8 @@ enum ProfileEnvironmentInspector {
                         : .attention,
                     resolution: contextResolution,
                     detail:
-                        "Определена по выходному IP прокси; " +
-                        "точный IP здесь не хранится.",
+                        (routeContextIsComplete ? "Определена по выходному IP прокси. " : "Локация из предыдущей проверки; сейчас не подтверждена. ") +
+                        "Точный IP здесь не хранится.",
                     observedAt: success.observedAt
                 )
             )

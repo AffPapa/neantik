@@ -1,0 +1,158 @@
+--- a/components/autofill/core/browser/crowdsourcing/autofill_crowdsourcing_manager.cc
++++ b/components/autofill/core/browser/crowdsourcing/autofill_crowdsourcing_manager.cc
+@@ -96,8 +96,6 @@
+ constexpr size_t kAutofillCrowdsourcingManagerMaxFormCacheSize = 16;
+ constexpr size_t kMaxFieldsPerQueryRequest = 100;
+ 
+-constexpr base::TimeDelta kFetchTimeout(base::Seconds(10));
+-
+ constexpr net::BackoffEntry::Policy kAutofillBackoffPolicy = {
+     // Number of initial errors (in sequence) to ignore before applying
+     // exponential back-off rules.
+@@ -126,10 +124,6 @@
+ 
+ constexpr char kDefaultAutofillServerURL[] =
+     "https://content-autofill.googleapis.com/";
+-
+-// Header to get base64 encoded serialized proto from API for safety.
+-constexpr char kGoogEncodeResponseIfExecutable[] =
+-    "X-Goog-Encode-Response-If-Executable";
+ 
+ // The default number of days after which to reset the registry of autofill
+ // events for which an upload has been sent.
+@@ -215,111 +209,6 @@
+     NOTREACHED();
+   };
+   return base::StrCat({"Autofill.", TypeToName(request_type), ".", suffix});
+-}
+-
+-net::NetworkTrafficAnnotationTag GetNetworkTrafficAnnotation(
+-    CrowdsourcingRequestType request_type) {
+-  switch (request_type) {
+-    case CrowdsourcingRequestType::kRequestQuery:
+-      return net::DefineNetworkTrafficAnnotation("autofill_query", R"(
+-        semantics {
+-          sender: "Autofill"
+-          description:
+-            "Chromium can automatically fill in web forms. If the feature is "
+-            "enabled, Chromium will send a non-identifying description of the "
+-            "form to Google's servers, which will respond with the type of "
+-            "data required by each of the form's fields, if known. I.e., if a "
+-            "field expects to receive a name, phone number, street address, "
+-            "etc."
+-          trigger: "User encounters a web form."
+-          data:
+-            "Hashed descriptions of the form and its fields. User data is not "
+-            "sent."
+-          destination: GOOGLE_OWNED_SERVICE
+-          internal {
+-            contacts {
+-              owners: "//components/autofill/OWNERS"
+-            }
+-          }
+-          user_data {
+-            type: NONE
+-          }
+-          last_reviewed: "2023-08-10"
+-        }
+-        policy {
+-          cookies_allowed: NO
+-          setting:
+-            "You can enable or disable this feature via 'Enable autofill to "
+-            "fill out web forms in a single click.' in Chromium's settings "
+-            "under 'Passwords and forms'. The feature is enabled by default."
+-          chrome_policy {
+-            AutofillCreditCardEnabled {
+-                policy_options {mode: MANDATORY}
+-                AutofillCreditCardEnabled: false
+-            }
+-          }
+-          chrome_policy {
+-            AutofillAddressEnabled {
+-                policy_options {mode: MANDATORY}
+-                AutofillAddressEnabled: false
+-            }
+-          }
+-          chrome_policy {
+-            PasswordManagerEnabled {
+-                policy_options {mode: MANDATORY}
+-                PasswordManagerEnabled: false
+-            }
+-          }
+-        })");
+-    case CrowdsourcingRequestType::kRequestUpload:
+-      return net::DefineNetworkTrafficAnnotation("autofill_upload", R"(
+-      semantics {
+-        sender: "Autofill"
+-        description:
+-          "Chromium relies on crowd-sourced field type classifications to "
+-          "help it automatically fill in web forms. If the feature is "
+-          "enabled, Chromium will send a non-identifying description of the "
+-          "form to Google's servers along with the type of data Chromium "
+-          "observed being given to the form. I.e., if you entered your first "
+-          "name into a form field, Chromium will 'vote' for that form field "
+-          "being a first name field."
+-        trigger: "User submits a web form."
+-        data:
+-          "Hashed descriptions of the form and its fields along with type of "
+-          "data given to each field, if recognized from the user's "
+-          "profile(s). User data is not sent."
+-        destination: GOOGLE_OWNED_SERVICE
+-        internal {
+-          contacts {
+-            owners: "//components/autofill/OWNERS"
+-          }
+-        }
+-        user_data {
+-          type: NONE
+-        }
+-        last_reviewed: "2023-07-31"
+-      }
+-      policy {
+-        cookies_allowed: NO
+-        setting:
+-          "You can enable or disable this feature via 'Enable autofill to "
+-          "fill out web forms in a single click.' in Chromium's settings "
+-          "under 'Passwords and forms'. The feature is enabled by default."
+-        chrome_policy {
+-          AutofillCreditCardEnabled {
+-              policy_options {mode: MANDATORY}
+-              AutofillCreditCardEnabled: false
+-          }
+-        }
+-        chrome_policy {
+-          AutofillAddressEnabled {
+-              policy_options {mode: MANDATORY}
+-              AutofillAddressEnabled: false
+-          }
+-        }
+-      })");
+-  }
+-  NOTREACHED();
+ }
+ 
+ // A field is active if it contributes to the form signature and it is are
+@@ -544,23 +433,6 @@
+   return base::StrCat({api_method_url, "/", resource_id});
+ }
+ 
+-// Gets HTTP body payload for API POST request.
+-std::optional<std::string> GetAPIBodyPayload(std::string payload,
+-                                             CrowdsourcingRequestType type) {
+-  // Don't do anything for payloads not related to Query.
+-  if (type != CrowdsourcingRequestType::kRequestQuery) {
+-    return std::move(payload);
+-  }
+-  // Wrap query payload in a request proto to interface with API Query method.
+-  AutofillPageResourceQueryRequest request;
+-  request.set_serialized_request(std::move(payload));
+-  payload = {};
+-  if (!request.SerializeToString(&payload)) {
+-    return std::nullopt;
+-  }
+-  return std::move(payload);
+-}
+-
+ // Gets the data payload for API Query (POST and GET).
+ std::optional<std::string> GetAPIQueryPayload(
+     const AutofillPageQueryRequest& query) {

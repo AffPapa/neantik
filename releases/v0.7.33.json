@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "channel": "public-alpha",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "siteUrl": "https://browser.free",
+  "publicationScope": {
+    "channels": [
+      "GitHub",
+      "browser.free"
+    ],
+    "affpapa": "excluded by explicit user instruction; user updates manually"
+  },
+  "limitations": [
+    "Public alpha; full production hardware cohorts open.",
+    "macOS27beta ARM64 tests, not every Mac/OS or physical VoiceOver.",
+    "Safe Browsing disabled; no anonymity/CAPTCHA/site-rule bypass guarantee.",
+    "Bounded route/failure observations only; public OS-default-trusted authenticated HTTPS CONNECT e2e separately unmeasured.",
+    "Backup BrowserData-only for original stopped profile/Mac/Keychain/exact runtime; prior matching signed QA restore retained, no cross-Mac OS secret portability or fresh production Keychain use.",
+    "CRX native packed installation qualification and full product installer remain open; extension center retained.",
+    "Automatic updater disabled: full signed old-to-new install, interruption recovery and rollback qualification require separate isolated macOS GUI account/session or independently verified audit-context bridge. Current shipping bootstrap does not propagate a synthetic data root to restarted GUI."
+  ],
+  "tag": "v0.7.33",
+  "version": "0.7.33",
+  "build": 96,
+  "releasedAt": "2026-10-12",
+  "sourceCommit": "1ada37d493e0333401a0da72a72ca2a381dc3253",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.33",
+  "rollbackRelease": "v0.7.32",
+  "distributionDirectory": "dist/distribution/v0.7.33-96-20261011T225552Z-54170",
+  "candidateManifestSHA256": "12ce90973d6540e0430738a5c2742622ee7433b14f244cf1ceaefd1504cb9dfd",
+  "candidateSourceBindingSHA256": "02a351a095abe01781c31d2f82931919028052af09e09d1693adbaeef6022662",
+  "archive": {
+    "name": "NeAntik-0.7.33-arm64-notarized.zip",
+    "sizeBytes": 189410101,
+    "sha256": "5e6039efe6d4d5a05c555a5ea9c7d941b637babc30642915c0bf8c95f6753637"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.33-arm64-notarized.dmg",
+    "sizeBytes": 214047131,
+    "sha256": "ed4cc4f6dc6e3ba5482c5265ba9ae8cce1d370d92ba780c6da6295270bfa0781"
+  },
+  "verification": {
+    "developerId": "passed, same pinned certificate 474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "notarization": "Accepted ZIP and DMG",
+    "zipNotarySubmissionId": "8b525d76-02f8-4dad-bb2d-8ff9d7bace8b",
+    "dmgNotarySubmissionId": "25c05b7d-713c-4868-a557-593ddf83df0e",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "swiftTests": {
+      "reportedTests": 1372,
+      "suites": 159,
+      "seconds": 66.27,
+      "status": "passed",
+      "optionalSkippedCaseLogCount": 52
+    },
+    "fingerprint": "fresh authenticated exact signed candidate and fresh downloaded headed audit; critical files match; owned processes drained",
+    "managerSHA256": "50eb9c5db1a8cc76f2f653835eb12baa1f614e9ec05e2cc751b3704b11c2a344",
+    "exactCandidateMCP": "PASS: 18 management/7 read; metadata, revision and access-control negatives, EOF/reconnect",
+    "downloadedMCP": "PASS: same bounded metadata/access-control scenarios; no browser/proxy/Keychain operations",
+    "hostedDownload": "PASS: fresh ZIP/DMG download, hash/size, signing/stapling/Gatekeeper, runtime provenance and privacy",
+    "downloadedHeaded": "PASS: fresh enrollment, all critical files equal, isolated headed audit, owned processes drained",
+    "devUI": "PASS: manual updater window, Tab/Escape, synthetic create/start/stop, metadata after quit/reopen. VoiceOver not activated. Browser page content not visually inspected in this Dev smoke.",
+    "updater": "app-owned UI, quiescence admission, stale/duplicate lifetime handling and cancellation/cleanup boundary verified locally. Automatic channel false; whole signed old-to-new install not qualified.",
+    "relay": "Unchanged since v0.7.32. Prior evidence retained in v0.7.32.json; not claimed as a new relay qualification in this manager release.",
+    "privacy": "21 source entries/661748 bytes; reachable5036 blobs/8535 objects recognized formats PASS before publication metadata. Shipped artifact privacy PASS. All212 Sites tar regular entries plus retained session credential literals PASS. Not proof against unknown secret formats.",
+    "siteTests": "32 tests PASS; final release-notes targeted12 tests PASS; Vinext build PASS",
+    "liveAPI": "ordinary HTTPS200: version0.7.33/build96, hash and ZIP/DMG URLs match"
+  },
+  "changes": [
+    "Readable manual update window in app",
+    "Application-owned update controller and bounded manifest reader",
+    "Quiescence fence spans profile/proxy/backup/cache/extension workers through actual completion, cancellation and publication",
+    "Duplicate/stale owner operations and unconfirmed cleanup preserve safe admission boundaries"
+  ],
+  "sitePublication": {
+    "status": "succeeded",
+    "projectId": "appgprj_6a643e28baa08191bf23bf4803345907",
+    "versionNumber": 134,
+    "versionId": "appgprj_6a643e28baa08191bf23bf4803345907~appgver_7411841586dc8191808391bf7af19f08",
+    "sourceCommit": "a37fb1f95accccc594344aec383e95deb70fbdce",
+    "deploymentId": "appgdep_6acc15c390b481919defa678d4eccd40",
+    "nativeURL": "https://neantik-browser.iryadom.chatgpt.site",
+    "customDomain": "https://browser.free/",
+    "audience": "public unchanged",
+    "liveAPI": "ordinary HTTPS200, version/build/SHA256/URLs match",
+    "liveUI": "0.7.33(96), DMG/ZIP hrefs and screenshot verified"
+  },
+  "githubPublication": {
+    "status": "published",
+    "releaseId": 409973765,
+    "tag": "v0.7.33",
+    "targetCommit": "1ada37d493e0333401a0da72a72ca2a381dc3253",
+    "assetsImmutable": true
+  }
+}

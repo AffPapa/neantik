@@ -1,0 +1,14 @@
+{
+  "archiveBytes": 2654288833,
+  "archiveManifestSHA256": "bb4b86db51249450e2f983f2ad96075351c682d9352f6805d9ad426836467a3f",
+  "archiveMiB": 2531.33,
+  "archiveRoot": "/private/tmp/neantik-webkit-ab-qa-archive-v390",
+  "classification": "PASS_ALL_11_QA_STAGES_ARCHIVED_AND_ROUNDTRIP_VERIFIED",
+  "createdAt": "2026-10-28T05:52:11Z",
+  "diskAfterGiB": 21.17,
+  "id": "V390",
+  "nextAction": "Run exactly one V382 filtered WebKit build at -j2 with a disk guard that sends SIGINT if free space reaches 8 GiB. Keep incremental outputs on interruption. On completion, write and bind the exact filtered build receipt into the V382 source offer; do not sign until timestamp control succeeds.",
+  "scope": "Reversibly archived isolated prior QA staging copies after exact round-trip verification. No user profiles, source checkouts, release candidates, shared caches, or published artifacts were touched.",
+  "stages": 11,
+  "verification": "Each restored tree matched source relative paths, file types, modes, symlink targets, sizes and SHA-256. Original/restored codesign verification outcomes were compared; existing invalid signatures were preserved as such. Each original folder was removed only after its archive round-trip passed."
+}

@@ -1,0 +1,22 @@
+{
+  "chromiumVersion": "155.0.8059.40",
+  "qualificationPolicy": {
+    "globalXcodeSelectorChangesAllowed": false,
+    "purpose": "Exact source build identity only; fresh runtime and Direct gates required"
+  },
+  "schemaVersion": 1,
+  "toolchain": {
+    "clangVersion": "Apple clang version 21.0.0 (clang-2100.3.27.1)",
+    "developerDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+    "hermetic": false,
+    "metalBuild": "32023.921",
+    "metalVersion": "Apple metal version 32023.921 (metalfe-32023.921)",
+    "releaseQualified": false,
+    "sdkBuild": "26A5388f",
+    "sdkName": "macosx",
+    "sdkVersion": "27.0",
+    "systemXcode": true,
+    "xcodeBuild": "27A5228h",
+    "xcodeVersion": "27.0"
+  }
+}

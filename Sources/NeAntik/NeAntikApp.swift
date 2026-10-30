@@ -4,21 +4,37 @@ import Foundation
 import SwiftUI
 
 @main
+enum NeAntikEntryPoint {
+    @MainActor
+    static func main() {
+        // The pinned helper must enter AppKit before SwiftUI constructs the
+        // manager's delegate and property wrappers. Keep this in the app file
+        // so the standalone RuntimeAuditCLI still excludes the entry point.
+        if case .webKitHostChild = NeAntikLaunchIntent.parse(
+            arguments: CommandLine.arguments).mode {
+            WebKitHostChildRuntime.runAndExit()
+        }
+        NeAntikApp.main()
+    }
+}
+
 struct NeAntikApp: App {
-    @StateObject private var workplaceNavigation = WorkplaceNavigation()
-    @NSApplicationDelegateAdaptor(NeAntikApplicationDelegate.self)
-    private var applicationDelegate
+    @NSApplicationDelegateAdaptor(NeAntikApplicationDelegate.self) private var applicationDelegate
+    @Environment(\.openWindow) private var openWindow
+    @StateObject private var helpNavigation = HelpNavigation()
+    @StateObject private var updateController: ApplicationUpdateController
     @StateObject private var store: ProfileStore
     @StateObject private var processes: BrowserProcessManager
+    @StateObject private var mcpGUI: MCPGUIControlCoordinator
+    @StateObject private var telemetry: TelemetryController
     @StateObject private var fingerprintObservationStore:
         FingerprintObservationStore
     @StateObject private var proxyHealthCoordinator:
         ProxyHealthCoordinator
-    @StateObject private var workspacePreferences:
-        WorkspacePreferenceStore
-    @StateObject private var telemetry = NeAntikTelemetry()
 
+    private let updateAuditIsolation: DirectUpdateAuditIsolation?
     private let keychain: KeychainStore
+    private let backupComposition: BackupApplicationComposition
     private let credentialCleanup: DeletedProfileCredentialCleanup
     private let runtimeLocator = BrowserRuntimeLocator()
     private let launchIntent: NeAntikLaunchIntent
@@ -39,15 +55,61 @@ struct NeAntikApp: App {
         let launchIntent = NeAntikLaunchIntent.parse(
             arguments: CommandLine.arguments
         )
+        let updateAuditIsolation = DirectUpdateCandidateBootstrap.runIfRequested()
+        self.updateAuditIsolation = updateAuditIsolation
+        do { try ApplicationInstallLifecycle.enter() }
+        catch {
+            #if DEBUG
+            DirectUpdateCandidateBootstrap.recordQualificationRefusal("ordinary-lifecycle")
+            #endif
+            if CommandLine.arguments.count == 1 {
+                let alert = NSAlert()
+                alert.messageText = "Запуск NeAntik временно недоступен"
+                alert.informativeText = error.localizedDescription
+                alert.addButton(withTitle: "Закрыть")
+                NSApplication.shared.setActivationPolicy(.regular)
+                NSApplication.shared.activate(ignoringOtherApps: true)
+                alert.runModal()
+            }
+            Self.writeControlErrorAndExit(error.localizedDescription + "\n", code: EX_TEMPFAIL)
+        }
+        #if DEBUG
+        if CommandLine.arguments.count == 2,
+           CommandLine.arguments[1] == BackupScopeQualification.argument {
+            BackupScopeQualification.runAndExit()
+        }
+        if CommandLine.arguments.count == 2,
+           CommandLine.arguments[1] == ProxyRelayOwnerQualification.argument {
+            ProxyRelayOwnerQualification.runAndExit()
+        }
+        #endif
         switch launchIntent.mode {
+        case .proxyRelayOwner:
+            ProxyRelayOwner.runAndExit()
+        case .webKitHostChild:
+            // Defensive only: normal helper entry bypasses SwiftUI entirely.
+            WebKitHostChildRuntime.runAndExit()
+        case let .mcpStdio(dataRoot):
+            MCPStdioServer.runAndExit(dataRoot: dataRoot)
+        case let .mcpManagement(dataRoot):
+            MCPStdioServer.runAndExit(dataRoot: dataRoot, allowsManagement: true)
         case let .fingerprintEnrollment(outputURL):
             Self.runFingerprintEnrollmentAndExit(outputURL: outputURL)
+        case let .fingerprintRetirement(request):
+            do {
+                try FingerprintEvidenceRetirement.run(request)
+                Darwin.exit(EXIT_SUCCESS)
+            } catch {
+                Self.writeControlErrorAndExit(
+                    "Не удалось подтвердить удаление временного ключа аудита: " +
+                        error.localizedDescription + "\n", code: EX_DATAERR)
+            }
         case .invalidControlArguments:
             Self.writeControlErrorAndExit(
                 "Неверные параметры защищённого режима NeAntik.\n",
                 code: EX_USAGE
             )
-        case let .interactive(request):
+        case let .interactive(request, _):
             self.launchIntent = launchIntent
             if let request {
                 do {
@@ -70,6 +132,11 @@ struct NeAntikApp: App {
                             bundle: releaseBundle
                         ) {
                     case let .audit(context):
+                        if launchIntent.requiresUpdateAuditAuthority {
+                            // A parsed manifest alone cannot grant a GUI that
+                            // avoids the automatic fingerprint signing path.
+                            try context.authenticateUpdateAuditIsolation()
+                        }
                         fingerprintEvidenceReleaseContext = context
                     case .recovered:
                         Darwin.exit(EXIT_SUCCESS)
@@ -87,49 +154,92 @@ struct NeAntikApp: App {
         }
 
         let environment = NeAntikApplicationEnvironment.resolve(
-            bundleIdentifier: Bundle.main.bundleIdentifier
+            bundleIdentifier: Bundle.main.bundleIdentifier,
+            environment: ProcessInfo.processInfo.environment
         )
-        let processEnvironment = ProcessInfo.processInfo.environment
-        let startupIsolation = ManagerStartupProbe.isolationConfiguration(
-            environment: processEnvironment,
-            bundleIdentifier: Bundle.main.bundleIdentifier
-        )
-        if ManagerStartupProbe.isRequested(environment: processEnvironment),
-           startupIsolation == nil
-        {
-            Self.writeControlErrorAndExit(
-                "Небезопасная конфигурация измерения запуска NeAntik.\n",
-                code: EX_USAGE
-            )
+        let auditRoot = updateAuditIsolation?.root ?? fingerprintEvidenceReleaseContext?.request.managerDataRoot
+        do { try updateAuditIsolation?.validate() }
+        catch { Self.writeControlErrorAndExit("Не удалось подтвердить изоляцию проверки обновления.\n", code: EX_NOPERM) }
+        let backupQualification: BackupGUIQualificationContext?
+        do {
+            backupQualification = auditRoot == nil ? try BackupGUIQualificationContext.resolve(
+                bundleIdentifier: Bundle.main.bundleIdentifier,
+                runID: Bundle.main.object(forInfoDictionaryKey: BackupGUIQualificationContext.runIDKey) as? String,
+                root: Bundle.main.object(forInfoDictionaryKey: BackupGUIQualificationContext.rootKey) as? String
+            ) : nil
+        } catch {
+            #if DEBUG
+            DirectUpdateCandidateBootstrap.recordQualificationRefusal("ordinary-backup-qualification")
+            #endif
+            Self.writeControlErrorAndExit("Не удалось подтвердить изолированный стенд копий данных.\n", code: EX_NOPERM)
         }
         let paths: AppPaths
-        let keychain: KeychainStore
-        if let startupIsolation {
-            paths = AppPaths(rootDirectory: startupIsolation.dataRoot)
-            keychain = KeychainStore(
-                backend: ManagerStartupKeychainBackend(),
-                service: startupIsolation.keychainService,
-                legacyService: nil
-            )
+        if let auditRoot {
+            paths = AppPaths(rootDirectory: auditRoot)
+        } else if let backupQualification {
+            paths = AppPaths(rootDirectory: backupQualification.root)
+        } else if environment.isDevelopment {
+            paths = AppPaths(rootDirectory: environment.applicationSupportRoot())
+        } else if environment.isProductionDiagnostic {
+            paths = AppPaths(rootDirectory: environment.applicationSupportRoot())
         } else {
-            paths = environment.isDevelopment
-                ? AppPaths(
-                    rootDirectory: environment.applicationSupportRoot()
-                )
-                : AppPaths()
-            keychain = KeychainStore(
-                service: environment.keychainService,
-                legacyService: environment.legacyKeychainService
-            )
+            paths = AppPaths()
         }
+        do {
+            backupComposition = try BackupApplicationComposition.resolve(
+                environment: environment, paths: paths, validatedReleaseAudit: auditRoot != nil,
+                qualification: backupQualification
+            )
+        } catch {
+            #if DEBUG
+            DirectUpdateCandidateBootstrap.recordQualificationRefusal("ordinary-backup-composition")
+            #endif
+            Self.writeControlErrorAndExit("Не удалось подтвердить доступ к копиям данных.\n", code: EX_NOPERM)
+        }
+        let keychain = auditRoot == nil
+            ? KeychainStore.applicationStore(environment: environment, paths: paths)
+            : KeychainStore(backend: ReleaseAuditKeychainBackend(), service: "app.neantik.release-audit.proxy", legacyService: nil)
         self.keychain = keychain
         credentialCleanup = DeletedProfileCredentialCleanup(
             paths: paths,
             keychain: keychain
         )
-        let processManager = BrowserProcessManager(paths: paths)
-        _store = StateObject(wrappedValue: ProfileStore(paths: paths))
+        let makeUpdateClient: () -> any ApplicationUpdateTransport
+        if let updateAuditIsolation {
+            makeUpdateClient = { DirectUpdateOwnerClient(auditIsolation: updateAuditIsolation) }
+        } else if let context = fingerprintEvidenceReleaseContext {
+            // Disk custody is captured on the client's utility worker after the
+            // app has created its synthetic store. No signer authority crosses.
+            let root = context.request.managerDataRoot, manifest = context.candidateManifest
+            makeUpdateClient = { DirectUpdateOwnerClient(prepareAuditIsolation: {
+                try DirectUpdateAuditIsolation.capture(root: root, validatedManifest: manifest)
+            }) }
+        } else { makeUpdateClient = { DirectUpdateOwnerClient() } }
+        _updateController = StateObject(wrappedValue: ApplicationUpdateController(makeClient: makeUpdateClient))
+        let browserIsolation: ReleaseAuditBrowserIsolation?
+        do {
+            if let updateAuditIsolation {
+                browserIsolation = try .authenticatedContinuation(updateAuditIsolation)
+            } else if let context = fingerprintEvidenceReleaseContext {
+                browserIsolation = try .authenticatedRelease(context)
+            } else { browserIsolation = nil }
+        } catch {
+            Self.writeControlErrorAndExit("Не удалось подтвердить временное хранилище браузера для проверки выпуска.\n", code: EX_NOPERM)
+        }
+        let profileStore = ProfileStore(paths: paths)
+        let processManager = BrowserProcessManager(paths: paths, releaseAuditBrowserIsolation: browserIsolation,
+            keychain: keychain)
+        _store = StateObject(wrappedValue: profileStore)
         _processes = StateObject(wrappedValue: processManager)
+        let guiControl = MCPGUIControlCoordinator(store: profileStore, processes: processManager)
+        _mcpGUI = StateObject(wrappedValue: guiControl)
+        // Help can be restored without a main window. Quit must still drain
+        // the same GUI-owned windows and control endpoint.
+        NeAntikApplicationDelegate.processes = processManager
+        NeAntikApplicationDelegate.mcpGUI = guiControl
+        _telemetry = StateObject(
+            wrappedValue: TelemetryController(edition: .direct)
+        )
         _fingerprintObservationStore = StateObject(
             wrappedValue: FingerprintObservationStore()
         )
@@ -138,10 +248,6 @@ struct NeAntikApp: App {
                 fileURL: paths.proxyHealthFile
             )
         )
-        _workspacePreferences = StateObject(
-            wrappedValue: WorkspacePreferenceStore()
-        )
-        applicationDelegate.configure(processes: processManager)
     }
 
     var body: some Scene {
@@ -149,18 +255,19 @@ struct NeAntikApp: App {
             ContentView(
                 store: store,
                 processes: processes,
+                updateController: updateController,
+                telemetry: telemetry,
                 fingerprintObservationStore: fingerprintObservationStore,
                 proxyHealthCoordinator: proxyHealthCoordinator,
-                workspacePreferences: workspacePreferences,
-                telemetry: telemetry,
                 keychain: keychain,
+                backupComposition: backupComposition,
                 credentialCleanup: credentialCleanup,
                 runtimeLocator: runtimeLocator,
                 launchIntent: launchIntent,
                 fingerprintEvidenceReleaseContext:
-                    fingerprintEvidenceReleaseContext,
-                workplaceNavigation: workplaceNavigation
+                    fingerprintEvidenceReleaseContext
             )
+            .environmentObject(helpNavigation)
             .preferredColorScheme(uiSmokeColorScheme)
             .background {
                 WindowMinimumSizeEnforcer(
@@ -173,7 +280,6 @@ struct NeAntikApp: App {
             }
             .onAppear {
                 NativeMenuLocalization.applyAfterMenuCreation()
-                ManagerStartupProbe.signalReadyIfRequested()
             }
             .onReceive(
                 NotificationCenter.default.publisher(
@@ -188,19 +294,33 @@ struct NeAntikApp: App {
         .commands {
             WorkspaceCommandMenu()
             ProfileCommandMenu()
+            NeAntikHelpCommands(navigation: helpNavigation)
+        }
+        // Audit entry is explicit: do not depend on macOS restoring a main
+        // scene after a previous stdio-only or closed-window session.
+        .onChange(of: launchIntent.opensAuditWindow, initial: true) {
+            if launchIntent.opensAuditWindow {
+                Task { @MainActor in
+                    await Task.yield() // Let SwiftUI register the named scene.
+                    openWindow(id: "main")
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                }
+            }
         }
 
-        MenuBarExtra(isInserted: .constant(!launchIntent.opensFingerprintAudit)) {
-            WorkplaceMenu(store: store, processes: processes, navigation: workplaceNavigation)
-                .disabled(workplaceNavigation.isBlocked)
-        } label: {
-            WorkplaceMenuLabel(store: store, processes: processes)
+        Window("Справка NeAntik", id: "help") {
+            NeAntikHelpWindow(
+                navigation: helpNavigation,
+                guiControl: mcpGUI,
+                store: store,
+                connection: MCPConnectionConfiguration(
+                    executable: Bundle.main.executableURL ?? URL(fileURLWithPath: CommandLine.arguments[0]),
+                    dataRoot: store.paths.rootDirectory
+                )
+            )
         }
-
-        Settings {
-            NeAntikSettingsView(preferences: workspacePreferences)
-                .preferredColorScheme(uiSmokeColorScheme)
-        }
+        .defaultSize(width: 980, height: 720)
+        .windowResizability(.contentMinSize)
     }
 
     private static func runFingerprintEnrollmentAndExit(

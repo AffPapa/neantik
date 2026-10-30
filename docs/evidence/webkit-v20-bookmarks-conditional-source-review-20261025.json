@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T09:48:55+00:00",
+  "status": "partial-factual-build-evidence",
+  "candidate": {
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "sourceCommit": "955bc0808a1e1a49d3a9f74f2b02e05af9fee3e2",
+    "version": "1.0.0"
+  },
+  "upstream": {
+    "repository": "WebKit/WebKit",
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+  },
+  "runtimeImage": {
+    "path": "WebKit.framework/Versions/A/WebKit",
+    "sha256": "876cb2176bc9c722e64b8bbc31f29b1539f435994fda1d4a037c572984943276"
+  },
+  "source": {
+    "path": "Source/WebKit/UIProcess/Extensions/Cocoa/API/WebExtensionContextAPIBookmarksCocoa.mm",
+    "sha256": "0af364c07ebda76fd234996ade2b03981a1650703c1622d71c209d056044a6bc",
+    "header": "Copyright © 2025 All rights reserved; no OSS license identified in header"
+  },
+  "buildEvidence": {
+    "buildRoot": "/private/tmp/neantik-v20-production-rebuild/WebKit/WebKitBuild/neantik-v20-production-arm64",
+    "buildNinjaSHA256": "691f704d4a75b80b5f4e8652a1d758b78e135f83b089b61a378df3c20bffc570",
+    "cmakeConfigSHA256": "9acf7eb2c6591eac435ec3805b42cd29db8ec85c61b8c836ef6e065c17259c3e",
+    "platformEnableCocoaSHA256": "b943f9580e5fabc93655318de5a7d93f92f6c04799ff68951f1c43d28ebc8c42",
+    "featureDefinesSHA256": "64f8297fe907ea66889189df9d8b55f278ea3bf0eb9dcd013859c30ffd603249",
+    "unifiedTranslationUnit": {
+      "path": "WebKit/DerivedSources/unified-sources/UnifiedSource-UIProcess-1-ARC.mm",
+      "sha256": "505a9efb4f0f04e8f68ec6ef72f93dca0ada1dbf535859c468e116ce9b0b16de",
+      "includeLine": 35
+    },
+    "unityObject": {
+      "path": "Source/WebKit/CMakeFiles/WebKitARC.dir/__/__/WebKit/DerivedSources/unified-sources/UnifiedSource-UIProcess-1-ARC.mm.o",
+      "sha256": "a31a576b9e59f37a82b209da320e3eb1aa3e659bf70e2f991c274a4b4f2ecec2"
+    },
+    "runtimeImageSHA256": "a114a212993c88681dacef826f964150df37b979d0d5ad5ded8debb137c0c6ef",
+    "featureConfiguration": "ENABLE_WK_WEB_EXTENSIONS is 1; WK_WEB_EXTENSIONS_BOOKMARKS is absent from generated feature defines and PlatformEnableCocoa.h defaults it to 0 && ENABLE_WK_WEB_EXTENSIONS.",
+    "symbolInspection": "nm -m of the exact WebKit framework image and unity object produced no matches for isBookmarksMessageAllowed, createParametersFromProtocolObject, or WebExtensionContextAPIBookmarks."
+  },
+  "decisionBoundary": "The source is textually included by a unified translation unit but its implementation is inside #if ENABLE(WK_WEB_EXTENSIONS_BOOKMARKS), disabled by this build configuration. This is technical evidence about this image only. It does not decide legal applicability, required notice, or source-offer obligations; the worksheet row remains UNKNOWN.",
+  "worksheetRowUnchanged": true,
+  "worksheetUnknownCount": 82,
+  "scopeLimit": "No runtime launched, no build or package changed, no license decision made."
+}

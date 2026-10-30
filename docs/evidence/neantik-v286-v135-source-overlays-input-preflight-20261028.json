@@ -1,0 +1,74 @@
+{
+  "attempt": "V286",
+  "changedCodeSHA256": {
+    "scripts/package-owned-webkit-release.py": "bdb6628572908dff6848512c60575dc6aa10993439a93755442b23508f9c5e74",
+    "scripts/package-webkit-host.py": "d032c1db3ae4af0f8317ef6a5ae3c8c7d90f08f7334b247c96976a433653f22e",
+    "scripts/tests/test_package_owned_webkit_release.py": "73bdbb8d66e6a4029c1f6d9be30acc260891dfa8f141df8a98853b5ce55b5b73",
+    "scripts/tests/test_webkit_runtime_notices.py": "ae3e032396b613c3491794ecede052163005726d08d25e6145e2f9d3ae115f07",
+    "scripts/webkit_runtime_notices.py": "3c3d5efec61929e2223a966c12f2b5fb5186c9ec3b5f386cd22d35f8c4a67c89"
+  },
+  "checks": {
+    "focusedTests": {
+      "count": 121,
+      "status": "PASS",
+      "suites": [
+        "test_webkit_runtime_notices",
+        "test_package_webkit_host",
+        "test_package_owned_webkit_release"
+      ]
+    },
+    "ninjaResourceTargets": {
+      "CxxCompileOrLinkActions": 0,
+      "dryRunBefore": "22 resource actions",
+      "executed": "21 resource copies + 1 asset catalog compile",
+      "postRunDryRun": "no work",
+      "targets": [
+        "WebCore_CopyBundleResources",
+        "WebCore_CopyModernMediaControlsImages",
+        "WebKit_Assets"
+      ]
+    },
+    "packageInputValidation": "PASS: all 14 V135 binary outputs exact; pinned archive, main/V36 patches, 3344 crosswalk source paths and 64 source-offer overlay replacements accepted",
+    "sourceOverlayJoin": {
+      "allExact": true,
+      "count": 64
+    },
+    "webcoreRuntimeResources": {
+      "allExact": true,
+      "count": 55
+    },
+    "webkitAssetCatalog": {
+      "compiledColorVariantsMatched": 14,
+      "status": "PASS",
+      "tool": "/usr/bin/assetutil"
+    }
+  },
+  "inputs": {
+    "mainPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "sourceOfferManifestSHA256": "6a600e21ef358e5bd43ec96180d25140bf22929aaa589ea1d6aaa5287f096d62",
+    "v135BuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "webkitArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f"
+  },
+  "limits": [
+    "No app/package was signed or launched.",
+    "No production candidate, ZIP/DMG, publication, notarization, or runtime qualification.",
+    "V135 JSC/WebCore/WebKit/libwebrtc source and license scope remains subject to exact notice/relink closure."
+  ],
+  "noticeBoundary": {
+    "expectedV122": "033f978342498b2dbeba3ec265ace4ac6995b7454f496d8dd6396c73de9bb684",
+    "interpretation": "Notice pipeline still pins V122 image identity; V135 is an exact clean build receipt but its scoped image-source and license notices must be rebound and verified before production package.",
+    "message": "WebGPU runtime image SHA-256 mismatch",
+    "observedV135": "42e1a8d4205948576032c04a428788cd737d06512aac044cc04acb1608b0dc23",
+    "status": "REFUSED"
+  },
+  "observedAtUTC": "2026-10-27T17:49:18Z",
+  "schemaVersion": 1,
+  "status": "PASS_V135_EXACT_BUILD_SOURCE_AND_ALL_64_RESOURCE_OVERLAYS; NOTICE_IMAGE_REBIND_REQUIRED; NO_CANDIDATE",
+  "worktrees": {
+    "buildRoot": "/private/tmp/neantik-v132-recipient-relink-20261026/build",
+    "rollbackSource": "/private/tmp/neantik-v286-v135-all-overlays-source-backup",
+    "source": "/private/tmp/neantik-v132-recipient-relink-20261026/WebKit",
+    "v20ScratchRestored": true
+  }
+}

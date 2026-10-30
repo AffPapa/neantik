@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-18",
+  "status": "PASS own signed-process control;WebKit attribution unresolved",
+  "scope": "Separate local executable using the unchanged QA7 dynamic verifier;not the provider or browser",
+  "shippingWebKitProxy": false,
+  "releaseQualified": false,
+  "verifier": {
+    "sourcePath": "Experiments/WebKitIsolation/Sources/IsolationNetworkExtension/SignedHostPin.swift",
+    "sha256": "956d83a3b4c0254fa3d9aebdca7e1377a5bdaca58cda2b65aefa55325c739a87",
+    "identicalToQA7Source": "b6e3f39d9b781a5bd6d4f0a6707064d7bc32524d"
+  },
+  "build": {
+    "inputSHA256": "266b6ed40402b821094dc61c5fc2257775b78eb3315ee2905770df893eb332ff",
+    "incrementalSeconds": 1.796941583,
+    "nativeQA": false
+  },
+  "execution": {
+    "signedExecutableSHA256": "53dffc9e2ceea9c0ef69f9ac48587ab67aa9349f5923f9bfb3de8c06e4c6276c",
+    "strictSignature": true,
+    "hardenedRuntime": true,
+    "sameExistingCertificate": true,
+    "newEntitlements": false,
+    "notarization": false,
+    "memoryPressure": 1,
+    "thermalState": 0,
+    "normalExitCode": 0,
+    "actualGuestIdentityExported": false,
+    "expectedClauseStatuses": "full:0,integrity:0,apple:0,developer-id:0,team:0,identifier:0,cdhash:0",
+    "fullTokenEqualityVerified": true,
+    "negativeControlsRefused": 2,
+    "networkRun": false,
+    "otherProcessInspected": false,
+    "ownKernelTokenRead": true,
+    "releaseQualified": false,
+    "schemaVersion": 1,
+    "status": "PASS own dynamic pin and two negative controls",
+    "tokenExported": false
+  },
+  "primarySource": {
+    "repository": "https://github.com/WebKit/WebKit",
+    "commit": "d22fe75a1b10a54d034da33bf2174cff9814639b",
+    "filesReviewed": 13,
+    "installedSystemWebKitVersion": "22625.1.29.11.24",
+    "installedRuntimeCorrespondence": false,
+    "conclusion": "Parent audit-data forwarding exists in reviewed source;this does not establish the cause of the installed QA7 mismatch."
+  },
+  "controls": {
+    "positive": "All seven expected dynamic requirement clauses match the own signed process;full token equality preserved.",
+    "wrongIdentifier": "Refused by the same dynamic verifier.",
+    "wrongCDHash": "Refused by the same dynamic verifier."
+  },
+  "privacy": {
+    "tokenExported": false,
+    "actualGuestIdentityExported": false,
+    "networkRun": false,
+    "otherProcessInspected": false,
+    "realUserDataUsed": false
+  },
+  "limits": [
+    "Own-process Security API control does not qualify provider/delegated-flow context.",
+    "No new browser,network filter or WebKit isolation feature was executed.",
+    "No notarization or product release gate from this standalone tool.",
+    "Public upstream WebKit source is not proven to match the installed framework."
+  ],
+  "next": "Establish a supported authenticated original-profile owner link before another network candidate;never accept a shared helper or a team-only match."
+}

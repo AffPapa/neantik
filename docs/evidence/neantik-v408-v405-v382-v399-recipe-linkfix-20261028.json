@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v408-v405-v382-v399-recipient-recipe-link-correction-20261028",
+  "observedAtUTC": "2026-10-28T07:49:31Z",
+  "status": "PASS_V408_SOURCE_OFFER_COMPONENT_AND_SUPPLEMENT_PREFLIGHT; RECIPIENT_RELINK_AND_RELEASE_OPEN",
+  "scope": "Private copy-on-write successor of V405 correcting one packaged recipient-recipe link. Exact package consumer and supplement integrity checks only; no build, signing, launch, candidate creation, publication, or broad regression.",
+  "inputs": {
+    "v405SourceOfferRoot": "/private/tmp/neantik-release-v1/dist/private/source-offers/v405-v382-v399-combined-draft",
+    "v405ManifestSHA256": "5c03656e822ef3bb69ab4bf14c0c2d2efa118b85bbbd3e3be4661391ae2c37ca",
+    "v408SourceOfferRoot": "/private/tmp/neantik-release-v1/dist/private/source-offers/v408-v382-v399-recipe-linkfix-draft",
+    "v408ManifestSHA256": "dfefa024875fbc7a33a2ee09b21f0ead5e2237dfee967a8c6b7e21a3139e8820",
+    "v408RecipeSHA256": "fdf41df0fdeb367f0f2d598e395bf9a84bb9384c98ea5b732f852b5ac9faa02f",
+    "v405RecipeSHA256": "9201e26477fb1ef8f660bdf1e2d0aa24fe19e8eaa5de91925d4bcac1133e2598",
+    "changedPathsComparedWithV405": [
+      "WEBKIT_BUILD_RECIPE_V20_DRAFT.md",
+      "manifest.json"
+    ],
+    "treePathCount": 1326,
+    "referencePath": "overlay/docs/recipient-work/V265-RECIPIENT-PRODUCTION-RECIPE-DRAFT.md",
+    "packageConsumerScriptSHA256": "3050d56cddeb05681dee5cac279cf3cba6354411724e62432ab3cddaec9233a9",
+    "supplementCheckerScriptSHA256": "e2e934906da24761d3a95f72639ebbf495526c15e0b9fe4762e830c36ed4206b",
+    "filteredCrosswalkSHA256": "7a0a90589615ebf7979dfff659e82546dd9770693d8e4ac82f7aa9dafe1f2580",
+    "filteredBuildReceiptSHA256": "319afbac5c8a7b55daeb54912b3c7614537a4d26315885127d54694dc3bc7a7f"
+  },
+  "checks": {
+    "V408PackageConsumer": "PASS; all 662 source-offer components hash/size-verified; 64 overlay assets; filtered crosswalk and exact build receipt binding verified",
+    "V408RecipeReference": "PASS; exact packaged path exists and is a manifest component",
+    "V405Preserved": "PASS; full tree comparison across 1326 paths found only the two declared V408 changes; pinned V405 manifest and recipe hashes unchanged",
+    "V399Supplement": "PASS; componentCount=1; supplement manifest SHA-256 688c8f4681e8c79cfdc69a6124fb4cf868c32a8e54738b03e6ba732a1a4e5ecd",
+    "frozenV382Base": "PASS; manifest SHA-256 e96b51e74894ec9877462105cf03c28bc80c0bc799b5408288d7c0b49c4631a8; source archive SHA-256 35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd"
+  },
+  "limitations": [
+    "Recipient full dependency closure remains unresolved.",
+    "No recipient-owned WebKit rebuild/relink/load or modified-image proof.",
+    "No production signed candidate, timestamp signing, notarization, publication, or downloaded-byte verification.",
+    "License UNKNOWN rows remain under their prior dispositions."
+  ],
+  "sideEffects": {
+    "build": false,
+    "runtimeLaunch": false,
+    "signing": false,
+    "candidateChanged": false,
+    "publication": false
+  },
+  "releaseQualified": false,
+  "nextAction": "After observable secure timestamp recovery, produce the exact signed Chromium .74 Metal runtime report and promote its source lock; use the V408 combined offer manifest for the integrated production package and recipient evidence."
+}

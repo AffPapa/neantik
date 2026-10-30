@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "status": "bounded-factual-maintainer-review;candidate-notice-copies-match;other-applicability-rows-open",
+  "observedAt": "2026-10-25",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "scope": {
+    "runtimeImage": "libANGLE-shared.dylib",
+    "runtimeImageSHA256": "cbd2a2750205cf4a743a45a4a21bf7cfbde2c1d72d5dbe5a6cfd9cafdbc9e111",
+    "linkedSourceCount": 344,
+    "exactCompileInputMatches": 344,
+    "sourceLicenseCandidateCounts": {
+      "ANGLE_LICENSE": 340,
+      "xxHash_LICENSE": 1,
+      "Chromium_zlib_wrapper_LICENSE": 1,
+      "generatedBisonParsersWithAppleBSDElection": 2,
+      "generatedPCHWrappers": 2
+    }
+  },
+  "inputs": {
+    "productionLinkInputClosure": {
+      "path": "docs/evidence/webkit-v20-production-link-input-closure-20261025.json",
+      "sha256": "2aa173e04b793973469c261a3a7d7d573ba94e5d1ad814c863ab1f2b7d51be73"
+    },
+    "runtimeImageSourceClosure": {
+      "path": "docs/evidence/webkit-v20-runtime-image-source-closure-20261025.json",
+      "sha256": "6e9a5a634e7e78fcb23d4e2b0d10bbda676bd264cc9b4127f4ce4d833c2e2304"
+    },
+    "linkSourceLicenseCandidates": {
+      "path": "docs/evidence/webkit-v20-link-source-license-candidates-20261025.json",
+      "sha256": "70a07ede311458659ba1a9d5b91a90a6bfbd130d809dfe19865bc684cf952f6a"
+    },
+    "upstream": {
+      "repository": "https://github.com/WebKit/WebKit",
+      "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+      "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f"
+    }
+  },
+  "licenseTexts": [
+    {
+      "component": "ANGLE",
+      "sourcePath": "Source/ThirdParty/ANGLE/LICENSE",
+      "sourceSHA256": "bf4da21bd20bcfb5b60b7ecc67fa864a79be049e21d6178076887f178dd6c71a",
+      "license": "BSD 3-Clause",
+      "candidateCopyPath": "Contents/Resources/NeAntikRuntimeLicenses/ANGLE-LICENSE.txt",
+      "candidateCopySHA256": "bf4da21bd20bcfb5b60b7ecc67fa864a79be049e21d6178076887f178dd6c71a",
+      "sourceOfferPath": "notices/angle/ANGLE-LICENSE-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+    },
+    {
+      "component": "xxHash",
+      "sourcePath": "Source/ThirdParty/ANGLE/src/common/third_party/xxhash/LICENSE",
+      "sourceSHA256": "6ffedbc0f7878612d2b23589f1ff2ab15633e1df7963a5d9fc750ec5500c7e7a",
+      "license": "BSD 2-Clause",
+      "candidateCopyPath": "Contents/Resources/NeAntikRuntimeLicenses/xxHash-LICENSE.txt",
+      "candidateCopySHA256": "6ffedbc0f7878612d2b23589f1ff2ab15633e1df7963a5d9fc750ec5500c7e7a",
+      "sourceOfferPath": "notices/angle/xxhash-LICENSE-e4c5da7234eca7baad9a46f0b144e49ccad2e500"
+    },
+    {
+      "component": "Chromium zlib compression wrapper",
+      "sourcePath": "Source/ThirdParty/ANGLE/third_party/zlib/google/compression_utils_portable.cc",
+      "licenseSourcePath": "Chromium repository LICENSE at pinned DEPS commit 738956cca47a264e92106fdbefdc040ee7ed487d",
+      "licenseSourceSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
+      "license": "BSD-style license as declared in exact source header",
+      "candidateCopyPath": "Contents/Resources/NeAntikRuntimeLicenses/Chromium-ANGLE-DEPS-LICENSE.txt",
+      "candidateCopySHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
+      "sourceOfferPath": "notices/chromium/Chromium-ANGLE-DEPS-LICENSE.txt"
+    }
+  ],
+  "generatedParserEvidence": [
+    {
+      "path": "Source/ThirdParty/ANGLE/src/compiler/preprocessor/preprocessor_tab_autogen.cpp",
+      "sha256": "7f76f2d048f91ba080ff2d40ed8845ef6e7daf1a1231cca5e9696d17c15c473b",
+      "appleBSDNoticePresent": true,
+      "bisonSkeletonExceptionPresent": true,
+      "upstreamGPLSkeletonTextPresent": true
+    },
+    {
+      "path": "Source/ThirdParty/ANGLE/src/compiler/translator/glslang_tab_autogen.cpp",
+      "sha256": "4c36d53eb5bc8f1ad388284f4ccf9647c79111a6d436e129c17069ad9e3c2409",
+      "appleBSDNoticePresent": true,
+      "bisonSkeletonExceptionPresent": true,
+      "upstreamGPLSkeletonTextPresent": true
+    }
+  ],
+  "generatedPCHWrappers": [
+    {
+      "path": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/ANGLE/ANGLE_pch_obj.cpp",
+      "sha256": "b50cb23a6be31e88bf593d98f6af14e26fa73f00dfa8394ebb3e56778ba2be98",
+      "content": "// PCH object for ANGLE (CXX)"
+    },
+    {
+      "path": "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/ANGLE/ANGLE_pch_obj.mm",
+      "sha256": "175a70f5469946c5375fd05696a8d7928ba7e259a311f4e5934f14794334ef8b",
+      "content": "// PCH object for ANGLE (OBJCXX)"
+    }
+  ],
+  "candidateNotices": {
+    "path": "Contents/Resources/NeAntikRuntimeNotices.md",
+    "sha256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375",
+    "containsAllThreeLicenseNamesAndHashes": true
+  },
+  "maintainerDecision": {
+    "applicableLicense": "For this mapped image only: ANGLE BSD 3-Clause for its 340 mapped project inputs; xxHash BSD 2-Clause for its one source; Chromium BSD-style license for the one zlib compression wrapper as specified by that source header; and two generated Bison outputs with explicit Apple BSD-election notes and the Bison parser-skeleton exception in their pinned headers.",
+    "noticeLocation": "Candidate NeAntikRuntimeNotices.md plus byte-identical packaged ANGLE-LICENSE.txt, xxHash-LICENSE.txt, and Chromium-ANGLE-DEPS-LICENSE.txt; all three exact license texts are also staged in the private corresponding-source offer.",
+    "requiredNotice": "Retain the complete ANGLE, xxHash, and Chromium license texts with distribution. Preserve the pinned generated-parser source/header and Bison exception in corresponding source.",
+    "decision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact link-input closure, source/license hashes, three distinct exact license texts and candidate copies, two generated-parser election headers, and notice references are bound for libANGLE-shared.dylib only. This is not legal advice or a legal opinion."
+  },
+  "limitations": [
+    "Does not decide applicability for any other runtime image/resource.",
+    "Does not resolve other licensing rows, source-offer completeness, recipient relink, signature, notarization, runtime qualification or publication.",
+    "Candidate 139 remains unqualified; factual bundle-presence evidence is not signature evidence.",
+    "The zlib wrapper has its own Chromium BSD-style notice; it is separately bound rather than inferred from the enclosing ANGLE license."
+  ]
+}

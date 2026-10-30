@@ -1,0 +1,309 @@
+{
+  "schemaVersion": 1,
+  "status": "hash-bound-upstream-component-metadata-inventory;legal-applicability-unresolved",
+  "observedAt": "2026-10-25",
+  "candidate": {
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "sourceCommit": "955bc0808a1e1a49d3a9f74f2b02e05af9fee3e2",
+    "version": "1.0.0"
+  },
+  "runtimeImage": {
+    "runtimePath": "libwebrtc.dylib",
+    "runtimeSHA256": "ce802e6ea83ba3e5faecc7e6b77f156821c74f30ca47fc6cf310caf19d4ffd6f",
+    "currentWorksheetDecision": {
+      "applicableLicense": "UNKNOWN",
+      "noticeLocation": "UNKNOWN",
+      "requiredNotice": "UNKNOWN",
+      "reviewerDecision": "UNKNOWN"
+    },
+    "existingSourceJoinPath": "docs/evidence/webkit-v20-runtime-image-license-evidence-join-20261025.json",
+    "existingSourceJoinSHA256": "38e9f939aef2a9369822761b70e683c926572021e4a16743ab6e14d754863463",
+    "sourceCountInJoin": 2505,
+    "sourceRowsNotMatchedToPriorCrosswalk": 2505
+  },
+  "pinnedSourceArchive": {
+    "offerPath": "dist/private/source-offers/1.0.0-manager-955/upstream/WebKit-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c.tar.zst",
+    "bytes": 1748508866,
+    "sha256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "archiveRoot": "WebKit/",
+    "sha256VerifiedAgainstCurrentFile": true,
+    "verificationMethod": "Streaming SHA-256 of the exact compressed archive bytes matched the source-offer manifest entry."
+  },
+  "upstreamReadmeChromiumMetadata": [
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/abseil-cpp/README.chromium",
+      "bytes": 2316,
+      "sha256": "684e2808c663320b43a9173fab9d314043c55e0fcec54f11bd11fdf130b8352f",
+      "name": "Abseil",
+      "short Name": "absl",
+      "license": "Apache-2.0",
+      "license File": "LICENSE",
+      "revision": "7f008af1930f59d869a816795ac5d445e3628e4d",
+      "version": "N/A",
+      "shipped": "yes",
+      "uRL": "https://github.com/abseil/abseil-cpp"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/README.chromium",
+      "bytes": 445,
+      "sha256": "b902b0ba3d65cb26d2c043ff586b9959462b54601f82467120a565c97d977fe8",
+      "name": "BoringSSL",
+      "license": "Apache-2.0, BSD-3-Clause",
+      "license File": "src/LICENSE",
+      "revision": "2ea3200c3a3ec176613ab7a0b9a4ffc6db846120",
+      "version": "N/A",
+      "shipped": "yes",
+      "uRL": "https://boringssl.googlesource.com/boringssl"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/crc32c/README.chromium",
+      "bytes": 612,
+      "sha256": "e4a95f5f631efc7d262b2e24cf55c15834d942187515c2bd6eaf2c2f9972ec30",
+      "name": "CRC32C",
+      "short Name": "crc32c",
+      "license": "BSD-3-Clause",
+      "license File": "src/LICENSE",
+      "revision": "2bbb3be42e20a0e6c0f7b39dc07dc863d9ffbc07",
+      "version": "1.0.7.git-5998f8451548244de8cde7fab387a550e7c4497d",
+      "shipped": "yes",
+      "uRL": "https://github.com/google/crc32c"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/README.chromium",
+      "bytes": 1789,
+      "sha256": "9e1ef9a39ac31787ad23d7e5f9f3a22feb3788b7dc9baf212369a7a205cf93ae",
+      "name": "Alliance for Open Media Video Codec",
+      "short Name": "libaom",
+      "license": "Alliance-for-Open-Media-Patent, BSD-2-Clause",
+      "license File": "source/libaom/LICENSE, source/libaom/PATENTS",
+      "revision": "7b6197cb8fdc1ce555a03d23a9d25242c61d38e6",
+      "version": "N/A",
+      "shipped": "yes",
+      "uRL": "https://aomedia.googlesource.com/aom/"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/libsrtp/README.chromium",
+      "bytes": 499,
+      "sha256": "e8fb1758e7903b45f4a233108f610addd6120f7e2d2f6c19d46fd332021deb8d",
+      "name": "libsrtp",
+      "license": "BSD-3-Clause",
+      "license File": "LICENSE",
+      "version": "24b3bf8f19b6f5ab4cd2bcceb4f4064efca (v⒉.8.0)",
+      "shipped": "yes",
+      "uRL": "https://github.com/cisco/libsrtp"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/README.chromium",
+      "bytes": 1970,
+      "sha256": "b263c95b0e800304ff754b2244448afb1312ec147f707239a8a8f720d7f0b1b6",
+      "name": "libvpx",
+      "license": "BSD-3-Clause, WebM-Project-Patent",
+      "license File": "source/libvpx/LICENSE, source/libvpx/PATENTS",
+      "revision": "5e680f30801d03c21078f8c4b772464752516211",
+      "version": "N/A",
+      "shipped": "yes",
+      "uRL": "https://chromium.googlesource.com/webm/libvpx"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/libyuv/README.chromium",
+      "bytes": 305,
+      "sha256": "5ba54148f57cf59ed76aaaeae4cd428bbadadedf50ffd6bd48743b5ceef3de99",
+      "name": "libyuv",
+      "license": "BSD-3-Clause",
+      "license File": "LICENSE",
+      "revision": "DEPS",
+      "version": "1973",
+      "shipped": "yes",
+      "uRL": "https://chromium.googlesource.com/libyuv/libyuv/"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/opus/README.chromium",
+      "bytes": 1499,
+      "sha256": "b3462b72d621616f2e62f5c9954f0e30288d6fc102bed5b358c99ac23811f604",
+      "name": "opus",
+      "license": "Opus-Patent-BSD-3-Clause",
+      "license File": "src/COPYING",
+      "revision": "55513e81d8f606bd75d0ff773d2144e5f2a732f5",
+      "version": "55513e81",
+      "shipped": "yes",
+      "uRL": "https://gitlab.xiph.org/xiph/opus"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/pffft/README.chromium",
+      "bytes": 2329,
+      "sha256": "6d53a57a94467b529def637e84fe00969f088394749a95ccf77d7dcc6e0bb5e7",
+      "name": "PFFFT: a pretty fast FFT.",
+      "short Name": "PFFFT",
+      "license": "pffft",
+      "license File": "LICENSE",
+      "revision": "483453d8f766",
+      "version": "N/A",
+      "shipped": "yes",
+      "uRL": "https://bitbucket.org/jpommier/pffft/"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/rnnoise/README.chromium",
+      "bytes": 992,
+      "sha256": "396a75a64c73e0348967bc08460b19fab2829b04368088f8cd61dfed47d4d7eb",
+      "name": "Recurrent neural network for audio noise reduction",
+      "short Name": "rnnoise",
+      "license": "BSD-3-Clause",
+      "license File": "COPYING",
+      "revision": "91ef401f4c3536c6de999ac609262691ec888c4c",
+      "version": "N/A",
+      "shipped": "yes",
+      "uRL": "https://github.com/xiph/rnnoise"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/sframe/README.chromium",
+      "bytes": 374,
+      "sha256": "8a6ab69f6d7b1b855dd4dc8ea30c81337436e85f1639d132a73b8c3a6a19ab0a",
+      "name": "Sframe",
+      "short Name": "sframe",
+      "license": "BSD-2-Clause, MIT",
+      "license File": "src/LICENSE",
+      "revision": "6a37f061f4eda0c6594c91ecf99b5ff498c8c124",
+      "version": "N/A",
+      "shipped": "yes",
+      "uRL": "https://github.com/cisco/sframe"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/webrtc/README.chromium",
+      "bytes": 513,
+      "sha256": "51be870b76b91e8b107b56063433470f197cbaea7660f7657fa93cde312f44e7",
+      "name": "WebRTC",
+      "license": "BSD-3-Clause",
+      "license File": "LICENSE",
+      "version": "DEPS",
+      "shipped": "yes",
+      "uRL": "This is the canonical repository"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/ooura/README.chromium",
+      "bytes": 492,
+      "sha256": "80392fe13803dcea137e4c7fb5f3f6d78f66c12269c89b046c660b12d5061538",
+      "name": "General Purpose FFT (Fast Fourier/Cosine/Sine Transform) Package",
+      "short Name": "fft4g",
+      "license": "LicenseRef-takuya-ooura",
+      "license File": "LICENSE",
+      "version": "N/A",
+      "shipped": "yes",
+      "uRL": "http://www.kurims.kyoto-u.ac.jp/~ooura/fft.html"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/spl_sqrt_floor/README.chromium",
+      "bytes": 355,
+      "sha256": "292b6fa1147d681f40ff6ff81cccbca4e933ab06ef0212e5d589ddccc6ed2d69",
+      "name": "spl sqrt floor",
+      "short Name": "spl_sqrt_floor",
+      "license": "SPL-SQRT-FLOOR",
+      "license File": "LICENSE",
+      "version": "N/A",
+      "shipped": "yes",
+      "uRL": "http://www.pertinentdetail.org/sqrt"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/fft/README.chromium",
+      "bytes": 561,
+      "sha256": "f656f4c66749cae59dc5daaa9a477b39e2d28758f292cfd82a5d1ab900e303d7",
+      "name": "fft",
+      "short Name": "fft",
+      "license": "dtoa",
+      "license File": "LICENSE",
+      "version": "N/A",
+      "shipped": "yes",
+      "uRL": "This is the canonical repository."
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g711/README.chromium",
+      "bytes": 362,
+      "sha256": "5d57cb71736037846f858d4db1cd28ce20443b81a84a8af6ceae2e7662a37be6",
+      "name": "In line A-law and u-law conversion routines",
+      "short Name": "g711",
+      "license": "LicenseRef-Public-Domain-SpanDSP",
+      "license File": "LICENSE",
+      "version": "N/A",
+      "shipped": "yes",
+      "uRL": "https://www.soft-switch.org/downloads/spandsp/"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g722/README.chromium",
+      "bytes": 364,
+      "sha256": "e0d7a24ab30fb0fd49165e0f30c1171be418cec109997e2152f3b3daf1bba589",
+      "name": "The ITU G.722 codec, encode and decode part.",
+      "short Name": "g722",
+      "license": "LicenseRef-Public-Domain-SpanDSP",
+      "license File": "LICENSE",
+      "version": "N/A",
+      "shipped": "yes",
+      "uRL": "https://www.soft-switch.org/downloads/spandsp/"
+    }
+  ],
+  "upstreamLicenseAndPatentFiles": [
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/LICENSE",
+      "bytes": 1316,
+      "sha256": "4764a286d8b2faeaf42f4418e7d7a28d58fc8fd4d00a3d0a7f44b0a4099de7f2"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/PATENTS",
+      "bytes": 5701,
+      "sha256": "661fb8e504744e95587b556b94a58343448300606a41bea8c7a9b97125696e61"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/libsrtp/LICENSE",
+      "bytes": 1614,
+      "sha256": "8e19d42a1eec9561f3f347253ddf2e385c55f392f025bb0fd41b88dbf38db5ae"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/LICENSE",
+      "bytes": 1537,
+      "sha256": "8267348d5af1262c11d1a08de2f5afc77457755f1ac658627dd9acf71011d615"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/PATENTS",
+      "bytes": 1436,
+      "sha256": "cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/third_party/libwebm/LICENSE.TXT",
+      "bytes": 1496,
+      "sha256": "5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/webrtc/LICENSE",
+      "bytes": 1511,
+      "sha256": "ab00a482b6a3902e40211b43c5d0441962ea99b6cc7c25c0f243fa270b78d482"
+    },
+    {
+      "path": "Source/ThirdParty/libwebrtc/Source/webrtc/PATENTS",
+      "bytes": 1388,
+      "sha256": "01462e2068d1a04c2274f3389773014c14ed9bc3446b28303543bd3e3c064145"
+    }
+  ],
+  "sourceJoinPathRootCounts": {
+    "Source/ThirdParty/libwebrtc/Source/third_party/abseil-cpp": 67,
+    "Source/ThirdParty/libwebrtc/Source/third_party/boringssl": 272,
+    "Source/ThirdParty/libwebrtc/Source/third_party/crc32c": 2,
+    "Source/ThirdParty/libwebrtc/Source/third_party/libaom": 219,
+    "Source/ThirdParty/libwebrtc/Source/third_party/libsrtp": 17,
+    "Source/ThirdParty/libwebrtc/Source/third_party/libvpx": 292,
+    "Source/ThirdParty/libwebrtc/Source/third_party/libwebm": 48,
+    "Source/ThirdParty/libwebrtc/Source/third_party/libyuv": 37,
+    "Source/ThirdParty/libwebrtc/Source/third_party/opus": 168,
+    "Source/ThirdParty/libwebrtc/Source/third_party/pffft": 1,
+    "Source/ThirdParty/libwebrtc/Source/third_party/rnnoise": 1,
+    "Source/ThirdParty/libwebrtc/Source/webrtc": 1188,
+    "Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/ooura": 3,
+    "Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/spl_sqrt_floor": 1,
+    "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/fft": 1,
+    "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g711": 1,
+    "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g722": 2,
+    "Source/ThirdParty/libwebrtc/cmake/usage_exit_stub.c": 1,
+    "Source/WebCore/PAL/ThirdParty/dav1d": 58,
+    "WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc": 126
+  },
+  "scopeLimit": "README.chromium license fields and exact license/patent file hashes are upstream factual declarations. This inventory does not prove that every listed object is linked into this dylib, does not decide license applicability or patent obligations, and does not establish complete binary notices or relink rights. Keep the worksheet UNKNOWN until exact image/source scope and applicable obligations are reviewed."
+}

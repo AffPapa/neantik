@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "status": "activation-failed-source-diagnosed;successor-patch-compiled-only",
+  "appVersion": "0.8.20",
+  "build": 132,
+  "chromiumVersion": "156.0.8078.12",
+  "actualBrowser": true,
+  "headed": true,
+  "releaseQualifiedForThisCheck": false,
+  "runtime": {
+    "executableSHA256": "cf3bbc56ddbcac264363f33bac4d3f92ac66cf164038c9409651db22708a6941",
+    "frameworkSHA256": "4774c5ef3d9048b7faf9f26307ce07f29be7696a9951e6e179e3e5f8b01d046f",
+    "appSource": "45b79d72008b9091507ac6628d2e4dd3807a41c6"
+  },
+  "observed": {
+    "sessionsAttempted": 1,
+    "mode": "owned proxy and owned HTTP endpoint",
+    "knownComponent": "CRLSet",
+    "explicitButtonClicked": true,
+    "unknownComponentControlNoRequests": true,
+    "componentRequests": 0,
+    "persistedCheckResultPresent": false,
+    "browserExitCode": 0,
+    "ownedProcessesRemaining": 0,
+    "ownedProfileRemoved": true
+  },
+  "sourceDiagnosis": {
+    "path": "components/update_client/update_checker.cc",
+    "function": "UpdateCheckerImpl::CheckForUpdates",
+    "cause": "Unconditional return from applied privacy patch precedes callback assignment and network setup",
+    "privacyPatch": "runtime/nevision-patches/ports/chromium-156.0.8078.12/patches/common/core/ungoogled-chromium/block-requests.patch",
+    "sha256": "f028bd144d53156d2748066dac50f29800947b077e1abc24d107fd100a4f9313"
+  },
+  "successor": {
+    "manifest": "runtime/component-updates-v1/manifest.json",
+    "sourceTreeModified": false,
+    "privateForwardAndReverseApply": true,
+    "checkerTranslationUnitCompiled": true,
+    "testTranslationUnitCompiled": true,
+    "nativeTestsExecuted": false,
+    "runtimeBuilt": false,
+    "headedVerified": false,
+    "published": false,
+    "policy": "Keep network blocked; asynchronously return unsupported-operation error through the existing helper"
+  },
+  "limitations": [
+    "No request was emitted, so CUP refusal and proxy-route checks did not run; no PASS inferred.",
+    "No second direct session was attempted after the failed proxy activation.",
+    "No global DNS/UDP/telemetry absence claim.",
+    "The fix is prepared source for a successor, not installed in the public runtime."
+  ]
+}

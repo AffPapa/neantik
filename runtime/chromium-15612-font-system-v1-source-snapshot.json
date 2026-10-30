@@ -1,0 +1,20 @@
+{
+  "argsGN": {
+    "relativePath": "out/NeAntikFontSkiaQA_20261016a/args.gn",
+    "sha256": "428054a30abeb212aa3784f524bb27ef4bc0068ab7ebef149866b2b8bff30a3c"
+  },
+  "deletedPathCount": 3248,
+  "deletedPathsSHA256": "659683e99c3a4b56324019e10d45db8e69c06a95789793e22616da32aef299e1",
+  "entriesSHA256": "d8358146577e55d7c5ac072568c5c34ad79c5aeb0e7827be9cfa0b01f894fc0b",
+  "inventoryDigestAlgorithm": "sha256-canonical-json-v1",
+  "officialChromiumBase": {
+    "commit": "634b046faf2137b83af71c87baf362b533af9104",
+    "tree": "64e212cac2a53bcbd28b0530cf6eb092141bddec"
+  },
+  "provenanceLimit": "Exact current checkout snapshot only; this does not recreate or prove missing historical patch replay evidence.",
+  "recordType": "chromium-source-snapshot",
+  "releaseReady": false,
+  "schemaVersion": 2,
+  "sourceFileCount": 1062655,
+  "targetChromiumVersion": "156.0.8078.12"
+}

@@ -1,0 +1,20 @@
+{
+  "status": "UNRESOLVED_SCANNER_MATCH_REMOVED_FROM_CURRENT_TREE",
+  "sourceCommit": "c2a0135bf19c464d79bee0a67cf06d808c4edc19",
+  "parent": "536c45b92f451448ebc4711e3490cec6c94ddd34",
+  "path": "releases/v0.8.24.json",
+  "originalSHA256": "14296830162320bd8a6adc65b8ed46546c88dd5428a6447e4da7faf1208f1d6a",
+  "replacementSHA256": "df531fed16507da348ce0239612767e1171a5d623656bb16bf61a8aa693e7840",
+  "originalValueSHA256": "4418f1221ce63054364ef72008bc027322e1cb90a72016dcc1b855a01ae786f4",
+  "originalPrivateBackup": "/private/tmp/neantik-v205-private/v0.8.24-original.json",
+  "scanner": "gitleaks 8.30.1 targeted changed file exits 0",
+  "openSourceVerifier": "PASS 2728 files",
+  "focusedTests": "11/11 PASS",
+  "limits": [
+    "the original match is not classified and may exist in prior archives or git history",
+    "no claim that any underlying credential was revoked or never exposed",
+    "V199 source offer contains prior file and is superseded; create a new archive and scan",
+    "no release or runtime qualification"
+  ],
+  "releaseQualified": false
+}

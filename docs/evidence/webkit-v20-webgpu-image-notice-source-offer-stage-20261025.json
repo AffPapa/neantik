@@ -1,0 +1,57 @@
+{
+  "addedComponents": [
+    {
+      "bytes": 1313,
+      "includedInOfferFolder": true,
+      "path": "notices/webgpu-v20-runtime/WebKit-WebGPU-BSD-2-Clause.txt",
+      "sha256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4"
+    },
+    {
+      "bytes": 3407,
+      "includedInOfferFolder": true,
+      "path": "evidence/WEBKIT_webgpu-image-license-review-followup_20261025.json",
+      "sha256": "8f9670f10fd3f2eb613ea082bdb69a4175938577fed4a108f82ad37082ba4394"
+    }
+  ],
+  "candidate": {
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0"
+  },
+  "limitations": [
+    "Candidate 139 remains unchanged and unqualified.",
+    "The production bundle still has a separate unresolved signature/trust check and macOS is locked.",
+    "Four runtime image and 78 resource applicability rows remain UNKNOWN.",
+    "The private corresponding-source offer, dependency/relink closure, final production package, notarization, headed qualification, GitHub and Sites publication remain open."
+  ],
+  "noticeIntegration": {
+    "implementation": "scripts/webkit_runtime_notices.py",
+    "licenseSHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+    "result": "PASS",
+    "test": "scripts.tests.test_webkit_runtime_notices",
+    "testCount": 33
+  },
+  "observedAt": "2026-10-25",
+  "priorManifest": {
+    "byteExactBackup": true,
+    "path": "docs/evidence/webkit-v20-source-offer-manifest-before-webgpu-notice-integration-20261025.json",
+    "sha256": "85f0e0c7aa69f3f986b7a5be81d666e22c11537f6b695723fa4371b41b5024da"
+  },
+  "schemaVersion": 1,
+  "sourceOfferFolder": "dist/private/source-offers/1.0.0-manager-955",
+  "sourceOfferManifest": {
+    "path": "dist/private/source-offers/1.0.0-manager-955/MANIFEST.json",
+    "previousExternalComponents": [],
+    "previousIncludedComponents": 129,
+    "previousSHA256": "85f0e0c7aa69f3f986b7a5be81d666e22c11537f6b695723fa4371b41b5024da",
+    "sha256": "151446884ed0af5542d1ed5c34fd60eb4792c4d4026d3c2c667654a4cfc8a726",
+    "totalComponents": 131
+  },
+  "status": "webgpu-image-notice-integrated-for-next-package;source-offer-and-release-incomplete",
+  "worksheet": {
+    "decisionsUnknown": 82,
+    "path": "docs/evidence/webkit-runtime-package-notice-worksheet-20261025.json",
+    "reviewedWebGPUImageSHA256": "3e1f3814ac782392b2108df9a69eb8d8afde0765ad856683e2cfbc24261a82c2"
+  }
+}

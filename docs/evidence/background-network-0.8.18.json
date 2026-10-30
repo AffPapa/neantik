@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "status": "scoped-native-observations-pass",
+  "observedOn": "2026-10-16",
+  "scope": "Uniquely signed DEBUG QA manager with exact public130 runtime;startup,80sboundedwindow,owneddownload/cancel,proxyoutage/recovery;not shipping-manager qualification",
+  "shippingVersion": "0.8.18",
+  "shippingBuild": 130,
+  "runtimeVersion": "156.0.8078.12",
+  "runtimeExecutableSHA256": "27d0378671dd946f2b19c518f928a60a44b19ae0f97552569adb3eecc7e95c6c",
+  "runtimeFrameworkSHA256": "7bfe8e081bd94ea222e2a9ed304a56ef96a7edf342f12ecf079abf147c4b95f8",
+  "qaManagerSHA256": "cf62a07d42f37909b56e6d8f950efb1ea73c5d7b1801fde2e698905eb97f3421",
+  "debugSourceInputSHA256": "69ce2dc1b868e2033b5eead2dabcf04ce34d37ec377e2cff9c4302047fcc623e",
+  "backgroundSuppressionAbsent": true,
+  "additionalInstrumentation": "Default NetLog,mockKeychain,ephemeral loopback CDP limited to owned download controls",
+  "secondsObserved": 80,
+  "networkSelection": {
+    "status": "observation-only",
+    "destinations": {
+      "ownedFixture": {
+        "attempts": 7,
+        "responseHeaders": 6,
+        "failed": 1,
+        "selectedRoutes": {
+          "expectedRelay": 7,
+          "direct": 0,
+          "other": 0,
+          "mixed": 0,
+          "unobserved": 0
+        }
+      },
+      "vendorRelated": {
+        "attempts": 0,
+        "responseHeaders": 0,
+        "failed": 0,
+        "selectedRoutes": {
+          "expectedRelay": 0,
+          "direct": 0,
+          "other": 0,
+          "mixed": 0,
+          "unobserved": 0
+        }
+      },
+      "unclassified": {
+        "attempts": 0,
+        "responseHeaders": 0,
+        "failed": 0,
+        "selectedRoutes": {
+          "expectedRelay": 0,
+          "direct": 0,
+          "other": 0,
+          "mixed": 0,
+          "unobserved": 0
+        }
+      }
+    },
+    "unsupportedRequestLegs": 0,
+    "dnsTransactionEvents": 0,
+    "udpEvents": 0,
+    "successfulSocketRouteVerified": false,
+    "onWireDNSVerified": false,
+    "generalPrivacyQualified": false,
+    "scope": "Default NetLog request legs; selected routes only; destination category does not prove purpose"
+  },
+  "ownedFixtureSocketCustody": {
+    "observations": 7,
+    "kernelGenerationAndLiveStaticCodeMatched": true,
+    "acceptedClientTupleBelongsToBoundRelay": true,
+    "unchangedLeaseSessionConfiguration": true,
+    "scope": "Owned fixture relay-to-upstream sockets only;not global background socket proof"
+  },
+  "downloads": {
+    "privateDestinationAcknowledgedBeforeAttachment": true,
+    "complete": {
+      "beginObserved": true,
+      "state": "completed",
+      "totalBytes": 4096,
+      "receivedBytes": 4096,
+      "fileBytes": 4096,
+      "fileSHA256": "d41d438c379110c7f7b2c561b1f04f26c1b4549110791f8e022f48974280c13e",
+      "observerErrors": []
+    },
+    "cancel": {
+      "beginObserved": true,
+      "state": "canceled",
+      "totalBytes": 1048576,
+      "receivedBytes": 0,
+      "cancelAcknowledged": true,
+      "finalFileExists": false,
+      "observerErrors": []
+    },
+    "completedFilePreservedAfterNativeClose": true
+  },
+  "actualDirectControl": {
+    "originHit": true,
+    "socketBrowserAncestryVerified": true,
+    "selectedDirect": 2,
+    "selectedExpectedRelay": 0,
+    "scope": "Deliberate owned raw-runtime Direct control;host resolution is fixture-specific"
+  },
+  "cleanup": {
+    "nativeQuitAccepted": true,
+    "ownedProcessesRemaining": 0,
+    "serverDrained": true,
+    "fingerprintAuthorityCreated": false,
+    "productionKeychainUsed": false
+  },
+  "inputSHA256": {
+    "netlog": "5bd3fc915db39496e8ee7de902d7397320bf62363adbab17142678d03db5702f",
+    "privateFixtureEvents": "372d7f65ffbc0849abc3ef0efddc993460785b6d28aabe8fca5cfb647e368c11",
+    "directControl": "b5f735737a056d243e1deb49f5d0d8796eeafcf8b2e44cc6775a033b3497b702",
+    "nativeHarness": "c8460691eac30afd8eae2469002f945895a1dbd643081983ebd4e5dcc03bff15",
+    "downloadController": "179e8dde322c214bfebc32f196d00941d3779b4acecc3932acd2213dbb674ce0",
+    "downloadObserver": "478bb263a73c4584d90880b329eae476147363f62c1d53c20b2620659c4d0fba",
+    "peerCustody": "d6c7f53135543058e1dd2315c6c772e182094221c5129c728358cc9c039caea8",
+    "kernelCustody": "ea412f61022c966fb2733fb77736c2ce123dd9988a77e943fd42a69c4c1876b7",
+    "backgroundObserver": "0cad5825de91e4ee40a803e6bc5760f7bf6e51d8820634fc24891220a638920e"
+  },
+  "productRuntimeRebuilt": false,
+  "immutableReleaseAssetsChanged": false,
+  "allNetworkGatesComplete": false,
+  "releaseGate": false,
+  "limitations": [
+    "DEBUG manager and NetLog/CDP differ from shipping manager",
+    "Selected routes do not prove every successful socket or on-wire DNS/UDP",
+    "No unclassified request during this window is not absence of telemetry",
+    "No explicit component update activation or long-idle qualification",
+    "Network changes,global DNS/UDP,default-trusted HTTPS upstream and other environments remain open"
+  ],
+  "privacy": "No raw trace,headers,credentials,network addresses,DNS names,URLs,profile identifiers or argv published"
+}

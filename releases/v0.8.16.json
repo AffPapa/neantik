@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "channel": "public-alpha",
+  "architecture": "arm64",
+  "minimumOS": "14.0",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "rebuilt": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815",
+    "safeBrowsingEnabled": false,
+    "architecture": "arm64"
+  },
+  "qualificationEnvironment": {
+    "macOS": "27.0",
+    "architecture": "arm64",
+    "dateUTC": "2026-10-15",
+    "headed": true
+  },
+  "version": "0.8.16",
+  "build": 128,
+  "sourceCommit": "369d48353122dd002e83c68e349baf08bb048b60",
+  "tag": "v0.8.16",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.8.16",
+  "siteUrl": "https://browser.free/",
+  "rollbackRelease": "v0.8.15",
+  "managerSHA256": "3bf637bc8fa352fa72ae8163752fb5642119f0dc230a53b3e800f648fd64bf01",
+  "candidateManifestSHA256": "10711d14bed1228130730a8c41107a806f4f05dae9974c7f7fda4e6a59ca8bd1",
+  "candidateSourceBindingSHA256": "0af6b10e713e5a200ca4fedbb17ac1233c09af700f3d08affe61c8f206a6f5cc",
+  "artifacts": [
+    {
+      "name": "NeAntik-0.8.16-arm64-notarized.zip",
+      "sha256": "d761356343277c8c9044bc950d1a2324316af5530477636ae6c5b0f57efee2f3",
+      "sizeBytes": 190485509,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.16/NeAntik-0.8.16-arm64-notarized.zip"
+    },
+    {
+      "name": "NeAntik-0.8.16-arm64-notarized.dmg",
+      "sha256": "f32d22dbd139386c99cfe04182502a9acf1bb758ca052af75947e557529e7883",
+      "sizeBytes": 215007475,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.16/NeAntik-0.8.16-arm64-notarized.dmg"
+    }
+  ],
+  "checksumFiles": [
+    {
+      "name": "NeAntik-0.8.16-arm64-notarized.dmg.sha256",
+      "sha256": "163db3029355a9f82c5a3beac2639caaac292367b27217e6a7aab1bd8c295545",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.16/NeAntik-0.8.16-arm64-notarized.dmg.sha256"
+    },
+    {
+      "name": "NeAntik-0.8.16-arm64-notarized.zip.sha256",
+      "sha256": "8652192e294ff6cb9577a556e96b1c88decb451877534343c39b4689d26ab083",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.16/NeAntik-0.8.16-arm64-notarized.zip.sha256"
+    }
+  ],
+  "signing": {
+    "teamID": "H6VGU2M6JD",
+    "certificateSHA1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "zipSubmissionID": "6dccaeba-11d7-49bb-afc7-a650688e4579",
+    "dmgSubmissionID": "9ef3c4b7-4264-4310-9a58-53dc9e5bbfec",
+    "notarization": "Accepted",
+    "stapling": "pass",
+    "gatekeeper": "accepted"
+  },
+  "checks": {
+    "swiftIntegration": "1572 reported/183 suites;1498 PASS log lines/71 explicit skips; logic integration retained; final change was truthful error copy/docs",
+    "pythonIntegration": "1482 tests/19 skips PASS; no repeated full suite",
+    "sourceNativeWebKitDeletion": "3 fresh phases,1 actual executed PASS each: seed/delete/cleanup; final atomic-retirement path",
+    "exactSignedWebKit": "GUI A deleted; B cookie/LS/IDB/SW/CacheStorage preserved after reopening; owned B cleanup; restart orphan recovery detected/confirmed/completed; metadata snapshots and session cleanup checked",
+    "exactSignedHeaded": "Authenticated schema8 PASS on frozen128; no second full headed suite after byte equality",
+    "runtimeReuse": "Executable/framework identical to published0.8.3 and127; retain bounded Canvas/WebGL/Audio/realm/DeviceMemory and rawDNS evidence. Manager/config/cohort gaps remain separate",
+    "doctor": "13/13 PASS",
+    "updater": "No changed helper code claimed; no new127-to128 physical install/rollback hop; existing continuity evidence retained",
+    "sourcePrivacy": "Recognized source scan1665 PASS; app/archive privacy gates PASS; Sites242members recognized patterns PASS; unknown secret formats not guaranteed",
+    "hostedZIP": "Anonymous byte-identical ZIP; candidate/evidence/signing/notary/Gatekeeper PASS",
+    "hostedDMG": "Anonymous byte-identical DMG; image/signing/notary/Gatekeeper PASS",
+    "downloadedMCP": "Exact downloaded128 isolated stdio:18 management/7read, metadata survives restart; own temporary root; first warning attempt stopped before process, actual run normal",
+    "site": "Saved153/deployed de264882; build PASS, release-Markdown hash/disclosure failure corrected,12affected rendered tests PASS;6anonymous live routes and exact v2/legacy feeds PASS"
+  },
+  "verification": {
+    "notarization": {
+      "ZIP": "Accepted",
+      "DMG": "Accepted"
+    },
+    "stapling": {
+      "passed": true
+    },
+    "Gatekeeper": {
+      "passed": true
+    },
+    "DirectDoctor": "13/13PASS",
+    "GUIFingerprint": {
+      "passed": true
+    },
+    "MCPExactSigned": "PASS own metadata creation/persistence; no real AI-client integration",
+    "downloadedMCP": {
+      "passed": true
+    },
+    "hostedZIP": {
+      "passed": true
+    },
+    "hostedDMG": {
+      "passed": true
+    },
+    "site": {
+      "passed": true
+    },
+    "downloadedHeaded": "No second full headed suite; exact128 signed evidence retained after downloaded critical-file inventory equality",
+    "nativeUpdater": "open: no new127-to128 physical install; unchanged helper continuity retained",
+    "nativeRollback": "open: no new127-to128 physical rollback",
+    "tests": {
+      "Swift": "1572 reported/183 suites;1498 PASS log lines/71 explicit skips; logic integration retained; final change was truthful error copy/docs",
+      "Python": "1482 tests/19 skips PASS; no repeated full suite",
+      "site": "Saved153/deployed de264882; build PASS, release-Markdown hash/disclosure failure corrected,12affected rendered tests PASS;6anonymous live routes and exact v2/legacy feeds PASS"
+    }
+  },
+  "site": {
+    "status": "pass",
+    "savedVersion": 153,
+    "deploymentID": "appgdep_6ad0e1898e808191abc51652570ce091",
+    "sourceCommit": "de26488234c1988525045fc537c409e39a7ce81b",
+    "routes": [
+      {
+        "route": "/",
+        "status": "200",
+        "mime": "text/html; charset=utf-8"
+      },
+      {
+        "route": "/api/release",
+        "status": "200",
+        "mime": "application/json"
+      },
+      {
+        "route": "/api/update-v2.json",
+        "status": "200",
+        "mime": "application/json"
+      },
+      {
+        "route": "/api/update.json",
+        "status": "200",
+        "mime": "application/json"
+      },
+      {
+        "route": "/guides/mcp",
+        "status": "200",
+        "mime": "text/html; charset=utf-8"
+      },
+      {
+        "route": "/release-0.8.16.md",
+        "status": "200",
+        "mime": "text/markdown"
+      }
+    ],
+    "legacyFeedVersion": "0.8.10"
+  },
+  "migrations": {
+    "metadataAndSessionSchemaChanged": false,
+    "profileIdentityChanged": false,
+    "backupArchiveSchemaChanged": false,
+    "newWebKitDeletionJournal": true,
+    "recovery": "Durable per-profile UUID/digest/inode/stage journal; incomplete native deletion remains fenced and can be explicitly finalized",
+    "rollback": "v0.8.15 immutable app retained; both snapshots exclude deleted profile before native dispatch. Downgrade does not recover irreversibly deleted WebKit sites; never manually delete journal"
+  },
+  "limitations": [
+    "Public alpha; mandatory1.0 acceptance remains open with finite remaining scope",
+    "System WebKit identity; no full Safari fingerprint replacement, WebKit proxy, Chromium extensions, full BrowserData backup, media capture or stdio GUI launch",
+    "Manager/relay DNS, idle/background and network-change qualification remain open; raw-runtime DNS evidence is not manager proof",
+    "OS-default-trusted authenticated HTTPS upstream positive deferred by user until server available",
+    "No new physical VoiceOver/macOS14/otherMac/second-display/physical media or crossMac encrypted-secret qualification",
+    "No new127-to128 native updater/rollback hop; retained unchanged helper evidence only",
+    "No second complete headed run of byte-identical downloaded copy; downloaded isolated stdio startup/persistence and Gatekeeper checked",
+    "Safe Browsing disabled; no anonymity/CAPTCHA/site-policy bypass guarantee"
+  ],
+  "publicationState": "published: GitHub latest v0.8.16 and browser.free153; hosted ZIP/DMG, downloaded isolated MCP and6live routes PASS",
+  "changes": [
+    "Supported irreversible deletion of closed WebKit profile using public macOS API",
+    "Durable tombstone, metadata fence, inode-safe directory retirement and explicit restart recovery",
+    "Human-readable deletion form/help and updated website FAQ",
+    "Finite1.0 acceptance plan; runtime operations not rerun without changed inputs"
+  ]
+}

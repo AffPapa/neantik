@@ -1,0 +1,37 @@
+{
+  "status": "BOUNDED_V135_SOURCE_AND_RESOURCE_REPLAY_PASS",
+  "v135BuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+  "sourceOfferManifestSHA256": "e5bfa9c617bed41545541cf442554346c05b71bb59d20fd16fb1a25210d8ee95",
+  "checks": {
+    "jscHeaderlessInputs": {
+      "reviewSHA256": "5a55d0681fe874111c92c4882994b8aa549bc4e5e12f64356cd009b6f732d671",
+      "v135SourceMatches": 32
+    },
+    "jscGeneratorInputs": {
+      "reviewSHA256": "d50c37630550bd85d2685e9ef3046b19ecac83baca18a9503dde142c25e7a9cf",
+      "v135SourceMatches": 99
+    },
+    "webkitSwiftInputs": {
+      "reviewSHA256": "7b233d8370bce4cc76edf63083c22a634f4c692ab87e9e427856ece9471cdcc7",
+      "v135SourceMatches": 32
+    },
+    "webcoreMediaAssets": {
+      "reviewSHA256": "6aefd30127d98c29df1b42c6e56e6ce5bf2e25f4e2380d567220b4e4896b6ef4",
+      "v135SourceMatches": 35,
+      "v135StagedRuntimeMatches": 35
+    },
+    "libwebrtc": {
+      "reviewSHA256": "f467db632b3a68b1fe5937f24eafd21a81dd2a6affcf36da6f018607b67af46f",
+      "readmeMatches": 17,
+      "declaredLicenseMatches": 19,
+      "otherLicensePatentMatches": 8
+    }
+  },
+  "limitations": [
+    "source byte matches do not independently prove every source input was compiled or linked",
+    "historical reviews apply only to their stated scope, not entire engines or patent clearance",
+    "no V135 image notice binding, signing or runtime qualification",
+    "V122 pins remain unchanged"
+  ],
+  "releaseQualified": false
+}

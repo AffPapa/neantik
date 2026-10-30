@@ -1,0 +1,31 @@
+Existing Iridium Remove-EV policy; independent M156 shared-metadata port.
+Normal root store and AddEVCA test seam remain native.
+
+--- a/net/cert/ev_root_ca_metadata.cc
++++ b/net/cert/ev_root_ca_metadata.cc
+@@ -112,24 +112,7 @@
+ #endif
+ 
+ EVRootCAMetadata::EVRootCAMetadata() {
+-// Constructs the object from the raw metadata in GetEvRootCaMetadata().
+-#if defined(PLATFORM_USES_CHROMIUM_EV_METADATA)
+-  for (const auto& ev_root : GetEvRootCaMetadata()) {
+-    for (const auto& policy : ev_root.policy_oids) {
+-      if (policy.empty())
+-        break;
+-
+-      std::string policy_der = OIDStringToDER(policy);
+-      if (policy_der.empty()) {
+-        LOG(ERROR) << "Failed to decode OID: " << policy;
+-        continue;
+-      }
+-
+-      ev_policy_[ev_root.fingerprint].push_back(policy_der);
+-      policy_oids_.insert(policy_der);
+-    }
+-  }
+-#endif
++  // NeAntik preserves normal root trust without built-in EV badge metadata.
+ }
+ 
+ EVRootCAMetadata::~EVRootCAMetadata() = default;

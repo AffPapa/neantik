@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "channel": "public-alpha",
+  "architecture": "arm64",
+  "minimumOS": "14.0",
+  "version": "0.8.20",
+  "build": 132,
+  "sourceCommit": "45b79d72008b9091507ac6628d2e4dd3807a41c6",
+  "tag": "v0.8.20",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.8.20",
+  "siteUrl": "https://browser.free/",
+  "rollbackRelease": "v0.8.18",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "sourceVariant": "font-system-security-20261015-v1",
+    "rebuilt": true,
+    "builtDuringPackaging": false,
+    "executableSHA256": "cf3bbc56ddbcac264363f33bac4d3f92ac66cf164038c9409651db22708a6941",
+    "frameworkSHA256": "4774c5ef3d9048b7faf9f26307ce07f29be7696a9951e6e179e3e5f8b01d046f",
+    "closureSHA256": "6dfde85080a3fde010869cc00d6ac35f60cec32165725b5743f2b558070a2638",
+    "evidenceClosureSHA256": "3d42c5fe520c9f55aa320c6b3c0dd8d9b333266aa5bdfd84cb30559fe8076555",
+    "safeBrowsingEnabled": false,
+    "latestEarlyStable": false,
+    "sourceContractSHA256": "5da10213b79c97a4bc3b13a0fd6af5e26d6034179bcdbe160bd244463a06f903",
+    "backportedFixes": 8,
+    "sourceReviewedFixes": 10
+  },
+  "qualificationEnvironment": {
+    "macOS": "27.0",
+    "architecture": "arm64",
+    "dateUTC": "2026-10-16",
+    "headed": true
+  },
+  "managerSHA256": "fa25b9fae207c7d8e413c64c0d64710532fa8173be2391fc78ffb7887b6e8789",
+  "candidateManifestSHA256": "5cbe5c6526a38108381d337f116986efd8fd141b633ae3c936e48554f8e7f5ef",
+  "candidateSourceBindingSHA256": "37de82566affb6195d74af4c6a5e477fc5f9f5502f6f4e81fc1740706bf65adb",
+  "artifacts": [
+    {
+      "name": "NeAntik-0.8.20-arm64-notarized.zip",
+      "sha256": "100d18e28cb1a02356123af1427dc2e70cf2690fc2be7ffdedc25669d841edcc",
+      "sizeBytes": 191280406,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.20/NeAntik-0.8.20-arm64-notarized.zip"
+    },
+    {
+      "name": "NeAntik-0.8.20-arm64-notarized.dmg",
+      "sha256": "27c6cb92fdea0100fc4fd1ad263acd66144323df4808653ea79e652eddb916b2",
+      "sizeBytes": 216024977,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.20/NeAntik-0.8.20-arm64-notarized.dmg"
+    }
+  ],
+  "checksumFiles": [
+    {
+      "name": "NeAntik-0.8.20-arm64-notarized.zip.sha256",
+      "sha256": "76cc1822242bf01a6304287089dd0e406b2acc5e347b1e6481c0803ff2d17daa",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.20/NeAntik-0.8.20-arm64-notarized.zip.sha256"
+    },
+    {
+      "name": "NeAntik-0.8.20-arm64-notarized.dmg.sha256",
+      "sha256": "fd51785f6cbe6ed5ebdf0a6c374ed14c117756d4be8af1abfd5a872fe9c9693b",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.20/NeAntik-0.8.20-arm64-notarized.dmg.sha256"
+    }
+  ],
+  "checks": {
+    "exactHeaded": "firstattemptschema8/9collectedPASS;DeviceMemoryJS/HTTPcoherent8;ownedprocessesdrained",
+    "updaterNative": "two newsource DEBUG signed QA controlsPASS:actualACKcommit+preACKrollback;bothslotsretained;ownedchildrenexited;notshippingfeedhop",
+    "doctor": "13/13PASS",
+    "localDirect": "ZIP/DMGsignatures,AppleAccepted,stapling,Gatekeeper,integrityPASS",
+    "hostedZIP": "Anonymous bytes SHA256 equal;candidate/evidence binding,privacy,notarization,Gatekeeper PASS",
+    "hostedDMG": "Anonymous bytes SHA256 equal;imageintegrity,signature,notarization,Gatekeeper PASS",
+    "downloadedMCP": "Exactdownloadedmanagerstdio18management/7read;requestedfontPolicycreate/edit/restartPASS;noheadedbrowserlaunched;appliedfontpolicyprovedseparately",
+    "publicChecksums": "Bothanonymoussidecars byte-identical to qualifiedexport",
+    "tagAndLatest": "Latestv0.8.20/release414490548/tagcommit45b79d72008b9091507ac6628d2e4dd3807a41c6 PASS",
+    "sourceSwift": "Full1640reported/194suites/71skip PASS81.317s;sourceunchangedduringrun",
+    "sourcePython": "Full1584/19skipinitially3READMEclaimerrors;warningmovedtoownsection;17focusedPASSandfinal5metadataPASS;failedreceiptretained",
+    "securityResearch": "9boundedheadedDOM/V8/workercontrolsPASSincl2deliberatelybrokencontrols;notallupstreamnativeunits",
+    "fontResearch": "422configuredpage/workerchecksPASS;4rendererACK;exactnewruntime;notfullold9realmreplay",
+    "runtimeEvidence": "Newbuild27min/jobs2;fullFD1062659/83COPYgroups;16signedMachO;separatefrozenreport+historicalbaseline;source-bound10fixreview",
+    "site": "Sites153/app128unchanged;automaticcredentialtransportreviewblock;no retry/workaround",
+    "secrets": "Recognizedsecret/Gitcredential-pathaudit6277blobs/10782objectsPASSatappsource45b79d7;selectednewpublicfiles checked separately"
+  },
+  "signing": {
+    "teamID": "H6VGU2M6JD",
+    "certificateSHA1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "notarization": "Accepted",
+    "stapling": "pass",
+    "gatekeeper": "accepted",
+    "zipSubmissionID": "d3fe83a4-43eb-4e69-ae2a-00a028f416e6",
+    "dmgSubmissionID": "44a0d82f-e77f-4c12-a9a6-5f7cc514a229"
+  },
+  "migrations": {
+    "metadataSchemaChanged": false,
+    "profileIdentitySeedRegenerated": false,
+    "browserDataFormatChanged": false,
+    "backupArchiveSchemaChanged": false,
+    "rollback": "Public130retainedforcontrolledrollback;knownsecuritygap,notrecommendedsecurityfallback;quitbeforeappreplacement;no seed/profiledata migration"
+  },
+  "site": {
+    "status": "blocked-by-automatic-approval-review",
+    "previousSavedVersion": 153,
+    "previousAppVersion": "0.8.16"
+  },
+  "publicationState": "GitHub-published-and-hosted-verified;Site153/app128blocked",
+  "limitations": [
+    "Public alpha;mandatory1.0 acceptance remains open",
+    "Upstreamversion156.0.8078.12with8backports;notlatestEarlyStable or universal security qualification",
+    "Tenfixsourceinclusionreviewandboundedbrowsercontrols;notallnativeupstreamunits",
+    "Qualified on this macOS27 ARM64 host only;otherhardware/macOS14/secondarydisplay/media remain open",
+    "Updater130cannotadmitnewcompiledruntime;manualsignedDMG/ZIPfirsthop;QAbootstrapisnotshippingfeedhop",
+    "Prior130networkobservationsretainoldscope;newsecurityruntimeisnotglobalDNS/UDP/backgroundqualification",
+    "WebKit experimental systemidentity;proxy/media/fullbackup/fingerprint customization remain separate gates",
+    "Safe Browsing disabled;no universal undetectability claim",
+    "Sites publication separately blocked"
+  ],
+  "releaseQualified": true,
+  "major1_0Complete": false
+}

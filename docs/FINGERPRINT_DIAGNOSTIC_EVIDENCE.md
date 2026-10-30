@@ -1,6 +1,12 @@
 # NeAntik fingerprint diagnostic evidence
 
-## Scope
+## Historical scope
+
+This records the July 2026 policy and observations. The current development
+source uses [versioned semantic evidence](FINGERPRINT_EVIDENCE_POLICY.md): equal
+WebGL pixels on an equivalent GPU are lawful. Historical signed schema-8
+reports retain their original meaning and cannot qualify a schema-9 candidate.
+
 
 On 25 July 2026, the exact production `FingerprintAuditCoordinator` and
 JavaScript probe completed four real three-pass audits against source-built

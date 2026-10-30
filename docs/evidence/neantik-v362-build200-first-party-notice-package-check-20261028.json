@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "V362",
+  "observedAtUTC": "2026-10-28T03:32:07Z",
+  "status": "PASS_BUILD200_APFS_COPY_FULL_NOTICE_INSTALL_AND_VERIFY",
+  "scope": "On an APFS copy of retained signed build200, ran the production notice installer with the V359 source offer and exact bundled WebKit Frameworks. Installer completed its internal verifier; package now contains exact first-party BSD-2 licenses/attributions for five WebCore groups (18 resources) and the WebKit warning-color catalog (9 source files, 7 compiled color sets/14 variants). Original candidate was not modified.",
+  "bindings": {
+    "candidateId": "ef2ce9cf159242c3a147027867403460",
+    "candidateManifestSHA256": "145531171b5d999490a5a94b523cb5623d3f32d58a600925f9d639f946500020",
+    "sourceOfferManifestSHA256": "b9404c2eb5c67ea5b6c6f3afc175a1fb6539f11ab6ec9a35aad73f4662750644",
+    "runtimeAssetsCarSHA256": "7f12d3e66db0813cdbfbef7125bab3844f5d8d6900d7ed36ea2c49e523e6ae61",
+    "packageMarkdownSHA256": "3256034db0fba9b0a3fa10e5db3327a2484344bdb7a491690bdd51ece352bf73",
+    "packageHTMLSHA256": "7c66f813792cde0484537bcd9aef1b637ac36312645950fee6a7cf51984d7cf8",
+    "groupNotices": {
+      "neantik-core-ui-original-v1": {
+        "licenseSHA256": "3ab0de831861966f2c2ec76d3ba1b24473c64ee08cb7699327a2005fca688ff7",
+        "attributionSHA256": "42d7a46b8ac2d76bb5f6008dc689d0d34a8598f80987623e9c1eb421a3b7b4a8"
+      },
+      "neantik-original-cursors-v1": {
+        "licenseSHA256": "3ab0de831861966f2c2ec76d3ba1b24473c64ee08cb7699327a2005fca688ff7",
+        "attributionSHA256": "b356f3ed6c8346aade670cbb991e8196974baf2563866e22a452b70e18ae2d73"
+      },
+      "neantik-delete-button-first-party-v1": {
+        "licenseSHA256": "3ab0de831861966f2c2ec76d3ba1b24473c64ee08cb7699327a2005fca688ff7",
+        "attributionSHA256": "077042f44b6e17f7c70d13d59241528a20f952a47688149f310bf46ac8f22c81"
+      },
+      "neantik-linear-srgb-icc-v1": {
+        "licenseSHA256": "3ab0de831861966f2c2ec76d3ba1b24473c64ee08cb7699327a2005fca688ff7",
+        "attributionSHA256": "406fab52fca09ecf6fc4bc168a7ae16814b6e69d4b3dc689cdbe0b2aaa4737dd"
+      },
+      "neantik-first-party-webcore-contentfilter-v1": {
+        "licenseSHA256": "3ab0de831861966f2c2ec76d3ba1b24473c64ee08cb7699327a2005fca688ff7",
+        "attributionSHA256": "377c48c73dc16070915c9488922c6725a4d28a1d478ee8d7934c017fe48a46a7"
+      },
+      "neantik-first-party-warning-colors-v1": {
+        "licenseSHA256": "a8d20bbe0dc85256b9837b293af6921269f0c64362674069e63aee5e24ada814",
+        "attributionSHA256": "d32332a470fdd45e4b95e83bc53758b34676c3254af94b0e401ac905fa7437cb"
+      }
+    },
+    "runtimeImageScope": "Exact signed build200 bytes. Chromium is 156.0.8078.48; this is not the final .74 candidate."
+  },
+  "verification": {
+    "productionInstallerAndVerifier": "PASS on copied app with exact Frameworks and source offer",
+    "originalCandidateCodesign": "PASS: codesign --verify --deep --strict --verbose=2",
+    "originalCandidateManifestAfter": "Matches CURRENT activeCandidate manifest SHA-256",
+    "fullWarningColorAssetutilBinding": "PASS: 7 names x light/dark variants; exact sRGB RGBA matches source",
+    "temporaryClone": "removed after verification; no modified candidate retained"
+  },
+  "nonActions": [
+    "No runtime build",
+    "No candidate registration or original candidate mutation",
+    "No signing operation or notarization request",
+    "No release publication"
+  ],
+  "limitations": [
+    "The package copy is build200-only and is not release-qualified.",
+    "The four image dispositions are pinned to different V135 runtime hashes and were not carried over to build200.",
+    "Final Chromium .74 notices/source binding, recipient build/relink/load, timestamp signing, notarization and delivery remain open."
+  ],
+  "nextAction": "Resume the final .74 candidate flow only after a fresh disposable Developer ID timestamp signing control succeeds; then run this exact notice installer/verifier on the frozen .74 bundle before signing."
+}

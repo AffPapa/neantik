@@ -1,0 +1,32 @@
+{
+  "id": "neantik-v279-apple-tsa-host-route-reconciliation-20261027",
+  "interpretation": "This is a destination-specific outbound refusal/filter, not a missing default route, general internet outage, or sandbox-only route observer failure. Apple documents timestamp.apple.com as the code-signing TSA and says the applicable firewall must permit it.",
+  "nextAction": "Allow outbound TCP/443 from this Mac/network to timestamp.apple.com through the existing local egress filter; keep the network unchanged. Then timestamp-sign a fresh private diagnostic copy and continue the one exact owned-WebKit synthetic HTTPS route. Release signing/notarization remains pending.",
+  "observations": {
+    "controlSites": {
+      "https://www.apple.com": "HTTP 200",
+      "https://www.google.com": "HTTP 200"
+    },
+    "defaultRoute": {
+      "gatewayPresent": true,
+      "interfacePresent": true,
+      "present": true
+    },
+    "systemProxy": "none configured",
+    "timestamp.apple.com": {
+      "dnsResolved": true,
+      "hostRoute": {
+        "gatewayPresent": true,
+        "interfacePresent": true,
+        "lookupExit": 0
+      },
+      "resolvedAddressCount": 1,
+      "tcp443": "connection failed; curl exit 7; HTTP 000"
+    }
+  },
+  "observedAtUTC": "2026-10-27T16:20:48Z",
+  "schemaVersion": 1,
+  "scope": "Read-only host-network diagnosis after V278; no build, signing, launch, candidate, profile, or publication changes.",
+  "source": "https://developer.apple.com/documentation/technotes/tn3161-inside-code-signing-certificates",
+  "status": "GENERAL_HTTPS_PASS; APPLE_TSA_TCP443_STILL_UNREACHABLE; CHECKPOINT_ROUTE_CORRECTED"
+}

@@ -1,0 +1,39 @@
+{
+  "observedAt": "2026-10-27",
+  "status": "PASS_PRIVATE_DEV_QA_DIRECT_SYSTEM_WEBKIT_GOOGLE_AND_BOOKING_PAGE_LOAD",
+  "scope": "One temporary Direct WebKit profile in the exact private signed Dev QA build-200 app; proxy disabled; public sites visited only to verify page loading; no login, search submission, booking, or account interaction.",
+  "candidate": {
+    "archivePath": "/private/tmp/neantik-owned-webkit-qa-x77ltbpd/NeAntik-1.0.0-200-dev-owned-webkit-qa.zip",
+    "archiveSHA256": "3bdc4b7646a3d1806c6a0944e187ec442024455de19af7b132452b7e28c10656",
+    "version": "1.0.0",
+    "build": "200",
+    "bundleIdentifier": "app.neantik.desktop.dev",
+    "appPath": "/private/tmp/neantik-owned-webkit-qa-x77ltbpd/NeAntik.app"
+  },
+  "route": "Direct profile -> macOS system WebKit; the product UI states that proxy-enabled profiles use the separate isolated owned-WebKit runtime and local broker.",
+  "observations": [
+    {
+      "url": "https://www.google.com/",
+      "result": "PASS",
+      "visibleEvidence": "Google HTML title, search text field, Google Search button, and navigation links appeared in the browser accessibility tree."
+    },
+    {
+      "url": "https://www.booking.com/",
+      "result": "PASS",
+      "visibleEvidence": "Booking.com localized homepage HTML title, lodging search form, destination/date/guest controls, and page sections appeared in the browser accessibility tree."
+    }
+  ],
+  "separateSameArchiveOwnedRuntimeEvidence": {
+    "result": "PASS_SYNTHETIC_HTTPS_OWNED_WEBKIT_A1_B1_A2",
+    "candidateArchiveSHA256": "3bdc4b7646a3d1806c6a0944e187ec442024455de19af7b132452b7e28c10656",
+    "routeAndStorage": "A1, B1, A2 route and storage boundaries passed with expected per-proxy origin deltas and initial/restored state callbacks.",
+    "limitation": "Synthetic loopback fixture only; does not establish public-network page loading through a real proxy."
+  },
+  "releaseBoundary": {
+    "publicMutation": false,
+    "notarization": "not performed for this QA archive",
+    "releaseQualified": false,
+    "anonymityClaim": "not evaluated or claimed"
+  },
+  "next": "Use the Direct public-page PASS as the baseline; reconcile any failure in the ordinary user launch path against this exact build. Resume owned-WebKit proxy qualification only after the direct page-opening P0 is stable."
+}

@@ -1,85 +1,237 @@
-import CryptoKit
 import Combine
 import Foundation
 
-enum NeAntikTelemetryEvent: String, Sendable {
+enum TelemetryEvent: String, Codable, Sendable {
     case snapshot
+    case consentEnabled = "consent_enabled"
     case profileCreated = "profile_created"
-    case browserLaunched = "browser_launched"
+    case profileDeleted = "profile_deleted"
     case proxyEnabled = "proxy_enabled"
+    case proxyDisabled = "proxy_disabled"
+    case browserLaunched = "browser_launched"
 }
 
-/// Opt-out, privacy-bounded product metrics. No URL, profile name/ID, proxy
-/// value, cookie, page content or fingerprint material is ever serialized.
+enum TelemetryEdition: String, Codable, Sendable {
+    case direct
+    case store
+}
+
+struct TelemetrySnapshot: Equatable, Sendable {
+    let profileCount: Int
+    let proxyProfileCount: Int
+
+    init(profileCount: Int, proxyProfileCount: Int) {
+        let profiles = min(max(profileCount, 0), 10_000)
+        self.profileCount = profiles
+        self.proxyProfileCount = min(
+            max(proxyProfileCount, 0),
+            profiles
+        )
+    }
+}
+
+struct TelemetryPayload: Encodable, Equatable, Sendable {
+    let schemaVersion = 2
+    let eventID: String
+    let edition: TelemetryEdition
+    let version: String
+    let build: String
+    let osMajor: Int
+    let architecture = "arm64"
+    let profileCount: Int
+    let proxyProfileCount: Int
+    let event: TelemetryEvent
+}
+
+struct TelemetryConfiguration: Equatable, Sendable {
+    let endpoint: URL?
+    let publicStatsURL: URL?
+
+    static func fromBundle(_ bundle: Bundle = .main) -> Self {
+        fromInfoDictionary(bundle.infoDictionary ?? [:])
+    }
+
+    static func fromInfoDictionary(_ dictionary: [String: Any]) -> Self {
+        Self(
+            endpoint: validatedURL(
+                dictionary["NeAntikTelemetryEndpoint"] as? String
+            ),
+            publicStatsURL: validatedURL(
+                dictionary["NeAntikPublicStatsURL"] as? String
+            )
+        )
+    }
+
+    private static func validatedURL(_ rawValue: String?) -> URL? {
+        guard let rawValue,
+              let url = URL(string: rawValue),
+              url.scheme == "https",
+              let host = url.host,
+              NeAntikPublicHostPolicy.allows(host),
+              url.port == nil || url.port == 443,
+              url.user == nil,
+              url.password == nil,
+              url.query == nil,
+              url.fragment == nil
+        else {
+            return nil
+        }
+        return url
+    }
+}
+
+actor TelemetryNetworkClient {
+    private let endpoint: URL
+    private let edition: TelemetryEdition
+    private let version: String
+    private let build: String
+    private let session: URLSession
+    private var isAuthorized: Bool
+
+    init(
+        endpoint: URL,
+        edition: TelemetryEdition,
+        isAuthorized: Bool,
+        bundle: Bundle = .main,
+        session: URLSession = .shared
+    ) {
+        self.endpoint = endpoint
+        self.edition = edition
+        version = bundle.object(
+            forInfoDictionaryKey: "CFBundleShortVersionString"
+        ) as? String ?? "0.0.0"
+        build = bundle.object(
+            forInfoDictionaryKey: "CFBundleVersion"
+        ) as? String ?? "0"
+        self.session = session
+        self.isAuthorized = isAuthorized
+    }
+
+    func setAuthorized(_ authorized: Bool) {
+        isAuthorized = authorized
+    }
+
+    func send(
+        event: TelemetryEvent,
+        snapshot: TelemetrySnapshot
+    ) async {
+        guard isAuthorized else {
+            return
+        }
+        do {
+            let payload = TelemetryPayload(
+                eventID: UUID().uuidString.lowercased(),
+                edition: edition,
+                version: version,
+                build: build,
+                osMajor: ProcessInfo.processInfo
+                    .operatingSystemVersion.majorVersion,
+                profileCount: snapshot.profileCount,
+                proxyProfileCount: snapshot.proxyProfileCount,
+                event: event
+            )
+            var request = URLRequest(url: endpoint)
+            request.httpMethod = "POST"
+            request.timeoutInterval = 8
+            request.setValue(
+                "application/json",
+                forHTTPHeaderField: "Content-Type"
+            )
+            request.httpBody = try JSONEncoder().encode(payload)
+            let (_, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse,
+                  (200..<300).contains(http.statusCode)
+            else {
+                return
+            }
+        } catch {
+            // Telemetry is best-effort and must never affect browser use.
+        }
+    }
+
+    func revoke() async {
+        isAuthorized = false
+    }
+}
+
 @MainActor
-final class NeAntikTelemetry: ObservableObject {
-    static let fallbackVersion = "0.6.4"
-    static let fallbackBuild = "46"
-    private static let installationKey = "telemetry.installationID"
-    private static let endpoint = URL(string: "https://nevision-stats.iryadom.chatgpt.site/api/ingest")!
+final class TelemetryController: ObservableObject {
+    @Published private(set) var isEnabled: Bool
 
-    @Published var enabled: Bool {
-        didSet { UserDefaults.standard.set(enabled, forKey: WorkspacePreferenceStore.telemetryEnabledKey) }
-    }
+    let publicStatsURL: URL?
+    let isConfigured: Bool
 
-    private let installationHash: String
+    private let defaults: UserDefaults
+    private let consentKey: String
+    private let network: TelemetryNetworkClient?
 
-    init(enabled: Bool = UserDefaults.standard.object(forKey: "telemetry.enabled") as? Bool ?? true) {
-        self.enabled = enabled
-        let rawID: String
-        if let stored = UserDefaults.standard.string(forKey: Self.installationKey), !stored.isEmpty {
-            rawID = stored
+    init(
+        edition: TelemetryEdition,
+        configuration: TelemetryConfiguration = .fromBundle(),
+        defaults: UserDefaults = .standard
+    ) {
+        self.defaults = defaults
+        consentKey = "NeAntikTelemetryConsent.\(edition.rawValue).v1"
+        publicStatsURL = configuration.publicStatsURL
+        isConfigured = configuration.endpoint != nil
+        let enabled =
+            configuration.endpoint != nil &&
+            defaults.bool(forKey: consentKey)
+        isEnabled = enabled
+        if let endpoint = configuration.endpoint {
+            network = TelemetryNetworkClient(
+                endpoint: endpoint,
+                edition: edition,
+                isAuthorized: enabled
+            )
         } else {
-            rawID = UUID().uuidString
-            UserDefaults.standard.set(rawID, forKey: Self.installationKey)
+            network = nil
         }
-        installationHash = SHA256.hash(data: Data(rawID.utf8)).map { String(format: "%02x", $0) }.joined()
-    }
-
-    func record(_ event: NeAntikTelemetryEvent, profileCount: Int, proxyProfileCount: Int) {
-        guard enabled else { return }
-        let info = Bundle.main.infoDictionary ?? [:]
-        let version = Self.validVersion(info["CFBundleShortVersionString"] as? String)
-        let build = Self.validBuild(info["CFBundleVersion"] as? String)
-        let osMajor = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
-        let payload: [String: Any] = [
-            "schemaVersion": 1,
-            "eventID": UUID().uuidString.lowercased(),
-            "installationHash": installationHash,
-            "edition": "direct",
-            "version": version,
-            "build": build,
-            "osMajor": osMajor,
-            "architecture": "arm64",
-            "profileCount": max(0, min(profileCount, 10_000)),
-            "proxyProfileCount": max(0, min(proxyProfileCount, profileCount)),
-            "event": event.rawValue
-        ]
-        guard JSONSerialization.isValidJSONObject(payload),
-              let body = try? JSONSerialization.data(withJSONObject: payload)
-        else { return }
-        var request = URLRequest(url: Self.endpoint)
-        request.httpMethod = "POST"
-        request.httpBody = body
-        request.timeoutInterval = 8
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        Task.detached(priority: .utility) {
-            _ = try? await URLSession.shared.data(for: request)
+        if !enabled, let network {
+            Task {
+                await network.revoke()
+            }
         }
     }
 
-    static func validVersion(_ raw: String?) -> String {
-        guard let raw,
-              raw.range(of: #"^\d+\.\d+\.\d+$"#, options: .regularExpression) != nil,
-              raw != "0.0.0"
-        else { return fallbackVersion }
-        return raw
+    func setEnabled(
+        _ enabled: Bool,
+        snapshot: TelemetrySnapshot
+    ) {
+        guard isConfigured else {
+            isEnabled = false
+            defaults.set(false, forKey: consentKey)
+            return
+        }
+        isEnabled = enabled
+        defaults.set(enabled, forKey: consentKey)
+        guard let network else {
+            return
+        }
+        if enabled {
+            Task {
+                await network.setAuthorized(true)
+                await network.send(
+                    event: .consentEnabled,
+                    snapshot: snapshot
+                )
+            }
+        } else {
+            Task {
+                await network.revoke()
+            }
+        }
     }
 
-    static func validBuild(_ raw: String?) -> String {
-        guard let raw,
-              raw.range(of: #"^[1-9]\d*$"#, options: .regularExpression) != nil
-        else { return fallbackBuild }
-        return raw
+    func record(
+        _ event: TelemetryEvent,
+        snapshot: TelemetrySnapshot
+    ) {
+        guard isEnabled, let network else {
+            return
+        }
+        Task {
+            await network.send(event: event, snapshot: snapshot)
+        }
     }
 }

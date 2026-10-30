@@ -1,0 +1,18 @@
+{
+  "reviewedAt": "2026-10-01T07:24:57.660992+00:00",
+  "reviewer": "independent provenance_recovery agent; parent synthesis",
+  "reportSHA256": "5d505c5571c3279c842c05dca0418f9fc36dabc5055512a2ad49f29beb0ec117",
+  "logSHA256": "acf5e4273abf64c99caf48ff40bd194e4904ad07003d8c6adfc9b1a55ddb75cd",
+  "decision": "exact-context line relocations accepted for sparse replay only",
+  "offsetPatchCount": 11,
+  "offsetMessageCount": 22,
+  "postimageCount": 801,
+  "allPostimagesMatch": true,
+  "wholeTreeQualified": false,
+  "limitations": [
+    "Byte-only comparison; modes and symlink semantics require full snapshot",
+    "Input generator/domain/dependency hashes must be bound separately",
+    "Full tree and toolchain package contents not qualified",
+    "Harden git-show missing-file error handling before reusing harness"
+  ]
+}

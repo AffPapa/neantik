@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v267-source-offer-check-only-20261027",
+  "observedAtUTC": "2026-10-27T15:12:25Z",
+  "status": "V266_SUPPLEMENT_CHECK_ONLY_PASS; COMPLETE_SOURCE_OFFER_AND_RECIPIENT_PREFLIGHT_OPEN",
+  "command": "python3 -B scripts/check-source-offer-supplement.py --base-offer-root <V246 source-offer folder> --supplement-root <V266 supplement folder>",
+  "supplementManifestSHA256": "17bf182b6a2acfd3161bc55a1988fb18d473fe3e7bf290e5a0a9e41fe9223468",
+  "checkerSHA256": "52f3ada40a61ed9d56b94c014528da3984c0418002550cc0ba4f2ec4cb3caed6",
+  "checkerTestsSHA256": "8c70ee0cb62dabb4aedc973c355d3de70fb5916390a830dd8e7be00f2a0e6907",
+  "baseOffer": {
+    "manifestPath": "manifest.json",
+    "manifestSHA256": "6240d928c933b9b44d6d5376cadc66fee0a1107cd9e1528281a016363ad7c59c",
+    "sourceArchivePath": "NeAntik-source-adc79f0.tar.zst",
+    "sourceArchiveSHA256": "047ad8b493ff2710a277ac4526ee899aa9165e1ab18f7ca6deab63a6e0523958"
+  },
+  "componentCount": 21,
+  "componentBytes": 1440322,
+  "checks": {
+    "21SupplementComponents": "PASS",
+    "V246BaseManifestAndSourceArchive": "PASS",
+    "localWorkspacePathsInPayload": "none detected",
+    "readOnlyNoExtraction": "PASS",
+    "completeCorrespondingSource": "not established"
+  },
+  "releaseQualified": false
+}

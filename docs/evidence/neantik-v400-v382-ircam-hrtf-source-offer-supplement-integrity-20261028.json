@@ -1,0 +1,84 @@
+{
+  "id": "V400",
+  "timestampUTC": "2026-10-28T07:18:53Z",
+  "status": "PASS_V382_FROZEN_BASE_AND_IRCAM_HRTF_SUPPLEMENT_INTEGRITY; NOT_COMPLETE_OR_CANDIDATE_BOUND",
+  "scope": "Create and verify a standalone IRCAM HRTF permission-notice supplement bound to the immutable V382 source-offer manifest and derived source archive. Correct stale current gate summary. No app candidate/build/runtime/signing/publication.",
+  "priorCheckpoint": {
+    "receipt": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v399-v382-ircam-listen-hrtf-permission-and-notice-integration-20261028.json",
+    "sha256": "ca6b37af265f0271b43f8333bcfd4654cbc7e70ed0f92a717e866c452817ce96",
+    "currentSHA256": "bc9c1bd189154af87ab684852497a07290112620457981c683b084db8a3827e2"
+  },
+  "baseOffer": {
+    "offerId": "V382",
+    "manifestPath": "manifest.json",
+    "manifestSHA256": "e96b51e74894ec9877462105cf03c28bc80c0bc799b5408288d7c0b49c4631a8",
+    "sourceArchivePath": "upstream/WebKit-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c.tar.zst",
+    "sourceArchiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+    "sourceArchiveBytes": 1603356903,
+    "baseComponentCount": 658
+  },
+  "supplement": {
+    "root": "/private/tmp/neantik-release-v1/dist/private/source-offer-supplements/v399-ircam-listen-hrtf",
+    "manifestSHA256": "688c8f4681e8c79cfdc69a6124fb4cf868c32a8e54738b03e6ba732a1a4e5ecd",
+    "componentCount": 1,
+    "componentBytes": 1545,
+    "integrityCheck": {
+      "baseManifestSHA256": "e96b51e74894ec9877462105cf03c28bc80c0bc799b5408288d7c0b49c4631a8",
+      "baseOfferID": "V382",
+      "baseSourceArchiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+      "completeSourceOffer": false,
+      "componentBytes": 1545,
+      "componentCount": 1,
+      "releaseQualified": false,
+      "status": "SUPPLEMENT_INTEGRITY_PASS; COMPLETE_SOURCE_OFFER_NOT_PROVED",
+      "supplementManifestSHA256": "688c8f4681e8c79cfdc69a6124fb4cf868c32a8e54738b03e6ba732a1a4e5ecd"
+    },
+    "completeSourceOffer": false,
+    "candidateBound": false,
+    "releaseQualified": false
+  },
+  "tests": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest scripts.tests.test_check_source_offer_supplement",
+    "result": "PASS: 5 tests"
+  },
+  "changedFiles": [
+    {
+      "path": "scripts/check-source-offer-supplement.py",
+      "sha256": "e2e934906da24761d3a95f72639ebbf495526c15e0b9fe4762e830c36ed4206b",
+      "scope": "Allows integrity-checked V382 supplements while retaining incomplete/not-candidate-bound status."
+    },
+    {
+      "path": "scripts/tests/test_check_source_offer_supplement.py",
+      "sha256": "09c60c470af74daf62b5ce1a8685ab07c6af811868db5f1521a31b4289185a84",
+      "scope": "Tests V246 compatibility and V382 exact base archive binding."
+    },
+    {
+      "path": "dist/private/source-offer-supplements/v399-ircam-listen-hrtf/supplement-manifest.json",
+      "sha256": "688c8f4681e8c79cfdc69a6124fb4cf868c32a8e54738b03e6ba732a1a4e5ecd",
+      "scope": "Binds one HRTF permission notice to frozen V382 source-offer bytes."
+    },
+    {
+      "path": "dist/private/source-offer-supplements/v399-ircam-listen-hrtf/notices/IRCAM-LISTEN-HRTF-NOTICE.txt",
+      "sha256": "98e596a4a8e0cd4d5fcb5d77f8a37d846129dce89d99235dcc3133a22dfdd0a2",
+      "scope": "Included notice component."
+    }
+  ],
+  "preservation": {
+    "V382ManifestSHA256Unchanged": "e96b51e74894ec9877462105cf03c28bc80c0bc799b5408288d7c0b49c4631a8",
+    "newWebKitBuild": false,
+    "productionCandidateChanged": false,
+    "runtimeLaunch": false,
+    "signingProbe": false,
+    "publicMutation": false,
+    "dirtyWorktreePreserved": true
+  },
+  "sourceLicenseStatus": "The exact Composite.wav row has a published IRCAM LISTEN any-use permission and requested acknowledgement notice; notice code and standalone supplement are integrity-verified. Thirteen of the fourteen prior exact V382 UNKNOWN resource rows remain unresolved. Complete corresponding-source recipient relink/load and exact candidate binding remain open.",
+  "nextAction": "Resolve the remaining 13 exact V397 V382 resource rows in one bounded evidence matrix. Preserve UNKNOWN wherever exact applicable terms are not established. Then bind the verified base plus supplement to the next exact candidate consumer preflight.",
+  "worktree": {
+    "path": "/private/tmp/neantik-release-v1",
+    "branch": "codex/neantik-1-0-prep-20261025",
+    "HEAD": "63c3bc620163ae6354f3dc359b47b9fd72e921d0",
+    "dirty": true,
+    "preserveUniqueChanges": true
+  }
+}
