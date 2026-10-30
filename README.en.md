@@ -42,7 +42,7 @@ the exact public binary contents are defined by its release notes and assets.
 
 ## WebKit in the current candidate
 
-The 1.0 development candidate creates and launches Chromium profiles only.
+The 0.9.1 public alpha candidate creates and launches Chromium profiles only.
 Previously created WebKit profiles and their data are retained, but cannot be
 launched or duplicated in this candidate. Published version 0.9.0 included an
 experimental system WebKit mode; its behavior and limits are described in the

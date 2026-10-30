@@ -1,8 +1,8 @@
 # NeAntik changelog
 
-## Direct 1.0.0 (201) — development candidate, not released
+## Direct 0.9.1 (201) — public alpha candidate, not released
 
-- The current 1.0 candidate is scoped to Chromium profiles. Previously created WebKit profiles and data are retained, while launching or duplicating those profiles is unavailable in this candidate.
+- The current 0.9.1 public alpha candidate is scoped to Chromium profiles. Previously created WebKit profiles and data are retained, while launching or duplicating those profiles is unavailable in this candidate.
 - Chromium 156.0.8078.80 has an ARM64 source build and bound source/dependency evidence. The integrated manager candidate, exact profile/proxy checks, source/relink, Developer ID signing, notarization, Gatekeeper and public release remain unqualified.
 
 ## Direct 1.0.0 (200) — development candidate, not released
