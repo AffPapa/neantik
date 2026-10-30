@@ -40,12 +40,13 @@ the exact public binary contents are defined by its release notes and assets.
 2. Paste a proxy if needed; NeAntik parses it locally.
 3. Click **Launch**. Cookies and site data stay inside that profile.
 
-## Experimental WebKit
+## WebKit in the current candidate
 
-Choose Chromium or system WebKit when creating a profile. WebKit uses a NeAntik
-window with separate site data and tabs (CmdT/CmdW). Downloads support progress/cancel/Finder reveal. Proxy,
-extensions, full backup and stdio MCP launch remain unavailable.
-[Guide and verification limits](docs/WEBKIT_PROFILES.md).
+The 1.0 development candidate creates and launches Chromium profiles only.
+Previously created WebKit profiles and their data are retained, but cannot be
+launched or duplicated in this candidate. Published version 0.9.0 included an
+experimental system WebKit mode; its behavior and limits are described in the
+[guide](docs/WEBKIT_PROFILES.md).
 
 ## What it does
 

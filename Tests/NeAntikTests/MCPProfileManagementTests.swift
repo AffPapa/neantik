@@ -84,7 +84,18 @@ struct MCPProfileManagementTests {
         await #expect(throws: Error.self) { try await engine.call("profile_create", ["name": "Wrong engine", "changes": ["webKitMediaPolicy": "deny"]]) }
     }
 
+    @Test func chromiumOnlyDescriptionsDoNotOfferWebKitLaunch() throws {
+        guard !BrowserEngine.webkit.isAvailableInBuild else { return }
+        let tools = MCPProfileManagement.definitions(allowsManagement: true)
+        let start = try #require(tools.first { $0["name"] as? String == "profile_start" }?["description"] as? String)
+        let proxy = try #require(tools.first { $0["name"] as? String == "profile_set_proxy" }?["description"] as? String)
+        #expect(start.contains("WebKit profiles cannot be started"))
+        #expect(!start.contains("WebKit requires"))
+        #expect(proxy.contains("does not prove the browser route"))
+    }
+
     @Test func webKitCreationMetadataAndProxyCredentialManagementStayProfileScoped() async throws {
+        guard BrowserEngine.webkit.isAvailableInBuild else { return }
         let (root, engine, backend) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
         let proxyTool = try #require(MCPProfileManagement.definitions(allowsManagement: true)

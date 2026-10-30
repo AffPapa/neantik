@@ -13,7 +13,11 @@ struct HelpContentTests {
 
     @Test func proxyHelpMatchesAvailableWebKitRoute() {
         let proxyHelp = HelpTopic.mcp.sections.map(\.text).joined(separator: " ")
-        if WebKitProxyFeature.launchEnabled {
+        if !BrowserEngine.webkit.isAvailableInBuild {
+            #expect(proxyHelp.contains("WebKit-профили в этом выпуске не запускаются"))
+            #expect(proxyHelp.contains("не подтверждает маршрут окна"))
+            #expect(!HelpTopic.mcp.sections.map(\.title).contains("WebKit через AI"))
+        } else if WebKitProxyFeature.launchEnabled {
             #expect(proxyHelp.contains("профиль с прокси использует отдельный встроенный runtime"))
             #expect(proxyHelp.contains("не подтверждают фактический маршрут окна"))
         } else {
@@ -21,6 +25,14 @@ struct HelpContentTests {
             #expect(proxyHelp.contains("прямое подключение вместо прокси не используется"))
         }
         #expect(!proxyHelp.contains("настройки применяются к отдельному хранилищу сайтов"))
+    }
+
+    @Test func chromiumOnlyHelpDoesNotOfferWebKitLaunch() {
+        guard !BrowserEngine.webkit.isAvailableInBuild else { return }
+        let profiles = HelpTopic.profiles.sections
+        #expect(profiles.contains { $0.title == "Движок браузера" && $0.text.contains("не запускает и не дублирует") })
+        #expect(!profiles.contains { $0.title == "Chromium или WebKit" || $0.title == "Загрузки в WebKit" })
+        #expect(!HelpTopic.mcp.sections.contains { $0.title == "WebKit через AI" })
     }
 
     @Test func copiedConfigurationUsesExactResolvedWorkspaceAndEscapesClientFormats() throws {

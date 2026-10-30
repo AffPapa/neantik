@@ -125,7 +125,9 @@ struct NeAntikHelpWindow: View {
                     Toggle("Только просмотр — без изменений и запуска", isOn: Binding(
                         get: { !allowsManagement }, set: { allowsManagement = !$0 }))
                 }
-                MCPGUIControlPanel(control: guiControl, store: store)
+                if BrowserEngine.webkit.isAvailableInBuild {
+                    MCPGUIControlPanel(control: guiControl, store: store)
+                }
                 Picker("AI-клиент", selection: $client) {
                     ForEach(MCPClient.allCases) { Text($0.title).tag($0) }
                 }.pickerStyle(.menu)

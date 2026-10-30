@@ -2,8 +2,8 @@
 
 ## Direct 1.0.0 (201) — development candidate, not released
 
-- Incorporates the owned-WebKit HTTP CONNECT Host optional-port fix. V321 proved one private Google HTTPS navigation through the per-profile proxy; this candidate and the 1.0 release gates remain unqualified.
-- Chromium 156.0.8078.74 now has an isolated ARM64 source build and source/dependency evidence. A disposable ad-hoc-signed copy passes static runtime/report checks; Developer ID signing, notarization, WebKit qualification, and release qualification remain open.
+- The current 1.0 candidate is scoped to Chromium profiles. Previously created WebKit profiles and data are retained, while launching or duplicating those profiles is unavailable in this candidate.
+- Chromium 156.0.8078.80 has an ARM64 source build and bound source/dependency evidence. The integrated manager candidate, exact profile/proxy checks, source/relink, Developer ID signing, notarization, Gatekeeper and public release remain unqualified.
 
 ## Direct 1.0.0 (200) — development candidate, not released
 
