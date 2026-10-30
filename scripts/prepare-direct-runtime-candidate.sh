@@ -123,7 +123,13 @@ if [[ -f "$CHROMIUM_OUT_DIR/build.ninja" && -d "$(dirname "$RUNTIME_APP")/NeAnti
     echo "Chromium runtime app and args.gn must share the selected GN output directory." >&2
     exit 65
   fi
-  ninja -C "$CHROMIUM_OUT_DIR" 'NeAntik Browser Packaging/signing/build_props_config.py'
+  NINJA_BIN="$SOURCE_ROOT/third_party/ninja/ninja"
+  if [[ ! -x "$NINJA_BIN" || -L "$NINJA_BIN" ||
+        ! -f "$CHROMIUM_OUT_DIR/.ninja_log" || -L "$CHROMIUM_OUT_DIR/.ninja_log" ]]; then
+    echo "Pinned Chromium Ninja or build log is unavailable; preserve the output and diagnose before retrying." >&2
+    exit 65
+  fi
+  "$NINJA_BIN" -C "$CHROMIUM_OUT_DIR" 'NeAntik Browser Packaging/signing/build_props_config.py'
   if [[ ! -f "$CHROMIUM_SIGNING_CONFIG" || -L "$CHROMIUM_SIGNING_CONFIG" ]]; then
     echo "Chromium GN signing configuration was not regenerated safely." >&2
     exit 65

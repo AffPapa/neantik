@@ -83,8 +83,33 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertEqual(text.count(check), 2)
         first = text.index(check)
         second = text.index(check, first + len(check))
-        self.assertLess(first, text.index('ninja -C "$CHROMIUM_OUT_DIR"'))
+        self.assertLess(first, text.index('"$NINJA_BIN" -C "$CHROMIUM_OUT_DIR"'))
         self.assertLess(second, text.index('"$PROJECT_DIR/scripts/enroll-direct-fingerprint-authority.sh"'))
+
+    def test_missing_build_log_refuses_ninja_and_preserves_output(self) -> None:
+        script = PREPARE.read_text(encoding="utf-8")
+        start = script.index('  NINJA_BIN="$SOURCE_ROOT/third_party/ninja/ninja"')
+        end = script.index('  if [[ ! -f "$CHROMIUM_SIGNING_CONFIG"', start)
+        guard = script[start:end]
+        with tempfile.TemporaryDirectory(prefix="neantik-missing-ninja-log-") as temporary:
+            root = Path(temporary)
+            ninja = root / "src/third_party/ninja/ninja"
+            ninja.parent.mkdir(parents=True)
+            marker = root / "invoked"
+            ninja.write_text('#!/bin/sh\ntouch "$MARKER"\n')
+            ninja.chmod(0o755)
+            output = root / "out"
+            output.mkdir()
+            retained = output / "retained"
+            retained.write_text("keep")
+            env = {**os.environ, "SOURCE_ROOT": str(root / "src"),
+                   "CHROMIUM_OUT_DIR": str(output), "MARKER": str(marker)}
+            result = subprocess.run(["/bin/zsh", "-c", guard], env=env,
+                                    capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 65, result.stderr)
+            self.assertIn("build log is unavailable", result.stderr)
+            self.assertFalse(marker.exists())
+            self.assertEqual(retained.read_text(), "keep")
 
     def test_runtime_preparation_refuses_warning_before_ninja_or_signing(self) -> None:
         with tempfile.TemporaryDirectory(prefix="neantik-admission-fixture-") as temporary:
