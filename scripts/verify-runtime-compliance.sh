@@ -61,6 +61,13 @@ if manifest.get("chromiumVersion") != expected_version:
 if manifest.get("sourceLockSHA256") != sha256(lock_path):
     fail("Compliance source-lock hash does not match.")
 
+if expected_version == "156.0.8078.80":
+    from ffmpeg_crc_notice import verify
+    try:
+        verify(root, manifest.get("ffmpegCrcSupplement"))
+    except ValueError as error:
+        fail(str(error))
+
 notices_meta = manifest.get("notices", {})
 spdx_meta = manifest.get("spdx", {})
 notices_path = root / str(notices_meta.get("file", ""))
