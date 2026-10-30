@@ -89,7 +89,7 @@ class ReleaseDirectScriptTests(unittest.TestCase):
     def test_missing_build_log_refuses_ninja_and_preserves_output(self) -> None:
         script = PREPARE.read_text(encoding="utf-8")
         start = script.index('  NINJA_BIN="$SOURCE_ROOT/third_party/ninja/ninja"')
-        end = script.index('  if [[ ! -f "$CHROMIUM_SIGNING_CONFIG"', start)
+        end = script.index('\nfi\nif [[ "$(plutil', start)
         guard = script[start:end]
         with tempfile.TemporaryDirectory(prefix="neantik-missing-ninja-log-") as temporary:
             root = Path(temporary)
@@ -102,8 +102,14 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             output.mkdir()
             retained = output / "retained"
             retained.write_text("keep")
+            binaries = root / "bin"
+            binaries.mkdir()
+            plutil = binaries / "plutil"
+            plutil.write_text('#!/bin/sh\nprintf "156.0.8078.74\n"\n')
+            plutil.chmod(0o755)
             env = {**os.environ, "SOURCE_ROOT": str(root / "src"),
-                   "CHROMIUM_OUT_DIR": str(output), "MARKER": str(marker)}
+                   "CHROMIUM_OUT_DIR": str(output), "MARKER": str(marker),
+                   "CANDIDATE_LOCK": str(root / "lock.json"), "PATH": str(binaries) + os.pathsep + os.environ["PATH"]}
             result = subprocess.run(["/bin/zsh", "-c", guard], env=env,
                                     capture_output=True, text=True, timeout=10)
             self.assertEqual(result.returncode, 65, result.stderr)

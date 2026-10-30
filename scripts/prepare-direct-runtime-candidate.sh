@@ -124,15 +124,26 @@ if [[ -f "$CHROMIUM_OUT_DIR/build.ninja" && -d "$(dirname "$RUNTIME_APP")/NeAnti
     exit 65
   fi
   NINJA_BIN="$SOURCE_ROOT/third_party/ninja/ninja"
-  if [[ ! -x "$NINJA_BIN" || -L "$NINJA_BIN" ||
-        ! -f "$CHROMIUM_OUT_DIR/.ninja_log" || -L "$CHROMIUM_OUT_DIR/.ninja_log" ]]; then
-    echo "Pinned Chromium Ninja or build log is unavailable; preserve the output and diagnose before retrying." >&2
-    exit 65
-  fi
-  "$NINJA_BIN" -C "$CHROMIUM_OUT_DIR" 'NeAntik Browser Packaging/signing/build_props_config.py'
-  if [[ ! -f "$CHROMIUM_SIGNING_CONFIG" || -L "$CHROMIUM_SIGNING_CONFIG" ]]; then
-    echo "Chromium GN signing configuration was not regenerated safely." >&2
-    exit 65
+  if [[ ! -f "$CHROMIUM_OUT_DIR/.ninja_log" || -L "$CHROMIUM_OUT_DIR/.ninja_log" ]]; then
+    if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" != "156.0.8078.80" ]]; then
+      echo "Pinned Chromium Ninja or build log is unavailable; preserve the output and diagnose before retrying." >&2
+      exit 65
+    fi
+    # Reproduce only the pinned sign_config Python action in an isolated copy.
+    # This does not recreate a build log or validate the existing runtime.
+    PACKAGING_DIR="$SIGNED_RUNTIME_ROOT/NeAntik Browser Packaging"
+    python3 -B "$PROJECT_DIR/scripts/prepare-chromium-15680-signing-package.py" \
+      "$SOURCE_ROOT" "$CHROMIUM_OUT_DIR" "$PACKAGING_DIR"
+  else
+    if [[ ! -x "$NINJA_BIN" || -L "$NINJA_BIN" ]]; then
+      echo "Pinned Chromium Ninja or build log is unavailable; preserve the output and diagnose before retrying." >&2
+      exit 65
+    fi
+    "$NINJA_BIN" -C "$CHROMIUM_OUT_DIR" 'NeAntik Browser Packaging/signing/build_props_config.py'
+    if [[ ! -f "$CHROMIUM_SIGNING_CONFIG" || -L "$CHROMIUM_SIGNING_CONFIG" ]]; then
+      echo "Chromium GN signing configuration was not regenerated safely." >&2
+      exit 65
+    fi
   fi
 fi
 if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "154.0.8037.93" ]]; then

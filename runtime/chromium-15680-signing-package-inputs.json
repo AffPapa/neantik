@@ -1,0 +1,120 @@
+{
+  "chromiumVersion": "156.0.8078.80",
+  "files": {
+    "dmg_tool": {
+      "mode": 493,
+      "sha256": "75379d9ec5990aa6e7a9cb5739f2fa5feea611bec1a6468676ffe6dc51ce43cd"
+    },
+    "helper-gpu-entitlements.plist": {
+      "mode": 420,
+      "sha256": "958648f799e436860b51eaf55ec8f92d2c62da17001e23d96bc05ffc748f2a2a"
+    },
+    "helper-renderer-entitlements.plist": {
+      "mode": 420,
+      "sha256": "958648f799e436860b51eaf55ec8f92d2c62da17001e23d96bc05ffc748f2a2a"
+    },
+    "hfs_tool": {
+      "mode": 493,
+      "sha256": "99dc2772f98c76ae8ec8137b2511f9dfaffb442f5bd9fbd599d930f86ea46af5"
+    },
+    "pkg-dmg": {
+      "mode": 493,
+      "sha256": "d5bd7b756047a1929b9bfaf6cda7b0b5fdf1b4292ea16484b30601700afa7598"
+    },
+    "pkg_postinstall.in": {
+      "mode": 420,
+      "sha256": "88c3c455c1768c9533fa252d75f45215d5f7a94c4c8f4d11d6fb89a22929035b"
+    },
+    "pkg_preinstall.in": {
+      "mode": 420,
+      "sha256": "8abab6417f08aee2e9096c56de0895106dd83a53a31888edf21b771d68179fdd"
+    },
+    "rebrand_chrome.py": {
+      "mode": 493,
+      "sha256": "adf5de71aa4db223ca4608d6079842f9eb8ae26ea044060745b39606e572b58c"
+    },
+    "sign_chrome.py": {
+      "mode": 493,
+      "sha256": "3b064aaba121488e3e62db93dd9c96e1831b0dac76f10d6f37d10ef8fd76266d"
+    },
+    "signing/__init__.py": {
+      "mode": 420,
+      "sha256": "96984ef724456d9b0d1462b7a06bd571d7d3c25e5fd320ec2d0a7cf16fd5761e"
+    },
+    "signing/build_props_config.py": {
+      "mode": 420,
+      "sha256": "3c70273b3f62c210bd0b0d098914575d0acd7f274ec541b0d978efe1f96e5e2b"
+    },
+    "signing/chromium_config.py": {
+      "mode": 420,
+      "sha256": "68a3d6930fafcb00d1a10c33cb16592b4d197ae8893feb402a5ff88a41e38741"
+    },
+    "signing/commands.py": {
+      "mode": 420,
+      "sha256": "9441eec3d6593b7e3c16018eaa6491a84d9e4b859ea72610ee7a8263cb477a9c"
+    },
+    "signing/config.py": {
+      "mode": 420,
+      "sha256": "1d6fe0854445dc19241e43e36d3e80be496db37314c9bbfc1bb259defd19483c"
+    },
+    "signing/config_factory.py": {
+      "mode": 420,
+      "sha256": "343ece21c3dfdad26f722c21af7e566eef5f74ed02368f97a3d3984e808ef7e2"
+    },
+    "signing/driver.py": {
+      "mode": 420,
+      "sha256": "8b9cf41f4d6f0ae48e25f7d8e323f70a709b7617ae9eadfbdf297aab272fbb53"
+    },
+    "signing/invoker.py": {
+      "mode": 420,
+      "sha256": "bce353a941acea53509e3eafab6934ac639012e45c39e2c84df1f47111c7eb77"
+    },
+    "signing/model.py": {
+      "mode": 420,
+      "sha256": "fa810319cd078c546f290083eb6bd327b30d778b6352015df82e53f9a77eaaa3"
+    },
+    "signing/modification.py": {
+      "mode": 420,
+      "sha256": "6c95981e84d4154e22db2a2477859a96b6ab7cefea533eaea95b15ae6bdb38fd"
+    },
+    "signing/notarize.py": {
+      "mode": 420,
+      "sha256": "2a1cd77da30854a8570a3d850c007ac0168707ea0d21d470e48dccab55ecb839"
+    },
+    "signing/parts.py": {
+      "mode": 420,
+      "sha256": "1e80f217f8d1af851b04bb33d3c76e56b1f475a87df5fe50cb2012f16e8e2815"
+    },
+    "signing/pipeline.py": {
+      "mode": 420,
+      "sha256": "d3e6e8f16ab9ebcb1714120990846c50450def024e76d514d48319d110599cec"
+    },
+    "signing/rebranding.py": {
+      "mode": 420,
+      "sha256": "1f485012d2c99a83071d87da3604513c9a5893603c7f60e6303423d5016fb561"
+    },
+    "signing/signing.py": {
+      "mode": 420,
+      "sha256": "a732556f9307e59fb52453c0f1bd0b8e40d2d327655d91c5dd295aa4dfe00edb"
+    },
+    "signing/standard_invoker.py": {
+      "mode": 420,
+      "sha256": "9d1be0777dc1d6afbe2d60e12a8af322daabd480e896a1ffd0735b29e1b565d6"
+    },
+    "universalizer.py": {
+      "mode": 493,
+      "sha256": "457150829a19107c4eb1a229ac793b55ccef767abb81ce83f1dfc9e48dfec716"
+    }
+  },
+  "generatedConfigSHA256": "3014c77a6e3728774aa2354fc30bb5c1ae9adde5c53dc8dfe44d26db83a26a7b",
+  "generatorInputs": {
+    "build/util/LASTCHANGE": "6ee42bff709cf55662332e0efa7dd3514f191773c1136068c972e96884a6e61d",
+    "build/util/android_chrome_version.py": "3c86e9d3bd0874274b3ebc5d67e11b16a2a6560eccb3147b0d291c362e34e4ca",
+    "build/util/version.py": "45cf759de74813c5dc7b4f9c203209e8c44218a52fb008793c38e7dfc875b98a",
+    "chrome/VERSION": "c1ed3a86621eebc6b12ed9d09732789175e39744add072ff1bd6f9aece3e40aa",
+    "chrome/app/theme/chromium/BRANDING": "e01f8173e6860dd3c95d29a9e2f2453122e8acb26dbe026373812194c78a7f3f",
+    "chrome/installer/mac/signing/build_props_config.py.in": "8bc8e572bde4df55692796b213000ec1eca3a4fa9cea15518c1fed2f7c46f441"
+  },
+  "schemaVersion": 1,
+  "toolchainNinjaSHA256": "8f1dd95d8971ae18550a3386fb516515410d74f453a55837b0e3005ec6badcce"
+}
