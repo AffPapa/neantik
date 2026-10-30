@@ -21,6 +21,28 @@ RELEASE_ENTRYPOINT = SCRIPTS.parent / "Release-NeAntik.command"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
+    def test_prepared_candidate_without_binding_is_preserved_before_rebuild(self) -> None:
+        inner = (SCRIPTS / "Run-NeAntik-Release.command").read_text(encoding="utf-8")
+        start = inner.index("# A freshly prepared runtime candidate needs")
+        end = inner.index('mkdir -p "$ATTEMPT_STATE_ROOT"', start)
+        guard = inner[start:end]
+        with tempfile.TemporaryDirectory(prefix="neantik-unbound-candidate-") as temporary:
+            root = Path(temporary)
+            app = root / "NeAntik.app"
+            app.mkdir()
+            marker = app / "retain"
+            marker.write_text("candidate intact")
+            manifest = root / "manifest.json"
+            manifest.write_text("candidate manifest intact")
+            env = {**os.environ, "APP_PATH": str(app), "CANDIDATE_MANIFEST": str(manifest),
+                   "CANDIDATE_SOURCE_BINDING": str(root / "binding.json")}
+            result = subprocess.run(["/bin/zsh", "-c", guard], env=env,
+                                    text=True, capture_output=True, timeout=10)
+            self.assertEqual(result.returncode, 65, result.stderr)
+            self.assertIn("no source binding", result.stderr)
+            self.assertEqual(marker.read_text(), "candidate intact")
+            self.assertEqual(manifest.read_text(), "candidate manifest intact")
+
     def test_runtime_preparation_preserves_existing_or_partial_apps(self) -> None:
         with tempfile.TemporaryDirectory(prefix="neantik-preserve-fixture-") as temporary:
             root = Path(temporary).resolve()

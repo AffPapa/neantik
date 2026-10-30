@@ -241,6 +241,15 @@ if [[ -e "$APP_PATH" ]]; then
     --app "$APP_PATH" --timeout 2
 fi
 
+# A freshly prepared runtime candidate needs an explicit clean-source binding.
+# Do not move it away and invoke the unrelated manager-only preparation path.
+if [[ -d "$APP_PATH" && -f "$CANDIDATE_MANIFEST" && ! -L "$CANDIDATE_MANIFEST" &&
+      ! -e "$CANDIDATE_SOURCE_BINDING" && ! -L "$CANDIDATE_SOURCE_BINDING" ]]; then
+  echo "Prepared candidate has no source binding; preserve it and bind the exact clean source before release." >&2
+  echo "Use direct-candidate-source-binding.py create with this candidate manifest and source binding path." >&2
+  exit 65
+fi
+
 mkdir -p "$ATTEMPT_STATE_ROOT"
 chmod 0700 "$ATTEMPT_STATE_ROOT"
 echo "Private attempt state: $ATTEMPT_STATE_ROOT"
