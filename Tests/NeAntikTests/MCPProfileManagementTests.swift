@@ -66,12 +66,17 @@ struct MCPProfileManagementTests {
         args = request(renamed); args["changes"] = ["fontPolicy": "native"]
         let disabled = try await engine.call("profile_update", args)
         #expect(disabled["fontPolicy"] as? String == "native")
-        let webkit = try await engine.call("profile_create", ["name": "Own WebKit font control", "engine": "webkit"])
-        #expect(webkit["fontPolicy"] is NSNull)
-        args = request(webkit); args["changes"] = ["fontPolicy": "system-v1"]
-        await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
+        if BrowserEngine.webkit.isAvailableInBuild {
+            let webkit = try await engine.call("profile_create", ["name": "Own WebKit font control", "engine": "webkit"])
+            #expect(webkit["fontPolicy"] is NSNull)
+            args = request(webkit); args["changes"] = ["fontPolicy": "system-v1"]
+            await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
+        } else {
+            await #expect(throws: Error.self) { try await engine.call("profile_create", ["name": "Unavailable WebKit", "engine": "webkit"]) }
+        }
     }
     @Test func webKitMediaPolicyIsRevisionCheckedAndRejectsOtherEngines() async throws {
+        guard BrowserEngine.webkit.isAvailableInBuild else { return }
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let created = try await engine.call("profile_create", ["name": "Own media", "engine": "webkit", "changes": ["startURL": "about:blank", "webKitMediaPolicy": "deny"]])
         #expect(created["webKitMediaPolicy"] as? String == "deny")
@@ -135,6 +140,7 @@ struct MCPProfileManagementTests {
     }
 
     @Test func webKitProxyCanBeCreatedAtomicallyWithoutExposingCredential() async throws {
+        guard BrowserEngine.webkit.isAvailableInBuild else { return }
         let (root, engine, backend) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
         let creation = try #require(MCPProfileManagement.definitions(allowsManagement: true)
@@ -158,6 +164,7 @@ struct MCPProfileManagementTests {
     }
 
     @Test func webKitSessionAddressesStayOutOfMCPAndConfigurationExport() async throws {
+        guard BrowserEngine.webkit.isAvailableInBuild else { return }
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let created = try await engine.call("profile_create", ["name": "Own restore metadata", "engine": "webkit", "changes": ["startURL": "about:blank", "startupMode": "restoreSession"]])
         let id = try #require(UUID(uuidString: created["id"] as! String))
@@ -177,6 +184,7 @@ struct MCPProfileManagementTests {
     }
 
     @Test func webKitCleanupWarningMeansCommittedEditAndFailedReenableKeepsOff() async throws {
+        guard BrowserEngine.webkit.isAvailableInBuild else { return }
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let created = try await engine.call("profile_create", ["name": "Own cleanup warning", "engine": "webkit", "changes": ["startURL": "about:blank", "startupMode": "restoreSession"]])
         let id = try #require(UUID(uuidString: created["id"] as! String)), sessions = WebKitSessionStore(paths: engine.store.paths)
