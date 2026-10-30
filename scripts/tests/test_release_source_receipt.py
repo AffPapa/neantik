@@ -27,6 +27,7 @@ class ReleaseSourceReceiptTests(unittest.TestCase):
     def test_production_source_closure_is_sorted_and_unique(self) -> None:
         paths = [path for path, _ in MODULE.RELEASE_SOURCE_CLOSURE]
         self.assertEqual(paths, sorted(set(paths)))
+        self.assertIn("scripts/ffmpeg_crc_notice.py", paths)
 
     closure = (
         ("policy.json", "reviewed-policy"),

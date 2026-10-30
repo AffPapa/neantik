@@ -52,6 +52,7 @@ RELEASE_SOURCE_CLOSURE: tuple[tuple[str, str], ...] = (
     ("runtime/nevision-patches/series.json", "reviewed-policy"),
     ("runtime/security-baseline.json", "reviewed-policy"),
     ("scripts/direct-candidate-manifest.py", "candidate-manifest"),
+    ("scripts/ffmpeg_crc_notice.py", "license-gate"),
     ("scripts/fingerprint_evidence.py", "evidence-schema-dispatch"),
     ("scripts/fingerprint_evidence_schema8.py", "evidence-schema"),
     ("scripts/fingerprint_evidence_schema9.py", "evidence-schema"),
