@@ -58,6 +58,26 @@ struct DirectUpdateCodeSignatureTests {
         let result = try DirectUpdateCodeSignature.validatedFields(information(role), role: role)
         #expect(result.identifier == role.identifier && result.cdHash.count == 20)
     }
+    @Test(arguments: DirectUpdateCodeRole.shippingRoles)
+    func onlyFrameworkAllowsNoExecutableRuntimeFlag(role: DirectUpdateCodeRole) throws {
+        var info = information(role)
+        info[kSecCodeInfoFlags as String] = NSNumber(value: 0)
+        if role == .framework {
+            let result = try DirectUpdateCodeSignature.validatedFields(info, role: role)
+            #expect(!result.hardenedRuntimeVerified)
+            for invalid in [UInt32(2), UInt32(0x10002)] {
+                info[kSecCodeInfoFlags as String] = NSNumber(value: invalid)
+                #expect(throws: DirectUpdateCodeSignatureError.policy) {
+                    try DirectUpdateCodeSignature.validatedFields(info, role: role)
+                }
+            }
+        } else {
+            #expect(throws: DirectUpdateCodeSignatureError.policy) {
+                try DirectUpdateCodeSignature.validatedFields(info, role: role)
+            }
+        }
+    }
+
     @Test(arguments: ["identifier", "team", "hash", "runtime-flag", "missing-timestamp", "signer-time", "plist-id", "plist-executable", "plist-version", "extra-entitlement", "wrong-appid", "missing-entitlement"])
     func legacyManagerContractRefusesContradictions(control: String) throws {
         var info = information(.manager)
@@ -180,8 +200,9 @@ struct DirectUpdateCodeSignatureTests {
         let app = URL(fileURLWithPath: path), runtime = app.appendingPathComponent("Contents/Resources/NeAntik Browser.app")
         let target = role == .manager ? app : role == .runtime ? runtime : runtime.appendingPathComponent("Contents/Frameworks/NeAntik Browser Framework.framework")
         let result = try DirectUpdateCodeSignature.inspect(target, role: role)
-        #expect(result.developerIDVerified && result.nestedAndAllArchitecturesVerified && result.hardenedRuntimeVerified)
-        #expect(result.version == (role == .manager ? (ProcessInfo.processInfo.environment["NEANTIK_UPDATE_CODE_VERSION"] ?? "0.7.29") : "156.0.8078.12"))
+        #expect(result.developerIDVerified && result.nestedAndAllArchitecturesVerified)
+        #expect(role == .framework || result.hardenedRuntimeVerified)
+        #expect(result.version == (role == .manager ? (ProcessInfo.processInfo.environment["NEANTIK_UPDATE_CODE_VERSION"] ?? "0.7.29") : (ProcessInfo.processInfo.environment["NEANTIK_UPDATE_CODE_RUNTIME_VERSION"] ?? "156.0.8078.12")))
         #expect(result.certifiedTimestamp.timeIntervalSince1970 > 1_700_000_000)
     }
 

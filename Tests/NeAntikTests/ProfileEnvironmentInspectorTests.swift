@@ -3,6 +3,21 @@ import Testing
 @testable import NeAntik
 
 struct ProfileEnvironmentInspectorTests {
+    @Test(arguments: [false, true])
+    func passportUsesRequestedSyncAutofillRestriction(restricted: Bool) throws {
+        var profile = BrowserProfile(name: "Owned custom privacy fixture")
+        profile.privacyPolicy = .balanced
+        profile.privacyPolicy.disableSyncAndAutofill = restricted
+        let snapshot = ProfileEnvironmentInspector.snapshot(profile: profile, runtime: nil, proxyHealth: nil)
+        let entry = try field("protection.extensions", in: snapshot)
+        let detail = try #require(entry.detail)
+        #expect(detail.contains(restricted
+            ? "Политика запрещает Sync, autofill и сохранение паролей."
+            : "Политика не запрещает Sync, autofill и сохранение паролей."))
+        #expect(!detail.contains("Sync и autofill выключены в новых режимах"))
+        #expect(entry.state == .configured)
+    }
+
     @Test
     func protectionPassportPreservesEvidenceLimitsAndRedactsStartAddress() throws {
         let profile = BrowserProfile(name: "Private passport", startURL: "https://example.invalid/?token=private-marker")

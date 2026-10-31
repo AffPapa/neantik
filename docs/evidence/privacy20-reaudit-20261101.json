@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "auditDate": "2026-11-01 Asia/Bangkok",
+  "publishedVersion": "0.9.2",
+  "build": 202,
+  "productSourceCommit": "a90a9345f902c2d202ccf7bb73bacb28bcb16bb6",
+  "productBytesChanged": false,
+  "findings": "Threequalificationgaps corrected and one concreteP1custom-policy passport defect found/fixed in source; no confirmedproductionP0bypass in reviewed scope. Requirementcoverage remains partial.",
+  "counts": {
+    "fulfilledBounded": 9,
+    "researchComplete": 1,
+    "partial": 10
+  },
+  "items": [
+    {
+      "id": 1,
+      "status": "partial",
+      "confirmed": "Required proxy fixed in profile/system contexts; worker HTTP, keepalive, page WSS, downloads and failure/recovery.",
+      "remaining": "Packet-wide DNS/UDP/IPv6 and ordinary background traffic remain unqualified; fixture disables background networking."
+    },
+    {
+      "id": 2,
+      "status": "partial",
+      "confirmed": "RTC-off and corrected single-variable STUN comparison: control UDP1, proxy policy UDP0.",
+      "remaining": "Successful proxied TURN/media and route qualification are not measured."
+    },
+    {
+      "id": 3,
+      "status": "partial",
+      "confirmed": "Signed bounded downloader, reviewed runtime pins and migration/rollback boundaries.",
+      "remaining": "No measured security-update delivery SLA or automated end-to-end qualification of future Chromium versions."
+    },
+    {
+      "id": 4,
+      "status": "partial",
+      "confirmed": "CERT/HaGeZi domain protection and threat-priority controls.",
+      "remaining": "Google Safe Browsing and downloaded-file malware scanning remain disabled/absent."
+    },
+    {
+      "id": 5,
+      "status": "fulfilled-bounded",
+      "confirmed": "New profiles start at local about:blank; saved URLs preserved.",
+      "remaining": "This does not disable all browser background traffic."
+    },
+    {
+      "id": 6,
+      "status": "fulfilled-bounded",
+      "confirmed": "Cookies/localStorage/IndexedDB/CacheStorage plus new service-worker registration/state and dedicated-worker IndexedDB A/B/A.",
+      "remaining": "Bounded owned-origin/profile tests; no universal assertion for every storage API."
+    },
+    {
+      "id": 7,
+      "status": "fulfilled-bounded",
+      "confirmed": "HTTP disk cache, socket reuse and TLS1.2 separation with positive controls.",
+      "remaining": "TLS1.3, HTTP2 coalescing, HSTS/Alt-Svc and HTTP3 not independently measured."
+    },
+    {
+      "id": 8,
+      "status": "partial",
+      "confirmed": "Native LNA block and literal/local-name preflight, including mapped IPv6.",
+      "remaining": "Hostname-to-private/rebinding needs a controlled resolver test; remote proxy DNS remains a trust boundary."
+    },
+    {
+      "id": 9,
+      "status": "fulfilled-bounded",
+      "confirmed": "Coherent Balanced/Strict presets, legacy preservation and compatibility gates.",
+      "remaining": "Existing saved profiles retain their settings."
+    },
+    {
+      "id": 10,
+      "status": "research-complete",
+      "confirmed": "Site-scoped derivation investigated; legacy31-bit seed is not a cryptographic secret.",
+      "remaining": "A new Keychain-root/site-secret algorithm is not enabled."
+    },
+    {
+      "id": 11,
+      "status": "fulfilled-bounded",
+      "confirmed": "WebGL debug-renderer extension hidden; normal rendering smoke passed.",
+      "remaining": "Other GPU limits/rendering differences are not normalized."
+    },
+    {
+      "id": 12,
+      "status": "partial",
+      "confirmed": "Protected system-font lookup/fallback, CoreText source checks and seven language vectors.",
+      "remaining": "Not a universal eight-font bundle; browser-origin canary/full browser glyph fallback remain unverified."
+    },
+    {
+      "id": 13,
+      "status": "fulfilled-bounded",
+      "confirmed": "Optional viewport grid200x100.",
+      "remaining": "Fullscreen, DevTools and animated resize exemptions; outer window is not universally normalized."
+    },
+    {
+      "id": 14,
+      "status": "partial",
+      "confirmed": "Strict permission denial plus new fake-media deviceID profile separation and document-specific groupID rotation.",
+      "remaining": "Fake UI auto-grant does not prove persisted per-profile user permission grants; no physical camera/mic test."
+    },
+    {
+      "id": 15,
+      "status": "fulfilled-bounded",
+      "confirmed": "77852-domain HaGeZi filtering, bounded session exceptions and independent CERT priority.",
+      "remaining": "Known-domain filtering does not block every possible tracker."
+    },
+    {
+      "id": 16,
+      "status": "partial",
+      "confirmed": "Known all-tracking main-frame GET query cleanup and Chromium DIPS; synthetic OAuth/signed preservation.",
+      "remaining": "Mixed queries preserved; not a universal redirect remover; real OAuth/payment flows not measured."
+    },
+    {
+      "id": 17,
+      "status": "fulfilled-bounded",
+      "confirmed": "Two manager-driven ephemeral cleanup cycles and selected-profile clear; persistent data preserved.",
+      "remaining": "Downloads remain; no SSD forensic-erasure guarantee."
+    },
+    {
+      "id": 18,
+      "status": "fulfilled-bounded",
+      "confirmed": "Separate extension data, requested-permission warnings, Sync/autofill/password filling restrictions.",
+      "remaining": "Component/external integrations may remain; native fixed proxy is an independent boundary."
+    },
+    {
+      "id": 19,
+      "status": "partial",
+      "confirmed": "Encrypted backup58 source tests plus separate signed real-Keychain export/restore/wrong-password/corrupt/crash recovery.",
+      "remaining": "Same Mac/profile/exact runtime only; exact production GUI and real browser-login restore not measured; not portable to another Mac."
+    },
+    {
+      "id": 20,
+      "status": "partial",
+      "confirmed": "Passport distinguishes settings, sent parameters, recognized signed runtime and observations/unsupported surfaces.",
+      "remaining": "Published0.9.2 incorrectly says Sync/autofill are off for valid custom disableSyncAndAutofill=false. Source fix reproduced and14targetedtestsPASS; not yet in a new signedbinary. Sent parameters still do not measure every page API."
+    }
+  ],
+  "newNativeCases": [
+    {
+      "case": "rtc-control",
+      "result": "PASS",
+      "receiptSHA256": "17d2f8cba850bed264af6cb63e3770bcdf8f11febd752beecca28ef073e5cfc4",
+      "runtimeExecutableSHA256": "be743b4f09d96da901701d3b517e0a64daaac9535150172701c099964902492d",
+      "runtimeFrameworkSHA256": "03852e945564d2e00db3849e9a26c560a0e0ad22836e8a8e83afbe50ce2e8047",
+      "phases": 1,
+      "udpPackets": 1,
+      "scope": [
+        "UDP fixture positive control: same requiredproxy/LAN-unset; only RTC IP policy differs",
+        "WebTransport refuses non-direct proxy route"
+      ],
+      "sourceInputs": {
+        "run.mjs": "8f66e473b8ba63bb37d2766efe7a705a6a45aacfdebe1576aba72277a8282e82",
+        "probe.mjs": "29b14bafc26d2bc57eadac5eaec6310257fc043f48854867f87b6c462c1d6105",
+        "qa-controls.mjs": "a60e3f6125f654303f20fd9671f972b329a8c5f3b799c42eb9ee547c38740b8e"
+      },
+      "ownedRootsRemoved": true
+    },
+    {
+      "case": "rtc-proxy",
+      "result": "PASS",
+      "receiptSHA256": "0cfda4b591574e87eeef43b6636b2307781a61dcb3023a45a2e1c967e95c58b8",
+      "runtimeExecutableSHA256": "be743b4f09d96da901701d3b517e0a64daaac9535150172701c099964902492d",
+      "runtimeFrameworkSHA256": "03852e945564d2e00db3849e9a26c560a0e0ad22836e8a8e83afbe50ce2e8047",
+      "phases": 1,
+      "udpPackets": 0,
+      "scope": [
+        "RTC constructor enabled with fixedproxy; owned STUN UDP zero",
+        "WebTransport refuses non-direct proxy route"
+      ],
+      "sourceInputs": {
+        "run.mjs": "8f66e473b8ba63bb37d2766efe7a705a6a45aacfdebe1576aba72277a8282e82",
+        "probe.mjs": "29b14bafc26d2bc57eadac5eaec6310257fc043f48854867f87b6c462c1d6105",
+        "qa-controls.mjs": "a60e3f6125f654303f20fd9671f972b329a8c5f3b799c42eb9ee547c38740b8e"
+      },
+      "ownedRootsRemoved": true
+    },
+    {
+      "case": "workers",
+      "result": "PASS",
+      "receiptSHA256": "ac97d4eafa22add0afb5627ff39ff77c08c296bef98760619f9d74cffac793e8",
+      "runtimeExecutableSHA256": "be743b4f09d96da901701d3b517e0a64daaac9535150172701c099964902492d",
+      "runtimeFrameworkSHA256": "03852e945564d2e00db3849e9a26c560a0e0ad22836e8a8e83afbe50ce2e8047",
+      "phases": 3,
+      "udpPackets": 0,
+      "scope": [
+        "service worker registration pre-state and SW-message-owned persisted marker A1/B1/A2",
+        "dedicated worker own IndexedDB marker A1/B1/A2"
+      ],
+      "sourceInputs": {
+        "run.mjs": "40e72651658b8891288874bcdc05979b6fb13b1889997ff6512bacea1f3caab3",
+        "probe.mjs": "730045e63d831bd733fed1275e24e32bb8687890688b9b2e4644852743fd3631",
+        "qa-controls.mjs": "a60e3f6125f654303f20fd9671f972b329a8c5f3b799c42eb9ee547c38740b8e"
+      },
+      "ownedRootsRemoved": true
+    },
+    {
+      "case": "media",
+      "result": "PASS",
+      "receiptSHA256": "3b772793a00015c7aaca6c6e61f8152aa5ea32236316dbc3bf658962d1b192c0",
+      "runtimeExecutableSHA256": "be743b4f09d96da901701d3b517e0a64daaac9535150172701c099964902492d",
+      "runtimeFrameworkSHA256": "03852e945564d2e00db3849e9a26c560a0e0ad22836e8a8e83afbe50ce2e8047",
+      "phases": 3,
+      "udpPackets": 0,
+      "scope": [
+        "synthetic fake camera/mic only; no physical capture",
+        "same-origin per-profile device ID A1/B1/A2, reserved aliases excluded",
+        "group ID same-document stability and new-document rotation",
+        "fake UI auto-grant does not prove persisted user permission separation"
+      ],
+      "sourceInputs": {
+        "run.mjs": "8f66e473b8ba63bb37d2766efe7a705a6a45aacfdebe1576aba72277a8282e82",
+        "probe.mjs": "29b14bafc26d2bc57eadac5eaec6310257fc043f48854867f87b6c462c1d6105",
+        "qa-controls.mjs": "a60e3f6125f654303f20fd9671f972b329a8c5f3b799c42eb9ee547c38740b8e"
+      },
+      "ownedRootsRemoved": true
+    }
+  ],
+  "reuseBoundary": "RTC/media pages and RTCcontrol helper unchanged by later worker-only addition; generated-page equality checked. Other matching public0.9.2 gates reused.",
+  "unreleasedCertificatePin": "SHA256 updater certificate pin is in main source only, not in published0.9.2 binaries; future manager/helpers need new binary qualification.",
+  "officialBaselineReference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_02107719452.html",
+  "officialBaselineObservation": "Official2026-10-29 Stable/ExtendedStable post lists156.0.8078.79/.80 forWindows/Mac; this is not a claim of a newer early-stable Mac rollout.",
+  "mediaOfflineStrengthening": {
+    "receiptSHA256": "d92d4e1985febbb9e0a22a483cca4cb1a97e95a583a1d906ba97aa3b7d596e6c",
+    "status": "PASS",
+    "crossProfileDeviceSetIntersection": 0,
+    "crossProfileGroupSetIntersection": 0,
+    "crossDocumentGroupSetIntersection": 0,
+    "sameProfileDevicesPersistent": true,
+    "nonemptyPositiveControls": true,
+    "rtcControlFunctionUnchanged": true,
+    "browserRerun": false,
+    "scope": "AllnonreservedIDsdisjoint, not merely unequal arrays; evaluated against retainednative3phaseobservations"
+  },
+  "passportBug": {
+    "severity": "P1",
+    "affected": "valid custom disableSyncAndAutofill=false; standardBalanced/Strictunaffected",
+    "source": "Sources/NeAntik/EnvironmentDiagnostics.swift",
+    "before": "regression reproduced actual incorrectclaim",
+    "after": "conditional configured-intent text;14tests/2suitesPASS,no skips",
+    "publishedBinaryFixed": false
+  }
+}
