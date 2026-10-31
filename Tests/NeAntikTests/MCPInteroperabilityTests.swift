@@ -4,6 +4,30 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPInteroperabilityTests {
+    @Test func failedCommitAndRollbackReportsUncertainStateWithoutSecrets() async throws {
+        struct SyntheticError: LocalizedError {
+            var errorDescription: String? { "secret-token /private/synthetic/profile" }
+        }
+        let failure = ProfileSaveRollbackError(operationError: SyntheticError(), rollbackError: SyntheticError())
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("mcp-rollback-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let session = MCPManagementSession(root: root, testingToolFailure: failure)
+        let response = try await request(session, "tools/call", ["name": "profile_create", "arguments": ["name": "Synthetic"]], modern: true, id: 42)
+        let result = try #require(response["result"] as? [String: Any])
+        let meta = try #require(result["_meta"] as? [String: Any])
+        #expect(result["isError"] as? Bool == true)
+        #expect(meta["app.neantik/errorCode"] as? String == "storage_state_uncertain")
+        #expect(meta["app.neantik/automaticRetry"] as? Bool == false)
+        let wire = try #require(String(data: JSONSerialization.data(withJSONObject: response), encoding: .utf8))
+        #expect(wire.contains("rollback could not be confirmed"))
+        #expect(!wire.contains("Existing data retained"))
+        #expect(!wire.contains("secret-token") && !wire.contains("/private/synthetic/profile"))
+        let fallback = MCPManagementSession(root: root, testingToolFailure: SyntheticError())
+        let generic = try await request(fallback, "tools/call", ["name": "profile_create", "arguments": ["name": "Synthetic"]], modern: true)
+        let genericWire = try #require(String(data: JSONSerialization.data(withJSONObject: generic), encoding: .utf8))
+        #expect(genericWire.contains("operation_unavailable"))
+        #expect(!genericWire.contains("Existing data retained") && !genericWire.contains("secret-token"))
+    }
     func request(_ session: MCPManagementSession, _ method: String, _ params: [String: Any] = [:], modern: Bool = false, id: Int = 1) async throws -> [String: Any] {
         var params = params
         if modern { params["_meta"] = ["io.modelcontextprotocol/protocolVersion": "2026-07-28", "io.modelcontextprotocol/clientCapabilities": [:]] }

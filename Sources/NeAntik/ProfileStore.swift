@@ -2295,8 +2295,8 @@ struct ProfileSaveRollbackError: LocalizedError {
         // detailed values remain available to the private debugger while the
         // user-facing error stays safe and actionable.
         "Не удалось сохранить профиль, а откат старых метаданных тоже не " +
-            "прошёл. Повтори операцию позже или проверь доступ к данным " +
-            "приложения."
+        "прошёл. Состояние профилей не подтверждено; проверь список профилей " +
+            "и папок перед повтором операции."
     }
 }
 

@@ -15,6 +15,9 @@ final class MCPManagementSession {
     private var currentMethod: String?
     private var closed = false
     private var cancelledCurrent = false
+    #if DEBUG
+    private var testingToolFailure: Error?
+    #endif
 
     init(root: URL, allowsManagement: Bool) { self.root = root; self.allowsManagement = allowsManagement }
 
@@ -24,6 +27,10 @@ final class MCPManagementSession {
     convenience init(root: URL, allowsManagement: Bool, testingEngine: MCPProfileManagement) {
         self.init(root: root, allowsManagement: allowsManagement)
         engine = testingEngine
+    }
+    convenience init(root: URL, testingToolFailure: Error) {
+        self.init(root: root, allowsManagement: true)
+        self.testingToolFailure = testingToolFailure
     }
     #endif
 
@@ -198,6 +205,9 @@ final class MCPManagementSession {
         do {
             try Task.checkCancellation()
             try ApplicationInstallLifecycle.requireNewWork()
+            #if DEBUG
+            if let testingToolFailure { throw testingToolFailure }
+            #endif
             if name == "profile_check_proxy" { ProxyAuditPhase.mark(.engineInitBegin) }
             if engine == nil { engine = MCPProfileManagement(root: root, allowsManagement: allowsManagement) }
             if name == "profile_check_proxy" { ProxyAuditPhase.mark(.engineInitDone) }
@@ -208,6 +218,7 @@ final class MCPManagementSession {
             if name == "profile_check_proxy" { ProxyAuditPhase.mark(.responseDone) }
             return response
         } catch {
+            if let response = Self.uncertainCommitFailure(error, id: id) { return response }
             let message: String
             let code: String
             var blockReason: String? = nil
@@ -254,10 +265,19 @@ final class MCPManagementSession {
             case MCPProfileManagement.Failure.proxyFailed: code = "proxy_preparation_failed"; message = "Proxy preparation did not establish required context. Check protocol/port and run profile_check_proxy. No direct fallback."
             case MCPProfileManagement.Failure.cursor: code = "cursor_invalid"; message = "Cursor invalid or metadata/filter changed. Restart without cursor."
             case MCPProfileManagement.Failure.responseLimit: code = "response_limit"; message = "Response exceeds limit. Use a smaller page."
-            default: code = "operation_unavailable"; message = "Operation unavailable or storage commit failed. Existing data retained; open NeAntik and inspect diagnostics before retry."
+            default: code = "operation_unavailable"; message = "Operation unavailable or storage commit could not be confirmed. Open NeAntik and re-read current state before retrying; do not retry automatically."
             }
             return toolFailure(id: id, code: code, message: message, blockReason: blockReason)
         }
+    }
+    private static func uncertainCommitFailure(_ error: Error, id: Any) -> Data? {
+        guard error is ProfileSaveRollbackError else { return nil }
+        let message = "Saving failed and rollback could not be confirmed. Do not retry automatically. Open NeAntik and inspect the current profile and folder state before taking further action."
+        return MCPStdioServer.response(id: id, result: ["isError": true,
+            "content": [["type": "text", "text": message]],
+            "_meta": ["app.neantik/errorCode": "storage_state_uncertain",
+                      "app.neantik/nextAction": message,
+                      "app.neantik/automaticRetry": false]])
     }
     private func toolFailure(id: Any, code: String, message: String, blockReason: String? = nil) -> Data? {
         var metadata: [String: Any] = ["app.neantik/errorCode": code, "app.neantik/nextAction": message, "app.neantik/automaticRetry": false]
