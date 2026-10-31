@@ -310,13 +310,18 @@ enum ProfileEnvironmentInspector {
                     id: "protection.controls", title: "Ограничения",
                     value: "RTC: \(profile.privacyPolicy.rtc.rawValue) · LAN: \(profile.privacyPolicy.localNetwork.rawValue) · разрешения: \(profile.privacyPolicy.media.rawValue)",
                     state: .configured,
-                    detail: "При RTC proxyOnly без прокси WebRTC выключен. С прокси запрещён UDP вне прокси; совместимый TCP TURN зависит от сайта. Строгий режим полностью запрещает создание RTCPeerConnection."
+                    detail: "При RTC proxyOnly без прокси WebRTC выключен. С прокси политика ограничивает прямой UDP; работа TURN зависит от сайта и не подтверждена проверкой маршрута. Строгий режим запрещает создание RTCPeerConnection."
                 ),
                 EnvironmentDiagnosticField(
                     id: "protection.extensions", title: "Расширения, Sync и autofill",
                     value: profile.proxy != nil || profile.privacyPolicy.presetName == "strict" ? "Обычные расширения профиля отключены" : "Разрешены отдельные расширения профиля",
                     state: .configured,
-                    detail: "Обычные расширения профиля ограничены; компоненты браузера и системные интеграции могут сохраняться. В совместимом движке обязательный прокси закреплён независимо от их настроек. Данные расширений не удаляются. " +
+                    detail: (profile.proxy != nil || profile.privacyPolicy.presetName == "strict"
+                        ? "Обычные расширения профиля отключены. "
+                        : "Отдельные расширения профиля разрешены. ") +
+                        "Компоненты браузера и системные интеграции могут сохраняться. " +
+                        (profile.proxy != nil ? "В совместимом движке обязательный прокси закреплён независимо от их настроек. " : "") +
+                        "Данные расширений не удаляются. " +
                         (profile.privacyPolicy.disableSyncAndAutofill
                             ? "Политика запрещает Sync, autofill и сохранение паролей."
                             : "Политика не запрещает Sync, autofill и сохранение паролей.")
@@ -635,7 +640,7 @@ enum ProfileEnvironmentInspector {
         case .publicInterfaceOnly:
             "Только публичный интерфейс"
         case .disableNonProxiedUDP:
-            "Запрещён UDP вне прокси"
+            "Ограничен прямой UDP для WebRTC"
         }
         var fields = [
             EnvironmentDiagnosticField(

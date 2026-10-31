@@ -1,6 +1,6 @@
 # NeAntik local MCP: profile management
 
-The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. For Chromium and metadata operations the manager GUI may be closed. WebKit lifecycle uses the explicitly approved GUI connection described below. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Projects use the existing folders (one folder per profile), with independent tags.
+The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. For Chromium and metadata operations the manager GUI may be closed. WebKit is deferred and cannot be launched in the current Chromium-only release; historical WebKit notes below do not describe the current build. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Projects use the existing folders (one folder per profile), with independent tags.
 
 ## Connect (official client formats checked 7 October 2026)
 
@@ -9,7 +9,7 @@ Open **Справка → Подключить MCP к AI…**, select the actual
 | Client | Generated format / setup | Official documentation |
 |---|---|---|
 | Claude Desktop | JSON; Settings → Developer → Edit Config; full restart | [Local MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop) |
-| ChatGPT Desktop / Codex CLI / IDE | TOML in ~/.codex/config.toml; Desktop Settings → MCP servers → STDIO | [OpenAI MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli) |
+| Codex CLI / IDE | TOML in ~/.codex/config.toml | [OpenAI MCP](https://developers.openai.com/codex/mcp/) |
 | Claude Code | shell-literal `claude mcp add --transport stdio --scope user`; /mcp | [Claude Code](https://code.claude.com/docs/en/mcp) |
 | Grok CLI | shell-literal `grok mcp add`; `grok mcp doctor neantik`, /mcps | [xAI MCP](https://docs.x.ai/build/features/mcp-servers) |
 | Cursor | JSON in ~/.cursor/mcp.json or project .cursor/mcp.json | [Cursor](https://cursor.com/docs/mcp) |
@@ -74,7 +74,7 @@ does not unlock the profile. WebKit retains its separate `stopPending` state.
 
 1. Find a profile, select its **UUID**, then call `profile_get`. Duplicate names are allowed.
 
-`profile_get`, creation and edit responses include `engineCapabilities`. Check these flags before offering an operation: `persistentSiteData`, `fingerprintConfiguration`, `proxy`, `mcpLaunch`, `extensions`, `browserDataBackup`. They describe supported operations, not the measured state of the current browser session. Chromium supports configured environment and these management operations; system WebKit supports separate persistent site data, metadata management and GUI-mediated MCP lifecycle. A WebKit proxy can be saved as profile metadata, but `proxy:false` means this build does not start that profile with a proxy; no WebKit request uses the saved setting. Use Chromium when a profile needs a proxy. `mcpLaunch:true` means the operation exists; WebKit additionally requires the same installed signed GUI, enabled access and explicit connection/profile approval. It does not mean unattended stdio can create GUI windows. WebKit uses macOS identity/language/timezone and does not implement full fingerprint substitution. A false flag means the client must explain the limitation rather than retrying the unsupported command.
+`profile_get`, creation and edit responses include `engineCapabilities`. These flags describe operations supported by the build, not measured state of a browser session. The current release runs Chromium; WebKit profiles from older versions remain stored but cannot be launched. Check capabilities before offering an operation and explain unavailable functionality instead of retrying it.
 2. Send `expectedRevision` exactly as a decimal **string**, not a floating-point JSON number.
 3. For folders/move, call `folder_list`; send `expectedOrganizationRevision` including explicit initial `null`. Checks happen inside the metadata transaction, preventing stale/ABA writes.
 4. Patches preserve omitted fields. `tags: []` clears tags. `folderID: null` unfiles; `proxy: null` disables.
@@ -125,7 +125,7 @@ Choose **either** separate fields **or** a line; never both. Separate fields:
 
 For `proxyLine`, also supply `kind` (`http`, `https`, `socks5`). Supported formats match the editor: `login:password@host:port`, `host:port:login:password`, `login:password:host:port`, protocol URLs and host:port. `order` can be `automatic`, `credentialsFirst` or `endpointFirst`; explicit order resolves ambiguity. Protocol and port must match the provider: HTTPS **proxy** is TLS to the proxy, not simply an HTTP proxy used to open HTTPS sites.
 
-For Chromium, authenticated HTTP, HTTPS and SOCKS5 use a separate local relay per profile. It reads the saved proxy password from Keychain and supplies it to the configured upstream; credentials do not enter Chromium arguments. SOCKS5 resolves destination names upstream. HTTPS upstream certificates are verified by macOS before authentication; failed trust never retries as plaintext HTTP. For WebKit, proxy settings are metadata only in current builds: the launch gate refuses a configured proxy before creating the window, so the browser cannot silently connect directly. The separate relay/owned-host design is not yet qualified by a signed-runtime launch and per-profile no-Direct network tests. Configuring a proxy is not proof of connectivity; `profile_check_proxy` is preflight only and availability is not proof of either browser's route.
+For Chromium, authenticated HTTP, HTTPS and SOCKS5 use a separate local relay per profile. It reads the saved proxy password from Keychain and supplies it to the configured upstream; credentials do not enter Chromium arguments. SOCKS5 resolves destination names upstream. HTTPS upstream certificates are verified by macOS before authentication; failed trust never retries as plaintext HTTP. WebKit is deferred in the current release. Configuring a proxy is not proof of connectivity; `profile_check_proxy` is preflight only and availability is not proof of either browser's route.
 
 Passwords are accepted as write-only input and stored in Keychain. The selected AI client may send your input to its model or retain chat history: enter secrets only in a trusted client. Responses omit passwords, proxy usernames/endpoints, notes and private filesystem paths. Configured start URLs are returned and may contain private query values; avoid secrets in start URLs.
 
@@ -141,21 +141,11 @@ Passwords are accepted as write-only input and stored in Keychain. The selected 
 
 ## WebKit windows through AI — development slice
 
-Available from published **0.8.17 (129)** on GitHub. The section anchor is retained for existing links. Exact signed GUI lifecycle and public/downloaded archive checks passed in the scope of the [release report](../releases/v0.8.17.json). The browser.free guide update is still pending. A real external AI-client integration and page observation are separate, unqualified scopes.
-
-1. Open the same installed NeAntik version used by the AI configuration.
-2. In **Help → MCP → Окна WebKit через AI**, enable WebKit access.
-3. Ask the AI to start a WebKit profile. The first call returns `gui_consent_required` immediately.
-4. In NeAntik, select the profiles that this connection may use, then click **Разрешить выбранные профили**. Repeat the start request intentionally with the current revision.
-5. `profile_status` reports `webKitState`. `profile_stop` closes only windows this connection launched. Poll until `stopped`; `stopPending` and `saveFailed` are not a completed close.
-
-Approval is temporary and scoped to selected profile IDs. Reconnecting, restarting the GUI or updating its executable does not inherit another connection's windows. Revoking access/EOF leaves windows open for manual use. Quitting NeAntik revokes control first, then saves/closes its WebKit windows; a failed save postpones quit. This private local Unix socket has no TCP port, web transport, shell, arbitrary JS, page reads, cookies or password reads. Signed executable and kernel peer checks supplement explicit human consent; they do not replace it.
-
-Example: «Запусти мой WebKit-профиль Магазин. Если нужно разрешение, скажи мне, где его подтвердить». After approval: «Повтори запуск с актуальной ревизией. Затем останови своё окно и дождись stopped».
+WebKit is **not available in the current Chromium-only release**. Version 0.8.17 included an experimental GUI-mediated lifecycle; its [historical report](../releases/v0.8.17.json) describes that version only. The section anchor is retained for existing links. Previously saved WebKit profiles remain stored, but cannot be launched in the current build.
 
 ## FAQ
 
-**Must the GUI be running?** For WebKit start/status/stop, yes: leave NeAntik open and approve the connection. Chromium and metadata operations use the stdio process without the GUI. GUI updates external changes without replacing drafts.
+**Must the GUI be running?** Chromium and metadata operations use the stdio process without the GUI. WebKit is unavailable in the current release. GUI updates external changes without replacing drafts.
 
 **Can I stop a browser after reconnecting?** It belongs to the earlier session. Close it manually. NeAntik does not send signals to an unowned/reused PID. A stop response can be pending; only observed `stopped` confirms completion.
 

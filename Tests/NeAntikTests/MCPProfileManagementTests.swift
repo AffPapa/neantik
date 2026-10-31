@@ -126,6 +126,18 @@ struct MCPProfileManagementTests {
         #expect(proxy.contains("does not prove the browser route"))
     }
 
+    @Test func engineCapabilitiesDoNotAdvertiseUnavailableEngines() {
+        for engine in [BrowserEngine.chromium, .webkit] {
+            let capabilities = engine.managementCapabilities
+            #expect(capabilities.count == 6)
+            if !engine.isAvailableInBuild {
+                #expect(capabilities.values.allSatisfy { !$0 })
+            } else {
+                #expect(capabilities["mcpLaunch"] == true)
+            }
+        }
+    }
+
     @Test func webKitCreationMetadataAndProxyCredentialManagementStayProfileScoped() async throws {
         guard BrowserEngine.webkit.isAvailableInBuild else { return }
         let (root, engine, backend) = try fixture()
@@ -278,6 +290,22 @@ struct MCPProfileManagementTests {
         #expect(first["folderID"] as? String == folder.id.uuidString)
         #expect(second["folderID"] is NSNull && b.tags == ["other"])
         #expect(engine.processes.processState(for: a.id) == .stopped)
+    }
+
+    @Test func savedTemplateWithInitialNullOrganizationRevisionMatchesSchema() async throws {
+        let (root, engine, _) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let template = try UserProfileTemplate(name: "Fixture", profile: BrowserProfile(name: "Original"), folderID: nil)
+        _ = try await ManagerLibraryRepository(paths: engine.store.paths).update { $0.templates.append(template) }
+        let definition = try #require(MCPProfileManagement.definitions(allowsManagement: true).first { $0["name"] as? String == "profile_create" })
+        let properties = try #require((definition["inputSchema"] as? [String: Any])?["properties"] as? [String: Any])
+        let revision = try #require(properties["expectedOrganizationRevision"] as? [String: Any])
+        #expect(Set(try #require(revision["type"] as? [String])) == ["string", "null"])
+        let list = try await engine.call("template_list", [:])
+        #expect(list["organizationRevision"] is NSNull)
+        let result = try await engine.call("profile_create", ["name": "Created", "templateID": template.id.uuidString,
+            "expectedOrganizationRevision": list["organizationRevision"]!])
+        #expect(result["name"] as? String == "Created")
     }
 
     @Test func savedTemplateRejectsMissingCorruptAndStaleInputsWithoutPartialWrites() async throws {
@@ -452,7 +480,7 @@ struct MCPProfileManagementTests {
         defer { try? FileManager.default.removeItem(at: root) }
         // A backend that refuses every read detects accidental Keychain access.
         backend.failRead = true
-        for kind in ["chromium", "webkit"] {
+        for kind in BrowserEngine.allCases.map(\.rawValue) {
             let original = try await engine.call("profile_create", ["name": "Direct", "engine": kind])
             var args = request(original); args["name"] = "Direct copy"
             let copied = try await engine.call("profile_duplicate", args)
