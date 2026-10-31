@@ -3,6 +3,22 @@ import Testing
 @testable import NeAntik
 
 struct MCPStdioServerTests {
+    @Test func reusedToolResultPreservesEncodingOnBothSidesOfSizeLimit() throws {
+        let limit = MCPStdioServer.maximumToolPayloadBytes
+        for length in [32, limit / 2 - 500, limit / 2 + 500] {
+            let payload: [String: Any] = ["data": String(repeating: "x", count: length), "marker": "тест\n\"", "missing": NSNull()]
+            let payloadBytes = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
+            let oldRepresentation: [String: Any] = ["isError": false, "structuredContent": payload,
+                "content": [["type": "text", "text": String(decoding: payloadBytes, as: UTF8.self)]], "resultType": "complete"]
+            let oldBytes = try JSONSerialization.data(withJSONObject: oldRepresentation, options: [.sortedKeys])
+            let object = try MCPStdioServer.toolResultObject(payload)
+            let reusedBytes = try MCPStdioServer.encodedToolResult(object)
+            #expect(reusedBytes == oldBytes)
+            #expect(try MCPStdioServer.toolResult(payload) == oldBytes)
+            if length == limit / 2 - 500 { #expect(reusedBytes.count <= limit) }
+            if length == limit / 2 + 500 { #expect(reusedBytes.count > limit) }
+        }
+    }
     @Test func invalidIDsAndIncompleteInitializationAreRejected() throws {
         let root = URL(fileURLWithPath: "/private/tmp/neantik-mcp-unread")
         for id: Any in [NSNull(), 1.5, true] {

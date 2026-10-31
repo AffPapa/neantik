@@ -213,8 +213,9 @@ final class MCPManagementSession {
             if name == "profile_check_proxy" { ProxyAuditPhase.mark(.engineInitDone) }
             let result = try await engine!.call(name, params["arguments"] as? [String: Any] ?? [:])
             if name == "profile_check_proxy" { ProxyAuditPhase.mark(.responseBegin) }
-            guard try MCPStdioServer.toolResult(result).count <= MCPStdioServer.maximumToolPayloadBytes else { throw MCPProfileManagement.Failure.responseLimit }
-            let response = MCPStdioServer.response(id: id, result: try MCPStdioServer.toolResultObject(result))
+            let resultObject = try MCPStdioServer.toolResultObject(result)
+            guard try MCPStdioServer.encodedToolResult(resultObject).count <= MCPStdioServer.maximumToolPayloadBytes else { throw MCPProfileManagement.Failure.responseLimit }
+            let response = MCPStdioServer.response(id: id, result: resultObject)
             if name == "profile_check_proxy" { ProxyAuditPhase.mark(.responseDone) }
             return response
         } catch {

@@ -209,7 +209,10 @@ enum MCPStdioServer {
                 "content": [["type": "text", "text": String(decoding: bytes, as: UTF8.self)]]]
     }
     static func toolResult(_ payload: [String: Any]) throws -> Data {
-        var result = try toolResultObject(payload)
+        try encodedToolResult(toolResultObject(payload))
+    }
+    static func encodedToolResult(_ object: [String: Any]) throws -> Data {
+        var result = object
         result["resultType"] = "complete" // Include the larger modern representation in the cap.
         return try JSONSerialization.data(withJSONObject: result, options: [.sortedKeys])
     }
