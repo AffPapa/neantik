@@ -79,7 +79,7 @@ struct ProfileEnvironmentAccessibilityTests {
     }
 
     @Test
-    func inspectorPreservesAllFiveEnvironmentSections() {
+    func inspectorPreservesEnvironmentSectionsAndProtectionPassport() {
         let snapshot = ProfileEnvironmentInspector.snapshot(
             profile: BrowserProfile(name: "Accessibility"),
             runtime: nil,
@@ -88,6 +88,7 @@ struct ProfileEnvironmentAccessibilityTests {
 
         #expect(
             snapshot.sections.map(\.id) == [
+                "protection",
                 "route",
                 "fingerprint",
                 "webrtc",

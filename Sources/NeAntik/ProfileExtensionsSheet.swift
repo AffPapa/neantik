@@ -160,6 +160,7 @@ struct ProfileExtensionsSheet: View {
                 Text("Необязательные разрешения").font(.headline)
                 permissionList(record.optionalPermissions, empty: "Нет")
             }
+            ExtensionPermissionWarnings(requested: record.permissions, optional: record.optionalPermissions)
             Text("Это запросы из manifest, а не список выданных прав. Они не подтверждают безопасность расширения; фактический доступ смотри в Chromium.")
                 .font(.subheadline).foregroundStyle(.secondary)
         }.frame(maxWidth: .infinity, alignment: .leading)
@@ -337,6 +338,7 @@ private struct CRXPackagePreview: View {
                     Divider()
                     permissions("Запрошенные разрешения", inspection.permissions)
                     permissions("Необязательные разрешения", inspection.optionalPermissions)
+                    ExtensionPermissionWarnings(requested: inspection.permissions, optional: inspection.optionalPermissions)
                     if retained != nil { retainedInstructions }
                     if let prepared { preparedInstructions(prepared) }
                 }.frame(maxWidth: .infinity, alignment: .leading)
@@ -389,6 +391,32 @@ private struct CRXPackagePreview: View {
             ForEach(Array(values.enumerated()), id: \.offset) { _, value in
                 Text(value).font(.system(.subheadline, design: .monospaced)).textSelection(.enabled)
             }
+        }
+    }
+}
+
+private struct ExtensionPermissionWarnings: View {
+    let requested: [String]
+    let optional: [String]
+
+    var body: some View {
+        let requiredRisks = ExtensionPermissionRiskAssessment.warnings(for: requested)
+        let optionalRisks = ExtensionPermissionRiskAssessment.warnings(for: optional)
+        if !requiredRisks.isEmpty || !optionalRisks.isEmpty {
+            VStack(alignment: .leading, spacing: 7) {
+                Label("Возможности, требующие внимания", systemImage: "exclamationmark.shield")
+                    .font(.subheadline.weight(.semibold))
+                ForEach(requiredRisks) { risk in
+                    Text(risk.explanation).font(.subheadline)
+                }
+                ForEach(optionalRisks) { risk in
+                    Text("Необязательное право · " + risk.explanation).font(.subheadline)
+                }
+                Text("Это запрошенные возможности, а не доказательство выданных прав или вредоносности. Отсутствие предупреждения не гарантирует безопасность.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityElement(children: .contain)
         }
     }
 }

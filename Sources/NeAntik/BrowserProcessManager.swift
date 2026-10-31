@@ -567,7 +567,7 @@ enum BrowserLaunchBuilder {
 
     static func normalizedStartURL(_ value: String) -> URL {
         validatedStartURL(value) ??
-            URL(string: "https://www.google.com")!
+            URL(string: "about:blank")!
     }
 
     static func validatedStartURL(_ value: String) -> URL? {

@@ -4,6 +4,19 @@ import Testing
 
 struct ProfileEnvironmentInspectorTests {
     @Test
+    func protectionPassportPreservesEvidenceLimitsAndRedactsStartAddress() throws {
+        let profile = BrowserProfile(name: "Private passport", startURL: "https://example.invalid/?token=private-marker")
+        let snapshot = ProfileEnvironmentInspector.snapshot(profile: profile, runtime: nil, proxyHealth: nil)
+        let section = try #require(snapshot.sections.first { $0.id == "protection" })
+        let text = section.fields.map { $0.value + ($0.detail ?? "") }.joined(separator: "\n")
+        #expect(!text.contains("private-marker"))
+        #expect(!text.contains("example.invalid"))
+        #expect(try field("protection.start-page", in: snapshot).state == .configured)
+        #expect(try field("protection.linkability", in: snapshot).state == .unverified)
+        #expect(!section.fields.contains { $0.state == .observed })
+    }
+
+    @Test
     func snapshotUsesAllFiveEvidenceStatesWithoutSensitiveValues() throws {
         let now = Date(timeIntervalSince1970: 1_800_000_100)
         let observedAt = Date(timeIntervalSince1970: 1_800_000_000)

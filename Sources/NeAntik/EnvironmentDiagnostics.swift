@@ -233,6 +233,7 @@ enum ProfileEnvironmentInspector {
             profileID: profile.id,
             generatedAt: now,
             sections: [
+                protectionSection(profile: profile),
                 routeSection(
                     policy: policy,
                     proxyHealth: proxyHealth,
@@ -267,6 +268,46 @@ enum ProfileEnvironmentInspector {
             siteCompatibility: siteCompatibility?.isUsable(
                 for: profile, runtime: runtime, now: now
             ) == true ? siteCompatibility : nil
+        )
+    }
+
+    private static func protectionSection(
+        profile: BrowserProfile
+    ) -> EnvironmentDiagnosticSection {
+        let localStart = BrowserStartURL.validate(profile.startURL)?.absoluteString == "about:blank"
+        let restoresSession = profile.startupMode == .restoreSession
+        return EnvironmentDiagnosticSection(
+            id: "protection",
+            title: "Паспорт защиты",
+            fields: [
+                EnvironmentDiagnosticField(
+                    id: "protection.start-page",
+                    title: "При запуске",
+                    value: restoresSession ? "Сохранённые вкладки" :
+                        (localStart ? "Локальная пустая страница" : "Выбранная веб-страница"),
+                    state: .configured,
+                    detail: restoresSession
+                        ? "Восстановленные сайты могут обращаться в сеть. Стартовый адрес используется при первом запуске."
+                        : (localStart
+                            ? "Пустая страница не отправляет запросы внешнему чекеру. Это не проверка всего фонового трафика браузера."
+                            : "Открытие выбранного сайта передаёт ему обычные данные соединения. Полный адрес здесь не раскрывается.")
+                ),
+                EnvironmentDiagnosticField(
+                    id: "protection.malware",
+                    title: "Проверка вредоносных сайтов NeAntik",
+                    value: "Не подключена",
+                    state: .unavailable,
+                    severity: .attention,
+                    detail: "В поставляемом движке Safe Browsing отключён. Проверка отпечатка и наличие прокси не защищают от фишинга или вредоносных загрузок."
+                ),
+                EnvironmentDiagnosticField(
+                    id: "protection.linkability",
+                    title: "Связывание профилей",
+                    value: "Полная несопоставимость не подтверждена",
+                    state: .unverified,
+                    detail: "Общий внешний IP, одинаковые аккаунты, файлы и поведение могут связывать посещения даже при разных настройках среды."
+                )
+            ]
         )
     }
 

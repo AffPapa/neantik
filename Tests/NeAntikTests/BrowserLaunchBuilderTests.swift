@@ -25,6 +25,26 @@ private final class RuntimeInspectionRecorder: @unchecked Sendable {
 }
 
 struct BrowserLaunchBuilderTests {
+    @Test
+    func newProfilesStartLocallyWithoutChangingStoredExternalChoices() throws {
+        let fresh = BrowserProfile(name: "Private default")
+        let arguments = BrowserLaunchBuilder.arguments(
+            profile: fresh,
+            browserDataDirectory: URL(fileURLWithPath: "/tmp/neantik-private-default")
+        )
+        #expect(arguments.last == "about:blank")
+        #expect(!arguments.contains(where: { $0.hasPrefix("https://") || $0.hasPrefix("http://") }))
+
+        let saved = BrowserProfile(name: "Existing choice", startURL: "https://example.invalid/chosen")
+        let restored = try JSONDecoder().decode(BrowserProfile.self, from: JSONEncoder().encode(saved))
+        #expect(restored.startURL == saved.startURL)
+        let restoredArguments = BrowserLaunchBuilder.arguments(
+            profile: restored,
+            browserDataDirectory: URL(fileURLWithPath: "/tmp/neantik-existing-default")
+        )
+        #expect(restoredArguments.last == saved.startURL)
+    }
+
     @Test func bareHostPortsWorkWithoutAllowingUnknownSchemesOrCredentials() {
         for value in ["example.com:8443/path?x=1#part", "localhost:8080", "127.0.0.1:8080", "[::1]:8080/path", "[2001:db8::1]:443"] {
             #expect(BrowserLaunchBuilder.validatedStartURL(value)?.absoluteString == "https://" + value)
@@ -354,7 +374,7 @@ struct BrowserLaunchBuilderTests {
         #expect(
             BrowserLaunchBuilder
                 .normalizedStartURL("javascript:alert(1)")
-                .absoluteString == "https://www.google.com"
+                .absoluteString == "about:blank"
         )
     }
 
@@ -853,12 +873,12 @@ struct BrowserLaunchBuilderTests {
         #expect(
             BrowserLaunchBuilder
                 .normalizedStartURL("https://")
-                .absoluteString == "https://www.google.com"
+                .absoluteString == "about:blank"
         )
         #expect(
             BrowserLaunchBuilder
                 .normalizedStartURL("https://user:pass@example.com")
-                .absoluteString == "https://www.google.com"
+                .absoluteString == "about:blank"
         )
         #expect(BrowserLaunchBuilder.validatedStartURL("https://") == nil)
         #expect(
