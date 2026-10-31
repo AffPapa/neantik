@@ -1,10 +1,13 @@
 # NeAntik changelog
 
-## Direct 0.9.1 (201) — public alpha candidate, not released
+## Direct 0.9.2 (202) — development candidate, not released
 
-- The current 0.9.1 public alpha candidate is scoped to Chromium profiles. Previously created WebKit profiles and data are retained, while launching or duplicating those profiles is unavailable in this candidate.
-- Chromium 156.0.8078.80 has an ARM64 source build and bound source/dependency evidence. The integrated manager candidate, exact profile/proxy checks, source/relink, Developer ID signing, notarization, Gatekeeper and public release remain unqualified.
-- The corrected runtime uses FFmpeg's portable CRC implementation and excludes the GPL-header ARM64 CRC assembly object. Its rebuilt object and relinked framework have separate source bindings; all seven upstream CRC reference vectors pass. This is specific build evidence, not full release or license qualification.
+- Privacy hardening is in progress. New-profile private start and protection disclosure/extension-permission warnings have scoped source tests. Versioned privacy intent prevents older managers from silently ignoring new policies. These statements are not native/release qualification.
+- Native RTC/permissions/LAN, graphics/viewport and bundled domain-protection work remains under qualification. No promise of complete anonymity, WebKit support, or completed20-item release is made.
+
+## Direct 0.9.1 (201) — published public alpha
+
+- Chromium156.0.8078.80, owned WebKit deferred. Published ZIP/DMG and scoped evidence are recorded in [the public release record](releases/v0.9.1.json). Compiled source39e3814 remains immutable; this feature branch is subsequent development.
 
 ## Direct 1.0.0 (200) — development candidate, not released
 

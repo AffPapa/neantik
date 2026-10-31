@@ -231,3 +231,12 @@ diagnostic fixture uses its explicit target without changing this setting.
 отпечатка. Скачиваемые шрифты сайтов продолжают работать. WebKit эту настройку
 не поддерживает; он остаётся системным движком без полного управления fingerprint.
 Первый переход со старой версии на 0.8.18 выполняется вручную через DMG/ZIP.
+
+## Development privacy-policy contract
+
+The unqualified0.9.2 source adds `changes.privacyPreset` (`legacy`, `balanced`,
+`strict`) to create/update. Missing fields preserve existing saved policy.
+Returned `privacyPolicyIntent` is saved intent only, never proof that a runtime
+applied or measured it. A profile requiring unsupported native controls refuses
+launch. Config export6, template library5 and profile workspace7 prevent older
+managers from ignoring these policies; old documents remain legacy.

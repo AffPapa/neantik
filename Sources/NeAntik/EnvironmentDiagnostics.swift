@@ -279,7 +279,16 @@ enum ProfileEnvironmentInspector {
         return EnvironmentDiagnosticSection(
             id: "protection",
             title: "Паспорт защиты",
-            fields: [
+            fields: (profile.privacyPolicy == .legacy ? [] : [
+                EnvironmentDiagnosticField(
+                    id: "protection.policy",
+                    title: "Новая политика защиты",
+                    value: "Требуется квалификация совместимого движка",
+                    state: .unavailable,
+                    severity: .blocking,
+                    detail: "Сохранённая политика не считается применённой. Запуск с неподдерживаемой политикой запрещён, без возврата к прежним настройкам."
+                )
+            ]) + [
                 EnvironmentDiagnosticField(
                     id: "protection.start-page",
                     title: "При запуске",

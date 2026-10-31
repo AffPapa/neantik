@@ -160,6 +160,7 @@ struct ProfileEditorView: View {
   @State private var startURL: String
   @State private var engine: BrowserEngine
   @State private var fontPolicy: BrowserFontPolicy
+  @State private var privacyPolicy: BrowserPrivacyPolicy
   @State private var webKitMediaPolicy: WebKitMediaPolicy
   @State private var webKitBlockPeerConnections: Bool
   @State private var startupMode: BrowserStartupMode
@@ -192,7 +193,7 @@ struct ProfileEditorView: View {
   private var isDetectingProtocol: Bool { protocolDetectionTask != nil }
   @State private var showsAdvancedOptions = false
   private var hasUnsavedChanges: Bool {
-    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue, engine.rawValue, webKitMediaPolicy.rawValue, String(webKitBlockPeerConnections), fontPolicy.rawValue,
+    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue, engine.rawValue, webKitMediaPolicy.rawValue, String(webKitBlockPeerConnections), fontPolicy.rawValue, privacyPolicy.draftToken,
       String(usesProxy), proxyKind.rawValue, proxyHost, proxyPort, proxyUsername,
       proxyPassword, proxyImportText], tags: tags, folderID: selectedFolderID)
   }
@@ -258,6 +259,7 @@ struct ProfileEditorView: View {
     _startURL = State(initialValue: profile.startURL)
     _engine = State(initialValue: profile.engine)
     _fontPolicy = State(initialValue: profile.fontPolicy)
+    _privacyPolicy = State(initialValue: profile.privacyPolicy)
     _webKitMediaPolicy = State(initialValue: profile.webKitMediaPolicy)
     _webKitBlockPeerConnections = State(initialValue: profile.webKitBlockPeerConnections)
     _startupMode = State(initialValue: profile.startupMode)
@@ -290,7 +292,7 @@ struct ProfileEditorView: View {
       }
     }
     _initialDraft = State(initialValue: ProfileEditorDraft(values: [profile.name, profile.colorHex, profile.displaySymbolName,
-      profile.note, profile.startURL, profile.startupMode.rawValue, profile.engine.rawValue, profile.webKitMediaPolicy.rawValue, String(profile.webKitBlockPeerConnections), profile.fontPolicy.rawValue, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
+      profile.note, profile.startURL, profile.startupMode.rawValue, profile.engine.rawValue, profile.webKitMediaPolicy.rawValue, String(profile.webKitBlockPeerConnections), profile.fontPolicy.rawValue, profile.privacyPolicy.draftToken, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
       profile.proxy?.host ?? "", profile.proxy.map { String($0.port) } ?? "",
       profile.proxy?.username ?? "", originalProxyPassword ?? "", ""], tags: profile.tags,
       folderID: folders.contains { $0.id == initialFolderID } ? initialFolderID : nil))
@@ -1299,6 +1301,7 @@ struct ProfileEditorView: View {
       #endif
       profile.engine = engine
       profile.fontPolicy = engine == .chromium ? fontPolicy : .native
+      profile.privacyPolicy = privacyPolicy
       profile.webKitMediaPolicy = engine == .webkit ? webKitMediaPolicy : .ask
       profile.webKitBlockPeerConnections = engine == .webkit && webKitBlockPeerConnections
       profile.name = cleanName

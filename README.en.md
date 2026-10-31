@@ -8,7 +8,7 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-**0.9.0 (140), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.9.0); the public ZIP/DMG sizes and SHA-256 digests are recorded in the [machine-readable release report](releases/v0.9.0.json). The last synchronized check placed [browser.free](https://browser.free/) at Sites159. Chromium is 156.0.8078.48; system WebKit remains a preview, while bundled owned WebKit and its proxy are not yet qualified. The 1.0 program remains open.
+**0.9.1 (201), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.9.1); the public ZIP/DMG sizes and SHA-256 digests are recorded in the [machine-readable release report](releases/v0.9.1.json). The last synchronized check placed [browser.free](https://browser.free/) at Sites160. Chromium is 156.0.8078.80; WebKit is deferred and existing WebKit profile data is retained. The 1.0 program remains open.
 
 ## Security advisory
 
@@ -21,7 +21,7 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.9.0 (140), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.9.0). Published ZIP/DMG sizes and SHA-256 digests are recorded in the [machine-readable report](releases/v0.9.0.json); this summary does not imply a new downloaded-byte check.
+Latest published release: [NeAntik 0.9.1 (201), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.9.1). Published ZIP/DMG sizes and SHA-256 digests are recorded in the [machine-readable report](releases/v0.9.1.json); this summary does not imply a new downloaded-byte check.
 
 **The 0.8.25 update was manual via DMG/ZIP.** Quit before replacing the app; keep profile folders. An installed-updater transition is not qualified by that release.
 
@@ -29,7 +29,7 @@ Latest published release: [NeAntik 0.9.0 (140), public alpha](https://github.com
 - Chromium `156.0.8078.48`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-Direct downloads: [GitHub — 0.9.0](https://github.com/AffPapa/neantik/releases/tag/v0.9.0). [browser.free](https://browser.free) is updated separately.
+Direct downloads: [GitHub — 0.9.1](https://github.com/AffPapa/neantik/releases/tag/v0.9.1). [browser.free](https://browser.free) is updated separately.
 
 The description below reflects the manager contract and this source branch;
 the exact public binary contents are defined by its release notes and assets.

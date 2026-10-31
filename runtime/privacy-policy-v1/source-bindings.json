@@ -1,0 +1,26 @@
+{
+  "createdAt": "2026-10-31T11:54:22.522610+00:00",
+  "status": "partial-compiled-unqualified",
+  "source": "/private/tmp/neantik-privacy20-runtime",
+  "preimageOrigin": "V1011 retained recipient source; independent APFS clone",
+  "files": {
+    "third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc": {
+      "beforeSHA256": "12841e22e0c67433b761e06159c5f0705e0a00057e423229b02197f49a9d7ba0",
+      "afterSHA256": "3517fc7c8777280ead4c93e6dbed15d203f240859f7961a0879480dce3bd1f1f"
+    },
+    "components/content_settings/core/browser/host_content_settings_map.cc": {
+      "beforeSHA256": "cf3835835a07b9515dc1037ff97fd0011d4f633100610a00776d58231e47d031",
+      "afterSHA256": "85b98cdebe40e62a8a7a46e7af7349f4bd33d12619682b41ba804820199e217a"
+    },
+    "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": {
+      "beforeSHA256": "1b52a8cd6f1b632882374e774dadf389d4d3c49426531e677dca477ea6fe9444",
+      "afterSHA256": "1c276f770b906e9df06be2027cf03cc7cb65c8ea5de7a8dec6f6c4a4cd5d4c45"
+    },
+    "chrome/browser/ui/views/frame/contents_container_view.cc": {
+      "beforeSHA256": "22c0ad7c456a6c3552e5b44a2cfe0f9bc901f9f4054e94734592902751bffae0",
+      "afterSHA256": "3fea2e76e61e67a00acd8f63e5721302107e3bf1461d3b9b928583e39d1b6163"
+    }
+  },
+  "nativeProof": false,
+  "managerAdmission": "No legacy runtime capability admitted"
+}

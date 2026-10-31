@@ -16,4 +16,6 @@ Chromium перед каждой прокси-сессией выполняет 
 
 ## Исторический срез
 
+Snapshot updated after publication: [0.9.1 (201)](https://github.com/AffPapa/neantik/releases/tag/v0.9.1), Chromium156.0.8078.80, is published public alpha. [`releases/v0.9.1.json`](../releases/v0.9.1.json) records downloaded-byte/Apple/scope evidence. Sites160 is live; WebKit remains deferred. Earlier snapshots below remain history.
+
 As recorded in [`releases/v0.9.0.json`](../releases/v0.9.0.json), [0.9.0 (140)](https://github.com/AffPapa/neantik/releases/tag/v0.9.0) is a public alpha for Apple Silicon using Chromium 156.0.8078.48. It includes system WebKit preview only; owned WebKit and its proxy are not qualified. This snapshot does not imply that 1.0 has shipped or assign a release date.

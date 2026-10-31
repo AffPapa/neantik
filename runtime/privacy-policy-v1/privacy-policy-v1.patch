@@ -1,0 +1,165 @@
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
+@@ -39,6 +39,7 @@
+ #include <utility>
+ #include <vector>
+ 
++#include "base/environment.h"
+ #include "base/check.h"
+ #include "base/check_op.h"
+ #include "base/containers/to_vector.h"
+@@ -685,6 +686,16 @@
+     ExecutionContext* context,
+     const RTCConfiguration* rtc_configuration,
+     ExceptionState& exception_state) {
++  // Profile policy is set by the manager's allowlisted environment, before
++  // any PeerConnection handler or network-dependent object is constructed.
++  const auto rtc_policy =
++      base::Environment::Create()->GetVar("NEANTIK_PROFILE_RTC");
++  if (rtc_policy && *rtc_policy == "off") {
++    exception_state.ThrowDOMException(
++        DOMExceptionCode::kNotAllowedError,
++        "WebRTC is disabled for this profile.");
++    return nullptr;
++  }
+   if (context->IsContextDestroyed()) {
+     exception_state.ThrowDOMException(
+         DOMExceptionCode::kNotSupportedError,
+--- a/components/content_settings/core/browser/host_content_settings_map.cc
++++ b/components/content_settings/core/browser/host_content_settings_map.cc
+@@ -19,6 +19,7 @@
+ #include "base/containers/fixed_flat_map.h"
+ #include "base/containers/flat_map.h"
+ #include "base/debug/crash_logging.h"
++#include "base/environment.h"
+ #include "base/feature_list.h"
+ #include "base/functional/bind.h"
+ #include "base/metrics/histogram_functions.h"
+@@ -83,6 +84,39 @@
+ 
+ using ProviderType = content_settings::ProviderType;
+ 
++// Effective profile policy only: never overwrite saved user grants or defaults.
++// No environment value preserves ordinary Chromium behavior.
++std::optional<PermissionSetting> NeAntikProfilePermissionOverride(
++    ContentSettingsType type) {
++  if (!PermissionSettingsRegistry::GetInstance()->Get(type)) {
++    return std::nullopt;
++  }
++  auto environment = base::Environment::Create();
++  const auto lan = environment->GetVar("NEANTIK_PROFILE_LAN");
++  if (lan && *lan == "deny" &&
++      (type == ContentSettingsType::LOCAL_NETWORK_ACCESS ||
++       type == ContentSettingsType::LOCAL_NETWORK ||
++       type == ContentSettingsType::LOOPBACK_NETWORK)) {
++    return CONTENT_SETTING_BLOCK;
++  }
++  const auto media = environment->GetVar("NEANTIK_PROFILE_MEDIA");
++  if (media && *media == "deny") {
++    switch (type) {
++      case ContentSettingsType::MEDIASTREAM_MIC:
++      case ContentSettingsType::MEDIASTREAM_CAMERA:
++      case ContentSettingsType::GEOLOCATION:
++      case ContentSettingsType::NOTIFICATIONS:
++        return CONTENT_SETTING_BLOCK;
++      case ContentSettingsType::GEOLOCATION_WITH_OPTIONS:
++        return GeolocationSetting(PermissionOption::kDenied,
++                                  PermissionOption::kDenied);
++      default:
++        break;
++    }
++  }
++  return std::nullopt;
++}
++
+ struct ProviderNamesSourceMapEntry {
+   const char* provider_name;
+   content_settings::SettingSource provider_source;
+@@ -438,6 +472,12 @@
+     ContentSettingsType content_type,
+     ProviderType* provider_id) const {
+   CheckPermissionTypeRegistration(content_type);
++  if (auto policy = NeAntikProfilePermissionOverride(content_type)) {
++    if (provider_id) {
++      *provider_id = ProviderType::kPolicyProvider;
++    }
++    return *policy;
++  }
+   ProviderType provider_type = ProviderType::kNone;
+   auto permission_setting =
+       GetDefaultPermissionSettingInternal(content_type, &provider_type);
+@@ -1102,6 +1142,15 @@
+     }
+   }
+ 
++  if (auto policy = NeAntikProfilePermissionOverride(content_type)) {
++    if (info) {
++      info->source = SettingSource::kPolicy;
++      info->primary_pattern = ContentSettingsPattern::Wildcard();
++      info->secondary_pattern = ContentSettingsPattern::Wildcard();
++    }
++    return content_settings::PermissionSettingToValue(permission_settings_info,
++                                                    *policy);
++  }
+   return GetWebsiteSettingInternal(primary_url, secondary_url, content_type,
+                                    ProviderFilter::kAny, info);
+ }
+--- a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
++++ b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
+@@ -46,6 +46,7 @@
+ #include "base/trace_event/memory_dump_manager.h"
+ #include "base/trace_event/trace_event.h"
+ #include "build/build_config.h"
++#include "base/environment.h"
+ #include "components/ungoogled/neantik_apple_device_tuples.h"
+ #include "components/ungoogled/nevision_fingerprint.h"
+ #include "components/viz/common/gpu/raster_context_provider.h"
+@@ -3847,6 +3848,13 @@
+ 
+ bool WebGLRenderingContextBase::ExtensionSupportedAndAllowed(
+     const ExtensionTracker* tracker) {
++  const auto graphics_policy =
++      base::Environment::Create()->GetVar("NEANTIK_PROFILE_GRAPHICS");
++  if (graphics_policy && *graphics_policy == "minimal" &&
++      DeprecatedEqualIgnoringCase(tracker->ExtensionName(),
++                                 WebGLDebugRendererInfo::ExtensionName())) {
++    return false;
++  }
+   if (tracker->Draft() &&
+       !RuntimeEnabledFeatures::WebGLDraftExtensionsEnabled())
+     return false;
+--- a/chrome/browser/ui/views/frame/contents_container_view.cc
++++ b/chrome/browser/ui/views/frame/contents_container_view.cc
+@@ -8,6 +8,7 @@
+ #include <optional>
+ #include <utility>
+ 
++#include "base/environment.h"
+ #include "base/i18n/rtl.h"
+ #include "chrome/browser/actor/ui/actor_overlay_web_view.h"
+ #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
+@@ -523,6 +524,24 @@
+                                        footer_rect);
+   }
+ 
++  // Quantize the real page viewport, never substitute JavaScript geometry.
++  // Developer/fullscreen/animated target layouts keep Chromium's own bounds.
++  const auto viewport_policy =
++      base::Environment::Create()->GetVar("NEANTIK_PROFILE_VIEWPORT");
++  if (viewport_policy && *viewport_policy == "standard" &&
++      !devtools_web_view_->GetVisible() && !browser_view_->IsFullscreen() &&
++      !target_content_bounds_.has_value()) {
++    const gfx::Rect available = contents_view_bounds;
++    const int bucket_width = (available.width() / 200) * 200;
++    const int bucket_height = (available.height() / 100) * 100;
++    if (bucket_width > 0 && bucket_height > 0) {
++      contents_view_bounds =
++          gfx::Rect(available.x() + (available.width() - bucket_width) / 2,
++                    available.y() + (available.height() - bucket_height) / 2,
++                    bucket_width, bucket_height);
++    }
++  }
++
+   const auto& contents_rect = GetMirroredRect(contents_view_bounds);
+   layouts.child_layouts.emplace_back(
+       contents_view_.get(), contents_view_->GetVisible(), contents_rect);

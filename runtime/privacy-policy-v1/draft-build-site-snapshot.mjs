@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import {parseArgs} from 'node:util';
+import {parseDomains, threatRules, trackerRules, queryCleanupRules} from '../../Resources/SiteProtection/policy.mjs';
+const root = new URL('../../Resources/SiteProtection/', import.meta.url);
+const {values} = parseArgs({options:{input:{type:'string'},provenance:{type:'string'}}});
+if (!values.input || !values.provenance) throw Error('Pass --input FILE and --provenance JSON from a bounded HTTPS source fetch.');
+const input = fs.readFileSync(values.input);
+const domains = parseDomains(input.toString('utf8'), {minimumDomains: 1000});
+const provenance = JSON.parse(fs.readFileSync(values.provenance, 'utf8'));if (crypto.createHash('sha256').update(input).digest('hex') !== provenance.sha256 || provenance.source !== 'https://hole.cert.pl/domains/v2/domains.txt') throw Error('Source binding mismatch');
+provenance.domains=domains.length;
+const save=(name,x)=>fs.writeFileSync(new URL(name,root),JSON.stringify(x)+'\n');
+save('baseline-provenance.json',provenance);save('cert-rules.json',threatRules(domains));save('tracker-rules.json',trackerRules());save('query-rules.json',queryCleanupRules(true));
+save('profile-policy.json',{schemaVersion:1,trackingParameterCleanup:true});
+const key=JSON.parse(fs.readFileSync(new URL('manifest.json',root),'utf8')).key;
+save('manifest.json',{manifest_version:3,name:'NeAntik — защита сайтов',version:'1.0.0',key,description:'Дополнительный фильтр известных опасных доменов и ограниченного списка трекеров. Без отправки посещённых URL.',minimum_chrome_version:'156',permissions:['declarativeNetRequest','declarativeNetRequestFeedback','storage','alarms'],host_permissions:['http://*/*','https://*/*'],background:{service_worker:'worker.mjs',type:'module'},action:{default_title:'Защита сайтов NeAntik',default_popup:'popup.html'},declarative_net_request:{rule_resources:[{id:'cert_baseline',enabled:true,path:'cert-rules.json'},{id:'trackers',enabled:true,path:'tracker-rules.json'},{id:'query_cleanup',enabled:false,path:'query-rules.json'}]},content_security_policy:{extension_pages:"script-src 'self'; object-src 'none'"}});
+console.log(JSON.stringify({domains:domains.length,baselineRules:threatRules(domains).length,source:provenance.source}));

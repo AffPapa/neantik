@@ -36,6 +36,14 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
 
     /// Recheck current bytes at the common launch boundary. The cached UI
     /// capability is not authority after a runtime replacement or edit.
+    static func validatePrivacyPolicy(_ profile: BrowserProfile, runtime: BrowserRuntime? = nil) throws {
+        // Staged policies cannot reach a legacy runtime. This guard is replaced
+        // only by a source-bound capability after the native consumers pass.
+        guard profile.privacyPolicy == .legacy else {
+            throw UnsupportedBrowserPrivacyPolicyError()
+        }
+    }
+
     static func validateFontPolicy(_ profile: BrowserProfile, runtime: BrowserRuntime? = nil) throws {
         if profile.fontPolicy == .native { return }
         guard profile.engine == .chromium, let runtime,

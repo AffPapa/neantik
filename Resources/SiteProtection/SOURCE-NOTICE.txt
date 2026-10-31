@@ -1,0 +1,15 @@
+NeAntik domain protection baseline
+
+Source: CERT Polska Dangerous Websites Warning List
+https://cert.pl/en/warning-list/
+https://hole.cert.pl/domains/v2/domains.txt
+
+CERT permits use of its list, including commercial use. CERT does not endorse
+NeAntik. The source primarily covers known campaigns targeting Polish users;
+it is not a complete malware detector. HTTPS transport is not a publisher
+signature. The public snapshot provenance is in baseline-provenance.json.
+The extension refreshes the list every five minutes while the browser runs.
+No visited URL, page content, cookie or account is sent to the list provider.
+
+The small tracker list is independently maintained here and is not EasyPrivacy.
+Other extension code: NeAntik project license.

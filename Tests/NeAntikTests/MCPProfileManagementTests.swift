@@ -4,6 +4,21 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func privacyPresetIsSavedIntentWithExplicitOutputSchema() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let created = try await engine.call("profile_create", ["name": "Own privacy profile", "changes": ["privacyPreset": "strict"]])
+        let intent = try #require(created["privacyPolicyIntent"] as? [String: Any])
+        #expect(intent["preset"] as? String == "strict")
+        #expect(intent["evidence"] as? String == "saved-intent; not native qualification")
+        let properties = try #require(MCPOutputSchemas.schema(for: "profile_get")["properties"] as? [String: Any])
+        #expect(properties["privacyPolicyIntent"] != nil)
+        let id = try #require(UUID(uuidString: created["id"] as! String))
+        #expect(engine.store.profile(withID: id)?.privacyPolicy == .strict)
+        #expect(throws: (any Error).self) {
+            try BrowserLaunchPolicy.validatePrivacyPolicy(try #require(engine.store.profile(withID: id)))
+        }
+    }
+
     @Test func closingIsExplicitInStatusSchemaAndRepeatedStopDoesNotSignalAgain() async throws {
         let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
         let engine = MCPProfileManagement(root: fixture.paths.rootDirectory, allowsManagement: true,

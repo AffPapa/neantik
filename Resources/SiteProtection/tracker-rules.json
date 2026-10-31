@@ -1,0 +1,1 @@
+[{"id":1000,"priority":100,"action":{"type":"block"},"condition":{"requestDomains":["google-analytics.com","stats.g.doubleclick.net","bat.bing.com","pixel.quantserve.com","analytics.twitter.com"],"domainType":"thirdParty","excludedResourceTypes":["main_frame"]}}]

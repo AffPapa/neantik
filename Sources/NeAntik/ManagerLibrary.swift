@@ -11,6 +11,7 @@ struct UserProfileTemplate: Codable, Identifiable, Equatable, Sendable {
     let engine: BrowserEngine?
     let webKitMediaPolicy: WebKitMediaPolicy?
     var webKitBlockPeerConnections: Bool?
+    var privacyPolicy: BrowserPrivacyPolicy?
 
     init(name: String, profile: BrowserProfile, folderID: UUID?) throws {
         guard let name = ProfileFolder.normalizedName(name),
@@ -26,6 +27,7 @@ struct UserProfileTemplate: Codable, Identifiable, Equatable, Sendable {
         self.engine = profile.engine
         self.webKitMediaPolicy = profile.webKitMediaPolicy
         self.webKitBlockPeerConnections = profile.webKitBlockPeerConnections
+        self.privacyPolicy = profile.privacyPolicy
     }
 
     // A template is reusable metadata, not a place to retain URL credentials
@@ -40,7 +42,7 @@ struct UserProfileTemplate: Codable, Identifiable, Equatable, Sendable {
     }
 
     func makeProfile() -> BrowserProfile {
-        BrowserProfile(name: name, tags: tags, startURL: startURL, startupMode: startupMode ?? .startPage, engine: engine ?? .chromium, webKitMediaPolicy: webKitMediaPolicy ?? .ask, webKitBlockPeerConnections: webKitBlockPeerConnections ?? false)
+        BrowserProfile(name: name, tags: tags, startURL: startURL, startupMode: startupMode ?? .startPage, engine: engine ?? .chromium, webKitMediaPolicy: webKitMediaPolicy ?? .ask, webKitBlockPeerConnections: webKitBlockPeerConnections ?? false, privacyPolicy: privacyPolicy ?? .legacy)
     }
 }
 
@@ -122,7 +124,10 @@ struct ManagerLibraryDocument: Codable, Equatable, Sendable {
     }
 
     func validate() throws {
-        guard [1, 2, 3, 4].contains(schemaVersion),
+        guard [1, 2, 3, 4, 5].contains(schemaVersion),
+              (schemaVersion >= 5 || !templates.contains(where: { ($0.privacyPolicy ?? .legacy) != .legacy })),
+              (schemaVersion < 5 || !templates.contains(where: { $0.privacyPolicy == nil })),
+              !templates.contains(where: { ($0.engine ?? .chromium) != .chromium && ($0.privacyPolicy ?? .legacy) != .legacy }),
               (schemaVersion >= 2 || !templates.contains(where: { $0.engine == .webkit })),
               (schemaVersion >= 3 || !templates.contains(where: { $0.webKitMediaPolicy == .deny })),
               (schemaVersion >= 4 || !templates.contains(where: { $0.webKitBlockPeerConnections == true })),
@@ -193,12 +198,17 @@ actor ManagerLibraryRepository {
             var document = try read()
             try change(&document)
             // Older managers must not turn a WebKit template into Chromium.
-            if document.templates.contains(where: { $0.webKitBlockPeerConnections == true }) {
+            if document.templates.contains(where: { $0.webKitBlockPeerConnections == true || ($0.privacyPolicy ?? .legacy) != .legacy }) {
                 for index in document.templates.indices where document.templates[index].webKitBlockPeerConnections == nil {
                     document.templates[index].webKitBlockPeerConnections = false
                 }
             }
-            document.schemaVersion = document.templates.contains(where: { $0.webKitBlockPeerConnections == true }) ? 4 : (document.templates.contains(where: { $0.webKitMediaPolicy == .deny }) ? 3 : (document.templates.contains(where: { $0.engine == .webkit }) ? 2 : 1))
+            if document.templates.contains(where: { ($0.privacyPolicy ?? .legacy) != .legacy }) {
+                for index in document.templates.indices where document.templates[index].privacyPolicy == nil {
+                    document.templates[index].privacyPolicy = .legacy
+                }
+            }
+            document.schemaVersion = document.templates.contains(where: { ($0.privacyPolicy ?? .legacy) != .legacy }) ? 5 : (document.templates.contains(where: { $0.webKitBlockPeerConnections == true }) ? 4 : (document.templates.contains(where: { $0.webKitMediaPolicy == .deny }) ? 3 : (document.templates.contains(where: { $0.engine == .webkit }) ? 2 : 1)))
             try document.validate()
             let data = try JSONEncoder().encode(document)
             guard data.count <= ManagerLibraryDocument.maximumBytes else { throw ManagerLibraryError.invalidDocument }

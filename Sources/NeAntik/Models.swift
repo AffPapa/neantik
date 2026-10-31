@@ -742,6 +742,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     var webKitMediaPolicy: WebKitMediaPolicy
     var webKitBlockPeerConnections: Bool
     var fontPolicy: BrowserFontPolicy
+    var privacyPolicy: BrowserPrivacyPolicy
     var proxy: ProxyConfiguration?
     var identity: BrowserIdentity
     var createdAt: Date
@@ -765,6 +766,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         webKitMediaPolicy: WebKitMediaPolicy = .ask,
         webKitBlockPeerConnections: Bool = false,
         fontPolicy: BrowserFontPolicy = .native,
+        privacyPolicy: BrowserPrivacyPolicy = .legacy,
         proxy: ProxyConfiguration? = nil,
         identity: BrowserIdentity = BrowserIdentity(),
         createdAt: Date = Date(),
@@ -788,6 +790,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         self.webKitMediaPolicy = webKitMediaPolicy
         self.webKitBlockPeerConnections = webKitBlockPeerConnections
         self.fontPolicy = fontPolicy
+        self.privacyPolicy = privacyPolicy
         self.proxy = proxy
         self.identity = identity
         self.createdAt = createdAt
@@ -855,7 +858,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     }
 
     func normalizedForPersistence() -> BrowserProfile? {
-        if engine != .chromium && fontPolicy != .native { return nil }
+        if engine != .chromium && (fontPolicy != .native || privacyPolicy != .legacy) { return nil }
         if engine != .webkit && webKitRuntimeGeneration != .system { return nil }
         if engine != .webkit && (webKitMediaPolicy != .ask || webKitBlockPeerConnections) { return nil }
         if engine == .webkit { do { try WebKitProfilePolicy.validateConfiguration(self) } catch { return nil } }
@@ -920,6 +923,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             webKitBlockPeerConnections: webKitBlockPeerConnections,
             // A copy receives a new identity; policy opt-in is not inherited.
             fontPolicy: .native,
+            privacyPolicy: privacyPolicy,
             proxy: proxy,
             identity: BrowserIdentity(),
             createdAt: date,
@@ -947,6 +951,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         case webKitMediaPolicy
         case webKitBlockPeerConnections
         case fontPolicy
+        case privacyPolicy
         case proxy
         case identity
         case createdAt
@@ -1004,6 +1009,14 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             }
         } else {
             fontPolicy = .native
+        }
+        if container.contains(.privacyPolicy) {
+            privacyPolicy = try container.decode(BrowserPrivacyPolicy.self, forKey: .privacyPolicy)
+        } else {
+            privacyPolicy = .legacy
+        }
+        guard engine == .chromium || privacyPolicy == .legacy else {
+            throw UnsupportedBrowserPrivacyPolicyError()
         }
         guard engine == .chromium || fontPolicy == .native else {
             throw UnsupportedBrowserFontPolicyError()

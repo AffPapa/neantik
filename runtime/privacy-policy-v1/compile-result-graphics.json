@@ -1,0 +1,24 @@
+{
+  "createdAt": "2026-10-31T12:02:04.289671+00:00",
+  "status": "compiled-unqualified",
+  "results": [
+    {
+      "source": "/private/tmp/neantik-privacy20-runtime/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc",
+      "sourceSHA256": "1c276f770b906e9df06be2027cf03cc7cb65c8ea5de7a8dec6f6c4a4cd5d4c45",
+      "target": "obj/third_party/blink/renderer/modules/webgl/webgl/webgl_rendering_context_base.o",
+      "exitCode": 0,
+      "objectSHA256": "9746fbb2484d4dc79bc3a16c1396615603fa9ba58445bfc5b7501c53aaff98e2",
+      "log": "/private/tmp/neantik-privacy20-runtime-delta/compile-graphics-0.log"
+    },
+    {
+      "source": "/private/tmp/neantik-privacy20-runtime/chrome/browser/ui/views/frame/contents_container_view.cc",
+      "sourceSHA256": "3fea2e76e61e67a00acd8f63e5721302107e3bf1461d3b9b928583e39d1b6163",
+      "target": "obj/chrome/browser/ui/views/frame/contents_container_view_impl/contents_container_view.o",
+      "exitCode": 0,
+      "objectSHA256": "f2a22d7c6d7a1aa61b12c508ed90af7596a724cf785b5222c2bc510af870ea82",
+      "log": "/private/tmp/neantik-privacy20-runtime-delta/compile-graphics-1.log"
+    }
+  ],
+  "nativeExecution": false,
+  "runtimeReleaseQualified": false
+}

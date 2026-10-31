@@ -2152,6 +2152,7 @@ final class BrowserProcessManager: ObservableObject {
         preparationReceipt: BrowserLaunchPreparationReceipt,
         keychain: KeychainStore, target: BrowserUserLaunchTarget = .profileStart
     ) async throws {
+        try BrowserLaunchPolicy.validatePrivacyPolicy(profile, runtime: runtime)
         try BrowserLaunchPolicy.validateFontPolicy(profile, runtime: runtime)
         try target.routeProbePlan?.validate()
         try launchAdmission.requireSafePressure()
@@ -2346,6 +2347,7 @@ final class BrowserProcessManager: ObservableObject {
         purpose: BrowserLaunchPurpose = .normal
     ) throws {
         guard profile.engine == .chromium else { throw NeAntikError.invalidProfile }
+        try BrowserLaunchPolicy.validatePrivacyPolicy(profile, runtime: runtime)
         try BrowserLaunchPolicy.validateFontPolicy(profile, runtime: runtime)
         try launchAdmission.requireSafePressure()
         guard !runningProfileIDs.contains(profile.id) else {
@@ -2541,6 +2543,7 @@ final class BrowserProcessManager: ObservableObject {
             try prepareDiagnosticLog(logURL)
             try fingerprintDirectoryCustody?.validate()
             let auditDirectoryCustody = try releaseAuditBrowserIsolation?.validateBeforeExec(paths: paths, browserDataDirectory: browserDataDirectory)
+            try BrowserLaunchPolicy.validatePrivacyPolicy(profile, runtime: runtime)
             try BrowserLaunchPolicy.validateFontPolicy(profile, runtime: runtime)
             try process.run()
             withExtendedLifetime((auditDirectoryCustody, fingerprintDirectoryCustody)) {}

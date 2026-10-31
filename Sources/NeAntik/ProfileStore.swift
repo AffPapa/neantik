@@ -1860,6 +1860,7 @@ final class ProfileStore: ObservableObject {
                   current.webKitRuntimeGeneration == expected.webKitRuntimeGeneration,
                   current.proxy == expected.proxy,
                   current.identity == persistedExpectedIdentity,
+                  current.privacyPolicy == expected.privacyPolicy,
                   current.startURL == expected.startURL,
                   current.startupMode == expected.startupMode,
                   current.webKitMediaPolicy == expected.webKitMediaPolicy,
@@ -1886,6 +1887,9 @@ final class ProfileStore: ObservableObject {
     /// Versioned envelopes prevent older managers from silently ignoring an
     /// engine/media/font policy. Ordinary Chromium workspaces keep array writes.
     nonisolated static func encodeProfiles(_ profiles: [BrowserProfile], encoder: JSONEncoder) throws -> Data {
+        if profiles.contains(where: { $0.privacyPolicy != .legacy }) {
+            return try encoder.encode(EngineProfilesDocument(schemaVersion: 7, profiles: profiles))
+        }
         if profiles.contains(where: { $0.webKitBlockPeerConnections }) {
             return try encoder.encode(EngineProfilesDocument(schemaVersion: 6, profiles: profiles))
         }
@@ -1905,8 +1909,10 @@ final class ProfileStore: ObservableObject {
         decoder.dateDecodingStrategy = .iso8601
         if data.first(where: { ![0x20, 0x09, 0x0A, 0x0D].contains($0) }) == 0x7B {
             let document = try decoder.decode(LegacyProfilesDocument.self, from: data)
-            guard [1, 2, 3, 4, 5, 6].contains(document.schemaVersion),
+            guard [1, 2, 3, 4, 5, 6, 7].contains(document.schemaVersion),
                   (document.schemaVersion < 6 || WebKitPeerConnectionPolicy.hasExplicitProfilePolicies(in: data)),
+                  (document.schemaVersion < 7 || BrowserPrivacyPolicy.hasExplicitProfilePolicies(in: data)),
+                  (document.schemaVersion >= 7 || !document.profiles.contains(where: { $0.privacyPolicy != .legacy })),
                   (document.schemaVersion >= 2 || !document.profiles.contains(where: { $0.engine == .webkit })),
                   (document.schemaVersion >= 3 || !document.profiles.contains(where: { $0.webKitMediaPolicy == .deny })),
                   (document.schemaVersion >= 4 || !document.profiles.contains(where: { $0.fontPolicy != .native })),
@@ -1918,7 +1924,7 @@ final class ProfileStore: ObservableObject {
             return document.profiles
         }
         let profiles = try decoder.decode([BrowserProfile].self, from: data)
-        guard !profiles.contains(where: { $0.engine == .webkit || $0.fontPolicy != .native || $0.webKitRuntimeGeneration != .system || $0.webKitBlockPeerConnections }) else { throw UnsupportedProfilesSchemaError() }
+        guard !profiles.contains(where: { $0.privacyPolicy != .legacy || $0.engine == .webkit || $0.fontPolicy != .native || $0.webKitRuntimeGeneration != .system || $0.webKitBlockPeerConnections }) else { throw UnsupportedProfilesSchemaError() }
         return profiles
     }
 
@@ -2234,7 +2240,7 @@ private struct LegacyProfilesDocument: Decodable {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try values.decode(Int.self, forKey: .schemaVersion)
         // Check the contract before interpreting an unknown payload shape.
-        guard [1, 2, 3, 4, 5, 6].contains(schemaVersion) else { throw UnsupportedProfilesSchemaError() }
+        guard [1, 2, 3, 4, 5, 6, 7].contains(schemaVersion) else { throw UnsupportedProfilesSchemaError() }
         profiles = try values.decode([BrowserProfile].self, forKey: .profiles)
     }
 }

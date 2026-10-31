@@ -40,7 +40,7 @@ final class MCPProfileManagement {
         let revision: [String: Any] = ["type": "string", "pattern": "^(0|[1-9][0-9]*)$"]
         let optionalUUID: [String: Any] = ["type": ["string", "null"]]
         let changes: [String: Any] = ["type": "object", "additionalProperties": false, "properties": WebKitMediaFeature.visibleFields([
-            "name": text, "startURL": text, "startupMode": ["type": "string", "enum": BrowserStartupMode.allCases.map(\.rawValue)], "fontPolicy": ["type": "string", "enum": ["native", "system-v1"]], "webKitMediaPolicy": ["type": "string", "enum": WebKitMediaPolicy.allCases.map(\.rawValue)], "tags": ["type": "array", "maxItems": 8, "items": text],
+            "privacyPreset": ["type": "string", "enum": ["legacy", "balanced", "strict"]], "name": text, "startURL": text, "startupMode": ["type": "string", "enum": BrowserStartupMode.allCases.map(\.rawValue)], "fontPolicy": ["type": "string", "enum": ["native", "system-v1"]], "webKitMediaPolicy": ["type": "string", "enum": WebKitMediaPolicy.allCases.map(\.rawValue)], "tags": ["type": "array", "maxItems": 8, "items": text],
             "note": text, "isPinned": ["type": "boolean"], "isArchived": ["type": "boolean"], "colorHex": text, "symbolName": text], enabled: mediaPolicyEnabled)]
         let proxyFields: [String: Any] = ["type": "object", "additionalProperties": false, "required": ["kind", "host", "port"], "properties": [
             "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "host": text,
@@ -370,12 +370,16 @@ final class MCPProfileManagement {
     }
 
     private func apply(_ changes: [String: Any], to profile: inout BrowserProfile) throws {
-        guard Set(changes.keys).isSubset(of: ["name", "startURL", "startupMode", "fontPolicy", "webKitMediaPolicy", "tags", "note", "isPinned", "isArchived", "colorHex", "symbolName"]) else { throw Failure.invalid }
+        guard Set(changes.keys).isSubset(of: ["name", "startURL", "startupMode", "privacyPreset", "fontPolicy", "webKitMediaPolicy", "tags", "note", "isPinned", "isArchived", "colorHex", "symbolName"]) else { throw Failure.invalid }
         for (key, value) in changes {
             switch key {
             case "name": profile.name = try string(changes, key).trimmingCharacters(in: .whitespacesAndNewlines)
             case "startURL": guard let url = BrowserLaunchBuilder.validatedStartURL(try string(changes, key)) else { throw Failure.invalid }; profile.startURL = url.absoluteString
             case "startupMode": guard let mode = BrowserStartupMode(rawValue: try string(changes, key)) else { throw Failure.invalid }; profile.startupMode = mode
+            case "privacyPreset":
+                guard profile.engine == .chromium,
+                      let policy = BrowserPrivacyPolicy.preset(named: try string(changes, key)) else { throw Failure.invalid }
+                profile.privacyPolicy = policy
             case "fontPolicy": guard profile.engine == .chromium, let policy = BrowserFontPolicy(rawValue: try string(changes, key)) else { throw Failure.invalid }; profile.fontPolicy = policy
             case "webKitMediaPolicy": guard WebKitMediaFeature.isEnabled, profile.engine == .webkit, let policy = WebKitMediaPolicy(rawValue: try string(changes, key)) else { throw Failure.invalid }; profile.webKitMediaPolicy = policy
             case "note": guard let note = BrowserProfile.normalizedNote(try string(changes, key)) else { throw Failure.invalid }; profile.note = note
@@ -423,6 +427,7 @@ final class MCPProfileManagement {
     private func dto(_ profile: BrowserProfile) -> [String: Any] {
         WebKitMediaFeature.visibleFields(["id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name, "startURL": profile.startURL, "startupMode": profile.startupMode.rawValue, "fontPolicy": profile.engine == .chromium ? profile.fontPolicy.rawValue as Any : NSNull(), "engine": profile.engine.rawValue, "webKitMediaPolicy": profile.engine == .webkit ? profile.webKitMediaPolicy.rawValue as Any : NSNull(),
          "engineCapabilities": profile.engine.managementCapabilities,
+         "privacyPolicyIntent": profile.privacyPolicy.safeIntent,
          "tags": profile.tags, "isPinned": profile.isPinned, "isArchived": profile.isArchived,
          "colorHex": profile.colorHex, "symbolName": profile.symbolName, "folderID": store.folderID(forProfileID: profile.id)?.uuidString as Any? ?? NSNull(),
          "organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(), "proxyKind": profile.proxy?.kind.rawValue as Any? ?? NSNull()])
