@@ -11,7 +11,7 @@ NODE = shutil.which('node')
 @unittest.skipUnless(NODE, 'Node is required for speech oracle controls')
 class RuntimeSpeechTests(unittest.TestCase):
     def test_probe_oracle_and_scoped_transport_controls(self):
-        result = subprocess.run([NODE, '--test',
+        result = subprocess.run([NODE, '--test-reporter=tap', '--test',
             'scripts/runtime-speech/test-observation.mjs',
             'scripts/runtime-speech/test-pipe.mjs',
             'scripts/runtime-speech/test-cleanup.mjs',

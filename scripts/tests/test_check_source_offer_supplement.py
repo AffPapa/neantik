@@ -4,10 +4,14 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from importlib.machinery import SourceFileLoader
+import importlib.util
+import sys
 
 module_path = Path(__file__).resolve().parents[1] / "check-source-offer-supplement.py"
-check_module = SourceFileLoader("source_offer_supplement", str(module_path)).load_module()
+_spec = importlib.util.spec_from_file_location("source_offer_supplement", module_path)
+check_module = importlib.util.module_from_spec(_spec)
+sys.modules[_spec.name] = check_module
+_spec.loader.exec_module(check_module)
 
 
 class SourceOfferSupplementTests(unittest.TestCase):

@@ -35,18 +35,19 @@ class Chromium15680UnsignedCandidateTests(unittest.TestCase):
     def test_postbuild_producer_rejects_nonzero_exit_without_mutating_pending_record(self) -> None:
         evidence = PROJECT_ROOT / "runtime/chromium-15680-build-evidence.json"
         before = hashlib.sha256(evidence.read_bytes()).hexdigest()
-        result = subprocess.run(
-            [sys.executable, "-B", str(BUILD_EVIDENCE_SCRIPT),
-             "/private/tmp/neantik-chromium-15680-stage/src",
-             "--project-root", str(PROJECT_ROOT), "--ninja-log", "/no/ninja.log",
-             "--ninja-exit-code", "1"],
-            cwd=PROJECT_ROOT,
-            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=False,
-        )
+        with tempfile.TemporaryDirectory(prefix="neantik-postbuild-refusal-") as source_root:
+            result = subprocess.run(
+                [sys.executable, "-B", str(BUILD_EVIDENCE_SCRIPT),
+                 str(Path(source_root).resolve()),
+                 "--project-root", str(PROJECT_ROOT), "--ninja-log", "/no/ninja.log",
+                 "--ninja-exit-code", "1"],
+                cwd=PROJECT_ROOT,
+                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Ninja did not exit successfully", result.stderr)
         self.assertEqual(hashlib.sha256(evidence.read_bytes()).hexdigest(), before)

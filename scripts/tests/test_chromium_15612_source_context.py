@@ -282,7 +282,15 @@ class SourceContextTests(unittest.TestCase):
             return actual_stat(path, *args, **kwargs)
         # checked_file holds the real FD while this controlled replacement
         # occurs immediately before its current-path inode comparison.
-        with patch.object(os, 'lstat', side_effect=changed), \
+        original_checked_file = packaged.source.checked_file
+        def observed_checked_file(receipt_root, name):
+            if Path(receipt_root) / name == target:
+                # pathlib may lstat during earlier namespace preflight. Arm
+                # the replacement only inside the actual FD-backed read.
+                with patch.object(os, 'lstat', side_effect=changed):
+                    return original_checked_file(receipt_root, name)
+            return original_checked_file(receipt_root, name)
+        with patch.object(packaged.source, 'checked_file', side_effect=observed_checked_file), \
              self.assertRaisesRegex(ValueError, 'changed while reading'):
             packaged.process(self.project, root, self.lock, source_context=ctx)
         self.assertTrue(replaced)

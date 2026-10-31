@@ -60,8 +60,22 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
             self.assertIn('languages: ' + language, analysis)
         self.assertEqual(analysis.count('github/codeql-action/init@'), 2)
         self.assertEqual(analysis.count('github/codeql-action/analyze@'), 2)
-        self.assertIn('swift build --disable-sandbox --arch arm64 --jobs 2', analysis)
-        self.assertIn('resolve-compatible-developer-dir.sh', analysis)
+        swift = analysis.split('  swift:\n', 1)[1].split('  python:\n', 1)[0]
+        self.assertLess(swift.index('Resolve compatible Xcode before instrumentation'),
+                        swift.index('Initialize CodeQL'))
+        build = swift.split('Build production Apple Silicon source graph for analysis', 1)[1].split('Analyze Swift', 1)[0]
+        self.assertNotIn('resolve-compatible-developer-dir.sh', build)
+        self.assertIn('DEVELOPER_DIR=%s', swift)
+        self.assertIn('"$GITHUB_ENV"', swift)
+        self.assertIn('timeout-minutes: 3', swift)
+        self.assertIn('timeout-minutes: 20', build)
+        self.assertIn('phase: instrumented native release build starts', build)
+        for flag in ['--build-system native', '--jobs 2', '-c release',
+                     '--arch arm64', '--disable-sandbox', '--scratch-path']:
+            self.assertIn(flag, build)
+            self.assertIn(flag, RELEASE_SCRIPT.read_text())
+        self.assertIn('SWIFTPM_HOME', build)
+        self.assertIn('CLANG_MODULE_CACHE_PATH', build)
 
     def test_fixture_boundary_follows_declared_types_without_suite_attribute(self) -> None:
         source = '''@MainActor struct HeadedTests {

@@ -26,6 +26,8 @@ can recognize a version-only Info.plist diff from actual before/after values;
 
 ## Execute
 
+- For CodeQL/manual compiler instrumentation, resolve and verify Xcode before initialization, persist that selected toolchain, then run only the instrumented build. Keep resolver/build/analysis phase markers and bounded step budgets; preserve build outputs until analysis finishes. A silent instrumented resolver timeout is not evidence that compilation or product execution began.
+- For CI portability repairs, test the affected modules on the minimum supported and actual CI interpreters. Keep test reporters explicit, use owned temporary fixtures instead of historical workstation paths, and arm filesystem race hooks inside the intended FD-backed operation. Preserve the original failure assertions.
 - Before a protected-main synchronization, read its exact required check contexts once and compare them with workflow job names. Preserve genuine CodeQL language analysis and stable shard context names; never replace required security scans with synthetic status/aggregate success or weaken branch protection.
 - Ordinary CI must exclude only explicit wholly opt-in fixture suites, retain mixed/pure unit controls and reject skipped-only results. Validate fixture gates against the actual declared test type (not an assumed @Suite file boundary). Size job budgets from measured build plus test duration; keep per-test progress so a timeout is diagnosable without a blind retry.
 - When independent CI lanes are already running, collect their remaining diagnostic results before pushing one repair batch. Do not cancel a failed run while other lanes can still reveal distinct failures; a record/harness failure is separate from product qualification.

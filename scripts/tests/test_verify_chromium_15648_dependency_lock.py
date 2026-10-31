@@ -7,10 +7,13 @@ import unittest
 
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from importlib.machinery import SourceFileLoader
+import importlib.util
 
 module_path = Path(__file__).resolve().parents[1] / "verify-chromium-15648-source-adoption.py"
-verify_module = SourceFileLoader("chromium_15648_source_adoption", str(module_path)).load_module()
+_spec = importlib.util.spec_from_file_location("chromium_15648_source_adoption", module_path)
+verify_module = importlib.util.module_from_spec(_spec)
+sys.modules[_spec.name] = verify_module
+_spec.loader.exec_module(verify_module)
 
 
 class DependencyLockTests(unittest.TestCase):
