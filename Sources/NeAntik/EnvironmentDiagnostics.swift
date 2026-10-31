@@ -281,7 +281,7 @@ enum ProfileEnvironmentInspector {
     ) -> EnvironmentDiagnosticSection {
         let compatible = runtime?.supportsProfilePrivacy == true
         let localStart = BrowserStartURL.validate(profile.startURL)?.absoluteString == "about:blank"
-        let restoresSession = profile.startupMode == .restoreSession && profile.privacyPolicy.retention != .ephemeral
+        let restoresSession = BrowserLaunchBuilder.restoresSession(profile: profile)
         return EnvironmentDiagnosticSection(
             id: "protection",
             title: "Паспорт защиты",

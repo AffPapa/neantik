@@ -3,6 +3,25 @@ import Testing
 @testable import NeAntik
 
 struct ProfileEnvironmentInspectorTests {
+    @Test func startPagePassportMatchesNormalLaunchForFirstRestoreAndEphemeralSessions() throws {
+        for start in ["about:blank", "https://owned.invalid/"] {
+            for launched in [false, true] {
+                for ephemeral in [false, true] {
+                    var profile = BrowserProfile(name: "Synthetic start", startURL: start, privacyPolicy: .balanced)
+                    profile.startupMode = .restoreSession
+                    profile.lastLaunchedAt = launched ? Date(timeIntervalSince1970: 100) : nil
+                    profile.privacyPolicy.retention = ephemeral ? .ephemeral : .persistent
+                    let snapshot = ProfileEnvironmentInspector.snapshot(profile: profile, runtime: nil, proxyHealth: nil)
+                    let entry = try field("protection.start-page", in: snapshot)
+                    let restoring = launched && !ephemeral
+                    #expect(entry.value == (restoring ? "Сохранённые вкладки" : (start == "about:blank" ? "Локальная пустая страница" : "Выбранная веб-страница")))
+                    let args = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: URL(fileURLWithPath: "/private/tmp/neantik-start-fixture"))
+                    #expect(args.contains(restoring ? "--restore-last-session" : "--new-window"))
+                    #expect(restoring ? !args.contains(start) : args.last == start)
+                }
+            }
+        }
+    }
     @Test func extensionPassportMatchesProxyAndPrivacyMode() throws {
         var custom = BrowserPrivacyPolicy.strict
         custom.trackingParameterCleanup = false

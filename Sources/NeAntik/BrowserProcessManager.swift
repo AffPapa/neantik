@@ -388,6 +388,12 @@ struct FingerprintAuditLaunchReservation: Equatable, Sendable {
 }
 
 enum BrowserLaunchBuilder {
+    static func restoresSession(profile: BrowserProfile, startURLOverride: URL? = nil,
+                                purpose: BrowserLaunchPurpose = .normal) -> Bool {
+        purpose == .normal && startURLOverride == nil &&
+            profile.privacyPolicy.retention != .ephemeral &&
+            profile.startupMode == .restoreSession && profile.lastLaunchedAt != nil
+    }
     private static let allowedInheritedEnvironmentKeys: Set<String> = [
         "HOME",
         "LANG",
@@ -449,9 +455,7 @@ enum BrowserLaunchBuilder {
         )
         // Never mix restoration with an explicit URL: Chromium adds that URL
         // again on every launch. Audit/management targets remain fresh windows.
-        let restoresSession = purpose == .normal && startURLOverride == nil &&
-            profile.privacyPolicy.retention != .ephemeral &&
-            profile.startupMode == .restoreSession && profile.lastLaunchedAt != nil
+        let restoresSession = Self.restoresSession(profile: profile, startURLOverride: startURLOverride, purpose: purpose)
         var arguments = [
             "--user-data-dir=\(browserDataDirectory.path)",
             "--no-first-run",
