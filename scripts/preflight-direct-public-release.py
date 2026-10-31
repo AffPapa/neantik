@@ -159,6 +159,18 @@ def verify_source_contract_binding(
         if provenance.get("buildArgsSHA256") != sha256_file(args_gn):
             raise ValueError("M156.74 packaged args differ from reviewed build inputs")
         return
+    if runtime_version == "156.0.8078.80" and candidate_lock.get("variant") == "recipient-privacy-policy-v1":
+        from chromium_15680_privacy_derivation import verify_provenance, verify_lock_binding, verify_contract, BASE
+        verify_provenance(provenance, project_root)
+        verify_lock_binding(candidate_lock, project_root)
+        reviewed, _ = verify_contract(project_root)
+        if (contract != reviewed or contract_path.name != "chromium-15680-privacy-v1-source-contract.json"
+                or sha256_file(contract_path) != candidate_lock.get("sourceContractSHA256")):
+            raise ValueError("Privacy embedded source contract mismatch")
+        base = json.loads((project_root / BASE['sourceContract']['file']).read_text())
+        if sha256_file(args_gn) != base['buildArgsSHA256']:
+            raise ValueError("Privacy packaged args differ from reviewed build inputs")
+        return
     if runtime_version == "156.0.8078.80":
         from chromium_15680_release_evidence import verify_provenance
         verify_provenance(provenance, project_root)

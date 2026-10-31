@@ -35,6 +35,10 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
         self.assertEqual(MODULE.source_contract_name("156.0.8078.48", {"fingerprintChromium": {"chromiumVersion": "156.0.8078.48"}}), "chromium-15648-source-contract.json")
         self.assertEqual(MODULE.source_contract_name("156.0.8078.74"), "chromium-15674-source-contract.json")
         self.assertEqual(MODULE.source_contract_name("156.0.8078.80"), "chromium-15680-source-contract.json")
+        privacy_lock = json.loads((SCRIPT.parent.parent / "runtime/fingerprint-chromium.lock.json").read_text())
+        self.assertEqual(MODULE.source_contract_name("156.0.8078.80", privacy_lock), "chromium-15680-privacy-v1-source-contract.json")
+        changed = {**privacy_lock, "sourceContractSHA256": "0" * 64}
+        with self.assertRaises(MODULE.FingerprintReportError): MODULE.source_contract_name("156.0.8078.80", changed)
         with self.assertRaises(MODULE.FingerprintReportError):
             MODULE.source_contract_name("156.0.8078.81")
 

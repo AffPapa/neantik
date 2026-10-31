@@ -41,7 +41,9 @@ Debug objects embed the compilation directory. For a different recipient root
 or SDK, append `--allow-byte-differences` to compile/reindex/link/verify. That
 explicit mode checks source images and archive member projections, permits local
 object/framework differences, and reports the actual framework hash with
-`releaseAuthority:false`. It never qualifies those bytes as the published runtime.
+`releaseAuthority:false`. A private local receipt binds completed compile,
+archive and link stages to their actual hashes; stale/missing objects or a
+skipped phase refuse continuation. It never qualifies those bytes as the published runtime.
 The CRC reference hashes likewise describe the historical build; preserve its
 source/commands/member deletion when rebuilding with another toolchain.
 

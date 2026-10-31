@@ -84,6 +84,41 @@ def compiled_sources(project, root, layer, *, allow_differences=False):
         output_file(root, OUT + '/' + item['object'], item['objectSHA256'], allow_differences=allow_differences)
 
 
+LOCAL_RECEIPT = OUT + '/neantik-privacy-local-replay.json'
+
+
+def local_receipt(project, root, layer, phase):
+    path = root / LOCAL_RECEIPT
+    if path.is_symlink() or not path.is_file(): raise ValueError('Recipient-local replay receipt missing; compile first')
+    info = path.stat()
+    if info.st_uid != os.getuid() or info.st_nlink != 1 or info.st_mode & 0o077 or info.st_size > 65536:
+        raise ValueError('Unsafe recipient-local receipt')
+    record = json.loads(path.read_text())
+    if (record.get('schemaVersion') != 1 or record.get('releaseAuthority') is not False
+            or record.get('manifestSHA256') != sha(project / MANIFEST) or record.get('phase') != phase):
+        raise ValueError('Recipient-local phase/source mismatch')
+    expected = {item['object'] for item in layer['files']}
+    if set(record.get('objects', {})) != expected: raise ValueError('Incomplete local compile receipt')
+    for name, digest in record['objects'].items(): checked_file(root, OUT + '/' + name, digest)
+    checked_file(root, OUT + '/obj/third_party/ffmpeg/ffmpeg_internal/autorename_libavutil_crc.o', record['crcObjectSHA256'])
+    if phase in ('indexed', 'linked'):
+        if set(record.get('archives', {})) != set(layer['link']['thinArchives']): raise ValueError('Incomplete local archive receipt')
+        for name, digest in record['archives'].items(): checked_file(root, OUT + '/' + name, digest)
+    if phase == 'linked': checked_file(root, OUT + '/' + FRAMEWORK, record['frameworkSHA256'])
+    return record
+
+
+def write_local_receipt(root, record):
+    target = root / LOCAL_RECEIPT
+    if target.is_symlink(): raise ValueError('Unsafe local receipt destination')
+    descriptor, temporary = tempfile.mkstemp(prefix='.neantik-replay-receipt-', dir=target.parent)
+    try:
+        with os.fdopen(descriptor, 'w') as stream:
+            json.dump(record, stream, indent=2); stream.write('\n'); stream.flush(); os.fsync(stream.fileno())
+        os.replace(temporary, target)
+    finally: Path(temporary).unlink(missing_ok=True)
+
+
 def compile_objects(project, root, layer, *, allow_differences=False):
     source_images(project, root, layer)
     for item in layer['files']:
@@ -91,6 +126,11 @@ def compile_objects(project, root, layer, *, allow_differences=False):
         subprocess.run(recipe['argv'], cwd=root / OUT, check=True,
                        env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'})
         output_file(root, OUT + '/' + item['object'], item['objectSHA256'], allow_differences=allow_differences)
+    if allow_differences:
+        write_local_receipt(root, {'schemaVersion': 1, 'releaseAuthority': False,
+            'manifestSHA256': sha(project / MANIFEST), 'phase': 'compiled',
+            'objects': {item['object']: sha(root / OUT / item['object']) for item in layer['files']},
+            'crcObjectSHA256': sha(root / OUT / 'obj/third_party/ffmpeg/ffmpeg_internal/autorename_libavutil_crc.o')})
 
 
 def check_archives(project, root, layer, *, allow_differences=False):
@@ -101,12 +141,16 @@ def check_archives(project, root, layer, *, allow_differences=False):
         expected = json.loads(evidence(project, item['members']).read_text())['members']
         if thin_members(archive.read_bytes()) != expected: raise ValueError('Archive members differ')
     crc = json.loads((project / BASE['portableCRC']['file']).read_text())
+    if allow_differences:
+        for name, binding in crc['sourceOverlay'].items(): checked_file(root, 'third_party/ffmpeg/' + name, binding['afterSHA256'])
+        checked_file(root, 'third_party/ffmpeg/chromium/config/Chrome/mac/arm64/config.h', crc['inputs']['configuration']['sha256'])
     output_file(root, OUT + '/obj/third_party/ffmpeg/ffmpeg_internal/autorename_libavutil_crc.o', crc['outputs']['crcObjectSHA256'], allow_differences=allow_differences)
     checked_file(root, OUT + '/obj/third_party/ffmpeg/libffmpeg_internal.a', crc['outputs']['ffmpegArchiveSHA256'])
 
 
 def reindex(project, root, layer, *, allow_differences=False):
     compiled_sources(project, root, layer, allow_differences=allow_differences)
+    record = local_receipt(project, root, layer, 'compiled') if allow_differences else None
     rebuild = json.loads(evidence(project, layer['link']['archiveRebuilds']).read_text())
     out = root / OUT; tool = root / 'third_party/llvm-build/Release+Asserts/bin/llvm-ar'
     if tool.is_symlink() or not tool.is_file(): raise ValueError('Pinned recipient llvm-ar missing')
@@ -128,6 +172,9 @@ def reindex(project, root, layer, *, allow_differences=False):
         finally: Path(temporary).unlink(missing_ok=True)
     # The other six metadata files are unchanged base bytes; no ceremonial ar s.
     check_archives(project, root, layer, allow_differences=allow_differences)
+    if record is not None:
+        record.update(phase='indexed', archives={name: sha(root / OUT / name) for name in layer['link']['thinArchives']})
+        write_local_receipt(root, record)
 
 
 def main(argv=None):
@@ -143,6 +190,7 @@ def main(argv=None):
         print(json.dumps({'pass': True, 'scope': 'reviewed recipe integrity only', 'executed': False})); return 0
     root = source_root(args.source_root)
     if args.action == 'verify':
+        if args.allow_byte_differences: local_receipt(project, root, layer, 'linked')
         compiled_sources(project, root, layer, allow_differences=args.allow_byte_differences)
         check_archives(project, root, layer, allow_differences=args.allow_byte_differences)
         actual = output_file(root, OUT + '/' + FRAMEWORK, layer['link']['frameworkSHA256'], allow_differences=args.allow_byte_differences)
@@ -152,12 +200,16 @@ def main(argv=None):
     elif args.action == 'compile': compile_objects(project, root, layer, allow_differences=args.allow_byte_differences)
     elif args.action == 'reindex': reindex(project, root, layer, allow_differences=args.allow_byte_differences)
     else:
+        record = local_receipt(project, root, layer, 'indexed') if args.allow_byte_differences else None
         compiled_sources(project, root, layer, allow_differences=args.allow_byte_differences)
         check_archives(project, root, layer, allow_differences=args.allow_byte_differences)
         command = evidence(project, layer['link']['recipe']).read_text()
         subprocess.run(['/bin/sh', '-c', command], cwd=root / OUT, check=True,
                        env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'})
-        output_file(root, OUT + '/' + FRAMEWORK, layer['link']['frameworkSHA256'], allow_differences=args.allow_byte_differences)
+        actual = output_file(root, OUT + '/' + FRAMEWORK, layer['link']['frameworkSHA256'], allow_differences=args.allow_byte_differences)
+        if record is not None:
+            record.update(phase='linked', frameworkSHA256=sha(actual))
+            write_local_receipt(root, record)
     print(json.dumps({'pass': True, 'action': args.action, 'scope': 'recipient preparation only; not signing or release authority'})); return 0
 
 if __name__ == '__main__':

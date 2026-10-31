@@ -35,6 +35,8 @@ class SemanticEvidenceTests(unittest.TestCase):
         base = "Contents/Resources/NeAntikRuntimeEvidence/"
         contract["bundlePath"] = base + "chromium-15680-source-contract.json"
         dispatch._validate_candidate_manifest(manifest)
+        contract["bundlePath"] = base + "chromium-15680-privacy-v1-source-contract.json"
+        dispatch._validate_candidate_manifest(manifest)
         for name in ("chromium-15681-source-contract.json", "chromium-15680-source-contract.json/extra"):
             contract["bundlePath"] = base + name
             with self.assertRaises(current.FingerprintEvidenceVerificationError):

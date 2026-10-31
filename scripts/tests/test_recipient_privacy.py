@@ -52,6 +52,27 @@ class RecipientPrivacyTests(unittest.TestCase):
         target.unlink(); target.symlink_to(self.after)
         with self.assertRaises(ValueError): replay.output_file(self.source, 'object.o', '0' * 64, allow_differences=True)
 
+    def test_local_receipt_refuses_missing_phase_and_stale_objects(self):
+        import json
+        manifest = self.project / replay.MANIFEST
+        manifest.parent.mkdir(parents=True); manifest.write_text('reviewed')
+        output = self.source / replay.OUT; output.mkdir(parents=True)
+        obj = output / 'obj/a.o'; obj.parent.mkdir(); obj.write_bytes(b'fresh compile')
+        crc = output / 'obj/third_party/ffmpeg/ffmpeg_internal/autorename_libavutil_crc.o'
+        crc.parent.mkdir(parents=True); crc.write_bytes(b'crc')
+        layer = {'files': [{'object': 'obj/a.o'}]}
+        with self.assertRaisesRegex(ValueError, 'compile first'):
+            replay.local_receipt(self.project, self.source, layer, 'compiled')
+        record = {'schemaVersion': 1, 'releaseAuthority': False, 'phase': 'compiled',
+            'manifestSHA256': replay.sha(manifest), 'objects': {'obj/a.o': replay.sha(obj)},
+            'crcObjectSHA256': replay.sha(crc)}
+        replay.write_local_receipt(self.source, record)
+        self.assertEqual(replay.local_receipt(self.project, self.source, layer, 'compiled'), record)
+        with self.assertRaisesRegex(ValueError, 'phase/source'):
+            replay.local_receipt(self.project, self.source, layer, 'linked')
+        obj.write_bytes(b'stale or modified object')
+        with self.assertRaises(ValueError): replay.local_receipt(self.project, self.source, layer, 'compiled')
+
     def test_default_is_inert_and_mutation_requires_confirmation(self):
         with patch.object(replay, 'verify_contract', return_value=({}, self.layer)), patch.object(replay, 'apply') as apply:
             self.assertEqual(replay.main(['--project-root', str(self.project)]), 0)

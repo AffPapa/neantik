@@ -667,7 +667,8 @@ final class FingerprintEvidenceReleaseContext {
                 "Contents/Resources/NeAntikRuntimeEvidence/chromium-15612-font-system-security-20261015-v1-source-contract.json",
                 "Contents/Resources/NeAntikRuntimeEvidence/chromium-15612-component-completion-v1-source-contract.json",
                 "Contents/Resources/NeAntikRuntimeEvidence/chromium-15674-source-contract.json",
-                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15680-source-contract.json"
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15680-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15680-privacy-v1-source-contract.json"
             ].contains(path) ? path : "",
             "sourceProvenance":
                 "Contents/Resources/NeAntikRuntimeEvidence/source-provenance.json",

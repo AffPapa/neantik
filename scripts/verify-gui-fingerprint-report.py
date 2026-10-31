@@ -313,6 +313,15 @@ def source_contract_name(runtime_version: str, candidate_lock: dict | None = Non
     if runtime_version == "156.0.8078.74":
         return "chromium-15674-source-contract.json"
     if runtime_version == "156.0.8078.80":
+        if candidate_lock is not None and candidate_lock.get("variant") == "recipient-privacy-policy-v1":
+            from chromium_15680_privacy_derivation import verify_lock_binding
+            try:
+                verify_lock_binding(candidate_lock, Path(__file__).resolve().parents[1])
+            except ValueError as error:
+                raise FingerprintReportError("Privacy candidate source contract mismatch") from error
+            return "chromium-15680-privacy-v1-source-contract.json"
+        if candidate_lock is not None and candidate_lock.get("variant") is not None:
+            raise FingerprintReportError("Unsupported Chromium .80 source variant")
         return "chromium-15680-source-contract.json"
     # A new major cannot borrow a historical diagnostic contract. Explicit
     # source/provenance dispatch must be implemented before qualifying it.
