@@ -32,13 +32,22 @@ jobs:
 
   swift-tests:
     if: ${{ ! inputs.toolchain_probe && inputs.diagnostic_suite == '' }}
-    name: Swift / shard ${{ matrix.shard }}
+    name: Swift / ${{ matrix.label }} shard
     runs-on: macos-latest
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         shard: [0, 1, 2, 3]
+        include:
+          - shard: 0
+            label: foundation
+          - shard: 1
+            label: fingerprint
+          - shard: 2
+            label: profiles-a
+          - shard: 3
+            label: profiles-b
     env:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:

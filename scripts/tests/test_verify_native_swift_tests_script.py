@@ -48,6 +48,21 @@ def fixture_suite_tail(source: str, suite: str) -> str | None:
 
 
 class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
+    def test_required_context_names_preserve_real_swift_and_python_analysis(self) -> None:
+        workflow = CI_WORKFLOW.read_text()
+        self.assertIn('name: Swift / ${{ matrix.label }} shard', workflow)
+        self.assertIn('shard: [0, 1, 2, 3]', workflow)
+        for label in ['foundation', 'fingerprint', 'profiles-a', 'profiles-b']:
+            self.assertIn('label: ' + label, workflow)
+        analysis = (CI_WORKFLOW.parent / 'codeql.yml').read_text()
+        for language, context in [('swift', 'Swift'), ('python', 'Python')]:
+            self.assertIn('name: ' + context, analysis)
+            self.assertIn('languages: ' + language, analysis)
+        self.assertEqual(analysis.count('github/codeql-action/init@'), 2)
+        self.assertEqual(analysis.count('github/codeql-action/analyze@'), 2)
+        self.assertIn('swift build --disable-sandbox --arch arm64 --jobs 2', analysis)
+        self.assertIn('resolve-compatible-developer-dir.sh', analysis)
+
     def test_fixture_boundary_follows_declared_types_without_suite_attribute(self) -> None:
         source = '''@MainActor struct HeadedTests {
             @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_FIXTURE"] != nil))
