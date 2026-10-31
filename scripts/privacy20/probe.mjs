@@ -46,7 +46,54 @@ export const workerSource = `
 (async()=>{const result={timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,fonts:typeof self.fonts!=='undefined',storage:typeof indexedDB==='object'};
 result.fetch=await(await fetch('/owned-worker-network',{keepalive:true})).text();
 result.websocket=await Promise.race([new Promise(resolve=>{const ws=new WebSocket(location.origin.replace('https:','wss:')+'/owned-worker-ws');ws.onopen=()=>{ws.close();resolve('unexpected-success')};ws.onerror=()=>resolve('rejected')}),new Promise(resolve=>setTimeout(()=>resolve('timeout'),2000))]);postMessage(result)})();`;
-export const serviceWorkerSource = `addEventListener('install',e=>e.waitUntil(skipWaiting()));addEventListener('activate',e=>e.waitUntil(clients.claim()));`;
+export const serviceWorkerSource = `
+addEventListener('install',e=>e.waitUntil(skipWaiting()));
+addEventListener('activate',e=>e.waitUntil(clients.claim()));
+addEventListener('message',e=>e.waitUntil((async()=>{
+ const {op,nonce,marker}=e.data??{},port=e.ports[0];if(!port||!['read','write'].includes(op))return;
+ const cache=await caches.open('owned-sw-state'),key='/owned-service-worker-marker';
+ if(op==='write'){if(typeof marker!=='string'||!/^[a-f0-9]{32}$/.test(marker))throw Error('invalid own marker');await cache.put(key,new Response(marker))}
+ const response=await cache.match(key);port.postMessage({nonce,marker:response?await response.text():null});
+})()));`;
+
+export const dedicatedWorkerStateSource = `
+onmessage=async e=>{const {nonce,marker}=e.data;try{
+ const db=await new Promise((resolve,reject)=>{const q=indexedDB.open('owned-dedicated-worker-state',1);q.onupgradeneeded=()=>q.result.createObjectStore('markers');q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error)});
+ const before=await new Promise((resolve,reject)=>{const q=db.transaction('markers').objectStore('markers').get('marker');q.onsuccess=()=>resolve(q.result??null);q.onerror=()=>reject(q.error)});
+ await new Promise((resolve,reject)=>{const tx=db.transaction('markers','readwrite');tx.objectStore('markers').put(marker,'marker');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close();postMessage({nonce,before,after:marker});
+}catch{postMessage({nonce,error:'owned worker state failed'})}};`;
+
+export function workerIsolationPage(nonce, phase, marker) {
+ return `<!doctype html><meta charset=utf-8><title>Own worker isolation QA</title><script type=module>
+const r={nonce:${JSON.stringify(nonce)},phase:${JSON.stringify(phase)},status:'not-run'},marker=${JSON.stringify(marker)};
+const bound=p=>Promise.race([p,new Promise((_,reject)=>setTimeout(()=>reject(Error('worker timeout')),5000))]);
+try{
+ const existing=await navigator.serviceWorker.getRegistrations();r.before={registrations:existing.length};
+ const registration=await navigator.serviceWorker.register('/owned-sw.js');await bound(navigator.serviceWorker.ready);
+ const worker=registration.active;if(!worker)throw Error('no active worker');
+ const request=op=>bound(new Promise((resolve,reject)=>{const channel=new MessageChannel();channel.port1.onmessage=e=>{channel.port1.close();if(e.data.nonce!==r.nonce){reject(Error('nonce mismatch'));return}resolve(e.data.marker)};worker.postMessage({op,nonce:r.nonce,marker},[channel.port2])}));
+ r.before.marker=await request('read');r.after=await request('write');
+ r.dedicatedWorker=await bound(new Promise((resolve,reject)=>{const w=new Worker('/owned-worker-state.js');w.onmessage=e=>{w.terminate();if(e.data.nonce!==r.nonce||e.data.error){reject(Error('dedicated worker failed'));return}resolve(e.data)};w.onerror=()=>{w.terminate();reject(Error('dedicated worker error'))};w.postMessage({nonce:r.nonce,marker})}));r.status='observed';
+}catch(e){r.status='failed';r.failure=String(e.message).slice(0,80)}
+await fetch('/result?nonce='+r.nonce,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(r)});
+</script>`;
+}
+
+export function mediaIsolationPage(nonce, phase, marker) {
+ return `<!doctype html><meta charset=utf-8><title>Own fake media isolation QA</title><script type=module>
+const r={nonce:${JSON.stringify(nonce)},phase:${JSON.stringify(phase)},status:'not-run'};let stream;
+const digest=async value=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),b=>b.toString(16).padStart(2,'0')).join('');
+try{
+ document.cookie='owned_media_marker=${marker};Secure;SameSite=Strict;Path=/;Max-Age=3600';
+ r.permissionBefore={};for(const name of ['camera','microphone'])r.permissionBefore[name]=(await navigator.permissions.query({name})).state;
+ stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+ const capture=async()=>{const devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>['videoinput','audioinput'].includes(d.kind)&&d.deviceId&&!['default','communications'].includes(d.deviceId));return (await Promise.all(devices.map(async d=>({kind:d.kind,device:await digest(d.deviceId),group:d.groupId?await digest(d.groupId):null})))).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))};
+ r.devices=await capture();r.repeat=await capture();r.status='observed';
+}catch(e){r.status='failed';r.failure=String(e.name).slice(0,80)}finally{stream?.getTracks().forEach(t=>t.stop())}
+await fetch('/result?nonce='+r.nonce,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(r)});
+</script>`;
+}
+
 
 export function rtcPage(nonce, udpPort) {
  return `<!doctype html><meta charset=utf-8><title>Own RTC route QA</title><script type=module>
