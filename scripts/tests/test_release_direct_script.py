@@ -21,6 +21,11 @@ RELEASE_ENTRYPOINT = SCRIPTS.parent / "Release-NeAntik.command"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
+    def test_runtime_preparation_preserves_explicit_backup_selection(self) -> None:
+        text = PREPARE.read_text(encoding="utf-8")
+        self.assertNotIn('NEANTIK_BROWSER_DATA_BACKUP_ENABLED=0 NEANTIK_DIRECT_PROVISIONING_PROFILE=""', text)
+        self.assertIn('"$PROJECT_DIR/scripts/package-integrated-app.sh"', text)
+
     def test_prepared_candidate_without_binding_is_preserved_before_rebuild(self) -> None:
         inner = (SCRIPTS / "Run-NeAntik-Release.command").read_text(encoding="utf-8")
         start = inner.index("# A freshly prepared runtime candidate needs")

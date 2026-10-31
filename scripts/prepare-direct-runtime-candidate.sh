@@ -236,7 +236,8 @@ elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDID
 else
   python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py"
 fi
-NEANTIK_BROWSER_DATA_BACKUP_ENABLED=0 NEANTIK_DIRECT_PROVISIONING_PROFILE="" \
+# Preserve the caller's explicit backup opt-in and authenticated provisioning.
+# Forcing a legacy capability here conflicts with approved release metadata.
 "$PROJECT_DIR/scripts/package-integrated-app.sh" \
   "$SIGNED_RUNTIME" \
   "$BUILD_ARGS" \
