@@ -26,6 +26,8 @@ can recognize a version-only Info.plist diff from actual before/after values;
 
 ## Execute
 
+- Ordinary CI must exclude only explicit wholly opt-in fixture suites, retain mixed/pure unit controls and reject skipped-only results. Validate fixture gates against the actual declared test type (not an assumed @Suite file boundary). Size job budgets from measured build plus test duration; keep per-test progress so a timeout is diagnosable without a blind retry.
+- When independent CI lanes are already running, collect their remaining diagnostic results before pushing one repair batch. Do not cancel a failed run while other lanes can still reveal distinct failures; a record/harness failure is separate from product qualification.
 - For a post-publication release record, keep the full `assets` inventory separate from the exact ZIP/DMG `artifacts` pair, copy their published checksum sidecars into `releases/`, and run `verify-open-source-tree.py` plus `verify-mcp-documentation.py` before pushing. A record-format failure never requires rebuilding qualified app bytes.
 - Keep CURRENT compact: public baseline with observation date, one private or
   production candidate, last consumed attempt, reusable receipts, open gates

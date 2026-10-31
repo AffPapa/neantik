@@ -37,7 +37,36 @@ CI_RUNNER = importlib.util.module_from_spec(CI_SPEC)
 CI_SPEC.loader.exec_module(CI_RUNNER)
 
 
+def fixture_suite_tail(source: str, suite: str) -> str | None:
+    declaration = re.search(r"\b(?:struct|class|actor|enum)\s+" + re.escape(suite) + r"\b", source)
+    if declaration is None:
+        return None
+    # Match the CI discovery convention, including suites without @Suite.
+    # Helper types may occur inside/between suites and are not a boundary.
+    return re.split(r"\b(?:struct|class|actor|enum)\s+[A-Za-z_][A-Za-z0-9_]*Tests\b",
+                    source[declaration.end():], maxsplit=1)[0]
+
+
 class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
+    def test_fixture_boundary_follows_declared_types_without_suite_attribute(self) -> None:
+        source = '''@MainActor struct HeadedTests {
+            @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_FIXTURE"] != nil))
+            func guarded() {}
+            enum Helper { case ready }
+        }
+        enum SharedHelper { case ready }
+        struct OrdinaryTests { @Test func matchSetterKeepsIndependentNativePolicyFields() {} }
+        @Suite struct LaterTests { @Test func alsoOrdinary() {} }
+        '''
+        tail = fixture_suite_tail(source, 'HeadedTests')
+        self.assertIsNotNone(tail)
+        self.assertEqual(tail.count('@Test'), 1)
+        self.assertIn('guarded()', tail)
+        self.assertNotIn('matchSetterKeepsIndependentNativePolicyFields', tail)
+        self.assertNotIn('alsoOrdinary', tail)
+        self.assertEqual(fixture_suite_tail(source, 'OrdinaryTests').count('@Test'), 1)
+        self.assertIsNone(fixture_suite_tail(source, 'MissingTests'))
+
     def test_uses_isolated_writable_swift_caches(self) -> None:
         text = SCRIPT.read_text(encoding="utf-8")
 
@@ -113,12 +142,8 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
             matches = []
             for path in SWIFT_TESTS.glob("*.swift"):
                 source = path.read_text()
-                declaration = re.search(r"\b(?:struct|class|actor|enum)\s+" + re.escape(suite) + r"\b", source)
-                if declaration:
-                    # Several suites may share one file; test gates belong to the
-                    # actual suite, not a guessed basename or unrelated suite.
-                    tail = source[declaration.end():]
-                    tail = re.split(r"\n@Suite\b", tail, maxsplit=1)[0]
+                tail = fixture_suite_tail(source, suite)
+                if tail is not None:
                     matches.append(tail)
             self.assertEqual(len(matches), 1)
             text = matches[0]

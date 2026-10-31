@@ -62,5 +62,25 @@
   "WebKitProxySOCKSQualificationTests": [
     "NEANTIK_WEBKIT_SOCKS_STREAM_QUALIFICATION",
     "NEANTIK_WEBKIT_SOCKS_WARNING_ONCE"
+  ],
+  "NamedProxyQASeedDiagnosticTests": [
+    "NEANTIK_QA_GENERATE_TLS_TEMPLATE",
+    "NEANTIK_QA_GENERATE_ROOT",
+    "NEANTIK_QA_SEED_ROOT"
+  ],
+  "PrivateRuntimeClosureMeasurementTests": [
+    "NEANTIK_PRIVATE_RUNTIME_MEASUREMENT_INPUT"
+  ],
+  "ProfileImportPhaseDiagnosticsTests": [
+    "NEANTIK_PROFILE_IMPORT_PHASE_QA"
+  ],
+  "ProfileImportManagerPhaseDiagnosticsTests": [
+    "NEANTIK_PROFILE_IMPORT_PHASE_QA"
+  ],
+  "WebKitProxyQAProfileFixtureTests": [
+    "NEANTIK_WEBKIT_PROXY_PROFILE_FIXTURE"
+  ],
+  "WebKitProxyHeadedQualificationTests": [
+    "NEANTIK_WEBKIT_PROXY_HEADED_QUALIFICATION"
   ]
 }

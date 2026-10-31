@@ -8,14 +8,14 @@ import DirectUpdateCore
 /// inspect profiles, change signatures or admit an unqualified capability.
 struct PrivateRuntimeClosureMeasurementTests {
     private static let input = ProcessInfo.processInfo.environment["NEANTIK_PRIVATE_RUNTIME_MEASUREMENT_INPUT"]
-    @Test(.enabled(if: input != nil))
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_PRIVATE_RUNTIME_MEASUREMENT_INPUT"] != nil))
     func updaterRecognizesTheExactFrozenSignedRuntimeAndEvidence() throws {
         let resources = URL(fileURLWithPath: "/private/tmp/neantik-privacy20-pin-reference18/Contents/Resources", isDirectory: true)
         let observation = try DirectUpdateRuntimeProvenance.inspectResources(resources)
         #expect(observation.chromiumVersion == "156.0.8078.80")
         #expect(observation.runtimeSHA256 == DirectUpdatePrivacyRuntimePins.runtimeDigest)
     }
-    @Test(.enabled(if: input != nil))
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_PRIVATE_RUNTIME_MEASUREMENT_INPUT"] != nil))
     func measuredSuccessorAdmitsTypedPoliciesButOldSignedPackagingDoesNot() throws {
         let raw = try #require(Self.input)
         let app = try OwnedProfileDirectory.platformPath(URL(fileURLWithPath: raw))
@@ -28,7 +28,7 @@ struct PrivateRuntimeClosureMeasurementTests {
         let old = URL(fileURLWithPath: "/private/tmp/neantik-privacy20-candidate17/NeAntik Browser.app/Contents/MacOS/NeAntik Browser")
         #expect(BrowserPrivacyRuntime.inspect(executableURL: old) == nil)
     }
-    @Test(.enabled(if: input != nil))
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_PRIVATE_RUNTIME_MEASUREMENT_INPUT"] != nil))
     func measureExactSignedPrivateRuntimeWithoutLaunchingIt() throws {
         let raw = try #require(Self.input)
         let root = try OwnedProfileDirectory.platformPath(URL(fileURLWithPath: raw))

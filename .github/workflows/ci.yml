@@ -50,7 +50,7 @@ jobs:
     if: ${{ ! inputs.toolchain_probe && inputs.diagnostic_suite == '' }}
     name: Release and privacy contracts
     runs-on: macos-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
@@ -82,9 +82,9 @@ jobs:
       - name: Public workflow dependency closure
         run: python3 scripts/verify-public-workflow-references.py
       - name: Python regression tests
-        run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
+        run: python3 -m unittest discover -s scripts/tests -p 'test_*.py' -v
       - name: AffPapa release regression tests
-        run: python3 -m unittest discover -s ops/affpapa/tests -p 'test_*.py'
+        run: python3 -m unittest discover -s ops/affpapa/tests -p 'test_*.py' -v
 
   manager-diagnostic:
     if: ${{ ! inputs.toolchain_probe && inputs.diagnostic_suite != '' }}

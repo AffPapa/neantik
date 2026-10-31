@@ -13,6 +13,39 @@ SPEC.loader.exec_module(MOD)
 
 
 class CIManagerShardTests(unittest.TestCase):
+    def test_all_private_diagnostic_suites_require_explicit_fixture_admission(self):
+        root = Path(__file__).resolve().parents[2]
+        fixtures = json.loads((root / 'scripts/swift-runtime-fixture-suites.json').read_text())
+        expected = {
+            'PrivateRuntimeClosureMeasurementTests': ['NEANTIK_PRIVATE_RUNTIME_MEASUREMENT_INPUT'],
+            'ProfileImportPhaseDiagnosticsTests': ['NEANTIK_PROFILE_IMPORT_PHASE_QA'],
+            'ProfileImportManagerPhaseDiagnosticsTests': ['NEANTIK_PROFILE_IMPORT_PHASE_QA'],
+            'WebKitProxyQAProfileFixtureTests': ['NEANTIK_WEBKIT_PROXY_PROFILE_FIXTURE'],
+            'WebKitProxyHeadedQualificationTests': ['NEANTIK_WEBKIT_PROXY_HEADED_QUALIFICATION'],
+        }
+        ordinary = MOD.catalog()
+        for suite, flags in expected.items():
+            with self.subTest(suite=suite):
+                self.assertEqual(fixtures[suite], flags)
+                self.assertNotIn(suite, ordinary)
+        # Mixed suites retain real, unconditional endpoint/transport controls.
+        self.assertIn('WebKitProxyTransportTests', ordinary)
+        source = (root / 'Tests/NeAntikTests/PrivateRuntimeClosureMeasurementTests.swift').read_text()
+        self.assertEqual(source.count('@Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_PRIVATE_RUNTIME_MEASUREMENT_INPUT"]'), 3)
+
+    def test_named_proxy_seed_diagnostics_are_wholly_opt_in(self):
+        root = Path(__file__).resolve().parents[2]
+        fixtures = json.loads((root / 'scripts/swift-runtime-fixture-suites.json').read_text())
+        flags = {'NEANTIK_QA_GENERATE_TLS_TEMPLATE', 'NEANTIK_QA_GENERATE_ROOT',
+                 'NEANTIK_QA_SEED_ROOT'}
+        self.assertEqual(set(fixtures['NamedProxyQASeedDiagnosticTests']), flags)
+        source = (root / 'Tests/NeAntikTests/NamedProxyQASeedDiagnosticTests.swift').read_text()
+        self.assertEqual(source.count('@Test('), 4)
+        self.assertEqual(source.count('@Test(.enabled(if: ProcessInfo.processInfo.environment['), 4)
+        self.assertNotIn('NamedProxyQASeedDiagnosticTests', MOD.catalog())
+        cleaned = MOD.clean_environment({flag: '/private/tmp/owned-fixture' for flag in flags})
+        self.assertTrue(flags.isdisjoint(cleaned))
+
     def test_webkit_proxy_experiment_is_opt_in_and_pure_endpoint_controls_stay_in_ci(self):
         root = Path(__file__).resolve().parents[2]
         fixtures = json.loads((root / 'scripts/swift-runtime-fixture-suites.json').read_text())
