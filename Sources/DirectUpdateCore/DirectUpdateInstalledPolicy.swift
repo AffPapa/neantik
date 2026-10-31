@@ -2,12 +2,12 @@ import CryptoKit
 import Darwin
 import Foundation
 
-/// Certificate identity only. SHA-256 still binds helper payloads; SHA-1 here
-/// identifies the existing Developer ID certificate used by release tooling.
+/// Public Developer ID certificate pin, supplementary to the verified Apple
+/// chain, role/team requirements and separately pinned helper payloads.
 package enum DirectUpdateDeveloperIdentity {
-    package static let certificateSHA1 = "474F7C78F33EE324C24F6F5AE0443EB713E85E60"
+    package static let certificateSHA256 = "781a0b9f09d3c3ac3bd34017699882ae0bec2c1ecfbbce77077ead353f592728"
     package static func matches(_ certificate: Data) -> Bool {
-        Insecure.SHA1.hash(data: certificate).map { String(format: "%02X", $0) }.joined() == certificateSHA1
+        SHA256.hash(data: certificate).map { String(format: "%02x", $0) }.joined() == certificateSHA256
     }
 }
 

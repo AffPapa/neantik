@@ -54,8 +54,40 @@ struct DirectUpdateInstalledPolicyTests {
         #expect(throws: (any Error).self) { try DirectUpdateInstalledMetadata.parseSigned(info, version: "0.7.33", build: build) }
     }
     @Test func aCertificateDeclarationDoesNotProveDeveloperIdentity() {
-        #expect(!DirectUpdateDeveloperIdentity.matches(Data(DirectUpdateDeveloperIdentity.certificateSHA1.utf8)))
+        #expect(!DirectUpdateDeveloperIdentity.matches(Data(DirectUpdateDeveloperIdentity.certificateSHA256.utf8)))
         #expect(!DirectUpdateDeveloperIdentity.matches(Data()))
+    }
+    @Test func onlyTheReviewedPublicCertificateMatchesTheStrongPin() throws {
+        // Public DER extracted from the frozen published 0.9.2 app. This is
+        // certificate material only; no private key or runtime override exists.
+        let certificate = try #require(Data(base64Encoded: """
+            MIIFwjCCBKqgAwIBAgIIIkBHVltD7OUwDQYJKoZIhvcNAQELBQAweTEtMCsGA1UEAwwkRGV2ZWxvcGVyIElEIENlcnRpZmljYXRp
+            b24gQXV0aG9yaXR5MSYwJAYDVQQLDB1BcHBsZSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTETMBEGA1UECgwKQXBwbGUgSW5jLjEL
+            MAkGA1UEBhMCVVMwHhcNMjYwNzI2MTgyOTEzWhcNMjcwMjAxMjIxMjE1WjCBsTEaMBgGCgmSJomT8ixkAQEMCkg2VkdVMk02SkQx
+            SzBJBgNVBAMMQkRldmVsb3BlciBJRCBBcHBsaWNhdGlvbjog0JXQstCz0LXQvdC40Lkg0JjQstCw0L3QvtCyIChINlZHVTJNNkpE
+            KTETMBEGA1UECwwKSDZWR1UyTTZKRDEkMCIGA1UECgwb0JXQstCz0LXQvdC40Lkg0JjQstCw0L3QvtCyMQswCQYDVQQGEwJVUzCC
+            ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALEOeXOCO6SHrBKuZb+ZhfUloZQiPdNk7eLoVSw2F4pye9Pmc4daYT7+ePC4
+            fvaVj9vOm/BUhuv5/ICQai1o6xogsm83EooqpwyOas2PW7jmFMiyYyis2xN91Jb57TfbifoHl5IfUKzsvz8FAB5yM0XBOPn4bUWd
+            37tIWUjOaY5LmaUHyskd8nUZpEs83XU9lU0udV9ZoiJ/WYic2IC8Pfmc+MwEezXOuAU48lTBjzKuI5fFEduWmugygO6hdHN1wTtw
+            4YW1JPuZ2cxBiIU7TMcVCKSJfQ820BrkLljVg+iesAGxSM/PidsP8+g0rzUPvjNVYSudLiyrpyKjBE205q0CAwEAAaOCAhMwggIP
+            MAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUVxftos/cfJihEOD8voctLPLjF1QwQAYIKwYBBQUHAQEENDAyMDAGCCsGAQUFBzAB
+            hiRodHRwOi8vb2NzcC5hcHBsZS5jb20vb2NzcDAzLWRldmlkMDYwggEdBgNVHSAEggEUMIIBEDCCAQwGCSqGSIb3Y2QFATCB/jCB
+            wwYIKwYBBQUHAgIwgbYMgbNSZWxpYW5jZSBvbiB0aGlzIGNlcnRpZmljYXRlIGJ5IGFueSBwYXJ0eSBhc3N1bWVzIGFjY2VwdGFu
+            Y2Ugb2YgdGhlIHRoZW4gYXBwbGljYWJsZSBzdGFuZGFyZCB0ZXJtcyBhbmQgY29uZGl0aW9ucyBvZiB1c2UsIGNlcnRpZmljYXRl
+            IHBvbGljeSBhbmQgY2VydGlmaWNhdGlvbiBwcmFjdGljZSBzdGF0ZW1lbnRzLjA2BggrBgEFBQcCARYqaHR0cDovL3d3dy5hcHBs
+            ZS5jb20vY2VydGlmaWNhdGVhdXRob3JpdHkvMBYGA1UdJQEB/wQMMAoGCCsGAQUFBwMDMB0GA1UdDgQWBBSehr8DzMWnWBy/azCL
+            JqD6v+zyIzAOBgNVHQ8BAf8EBAMCB4AwHwYKKoZIhvdjZAYBIQQRDA8yMDE3MDYyNDAwMDAwMFowEwYKKoZIhvdjZAYBDQEB/wQC
+            BQAwDQYJKoZIhvcNAQELBQADggEBABwkYGmfasYqz6wqqMnBQVd2OxxyK2pb2KEphCsbnvDJp34/M7Ewl2wTHXGnHza/lsEqkanR
+            z3+MZn7L1g1g6S7lmM7mocgVtF48XDFgCH/44H8bDYVJpHVl+kplq8CGDHNSZ9w2JuPeap2rsyoZeG7if0XHd2pDeeEWQbwemiTX
+            XkidZpmh8WZT17YcWMxA+VvFHtja86WGE1KngaTXFpGlm7kxAdZFReCrKG7rVzbtOaR++hXDa5QMMc49PAmpyWiD3Sv9SozqT+AH
+            A103TfU+rc25iY8f2KNn0fYdkZ1ext8HRNEPvFIx9vmQRWsHxEKEdBmYqzSzDnioU+MbDOs=
+            """, options: .ignoreUnknownCharacters))
+        #expect(DirectUpdateDeveloperIdentity.matches(certificate))
+        for index in [0, certificate.count / 2, certificate.count - 1] {
+            var changed = certificate
+            changed[index] ^= 1
+            #expect(!DirectUpdateDeveloperIdentity.matches(changed))
+        }
     }
     @Test func modernPolicySelectsNewOwnerAndRetainsOnlySignedPriorPin() throws {
         var info = plist()

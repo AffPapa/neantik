@@ -1,5 +1,9 @@
 # NeAntik changelog
 
+## Unreleased — certificate pin hardening
+
+- Source-only: the updater now compares the existing public Developer ID certificate using its reviewed SHA-256 digest. Apple chain/team/role, helper payload, timestamp and signed manifest checks remain. This patch is not present in published 0.9.2 binaries; incorporating it requires a separately qualified future manager/helper release, without rebuilding Chromium. No replacement key or certificate was created.
+
 ## Direct 0.9.2 (202) — published public alpha
 
 - Added versioned balanced/strict privacy presets, a local blank start page, explicit WebRTC policy, per-profile permissions, standard-font protection, WebGL debug-renderer reduction and optional letterboxing. Existing saved profiles preserve their choices.

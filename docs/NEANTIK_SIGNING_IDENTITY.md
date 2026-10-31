@@ -8,8 +8,14 @@ login Keychain at `~/Library/Keychains/login.keychain-db`:
 - Team: `H6VGU2M6JD`
 - Role: Developer ID Application for direct distribution and notarization
 
-Certificate trust comparisons use SHA-256 or exact DER membership; the SHA-1
-value is only the existing Apple CLI selector. Reviewed public pins are in
+Developer/QA scripts and the unreleased Swift source use the reviewed SHA-256
+certificate pin; exact DER membership checks remain. The SHA-1 value above is
+the existing Apple CLI selector. Published 0.9.2 (source a90a934) still uses that
+SHA-1 fingerprint as an additional updater certificate pin, alongside verified
+Apple chain/team/role, hardened signing, SHA-256 helper payloads and Ed25519
+manifest checks. No bypass was demonstrated; do not claim the source patch is
+already in released binaries. A future manager/helper release must qualify its
+new bytes; Chromium runtime18 need not be rebuilt. Reviewed script pins are in
 `scripts/direct_signing_identity.py`. No private key was exported or replaced.
 
 ## Safe verification
