@@ -15,6 +15,16 @@ actor ProxyRelayOwnerClient {
             if case let .cleanupUnconfirmed(fence) = self { return fence }; return nil
         }
     }
+    // Fixed, non-sensitive phase codes only. Protected audit startup already
+    // validates its arguments before any profile or relay work is reached.
+    private enum StartupPhase: String {
+        case bootstrap, parentIdentity, parentCodePin, parentLiveCode
+        case spawn, fence, pipes, childLiveCode, bootstrapWrite, readyRead, readyVerify, prepared
+    }
+    private static func auditStartupPhase(_ phase: StartupPhase) {
+        guard CommandLine.arguments.contains(NeAntikLaunchIntent.releaseUpdateAuditArgument) else { return }
+        try? FileHandle.standardError.write(contentsOf: Data("relay_startup_phase=\(phase.rawValue)\n".utf8))
+    }
     private enum State { case prepared, bound, active, closed }
     private let process: Process
     private let input: FileHandle
@@ -46,14 +56,18 @@ actor ProxyRelayOwnerClient {
         // A nonisolated async entry can inherit MainActor until its first
         // suspension. Put the whole startup on a separate executor explicitly.
         let task = Task.detached { () throws -> ProxyRelayOwnerClient in
+            auditStartupPhase(.bootstrap)
             try Task.checkCancellation(); try bootstrap.validate()
+            auditStartupPhase(.parentIdentity)
             guard let ownExecutable = Bundle.main.executableURL, let ownID = Bundle.main.bundleIdentifier,
                   ownExecutable.standardizedFileURL == executable.standardizedFileURL,
                   let parent = ProxyRelaySocketOwnerInspector.processIdentity(getpid())
             else { throw Failure.invalidState }
+            auditStartupPhase(.parentCodePin)
             let team = try ProxyRelayExpectedCode.teamIdentifier(at: ownExecutable, expectedIdentifier: ownID)
             let expectedCode = try ProxyRelayExpectedCode.qualifiedPin(at: ownExecutable,
                 expectedIdentifier: ownID, expectedTeamIdentifier: team)
+            auditStartupPhase(.parentLiveCode)
             guard ProxyRelayLiveCodeVerifier.matches(processID: getpid(), expectedProcess: parent, expectedCode: expectedCode)
             else { throw Failure.invalidState }
             let request = Pipe(), reply = Pipe(), process = Process()
@@ -66,23 +80,30 @@ actor ProxyRelayOwnerClient {
             let input = request.fileHandleForWriting, output = reply.fileHandleForReading
             var spawnedFence: ProxyRelayPendingOwnerFence?
             do {
+                auditStartupPhase(.spawn)
                 try process.run()
                 // Before any pipe setup, code validation or secret transmission:
                 // persist even an uninspectable child as a conservative fence.
                 let fence = ProxyRelayPendingOwnerFence(profileID: bootstrap.profileID, sessionGeneration: bootstrap.sessionGeneration,
                     ownerPID: process.processIdentifier, identity: ProxyRelaySocketOwnerInspector.processIdentity(process.processIdentifier))
                 spawnedFence = fence
+                auditStartupPhase(.fence)
                 try registerChild(fence)
+                auditStartupPhase(.pipes)
                 try request.fileHandleForReading.close(); try reply.fileHandleForWriting.close()
                 try ProxyRelayPrivatePipe.prepare(input.fileDescriptor, writable: true)
                 try ProxyRelayPrivatePipe.prepare(output.fileDescriptor, writable: false)
+                auditStartupPhase(.childLiveCode)
                 guard let child = ProxyRelaySocketOwnerInspector.processIdentity(process.processIdentifier),
                       child.userID == geteuid(), child.parentProcessID == getpid(),
                       ProxyRelayLiveCodeVerifier.matches(processID: process.processIdentifier, expectedProcess: child, expectedCode: expectedCode)
                 else { throw Failure.invalidReply }
+                auditStartupPhase(.bootstrapWrite)
                 try ProxyRelayPrivatePipe.writeFrame(input.fileDescriptor, data: JSONEncoder().encode(bootstrap), timeout: 2)
+                auditStartupPhase(.readyRead)
                 let ready = try JSONDecoder().decode(ProxyRelayOwnerProtocol.Ready.self,
                     from: ProxyRelayPrivatePipe.readFrame(output.fileDescriptor, timeout: 10))
+                auditStartupPhase(.readyVerify)
                 guard ready.schemaVersion == 1, ready.nonce == bootstrap.nonce, ready.port != 0,
                       process.isRunning,
                       let identity = ProxyRelaySocketOwnerInspector.processIdentity(process.processIdentifier),
@@ -90,6 +111,7 @@ actor ProxyRelayOwnerClient {
                       ProxyRelayLiveCodeVerifier.matches(processID: process.processIdentifier, expectedProcess: identity, expectedCode: expectedCode)
                 else { throw Failure.invalidReply }
                 try Task.checkCancellation()
+                auditStartupPhase(.prepared)
                 return ProxyRelayOwnerClient(process: process, input: input, output: output,
                                              bootstrap: bootstrap, ready: ready, identity: identity, expectedCode: expectedCode)
             } catch {
