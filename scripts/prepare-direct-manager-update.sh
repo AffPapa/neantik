@@ -132,6 +132,22 @@ verify_reviewed_runtime_evidence() {
     156.0.8078.74)
       source_contract="$PROJECT_DIR/runtime/chromium-15674-source-contract.json"
       ;;
+    156.0.8078.80)
+      local m15680_variant
+      m15680_variant="$(plutil -extract variant raw -o - "$evidence/fingerprint-chromium.lock.json" 2>/dev/null || true)"
+      case "$m15680_variant" in
+        recipient-privacy-policy-v1)
+          source_contract="$PROJECT_DIR/runtime/chromium-15680-privacy-v1-source-contract.json"
+          ;;
+        "")
+          source_contract="$PROJECT_DIR/runtime/chromium-15680-source-contract.json"
+          ;;
+        *)
+          echo "Unsupported Chromium 156.80 runtime variant for manager-only update." >&2
+          exit 65
+          ;;
+      esac
+      ;;
     *)
       echo "Unsupported Chromium runtime version for manager-only update: $runtime_version" >&2
       exit 65
