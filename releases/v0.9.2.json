@@ -86,5 +86,17 @@
     "tag": "v0.9.1",
     "retained": true
   },
-  "qualificationReport": "https://github.com/AffPapa/neantik/releases/download/v0.9.2/NeAntik-0.9.2-privacy-qualification.md"
+  "qualificationReport": "https://github.com/AffPapa/neantik/releases/download/v0.9.2/NeAntik-0.9.2-privacy-qualification.md",
+  "artifacts": [
+    {
+      "name": "NeAntik-0.9.2-arm64-notarized.zip",
+      "bytes": 183376570,
+      "sha256": "2e731d50cf2a98be0d9bf79eef3abaf26fac3fe901ac58d7978f59800c046238"
+    },
+    {
+      "name": "NeAntik-0.9.2-arm64-notarized.dmg",
+      "bytes": 208914426,
+      "sha256": "08715f4fef852a27a88054e2a0c30a3e40eb55d7b98df5473d902715ee7aa52e"
+    }
+  ]
 }

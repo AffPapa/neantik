@@ -26,6 +26,7 @@ can recognize a version-only Info.plist diff from actual before/after values;
 
 ## Execute
 
+- For a post-publication release record, keep the full `assets` inventory separate from the exact ZIP/DMG `artifacts` pair, copy their published checksum sidecars into `releases/`, and run `verify-open-source-tree.py` plus `verify-mcp-documentation.py` before pushing. A record-format failure never requires rebuilding qualified app bytes.
 - Keep CURRENT compact: public baseline with observation date, one private or
   production candidate, last consumed attempt, reusable receipts, open gates
   and one next action. Archive prior expanded state byte-for-byte before
