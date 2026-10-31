@@ -35,6 +35,16 @@ enum ProxyPasswordUpdate: Equatable {
   }
 }
 
+struct ProfileEditorEnginePresentation: Equatable, Sendable {
+  let showsPicker: Bool
+  let isAvailable: Bool
+
+  static func resolve(engine: BrowserEngine, available: [BrowserEngine]) -> Self {
+    let isAvailable = available.contains(engine)
+    return Self(showsPicker: available.count > 1 && isAvailable, isAvailable: isAvailable)
+  }
+}
+
 struct ProfileEditorFolderPresentation: Equatable, Sendable {
   static let searchablePickerThreshold = 8
 
@@ -349,10 +359,10 @@ struct ProfileEditorView: View {
       if privacyPolicy != .legacy {
         Picker("WebRTC", selection: $privacyPolicy.rtc) {
           Text("Выключен").tag(BrowserPrivacyPolicy.RTC.off)
-          Text("Только через маршрут прокси").tag(BrowserPrivacyPolicy.RTC.proxyOnly)
+          Text("Ограничить прямой UDP").tag(BrowserPrivacyPolicy.RTC.proxyOnly)
           if privacyPolicy.rtc == .automatic { Text("Прежняя политика").tag(BrowserPrivacyPolicy.RTC.automatic) }
         }
-        Text("Без прокси режим «Только через маршрут прокси» выключает WebRTC. При прокси разрешены совместимые TCP TURN-соединения; UDP вне прокси запрещён.")
+        Text("Режим «Ограничить прямой UDP» без прокси выключает WebRTC. С прокси он ограничивает прямой UDP; работа звонков через TURN зависит от сайта и не подтверждена проверкой маршрута.")
           .font(.caption).foregroundStyle(.secondary)
       }
       if original == nil {
@@ -447,17 +457,32 @@ struct ProfileEditorView: View {
           }
         }
         Section("Профиль") {
-          Picker("Движок браузера", selection: $engine) {
-            ForEach(BrowserEngine.allCases) { Text($0.title).tag($0) }
+          let enginePresentation = ProfileEditorEnginePresentation.resolve(
+            engine: engine, available: BrowserEngine.allCases
+          )
+          if enginePresentation.showsPicker {
+            Picker("Движок браузера", selection: $engine) {
+              ForEach(BrowserEngine.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .disabled(original != nil)
+            .onChange(of: engine) { _, value in
+              if value == .webkit { fontPolicy = .native }
+            }
+          } else {
+            LabeledContent("Движок браузера", value: engine.title)
           }
-          .pickerStyle(.segmented)
-          .disabled(original != nil)
-          .onChange(of: engine) { _, value in
-            if value == .webkit { fontPolicy = .native }
+          if enginePresentation.isAvailable {
+            Text(engine.settingsSummary + (engine == .webkit && !WebKitMediaFeature.isEnabled ? " Камера и микрофон пока отключены." : ""))
+              .font(.callout).foregroundStyle(.secondary)
+          } else {
+            Text("Этот движок недоступен в текущем выпуске. Данные профиля сохранены.")
+              .font(.callout).foregroundStyle(.secondary)
           }
-          Text(engine.settingsSummary + (engine == .webkit && !WebKitMediaFeature.isEnabled ? " Камера и микрофон пока отключены." : ""))
-            .font(.callout).foregroundStyle(.secondary)
-          if original != nil { Text("Чтобы выбрать другой движок, создай новый профиль.").font(.callout).foregroundStyle(.secondary) }
+          if original != nil && enginePresentation.showsPicker {
+            Text("Чтобы выбрать другой движок, создай новый профиль.")
+              .font(.callout).foregroundStyle(.secondary)
+          }
 
           TextField("Название", text: $name)
             .accessibilityLabel("Название профиля")
@@ -510,7 +535,7 @@ struct ProfileEditorView: View {
             set: { fontPolicy = $0 ? .systemV1 : .native }
           ))
           .disabled(!supportsSystemFontPolicy && fontPolicy == .native)
-          Text("Сайты видят системные шрифты macOS, но не установленные вами. Шрифты, загружаемые самим сайтом, работают. Cookies и данные сайтов сохраняются.")
+          Text("Ограничивает доступ сайтов к установленным шрифтам; системный набор зависит от macOS. Шрифты сайта продолжают работать. Cookies и данные сайтов сохраняются.")
             .font(.callout).foregroundStyle(.secondary)
           if !supportsSystemFontPolicy {
             Text(fontPolicy == .systemV1
@@ -529,7 +554,15 @@ struct ProfileEditorView: View {
               .font(.callout).foregroundStyle(.secondary)
           }
           Toggle("Использовать прокси", isOn: $usesProxy)
+          if !usesProxy {
+            Text(FirstProfileBootstrap.directPrivacyNotice)
+              .font(.caption).foregroundStyle(.secondary)
+          }
           if usesProxy {
+            Text("Проверка обращается к внешним сервисам через прокси; им виден выходной IP прокси.")
+              .font(.caption).foregroundStyle(.secondary)
+            Text("Прокси разрешает адреса сайтов и может иметь доступ к своей локальной сети. Выбирайте доверенного провайдера.")
+              .font(.caption).foregroundStyle(.secondary)
             Picker("Ввод прокси", selection: $proxyEntryMode) {
               ForEach(ProxyEntryMode.allCases, id: \.self) { mode in
                 Text(mode.rawValue).tag(mode)
@@ -677,7 +710,7 @@ struct ProfileEditorView: View {
                 ? (WebKitProxyFeature.launchEnabled
                   ? "Эта предварительная проверка использует curl и IP-сервисы. Она не измеряет маршрут окна WebKit; фактический маршрут и отказ без прямого подключения проверяются отдельно."
                   : "Эта предварительная проверка использует curl и IP-сервисы. Она не измеряет маршрут окна WebKit; в этой сборке запуск WebKit с прокси отключён.")
-                : "Проверка через прокси сверяет ответы двух IP-сервисов по выходному IP, стране и часовому поясу. Если сервис недоступен, используется резервный источник. Проверка повторяется перед запуском; маршрут Chromium проверяется отдельно.")
+                : "Проверка через прокси сверяет ответы ipwho.is и free.freeipapi.com по выходному IP, стране и часовому поясу. При недоступности используется резервный ipapi.co. Сервисы получают IP выхода прокси и данные запроса. Проверка повторяется перед запуском; маршрут Chromium проверяется отдельно.")
               .font(.caption)
               .foregroundStyle(.secondary)
               if !proxyUsername.isEmpty {

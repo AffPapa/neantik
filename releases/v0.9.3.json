@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "version": "0.9.3",
+  "tag": "v0.9.3",
+  "build": 203,
+  "channel": "public-alpha",
+  "publishedAt": "2026-10-31T20:38:24Z",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.9.3",
+  "sourceCommit": "b3fd185facd102217a682f2f9c849889fe48418a",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.80",
+    "webkit": "Deferred; existing data preserved; launch unavailable",
+    "signedFrameworkSHA256": "03852e945564d2e00db3849e9a26c560a0e0ad22836e8a8e83afbe50ce2e8047",
+    "sourceContractSHA256": "d2990face54ab8e721aa45404cf6de866d348c96dda7161ece04826d84845983"
+  },
+  "assets": [
+    {
+      "name": "NeAntik-0.9.3-arm64-notarized.dmg",
+      "bytes": 208913122,
+      "sha256": "4cc9a626d10954d912b80f033b0522c6bef4c1a3012abaabfeec41cf33132471"
+    },
+    {
+      "name": "NeAntik-0.9.3-arm64-notarized.dmg.sha256",
+      "bytes": 100,
+      "sha256": "bbe0bf77c3767921e2410b223f0bd038e6c29e2625f9795e842832ace1ccbe9e"
+    },
+    {
+      "name": "NeAntik-0.9.3-arm64-notarized.zip",
+      "bytes": 183396164,
+      "sha256": "99a3b9407c4803e6318c71e232d665a23506f4f561eff1352ae1ffa740d52470"
+    },
+    {
+      "name": "NeAntik-0.9.3-arm64-notarized.zip.sha256",
+      "bytes": 100,
+      "sha256": "7e64ea5aa8a5168a59b38b351e4a9342fb2390150ff1755731c385287709daa0"
+    },
+    {
+      "name": "NeAntik-0.9.3-fingerprint-attestation.json",
+      "bytes": 1372,
+      "sha256": "11e20107dd3d737e4803e36fa00d05eff9c63f4e10e6cd40075cdabd68416d82"
+    },
+    {
+      "name": "NeAntik-0.9.3-privacy-qualification.md",
+      "bytes": 13399,
+      "sha256": "3dc869ebcc3a48e350472d2ce79c67343d42e339dacea290e583822a621b039e"
+    },
+    {
+      "name": "NeAntik-0.9.3-source-offer.json",
+      "bytes": 2877,
+      "sha256": "925c178e331307afcd99a2403c63bd730c62bfbb1cc99779d78f6e9e7f2b23ca"
+    },
+    {
+      "name": "NeAntik-0.9.3-source.zip",
+      "bytes": 37566950,
+      "sha256": "16adea2db53633f5cb4a833e50ad158f30f0270856572c7b96f61e7ab2054e31"
+    }
+  ],
+  "site": {
+    "updated": true,
+    "liveVersion": "0.9.3",
+    "liveBuild": 203,
+    "sitesVersion": 163,
+    "sourceCommit": "8e230c7d7158b3e064c29c9cac3668d0d4d02470",
+    "deploymentID": "appgdep_6ae651e992c88191b7a86ed608e55f38",
+    "url": "https://browser.free"
+  },
+  "verificationScope": [
+    "Developer ID, Apple notarization, stapling and Gatekeeper for the exact ZIP/DMG",
+    "All eight GitHub assets verified by anonymous download; published ZIP and DMG match qualified bytes",
+    "Signed manager and shipping-helper install and controlled interruption/rollback tested with a synthetic 202 carrier on one Mac; unchanged Chromium runtime retained",
+    "Public source offer, source ZIP, attestation and qualification document verified; source/relink limitations apply"
+  ],
+  "limitations": [
+    "Public alpha, not stable1.0; no absolute anonymity or universal unlinkability",
+    "Google SafeBrowsing off; CERT/HaGeZi are bounded domain filters, not downloaded-file scanning",
+    "OneMac qualification; no all-path DNS/UDP/IPv6 guarantee, successfulTURNmedia, browser-nativefontorigincanary or fullhardware cohorts",
+    "Remote proxy resolving arbitrary hostname to privateIP remains proxy trust boundary",
+    "Separate signedQA backup is not an exactproductionGUI operation or cross-Mac restore proof",
+    "Site-specific secret derivation researched, not enabled; existing31bit identity seed not cryptographic secret",
+    "No fullclean Chromium rebuild, independentrecipient hardware or historicalSDK byteequivalence",
+    "Public 0.9.2 updater cannot apply this release; install the notarized ZIP/DMG manually. Synthetic carrier qualification is not a public 0.9.2 updater migration proof."
+  ],
+  "rollback": {
+    "tag": "v0.9.2",
+    "retained": true
+  },
+  "qualificationReport": "https://github.com/AffPapa/neantik/releases/download/v0.9.3/NeAntik-0.9.3-privacy-qualification.md",
+  "artifacts": [
+    {
+      "name": "NeAntik-0.9.3-arm64-notarized.dmg",
+      "bytes": 208913122,
+      "sha256": "4cc9a626d10954d912b80f033b0522c6bef4c1a3012abaabfeec41cf33132471"
+    },
+    {
+      "name": "NeAntik-0.9.3-arm64-notarized.zip",
+      "bytes": 183396164,
+      "sha256": "99a3b9407c4803e6318c71e232d665a23506f4f561eff1352ae1ffa740d52470"
+    }
+  ]
+}

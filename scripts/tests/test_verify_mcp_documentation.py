@@ -34,11 +34,12 @@ class MCPDocumentationTests(unittest.TestCase):
                 (root/name).parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,root/name)
             MODULE.verify(root)
             for name, before, after, error in [
-                ('docs/MCP_GUIDE.md','no WebKit request uses the saved setting','WebKit requests use the saved setting','MCP guide WebKit proxy claim'),
+                ('docs/MCP_GUIDE.md','WebKit is deferred and cannot be launched in the current Chromium-only release','WebKit can be launched in the current release','MCP guide WebKit availability claim'),
                 ('docs/WEBKIT_PROFILES.md','профиль с прокси не запускается','профиль запускается с прокси','WebKit profile guide proxy claim'),
                 ('Sources/NeAntik/HelpContent.swift','WebKit-профиль с прокси не запускается','WebKit-профиль с прокси запускается','In-app help WebKit proxy claim'),
             ]:
                 guide=root/name;original=guide.read_text()
+                self.assertIn(before, original)
                 guide.write_text(original.replace(before, after, 1))
                 with self.assertRaisesRegex(ValueError,error):
                     MODULE.verify(root)

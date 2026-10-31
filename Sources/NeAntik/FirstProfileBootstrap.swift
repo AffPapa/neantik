@@ -4,6 +4,7 @@ import SwiftUI
 enum FirstProfileBootstrap {
     static let defaultName = "Основной профиль"
     static let routeSummary = "Прямое подключение"
+    static let directPrivacyNotice = "Сайты видят IP текущего соединения. Профили с одним IP могут быть связаны."
 
     static func makeProfile(
         existingProfiles: [BrowserProfile]
@@ -140,6 +141,9 @@ struct FirstProfileOnboardingView: View {
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                Text(FirstProfileBootstrap.directPrivacyNotice)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 if let statusMessage = presentation.statusMessage,
                    let statusSystemImage = presentation.statusSystemImage
                 {
