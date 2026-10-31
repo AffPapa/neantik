@@ -27,7 +27,7 @@
   "dependencyGitCheckoutCount": 150,
   "nonGitInputCount": 89,
   "chromiumLicenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
-  "securityBaselineSHA256": "f74d9f7b7c803eb7aaea333be3712be858e1c08514af44ee26b2dd4033232340",
+  "securityBaselineSHA256": "9d8019f9cadcd10417f9104ae9dc065803b726daab4b507fc855bcc6937a82a6",
   "buildEvidenceFile": "runtime/chromium-15680-build-evidence.json",
   "buildEvidenceSHA256": "583823db2b2c34cfa92649b97206de3ffbd88c2d5e7b4769e17036d09024a913",
   "buildEvidenceStatus": "completed-build-verified-runtime-report-pending",
