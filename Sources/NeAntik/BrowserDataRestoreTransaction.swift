@@ -130,7 +130,13 @@ enum BrowserDataRestoreTransaction {
         defer { old.close() }
         let oldManifest = EncryptedBackupArchive.Manifest(profileID: manifest.profileID, identitySHA256: manifest.identitySHA256,
             runtimeExecutableSHA256: manifest.runtimeExecutableSHA256, runtimeFrameworkSHA256: manifest.runtimeFrameworkSHA256,
-            runtimeVersion: manifest.runtimeVersion, compatibilityScopeSHA256: manifest.compatibilityScopeSHA256, entries: old.entries)
+            runtimeVersion: manifest.runtimeVersion, compatibilityScopeSHA256: manifest.compatibilityScopeSHA256,
+            entries: old.entries.filter { entry in
+                let firstComponent = entry.path.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false).first ?? ""
+                return !EncryptedBackupArchive.isDerivedProtectionRoot(String(firstComponent))
+            })
+        // Portable archive validation excludes regenerated cache data. The full
+        // old.entries still binds journal, size budget and physical rollback.
         try EncryptedBackupArchive.validate(oldManifest)
         let next = try BackupTree.capture(stage.url, excludeRootTransients: false)
         defer { next.close() }

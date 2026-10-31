@@ -251,6 +251,12 @@ can recognize a version-only Info.plist diff from actual before/after values;
   share a cache within each job and execute each selected suite in a separate
   process. Nonzero exits and zero tests stop the shard.
 
+- When excluding derived profile data from backups, cover the actual restore
+  transaction with that data still present in the old live tree. Verify normal
+  commit, rollback before the decision and recovery after the decision. Keep
+  complete old-tree identity/entry/budget checks; archive-only round trips do
+  not cover internal retention and recovery validation.
+
 ## Deliver
 
 Record source/artifact inputs, result, evidence pointer, limitation and next

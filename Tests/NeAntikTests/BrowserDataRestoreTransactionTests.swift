@@ -20,6 +20,30 @@ struct BrowserDataRestoreTransactionTests {
     }
     private enum Interrupted: Error { case simulatedCrash }
 
+    @Test(arguments: [BrowserDataRestorePoint.finished, .swapped, .rollForwardRequired])
+    func restoreAndRecoveryPreserveOwnedDerivedCacheOnlyInTheOldTree(point: BrowserDataRestorePoint) throws {
+        let f = try fixture(); defer { try? fs.removeItem(at: f.paths.rootDirectory) }
+        let cache = f.paths.browserDataDirectory(for: f.profile.id).appendingPathComponent(".neantik-site-protection-v1")
+        try fs.createDirectory(at: cache, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let marker = Data("owned derived cache must survive rollback".utf8)
+        try marker.write(to: cache.appendingPathComponent("owner-fixture"))
+        if point == .finished {
+            _ = try commit(f)
+        } else {
+            #expect(throws: Interrupted.simulatedCrash) {
+                try commit(f) { if $0 == point { throw Interrupted.simulatedCrash } }
+            }
+            _ = try BrowserDataRestoreTransaction.recover(paths: f.paths, expectedContext: f.context, validateAuthority: { _, _ in })
+        }
+        let forward = point != .swapped
+        #expect(fs.fileExists(atPath: cache.path) == !forward)
+        let retainedCache = f.stage.url.appendingPathComponent(".neantik-site-protection-v1")
+        let preserved = forward ? retainedCache : cache
+        #expect(try Data(contentsOf: preserved.appendingPathComponent("owner-fixture")) == marker)
+        #expect(try Data(contentsOf: f.data) == Data((forward ? "backup value" : "newer live value").utf8))
+        try BrowserDataRestoreTransaction.requireNoPending(rootURL: f.paths.rootDirectory)
+    }
+
     @Test func atomicRestorePublishesNewRevisionAndPreservesOldTree() throws {
         let f = try fixture(); defer { try? fs.removeItem(at: f.paths.rootDirectory) }
         let result = try commit(f)
