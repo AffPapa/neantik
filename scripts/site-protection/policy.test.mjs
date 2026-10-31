@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createHmac} from 'node:crypto';
 import {canonicalDomain, parseDomains, threatRules, trackerRules, queryCleanupRules, replaceThreatRules, limitedText, RESOURCE_TYPES} from '../../Resources/SiteProtection/policy.mjs';
 
 test('domain normalization is bounded and never broadens to parent hosts', () => {
@@ -25,6 +26,17 @@ test('query cleanup preserves unknown OAuth payment signatures and mixed queries
   for (const url of ['https://example.com/?code=x&utm_source=y', 'https://example.com/?signature=x&utm_source=y', 'https://example.com/?X-Amz-Signature=x&utm_source=y','https://example.com/?order=1&utm_source=x','https://example.com/?utm_source=x&value=y','https://example.com/?url=https%3A%2F%2Fother.invalid']) assert.ok(!re.test(url), url);
   assert.deepEqual(queryCleanupRules(false), []);
   assert.deepEqual(rule.condition.requestMethods, ['get']);
+});
+
+test('signature outside the query can be invalidated by cleanup', () => {
+  const sign = query => createHmac('sha256', 'synthetic-test-key').update('/document?' + query).digest('hex');
+  const query = 'utm_source=synthetic';
+  const url = new URL(`https://owned.invalid/signed/${sign(query)}?${query}`);
+  const [rule] = queryCleanupRules(true);
+  assert.ok(new RegExp(rule.condition.regexFilter).test(url.href));
+  assert.equal(url.pathname.split('/').at(-1), sign(url.search.slice(1)));
+  for (const key of rule.action.redirect.transform.queryTransform.removeParams) url.searchParams.delete(key);
+  assert.notEqual(url.pathname.split('/').at(-1), sign(url.search.slice(1)));
 });
 
 test('tracker exception does not become a threat allow rule', () => {
