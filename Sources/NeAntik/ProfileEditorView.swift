@@ -561,6 +561,8 @@ struct ProfileEditorView: View {
           if usesProxy {
             Text("Проверка обращается к внешним сервисам через прокси; им виден выходной IP прокси.")
               .font(.caption).foregroundStyle(.secondary)
+            Text("Прокси разрешает адреса сайтов и может иметь доступ к своей локальной сети. Выбирайте доверенного провайдера.")
+              .font(.caption).foregroundStyle(.secondary)
             Picker("Ввод прокси", selection: $proxyEntryMode) {
               ForEach(ProxyEntryMode.allCases, id: \.self) { mode in
                 Text(mode.rawValue).tag(mode)
