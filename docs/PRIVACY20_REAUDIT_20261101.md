@@ -1,6 +1,6 @@
 # Privacy20 re-audit — 2026-11-01
 
-Published NeAntik0.9.2(202), Chromium156.0.8078.80, product source a90a934. The signed app, ZIP/DMG, runtime and website were not changed. This audit corrects the earlier overly broad interpretation of “19implemented”: **10 requirements are fulfilled within their stated bounded scope, one is research-complete, nine remain partial**. No confirmed production P0 bypass was found in the reviewed scope. This is not a claim that the product has no bugs or guarantees anonymity.
+Published NeAntik0.9.2(202), Chromium156.0.8078.80, product source a90a934. The signed app, ZIP/DMG, runtime and website were not changed. This audit corrects the earlier overly broad interpretation of “19implemented”: **9 requirements are fulfilled within their stated bounded scope, one is research-complete, ten remain partial**. One P1 custom-policy passport defect was found; no confirmed production P0 bypass was found in the reviewed scope. This is not a claim that the product has no bugs or guarantees anonymity.
 
 ## Corrected qualification
 
@@ -33,7 +33,7 @@ All new cases passed against the same pinned signed executable/framework. Succes
 | 17 | fulfilled-bounded | Two manager-driven ephemeral cleanup cycles and selected-profile clear; persistent data preserved. | Downloads remain; no SSD forensic-erasure guarantee. |
 | 18 | fulfilled-bounded | Separate extension data, requested-permission warnings, Sync/autofill/password filling restrictions. | Component/external integrations may remain; native fixed proxy is an independent boundary. |
 | 19 | partial | Encrypted backup58 source tests plus separate signed real-Keychain export/restore/wrong-password/corrupt/crash recovery. | Same Mac/profile/exact runtime only; exact production GUI and real browser-login restore not measured; not portable to another Mac. |
-| 20 | fulfilled-bounded | Passport distinguishes settings, sent parameters, recognized signed runtime and observations/unsupported surfaces. | Sent parameters are not a live measurement of every page API. |
+| 20 | partial | Passport distinguishes settings, sent parameters, recognized signed runtime and observations/unsupported surfaces. | Published0.9.2 wrongly claims Sync/autofill off for valid custom disableSyncAndAutofill=false. Source fix/14tests passed, not yet in a new signedbinary. |
 
 ## Documentation reconciliation
 
@@ -44,6 +44,15 @@ All new cases passed against the same pinned signed executable/framework. Succes
 5. The old worker-registration and confounded STUN observations cannot stand in for the newly measured stronger assertions. Their original receipts remain unchanged.
 6. Fixture background-network suppression is not normal-launch background qualification.
 7. Whole media-array inequality was weaker than complete identifier separation. Assertions now require empty device/group set intersections, with nonempty positive controls. Existing three-phase native observations passed the stronger checks offline; no extra browser launch was required.
+
+## Concrete passport defect
+
+Published0.9.2 always says Sync/autofill are disabled for non-legacy profiles,
+although custom disableSyncAndAutofill=false is supported and the real launch
+restrictions are conditional. Standard Balanced/Strict presets are unaffected.
+The defect was reproduced before the fix. Conditional configured-intent text
+passed14tests in2suites without skips. This is a source fix, not a claim that
+already downloaded0.9.2 binaries have changed.
 
 ## Remaining implementation / acceptance work
 

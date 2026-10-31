@@ -2,7 +2,15 @@
 
 ## Unreleased — certificate pin hardening
 
+- Source-only: the protection passport now derives its Sync/autofill statement from the actual custom policy flag. The old unconditional disabled claim was wrong when that flag was false. Standard Balanced/Strict presets are unchanged; this correction is not yet in published0.9.2 binaries.
+
 - Source-only: the updater now compares the existing public Developer ID certificate using its reviewed SHA-256 digest. Apple chain/team/role, helper payload, timestamp and signed manifest checks remain. This patch is not present in published 0.9.2 binaries; incorporating it requires a separately qualified future manager/helper release, without rebuilding Chromium. No replacement key or certificate was created.
+
+## Direct 0.9.3 (203) — development patch candidate, not yet qualified
+
+- Fix protection-passport wording for custom policies that do not disable Sync/autofill. Standard Balanced/Strict settings remain unchanged.
+- Consume the reviewed SHA-256 Developer ID certificate pin from the previously unreleased source hardening; preserve Apple/team/role, payload and signed-manifest checks.
+- Reuse the exact signed Chromium privacy18 runtime. New manager/helper signatures, adjacent update/rollback, native fingerprint and Apple/public gates remain required before distribution. No public0.9.3 is claimed yet.
 
 ## Direct 0.9.2 (202) — published public alpha
 

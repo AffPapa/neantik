@@ -5,11 +5,11 @@
   "build": 202,
   "productSourceCommit": "a90a9345f902c2d202ccf7bb73bacb28bcb16bb6",
   "productBytesChanged": false,
-  "findings": "No confirmed production P0 bypass in reviewed scope; three qualification shortcomings corrected; requirement coverage remains partial.",
+  "findings": "Threequalificationgaps corrected and one concreteP1custom-policy passport defect found/fixed in source; no confirmedproductionP0bypass in reviewed scope. Requirementcoverage remains partial.",
   "counts": {
-    "fulfilledBounded": 10,
+    "fulfilledBounded": 9,
     "researchComplete": 1,
-    "partial": 9
+    "partial": 10
   },
   "items": [
     {
@@ -128,9 +128,9 @@
     },
     {
       "id": 20,
-      "status": "fulfilled-bounded",
+      "status": "partial",
       "confirmed": "Passport distinguishes settings, sent parameters, recognized signed runtime and observations/unsupported surfaces.",
-      "remaining": "Sent parameters are not a live measurement of every page API."
+      "remaining": "Published0.9.2 incorrectly says Sync/autofill are off for valid custom disableSyncAndAutofill=false. Source fix reproduced and14targetedtestsPASS; not yet in a new signedbinary. Sent parameters still do not measure every page API."
     }
   ],
   "newNativeCases": [
@@ -228,5 +228,13 @@
     "rtcControlFunctionUnchanged": true,
     "browserRerun": false,
     "scope": "AllnonreservedIDsdisjoint, not merely unequal arrays; evaluated against retainednative3phaseobservations"
+  },
+  "passportBug": {
+    "severity": "P1",
+    "affected": "valid custom disableSyncAndAutofill=false; standardBalanced/Strictunaffected",
+    "source": "Sources/NeAntik/EnvironmentDiagnostics.swift",
+    "before": "regression reproduced actual incorrectclaim",
+    "after": "conditional configured-intent text;14tests/2suitesPASS,no skips",
+    "publishedBinaryFixed": false
   }
 }

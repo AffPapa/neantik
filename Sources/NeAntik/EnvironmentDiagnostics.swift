@@ -316,7 +316,10 @@ enum ProfileEnvironmentInspector {
                     id: "protection.extensions", title: "Расширения, Sync и autofill",
                     value: profile.proxy != nil || profile.privacyPolicy.presetName == "strict" ? "Обычные расширения профиля отключены" : "Разрешены отдельные расширения профиля",
                     state: .configured,
-                    detail: "Обычные расширения профиля ограничены; компоненты браузера и системные интеграции могут сохраняться. В совместимом движке обязательный прокси закреплён независимо от их настроек. Данные расширений не удаляются. Sync и autofill выключены в новых режимах."
+                    detail: "Обычные расширения профиля ограничены; компоненты браузера и системные интеграции могут сохраняться. В совместимом движке обязательный прокси закреплён независимо от их настроек. Данные расширений не удаляются. " +
+                        (profile.privacyPolicy.disableSyncAndAutofill
+                            ? "Политика запрещает Sync, autofill и сохранение паролей."
+                            : "Политика не запрещает Sync, autofill и сохранение паролей.")
                 ),
                 EnvironmentDiagnosticField(
                     id: "protection.retention", title: "Данные сайтов",
