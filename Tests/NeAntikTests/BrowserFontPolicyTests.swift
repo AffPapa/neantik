@@ -150,6 +150,43 @@ struct BrowserFontPolicyTests {
         #expect(!FileManager.default.fileExists(atPath: root.path))
     }
 
+    @Test func portableAndSnapshotImportsAcceptDerivedFontPolicyWithoutCopyingIdentity() throws {
+        for mode in ["balanced", "strict", "custom"] {
+            var policy = mode == "strict" ? BrowserPrivacyPolicy.strict : .balanced
+            if mode == "custom" { policy.trackingParameterCleanup = false }
+            let original = BrowserProfile(name: "Synthetic \(mode)", fontPolicy: .systemV1,
+                                          privacyPolicy: policy, identity: BrowserIdentity(seed: 33))
+            let portable = try ProfileConfigurationTransferDocument(profiles: [original])
+            let snapshot = try ProfileSnapshotDocument(profiles: [original], folderNameByProfileID: [:])
+            for imported in [try portable.makeProfiles(), try snapshot.makeProfiles()] {
+                let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-font-portable-" + UUID().uuidString)
+                defer { try? FileManager.default.removeItem(at: root) }
+                let paths = AppPaths(rootDirectory: root)
+                try paths.prepareBaseDirectories()
+                let fresh = try #require(imported.first)
+                #expect(fresh.fontPolicy == .systemV1 && fresh.privacyPolicy == policy)
+                #expect(fresh.id != original.id && fresh.identity != original.identity)
+                let result = try ProfileMetadataImportTransaction.run(paths: paths, requestedProfiles: imported, folderNames: [nil])
+                let saved = try #require(result.insertedProfiles.first)
+                #expect(saved.fontPolicy == .systemV1 && saved.privacyPolicy == policy)
+                #expect(try #require(ProfileStore(paths: paths).profile(withID: saved.id)).privacyPolicy == policy)
+            }
+        }
+    }
+
+    @Test func importedSystemFontPolicyStillRejectsIncompatibleEnginesAndLegacy() throws {
+        for engine in [BrowserEngine.chromium, .webkit] {
+            let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-font-import-denied-" + UUID().uuidString)
+            defer { try? FileManager.default.removeItem(at: root) }
+            let privacy: BrowserPrivacyPolicy = engine == .chromium ? .legacy : .balanced
+            let profile = BrowserProfile(name: "Denied", engine: engine, fontPolicy: .systemV1, privacyPolicy: privacy)
+            #expect(throws: (any Error).self) {
+                try ProfileMetadataImportTransaction.run(paths: AppPaths(rootDirectory: root), requestedProfiles: [profile], folderNames: [nil])
+            }
+            #expect(!FileManager.default.fileExists(atPath: root.path))
+        }
+    }
+
     @Test func ordinaryMetadataEditPreservesExplicitPolicyAndIdentity() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("neantik-font-edit-" + UUID().uuidString)
