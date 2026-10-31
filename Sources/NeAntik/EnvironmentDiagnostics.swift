@@ -314,10 +314,10 @@ enum ProfileEnvironmentInspector {
                 ),
                 EnvironmentDiagnosticField(
                     id: "protection.extensions", title: "Расширения, Sync и autofill",
-                    value: profile.proxy != nil || profile.privacyPolicy.presetName == "strict" ? "Обычные расширения профиля отключены" : "Разрешены отдельные расширения профиля",
+                    value: profile.proxy != nil || profile.privacyPolicy.restrictsUserExtensions ? "Настроено отключение обычных расширений" : "Допускаются отдельные расширения профиля",
                     state: .configured,
-                    detail: (profile.proxy != nil || profile.privacyPolicy.presetName == "strict"
-                        ? "Обычные расширения профиля отключены. "
+                    detail: (profile.proxy != nil || profile.privacyPolicy.restrictsUserExtensions
+                        ? "При запуске совместимого движка передаётся ограничение обычных расширений. "
                         : "Отдельные расширения профиля разрешены. ") +
                         "Компоненты браузера и системные интеграции могут сохраняться. " +
                         (profile.proxy != nil ? "В совместимом движке обязательный прокси закреплён независимо от их настроек. " : "") +

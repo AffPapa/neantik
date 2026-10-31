@@ -51,8 +51,8 @@ struct ProfileExtensionsSheet: View {
             }
             Text("Список из сохранённых настроек закрытого профиля. Установка, переключатели и удаление доступны в браузере.")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            if profile.proxy != nil || profile.privacyPolicy.presetName == "strict" {
-                Label("Обычные расширения профиля в этом режиме отключаются; данные сохраняются. Компоненты браузера и системные интеграции могут оставаться. Применение защиты показано в паспорте профиля.", systemImage: "lock.shield")
+            if profile.proxy != nil || profile.privacyPolicy.restrictsUserExtensions {
+                Label("В этом режиме настроено отключение обычных расширений профиля; их данные не удаляются. Компоненты браузера и системные интеграции могут оставаться.", systemImage: "lock.shield")
                     .font(.callout).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

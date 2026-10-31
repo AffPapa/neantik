@@ -354,6 +354,10 @@ struct ProfileEditorView: View {
       }
       Text("Сбалансированный режим ограничивает локальную сеть и трекеры. Строгий также запрещает WebRTC, камеру, микрофон, геолокацию и уведомления и выравнивает размер области страницы. Совместимость сайтов может измениться.")
         .font(.caption).foregroundStyle(.secondary)
+      if privacyPolicy.restrictsUserExtensions {
+        Text("В строгом режиме и при своих настройках обычные расширения профиля отключаются; их данные сохраняются.")
+          .font(.caption).foregroundStyle(.secondary)
+      }
       Text("Политика применяется только совместимым движком; при отсутствии поддержки запуск отклоняется без частичного применения настроек.")
         .font(.caption).foregroundStyle(.secondary)
       if privacyPolicy != .legacy {
