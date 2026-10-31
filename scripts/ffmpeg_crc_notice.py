@@ -47,7 +47,16 @@ def make(source: Path, output: Path, *, lock: dict | None = None) -> dict:
         portable = for_lock(ROOT, lock)
         if portable is not None:
             contract = json.loads((ROOT / 'runtime/chromium-15680-source-contract.json').read_text())
-            verify_source(ROOT, contract, source)
+            if lock.get('variant') == 'recipient-privacy-policy-v1':
+                from chromium_15680_privacy_derivation import verify_lock_binding
+                from chromium_15680_portable_crc import checked_file
+                verify_lock_binding(lock, ROOT)
+                for name, binding in portable['sourceOverlay'].items():
+                    checked_file(source, 'third_party/ffmpeg/' + name, binding['afterSHA256'])
+                checked_file(source, 'third_party/ffmpeg/chromium/config/Chrome/mac/arm64/config.h',
+                             portable['inputs']['configuration']['sha256'])
+            else:
+                verify_source(ROOT, contract, source)
             license_path = source / 'third_party/ffmpeg/COPYING.LGPLv2.1'
             if license_path.is_symlink() or digest(license_path.read_bytes()) != LGPL_SHA256:
                 raise ValueError('unexpected portable CRC LGPL input')

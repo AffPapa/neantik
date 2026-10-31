@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "variant": "recipient-privacy-policy-v1",
+  "sourceMode": "published-recipient-source-with-reviewed-privacy-layer",
+  "targetChromiumVersion": "156.0.8078.80",
+  "targetArchitecture": "arm64",
+  "base": {
+    "sourceContract": {
+      "file": "runtime/chromium-15680-source-contract.json",
+      "sha256": "47535a1d5a121e71a3bb77b5528d8e2ef6173863ff75b07657104324709be92f"
+    },
+    "portableCRC": {
+      "file": "runtime/chromium-15680-portable-crc.json",
+      "sha256": "81b2ab0cd60f08b59310f624eda403af0a23636c66bfaac097832a2a15e1cdf0"
+    },
+    "sourceOfferManifestSHA256": "1a28ebe4729b0cde8f3770315a15237f4a025aec9b6fd0fcd9edfc278fcdff5a"
+  },
+  "privacyDerivation": {
+    "file": "runtime/privacy-policy-v1/derivation.json",
+    "sha256": "559f03c75d58cb4c33e9c9698040d678df7ebc78dce5e73bf1f61caf52b68a96"
+  },
+  "releaseReady": false
+}

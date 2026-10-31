@@ -305,7 +305,9 @@ final class BackupTree {
             guard entries.count < EncryptedBackupArchive.maximumEntries else { throw BrowserDataBackupStorageError.limitExceeded }
             // Explicit stopped-browser transient paths only, never generic
             // symlink adoption. They are not meaningful restored browser data.
-            if excludeRootTransients, prefix.isEmpty, ["SingletonLock", "SingletonCookie", "SingletonSocket"].contains(name) { continue }
+            if excludeRootTransients, prefix.isEmpty,
+               (["SingletonLock", "SingletonCookie", "SingletonSocket"].contains(name) ||
+                EncryptedBackupArchive.isDerivedProtectionRoot(name)) { continue }
             guard name != ".neantik-cache-maintenance.json", !name.hasPrefix(".neantik-cache-clearing-") else { throw BrowserDataBackupStorageError.unsafeEntry }
             let path = prefix.isEmpty ? name : prefix + "/" + name
             guard let observed = try BackupFS.entry(directory, name), observed.uid == geteuid(), observed.device == rootIdentity.device else { throw BrowserDataBackupStorageError.unsafeEntry }

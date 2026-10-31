@@ -6,6 +6,7 @@ enum BrowserRoutePolicy: Equatable, Sendable {
 }
 
 enum BrowserWebRTCPolicy: String, Equatable, Sendable {
+    case disabledByProfile
     case publicInterfaceOnly
     case disableNonProxiedUDP
 }
@@ -37,9 +38,10 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
     /// Recheck current bytes at the common launch boundary. The cached UI
     /// capability is not authority after a runtime replacement or edit.
     static func validatePrivacyPolicy(_ profile: BrowserProfile, runtime: BrowserRuntime? = nil) throws {
-        // Staged policies cannot reach a legacy runtime. This guard is replaced
-        // only by a source-bound capability after the native consumers pass.
-        guard profile.privacyPolicy == .legacy else {
+        if profile.privacyPolicy == .legacy { return }
+        guard profile.engine == .chromium, let runtime, runtime.supportsProfilePrivacy,
+              BrowserPrivacyRuntime.inspect(executableURL: runtime.executableURL) != nil,
+              !profile.privacyPolicy.trackingParameterCleanup || profile.privacyPolicy.siteProtection else {
             throw UnsupportedBrowserPrivacyPolicyError()
         }
     }
@@ -75,7 +77,7 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
         }
 
         let route: BrowserRoutePolicy
-        let webRTC: BrowserWebRTCPolicy
+        var webRTC: BrowserWebRTCPolicy
         let quic: BrowserQUICPolicy
         let dns: BrowserDNSPolicy
         if let proxy = profile.proxy {
@@ -83,7 +85,7 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
             webRTC = .disableNonProxiedUDP
             quic = .disabledByNeAntik
             dns = .proxyResolverFailClosed
-            disabledFeatures.formUnion(["AsyncDns", "DnsOverHttpsUpgrade"])
+            disabledFeatures.formUnion(["AsyncDns", "DnsOverHttpsUpgrade", "DirectSockets", "DirectSocketsInSharedWorkers", "DirectSocketsInServiceWorkers"])
         } else {
             route = .direct
             webRTC = .publicInterfaceOnly
@@ -91,6 +93,10 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
             dns = .ordinaryChromium
         }
 
+        if profile.privacyPolicy.rtc == .off ||
+            (profile.privacyPolicy.rtc == .proxyOnly && profile.proxy == nil) {
+            webRTC = .disabledByProfile
+        }
         return BrowserLaunchPolicy(
             route: route,
             webRTC: webRTC,

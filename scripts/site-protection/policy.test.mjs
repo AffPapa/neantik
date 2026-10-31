@@ -53,3 +53,24 @@ test('response parser fails closed for size invalid UTF8 and response errors', a
   await assert.rejects(limitedText(new Response('x',{headers:{'content-length':'999999999'}})));
   await assert.rejects(limitedText(new Response(new Uint8Array([255]))));
 });
+
+test('large basic list uses one bounded aggregate session exception with threat priority intact', async () => {
+  const {sessionTrackerExceptionRules}=await import('../../Resources/SiteProtection/policy.mjs');
+  const trackers=Array.from({length:78000},(_,i)=>`tracker${i}.example`);
+  let rules=[];
+  for(let i=0;i<100;i++) rules=sessionTrackerExceptionRules(rules,`site${i}.example`,true,trackers).addRules;
+  assert.equal(rules.length,1);assert.equal(rules[0].condition.requestDomains.length,78000);
+  assert.equal(rules[0].condition.initiatorDomains.length,100);
+  assert(rules[0].priority<1000);assert(rules[0].condition.excludedResourceTypes.includes('main_frame'));
+  assert.throws(()=>sessionTrackerExceptionRules(rules,'overflow.example',true,trackers));
+  const update=sessionTrackerExceptionRules(rules,'site0.example',false,trackers);
+  assert.equal(update.addRules[0].condition.initiatorDomains.length,99);
+});
+
+test('session update changes only reserved IDs and refuses malformed hosts', async()=>{
+  const {sessionTrackerExceptionRules}=await import('../../Resources/SiteProtection/policy.mjs');
+  const trackers=['tracker.example'];
+  const result=sessionTrackerExceptionRules([{id:900,condition:{}}],'site.example',true,trackers);
+  assert.deepEqual(result.removeRuleIds,[]);assert.equal(result.addRules.length,1);
+  assert.throws(()=>sessionTrackerExceptionRules([],'https://site.example/path',true,trackers));
+});

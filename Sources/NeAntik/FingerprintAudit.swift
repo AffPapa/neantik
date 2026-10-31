@@ -1710,6 +1710,10 @@ final class FingerprintAuditCoordinator: ObservableObject {
         ) as? String
     ) {
         guard !isRunning else { return }
+        guard first.privacyPolicy == .legacy, second.privacyPolicy == .legacy else {
+            errorMessage = "Локальная проверка отпечатка пока не поддерживает новые режимы защиты. Их ограничения не будут отключены ради проверки."
+            return
+        }
         guard first.id != second.id else {
             errorMessage = "Выбери два разных профиля."
             return

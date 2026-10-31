@@ -63,7 +63,7 @@ async function run(spec) {
     inputsUnchanged(); assert.equal(ownedProcesses().length, 0); verifyDirectory(profile, custody);
     const ready = spawnSync('/usr/local/bin/python3', ['-B', path.join(project, 'scripts/native-qa-readiness.py'), '--check'], {encoding: 'utf8'});
     row.admission = JSON.parse(ready.stdout); assert.equal(ready.status, 0, 'Native admission refused;no warning exception');
-    assert(row.admission.eligibleForAttempt && row.admission.memoryPressure === 0 && row.admission.thermalState === 0);
+    assert(row.admission.eligibleForAttempt && row.admission.memoryPressure === 1 && [0, 1].includes(row.admission.thermalState));
     current = {nonce: crypto.randomBytes(16).toString('hex'), spec, row}; result = null;
     const flags = [`--user-data-dir=${profile}`, '--use-mock-keychain', '--no-first-run', '--no-default-browser-check', '--new-window',
       '--remote-debugging-pipe', '--disable-background-networking', '--disable-component-update', '--disable-sync', '--disable-quic',

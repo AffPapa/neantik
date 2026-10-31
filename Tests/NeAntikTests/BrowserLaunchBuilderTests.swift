@@ -25,6 +25,15 @@ private final class RuntimeInspectionRecorder: @unchecked Sendable {
 }
 
 struct BrowserLaunchBuilderTests {
+    @Test func mandatoryProxyOwnershipIsExplicitAndCannotBeInherited() {
+        var profile = BrowserProfile(name: "Own route", proxy: .init(kind: .http, host: "owned.test", port: 1234, username: ""))
+        let ambient = ["NEANTIK_PROFILE_PROXY_REQUIRED": "attacker"]
+        #expect(BrowserLaunchBuilder.environment(profile: profile, runtimeCapabilities: [], inherited: ambient)["NEANTIK_PROFILE_PROXY_REQUIRED"] == nil)
+        #expect(BrowserLaunchBuilder.environment(profile: profile, runtimeCapabilities: [.profilePrivacyV1], inherited: ambient)["NEANTIK_PROFILE_PROXY_REQUIRED"] == "1")
+        #expect(BrowserLaunchBuilder.environment(profile: profile, runtimeCapabilities: [.profilePrivacyV1], inherited: ambient, purpose: .fingerprintAudit(httpLoopbackPort: 12345))["NEANTIK_PROFILE_PROXY_REQUIRED"] == nil)
+        profile.proxy = nil
+        #expect(BrowserLaunchBuilder.environment(profile: profile, runtimeCapabilities: [.profilePrivacyV1], inherited: ambient)["NEANTIK_PROFILE_PROXY_REQUIRED"] == nil)
+    }
     @Test
     func newProfilesStartLocallyWithoutChangingStoredExternalChoices() throws {
         let fresh = BrowserProfile(name: "Private default")
@@ -302,7 +311,7 @@ struct BrowserLaunchBuilderTests {
         #expect(!arguments.contains("--fingerprinting-canvas-image-data-noise"))
         #expect(
             arguments.contains(
-                "--disable-features=AsyncDns,DnsOverHttpsUpgrade,WebGPUService"
+                "--disable-features=AsyncDns,DirectSockets,DirectSocketsInServiceWorkers,DirectSocketsInSharedWorkers,DnsOverHttpsUpgrade,WebGPUService"
             )
         )
         #expect(!arguments.contains("--user-data-dir=/tmp/evil"))
@@ -348,7 +357,7 @@ struct BrowserLaunchBuilderTests {
 
         #expect(
             arguments.contains(
-                "--disable-features=AsyncDns,DnsOverHttpsUpgrade,WebGPUService"
+                "--disable-features=AsyncDns,DirectSockets,DirectSocketsInServiceWorkers,DirectSocketsInSharedWorkers,DnsOverHttpsUpgrade,WebGPUService"
             )
         )
         #expect(

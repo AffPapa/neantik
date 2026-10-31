@@ -42,7 +42,7 @@ struct UserProfileTemplate: Codable, Identifiable, Equatable, Sendable {
     }
 
     func makeProfile() -> BrowserProfile {
-        BrowserProfile(name: name, tags: tags, startURL: startURL, startupMode: startupMode ?? .startPage, engine: engine ?? .chromium, webKitMediaPolicy: webKitMediaPolicy ?? .ask, webKitBlockPeerConnections: webKitBlockPeerConnections ?? false, privacyPolicy: privacyPolicy ?? .legacy)
+        BrowserProfile(name: name, tags: tags, startURL: startURL, startupMode: startupMode ?? .startPage, engine: engine ?? .chromium, webKitMediaPolicy: webKitMediaPolicy ?? .ask, webKitBlockPeerConnections: webKitBlockPeerConnections ?? false, fontPolicy: (engine ?? .chromium) == .chromium && (privacyPolicy ?? .legacy) != .legacy ? .systemV1 : .native, privacyPolicy: privacyPolicy ?? .legacy)
     }
 }
 

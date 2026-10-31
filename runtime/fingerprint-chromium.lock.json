@@ -1,8 +1,9 @@
 {
   "binaryBinding": {
-    "policy": "This source-only lock makes no binary, runtime, notarization, or publication claim.",
+    "policy": "Recipient derivation only; native execution, signed bytes and publication remain separate gates.",
     "requiredEvidence": "schema-3-runtime-report",
-    "status": "not-attested-by-this-document"
+    "status": "not-attested-by-this-document",
+    "unsignedFrameworkSHA256": "4446581ece6aec5e8baf990b4ef9f987da500c4e24953682d9efcebcb38f7e74"
   },
   "fingerprintChromium": {
     "chromiumVersion": "156.0.8078.80",
@@ -18,6 +19,8 @@
     "depsFileSHA256": "c4d60cae7b46d4ae476e3409226d89bf72c1fd61e1d97d64027ebae4356f23ae",
     "devtoolsCompatibilityPatchSHA256": "9eed3c3f43f96a00595163971b120c50accbeefeb07b552939b0ba9ad6ae7bfb",
     "portableCrcManifestSHA256": "81b2ab0cd60f08b59310f624eda403af0a23636c66bfaac097832a2a15e1cdf0",
+    "privacyDerivationSHA256": "559f03c75d58cb4c33e9c9698040d678df7ebc78dce5e73bf1f61caf52b68a96",
+    "privacyPatchSHA256": "aa86b95be3f77d33bb99cc9e1f5bcd26b4edb4886d977b9f3ec3014757a66d7a",
     "sourcePatchSHA256": "2f48cb944f6e51439322776e3ec0519bd0567e300049253791c60faca46481ea",
     "v8CompatibilityPatchSHA256": "d06dd32200393a0eacf5dafcf83f6c5dafafc508b97af58013e52cd135d58388"
   },
@@ -28,9 +31,10 @@
   },
   "schemaVersion": 4,
   "sourceAdoptionManifestSHA256": "64497886808d812f6958dac2860b1263f632ebaf97354a5ce634a68f7725279c",
-  "sourceContract": "runtime/chromium-15680-source-contract.json",
-  "sourceContractSHA256": "47535a1d5a121e71a3bb77b5528d8e2ef6173863ff75b07657104324709be92f",
-  "sourceProvenanceSHA256": "0d2531d8a5ad26c228864c017c15a101f904b431041b4d783f4beffaf6a393da",
+  "sourceContract": "runtime/chromium-15680-privacy-v1-source-contract.json",
+  "sourceContractSHA256": "d2990face54ab8e721aa45404cf6de866d348c96dda7161ece04826d84845983",
+  "sourceProvenanceSHA256": "bf94d6c86dba2c04a86ae4b5989616db95265c619e19eb02fcd3364b95576e24",
   "status": "source-qualified",
-  "targetArchitecture": "arm64"
+  "targetArchitecture": "arm64",
+  "variant": "recipient-privacy-policy-v1"
 }

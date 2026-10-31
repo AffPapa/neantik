@@ -1,0 +1,43 @@
+{
+  "base": {
+    "portableCRC": {
+      "file": "runtime/chromium-15680-portable-crc.json",
+      "sha256": "81b2ab0cd60f08b59310f624eda403af0a23636c66bfaac097832a2a15e1cdf0"
+    },
+    "sourceContract": {
+      "file": "runtime/chromium-15680-source-contract.json",
+      "sha256": "47535a1d5a121e71a3bb77b5528d8e2ef6173863ff75b07657104324709be92f"
+    },
+    "sourceOfferManifestSHA256": "1a28ebe4729b0cde8f3770315a15237f4a025aec9b6fd0fcd9edfc278fcdff5a"
+  },
+  "binaryBinding": {
+    "requiredEvidence": "schema-3-runtime-report",
+    "status": "pending-runtime-report",
+    "unsignedFrameworkSHA256": "4446581ece6aec5e8baf990b4ef9f987da500c4e24953682d9efcebcb38f7e74"
+  },
+  "officialChromiumBase": {
+    "commit": "fb096c0011f9d50f0a264a9376420cdea9c421e3",
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "156.0.8078.80",
+    "tree": "9daca4c0f1670a0ead9a94888c1bfe4ace733f4d"
+  },
+  "privacyDerivation": {
+    "file": "runtime/privacy-policy-v1/derivation.json",
+    "sha256": "559f03c75d58cb4c33e9c9698040d678df7ebc78dce5e73bf1f61caf52b68a96"
+  },
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "sourceChecks": {
+    "compileAndLinkReceipts": "verified",
+    "fullCleanChromiumRebuild": "not-claimed",
+    "fullGclientCheckout": "not-claimed",
+    "privacySourceImagesAndRecipes": "verified",
+    "publishedRecipientSourceOffer": "pinned-base-reference"
+  },
+  "sourceContractSHA256": "d2990face54ab8e721aa45404cf6de866d348c96dda7161ece04826d84845983",
+  "sourceMode": "published-recipient-source-with-reviewed-privacy-layer",
+  "status": "source-qualified",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "156.0.8078.80",
+  "variant": "recipient-privacy-policy-v1"
+}

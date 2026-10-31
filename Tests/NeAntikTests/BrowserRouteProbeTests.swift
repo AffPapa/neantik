@@ -16,7 +16,7 @@ struct BrowserRouteProbeTests {
         func now() -> UInt64 { lock.lock(); defer { lock.unlock() }; return value }
         func advance(_ seconds: UInt64) { lock.lock(); value += seconds * 1_000_000_000; lock.unlock() }
     }
-    private func request(_ target: String, extra: String = "", host: String = "127.0.0.1:1234") -> Data {
+    private func request(_ target: String, extra: String = "", host: String = "neantik-route-probe.invalid:1234") -> Data {
         Data("GET \(target) HTTP/1.1\r\nHost: \(host)\r\n\(extra)\r\n".utf8)
     }
     private func b64(_ data: Data) -> String {
@@ -178,19 +178,19 @@ struct BrowserRouteProbeTests {
             #expect(throws: BrowserRouteProbe.Failure.invalidRequest) { try BrowserRouteProbe.HTTP.target(bytes) }
         }
     }
-    @Test func virtualDestinationIsExactPortAndIPv4LoopbackOnly() throws {
+    @Test func virtualDestinationIsExactReservedHostAndPort() throws {
         let session = try BrowserRouteProbe.Session(plan: plan())
-        #expect(!session.isVirtual(try .init(host: "127.0.0.1", port: 1234)))
+        #expect(!session.isVirtual(try .init(host: "neantik-route-probe.invalid", port: 1234)))
         try session.activate(port: 1234)
-        #expect(session.isVirtual(try .init(host: "127.0.0.1", port: 1234)))
-        for host in ["localhost", "::1", "127.0.0.2"] { #expect(!session.isVirtual(try .init(host: host, port: 1234))) }
-        #expect(!session.isVirtual(try .init(host: "127.0.0.1", port: 1235)))
+        #expect(session.isVirtual(try .init(host: "neantik-route-probe.invalid", port: 1234)))
+        for host in ["localhost", "::1", "127.0.0.1", "127.0.0.2", "neantik-route-probe.invalid.evil.test"] { #expect(!session.isVirtual(try .init(host: host, port: 1234))) }
+        #expect(!session.isVirtual(try .init(host: "neantik-route-probe.invalid", port: 1235)))
         #expect(!session.matchesHTTP(try plan().destination(.https)))
     }
     @Test func launchTargetResolvesOnlyActualRelayPortAndPreservesOrdinaryTargets() throws {
         let target = BrowserUserLaunchTarget.routeProbe(plan())
         #expect(target.startURLOverride == nil)
-        #expect(try target.startURLOverride(relayPort: 54321)?.absoluteString == "http://127.0.0.1:54321/__neantik_route/start")
+        #expect(try target.startURLOverride(relayPort: 54321)?.absoluteString == "http://neantik-route-probe.invalid:54321/__neantik_route/start")
         #expect(throws: BrowserRouteProbe.Failure.invalidPlan) { try target.startURLOverride(relayPort: 0) }
         #expect(try BrowserUserLaunchTarget.profileStart.startURLOverride(relayPort: 54321) == nil)
         #expect(try BrowserUserLaunchTarget.extensions.startURLOverride(relayPort: 54321)?.absoluteString == "about:blank")
@@ -231,9 +231,9 @@ struct BrowserRouteProbeTests {
         let port = try await relay.start(); try session.activate(port: port)
         let client = try ProxyRelayUpstreamTransport(kind: .socks5, upstream: .init(host: "127.0.0.1", port: Int(port)))
         defer { client.cancel(); relay.cancel() }
-        let early = try await client.establish(destination: .init(host: "127.0.0.1", port: Int(port)), credentials: nil, authorizeCredentials: { false })
+        let early = try await client.establish(destination: .init(host: "neantik-route-probe.invalid", port: Int(port)), credentials: nil, authorizeCredentials: { false })
         #expect(early.isEmpty)
-        try await client.send(request(BrowserRouteProbe.Session.entryPath, host: "127.0.0.1:\(port)"))
+        try await client.send(request(BrowserRouteProbe.Session.entryPath, host: "neantik-route-probe.invalid:\(port)"))
         var result = Data(), eof = false
         while !eof { let r = try await client.receive(timeout: 3); result.append(r.data); eof = r.endOfStream }
         #expect(String(decoding: result, as: UTF8.self).hasPrefix("HTTP/1.1 303 See Other"))
@@ -255,9 +255,9 @@ struct BrowserRouteProbeTests {
         let port = try await relay.start(); try session.activate(port: port)
         let client = try ProxyRelayUpstreamTransport(kind: .socks5, upstream: .init(host: "127.0.0.1", port: Int(port)))
         defer { client.cancel(); relay.cancel() }
-        _ = try await client.establish(destination: .init(host: "127.0.0.1", port: Int(port)), credentials: nil, authorizeCredentials: { false })
+        _ = try await client.establish(destination: .init(host: "neantik-route-probe.invalid", port: Int(port)), credentials: nil, authorizeCredentials: { false })
         let target = scenario == "wrongHost" ? BrowserRouteProbe.Session.entryPath : BrowserRouteProbe.Session.callbackPath + "?r=e30&s=AAAA"
-        try await client.send(request(target, host: scenario == "wrongHost" ? "foreign.example.test" : "127.0.0.1:\(port)"))
+        try await client.send(request(target, host: scenario == "wrongHost" ? "foreign.example.test" : "neantik-route-probe.invalid:\(port)"))
         do { let response = try await client.receive(timeout: 3); #expect(response.data.isEmpty) } catch {}
         await relay.stop()
         let activity = relay.activitySnapshot()

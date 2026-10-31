@@ -24,6 +24,21 @@ private final class RuntimeClosureFixture: @unchecked Sendable {
 }
 
 @Suite(.serialized) struct DirectUpdateRuntimeProvenanceTests {
+    @Test func officialStablePrivacyReviewIsBoundToOneCompiledRecord() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let bytes = try Data(contentsOf: root.appendingPathComponent("runtime/security-baseline.json"))
+        try DirectUpdatePublicationBaseline.validateSecurityReview(bytes, record: .privacyPolicyV1)
+        let original = try #require(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
+        for (key, value) in [("minimumPublicChromiumVersion", "156.0.8078.79"), ("reference", "https://chromereleases.googleblog.com/2026/10/other.html"), ("publishedAt", "2026-10-28"), ("securityFixCountStatus", "unknown")] {
+            var changed = original; changed[key] = value
+            #expect(throws: (any Error).self) { try DirectUpdatePublicationBaseline.validateSecurityReview(JSONSerialization.data(withJSONObject: changed), record: .privacyPolicyV1) }
+        }
+        var count = original; count["securityFixCount"] = 20
+        #expect(throws: (any Error).self) { try DirectUpdatePublicationBaseline.validateSecurityReview(JSONSerialization.data(withJSONObject: count), record: .privacyPolicyV1) }
+        for record in DirectUpdateRuntimeRecord.allCases where record != .privacyPolicyV1 {
+            #expect(throws: (any Error).self) { try DirectUpdatePublicationBaseline.validateSecurityReview(bytes, record: record) }
+        }
+    }
     @Test func bootstrapAndAdmissionBudgetPublicationBytesBeyondHistoricalClosure() throws {
         let root = URL(fileURLWithPath: "/private/tmp/neantik-runtime-budget-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false,

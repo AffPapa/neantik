@@ -6,7 +6,7 @@
 
 - First-release execution: ship the qualified Chromium-only variant. Defer
   WebKit until its production runtime and source gates pass. Record unsupported
-  timezone, locale and WebRTC honestly; never imply absolute anonymity.
+  timezone, locale and WebRTC per exact runtime evidence; never imply absolute anonymity.
 - Freeze one candidate per product change. Do not create a replacement for
   receipt, documentation or source-offer edits alone; finish its scoped runtime
   check, diagnose failures, and batch source/license and release closure once.
@@ -55,3 +55,9 @@
   files. Use the framework/Finder lifecycle and the actual registered container;
   keep its file identity at the canonical path until deactivation completes.
   Preserve rollback by copying. Treat a required reboot as an external gate.
+
+- Incremental runtime packaging must bind the framework nested in the actual
+  signing input and staging copy to the selected link output; a loose sibling
+  framework is not evidence of the shipped bytes. Validate DNR regex support
+  through Chromium's own API/indexer; JavaScript RegExp accepts rules that
+  exceed Chromium's2KiB RE2 budget.

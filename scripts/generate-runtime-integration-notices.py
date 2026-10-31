@@ -101,8 +101,37 @@ def verified_license(
 def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
     """Render candidate metadata without promoting the published runtime lock."""
     lock = load_json(runtime_lock)
+    runtime_lock = runtime_lock.resolve()
     chromium = required_mapping(lock.get("fingerprintChromium"), "fingerprintChromium")
     version = chromium.get("chromiumVersion")
+    if version == "156.0.8078.80" and lock.get("variant") == "recipient-privacy-policy-v1":
+        from chromium_15680_privacy_derivation import verify_lock, verify_contract
+        provenance = (project_root / "runtime/chromium-15680-privacy-v1-source-provenance.json"
+            if runtime_lock == project_root / "runtime/fingerprint-chromium.lock.json"
+            else runtime_lock.parent / "source-provenance.json")
+        verify_lock(lock, provenance, project_root)
+        contract, layer = verify_contract(project_root)
+        base = load_json(project_root / contract["base"]["sourceContract"]["file"])
+        lines = ["# NeAntik Chromium runtime notices", "", "## Source references", "",
+            f"- Chromium: `{version}`; source: `{base['officialChromiumBase']['repository']}`",
+            f"- Commit: `{base['officialChromiumBase']['commit']}`; tree: `{base['officialChromiumBase']['tree']}`",
+            f"- Candidate lock SHA-256: `{sha256_file(runtime_lock)}`",
+            f"- Privacy source contract SHA-256: `{lock['sourceContractSHA256']}`",
+            f"- Privacy derivation SHA-256: `{contract['privacyDerivation']['sha256']}`",
+            "- Complete recipient delta and instructions: `docs/RELINK_PRIVACY_V1.md` in the accompanying source archive.",
+            f"- Immutable base corresponding-source offer manifest SHA-256: `{contract['base']['sourceOfferManifestSHA256']}`",
+            "", "## Bundled licenses", "",
+            "Chromium-generated third-party notices, SPDX SBOM and portable FFmpeg CRC supplement are packaged separately."]
+        for filename in ("Chromium-LICENSE", "fingerprint-chromium-LICENSE", "ungoogled-chromium-macos-LICENSE"):
+            digest = verified_license(project_root=project_root, relative_path="runtime/licenses/" + filename)
+            lines.append(f"- `NeAntikRuntimeLicenses/{filename}` — SHA-256 `{digest}`")
+        lines.extend(["- Font source helpers: MPL-2.0; complete modified files and recipes accompany the delta.",
+            f"- `NeAntikRuntimeLicenses/Privacy-MPL-2.0.txt` — SHA-256 `{layer['licenses'][0]['sha256']}`",
+            "- `NeAntikRuntimeLicenses/Privacy-SOURCE-NOTICE.txt` retains the helper attribution.",
+            "- The bundled tracker snapshot is GPL-3.0; its license, attribution and provenance are in `SiteProtection`, and its corresponding input/converter are in the accompanying source archive.",
+            "", "## Qualification boundary", "",
+            "This notice identifies source and licenses. It does not establish absolute anonymity, full clean rebuilding, independent-machine qualification or release status. No Apple SDK or private signing material is redistributed.", ""])
+        return "\n".join(lines)
     if version == "156.0.8078.48":
         from chromium_15648_release_evidence import verify_lock
         provenance = runtime_lock.parent / "source-provenance.json"
@@ -509,6 +538,8 @@ def main() -> int:
     output = args.output or DEFAULT_OUTPUT
     if args.output is None and not args.runtime_lock:
         current_lock = load_json(project_root / "runtime/fingerprint-chromium.lock.json")
+        if current_lock.get("variant") == "recipient-privacy-policy-v1":
+            output = project_root / "docs/RUNTIME_INTEGRATION_NOTICES_PRIVACY_V1.md"
         if current_lock.get("fingerprintChromium", {}).get("chromiumVersion") in {"154.0.8037.93", "154.0.8037.98", "155.0.8059.40", "156.0.8078.12"}:
             major = current_lock["fingerprintChromium"]["chromiumVersion"].split(".")[0]
             output = project_root / "docs" / f"RUNTIME_INTEGRATION_NOTICES_{major}.md"

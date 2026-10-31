@@ -61,6 +61,7 @@ enum EncryptedBackupArchive {
                 throw EncryptedBackupError.malformedFrame
             }
             guard !["SingletonLock", "SingletonCookie", "SingletonSocket"].contains(components[0].description),
+                  !isDerivedProtectionRoot(components[0].description),
                   !components.contains(where: { $0 == ".neantik-cache-maintenance.json" || $0.hasPrefix(".neantik-cache-clearing-") }) else {
                 throw EncryptedBackupError.malformedFrame
             }
@@ -219,6 +220,10 @@ enum EncryptedBackupArchive {
             streamHash.update(data: frame)
             records += 1
         }
+    }
+
+    static func isDerivedProtectionRoot(_ name: String) -> Bool {
+        pathKey(name) == ".neantik-site-protection-v1"
     }
 
     private static func pathKey(_ path: String) -> String {

@@ -15,7 +15,7 @@ struct BrowserFontPolicyRuntimeTests {
         let record = try #require(BrowserFontPolicyRuntime.supportedRecords.first {
             $0.executableSHA256 == runtime["executableSHA256"] as? String
         })
-        #expect(BrowserFontPolicyRuntime.supportedRecords.count == 3)
+        #expect(BrowserFontPolicyRuntime.supportedRecords.count == 4)
         #expect(record.runtimeDigest == tree["digest"] as? String)
         #expect(record.entries == tree["entries"] as? Int)
         #expect(record.regularBytes == tree["bytes"] as? Int64)

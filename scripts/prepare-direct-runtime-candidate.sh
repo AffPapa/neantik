@@ -20,6 +20,11 @@ CHROMIUM_OUT_DIR="$(dirname "$BUILD_ARGS")"
 SOURCE_ROOT="$3"
 CANDIDATE_LOCK="$4"
 SOURCE_PROVENANCE="$(dirname "$SOURCE_ROOT")/source-provenance.json"
+PRIVACY_DERIVATION=0
+if [[ "$(plutil -extract variant raw -o - "$CANDIDATE_LOCK" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ]]; then
+  PRIVACY_DERIVATION=1
+  SOURCE_PROVENANCE="$(dirname "$CANDIDATE_LOCK")/source-provenance.json"
+fi
 PACKAGING_DIR="$(dirname "$RUNTIME_APP")/NeAntik Browser Packaging"
 
 for input in "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_ROOT" "$CANDIDATE_LOCK"; do
@@ -55,6 +60,9 @@ for compliance_input in \
   fi
 done
 EXPECTED_CANDIDATE_LOCK="$(dirname "$SOURCE_ROOT")/runtime-candidate-lock.json"
+if (( PRIVACY_DERIVATION == 1 )); then
+  EXPECTED_CANDIDATE_LOCK="$(dirname "$SOURCE_PROVENANCE")/runtime-candidate-lock.json"
+fi
 if [[ "$(cd "$(dirname "$CANDIDATE_LOCK")" && pwd -P)/$(basename "$CANDIDATE_LOCK")" !=
       "$(cd "$(dirname "$EXPECTED_CANDIDATE_LOCK")" && pwd -P)/$(basename "$EXPECTED_CANDIDATE_LOCK")" ]]; then
   echo "Direct candidate requires the lock emitted for this build root." >&2
@@ -175,13 +183,29 @@ elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDID
   python3 "$PROJECT_DIR/scripts/verify-chromium-15674-unsigned-candidate.py" \
     "$RUNTIME_APP" "$BUILD_ARGS" "$PROJECT_DIR/runtime/chromium-15674-source-adoption-v1.json"
 elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.80" ]]; then
+  PRIVACY_VERIFY_ARGS=()
+  if (( PRIVACY_DERIVATION == 1 )); then PRIVACY_VERIFY_ARGS+=(--runtime-lock "$CANDIDATE_LOCK"); fi
   python3 "$PROJECT_DIR/scripts/verify-chromium-15680-unsigned-candidate.py" \
-    "$RUNTIME_APP" "$BUILD_ARGS" "$PROJECT_DIR/runtime/chromium-15680-source-adoption-v1.json"
+    "$RUNTIME_APP" "$BUILD_ARGS" "$PROJECT_DIR/runtime/chromium-15680-source-adoption-v1.json" "${PRIVACY_VERIFY_ARGS[@]}"
 fi
+if (( PRIVACY_DERIVATION == 1 )); then
+  export NEANTIK_RUNTIME_SIGNING_FRAMEWORK_SHA256="$(plutil -extract binaryBinding.unsignedFrameworkSHA256 raw -o - "$CANDIDATE_LOCK")"
+fi
+if [[ -n "${NEANTIK_REUSE_SIGNED_RUNTIME:-}" ]]; then
+  if (( PRIVACY_DERIVATION != 1 )) || [[ "$NEANTIK_REUSE_SIGNED_RUNTIME" != /* ||
+      -L "$NEANTIK_REUSE_SIGNED_RUNTIME" || ! -d "$NEANTIK_REUSE_SIGNED_RUNTIME" ]]; then
+    echo "Preserved signing input is available only for the selected privacy derivation." >&2
+    exit 65
+  fi
+  # Reuse exact qualified runtime bytes. The verifier below must reproduce the
+  # compiled frozen report; a fresh signature would invalidate capability pins.
+  ditto "$NEANTIK_REUSE_SIGNED_RUNTIME" "$SIGNED_RUNTIME"
+else
 "$PROJECT_DIR/scripts/sign-runtime.sh" \
   "$RUNTIME_APP" \
   "$PACKAGING_DIR" \
   "$SIGNED_RUNTIME"
+fi
 "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
   "$SIGNED_RUNTIME" \
   "$RUNTIME_REPORT" \
@@ -194,6 +218,7 @@ python3 "$PROJECT_DIR/scripts/promote-runtime-candidate-lock.py" \
   "$SIGNED_RUNTIME" \
   "$BUILD_ARGS" \
   "$RUNTIME_REPORT" \
+  --source-root "$SOURCE_ROOT" \
   --confirm-promote-source-lock
 RUNTIME_NOTICES_MAJOR="$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")"
 RUNTIME_NOTICES_MAJOR="${RUNTIME_NOTICES_MAJOR%%.*}"

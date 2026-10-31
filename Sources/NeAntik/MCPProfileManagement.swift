@@ -159,6 +159,10 @@ final class MCPProfileManagement {
                 guard let engine = BrowserEngine(rawValue: try string(args, "engine")) else { throw Failure.invalid }
                 profile.engine = engine
             }
+            if profile.engine == .chromium {
+                if template == nil { profile.privacyPolicy = .balanced }
+                if profile.privacyPolicy != .legacy { profile.fontPolicy = .systemV1 }
+            }
             guard profile.engine.isAvailableInBuild else { throw Failure.invalid }
             profile.name = requestedName
             try apply(args["changes"] as? [String: Any] ?? [:], to: &profile)
@@ -378,7 +382,7 @@ final class MCPProfileManagement {
             case "startupMode": guard let mode = BrowserStartupMode(rawValue: try string(changes, key)) else { throw Failure.invalid }; profile.startupMode = mode
             case "privacyPreset":
                 guard profile.engine == .chromium,
-                      let policy = BrowserPrivacyPolicy.preset(named: try string(changes, key)) else { throw Failure.invalid }
+                      let policy = profile.privacyPolicy.applyingPreset(try string(changes, key)) else { throw Failure.invalid }
                 profile.privacyPolicy = policy
             case "fontPolicy": guard profile.engine == .chromium, let policy = BrowserFontPolicy(rawValue: try string(changes, key)) else { throw Failure.invalid }; profile.fontPolicy = policy
             case "webKitMediaPolicy": guard WebKitMediaFeature.isEnabled, profile.engine == .webkit, let policy = WebKitMediaPolicy(rawValue: try string(changes, key)) else { throw Failure.invalid }; profile.webKitMediaPolicy = policy

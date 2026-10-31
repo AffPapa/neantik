@@ -1,25 +1,45 @@
-import {FEED_URL, THREAT_ID_BASE, TRACKER_HOSTS, canonicalDomain, limitedText, replaceThreatRules} from './policy.mjs';
+import {FEED_URL, THREAT_ID_BASE, canonicalDomain, limitedText, replaceThreatRules, sessionTrackerExceptionRules} from './policy.mjs';
 const ALARM = 'neantik-cert-refresh-v1';
 let activeRefresh;
 
 async function configuration() {
   const response = await fetch(chrome.runtime.getURL('profile-policy.json'));
   const policy = await response.json();
-  if (policy.schemaVersion !== 1 || typeof policy.trackingParameterCleanup !== 'boolean') throw new Error('invalid-policy');
+  if (policy.schemaVersion !== 1 || typeof policy.siteProtection !== 'boolean' || typeof policy.blockThirdPartyCookies !== 'boolean' || typeof policy.trackingParameterCleanup !== 'boolean' || (policy.trackingParameterCleanup && !policy.siteProtection)) throw new Error('invalid-policy');
   return policy;
 }
 
 async function initialize() {
   const policy = await configuration();
-  await chrome.declarativeNetRequest.updateEnabledRulesets({enableRulesetIds: ['trackers', ...(policy.trackingParameterCleanup ? ['query_cleanup'] : [])], disableRulesetIds: policy.trackingParameterCleanup ? [] : ['query_cleanup']});
-  await chrome.alarms.create(ALARM, {periodInMinutes: 5});
+  const cookieSetting = chrome.privacy.websites.thirdPartyCookiesAllowed;
+  if (policy.blockThirdPartyCookies) await cookieSetting.set({value:false,scope:'regular'});
+  else await cookieSetting.clear({scope:'regular'});
+  const cookie = await cookieSetting.get({});
+  await chrome.storage.local.set({thirdPartyCookiesBlocked:cookie.value===false,
+    cookieControl:cookie.levelOfControl,requestedCookieBlock:policy.blockThirdPartyCookies});
+  if (policy.blockThirdPartyCookies && cookie.value !== false) throw new Error('cookie-policy-not-applied');
+  if (!policy.siteProtection) {
+    await chrome.declarativeNetRequest.updateEnabledRulesets({disableRulesetIds:['cert_baseline','trackers','query_cleanup']});
+    const dynamic = await chrome.declarativeNetRequest.getDynamicRules();
+    await chrome.declarativeNetRequest.updateDynamicRules({removeRuleIds:dynamic.filter(rule=>rule.id>=THREAT_ID_BASE&&rule.id<THREAT_ID_BASE+600).map(rule=>rule.id)});
+    await chrome.alarms.clear(ALARM);
+    return policy;
+  }
+  const dynamic = await chrome.declarativeNetRequest.getDynamicRules();
+  const hasThreats = dynamic.filter(rule=>rule.id>=THREAT_ID_BASE&&rule.id<THREAT_ID_BASE+600).length >= 2;
+  await chrome.declarativeNetRequest.updateEnabledRulesets({
+    enableRulesetIds:['trackers',...(!hasThreats?['cert_baseline']:[]),...(policy.trackingParameterCleanup?['query_cleanup']:[])],
+    disableRulesetIds:[...(hasThreats?['cert_baseline']:[]),...(!policy.trackingParameterCleanup?['query_cleanup']:[])]});
+  await chrome.alarms.create(ALARM,{periodInMinutes:5});
+  return policy;
 }
 
 async function refresh() {
   if (activeRefresh) return activeRefresh;
   activeRefresh = (async () => {
     try {
-      await initialize();
+      const policy = await initialize();
+      if (!policy.siteProtection) return;
       const response = await fetch(FEED_URL, {cache: 'no-store', credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(15000)});
       await replaceThreatRules(chrome, await limitedText(response), new Date().toISOString());
     } catch {
@@ -31,18 +51,28 @@ async function refresh() {
   return activeRefresh;
 }
 
-async function trackerException(enabled, host) {
-  const domain = canonicalDomain(host);
-  const current = await chrome.declarativeNetRequest.getSessionRules();
-  const remaining = current.filter(rule => rule.id >= 50000 && rule.id < 50100 && rule.condition.initiatorDomains?.[0] !== domain);
-  if (enabled) {
-    if (remaining.length >= 100) throw new Error('exception-limit');
-    let id = 50000; const used = new Set(remaining.map(rule => rule.id)); while (used.has(id)) ++id;
-    remaining.push({id, priority: 200, action: {type: 'allow'}, condition: {initiatorDomains: [domain], requestDomains: [...TRACKER_HOSTS], domainType: 'thirdParty', excludedResourceTypes: ['main_frame']}});
+let exceptionMutation = Promise.resolve();
+let trackerHosts;
+async function bundledTrackerHosts() {
+  if (!trackerHosts) {
+    const response = await fetch(chrome.runtime.getURL('tracker-rules.json'));
+    const rules = await response.json();
+    if (!Array.isArray(rules) || rules.length !== 1 || rules[0].id !== 1000 || rules[0].priority !== 100 ||
+        rules[0].action?.type !== 'block' || rules[0].condition?.domainType !== 'thirdParty' ||
+        !Array.isArray(rules[0].condition.requestDomains)) throw new Error('tracker-shape');
+    trackerHosts = rules[0].condition.requestDomains.map(canonicalDomain);
   }
-  // Exceptions only allow the small tracker list; priority200 cannot override
-  // CERT threat blocks(priority1000). They expire when this browser exits.
-  await chrome.declarativeNetRequest.updateSessionRules({removeRuleIds: current.filter(rule => rule.id >= 50000 && rule.id < 50100).map(rule => rule.id), addRules: remaining});
+  return trackerHosts;
+}
+function trackerException(enabled, host) {
+  const operation = exceptionMutation.then(async () => {
+    const current = await chrome.declarativeNetRequest.getSessionRules();
+    const update = sessionTrackerExceptionRules(current, host, enabled, await bundledTrackerHosts());
+    // CERT blocks retain priority1000. Session allowances expire on browser exit.
+    await chrome.declarativeNetRequest.updateSessionRules(update);
+  });
+  exceptionMutation = operation.catch(() => {});
+  return operation;
 }
 
 chrome.runtime.onInstalled.addListener(() => { void refresh(); });

@@ -14,6 +14,14 @@ def verify_build_args(source_root, args_gn, lock, project_root):
             or any(not part or not part.isascii() or not part.isdecimal()
                    for part in version.split('.'))):
         raise ValueError('Invalid Chromium build path version')
+    if lock.get('variant') == 'recipient-privacy-policy-v1':
+        from chromium_15680_privacy_derivation import verify_lock_binding, BASE, OUT, checked_file
+        verify_lock_binding(lock, project_root)
+        contract = json.loads((project_root / BASE['sourceContract']['file']).read_text())
+        if args_gn != source_root / OUT / 'args.gn':
+            raise ValueError('Expected exact recipient privacy build args path')
+        checked_file(source_root, OUT + '/args.gn', contract['buildArgsSHA256'])
+        return args_gn.resolve()
     relative = 'out/Default/args.gn'
     digest = None
     m154_evidence = {

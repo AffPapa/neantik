@@ -155,7 +155,7 @@ enum BrowserRouteProbe {
         }
         func isVirtual(_ destination: ProxyRelayDestination) -> Bool {
             lock.lock(); defer { lock.unlock() }
-            return destination.host == "127.0.0.1" && destination.port == port
+            return destination.host == "neantik-route-probe.invalid" && destination.port == port
         }
         func matchesHTTP(_ destination: ProxyRelayDestination) -> Bool {
             lock.lock(); defer { lock.unlock() }
@@ -193,13 +193,13 @@ enum BrowserRouteProbe {
             guard let request = try HTTP.parse(data) else { throw Failure.invalidRequest }
             let target = request.target
             lock.lock(); defer { lock.unlock() }; try checkLive()
-            guard HTTP.authority(request.authority, matches: try .init(host: "127.0.0.1", port: Int(port!))) else { throw Failure.invalidRequest }
+            guard HTTP.authority(request.authority, matches: try .init(host: "neantik-route-probe.invalid", port: Int(port!))) else { throw Failure.invalidRequest }
             if target == Self.entryPath {
                 guard status == .notStarted else { throw Failure.wrongPhase }
                 status = .waitingHTTP; return redirect(.http)
             }
             guard target.hasPrefix(Self.callbackPath + "?"),
-                  let c = URLComponents(string: "http://127.0.0.1" + target),
+                  let c = URLComponents(string: "http://neantik-route-probe.invalid" + target),
                   c.path == Self.callbackPath, c.fragment == nil,
                   let items = c.queryItems, items.count == 2,
                   Set(items.map(\.name)) == ["r", "s"],
@@ -235,7 +235,7 @@ enum BrowserRouteProbe {
         private func remoteTarget(_ component: Component) -> String {
             var c = URLComponents(url: plan.endpoint(component), resolvingAgainstBaseURL: false)!
             c.queryItems = [.init(name: "nonce", value: plan.nonce(component)),
-                            .init(name: "callback", value: "http://127.0.0.1:\(port!)/" + String(Self.callbackPath.dropFirst()))]
+                            .init(name: "callback", value: "http://neantik-route-probe.invalid:\(port!)/" + String(Self.callbackPath.dropFirst()))]
             return (c.percentEncodedPath.isEmpty ? "/" : c.percentEncodedPath) + "?" + c.percentEncodedQuery!
         }
         private func redirect(_ component: Component) -> Response {

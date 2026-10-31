@@ -100,6 +100,12 @@ def expected_candidate_lock(
             return expected_m15674(provenance_path, project_root)
         except ValueError as error:
             raise SourceProvenanceError(str(error)) from error
+    if provenance.get("variant") == "recipient-privacy-policy-v1":
+        from chromium_15680_privacy_derivation import expected_lock as expected_privacy
+        try:
+            return expected_privacy(provenance_path, project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
     if version == "156.0.8078.80":
         from chromium_15680_release_evidence import expected_lock as expected_m15680
         try:
@@ -223,6 +229,12 @@ def verify_candidate_lock(
         try:
             return verify_m15674(actual, provenance_path, project_root)
         except ValueError as error:
+            raise SourceProvenanceError(str(error)) from error
+    if provenance.get("variant") == "recipient-privacy-policy-v1":
+        from chromium_15680_privacy_derivation import verify_lock as verify_privacy
+        try:
+            return verify_privacy(actual, provenance_path, project_root)
+        except (OSError, ValueError) as error:
             raise SourceProvenanceError(str(error)) from error
     if provenance.get("targetChromiumVersion") == "156.0.8078.80":
         from chromium_15680_release_evidence import verify_lock as verify_m15680

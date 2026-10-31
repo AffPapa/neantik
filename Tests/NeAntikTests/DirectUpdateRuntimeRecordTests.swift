@@ -17,6 +17,8 @@ import DirectInstallFilesystem
             path = "runtime/chromium-15612-font-system-security-20261015-v1-runtime-verification.json"
         case .componentCompletionV1:
             path = "runtime/chromium-15612-component-completion-v1-runtime-verification.json"
+        case .privacyPolicyV1:
+            path = "runtime/chromium-15680-privacy-v1-runtime-verification.json"
         }
         let bytes = try Data(contentsOf: root.appendingPathComponent(path))
         #expect(BackupFS.hex(SHA256.hash(data: bytes)) == record.reportDigest)
@@ -24,7 +26,7 @@ import DirectInstallFilesystem
     }
     private func runtime(_ record: DirectUpdateRuntimeRecord) -> DirectRuntimeClosureMeasurement {
         .init(digest: record.runtimeDigest, entries: record.runtimeEntries, regularBytes: record.runtimeBytes,
-              machoPaths: DirectUpdateRuntimePins.machoPaths, capturedReport: nil, publicationBaseline: nil)
+              machoPaths: record.machoPaths, capturedReport: nil, publicationBaseline: nil)
     }
     private func evidence(_ record: DirectUpdateRuntimeRecord, report: Data?) -> DirectRuntimeClosureMeasurement {
         .init(digest: record.evidenceDigest, entries: record.evidenceEntries, regularBytes: record.evidenceBytes,
@@ -85,7 +87,7 @@ import DirectInstallFilesystem
                 ("sourceLockSHA256", String(repeating: "0", count: 64)), ("baseFullFDObservationSHA256", "wrong"),
                 ("createdAt", other.createdAt), ("schemaVersion", true), ("machoCount", 15),
                 ("freshWholeSourceTreeObserved", 0), ("freshWholeSourceTreeObserved", true),
-                ("buildArguments", ["sha256": other.argsDigest]), ("unknown", true)
+                ("buildArguments", ["sha256": String(repeating: "0", count: 64)]), ("unknown", true)
             ]
             for (key, value) in controls {
                 var changed = dictionary; changed[key] = value

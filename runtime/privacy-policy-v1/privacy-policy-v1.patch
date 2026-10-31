@@ -431,3 +431,1442 @@
    base::FilePath app_data_dir;
    if (!base::PathService::Get(base::DIR_APP_DATA, &app_data_dir))
      return;
+--- a/services/network/network_service_network_delegate.cc
++++ b/services/network/network_service_network_delegate.cc
+@@ -5,8 +5,10 @@
+ #include "services/network/network_service_network_delegate.h"
+ 
+ #include <algorithm>
++#include <cstdlib>
+ #include <optional>
+ #include <string>
++#include <string_view>
+ 
+ #include "base/debug/crash_logging.h"
+ #include "base/debug/dump_without_crashing.h"
+@@ -18,6 +20,8 @@
+ #include "components/domain_reliability/monitor.h"
+ #include "net/base/features.h"
+ #include "net/base/isolation_info.h"
++#include "net/base/ip_address.h"
++#include "net/base/url_util.h"
+ #include "net/base/load_flags.h"
+ #include "net/base/net_errors.h"
+ #include "net/cookies/cookie_setting_override.h"
+@@ -44,6 +48,41 @@
+ namespace network {
+ 
+ namespace {
++// A proxy transport hides the final destination's address space from ordinary
++// LNA checks. Reject canonical local destinations before routing, without a DNS
++// lookup that would leak a proxied profile's hostnames. An arbitrary hostname's
++// final remote-DNS answer remains the upstream proxy's trust boundary.
++bool NeAntikLocalDestinationBlocked(const GURL& url) {
++#if BUILDFLAG(IS_MAC)
++  const char* value = std::getenv("NEANTIK_PROFILE_LAN");
++  if (!value || std::string_view(value) != "deny" ||
++      !(url.SchemeIsHTTPOrHTTPS() || url.SchemeIsWSOrWSS())) {
++    return false;
++  }
++  if (net::IsLocalhost(url)) {
++    return true;
++  }
++  std::string_view host = url.HostNoBracketsPiece();
++  while (!host.empty() && host.back() == '.') {
++    host.remove_suffix(1);
++  }
++  net::IPAddress address;
++  if (address.AssignFromIPLiteral(host)) {
++    if (address.IsIPv4MappedIPv6()) {
++      address = net::ConvertIPv4MappedIPv6ToIPv4(address);
++    }
++    return !address.IsPubliclyRoutable() || address.IsMulticast();
++  }
++  return host.empty() || host.find('.') == std::string_view::npos ||
++         host == "local" || host.ends_with(".local") ||
++         host == "localdomain" || host.ends_with(".localdomain") ||
++         host == "home.arpa" || host.ends_with(".home.arpa") ||
++         host == "internal" || host.ends_with(".internal");
++#else
++  return false;
++#endif
++}
++
+ // Returns the permissions policy saved for the request in the loader. The
+ // loader should outlive the caller of this method.
+ base::optional_ref<const network::PermissionsPolicy> GetPermissionsPolicy(
+@@ -104,6 +143,10 @@
+     effective_url = new_url;
+   } else {
+     effective_url = &request->url();
++  }
++
++  if (NeAntikLocalDestinationBlocked(*effective_url)) {
++    return net::ERR_BLOCKED_BY_CLIENT;
+   }
+ 
+   MaybeTruncateReferrer(request, *effective_url);
+--- a/components/ungoogled/nevision_fingerprint.cc
++++ b/components/ungoogled/nevision_fingerprint.cc
+@@ -10,6 +10,7 @@
+ #include <string_view>
+ 
+ #include "base/environment.h"
++#include "build/build_config.h"
+ #include "base/hash/hash.h"
+ #include "base/strings/string_number_conversions.h"
+ 
+@@ -81,3 +82,10 @@
+ }
+ 
+ }  // namespace ungoogled::nevision
++
++// Static .80 integration: preserve the MPL helper files as separate source
++// units, included once here instead of regenerating the retained GN graph.
++#if BUILDFLAG(IS_MAC)
++#include "components/ungoogled/system_font_source.cc"
++#include "components/ungoogled/system_font_policy_mac.cc"
++#endif
+--- a/third_party/blink/renderer/platform/fonts/mac/font_cache_mac.mm
++++ b/third_party/blink/renderer/platform/fonts/mac/font_cache_mac.mm
+@@ -40,6 +40,7 @@
+ #include "base/apple/foundation_util.h"
+ #include "base/apple/scoped_cftyperef.h"
+ #include "base/location.h"
++#include "components/ungoogled/system_font_policy_mac.h"
+ #include "base/metrics/histogram_macros.h"
+ #include "base/timer/elapsed_timer.h"
+ #include "third_party/blink/public/platform/platform.h"
+@@ -96,6 +97,14 @@
+     CFToNSPtrCast(kCTFontTraitsAttribute) : traits_dict,
+   };
+ 
++  if (ungoogled::nevision::SystemFontPolicyV1Enabled()) {
++    AtomicString family_string(String(CFToNSPtrCast(family_name.get())));
++    return MatchFontFamily(family_string, FontSelectionValue(ToCSSFontWeight(weight)),
++        (traits & kCTFontTraitItalic) ? FontSelectionValue(14) : kNormalSlopeValue,
++        (traits & kCTFontTraitExpanded) ? FontSelectionValue(125)
++          : (traits & kCTFontTraitCondensed) ? FontSelectionValue(75) : kNormalWidthValue,
++        size);
++  }
+   ScopedCFTypeRef<CTFontDescriptorRef> descriptor(
+       CTFontDescriptorCreateWithAttributes(NSToCFPtrCast(attributes)));
+   // When we try to find the substitute font of "Menlo Regular" with italic
+@@ -149,6 +158,16 @@
+     substitute_font.reset(CTFontCreateForString(ct_font, string.get(), range));
+   }
+ 
++  auto protected_fallback = [&] {
++    if (ungoogled::nevision::SystemFontPolicyV1Enabled()) {
++      ScopedCFTypeRef<CTFontRef> base_font(
++          ct_font ? static_cast<CTFontRef>(CFRetain(ct_font))
++                  : CTFontCreateWithName(CFSTR("Times"), size, nullptr));
++      substitute_font.reset(ungoogled::nevision::CopyProtectedFontFallback(
++          base_font.get(), string.get(), nullptr));
++    }
++  };
++  protected_fallback();
+   if (!substitute_font || IsLastResortFont(substitute_font.get())) {
+     return ScopedCFTypeRef<CTFontRef>(nullptr);
+   }
+@@ -180,6 +199,10 @@
+           CTFontCreateForString(mono_emoji_font.get(), string.get(), range));
+     }
+   }
++  if (ungoogled::nevision::SystemFontPolicyV1Enabled() &&
++      !ungoogled::nevision::ProtectedFontCoversText(substitute_font.get(), string.get())) {
++    protected_fallback();
++  }
+   return substitute_font;
+ }
+ 
+@@ -248,7 +271,7 @@
+         CreateCopyWithTraitsAndWeightFromFont(substitute_font.get(), traits,
+                                               weight, size);
+ 
+-    if (best_variation) {
++    if (best_variation && ungoogled::nevision::IsAllowedSystemHostFont(best_variation.get())) {
+       CTFontSymbolicTraits best_variation_font_traits =
+           CTFontGetSymbolicTraits(best_variation.get());
+       float best_variation_font_weight =
+@@ -414,7 +437,7 @@
+         creation_params.Family(), font_description.Weight(),
+         font_description.Style(), font_description.Stretch(), size);
+   }
+-  if (!matched_font)
++  if (!matched_font || !ungoogled::nevision::IsAllowedSystemHostFont(matched_font.get()))
+     return nullptr;
+ 
+   CTFontSymbolicTraits matched_font_traits =
+--- a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
++++ b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
+@@ -37,6 +37,7 @@
+ #include "base/apple/bridging.h"
+ #include "base/apple/foundation_util.h"
+ #include "base/apple/scoped_cftyperef.h"
++#include "components/ungoogled/system_font_policy_mac.h"
+ #include "third_party/blink/renderer/platform/fonts/font_cache.h"
+ #include "third_party/blink/renderer/platform/fonts/font_selection_types.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+@@ -244,6 +245,9 @@
+     CTFontSymbolicTraits desired_traits,
+     int desired_weight,
+     float size) {
++  if (ungoogled::nevision::SystemFontPolicyV1Enabled()) {
++    return BestStyleMatchForFamily(family_name, desired_traits, desired_weight, size);
++  }
+   DCHECK(!RuntimeEnabledFeatures::FontFamilyStyleMatchingCTMigrationEnabled());
+   NSFontManager* font_manager = NSFontManager.sharedFontManager;
+   NSArray<NSArray*>* fonts =
+@@ -301,12 +305,16 @@
+   // `availableMembersOfFontFamily` so that the matching results are the same.
+   // That's why we don't pass kCTFontCollectionRemoveDuplicatesOption, it might
+   // change the order and therefore might change the matching result.
+-  ScopedCFTypeRef<CTFontCollectionRef> all_system_fonts(
+-      CTFontCollectionCreateFromAvailableFonts(nullptr));
+-
+-  ScopedCFTypeRef<CFArrayRef> fonts_in_family(
+-      CTFontCollectionCreateMatchingFontDescriptorsForFamily(
+-          all_system_fonts.get(), family_name, NULL));
++  ScopedCFTypeRef<CTFontCollectionRef> all_system_fonts;
++  ScopedCFTypeRef<CFArrayRef> fonts_in_family;
++  const bool protected_policy = ungoogled::nevision::SystemFontPolicyV1Enabled();
++  if (protected_policy) {
++    fonts_in_family.reset(ungoogled::nevision::CopyProtectedFontCandidates(family_name));
++  } else {
++    all_system_fonts.reset(CTFontCollectionCreateFromAvailableFonts(nullptr));
++    fonts_in_family.reset(CTFontCollectionCreateMatchingFontDescriptorsForFamily(
++        all_system_fonts.get(), family_name, nullptr));
++  }
+   if (!fonts_in_family || CFArrayGetCount(fonts_in_family.get()) == 0) {
+     return ScopedCFTypeRef<CTFontRef>(nullptr);
+   }
+@@ -320,6 +328,20 @@
+         CFArrayGetValueAtIndex(fonts_in_family.get(), i));
+     if (!descriptor) {
+       continue;
++    }
++    ScopedCFTypeRef<CTFontRef> protected_candidate;
++    if (protected_policy) {
++      ScopedCFTypeRef<CFTypeRef> candidate_family(
++          CTFontDescriptorCopyAttribute(descriptor, kCTFontFamilyNameAttribute));
++      if (!candidate_family || CFGetTypeID(candidate_family.get()) != CFStringGetTypeID() ||
++          CFStringCompare(static_cast<CFStringRef>(candidate_family.get()), family_name,
++                          kCFCompareCaseInsensitive) != kCFCompareEqualTo) {
++        continue;
++      }
++      protected_candidate.reset(CTFontCreateWithFontDescriptor(descriptor, size, nullptr));
++      if (!ungoogled::nevision::IsAllowedSystemHostFont(protected_candidate.get())) {
++        continue;
++      }
+     }
+ 
+     int candidate_traits = kCTNormalTraitsValue;
+@@ -345,8 +367,9 @@
+     if (!matched_font_in_family ||
+         BetterChoiceCT(desired_traits, desired_weight, chosen_traits,
+                        chosen_weight, candidate_traits, candidate_weight)) {
+-      matched_font_in_family.reset(
+-          CTFontCreateWithFontDescriptor(descriptor, size, nullptr));
++      matched_font_in_family = protected_policy
++          ? std::move(protected_candidate)
++          : ScopedCFTypeRef<CTFontRef>(CTFontCreateWithFontDescriptor(descriptor, size, nullptr));
+       chosen_traits = candidate_traits;
+       chosen_weight = candidate_weight;
+       // If we found a font with the exact weight and traits we asked for, we
+@@ -363,6 +386,76 @@
+   return matched_font_in_family;
+ }
+ 
++// Direct protected descriptors avoid a global PostScript/full-name relookup.
++ScopedCFTypeRef<CTFontRef> MatchProtectedUniqueFont(CFStringRef name, float size) {
++  ScopedCFTypeRef<CFArrayRef> candidates(
++      ungoogled::nevision::CopyProtectedFontDescriptors());
++  for (CFIndex i = 0; i < CFArrayGetCount(candidates.get()); ++i) {
++    auto descriptor = CFCast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(candidates.get(), i));
++    if (!descriptor) continue;
++    ScopedCFTypeRef<CTFontRef> font(CTFontCreateWithFontDescriptor(descriptor, size, nullptr));
++    if (!font) continue;
++    ScopedCFTypeRef<CFStringRef> postscript(CTFontCopyPostScriptName(font.get()));
++    ScopedCFTypeRef<CFStringRef> full_name(CTFontCopyFullName(font.get()));
++    if ((postscript && CFStringCompare(postscript.get(), name, kCFCompareCaseInsensitive) == kCFCompareEqualTo) ||
++        (full_name && CFStringCompare(full_name.get(), name, kCFCompareCaseInsensitive) == kCFCompareEqualTo)) {
++      if (ungoogled::nevision::IsAllowedSystemHostFont(font.get())) return font;
++    }
++  }
++  return ScopedCFTypeRef<CTFontRef>();
++}
++
++ScopedCFTypeRef<CTFontRef> MatchProtectedNSFamily(CFStringRef requested,
++    NSFontTraitMask desired_traits, FontSelectionValue desired_weight, float size) {
++  ScopedCFTypeRef<CFStringRef> family(static_cast<CFStringRef>(CFRetain(requested)));
++  NSFontManager* manager = NSFontManager.sharedFontManager;
++  const NSInteger weight = ToAppKitFontWeight(desired_weight);
++  auto choices = [&](CFStringRef name) {
++    return ScopedCFTypeRef<CFArrayRef>(ungoogled::nevision::CopyProtectedFontCandidates(name));
++  };
++  auto candidates = choices(family.get());
++  auto same_family = [&](CTFontRef font) {
++    ScopedCFTypeRef<CFStringRef> actual(CTFontCopyFamilyName(font));
++    return actual && CFStringCompare(actual.get(),family.get(),kCFCompareCaseInsensitive)==kCFCompareEqualTo;
++  };
++  bool family_exists=false;
++  for (CFIndex i=0;i<CFArrayGetCount(candidates.get());++i) {
++    auto descriptor=CFCast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(candidates.get(),i));
++    ScopedCFTypeRef<CTFontRef> font(descriptor?CTFontCreateWithFontDescriptor(descriptor,size,nullptr):nullptr);
++    family_exists |= font && same_family(font.get()) && ungoogled::nevision::IsAllowedSystemHostFont(font.get());
++  }
++  if (!family_exists) {
++    auto named=MatchProtectedUniqueFont(requested,size);
++    if (!named) return ScopedCFTypeRef<CTFontRef>();
++    ScopedCFTypeRef<CFStringRef> postscript(CTFontCopyPostScriptName(named.get()));
++    if (!postscript || CFStringCompare(postscript.get(),requested,kCFCompareCaseInsensitive)!=kCFCompareEqualTo) return ScopedCFTypeRef<CTFontRef>();
++    family.reset(CTFontCopyFamilyName(named.get()));
++    if (!family) return ScopedCFTypeRef<CTFontRef>();
++    NSFontTraitMask named_traits=[manager traitsOfFont:(__bridge NSFont*)named.get()];
++    NSFontTraitMask required=desired_traits | (weight>=7?NSBoldFontMask:0);
++    if ((CFStringCompare(family.get(),CFSTR("Osaka-Mono"),kCFCompareCaseInsensitive)==kCFCompareEqualTo && !required) ||
++        (named_traits & required)==required) return named;
++    candidates=choices(family.get());
++  }
++  ScopedCFTypeRef<CTFontRef> chosen;
++  NSInteger chosen_weight=0;
++  NSFontTraitMask chosen_traits=0;
++  for (CFIndex i=0;i<CFArrayGetCount(candidates.get());++i) {
++    auto descriptor=CFCast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(candidates.get(),i));
++    ScopedCFTypeRef<CTFontRef> font(descriptor?CTFontCreateWithFontDescriptor(descriptor,size,nullptr):nullptr);
++    if (!font || !same_family(font.get()) || !ungoogled::nevision::IsAllowedSystemHostFont(font.get())) continue;
++    NSFont* native=(__bridge NSFont*)font.get();
++    const NSFontTraitMask traits=[manager traitsOfFont:native];
++    const NSInteger candidate_weight=[manager weightOfFont:native];
++    if ((!chosen && AcceptableChoice(desired_traits,traits)) ||
++        (chosen && BetterChoice(desired_traits,weight,chosen_traits,chosen_weight,traits,candidate_weight))) {
++      chosen=std::move(font);chosen_weight=candidate_weight;chosen_traits=traits;
++      if (chosen_weight==weight && (chosen_traits & IMPORTANT_FONT_TRAITS)==(desired_traits & IMPORTANT_FONT_TRAITS)) break;
++    }
++  }
++  return chosen;
++}
++
+ NSFont* MatchByPostscriptNameNS(const AtomicString& desired_family_string,
+                                 float size) {
+   NSString* desired_family = desired_family_string;
+@@ -386,6 +479,9 @@
+   // searching for fonts with its value as their display name.
+   ScopedCFTypeRef<CFStringRef> desired_name(
+       unique_font_name.Impl()->CreateCFString());
++  if (ungoogled::nevision::SystemFontPolicyV1Enabled()) {
++    return MatchProtectedUniqueFont(desired_name.get(), size);
++  }
+   ScopedCFTypeRef<CTFontRef> matched_font(
+       CTFontCreateWithName(desired_name.get(), size, nullptr));
+   DCHECK(matched_font);
+@@ -570,6 +666,16 @@
+                                     desired_weight, size)
+           : BestStyleMatchForFamilyNS(desired_name.get(), desired_traits,
+                                       desired_weight, size);
++
++  if (ungoogled::nevision::SystemFontPolicyV1Enabled()) {
++    if (match_in_family) return match_in_family;
++    auto named = MatchProtectedUniqueFont(desired_name.get(), size);
++    if (!named) return ScopedCFTypeRef<CTFontRef>();
++    if ((CTFontGetSymbolicTraits(named.get()) & desired_traits) == desired_traits) return named;
++    ScopedCFTypeRef<CFStringRef> family(CTFontCopyFamilyName(named.get()));
++    return family ? BestStyleMatchForFamily(family.get(), desired_traits, desired_weight, size)
++                  : ScopedCFTypeRef<CTFontRef>();
++  }
+ 
+   if (!match_in_family) {
+     // We first try to find font by postscript name. If the found font has
+@@ -644,6 +750,11 @@
+                           FontSelectionValue desired_weight,
+                           float size) {
+   DCHECK_NE(desired_family_string, FontCache::LegacySystemFontFamily());
++  if (ungoogled::nevision::SystemFontPolicyV1Enabled()) {
++    auto requested=ScopedCFTypeRef<CFStringRef>(desired_family_string.Impl()->CreateCFString());
++    auto font=MatchProtectedNSFamily(requested.get(),desired_traits,desired_weight,size);
++    return font ? (__bridge_transfer NSFont*)font.release() : nil;
++  }
+ 
+   NSString* desired_family = desired_family_string;
+   NSFontManager* font_manager = NSFontManager.sharedFontManager;
+--- a/third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm
++++ b/third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm
+@@ -30,6 +30,7 @@
+ #import <AvailabilityMacros.h>
+ 
+ #include "base/apple/bridging.h"
++#include "components/ungoogled/system_font_policy_mac.h"
+ #import "base/apple/foundation_util.h"
+ #include "third_party/blink/renderer/platform/fonts/font.h"
+ #include "third_party/blink/renderer/platform/fonts/font_platform_data.h"
+@@ -122,6 +123,9 @@
+     OpticalSizing optical_sizing,
+     const FontVariationSettings* variation_settings) {
+   DCHECK(ct_font);
++  // Both callers are host lookup/fallback. Downloadable fonts use their own
++  // custom-font-data path, which must not be restricted by this predicate.
++  if (!ungoogled::nevision::IsAllowedSystemHostFont(ct_font)) return nullptr;
+ 
+   // fontd automatically issues a sandbox extension to permit reading
+   // activated fonts that would otherwise be restricted by the sandbox.
+--- a/third_party/skia/src/ports/SkFontMgr_mac_ct.cpp
++++ b/third_party/skia/src/ports/SkFontMgr_mac_ct.cpp
+@@ -10,6 +10,7 @@
+ 
+ #ifdef SK_BUILD_FOR_MAC
+ #import <ApplicationServices/ApplicationServices.h>
++#include "components/ungoogled/system_font_policy_mac.h"
+ #endif
+ 
+ #ifdef SK_BUILD_FOR_IOS
+@@ -36,11 +37,53 @@
+ 
+ #include <string.h>
+ #include <memory>
++#include <algorithm>
++#include <vector>
++#include "include/ports/SkTypeface_mac.h"
+ 
+ using namespace skia_private;
+ 
+ static SkUniqueCFRef<CFStringRef> make_CFString(const char s[]) {
+     return SkUniqueCFRef<CFStringRef>(CFStringCreateWithCString(nullptr, s, kCFStringEncodingUTF8));
++}
++
++// This port also builds on iOS; the opt-in policy is macOS-only.
++static bool system_font_policy_enabled() {
++#ifdef SK_BUILD_FOR_MAC
++    return ungoogled::nevision::SystemFontPolicyV1Enabled();
++#else
++    return false;
++#endif
++}
++static bool allowed_host_font(CTFontRef font) {
++#ifdef SK_BUILD_FOR_MAC
++    return ungoogled::nevision::IsAllowedSystemHostFont(font);
++#else
++    return true;
++#endif
++}
++static bool protected_text_coverage(CTFontRef font, CFStringRef text) {
++#ifdef SK_BUILD_FOR_MAC
++    return ungoogled::nevision::ProtectedFontCoversText(font, text);
++#else
++    return false;
++#endif
++}
++static SkUniqueCFRef<CFArrayRef> protected_descriptors(CTFontCollectionRef collection) {
++    SkUniqueCFRef<CFArrayRef> source;
++#ifdef SK_BUILD_FOR_MAC
++    source.reset(collection ? CTFontCollectionCreateMatchingFontDescriptors(collection)
++                            : ungoogled::nevision::CopyProtectedFontDescriptors());
++#endif
++    SkUniqueCFRef<CFMutableArrayRef> result(CFArrayCreateMutable(nullptr, 0, &kCFTypeArrayCallBacks));
++    if (source) {
++        for (CFIndex i = 0; i < CFArrayGetCount(source.get()); ++i) {
++            auto desc = static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(source.get(), i));
++            SkUniqueCFRef<CTFontRef> font(CTFontCreateWithFontDescriptor(desc, 0, nullptr));
++            if (font && allowed_host_font(font.get())) CFArrayAppendValue(result.get(), desc);
++        }
++    }
++    return SkUniqueCFRef<CFArrayRef>(result.release());
+ }
+ 
+ /** Creates a typeface from a descriptor, searching the cache. */
+@@ -50,6 +93,7 @@
+         return nullptr;
+     }
+ 
++    if (!allowed_host_font(ctFont.get())) return nullptr;
+     return SkTypeface_Mac::Make(std::move(ctFont), OpszVariation(), nullptr);
+ }
+ 
+@@ -143,6 +187,7 @@
+         }
+     }
+ 
++    if (!allowed_host_font(ctFont.get())) return nullptr;
+     return SkTypeface_Mac::Make(std::move(ctFont), OpszVariation(), nullptr);
+ }
+ 
+@@ -215,6 +260,12 @@
+         fCount = SkToInt(CFArrayGetCount(fArray.get()));
+     }
+ 
++    // Policy constructor receives the already restricted collection. Never
++    // re-resolve a family descriptor against the global inventory here.
++    SkFontStyleSet_Mac(CFArrayRef descriptors)
++        : fArray(static_cast<CFArrayRef>(CFRetain(descriptors)))
++        , fCount(SkToInt(CFArrayGetCount(descriptors))) {}
++
+     int count() override {
+         return fCount;
+     }
+@@ -236,11 +287,31 @@
+         SkASSERT((unsigned)index < (unsigned)CFArrayGetCount(fArray.get()));
+         CTFontDescriptorRef desc = (CTFontDescriptorRef)CFArrayGetValueAtIndex(fArray.get(), index);
+ 
+-        return create_from_desc(desc);
++        auto face = create_from_desc(desc);
++        return !system_font_policy_enabled() || ContainsTypeface(face.get()) ? face : nullptr;
+     }
+ 
+     sk_sp<SkTypeface> matchStyle(const SkFontStyle& pattern) override {
+         if (0 == fCount) {
++            return nullptr;
++        }
++        if (system_font_policy_enabled()) {
++            std::vector<CTFontDescriptorRef> choices;
++            for (int i = 0; i < fCount; ++i) {
++                choices.push_back(static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(fArray.get(), i)));
++            }
++            std::stable_sort(choices.begin(), choices.end(), [&](auto a, auto b) {
++                return compute_metric(pattern, SkCTFontDescriptorGetSkFontStyle(a, false)) <
++                       compute_metric(pattern, SkCTFontDescriptorGetSkFontStyle(b, false));
++            });
++            for (auto desc : choices) {
++                auto face = create_from_desc_and_style(desc, pattern);
++                if (face && ContainsTypeface(face.get())) return face;
++                // Trait conversion may escape a caller-supplied collection.
++                // The admitted original remains a legitimate closest face.
++                face = create_from_desc(desc);
++                if (face && ContainsTypeface(face.get())) return face;
++            }
+             return nullptr;
+         }
+         return create_from_desc(findMatchingDesc(pattern));
+@@ -249,6 +320,21 @@
+ private:
+     SkUniqueCFRef<CFArrayRef> fArray;
+     int fCount;
++
++    bool ContainsTypeface(const SkTypeface* face) const {
++        CTFontRef font = face ? SkTypeface_GetCTFontRef(face) : nullptr;
++        if (!font || !allowed_host_font(font)) return false;
++        SkUniqueCFRef<CFStringRef> name(CTFontCopyPostScriptName(font));
++        SkUniqueCFRef<CFTypeRef> url(CTFontCopyAttribute(font, kCTFontURLAttribute));
++        if (!name || !url) return false;
++        for (CFIndex i=0; i<CFArrayGetCount(fArray.get()); ++i) {
++            auto desc=static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(fArray.get(),i));
++            SkUniqueCFRef<CFTypeRef> candidateName(CTFontDescriptorCopyAttribute(desc,kCTFontNameAttribute));
++            SkUniqueCFRef<CFTypeRef> candidateURL(CTFontDescriptorCopyAttribute(desc,kCTFontURLAttribute));
++            if (candidateName && candidateURL && CFEqual(name.get(),candidateName.get()) && CFEqual(url.get(),candidateURL.get())) return true;
++        }
++        return false;
++    }
+ 
+     CTFontDescriptorRef findMatchingDesc(const SkFontStyle& pattern) const {
+         int bestMetric = SK_MaxS32;
+@@ -326,6 +412,7 @@
+ } // namespace
+ 
+ class SkFontMgr_Mac : public SkFontMgr {
++    SkUniqueCFRef<CFArrayRef> fProtectedDescriptors;
+     SkUniqueCFRef<CFArrayRef> fNames;
+     int fCount;
+ 
+@@ -347,14 +434,101 @@
+         return sk_sp<SkFontStyleSet>(new SkFontStyleSet_Mac(desc.get()));
+     }
+ 
++    static SkUniqueCFRef<CFArrayRef> ProtectedFamilyNames(CFArrayRef descriptors) {
++        SkUniqueCFRef<CFMutableSetRef> seen(CFSetCreateMutable(nullptr, 0, &kCFTypeSetCallBacks));
++        for (CFIndex i = 0; i < CFArrayGetCount(descriptors); ++i) {
++            auto desc = static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(descriptors, i));
++            SkUniqueCFRef<CFTypeRef> family(CTFontDescriptorCopyAttribute(desc, kCTFontFamilyNameAttribute));
++            if (family && CFGetTypeID(family.get()) == CFStringGetTypeID()) CFSetAddValue(seen.get(), family.get());
++        }
++        std::vector<const void*> names(CFSetGetCount(seen.get()));
++        CFSetGetValues(seen.get(), names.data());
++        std::sort(names.begin(), names.end(), [](auto a, auto b) {
++            return CFStringCompare(static_cast<CFStringRef>(a), static_cast<CFStringRef>(b), 0) == kCFCompareLessThan;
++        });
++        return SkUniqueCFRef<CFArrayRef>(CFArrayCreate(nullptr, names.data(), names.size(), &kCFTypeArrayCallBacks));
++    }
++
++    sk_sp<SkFontStyleSet> ProtectedSet(CFStringRef name) const {
++        SkUniqueCFRef<CFMutableArrayRef> matches(CFArrayCreateMutable(nullptr, 0, &kCFTypeArrayCallBacks));
++        if (!name) return sk_sp<SkFontStyleSet>(new SkFontStyleSet_Mac(static_cast<CFArrayRef>(matches.get())));
++        for (CFIndex i = 0; i < CFArrayGetCount(fProtectedDescriptors.get()); ++i) {
++            auto desc = static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(fProtectedDescriptors.get(), i));
++            SkUniqueCFRef<CFTypeRef> family(CTFontDescriptorCopyAttribute(desc, kCTFontFamilyNameAttribute));
++            if (family && CFGetTypeID(family.get()) == CFStringGetTypeID() &&
++                CFStringCompare(static_cast<CFStringRef>(family.get()), name, kCFCompareCaseInsensitive) == kCFCompareEqualTo) {
++                CFArrayAppendValue(matches.get(), desc);
++            }
++        }
++        return sk_sp<SkFontStyleSet>(new SkFontStyleSet_Mac(static_cast<CFArrayRef>(matches.get())));
++    }
++
++    bool ContainsProtectedFont(CTFontRef font) const {
++        if (!font || !allowed_host_font(font)) return false;
++        SkUniqueCFRef<CFStringRef> name(CTFontCopyPostScriptName(font));
++        SkUniqueCFRef<CFTypeRef> url(CTFontCopyAttribute(font, kCTFontURLAttribute));
++        if (!name || !url) return false;
++        for (CFIndex i = 0; i < CFArrayGetCount(fProtectedDescriptors.get()); ++i) {
++            auto desc = static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(fProtectedDescriptors.get(), i));
++            SkUniqueCFRef<CFTypeRef> otherName(CTFontDescriptorCopyAttribute(desc, kCTFontNameAttribute));
++            SkUniqueCFRef<CFTypeRef> otherURL(CTFontDescriptorCopyAttribute(desc, kCTFontURLAttribute));
++            if (otherName && otherURL && CFEqual(name.get(), otherName.get()) && CFEqual(url.get(), otherURL.get())) return true;
++        }
++        return false;
++    }
++
++    sk_sp<SkTypeface> ProtectedCharacter(const char* family, const SkFontStyle& style,
++                                       const char* bcp47[], int count, SkUnichar character) const {
++        if (character < 0 || character > 0x10FFFF || (character >= 0xD800 && character <= 0xDFFF)) return nullptr;
++        UniChar utf16[2] = {};
++        const int length = SkToInt(SkUTF::ToUTF16(character, utf16));
++        if (length <= 0) return nullptr;
++        SkUniqueCFRef<CFStringRef> text(CFStringCreateWithCharacters(nullptr, utf16, length));
++        auto baseFace = this->onMatchFamilyStyle(family, style);
++        if (!baseFace) baseFace = this->onMatchFamilyStyle(nullptr, style);
++        CTFontRef base = baseFace ? SkTypeface_GetCTFontRef(baseFace.get()) : nullptr;
++        if (!base) return nullptr;
++        // SkFontMgr specifies that the LAST language has the highest priority.
++        SkUniqueCFRef<CFStringRef> language;
++        if (bcp47 && count > 0 && bcp47[count - 1]) language = make_CFString(bcp47[count - 1]);
++        SkUniqueCFRef<CTFontRef> fallback;
++#ifdef SK_BUILD_FOR_MAC
++        fallback.reset(ungoogled::nevision::CopyProtectedFontFallback(base, text.get(), language.get()));
++#endif
++        if (!fallback || !ContainsProtectedFont(fallback.get()) || !protected_text_coverage(fallback.get(), text.get())) {
++            fallback.reset();
++            int best = SK_MaxS32;
++            // A caller-supplied collection must never widen to the global one.
++            for (CFIndex i = 0; i < CFArrayGetCount(fProtectedDescriptors.get()); ++i) {
++                auto desc = static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(fProtectedDescriptors.get(), i));
++                SkUniqueCFRef<CTFontRef> candidate(CTFontCreateWithFontDescriptor(desc, 0, nullptr));
++                if (!candidate || !protected_text_coverage(candidate.get(), text.get())) continue;
++                int metric = compute_metric(style, SkCTFontDescriptorGetSkFontStyle(desc, false));
++                if (metric < best) { best = metric; fallback = std::move(candidate); }
++            }
++        }
++        if (!fallback) return nullptr;
++        SkUniqueCFRef<CFStringRef> fallbackFamily(CTFontCopyFamilyName(fallback.get()));
++        if (fallbackFamily) {
++            auto styledFace = ProtectedSet(fallbackFamily.get())->matchStyle(style);
++            CTFontRef styled = styledFace ? SkTypeface_GetCTFontRef(styledFace.get()) : nullptr;
++            if (styled && ContainsProtectedFont(styled) && protected_text_coverage(styled, text.get())) return styledFace;
++        }
++        if (!ContainsProtectedFont(fallback.get()) || !protected_text_coverage(fallback.get(), text.get())) return nullptr;
++        return SkTypeface_Mac::Make(std::move(fallback), OpszVariation(), nullptr);
++    }
++
+ public:
+     SkUniqueCFRef<CTFontCollectionRef> fFontCollection;
+     SkFontMgr_Mac(CTFontCollectionRef fontCollection)
+-        : fNames(fontCollection ? SkCopyAvailableFontFamilyNames(fontCollection)
+-                                : SkCTFontManagerCopyAvailableFontFamilyNames())
++        : fProtectedDescriptors(system_font_policy_enabled() ? protected_descriptors(fontCollection) : nullptr)
++        , fNames(system_font_policy_enabled() ? ProtectedFamilyNames(fProtectedDescriptors.get())
++                    : fontCollection ? SkCopyAvailableFontFamilyNames(fontCollection)
++                                     : SkCTFontManagerCopyAvailableFontFamilyNames())
+         , fCount(fNames ? SkToInt(CFArrayGetCount(fNames.get())) : 0)
+         , fFontCollection(fontCollection ? (CTFontCollectionRef)CFRetain(fontCollection)
+-                                         : CTFontCollectionCreateFromAvailableFonts(nullptr))
++                                         : system_font_policy_enabled() ? nullptr
++                                           : CTFontCollectionCreateFromAvailableFonts(nullptr))
+     {}
+ 
+ protected:
+@@ -374,7 +548,8 @@
+         if ((unsigned)index >= (unsigned)fCount) {
+             return nullptr;
+         }
+-        return CreateSet(this->getFamilyNameAt(index));
++        return system_font_policy_enabled() ? ProtectedSet(this->getFamilyNameAt(index))
++                                            : CreateSet(this->getFamilyNameAt(index));
+     }
+ 
+     sk_sp<SkFontStyleSet> onMatchFamily(const char familyName[]) const override {
+@@ -382,11 +557,18 @@
+             return nullptr;
+         }
+         SkUniqueCFRef<CFStringRef> cfName = make_CFString(familyName);
+-        return CreateSet(cfName.get());
++        return system_font_policy_enabled() ? ProtectedSet(cfName.get()) : CreateSet(cfName.get());
+     }
+ 
+     sk_sp<SkTypeface> onMatchFamilyStyle(const char familyName[],
+                                    const SkFontStyle& style) const override {
++        if (system_font_policy_enabled()) {
++            auto name = make_CFString(familyName ? familyName : "Helvetica");
++            if (!name) return nullptr;
++            auto set = ProtectedSet(name.get());
++            if (!familyName && set->count() == 0 && fCount > 0) set = ProtectedSet(getFamilyNameAt(0));
++            return set->matchStyle(style);
++        }
+         SkUniqueCFRef<CTFontDescriptorRef> reqDesc = create_descriptor(familyName, style);
+         if (!reqDesc) {
+             return nullptr;
+@@ -412,6 +594,9 @@
+                                                   const SkFontStyle& style,
+                                                   const char* bcp47[], int bcp47Count,
+                                                   SkUnichar character) const override {
++        if (system_font_policy_enabled()) {
++            return ProtectedCharacter(familyName, style, bcp47, bcp47Count, character);
++        }
+         SkUniqueCFRef<CTFontDescriptorRef> desc = create_descriptor(familyName, style);
+         if (!desc) {
+             return nullptr;
+@@ -512,6 +697,10 @@
+             familyName = map_css_names(familyName);
+         }
+ 
++        if (system_font_policy_enabled()) {
++            auto face = this->onMatchFamilyStyle(familyName, style);
++            return face ? face : this->onMatchFamilyStyle(nullptr, style);
++        }
+         sk_sp<SkTypeface> face = create_from_name(familyName, style);
+         if (face) {
+             return face;
+--- a/content/browser/font_access/font_enumeration_data_source_mac.mm
++++ b/content/browser/font_access/font_enumeration_data_source_mac.mm
+@@ -2,6 +2,7 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include "components/ungoogled/system_font_policy_mac.h"
+ #include "content/browser/font_access/font_enumeration_data_source_mac.h"
+ 
+ #import <CoreFoundation/CoreFoundation.h>
+@@ -75,16 +76,19 @@
+   blink::FontEnumerationTable font_enumeration_table;
+ 
+   @autoreleasepool {
+-    NSDictionary* options = @{
+-      base::apple::CFToNSPtrCast(kCTFontCollectionRemoveDuplicatesOption) : @YES
+-    };
+-
+-    base::apple::ScopedCFTypeRef<CTFontCollectionRef> collection(
+-        CTFontCollectionCreateFromAvailableFonts(
+-            base::apple::NSToCFPtrCast(options)));
+-
+-    base::apple::ScopedCFTypeRef<CFArrayRef> font_descs(
+-        CTFontCollectionCreateMatchingFontDescriptors(collection.get()));
++    base::apple::ScopedCFTypeRef<CTFontCollectionRef> collection;
++    base::apple::ScopedCFTypeRef<CFArrayRef> font_descs;
++    const bool protected_policy=ungoogled::nevision::SystemFontPolicyV1Enabled();
++    if (protected_policy) {
++      // Direct protected descriptors precede any global duplicate elimination.
++      font_descs.reset(ungoogled::nevision::CopyProtectedFontDescriptors());
++    } else {
++      NSDictionary* options = @{
++        base::apple::CFToNSPtrCast(kCTFontCollectionRemoveDuplicatesOption) : @YES
++      };
++      collection.reset(CTFontCollectionCreateFromAvailableFonts(base::apple::NSToCFPtrCast(options)));
++      font_descs.reset(CTFontCollectionCreateMatchingFontDescriptors(collection.get()));
++    }
+ 
+     // Used to filter duplicates.
+     std::set<std::string> fonts_seen;
+@@ -92,6 +96,15 @@
+     for (CFIndex i = 0; i < CFArrayGetCount(font_descs.get()); ++i) {
+       CTFontDescriptorRef fd = base::apple::CFCast<CTFontDescriptorRef>(
+           CFArrayGetValueAtIndex(font_descs.get(), i));
++      if (!fd) continue;
++      base::apple::ScopedCFTypeRef<CTFontDescriptorRef> actual_descriptor;
++      if (protected_policy) {
++        base::apple::ScopedCFTypeRef<CTFontRef> actual(CTFontCreateWithFontDescriptor(fd, 0, nullptr));
++        if (!actual || !ungoogled::nevision::IsAllowedSystemHostFont(actual.get())) continue;
++        actual_descriptor.reset(CTFontCopyFontDescriptor(actual.get()));
++        if (!actual_descriptor) continue;
++        fd=actual_descriptor.get();  // Published metadata describes the validated face.
++      }
+       if (!IsValidFontMac(fd)) {
+         // Skip invalid fonts.
+         continue;
+--- a/third_party/blink/renderer/platform/fonts/generic_font_family_settings.cc
++++ b/third_party/blink/renderer/platform/fonts/generic_font_family_settings.cc
+@@ -33,8 +33,40 @@
+ #include <memory>
+ 
+ #include "third_party/blink/renderer/platform/fonts/font_cache.h"
++#include "third_party/blink/renderer/platform/fonts/neantik_system_generic_defaults.h"
++
++#include "build/build_config.h"
++#if BUILDFLAG(IS_MAC)
++#include "components/ungoogled/system_font_policy_mac.h"
++#endif
+ 
+ namespace blink {
++
++// Shared/service workers have no document from which to inherit generic maps.
++// Only the explicit, seeded development policy supplies Chrome macOS defaults.
++// Existing COMMON/per-script mappings and downloaded font resources survive.
++void ApplySystemFontPolicyGenericDefaultsIfEmpty(
++    GenericFontFamilySettings& settings) {
++#if BUILDFLAG(IS_MAC)
++  if (!ungoogled::nevision::SystemFontPolicyV1Enabled())
++    return;
++  if (settings.Standard().empty())
++    settings.UpdateStandard(AtomicString("Times"));
++  if (settings.Fixed().empty())
++    settings.UpdateFixed(AtomicString("Menlo"));
++  if (settings.Serif().empty())
++    settings.UpdateSerif(AtomicString("Times"));
++  if (settings.SansSerif().empty())
++    settings.UpdateSansSerif(AtomicString("Helvetica"));
++  if (settings.Cursive().empty())
++    settings.UpdateCursive(AtomicString("Apple Chancery"));
++  if (settings.Fantasy().empty())
++    settings.UpdateFantasy(AtomicString("Papyrus"));
++  if (settings.Math().empty())
++    settings.UpdateMath(AtomicString("STIX Two Math"));
++#endif
++}
++
+ 
+ GenericFontFamilySettings::GenericFontFamilySettings(
+     const GenericFontFamilySettings& other)
+--- a/third_party/blink/renderer/core/workers/worker_settings.cc
++++ b/third_party/blink/renderer/core/workers/worker_settings.cc
+@@ -5,6 +5,7 @@
+ #include "third_party/blink/renderer/core/workers/worker_settings.h"
+ 
+ #include "third_party/blink/renderer/core/frame/settings.h"
++#include "third_party/blink/renderer/platform/fonts/neantik_system_generic_defaults.h"
+ 
+ namespace blink {
+ 
+@@ -24,7 +25,9 @@
+       allow_running_of_insecure_content_(allow_running_of_insecure_content),
+       strictly_block_blockable_mixed_content_(
+           strictly_block_blockable_mixed_content),
+-      generic_font_family_settings_(generic_font_family_settings) {}
++      generic_font_family_settings_(generic_font_family_settings) {
++  ApplySystemFontPolicyGenericDefaultsIfEmpty(generic_font_family_settings_);
++}
+ 
+ std::unique_ptr<WorkerSettings> WorkerSettings::Copy(
+     WorkerSettings* old_settings) {
+--- a/chrome/browser/net/proxy_config_monitor.cc
++++ b/chrome/browser/net/proxy_config_monitor.cc
+@@ -5,6 +5,19 @@
+ #include "chrome/browser/net/proxy_config_monitor.h"
+ 
+ #include <utility>
++#include <memory>
++#include <string>
++
++#include "base/check.h"
++#include "base/command_line.h"
++#include "base/environment.h"
++#include "chrome/common/chrome_switches.h"
++#include "net/base/proxy_server.h"
++#include "net/base/proxy_string_util.h"
++#include "net/proxy_resolution/proxy_config.h"
++#include "net/proxy_resolution/proxy_config_service_fixed.h"
++#include "net/proxy_resolution/proxy_config_with_annotation.h"
++#include "net/traffic_annotation/network_traffic_annotation.h"
+ 
+ #include "base/strings/utf_string_conversions.h"
+ #include "build/build_config.h"
+@@ -34,6 +47,63 @@
+ 
+ using content::BrowserThread;
+ 
++namespace {
++constexpr auto kNeAntikOwnedProxyTrafficAnnotation =
++    net::DefineNetworkTrafficAnnotation("neantik_owned_profile_proxy", R"(
++      semantics {
++        sender: "NeAntik profile proxy"
++        description: "Routes profile traffic through the user-selected mandatory proxy."
++        trigger: "Profile network requests while mandatory proxy mode is active."
++        data: "Requested destinations and normal proxied protocol data."
++        destination: OTHER
++        destination_other: "The user-selected proxy endpoint."
++      }
++      policy {
++        cookies_allowed: YES
++        cookies_store: "Cookies for this browser profile."
++        setting: "User selects a required proxy for the browser profile."
++        policy_exception_justification: "This profile explicitly requires its selected proxy."
++      })");
++
++std::unique_ptr<net::ProxyConfigService> NeAntikLockedProxyService() {
++  const auto required = base::Environment::Create()->GetVar(
++      "NEANTIK_PROFILE_PROXY_REQUIRED");
++  if (!required) {
++    return nullptr;
++  }
++  // Malformed owner protocol must stop before creating any NetworkContext.
++  // Never print endpoint/environment values, or fall back to DIRECT/PAC.
++  CHECK(*required == "1");
++  const auto* command = base::CommandLine::ForCurrentProcess();
++  CHECK(!command->HasSwitch(switches::kNoProxyServer));
++  CHECK(!command->HasSwitch(switches::kProxyPacUrl));
++  CHECK(!command->HasSwitch(switches::kProxyAutoDetect));
++  CHECK(command->HasSwitch(switches::kProxyServer));
++  CHECK(command->GetSwitchValueASCII(switches::kProxyBypassList) == "<-loopback>");
++  const std::string raw = command->GetSwitchValueASCII(switches::kProxyServer);
++  const size_t separator = raw.find("://");
++  CHECK(separator != std::string::npos);
++  const std::string scheme = raw.substr(0, separator);
++  CHECK(scheme == "http" || scheme == "https" || scheme == "socks5");
++  const std::string authority = raw.substr(separator + 3);
++  CHECK(!authority.empty());
++  CHECK(authority.find_first_of("/?#@,;=\\ \t\r\n") == std::string::npos);
++  const auto server = net::ProxyUriToProxyServer(raw, net::ProxyServer::SCHEME_INVALID);
++  CHECK(server.is_valid());
++  CHECK(server.GetPort() > 0);
++  CHECK(server.scheme() == net::ProxyServer::SCHEME_HTTP ||
++        server.scheme() == net::ProxyServer::SCHEME_HTTPS ||
++        server.scheme() == net::ProxyServer::SCHEME_SOCKS5);
++  net::ProxyConfig config;
++  config.proxy_rules().type = net::ProxyConfig::ProxyRules::Type::PROXY_LIST;
++  config.proxy_rules().single_proxies.SetSingleProxyServer(server);
++  config.proxy_rules().bypass_rules.ParseFromString("<-loopback>");
++  return std::make_unique<net::ProxyConfigServiceFixed>(
++      net::ProxyConfigWithAnnotation(config, kNeAntikOwnedProxyTrafficAnnotation));
++}
++}  // namespace
++
++
+ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+   DCHECK(profile);
+@@ -69,6 +139,9 @@
+   proxy_config_service_ = ProxyServiceFactory::CreateProxyConfigService(
+       pref_proxy_config_tracker_.get(), profile);
+ 
++  if (auto locked = NeAntikLockedProxyService()) {
++    proxy_config_service_ = std::move(locked);
++  }
+   proxy_config_service_->AddObserver(this);
+ }
+ 
+@@ -82,6 +155,9 @@
+ 
+   proxy_config_service_ = ProxyServiceFactory::CreateProxyConfigService(
+       pref_proxy_config_tracker_.get(), nullptr);
++  if (auto locked = NeAntikLockedProxyService()) {
++    proxy_config_service_ = std::move(locked);
++  }
+   proxy_config_service_->AddObserver(this);
+ }
+ 
+--- /dev/null
++++ b/components/ungoogled/system_font_policy_mac.cc
+@@ -0,0 +1,32 @@
++// Copyright 2026 NeAntik Authors. SPDX-License-Identifier: MPL-2.0
++#include "components/ungoogled/system_font_policy_mac.h"
++#include "base/environment.h"
++#include "base/no_destructor.h"
++#include "components/ungoogled/nevision_fingerprint.h"
++#include "components/ungoogled/system_font_source.h"
++namespace ungoogled::nevision {
++namespace {
++neantik::fonts::SystemSourcePolicy& Policy() {
++  static base::NoDestructor<neantik::fonts::SystemSourcePolicy> policy;
++  return *policy;
++}
++}  // namespace
++bool SystemFontPolicyV1Enabled() {
++  static const bool enabled = GetProfileSeed().has_value() &&
++      base::Environment::Create()->GetVar("NEANTIK_FONT_POLICY") == "system-v1";
++  return enabled;
++}
++bool IsAllowedSystemHostFont(CTFontRef font) {
++  return !SystemFontPolicyV1Enabled() || Policy().AllowsHostFont(font);
++}
++bool ProtectedFontCoversText(CTFontRef font, CFStringRef text) {
++  return SystemFontPolicyV1Enabled() && Policy().AllowsText(font, text);
++}
++CFArrayRef CopyProtectedFontCandidates(CFStringRef name) {
++  return Policy().CopySystemCandidates(name);
++}
++CFArrayRef CopyProtectedFontDescriptors() { return Policy().CopySystemDescriptors(); }
++CTFontRef CopyProtectedFontFallback(CTFontRef base, CFStringRef text, CFStringRef language) {
++  return Policy().CopySystemFallbackForText(base, text, language);
++}
++}  // namespace ungoogled::nevision
+--- /dev/null
++++ b/components/ungoogled/system_font_policy_mac.h
+@@ -0,0 +1,16 @@
++// Copyright 2026 NeAntik Authors. SPDX-License-Identifier: MPL-2.0
++#ifndef COMPONENTS_UNGOOGLED_SYSTEM_FONT_POLICY_MAC_H_
++#define COMPONENTS_UNGOOGLED_SYSTEM_FONT_POLICY_MAC_H_
++#include <CoreText/CoreText.h>
++#include "base/component_export.h"
++namespace ungoogled::nevision {
++// Seed presence alone never opts existing profiles into a new font identity.
++COMPONENT_EXPORT(NEANTIK_FONT_POLICY_MAC) bool SystemFontPolicyV1Enabled();
++COMPONENT_EXPORT(NEANTIK_FONT_POLICY_MAC) bool IsAllowedSystemHostFont(CTFontRef);
++COMPONENT_EXPORT(NEANTIK_FONT_POLICY_MAC) bool ProtectedFontCoversText(CTFontRef, CFStringRef);
++// Owned copies; validate every font constructed or styled from a descriptor.
++COMPONENT_EXPORT(NEANTIK_FONT_POLICY_MAC) CFArrayRef CopyProtectedFontCandidates(CFStringRef);
++COMPONENT_EXPORT(NEANTIK_FONT_POLICY_MAC) CFArrayRef CopyProtectedFontDescriptors();
++COMPONENT_EXPORT(NEANTIK_FONT_POLICY_MAC) CTFontRef CopyProtectedFontFallback(CTFontRef, CFStringRef, CFStringRef);
++}  // namespace ungoogled::nevision
++#endif
+--- /dev/null
++++ b/components/ungoogled/system_font_source.cc
+@@ -0,0 +1,387 @@
++// Copyright 2026 NeAntik Authors. SPDX-License-Identifier: MPL-2.0
++#include "system_font_source.h"
++
++#include <CoreFoundation/CoreFoundation.h>
++#include <fcntl.h>
++#include <limits.h>
++#include <stdlib.h>
++#include <string>
++#include <set>
++#include <vector>
++#include <cmath>
++#include <limits>
++#include <sys/stat.h>
++#include <unistd.h>
++
++namespace neantik::fonts {
++namespace {
++template <typename T> class OwnedCF {
++ public:
++  explicit OwnedCF(T value) : value_(value) {}
++  ~OwnedCF() { if (value_) CFRelease(value_); }
++  T get() const { return value_; }
++  OwnedCF(const OwnedCF&) = delete;
++  OwnedCF& operator=(const OwnedCF&) = delete;
++ private:
++  T value_;
++};
++
++struct FileOrigin {
++  Origin origin = Origin::kMissingOrInvalidURL;
++  std::string canonical;
++  dev_t device = 0;
++  ino_t inode = 0;
++};
++
++FileOrigin InspectURL(CFTypeRef attribute) {
++  FileOrigin result;
++  if (!attribute || CFGetTypeID(attribute) != CFURLGetTypeID()) return result;
++  auto url = static_cast<CFURLRef>(attribute);
++  OwnedCF<CFStringRef> scheme(CFURLCopyScheme(url));
++  if (!scheme.get() || CFStringCompare(scheme.get(), CFSTR("file"),
++                                     kCFCompareCaseInsensitive) != kCFCompareEqualTo) return result;
++  UInt8 requested[PATH_MAX + 1] = {};
++  char canonical[PATH_MAX + 1] = {};
++  if (!CFURLGetFileSystemRepresentation(url, true, requested, sizeof(requested)) ||
++      !realpath(reinterpret_cast<const char*>(requested), canonical)) {
++    result.origin = Origin::kUnavailableFile; return result;
++  }
++  result.canonical = canonical;
++  int fd = open(canonical, O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
++  if (fd < 0) { result.origin = Origin::kUnavailableFile; return result; }
++  struct stat info = {};
++  const bool valid = fstat(fd, &info) == 0 && S_ISREG(info.st_mode);
++  close(fd);
++  if (!valid) { result.origin = Origin::kUnavailableFile; return result; }
++  result.device = info.st_dev; result.inode = info.st_ino;
++  if (result.canonical.starts_with("/System/Library/Fonts/") && info.st_uid == 0 &&
++      !(info.st_mode & (S_IWGRP | S_IWOTH))) {
++    result.origin = Origin::kProtectedSystemFile;
++  } else if (result.canonical.starts_with("/System/Library/AssetsV2/")) {
++    result.origin = Origin::kSystemAssetCandidate;
++  } else {
++    result.origin = Origin::kOtherFile;
++  }
++  return result;
++}
++
++FileOrigin InspectFont(CTFontRef font) {
++  if (!font) return {};
++  OwnedCF<CFTypeRef> url(CTFontCopyAttribute(font, kCTFontURLAttribute));
++  return InspectURL(url.get());
++}
++
++bool EqualTables(CTFontRef actual, CTFontRef counterpart) {
++  OwnedCF<CFArrayRef> actual_tags(CTFontCopyAvailableTables(actual, kCTFontTableOptionNoOptions));
++  OwnedCF<CFArrayRef> counterpart_tags(CTFontCopyAvailableTables(counterpart, kCTFontTableOptionNoOptions));
++  if (!actual_tags.get() || !counterpart_tags.get() ||
++      CFArrayGetCount(actual_tags.get()) == 0 ||
++      CFArrayGetCount(actual_tags.get()) != CFArrayGetCount(counterpart_tags.get())) return false;
++  for (CFIndex i = 0; i < CFArrayGetCount(actual_tags.get()); ++i) {
++    // CoreText stores CTFontTableTag integer values directly in this array;
++    // they are not CFNumber objects and must never be dereferenced as CFType.
++    auto raw_tag = reinterpret_cast<uintptr_t>(CFArrayGetValueAtIndex(actual_tags.get(), i));
++    if (!raw_tag || raw_tag > UINT32_MAX) return false;
++    auto tag = static_cast<CTFontTableTag>(raw_tag);
++    OwnedCF<CFDataRef> a(CTFontCopyTable(actual, tag, kCTFontTableOptionNoOptions));
++    OwnedCF<CFDataRef> b(CTFontCopyTable(counterpart, tag, kCTFontTableOptionNoOptions));
++    if (!a.get() || !b.get() || !CFEqual(a.get(), b.get())) return false;
++  }
++  return true;
++}
++
++// Validate variation coordinates against the independently loaded file face.
++// Metadata from the submitted font cannot authorize an unsupported axis.
++bool VariationValue(CFTypeRef value, double* result) {
++  return value && CFGetTypeID(value) == CFNumberGetTypeID() &&
++      CFNumberGetValue(static_cast<CFNumberRef>(value), kCFNumberDoubleType, result) &&
++      std::isfinite(*result);
++}
++
++bool SupportedVariation(CFDictionaryRef variation, CFArrayRef axes) {
++  if (!variation || CFGetTypeID(variation) != CFDictionaryGetTypeID() ||
++      CFDictionaryGetCount(variation) > 64 || !axes || CFArrayGetCount(axes) > 64) return false;
++  const CFIndex count = CFDictionaryGetCount(variation);
++  std::vector<const void*> keys(count), values(count);
++  CFDictionaryGetKeysAndValues(variation, keys.data(), values.data());
++  for (CFIndex i = 0; i < count; ++i) {
++    double value = 0;
++    if (!keys[i] || CFGetTypeID(keys[i]) != CFNumberGetTypeID() ||
++        !VariationValue(values[i], &value)) return false;
++    bool supported = false;
++    for (CFIndex j = 0; j < CFArrayGetCount(axes); ++j) {
++      auto axis = static_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(axes, j));
++      if (!axis || CFGetTypeID(axis) != CFDictionaryGetTypeID()) return false;
++      auto tag = CFDictionaryGetValue(axis, kCTFontVariationAxisIdentifierKey);
++      double minimum = 0, maximum = 0, fallback = 0;
++      if (!tag || CFGetTypeID(tag) != CFNumberGetTypeID() ||
++          !VariationValue(CFDictionaryGetValue(axis, kCTFontVariationAxisMinimumValueKey), &minimum) ||
++          !VariationValue(CFDictionaryGetValue(axis, kCTFontVariationAxisMaximumValueKey), &maximum) ||
++          !VariationValue(CFDictionaryGetValue(axis, kCTFontVariationAxisDefaultValueKey), &fallback) ||
++          minimum > fallback || fallback > maximum) return false;
++      if (CFEqual(keys[i], tag)) { supported = minimum <= value && value <= maximum; break; }
++    }
++    if (!supported) return false;
++  }
++  return true;
++}
++
++bool SameEffectiveVariation(CFDictionaryRef requested, CTFontRef counterpart, CFArrayRef axes) {
++  OwnedCF<CFDictionaryRef> applied(CTFontCopyVariation(counterpart));
++  if (applied.get() && !SupportedVariation(applied.get(), axes)) return false;
++  for (CFIndex i = 0; i < CFArrayGetCount(axes); ++i) {
++    auto axis = static_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(axes, i));
++    auto tag = CFDictionaryGetValue(axis, kCTFontVariationAxisIdentifierKey);
++    double fallback = 0;
++    if (!VariationValue(CFDictionaryGetValue(axis, kCTFontVariationAxisDefaultValueKey), &fallback)) return false;
++    double a = fallback, b = fallback;
++    auto x = CFDictionaryGetValue(requested, tag);
++    auto y = applied.get() ? CFDictionaryGetValue(applied.get(), tag) : nullptr;
++    if ((x && !VariationValue(x, &a)) || (y && !VariationValue(y, &b))) return false;
++    // A font's fixed-point design coordinate has 16 fractional bits. Never
++    // accept a different effective instance merely because its name matches.
++    if (std::abs(a - b) > 1.0 / 65536.0) return false;
++  }
++  return true;
++}
++
++bool CoversText(CTFontRef font, CFStringRef text) {
++  if (!font || !text) return false;
++  OwnedCF<CFStringRef> name(CTFontCopyPostScriptName(font));
++  if (name.get() && (CFStringCompare(name.get(),CFSTR("LastResort"),kCFCompareCaseInsensitive)==kCFCompareEqualTo ||
++                     CFStringCompare(name.get(),CFSTR(".LastResort"),kCFCompareCaseInsensitive)==kCFCompareEqualTo)) return false;
++  CFIndex length = CFStringGetLength(text);
++  if (length <= 0 || length > 256) return false;  // Bounded fallback request.
++  std::vector<UniChar> chars(length);
++  std::vector<CGGlyph> glyphs(length, 0);
++  CFStringGetCharacters(text, CFRangeMake(0,length), chars.data());
++  CTFontGetGlyphsForCharacters(font, chars.data(), glyphs.data(), length);
++  for (CFIndex i=0; i<length; ++i) {
++    // Layout controls/variation selectors are interpreted by shaping, not
++    // independent glyphs. Final shaped runs still require source validation.
++    if (chars[i] == 0x200C || chars[i] == 0x200D || chars[i] == 0xFE0E || chars[i] == 0xFE0F) continue;
++    if (CFStringIsSurrogateLowCharacter(chars[i]) && i && CFStringIsSurrogateHighCharacter(chars[i-1])) continue;
++    if (!glyphs[i]) return false;
++  }
++  return true;
++}
++
++double StyleDistance(CTFontRef requested, CTFontRef candidate) {
++  // This is a fallback tie break, not a replacement for Blink/Skia's CSS
++  // matching algorithm. Prefer the native fallback's actual family/style.
++  constexpr CTFontSymbolicTraits mask = kCTFontTraitBold | kCTFontTraitItalic |
++      kCTFontTraitCondensed | kCTFontTraitExpanded;
++  double result = (CTFontGetSymbolicTraits(requested) & mask) ==
++                  (CTFontGetSymbolicTraits(candidate) & mask) ? 0 : 100;
++  OwnedCF<CFDictionaryRef> a(CTFontCopyTraits(requested));
++  OwnedCF<CFDictionaryRef> b(CTFontCopyTraits(candidate));
++  if (!a.get() || !b.get()) return result;
++  for (auto key:{kCTFontWeightTrait,kCTFontWidthTrait,kCTFontSlantTrait}) {
++    auto x=static_cast<CFNumberRef>(CFDictionaryGetValue(a.get(),key));
++    auto y=static_cast<CFNumberRef>(CFDictionaryGetValue(b.get(),key));
++    double xv=0,yv=0;
++    if (x && y && CFGetTypeID(x)==CFNumberGetTypeID() && CFGetTypeID(y)==CFNumberGetTypeID() &&
++        CFNumberGetValue(x,kCFNumberDoubleType,&xv) && CFNumberGetValue(y,kCFNumberDoubleType,&yv) &&
++        std::isfinite(xv) && std::isfinite(yv)) result+=std::abs(xv-yv);
++  }
++  return result;
++}
++}  // namespace
++
++Origin ResolvedOrigin(CTFontRef font) { return InspectFont(font).origin; }
++
++const char* OriginLabel(Origin origin) {
++  switch (origin) {
++    case Origin::kProtectedSystemFile: return "protected-system-file";
++    case Origin::kSystemAssetCandidate: return "OS-asset-candidate";
++    case Origin::kOtherFile: return "other-file";
++    case Origin::kUnavailableFile: return "unavailable-file";
++    case Origin::kMissingOrInvalidURL: return "missing-or-invalid-URL";
++  }
++  return "invalid-origin";
++}
++
++bool MatchesProtectedSystemSource(CTFontRef font) {
++  FileOrigin origin = InspectFont(font);
++  if (origin.origin != Origin::kProtectedSystemFile) return false;
++  OwnedCF<CFStringRef> name(CTFontCopyPostScriptName(font));
++  OwnedCF<CFTypeRef> attribute(CTFontCopyAttribute(font, kCTFontURLAttribute));
++  if (!name.get() || !attribute.get() || CFGetTypeID(attribute.get()) != CFURLGetTypeID()) return false;
++  OwnedCF<CFArrayRef> descriptors(CTFontManagerCreateFontDescriptorsFromURL(static_cast<CFURLRef>(attribute.get())));
++  if (!descriptors.get()) return false;
++  OwnedCF<CFDictionaryRef> variation(CTFontCopyVariation(font));
++  if (variation.get() && CFGetTypeID(variation.get()) != CFDictionaryGetTypeID()) return false;
++  const bool varied = variation.get() && CFDictionaryGetCount(variation.get()) > 0;
++  for (CFIndex i = 0; i < CFArrayGetCount(descriptors.get()); ++i) {
++    auto descriptor = static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(descriptors.get(), i));
++    OwnedCF<CFTypeRef> candidate_name(CTFontDescriptorCopyAttribute(descriptor, kCTFontNameAttribute));
++    if (!candidate_name.get() || (!varied && !CFEqual(name.get(), candidate_name.get()))) continue;
++    OwnedCF<CTFontRef> base(CTFontCreateWithFontDescriptor(descriptor, CTFontGetSize(font), nullptr));
++    if (!base.get()) continue;
++    // Preserve the previously qualified exact-face/all-table proof. Some
++    // default UI instances expose variation metadata only through the alias.
++    auto base_source = InspectFont(base.get());
++    if (base_source.origin != Origin::kProtectedSystemFile ||
++        base_source.device != origin.device || base_source.inode != origin.inode) continue;
++    if (CFEqual(name.get(), candidate_name.get()) && EqualTables(font, base.get())) return true;
++    OwnedCF<CFArrayRef> axes(varied ? CTFontCopyVariationAxes(base.get()) : nullptr);
++    if (varied && !SupportedVariation(variation.get(), axes.get())) continue;
++    const void* key = kCTFontVariationAttribute;
++    const void* value = variation.get();
++    OwnedCF<CFDictionaryRef> attributes(varied ? CFDictionaryCreate(kCFAllocatorDefault,
++        &key, &value, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks) : nullptr);
++    OwnedCF<CTFontDescriptorRef> adjusted(varied ?
++        CTFontDescriptorCreateCopyWithAttributes(descriptor, attributes.get()) : nullptr);
++    if (varied && (!attributes.get() || !adjusted.get())) continue;
++    OwnedCF<CTFontRef> counterpart(varied ?
++        CTFontCreateWithFontDescriptor(adjusted.get(), CTFontGetSize(font), nullptr) :
++        static_cast<CTFontRef>(CFRetain(base.get())));
++    if (!counterpart.get()) continue;
++    OwnedCF<CFStringRef> actual_name(CTFontCopyPostScriptName(counterpart.get()));
++    if (!actual_name.get() || !CFEqual(name.get(), actual_name.get())) continue;
++    auto actual_source = InspectFont(counterpart.get());
++    if (actual_source.origin == Origin::kProtectedSystemFile && actual_source.device == origin.device &&
++        actual_source.inode == origin.inode && (!varied || SameEffectiveVariation(variation.get(), counterpart.get(), axes.get())) &&
++        EqualTables(font, counterpart.get())) return true;
++  }
++  return false;
++}
++
++SystemSourcePolicy::~SystemSourcePolicy() {
++  for (const auto& entry : entries_) CFRelease(entry.font);
++  for (const auto& descriptor : descriptors_) CFRelease(descriptor);
++}
++
++bool SystemSourcePolicy::AllowsHostFont(CTFontRef font) {
++  if (!font) return false;
++  {
++    std::lock_guard lock(mutex_);
++    for (const auto& entry : entries_) if (entry.font == font) return entry.allowed;
++  }
++  const bool allowed = MatchesProtectedSystemSource(font);
++  std::lock_guard lock(mutex_);
++  for (const auto& entry : entries_) if (entry.font == font) return entry.allowed;
++  if (entries_.size() == kMaximumEntries) { CFRelease(entries_.front().font); entries_.pop_front(); }
++  CFRetain(font); entries_.push_back({font, allowed}); return allowed;
++}
++
++size_t SystemSourcePolicy::CachedCount() const {
++  std::lock_guard lock(mutex_); return entries_.size();
++}
++
++void SystemSourcePolicy::LoadSystemDescriptors() {
++  std::call_once(catalog_once_, [this] {
++    OwnedCF<CFArrayRef> urls(CTFontManagerCopyAvailableFontURLs());
++    if (!urls.get()) return;
++    // Stable protected-file order prevents user inventory order from deciding
++    // tie breaks in style/fallback selection. Never publish the path list.
++    std::set<std::string> files;
++    for (CFIndex i=0; i<CFArrayGetCount(urls.get()); ++i) {
++      CFTypeRef value=CFArrayGetValueAtIndex(urls.get(),i);
++      auto source=InspectURL(value);
++      if (source.origin==Origin::kProtectedSystemFile) files.insert(source.canonical);
++    }
++    for (const auto& file:files) {
++      OwnedCF<CFURLRef> url(CFURLCreateFromFileSystemRepresentation(kCFAllocatorDefault,
++          reinterpret_cast<const UInt8*>(file.data()), file.size(), false));
++      OwnedCF<CFArrayRef> faces(CTFontManagerCreateFontDescriptorsFromURL(url.get()));
++      if (!faces.get()) continue;
++      for (CFIndex j=0; j<CFArrayGetCount(faces.get()); ++j) {
++        auto descriptor=static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(faces.get(),j));
++        if (!descriptor || CFGetTypeID(descriptor)!=CTFontDescriptorGetTypeID()) continue;
++        CFRetain(descriptor);descriptors_.push_back(descriptor);
++      }
++    }
++  });
++}
++
++CFArrayRef SystemSourcePolicy::CopySystemCandidates(CFStringRef name) {
++  LoadSystemDescriptors();
++  CFMutableArrayRef result=CFArrayCreateMutable(kCFAllocatorDefault,0,&kCFTypeArrayCallBacks);
++  if (!name || !CFStringGetLength(name)) return result;
++  for (auto descriptor:descriptors_) {
++    for (auto key:{kCTFontFamilyNameAttribute,kCTFontNameAttribute,kCTFontDisplayNameAttribute}) {
++      OwnedCF<CFTypeRef> value(CTFontDescriptorCopyAttribute(descriptor,key));
++      if (value.get() && CFGetTypeID(value.get())==CFStringGetTypeID() &&
++          CFStringCompare(static_cast<CFStringRef>(value.get()),name,kCFCompareCaseInsensitive)==kCFCompareEqualTo) {
++        CFArrayAppendValue(result,descriptor);break;
++      }
++    }
++  }
++  return result;
++}
++
++size_t SystemSourcePolicy::SystemDescriptorCount() {
++  LoadSystemDescriptors();return descriptors_.size();
++}
++
++CFArrayRef SystemSourcePolicy::CopySystemDescriptors() {
++  LoadSystemDescriptors();
++  return CFArrayCreate(kCFAllocatorDefault,
++      reinterpret_cast<const void**>(descriptors_.data()),
++      descriptors_.size(), &kCFTypeArrayCallBacks);
++}
++
++bool SystemSourcePolicy::AllowsText(CTFontRef font, CFStringRef text) {
++  return AllowsHostFont(font) && CoversText(font, text);
++}
++
++CTFontRef SystemSourcePolicy::CopySystemFallbackForText(CTFontRef base, CFStringRef text,
++                                                      CFStringRef language) {
++  if (!base || !text || CFStringGetLength(text)<=0 || CFStringGetLength(text)>256) return nullptr;
++  OwnedCF<CTFontRef> native(CTFontCreateForStringWithLanguage(base,text,CFRangeMake(0,CFStringGetLength(text)),language));
++  if (native.get() && AllowsHostFont(native.get()) && CoversText(native.get(),text)) {
++    CFRetain(native.get());return native.get();
++  }
++  // A user font may shadow an otherwise available protected fallback family.
++  // Recover the exact protected face, then that family, before changing family.
++  if (native.get()) {
++    for (auto key:{kCTFontNameAttribute,kCTFontFamilyNameAttribute}) {
++      OwnedCF<CFStringRef> name(key==kCTFontNameAttribute
++          ? CTFontCopyPostScriptName(native.get()) : CTFontCopyFamilyName(native.get()));
++      if (!name.get()) continue;
++      OwnedCF<CFArrayRef> candidates(CopySystemCandidates(name.get()));
++      CTFontRef best=nullptr;
++      double best_distance=std::numeric_limits<double>::infinity();
++      for (CFIndex i=0;i<CFArrayGetCount(candidates.get());++i) {
++        auto descriptor=static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(candidates.get(),i));
++        CTFontRef candidate=CTFontCreateWithFontDescriptor(descriptor,CTFontGetSize(base),nullptr);
++        OwnedCF<CFStringRef> actual_name(candidate ? (key==kCTFontNameAttribute
++            ? CTFontCopyPostScriptName(candidate) : CTFontCopyFamilyName(candidate)) : nullptr);
++        if (candidate && actual_name.get() && CFStringCompare(name.get(),actual_name.get(),kCFCompareCaseInsensitive)==kCFCompareEqualTo &&
++            CoversText(candidate,text) && AllowsHostFont(candidate)) {
++          const double distance=StyleDistance(native.get(),candidate);
++          if (distance<best_distance) {
++            if (best) CFRelease(best);
++            best=candidate;candidate=nullptr;best_distance=distance;
++          }
++        }
++        if (candidate) CFRelease(candidate);
++      }
++      if (best) return best;
++    }
++  }
++  LoadSystemDescriptors();
++  // Prefer native language coverage metadata, then the remaining protected
++  // faces. No font from a failed/unknown source becomes an implicit fallback.
++  for (bool preferred:{true,false}) {
++    for (auto descriptor:descriptors_) {
++      bool same_language=false;
++      OwnedCF<CFTypeRef> languages(CTFontDescriptorCopyAttribute(descriptor,kCTFontLanguagesAttribute));
++      if (language && languages.get() && CFGetTypeID(languages.get())==CFArrayGetTypeID()) {
++        auto values=static_cast<CFArrayRef>(languages.get());
++        for (CFIndex i=0; i<CFArrayGetCount(values); ++i) {
++          CFTypeRef value=CFArrayGetValueAtIndex(values,i);
++          if (value && CFGetTypeID(value)==CFStringGetTypeID() &&
++              (CFStringHasPrefix(language,static_cast<CFStringRef>(value)) || CFStringHasPrefix(static_cast<CFStringRef>(value),language))) same_language=true;
++        }
++      }
++      if (same_language!=preferred) continue;
++      CTFontRef candidate=CTFontCreateWithFontDescriptor(descriptor,CTFontGetSize(base),nullptr);
++      if (candidate && CoversText(candidate,text) && AllowsHostFont(candidate)) return candidate;
++      if (candidate) CFRelease(candidate);
++    }
++  }
++  return nullptr;
++}
++}  // namespace neantik::fonts
+--- /dev/null
++++ b/components/ungoogled/system_font_source.h
+@@ -0,0 +1,61 @@
++// Copyright 2026 NeAntik Authors. SPDX-License-Identifier: MPL-2.0
++// Development primitive, not yet wired into Chromium or a published runtime.
++#ifndef NEANTIK_SYSTEM_FONT_SOURCE_H_
++#define NEANTIK_SYSTEM_FONT_SOURCE_H_
++
++#include <CoreText/CoreText.h>
++#include <deque>
++#include <mutex>
++#include <vector>
++
++namespace neantik::fonts {
++
++enum class Origin {
++  kProtectedSystemFile,
++  kSystemAssetCandidate,  // Not trusted by this version merely for its path.
++  kOtherFile,
++  kMissingOrInvalidURL,
++  kUnavailableFile,
++};
++
++// Reads the actual resolved CTFont, never trusts a requested family/name.
++Origin ResolvedOrigin(CTFontRef font);
++const char* OriginLabel(Origin origin);
++
++// URL classification alone is insufficient: a supplied descriptor can claim a
++// system URL. Compare all available SFNT tables with the exact system file face.
++bool MatchesProtectedSystemSource(CTFontRef font);
++
++// Immutable CTFont objects are retained to prevent pointer reuse; bounded FIFO.
++// Callers must apply this to HOST LOOKUP only. Downloaded/embedded fonts have
++// their own explicit source and must not be rejected by this host-font policy.
++class SystemSourcePolicy {
++ public:
++  SystemSourcePolicy() = default;
++  ~SystemSourcePolicy();
++  SystemSourcePolicy(const SystemSourcePolicy&) = delete;
++  SystemSourcePolicy& operator=(const SystemSourcePolicy&) = delete;
++  bool AllowsHostFont(CTFontRef font);
++  size_t CachedCount() const;
++  // Owned copies from real protected file descriptors, not a global family
++  // relookup that may select a user font with a colliding family/name.
++  CFArrayRef CopySystemCandidates(CFStringRef family_or_face);
++  // All protected file descriptors; callers still validate constructed fonts.
++  CFArrayRef CopySystemDescriptors();
++  bool AllowsText(CTFontRef font, CFStringRef text);
++  CTFontRef CopySystemFallbackForText(CTFontRef base, CFStringRef text,
++                                    CFStringRef language);
++  size_t SystemDescriptorCount();
++
++ private:
++  struct Entry { CTFontRef font; bool allowed; };
++  static constexpr size_t kMaximumEntries = 32;
++  mutable std::mutex mutex_;
++  std::deque<Entry> entries_;
++  void LoadSystemDescriptors();
++  std::once_flag catalog_once_;
++  std::vector<CTFontDescriptorRef> descriptors_;
++};
++
++}  // namespace neantik::fonts
++#endif
+--- /dev/null
++++ b/third_party/blink/renderer/platform/fonts/neantik_system_generic_defaults.h
+@@ -0,0 +1,11 @@
++// Copyright 2026 NeAntik Authors. SPDX-License-Identifier: MPL-2.0
++#ifndef THIRD_PARTY_BLINK_RENDERER_PLATFORM_FONTS_NEANTIK_SYSTEM_GENERIC_DEFAULTS_H_
++#define THIRD_PARTY_BLINK_RENDERER_PLATFORM_FONTS_NEANTIK_SYSTEM_GENERIC_DEFAULTS_H_
++#include "third_party/blink/renderer/platform/platform_export.h"
++namespace blink {
++class GenericFontFamilySettings;
++// Opt-in COMMON defaults for standalone workers; not document preferences.
++PLATFORM_EXPORT void ApplySystemFontPolicyGenericDefaultsIfEmpty(
++    GenericFontFamilySettings& settings);
++}  // namespace blink
++#endif

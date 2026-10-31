@@ -29,6 +29,12 @@ enum BrowserFontPolicyRuntime {
     struct Record: Hashable, Sendable {
         let executableSHA256: String, runtimeDigest: String, sourceContractSHA256: String
         let entries: Int, regularBytes: Int64, machoCount: Int
+        fileprivate init(privacy: BrowserPrivacyRuntime.Record) {
+            executableSHA256 = privacy.executableSHA256
+            runtimeDigest = privacy.runtimeDigest
+            sourceContractSHA256 = privacy.sourceContractSHA256
+            entries = privacy.entries; regularBytes = privacy.regularBytes; machoCount = privacy.machoCount
+        }
         fileprivate init(update: DirectUpdateRuntimeRecord, sourceContract: String) {
             executableSHA256 = update.executableDigest
             runtimeDigest = update.runtimeDigest
@@ -47,7 +53,7 @@ enum BrowserFontPolicyRuntime {
                sourceContract: "5da10213b79c97a4bc3b13a0fd6af5e26d6034179bcdbe160bd244463a06f903"),
         Record(update: .componentCompletionV1,
                sourceContract: "a7e6ee9d61543784d74d4b8b1ee0aaa155dd4b97db8bb30aaf27e239486fb10e")
-    ]
+    ] + BrowserPrivacyRuntime.records.map { Record(privacy: $0) }
 
     /// Pure comparison only. It cannot manufacture a launch qualification.
     static func acceptsMeasurement(digest: String, entries: Int, bytes: Int64,
@@ -72,10 +78,9 @@ enum BrowserFontPolicyRuntime {
               let record = supportedRecords.first(where: {
                   $0.executableSHA256 == observedExecutable
               }) else { return nil }
-        let app = executableURL.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().standardizedFileURL
-        guard app.lastPathComponent == "NeAntik Browser.app",
-              app.resolvingSymlinksInPath() == app else { return nil }
         do {
+            let app = try OwnedProfileDirectory.platformPath(executableURL.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent())
+            guard app.lastPathComponent == "NeAntik Browser.app" else { return nil }
             _ = try DirectUpdateCodeSignature.inspect(app, role: .runtime)
             let measured = try DirectRuntimeClosure.measure(app, scope: "runtime",
                 maximumEntries: record.entries, maximumBytes: record.regularBytes)
@@ -85,7 +90,7 @@ enum BrowserFontPolicyRuntime {
         } catch { return nil }
     }
 
-    private static func executableDigest(_ url: URL) -> String? {
+    static func executableDigest(_ url: URL) -> String? {
         let fd = open(url.path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK)
         guard fd >= 0 else { return nil }
         defer { Darwin.close(fd) }

@@ -1,0 +1,10 @@
+NeAntik Chromium privacy layer
+
+The system_font_source.cc/.h and system_font_policy_mac.cc/.h helper files
+carry their original NeAntik copyright and MPL-2.0 notices. Complete modified
+source and build/relink recipes accompany this layer; MPL-2.0 is in licenses/.
+They are included once in the existing static NeVision TU on macOS. The generic
+font header and Chromium consumer changes retain their own file notices.
+The base Chromium/FFmpeg licenses, corresponding source and portable CRC
+materials remain unchanged and are referenced by the source-offer manifest.
+No Apple SDK or private signing material is redistributed.

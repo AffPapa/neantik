@@ -443,7 +443,7 @@ struct ContentView: View {
     }
 
     private var fingerprintAuditProfiles: [BrowserProfile] {
-        store.profiles.filter { !$0.isArchived && $0.engine == .chromium }
+        store.profiles.filter { !$0.isArchived && $0.engine == .chromium && $0.privacyPolicy == .legacy }
     }
 
     private var canRunFingerprintAudit: Bool {
@@ -497,6 +497,7 @@ struct ContentView: View {
             siteCompatibility: siteCompatibilityByProfileID[
                 selectedProfile.id
             ],
+            privacyParametersSent: processes.privacyParametersWereSent(profile: selectedProfile, runtime: runtime),
             now: now
         )
     }

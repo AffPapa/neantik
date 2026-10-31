@@ -1,0 +1,29 @@
+{
+  "appleDeviceTuplesManifestSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+  "architecture": "arm64",
+  "buildArguments": {
+    "sha256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01"
+  },
+  "candidateLockSHA256": "c186ba1c59ceb029f7b44712559eafe018dcb2c2162562ab54c7e726b3114c76",
+  "chromiumVersion": "156.0.8078.80",
+  "codeSignature": "verified",
+  "codeSignatureKind": "developer-id",
+  "createdAt": "2026-10-31T14:40:37.434889+00:00",
+  "executable": {
+    "path": "Contents/MacOS/NeAntik Browser",
+    "sha256": "be743b4f09d96da901701d3b517e0a64daaac9535150172701c099964902492d"
+  },
+  "fingerprintProtocolStrings": "verified",
+  "framework": {
+    "path": "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.80/NeAntik Browser Framework",
+    "sha256": "03852e945564d2e00db3849e9a26c560a0e0ad22836e8a8e83afbe50ce2e8047"
+  },
+  "gpuMode": "metal",
+  "machoCount": 16,
+  "neantikPatchManifestSHA256": "c79ee59b55b1ad474229313660c31c19fcc3b67051bca4f1da1e6098b0b69748",
+  "schemaVersion": 3,
+  "securityBaselineSHA256": "9d8019f9cadcd10417f9104ae9dc065803b726daab4b507fc855bcc6937a82a6",
+  "sourceContractSHA256": "d2990face54ab8e721aa45404cf6de866d348c96dda7161ece04826d84845983",
+  "sourceLockSHA256": "c186ba1c59ceb029f7b44712559eafe018dcb2c2162562ab54c7e726b3114c76",
+  "sourceProvenanceSHA256": "bf94d6c86dba2c04a86ae4b5989616db95265c619e19eb02fcd3364b95576e24"
+}

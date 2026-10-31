@@ -2,8 +2,11 @@
 
 ## Direct 0.9.2 (202) — development candidate, not released
 
-- Privacy hardening is in progress. New-profile private start and protection disclosure/extension-permission warnings have scoped source tests. Versioned privacy intent prevents older managers from silently ignoring new policies. These statements are not native/release qualification.
-- Native RTC/permissions/LAN, graphics/viewport and bundled domain-protection work remains under qualification. No promise of complete anonymity, WebKit support, or completed20-item release is made.
+- Added versioned balanced/strict privacy presets, a local blank start page, explicit WebRTC policy, per-profile permissions, standard-font protection, WebGL debug-renderer reduction and optional letterboxing. Existing saved profiles preserve their choices.
+- Required proxy selection is fixed when creating network contexts. Owned-fixture tests cover extension DIRECT override, proxy failure/recovery, A→B→A storage, disk cache and TLS-session separation, workers, WebSocket and downloads. Packet-wide leak freedom and absolute anonymity are not claimed.
+- Bundled CERT/HaGeZi domain protection, limited tracking-query cleanup and Chromium bounce-tracking mitigation include effective-state disclosure and temporary tracker exceptions. This is not full Safe Browsing or downloaded-file scanning.
+- Added ephemeral-profile lifecycle, derived-cache-safe encrypted backup/restore, extension permission warnings, privacy passport and bounded authenticated update downloading. Integrated manager/release qualification is pending; WebKit remains deferred.
+- Build/relink sources, license notices and privacy limitations are documented in [privacy modes](docs/PRIVACY_MODES.md) and [recipient replay](docs/RELINK_PRIVACY_V1.md). Per-site secret derivation remains research, not an enabled identity feature.
 
 ## Direct 0.9.1 (201) — published public alpha
 

@@ -566,6 +566,12 @@ def build_provenance(
             return build_m15674(source_root, project_root.resolve())
         except (OSError, ValueError) as error:
             raise SourceProvenanceError(str(error)) from error
+    if contract_path.resolve() == (project_root / "runtime/chromium-15680-privacy-v1-source-contract.json").resolve():
+        from chromium_15680_privacy_derivation import build_provenance as build_privacy
+        try:
+            return build_privacy(source_root, project_root.resolve())
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
     if chromium_version(source_root) == CHROMIUM_15680_VERSION:
         from chromium_15680_release_evidence import build_provenance as build_m15680
         try:
@@ -929,6 +935,13 @@ def verify_document(
     rebase_plan_path: Path = DEFAULT_REBASE_PLAN,
 ) -> None:
     ensure_no_stale_markers(document, "emitted source provenance")
+    if document.get("variant") == "recipient-privacy-policy-v1":
+        from chromium_15680_privacy_derivation import verify_provenance as verify_privacy
+        try:
+            verify_privacy(document, project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+        return
     if document.get("targetChromiumVersion") == CHROMIUM_15648_VERSION:
         from chromium_15648_release_evidence import verify_provenance as verify_m15648
         try:
@@ -1077,6 +1090,13 @@ def verify_runtime_lock_for_new_candidate(
         from chromium_15674_release_evidence import verify_contract as verify_m15674
         try:
             verify_m15674(project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+        return
+    if lock.get("variant") == "recipient-privacy-policy-v1":
+        from chromium_15680_privacy_derivation import verify_lock_binding
+        try:
+            verify_lock_binding(lock, project_root)
         except (OSError, ValueError) as error:
             raise SourceProvenanceError(str(error)) from error
         return

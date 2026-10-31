@@ -428,6 +428,7 @@ enum BulkProfileImporter {
             }
             return BrowserProfile(
                 name: name,
+                fontPolicy: .systemV1, privacyPolicy: .balanced,
                 proxy: draft.configuration
             )
         }

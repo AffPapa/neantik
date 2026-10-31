@@ -33,7 +33,9 @@ package enum DirectUpdatePublicationBaseline {
             return d
         }
         let extendedKeys = keys.union(["earlyStableObservation", "requiredSecurityFixes", "reviewedSecurityBranches"])
-        guard (Set(value.keys) == keys || Set(value.keys) == extendedKeys), integer("schemaVersion") == 1, integer("maximumAgeDays") == 0,
+        let officialKeys = keys.union(["securityFixCountStatus"])
+        guard (Set(value.keys) == keys || Set(value.keys) == extendedKeys ||
+               (Set(value.keys) == officialKeys && value["securityFixCountStatus"] as? String == "count-reported-by-official-post")), integer("schemaVersion") == 1, integer("maximumAgeDays") == 0,
               let fixes = integer("securityFixCount"), (0...100_000).contains(fixes),
               let checked = day("checkedAt"), let published = day("publishedAt"), published <= checked,
               checked <= now,
@@ -55,6 +57,17 @@ package enum DirectUpdatePublicationBaseline {
     /// Evaluate after closure and report selection: metadata alone cannot enroll a runtime.
     package static func validateSecurityReview(_ bytes: Data, record: DirectUpdateRuntimeRecord) throws {
         try validate(bytes)
+        if record == .privacyPolicyV1 {
+            guard let value = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
+                  value["minimumPublicChromiumVersion"] as? String == record.chromiumVersion,
+                  value["reference"] as? String == DirectUpdatePrivacyRuntimePins.securityReference,
+                  value["publishedAt"] as? String == DirectUpdatePrivacyRuntimePins.securityPublishedAt,
+                  value["securityFixCount"] as? Int == DirectUpdatePrivacyRuntimePins.securityFixCount,
+                  value["securityFixCountStatus"] as? String == DirectUpdatePrivacyRuntimePins.securityFixCountStatus else {
+                throw DirectUpdateRuntimeProvenanceError.metadata
+            }
+            return
+        }
         guard let value = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
               (record == .fontSystemSecurity20261015V1 || record == .componentCompletionV1),
               value["reference"] as? String == DirectUpdateSecurityRuntimePins.securityReference,

@@ -190,6 +190,18 @@ elif [[ "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.80" ]]; then
   PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-15680-source-contract.json"
   SOURCE_PROVENANCE_FILE="$EVIDENCE/source-provenance.json"
   CANDIDATE_LOCK_FILE="$EVIDENCE/fingerprint-chromium.lock.json"
+  if [[ "$(plutil -extract variant raw -o - "$CANDIDATE_LOCK_FILE" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ]]; then
+    SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-15680-privacy-v1-source-contract.json"
+    PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-15680-privacy-v1-source-contract.json"
+    python3 -B - "$PROJECT_DIR" "$EVIDENCE" <<'PY_PRIVACY_VERIFY'
+import sys
+from pathlib import Path
+project, evidence = map(Path, sys.argv[1:])
+sys.path.insert(0, str(project / 'scripts'))
+from chromium_15680_privacy_derivation import verify_packaged_evidence
+verify_packaged_evidence(project, evidence)
+PY_PRIVACY_VERIFY
+  fi
 else
   echo "Unsupported Chromium runtime version for integrated release verification: $EXPECTED_RUNTIME_VERSION" >&2
   exit 65

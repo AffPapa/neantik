@@ -10,6 +10,7 @@ struct FirstProfileBootstrapTests {
 
         #expect(profile.name == "Основной профиль")
         #expect(profile.proxy == nil)
+        #expect(profile.privacyPolicy == .balanced && profile.fontPolicy == .systemV1)
         #expect(profile.startURL == BrowserProfile.defaultStartURL)
         #expect(!profile.isArchived)
         #expect(!profile.isPinned)

@@ -25,7 +25,7 @@ enum BrowserUserLaunchTarget: Equatable, Sendable {
         guard let plan = routeProbePlan else { return startURLOverride }
         try plan.validate()
         guard relayPort > 0 else { throw BrowserRouteProbe.Failure.invalidPlan }
-        return URL(string: "http://127.0.0.1:\(relayPort)" + BrowserRouteProbe.Session.entryPath)!
+        return URL(string: "http://neantik-route-probe.invalid:\(relayPort)" + BrowserRouteProbe.Session.entryPath)!
     }
 
 }

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "fetchedAt": "2026-10-31T13:44:51.173148+00:00",
+  "upstream": "HaGeZi Multi LIGHT",
+  "license": "GPL-3.0",
+  "files": {
+    "upstream-domains.txt": {
+      "source": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/light-onlydomains.txt",
+      "sha256": "9338e73ea81523498a648ac3a85712a7b3bebf6bb473c009bb3fccc91f3a753b",
+      "bytes": 1671370
+    },
+    "LICENSE-GPL-3.0.txt": {
+      "source": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "bytes": 35149
+    },
+    "UPSTREAM-README.md": {
+      "source": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/README.md",
+      "sha256": "04a1606d2b1c53d7dffaa7a251b270579c61fc9ab41b0676fe1815938be8c89f",
+      "bytes": 79057
+    }
+  },
+  "transport": "OS curl verifiedTLS; bundledPythonCAroute unavailable",
+  "notAnEndorsement": true
+}

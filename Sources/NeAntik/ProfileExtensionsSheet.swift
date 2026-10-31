@@ -51,6 +51,11 @@ struct ProfileExtensionsSheet: View {
             }
             Text("Список из сохранённых настроек закрытого профиля. Установка, переключатели и удаление доступны в браузере.")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            if profile.proxy != nil || profile.privacyPolicy.presetName == "strict" {
+                Label("Обычные расширения профиля в этом режиме отключаются; данные сохраняются. Компоненты браузера и системные интеграции могут оставаться. Применение защиты показано в паспорте профиля.", systemImage: "lock.shield")
+                    .font(.callout).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             HStack {
                 Button("Проверить файл CRX…", systemImage: "checkmark.shield", action: inspectPackage)
                     .disabled(packageBusy)

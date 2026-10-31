@@ -129,6 +129,7 @@ def compiled_records(project: Path) -> list[dict]:
         ('font-system-v1', 'Sources/DirectUpdateCore/DirectUpdateFontRuntimePins.swift'),
         ('font-system-security-20261015-v1', 'Sources/DirectUpdateCore/DirectUpdateSecurityRuntimePins.swift'),
         ('component-completion-v1', 'Sources/DirectUpdateCore/DirectUpdateComponentRuntimePins.swift'),
+        ('privacy-policy-v1', 'Sources/DirectUpdateCore/DirectUpdatePrivacyRuntimePins.swift'),
     ):
         path = project / relative
         if path.is_symlink() or path.stat().st_size > 256 * 1024:
@@ -144,7 +145,7 @@ def compiled_records(project: Path) -> list[dict]:
         records.append({'name': name, 'reportDigest': scalar('reportDigest', digest=True),
             **{scope: {'digest': scalar(scope + 'Digest', digest=True),
                        'entries': scalar(scope + 'Entries'), 'bytes': scalar(scope + 'Bytes'),
-                       'machoCount': 16 if scope == 'runtime' else 0}
+                       'machoCount': (scalar('machoCount') if name == 'privacy-policy-v1' else 16) if scope == 'runtime' else 0}
                for scope in ('runtime', 'evidence')}})
     return records
 
@@ -177,9 +178,13 @@ def main() -> int:
         # Source projections are reviewed checkout inputs, not values chosen by
         # the report. Large patch evidence is hashed, never executed or parsed
         # by native admission.
-        from chromium_15612_packaged_evidence import process
         evidence = resources / 'NeAntikRuntimeEvidence'
-        process(PROJECT, evidence, json.loads((evidence / 'fingerprint-chromium.lock.json').read_bytes()))
+        if selected == 'privacy-policy-v1':
+            from chromium_15680_privacy_derivation import verify_packaged_evidence
+            verify_packaged_evidence(PROJECT, evidence)
+        else:
+            from chromium_15612_packaged_evidence import process
+            process(PROJECT, evidence, json.loads((evidence / 'fingerprint-chromium.lock.json').read_bytes()))
         # Publication is separately signed with the manager. It must match
         # today's reviewed release input, never the historical build date.
         spec = importlib.util.spec_from_file_location('update_publication_baseline',

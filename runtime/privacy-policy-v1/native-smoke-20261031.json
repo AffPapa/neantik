@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "status": "scoped-native-pass-not-release",
+  "executableSHA256": "be743b4f09d96da901701d3b517e0a64daaac9535150172701c099964902492d",
+  "frameworkSHA256": "03852e945564d2e00db3849e9a26c560a0e0ad22836e8a8e83afbe50ce2e8047",
+  "sourceContractSHA256": "d2990face54ab8e721aa45404cf6de866d348c96dda7161ece04826d84845983",
+  "runtimeClosure": {
+    "browserLaunched": false,
+    "entries": 946,
+    "executableSHA256": "be743b4f09d96da901701d3b517e0a64daaac9535150172701c099964902492d",
+    "machoCount": 16,
+    "nativeBehaviorQualified": false,
+    "regularBytes": 410805831,
+    "releaseQualified": false,
+    "runtimeDigest": "aa174946456e7d5cac95aefe004d61038e24fb9886e5146281b7defb14419039",
+    "schemaVersion": 1,
+    "status": "measured-signed-closure-behavior-unqualified"
+  },
+  "nativeHarnessSHA256": {
+    "run.mjs": "be3cd1efb71455f6dc7dfd7bcbf4dd3df66d7056743ff6abe5e444c319c18b4b",
+    "probe.mjs": "bb125859649da4c9a96934fcd905257224295c7c335e29281a41ddac4cbb6bb3",
+    "protection.mjs": "a30b480ee6b98beb5631133fd61f39642f79de385c8a5b50a4c8afebbadcd978"
+  },
+  "observedScopes": [
+    "RTC constructor off",
+    "literal LAN guard",
+    "WebGL debug renderer hidden",
+    "letterbox dimensions",
+    "timezone main/worker",
+    "cookies/localStorage/IndexedDB/CacheStorage A-B-A",
+    "service worker per-profile registration",
+    "media permission deny",
+    "font seven script width smoke",
+    "third-party tracker block before proxy",
+    "HTTP disk cache and in-process TLS1.2 resumption positive controls; A/B separation",
+    "worker and keepalive requests, main-frame WSS, exact download bytes via owned proxy",
+    "required native proxy ignores hostile extension DIRECT setting; unprotected control fails DNS",
+    "DIPS third-registrable-site bounce deletion and trusted-click preservation",
+    "CERT threat plus full tracker-list temporary exception/removal through real DNR API"
+  ],
+  "unverified": [
+    "packet-wide DNS/UDP leakage",
+    "successful TURN media transport in proxyOnly mode",
+    "browser-native font origin canary and complete language glyph coverage",
+    "integrated manager ephemeral/backup/UI qualification",
+    "production notarization and publication"
+  ],
+  "fontPrimitive": {
+    "status": "pass",
+    "source": "runtime/font-policy-v1/system_font_source_variations.cc",
+    "sourceSHA256": "a9a7bcdb47fac744895cd7bb04025813ab5aba70b50ee42875a8810f7693b627",
+    "observationsSHA256": "a23992806b8fb5967bdcdd45c18519e24bd1eaf840cdecad263b88957aa450ed",
+    "scope": "CoreText process-local canary origin rejection and seven drawn/shaped language samples; not browser-native origin canary"
+  },
+  "releaseQualified": false,
+  "proofs": [
+    {
+      "scope": "isolation",
+      "reportSHA256": "298391bef281f86b19cc2a2c3bfb2b889078288efa9142d427328e358a02dbb9",
+      "rowCount": 3,
+      "result": "scoped-pass"
+    },
+    {
+      "scope": "protection",
+      "reportSHA256": "e2e0e3ad2979e5c1afc05d0d0a4a2cd9359abe6e9bec2b31bfb0a186afde15a8",
+      "rowCount": 5,
+      "result": "scoped-pass"
+    },
+    {
+      "scope": "override-locked",
+      "reportSHA256": "4209d83635f545c89f00c10d97dcacc116deb8593fcc91a499ce51fd0c3385f4",
+      "rowCount": 1,
+      "result": "scoped-pass"
+    },
+    {
+      "scope": "override-control",
+      "reportSHA256": "ffa57b985ed4807b0eb7b83bceb15076d34cdfcc28d067f30c02a3d2f2529585",
+      "rowCount": 1,
+      "result": "scoped-pass"
+    },
+    {
+      "scope": "filters-port-corrected",
+      "reportSHA256": "d3faafcec842a0e4563414e202752929760a8fd708539e800680cd465e615ba8",
+      "rowCount": 3,
+      "result": "scoped-pass"
+    }
+  ]
+}

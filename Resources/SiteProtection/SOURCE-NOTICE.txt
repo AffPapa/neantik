@@ -11,5 +11,13 @@ signature. The public snapshot provenance is in baseline-provenance.json.
 The extension refreshes the list every five minutes while the browser runs.
 No visited URL, page content, cookie or account is sent to the list provider.
 
-The small tracker list is independently maintained here and is not EasyPrivacy.
+The basic third-party domain list is derived from HaGeZi Multi LIGHT:
+https://github.com/hagezi/dns-blocklists
+Its original snapshot, GPL-3.0 license and offline converter are included in
+NeAntik source. Converted tracker-rules.json is distributed under GPL-3.0;
+see TRACKER-LICENSE-GPL-3.0.txt and tracker-provenance.json. Modified/converted
+by NeAntik; no endorsement. It covers ads/trackers/telemetry and some badware,
+not all tracking. This bundled snapshot updates with NeAntik releases; CERT
+refresh and its freshness status are separate. No upstream ABP rules/exceptions
+are silently approximated: this source is domain-only.
 Other extension code: NeAntik project license.

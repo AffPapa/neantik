@@ -112,6 +112,8 @@ cp "$PROJECT_DIR/Resources/NeAntik.icns" "$RESOURCES_DIR/NeAntik.icns"
 cp \
   "$PROJECT_DIR/Resources/PrivacyInfo.xcprivacy" \
   "$RESOURCES_DIR/PrivacyInfo.xcprivacy"
+# Immutable local protection resources are sealed into the manager signature.
+cp -R "$PROJECT_DIR/Resources/SiteProtection" "$RESOURCES_DIR/SiteProtection"
 mkdir -p "$RESOURCES_DIR/ru.lproj"
 cp \
   "$PROJECT_DIR/Resources/ru.lproj/InfoPlist.strings" \

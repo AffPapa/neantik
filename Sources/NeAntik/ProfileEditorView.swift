@@ -233,7 +233,7 @@ struct ProfileEditorView: View {
       initialValue: showsAdvancedOptionsInitially
     )
 
-    var profile = original ?? creationTemplate?.makeProfile() ?? BrowserProfile(name: "")
+    var profile = original ?? creationTemplate?.makeProfile() ?? BrowserProfile(name: "", fontPolicy: .systemV1, privacyPolicy: .balanced)
     #if NEANTIK_CHROMIUM_ONLY
     // A retained WebKit template may still be useful as a source of ordinary
     // profile metadata, but this build creates Chromium profiles only.
@@ -335,7 +335,7 @@ struct ProfileEditorView: View {
     Section("Защита профиля") {
       Picker("Режим защиты", selection: Binding(
         get: { privacyPolicy.presetName },
-        set: { if let value = privacyPolicy.applyingPreset($0) { privacyPolicy = value } }
+        set: { if let value = privacyPolicy.applyingPreset($0) { privacyPolicy = value; if $0 != "legacy" { fontPolicy = .systemV1 } } }
       )) {
         Text("Прежние настройки").tag("legacy")
         Text("Сбалансированный").tag("balanced")
@@ -344,8 +344,17 @@ struct ProfileEditorView: View {
       }
       Text("Сбалансированный режим ограничивает локальную сеть и трекеры. Строгий также запрещает WebRTC, камеру, микрофон, геолокацию и уведомления и выравнивает размер области страницы. Совместимость сайтов может измениться.")
         .font(.caption).foregroundStyle(.secondary)
-      Text("Новые политики начнут работать только с совместимым движком; при отсутствии поддержки запуск будет отклонён, настройки не будут применены частично.")
+      Text("Политика применяется только совместимым движком; при отсутствии поддержки запуск отклоняется без частичного применения настроек.")
         .font(.caption).foregroundStyle(.secondary)
+      if privacyPolicy != .legacy {
+        Picker("WebRTC", selection: $privacyPolicy.rtc) {
+          Text("Выключен").tag(BrowserPrivacyPolicy.RTC.off)
+          Text("Только через маршрут прокси").tag(BrowserPrivacyPolicy.RTC.proxyOnly)
+          if privacyPolicy.rtc == .automatic { Text("Прежняя политика").tag(BrowserPrivacyPolicy.RTC.automatic) }
+        }
+        Text("Без прокси режим «Только через маршрут прокси» выключает WebRTC. При прокси разрешены совместимые TCP TURN-соединения; UDP вне прокси запрещён.")
+          .font(.caption).foregroundStyle(.secondary)
+      }
       if original == nil {
         Toggle("Очищать данные сайтов после закрытия", isOn: Binding(
           get: { privacyPolicy.retention == .ephemeral },

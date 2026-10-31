@@ -120,7 +120,7 @@ struct BrowserFontPolicyTests {
         #expect(throws: (any Error).self) { try ProfileStore.decodeProfiles(data) }
     }
 
-    @Test func copiesPortableConfigurationsSnapshotsAndTemplatesStayNative() throws {
+    @Test func copiesRetainFontPolicyWhilePortableConfigurationsSnapshotsAndTemplatesStayNative() throws {
         let original = fixture(policy: .systemV1)
         let copy = original.duplicated()
         let configuration = try ProfileConfigurationTransferDocument(profiles: [original])
@@ -129,7 +129,8 @@ struct BrowserFontPolicyTests {
         let restoredMetadata = try #require(snapshot.makeProfiles().first)
         let template = try UserProfileTemplate(name: "Own template", profile: original, folderID: nil)
         let fromTemplate = template.makeProfile()
-        for profile in [copy, imported, restoredMetadata, fromTemplate] {
+        #expect(copy.fontPolicy == .systemV1 && copy.id != original.id)
+        for profile in [imported, restoredMetadata, fromTemplate] {
             #expect(profile.fontPolicy == .native)
             #expect(profile.id != original.id)
         }

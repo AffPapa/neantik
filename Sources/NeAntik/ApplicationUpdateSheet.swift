@@ -18,8 +18,8 @@ struct ApplicationUpdateSheet: View {
                     LabeledContent("Версия в подписанном канале", value: version)
                     Text("Архив ещё не проверен и установка не началась.").foregroundStyle(.secondary)
                 }
-                if controller.phase == .discovering || controller.phase == .checking || controller.phase == .cancelling || controller.phase == .committing {
-                    ProgressView(controller.phase == .discovering ? "Проверка подписанного канала…" : controller.phase == .checking ? "Проверка файлов…" : "Завершение операции…")
+                if controller.phase == .discovering || controller.phase == .downloading || controller.phase == .checking || controller.phase == .cancelling || controller.phase == .committing {
+                    ProgressView(controller.phase == .discovering ? "Проверка подписанного канала…" : controller.phase == .downloading ? "Загрузка ZIP…" : controller.phase == .checking ? "Проверка файлов…" : "Завершение операции…")
                 }
             } else {
                 Text("В этой версии обновление выполняется вручную.").font(.headline)
@@ -40,6 +40,7 @@ struct ApplicationUpdateSheet: View {
                 }
                 if controller.phase == .idle, controller.holdsFence {
                     Button("Проверить обновления", action: controller.checkForUpdates)
+                    if controller.hasRetrievedManifest { Button("Скачать и проверить ZIP", action: controller.downloadAndInspect) }
                     Button(controller.hasRetrievedManifest ? "Выбрать ZIP…" : "Выбрать файлы…", action: controller.chooseFiles).keyboardShortcut(.defaultAction)
                 }
                 if controller.phase == .offered {

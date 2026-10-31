@@ -277,3 +277,8 @@ lanes. Preserve secrets, real data, certificate and runtime unless the task
 requires an authorized change. Do not create a token because another auth
 route failed.
 - Determine the current public release from GitHub's Releases API, not a potentially cached rendered `/releases/latest` page. Reconcile it with the exact Sites saved version and successful production deployment before claiming the site or download is stale; retain the observed discrepancy in a small receipt.
+
+- Engine successor update records own their version, paths, Mach-O set, report
+  schema and official source/security review; do not relabel an older tuple.
+  Freeze the qualified signed runtime and report before manager compilation;
+  reuse those exact bytes for receipt/package changes instead of re-signing.

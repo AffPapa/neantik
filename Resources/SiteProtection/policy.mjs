@@ -49,8 +49,9 @@ export function queryCleanupRules(enabled) {
   // Only queries entirely made of these exact keys qualify. Unknown, OAuth,
   // payment and signature parameters leave the URL untouched. This conservative
   // filter is not a general redirect/bounce-tracking remover.
-  const key = `(?:${TRACKING_PARAMETERS.join('|')})`;
-  const regex = `^https?://[^?#]+\\?${key}=[^&#]*(?:&${key}=[^&#]*)*$`;
+  // Factor one repeated key/value token to stay within Chromium's2KiB RE2 budget.
+  const key = '(?:utm_(?:source|medium|campaign|term|content|id)|gclid|fbclid|dclid|msclkid|mc_(?:cid|eid))';
+  const regex = `^https?://[^?#]+\\?(?:${key}=[^&#]*(?:&|$))+$`;
   return [{id: 2000, priority: 50, action: {type: 'redirect', redirect: {transform: {queryTransform: {removeParams: [...TRACKING_PARAMETERS]}}}}, condition: {regexFilter: regex, isUrlFilterCaseSensitive: true, resourceTypes: ['main_frame'], requestMethods: ['get']}}];
 }
 
@@ -85,4 +86,27 @@ export async function replaceThreatRules(api, text, observedAt) {
   const metadata = {observedAt, domains: domains.length, source: FEED_URL, transport: 'HTTPS; not publisher-signed'};
   await api.storage.local.set({threatMetadata: metadata, threatUpdateError: null});
   return metadata;
+}
+
+
+// One aggregate session exception avoids N copies of a large domain list.
+// Only our reserved session IDs are changed; unrelated rules are preserved.
+export function sessionTrackerExceptionRules(existing, host, enabled, trackerHosts) {
+  if (!Array.isArray(existing) || existing.length > 5000 || typeof enabled !== 'boolean') throw new Error('exception-shape');
+  const domain = canonicalDomain(host);
+  if (!Array.isArray(trackerHosts) || trackerHosts.length < 1 || trackerHosts.length > 100000) throw new Error('tracker-limit');
+  const trackers = [...new Set(trackerHosts.map(canonicalDomain))].sort();
+  const owned = existing.filter(rule => Number.isInteger(rule.id) && rule.id >= 50000 && rule.id < 50100);
+  const sites = new Set();
+  for (const rule of owned) {
+    if (!Array.isArray(rule.condition?.initiatorDomains) || rule.condition.initiatorDomains.length > 100) throw new Error('exception-shape');
+    for (const site of rule.condition.initiatorDomains) sites.add(canonicalDomain(site));
+  }
+  if (enabled) sites.add(domain); else sites.delete(domain);
+  if (sites.size > 100) throw new Error('exception-limit');
+  const addRules = sites.size ? [{id:50000,priority:200,action:{type:'allow'},condition:{
+    initiatorDomains:[...sites].sort(),requestDomains:trackers,domainType:'thirdParty',excludedResourceTypes:['main_frame']}}] : [];
+  const result = {removeRuleIds:owned.map(rule=>rule.id),addRules};
+  if (new TextEncoder().encode(JSON.stringify(result)).length > 4*1024*1024) throw new Error('exception-bytes');
+  return result;
 }

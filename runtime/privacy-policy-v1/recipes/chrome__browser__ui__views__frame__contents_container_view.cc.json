@@ -276,5 +276,6 @@
   ],
   "sourceSHA256": "3fea2e76e61e67a00acd8f63e5721302107e3bf1461d3b9b928583e39d1b6163",
   "objectSHA256": "f2a22d7c6d7a1aa61b12c508ed90af7596a724cf785b5222c2bc510af870ea82",
-  "exitCode": 0
+  "exitCode": 0,
+  "supplementalInputSHA256": {}
 }

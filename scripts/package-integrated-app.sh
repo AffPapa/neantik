@@ -71,6 +71,11 @@ elif [[ "$RUNTIME_VERSION" == "156.0.8078.74" ]]; then
 elif [[ "$RUNTIME_VERSION" == "156.0.8078.80" ]]; then
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-15680-source-contract.json"
   SOURCE_CONTRACT_NAME="chromium-15680-source-contract.json"
+  if [[ "$(plutil -extract variant raw -o - "$CANDIDATE_LOCK" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ]]; then
+    SOURCE_CONTRACT_NAME="chromium-15680-privacy-v1-source-contract.json"
+    SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/$SOURCE_CONTRACT_NAME"
+    SOURCE_PROVENANCE="$(dirname "$CANDIDATE_LOCK")/source-provenance.json"
+  fi
 elif [[ "$RUNTIME_VERSION" == "152.0.7977.64" ]]; then
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
   SOURCE_CONTRACT_NAME="chromium-152-source-contract.json"
@@ -94,6 +99,9 @@ fi
 python3 "$PROJECT_DIR/scripts/runtime_build_path.py" \
   "$SOURCE_ROOT" "$BUILD_ARGS" "$CANDIDATE_LOCK" >/dev/null
 EXPECTED_CANDIDATE_LOCK="$(dirname "$SOURCE_ROOT")/runtime-candidate-lock.json"
+if [[ "$SOURCE_CONTRACT_NAME" == "chromium-15680-privacy-v1-source-contract.json" ]]; then
+  EXPECTED_CANDIDATE_LOCK="$(dirname "$SOURCE_PROVENANCE")/runtime-candidate-lock.json"
+fi
 if [[ "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-v1" ||
       "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-security-20261015-v1" ||
       "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-component-completion-v1" ]]; then
@@ -223,9 +231,16 @@ RESOURCES="$OUTPUT_APP/Contents/Resources"
 EVIDENCE="$RESOURCES/NeAntikRuntimeEvidence"
 LICENSES="$RESOURCES/NeAntikRuntimeLicenses"
 COMPLIANCE="$RESOURCES/NeAntikRuntimeCompliance"
-mkdir -p "$EVIDENCE" "$LICENSES"
+mkdir -p "$LICENSES"
 
 ditto "$SNAPSHOT_RUNTIME" "$RESOURCES/NeAntik Browser.app"
+if [[ "$RUNTIME_VERSION" == "156.0.8078.80" &&
+      "$(plutil -extract variant raw -o - "$CANDIDATE_LOCK" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ]]; then
+  python3 -B "$PROJECT_DIR/scripts/prepare-privacy-runtime-evidence.py" \
+    --project "$PROJECT_DIR" --lock "$CANDIDATE_LOCK" --provenance "$SOURCE_PROVENANCE" \
+    --args "$SNAPSHOT_ARGS" --report "$VERIFY_REPORT" --destination "$EVIDENCE"
+else
+mkdir -p "$EVIDENCE"
 cp "$CANDIDATE_LOCK" \
   "$EVIDENCE/fingerprint-chromium.lock.json"
 cp "$SECURITY_BASELINE_SOURCE" \
@@ -277,6 +292,17 @@ elif [[ "$RUNTIME_VERSION" == "156.0.8078.80" ]]; then
     cp -R "$PROJECT_DIR/runtime/chromium-15680-portable-crc" "$EVIDENCE/chromium-15680-source-evidence/"
   fi
 fi
+if [[ "$RUNTIME_VERSION" == "156.0.8078.80" &&
+      "$(plutil -extract variant raw -o - "$CANDIDATE_LOCK" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ]]; then
+  python3 -B - "$PROJECT_DIR" "$EVIDENCE" <<'PY_PRIVACY'
+import sys
+from pathlib import Path
+project, destination = map(Path, sys.argv[1:])
+sys.path.insert(0, str(project / 'scripts'))
+from chromium_15680_privacy_derivation import copy_evidence
+copy_evidence(project, destination)
+PY_PRIVACY
+fi
 cp "$SNAPSHOT_ARGS" "$EVIDENCE/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE/runtime-verification.json"
 if [[ "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-v1" ||
@@ -288,6 +314,7 @@ fi
 python3 "$PROJECT_DIR/scripts/package-manager-release-baseline.py" \
   --project-root "$PROJECT_DIR" \
   --evidence "$EVIDENCE"
+fi
 cp "$RUNTIME_NOTICES_FILE" \
   "$RESOURCES/NeAntikRuntimeNotices.md"
 ditto "$COMPLIANCE_DIR" "$COMPLIANCE"
@@ -298,6 +325,11 @@ cp "$PROJECT_DIR/runtime/licenses/fingerprint-chromium-LICENSE" \
   "$LICENSES/fingerprint-chromium-LICENSE"
 cp "$PROJECT_DIR/runtime/licenses/ungoogled-chromium-macos-LICENSE" \
   "$LICENSES/ungoogled-chromium-macos-LICENSE"
+
+if [[ "$SOURCE_CONTRACT_NAME" == "chromium-15680-privacy-v1-source-contract.json" ]]; then
+  cp "$PROJECT_DIR/runtime/privacy-policy-v1/licenses/MPL-2.0.txt" "$LICENSES/Privacy-MPL-2.0.txt"
+  cp "$PROJECT_DIR/runtime/privacy-policy-v1/SOURCE-NOTICE.txt" "$LICENSES/Privacy-SOURCE-NOTICE.txt"
+fi
 
 if [[ "$SIGNING_IDENTITY" == "-" ]]; then
   if [[ "$BACKUP_ENABLED" != "0" || -n "$PROVISIONING_PROFILE" ]]; then

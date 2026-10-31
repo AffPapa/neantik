@@ -426,7 +426,9 @@ enum BrowserLaunchBuilder {
         "--timezone",
         "--lang",
         "--accept-lang",
-        "--disable-features"
+        "--disable-features", "--enable-features", "--enable-blink-features", "--disable-blink-features",
+        "--force-fieldtrials", "--force-fieldtrial-params", "--enable-quic",
+        "--load-extension", "--disable-extensions", "--disable-extensions-except"
     ]
 
     static func arguments(
@@ -436,6 +438,7 @@ enum BrowserLaunchBuilder {
         additionalArguments: [String] = [],
         startURLOverride: URL? = nil,
         proxyTransportOverride: UInt16? = nil,
+        siteProtectionDirectory: URL? = nil,
         now: Date = Date(),
         purpose: BrowserLaunchPurpose = .normal
     ) -> [String] {
@@ -509,6 +512,27 @@ enum BrowserLaunchBuilder {
             )
         }
 
+        let privacy = runtimeCapabilities.contains(.profilePrivacyV1) && profile.privacyPolicy != .legacy
+        var enabledPrivacyFeatures: [String] = []
+        if privacy && profile.privacyPolicy.localNetwork == .deny {
+            enabledPrivacyFeatures += ["LocalNetworkAccessChecks", "LocalNetworkAccessChecksWebRTC", "LocalNetworkAccessChecksWebSockets", "LocalNetworkAccessChecksWebTransport"]
+        }
+        if privacy && profile.privacyPolicy.trackingParameterCleanup { enabledPrivacyFeatures.append("DIPS") }
+        if !enabledPrivacyFeatures.isEmpty { arguments.append("--enable-features=" + enabledPrivacyFeatures.sorted().joined(separator: ",")) }
+        if privacy && profile.privacyPolicy.disableSyncAndAutofill { arguments.append("--disable-sync") }
+        if purpose != .normal {
+            arguments.append("--disable-extensions")
+        } else if runtimeCapabilities.contains(.profilePrivacyV1), let directory = siteProtectionDirectory {
+            // Only a verified manager-owned path may reach this argument. The
+            // launch boundary provisions it after the exclusive profile lease.
+            precondition(directory.isFileURL && !directory.path.contains(","))
+            arguments.append("--load-extension=" + directory.path)
+            if profile.proxy != nil || profile.privacyPolicy.presetName == "strict" { arguments.append("--disable-extensions-except=" + directory.path) }
+        } else if profile.proxy != nil {
+            // Extension-controlled proxy prefs outrank command-line prefs.
+            // Exclude both active and persisted third-party overrides.
+            arguments.append("--disable-extensions")
+        }
         arguments.append(
             contentsOf: sanitizedAdditionalArguments(additionalArguments)
         )
@@ -522,7 +546,8 @@ enum BrowserLaunchBuilder {
         profile: BrowserProfile,
         runtimeCapabilities: BrowserRuntimeCapabilities = [],
         inherited: [String: String] = ProcessInfo.processInfo.environment,
-        now: Date = Date()
+        now: Date = Date(),
+        purpose: BrowserLaunchPurpose = .normal
     ) -> [String: String] {
         let policy = BrowserLaunchPolicy.resolve(
             profile: profile,
@@ -533,6 +558,26 @@ enum BrowserLaunchBuilder {
             allowedInheritedEnvironmentKeys.contains($0.key)
         }
 
+        if runtimeCapabilities.contains(.profilePrivacyV1), profile.proxy != nil, purpose == .normal {
+            environment["NEANTIK_PROFILE_PROXY_REQUIRED"] = "1"
+        }
+        if runtimeCapabilities.contains(.profilePrivacyV1), profile.privacyPolicy != .legacy {
+            let privacy = profile.privacyPolicy
+            if privacy.rtc == .off || (privacy.rtc == .proxyOnly && profile.proxy == nil) {
+                environment["NEANTIK_PROFILE_RTC"] = "off"
+            }
+            if privacy.localNetwork == .deny { environment["NEANTIK_PROFILE_LAN"] = "deny" }
+            if privacy.media == .deny { environment["NEANTIK_PROFILE_MEDIA"] = "deny" }
+            environment["NEANTIK_PROFILE_GRAPHICS"] = "minimal"
+            if privacy.viewport == .standard { environment["NEANTIK_PROFILE_VIEWPORT"] = "standard" }
+            if privacy.disableSyncAndAutofill { environment["NEANTIK_PROFILE_AUTOFILL"] = "off" }
+            if privacy.retention == .ephemeral { environment["NEANTIK_PROFILE_EPHEMERAL"] = "1" }
+            if privacy.siteProtection {
+                environment["NEANTIK_PROFILE_PRIVACY_EXTENSION_ID"] = SiteProtectionBundle.extensionID
+                environment["NEANTIK_PROFILE_PRIVACY_BASELINE_RULES"] = String(SiteProtectionBundle.baselineRuleCount)
+                if privacy.trackingParameterCleanup { environment["NEANTIK_PROFILE_QUERY_CLEANUP"] = "1" }
+            }
+        }
         guard policy.fingerprintSeedConfigured else {
             return environment
         }
@@ -2442,6 +2487,9 @@ final class BrowserProcessManager: ObservableObject {
         let launchNow = Date()
         process.executableURL = runtime.executableURL
         let auditStorageArguments = try releaseAuditBrowserIsolation?.arguments(paths: paths, browserDataDirectory: browserDataDirectory)
+        let storageArguments = auditStorageArguments ?? KeychainStore.disposableBrowserArguments(
+            environment: NeAntikApplicationEnvironment.resolve(bundleIdentifier: Bundle.main.bundleIdentifier,
+                environment: ProcessInfo.processInfo.environment), paths: paths)
         process.arguments = BrowserLaunchBuilder.arguments(
             profile: profile,
             browserDataDirectory: browserDataDirectory,
@@ -2451,16 +2499,11 @@ final class BrowserProcessManager: ObservableObject {
             proxyTransportOverride: preparedRelayLaunches[profile.id]?.port,
             now: launchNow,
             purpose: purpose
-        ) + (auditStorageArguments ?? KeychainStore.disposableBrowserArguments(
-            environment: NeAntikApplicationEnvironment.resolve(
-                bundleIdentifier: Bundle.main.bundleIdentifier,
-                environment: ProcessInfo.processInfo.environment),
-            paths: paths
-        ))
+        ) + storageArguments
         process.environment = BrowserLaunchBuilder.environment(
             profile: profile,
             runtimeCapabilities: runtime.capabilities,
-            now: launchNow
+            now: launchNow, purpose: purpose
         )
         process.currentDirectoryURL =
             browserDataDirectoryOverride == nil
@@ -2569,6 +2612,17 @@ final class BrowserProcessManager: ObservableObject {
                 }
                 managedEphemeralProfiles[profile.id] = profile
                 try EphemeralProfileStorage.prepareLaunch(paths: paths, profile: profile)
+            }
+            if runtime.supportsProfilePrivacy && purpose == .normal {
+                guard let resources = Bundle.main.resourceURL else { throw SiteProtectionPreparationError() }
+                let protection = try SiteProtectionBundle.prepare(
+                    resources: resources.appendingPathComponent("SiteProtection", isDirectory: true),
+                    browserData: browserDataDirectory, profile: profile)
+                process.arguments = BrowserLaunchBuilder.arguments(profile: profile,
+                    browserDataDirectory: browserDataDirectory, runtimeCapabilities: runtime.capabilities,
+                    additionalArguments: additionalArguments, startURLOverride: startURLOverride,
+                    proxyTransportOverride: preparedRelayLaunches[profile.id]?.port,
+                    siteProtectionDirectory: protection.directory, now: launchNow, purpose: purpose) + storageArguments
             }
             try process.run()
             withExtendedLifetime((auditDirectoryCustody, fingerprintDirectoryCustody)) {}
@@ -2684,6 +2738,18 @@ final class BrowserProcessManager: ObservableObject {
               application.isFinishedLaunching,
               application.executableURL?.resolvingSymlinksInPath() == process.executableURL?.resolvingSymlinksInPath()
         else { return false }
+        return true
+    }
+
+    /// Launch bookkeeping, not page/network measurement. Adopted processes
+    /// have no such evidence, and later editor revisions invalidate it.
+    func privacyParametersWereSent(profile: BrowserProfile, runtime: BrowserRuntime?) -> Bool {
+        guard profile.privacyPolicy != .legacy, runtime?.supportsProfilePrivacy == true,
+              let process = processes[profile.id], process.isRunning,
+              let receipt = managedSessionReceipts[profile.id], receipt.matchesProfileRevision(profile.revision),
+              receipt.lock.executablePath == runtime?.executableURL.standardizedFileURL.path,
+              let identity = receipt.browserIdentity,
+              ProxyRelaySocketOwnerInspector.processIdentity(process.processIdentifier) == identity else { return false }
         return true
     }
 

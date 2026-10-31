@@ -105,6 +105,7 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
                 webKitRuntimeGeneration: entry.webKitRuntimeGeneration ?? .system,
                 webKitMediaPolicy: entry.webKitMediaPolicy ?? .ask,
                 webKitBlockPeerConnections: entry.webKitBlockPeerConnections ?? false,
+                fontPolicy: (entry.engine ?? .chromium) == .chromium && (entry.privacyPolicy ?? .legacy) != .legacy ? .systemV1 : .native,
                 privacyPolicy: entry.privacyPolicy ?? .legacy,
                 proxy: entry.proxy,
                 identity: BrowserIdentity(),

@@ -28,7 +28,7 @@ package enum DirectUpdateFontRuntimePins {
 
 /// A complete record is selected only by actual closure + captured report bytes.
 package enum DirectUpdateRuntimeRecord: Sendable, Equatable, CaseIterable {
-    case final9, fontSystemV1, fontSystemSecurity20261015V1, componentCompletionV1
+    case final9, fontSystemV1, fontSystemSecurity20261015V1, componentCompletionV1, privacyPolicyV1
 
     private struct RecordData: Sendable {
         let runtimeDigest: String
@@ -49,6 +49,23 @@ package enum DirectUpdateRuntimeRecord: Sendable, Equatable, CaseIterable {
 
     private var data: RecordData {
         switch self {
+        case .privacyPolicyV1:
+            RecordData(
+                runtimeDigest: DirectUpdatePrivacyRuntimePins.runtimeDigest,
+                evidenceDigest: DirectUpdatePrivacyRuntimePins.evidenceDigest,
+                reportDigest: DirectUpdatePrivacyRuntimePins.reportDigest,
+                runtimeEntries: DirectUpdatePrivacyRuntimePins.runtimeEntries,
+                evidenceEntries: DirectUpdatePrivacyRuntimePins.evidenceEntries,
+                runtimeBytes: DirectUpdatePrivacyRuntimePins.runtimeBytes,
+                evidenceBytes: DirectUpdatePrivacyRuntimePins.evidenceBytes,
+                reportHashes: DirectUpdatePrivacyRuntimePins.reportHashes,
+                sourceMode: "source-bound-schema3-recipient-privacy",
+                createdAt: DirectUpdatePrivacyRuntimePins.createdAt,
+                argsDigest: DirectUpdatePrivacyRuntimePins.argsDigest,
+                executableDigest: DirectUpdatePrivacyRuntimePins.executableDigest,
+                frameworkDigest: DirectUpdatePrivacyRuntimePins.frameworkDigest,
+                sourceVariant: nil
+            )
         case .final9:
             RecordData(
                 runtimeDigest: DirectUpdateRuntimePins.runtimeDigest,
@@ -120,6 +137,11 @@ package enum DirectUpdateRuntimeRecord: Sendable, Equatable, CaseIterable {
         }
     }
 
+    package var chromiumVersion: String { self == .privacyPolicyV1 ? DirectUpdatePrivacyRuntimePins.chromiumVersion : DirectUpdateRuntimePins.chromiumVersion }
+    package var executablePath: String { self == .privacyPolicyV1 ? DirectUpdatePrivacyRuntimePins.executablePath : DirectUpdateRuntimePins.executable }
+    package var frameworkPath: String { self == .privacyPolicyV1 ? DirectUpdatePrivacyRuntimePins.frameworkPath : DirectUpdateRuntimePins.framework }
+    package var machoPaths: Set<String> { self == .privacyPolicyV1 ? DirectUpdatePrivacyRuntimePins.machoPaths : DirectUpdateRuntimePins.machoPaths }
+    package var includesLegacySourceFields: Bool { self != .privacyPolicyV1 }
     package var runtimeDigest: String { data.runtimeDigest }
     package var evidenceDigest: String { data.evidenceDigest }
     package var reportDigest: String { data.reportDigest }

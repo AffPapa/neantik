@@ -97,6 +97,21 @@ apply_public_runtime_icon() {
   fi
 }
 
+# Privacy derivations bind the exact nested bytes consumed by the signer.
+# A loose output next to the app is not the signing input.
+verify_framework_preimage() {
+  local app_path="$1"
+  local expected="${NEANTIK_RUNTIME_SIGNING_FRAMEWORK_SHA256:-}"
+  [[ -z "$expected" ]] && return
+  local image="$app_path/Contents/Frameworks/NeAntik Browser Framework.framework/Versions/$RUNTIME_VERSION/NeAntik Browser Framework"
+  if [[ ! "$expected" =~ ^[0-9a-f]{64}$ || ! -f "$image" || -L "$image" ||
+        "$(/usr/bin/shasum -a 256 "$image" | /usr/bin/awk '{print $1}')" != "$expected" ]]; then
+    echo "Nested runtime signing input differs from the selected derived framework." >&2
+    exit 65
+  fi
+}
+verify_framework_preimage "$INPUT_APP"
+
 manual_public_alpha_sign() {
   local entitlements_root="${NEANTIK_CHROMIUM_SOURCE_ROOT:-}"
   local app_entitlements=""
@@ -167,6 +182,7 @@ manual_public_alpha_sign() {
   fi
 
   ditto "$INPUT_APP" "$OUTPUT_APP"
+  verify_framework_preimage "$OUTPUT_APP"
   # Finder metadata is not runtime content and would make the Direct ZIP
   # fail its deterministic archive gate. Remove it before any CodeResources
   # seal is created; the source runtime remains untouched.
@@ -258,6 +274,7 @@ cleanup() {
 trap cleanup EXIT
 
 ditto "$INPUT_APP" "$STAGING/NeAntik Browser.app"
+verify_framework_preimage "$STAGING/NeAntik Browser.app"
 ditto "$PACKAGING_DIR" "$STAGING/NeAntik Browser Packaging"
 STAGED_APP="$STAGING/NeAntik Browser.app"
 apply_public_runtime_icon "$STAGED_APP"

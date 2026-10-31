@@ -56,8 +56,8 @@ package struct DirectUpdateRuntimeProvenanceObservation: Sendable, Equatable {
     package let chromiumVersion: String
     package let runtimeSHA256: String, evidenceSHA256: String
     package let machoCount: Int
-    fileprivate init(runtime: DirectRuntimeClosureMeasurement, evidence: DirectRuntimeClosureMeasurement) {
-        chromiumVersion = DirectUpdateRuntimePins.chromiumVersion
+    fileprivate init(runtime: DirectRuntimeClosureMeasurement, evidence: DirectRuntimeClosureMeasurement, record: DirectUpdateRuntimeRecord) {
+        chromiumVersion = record.chromiumVersion
         runtimeSHA256 = runtime.digest; evidenceSHA256 = evidence.digest
         machoCount = runtime.machoPaths.count
     }
@@ -85,7 +85,7 @@ package enum DirectUpdateRuntimeProvenance {
 
     package static func inspectStage(_ stage: ExtractedUpdateApp) throws -> DirectUpdateRuntimeProvenanceObservation {
         try Task.checkCancellation()
-        guard stage.archiveIntegrity.chromiumVersion == DirectUpdateRuntimePins.chromiumVersion else {
+        guard DirectUpdateRuntimeRecord.allCases.contains(where: { $0.chromiumVersion == stage.archiveIntegrity.chromiumVersion }) else {
             throw DirectUpdateRuntimeProvenanceError.unsupported
         }
         // Separate custody scopes avoid re-entering the stage's nonrecursive
@@ -101,7 +101,7 @@ package enum DirectUpdateRuntimeProvenance {
         try Task.checkCancellation()
         let worker = Task.detached(priority: .utility) {
             try signature.requireBinding(to: stage)
-            guard stage.archiveIntegrity.chromiumVersion == DirectUpdateRuntimePins.chromiumVersion else {
+            guard DirectUpdateRuntimeRecord.allCases.contains(where: { $0.chromiumVersion == stage.archiveIntegrity.chromiumVersion }) else {
                 throw DirectUpdateRuntimeProvenanceError.unsupported
             }
             let result = try inspectClosure(stage)
@@ -137,7 +137,7 @@ package enum DirectUpdateRuntimeProvenance {
         guard let baseline = evidence.publicationBaseline else { throw DirectUpdateRuntimeProvenanceError.metadata }
         try DirectUpdatePublicationBaseline.validateSecurityReview(baseline, record: record)
         try Task.checkCancellation()
-        return .init(runtime: runtime, evidence: evidence)
+        return .init(runtime: runtime, evidence: evidence, record: record)
     }
 
     package static func inspectStageAsynchronously(_ stage: ExtractedUpdateApp) async throws -> DirectUpdateRuntimeProvenanceObservation {
@@ -162,7 +162,7 @@ package enum DirectUpdateRuntimeProvenance {
               }) else {
             throw DirectUpdateRuntimeProvenanceError.closure
         }
-        guard runtime.machoPaths == DirectUpdateRuntimePins.machoPaths, evidence.machoPaths.isEmpty else {
+        guard runtime.machoPaths == record.machoPaths, evidence.machoPaths.isEmpty else {
             throw DirectUpdateRuntimeProvenanceError.architecture
         }
         return record
@@ -176,27 +176,31 @@ package enum DirectUpdateRuntimeProvenance {
         }
         let keys = Set(["schemaVersion", "chromiumVersion", "architecture", "buildArguments", "createdAt", "executable", "framework",
                         "codeSignature", "codeSignatureKind", "fingerprintProtocolStrings", "gpuMode", "machoCount",
-                        "freshWholeSourceTreeObserved", "sourceEvidenceMode"] + Array(record.reportHashes.keys) +
+                        ] + (record.includesLegacySourceFields ? ["freshWholeSourceTreeObserved", "sourceEvidenceMode"] : []) + Array(record.reportHashes.keys) +
                        (record.sourceVariant == nil ? [] : ["sourceVariant"]))
         guard Set(report.keys) == keys, integer(report["schemaVersion"], equals: 3),
-              integer(report["machoCount"], equals: DirectUpdateRuntimePins.machoPaths.count),
-              report["chromiumVersion"] as? String == DirectUpdateRuntimePins.chromiumVersion,
+              integer(report["machoCount"], equals: record.machoPaths.count),
+              report["chromiumVersion"] as? String == record.chromiumVersion,
               report["architecture"] as? String == "arm64", report["gpuMode"] as? String == "metal",
               report["codeSignature"] as? String == "verified", report["codeSignatureKind"] as? String == "developer-id",
               report["fingerprintProtocolStrings"] as? String == "verified",
-              report["sourceEvidenceMode"] as? String == record.sourceMode,
               record.sourceVariant == nil || report["sourceVariant"] as? String == record.sourceVariant,
-              let observed = report["freshWholeSourceTreeObserved"] as? NSNumber,
-              CFGetTypeID(observed) == CFBooleanGetTypeID(), !observed.boolValue,
               let created = report["createdAt"] as? String, created == record.createdAt,
               record.reportHashes.allSatisfy({ report[$0.key] as? String == $0.value }),
               let args = report["buildArguments"] as? [String: String],
               args == ["sha256": record.argsDigest],
               let executable = report["executable"] as? [String: String],
-              executable == ["path": DirectUpdateRuntimePins.executable, "sha256": record.executableDigest],
+              executable == ["path": record.executablePath, "sha256": record.executableDigest],
               let framework = report["framework"] as? [String: String],
-              framework == ["path": DirectUpdateRuntimePins.framework, "sha256": record.frameworkDigest] else {
+              framework == ["path": record.frameworkPath, "sha256": record.frameworkDigest] else {
             throw DirectUpdateRuntimeProvenanceError.metadata
+        }
+        if record.includesLegacySourceFields {
+            guard report["sourceEvidenceMode"] as? String == record.sourceMode,
+                  let observed = report["freshWholeSourceTreeObserved"] as? NSNumber,
+                  CFGetTypeID(observed) == CFBooleanGetTypeID(), !observed.boolValue else {
+                throw DirectUpdateRuntimeProvenanceError.metadata
+            }
         }
     }
 }

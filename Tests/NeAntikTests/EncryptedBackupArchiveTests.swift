@@ -8,6 +8,20 @@ struct EncryptedBackupArchiveTests {
     private let password = "test archive password 🔐"
     private let emptyHash = Self.hash(Data())
 
+    @Test func generatedProtectionCacheCannotBeSmuggledIntoAnArchive() throws {
+        for name in [".neantik-site-protection-v1", ".NEANTIK-SITE-PROTECTION-V1"] {
+            for kind in [Archive.EntryKind.directory, .file] {
+                let entry = Archive.Entry(path: name, kind: kind, size: 0, sha256: kind == .file ? emptyHash : "")
+                #expect(throws: (any Error).self) { try Archive.validate(fixture([entry])) }
+            }
+            let entries = [Archive.Entry(path: name, kind: .directory, size: 0, sha256: ""),
+                Archive.Entry(path: name + "/owner.json", kind: .file, size: 0, sha256: emptyHash)]
+            #expect(throws: (any Error).self) { try Archive.validate(fixture(entries)) }
+        }
+        // Only the reserved BrowserData root is derived manager state.
+        try Archive.validate(fixture([.init(path: "Default", kind: .directory, size: 0, sha256: ""),
+            .init(path: "Default/.neantik-site-protection-v1", kind: .directory, size: 0, sha256: "")]))
+    }
     @Test func roundTripDirectoriesEmptyFilesUnicodeAndMultichunkData() throws {
         let content = Data((0..<(EncryptedBackupFraming.maximumPayload + 27)).map { UInt8(truncatingIfNeeded: $0) })
         let entries: [Archive.Entry] = [

@@ -695,7 +695,7 @@ final class ProfileStore: ObservableObject {
     /// Bookmarks enter only a newly minted profile, never an existing identity
     /// or an open BrowserData tree. This operation does not start the browser.
     func createProfileFromBookmarks(name: String, document: BookmarkImportDocument) async throws -> BrowserProfile {
-        let profile = BrowserProfile(name: name, startURL: "about:blank", proxy: nil)
+        let profile = BrowserProfile(name: name, startURL: "about:blank", fontPolicy: .systemV1, privacyPolicy: .balanced, proxy: nil)
         let inserted = try await insertImportedProfilesOffMainActor([profile], folderNames: [nil], initialBookmarks: [profile.id: document])
         guard inserted.count == 1, let saved = inserted.first else { throw NeAntikError.invalidProfile }
         return saved

@@ -33,9 +33,23 @@ def require_regular_chain(path: Path, stop: Path) -> None:
         current = current.parent
 
 
+def verify_embedded_framework(app: Path, version: str, out_dir: Path, expected: str) -> None:
+    embedded = app / "Contents/Frameworks/NeAntik Browser Framework.framework/Versions" / version / "NeAntik Browser Framework"
+    require_regular_chain(embedded, out_dir)
+    require(embedded.is_file(), "Embedded signing framework is missing")
+    require(digest(embedded) == expected,
+            "Embedded framework differs from selected link output; signing would ship stale code")
+
+
 def main() -> int:
-    require(len(sys.argv) == 4, "usage: verify app args.gn source-adoption-manifest")
-    app, args_gn, adoption_path = map(Path, sys.argv[1:])
+    require(len(sys.argv) in (4, 6), "usage: verify app args.gn source-adoption-manifest [--runtime-lock LOCK]")
+    app, args_gn, adoption_path = map(Path, sys.argv[1:4])
+    runtime_lock = None
+    if len(sys.argv) == 6:
+        require(sys.argv[4] == "--runtime-lock", "explicit runtime lock selector required")
+        lock_path = Path(sys.argv[5])
+        require(lock_path.is_absolute() and lock_path.is_file() and not lock_path.is_symlink(), "unsafe privacy lock path")
+        runtime_lock = json.loads(lock_path.read_text())
     root = Path(__file__).resolve().parents[1]
     runtime = root / "runtime"
     evidence_path = runtime / "chromium-15680-build-evidence.json"
@@ -73,8 +87,9 @@ def main() -> int:
     binary_path = app / "Contents/MacOS/NeAntik Browser"
     version = "156.0.8078.80"
     framework_path = app.parent / "NeAntik Browser Framework.framework/Versions" / version / "NeAntik Browser Framework"
+    embedded_framework = app / "Contents/Frameworks/NeAntik Browser Framework.framework/Versions" / version / "NeAntik Browser Framework"
     out_dir = args_gn.parent.resolve()
-    for path in (app, plist_path, binary_path, framework_path):
+    for path in (app, plist_path, binary_path, framework_path, embedded_framework):
         require_regular_chain(path, out_dir)
         require(path.exists(), "missing Chromium 156.80 build output: " + str(path))
     info = plistlib.loads(plist_path.read_bytes())
@@ -87,9 +102,15 @@ def main() -> int:
     portable = verify_portable_crc(root, contract)
     expected_framework = (portable["outputs"]["frameworkSHA256"] if portable
                           else evidence.get("frameworkSHA256"))
+    if runtime_lock is not None:
+        from chromium_15680_privacy_derivation import verify_lock_binding, verify_contract as verify_privacy
+        verify_lock_binding(runtime_lock, root)
+        _, layer = verify_privacy(root)
+        expected_framework = layer["link"]["frameworkSHA256"]
     require(digest(framework_path) == expected_framework,
             "Chromium 156.80 framework differs from selected base/derived build evidence")
-    for binary in (binary_path, framework_path):
+    verify_embedded_framework(app, version, out_dir, expected_framework)
+    for binary in (binary_path, framework_path, embedded_framework):
         subprocess.run(["/usr/bin/lipo", "-verify_arch", "arm64", str(binary)],
                        check=True, stdout=subprocess.DEVNULL)
     print("PASS: arm64 Chromium 156.0.8078.80 output matches selected unqualified build evidence.")

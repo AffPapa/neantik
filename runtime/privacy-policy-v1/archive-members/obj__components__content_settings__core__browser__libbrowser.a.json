@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "archive": "obj/components/content_settings/core/browser/libbrowser.a",
+  "kind": "thin",
+  "sourceArchiveSHA256": "4dc72cb283c6f288cb9d1015d6f88dbf57408d297023771a87d3d1ed57da3840",
+  "members": [
+    "browser/content_settings_default_provider.o",
+    "browser/content_settings_global_value_map.o",
+    "browser/content_settings_info.o",
+    "browser/content_settings_observable_provider.o",
+    "browser/content_settings_origin_value_map.o",
+    "browser/content_settings_policy_provider.o",
+    "browser/content_settings_pref.o",
+    "browser/content_settings_pref_provider.o",
+    "browser/content_settings_provider.o",
+    "browser/content_settings_registry.o",
+    "browser/content_settings_rule.o",
+    "browser/content_settings_uma_util.o",
+    "browser/content_settings_utils.o",
+    "browser/geolocation_setting_delegate.o",
+    "browser/host_content_settings_map.o",
+    "browser/permission_settings_info.o",
+    "browser/permission_settings_registry.o",
+    "browser/single_value_wildcard_rule_iterator.o",
+    "browser/user_modifiable_provider.o",
+    "browser/website_settings_info.o",
+    "browser/website_settings_registry.o"
+  ]
+}

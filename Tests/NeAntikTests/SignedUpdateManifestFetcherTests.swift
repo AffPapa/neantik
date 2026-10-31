@@ -13,13 +13,13 @@ struct ManifestDiscoveryFixture {
               publicKeyID: "qa-discovery", publicKey: key.publicKey.rawRepresentation)
     }
     func envelope(build: Int = 98, minimumOS: String = "14.0", expired: Bool = false,
-                  expiresAfter: TimeInterval? = nil) throws -> Data {
+                  expiresAfter: TimeInterval? = nil, archiveSHA256: String = String(repeating: "a", count: 64)) throws -> Data {
         let payload = UpdateManifestPayload(schemaVersion: 1, product: "NeAntik", edition: "Direct",
             version: "0.7.35", build: build, issuedAt: Self.date.addingTimeInterval(-600),
             expiresAt: Self.date.addingTimeInterval(expiresAfter ?? (expired ? -301 : 600)),
             archiveName: "NeAntik-0.7.35-arm64-notarized.zip",
             downloadURL: "https://github.com/AffPapa/neantik/releases/download/v0.7.35/NeAntik-0.7.35-arm64-notarized.zip",
-            sha256: String(repeating: "a", count: 64), minimumOS: minimumOS, architecture: "arm64",
+            sha256: archiveSHA256, minimumOS: minimumOS, architecture: "arm64",
             artifactKind: "public-notarized", publicReleaseState: "public-ready", chromiumVersion: "156.0.8078.80")
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
         let bytes = try encoder.encode(payload)
@@ -280,7 +280,7 @@ private final class ManifestChallengeSender: NSObject, URLAuthenticationChalleng
     }
 }
 
-private final class ManifestURLProtocol: URLProtocol, @unchecked Sendable {
+final class ManifestURLProtocol: URLProtocol, @unchecked Sendable {
     private static let lock = NSLock()
     private static var handler: ((ManifestURLProtocol) -> Void)?
     private static var recorded = [URLRequest](), stops = 0

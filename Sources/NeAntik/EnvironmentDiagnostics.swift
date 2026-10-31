@@ -188,10 +188,14 @@ struct ProfileFingerprintConfigurationRevision: Equatable, Sendable {
     let identity: BrowserIdentity
     let proxy: ProxyConfiguration?
     let runtime: BrowserRuntime
+    let fontPolicy: BrowserFontPolicy
+    let privacyPolicy: BrowserPrivacyPolicy
 
     init(profile: BrowserProfile, runtime: BrowserRuntime) {
         identity = profile.identity
         proxy = profile.proxy
+        fontPolicy = profile.fontPolicy
+        privacyPolicy = profile.privacyPolicy
         self.runtime = runtime
     }
 }
@@ -204,6 +208,7 @@ enum ProfileEnvironmentInspector {
         fingerprintObservation:
             ValidatedProfileFingerprintObservation? = nil,
         siteCompatibility: SiteCompatibilityAssessment? = nil,
+        privacyParametersSent: Bool = false,
         now: Date = Date()
     ) -> ProfileEnvironmentSnapshot {
         let capabilities = runtime?.capabilities ?? []
@@ -233,7 +238,7 @@ enum ProfileEnvironmentInspector {
             profileID: profile.id,
             generatedAt: now,
             sections: [
-                protectionSection(profile: profile),
+                protectionSection(profile: profile, runtime: runtime, parametersSent: privacyParametersSent),
                 routeSection(
                     policy: policy,
                     proxyHealth: proxyHealth,
@@ -272,21 +277,52 @@ enum ProfileEnvironmentInspector {
     }
 
     private static func protectionSection(
-        profile: BrowserProfile
+        profile: BrowserProfile, runtime: BrowserRuntime?, parametersSent: Bool
     ) -> EnvironmentDiagnosticSection {
+        let compatible = runtime?.supportsProfilePrivacy == true
         let localStart = BrowserStartURL.validate(profile.startURL)?.absoluteString == "about:blank"
-        let restoresSession = profile.startupMode == .restoreSession
+        let restoresSession = profile.startupMode == .restoreSession && profile.privacyPolicy.retention != .ephemeral
         return EnvironmentDiagnosticSection(
             id: "protection",
             title: "Паспорт защиты",
             fields: (profile.privacyPolicy == .legacy ? [] : [
                 EnvironmentDiagnosticField(
                     id: "protection.policy",
-                    title: "Новая политика защиты",
-                    value: "Требуется квалификация совместимого движка",
-                    state: .unavailable,
-                    severity: .blocking,
-                    detail: "Сохранённая политика не считается применённой. Запуск с неподдерживаемой политикой запрещён, без возврата к прежним настройкам."
+                    title: "Сохранённый режим защиты",
+                    value: profile.privacyPolicy.presetName,
+                    state: .configured,
+                    detail: "Это настройки профиля. Изменение режима не считается измерением защиты."
+                ),
+                EnvironmentDiagnosticField(
+                    id: "protection.runtime", title: "Поддержка движка",
+                    value: compatible ? "Точный подписанный движок распознан" : "Нужен совместимый движок",
+                    state: compatible ? .observed : .unavailable,
+                    severity: compatible ? .neutral : .blocking,
+                    detail: "Сверяются подпись и полный набор файлов. Синтетический тест на этом Mac проверил RTC-off, LAN, графику и изоляцию хранилищ; он не доказывает отсутствие всех утечек."
+                ),
+                EnvironmentDiagnosticField(
+                    id: "protection.applied", title: "Текущий сеанс",
+                    value: parametersSent ? "Параметры переданы запущенному процессу" : "Применение к текущему сеансу не подтверждено",
+                    state: parametersSent ? .configured : .unverified,
+                    detail: "Передача параметров не является измерением API страницы. Эффективные правила сайтов и сторонних cookies показаны в расширении «Защита сайтов»."
+                ),
+                EnvironmentDiagnosticField(
+                    id: "protection.controls", title: "Ограничения",
+                    value: "RTC: \(profile.privacyPolicy.rtc.rawValue) · LAN: \(profile.privacyPolicy.localNetwork.rawValue) · разрешения: \(profile.privacyPolicy.media.rawValue)",
+                    state: .configured,
+                    detail: "При RTC proxyOnly без прокси WebRTC выключен. С прокси запрещён UDP вне прокси; совместимый TCP TURN зависит от сайта. Строгий режим полностью запрещает создание RTCPeerConnection."
+                ),
+                EnvironmentDiagnosticField(
+                    id: "protection.extensions", title: "Расширения, Sync и autofill",
+                    value: profile.proxy != nil || profile.privacyPolicy.presetName == "strict" ? "Обычные расширения профиля отключены" : "Разрешены отдельные расширения профиля",
+                    state: .configured,
+                    detail: "Обычные расширения профиля ограничены; компоненты браузера и системные интеграции могут сохраняться. В совместимом движке обязательный прокси закреплён независимо от их настроек. Данные расширений не удаляются. Sync и autofill выключены в новых режимах."
+                ),
+                EnvironmentDiagnosticField(
+                    id: "protection.retention", title: "Данные сайтов",
+                    value: profile.privacyPolicy.retention == .ephemeral ? "Очистка после закрытия сеанса" : "Постоянное хранение",
+                    state: .configured,
+                    detail: "Для выбранного открытого профиля: расширение «Защита сайтов» → «Очистить данные этого профиля…» или ⌘⇧⌫. Очистка не меняет настройки личности; скачанные файлы сохраняются."
                 )
             ]) + [
                 EnvironmentDiagnosticField(
@@ -304,10 +340,10 @@ enum ProfileEnvironmentInspector {
                 EnvironmentDiagnosticField(
                     id: "protection.malware",
                     title: "Проверка вредоносных сайтов NeAntik",
-                    value: "Не подключена",
-                    state: .unavailable,
+                    value: profile.privacyPolicy.siteProtection ? "CERT Polska и HaGeZi настроены" : "Выключена в настройках",
+                    state: .configured,
                     severity: .attention,
-                    detail: "В поставляемом движке Safe Browsing отключён. Проверка отпечатка и наличие прокси не защищают от фишинга или вредоносных загрузок."
+                    detail: "Дополнительные списки известных доменов; не полная защита от phishing/malware и не проверка файлов. Safe Browsing выключен. Свежесть CERT и дата снимка HaGeZi показаны в расширении. Проверка отпечатка для новых режимов пока недоступна."
                 ),
                 EnvironmentDiagnosticField(
                     id: "protection.linkability",
@@ -591,6 +627,8 @@ enum ProfileEnvironmentInspector {
         observation: ValidatedProfileFingerprintObservation?
     ) -> EnvironmentDiagnosticSection {
         let policyValue = switch policy.webRTC {
+        case .disabledByProfile:
+            "WebRTC выключен политикой профиля"
         case .publicInterfaceOnly:
             "Только публичный интерфейс"
         case .disableNonProxiedUDP:

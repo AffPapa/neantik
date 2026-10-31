@@ -25,6 +25,15 @@ from chromium_15540_variant import verify_candidate_document as verify_candidate
 
 
 def verify_live_source(document: dict, source_root: Path, project_root: Path) -> None:
+    if document.get("variant") == "recipient-privacy-policy-v1":
+        from chromium_15680_privacy_derivation import build_provenance as build_privacy
+        try:
+            fresh = build_privacy(source_root, project_root)
+            if document != fresh:
+                raise ValueError("Recipient privacy provenance differs from live source/objects/binary")
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+        return
     if document.get("targetChromiumVersion") == "156.0.8078.48":
         from chromium_15648_release_evidence import build_provenance as build_m15648
         try:

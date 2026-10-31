@@ -58,6 +58,47 @@ struct ApplicationUpdateControllerTests {
         for _ in 0..<2_000 { if controller.phase == .idle { break }; try await Task.sleep(for: .milliseconds(1)) }
         controller.close(); #expect(!gate.isUpdating)
     }
+    @Test func downloadedZIPIsRemovedAfterOwnerRetainsOfferBeforeCommit() async throws {
+        let manifest = try ManifestDiscoveryFixture().retrieved(), transport = UpdateUITransportFixture(offerSuccess: true)
+        let archive = try DownloadedUpdateArchive(), url = archive.url, gate = ApplicationUpdateAdmission()
+        let controller = ApplicationUpdateController(channelEnabled: true, admission: gate, makeClient: { transport },
+            fetchManifest: { manifest }, downloadArchive: { _ in archive })
+        controller.present(workspaceIsBusy: false); controller.checkForUpdates()
+        for _ in 0..<2_000 { if controller.hasRetrievedManifest { break }; try await Task.sleep(for: .milliseconds(1)) }
+        controller.downloadAndInspect()
+        for _ in 0..<2_000 { if await transport.inspectCount == 1 { break }; try await Task.sleep(for: .milliseconds(1)) }
+        #expect(FileManager.default.fileExists(atPath: url.path))
+        await transport.releaseInspection()
+        for _ in 0..<2_000 { if controller.phase == .offered { break }; try await Task.sleep(for: .milliseconds(1)) }
+        #expect(controller.phase == .offered && gate.isUpdating)
+        #expect(!FileManager.default.fileExists(atPath: url.path))
+        #expect(await transport.receivedManifest == manifest.bytes)
+        #expect(await transport.commitCount == 0)
+        controller.cancel()
+        for _ in 0..<2_000 { if await transport.drainCount == 1 { break }; try await Task.sleep(for: .milliseconds(1)) }
+        await transport.releaseDrain()
+        for _ in 0..<2_000 { if controller.phase == .idle { break }; try await Task.sleep(for: .milliseconds(1)) }
+        controller.close(); #expect(!gate.isUpdating)
+    }
+    @Test func cancelledDownloadHoldsFenceUntilDrainAndRejectsLateArchive() async throws {
+        let manifest = try ManifestDiscoveryFixture().retrieved(), download = UpdateDownloadGate()
+        let gate = ApplicationUpdateAdmission(), transport = UpdateUITransportFixture()
+        let controller = ApplicationUpdateController(channelEnabled: true, admission: gate, makeClient: { transport },
+            fetchManifest: { manifest }, downloadArchive: { _ in try await download.download() })
+        controller.present(workspaceIsBusy: false); controller.checkForUpdates()
+        for _ in 0..<2_000 { if controller.hasRetrievedManifest { break }; try await Task.sleep(for: .milliseconds(1)) }
+        controller.downloadAndInspect(); controller.downloadAndInspect()
+        for _ in 0..<2_000 { if await download.calls == 1 { break }; try await Task.sleep(for: .milliseconds(1)) }
+        controller.cancel(); controller.close()
+        #expect(controller.phase == .cancelling && gate.isUpdating)
+        let archive = try DownloadedUpdateArchive(), url = archive.url
+        await download.release(archive)
+        for _ in 0..<2_000 { if controller.phase == .idle { break }; try await Task.sleep(for: .milliseconds(1)) }
+        #expect(controller.phase == .idle && gate.isUpdating)
+        #expect(!FileManager.default.fileExists(atPath: url.path))
+        #expect(await transport.inspectCount == 0)
+        controller.close(); #expect(!gate.isUpdating)
+    }
     @Test func fetchFailureIsSanitizedAndAllowsRetryWithoutReleasingFence() async throws {
         let gate = ApplicationUpdateAdmission()
         let controller = ApplicationUpdateController(channelEnabled: true, admission: gate, fetchManifest: {
@@ -278,4 +319,14 @@ private actor UpdateDiscoveryGate {
         return try await withCheckedThrowingContinuation { continuation = $0 }
     }
     func release(_ manifest: RetrievedUpdateManifest) { continuation?.resume(returning: manifest); continuation = nil }
+}
+
+private actor UpdateDownloadGate {
+    private(set) var calls = 0
+    private var continuation: CheckedContinuation<DownloadedUpdateArchive, Error>?
+    func download() async throws -> DownloadedUpdateArchive {
+        calls += 1
+        return try await withCheckedThrowingContinuation { continuation = $0 }
+    }
+    func release(_ archive: DownloadedUpdateArchive) { continuation?.resume(returning: archive); continuation = nil }
 }

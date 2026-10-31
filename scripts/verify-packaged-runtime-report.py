@@ -285,8 +285,13 @@ def source_evidence_paths(
         return (evidence / "fingerprint-chromium.lock.json",
                 evidence / "chromium-15674-source-contract.json")
     if runtime_version == "156.0.8078.80":
-        return (evidence / "fingerprint-chromium.lock.json",
-                evidence / "chromium-15680-source-contract.json")
+        lock_path = evidence / "fingerprint-chromium.lock.json"
+        # Keep ordinary path selection usable before materialization. The
+        # verifier below still requires the actual regular lock and its hashes.
+        lock = load_json(lock_path) if lock_path.exists() or lock_path.is_symlink() else {}
+        name = ("chromium-15680-privacy-v1-source-contract.json"
+                if lock.get("variant") == "recipient-privacy-policy-v1" else "chromium-15680-source-contract.json")
+        return (evidence / "fingerprint-chromium.lock.json", evidence / name)
     if runtime_version.startswith("154."):
         raise PackagedRuntimeReportError(
             f"Chromium {runtime_version} release qualification is unavailable; "
@@ -302,6 +307,12 @@ def verify_m15680_source_evidence(evidence: Path, project_root: Path) -> None:
     from chromium_15680_release_evidence import verify_lock
 
     packaged_lock = load_json(evidence / "fingerprint-chromium.lock.json")
+    if packaged_lock.get("variant") == "recipient-privacy-policy-v1":
+        from chromium_15680_privacy_derivation import verify_lock, verify_packaged_evidence
+        try:
+            verify_packaged_evidence(project_root, evidence)
+        except (OSError, ValueError) as error:
+            raise PackagedRuntimeReportError(f"Privacy evidence closure failed: {error}") from error
     try:
         verify_lock(packaged_lock, evidence / "source-provenance.json", project_root)
     except (OSError, ValueError) as error:

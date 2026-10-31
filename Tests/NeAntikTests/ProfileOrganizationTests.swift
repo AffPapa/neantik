@@ -4,11 +4,11 @@ import Testing
 
 struct ProfileOrganizationTests {
     @Test
-    func newProfileUsesEditableAffTopFingerprintStartPage() {
+    func newProfileUsesLocalBlankStartPage() {
         let profile = BrowserProfile(name: "Новый профиль")
 
         #expect(
-            profile.startURL == "https://aff.top/tools/fingerprint"
+            profile.startURL == "about:blank"
         )
     }
 

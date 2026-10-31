@@ -8,6 +8,23 @@ struct BrowserDataBackupStorageTests {
     private let password = "storage fixture password 🔐"
     private let fs = FileManager.default
 
+    @Test func generatedProtectionCacheIsNotRestoredWithForeignInodeMarkers() throws {
+        let root = try fixture(); defer { try? fs.removeItem(at: root) }
+        let source = try populate(root), archive = root.appendingPathComponent("own.nabackup")
+        let cache = source.appendingPathComponent(".neantik-site-protection-v1")
+        try fs.createDirectory(at: cache, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        let marker = cache.appendingPathComponent(".neantik-owner-v1.json")
+        let bytes = Data("synthetic old-inode owner".utf8); try bytes.write(to: marker)
+        let manifest = try BrowserDataBackupStorage.export(browserData: source, context: context(), destination: archive, password: password)
+        #expect(!manifest.entries.contains { $0.path.hasPrefix(".neantik-site-protection-v1") })
+        #expect(try Data(contentsOf: marker) == bytes)
+        let full = try BackupTree.capture(source, excludeRootTransients: false); defer { full.close() }
+        #expect(full.entries.contains { $0.path == ".neantik-site-protection-v1/.neantik-owner-v1.json" })
+        let stage = try BrowserDataBackupStorage.prepareRestore(archive: archive, parentURL: root, expectedContext: context(), password: password)
+        defer { try? stage.discard() }
+        #expect(!fs.fileExists(atPath: stage.url.appendingPathComponent(".neantik-site-protection-v1").path))
+        #expect(stage.manifest == manifest)
+    }
     @Test func unsafeDestinationRefusesWithUsefulRedactedMessage() throws {
         let root = try fixture(); defer { try? fs.removeItem(at: root) }
         let source = try populate(root), before = try bytes(source)

@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-10-31T11:54:22.522610+00:00",
-  "status": "partial-compiled-unqualified",
+  "status": "18objects-compiled-link-pending",
   "source": "/private/tmp/neantik-privacy20-runtime",
   "preimageOrigin": "V1011 retained recipient source; independent APFS clone",
   "files": {
@@ -35,9 +35,18 @@
     "chrome/common/chrome_paths_mac.mm": {
       "beforeSHA256": "d1dfa65cbd46600c6340aa51fa3ebdc5559aa91d20f78a375364a0af6ab3e588",
       "afterSHA256": "5d9577dbeb0324f29bb02b8c5b157b0201420ac35d3a95c3df1d80d4e6b9e37e"
+    },
+    "services/network/network_service_network_delegate.cc": {
+      "beforeSHA256": "0b3100d35ed99789a3a218d8bec40f72e8726aef3678e826e5eb9255ee87ff72",
+      "afterSHA256": "be8cb8380d4c217821a090685e99da9d19fc790063675648b4f3ed3d1f5f2de0"
+    },
+    "chrome/browser/net/proxy_config_monitor.cc": {
+      "beforeSHA256": "5c97ac5971fd5979073ad39de66388c12d7787fa853442d24f7b5107f84ff260",
+      "afterSHA256": "9756c6798ea65a7ebf50286aa4ec86bf624878366cedfe628bc53ff781c1cbae"
     }
   },
   "nativeProof": false,
   "managerAdmission": "No legacy runtime capability admitted",
-  "readinessInvalidation": "Keepalive factory does not reuse main URLLoader factory; include same native gate. Recompile only changed readiness object."
+  "readinessInvalidation": "Keepalive factory does not reuse main URLLoader factory; include same native gate. Recompile only changed readiness object.",
+  "lanPreflightStatus": "compiled-unqualified; URLRequest guard without DNS lookup"
 }

@@ -87,6 +87,9 @@ elif [[ "$LOCK_VERSION" == "156.0.8078.74" ]]; then
 elif [[ "$LOCK_VERSION" == "156.0.8078.80" ]]; then
   IS_CHROMIUM_15680=1
   SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-15680-source-contract.json"
+  if [[ "$(plutil -extract variant raw -o - "$LOCK_VERSION_SOURCE" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ]]; then
+    SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-15680-privacy-v1-source-contract.json"
+  fi
 else
   echo "Unsupported Chromium runtime version for release verification: $LOCK_VERSION" >&2
   exit 65
@@ -186,7 +189,9 @@ if [[ -n "$SOURCE_PROVENANCE_PATH" ]]; then
     if [[ -n "$POSSIBLE_SOURCE_ROOT" &&
           -f "$POSSIBLE_SOURCE_ROOT/chrome/VERSION" &&
           ( -e "$POSSIBLE_SOURCE_ROOT/.git" ||
-            -f "$(dirname "$POSSIBLE_SOURCE_ROOT")/.git" ) ]]; then
+            -f "$(dirname "$POSSIBLE_SOURCE_ROOT")/.git" ||
+            ( "$IS_CHROMIUM_15680" == 1 &&
+              "$(plutil -extract variant raw -o - "$LOCK_VERSION_SOURCE" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ) ) ]]; then
       PROVENANCE_VERIFY_ARGS+=(--source-root "$POSSIBLE_SOURCE_ROOT")
     fi
   fi
@@ -641,6 +646,12 @@ if os.environ["BUILD_ARGS_SHA256"]:
 content = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("utf-8")
 if report.get('sourceVariant') in ('font-system-v1', 'font-system-security-20261015-v1', 'component-completion-v1'):
     from chromium_15612_font_report import preserved_report_bytes
+    content = preserved_report_bytes(report, script_dir.parent)
+if json.loads(Path(os.environ['M156_SOURCE_LOCK']).read_text()).get('variant') == 'recipient-privacy-policy-v1':
+    import sys
+    script_dir = Path(os.environ['M156_SCRIPT_DIR']).resolve()
+    sys.path.insert(0, str(script_dir))
+    from chromium_15680_privacy_report import preserved_report_bytes
     content = preserved_report_bytes(report, script_dir.parent)
 Path(os.environ["REPORT_PATH"]).write_bytes(content)
 PY

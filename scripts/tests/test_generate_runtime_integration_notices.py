@@ -81,6 +81,12 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
                 project_root=ROOT, runtime_lock=ROOT / "runtime/fingerprint-chromium.lock.json"))
             self.assertIn(f"Chromium: `{runtime_lock['fingerprintChromium']['chromiumVersion']}`", rendered)
             return
+        if runtime_lock.get("variant") == "recipient-privacy-policy-v1":
+            self.assertEqual(rendered, (ROOT / "docs/RUNTIME_INTEGRATION_NOTICES_PRIVACY_V1.md").read_text())
+            self.assertIn("MPL-2.0", rendered)
+            self.assertIn("GPL-3.0", rendered)
+            self.assertIn("RELINK_PRIVACY_V1.md", rendered)
+            return
         checked_in = (
             ROOT / "docs" / "RUNTIME_INTEGRATION_NOTICES.md"
         ).read_text(encoding="utf-8")

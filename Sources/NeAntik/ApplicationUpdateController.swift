@@ -15,7 +15,7 @@ extension DirectUpdateOwnerClient: ApplicationUpdateTransport {}
 /// after the owner has drained, or retained until ordinary application exit.
 @MainActor
 final class ApplicationUpdateController: ObservableObject {
-    enum Phase: Equatable { case idle, discovering, checking, offered, cancelling, committing, restartRequired }
+    enum Phase: Equatable { case idle, discovering, downloading, checking, offered, cancelling, committing, restartRequired }
     @Published private(set) var isPresented = false
     @Published private(set) var phase = Phase.idle
     @Published private(set) var offeredVersion: String?
@@ -35,6 +35,9 @@ final class ApplicationUpdateController: ObservableObject {
     private let offerLifetime: Duration
     private var retrievedManifest: RetrievedUpdateManifest?
     private var discovery: Task<Void, Never>?
+    private var downloadTask: Task<Void, Never>?
+    private var downloadedArchive: DownloadedUpdateArchive?
+    private let downloadArchive: @Sendable (RetrievedUpdateManifest) async throws -> DownloadedUpdateArchive
     private let fetchManifest: @Sendable () async throws -> RetrievedUpdateManifest
 
     init(channelEnabled: Bool = UpdateChannelConfiguration.fromBundle().isEnabled,
@@ -42,19 +45,23 @@ final class ApplicationUpdateController: ObservableObject {
          makeClient: (@MainActor () -> any ApplicationUpdateTransport)? = nil,
          terminate: (@MainActor () -> Void)? = nil,
          offerLifetime: Duration = .seconds(240),
-         fetchManifest: (@Sendable () async throws -> RetrievedUpdateManifest)? = nil) {
+         fetchManifest: (@Sendable () async throws -> RetrievedUpdateManifest)? = nil,
+         downloadArchive: (@Sendable (RetrievedUpdateManifest) async throws -> DownloadedUpdateArchive)? = nil) {
         self.channelEnabled = channelEnabled; self.admission = admission ?? .shared
         self.makeClient = makeClient ?? { DirectUpdateOwnerClient() }
         self.terminate = terminate ?? { NSApplication.shared.terminate(nil) }
         self.offerLifetime = offerLifetime
         let installedApp = Bundle.main.bundleURL
+        self.downloadArchive = downloadArchive ?? { manifest in
+            try await DirectUpdateArchiveDownloader().downloadInstalled(manifest: manifest, app: installedApp)
+        }
         self.fetchManifest = fetchManifest ?? {
             try await SignedUpdateManifestFetcher().fetchInstalled(app: installedApp)
         }
     }
     var holdsFence: Bool { fence != nil }
     var canClose: Bool { phase == .idle }
-    var canCancel: Bool { phase == .discovering || phase == .checking || phase == .offered }
+    var canCancel: Bool { phase == .discovering || phase == .downloading || phase == .checking || phase == .offered }
     var hasRetrievedManifest: Bool { retrievedManifest != nil }
 
     func present(workspaceIsBusy: Bool) {
@@ -84,13 +91,31 @@ final class ApplicationUpdateController: ObservableObject {
                 if manifest.verified.isNewerThanInstalled {
                     retrievedManifest = manifest
                     manifestVersion = "\(manifest.verified.payload.version) (\(manifest.verified.payload.build))"
-                    message = "Подпись описания обновления проверена. Выбери ZIP этого выпуска: приложение и архив будут проверены отдельно до установки."
+                    message = "Подпись описания обновления проверена. Скачай ZIP кнопкой ниже или выбери файл: приложение и архив будут проверены отдельно до установки."
                 } else { message = "В подписанном канале нет версии новее установленной." }
                 phase = .idle; discovery = nil
             } catch {
                 guard phase == .discovering else { return }
                 message = "Не удалось получить и проверить описание обновления. Повтори позже или выбери ZIP и подписанный manifest вручную."
                 phase = .idle; discovery = nil
+            }
+        }
+    }
+
+    func downloadAndInspect() {
+        guard channelEnabled, holdsFence, phase == .idle, let manifest = retrievedManifest else { return }
+        phase = .downloading; message = "Загрузка ZIP из подписанного канала…"
+        let download = downloadArchive
+        downloadTask = Task { @MainActor in
+            do {
+                let archive = try await download(manifest)
+                guard !Task.isCancelled, phase == .downloading else { archive.dispose(); return }
+                downloadedArchive = archive; downloadTask = nil; phase = .idle
+                beginInspection(archive: archive.url)
+            } catch {
+                guard phase == .downloading else { return }
+                downloadTask = nil; phase = .idle
+                message = "ZIP не загружен или не прошёл проверку. Установка не началась. Можно повторить или выбрать файл выпуска вручную."
             }
         }
     }
@@ -141,6 +166,9 @@ final class ApplicationUpdateController: ObservableObject {
                 let bytes = try await Task.detached(priority: .utility) { try read() }.value
                 try Task.checkCancellation()
                 let offer = try await client.inspect(archive: archive, manifest: bytes)
+                // The owner has retained and verified its own stage before offering.
+                // Do not leave a downloaded ZIP behind at application termination.
+                stopArchiveAccess()
                 guard phase != .cancelling else { return }
                 offeredVersion = "\(offer.version) (\(offer.build))"; phase = .offered
                 offerExpiration = Task { @MainActor [weak self] in
@@ -169,6 +197,16 @@ final class ApplicationUpdateController: ObservableObject {
 
     func cancel() {
         offerExpiration?.cancel(); offerExpiration = nil
+        if phase == .downloading {
+            phase = .cancelling; message = "Остановка загрузки…"
+            let pending = downloadTask; pending?.cancel()
+            Task { @MainActor in
+                await pending?.value
+                downloadTask = nil; downloadedArchive?.dispose(); downloadedArchive = nil
+                phase = .idle; message = nil
+            }
+            return
+        }
         if phase == .discovering {
             phase = .cancelling; message = "Завершение проверки…"
             let pending = discovery; pending?.cancel()
@@ -241,6 +279,7 @@ final class ApplicationUpdateController: ObservableObject {
     }
     private func stopArchiveAccess() {
         archiveAccess?.stopAccessingSecurityScopedResource(); archiveAccess = nil
+        downloadedArchive?.dispose(); downloadedArchive = nil
     }
     nonisolated static func readManifest(_ url: URL) throws -> Data {
         let fd = open(url.path, O_RDONLY | O_NONBLOCK | O_NOFOLLOW | O_CLOEXEC)

@@ -4,6 +4,18 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func protectedDefaultsAndPresetChangesPreserveDisposableRetention() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let fresh = try await engine.call("profile_create", ["name": "Own safe default"])
+        #expect(fresh["fontPolicy"] as? String == "system-v1")
+        #expect((fresh["privacyPolicyIntent"] as? [String: Any])?["preset"] as? String == "balanced")
+        var policy = BrowserPrivacyPolicy.strict; policy.retention = .ephemeral
+        let own = try engine.store.upsert(BrowserProfile(name: "Own disposable policy", fontPolicy: .systemV1, privacyPolicy: policy))
+        _ = try await engine.call("profile_update", ["profileID": own.id.uuidString, "expectedRevision": String(own.revision), "changes": ["privacyPreset": "balanced"]])
+        let updated = try #require(engine.store.profile(withID: own.id))
+        #expect(updated.privacyPolicy.retention == .ephemeral)
+        #expect(updated.privacyPolicy.presetName == "balanced")
+    }
     @Test func privacyPresetIsSavedIntentWithExplicitOutputSchema() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let created = try await engine.call("profile_create", ["name": "Own privacy profile", "changes": ["privacyPreset": "strict"]])
@@ -45,7 +57,7 @@ struct MCPProfileManagementTests {
     }
     @Test func fontPolicyIsExplicitRevisionCheckedAndDoesNotClaimRuntimeSupport() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
-        let created = try await engine.call("profile_create", ["name": "Own font profile", "changes": ["startURL": "about:blank"]])
+        let created = try await engine.call("profile_create", ["name": "Own font profile", "changes": ["startURL": "about:blank", "fontPolicy": "native"]])
         #expect(created["fontPolicy"] as? String == "native")
         let schema = MCPOutputSchemas.schema(for: "profile_get")
         let properties = try #require(schema["properties"] as? [String: Any])

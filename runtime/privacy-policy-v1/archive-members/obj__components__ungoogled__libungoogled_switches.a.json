@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "archive": "obj/components/ungoogled/libungoogled_switches.a",
+  "kind": "thin",
+  "sourceArchiveSHA256": "d095b3afc6e8eef8b678d49cd26b3cb3dc0ce0ffb612bf66e1ea93ed1bc418bf",
+  "members": [
+    "ungoogled_switches/ungoogled_switches.o",
+    "ungoogled_switches/nevision_fingerprint.o"
+  ]
+}

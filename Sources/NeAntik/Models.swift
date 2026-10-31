@@ -921,8 +921,8 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             webKitRuntimeGeneration: webKitRuntimeGeneration,
             webKitMediaPolicy: webKitMediaPolicy,
             webKitBlockPeerConnections: webKitBlockPeerConnections,
-            // A copy receives a new identity; policy opt-in is not inherited.
-            fontPolicy: .native,
+            // A copy receives a new identity and retains the requested protections.
+            fontPolicy: fontPolicy,
             privacyPolicy: privacyPolicy,
             proxy: proxy,
             identity: BrowserIdentity(),
@@ -1058,6 +1058,7 @@ struct BrowserRuntimeCapabilities: OptionSet, Hashable, Sendable {
     static let platformOverride = BrowserRuntimeCapabilities(rawValue: 1 << 1)
     // BrowserRuntime admits this bit only after exact signed closure inspection.
     static let systemFontPolicy = BrowserRuntimeCapabilities(rawValue: 1 << 2)
+    static let profilePrivacyV1 = BrowserRuntimeCapabilities(rawValue: 1 << 3)
 
     static let fingerprintIdentity: BrowserRuntimeCapabilities = [
         .fingerprintSeed,
@@ -1109,6 +1110,7 @@ struct BrowserRuntime: Identifiable, Hashable, Sendable {
     let capabilities: BrowserRuntimeCapabilities
     let inspection: BrowserRuntimeInspection
     let fontPolicyQualification: BrowserFontPolicyQualification?
+    let privacyQualification: BrowserPrivacyQualification?
 
     init(
         name: String,
@@ -1124,6 +1126,11 @@ struct BrowserRuntime: Identifiable, Hashable, Sendable {
         self.flavor = flavor
         var admitted = capabilities ?? flavor.capabilities
         admitted.remove(.systemFontPolicy)
+        admitted.remove(.profilePrivacyV1)
+        let privacyQualification = admitted.contains(.fingerprintIdentity)
+            ? BrowserPrivacyRuntime.inspect(executableURL: executableURL) : nil
+        self.privacyQualification = privacyQualification
+        if privacyQualification != nil { admitted.insert(.profilePrivacyV1) }
         let fontQualification = admitted.contains(.fingerprintIdentity)
             ? BrowserFontPolicyRuntime.inspect(executableURL: executableURL) : nil
         self.fontPolicyQualification = fontQualification
@@ -1135,6 +1142,10 @@ struct BrowserRuntime: Identifiable, Hashable, Sendable {
 
     var supportsFingerprintIdentity: Bool {
         capabilities.contains(.fingerprintIdentity)
+    }
+
+    var supportsProfilePrivacy: Bool {
+        privacyQualification != nil && capabilities.contains(.profilePrivacyV1)
     }
 
     var supportsSystemFontPolicy: Bool {

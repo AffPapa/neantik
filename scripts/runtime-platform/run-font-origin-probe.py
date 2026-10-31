@@ -11,7 +11,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = ('runtime/font-policy-v1/system_font_source.h',
-           'runtime/font-policy-v1/system_font_source.cc',
+           'runtime/font-policy-v1/system_font_source_variations.cc',
            'scripts/runtime-platform/probe-font-origin.mm',
            'scripts/runtime-platform/make-font-policy-canary.py',
            'scripts/runtime-platform/run-font-origin-probe.py',
