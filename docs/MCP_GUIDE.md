@@ -64,6 +64,8 @@ The four additional read tools are available in read mode. Other tools require m
 
 `prompts/list` offers organize_project, review_workspace and prepare_profile. `prompts/get` returns static user-selected guidance with no arguments, workspace interpolation or tool execution. Read mode guidance never asks for writes. Tool outputSchema declares public success DTOs. Tool failures use isError with namespaced `_meta` app.neantik/errorCode, app.neantik/nextAction and automaticRetry:false; names/values are untrusted data.
 
+The next candidate reports `storage_state_uncertain` when a profile save and its rollback both fail. Do not retry automatically: inspect the current profile and folder state first. This response contains no underlying paths or error details. Public 0.9.3 does not yet include this change.
+
 ## Safe workflow
 
 From 0.8.22, Chromium `profile_stop` can return

@@ -4,6 +4,7 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPInteroperabilityTests {
+    #if DEBUG
     @Test func failedCommitAndRollbackReportsUncertainStateWithoutSecrets() async throws {
         struct SyntheticError: LocalizedError {
             var errorDescription: String? { "secret-token /private/synthetic/profile" }
@@ -28,6 +29,7 @@ struct MCPInteroperabilityTests {
         #expect(genericWire.contains("operation_unavailable"))
         #expect(!genericWire.contains("Existing data retained") && !genericWire.contains("secret-token"))
     }
+    #endif
     func request(_ session: MCPManagementSession, _ method: String, _ params: [String: Any] = [:], modern: Bool = false, id: Int = 1) async throws -> [String: Any] {
         var params = params
         if modern { params["_meta"] = ["io.modelcontextprotocol/protocolVersion": "2026-07-28", "io.modelcontextprotocol/clientCapabilities": [:]] }
