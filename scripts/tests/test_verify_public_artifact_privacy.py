@@ -339,22 +339,20 @@ class PublicArtifactPrivacyVerifierTests(unittest.TestCase):
             self.assertNotIn("another-password", message)
 
     def test_plain_secret_and_test_password_values_are_not_placeholders(self) -> None:
+        # These are scanner inputs, not credentials to persist. Exercise the
+        # actual JSON/text scanner in memory; neighboring tests cover file IO.
         for password in ("secret", "test"):
             with self.subTest(password=password):
-                with tempfile.TemporaryDirectory() as temporary:
-                    public = Path(temporary)
-                    (public / "release.json").write_text(
-                        json.dumps({"proxy": {"password": password}}),
-                        encoding="utf-8",
-                    )
-
-                    with self.assertRaisesRegex(
-                        MODULE.PublicArtifactPrivacyError,
-                        "sensitive user, profile, browser or proxy data",
-                    ):
-                        MODULE.verify_public_artifact_privacy(
-                            artifact=public
-                        )
+                entry = MODULE.ArtifactEntry(
+                    name="release.json",
+                    payload=json.dumps({"proxy": {"password": password}}).encode("utf-8"),
+                )
+                findings = MODULE.inspect_entry(entry)
+                self.assertTrue(any(
+                    finding.kind == "sensitive user, profile, browser or proxy data"
+                    for finding in findings
+                ))
+                self.assertNotIn(password, repr(findings))
 
     def test_rejects_ini_proxy_password_and_absolute_path(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

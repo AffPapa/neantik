@@ -48,11 +48,9 @@ PRIVATE_SECRET_STORE_PATH_RE = re.compile(
     re.IGNORECASE,
 )
 SYNTHETIC_TEST_USERNAMES = frozenset({"alice", "example", "test"})
-SECRET_PATTERNS = {
-    "private key": re.compile(r"BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY"),
-    "GitHub token": re.compile(r"\b(?:gh[opsu]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b"),
-    "AWS access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
-}
+PRIVATE_KEY_PATTERN = re.compile(r"BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY")
+GITHUB_TOKEN_PATTERN = re.compile(r"\b(?:gh[opsu]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b")
+AWS_ACCESS_KEY_PATTERN = re.compile(r"\bAKIA[0-9A-Z]{16}\b")
 RELEASE_MARKDOWN_FILENAME = re.compile(
     r"^v(?P<version>\d+(?:\.\d+){2})\.md$"
 )
@@ -267,9 +265,14 @@ def text_violation(relative: Path, text: str) -> str | None:
     if PRIVATE_DEPLOYMENT_ENDPOINT_RE.search(text):
         return "private deployment endpoint"
 
-    for description, pattern in SECRET_PATTERNS.items():
-        if pattern.search(text):
-            return f"possible {description}"
+    # Diagnostics are fixed literals, separate from both matched bytes and
+    # detection-pattern containers. Never echo source payloads or matches.
+    if PRIVATE_KEY_PATTERN.search(text):
+        return "possible private key"
+    if GITHUB_TOKEN_PATTERN.search(text):
+        return "possible GitHub token"
+    if AWS_ACCESS_KEY_PATTERN.search(text):
+        return "possible AWS access key"
     return None
 
 
@@ -532,8 +535,7 @@ def verify_required_contracts() -> None:
         check=False,
     )
     if result.returncode != 0:
-        detail = (result.stderr or result.stdout).strip()
-        fail(f"public fingerprint corpus failed: {detail}")
+        fail(f"public fingerprint corpus failed (exit {result.returncode}); child output withheld")
 
     workflow_result = subprocess.run(
         [
@@ -549,8 +551,7 @@ def verify_required_contracts() -> None:
         check=False,
     )
     if workflow_result.returncode != 0:
-        detail = (workflow_result.stderr or workflow_result.stdout).strip()
-        fail(f"public workflow reference gate failed: {detail}")
+        fail(f"public workflow reference gate failed (exit {workflow_result.returncode}); child output withheld")
 
 
 def main() -> None:

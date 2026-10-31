@@ -26,6 +26,7 @@ can recognize a version-only Info.plist diff from actual before/after values;
 
 ## Execute
 
+- CodeQL alert top-level state may describe main while the current PR instance is open. Check the analysis and instances bound to the exact PR merge parents. Diagnose the source-to-sink path; separate fixed diagnostic labels from matched-data containers and keep synthetic scanner inputs in memory when disk IO is not the subject. Do not dismiss findings or rename sensitive variables to hide them.
 - Treat an Apple SHA-1 identity as a CLI selector only; bind certificate trust with a reviewed SHA-256 pin and preserve exact DER/profile membership checks. Certificate rotation requires reviewing the new public certificate, never exporting its private key.
 - TLS fixtures must declare the supported minimum and issue a standards-compliant strict chain (including SKI/AKI); fix fixture certificates rather than weakening hostname, CA or verification flags.
 - A failed local CI watcher is a transport failure, not a pending remote job. Check process exit and log freshness, then obtain one authoritative head/check snapshot; never wait indefinitely on a stale watch file.

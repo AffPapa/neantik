@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import io
 import tempfile
+import subprocess
 import unittest
 from contextlib import redirect_stderr
 from pathlib import Path
@@ -18,6 +19,30 @@ SPEC.loader.exec_module(MODULE)
 
 
 class OpenSourceTreePrivacyTests(unittest.TestCase):
+    def test_all_secret_categories_emit_fixed_labels_without_payload(self):
+        fixtures = (
+            ("BEGIN " + "OPENSSH PRIVATE KEY", "possible private key"),
+            ("ghp_" + "Q" * 80, "possible GitHub token"),
+            ("AKIA" + "Q" * 16, "possible AWS access key"),
+        )
+        for payload, label in fixtures:
+            with self.subTest(category=label):
+                self.assertEqual(MODULE.text_violation(Path("source.py"), payload), label)
+                self.assertNotIn(payload, label)
+
+    def test_child_contract_failure_does_not_echo_untrusted_output(self):
+        marker = "synthetic-sensitive-child-output"
+        for gate in ("public fingerprint corpus", "public workflow reference gate"):
+            plans = [subprocess.CompletedProcess([], 0, '{"suites": []}', "") for _ in range(4)]
+            if gate == "public workflow reference gate":
+                plans.append(subprocess.CompletedProcess([], 0, "", ""))
+            plans.append(subprocess.CompletedProcess([], 2, marker, marker))
+            output = io.StringIO()
+            with self.subTest(gate=gate), mock.patch.object(MODULE.subprocess, "run", side_effect=plans), mock.patch.object(MODULE, "verify_ci_suite_coverage"), redirect_stderr(output), self.assertRaises(SystemExit):
+                MODULE.verify_required_contracts()
+            self.assertIn(gate + " failed (exit 2)", output.getvalue())
+            self.assertNotIn(marker, output.getvalue())
+
     def test_patch_payloads_are_scanned_without_echoing_secrets(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
