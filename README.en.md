@@ -8,7 +8,7 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-**0.9.1 (201), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.9.1); the public ZIP/DMG sizes and SHA-256 digests are recorded in the [machine-readable release report](releases/v0.9.1.json). The last synchronized check placed [browser.free](https://browser.free/) at Sites160. Chromium is 156.0.8078.80; WebKit is deferred and existing WebKit profile data is retained. The 1.0 program remains open.
+**0.9.1 (201), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.9.1); the public ZIP/DMG sizes and SHA-256 digests are recorded in the [machine-readable release report](releases/v0.9.1.json). Chromium is 156.0.8078.80; WebKit is deferred and existing WebKit profile data is retained. The 1.0 program remains open.
 
 ## Security advisory
 
@@ -26,7 +26,7 @@ Latest published release: [NeAntik 0.9.1 (201), public alpha](https://github.com
 **The 0.8.25 update was manual via DMG/ZIP.** Quit before replacing the app; keep profile folders. An installed-updater transition is not qualified by that release.
 
 - macOS 14 or newer, Apple Silicon only;
-- Chromium `156.0.8078.48`, ARM64, Metal;
+- Chromium `156.0.8078.80`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
 Direct downloads: [GitHub — 0.9.1](https://github.com/AffPapa/neantik/releases/tag/v0.9.1). [browser.free](https://browser.free) is updated separately.
@@ -40,9 +40,15 @@ the exact public binary contents are defined by its release notes and assets.
 2. Paste a proxy if needed; NeAntik parses it locally.
 3. Click **Launch**. Cookies and site data stay inside that profile.
 
+## Privacy candidate0.9.2
+
+This branch adds coherent presets, required proxy routing, site protection,
+ephemeral profiles and a protection passport. See [privacy modes](docs/PRIVACY_MODES.md)
+for scope and limits. Source availability is separate from binary publication.
+
 ## WebKit in the current candidate
 
-The 0.9.1 public alpha candidate creates and launches Chromium profiles only.
+The 0.9.2 (202) public alpha candidate creates and launches Chromium profiles only.
 Previously created WebKit profiles and their data are retained, but cannot be
 launched or duplicated in this candidate. Published version 0.9.0 included an
 experimental system WebKit mode; its behavior and limits are described in the
