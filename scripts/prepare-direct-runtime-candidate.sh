@@ -16,6 +16,7 @@ fi
 
 RUNTIME_APP="$1"
 BUILD_ARGS="$2"
+CHROMIUM_OUT_DIR="$(dirname "$BUILD_ARGS")"
 SOURCE_ROOT="$3"
 CANDIDATE_LOCK="$4"
 SOURCE_PROVENANCE="$(dirname "$SOURCE_ROOT")/source-provenance.json"
@@ -45,6 +46,14 @@ done
 
 python3 "$PROJECT_DIR/scripts/runtime_build_path.py" \
   "$SOURCE_ROOT" "$BUILD_ARGS" "$CANDIDATE_LOCK" >/dev/null
+for compliance_input in \
+  "$SOURCE_ROOT/tools/licenses/licenses.py" \
+  "$CHROMIUM_OUT_DIR/gen/components/resources/about_credits.html"; do
+  if [[ ! -f "$compliance_input" || -L "$compliance_input" ]]; then
+    echo "Required compliance input is unavailable before signing: $compliance_input" >&2
+    exit 66
+  fi
+done
 EXPECTED_CANDIDATE_LOCK="$(dirname "$SOURCE_ROOT")/runtime-candidate-lock.json"
 if [[ "$(cd "$(dirname "$CANDIDATE_LOCK")" && pwd -P)/$(basename "$CANDIDATE_LOCK")" !=
       "$(cd "$(dirname "$EXPECTED_CANDIDATE_LOCK")" && pwd -P)/$(basename "$EXPECTED_CANDIDATE_LOCK")" ]]; then
@@ -111,12 +120,16 @@ SIGNED_RUNTIME_ROOT="$(mktemp -d -t neantik-developer-id-runtime)"
 SIGNED_RUNTIME="$SIGNED_RUNTIME_ROOT/NeAntik Browser.app"
 RUNTIME_REPORT="$SIGNED_RUNTIME_ROOT/runtime-verification.json"
 cleanup() {
-  rm -rf "$SIGNED_RUNTIME_ROOT"
+  local cleanup_status="$1"
+  if (( cleanup_status == 0 )); then
+    rm -rf "$SIGNED_RUNTIME_ROOT"
+  else
+    echo "Failed preparation inputs preserved: $SIGNED_RUNTIME_ROOT" >&2
+  fi
 }
-trap cleanup EXIT
+trap 'cleanup $?' EXIT
 
 export NEANTIK_CHROMIUM_SOURCE_ROOT="$SOURCE_ROOT"
-CHROMIUM_OUT_DIR="$(dirname "$BUILD_ARGS")"
 CHROMIUM_SIGNING_CONFIG="$CHROMIUM_OUT_DIR/NeAntik Browser Packaging/signing/build_props_config.py"
 if [[ -f "$CHROMIUM_OUT_DIR/build.ninja" && -d "$(dirname "$RUNTIME_APP")/NeAntik Browser Packaging" ]]; then
   if [[ "$(cd "$(dirname "$RUNTIME_APP")" && pwd -P)" != "$(cd "$CHROMIUM_OUT_DIR" && pwd -P)" ]]; then

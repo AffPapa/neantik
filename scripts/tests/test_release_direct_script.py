@@ -128,6 +128,10 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             app.mkdir()
             args = stage / "src/args.gn"
             args.write_text("angle_enable_metal = true\n", encoding="utf-8")
+            for relative in ("tools/licenses/licenses.py", "gen/components/resources/about_credits.html"):
+                compliance_input = stage / "src" / relative
+                compliance_input.parent.mkdir(parents=True, exist_ok=True)
+                compliance_input.write_text("synthetic required input\n", encoding="utf-8")
             lock = stage / "runtime-candidate-lock.json"
             lock.write_text("{}", encoding="utf-8")
             (stage / "source-provenance.json").write_text("{}", encoding="utf-8")
