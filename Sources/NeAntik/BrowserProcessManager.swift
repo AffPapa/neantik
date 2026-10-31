@@ -527,7 +527,7 @@ enum BrowserLaunchBuilder {
             // launch boundary provisions it after the exclusive profile lease.
             precondition(directory.isFileURL && !directory.path.contains(","))
             arguments.append("--load-extension=" + directory.path)
-            if profile.proxy != nil || profile.privacyPolicy.presetName == "strict" { arguments.append("--disable-extensions-except=" + directory.path) }
+            if profile.proxy != nil || profile.privacyPolicy.restrictsUserExtensions { arguments.append("--disable-extensions-except=" + directory.path) }
         } else if profile.proxy != nil {
             // Extension-controlled proxy prefs outrank command-line prefs.
             // Exclude both active and persisted third-party overrides.

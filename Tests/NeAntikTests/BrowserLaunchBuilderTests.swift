@@ -25,6 +25,26 @@ private final class RuntimeInspectionRecorder: @unchecked Sendable {
 }
 
 struct BrowserLaunchBuilderTests {
+    @Test func customizedProtectionNeverDropsExtensionRestriction() {
+        let data = URL(fileURLWithPath: "/private/tmp/neantik-extension-policy-data")
+        let extensionDirectory = URL(fileURLWithPath: "/private/tmp/neantik-owned-protection")
+        var customStrict = BrowserPrivacyPolicy.strict
+        customStrict.trackingParameterCleanup = false
+        var customBalanced = BrowserPrivacyPolicy.balanced
+        customBalanced.rtc = .off
+        for policy in [BrowserPrivacyPolicy.strict, customStrict, customBalanced] {
+            let profile = BrowserProfile(name: "Synthetic protection", privacyPolicy: policy)
+            let args = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: data,
+                runtimeCapabilities: [.profilePrivacyV1], siteProtectionDirectory: extensionDirectory)
+            #expect(args.contains("--disable-extensions-except=" + extensionDirectory.path))
+        }
+        for policy in [BrowserPrivacyPolicy.legacy, .balanced] {
+            let profile = BrowserProfile(name: "Synthetic direct", privacyPolicy: policy)
+            let args = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: data,
+                runtimeCapabilities: [.profilePrivacyV1], siteProtectionDirectory: extensionDirectory)
+            #expect(!args.contains { $0.hasPrefix("--disable-extensions-except=") })
+        }
+    }
     @Test func linkCleanupCanBeDisabledWithoutTurningOffSiteProtection() throws {
         var profile = BrowserProfile(name: "Signed link fixture", privacyPolicy: .balanced)
         let original = profile.privacyPolicy

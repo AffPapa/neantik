@@ -4,14 +4,18 @@ import Testing
 
 struct ProfileEnvironmentInspectorTests {
     @Test func extensionPassportMatchesProxyAndPrivacyMode() throws {
-        for (policy, proxied, disabled) in [(BrowserPrivacyPolicy.balanced, false, false), (.balanced, true, true), (.strict, false, true)] {
+        var custom = BrowserPrivacyPolicy.strict
+        custom.trackingParameterCleanup = false
+        var disposableBalanced = BrowserPrivacyPolicy.balanced
+        disposableBalanced.retention = .ephemeral
+        for (policy, proxied, disabled) in [(BrowserPrivacyPolicy.balanced, false, false), (.balanced, true, true), (.strict, false, true), (custom, false, true), (disposableBalanced, false, false)] {
             var profile = BrowserProfile(name: "Protection fixture")
             profile.privacyPolicy = policy
             if proxied { profile.proxy = ProxyConfiguration(kind: .http, host: "127.0.0.1", port: 8080, username: "") }
             let snapshot = ProfileEnvironmentInspector.snapshot(profile: profile, runtime: nil, proxyHealth: nil)
             let entry = try field("protection.extensions", in: snapshot)
             let detail = try #require(entry.detail)
-            #expect(detail.contains(disabled ? "Обычные расширения профиля отключены." : "Отдельные расширения профиля разрешены."))
+            #expect(detail.contains(disabled ? "При запуске совместимого движка передаётся ограничение обычных расширений." : "Отдельные расширения профиля разрешены."))
             #expect(detail.contains("обязательный прокси закреплён") == proxied)
             #expect(entry.state == .configured)
         }
