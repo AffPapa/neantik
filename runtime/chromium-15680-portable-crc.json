@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "chromiumVersion": "156.0.8078.80",
+  "status": "portable-crc-compiled-and-relinked-unqualified",
+  "releaseQualified": false,
+  "baseBuildEvidenceSHA256": "583823db2b2c34cfa92649b97206de3ffbd88c2d5e7b4769e17036d09024a913",
+  "baseFrameworkSHA256": "ef4b4e3c37f99e719ca4a7bdeaf09dbc749130e311ee00844f382fcecf0fa333",
+  "browserExecutableSHA256": "bcf4e0fe1cb003cd653a0c88eab9ab93af6810107412fddfebc2cb3274cdd53a",
+  "buildArgsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+  "patchSHA256": "05a80840a37f779ee2b60e9a7d2d56459bad98857c749b40e10efbc22cede19d",
+  "inputs": {
+    "baseCRC": {
+      "file": "runtime/chromium-15680-portable-crc/base-crc.c",
+      "sha256": "fbcab458ebddda14d121333622525cb0547c1d428645e9286534690c48366ad5"
+    },
+    "baseGN": {
+      "file": "runtime/chromium-15680-portable-crc/base-ffmpeg_generated.gni",
+      "sha256": "f0a7e8440c3445bb7c9839c2dc3c5406ecb8a80669104799383fa9ab4a7b28e6"
+    },
+    "configuration": {
+      "file": "runtime/chromium-15680-portable-crc/config.h",
+      "sha256": "0478bc9f5957a50b4d179da4b6c1172fbf9b01da63e2059f3888f0bad53f2c08"
+    },
+    "compileCommand": {
+      "file": "runtime/chromium-15680-portable-crc/compile-command.txt",
+      "sha256": "d3dfc8dcfded2de0455b152def3ec0af629fa5328859c43b1a73d171c311c995"
+    },
+    "linkCommand": {
+      "file": "runtime/chromium-15680-portable-crc/link-command.txt",
+      "sha256": "a772e30e14493127bd637d6d3c48d60cf45112d9f81a58e56aa9951945cfbf26"
+    }
+  },
+  "sourceOverlay": {
+    "libavutil/crc.c": {
+      "beforeSHA256": "fbcab458ebddda14d121333622525cb0547c1d428645e9286534690c48366ad5",
+      "afterSHA256": "066b4e75a8a0a0245fa008c38ee3ddc30c6839b12937b7f12c72a8116cc2b0e6"
+    },
+    "ffmpeg_generated.gni": {
+      "beforeSHA256": "f0a7e8440c3445bb7c9839c2dc3c5406ecb8a80669104799383fa9ab4a7b28e6",
+      "afterSHA256": "0e62d644db87be8669b96668cc06ebb78d9a16f28db018c0ca5681aa1665fc3b"
+    }
+  },
+  "archive": {
+    "beforeMemberCount": 296,
+    "afterMemberCount": 295,
+    "removedMember": "ffmpeg_internal/crc.o",
+    "remainingMembersUnchanged": true,
+    "beforeSHA256": "78cacbb2c6de36cd013a9c75b9686162c9b9f39048b57772f55e458ba51aacfe"
+  },
+  "compileExitCode": 0,
+  "linkExitCode": 0,
+  "outputs": {
+    "crcObjectSHA256": "8820e10bca5b0abb7b8122ec76b7a893c2a0924e07af3baff0ae7b373971dae0",
+    "ffmpegArchiveSHA256": "e45c7875f1803e03ab671693b6c791b7b4370611ed4bf7faf7bcaa09e0eb3869",
+    "frameworkSHA256": "91f635b4f97ca9198a7a2c375176c50fba3a67b09829bbcc4a9a607114f68bff"
+  },
+  "qualificationBoundary": "Compile/relink evidence only. No runtime, anonymity, full license clearance, signature, notarization or publication attested.",
+  "candidateOutputDirectory": "out/NeAntikStable156_80PortableCRC"
+}

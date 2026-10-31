@@ -77,6 +77,7 @@ OUTPUT_DIR="$OUTPUT_DIR" \
 PYTHONPATH="$SCRIPT_DIR" \
 VERSION="$VERSION" \
 SOURCE_LOCK_SHA256="$SOURCE_LOCK_SHA256" \
+LOCK_FILE="$LOCK_FILE" \
 LICENSE_TOOL="$LICENSE_TOOL" \
 CREDITS_OUTPUT="$CREDITS_OUTPUT" \
 SPDX_OUTPUT="$SPDX_OUTPUT" \
@@ -126,7 +127,8 @@ manifest = {
 }
 if os.environ["VERSION"] == "156.0.8078.80":
     from ffmpeg_crc_notice import make
-    manifest["ffmpegCrcSupplement"] = make(Path(os.environ["SOURCE_ROOT"]), Path(os.environ["OUTPUT_DIR"]))
+    lock = json.loads(Path(os.environ["LOCK_FILE"]).read_text())
+    manifest["ffmpegCrcSupplement"] = make(Path(os.environ["SOURCE_ROOT"]), Path(os.environ["OUTPUT_DIR"]), lock=lock)
 Path(os.environ["MANIFEST_OUTPUT"]).write_text(
     json.dumps(manifest, indent=2, sort_keys=True) + "\n",
     encoding="utf-8",

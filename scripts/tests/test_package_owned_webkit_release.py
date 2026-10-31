@@ -15,6 +15,22 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
+class ProductionSourceMetadataTests(unittest.TestCase):
+    def test_webkit_production_metadata_stays_1_0_only(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'Resources').mkdir()
+            info = root / 'Resources/Info.plist'
+            with patch.object(MODULE, 'ROOT', root):
+                info.write_bytes(plistlib.dumps({'CFBundleShortVersionString': '1.0.0',
+                                                'CFBundleVersion': '201'}))
+                self.assertEqual(MODULE.production_build_number(), 201)
+                info.write_bytes(plistlib.dumps({'CFBundleShortVersionString': '0.9.1',
+                                                'CFBundleVersion': '201'}))
+                with self.assertRaisesRegex(MODULE.PackageError, 'version/build metadata'):
+                    MODULE.production_build_number()
+
+
 class OwnedWebKitReleaseContractTests(unittest.TestCase):
     def test_production_validation_rejects_inconsistent_recipe_before_staging(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -99,6 +115,11 @@ class OwnedWebKitReleaseContractTests(unittest.TestCase):
                     before, after, overlay.stat().st_size)
 
     def setUp(self):
+        # This suite models the future WebKit 1.0 producer. The current
+        # Chromium-only alpha's version is not its fixture metadata.
+        build_number = patch.object(MODULE, 'production_build_number', return_value=201)
+        build_number.start()
+        self.addCleanup(build_number.stop)
         self.info = {
             "CFBundleIdentifier": MODULE.PRODUCTION_BUNDLE_ID,
             "CFBundleShortVersionString": "1.0.0",

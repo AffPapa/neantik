@@ -1080,6 +1080,18 @@ def verify_runtime_lock_for_new_candidate(
         except (OSError, ValueError) as error:
             raise SourceProvenanceError(str(error)) from error
         return
+    if version == CHROMIUM_15680_VERSION:
+        from chromium_15680_release_evidence import verify_contract as verify_m15680
+        from chromium_15680_portable_crc import for_lock as verify_portable_lock
+        try:
+            verify_m15680(project_root)
+            if lock.get("sourceContractSHA256") != sha256_file(
+                    project_root / "runtime/chromium-15680-source-contract.json"):
+                raise ValueError("Chromium 156.80 runtime lock source contract mismatch")
+            verify_portable_lock(project_root, lock)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+        return
     if version == CHROMIUM_15612_VERSION:
         from chromium_15612_variant import reviewed_lock_prefix, verify_candidate_lock as verify_m156
         prefix = reviewed_lock_prefix(lock)

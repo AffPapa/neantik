@@ -63,6 +63,10 @@ def verify_build_args(source_root, args_gn, lock, project_root):
             adoption_path = runtime / 'chromium-15680-source-adoption-v1.json'
             adoption = json.loads(adoption_path.read_text())
             output_directory = adoption.get('buildOutputDirectory')
+            if 'portableCRC' in contract:
+                from chromium_15680_portable_crc import verify as verify_portable_crc
+                portable = verify_portable_crc(project_root, contract)
+                output_directory = portable['candidateOutputDirectory']
             parts = PurePosixPath(output_directory).parts if isinstance(output_directory, str) else ()
             if (len(parts) != 2 or parts[0] != 'out' or
                     any(part in {'', '.', '..'} for part in parts)):

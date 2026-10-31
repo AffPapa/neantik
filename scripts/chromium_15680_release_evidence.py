@@ -152,6 +152,8 @@ def verify_contract(project_root: Path) -> dict[str, Any]:
             raise M15680EvidenceError("Chromium 156.80 completed build evidence is inconsistent")
     else:
         raise M15680EvidenceError("Chromium 156.80 contract has an unknown build state")
+    from chromium_15680_portable_crc import verify as verify_portable_crc
+    verify_portable_crc(root, contract)
     return contract
 
 
@@ -166,6 +168,8 @@ def verify_source_root(source_root: Path, project_root: Path) -> dict[str, Any]:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     result = module.verify(project_root.resolve(), source_root.resolve(), ADOPTION)
+    from chromium_15680_portable_crc import verify_source as verify_portable_source
+    verify_portable_source(project_root.resolve(), contract, source_root.resolve())
     adoption = _load(project_root.resolve() / "runtime" / ADOPTION, "Chromium 156.80 adoption manifest")
     return {"contract": contract, "adoption": adoption, "sourceVerification": result}
 
@@ -188,7 +192,7 @@ def _expected_provenance(contract: dict[str, Any], adoption: dict[str, Any], sou
         raise M15680EvidenceError(
             "Chromium 156.80 build evidence is pending; export is blocked until the completed Ninja run is captured"
         )
-    return {
+    result = {
         "schemaVersion": 1, "status": "source-qualified",
         "sourceMode": contract["sourceMode"], "targetChromiumVersion": VERSION,
         "targetArchitecture": "arm64", "officialChromiumBase": contract["officialChromiumBase"],
@@ -208,6 +212,10 @@ def _expected_provenance(contract: dict[str, Any], adoption: dict[str, Any], sou
         "binaryBinding": {"status": "pending-runtime-report", "requiredEvidence": "schema-3-runtime-report"},
         "releaseReady": False,
     }
+    if "portableCRC" in contract:
+        result["portableCRC"] = contract["portableCRC"]
+        result["sourceChecks"]["portableCRC"] = "overlay-and-derived-build-evidence-verified"
+    return result
 
 
 def verify_provenance(document: dict[str, Any], project_root: Path) -> None:
@@ -232,7 +240,7 @@ def expected_lock(provenance_path: Path, project_root: Path) -> dict[str, Any]:
     if provenance.get("binaryBinding", {}).get("status") != "pending-runtime-report":
         raise M15680EvidenceError("Chromium 156.80 source lock cannot attest runtime binaries")
     base = contract["officialChromiumBase"]
-    return {
+    result = {
         "schemaVersion": 4, "status": "source-qualified", "targetArchitecture": "arm64",
         "sourceContract": "runtime/" + CONTRACT,
         "sourceContractSHA256": _sha(project_root.resolve() / "runtime" / CONTRACT),
@@ -254,6 +262,9 @@ def expected_lock(provenance_path: Path, project_root: Path) -> dict[str, Any]:
         "binaryBinding": {"status": "not-attested-by-this-document", "requiredEvidence": "schema-3-runtime-report",
                           "policy": "This source-only lock makes no binary, runtime, notarization, or publication claim."},
     }
+    if "portableCRC" in contract:
+        result["ownedInputs"]["portableCrcManifestSHA256"] = contract["portableCRC"]["sha256"]
+    return result
 
 
 def verify_lock(lock: dict[str, Any], provenance_path: Path, project_root: Path) -> dict[str, Any]:

@@ -23,6 +23,10 @@ RUNTIME_FIXTURE = Path(os.environ.get(
 ))
 
 
+@unittest.skipUnless(
+    os.environ.get('NEANTIK_TEST_RUNTIME_FRAMEWORKS')
+    and os.environ.get('NEANTIK_TEST_SOURCE_OFFERS_ROOT'),
+    'Opt-in WebKit notice integration requires explicit retained runtime and source-offer fixtures')
 class WebKitRuntimeNoticeTests(unittest.TestCase):
     def test_webcore_input_hashes_are_not_mislabeled_as_runtime_image_hashes(self):
         review_sha256 = "a" * 64

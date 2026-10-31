@@ -83,12 +83,16 @@ def main() -> int:
             "Chromium 156.80 app plist identity mismatch")
     require(digest(binary_path) == evidence.get("browserExecutableSHA256"),
             "Chromium 156.80 browser executable changed since authenticated build")
-    require(digest(framework_path) == evidence.get("frameworkSHA256"),
-            "Chromium 156.80 framework changed since authenticated build")
+    from chromium_15680_portable_crc import verify as verify_portable_crc
+    portable = verify_portable_crc(root, contract)
+    expected_framework = (portable["outputs"]["frameworkSHA256"] if portable
+                          else evidence.get("frameworkSHA256"))
+    require(digest(framework_path) == expected_framework,
+            "Chromium 156.80 framework differs from selected base/derived build evidence")
     for binary in (binary_path, framework_path):
         subprocess.run(["/usr/bin/lipo", "-verify_arch", "arm64", str(binary)],
                        check=True, stdout=subprocess.DEVNULL)
-    print("PASS: unchanged arm64 Chromium 156.0.8078.80 output matches completed unqualified build evidence.")
+    print("PASS: arm64 Chromium 156.0.8078.80 output matches selected unqualified build evidence.")
     return 0
 
 

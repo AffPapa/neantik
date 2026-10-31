@@ -465,6 +465,8 @@ class PackageWebKitHostTests(unittest.TestCase):
                  self.assertRaisesRegex(MODULE.ContractError, "Debug entitlement is forbidden"):
                 MODULE.verify_release_xpc_entitlements(frameworks)
 
+    @unittest.skipUnless(os.environ.get('NEANTIK_TEST_RUNTIME_FRAMEWORKS'),
+                         'Opt-in packaging integration requires an explicit WebKit resource fixture')
     def test_packaging_pins_the_signed_nested_binary_before_outer_signing(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

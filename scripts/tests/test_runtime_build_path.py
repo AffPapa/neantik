@@ -155,3 +155,24 @@ class RuntimeBuildPathTests(unittest.TestCase):
         with patch.dict(sys.modules, {'chromium_15680_release_evidence': helper}):
             with self.assertRaisesRegex(ValueError, 'output directory is invalid'):
                 module.verify_build_args(self.src, self.args, self.lock, self.root)
+
+    def test_m15680_derived_output_cannot_use_original_build_directory(self):
+        self.lock['fingerprintChromium']['chromiumVersion'] = '156.0.8078.80'
+        adoption = self.root / 'runtime/chromium-15680-source-adoption-v1.json'
+        adoption.write_text(json.dumps({'buildOutputDirectory': 'out/NeAntikStable156_48'}))
+        args = self.src / 'out/NeAntikStable156_80PortableCRC/args.gn'
+        args.parent.mkdir(parents=True)
+        args.write_text('derived build args\n')
+        helper = types.ModuleType('chromium_15680_release_evidence')
+        helper.verify_contract = lambda project_root: {
+            'portableCRC': {'file': 'bound overlay'},
+            'buildArgsSHA256': hashlib.sha256(args.read_bytes()).hexdigest()}
+        with patch.dict(sys.modules, {'chromium_15680_release_evidence': helper}), \
+                patch('chromium_15680_portable_crc.verify', return_value={
+                    'candidateOutputDirectory': 'out/NeAntikStable156_80PortableCRC'}):
+            self.assertEqual(module.verify_build_args(self.src, args, self.lock, self.root), args.resolve())
+            stale = self.src / 'out/NeAntikStable156_48/args.gn'
+            stale.parent.mkdir(parents=True)
+            stale.write_bytes(args.read_bytes())
+            with self.assertRaisesRegex(ValueError, 'Expected exact M156.80'):
+                module.verify_build_args(self.src, stale, self.lock, self.root)

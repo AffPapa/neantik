@@ -272,6 +272,10 @@ elif [[ "$RUNTIME_VERSION" == "156.0.8078.80" ]]; then
   for name in chromium-15680-source-adoption-v1.json chromium-15680-deps-lock.json chromium-15680-neantik.patch chromium-15680-devtools-typescript6.patch chromium-15680-v8-scope-iterator-compat.patch chromium-15680-rebase-plan.json chromium-15680-build-evidence.json chromium-15680-args.gn; do
     cp "$PROJECT_DIR/runtime/$name" "$EVIDENCE/chromium-15680-source-evidence/$name"
   done
+  if plutil -extract ownedInputs.portableCrcManifestSHA256 raw -o - "$CANDIDATE_LOCK" >/dev/null 2>&1; then
+    cp "$PROJECT_DIR/runtime/chromium-15680-portable-crc.json" "$PROJECT_DIR/runtime/chromium-15680-portable-crc.patch" "$EVIDENCE/chromium-15680-source-evidence/"
+    cp -R "$PROJECT_DIR/runtime/chromium-15680-portable-crc" "$EVIDENCE/chromium-15680-source-evidence/"
+  fi
 fi
 cp "$SNAPSHOT_ARGS" "$EVIDENCE/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE/runtime-verification.json"

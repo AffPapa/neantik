@@ -9,15 +9,11 @@ import subprocess
 import sys
 
 
-# Values exported by kern.memorystatus_vm_pressure_level (XNU):
-# 0 Normal, 1 Warning, 2 Urgent, 3 Critical, 4 Jetsam.
-MEMORY_PRESSURE_STATES = {
-    0: "normal",
-    1: "warning",
-    2: "urgent",
-    3: "critical",
-    4: "jetsam",
-}
+# The sysctl exports userspace dispatch flags, not the internal XNU enum.
+# sysctl_memorystatus_vm_pressure_level converts the internal value before OUT:
+# https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_memorystatus_notify.c
+# NOTE_MEMORYSTATUS_PRESSURE_NORMAL=1, WARN=2, CRITICAL=4 (sys/event_private.h).
+MEMORY_PRESSURE_STATES = {1: "normal", 2: "warning", 4: "critical"}
 
 
 def observe_memory_pressure():
@@ -53,11 +49,11 @@ def observe_thermal_state():
 
 def assess(pressure, thermal):
     reasons = []
-    if pressure not in MEMORY_PRESSURE_STATES:
+    if type(pressure) is not int or pressure not in MEMORY_PRESSURE_STATES:
         reasons.append("memory_pressure_unknown")
-    elif pressure != 0:
+    elif pressure != 1:
         reasons.append(f"memory_pressure_{MEMORY_PRESSURE_STATES[pressure]}")
-    if thermal not in (0, 1, 2, 3):
+    if type(thermal) is not int or thermal not in (0, 1, 2, 3):
         reasons.append("thermal_unknown")
     elif thermal >= 2:
         reasons.append("thermal_serious" if thermal == 2 else "thermal_critical")
@@ -65,8 +61,8 @@ def assess(pressure, thermal):
         "schemaVersion": 1,
         "status": "not-run",
         "eligibleForAttempt": not reasons,
-        "memoryPressure": pressure if pressure in MEMORY_PRESSURE_STATES else None,
-        "thermalState": thermal if thermal in (0, 1, 2, 3) else None,
+        "memoryPressure": pressure if type(pressure) is int and pressure in MEMORY_PRESSURE_STATES else None,
+        "thermalState": thermal if type(thermal) is int and thermal in (0, 1, 2, 3) else None,
         "reasons": reasons,
         "releaseQualified": False,
         "boundary": "Resource observation only; live manager admission and exact native gates remain required",

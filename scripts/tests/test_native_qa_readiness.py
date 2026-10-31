@@ -12,7 +12,7 @@ SPEC.loader.exec_module(MOD)
 class NativeQAReadinessTests(unittest.TestCase):
     def test_normal_and_fair_allow_attempt_without_qualification(self):
         for thermal in (0, 1):
-            report = MOD.assess(0, thermal)
+            report = MOD.assess(1, thermal)
             self.assertTrue(report["eligibleForAttempt"])
             self.assertEqual(MOD.exit_code(report), 0)
             self.assertEqual(report["status"], "not-run")
@@ -20,10 +20,8 @@ class NativeQAReadinessTests(unittest.TestCase):
 
     def test_every_non_normal_kernel_pressure_level_refuses(self):
         for pressure, reason in (
-            (1, "memory_pressure_warning"),
-            (2, "memory_pressure_urgent"),
-            (3, "memory_pressure_critical"),
-            (4, "memory_pressure_jetsam"),
+            (2, "memory_pressure_warning"),
+            (4, "memory_pressure_critical"),
         ):
             report = MOD.assess(pressure, 0)
             self.assertFalse(report["eligibleForAttempt"])
@@ -32,10 +30,10 @@ class NativeQAReadinessTests(unittest.TestCase):
 
     def test_serious_and_critical_thermal_refuse_with_normal_memory(self):
         for thermal in (2, 3):
-            self.assertEqual(MOD.exit_code(MOD.assess(0, thermal)), 75)
+            self.assertEqual(MOD.exit_code(MOD.assess(1, thermal)), 75)
 
     def test_unknown_and_unsupported_values_never_allow_launch(self):
-        for pressure, thermal in ((None, 0), (5, 0), (8, 0), (0, None), (0, -1), (0, 4)):
+        for pressure, thermal in ((None, 0), (0, 0), (3, 0), (5, 0), (8, 0), (True, 0), (False, 0), (1.0, 0), (1, None), (1, -1), (1, 4), (1, True)):
             report = MOD.assess(pressure, thermal)
             self.assertFalse(report["eligibleForAttempt"])
             self.assertEqual(MOD.exit_code(report), 78)
@@ -44,7 +42,7 @@ class NativeQAReadinessTests(unittest.TestCase):
         calls = []
         def memory():
             calls.append("memory")
-            return 0
+            return 1
         def thermal():
             calls.append("thermal")
             return 3 if calls.count("thermal") == 1 else 0
@@ -68,7 +66,7 @@ class NativeQAReadinessTests(unittest.TestCase):
     def test_thermal_failure_does_not_hide_memory_warning(self):
         def refused():
             raise RuntimeError("private error")
-        report = MOD.observe("darwin", lambda: 1, refused)
+        report = MOD.observe("darwin", lambda: 2, refused)
         self.assertEqual(report["reasons"], ["memory_pressure_warning", "thermal_unknown"])
         self.assertEqual(MOD.exit_code(report), 78)
 

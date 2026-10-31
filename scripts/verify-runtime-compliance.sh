@@ -64,7 +64,7 @@ if manifest.get("sourceLockSHA256") != sha256(lock_path):
 if expected_version == "156.0.8078.80":
     from ffmpeg_crc_notice import verify
     try:
-        verify(root, manifest.get("ffmpegCrcSupplement"))
+        verify(root, manifest.get("ffmpegCrcSupplement"), lock=lock)
     except ValueError as error:
         fail(str(error))
 

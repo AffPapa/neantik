@@ -4,6 +4,7 @@
 
 - The current 0.9.1 public alpha candidate is scoped to Chromium profiles. Previously created WebKit profiles and data are retained, while launching or duplicating those profiles is unavailable in this candidate.
 - Chromium 156.0.8078.80 has an ARM64 source build and bound source/dependency evidence. The integrated manager candidate, exact profile/proxy checks, source/relink, Developer ID signing, notarization, Gatekeeper and public release remain unqualified.
+- The corrected runtime uses FFmpeg's portable CRC implementation and excludes the GPL-header ARM64 CRC assembly object. Its rebuilt object and relinked framework have separate source bindings; all seven upstream CRC reference vectors pass. This is specific build evidence, not full release or license qualification.
 
 ## Direct 1.0.0 (200) — development candidate, not released
 

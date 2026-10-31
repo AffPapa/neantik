@@ -31,5 +31,9 @@
   "buildEvidenceFile": "runtime/chromium-15680-build-evidence.json",
   "buildEvidenceSHA256": "583823db2b2c34cfa92649b97206de3ffbd88c2d5e7b4769e17036d09024a913",
   "buildEvidenceStatus": "completed-build-verified-runtime-report-pending",
-  "depsFileSHA256": "c4d60cae7b46d4ae476e3409226d89bf72c1fd61e1d97d64027ebae4356f23ae"
+  "depsFileSHA256": "c4d60cae7b46d4ae476e3409226d89bf72c1fd61e1d97d64027ebae4356f23ae",
+  "portableCRC": {
+    "file": "runtime/chromium-15680-portable-crc.json",
+    "sha256": "81b2ab0cd60f08b59310f624eda403af0a23636c66bfaac097832a2a15e1cdf0"
+  }
 }

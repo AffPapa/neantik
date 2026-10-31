@@ -271,6 +271,15 @@ elif [[ "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.80" ]]; then
       exit 65
     fi
   done
+  if plutil -extract ownedInputs.portableCrcManifestSHA256 raw -o - "$CANDIDATE_LOCK_FILE" >/dev/null 2>&1; then
+    for evidence_name in chromium-15680-portable-crc.json chromium-15680-portable-crc.patch chromium-15680-portable-crc/base-crc.c chromium-15680-portable-crc/base-ffmpeg_generated.gni chromium-15680-portable-crc/config.h chromium-15680-portable-crc/compile-command.txt chromium-15680-portable-crc/link-command.txt; do
+      if [[ ! -f "$EVIDENCE/chromium-15680-source-evidence/$evidence_name" || -L "$EVIDENCE/chromium-15680-source-evidence/$evidence_name" ]] ||
+         ! cmp -s "$PROJECT_DIR/runtime/$evidence_name" "$EVIDENCE/chromium-15680-source-evidence/$evidence_name"; then
+        echo "Integrated Chromium portable CRC evidence differs: $evidence_name" >&2
+        exit 65
+      fi
+    done
+  fi
 fi
 
 if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then

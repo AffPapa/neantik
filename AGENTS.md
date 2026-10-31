@@ -1,9 +1,11 @@
 # NeAntik agent instructions
 
 - When repository documentation conflicts with conventions established by the existing code, follow the code conventions for implementation and list every documentation/code mismatch found in the final response.
+- Resource admission uses exported sysctl flags, not the internal XNU enum;
+  follow `docs/NEANTIK_RESOURCE_ADMISSION.md` before changing pressure gates.
 
-- Product-first execution: prioritize an actual working WebKit site/proxy path,
-  then per-profile leak controls and focused UI clarity. Record unsupported
+- First-release execution: ship the qualified Chromium-only variant. Defer
+  WebKit until its production runtime and source gates pass. Record unsupported
   timezone, locale and WebRTC honestly; never imply absolute anonymity.
 - Freeze one candidate per product change. Do not create a replacement for
   receipt, documentation or source-offer edits alone; finish its scoped runtime
@@ -31,7 +33,8 @@
   `.agents/skills/neantik-development/SKILL.md`; the read-only check planner
   explains selection. Unknown/shared inputs require full regression. Small
   prose fixes need relevant diff/claim/link review. Planning is never PASS.
-- Read one CURRENT linked by the parent `docs/PROJECT_CONTEXT_INDEX.md`.
+- Read one CURRENT linked by the operator workspace's project context index;
+  public source checkouts need not contain private checkpoints.
   CURRENT is the sole rolling status; index/roadmap link to it rather than
   copying candidate hashes or next actions. Old snapshots remain archival.
   Historical receipts answer specific questions. App/runtime/Site/hosted

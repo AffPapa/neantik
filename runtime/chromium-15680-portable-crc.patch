@@ -1,0 +1,48 @@
+--- a/libavutil/crc.c
++++ b/libavutil/crc.c
+@@ -25,7 +25,7 @@
+ #include "bswap.h"
+ #include "crc.h"
+ #include "error.h"
+-#if ARCH_AARCH64
++#if ARCH_AARCH64 && CONFIG_GPL
+ #include "libavutil/aarch64/crc.h"
+ #elif ARCH_X86
+ #include "libavutil/x86/crc.h"
+@@ -357,7 +357,7 @@
+     int done = ff_crc_init_x86(ctx, le, bits, poly, ctx_size);
+     if (done)
+         return 0;
+-#elif ARCH_AARCH64
++#elif ARCH_AARCH64 && CONFIG_GPL
+     int done = ff_crc_init_aarch64(ctx, le, bits, poly, ctx_size);
+     if (done)
+         return 0;
+@@ -392,7 +392,7 @@
+         return NULL;
+ // Check for arch-specific extensions first to avoid initializing
+ // ordinary CRC tables unnecessarily.
+-#if ARCH_AARCH64
++#if ARCH_AARCH64 && CONFIG_GPL
+     const AVCRC *table = ff_crc_get_table_aarch64(crc_id);
+     if (table)
+         return table;
+@@ -422,7 +422,7 @@
+                 const uint8_t *buffer, size_t length)
+ {
+     if (ctx[0]) {
+-#if ARCH_AARCH64
++#if ARCH_AARCH64 && CONFIG_GPL
+         return ff_crc_aarch64(ctx, crc, buffer, length);
+ #elif ARCH_X86
+         return ff_crc_x86(ctx, crc, buffer, length);
+--- a/ffmpeg_generated.gni
++++ b/ffmpeg_generated.gni
+@@ -563,7 +563,6 @@
+     "libavcodec/aarch64/vorbisdsp_neon.S",
+     "libavutil/aarch64/cpu_sme.S",
+     "libavutil/aarch64/cpu_sve.S",
+-    "libavutil/aarch64/crc.S",
+     "libavutil/aarch64/float_dsp_neon.S",
+     "libavutil/aarch64/tx_float_neon.S",
+   ]
