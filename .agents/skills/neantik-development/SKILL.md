@@ -26,6 +26,9 @@ can recognize a version-only Info.plist diff from actual before/after values;
 
 ## Execute
 
+- Treat an Apple SHA-1 identity as a CLI selector only; bind certificate trust with a reviewed SHA-256 pin and preserve exact DER/profile membership checks. Certificate rotation requires reviewing the new public certificate, never exporting its private key.
+- TLS fixtures must declare the supported minimum and issue a standards-compliant strict chain (including SKI/AKI); fix fixture certificates rather than weakening hostname, CA or verification flags.
+- A failed local CI watcher is a transport failure, not a pending remote job. Check process exit and log freshness, then obtain one authoritative head/check snapshot; never wait indefinitely on a stale watch file.
 - For CodeQL/manual compiler instrumentation, resolve and verify Xcode before initialization, persist that selected toolchain, then run only the instrumented build. Keep resolver/build/analysis phase markers and bounded step budgets; preserve build outputs until analysis finishes. A silent instrumented resolver timeout is not evidence that compilation or product execution began.
 - For CI portability repairs, test the affected modules on the minimum supported and actual CI interpreters. Keep test reporters explicit, use owned temporary fixtures instead of historical workstation paths, and arm filesystem race hooks inside the intended FD-backed operation. Preserve the original failure assertions.
 - Before a protected-main synchronization, read its exact required check contexts once and compare them with workflow job names. Preserve genuine CodeQL language analysis and stable shard context names; never replace required security scans with synthetic status/aggregate success or weaken branch protection.

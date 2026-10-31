@@ -37,7 +37,9 @@ class TLSFixtureTests(unittest.TestCase):
         return client
 
     def context(self, root='ca'):
-        return ssl.create_default_context(cafile=str(self.certificates / (root + '.pem')))
+        context = ssl.create_default_context(cafile=str(self.certificates / (root + '.pem')))
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+        return context
 
     def test_real_verified_tls_bytes_cross_tunnel(self):
         raw = self.connect(); self.assertIn(b'200 Connection Established', probe.read_header(raw))
@@ -172,6 +174,7 @@ class DNSBackedTLSFixtureTests(unittest.TestCase):
 
     def trusted_request(self, raw, *, name=None, anchor='ca'):
         context = ssl.create_default_context(cafile=str(self.certificates / (anchor + '.pem')))
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
         with context.wrap_socket(raw, server_hostname=name or self.name) as client:
             client.sendall(b'GET / HTTP/1.1\r\nHost: owned-qa\r\n\r\n')
             response = b''

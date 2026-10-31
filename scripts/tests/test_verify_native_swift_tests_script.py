@@ -68,7 +68,10 @@ class NativeSwiftTestVerifierScriptTests(unittest.TestCase):
         self.assertIn('DEVELOPER_DIR=%s', swift)
         self.assertIn('"$GITHUB_ENV"', swift)
         self.assertIn('timeout-minutes: 3', swift)
-        self.assertIn('timeout-minutes: 20', build)
+        self.assertIn('timeout-minutes: 45', build)
+        job_budget = int(re.search(r'^    timeout-minutes: (\d+)', swift, re.MULTILINE).group(1))
+        phase_budgets = [int(value) for value in re.findall(r'^        timeout-minutes: (\d+)', swift, re.MULTILINE)]
+        self.assertGreaterEqual(job_budget, sum(phase_budgets))
         self.assertIn('phase: instrumented native release build starts', build)
         for flag in ['--build-system native', '--jobs 2', '-c release',
                      '--arch arm64', '--disable-sandbox', '--scratch-path']:

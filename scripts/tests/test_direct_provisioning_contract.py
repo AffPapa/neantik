@@ -18,6 +18,16 @@ spec.loader.exec_module(cli)
 
 
 class DirectProvisioningTests(unittest.TestCase):
+    def test_cli_selector_alone_does_not_authorize_a_certificate(self):
+        profile, selector = self.fixture()
+        self.assertEqual(self.validate(profile, selector), contract.exact_claims(contract.QA))
+        profile['DeveloperCertificates'] = [b'foreign certificate with the same claimed selector']
+        with self.assertRaisesRegex(contract.ContractError, 'certificate differs'):
+            self.validate(profile, selector)
+        with self.assertRaises(ValueError):
+            contract.signing.certificate_sha256_for_selector('0' * 40)
+        self.assertEqual(len(contract.signing.certificate_sha256_for_selector(selector)), 64)
+
     def test_media_purpose_strings_and_exact_grants(self):
         self.assertEqual(contract.media_claims({}), {})  # Old immutable apps remain supported.
         info = {"NSCameraUsageDescription": "User-approved website camera",
@@ -48,6 +58,11 @@ class DirectProvisioningTests(unittest.TestCase):
                       "certificate": profile["DeveloperCertificates"][0], "hardenedRuntime": True}
             with patch.object(contract, "authenticated_profile", return_value=profile), patch.object(contract, "security_result", return_value=signed):
                 self.assertEqual(contract.verify_app(Path("/helper"), app, contract.QA, sha), "provisioned")
+                foreign = b"another profile member cannot claim the selected signing identity"
+                profile["DeveloperCertificates"].append(foreign)
+                with patch.object(contract, "security_result", return_value={**signed, "certificate": foreign}):
+                    with self.assertRaisesRegex(contract.ContractError, "Actual signed certificate"):
+                        contract.verify_app(Path("/helper"), app, contract.QA, sha)
                 for key in expected:
                     broken = {**signed, "entitlements": {k: v for k, v in signed["entitlements"].items() if k != key}}
                     with patch.object(contract, "security_result", return_value=broken):
@@ -55,13 +70,18 @@ class DirectProvisioningTests(unittest.TestCase):
 
     def fixture(self):
         certificate = b"synthetic certificate fixture, not runtime trust proof"
+        selector = "F" * 40  # An opaque Apple CLI selector, never a trust hash.
+        pin = hashlib.sha256(certificate).hexdigest()
+        override = patch.dict(contract.signing.APPROVED_CERTIFICATE_SHA256, {selector: pin})
+        override.start()
+        self.addCleanup(override.stop)
         return {"Platform": ["OSX"], "ProvisionsAllDevices": True,
                 "TeamIdentifier": [contract.TEAM], "ApplicationIdentifierPrefix": [contract.TEAM],
                 "CreationDate": dt.datetime(2026, 1, 1), "ExpirationDate": dt.datetime(2040, 1, 1),
                 "Entitlements": {"com.apple.application-identifier": contract.TEAM + ".*",
                                  "com.apple.developer.team-identifier": contract.TEAM,
                                  "keychain-access-groups": [contract.TEAM + ".*"]},
-                "DeveloperCertificates": [certificate]}, hashlib.sha1(certificate).hexdigest()
+                "DeveloperCertificates": [certificate]}, selector
 
     def validate(self, profile, certificate):
         return contract.validate_profile(profile, contract.QA, certificate,
@@ -90,6 +110,7 @@ class DirectProvisioningTests(unittest.TestCase):
             ("ExpirationDate", dt.datetime(2025, 1, 1)), ("CreationDate", dt.datetime(2030, 1, 1)),
             ("ExpirationDate", "2040"), ("DeveloperCertificates", []),
             ("DeveloperCertificates", ["not DER bytes"]),
+            ("DeveloperCertificates", [b"different valid byte payload"]),
         ]
         for key, value in changes:
             with self.subTest(key=key, value=value):

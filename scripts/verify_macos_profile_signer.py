@@ -31,7 +31,7 @@ def validate_profile_contract(
     bundle_id: str,
     signing_identifier: str,
     signing_team: str,
-    signing_certificate_sha1: str,
+    signing_certificate_sha256: str,
     signing_entitlements: dict[str, Any],
     profile: dict[str, Any],
 ) -> dict[str, Any]:
@@ -63,11 +63,13 @@ def validate_profile_contract(
         raise ProfileVerificationError("signed_team_mismatch")
 
     allowed_certificates = {
-        hashlib.sha1(bytes(certificate)).hexdigest().upper()
+        hashlib.sha256(bytes(certificate)).hexdigest().upper()
         for certificate in profile.get("DeveloperCertificates", [])
     }
-    signer_sha1 = signing_certificate_sha1.replace(":", "").upper()
-    if signer_sha1 not in allowed_certificates:
+    signer_sha256 = signing_certificate_sha256.replace(":", "").upper()
+    if not re.fullmatch(r"[0-9A-F]{64}", signer_sha256):
+        raise ProfileVerificationError("signing_certificate_digest_invalid")
+    if signer_sha256 not in allowed_certificates:
         raise ProfileVerificationError("signing_certificate_not_in_profile")
 
     for entitlement in ("keychain-access-groups", "com.apple.security.application-groups"):
@@ -80,7 +82,7 @@ def validate_profile_contract(
         "bundleIdentifier": bundle_id,
         "teamIdentifier": signing_team,
         "applicationIdentifier": expected_identifier,
-        "signingCertificateSHA1": signer_sha1,
+        "signingCertificateSHA256": signer_sha256,
         "profileUUID": profile.get("UUID"),
         "profileName": profile.get("Name"),
         "profileIncludesSigningCertificate": True,
@@ -133,7 +135,7 @@ def inspect_app(app: Path) -> dict[str, Any]:
         leaf_path = Path(prefix + "0")
         if not leaf_path.is_file():
             raise ProfileVerificationError("signing_certificate_missing")
-        signer_sha1 = hashlib.sha1(leaf_path.read_bytes()).hexdigest().upper()
+        signer_sha256 = hashlib.sha256(leaf_path.read_bytes()).hexdigest().upper()
 
     details = run_checked(["/usr/bin/codesign", "--display", "--verbose=4", str(app)]).decode("utf-8", "replace")
     # codesign writes display details to stderr on supported macOS versions.
@@ -151,7 +153,7 @@ def inspect_app(app: Path) -> dict[str, Any]:
         bundle_id=bundle_id,
         signing_identifier=identifier.group(1).strip(),
         signing_team=team.group(1).strip(),
-        signing_certificate_sha1=signer_sha1,
+        signing_certificate_sha256=signer_sha256,
         signing_entitlements=signed_entitlements,
         profile=profile,
     )

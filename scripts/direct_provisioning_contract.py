@@ -15,6 +15,8 @@ import re
 import stat
 import subprocess
 
+import direct_signing_identity as signing
+
 TEAM = "H6VGU2M6JD"
 PRODUCTION = "app.neantik.desktop"
 QA = PRODUCTION + ".backup-qa"
@@ -23,6 +25,13 @@ LIMIT = 2 * 1024 * 1024
 
 class ContractError(ValueError):
     pass
+
+
+def certificate_pin(selector: str) -> str:
+    try:
+        return signing.certificate_sha256_for_selector(selector)
+    except ValueError as error:
+        raise ContractError("Unreviewed signing certificate selector") from error
 
 
 def media_claims(info: dict) -> dict:
@@ -91,7 +100,7 @@ def validate_profile(profile: object, bundle: str, certificate_sha1: str,
     certificates = profile.get("DeveloperCertificates")
     if not isinstance(certificates, list) or not 1 <= len(certificates) <= 16 or any(not isinstance(value, bytes) or not 1 <= len(value) <= 32768 for value in certificates):
         raise ContractError("Provisioning signing certificates invalid")
-    if not any(hashlib.sha1(value).hexdigest() == certificate_sha1.lower() for value in certificates):
+    if not any(hashlib.sha256(value).hexdigest() == certificate_pin(certificate_sha1) for value in certificates):
         raise ContractError("Provisioning signing certificate differs")
     return claims
 
@@ -157,7 +166,7 @@ def verify_app(helper: Path, app: Path, bundle: str, certificate_sha1: str,
     if (embedded.exists() or embedded.is_symlink()) != provisioned or (provisioned and read_regular(embedded) != data):
         raise ContractError("Embedded profile changed during signed-code verification")
     leaf = signed.get("certificate")
-    if not isinstance(leaf, bytes) or hashlib.sha1(leaf).hexdigest() != certificate_sha1.lower() or signed.get("hardenedRuntime") is not True:
+    if not isinstance(leaf, bytes) or hashlib.sha256(leaf).hexdigest() != certificate_pin(certificate_sha1) or signed.get("hardenedRuntime") is not True:
         raise ContractError("Actual signed certificate or hardened runtime differs")
     claims.update(media_claims(info))
     if profile is not None:

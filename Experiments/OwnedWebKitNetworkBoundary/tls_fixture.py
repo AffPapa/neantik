@@ -33,10 +33,12 @@ def certificates(root, address, name=NAME):
         raise ValueError('Only the owned random DNS fixture name is accepted')
     root.mkdir(mode=0o700)
     (root / 'ca.cnf').write_text('[req]\ndistinguished_name=dn\n[dn]\n[ca_ext]\n'
-                               'basicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign,cRLSign\n')
+                               'basicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign,cRLSign\n'
+                               'subjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid:always,issuer\n')
     (root / 'leaf.ext').write_text('basicConstraints=critical,CA:FALSE\n'
                                  'keyUsage=critical,digitalSignature,keyEncipherment\n'
                                  'extendedKeyUsage=serverAuth\n'
+                                 'subjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid,issuer\n'
                                  f'subjectAltName=DNS:{name},IP:{address}\n')
     outputs = []
     for stem in ('ca', 'wrong-ca'):

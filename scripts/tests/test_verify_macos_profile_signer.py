@@ -46,7 +46,7 @@ class VerifyMacOSProfileSignerTests(unittest.TestCase):
             bundle_id=BUNDLE,
             signing_identifier=BUNDLE,
             signing_team=TEAM,
-            signing_certificate_sha1=hashlib.sha1(signer or CURRENT_SIGNER).hexdigest(),
+            signing_certificate_sha256=hashlib.sha256(signer or CURRENT_SIGNER).hexdigest(),
             signing_entitlements=entitlements or make_entitlements(),
             profile=profile or make_profile(),
         )

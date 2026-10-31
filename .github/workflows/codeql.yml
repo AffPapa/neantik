@@ -19,7 +19,7 @@ jobs:
   swift:
     name: Swift
     runs-on: macos-latest
-    timeout-minutes: 40
+    timeout-minutes: 65
     permissions:
       contents: read
       security-events: write
@@ -36,12 +36,13 @@ jobs:
           printf 'DEVELOPER_DIR=%s\n' "$selected_developer_dir" >> "$GITHUB_ENV"
           echo "phase: compatible toolchain selected"
       - name: Initialize CodeQL
+        timeout-minutes: 5
         uses: github/codeql-action/init@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
         with:
           languages: swift
           build-mode: manual
       - name: Build production Apple Silicon source graph for analysis
-        timeout-minutes: 20
+        timeout-minutes: 45
         run: |
           set -euo pipefail
           echo "phase: instrumented native release build starts"

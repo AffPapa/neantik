@@ -5,11 +5,13 @@ import hashlib
 from pathlib import Path
 import plistlib
 import tempfile
+import sys
 import unittest
 from unittest import mock
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "prepare-owned-webkit-dev-qa.py"
+sys.path.insert(0, str(SCRIPT.parent))
 SPEC = importlib.util.spec_from_file_location("prepare_owned_webkit_dev_qa", SCRIPT)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
@@ -173,7 +175,7 @@ class OwnedWebKitDevProducerContracts(unittest.TestCase):
             "Platform": ["OSX"],
             "ProvisionsAllDevices": True,
         }
-        with mock.patch.object(MODULE, "IDENTITY", hashlib.sha1(certificate).hexdigest().upper()):
+        with mock.patch.dict(MODULE.signing.APPROVED_CERTIFICATE_SHA256, {MODULE.IDENTITY: hashlib.sha256(certificate).hexdigest()}):
             MODULE.validate_profile_claims(plistlib.dumps(claims))
             claims["Entitlements"]["com.apple.application-identifier"] = f"{MODULE.TEAM}.app.neantik.desktop"
             with self.assertRaisesRegex(MODULE.ProducerError, "dev-profile-claims-mismatch"):

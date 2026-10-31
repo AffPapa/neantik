@@ -3,9 +3,14 @@
 The existing NeAntik Developer ID signing identity is stored in the macOS user
 login Keychain at `~/Library/Keychains/login.keychain-db`:
 
-- Certificate SHA-1: `474F7C78F33EE324C24F6F5AE0443EB713E85E60`
+- Apple CLI identity selector (SHA-1): `474F7C78F33EE324C24F6F5AE0443EB713E85E60`
+- Public certificate SHA-256: `781a0b9f09d3c3ac3bd34017699882ae0bec2c1ecfbbce77077ead353f592728`
 - Team: `H6VGU2M6JD`
 - Role: Developer ID Application for direct distribution and notarization
+
+Certificate trust comparisons use SHA-256 or exact DER membership; the SHA-1
+value is only the existing Apple CLI selector. Reviewed public pins are in
+`scripts/direct_signing_identity.py`. No private key was exported or replaced.
 
 ## Safe verification
 

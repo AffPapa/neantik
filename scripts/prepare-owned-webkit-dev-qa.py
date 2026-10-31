@@ -23,6 +23,8 @@ import stat
 import subprocess
 import sys
 import tempfile
+
+import direct_signing_identity as signing
 from urllib.parse import urlsplit
 import zipfile
 
@@ -216,7 +218,7 @@ def validate_profile_claims(data: bytes) -> None:
             # the signed app still claims the exact, non-wildcard access group.
             and (APPLICATION_ID in groups or f"{TEAM}.*" in groups)
             and isinstance(certificates, list)
-            and any(hashlib.sha1(cert).hexdigest().upper() == IDENTITY
+            and any(hashlib.sha256(cert).hexdigest() == signing.certificate_sha256_for_selector(IDENTITY)
                     for cert in certificates if isinstance(cert, bytes)),
             "dev-profile-claims-mismatch")
     if isinstance(expires, datetime):
