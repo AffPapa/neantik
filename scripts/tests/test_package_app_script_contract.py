@@ -31,6 +31,9 @@ class PackageAppScriptContractTests(unittest.TestCase):
         self.assertIn(marker, text)
         self.assertLess(text.index('cp "$PROJECT_DIR/Resources/Info.plist"'), text.index(marker))
         self.assertLess(text.index(marker), text.index('package-update-helpers.py" "$CANDIDATE_APP"'))
+        conflict = 'Chromium-only manager cannot include the owned WebKit host.'
+        self.assertIn(conflict, text)
+        self.assertLess(text.index(conflict), text.index('swift build \\'))
 
     @unittest.skipUnless(Path('/usr/libexec/PlistBuddy').is_file(), 'macOS PlistBuddy required')
     def test_manager_update_scope_marker_applies_only_to_chromium_builds(self) -> None:
@@ -47,6 +50,16 @@ class PackageAppScriptContractTests(unittest.TestCase):
                     env = os.environ.copy(); env.update(CANDIDATE_APP=str(app), NEANTIK_CHROMIUM_ONLY=enabled)
                     subprocess.run(['/bin/zsh', '-c', text[start:end]], env=env, check=True, capture_output=True)
                     self.assertEqual(plistlib.loads(info.read_bytes()).get('NeAntikEngineScope'), 'chromium-only' if enabled == '1' else None)
+
+    def test_manager_update_refuses_conflicting_engine_selection(self) -> None:
+        text = (ROOT / 'scripts/prepare-direct-manager-update.sh').read_text(encoding='utf-8')
+        start = text.index('if [[ "${NEANTIK_CHROMIUM_ONLY:-0}" == "1" && "$WEBKIT_HOST_ENABLED" == "1" ]]')
+        end = text.index('\nfi', start) + len('\nfi')
+        for chromium, webkit, expected in [('1', '1', 78), ('1', '0', 0), ('0', '1', 0)]:
+            with self.subTest(chromium=chromium, webkit=webkit):
+                env = os.environ.copy(); env.update(NEANTIK_CHROMIUM_ONLY=chromium, WEBKIT_HOST_ENABLED=webkit)
+                result = subprocess.run(['/bin/zsh', '-c', text[start:end]], env=env, capture_output=True)
+                self.assertEqual(result.returncode, expected)
 
     def test_unqualified_runtime_gate_is_scoped_to_bundle_only_preparation(self) -> None:
         text = (ROOT / "scripts/prepare-direct-manager-update.sh").read_text(encoding="utf-8")

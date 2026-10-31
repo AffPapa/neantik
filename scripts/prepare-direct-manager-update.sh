@@ -297,6 +297,10 @@ case "$WEBKIT_HOST_ENABLED" in
   0|1) ;;
   *) echo "NEANTIK_WEBKIT_HOST_ENABLED must be 0 or 1." >&2; exit 64 ;;
 esac
+if [[ "${NEANTIK_CHROMIUM_ONLY:-0}" == "1" && "$WEBKIT_HOST_ENABLED" == "1" ]]; then
+  echo "Chromium-only manager cannot include the owned WebKit host." >&2
+  exit 78
+fi
 if [[ "${NEANTIK_RELEASE_CHANNEL:-}" == "production" ]]; then
   if [[ "$WEBKIT_HOST_ENABLED" != "1" ]]; then
     echo "Production release requires the owned WebKit host; refusing a proxy-enabled manager-only candidate." >&2
