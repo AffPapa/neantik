@@ -447,6 +447,7 @@ enum BrowserLaunchBuilder {
         // Never mix restoration with an explicit URL: Chromium adds that URL
         // again on every launch. Audit/management targets remain fresh windows.
         let restoresSession = purpose == .normal && startURLOverride == nil &&
+            profile.privacyPolicy.retention != .ephemeral &&
             profile.startupMode == .restoreSession && profile.lastLaunchedAt != nil
         var arguments = [
             "--user-data-dir=\(browserDataDirectory.path)",
@@ -763,6 +764,12 @@ final class BrowserProcessManager: ObservableObject {
     private var externalUnverifiedProfileIDs = Set<UUID>()
     private var recoveryProfileIDs = Set<UUID>()
     private var recoveryRecords: [UUID: BrowserProcessRecoveryRecord] = [:]
+    @Published private(set) var ephemeralCleanupFailures = Set<UUID>()
+    @Published private(set) var ephemeralCleanupPending = Set<UUID>()
+    private var ephemeralCleanupTasks: [UUID: Task<Void, Never>] = [:]
+    private var ephemeralStartupInspected = Set<UUID>()
+    private var ephemeralQuitPending = false
+    private var managedEphemeralProfiles: [UUID: BrowserProfile] = [:]
     private var managedStopRequests: [UUID: ObjectIdentifier] = [:]
     @Published private var managedClosingIntents: [UUID: ManagedBrowserClosingIntent] = [:]
     private var managedStopWarnings: [UUID: Task<Void, Never>] = [:]
@@ -797,6 +804,7 @@ final class BrowserProcessManager: ObservableObject {
     /// Local busy evidence is only an initial refusal. The owner still checks
     /// a fresh full-UID kernel inventory before launch and after manager exit.
     var hasWorkPreventingUpdate: Bool {
+        !ephemeralCleanupPending.isEmpty || !ephemeralCleanupFailures.isEmpty ||
         !webKitMaintenanceProfileIDs.isEmpty || !runningProfileIDs.isEmpty || !processes.isEmpty ||
         !webKitHostClients.isEmpty || !webKitHostStartingProfileIDs.isEmpty || !webKitHostStopTasks.isEmpty ||
         !preparedRelayLaunches.isEmpty || !pendingRelayLaunchTokens.isEmpty ||
@@ -956,6 +964,11 @@ final class BrowserProcessManager: ObservableObject {
     func reconcile(profiles: [BrowserProfile], preservesKnownStates: Bool = false) {
         guard !ApplicationUpdateAdmission.shared.isUpdating else { return }
         lastReconciledProfiles = profiles
+        for profile in profiles where profile.privacyPolicy.retention == .ephemeral {
+            if ephemeralStartupInspected.insert(profile.id).inserted {
+                beginEphemeralCleanupIfNeeded(profile: profile, onlyIfPending: true)
+            }
+        }
         if profiles.isEmpty {
             reconcileGeneration &+= 1
             reconcileTask?.cancel()
@@ -1408,6 +1421,7 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     func processState(for profileID: UUID) -> BrowserProfileProcessState {
+        if ephemeralCleanupPending.contains(profileID) { return .closing }
         if webKitMaintenanceProfileIDs.contains(profileID) { return .checking }
         if webKitHostStartingProfileIDs.contains(profileID) { return .checking }
         if webKitBrowsers[profileID] != nil || webKitHostClients[profileID] != nil { return .managed }
@@ -1417,7 +1431,7 @@ final class BrowserProcessManager: ObservableObject {
         if processes[profileID]?.isRunning == true {
             return .managed
         }
-        if recoveryProfileIDs.contains(profileID) {
+        if ephemeralCleanupFailures.contains(profileID) || recoveryProfileIDs.contains(profileID) {
             return .recoveryRequired
         }
         if externalUnverifiedProfileIDs.contains(profileID) {
@@ -1446,7 +1460,8 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         _ destructiveOperation: () throws -> T
     ) throws -> T {
-        if webKitBrowsers[profileID] != nil || webKitHostClients[profileID] != nil ||
+        if ephemeralCleanupPending.contains(profileID) || ephemeralCleanupFailures.contains(profileID) ||
+            webKitBrowsers[profileID] != nil || webKitHostClients[profileID] != nil ||
             webKitHostStartingProfileIDs.contains(profileID) || processes[profileID]?.isRunning == true {
             throw BrowserProfileDeletionBlockedError(
                 reason: .managedProcess
@@ -2346,11 +2361,14 @@ final class BrowserProcessManager: ObservableObject {
             FingerprintAuditLaunchReservation? = nil,
         purpose: BrowserLaunchPurpose = .normal
     ) throws {
+        guard !ephemeralQuitPending else { throw NeAntikError.processLaunchFailed("") }
         guard profile.engine == .chromium else { throw NeAntikError.invalidProfile }
         try BrowserLaunchPolicy.validatePrivacyPolicy(profile, runtime: runtime)
         try BrowserLaunchPolicy.validateFontPolicy(profile, runtime: runtime)
         try launchAdmission.requireSafePressure()
-        guard !runningProfileIDs.contains(profile.id) else {
+        guard !runningProfileIDs.contains(profile.id),
+              !ephemeralCleanupPending.contains(profile.id),
+              !ephemeralCleanupFailures.contains(profile.id) else {
             throw NeAntikError.profileAlreadyRunning
         }
         guard profile.proxy?.isValid != false else {
@@ -2545,6 +2563,13 @@ final class BrowserProcessManager: ObservableObject {
             let auditDirectoryCustody = try releaseAuditBrowserIsolation?.validateBeforeExec(paths: paths, browserDataDirectory: browserDataDirectory)
             try BrowserLaunchPolicy.validatePrivacyPolicy(profile, runtime: runtime)
             try BrowserLaunchPolicy.validateFontPolicy(profile, runtime: runtime)
+            if profile.privacyPolicy.retention == .ephemeral {
+                guard purpose == .normal, browserDataDirectoryOverride == nil else {
+                    throw EphemeralProfileStorageError()
+                }
+                managedEphemeralProfiles[profile.id] = profile
+                try EphemeralProfileStorage.prepareLaunch(paths: paths, profile: profile)
+            }
             try process.run()
             withExtendedLifetime((auditDirectoryCustody, fingerprintDirectoryCustody)) {}
             processes[profile.id] = process
@@ -2604,10 +2629,13 @@ final class BrowserProcessManager: ObservableObject {
             managedLeaseOwners.removeValue(forKey: profile.id)
             managedBrowserDataDirectories.removeValue(forKey: profile.id)
             managedSessionReceipts.removeValue(forKey: profile.id)
-            removeLockIfOwned(
+            let leaseCleanup = removeLockIfOwned(
                 profileID: profile.id,
                 ownerToken: ownerToken
             )
+            if leaseCleanup == .removedOrMissing {
+                beginEphemeralCleanupIfNeeded(profile: profile, onlyIfPending: true)
+            }
             cleanupTransientProfileDirectoryIfSafe(profileID: profile.id)
             try? appendDiagnostic(
                 "browser_launch_failed reason=process-launch-error",
@@ -3370,6 +3398,7 @@ final class BrowserProcessManager: ObservableObject {
             switch outcome {
             case .removedOrMissing:
                 runningProfileIDs.remove(profileID)
+                beginEphemeralCleanupIfNeeded(profileID: profileID)
                 cleanupTransientProfileDirectoryIfSafe(profileID: profileID)
             case .replacementPresent:
                 if processInventoryProvider != nil,
@@ -3763,7 +3792,100 @@ final class BrowserProcessManager: ObservableObject {
             passiveInventoryObservationTask?.cancel()
             passiveInventoryObservationTask = nil
         }
+        beginEphemeralCleanupIfNeeded(profileID: profileID)
         cleanupTransientProfileDirectoryIfSafe(profileID: profileID)
+    }
+
+    var hasPendingEphemeralWork: Bool {
+        !ephemeralCleanupTasks.isEmpty || !ephemeralCleanupFailures.isEmpty ||
+        lastReconciledProfiles.contains { $0.privacyPolicy.retention == .ephemeral && runningProfileIDs.contains($0.id) } ||
+        managedEphemeralProfiles.keys.contains { runningProfileIDs.contains($0) }
+    }
+
+    /// Quit waits only for disposable sessions. Persistent Chromium sessions keep
+    /// their existing manager-exit behavior. Never force-kill a stalled process.
+    func drainEphemeralForQuit() async -> Bool {
+        ephemeralQuitPending = true
+        defer { ephemeralQuitPending = false }
+        var profiles = managedEphemeralProfiles
+        for profile in lastReconciledProfiles where profile.privacyPolicy.retention == .ephemeral { profiles[profile.id] = profile }
+        for profile in profiles.values {
+            if processState(for: profile.id).canRequestStop && runningProfileIDs.contains(profile.id) {
+                stop(profileID: profile.id)
+            } else if ephemeralCleanupFailures.contains(profile.id) {
+                retryEphemeralCleanup(profile: profile)
+            }
+        }
+        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
+        while hasPendingEphemeralWork && ContinuousClock.now < deadline {
+            do { try await Task.sleep(for: .milliseconds(100)) }
+            catch { return false }
+        }
+        return !hasPendingEphemeralWork
+    }
+
+    /// An explicit retry never relaxes process, metadata or directory custody.
+    func retryEphemeralCleanup(profile: BrowserProfile) {
+        guard ephemeralCleanupFailures.contains(profile.id) else { return }
+        beginEphemeralCleanupIfNeeded(profile: profile, onlyIfPending: false)
+    }
+
+    private func beginEphemeralCleanupIfNeeded(profileID: UUID) {
+        guard let profile = lastReconciledProfiles.first(where: { $0.id == profileID }) ?? managedEphemeralProfiles[profileID] else { return }
+        beginEphemeralCleanupIfNeeded(profile: profile, onlyIfPending: true)
+    }
+
+    private func beginEphemeralCleanupIfNeeded(profile: BrowserProfile, onlyIfPending: Bool) {
+        guard profile.privacyPolicy.retention == .ephemeral,
+              ephemeralCleanupTasks[profile.id] == nil else { return }
+        let savedPaths = paths
+        let provider = processInventoryProvider
+        ephemeralCleanupPending.insert(profile.id)
+        ephemeralCleanupFailures.remove(profile.id)
+        ephemeralCleanupTasks[profile.id] = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let pending = try await Task.detached(priority: .utility) {
+                    try EphemeralProfileStorage.pending(paths: savedPaths, profile: profile)
+                }.value
+                if pending || !onlyIfPending {
+                    guard let provider else { throw EphemeralProfileStorageError() }
+                    let inspection = await Task.detached(priority: .utility) {
+                        provider().inspectBrowserDataProcess(savedPaths.browserDataDirectory(for: profile.id))
+                    }.value
+                    if case .found = inspection {
+                        // Startup can discover an ordinary still-running session.
+                        // Its termination callback will request cleanup later.
+                        self.ephemeralCleanupPending.remove(profile.id)
+                        self.ephemeralCleanupTasks.removeValue(forKey: profile.id)
+                        return
+                    }
+                    try await self.withVerifiedStoppedProfileMaintenance(profile: profile) { authority in
+                        // Keep metadata unchanged throughout detach and deletion. The
+                        // authority itself also rechecks lease and live processes.
+                        try ProfileStore.withPersistedLaunchSnapshot(profile, paths: savedPaths) {
+                            try EphemeralProfileStorage.clear(paths: savedPaths, profile: profile,
+                                validateAuthority: {
+                                    try authority.validate(browserData: savedPaths.browserDataDirectory(for: profile.id))
+                                }, requireAbsent: { url in
+                                    switch provider().inspectBrowserDataProcess(url) {
+                                    case .absent: break
+                                    case .found, .unknown: throw EphemeralProfileStorageError()
+                                    }
+                                })
+                        }
+                    }
+                }
+                self.ephemeralCleanupFailures.remove(profile.id)
+                self.managedEphemeralProfiles.removeValue(forKey: profile.id)
+                if self.lastError == EphemeralProfileStorageError().localizedDescription { self.lastError = nil }
+            } catch {
+                self.ephemeralCleanupFailures.insert(profile.id)
+                self.lastError = EphemeralProfileStorageError().localizedDescription
+            }
+            self.ephemeralCleanupPending.remove(profile.id)
+            self.ephemeralCleanupTasks.removeValue(forKey: profile.id)
+        }
     }
 
     private func cleanupTransientProfileDirectoryIfSafe(

@@ -214,7 +214,7 @@ enum ProfileMetadataImportTransaction {
                     }
                     let owned = try OwnedProfileDirectory(paths: paths, profileID: profile.id)
                     createdDirectories.append(owned)
-                    try owned.prepareBrowserData()
+                    try owned.prepareBrowserData(for: profile)
                     if let bookmarks = initialBookmarks[profile.id] { try owned.prepareInitialBookmarks(bookmarks) }
                 }
                 try beforeProfilesPersist()

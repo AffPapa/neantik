@@ -3,6 +3,26 @@ import Testing
 @testable import NeAntik
 
 struct BrowserPrivacyPolicyTests {
+    @Test func changingPresetPreservesRetentionAndRejectsUnknown() {
+        var policy = BrowserPrivacyPolicy.strict; policy.retention = .ephemeral
+        #expect(policy.presetName == "strict")
+        #expect(policy.applyingPreset("balanced")?.retention == .ephemeral)
+        #expect(policy.applyingPreset("balanced")?.presetName == "balanced")
+        #expect(policy.applyingPreset("legacy")?.retention == .ephemeral)
+        #expect(BrowserPrivacyPolicy.balanced.applyingPreset("strict")?.retention == .persistent)
+        #expect(policy.applyingPreset("unrecognised") == nil)
+    }
+
+    @Test func disposableSessionNeverRestoresPersistedTabs() {
+        var policy = BrowserPrivacyPolicy.strict; policy.retention = .ephemeral
+        var profile = BrowserProfile(name: "Disposable", startURL: "about:blank", privacyPolicy: policy)
+        profile.startupMode = .restoreSession; profile.lastLaunchedAt = Date()
+        let args = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: URL(fileURLWithPath: "/private/tmp/own-disposable"))
+        #expect(!args.contains("--restore-last-session"))
+        #expect(args.contains("--new-window"))
+        #expect(args.last == "about:blank")
+    }
+
     private func encode(_ profiles: [BrowserProfile]) throws -> Data {
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
         return try ProfileStore.encodeProfiles(profiles, encoder: encoder)

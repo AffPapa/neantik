@@ -51,6 +51,7 @@ final class OwnedProfileDirectory {
     private var initialBookmarkFile: Int32?
     private var initialBookmarkIdentity: BackupIdentity?
     private var initialBookmarkBytes: Data?
+    private var initialEphemeralMarker: EphemeralProfileStorage.CreationMarker?
 
     init(paths: AppPaths, profileID: UUID) throws {
         parentURL = try Self.platformPath(paths.profilesDirectory); name = profileID.uuidString
@@ -69,7 +70,7 @@ final class OwnedProfileDirectory {
         } catch { Darwin.close(parent); throw error }
     }
 
-    func prepareBrowserData() throws {
+    func prepareBrowserData(for profile: BrowserProfile? = nil) throws {
         try validate()
         guard browser == nil, mkdirat(directory, "BrowserData", 0o700) == 0 else { throw BackupFS.posix() }
         let fd = openat(directory, "BrowserData", O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
@@ -79,6 +80,10 @@ final class OwnedProfileDirectory {
             guard identity.directory, identity.uid == geteuid(), identity.mode & 0o077 == 0,
                   try BackupFS.entry(directory, "BrowserData")?.sameObject(identity) == true else { throw ProfileCreationOwnershipError() }
             browser = fd; browserIdentity = identity
+            if let profile, profile.privacyPolicy.retention == .ephemeral {
+                guard profile.id.uuidString == name else { throw ProfileCreationOwnershipError() }
+                initialEphemeralMarker = try EphemeralProfileStorage.issueForExclusiveCreation(profile: profile, parent: directory, browser: fd)
+            }
             try validate()
         } catch { if browser == nil { Darwin.close(fd) }; throw error }
     }
@@ -122,6 +127,9 @@ final class OwnedProfileDirectory {
 
     func validatePreparedInitialState() throws {
         try validate()
+        if let initialEphemeralMarker {
+            try EphemeralProfileStorage.validateCreatedMarker(parent: directory, expected: initialEphemeralMarker)
+        }
         guard let browser, let browserIdentity, try Self.privateDirectoryIdentity(browser).sameObject(browserIdentity),
               try BackupFS.entry(directory, "BrowserData")?.sameObject(browserIdentity) == true else { throw ProfileCreationOwnershipError() }
         guard let initialDefault else {
@@ -147,7 +155,7 @@ final class OwnedProfileDirectory {
 
     /// Normalize only Darwin's fixed system aliases. Resolving arbitrary
     /// profile symlinks would defeat the no-follow ancestry contract.
-    private static func platformPath(_ url: URL) throws -> URL {
+    static func platformPath(_ url: URL) throws -> URL {
         for alias in ["var", "tmp"] where url.path.hasPrefix("/" + alias + "/") {
             let target = try FileManager.default.destinationOfSymbolicLink(atPath: "/" + alias)
             guard target == "private/" + alias || target == "/private/" + alias else { throw ProfileCreationOwnershipError() }
@@ -173,6 +181,10 @@ final class OwnedProfileDirectory {
             self.browser = nil; self.browserIdentity = nil; Darwin.close(browser)
         } else {
             guard try BackupFS.entry(directory, "BrowserData") == nil else { throw ProfileCreationOwnershipError() }
+        }
+        if let marker = initialEphemeralMarker {
+            try EphemeralProfileStorage.removeCreatedMarker(parent: directory, expected: marker)
+            initialEphemeralMarker = nil
         }
         try validate()
         guard unlinkat(parent, name, AT_REMOVEDIR) == 0, fsync(parent) == 0 else { throw BackupFS.posix() }

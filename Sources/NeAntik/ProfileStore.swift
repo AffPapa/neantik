@@ -1052,6 +1052,15 @@ final class ProfileStore: ObservableObject {
             }
             value.identity = replacementIdentity
         }
+        if let current, current.privacyPolicy.retention != value.privacyPolicy.retention {
+            // Storage lifetime is chosen only for a new, exclusively created root.
+            throw EphemeralProfileStorageError()
+        }
+        if let current, current.privacyPolicy.retention == .ephemeral,
+           current.privacyPolicy != value.privacyPolicy,
+           try EphemeralProfileStorage.pending(paths: paths, profile: current) {
+            throw EphemeralProfileStorageError()
+        }
         let profileDirectory = paths.profileDirectory(for: value.id)
         let profileDirectoryExisted = FileManager.default.fileExists(
             atPath: profileDirectory.path
@@ -1064,7 +1073,7 @@ final class ProfileStore: ObservableObject {
             } else {
                 try OwnedProfileDirectory.requireDescriptorBudget(profileCount: 1)
                 owned = try OwnedProfileDirectory(paths: paths, profileID: value.id)
-                try owned!.prepareBrowserData()
+                try owned!.prepareBrowserData(for: value)
             }
             createdDirectory?(owned)
         } catch {

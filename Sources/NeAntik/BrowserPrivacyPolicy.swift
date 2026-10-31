@@ -44,9 +44,10 @@ struct BrowserPrivacyPolicy: Codable, Equatable, Hashable, Sendable {
     }
 
     var presetName: String {
-        if self == .legacy { return "legacy" }
-        if self == .balanced { return "balanced" }
-        if self == .strict { return "strict" }
+        var controls = self; controls.retention = .persistent
+        if controls == .legacy { return "legacy" }
+        if controls == .balanced { return "balanced" }
+        if controls == .strict { return "strict" }
         return "custom"
     }
 
@@ -57,6 +58,14 @@ struct BrowserPrivacyPolicy: Codable, Equatable, Hashable, Sendable {
         case "strict": .strict
         default: nil
         }
+    }
+
+    /// Changing a preset must never turn an existing disposable session into
+    /// persistent storage (or delete a persistent profile implicitly).
+    func applyingPreset(_ name: String) -> BrowserPrivacyPolicy? {
+        guard var value = Self.preset(named: name) else { return nil }
+        value.retention = retention
+        return value
     }
 
     var draftToken: String {

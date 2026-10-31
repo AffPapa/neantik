@@ -3146,6 +3146,9 @@ struct ContentView: View {
                     preflight: runtimePreflight
                 ),
                 recoveryNotice: store.recoveryNotice,
+                ephemeralCleanupFailed: processes.ephemeralCleanupFailures.contains(profile.id),
+                ephemeralCleanupInProgress: processes.ephemeralCleanupPending.contains(profile.id),
+                onRetryEphemeralCleanup: { processes.retryEphemeralCleanup(profile: profile) },
                 folderName: store.folderID(forProfileID: profile.id).flatMap {
                     store.folder(withID: $0)?.name
                 },
@@ -4262,6 +4265,9 @@ struct ProfileDetailView: View {
     var artifactProvenance: ProfileArtifactProvenanceSnapshot = .empty
     var runtimeProvenance: RuntimeProvenanceSnapshot = .empty
     var recoveryNotice: ProfileRecoveryNotice? = nil
+    var ephemeralCleanupFailed = false
+    var ephemeralCleanupInProgress = false
+    var onRetryEphemeralCleanup: () -> Void = {}
     var folderName: String? = nil
     var environmentSnapshot: ProfileEnvironmentSnapshot? = nil
     var proxyCheckSummary: ProxyCheckSummary? = nil
@@ -4319,6 +4325,16 @@ struct ProfileDetailView: View {
 
     private var detailContent: some View {
         VStack(alignment: .leading, spacing: 18) {
+            if ephemeralCleanupFailed || ephemeralCleanupInProgress {
+                ProfileDetailCard("Очистка одноразового сеанса") {
+                    if ephemeralCleanupInProgress {
+                        ProgressView("Ожидаем безопасного завершения очистки…")
+                    } else {
+                        Text("Очистка не завершена. Данные сохранены; новый запуск заблокирован до безопасного завершения.")
+                        Button("Повторить очистку", action: onRetryEphemeralCleanup)
+                    }
+                }
+            }
             if profile.engine == .chromium { networkAndEnvironment }
             else {
                 ProfileDetailCard("WebKit · движок Safari") {

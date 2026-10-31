@@ -174,7 +174,11 @@ import Foundation
         return value
     }
     private nonisolated static func requireSupportedEngine(_ profile: BrowserProfile) throws {
-        guard profile.engine == .chromium else { throw BrowserDataBackupStorageError.incompatibleContext }
+        // A disposable session must not be made persistent by an export or
+        // receive restored state outside its exclusive issuance lifecycle.
+        guard profile.engine == .chromium, profile.privacyPolicy.retention == .persistent else {
+            throw BrowserDataBackupStorageError.incompatibleContext
+        }
     }
     private nonisolated static func context(_ profile: BrowserProfile, _ runtime: BrowserRuntimeInspection, _ scope: String) throws -> EncryptedBackupArchive.Manifest {
         try requireSupportedEngine(profile)

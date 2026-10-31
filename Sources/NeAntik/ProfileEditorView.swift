@@ -331,6 +331,36 @@ struct ProfileEditorView: View {
     }
   }
 
+  private var privacyPolicySection: some View {
+    Section("Защита профиля") {
+      Picker("Режим защиты", selection: Binding(
+        get: { privacyPolicy.presetName },
+        set: { if let value = privacyPolicy.applyingPreset($0) { privacyPolicy = value } }
+      )) {
+        Text("Прежние настройки").tag("legacy")
+        Text("Сбалансированный").tag("balanced")
+        Text("Строгий").tag("strict")
+        if privacyPolicy.presetName == "custom" { Text("Свои настройки").tag("custom") }
+      }
+      Text("Сбалансированный режим ограничивает локальную сеть и трекеры. Строгий также запрещает WebRTC, камеру, микрофон, геолокацию и уведомления и выравнивает размер области страницы. Совместимость сайтов может измениться.")
+        .font(.caption).foregroundStyle(.secondary)
+      Text("Новые политики начнут работать только с совместимым движком; при отсутствии поддержки запуск будет отклонён, настройки не будут применены частично.")
+        .font(.caption).foregroundStyle(.secondary)
+      if original == nil {
+        Toggle("Очищать данные сайтов после закрытия", isOn: Binding(
+          get: { privacyPolicy.retention == .ephemeral },
+          set: { privacyPolicy.retention = $0 ? .ephemeral : .persistent }
+        ))
+      } else {
+        LabeledContent("Хранение данных", value: privacyPolicy.retention == .ephemeral ? "Одноразовый сеанс" : "Постоянное")
+      }
+      if privacyPolicy.retention == .ephemeral {
+        Text("Каждый запуск начинает новый сеанс. Настройки профиля, скачанные файлы и экспорт сохраняются. Физическое стирание данных с SSD не гарантируется. Режим хранения существующего профиля менять нельзя.")
+          .font(.caption).foregroundStyle(.secondary)
+      }
+    }
+  }
+
   var body: some View {
     VStack(spacing: 0) {
       HStack {
@@ -689,6 +719,7 @@ struct ProfileEditorView: View {
             }
           }
         }
+        if engine == .chromium { privacyPolicySection }
         if showsAdvancedOptions {
         Section("Организация и заметки") {
           folderControl
