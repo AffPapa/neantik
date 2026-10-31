@@ -1,8 +1,11 @@
 # NeAntik changelog
 
-## Unreleased — privacy and MCP clarity
+## Direct 0.9.4 (204) — candidate, not released
 
-- Clarify direct IP exposure, configured WebRTC limits and extension policies; fix MCP nullable organization revision and unavailable engine capabilities. These changes are not yet in published 0.9.3 binaries.
+- Clarify direct IP exposure, configured WebRTC limits and extension policies; fix MCP nullable organization revision and unavailable engine capabilities.
+- Add a compatibility control for tracking-query cleanup, preserve extension restrictions for custom policies, and fix privacy-profile configuration imports.
+- Report uncertain MCP rollback accurately and avoid duplicate response serialization. These changes are not in published 0.9.3 binaries.
+- Chromium-only packaging, exact signed-app qualification, notarization and distribution remain in progress; no absolute anonymity is claimed.
 
 ## Direct 0.9.3 (203) — published public alpha
 
