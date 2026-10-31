@@ -17,6 +17,9 @@ class IsolatedSigningPackageTests(unittest.TestCase):
             root = Path(temporary)
             source, out = root / 'src', root / 'out'
             source.mkdir(); out.mkdir()
+            entitlements = source / 'chrome/app/app-entitlements.plist'
+            entitlements.parent.mkdir(parents=True)
+            entitlements.write_bytes(b'synthetic application entitlements')
             (out / 'toolchain.ninja').write_bytes(b'graph')
             config = out / 'NeAntik Browser Packaging/signing/build_props_config.py'
             config.parent.mkdir(parents=True)
@@ -27,6 +30,9 @@ class IsolatedSigningPackageTests(unittest.TestCase):
             spec = {'schemaVersion': 1, 'chromiumVersion': '156.0.8078.80',
                     'toolchainNinjaSHA256': digest(b'graph'), 'generatorInputs': {},
                     'files': {'signing/build_props_config.py': {'sha256': digest(old), 'mode': 0o644}},
+                    'supplementalInputs': {'app-entitlements.plist': {
+                        'source': 'chrome/app/app-entitlements.plist',
+                        'sha256': digest(entitlements.read_bytes()), 'mode': 0o644}},
                     'generatedConfigSHA256': digest(new)}
             def generate(command, **kwargs):
                 Path(command[command.index('-o') + 1]).write_bytes(new)
@@ -35,6 +41,13 @@ class IsolatedSigningPackageTests(unittest.TestCase):
                 MODULE.prepare(source, out, dest, spec)
                 self.assertEqual((dest / 'signing/build_props_config.py').read_bytes(), new)
                 self.assertEqual(config.read_bytes(), old)
+                self.assertEqual((dest / 'app-entitlements.plist').read_bytes(), entitlements.read_bytes())
+                saved_entitlements = entitlements.read_bytes()
+                entitlements.write_bytes(b'tampered')
+                with self.assertRaisesRegex(ValueError, 'supplemental input changed'):
+                    MODULE.prepare(source, out, root / 'wrong-entitlements', spec)
+                self.assertFalse((root / 'wrong-entitlements').exists())
+                entitlements.write_bytes(saved_entitlements)
                 config.write_bytes(b'tampered')
                 with self.assertRaisesRegex(ValueError, 'differs from pinned inputs'):
                     MODULE.prepare(source, out, root / 'refused', spec)

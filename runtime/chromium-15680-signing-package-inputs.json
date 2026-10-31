@@ -116,5 +116,12 @@
     "chrome/installer/mac/signing/build_props_config.py.in": "8bc8e572bde4df55692796b213000ec1eca3a4fa9cea15518c1fed2f7c46f441"
   },
   "schemaVersion": 1,
+  "supplementalInputs": {
+    "app-entitlements.plist": {
+      "mode": 420,
+      "sha256": "bab6f068004a79a5c439958d4060ff74edaad6301ca1390fed2cb666af4d28b7",
+      "source": "chrome/app/app-entitlements.plist"
+    }
+  },
   "toolchainNinjaSHA256": "8f1dd95d8971ae18550a3386fb516515410d74f453a55837b0e3005ec6badcce"
 }

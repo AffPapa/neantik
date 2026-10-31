@@ -56,6 +56,16 @@ def prepare(source: Path, out: Path, destination: Path, spec: dict) -> None:
             }
     if found != spec["files"]:
         raise ValueError("signing package differs from pinned inputs")
+    supplements = spec.get("supplementalInputs")
+    if (not isinstance(supplements, dict) or set(supplements) != {"app-entitlements.plist"}):
+        raise ValueError("missing pinned application entitlements")
+    for name, binding in supplements.items():
+        if binding.get("source") != "chrome/app/app-entitlements.plist" or name in found:
+            raise ValueError("unexpected supplemental signing input")
+        path = source / binding["source"]
+        if (path.is_symlink() or not path.is_file() or sha(path) != binding.get("sha256")
+                or binding.get("mode") != 0o644):
+            raise ValueError("supplemental input changed: " + name)
     shutil.copytree(package, destination, symlinks=False)
     for name, expected_file in spec["files"].items():
         copied = destination / name
@@ -63,6 +73,12 @@ def prepare(source: Path, out: Path, destination: Path, spec: dict) -> None:
         if (not stat.S_ISREG(info.st_mode) or sha(copied) != expected_file["sha256"]
                 or stat.S_IMODE(info.st_mode) != expected_file["mode"]):
             raise ValueError("copied signing input changed: " + name)
+    for name, binding in supplements.items():
+        copied = destination / name
+        shutil.copyfile(source / binding["source"], copied)
+        copied.chmod(binding["mode"])
+        if copied.is_symlink() or sha(copied) != binding["sha256"]:
+            raise ValueError("copied supplemental signing input changed: " + name)
     config = destination / "signing/build_props_config.py"
     previous = config.read_bytes()
     command = [sys.executable, "-B", str(source / "build/util/version.py"), "--official",
