@@ -1,11 +1,11 @@
 # NeAntik changelog
 
-## Direct 0.9.2 (202) — development candidate, not released
+## Direct 0.9.2 (202) — published public alpha
 
 - Added versioned balanced/strict privacy presets, a local blank start page, explicit WebRTC policy, per-profile permissions, standard-font protection, WebGL debug-renderer reduction and optional letterboxing. Existing saved profiles preserve their choices.
 - Required proxy selection is fixed when creating network contexts. Owned-fixture tests cover extension DIRECT override, proxy failure/recovery, A→B→A storage, disk cache and TLS-session separation, workers, WebSocket and downloads. Packet-wide leak freedom and absolute anonymity are not claimed.
 - Bundled CERT/HaGeZi domain protection, limited tracking-query cleanup and Chromium bounce-tracking mitigation include effective-state disclosure and temporary tracker exceptions. This is not full Safe Browsing or downloaded-file scanning.
-- Added ephemeral-profile lifecycle, derived-cache-safe encrypted backup/restore, extension permission warnings, privacy passport and bounded authenticated update downloading. Integrated manager/release qualification is pending; WebKit remains deferred.
+- Added ephemeral-profile lifecycle, derived-cache-safe encrypted backup/restore, extension permission warnings, privacy passport and bounded authenticated update downloading. Exact manager A→B→A, scoped native privacy checks, separate signed backup QA, Apple ZIP/DMG, anonymous public downloads and Sites162 live binding passed on this Mac; WebKit remains deferred. See [release evidence](releases/v0.9.2.json).
 - Build/relink sources, license notices and privacy limitations are documented in [privacy modes](docs/PRIVACY_MODES.md) and [recipient replay](docs/RELINK_PRIVACY_V1.md). Per-site secret derivation remains research, not an enabled identity feature.
 
 ## Direct 0.9.1 (201) — published public alpha

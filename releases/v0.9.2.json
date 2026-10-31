@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "version": "0.9.2",
+  "tag": "v0.9.2",
+  "build": 202,
+  "channel": "public-alpha",
+  "publishedAt": "2026-10-31T16:07:31Z",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.9.2",
+  "sourceCommit": "a90a9345f902c2d202ccf7bb73bacb28bcb16bb6",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.80",
+    "webkit": "Deferred; existing data preserved; launch unavailable",
+    "signedFrameworkSHA256": "03852e945564d2e00db3849e9a26c560a0e0ad22836e8a8e83afbe50ce2e8047",
+    "sourceContractSHA256": "d2990face54ab8e721aa45404cf6de866d348c96dda7161ece04826d84845983"
+  },
+  "assets": [
+    {
+      "name": "NeAntik-0.9.2-arm64-notarized.zip",
+      "bytes": 183376570,
+      "sha256": "2e731d50cf2a98be0d9bf79eef3abaf26fac3fe901ac58d7978f59800c046238"
+    },
+    {
+      "name": "NeAntik-0.9.2-arm64-notarized.zip.sha256",
+      "bytes": 100,
+      "sha256": "405ca6b226013bdf08f509b6e87110ec6d3671040c66cec435ec8cf8a58ed9d5"
+    },
+    {
+      "name": "NeAntik-0.9.2-arm64-notarized.dmg",
+      "bytes": 208914426,
+      "sha256": "08715f4fef852a27a88054e2a0c30a3e40eb55d7b98df5473d902715ee7aa52e"
+    },
+    {
+      "name": "NeAntik-0.9.2-arm64-notarized.dmg.sha256",
+      "bytes": 100,
+      "sha256": "bd39ed3ab1181f87c6c957ba7455fc634d5f1d654146b46f418f9f82f70f8193"
+    },
+    {
+      "name": "NeAntik-0.9.2-source.zip",
+      "bytes": 37540160,
+      "sha256": "9a0a60f269cd81cf36af8d2999081f5b724ae9722ed52f3a662511507f10a3dc"
+    },
+    {
+      "name": "NeAntik-0.9.2-source-offer.json",
+      "bytes": 2877,
+      "sha256": "21918f6e7c36cf1bd36b4d0de86165f42d6f6eb8014f1c3bcdb8779b4091ba00"
+    },
+    {
+      "name": "NeAntik-0.9.2-fingerprint-attestation.json",
+      "bytes": 1372,
+      "sha256": "fc86a0b254d4950324e51f5aefcacdecebf27a022fcd3f5b2af0b008cf018364"
+    },
+    {
+      "name": "NeAntik-0.9.2-privacy-qualification.md",
+      "bytes": 3853,
+      "sha256": "fd8a0ab90eb2c1638b2e08227b07d1942210c6fdef8c3e84a91894772c9c5c9a"
+    }
+  ],
+  "site": {
+    "updated": true,
+    "liveVersion": "0.9.2",
+    "liveBuild": 202,
+    "sitesVersion": 162,
+    "sourceCommit": "14431becc4f8ec568f7867facf845c93bddce920",
+    "deploymentID": "appgdep_6ae61300c2888191b1de57d1cdb8183f",
+    "url": "https://browser.free"
+  },
+  "verificationScope": [
+    "DeveloperID, AppleAccepted ZIP/DMG, stapling and Gatekeeper",
+    "All8GitHub server asset digests/sizes matched; anonymous exactconsumer ZIP/DMG passed",
+    "Exact final manager signed A-B-A; unchanged frozenruntime18 scoped native privacy/network controls retained",
+    "Manual protected manager Google/Booking through authenticated localHTTPproxy, normalTLS; strict policy, passport and ephemeral purge observed on unchanged UI/runtime surfaces",
+    "Separate signedQA realDataProtectionKeychain backup normal/export/restore/wrongpassword/corruption and abrupt crash rollback/rollforward passed;58backup regression tests passed",
+    "Sites162 build/40tests passed; live homepage/release/download and signedfeed binding passed; SEO161 preserved",
+    "Anonymous sourceofferGET and sourceZIP availability;3378entry known-secret scan PASS; immutable0.9.1 base5parts retained"
+  ],
+  "limitations": [
+    "Public alpha, not stable1.0; no absolute anonymity or universal unlinkability",
+    "Google SafeBrowsing off; CERT/HaGeZi are bounded domain filters, not downloaded-file scanning",
+    "OneMac qualification; no all-path DNS/UDP/IPv6 guarantee, successfulTURNmedia, browser-nativefontorigincanary or fullhardware cohorts",
+    "Remote proxy resolving arbitrary hostname to privateIP remains proxy trust boundary",
+    "Separate signedQA backup is not an exactproductionGUI operation or cross-Mac restore proof",
+    "Site-specific secret derivation researched, not enabled; existing31bit identity seed not cryptographic secret",
+    "No fullclean Chromium rebuild, independentrecipient hardware or historicalSDK byteequivalence"
+  ],
+  "rollback": {
+    "tag": "v0.9.1",
+    "retained": true
+  },
+  "qualificationReport": "https://github.com/AffPapa/neantik/releases/download/v0.9.2/NeAntik-0.9.2-privacy-qualification.md"
+}
