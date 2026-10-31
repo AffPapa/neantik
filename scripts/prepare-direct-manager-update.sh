@@ -26,6 +26,10 @@ CANDIDATE_RUNTIME="$CANDIDATE_APP/Contents/Resources/NeAntik Browser.app"
 BUILD_SUPPORT_DIR="${NEANTIK_BUILD_SUPPORT_DIR:-/private/tmp/neantik-direct-manager-update}"
 SECURITY_BASELINE_ARGS=()
 PREPARATION_MODE="${NEANTIK_MANAGER_PREPARATION_MODE:-complete}"
+case "${NEANTIK_CHROMIUM_ONLY:-0}" in
+  0|1) ;;
+  *) echo "NEANTIK_CHROMIUM_ONLY must be 0 or 1." >&2; exit 64 ;;
+esac
 case "$PREPARATION_MODE" in
   complete) ;;
   bundle-only)
@@ -419,6 +423,11 @@ python3 "$PROJECT_DIR/scripts/sanitize-manager-rpaths.py" "$CANDIDATE_APP/Conten
 xcrun strip -S "$CANDIDATE_APP/Contents/MacOS/NeAntik"
 cp "$PROJECT_DIR/Resources/Info.plist" \
   "$CANDIDATE_APP/Contents/Info.plist"
+if [[ "${NEANTIK_CHROMIUM_ONLY:-0}" == "1" ]]; then
+  /usr/libexec/PlistBuddy \
+    -c 'Add :NeAntikEngineScope string chromium-only' \
+    "$CANDIDATE_APP/Contents/Info.plist"
+fi
 if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
   python3 "$PROJECT_DIR/scripts/package-update-helpers.py" "$CANDIDATE_APP" "$BIN_PATH" -
 else
