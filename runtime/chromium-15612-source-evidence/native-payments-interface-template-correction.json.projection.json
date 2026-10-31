@@ -1,0 +1,47 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "80cc98dc6c41604aee6ba33d4c5aed94469bc275e4d6dd2245f7d7acf5e3845d",
+  "payload": {
+    "argsChanged": false,
+    "at": "2026-10-09T02:09:52.833986+00:00",
+    "buildFlagsChanged": false,
+    "change": "Remove only stale manageLink interface property; preserve hidden/removed account link policy, ESLint rule, all real handlers",
+    "failureObservationSHA256": "fcef92513b02123846172dcee5d9ac3b3ce0064be79ac4771d34aa5ef8c0727a",
+    "fingerprintPolicyChanged": false,
+    "licenseBoundary": "Existing Chromium BSD source and ungoogled BSD-3-Clause prerequisite; independently written one-line source correction",
+    "nativeJobs": 2,
+    "patchSHA256": "aa959175a54598162c839f7b12788ab446d9f2bf354f7c96ed8edae9a3fe3d77",
+    "postimages": {
+      "chrome/browser/resources/settings/autofill_page/payments/payments_page.ts": "f092a85f61010931ea3063dd2a7344b2e1bcf34c5a7411cb1b9c36ebc29b7a47"
+    },
+    "preimages": {
+      "chrome/browser/resources/settings/autofill_page/payments/payments_page.ts": "709734b6ec9ca55029784fc807764cd137d4d0cd50bf77aed34d825002477b9d"
+    },
+    "prerequisite": "common/extra/ungoogled-chromium/remove-uneeded-ui.patch",
+    "prerequisitePatchSHA256": "fd90f70550dc6ccf0c0c165a9eefe046c3a52afeba6d456c6d167e4cdd84ee0b",
+    "reason": "Removed UI and listener left one stale Lit dollar-map interface member; native ESLint detects nonexistent element",
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "sourcePath": "chrome/browser/resources/settings/autofill_page/payments/payments_page.ts",
+    "status": "confirmed-source-correction-native-target-required",
+    "templateUnchangedSHA256": "9a0caa228c21ab5b9aef539b71344e5bd5a4bc3ed061b3ea2081d6d816e1962a"
+  },
+  "payloadType": "json",
+  "receipt": "native-payments-interface-template-correction.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v198-v193-python-regression-failures-and-recipient-static-check-20261027",
+  "observedAtUTC": "2026-10-27T07:48:42Z",
+  "status": "FULL_PYTHON_2002_TESTS_2_FAILURES_2_ERRORS_55_SKIPPED; ROOT_CAUSES_IDENTIFIED; RECIPIENT_STATIC_CHECK_PASS",
+  "python": {
+    "exitCode": 1,
+    "tests": 2002,
+    "failures": [
+      {
+        "test": "test_checked_in_notices_equal_fresh_public_metadata_render",
+        "kind": "ERROR",
+        "finding": "current source checkout lacks runtime/source-provenance.json required by the Chromium 156.48 notice generator"
+      },
+      {
+        "test": "test_packaging_pins_the_signed_nested_binary_before_outer_signing",
+        "kind": "ERROR",
+        "finding": "synthetic host fixture mocks an obsolete WebGPU helper; current notice preflight calls _webgpu_image_binding and fixture has no WebGPU image"
+      },
+      {
+        "test": "test_source_candidate_must_remain_pending_until_runtime_promotion",
+        "kind": "FAIL",
+        "finding": "test mutates the current 156.48 source-only lock into a legacy version but does not supply the legacy commonChromium/macPackaging schema"
+      },
+      {
+        "test": "test_local_audit_keeps_release_blocked",
+        "kind": "FAIL",
+        "finding": "the security-baseline verifier reports a source-only lock without tuple verification as an error without the audit runner expected blocked prefix; release remains blocked"
+      }
+    ],
+    "errors": 2,
+    "skipped": 55,
+    "sourceUnchangedDuringRun": true,
+    "privateLogSHA256": "8a0dbb6202f101274551892010c61aa8031a443a968d757df25c4867303c056f",
+    "privateLog": "/private/tmp/neantik-v193-python-regression-ysjj0wmd/unittest.log"
+  },
+  "provenanceDiagnosis": {
+    "trackedSourceLockProvenanceSHA256": "3e28285531ef15b16a1d5cd83cf9f9a96c46517e2140adacd0099f1b99074922",
+    "signedCandidateProvenanceSHA256": "c37cfcd0ddb4104f1e94ee9d12b109e957f210ad2cf430ffd4709d863ff2ef59",
+    "candidateLockMatchesCandidateProvenance": true,
+    "candidateLockAndProvenanceMatchV193SourceContract": "PASS via verify_lock",
+    "lockDifference": "only sourceProvenanceSHA256 differs",
+    "sourceCheckoutProvenancePresent": false,
+    "candidateModified": false
+  },
+  "recipientStaticCheck": {
+    "frameworks": "/private/tmp/neantik-v197-v135-recipient-staging/Frameworks-relocation-check",
+    "scriptSHA256": "5ab4576f69d6f92f520f1d2058019e76ffd25e6c31487dbf034344284019a012",
+    "result": "PASS static no system-WebKit fallback and relocatable RPATHs",
+    "signed": false,
+    "loaded": false
+  },
+  "limitations": [
+    "The full Python regression is FAIL, not release qualification.",
+    "Signed candidate and historical evidence are unchanged.",
+    "No claims of proxy runtime, recipient replacement/load, licenses or final release."
+  ],
+  "nextAction": "Restore exact candidate-bound provenance and lock in a new source commit, correct stale tests/blocked classification without relaxing release checks, and run targeted verification before a new full regression."
+}

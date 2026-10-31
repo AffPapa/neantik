@@ -1,0 +1,51 @@
+{
+  "baseOffer": {
+    "manifestSHA256": "24b63a6dc7a227594ab3217cdc9948feb3feea9fa1d78566b5db66f7d3d296a9",
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v287-v135-runtime-notice-source-offer"
+  },
+  "checks": {
+    "all28SupplementBaseAndPayloadBindings": "PASS",
+    "all612OfferComponentsHashAndSize": "PASS",
+    "exactBuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "packageOwnedWebkitCheckOnly": "PASS_OWNED_WEBKIT_EXACT_BUILD_SOURCE_AND_OVERLAY_CHECK_ONLY",
+    "productionHostBuildSHA256": "dcdf45840aaa1428fdf3620d84e5c22c3a9a1e329e9423eb8be2e5bd65282880",
+    "v287BaseManifestUnchanged": "PASS"
+  },
+  "id": "V289",
+  "networkBoundary": {
+    "httpsClient": "curl https://timestamp.apple.com/ failed to connect to port 443 (exit 7)",
+    "systemProxy": "no active HTTP/HTTPS/SOCKS proxy flags",
+    "timestampBypass": "not used; no signing retry"
+  },
+  "observedAtUTC": "2026-10-27T18:17:14Z",
+  "open": [
+    "recipient must apply overlay and reproduce host build",
+    "complete corresponding-source/build dependency closure not proven",
+    "legal applicability/source obligations remain open",
+    "timestamped signing and exact-candidate Google/Booking/proxy runtime gates remain open"
+  ],
+  "releaseQualified": false,
+  "scope": "Private draft source-offer supplement for the exact production-mode standalone WebKit host build inputs. No candidate bytes changed; no launch, runtime, signing, notarization, publication, or release qualification.",
+  "status": "V288_HOST_SOURCE_SUPPLEMENT_INTEGRITY_AND_EXACT_PACKAGE_CONSUMER_PREFLIGHT_PASS; RECIPIENT_REBUILD_AND_LEGAL_CLOSURE_OPEN",
+  "supplementOffer": {
+    "addedComponents": 29,
+    "baseComponents": 583,
+    "buildSupportInputCount": 3,
+    "changedFromBase": 7,
+    "changedPaths": [
+      "Sources/WebKitHostEntry/HostEntry.swift",
+      "Sources/NeAntik/WebKitHostChildRuntime.swift",
+      "Sources/NeAntik/WebKitProfileBrowser.swift",
+      "Sources/NeAntik/WebKitHostChildBootstrap.swift",
+      "Sources/NeAntik/WebKitProxyConfigurationFactory.swift",
+      "Package.swift",
+      "scripts/build-webkit-standalone-host.py"
+    ],
+    "componentCount": 612,
+    "hostSwiftSourceInputCount": 25,
+    "manifestSHA256": "73b83130fc540e65dc238f6fe510e831654b39a93fb691690de1532335ebcc42",
+    "overlayInputCount": 28,
+    "overlayManifestSHA256": "cf9da7167dfe1765ab3bde8ef0aba502ee66f2c289ea5c7467286b45c755ec3b",
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v288-v135-webkit-host-source-supplement"
+  }
+}

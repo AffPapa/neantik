@@ -1,0 +1,9 @@
+--- a/Source/WebGPU/WebGPU/Adapter.mm
++++ b/Source/WebGPU/WebGPU/Adapter.mm
+@@ -255,3 +255,6 @@
+ {
+     return WebGPU::Metal::fromAPI(adapter).isXRCompatible();
+ }
++
++// Disposable recipient relink marker; no runtime behavior change.
++__attribute__((used)) static const char neantikRecipientRelinkMarker[] = "NEANTIK_RECIPIENT_RELINK_V446_20261028";

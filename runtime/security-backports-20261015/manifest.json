@@ -1,0 +1,497 @@
+{
+  "schemaVersion": 1,
+  "status": "source-applied-not-built-or-runtime-qualified",
+  "securityBatch": "2026-10-15",
+  "securityReference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_01886704284.html",
+  "baseChromiumVersion": "156.0.8078.12",
+  "baseChromiumCommit": "634b046faf2137b83af71c87baf362b533af9104",
+  "baseV8Commit": "4b33f15d4d172248a95629d6aa9917b20a79ad76",
+  "baseFontSourceContractSHA256": "e0eea87dd2bfbaa8561d199f89f366c02238df252666dad37cb4ff61d98d5f4b",
+  "sourceContractPinStatus": "historical font contract preserved;new additive source contract pending",
+  "orderedPatches": [
+    {
+      "order": 1,
+      "issue": "568719351",
+      "repository": "chromium/src",
+      "commit": "d50992ebe4421079a6f9782c7e8a4d0eb3f14c5f",
+      "upstreamReference": "https://chromium.googlesource.com/chromium/src/+/d50992ebe4421079a6f9782c7e8a4d0eb3f14c5f",
+      "path": "runtime/security-backports-20261015/0001-prerender-568719351.patch",
+      "sha256": "7fc8d7af3ff614bbe7d8991927460db1c973481832c71a86749fa2703126dcd7",
+      "applyRoot": ".",
+      "strip": 1,
+      "reviewedDependencies": "Existing15612source;source-apply only;compilation/behavior not yet qualified",
+      "sourceApplyAndReverseCheck": "passed on owned temporary copies including upstream test files",
+      "beforeFiles": [
+        {
+          "path": "content/browser/preloading/prerender/prerender_browsertest.cc",
+          "beforeSHA256": "b59d16accde3a863cd523060d555c7905556735ce8f46f9fc6fcf19dca371786"
+        },
+        {
+          "path": "content/browser/renderer_host/navigation_request.cc",
+          "beforeSHA256": "8658ddec0c4ca3690b2d606a4b883965080ff1e280478f67b88f49c28896b396"
+        }
+      ],
+      "files": [
+        {
+          "path": "content/browser/preloading/prerender/prerender_browsertest.cc",
+          "change": "modify",
+          "beforeSHA256": "b59d16accde3a863cd523060d555c7905556735ce8f46f9fc6fcf19dca371786",
+          "upstreamPostimageGitBlob": "fb34bf5a64c0ce996eb54e81ebc282733df44c38"
+        },
+        {
+          "path": "content/browser/renderer_host/navigation_request.cc",
+          "change": "modify",
+          "beforeSHA256": "8658ddec0c4ca3690b2d606a4b883965080ff1e280478f67b88f49c28896b396",
+          "upstreamPostimageGitBlob": "4934a6d51997ab50b9f644349d6e5b3ab59065c5"
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "issue": "567638392",
+      "repository": "chromium/src",
+      "commit": "6f8bd0510049073dacc94db8968ba350678da324",
+      "upstreamReference": "https://chromium.googlesource.com/chromium/src/+/6f8bd0510049073dacc94db8968ba350678da324",
+      "path": "runtime/security-backports-20261015/0002-dom-567638392.patch",
+      "sha256": "8dfd33f67a23428ee1a1215cce9c3b043fdd03b8032f06e58e0c5a827aabc996",
+      "applyRoot": ".",
+      "strip": 1,
+      "reviewedDependencies": "Existing15612source;source-apply only;compilation/behavior not yet qualified",
+      "sourceApplyAndReverseCheck": "passed on owned temporary copies including upstream test files",
+      "beforeFiles": [
+        {
+          "path": "third_party/blink/renderer/core/dom/element.cc",
+          "beforeSHA256": "4730e00a37a3df058cd8825352c8c5c062108201a10a394522fe617fdbf29283"
+        }
+      ],
+      "files": [
+        {
+          "path": "third_party/blink/renderer/core/dom/element.cc",
+          "change": "modify",
+          "beforeSHA256": "4730e00a37a3df058cd8825352c8c5c062108201a10a394522fe617fdbf29283",
+          "upstreamPostimageGitBlob": "2fc53b089283516830459b2ab58dfe05404444cd"
+        },
+        {
+          "path": "third_party/blink/web_tests/external/wpt/html/semantics/forms/the-datalist-element/list-id-insertion-crash.html",
+          "change": "add",
+          "beforeSHA256": null,
+          "upstreamPostimageGitBlob": "77823aeb67e4e5f1fdf3b3f038465ea1049d4bd2"
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "issue": "568831769",
+      "repository": "v8/v8",
+      "commit": "4e469dd5830b78b8fea1318cbabe95c2682e974b",
+      "upstreamReference": "https://chromium.googlesource.com/v8/v8/+/4e469dd5830b78b8fea1318cbabe95c2682e974b",
+      "path": "runtime/security-backports-20261015/0003-v8-568831769-568831769.patch",
+      "sha256": "7d39cbdaa85422e88358bdbd5a603ce14ce17d552d41c92c14608e12ca548b9c",
+      "applyRoot": "v8",
+      "strip": 1,
+      "reviewedDependencies": "Existing15612source;source-apply only;compilation/behavior not yet qualified",
+      "sourceApplyAndReverseCheck": "passed on owned temporary copies including upstream test files",
+      "beforeFiles": [
+        {
+          "path": "src/codegen/compiler.cc",
+          "beforeSHA256": "d56c6a7c49355d807cc3cc753b7eb87a500fb2aa91387db2cda3f3e04e35ee0e"
+        },
+        {
+          "path": "src/codegen/compiler.h",
+          "beforeSHA256": "34a6cbf6a2dc2f984ea293ccd5678d4df36420b566950604261e695600d18bd1"
+        },
+        {
+          "path": "src/snapshot/code-serializer.cc",
+          "beforeSHA256": "3bde9c526e0412f07762b0812c9b3ec1b5670d64e9bb0bcd0d20aa287150c741"
+        },
+        {
+          "path": "src/snapshot/code-serializer.h",
+          "beforeSHA256": "2f6b770181738757a86e0cc1c7227083427d9c398247ea996649b547d71afa65"
+        },
+        {
+          "path": "test/unittests/api/deserialize-unittest.cc",
+          "beforeSHA256": "fe6da5cfada6346d4f3a2207f18b1621f7731b39fe7de3115e8772ab8724047d"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/codegen/compiler.cc",
+          "change": "modify",
+          "beforeSHA256": "d56c6a7c49355d807cc3cc753b7eb87a500fb2aa91387db2cda3f3e04e35ee0e",
+          "upstreamPostimageGitBlob": "0a3599ee41c45b2cfdf6fc97a86ec678603fcadf"
+        },
+        {
+          "path": "src/codegen/compiler.h",
+          "change": "modify",
+          "beforeSHA256": "34a6cbf6a2dc2f984ea293ccd5678d4df36420b566950604261e695600d18bd1",
+          "upstreamPostimageGitBlob": "cfa6af01010b8041e3b20f5d1b4b72acfa518741"
+        },
+        {
+          "path": "src/snapshot/code-serializer.cc",
+          "change": "modify",
+          "beforeSHA256": "3bde9c526e0412f07762b0812c9b3ec1b5670d64e9bb0bcd0d20aa287150c741",
+          "upstreamPostimageGitBlob": "78ba29eeca3ea84322b00b763649423ace1bf671"
+        },
+        {
+          "path": "src/snapshot/code-serializer.h",
+          "change": "modify",
+          "beforeSHA256": "2f6b770181738757a86e0cc1c7227083427d9c398247ea996649b547d71afa65",
+          "upstreamPostimageGitBlob": "6cfafc4d26b1a9f080c113383e89d581a30b2bce"
+        },
+        {
+          "path": "test/unittests/api/deserialize-unittest.cc",
+          "change": "modify",
+          "beforeSHA256": "fe6da5cfada6346d4f3a2207f18b1621f7731b39fe7de3115e8772ab8724047d",
+          "upstreamPostimageGitBlob": "fb9fb9983b7d21d491ff015987bf324f2e11a23f"
+        }
+      ]
+    },
+    {
+      "order": 4,
+      "issue": "568937999",
+      "repository": "chromium/src",
+      "commit": "eb3f43746d10e5627368c2340cab1ed76d494973",
+      "upstreamReference": "https://chromium.googlesource.com/chromium/src/+/eb3f43746d10e5627368c2340cab1ed76d494973",
+      "path": "runtime/security-backports-20261015/0004-core-568937999.patch",
+      "sha256": "bf05c1dbec3a8ab9fc38fe08e41910ca70653827f19ac34b0217004547cb90e7",
+      "applyRoot": ".",
+      "strip": 1,
+      "reviewedDependencies": "Existing15612source;source-apply only;compilation/behavior not yet qualified",
+      "sourceApplyAndReverseCheck": "passed on owned temporary copies including upstream test files",
+      "beforeFiles": [
+        {
+          "path": "content/browser/renderer_host/text_input_manager.cc",
+          "beforeSHA256": "22f9a5fd103252ea2b8fa375607eb749e3bc46f22c2f50d50570242b9aead29f"
+        },
+        {
+          "path": "content/browser/renderer_host/text_input_manager.h",
+          "beforeSHA256": "b6acd10944e89623c056bbadfc4367b5f7678eddc23532a782d6fcdfeec2be16"
+        },
+        {
+          "path": "content/browser/renderer_host/text_input_manager_unittest.cc",
+          "beforeSHA256": "5bba7eddae6bfcfb7d4c20fd5d8182624b3651daf5a0d18873bb58aa7783cfc0"
+        }
+      ],
+      "files": [
+        {
+          "path": "content/browser/renderer_host/text_input_manager.cc",
+          "change": "modify",
+          "beforeSHA256": "22f9a5fd103252ea2b8fa375607eb749e3bc46f22c2f50d50570242b9aead29f",
+          "upstreamPostimageGitBlob": "9fce7e930e5bafddad787a627eae257c124b33ab"
+        },
+        {
+          "path": "content/browser/renderer_host/text_input_manager.h",
+          "change": "modify",
+          "beforeSHA256": "b6acd10944e89623c056bbadfc4367b5f7678eddc23532a782d6fcdfeec2be16",
+          "upstreamPostimageGitBlob": "b1d249aa5876a271b6eded1c66f5e0c26bd0cdb9"
+        },
+        {
+          "path": "content/browser/renderer_host/text_input_manager_unittest.cc",
+          "change": "modify",
+          "beforeSHA256": "5bba7eddae6bfcfb7d4c20fd5d8182624b3651daf5a0d18873bb58aa7783cfc0",
+          "upstreamPostimageGitBlob": "217b62f1d65312d42140d29743880ae9818e8902"
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "issue": "569038297",
+      "repository": "chromium/src",
+      "commit": "54a60b5c28c32cbec956fb83af92142cd5b08568",
+      "upstreamReference": "https://chromium.googlesource.com/chromium/src/+/54a60b5c28c32cbec956fb83af92142cd5b08568",
+      "path": "runtime/security-backports-20261015/0005-svg-569038297.patch",
+      "sha256": "d23978e0ba55f0ce9cceb17ebf09d5465e1deea92f231cc31b2e1f6e48e0c7da",
+      "applyRoot": ".",
+      "strip": 1,
+      "reviewedDependencies": "Existing15612source;source-apply only;compilation/behavior not yet qualified",
+      "sourceApplyAndReverseCheck": "passed on owned temporary copies including upstream test files",
+      "beforeFiles": [
+        {
+          "path": "third_party/blink/renderer/core/svg/svg_resource.cc",
+          "beforeSHA256": "589d2be518853b8282802aa8ab1cbd7e6747e914ade5e9a1183a284842ff4019"
+        }
+      ],
+      "files": [
+        {
+          "path": "third_party/blink/renderer/core/svg/svg_resource.cc",
+          "change": "modify",
+          "beforeSHA256": "589d2be518853b8282802aa8ab1cbd7e6747e914ade5e9a1183a284842ff4019",
+          "upstreamPostimageGitBlob": "92e0c4598467a0df382b7a8717bf0255741c6807"
+        }
+      ]
+    },
+    {
+      "order": 6,
+      "issue": "569286602",
+      "repository": "v8/v8",
+      "commit": "8dd66e1f4f687e137d9a6cfa6628268a1ba7869c",
+      "upstreamReference": "https://chromium.googlesource.com/v8/v8/+/8dd66e1f4f687e137d9a6cfa6628268a1ba7869c",
+      "path": "runtime/security-backports-20261015/0006-v8-569286602-569286602.patch",
+      "sha256": "48f7de2c897914cc76351838aa840ba31f6ae2dc25ee6333bc90af31df08d189",
+      "applyRoot": "v8",
+      "strip": 1,
+      "reviewedDependencies": "Existing15612source;source-apply only;compilation/behavior not yet qualified",
+      "sourceApplyAndReverseCheck": "passed on owned temporary copies including upstream test files",
+      "beforeFiles": [
+        {
+          "path": "src/maglev/maglev-graph-builder.cc",
+          "beforeSHA256": "535ed5a427cc4915b1af4e77b9a97df4f13b27bef8e0ab08dc5bbd1eeaa3a5a4"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/maglev/maglev-graph-builder.cc",
+          "change": "modify",
+          "beforeSHA256": "535ed5a427cc4915b1af4e77b9a97df4f13b27bef8e0ab08dc5bbd1eeaa3a5a4",
+          "upstreamPostimageGitBlob": "ca199bab0fabe67bb4d453fafe8c8a3bd35442d1"
+        },
+        {
+          "path": "test/mjsunit/maglev/regress-569286602-1.js",
+          "change": "add",
+          "beforeSHA256": null,
+          "upstreamPostimageGitBlob": "b89ebdcb4828efa5b6dc82e91af3f464a1560bc3"
+        },
+        {
+          "path": "test/mjsunit/maglev/regress-569286602-2.js",
+          "change": "add",
+          "beforeSHA256": null,
+          "upstreamPostimageGitBlob": "dc186b862a9be6213aeb2b50183f2642f2b19484"
+        }
+      ]
+    },
+    {
+      "order": 7,
+      "issue": "569659194",
+      "repository": "v8/v8",
+      "commit": "d399837d2a9e790736fc05cb36d679215396bd1c",
+      "upstreamReference": "https://chromium.googlesource.com/v8/v8/+/d399837d2a9e790736fc05cb36d679215396bd1c",
+      "path": "runtime/security-backports-20261015/0007-v8-569659194-569659194.patch",
+      "sha256": "1f85c39998504bd47b105791d7b71e29e438b0d49578f103025e0808d621500e",
+      "applyRoot": "v8",
+      "strip": 1,
+      "reviewedDependencies": "Existing15612source;source-apply only;compilation/behavior not yet qualified",
+      "sourceApplyAndReverseCheck": "passed on owned temporary copies including upstream test files",
+      "beforeFiles": [
+        {
+          "path": "src/compiler/js-generic-lowering.cc",
+          "beforeSHA256": "0d8848d89a8f5fb2cc4662563fb8b521ffd9a1e912e1a4c085f896e11118eedd"
+        },
+        {
+          "path": "src/compiler/js-intrinsic-lowering.cc",
+          "beforeSHA256": "e2803d89d4ed78307bc90e541704bf1f6a1a47b94efa2afe48880fc7569014be"
+        },
+        {
+          "path": "src/compiler/js-operator.cc",
+          "beforeSHA256": "f17f1b6a00c95ecbb965a2a6716f7604e9fe7cff5c8f4326827b3d75a88cb991"
+        },
+        {
+          "path": "src/compiler/operator-properties.cc",
+          "beforeSHA256": "bea0d6a90c0ed5bf795ea6c7693a2bf53d823b965b6be11c889eeabc1e41c7fa"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/compiler/js-generic-lowering.cc",
+          "change": "modify",
+          "beforeSHA256": "0d8848d89a8f5fb2cc4662563fb8b521ffd9a1e912e1a4c085f896e11118eedd",
+          "upstreamPostimageGitBlob": "2affa53f2fba678f23771d947771cb0e8fe11b1b"
+        },
+        {
+          "path": "src/compiler/js-intrinsic-lowering.cc",
+          "change": "modify",
+          "beforeSHA256": "e2803d89d4ed78307bc90e541704bf1f6a1a47b94efa2afe48880fc7569014be",
+          "upstreamPostimageGitBlob": "6737cfd9eec75a1bbf99500fb8454c16bb80828d"
+        },
+        {
+          "path": "src/compiler/js-operator.cc",
+          "change": "modify",
+          "beforeSHA256": "f17f1b6a00c95ecbb965a2a6716f7604e9fe7cff5c8f4326827b3d75a88cb991",
+          "upstreamPostimageGitBlob": "5aec87c5ad38468c667307b105b8c9401852ca0e"
+        },
+        {
+          "path": "src/compiler/operator-properties.cc",
+          "change": "modify",
+          "beforeSHA256": "bea0d6a90c0ed5bf795ea6c7693a2bf53d823b965b6be11c889eeabc1e41c7fa",
+          "upstreamPostimageGitBlob": "e19d1bf0ece55bb7517b20d8f5d4b8cdd95ba41b"
+        },
+        {
+          "path": "test/mjsunit/compiler/regress-569659194-1.js",
+          "change": "add",
+          "beforeSHA256": null,
+          "upstreamPostimageGitBlob": "76d1084946c907e3a91a325559aabd8d1a8a2e9e"
+        },
+        {
+          "path": "test/mjsunit/compiler/regress-569659194-2.js",
+          "change": "add",
+          "beforeSHA256": null,
+          "upstreamPostimageGitBlob": "49efb73059af4fb7149e0f4c79e42d83564c5efd"
+        },
+        {
+          "path": "test/mjsunit/compiler/regress-569659194-3.js",
+          "change": "add",
+          "beforeSHA256": null,
+          "upstreamPostimageGitBlob": "0b30f10d2ed3ae8839377e2999c86258aaa6b6c1"
+        }
+      ]
+    },
+    {
+      "order": 8,
+      "issue": "563194341",
+      "repository": "chromium/src",
+      "commit": "08f529c57faad9e8bf7cb3881576d0c5fa4b984e",
+      "upstreamReference": "https://chromium.googlesource.com/chromium/src/+/08f529c57faad9e8bf7cb3881576d0c5fa4b984e",
+      "path": "runtime/security-backports-20261015/0008-workers-563194341.patch",
+      "sha256": "d9e263b871949b14ce41b8c9d859235ed9a439c0eb52864b6bb1a2ee60b7bad7",
+      "applyRoot": ".",
+      "strip": 1,
+      "reviewedDependencies": "Existing15612source;source-apply only;compilation/behavior not yet qualified",
+      "sourceApplyAndReverseCheck": "passed on owned temporary copies including upstream test files",
+      "beforeFiles": [
+        {
+          "path": "content/browser/worker_host/dedicated_worker_host.cc",
+          "beforeSHA256": "7e43fa2a8d99d62d2b3150ad66a559db5bd4b07b9d4dc94acd74e20b960783fa"
+        },
+        {
+          "path": "content/browser/worker_host/dedicated_worker_host.h",
+          "beforeSHA256": "b81a594160850734ac3c36c534a7a83b9541a977b3fb75e051a774ab95ef343a"
+        },
+        {
+          "path": "content/browser/worker_host/dedicated_worker_service_impl_unittest.cc",
+          "beforeSHA256": "f385961858b78447b4a853bc1b87cc5e7e22773cee1c17ede5ad748195669684"
+        },
+        {
+          "path": "content/browser/worker_host/shared_worker_host.cc",
+          "beforeSHA256": "85c95af160a0fdd426844f33daa2aca00047989d3999347970d2d75cf63fb4bf"
+        },
+        {
+          "path": "content/browser/worker_host/shared_worker_host_unittest.cc",
+          "beforeSHA256": "7dfbacbb15c04fc369ed247c130fa7d39966f1e714aadb302c700cb21aa0ecc2"
+        },
+        {
+          "path": "content/browser/worker_host/worker_script_fetcher.cc",
+          "beforeSHA256": "c9f93076f6c081df5e28eeff37a6ac16e195b779d49025e42317e041aef1573a"
+        },
+        {
+          "path": "content/browser/worker_host/worker_script_fetcher.h",
+          "beforeSHA256": "187bda5bcd039e937110d5ef409f508a05029d9208ea13098362ac6f88dbf708"
+        },
+        {
+          "path": "content/browser/worker_host/worker_script_fetcher_unittest.cc",
+          "beforeSHA256": "2f244b8e23430d4d32326bac607717933d560c02a26439fb1dfe768534e66bcf"
+        },
+        {
+          "path": "content/common/features.cc",
+          "beforeSHA256": "72a1756ae91f9ebbfd7c514728d1c92aca337047d0415d8801e0d09a77de7ddd"
+        },
+        {
+          "path": "content/common/features.h",
+          "beforeSHA256": "2046d8d71a6733468e0815f27b214280a690cd64e79047f512632fe97046583f"
+        },
+        {
+          "path": "third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-credentialless.tentative.https.any.worker-expected.txt",
+          "beforeSHA256": "48c947834d76271a32cf9a2aaf96d2b51045997cb3383db44e755cf39c84a984"
+        },
+        {
+          "path": "third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-require-corp.tentative.https.any.worker-expected.txt",
+          "beforeSHA256": "fa426d488cbf51b51930f0bbf7bbba56bdbe815fadc3f91b265407534d6508ed"
+        }
+      ],
+      "files": [
+        {
+          "path": "content/browser/worker_host/dedicated_worker_host.cc",
+          "change": "modify",
+          "beforeSHA256": "7e43fa2a8d99d62d2b3150ad66a559db5bd4b07b9d4dc94acd74e20b960783fa",
+          "upstreamPostimageGitBlob": "b206e6eb313d68dca8cda62d874bceed13438eeb"
+        },
+        {
+          "path": "content/browser/worker_host/dedicated_worker_host.h",
+          "change": "modify",
+          "beforeSHA256": "b81a594160850734ac3c36c534a7a83b9541a977b3fb75e051a774ab95ef343a",
+          "upstreamPostimageGitBlob": "5bb431950f2b9f752927ab0e946342449f3e4e40"
+        },
+        {
+          "path": "content/browser/worker_host/dedicated_worker_service_impl_unittest.cc",
+          "change": "modify",
+          "beforeSHA256": "f385961858b78447b4a853bc1b87cc5e7e22773cee1c17ede5ad748195669684",
+          "upstreamPostimageGitBlob": "6bafa747a6e9e4b14fdeb196cb238f5ffd955a58"
+        },
+        {
+          "path": "content/browser/worker_host/shared_worker_host.cc",
+          "change": "modify",
+          "beforeSHA256": "85c95af160a0fdd426844f33daa2aca00047989d3999347970d2d75cf63fb4bf",
+          "upstreamPostimageGitBlob": "dcbf9f96ecefa5789830d59ba282050dbfd066ad"
+        },
+        {
+          "path": "content/browser/worker_host/shared_worker_host_unittest.cc",
+          "change": "modify",
+          "beforeSHA256": "7dfbacbb15c04fc369ed247c130fa7d39966f1e714aadb302c700cb21aa0ecc2",
+          "upstreamPostimageGitBlob": "687761eb64a0f8c7886fa0f29cabe6d9c26655f3"
+        },
+        {
+          "path": "content/browser/worker_host/worker_script_fetcher.cc",
+          "change": "modify",
+          "beforeSHA256": "c9f93076f6c081df5e28eeff37a6ac16e195b779d49025e42317e041aef1573a",
+          "upstreamPostimageGitBlob": "77f5160431952e92a344ce2ae9e0379e791b790f"
+        },
+        {
+          "path": "content/browser/worker_host/worker_script_fetcher.h",
+          "change": "modify",
+          "beforeSHA256": "187bda5bcd039e937110d5ef409f508a05029d9208ea13098362ac6f88dbf708",
+          "upstreamPostimageGitBlob": "de982a15254c58fe8eddccaa8ab66f1c9aa9621c"
+        },
+        {
+          "path": "content/browser/worker_host/worker_script_fetcher_unittest.cc",
+          "change": "modify",
+          "beforeSHA256": "2f244b8e23430d4d32326bac607717933d560c02a26439fb1dfe768534e66bcf",
+          "upstreamPostimageGitBlob": "c86dcb8e086ef96ca6d0d7f609c21cd233953ff7"
+        },
+        {
+          "path": "content/common/features.cc",
+          "change": "modify",
+          "beforeSHA256": "72a1756ae91f9ebbfd7c514728d1c92aca337047d0415d8801e0d09a77de7ddd",
+          "upstreamPostimageGitBlob": "0a49092b06056f90e06316ea80cfd61e9831b33d"
+        },
+        {
+          "path": "content/common/features.h",
+          "change": "modify",
+          "beforeSHA256": "2046d8d71a6733468e0815f27b214280a690cd64e79047f512632fe97046583f",
+          "upstreamPostimageGitBlob": "76487c0d8d3606e2133cfba47bf1d199491dba3c"
+        },
+        {
+          "path": "third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-credentialless.tentative.https.any.worker-expected.txt",
+          "change": "delete",
+          "beforeSHA256": "48c947834d76271a32cf9a2aaf96d2b51045997cb3383db44e755cf39c84a984",
+          "upstreamPostimageGitBlob": "0000000000000000000000000000000000000000"
+        },
+        {
+          "path": "third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-require-corp.tentative.https.any.worker-expected.txt",
+          "change": "delete",
+          "beforeSHA256": "fa426d488cbf51b51930f0bbf7bbba56bdbe815fadc3f91b265407534d6508ed",
+          "upstreamPostimageGitBlob": "0000000000000000000000000000000000000000"
+        }
+      ]
+    }
+  ],
+  "alreadyIncludedProductionFixes": [
+    {
+      "issue": "501886301",
+      "commit": "90430e752b9669b5054a31d2d4f539cd50ff75e4",
+      "sourceVerification": "All production fix hunks reverse-apply on current source;test context differs and was not executed"
+    },
+    {
+      "issue": "556272421",
+      "commit": "f06e60e56d7f62632ed78bdfd414d89097669734",
+      "sourceVerification": "13files reverse-apply;complete uint64 writer function equals original fix;following unrelated SkPath context differs"
+    }
+  ],
+  "licenseFiles": [
+    "CHROMIUM_LICENSE.txt",
+    "V8_LICENSE.txt"
+  ],
+  "releaseQualified": false,
+  "runtimeBuilt": false,
+  "publicAlphaExceptionAllowed": false,
+  "scope": "Exact upstream patch bytes;no custom partial hunk selection.8newfixes+2preexisting production corrections. Fullsource/build/behavior/release qualification pending.",
+  "patchAffectedPathsAreDisjoint": true,
+  "sourceApplyReadbackFileCount": 35
+}

@@ -3,8 +3,11 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-OUTPUT_APP="$PROJECT_DIR/dist/NeAntik-Integrated.app"
-BASE_APP="$PROJECT_DIR/dist/NeAntik.app"
+OUTPUT_APP="${NEANTIK_INTEGRATED_APP_PATH:-$PROJECT_DIR/dist/NeAntik-Integrated.app}"
+BASE_APP="${NEANTIK_PACKAGE_APP_PATH:-$PROJECT_DIR/dist/NeAntik.app}"
+SIGNING_IDENTITY="${NEANTIK_SIGNING_IDENTITY:--}"
+BACKUP_ENABLED="${NEANTIK_BROWSER_DATA_BACKUP_ENABLED:-0}"
+PROVISIONING_PROFILE="${NEANTIK_DIRECT_PROVISIONING_PROFILE:-}"
 
 usage() {
   echo "Usage: $0 /absolute/path/to/NeAntik\\ Browser.app /absolute/path/to/args.gn /absolute/path/to/chromium/src /absolute/path/to/runtime-candidate-lock.json" >&2
@@ -14,12 +17,72 @@ if [[ $# -ne 4 ]]; then
   usage
   exit 64
 fi
+if [[ "$OUTPUT_APP" != /* || "$BASE_APP" != /* ]]; then
+  echo "Integrated and base manager output paths must be absolute." >&2
+  exit 64
+fi
+if [[ -n "${NEANTIK_INTEGRATED_APP_PATH:-}" && (-e "$OUTPUT_APP" || -L "$OUTPUT_APP") ]]; then
+  echo "Refusing to replace an existing isolated integrated output: $OUTPUT_APP" >&2
+  exit 65
+fi
 
 RUNTIME_APP="$1"
 BUILD_ARGS="$2"
 SOURCE_ROOT="$3"
 CANDIDATE_LOCK="$4"
 SOURCE_PROVENANCE="$(dirname "$SOURCE_ROOT")/source-provenance.json"
+SECURITY_BASELINE_SOURCE="$PROJECT_DIR/runtime/security-baseline.json"
+
+RUNTIME_VERSION="$(
+  plutil -extract fingerprintChromium.chromiumVersion raw -o - \
+    "$CANDIDATE_LOCK" 2>/dev/null || true
+)"
+if [[ "$RUNTIME_VERSION" == 153.* ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-153-port-status.json"
+  SOURCE_CONTRACT_NAME="chromium-153-port-status.json"
+elif [[ "$RUNTIME_VERSION" == "154.0.8037.93" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-154-source-contract.json"
+  SOURCE_CONTRACT_NAME="chromium-154-source-contract.json"
+elif [[ "$RUNTIME_VERSION" == "154.0.8037.98" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-15498-source-contract.json"
+  # The bundled evidence schema pins this public path for M154 contracts.
+  SOURCE_CONTRACT_NAME="chromium-154-source-contract.json"
+elif [[ "$RUNTIME_VERSION" == "155.0.8059.40" ]]; then
+  M155_EVIDENCE_PREFIX="$(python3 "$PROJECT_DIR/scripts/chromium_15540_variant.py" "$CANDIDATE_LOCK")"
+  SOURCE_CONTRACT_NAME="${M155_EVIDENCE_PREFIX}-source-contract.json"
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/$SOURCE_CONTRACT_NAME"
+elif [[ "$RUNTIME_VERSION" == "156.0.8078.12" ]]; then
+  M156_EVIDENCE_PREFIX="$(python3 "$PROJECT_DIR/scripts/chromium_15612_variant.py" "$CANDIDATE_LOCK")"
+  SOURCE_CONTRACT_NAME="${M156_EVIDENCE_PREFIX}-source-contract.json"
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/$SOURCE_CONTRACT_NAME"
+  if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ||
+        "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-security-20261015-v1" ||
+        "$M156_EVIDENCE_PREFIX" == "chromium-15612-component-completion-v1" ]]; then
+    # Additive canonical proof; retain the historical emitted files beside src.
+    SOURCE_PROVENANCE="$PROJECT_DIR/runtime/${M156_EVIDENCE_PREFIX}-port-candidate.json"
+    SECURITY_BASELINE_SOURCE="$(python3 "$PROJECT_DIR/scripts/chromium_15612_font_report.py" --baseline --variant-prefix "$M156_EVIDENCE_PREFIX")"
+  fi
+elif [[ "$RUNTIME_VERSION" == "156.0.8078.48" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-15648-source-contract.json"
+  SOURCE_CONTRACT_NAME="chromium-15648-source-contract.json"
+elif [[ "$RUNTIME_VERSION" == "156.0.8078.74" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-15674-source-contract.json"
+  SOURCE_CONTRACT_NAME="chromium-15674-source-contract.json"
+elif [[ "$RUNTIME_VERSION" == "156.0.8078.80" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-15680-source-contract.json"
+  SOURCE_CONTRACT_NAME="chromium-15680-source-contract.json"
+  if [[ "$(plutil -extract variant raw -o - "$CANDIDATE_LOCK" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ]]; then
+    SOURCE_CONTRACT_NAME="chromium-15680-privacy-v1-source-contract.json"
+    SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/$SOURCE_CONTRACT_NAME"
+    SOURCE_PROVENANCE="$(dirname "$CANDIDATE_LOCK")/source-provenance.json"
+  fi
+elif [[ "$RUNTIME_VERSION" == "152.0.7977.64" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
+  SOURCE_CONTRACT_NAME="chromium-152-source-contract.json"
+else
+  echo "Unsupported Chromium runtime version for packaging: $RUNTIME_VERSION" >&2
+  exit 65
+fi
 
 if [[ "$RUNTIME_APP" != /* || ! -d "$RUNTIME_APP" ]]; then
   echo "NeAntik Browser.app must be an existing absolute path." >&2
@@ -33,13 +96,17 @@ if [[ "$SOURCE_ROOT" != /* || ! -d "$SOURCE_ROOT" ]]; then
   echo "Chromium source root must be an existing absolute path." >&2
   exit 66
 fi
-EXPECTED_BUILD_ARGS="$SOURCE_ROOT/out/Default/args.gn"
-if [[ "$(cd "$(dirname "$BUILD_ARGS")" && pwd -P)/$(basename "$BUILD_ARGS")" !=
-      "$(cd "$(dirname "$EXPECTED_BUILD_ARGS")" && pwd -P)/$(basename "$EXPECTED_BUILD_ARGS")" ]]; then
-  echo "args.gn must be the canonical source-root out/Default/args.gn." >&2
-  exit 65
-fi
+python3 "$PROJECT_DIR/scripts/runtime_build_path.py" \
+  "$SOURCE_ROOT" "$BUILD_ARGS" "$CANDIDATE_LOCK" >/dev/null
 EXPECTED_CANDIDATE_LOCK="$(dirname "$SOURCE_ROOT")/runtime-candidate-lock.json"
+if [[ "$SOURCE_CONTRACT_NAME" == "chromium-15680-privacy-v1-source-contract.json" ]]; then
+  EXPECTED_CANDIDATE_LOCK="$(dirname "$SOURCE_PROVENANCE")/runtime-candidate-lock.json"
+fi
+if [[ "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-v1" ||
+      "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-security-20261015-v1" ||
+      "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-component-completion-v1" ]]; then
+  EXPECTED_CANDIDATE_LOCK="$PROJECT_DIR/runtime/fingerprint-${M156_EVIDENCE_PREFIX}.lock.json"
+fi
 if [[ "$(cd "$(dirname "$CANDIDATE_LOCK")" && pwd -P)/$(basename "$CANDIDATE_LOCK")" !=
       "$(cd "$(dirname "$EXPECTED_CANDIDATE_LOCK")" && pwd -P)/$(basename "$EXPECTED_CANDIDATE_LOCK")" ]]; then
   echo "Candidate lock must be the one emitted beside source provenance." >&2
@@ -55,9 +122,24 @@ if [[ "$CANDIDATE_LOCK" != /* ||
   echo "Chromium candidate lock must be an absolute regular file." >&2
   exit 66
 fi
-"$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
+if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.12" ]]; then
+  if [[ "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-v1" ||
+        "$M156_EVIDENCE_PREFIX" == "chromium-15612-font-system-security-20261015-v1" ||
+        "$M156_EVIDENCE_PREFIX" == "chromium-15612-component-completion-v1" ]]; then
+    # The new variant authenticates its own executed build + later complete FD
+    # proof. Do not relabel it as a fresh scan or historical final9 output.
+    "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE" --runtime-lock "$CANDIDATE_LOCK"
+    python3 "$PROJECT_DIR/scripts/chromium_15612_font_packaging.py" "$SOURCE_ROOT" --variant-prefix "$M156_EVIDENCE_PREFIX"
+  else
+    : "${NEANTIK_M156_BUILD_EVIDENCE:?Set the private final9 executed build evidence directory}"
+    "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" "$SOURCE_PROVENANCE" \
+      --built-source-root "$SOURCE_ROOT" --build-evidence "$NEANTIK_M156_BUILD_EVIDENCE"
+  fi
+else
+  "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
   "$SOURCE_PROVENANCE" \
   --source-root "$SOURCE_ROOT"
+fi
 "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
   "$CANDIDATE_LOCK" \
   "$SOURCE_PROVENANCE"
@@ -74,7 +156,29 @@ if [[ "$RUNTIME_BUNDLE_ID" != "app.neantik.runtime" ||
   echo "Runtime is not a declared NeAntik fingerprint runtime." >&2
   exit 65
 fi
-python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" --check
+if [[ "$RUNTIME_VERSION" != "154.0.8037.93" &&
+      "$RUNTIME_VERSION" != "154.0.8037.98" &&
+      "$RUNTIME_VERSION" != "155.0.8059.40" &&
+      "$RUNTIME_VERSION" != "156.0.8078.12" &&
+      "$RUNTIME_VERSION" != "156.0.8078.48" &&
+      "$RUNTIME_VERSION" != "156.0.8078.74" &&
+      "$RUNTIME_VERSION" != "156.0.8078.80" ]]; then
+  python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" --check
+fi
+if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ||
+      "$RUNTIME_VERSION" == "154.0.8037.98" ||
+      "$RUNTIME_VERSION" == "155.0.8059.40" ||
+      "$RUNTIME_VERSION" == "156.0.8078.12" ||
+      "$RUNTIME_VERSION" == "156.0.8078.48" ||
+      "$RUNTIME_VERSION" == "156.0.8078.74" ||
+      "$RUNTIME_VERSION" == "156.0.8078.80" ]]; then
+  # Generated below in temporary compliance storage from this exact candidate.
+  RUNTIME_NOTICES_FILE=""
+elif [[ "$RUNTIME_VERSION" == 153.* ]]; then
+  RUNTIME_NOTICES_FILE="$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES_153.md"
+else
+  RUNTIME_NOTICES_FILE="$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES.md"
+fi
 
 VERIFY_REPORT="$(mktemp -t nevision-integrated-runtime)"
 COMPLIANCE_DIR="$(mktemp -d -t nevision-runtime-compliance)"
@@ -86,6 +190,17 @@ cleanup() {
   rm -rf "$COMPLIANCE_DIR" "$SNAPSHOT_ROOT"
 }
 trap cleanup EXIT
+if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ||
+      "$RUNTIME_VERSION" == "154.0.8037.98" ||
+      "$RUNTIME_VERSION" == "155.0.8059.40" ||
+      "$RUNTIME_VERSION" == "156.0.8078.12" ||
+      "$RUNTIME_VERSION" == "156.0.8078.48" ||
+      "$RUNTIME_VERSION" == "156.0.8078.74" ||
+      "$RUNTIME_VERSION" == "156.0.8078.80" ]]; then
+  RUNTIME_NOTICES_FILE="$COMPLIANCE_DIR/RUNTIME_INTEGRATION_NOTICES_${RUNTIME_VERSION%%.*}.md"
+  python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" \
+    --runtime-lock "$CANDIDATE_LOCK" --output "$RUNTIME_NOTICES_FILE"
+fi
 "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
   "$RUNTIME_APP" \
   "$VERIFY_REPORT" \
@@ -95,12 +210,20 @@ trap cleanup EXIT
 "$PROJECT_DIR/scripts/generate-runtime-compliance.sh" \
   "$SOURCE_ROOT" \
   "$COMPLIANCE_DIR" \
-  "$CANDIDATE_LOCK"
+  "$CANDIDATE_LOCK" \
+  "$BUILD_ARGS"
 ditto "$RUNTIME_APP" "$SNAPSHOT_RUNTIME"
 cp "$BUILD_ARGS" "$SNAPSHOT_ARGS"
 
-NEANTIK_SIGNING_IDENTITY=- "$PROJECT_DIR/scripts/package-app.sh"
+NEANTIK_PACKAGE_APP_PATH="$BASE_APP" \
+NEANTIK_WEBKIT_HOST_ENABLED=0 \
+NEANTIK_CHROMIUM_ONLY=1 \
+NEANTIK_SIGNING_IDENTITY="$SIGNING_IDENTITY" \
+NEANTIK_BROWSER_DATA_BACKUP_ENABLED="$BACKUP_ENABLED" \
+NEANTIK_DIRECT_PROVISIONING_PROFILE="$PROVISIONING_PROFILE" \
+  "$PROJECT_DIR/scripts/package-app.sh"
 
+mkdir -p "$(dirname "$OUTPUT_APP")"
 rm -rf "$OUTPUT_APP"
 ditto "$BASE_APP" "$OUTPUT_APP"
 
@@ -108,24 +231,91 @@ RESOURCES="$OUTPUT_APP/Contents/Resources"
 EVIDENCE="$RESOURCES/NeAntikRuntimeEvidence"
 LICENSES="$RESOURCES/NeAntikRuntimeLicenses"
 COMPLIANCE="$RESOURCES/NeAntikRuntimeCompliance"
-mkdir -p "$EVIDENCE" "$LICENSES"
+mkdir -p "$LICENSES"
 
 ditto "$SNAPSHOT_RUNTIME" "$RESOURCES/NeAntik Browser.app"
+if [[ "$RUNTIME_VERSION" == "156.0.8078.80" &&
+      "$(plutil -extract variant raw -o - "$CANDIDATE_LOCK" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ]]; then
+  python3 -B "$PROJECT_DIR/scripts/prepare-privacy-runtime-evidence.py" \
+    --project "$PROJECT_DIR" --lock "$CANDIDATE_LOCK" --provenance "$SOURCE_PROVENANCE" \
+    --args "$SNAPSHOT_ARGS" --report "$VERIFY_REPORT" --destination "$EVIDENCE"
+else
+mkdir -p "$EVIDENCE"
 cp "$CANDIDATE_LOCK" \
   "$EVIDENCE/fingerprint-chromium.lock.json"
-cp "$PROJECT_DIR/runtime/security-baseline.json" \
+cp "$SECURITY_BASELINE_SOURCE" \
   "$EVIDENCE/security-baseline.json"
 cp "$PROJECT_DIR/runtime/nevision-patches/series.json" \
   "$EVIDENCE/neantik-patch-series.json"
 cp "$PROJECT_DIR/runtime/apple-device-tuples.json" \
   "$EVIDENCE/apple-device-tuples.json"
-cp "$PROJECT_DIR/runtime/chromium-152-source-contract.json" \
-  "$EVIDENCE/chromium-152-source-contract.json"
+cp "$SOURCE_CONTRACT_FILE" \
+  "$EVIDENCE/$SOURCE_CONTRACT_NAME"
 cp "$SOURCE_PROVENANCE" \
   "$EVIDENCE/source-provenance.json"
+if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ]]; then
+  cp "$PROJECT_DIR/runtime/chromium-154-device-memory-hotfix.json" \
+    "$EVIDENCE/chromium-154-device-memory-hotfix.json"
+  cp "$PROJECT_DIR/runtime/chromium-154-posthotfix-source-snapshot.json" \
+    "$EVIDENCE/chromium-154-posthotfix-source-snapshot.json"
+elif [[ "$RUNTIME_VERSION" == "154.0.8037.98" ]]; then
+  cp "$PROJECT_DIR/runtime/chromium-15498-source-input-manifest.json" \
+    "$EVIDENCE/chromium-15498-source-input-manifest.json"
+  cp "$PROJECT_DIR/runtime/chromium-15498-source-snapshot.json" \
+    "$EVIDENCE/chromium-15498-source-snapshot.json"
+  cp "$PROJECT_DIR/runtime/chromium-15498-rebase-plan.json" \
+    "$EVIDENCE/chromium-15498-rebase-plan.json"
+  mkdir -p "$EVIDENCE/chromium-15498-source-evidence"
+  ditto "$PROJECT_DIR/runtime/chromium-15498-source-evidence" \
+    "$EVIDENCE/chromium-15498-source-evidence"
+elif [[ "$RUNTIME_VERSION" == "155.0.8059.40" ]]; then
+  python3 "$PROJECT_DIR/scripts/chromium_15540_packaged_evidence.py" "$CANDIDATE_LOCK" "$EVIDENCE" --copy
+elif [[ "$RUNTIME_VERSION" == "156.0.8078.12" ]]; then
+  python3 "$PROJECT_DIR/scripts/chromium_15612_packaged_evidence.py" "$CANDIDATE_LOCK" "$EVIDENCE" --copy
+elif [[ "$RUNTIME_VERSION" == "156.0.8078.48" ]]; then
+  mkdir -p "$EVIDENCE/chromium-15648-source-evidence"
+  for name in chromium-15648-source-adoption-v3.json chromium-15648-deps-lock.json chromium-15648-neantik-v3.patch chromium-15648-devtools-typescript6.patch chromium-15648-v8-scope-iterator-compat.patch chromium-15648-rebase-plan.json; do
+    cp "$PROJECT_DIR/runtime/$name" "$EVIDENCE/chromium-15648-source-evidence/$name"
+  done
+elif [[ "$RUNTIME_VERSION" == "156.0.8078.74" ]]; then
+  mkdir -p "$EVIDENCE/chromium-15674-source-evidence"
+  for name in chromium-15674-source-adoption-v1.json chromium-15674-deps-lock.json chromium-15674-neantik.patch chromium-15674-devtools-typescript6.patch chromium-15674-v8-scope-iterator-compat.patch chromium-15674-rebase-plan.json chromium-15674-build-evidence.json chromium-15674-args.gn; do
+    cp "$PROJECT_DIR/runtime/$name" "$EVIDENCE/chromium-15674-source-evidence/$name"
+  done
+elif [[ "$RUNTIME_VERSION" == "156.0.8078.80" ]]; then
+  mkdir -p "$EVIDENCE/chromium-15680-source-evidence"
+  for name in chromium-15680-source-adoption-v1.json chromium-15680-deps-lock.json chromium-15680-neantik.patch chromium-15680-devtools-typescript6.patch chromium-15680-v8-scope-iterator-compat.patch chromium-15680-rebase-plan.json chromium-15680-build-evidence.json chromium-15680-args.gn; do
+    cp "$PROJECT_DIR/runtime/$name" "$EVIDENCE/chromium-15680-source-evidence/$name"
+  done
+  if plutil -extract ownedInputs.portableCrcManifestSHA256 raw -o - "$CANDIDATE_LOCK" >/dev/null 2>&1; then
+    cp "$PROJECT_DIR/runtime/chromium-15680-portable-crc.json" "$PROJECT_DIR/runtime/chromium-15680-portable-crc.patch" "$EVIDENCE/chromium-15680-source-evidence/"
+    cp -R "$PROJECT_DIR/runtime/chromium-15680-portable-crc" "$EVIDENCE/chromium-15680-source-evidence/"
+  fi
+fi
+if [[ "$RUNTIME_VERSION" == "156.0.8078.80" &&
+      "$(plutil -extract variant raw -o - "$CANDIDATE_LOCK" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ]]; then
+  python3 -B - "$PROJECT_DIR" "$EVIDENCE" <<'PY_PRIVACY'
+import sys
+from pathlib import Path
+project, destination = map(Path, sys.argv[1:])
+sys.path.insert(0, str(project / 'scripts'))
+from chromium_15680_privacy_derivation import copy_evidence
+copy_evidence(project, destination)
+PY_PRIVACY
+fi
 cp "$SNAPSHOT_ARGS" "$EVIDENCE/args.gn"
 cp "$VERIFY_REPORT" "$EVIDENCE/runtime-verification.json"
-cp "$PROJECT_DIR/docs/RUNTIME_INTEGRATION_NOTICES.md" \
+if [[ "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-v1" ||
+      "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-font-system-security-20261015-v1" ||
+      "${M156_EVIDENCE_PREFIX:-}" == "chromium-15612-component-completion-v1" ]]; then
+  python3 "$PROJECT_DIR/scripts/package-manager-release-baseline.py" --project-root "$PROJECT_DIR" --evidence "$EVIDENCE"
+  python3 "$PROJECT_DIR/scripts/chromium_15612_packaged_evidence.py" "$CANDIDATE_LOCK" "$EVIDENCE" --normalize-font-modes
+fi
+python3 "$PROJECT_DIR/scripts/package-manager-release-baseline.py" \
+  --project-root "$PROJECT_DIR" \
+  --evidence "$EVIDENCE"
+fi
+cp "$RUNTIME_NOTICES_FILE" \
   "$RESOURCES/NeAntikRuntimeNotices.md"
 ditto "$COMPLIANCE_DIR" "$COMPLIANCE"
 
@@ -136,11 +326,31 @@ cp "$PROJECT_DIR/runtime/licenses/fingerprint-chromium-LICENSE" \
 cp "$PROJECT_DIR/runtime/licenses/ungoogled-chromium-macos-LICENSE" \
   "$LICENSES/ungoogled-chromium-macos-LICENSE"
 
-codesign --force --sign - "$OUTPUT_APP"
+if [[ "$SOURCE_CONTRACT_NAME" == "chromium-15680-privacy-v1-source-contract.json" ]]; then
+  cp "$PROJECT_DIR/runtime/privacy-policy-v1/licenses/MPL-2.0.txt" "$LICENSES/Privacy-MPL-2.0.txt"
+  cp "$PROJECT_DIR/runtime/privacy-policy-v1/SOURCE-NOTICE.txt" "$LICENSES/Privacy-SOURCE-NOTICE.txt"
+fi
+
+if [[ "$SIGNING_IDENTITY" == "-" ]]; then
+  if [[ "$BACKUP_ENABLED" != "0" || -n "$PROVISIONING_PROFILE" ]]; then
+    echo "Ad-hoc integrated packaging cannot carry production backup provisioning." >&2
+    exit 65
+  fi
+  codesign --force --sign - \
+    --entitlements "$PROJECT_DIR/runtime/neantik-direct-entitlements.plist" \
+    "$OUTPUT_APP"
+else
+  python3 "$PROJECT_DIR/scripts/direct_backup_signing.py" sign \
+    "$OUTPUT_APP" "$SIGNING_IDENTITY"
+fi
 codesign --verify --deep --strict --verbose=2 "$OUTPUT_APP"
 
-# The manager is still ad-hoc here; provisioning and Developer ID signing
-# belong to Direct candidate preparation, not engineering assembly.
-"$PROJECT_DIR/scripts/verify-integrated-release.sh" --engineering "$OUTPUT_APP"
+# The full Direct verifier intentionally accepts only the public bundle name
+# NeAntik.app. Move the exact engineering bundle into a private public-name
+# verification path, verify it without weakening that gate, then restore the
+# engineering artifact for prepare-direct-runtime-candidate.sh.
+python3 "$PROJECT_DIR/scripts/verify-public-named-bundle.py" \
+  --engineering-app "$OUTPUT_APP" \
+  --verifier "$PROJECT_DIR/scripts/verify-integrated-release.sh"
 
 echo "$OUTPUT_APP"

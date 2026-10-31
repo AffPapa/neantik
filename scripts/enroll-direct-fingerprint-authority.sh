@@ -1,8 +1,6 @@
 #!/bin/zsh
 
 set -euo pipefail
-umask 077
-export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -32,10 +30,16 @@ if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
   echo "Ad-hoc builds cannot enroll a public Direct release authority." >&2
   exit 65
 fi
+if [[ "$(/usr/bin/stat -f '%u' /dev/console)" != "$EUID" ]]; then
+  echo "Run fingerprint enrollment from the signed-in user's Terminal session." >&2
+  exit 69
+fi
+if ! /bin/launchctl print "gui/$EUID" >/dev/null 2>&1; then
+  echo "The signed-in macOS user session is unavailable." >&2
+  exit 69
+fi
+
 /usr/bin/codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
-  --profile "$APP_PATH/Contents/embedded.provisionprofile" \
-  --app "$APP_PATH"
 SIGNATURE_DETAILS="$(/usr/bin/codesign -dvvv "$APP_PATH" 2>&1)"
 if ! /usr/bin/grep -Fq "Authority=Developer ID Application:" \
     <<<"$SIGNATURE_DETAILS"; then
@@ -53,19 +57,25 @@ if [[ -e "$LOG_PATH" || -L "$LOG_PATH" ]]; then
 fi
 
 enrollment_status=0
-python3 "$PROJECT_DIR/scripts/verify-active-gui-session-unlocked.py"
-/usr/bin/env \
+# Launch through Launch Services so Keychain/Secure Enclave operations run in
+# the signed-in GUI application context. Running the GUI executable as a child
+# of a shell can return errSecInteractionNotAllowed even when the user session
+# and signing identity are valid.
+if /usr/bin/env \
   -u DYLD_INSERT_LIBRARIES \
   -u DYLD_LIBRARY_PATH \
   -u DYLD_FRAMEWORK_PATH \
   -u DYLD_FALLBACK_LIBRARY_PATH \
-  /usr/bin/python3 "$PROJECT_DIR/scripts/run-exact-command-with-timeout.py" \
-    --timeout 60 \
-    --log "$LOG_PATH" \
-    -- \
-    "$EXECUTABLE" \
+  /usr/bin/open -n -W -a "$APP_PATH" \
+    --stdout /dev/null \
+    --stderr "$LOG_PATH" \
+    --args \
     --neantik-enroll-fingerprint-evidence \
-    --output "$OUTPUT_PATH" || enrollment_status=$?
+    --output "$OUTPUT_PATH"; then
+  enrollment_status=0
+else
+  enrollment_status=$?
+fi
 
 if (( enrollment_status != 0 )); then
   echo "Secure Enclave enrollment failed; Direct release preparation stopped." >&2

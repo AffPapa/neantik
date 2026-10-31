@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T14:24:07Z",
+  "status": "PASS_FACTUAL_SOURCE_HEADER_COVERAGE;JAVASCRIPTCORE_IMAGE_LICENSE_AND_REPLACEMENT_REMAIN_OPEN",
+  "runtimeImage": {
+    "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+    "sha256": "b18e6c8575354ec022779494daaa0afc48f5e75d412ed96cadef0edba41f6a56"
+  },
+  "evidence": {
+    "sourceHeaderManifest": {
+      "path": "/private/tmp/neantik-release-v1/docs/evidence/third-party/webkit-v20-linked-image-source-headers/MANIFEST.json",
+      "sha256": "599b1677b25c00a2f14ed4101061c302d75148af27146e6b1894c7f0ebcd9604",
+      "noticeBundleSHA256": "d3060d740022138adadfe3f95a9001e90e1c5772e9c03a74af115ef98d0bcf66",
+      "entryCount": 906,
+      "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+      "sourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735"
+    },
+    "runtimeSourceClosure": {
+      "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/evidence/WEBKIT_RUNTIME_IMAGE_SOURCE_CLOSURE_V20.json",
+      "sha256": "6e9a5a634e7e78fcb23d4e2b0d10bbda676bd264cc9b4127f4ce4d833c2e2304",
+      "primaryCompileSources": 35,
+      "primarySourceClosureSHA256": "939f121aec6dc8d1de7cb35fffb7bc14248accf6df75735956e1b3323d7d2638"
+    },
+    "unityLeaves": {
+      "path": "/private/tmp/neantik-release-v1/docs/evidence/webkit-v20-jsc-webkit-unity-leaves-20261025.json",
+      "sha256": "652320b200a4484541365c92e676fb1be45fd4b700110cb9304b682f99dd99f2",
+      "wrappers": 23,
+      "uniqueSourceLeaves": 901,
+      "unityClosureSHA256": "6e9a5a634e7e78fcb23d4e2b0d10bbda676bd264cc9b4127f4ce4d833c2e2304"
+    },
+    "reviewPacket": {
+      "path": "/private/tmp/neantik-release-v1/docs/evidence/webkit-v20-license-review-packet-20261025.json",
+      "sha256": "99ec10c609b5a91a2c1b5146295570fea755920ce37a4ae98c71eb529c0ee9e6"
+    },
+    "packagedLicenseTexts": {
+      "LGPL-2": {
+        "source": "/private/tmp/neantik-release-v1/docs/evidence/third-party/webkit-v20-license-text-corpus/Source/WebCore/LICENSE-LGPL-2",
+        "sha256": "7555fa34bc131a75ca56d65c40cc1ea8f9515d23e353d4c15d58573a042f7805"
+      },
+      "LGPL-2.1": {
+        "source": "/private/tmp/neantik-release-v1/docs/evidence/third-party/webkit-v20-license-text-corpus/Source/WebCore/LICENSE-LGPL-2.1",
+        "sha256": "f2b3bd09663381deb99721109d22b47af1213bb43007a8b56a06c6375c8050ce"
+      },
+      "noticeInstaller": "/private/tmp/neantik-release-v1/scripts/webkit_runtime_notices.py",
+      "noticeInstallerSHA256": "38d0409572a99a0d5f7bb3c10c1d4f6988c3c94a5b9f400e92924d4060e42fa9"
+    }
+  },
+  "reconciliation": {
+    "primaryCompileSourceCount": 35,
+    "uniqueUnityLeafCount": 901,
+    "unionCount": 936,
+    "exactHeaderManifestEntries": 906,
+    "headerManifestCoversSourceUnion": true,
+    "sourceUnionWithoutHeaderEntryCount": 30,
+    "headerEntriesOutsideSourceUnionCount": 0,
+    "result": "All 906 mapped header/source records are within the 35 primary-source plus 901 unity-leaf map; 30 generated compile wrapper/PCH inputs have no standalone source-header entry and require generated-source/build lineage, not a blanket license inference."
+  },
+  "headerSignalCounts": {
+    "BSD-form": 846,
+    "Library/Lesser GPL-form": 59,
+    "BSD-form + Library/Lesser GPL-form + MPL-form": 1
+  },
+  "technicalFindings": [
+    "The exact JSDateMath.cpp header lists LGPL-2.1-or-later, MPL-1.1, or GPL-2.0 alternatives and separately includes a V8 BSD-style notice with Google/V8 attribution. The linked header bundle contains its exact header; MPL-1.1 and GPL-2.0 full texts are present in the source-offer notice overlay.",
+    "The JSC header manifest records 846 BSD-form, 59 Library/Lesser-GPL-form, and one combined BSD + LGPL + MPL entry. These are header signals, not a license-election record.",
+    "The existing notice installer already pins and copies LGPL-2 and LGPL-2.1 complete texts into app Resources and Markdown/HTML notices; this closes text availability only.",
+    "WebKit upstream policy states inherited KHTML code is LGPL and newer contributions use two-clause BSD; exact file headers and generated-source lineage still govern this candidate."
+  ],
+  "decisionBoundary": "No whole-image license election or applicability decision is made. Source header coverage and license text availability do not prove LGPL recipient replacement/relink ability, final app re-sign/startup, or notice-to-runtime binding. JavaScriptCore remains UNKNOWN; no build, app mutation, signing, installation or publication was performed."
+}

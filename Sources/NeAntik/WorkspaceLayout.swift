@@ -1,59 +1,16 @@
-import SwiftUI
-
-enum WorkspaceKeyboardRegion: Int, CaseIterable, Hashable, Sendable {
-    case sidebar
-    case profileList
-    case inspector
-
-    var accessibilityIdentifier: String {
-        switch self {
-        case .sidebar: "workspace.sidebar"
-        case .profileList: "workspace.profile-list"
-        case .inspector: "workspace.inspector"
-        }
-    }
-
-    var accessibilityPriority: Double {
-        Double(WorkspaceKeyboardRegion.allCases.count - rawValue)
-    }
-}
-
-private struct WorkspaceKeyboardRegionModifier: ViewModifier {
-    let region: WorkspaceKeyboardRegion
-
-    func body(content: Content) -> some View {
-        content
-            .focusSection()
-            .accessibilityIdentifier(region.accessibilityIdentifier)
-            .accessibilitySortPriority(region.accessibilityPriority)
-    }
-}
-
-extension View {
-    func workspaceKeyboardRegion(
-        _ region: WorkspaceKeyboardRegion
-    ) -> some View {
-        modifier(WorkspaceKeyboardRegionModifier(region: region))
-    }
-}
+import CoreGraphics
 
 enum WorkspaceLayout {
-    static let keyboardRegionOrder = WorkspaceKeyboardRegion.allCases
     static let minimumWindowWidth: CGFloat = 820
     static let minimumWindowHeight: CGFloat = 560
-
-    /// Native navigation already reserves the titlebar; this is content spacing only.
-    static let profileHeaderTopPadding: CGFloat = 16
 
     static let minimumSourceColumnWidth: CGFloat = 200
     static let idealSourceColumnWidth: CGFloat = 220
     static let maximumSourceColumnWidth: CGFloat = 260
 
-    static let minimumProfileColumnWidth: CGFloat = 520
-    static let idealProfileColumnWidth: CGFloat = 820
-    static let maximumProfileColumnWidth: CGFloat = 3_200
+    static let minimumProfileColumnWidth: CGFloat = 300
+    static let idealProfileColumnWidth: CGFloat = 360
+    static let maximumProfileColumnWidth: CGFloat = 440
 
-    static let minimumInspectorWidth: CGFloat = 360
-    static let idealInspectorWidth: CGFloat = 440
-    static let maximumInspectorWidth: CGFloat = 560
+    static let minimumDetailColumnWidth: CGFloat = 480
 }

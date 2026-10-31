@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.8.10",
+  "version": "0.8.10",
+  "build": 121,
+  "channel": "public-alpha",
+  "sourceCommit": "703edcfcc14da77a62d6a621375b99c4e68314bf",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.8.10",
+  "siteUrl": "https://browser.free",
+  "publicationScope": {
+    "channels": [
+      "GitHub",
+      "browser.free"
+    ],
+    "affpapa": "excluded by explicit user instruction; user updates manually"
+  },
+  "rollbackRelease": "v0.8.8",
+  "distributionDirectory": "dist/distribution/v0.8.10-121-20261014T051038Z-27569",
+  "candidateManifestSHA256": "88069a2a3334292a39648ecbcfedd788499def4fa65976411f9eb1e559c798a0",
+  "candidateSourceBindingSHA256": "137d79bc572c62f4d93f39a1273a4d387df3977d116c71e84674fefc058af24f",
+  "managerSHA256": "572f4560bc7f4db53d254da1115a0258bd5ab6d1f52fc46f2f2bdc26231dbc97",
+  "changes": [
+    "Signed previous owner/assessment retained byte-for-byte; separately signed V2 primary helpers at fixed paths. Malformed V2 refuses without legacy fallback.",
+    "Admission/bootstrap authenticate the installed owner against exact signed candidate helper payloads, retaining certificate, SHA and CodeDirectory pins.",
+    "Packaging retains file identities across signature verification and refuses transient swaps or omitted required continuity input.",
+    "Legacy feed pinned to qualified transition; separate v2 current feed. WebKit media feature remains signed-disabled with no new device entitlements or purpose strings."
+  ],
+  "limitations": [
+    "Public alpha; all45 major1.0/hardware/macOS gates remain open.",
+    "Native qualification macOS27 ARM64; not every Mac/macOS14 or physical VoiceOver.",
+    "Safe Browsing disabled; no anonymity/CAPTCHA/site-rule bypass guarantee.",
+    "WebKit camera/microphone/proxy/extensions/full BrowserData backup/deletion/stdioMCP GUI launch unavailable.",
+    "Native updater proof is exact088→0810 with metadata-only synthetic profiles and mock credentials, not fresh-cookie durability. Future changed-helper/multi-hop releases need their own continuity and rollback gates; manifests expire within14days and need renewal.",
+    "Encrypted Chromium backup retains originalMac/Keychain/runtime restrictions; no cross-Mac secret portability. OS-default-trusted authenticated HTTPS upstream positive user-deferred.",
+    "Cloud CI PASS not claimed. Optional native test skips are explicit; scope-separated historical subsystem receipts retained.",
+    "First downloaded headed attempt refused for temporary memory/thermal pressure; retained, nominal thermal/free49percent measured, fresh second launch verified without disabling guards.",
+    "Private089candidate failed nativeowner binding and was neverpublished; no old assets replaced."
+  ],
+  "artifacts": [
+    {
+      "name": "NeAntik-0.8.10-arm64-notarized.zip",
+      "sha256": "eae7f6bbe79fe8f8aab4d64584952a81e5e6bc7e0eef1cdfab2457e8bf38d419",
+      "sizeBytes": 190369189,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.10/NeAntik-0.8.10-arm64-notarized.zip"
+    },
+    {
+      "name": "NeAntik-0.8.10-arm64-notarized.dmg",
+      "sha256": "fba58f885a2fd1434a752d6c76a057346b00f2bbc2fbabafbff921993a52da55",
+      "sizeBytes": 214744402,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.10/NeAntik-0.8.10-arm64-notarized.dmg"
+    }
+  ],
+  "verification": {
+    "developerId": "same474F7C78F33EE324C24F6F5AE0443EB713E85E60; existingprofile/certificate",
+    "notarization": {
+      "ZIP": "Accepted",
+      "ZIPSubmission": "5e28eecf-95e0-447d-8159-3083f174a610",
+      "DMG": "Accepted",
+      "DMGSubmission": "6c339566-fdcb-4ff8-b04e-e46cdd8cb229"
+    },
+    "stapling": "PASS",
+    "Gatekeeper": "PASS local and freshly downloaded ZIP/DMG",
+    "DirectDoctor": "13/13PASS",
+    "tests": {
+      "baseSwift": "1531reported/178suites PASS87.942s; 1461passed/67skip loglines",
+      "basePython": "1356tests PASS166.481s/19explicit skips",
+      "finalPolicy": "7reported/5passed/2nativeoptin skips PASS7.802s",
+      "finalPackaging": "8tests PASS incl temporary inode swap",
+      "site": "37PASS/0skip; officialbuildPASS"
+    },
+    "nativeUpdater": {
+      "passed": true,
+      "fromVersion": "0.8.8",
+      "fromBuild": 119,
+      "toVersion": "0.8.10",
+      "toBuild": 121,
+      "shippingBinary": true,
+      "debugHooks": false,
+      "commitDurable": true,
+      "pendingJournalAbsent": true,
+      "restartedExactCandidate": true,
+      "ownedPIDExitedAfterCmdQ": true,
+      "metadataBytesUnchanged": true,
+      "twoProfileIdentitiesUnchanged": true,
+      "keyboardCmdNAndWebKitChoice": true,
+      "shippingMediaDisabledAndExplained": true,
+      "cancelDraftConfirmed": true,
+      "rollbackEvidence": "updater-088-to-0810-rollback.json",
+      "scope": "two synthetic metadata-only profiles; mock credentials; no production profiles or cookies; this is not fresh-cookie durability evidence",
+      "macOS": "27.0",
+      "architecture": "arm64",
+      "date": "2026-10-14T05:17:57.552923+00:00"
+    },
+    "nativeRollback": {
+      "schemaVersion": 1,
+      "exactShippingBinary": true,
+      "debugHooks": false,
+      "signalSent": true,
+      "rollbackVerified": true,
+      "generationChecked": true,
+      "beforeAcknowledgement": true,
+      "restoredVersion": "0.8.8",
+      "restoredBuild": 119,
+      "ownedChildExited": true
+    },
+    "MCPExactSigned": "18management including7read/revision/refusals PASS; not browser automation",
+    "GUIFingerprint": "fresh headed candidate and freshdownloaded evidence publicalpha PASS",
+    "hostedZIP": {
+      "archiveName": "NeAntik-0.8.10-arm64-notarized.zip",
+      "downloadURL": "https://github.com/AffPapa/neantik/releases/download/v0.8.10/NeAntik-0.8.10-arm64-notarized.zip",
+      "sha256": "eae7f6bbe79fe8f8aab4d64584952a81e5e6bc7e0eef1cdfab2457e8bf38d419",
+      "sizeBytes": 190369189,
+      "status": "hosted-zip-byte-identical-gatekeeper-candidate-and-evidence-verified",
+      "retainedDownloadSHA256": "eae7f6bbe79fe8f8aab4d64584952a81e5e6bc7e0eef1cdfab2457e8bf38d419"
+    },
+    "hostedDMG": {
+      "status": "PASS",
+      "sha256": "fba58f885a2fd1434a752d6c76a057346b00f2bbc2fbabafbff921993a52da55",
+      "sizeBytes": 214744402,
+      "anonymousDownload": true,
+      "integritySigningStaplingGatekeeper": "PASS",
+      "version": "0.8.10",
+      "build": 121
+    },
+    "downloadedHeaded": {
+      "status": "PASS",
+      "version": "0.8.10",
+      "build": 121,
+      "headed": true,
+      "downloadedBytes": true,
+      "freshEvidence": true,
+      "sourceNotBefore": "2026-10-14T05:34:21.426497+00:00",
+      "criticalFilesMatch": true,
+      "ownedProcessesDrained": true,
+      "productionProfilesUsed": false,
+      "firstAttempt": "environment pressure refusal, retained; thermal0/free49percent measured before retry"
+    },
+    "draftAssetDigests": "all4sizes/digests/fullsourceSHA verified",
+    "privacy": "reachableGit history5587blobs/9562objects knownformatsPASS; cleanSite107entries/5731714bytes knownpatterns + exactSitescredential/bypass literalsPASS; /Users/YOU is an explicitpublicguide placeholder",
+    "liveSite": {
+      "passed": true,
+      "version": 147,
+      "release": "0.8.10",
+      "rows": [
+        {
+          "route": "/",
+          "status": 200,
+          "mime": "text/html; charset=utf-8",
+          "bodySHA256": "31d9d4604c8a0e4677c02b04944907ccd8d64e73a17dd16c440068e3bae3cf76",
+          "anonymous": true
+        },
+        {
+          "route": "/api/update.json",
+          "status": 200,
+          "mime": "application/json",
+          "bodySHA256": "ddf225ffaab79ae6d66f48910376c32d8a2f57a9dd60f095a59953d5a368c950",
+          "anonymous": true
+        },
+        {
+          "route": "/api/update-v2.json",
+          "status": 200,
+          "mime": "application/json",
+          "bodySHA256": "ddf225ffaab79ae6d66f48910376c32d8a2f57a9dd60f095a59953d5a368c950",
+          "anonymous": true
+        },
+        {
+          "route": "/release-0.8.10.md",
+          "status": 200,
+          "mime": "text/markdown",
+          "bodySHA256": "bc32bf27fe8f090b43128e2edca6c662fb552062be20cc90b09abb69ac9dd84b",
+          "anonymous": true
+        },
+        {
+          "route": "/guides/mcp",
+          "status": 200,
+          "mime": "text/html; charset=utf-8",
+          "bodySHA256": "07692c6c74ec5ec499e59ae8bc2bf933d78e0bb77245c67f9cb93c951da0bc2b",
+          "anonymous": true
+        }
+      ]
+    },
+    "downloadedMCP": {
+      "pass": true,
+      "managementTools": 18,
+      "readTools": 7,
+      "allOwnedMCPProcessesExited": true,
+      "mediaShippingDisabled": true,
+      "priorThreeSigningClaims": true
+    }
+  },
+  "sitePublication": {
+    "status": "succeeded",
+    "projectID": "appgprj_6a643e28baa08191bf23bf4803345907",
+    "version": 147,
+    "savedVersionID": "appgprj_6a643e28baa08191bf23bf4803345907~appgver_b763dba1e7a08191965cf07eea439587",
+    "deploymentID": "appgdep_6acf1497e7a88191892823e7f654de06",
+    "sourceCommit": "cdb6d6d804e419a89f4bd482cca0af8f9bb68f2d",
+    "url": "https://browser.free",
+    "origin": "https://neantik-browser.iryadom.chatgpt.site",
+    "audience": "public"
+  },
+  "migrations": {
+    "profileIdentity": "unchanged; exact synthetic metadata bytes preserved through rollback/install",
+    "metadataSchema": "unchanged by release; unqualified media values remain gated",
+    "updaterPolicy": "signed legacy1 plus separate strictV2 primary; previous exacthelper bytes retained",
+    "rollback": "v0.8.8 assets preserved"
+  },
+  "major1Ready": false
+}

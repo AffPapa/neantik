@@ -31,6 +31,8 @@ def main() -> int:
         ),
     )
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
+    parser.add_argument("--recipient-privacy", action="store_true",
+                        help="Verify explicit layered recipient privacy derivation; does not claim a full Git checkout")
     args = parser.parse_args()
     source_root = args.source_root
     output = args.output or source_root.parent / "source-provenance.json"
@@ -38,6 +40,8 @@ def main() -> int:
         document = build_provenance(
             source_root,
             project_root=args.project_root.resolve(),
+            **({"contract_path": args.project_root.resolve() / "runtime/chromium-15680-privacy-v1-source-contract.json"}
+               if args.recipient_privacy else {}),
         )
         atomic_write_json(output, document)
     except (OSError, SourceProvenanceError) as error:
@@ -45,7 +49,7 @@ def main() -> int:
         return 1
     print(f"Chromium source provenance exported: {output}")
     print(f"SHA-256: {sha256_file(output)}")
-    print("Binary binding: pending-new-build")
+    print("Binary binding: pending runtime report" if args.recipient_privacy else "Binary binding: pending-new-build")
     return 0
 
 

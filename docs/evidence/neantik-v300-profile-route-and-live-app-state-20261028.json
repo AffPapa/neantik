@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v300-profile-route-and-live-app-state-20261028",
+  "observedAtUTC": "2026-10-27T18:46:45Z",
+  "scope": "Read-only continuation after V299. Checked the configured profile environment and bounded existing candidate profiles; checked desktop process inventory only. No profile contents or browser user data were read.",
+  "configuredProvisioningProfilePresent": false,
+  "existingCandidateProfilesChecked": 8,
+  "validForPinnedDirectContract": 0,
+  "cmsDecodeFailures": 8,
+  "liveDesktopState": {
+    "NeAntikRunning": true,
+    "candidateLaunchPerformed": false,
+    "userProfilesTouched": false
+  },
+  "decision": "Keep backup capability and signer contract intact; do not silently remove the feature or weaken profile validation. Continue non-interactive work only until a valid profile is available or product scope is explicitly changed.",
+  "releaseQualified": false,
+  "signedCandidateQualified": false,
+  "notarized": false,
+  "published": false
+}

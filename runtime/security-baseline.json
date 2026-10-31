@@ -1,20 +1,21 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-09-16",
-  "publishedAt": "2026-09-03",
-  "maximumAgeDays": 7,
-  "minimumPublicChromiumVersion": "152.0.7977.82",
+  "checkedAt": "2026-10-31",
+  "publishedAt": "2026-10-29",
+  "maximumAgeDays": 0,
+  "minimumPublicChromiumVersion": "156.0.8078.80",
   "alsoObservedPublicChromiumVersions": [
-    "152.0.7977.83"
+    "156.0.8078.79"
   ],
   "channel": "Desktop Stable",
   "platforms": [
     "macOS"
   ],
-  "securityFixCount": 12,
-  "reference": "https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_01882797386.html",
+  "securityFixCount": 21,
+  "reference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_02107719452.html",
   "referenceTitle": "Stable Channel Update for Desktop",
   "sourceLabel": "Chrome Releases",
-  "releaseBoundary": "This is a manually pinned primary-source security baseline. It is not a live updater. Refresh checkedAt, versions, securityFixCount and reference before every public Direct release. A zero securityFixCount means the official Stable post did not enumerate security fixes; it never means that the version is exempt from the minimum-version gate.",
-  "policy": "A public NeAntik Direct build must not ship an older Chromium version than the latest security-patched macOS Stable version recorded here. Refresh this checked-in baseline before every release."
+  "releaseBoundary": "This manually pinned primary-source security baseline is not a live updater. Refresh checkedAt, versions, securityFixCount and reference on the day of every public Direct release. A securityFixCount of 0 means the official post had not enumerated fixes, not that there were no fixes. This names the current widely deployed M156 stable floor; same-train version comparison is not a source review for another Chromium branch.",
+  "policy": "As verified 2026-10-31 UTC, the current macOS Desktop Stable floor is Chromium 156.0.8078.80, published 2026-10-29. The official post lists .79/.80 for Windows and Mac and .79 for Linux, and reports 21 security fixes. The NeAntik runtime must be built from the pinned official stable source at or above the macOS floor. Early Stable is separate from the widely deployed floor. Cross-branch runtime use still requires source-bound review.",
+  "securityFixCountStatus": "count-reported-by-official-post"
 }

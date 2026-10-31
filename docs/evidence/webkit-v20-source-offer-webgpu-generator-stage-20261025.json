@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T02:45:55Z",
+  "status": "webgpu-generator-source-and-replay-staged;license-and-release-gates-open",
+  "candidate": {
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0"
+  },
+  "sourceOfferFolder": "dist/private/source-offers/1.0.0-manager-955",
+  "priorManifestSHA256": "bc5d55c2ebf92d4e61c9a641d1a52b67585fa145fc63b1c17fec1fb295372650",
+  "priorManifestBackup": "docs/evidence/webkit-v20-source-offer-manifest-before-webgpu-license-review-20261025.json",
+  "sourceOfferManifestSHA256": "30bd86f2e03e4e9054dd75bae714c3dd59a5e7cfe3a21f075ffac933f123370f",
+  "addedComponents": [
+    {
+      "path": "source/WebKit/Source/WebGPU/WGSL/TypeDeclarations.rb",
+      "bytes": 50822,
+      "sha256": "e18e6d38fe4f11f97e46c0935b3d7dbbfb7e71e0ab1fd23e90f60994a4b46809",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "source/WebKit/Source/WebGPU/WGSL/generator/main.rb",
+      "bytes": 18065,
+      "sha256": "55e2f00b4506f078d5507d83d3ba0dc1ad9463b03906e0d0d63bee9f75a6d8d6",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "source/WebKit/Source/WebGPU/WGSL/CMakeLists.txt",
+      "bytes": 6336,
+      "sha256": "51e567aa0497b19a764639777305eab08710ae925902f9a8272996c0839674d4",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "generated/webgpu-wgsl/TypeDeclarations.h",
+      "bytes": 3030,
+      "sha256": "70a6d9e56c58f001bea4c81960139f3a8ae7c9deaee7b943dad9f35af43adfbd",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "generated/webgpu-wgsl/TypeOverloads.h",
+      "bytes": 381605,
+      "sha256": "11f4ba1c6b1f97dc042b1725598954afcb40d2e89706a06d7666cf8f0b74047a",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_webgpu-wgsl-generator-replay-V20.json",
+      "bytes": 3246,
+      "sha256": "a8b1586617e01198836365d87b9f87eb92f49bd6cf91beb09bc16260bd2f507b",
+      "includedInOfferFolder": true
+    }
+  ],
+  "totalManifestComponents": 129,
+  "physicallyIncludedComponents": 128,
+  "externalComponents": [
+    "../../../../artifacts/neantik/webkit-v20-source-20261025/WebKit-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c.tar.zst"
+  ],
+  "verification": {
+    "generatorReplayMatchesProductionOutputHashes": true,
+    "newFilesMatchManifest": true
+  },
+  "limitations": [
+    "WebGPU generator license applicability remains UNKNOWN.",
+    "The 83-row runtime image/resource applicability worksheet is unchanged.",
+    "Source offer remains incomplete; corresponding source, external dependencies and recipient relink remain open.",
+    "Frozen candidate 139 was not modified."
+  ],
+  "updatedComponents": [
+    {
+      "path": "evidence/WEBKIT_webgpu-wgsl-generator-replay-V20.json",
+      "previous": {
+        "bytes": 3246,
+        "sha256": "084f39fb4386b7cec6507148c54a2ef4a9104a927a12cf1f2854004f2e71855e"
+      },
+      "current": {
+        "bytes": 4466,
+        "sha256": "4f6052b1840541556c0ded75ea7024674fdcc266f2766f9ca0a8abc26a6afb0d"
+      }
+    }
+  ],
+  "officialLicenseEvidenceReviewed": [
+    "https://github.com/gpuweb/gpuweb/blob/main/LICENSE.md",
+    "https://docs.webkit.org/Other/Licensing.html",
+    "https://webkit.org/licensing-webkit/"
+  ]
+}

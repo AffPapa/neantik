@@ -1,4 +1,8 @@
 import unittest
+import re
+import shlex
+import subprocess
+import tempfile
 from pathlib import Path
 
 
@@ -7,50 +11,25 @@ SIGN_RUNTIME = ROOT / "scripts" / "sign-runtime.sh"
 
 
 class SignRuntimeScriptTests(unittest.TestCase):
-    def test_apple_strip_optimizer_runs_before_both_signing_paths(self) -> None:
-        text = SIGN_RUNTIME.read_text(encoding="utf-8")
-        manual = text.split("manual_public_alpha_sign() {", 1)[1].split(
-            "\n}\n\nif [[ ! -d", 1
-        )[0]
-        packaging = text.split(
-            'STAGED_APP="$STAGING/NeAntik Browser.app"',
-            1,
-        )[1]
-
-        self.assertIn('remove_attached_signatures "$OUTPUT_APP"', manual)
-        self.assertIn('optimize_runtime_size "$OUTPUT_APP"', manual)
-        self.assertLess(
-            manual.index('optimize_runtime_size "$OUTPUT_APP"'),
-            manual.index('sign_code "$OUTPUT_APP"'),
-        )
-        self.assertIn('remove_attached_signatures "$STAGED_APP"', packaging)
-        self.assertIn('optimize_runtime_size "$STAGED_APP"', packaging)
-        self.assertLess(
-            packaging.index('optimize_runtime_size "$STAGED_APP"'),
-            packaging.index("sign_chrome.py"),
-        )
-        self.assertIn("optimize-runtime-size.py", text)
-        self.assertIn("xcrun --find strip", text)
-
-    def test_manual_signing_orders_nested_bundles_inside_out(self) -> None:
-        text = SIGN_RUNTIME.read_text(encoding="utf-8")
-        manual = text.split("manual_public_alpha_sign() {", 1)[1].split(
-            "\n}\n\nif [[ ! -d", 1
-        )[0]
-
-        self.assertIn('*/Contents/MacOS/*|*/"NeAntik Browser Framework")', manual)
-        self.assertLess(
-            manual.index("sign_code \"$candidate\""),
-            manual.index("sign_code \"$nested_app\""),
-        )
-        self.assertLess(
-            manual.index("sign_code \"$nested_app\""),
-            manual.index("sign_code \"$framework\""),
-        )
-        self.assertLess(
-            manual.index("sign_code \"$framework\""),
-            manual.index('sign_code "$OUTPUT_APP"'),
-        )
+    @unittest.skipUnless(Path('/bin/zsh').is_file(), 'Requires zsh for the actual cleanup trap')
+    def test_candidate_cleanup_preserves_failure_and_removes_only_successful_inputs(self):
+        text = (ROOT / 'scripts/prepare-direct-runtime-candidate.sh').read_text()
+        cleanup = re.search(r'cleanup\(\) \{.*?\n\}', text, re.S).group(0)
+        trap = re.search(r"^trap 'cleanup \$\?' EXIT$", text, re.M).group(0)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            unrelated = root / 'unrelated'
+            unrelated.write_text('keep')
+            for status in (23, 0):
+                staged = root / ('staged-' + str(status))
+                staged.mkdir()
+                (staged / 'signed-runtime').write_text('retained bytes')
+                script = ('set -euo pipefail\nSIGNED_RUNTIME_ROOT=' + shlex.quote(str(staged))
+                          + '\n' + cleanup + '\n' + trap + '\nexit ' + str(status))
+                result = subprocess.run(['/bin/zsh', '-f', '-c', script], capture_output=True)
+                self.assertEqual(result.returncode, status)
+                self.assertEqual(staged.exists(), status != 0)
+                self.assertEqual(unrelated.read_text(), 'keep')
 
     def test_public_icon_is_applied_before_both_signing_paths(self) -> None:
         text = SIGN_RUNTIME.read_text(encoding="utf-8")

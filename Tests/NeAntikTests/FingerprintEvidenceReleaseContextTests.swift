@@ -6,6 +6,191 @@ import Testing
 @testable import NeAntik
 
 struct FingerprintEvidenceReleaseContextTests {
+    @Test(arguments: ["success", "missing", "different-key", "wrong-proof", "target-changed",
+                      "intent-write-fails", "delete-fails", "key-survives", "reservation-survives", "receipt-write-fails"])
+    func retirementRequiresProofDurableIntentAndConfirmedDeletion(control: String) throws {
+        let template = makeContext()
+        let signer = try SoftwareP256FingerprintEvidenceSigner(rawRepresentation: Data(repeating: 0, count: 31) + Data([1]))
+        let foreign = SoftwareP256FingerprintEvidenceSigner()
+        let state = RetirementTestState()
+        let output: any FingerprintEvidenceEnrollmentOutput = control == "receipt-write-fails" ? ThrowingEnrollmentOutput() : template.output
+        func context(_ selectedOutput: any FingerprintEvidenceEnrollmentOutput) -> FingerprintEvidenceReleaseContext {
+            FingerprintEvidenceReleaseContext(request: template.context.request, candidateManifest: template.manifest,
+                metadata: template.context.metadata, binding: template.binding, signerProvider: {
+                    if state.gone || control == "missing" { throw SecureEnclaveFingerprintEvidenceAuthorityError.notEnrolled }
+                    if control == "different-key" { return foreign }
+                    if control == "wrong-proof" { return UpdateAuditWrongProofSigner(publicKeyX963: signer.publicKeyX963, foreign: foreign) }
+                    return signer
+                }, abandonAuthority: { session in
+                    #expect(session == template.binding.sessionID)
+                    state.deletes += 1
+                    if control == "delete-fails" { throw FingerprintEvidenceReleaseError.operationFailed(Int(EIO)) }
+                    if control != "key-survives" { state.gone = true }
+                }, claimStore: template.claimStore,
+                recoveryStore: DiscardingFingerprintEvidenceRecoveryStore(), output: selectedOutput)
+        }
+        let run = context(output)
+        let operation = {
+            try run.retireAuditAuthority(validateCandidate: {
+                if control == "target-changed" { throw FingerprintEvidenceReleaseError.candidateMetadataMismatch }
+            }, confirmRetired: { state.gone && control != "reservation-survives" }, persistIntent: { bytes in
+                if control == "intent-write-fails" { throw FingerprintEvidenceReleaseError.outputUnavailable }
+                state.intent = bytes
+            })
+        }
+        if control == "success" { try operation() } else { #expect(throws: (any Error).self) { try operation() } }
+        #expect(template.claimStore.claimCount == 0)
+        if ["success", "receipt-write-fails", "delete-fails", "key-survives", "reservation-survives"].contains(control) {
+            #expect(state.intent != nil && state.deletes == 1)
+        } else { #expect(state.deletes == 0) }
+        if control == "success" {
+            let receipt = try #require(template.output.payload)
+            let value = try #require(JSONSerialization.jsonObject(with: receipt) as? [String: Any])
+            #expect(value["authorityRetired"] as? Bool == true)
+            #expect(value["releaseQualified"] as? Bool == false)
+            #expect(value["kind"] as? String == "neantik-fingerprint-authority-retirement")
+            #expect(!String(decoding: receipt, as: UTF8.self).contains(template.binding.sessionID.uuidString))
+            let recoveredOutput = PreexistingEnrollmentOutput(existing: receipt)
+            try context(recoveredOutput).retireAuditAuthority(validateCandidate: {},
+                existingIntent: try #require(state.intent), confirmRetired: { state.gone },
+                persistIntent: { _ in Issue.record("must reuse durable intent") })
+            #expect(recoveredOutput.commitCount == 1 && state.deletes == 2)
+        } else { #expect(template.output.commitCount == 0) }
+        if control == "receipt-write-fails" {
+            // Existing signed intent permits cleanup reconciliation after the
+            // key vanished; no second signing/enrollment or release claim.
+            try context(template.output).retireAuditAuthority(validateCandidate: {},
+                existingIntent: try #require(state.intent), confirmRetired: { state.gone }, persistIntent: { _ in Issue.record("must reuse durable intent") })
+            #expect(template.output.commitCount == 1 && state.deletes == 2)
+        }
+    }
+
+    @Test(arguments: ["foreign-proof", "changed-manifest", "malformed", "absent-intent"])
+    func absentKeyCannotBeRetiredWithoutMatchingSignedIntent(control: String) throws {
+        let template = makeContext()
+        let state = RetirementTestState()
+        let signer = control == "foreign-proof" ? SoftwareP256FingerprintEvidenceSigner() : try SoftwareP256FingerprintEvidenceSigner(rawRepresentation: Data(repeating: 0, count: 31) + Data([1]))
+        let prefix = Data("NeAntik fingerprint authority retirement v1\u{0}".utf8)
+        let manifest = control == "changed-manifest" ? Data("changed".utf8) : template.manifest
+        let transcript = prefix + Data(SHA256.hash(data: manifest)) + Data(UUID().uuidString.utf8)
+        let intent = try JSONSerialization.data(withJSONObject: ["kind": "neantik-fingerprint-retirement-intent-v1",
+            "transcript": transcript.base64EncodedString(), "signature": try signer.signatureDER(for: transcript).base64EncodedString()])
+        let context = FingerprintEvidenceReleaseContext(request: template.context.request, candidateManifest: template.manifest,
+            metadata: template.context.metadata, binding: template.binding,
+            signerProvider: { throw SecureEnclaveFingerprintEvidenceAuthorityError.notEnrolled },
+            abandonAuthority: { _ in state.deletes += 1 }, claimStore: template.claimStore,
+            recoveryStore: DiscardingFingerprintEvidenceRecoveryStore(), output: template.output)
+        #expect(throws: (any Error).self) {
+            try context.retireAuditAuthority(validateCandidate: {},
+                existingIntent: control == "absent-intent" ? nil : control == "malformed" ? Data("{}".utf8) : intent,
+                confirmRetired: { state.gone }, persistIntent: { _ in Issue.record("unexpected intent") })
+        }
+        #expect(state.deletes == 0 && template.output.commitCount == 0 && template.claimStore.claimCount == 0)
+    }
+    @Test func interactiveUpdateAuditProvesAuthorityWithoutClaimOrReport() throws {
+        let fixture = makeContext()
+        try fixture.context.authenticateUpdateAuditIsolation()
+        #expect(fixture.claimStore.claimCount == 0)
+        #expect(fixture.output.commitCount == 0)
+        #expect(fixture.abandonedSessions.values.isEmpty)
+    }
+
+    @Test(arguments: ["missing", "different-key", "wrong-proof"])
+    func interactiveUpdateAuditRefusesUnenrolledOrWrongSigningAuthority(control: String) throws {
+        let fixture = makeContext()
+        let foreign = SoftwareP256FingerprintEvidenceSigner()
+        let expected = try fixture.binding.validated().publicKey.x963Representation
+        let context = FingerprintEvidenceReleaseContext(
+            request: fixture.context.request, candidateManifest: fixture.manifest,
+            metadata: fixture.context.metadata, binding: fixture.binding,
+            signerProvider: {
+                if control == "missing" { throw FingerprintEvidenceReleaseError.operationFailed(Int(EX_NOPERM)) }
+                if control == "different-key" { return foreign }
+                return UpdateAuditWrongProofSigner(publicKeyX963: expected, foreign: foreign)
+            }, abandonAuthority: { _ in }, claimStore: fixture.claimStore,
+            recoveryStore: DiscardingFingerprintEvidenceRecoveryStore(), output: fixture.output
+        )
+        #expect(throws: (any Error).self) { try context.authenticateUpdateAuditIsolation() }
+        #expect(fixture.claimStore.claimCount == 0)
+        #expect(fixture.output.commitCount == 0)
+    }
+    @Test(arguments: [0o700, 0o755])
+    func authenticatedAuditCreatesPrivateBrowserRootWithoutUsingSigner(parentMode: Int) throws {
+        let parent = URL(fileURLWithPath: "/private/tmp/neantik-browser-release-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: false, attributes: [.posixPermissions: parentMode])
+        defer { try? FileManager.default.removeItem(at: parent) }
+        let template = makeContext()
+        let request = FingerprintEvidenceReleaseRequest(candidateManifestURL: parent.appendingPathComponent("manifest.json"),
+            evidenceOutputURL: parent.appendingPathComponent("evidence.json"))
+        let context = FingerprintEvidenceReleaseContext(request: request, candidateManifest: template.manifest,
+            metadata: template.context.metadata, binding: template.binding,
+            signerProvider: { throw FingerprintEvidenceReleaseError.operationFailed(Int(EX_NOPERM)) },
+            abandonAuthority: { _ in }, claimStore: template.claimStore,
+            recoveryStore: DiscardingFingerprintEvidenceRecoveryStore(), output: template.output)
+        if parentMode != 0o700 {
+            // An injected unit context is not proof that the real loader would
+            // admit this parent. Both require a private report directory.
+            #expect(throws: (any Error).self) { try ReleaseAuditBrowserIsolation.authenticatedRelease(context) }
+            #expect(!FileManager.default.fileExists(atPath: request.managerDataRoot.path))
+            return
+        }
+        // A context is the authority; the factory creates only its manager-data
+        // child and never calls the signer, consumes a claim or writes output.
+        let isolation = try ReleaseAuditBrowserIsolation.authenticatedRelease(context)
+        let paths = AppPaths(rootDirectory: request.managerDataRoot)
+        let attrs = try FileManager.default.attributesOfItem(atPath: request.managerDataRoot.path)
+        #expect(attrs[.posixPermissions] as? Int == 0o700)
+        #expect(try isolation.arguments(paths: paths, browserDataDirectory: paths.browserDataDirectory(for: UUID())) == ["--use-mock-keychain"])
+        #expect(template.claimStore.claimCount == 0 && template.output.commitCount == 0)
+        #expect(chmod(request.managerDataRoot.path, 0o755) == 0)
+        #expect(throws: (any Error).self) { try ReleaseAuditBrowserIsolation.authenticatedRelease(context) }
+        #expect(chmod(request.managerDataRoot.path, 0o700) == 0)
+        #expect(chmod(parent.path, 0o777) == 0)
+        #expect(throws: (any Error).self) { try isolation.validate() }
+        #expect(throws: (any Error).self) { try ReleaseAuditBrowserIsolation.authenticatedRelease(context) }
+    }
+    @Test
+    func legacyFontListCannotConsumeReleaseAuthority() {
+        let fixture = makeContext()
+        let report = qualifiedReport()
+        var values = report.second.values
+        values["fonts"] = "Arial,Menlo"
+        let legacy = FingerprintCapture(
+            profileID: report.second.profileID, profileName: report.second.profileName,
+            identityCode: report.second.identityCode, capturedAt: report.second.capturedAt,
+            values: values
+        )
+        #expect(throws: FingerprintEvidenceReleaseError.reportNotQualified) {
+            try fixture.context.persist(report: replacing(report, second: legacy))
+        }
+        #expect(fixture.claimStore.claimCount == 0)
+        #expect(fixture.output.commitCount == 0)
+    }
+    @Test
+    func manifestAcceptsKnownContractsAndRejectsUnknownPaths() throws {
+        let fixture = makeContext()
+        var root = try #require(JSONSerialization.jsonObject(with: fixture.manifest) as? [String: Any])
+        var critical = try #require(root["criticalFiles"] as? [String: Any])
+        var contract = try #require(critical["sourceContract"] as? [String: Any])
+        let allowed = ["chromium-15680-privacy-v1-source-contract.json", "chromium-15680-source-contract.json", "chromium-15674-source-contract.json", "chromium-15612-source-contract.json", "chromium-15612-font-system-v1-source-contract.json", "chromium-154-source-contract.json", "chromium-15540-semantic-v1-source-contract.json", "chromium-15540-semantic-v2-source-contract.json", "chromium-15540-semantic-v3-source-contract.json", "chromium-15540-semantic-v4-source-contract.json", "chromium-15540-semantic-v5-source-contract.json"]
+        for filename in allowed + ["chromium-15681-source-contract.json", "chromium-15680-source-contract.json/extra", "chromium-15675-source-contract.json", "chromium-15674-source-contract.json/extra", "chromium-15612-font-system-v2-source-contract.json", "chromium-15612-font-system-v1-source-contract.json/extra", "chromium-155-source-contract.json", "chromium-15540-semantic-v6-source-contract.json", "../chromium-154-source-contract.json"] {
+            contract["bundlePath"] = "Contents/Resources/NeAntikRuntimeEvidence/" + filename
+            critical["sourceContract"] = contract
+            root["criticalFiles"] = critical
+            let manifest = try JSONSerialization.data(
+                withJSONObject: root,
+                options: [.sortedKeys, .withoutEscapingSlashes]
+            )
+            if allowed.contains(filename) {
+                _ = try FingerprintEvidenceReleaseContext.parseCandidateMetadata(manifest)
+            } else {
+                #expect(throws: FingerprintEvidenceReleaseError.invalidManifest) {
+                    try FingerprintEvidenceReleaseContext.parseCandidateMetadata(manifest)
+                }
+            }
+        }
+    }
+
     @Test
     func qualifiedReportProducesOnePrivacySafeOneShotEnvelope() throws {
         let fixture = makeContext()
@@ -34,8 +219,8 @@ struct FingerprintEvidenceReleaseContextTests {
         for privateValue in [
             "PRIVATE-PROFILE-A",
             "PRIVATE-PROFILE-B",
-            "NA-13579BDF",
-            "NA-2468ACE0",
+            "NA-" + "13579BDF",
+            "NA-" + "2468ACE0",
             report.firstInitial.profileID.uuidString,
             report.second.profileID.uuidString,
             "raw-canvas-a",
@@ -391,7 +576,7 @@ struct FingerprintEvidenceReleaseContextTests {
         let receipt = root
             .appendingPathComponent("v1", isDirectory: true)
             .appendingPathComponent(identifier, isDirectory: true)
-            .appendingPathComponent("envelope.schema8.json")
+            .appendingPathComponent("envelope.schema9.json")
         let attributes = try FileManager.default.attributesOfItem(
             atPath: receipt.path
         )
@@ -808,7 +993,7 @@ struct FingerprintEvidenceReleaseContextTests {
         let first = FingerprintCapture(
             profileID: firstID,
             profileName: "PRIVATE-PROFILE-A",
-            identityCode: "NA-13579BDF",
+            identityCode: "NA-" + "13579BDF",
             capturedAt: Date(timeIntervalSince1970: 1),
             values: publicAlphaValues(
                 canvas: "raw-canvas-a",
@@ -825,7 +1010,7 @@ struct FingerprintEvidenceReleaseContextTests {
                     "22222222-2222-2222-2222-222222222222"
             )!,
             profileName: "PRIVATE-PROFILE-B",
-            identityCode: "NA-2468ACE0",
+            identityCode: "NA-" + "2468ACE0",
             capturedAt: Date(timeIntervalSince1970: 2),
             values: publicAlphaValues(
                 canvas: "raw-canvas-b",
@@ -893,7 +1078,7 @@ struct FingerprintEvidenceReleaseContextTests {
             "webgl_vendor": "Google Inc. (Apple)",
             "webgl_renderer": renderer,
             "webgl_extensions": "extensions",
-            "webgpu_policy": "disabled",
+            "webgpu_policy": "adapter-null",
             "user_agent": userAgent,
             "platform": "MacIntel",
             "client_hints": clientHints,
@@ -901,7 +1086,7 @@ struct FingerprintEvidenceReleaseContextTests {
             "hardware_concurrency": String(cores),
             "device_memory": "8",
             "touch_points": "0",
-            "fonts": "Arial,Menlo",
+            "fonts": "metrics-v1:a1b2c3d4:fallback-control-pass",
             "languages": "en-US,en",
             "timezone": "Europe/Berlin",
             "intl_locale": "en-US",
@@ -957,6 +1142,12 @@ struct FingerprintEvidenceReleaseContextTests {
             firstRepeat: report.firstRepeat
         )
     }
+}
+
+private final class RetirementTestState: @unchecked Sendable {
+    var gone = false
+    var deletes = 0
+    var intent: Data?
 }
 
 private final class RecordingChallengeClaimStore:
@@ -1178,6 +1369,12 @@ private final class PreexistingEnrollmentOutput:
     }
 
     func rollback() {}
+}
+
+private struct UpdateAuditWrongProofSigner: FingerprintEvidenceSigning {
+    let publicKeyX963: Data
+    let foreign: SoftwareP256FingerprintEvidenceSigner
+    func signatureDER(for transcript: Data) throws -> Data { try foreign.signatureDER(for: transcript) }
 }
 
 private final class LockedSessions: @unchecked Sendable {

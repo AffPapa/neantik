@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "archive": "obj/chrome/common/libconstants.a",
+  "kind": "thin",
+  "sourceArchiveSHA256": "e36c831e3312cdd22955707c522bc74e4038693f43cc8174a569debc7818de15",
+  "members": [
+    "constants/chrome_paths.o",
+    "constants/chrome_paths_mac.o"
+  ]
+}

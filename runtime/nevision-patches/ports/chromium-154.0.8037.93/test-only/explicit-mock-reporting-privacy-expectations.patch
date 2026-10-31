@@ -1,0 +1,145 @@
+--- a/chrome/browser/enterprise/connectors/test/deep_scanning_test_utils.cc
++++ b/chrome/browser/enterprise/connectors/test/deep_scanning_test_utils.cc
+@@ -424,7 +424,9 @@
+   RealtimeReportingClientFactory::GetForProfile(profile)
+       ->SetIdentityManagerForTesting(
+           identity_test_environment_.identity_manager());
+-  SetOnSecurityEventReporting(profile->GetPrefs(), true);
++  SetOnSecurityEventReporting(
++      profile->GetPrefs(), true,
++      {kKeySensitiveDataEvent, kKeyDangerousDownloadEvent, kKeyUnscannedFileEvent});
+ }
+ 
+ EventReportValidatorHelper::~EventReportValidatorHelper() {
+--- a/chrome/browser/enterprise/connectors/analysis/clipboard_request_handler_unittest.cc
++++ b/chrome/browser/enterprise/connectors/analysis/clipboard_request_handler_unittest.cc
+@@ -209,7 +209,7 @@
+   *expected_event.add_triggered_rule_info() = triggered_rule;
+ 
+   expected_event.set_profile_identifier(profile_->GetPath().AsUTF8Unsafe());
+-  expected_event.set_profile_user_name("test-user@ch40m1um.qjz9zk");
++  expected_event.set_profile_user_name("");
+ 
+   validator.ExpectSensitiveDataEvent(std::move(expected_event));
+ 
+@@ -248,7 +248,7 @@
+ 
+   expected_bypass_event.set_profile_identifier(
+       profile_->GetPath().AsUTF8Unsafe());
+-  expected_bypass_event.set_profile_user_name("test-user@ch40m1um.qjz9zk");
++  expected_bypass_event.set_profile_user_name("");
+ 
+   validator_bypass.ExpectSensitiveDataEvent(std::move(expected_bypass_event));
+   handler->ReportWarningBypass(kJustification);
+@@ -305,7 +305,7 @@
+   *expected_event.add_triggered_rule_info() = triggered_rule;
+ 
+   expected_event.set_profile_identifier(profile_->GetPath().AsUTF8Unsafe());
+-  expected_event.set_profile_user_name("test-user@ch40m1um.qjz9zk");
++  expected_event.set_profile_user_name("");
+ 
+   validator.ExpectSensitiveDataEvent(std::move(expected_event));
+ 
+@@ -343,7 +343,7 @@
+ 
+   expected_bypass_event.set_profile_identifier(
+       profile_->GetPath().AsUTF8Unsafe());
+-  expected_bypass_event.set_profile_user_name("test-user@ch40m1um.qjz9zk");
++  expected_bypass_event.set_profile_user_name("");
+ 
+   validator_bypass.ExpectSensitiveDataEvent(std::move(expected_bypass_event));
+   handler->ReportWarningBypass(kJustification);
+@@ -400,7 +400,7 @@
+   *expected_event.add_triggered_rule_info() = triggered_rule;
+ 
+   expected_event.set_profile_identifier(profile_->GetPath().AsUTF8Unsafe());
+-  expected_event.set_profile_user_name("test-user@ch40m1um.qjz9zk");
++  expected_event.set_profile_user_name("");
+ 
+   validator.ExpectSensitiveDataEvent(std::move(expected_event));
+ 
+@@ -439,7 +439,7 @@
+ 
+   expected_bypass_event.set_profile_identifier(
+       profile_->GetPath().AsUTF8Unsafe());
+-  expected_bypass_event.set_profile_user_name("test-user@ch40m1um.qjz9zk");
++  expected_bypass_event.set_profile_user_name("");
+ 
+   validator_bypass.ExpectSensitiveDataEvent(std::move(expected_bypass_event));
+   handler->ReportWarningBypass(kJustification);
+@@ -487,7 +487,7 @@
+                                  DataTransferEventTrigger::WEB_CONTENT_UPLOAD);
+ 
+   expected_event.set_profile_identifier(profile_->GetPath().AsUTF8Unsafe());
+-  expected_event.set_profile_user_name("test-user@ch40m1um.qjz9zk");
++  expected_event.set_profile_user_name("");
+ 
+   validator.ExpectUnscannedFileEvent(std::move(expected_event));
+ 
+--- a/chrome/browser/enterprise/connectors/analysis/page_print_request_handler_unittest.cc
++++ b/chrome/browser/enterprise/connectors/analysis/page_print_request_handler_unittest.cc
+@@ -190,7 +190,7 @@
+ 
+   *expected_event.add_triggered_rule_info() = triggered_rule;
+   expected_event.set_profile_identifier(profile_->GetPath().AsUTF8Unsafe());
+-  expected_event.set_profile_user_name("test-user@ch40m1um.qjz9zk");
++  expected_event.set_profile_user_name("");
+ 
+   validator.ExpectSensitiveDataEvent(std::move(expected_event));
+ 
+@@ -231,7 +231,7 @@
+   *expected_bypass_event.add_triggered_rule_info() = expected_bypass_rule;
+   expected_bypass_event.set_profile_identifier(
+       profile_->GetPath().AsUTF8Unsafe());
+-  expected_bypass_event.set_profile_user_name("test-user@ch40m1um.qjz9zk");
++  expected_bypass_event.set_profile_user_name("");
+ 
+   validator_bypass.ExpectSensitiveDataEvent(std::move(expected_bypass_event));
+   handler->ReportWarningBypass(kJustification);
+@@ -282,7 +282,7 @@
+ 
+   *expected_event.add_triggered_rule_info() = triggered_rule;
+   expected_event.set_profile_identifier(profile_->GetPath().AsUTF8Unsafe());
+-  expected_event.set_profile_user_name("test-user@ch40m1um.qjz9zk");
++  expected_event.set_profile_user_name("");
+ 
+   validator.ExpectSensitiveDataEvent(std::move(expected_event));
+ 
+@@ -323,7 +323,7 @@
+   *expected_bypass_event.add_triggered_rule_info() = expected_bypass_rule;
+   expected_bypass_event.set_profile_identifier(
+       profile_->GetPath().AsUTF8Unsafe());
+-  expected_bypass_event.set_profile_user_name("test-user@ch40m1um.qjz9zk");
++  expected_bypass_event.set_profile_user_name("");
+ 
+   validator_bypass.ExpectSensitiveDataEvent(std::move(expected_bypass_event));
+   handler->ReportWarningBypass(kJustification);
+@@ -361,7 +361,7 @@
+   expected_event.set_unscanned_reason(
+       chrome::cros::reporting::proto::UnscannedFileEvent::USER_CANCELLED);
+   expected_event.set_profile_identifier(profile_->GetPath().AsUTF8Unsafe());
+-  expected_event.set_profile_user_name("test-user@ch40m1um.qjz9zk");
++  expected_event.set_profile_user_name("");
+ 
+   validator.ExpectUnscannedFileEvent(std::move(expected_event));
+ 
+--- a/chrome/browser/enterprise/connectors/analysis/files_request_handler_unittest.cc
++++ b/chrome/browser/enterprise/connectors/analysis/files_request_handler_unittest.cc
+@@ -940,7 +940,7 @@
+       chrome::cros::reporting::proto::UnscannedFileEvent::USER_CANCELLED);
+   expected_event.set_event_result(
+       chrome::cros::reporting::proto::EVENT_RESULT_CANCELLED_BY_USER);
+-  expected_event.set_profile_user_name("test-user@ch40m1um.qjz9zk");
++  expected_event.set_profile_user_name("");
+   expected_event.set_profile_identifier(profile_->GetPath().AsUTF8Unsafe());
+   expected_event.set_content_transfer_method(
+       chrome::cros::reporting::proto::CONTENT_TRANSFER_METHOD_FILE_PICKER);
+@@ -1011,7 +1011,7 @@
+       chrome::cros::reporting::proto::UnscannedFileEvent::USER_CANCELLED);
+   expected_event.set_event_result(
+       chrome::cros::reporting::proto::EVENT_RESULT_CANCELLED_BY_USER);
+-  expected_event.set_profile_user_name("test-user@ch40m1um.qjz9zk");
++  expected_event.set_profile_user_name("");
+   expected_event.set_profile_identifier(profile_->GetPath().AsUTF8Unsafe());
+   expected_event.set_content_transfer_method(
+       chrome::cros::reporting::proto::CONTENT_TRANSFER_METHOD_FILE_PICKER);

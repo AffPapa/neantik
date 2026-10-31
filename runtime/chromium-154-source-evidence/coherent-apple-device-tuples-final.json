@@ -1,0 +1,12 @@
+{
+  "status": "verified",
+  "scope": "Exact signed runtime GUI device-tuple coherence; final integrated app must be checked separately",
+  "chromiumVersion": "154.0.8037.93",
+  "tupleCatalogSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+  "guiReportSHA256": "102a9ff2e87b366632e5ff697c047c2935257fd8d71c6a1b2f70c3d8e0071df4",
+  "qualificationSHA256": "521ccd6e5884dd4ff30bc480b98c64914e18c96b95935f59909836a3ce09214f",
+  "signedExecutableSHA256": "7ffcec6fa25c8ae107d5c7c2b4bc4bbb52270f8c49e933e60b64beaaa330628a",
+  "signedFrameworkSHA256": "4f55bcb8f08bf1e3ca6814054ed464c2c74dee070de16348e0daeee4621ac9a6",
+  "effectiveHTTPRouteObserved": false,
+  "releaseReady": false
+}

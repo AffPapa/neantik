@@ -1,0 +1,136 @@
+diff --git a/chrome/browser/signin/signin_promo_util.cc b/chrome/browser/signin/signin_promo_util.cc
+--- a/chrome/browser/signin/signin_promo_util.cc
++++ b/chrome/browser/signin/signin_promo_util.cc
+@@ -401,26 +401,8 @@
+       return syncer::SEND_TAB_TO_SELF;
+   }
+ }
+ 
+-bool PromoTypeHasSyncableData(SignInPromoType type) {
+-  switch (type) {
+-    case SignInPromoType::kPassword:
+-    case SignInPromoType::kAddress:
+-    case SignInPromoType::kBookmark:
+-    case SignInPromoType::kExtension:
+-    case SignInPromoType::kSendTabToSelf:
+-      return true;
+-    case SignInPromoType::kSearchAIMode:
+-      // Search AI Mode sign-in promo is not related to any synced data type.
+-      return false;
+-    case SignInPromoType::kComposeboxDriveContextMenuOption:
+-      // Composebox Drive context menu option sign-in promo is not related to
+-      // any synced data type.
+-      return false;
+-  }
+-  NOTREACHED();
+-}
+ 
+ int GetAddressPromoShownCount(Profile& profile, const GaiaId& gaia_id) {
+   return 0;
+ }
+@@ -492,70 +474,8 @@
+       NOTREACHED();
+   }
+ }
+ 
+-bool ShouldShowPromoBasedOnImpressionOrDismissalCount(Profile& profile,
+-                                                      SignInPromoType type) {
+-  // Footer sign in promos are always shown.
+-  if (type == signin::SignInPromoType::kExtension ||
+-      type == signin::SignInPromoType::kSendTabToSelf ||
+-      type == signin::SignInPromoType::kComposeboxDriveContextMenuOption ||
+-      (type == signin::SignInPromoType::kBookmark &&
+-       !base::FeatureList::IsEnabled(syncer::kUnoPhase2FollowUp))) {
+-    return true;
+-  }
+-
+-  AccountInfo account = signin_ui_util::GetSingleAccountForPromos(
+-      IdentityManagerFactory::GetForProfile(&profile),
+-      AccountPreviewDataServiceFactory::GetForProfile(&profile));
+-
+-  int show_count = 0;
+-  switch (type) {
+-    case SignInPromoType::kAddress:
+-      show_count = GetAddressPromoShownCount(profile, account.GetGaiaId());
+-      break;
+-    case SignInPromoType::kPassword:
+-      show_count = GetPasswordPromoShownCount(profile, account.GetGaiaId());
+-      break;
+-    case SignInPromoType::kSearchAIMode:
+-      show_count = GetSearchAIModePromoShownCount(profile, account.GetGaiaId());
+-      break;
+-    case SignInPromoType::kBookmark:
+-      if (!base::FeatureList::IsEnabled(syncer::kUnoPhase2FollowUp)) {
+-        NOTREACHED();
+-      }
+-      show_count = GetBookmarkPromoShownCount(profile, account.GetGaiaId());
+-      break;
+-    case SignInPromoType::kExtension:
+-    case SignInPromoType::kSendTabToSelf:
+-    case SignInPromoType::kComposeboxDriveContextMenuOption:
+-      NOTREACHED();
+-  }
+-
+-  int dismiss_count =
+-      account.GetGaiaId().empty()
+-          ? GetContextualPromoDismissCountPerSignedOutProfile(profile, type)
+-          : GetContextualPromoDismissCountPerAccount(profile, type,
+-                                                     account.GetGaiaId());
+-
+-  if (base::FeatureList::IsEnabled(switches::kSigninPromoLimitsExperiment) &&
+-      type != SignInPromoType::kSearchAIMode) {
+-    return show_count < switches::kContextualSigninPromoShownThreshold.Get() &&
+-           dismiss_count <
+-               switches::kContextualSigninPromoDismissedThreshold.Get();
+-  }
+-
+-  // Don't show the promo again if:
+-  // - it has already been shown `kSigninPromoShownThreshold` times for its
+-  // autofill bubble promo type.
+-  // - it has already been dismissed `kSigninPromoDismissedThreshold` times,
+-  // regardless of autofill bubble promo type.
+-  // - the promo type has a minimum required frequency between impressions
+-  // which is currently not met.
+-  return show_count < kSigninPromoShownThreshold &&
+-         dismiss_count < kSigninPromoDismissedThreshold &&
+-         IsAllowedByPromoFrequency(profile, type, account.GetGaiaId());
+-}
+ 
+ bool IsDataTypeManagedByPolicy(const syncer::SyncService* sync_service,
+                                syncer::DataType data_type) {
+   if (!sync_service) {
+@@ -569,34 +489,8 @@
+ }
+ 
+ // Common eligibility checks for signin promos relating to the syncing of an
+ // underlying syncable data type.
+-bool CanShowPromoForSyncableDataType(SignInPromoType type, Profile& profile) {
+-  syncer::SyncPrefs prefs(profile.GetPrefs());
+-  // Don't show if sync is not allowed to start or is running in local mode.
+-  if (!SyncServiceFactory::IsSyncAllowed(&profile) ||
+-      prefs.IsLocalSyncEnabled()) {
+-    return false;
+-  }
+-
+-  syncer::SyncService* sync_service =
+-      SyncServiceFactory::GetForProfile(&profile);
+-
+-  // Don't show the promo if the sync service is not available, e.g. if the
+-  // profile is off-the-record.
+-  if (!sync_service) {
+-    return false;
+-  }
+-
+-  syncer::DataType data_type = GetDataTypeFromSignInPromoType(type);
+-
+-  // Don't show the promo if policies disallow account storage.
+-  if (IsDataTypeManagedByPolicy(sync_service, data_type) ||
+-      !sync_service->GetDataTypesForTransportOnlyMode().Has(data_type)) {
+-    return false;
+-  }
+-  return true;
+-}
+ 
+ // Performs base checks for whether the sign in promos should be shown.
+ // Needs additional checks depending on the type of the promo.
+ // `profile` is the profile of the tab the promo would be shown on.

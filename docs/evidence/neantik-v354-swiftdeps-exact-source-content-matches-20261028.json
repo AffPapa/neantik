@@ -1,0 +1,710 @@
+{
+  "schemaVersion": 1,
+  "id": "V354",
+  "scope": "Path-level backing for the 87 exact source-content matches among the V348 Swift dependency paths; no build or compiler run.",
+  "buildNinjaSHA256": "2a28e27f417390a2f24e8dfe28b5e094e30eee2b22aae165cfbeba308dd38836",
+  "v348ManifestSHA256": "34e6c4e2f5b0b25210eae181228461ae6c5ef92b5d3e1ba7b5f69af5a0167ae7",
+  "v350QuerySHA256": "15af5ac7964d117539745ed3378423251ec4b8dd529199c939ea6dcfebe13eeb",
+  "regularBuildPathCount": 308,
+  "exactSourceContentMatchCount": 87,
+  "ninjaNoEdgeCount": 46,
+  "allNoEdgePathsMatchPinnedSourceContent": true,
+  "matches": [
+    {
+      "buildPath": "ICU/Headers/unicode/parseerr.h",
+      "bytes": 3371,
+      "sha256": "3d983b71f8e0800021e23fb52491b6857c6c4be847b312fea645bf681f39b162",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/parseerr.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/platform.h",
+      "bytes": 29470,
+      "sha256": "cdd7307bea162e60b80e08d2424fb601810caf4e52b69d064e99d1f32e74e3c8",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/platform.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/ptypes.h",
+      "bytes": 3829,
+      "sha256": "b65d1f04227688d498dedb841c3de3015841eada90e7e6e0e8873d2893ff5254",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/ptypes.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/putil.h",
+      "bytes": 6776,
+      "sha256": "12c7cbf07e2a9c99dce28980e3f64240f1e965fdbf717d54294a607ee7352cd6",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/putil.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/stringoptions.h",
+      "bytes": 6238,
+      "sha256": "1f75c8aafd039b84d8e5ddeaeac018fc7ca4f8d42ed0a0cfc8105c2e7ea517a5",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/stringoptions.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/ubidi.h",
+      "bytes": 94092,
+      "sha256": "6a37bf2bf409d09d9eba0973e2cebb4c94804ffea0be6a65b8fdb3c56e0cc756",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/ubidi.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/ubrk.h",
+      "bytes": 25790,
+      "sha256": "981162f46b8dee00fde4e45e9450ffcdf9cc67035e328811d3c56e1bdbaf902f",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/ubrk.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/ucal.h",
+      "bytes": 67727,
+      "sha256": "e500139b5df5830fbccaf3769e7cfcd254a2802f0907bf2df467a45b22bb8ac6",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/ucal.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/uchar.h",
+      "bytes": 153528,
+      "sha256": "26882e3317ebd102ca8a12c98c997a475c9db2d963c1257e5282e41698148d75",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/uchar.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/ucnv.h",
+      "bytes": 87638,
+      "sha256": "f9fe84da87395b72f1b381dcf1676f696417e504b5b13552722c9f312f18bf43",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/ucnv.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/ucnv_err.h",
+      "bytes": 22073,
+      "sha256": "2f3a81d98257df49ce91299973ad5f1ddc93f905bd4d522951ac5872b525df4e",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/ucnv_err.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/ucol.h",
+      "bytes": 65915,
+      "sha256": "b201df455712a421d33d21b6262da1b0add52f5ce2523320fb37813ba2bc56aa",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/ucol.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/ucoleitr.h",
+      "bytes": 10454,
+      "sha256": "a8e16cfab602f62239c61288632d03a159c039d8bfb62ab145fb562f86ffc521",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/ucoleitr.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/uconfig.h",
+      "bytes": 13194,
+      "sha256": "a03c3debdf95b8e26e0f2206d7d2f26cfabb285f57f27bdd7fbf924845ad5efb",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/uconfig.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/ucpmap.h",
+      "bytes": 5954,
+      "sha256": "d839b98ab925a2f5d9420da9ff6605e54e2e33b1de4a8b552887e8d861944fce",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/ucpmap.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/ucsdet.h",
+      "bytes": 15587,
+      "sha256": "5c1d4e7acc986743d3929e704114ad51fc2652e688a9025ce5f8cce71811b1ce",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/ucsdet.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/ucurr.h",
+      "bytes": 17710,
+      "sha256": "6b91a0c3a6006026c1d7783d6d2e8c45cd86465d8b07067522aee4857b12d74b",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/ucurr.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/udat.h",
+      "bytes": 65715,
+      "sha256": "ba777b5eb544f7277552540721691f12976fd1b68ab615e46424a7d9a91ce2a3",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/udat.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/udatpg.h",
+      "bytes": 31728,
+      "sha256": "fc802fea49890b00f080d2bd32e80cb436e2c1c4d653cdb2b0902991595e7275",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/udatpg.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/udisplaycontext.h",
+      "bytes": 6379,
+      "sha256": "131286da5cba09773c39df0105ecff484af7758f1efcbc344dca367047f6e343",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/udisplaycontext.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/uenum.h",
+      "bytes": 8312,
+      "sha256": "d8cea70f1f8071d60dad54c3143f032e0da8d5e111b9a0a9cd162e6451ef6fe7",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/uenum.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/ufieldpositer.h",
+      "bytes": 4758,
+      "sha256": "c089c5d64fa577304818189342dcbf3ab326cf7e80ce7596333dfe7460658582",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/ufieldpositer.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/uformattable.h",
+      "bytes": 11645,
+      "sha256": "01f8260b908386c09a62dc5aa18a3fbf299693ee88e450ee1a3a8217930452f3",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/uformattable.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/uidna.h",
+      "bytes": 35193,
+      "sha256": "aa4d29547ae6eee3b9ddb2cfc75b50bbad41e7e050ae04c8b400b7235b62ffbf",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/uidna.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/uiter.h",
+      "bytes": 24130,
+      "sha256": "f003b6df1fe1db2a8b1fe854f048a863b9029d2dbcdf2ddac2df1d3c1af66bc1",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/uiter.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/uloc.h",
+      "bytes": 57490,
+      "sha256": "fe10980f0215e219c5589312277d7003423f900207fed6cc45bdb252efb7dad2",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/uloc.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/umachine.h",
+      "bytes": 15941,
+      "sha256": "06440e0b293a05b7114a055053ce0ed3b99ddea559ee14048ae93d06ed79bb95",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/umachine.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/umisc.h",
+      "bytes": 1556,
+      "sha256": "163d4898ae9144e42f84f305ab688a4a99f50a0cc3097a98c2ff7fc8ebb91f35",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/umisc.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/unorm.h",
+      "bytes": 21640,
+      "sha256": "d6014b5ccc87a11ee0437806a7434291dc696f751b2fc18ce92ac111093f9359",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/unorm.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/unorm2.h",
+      "bytes": 27146,
+      "sha256": "ea81469ca9c17c78ae347bea28d5828305ebfdc267e63eacc7db6f088e79b868",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/unorm2.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/unum.h",
+      "bytes": 58115,
+      "sha256": "8da1e11c9baf31ddebfd71dbc8eec5d6bdf9957dcc20114d6e4dccf8cc67919d",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/unum.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/unumberoptions.h",
+      "bytes": 5655,
+      "sha256": "5a6e9d374d65576752efe4763ac4126271c15d474d99a434a696c48a13a05b07",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/unumberoptions.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/urename.h",
+      "bytes": 146347,
+      "sha256": "76fafc9e0f57e54995c4f555118e84d91f029b0cfaa9f809989e46fba874e7ba",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/urename.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/uscript.h",
+      "bytes": 29316,
+      "sha256": "ab13830a6e87bb6e767125e3d541518fc1dcf5134540bdc263c52839779f1cfc",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/uscript.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/usearch.h",
+      "bytes": 41186,
+      "sha256": "711e869f2bd594c27892dface10c43b312df746197abd9ade86b4f5e2ef8e6bd",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/usearch.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/uset.h",
+      "bytes": 48120,
+      "sha256": "b264fe6f3d5021add3c370e65d8a31d3ac5adf55b630a4d1023ed32ea0027e3d",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/uset.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/ustring.h",
+      "bytes": 75736,
+      "sha256": "b1d2a242e8c043c877cdb83b41337245c8cf64ec031d21612d2c404a8792b607",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/ustring.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/utext.h",
+      "bytes": 61220,
+      "sha256": "f73c3750cb29280dff87073ac3b6291ae5aeb8df67e0cded90e55fe749ad588d",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/utext.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/utf.h",
+      "bytes": 8404,
+      "sha256": "98c62d97af4f6502a1de4e1069a870e9b442cdbb6586e3df55e83bfef4378f03",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/utf.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/utf16.h",
+      "bytes": 24766,
+      "sha256": "4cec6dbd439e9693d6dc94738273150370bc2cbcc795c3aa8c00d2b3475c1197",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/utf16.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/utf8.h",
+      "bytes": 32576,
+      "sha256": "3f8a6296a9b4b4c13a4d71d721c38694506c1b6544cf378d34b9f708149b50a6",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/utf8.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/utf_old.h",
+      "bytes": 48219,
+      "sha256": "b02aa0d217d4cad027a731d0292c804bff7d2695159b8cfe29a866dab02efbe6",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/utf_old.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/utypes.h",
+      "bytes": 32659,
+      "sha256": "945b5bd636f34472906dd0347d0164c8d78f1041ebb4306aa2f9cb7c5176ab95",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/utypes.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/uvernum.h",
+      "bytes": 6793,
+      "sha256": "ad7bb488008b617d255c270c5aea546394a6a116f37fc74bf341195b889dac7d",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/uvernum.h"
+      ]
+    },
+    {
+      "buildPath": "ICU/Headers/unicode/uversion.h",
+      "bytes": 6446,
+      "sha256": "e8d568592acb01c0e2ed0250fd6925ad73e41c3cd91ca47a4da0b5050e05d674",
+      "exactSourcePaths": [
+        "Source/WTF/icu/unicode/uversion.h"
+      ]
+    },
+    {
+      "buildPath": "WebCore/WebKitAvailability.h",
+      "bytes": 2960,
+      "sha256": "8684ce893b282a225d2152a348c0120996551253cd5279c18186e1ca6f34db19",
+      "exactSourcePaths": [
+        "Source/WebCore/platform/cocoa/WebKitAvailability.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/Headers/WebKitAvailability.h",
+      "bytes": 2960,
+      "sha256": "8684ce893b282a225d2152a348c0120996551253cd5279c18186e1ca6f34db19",
+      "exactSourcePaths": [
+        "Source/WebCore/platform/cocoa/WebKitAvailability.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/Headers/WebPluginContainer.h",
+      "bytes": 3123,
+      "sha256": "620f4f0406361f15e43ad3710c9974563b2e877b7dba595a43eea2b364c861db",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Plugins/WebPluginContainer.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/Headers/WebResource.h",
+      "bytes": 3285,
+      "sha256": "3d4e78b03d7aa041974f5a38246c2c6852bacabf8b8085b45b373141e38bb9a0",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebView/WebResource.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/Modules/WebKit.swiftcrossimport/SwiftUI.swiftoverlay",
+      "bytes": 94,
+      "sha256": "425b5887a7a8aa393ec19556f05d0993e891af26d5b4984e5338fa9c303a79c3",
+      "exactSourcePaths": [
+        "Source/WebKit/Modules/SwiftUI.swiftoverlay"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebAllowDenyPolicyListener.h",
+      "bytes": 1557,
+      "sha256": "a1c8dc851740bf3136ea4debcd69ce806efff84e3c15a157b74a0ad60c014adb",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebView/WebAllowDenyPolicyListener.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebAutocapitalizeTypes.h",
+      "bytes": 1568,
+      "sha256": "d4b7edcbc6c220384fab0ee54a92c3dec20d97d0ac43d99e724b128501632ba5",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/DOM/WebAutocapitalizeTypes.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebCache.h",
+      "bytes": 1768,
+      "sha256": "6fee650cb91316e02a62139449745f1f81803fa011e63efe559c9f6a10d6bde5",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Misc/WebCache.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebCreateFragmentInternal.h",
+      "bytes": 1617,
+      "sha256": "72209b448503bbe9c66d385099bdbe11d50c256442cd6f7c8d17ecc3676467d2",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebCoreSupport/WebCreateFragmentInternal.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebDeviceOrientation.h",
+      "bytes": 1635,
+      "sha256": "446ea26a43d43f9f448d7129f81cd09b555fc206d95a910e595662c54218d792",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebView/WebDeviceOrientation.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebDeviceOrientationProvider.h",
+      "bytes": 1552,
+      "sha256": "0dfba9d6a2cc2930517f7c7cb6171c3153ec6284eaa48a34ac61ca1841e3c38e",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebView/WebDeviceOrientationProvider.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebDynamicScrollBarsView.h",
+      "bytes": 2886,
+      "sha256": "015bd3e39df0e60a1d1af100a7ce0ec4cb0e051dbab22a5a6c79bb6acbdf85f3",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebView/WebDynamicScrollBarsView.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebFeature.h",
+      "bytes": 3573,
+      "sha256": "0dc801cef46f55b35566b0f5f1691df5f435bcfbe4f0b7e356edd161fe377d39",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebView/WebFeature.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebGeolocationPosition.h",
+      "bytes": 1558,
+      "sha256": "ca71c65658ca303d836192a64f1c429bc4e330862f27ab0e28d3aff4233f185a",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebView/WebGeolocationPosition.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebIconDatabase.h",
+      "bytes": 6094,
+      "sha256": "0f6b2904dc29c3985552438012d8c37f67930ba6a4ca41d56dbaf82b65fe9a69",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Misc/WebIconDatabase.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebInspector.h",
+      "bytes": 2576,
+      "sha256": "b1f23c4ca48383c54164d954bbc4eb4928c728d7d9826edadcb766a56060d608",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebInspector/WebInspector.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebJavaScriptTextInputPanel.h",
+      "bytes": 1809,
+      "sha256": "2aa1fa9213931fda07552fad125ad9da0d8fbb5f4eba1000d876c14ec2d0038f",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebCoreSupport/WebJavaScriptTextInputPanel.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebKitNSStringExtras.h",
+      "bytes": 2432,
+      "sha256": "454a56b99c4e8faac922b65e6a64ad68cffa6353a10f4324cf80fa717a4df6fd",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Misc/WebKitNSStringExtras.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebKitStatistics.h",
+      "bytes": 1954,
+      "sha256": "5a03f4b412a7237c4d495d358a70898d0c4c9b85402ad90731a5c38e1d1f4a73",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Misc/WebKitStatistics.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebLocalizableStrings.h",
+      "bytes": 3137,
+      "sha256": "c4dc5adf36f91975d2ed09305571e411cc4c6a39b354a92458a25ff78d92341a",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Misc/WebLocalizableStrings.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebNSEventExtras.h",
+      "bytes": 1821,
+      "sha256": "3c7e4a32c4ac37aca9a1c3347291d03c38db921c49b705a00b04bf2d97cb6a86",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Misc/WebNSEventExtras.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebNSFileManagerExtras.h",
+      "bytes": 1978,
+      "sha256": "df5e1966c4703b95e883461631d2a1f573206b7e87e359ddd782686c1a119f0b",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Misc/WebNSFileManagerExtras.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebNSPasteboardExtras.h",
+      "bytes": 3826,
+      "sha256": "f19c49ec62973982fae80b8efcb356364a562704b1500cbd40254e0a59b5a143",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Misc/WebNSPasteboardExtras.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebNSURLExtras.h",
+      "bytes": 3591,
+      "sha256": "12e7899877bd3cc955e45398752e8ba3143b9157c043970565f91a279f328d77",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Misc/WebNSURLExtras.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebNSUserDefaultsExtras.h",
+      "bytes": 1698,
+      "sha256": "05d1fd6dac9e8cb1393a3d27a5c5ca6176128e18a2201188965db73fe9312d8a",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Misc/WebNSUserDefaultsExtras.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebNSWindowExtras.h",
+      "bytes": 1828,
+      "sha256": "73e97dd63a7df9b27b80aa249cc910a7a9af7dfcc67a6fd27a7b223eddac7f79",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Misc/WebNSWindowExtras.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebNavigationData.h",
+      "bytes": 1846,
+      "sha256": "1e2669eb6b432982b140f4a79d2a695734b75b18ee58f3f6a9dda52d51f5b7d7",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebView/WebNavigationData.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebNotification.h",
+      "bytes": 1976,
+      "sha256": "d2a470c91320143dc27c3160cedae89564622d2c98b2474d92151ccc37937827",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebView/WebNotification.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebPanelAuthenticationHandler.h",
+      "bytes": 1924,
+      "sha256": "de132c9db5633fb19633afac64824a60f46c21b05f6bdeae8a446083bc72068b",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Panels/WebPanelAuthenticationHandler.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebPluginContainerPrivate.h",
+      "bytes": 2613,
+      "sha256": "763204383e528722771437fea6784123aa05ef4bc8e6369a0ce218e742164a6b",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Plugins/WebPluginContainerPrivate.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebPluginPackagePrivate.h",
+      "bytes": 1466,
+      "sha256": "e45ad34fc19577536e9a252fb844763a318770df55ee99da8c9b8a942b6ea29f",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Plugins/WebPluginPackagePrivate.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebPreferenceKeysPrivate.h",
+      "bytes": 21916,
+      "sha256": "676ecef625576dbb8ecc5614fb13f3c5dddd764c8a06884e6491896d032cddca",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebView/WebPreferenceKeysPrivate.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebQuotaManager.h",
+      "bytes": 2224,
+      "sha256": "addb976cbf516fd359996f87b445dc8e4af199827029cbcac3035240d63a9494",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Misc/WebQuotaManager.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebResourceLoadDelegatePrivate.h",
+      "bytes": 4759,
+      "sha256": "f067f3b5ce80a10ce2c145d8084fa2a3ddd305960f53f44d7bf4ca0f8472b5f5",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebView/WebResourceLoadDelegatePrivate.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebScriptDebugDelegate.h",
+      "bytes": 4586,
+      "sha256": "9f62f035ce7496eccbf1d88c3a7dedbb71a26a657a8a9dfa83e18e324ea67e56",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebView/WebScriptDebugDelegate.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebScriptWorld.h",
+      "bytes": 1722,
+      "sha256": "5c0240481ba7c643f3325aac2c746da4684f96bc7d58c399315bea80f30b5b01",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebView/WebScriptWorld.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebSecurityOriginPrivate.h",
+      "bytes": 2468,
+      "sha256": "645271bcbc9228428e729a003de1655e213973251b303df0d236334cab2922b3",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebCoreSupport/WebSecurityOriginPrivate.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebStorageManagerPrivate.h",
+      "bytes": 2080,
+      "sha256": "e14c501fc9b8da2f63d643acbac28cf83b4e6839dac0852c00fcf2f28c97dd16",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Storage/WebStorageManagerPrivate.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebStringTruncator.h",
+      "bytes": 2056,
+      "sha256": "6061c63eb376ddc0deeb05a6a707812ac21c6b628ef9e2dd22c48f6b0290fcbd",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Misc/WebStringTruncator.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebTextIterator.h",
+      "bytes": 3528,
+      "sha256": "0fc7a4308faa022809c417696ff755b2fb3ecff98357f0427cf1af17e51cd720",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/WebView/WebTextIterator.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebURLsWithTitles.h",
+      "bytes": 3114,
+      "sha256": "ef6c2cbaa1bf12f0b5c2331c8778fd16dc737a86bf80798ef4c357b085e89976",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/History/WebURLsWithTitles.h"
+      ]
+    },
+    {
+      "buildPath": "WebKit.framework/PrivateHeaders/WebUserContentURLPattern.h",
+      "bytes": 1610,
+      "sha256": "66cb9a08d23e0aa46b402d64d21a12e5a518db8e93a26acf072c5241e15eebaa",
+      "exactSourcePaths": [
+        "Source/WebKitLegacy/mac/Misc/WebUserContentURLPattern.h"
+      ]
+    }
+  ]
+}

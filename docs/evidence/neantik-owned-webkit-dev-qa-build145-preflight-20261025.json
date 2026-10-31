@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T13:08:46.857347+00:00",
+  "status": "build145-exact-signed-Dev-ZIP-preflight-PASS;no-Apple-submission-or-launch",
+  "archive": "/private/tmp/neantik-owned-webkit-qa-10tivyil/NeAntik-1.0.0-145-dev-owned-webkit-qa.zip",
+  "archiveSHA256": "6cfacdd64c1ac38b1573f09726665c3c4f6b1f83845138b9ec5e7ea74549dc29",
+  "archiveBytes": 246399312,
+  "stageReceipt": "/private/tmp/neantik-owned-webkit-qa-10tivyil/stage.json",
+  "stageReceiptSHA256": "ffc2518f886ae27981703988e65cef15e62ef6df62a6609fecaa84198e89a0cd",
+  "sourceChange": "QA-only fixed category and bounded numeric navigation error marker in manager+host; named synthetic .invalid A origin; no WebKit engine rebuild",
+  "hostSignedSHA256": "e3046ece028cdbdd773b33c6384f67d6b439cd3c6bef993aa208c64d85887cfc",
+  "managerSignedSHA256": "db0e77530121164674d477bb1208b3dfa3496e6a7b6214942149e919cb607fec",
+  "webkitImageSHA256": "876cb2176bc9c722e64b8bbc31f29b1539f435994fda1d4a037c572984943276",
+  "seedSHA256": "666e3be45e753a916ba333e63ff759e82f0035e280993a60274e229fafa77d9f",
+  "fixtureTargetHost": "neantik-proxy-qa.invalid",
+  "fixturePreflight": "PASS load_fixture on exact stage receipt and seed",
+  "tests": "WebKitHostChildBootstrapTests 29/29 PASS; producer Python tests 3/3 PASS; model seed generator 1/1 PASS",
+  "preflight": "deep strict signature, notices, exact ZIP verifier and compiled launcher --check-only PASS",
+  "productionQualified": false,
+  "releaseQualified": false,
+  "nextAction": "Submit exact archive SHA once to Apple; Gatekeeper then one synthetic named-origin A launch; capture bounded navigation category/code and broker counters."
+}

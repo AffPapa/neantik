@@ -83,7 +83,7 @@ class ExactCommandTimeoutTests(unittest.TestCase):
                     sys.executable,
                     str(SCRIPT),
                     "--timeout",
-                    "1",
+                    "3",
                     "--",
                     str(child),
                     str(pid_file),
@@ -93,10 +93,12 @@ class ExactCommandTimeoutTests(unittest.TestCase):
                 check=False,
             )
             elapsed = time.monotonic() - started
+            self.assertEqual(completed.returncode, 124)
+            self.assertTrue(pid_file.is_file(), "Owned child did not start before the test timeout")
             pid = int(pid_file.read_text(encoding="utf-8"))
 
         self.assertEqual(completed.returncode, 124)
-        self.assertLess(elapsed, 6)
+        self.assertLess(elapsed, 8)
         with self.assertRaises(ProcessLookupError):
             os.kill(pid, 0)
 

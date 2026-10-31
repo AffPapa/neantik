@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T14:08:18Z",
+  "status": "PASS_SOURCE_OFFER_NOTICE_INPUTS_AND_OVERLAY;LICENSE_DECISIONS_AND_RELEASE_OPEN",
+  "previousManifest": {
+    "components": 143,
+    "sha256": "a02e54a22a45001a42485454bacc543d225d8a6334e6189952b51eb905c2a214"
+  },
+  "currentManifest": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/manifest.json",
+    "components": 151,
+    "sha256": "3eb40e16ad5e1c2382d65bc6c6a31707dc5b46d7139a6f20291d4b14041e9dd6"
+  },
+  "noticeInstallerOverlay": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/patches/notice-installer-overlay-20261025.patch",
+    "sha256": "058af63b6a155fd8a84f2c8c47118105803fcfbf6b72ca20b307b6021a00a809",
+    "baseManagerArchiveSHA256": "b880531a56aced46dbf8cda817b3c1c52a8294dc1c38a4b13a2c2177cb556197"
+  },
+  "noticeInputs": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/notice-source-inputs-v20.tar",
+    "sha256": "826a1a04a536e5cdc332bea9d1738c95af38727500ecca96e58d203fc16a8bf7",
+    "manifest": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/evidence/NOTICE_SOURCE_INPUTS_MANIFEST_V20.json",
+    "manifestSHA256": "255657278534bff40e9129951aa1b96b3faea26b9773922c001306cf7db60dfb",
+    "files": 85
+  },
+  "jscAlternativeLicenseTexts": {
+    "MPL-1.1": "f849fc26a7a99981611a3a370e83078deb617d12a45776d6c4cada4d338be469",
+    "GPL-2.0": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6",
+    "provenanceManifest": "d2c93f73fcfe5847a40803b3616b59ce47a21b1cd068970e0fdca33d9c2f2a76"
+  },
+  "verification": {
+    "liveImplementation": "43/43 focused notice installer tests PASS",
+    "sourceOfferReplay": "43/43 focused notice installer tests PASS after fresh extraction of exact manager archive, notice overlay patch, 85-file input bundle, and official MPL-1.1/GPL-2.0 texts",
+    "sourceHashes": "Replay produced exact script and test SHA-256 values recorded in the JSDateMath integration receipt",
+    "priorSourceOfferFailure": "Initial archive replay failed because notice test/source inputs were absent at the source paths expected by the installer. The 85-file supplemental archive now provides those pinned paths."
+  },
+  "unchangedProof": {
+    "webkitSourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "webkitPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "relink": "reuse existing same-Mac 14-target clean relocated evidence; no new build"
+  },
+  "decisionBoundary": "The JSDateMath source header lists LGPL-2.1-or-later/MPL-1.1/GPL-2.0 alternatives and a V8-style BSD paragraph. Exact text is now included and hash-verified. No option or complete JavaScriptCore image applicability decision has been made; all 4 runtime-image and 78 resource rows remain UNKNOWN. No signed app, runtime, install, publication or legal-opinion claim."
+}

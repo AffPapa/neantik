@@ -19,34 +19,6 @@ enum ProfileTagEditorValidationError: LocalizedError, Equatable {
   }
 }
 
-enum ProfileTagEditorAccessibilityAnnouncement: Equatable {
-  case tooMany
-  case tooLong
-  case invalid
-
-  init(_ error: ProfileTagEditorValidationError) {
-    switch error {
-    case .tooMany:
-      self = .tooMany
-    case .tooLong:
-      self = .tooLong
-    case .invalid:
-      self = .invalid
-    }
-  }
-
-  var message: String {
-    switch self {
-    case .tooMany:
-      "Тег не добавлен. Можно добавить не больше \(BrowserProfile.maximumTagCount) тегов."
-    case .tooLong:
-      "Тег не добавлен. Сократи тег до \(BrowserProfile.maximumTagLength) символов."
-    case .invalid:
-      "Тег не добавлен. Удали переносы строк и управляющие символы."
-    }
-  }
-}
-
 struct ProfileTagEditorInputResult: Equatable {
   let tags: [String]
   let remainingInput: String
@@ -55,33 +27,6 @@ struct ProfileTagEditorInputResult: Equatable {
 
 enum ProfileTagEditorModel {
   static let searchableSuggestionThreshold = 8
-
-  /// Save resolves the final token too; a rejected draft remains intact.
-  static func resolvingDraft(
-    _ input: String, tags: [String]
-  ) -> ProfileTagEditorInputResult {
-    let completed = consumingDelimitedInput(input, tags: tags)
-    let hasFinalToken = !completed.remainingInput.trimmingCharacters(
-      in: .whitespacesAndNewlines
-    ).isEmpty
-    let result = completed.error == nil && hasFinalToken
-      ? adding(completed.remainingInput, to: completed.tags) : completed
-    if let error = result.error {
-      return .init(tags: tags, remainingInput: input, error: error)
-    }
-    return .init(tags: result.tags, remainingInput: "", error: nil)
-  }
-
-  static func permitsSuggestionCommit(query: String) -> Bool {
-    !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-  }
-
-  static func addingSuggestion(
-    _ suggestion: String, to tags: [String], preservingInput input: String
-  ) -> ProfileTagEditorInputResult {
-    let result = adding(suggestion, to: tags)
-    return .init(tags: result.tags, remainingInput: input, error: result.error)
-  }
 
   static func adding(
     _ candidate: String,
@@ -225,17 +170,12 @@ enum ProfileTagEditorModel {
 
 struct ProfileTagEditor: View {
   @Binding var tags: [String]
-  @Binding var input: String
   let suggestions: [String]
-  var focusRequest = 0
 
+  @State private var input = ""
   @State private var suggestionSearch = ""
   @State private var showingSuggestionPicker = false
   @State private var validationMessage: String?
-  @State private var announcementGate =
-    AccessibilityAnnouncementGate<
-      ProfileTagEditorAccessibilityAnnouncement
-    >()
   @FocusState private var inputIsFocused: Bool
   @FocusState private var suggestionSearchIsFocused: Bool
   @Environment(\.colorSchemeContrast) private var contrast
@@ -293,7 +233,6 @@ struct ProfileTagEditor: View {
     .onChange(of: input) { _, value in
       guard value.contains(",") else {
         validationMessage = nil
-        announcementGate.reset()
         return
       }
       apply(
@@ -302,9 +241,6 @@ struct ProfileTagEditor: View {
           tags: tags
         )
       )
-    }
-    .onChange(of: focusRequest, initial: true) { _, request in
-      if request > 0 { inputIsFocused = true }
     }
   }
 
@@ -318,14 +254,13 @@ struct ProfileTagEditor: View {
     )
     .focused($inputIsFocused)
     .onSubmit(commitInput)
-    .disabled(tags.count >= BrowserProfile.maximumTagCount && input.isEmpty)
+    .disabled(tags.count >= BrowserProfile.maximumTagCount)
     .accessibilityLabel("Новый тег профиля")
     .accessibilityHint("Нажми Return или введи запятую, чтобы добавить тег")
   }
 
   @ViewBuilder
   private var suggestionMenu: some View {
-    let availableSuggestions = self.availableSuggestions
     if availableSuggestions.count >
       ProfileTagEditorModel.searchableSuggestionThreshold
     {
@@ -373,8 +308,7 @@ struct ProfileTagEditor: View {
   }
 
   private var searchableSuggestionPicker: some View {
-    let filteredSuggestions = self.filteredSuggestions
-    return VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: 10) {
       Text("Существующие теги")
         .font(.headline)
         .accessibilityHeading(.h2)
@@ -468,8 +402,6 @@ struct ProfileTagEditor: View {
         .padding(.leading, 8)
       Text(tag)
         .lineLimit(1)
-        .truncationMode(.tail)
-        .help(tag)
       Button {
         remove(tag)
       } label: {
@@ -479,7 +411,6 @@ struct ProfileTagEditor: View {
           .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
-      .fixedSize()
       .help("Удалить тег \(tag)")
       .accessibilityLabel("Удалить тег \(tag)")
     }
@@ -500,11 +431,10 @@ struct ProfileTagEditor: View {
   }
 
   private func addSuggestion(_ suggestion: String) {
-    apply(ProfileTagEditorModel.addingSuggestion(suggestion, to: tags, preservingInput: input))
+    apply(ProfileTagEditorModel.adding(suggestion, to: tags))
   }
 
   private func addFirstFilteredSuggestion() {
-    guard ProfileTagEditorModel.permitsSuggestionCommit(query: suggestionSearch) else { return }
     guard let suggestion = filteredSuggestions.first else { return }
     addSuggestion(suggestion)
     showingSuggestionPicker = false
@@ -513,7 +443,6 @@ struct ProfileTagEditor: View {
   private func remove(_ tag: String) {
     tags.removeAll { $0 == tag }
     validationMessage = nil
-    announcementGate.reset()
     inputIsFocused = true
   }
 
@@ -521,27 +450,9 @@ struct ProfileTagEditor: View {
     tags = result.tags
     input = result.remainingInput
     validationMessage = result.error?.localizedDescription
-    if let error = result.error {
+    if result.error != nil {
       inputIsFocused = true
-      announce(ProfileTagEditorAccessibilityAnnouncement(error))
-    } else {
-      announcementGate.reset()
     }
-  }
-
-  @MainActor
-  private func announce(
-    _ announcement: ProfileTagEditorAccessibilityAnnouncement
-  ) {
-    guard announcementGate.shouldAnnounce(announcement) else { return }
-    NSAccessibility.post(
-      element: NSApp as Any,
-      notification: .announcementRequested,
-      userInfo: [
-        .announcement: announcement.message,
-        .priority: NSAccessibilityPriorityLevel.medium.rawValue
-      ]
-    )
   }
 }
 
@@ -560,9 +471,7 @@ private struct ProfileTagFlowLayout: Layout {
     var widestRow: CGFloat = 0
 
     for subview in subviews {
-      let size = subview.sizeThatFits(
-        ProposedViewSize(width: proposal.width, height: nil)
-      )
+      let size = subview.sizeThatFits(.unspecified)
       if currentX > 0, currentX + size.width > maximumWidth {
         widestRow = max(widestRow, currentX - spacing)
         currentX = 0
@@ -591,9 +500,7 @@ private struct ProfileTagFlowLayout: Layout {
     var rowHeight: CGFloat = 0
 
     for subview in subviews {
-      let size = subview.sizeThatFits(
-        ProposedViewSize(width: bounds.width, height: nil)
-      )
+      let size = subview.sizeThatFits(.unspecified)
       if currentX > bounds.minX,
         currentX + size.width > bounds.maxX
       {

@@ -6,6 +6,7 @@ enum BrowserRoutePolicy: Equatable, Sendable {
 }
 
 enum BrowserWebRTCPolicy: String, Equatable, Sendable {
+    case disabledByProfile
     case publicInterfaceOnly
     case disableNonProxiedUDP
 }
@@ -34,6 +35,25 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
     let appliedTimezoneIdentifier: String?
     let disabledFeatures: Set<String>
 
+    /// Recheck current bytes at the common launch boundary. The cached UI
+    /// capability is not authority after a runtime replacement or edit.
+    static func validatePrivacyPolicy(_ profile: BrowserProfile, runtime: BrowserRuntime? = nil) throws {
+        if profile.privacyPolicy == .legacy { return }
+        guard profile.engine == .chromium, let runtime, runtime.supportsProfilePrivacy,
+              BrowserPrivacyRuntime.inspect(executableURL: runtime.executableURL) != nil,
+              !profile.privacyPolicy.trackingParameterCleanup || profile.privacyPolicy.siteProtection else {
+            throw UnsupportedBrowserPrivacyPolicyError()
+        }
+    }
+
+    static func validateFontPolicy(_ profile: BrowserProfile, runtime: BrowserRuntime? = nil) throws {
+        if profile.fontPolicy == .native { return }
+        guard profile.engine == .chromium, let runtime,
+              runtime.supportsFingerprintIdentity, runtime.supportsSystemFontPolicy,
+              BrowserFontPolicyRuntime.inspect(executableURL: runtime.executableURL) != nil
+        else { throw UnsupportedBrowserFontPolicyError() }
+    }
+
     static func resolve(
         profile: BrowserProfile,
         runtimeCapabilities: BrowserRuntimeCapabilities,
@@ -57,7 +77,7 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
         }
 
         let route: BrowserRoutePolicy
-        let webRTC: BrowserWebRTCPolicy
+        var webRTC: BrowserWebRTCPolicy
         let quic: BrowserQUICPolicy
         let dns: BrowserDNSPolicy
         if let proxy = profile.proxy {
@@ -65,7 +85,7 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
             webRTC = .disableNonProxiedUDP
             quic = .disabledByNeAntik
             dns = .proxyResolverFailClosed
-            disabledFeatures.formUnion(["AsyncDns", "DnsOverHttpsUpgrade"])
+            disabledFeatures.formUnion(["AsyncDns", "DnsOverHttpsUpgrade", "DirectSockets", "DirectSocketsInSharedWorkers", "DirectSocketsInServiceWorkers"])
         } else {
             route = .direct
             webRTC = .publicInterfaceOnly
@@ -73,6 +93,10 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
             dns = .ordinaryChromium
         }
 
+        if profile.privacyPolicy.rtc == .off ||
+            (profile.privacyPolicy.rtc == .proxyOnly && profile.proxy == nil) {
+            webRTC = .disabledByProfile
+        }
         return BrowserLaunchPolicy(
             route: route,
             webRTC: webRTC,
@@ -80,7 +104,7 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
             dns: dns,
             fingerprintSeedConfigured: fingerprintSeedConfigured,
             fingerprintIdentityConfigured: fingerprintIdentityConfigured,
-            fingerprintNoiseArgumentsEnabled: fingerprintSeedConfigured,
+            fingerprintNoiseArgumentsEnabled: false,
             webGPUDisabled: fingerprintSeedConfigured,
             proxyContextIsFresh: proxyContextIsFresh,
             appliedLocaleIdentifier:

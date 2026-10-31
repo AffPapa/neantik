@@ -1,15 +1,6 @@
 import CryptoKit
-import Darwin
 import Foundation
 import Security
-
-struct BrowserRuntimeFileIdentity: Equatable, Hashable, Sendable {
-    let device: UInt64
-    let inode: UInt64
-    let size: UInt64
-    let modificationSeconds: Int64
-    let modificationNanoseconds: Int64
-}
 
 struct BrowserRuntimeInspection: Equatable, Hashable, Sendable {
     let version: String?
@@ -17,22 +8,19 @@ struct BrowserRuntimeInspection: Equatable, Hashable, Sendable {
     let codeSignatureValid: Bool?
     let executableSHA256: String?
     let frameworkSHA256: String?
-    let executableIdentity: BrowserRuntimeFileIdentity?
 
     init(
         version: String?,
         architectures: [String],
         codeSignatureValid: Bool?,
         executableSHA256: String? = nil,
-        frameworkSHA256: String? = nil,
-        executableIdentity: BrowserRuntimeFileIdentity? = nil
+        frameworkSHA256: String? = nil
     ) {
         self.version = version
         self.architectures = architectures
         self.codeSignatureValid = codeSignatureValid
         self.executableSHA256 = executableSHA256
         self.frameworkSHA256 = frameworkSHA256
-        self.executableIdentity = executableIdentity
     }
 
     var supportsAppleSilicon: Bool {
@@ -43,7 +31,6 @@ struct BrowserRuntimeInspection: Equatable, Hashable, Sendable {
 enum BrowserRuntimeInspector {
     private static let cpuTypeX86_64: UInt32 = 0x0100_0007
     private static let cpuTypeARM64: UInt32 = 0x0100_000C
-    private static let maximumInfoPlistBytes = 1 * 1_024 * 1_024
 
     static func inspect(executableURL: URL) -> BrowserRuntimeInspection {
         let frameworkURL = frameworkBinary(for: executableURL)
@@ -54,8 +41,7 @@ enum BrowserRuntimeInspector {
                 for: executableURL
             ),
             executableSHA256: sha256(of: executableURL),
-            frameworkSHA256: frameworkURL.flatMap(sha256),
-            executableIdentity: fileIdentity(at: executableURL)
+            frameworkSHA256: frameworkURL.flatMap(sha256)
         )
     }
 
@@ -67,32 +53,7 @@ enum BrowserRuntimeInspector {
             architectures: machOArchitectures(at: executableURL),
             codeSignatureValid: codeSignatureValidity(
                 for: executableURL
-            ),
-            executableIdentity: fileIdentity(at: executableURL)
-        )
-    }
-
-    static func inspectForLaunch(
-        executableURL: URL
-    ) -> BrowserRuntimeInspection {
-        inspectForStartup(executableURL: executableURL)
-    }
-
-    private static func fileIdentity(
-        at url: URL
-    ) -> BrowserRuntimeFileIdentity? {
-        var value = stat()
-        guard lstat(url.path, &value) == 0,
-              (value.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG)
-        else {
-            return nil
-        }
-        return BrowserRuntimeFileIdentity(
-            device: UInt64(value.st_dev),
-            inode: UInt64(value.st_ino),
-            size: UInt64(max(0, value.st_size)),
-            modificationSeconds: Int64(value.st_mtimespec.tv_sec),
-            modificationNanoseconds: Int64(value.st_mtimespec.tv_nsec)
+            )
         )
     }
 
@@ -103,10 +64,7 @@ enum BrowserRuntimeInspector {
         let plistURL = bundleURL.appendingPathComponent(
             "Contents/Info.plist"
         )
-        guard let data = try? AppPaths.readStableRegularFile(
-                plistURL,
-                maximumBytes: maximumInfoPlistBytes
-              ),
+        guard let data = try? Data(contentsOf: plistURL),
               let object = try? PropertyListSerialization.propertyList(
                   from: data,
                   format: nil
@@ -163,67 +121,24 @@ enum BrowserRuntimeInspector {
             "Contents/Frameworks",
             isDirectory: true
         )
-        let expectedFrameworkName =
-            executableURL.lastPathComponent + " Framework"
-        let expectedBundleName = expectedFrameworkName + ".framework"
-        guard let children = try? FileManager.default.contentsOfDirectory(
+        guard let enumerator = FileManager.default.enumerator(
             at: root,
-            includingPropertiesForKeys: [
-                .isDirectoryKey,
-                .isSymbolicLinkKey,
-            ],
+            includingPropertiesForKeys: [.isRegularFileKey],
             options: [.skipsHiddenFiles]
         ) else {
             return nil
         }
-        let frameworkBundles = children.filter { candidate in
-            guard candidate.lastPathComponent == expectedBundleName,
-                  let values = try? candidate.resourceValues(
-                    forKeys: [.isDirectoryKey, .isSymbolicLinkKey]
-                  )
-            else { return false }
-            return values.isDirectory == true &&
-                values.isSymbolicLink != true
+        for case let candidate as URL in enumerator {
+            guard candidate.lastPathComponent.hasSuffix(" Framework"),
+                  (try? candidate.resourceValues(
+                    forKeys: [.isRegularFileKey]
+                  ).isRegularFile) == true
+            else {
+                continue
+            }
+            return candidate
         }
-        guard frameworkBundles.count == 1,
-              let framework = frameworkBundles.first
-        else { return nil }
-
-        let versions = framework.appendingPathComponent(
-            "Versions",
-            isDirectory: true
-        )
-        guard let versionDirectories = try? FileManager.default
-            .contentsOfDirectory(
-                at: versions,
-                includingPropertiesForKeys: [
-                    .isDirectoryKey,
-                    .isSymbolicLinkKey,
-                ],
-                options: [.skipsHiddenFiles]
-            )
-        else { return nil }
-        let binaries = versionDirectories.compactMap { version -> URL? in
-            guard version.lastPathComponent != "Current",
-                  let values = try? version.resourceValues(
-                    forKeys: [.isDirectoryKey, .isSymbolicLinkKey]
-                  ),
-                  values.isDirectory == true,
-                  values.isSymbolicLink != true
-            else { return nil }
-            let binary = version.appendingPathComponent(
-                expectedFrameworkName
-            )
-            guard let binaryValues = try? binary.resourceValues(
-                forKeys: [.isRegularFileKey, .isSymbolicLinkKey]
-            ),
-            binaryValues.isRegularFile == true,
-            binaryValues.isSymbolicLink != true
-            else { return nil }
-            return binary
-        }
-        guard binaries.count == 1 else { return nil }
-        return binaries[0]
+        return nil
     }
 
     private static func sha256(of url: URL) -> String? {

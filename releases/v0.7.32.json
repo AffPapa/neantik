@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.32",
+  "version": "0.7.32",
+  "build": 95,
+  "releasedAt": "2026-10-12",
+  "channel": "public-alpha",
+  "sourceCommit": "105f108b399711eae48b07237b34d02eae63ff97",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "archive": {
+    "name": "NeAntik-0.7.32-arm64-notarized.zip",
+    "sizeBytes": 188772290,
+    "sha256": "050f9c78170446c5be281b6893136fb07281bd9d6eccc4ab226511bab9a01d14"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.32-arm64-notarized.dmg",
+    "sizeBytes": 213714502,
+    "sha256": "0a8f02b43c5a27179d08e385b9e7545a6c595d91987720328a90190a4312423b"
+  },
+  "verification": {
+    "developerId": "passed same pinned certificate474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "notarization": "Accepted ZIP and DMG",
+    "zipNotarySubmissionId": "9442865f-0610-4a6b-9d05-8ef0563598cb",
+    "dmgNotarySubmissionId": "4ca68214-fb15-4fde-8024-f1e3bef9139a",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "swiftTests": {
+      "reportedTests": 1317,
+      "suites": 151,
+      "seconds": 62.771,
+      "status": "passed",
+      "optionalSkippedCaseLogCount": 48
+    },
+    "fingerprint": "fresh authenticated headed exact candidate isolation; JS8 / HTTP DeviceMemory8 modern and legacy navigation/subresource; owned processes drained",
+    "exactCandidateMCP": "18management/7read, metadata create/update/startupMode, stale revision/invalid enum/read-only write refusal/reconnect/EOF PASS",
+    "managerSHA256": "712e053b350c5423902ebaa52afba5bb6d50f63cec83e70ba5de7ed0c070df23",
+    "relay": "normal product selector handles HTTP/HTTPS/SOCKS auth; production OS-default TLS/application I/O PASS plus private-anchor authenticated headed HTTPS CONNECT/failure/reconnect/ownership controls PASS; public OS-default-trusted authenticated CONNECT e2e remains unmeasured",
+    "updater": "full global process inventory remains strict; fixture classification seam uses exact fresh own kernel records and generation/unlinked executable negatives. Public installer disabled",
+    "privacy": "changed source14entries458391bytes and reachable4958blobs8391objects recognized-format scansPASS before final doc commits; final release artifact privacyPASS. Sites all210tarfiles including macOS metadata5686136bytes recognized secret patterns and session literalsPASS. Not proof for all unknown secret formats",
+    "hostedDownload": "PASS: independently downloaded ZIP/DMG, exact hash/size, mounted signing/stapling/Gatekeeper/provenance/privacy",
+    "downloadedHeaded": "PASS: fresh enrollment, all critical files equal, authenticated headed isolation, processes drained",
+    "downloadedMCP": "PASS:18management/7read, metadata/revision/enum/access control negatives/reconnect/EOF; no browser/proxy/Keychain operations",
+    "devUI": "PASS: fresh synthetic library, keyboard create/cancel, help and profile persistence after quit/reopen; VoiceOver not activated",
+    "siteTests": "PASS:32tests and Vinext build",
+    "liveAPI": "PASS: ordinary HTTPS200 version0.7.32/build95/hash/downloadURLs match"
+  },
+  "siteUrl": "https://browser.free",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.32",
+  "rollbackRelease": "v0.7.31",
+  "candidateManifestSHA256": "f1d6860e67b08bd1b9536dea53e9e1c69682f2fa3894818bebf65aa9361895b4",
+  "candidateSourceBindingSHA256": "39826e023f4e6f0875a984d017ff59cb2c35d82bf792ab5be0c9ec9242c98f01",
+  "changes": [
+    "Production normal profile selector uses authenticated HTTPS relay as HTTP/SOCKS5",
+    "macOS certificate verification precedes HTTPS credentials, no HTTP/Direct retry",
+    "Network editor/help/MCP documentation updated",
+    "Owned-kernel updater tests separated from unrelated host processes without weakening production global inventory"
+  ],
+  "limitations": [
+    "Public alpha; full production hardware cohorts open.",
+    "macOS27beta ARM64 tests, not every Mac/OS or physical VoiceOver.",
+    "Safe Browsing disabled; no anonymity/CAPTCHA/site-rule bypass guarantee.",
+    "Bounded route/failure observations only; public OS-default-trusted authenticated HTTPS CONNECT e2e separately unmeasured.",
+    "Backup BrowserData-only for original stopped profile/Mac/Keychain/exact runtime; prior matching signed QA restore retained, no cross-Mac OS secret portability or fresh production Keychain use.",
+    "CRX native packed installation qualification and full product installer remain open; extension center retained.",
+    "Atomic updater public admission/feed/install-location/notarized transaction/rollback gates remain open; Release QA command disabled."
+  ],
+  "publicationScope": {
+    "channels": [
+      "GitHub",
+      "browser.free"
+    ],
+    "affpapa": "excluded by explicit user instruction; user updates manually"
+  },
+  "sitePublication": {
+    "status": "succeeded",
+    "projectId": "appgprj_6a643e28baa08191bf23bf4803345907",
+    "versionNumber": 133,
+    "versionId": "appgprj_6a643e28baa08191bf23bf4803345907~appgver_25459c558db08191b134abc6db1b8043",
+    "sourceCommit": "6a8948aab564da3e8da7fb85ed3100403a1d183a",
+    "deploymentId": "appgdep_6acbf28c610c8191b2e4df302906229c",
+    "nativeURL": "https://neantik-browser.iryadom.chatgpt.site",
+    "customDomain": "https://browser.free/",
+    "liveUI": "PASS: fresh reload visible0.7.32(95) and exact ZIP/DMG links",
+    "liveAPI": "PASS: ordinary HTTPS200 version0.7.32/build95/hash/downloadURLs match",
+    "audience": "public unchanged"
+  },
+  "distributionDirectory": "dist/distribution/v0.7.32-95-20261011T202649Z-20570",
+  "githubPublication": {
+    "status": "published",
+    "releaseId": 409903848,
+    "tag": "v0.7.32",
+    "targetCommit": "105f108b399711eae48b07237b34d02eae63ff97",
+    "assetsImmutable": true
+  }
+}

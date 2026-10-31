@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-16",
+  "status": "Offline analysis controls passed;native filter activation not performed",
+  "shippingWebKitProxy": false,
+  "nativeExecutedByThisSlice": false,
+  "controls": {
+    "acceptance": 13,
+    "journal": 6,
+    "totalUnique": 19,
+    "scope": "Offline deliberately broken fixtures;not actual OS filtering",
+    "retainedFailure": "New missing-apply control originally raised IndexError;guard corrected,13 acceptance controls subsequently passed. Journal6 subsequently passed. Old native suites not replayed."
+  },
+  "realRetainedReceipt": {
+    "caseCount": 4,
+    "analysisStatus": "INCOMPLETE OR FAILED;NOT QUALIFIED",
+    "workingProxyProved": false,
+    "productionQualified": false
+  },
+  "implemented": [
+    "Complete12case matrix and per-request lifecycle/owner timing",
+    "Actual macOS journal schema and case-independent UUID matching",
+    "Unknown ownership/unexpected callbacks retained;stop callback never equals unavailability",
+    "Retained baseline validates actual origin/completion times without fabricated launch intervals",
+    "Malformed/hugely oversized numeric evidence refuses without arithmetic overflow"
+  ],
+  "limits": [
+    "Offline tools do not authenticate OS collection",
+    "Pending action-time content-filter access confirmation",
+    "No proxy tunnel,external network,DNS,UDP,existing-flow or provider-crash qualification"
+  ],
+  "sourceSHA256": {
+    "Experiments/WebKitIsolation/analyze-owned-filter.py": "6c934267a397dbef287948e303e820dedbb6be2baef287178d50794f530bd7ee",
+    "Experiments/WebKitIsolation/test-analyze-owned-filter.py": "79ed56787f50c247d28d2a5025ea1d37b32f8cc158aa88ff3daf804d26229f47"
+  }
+}

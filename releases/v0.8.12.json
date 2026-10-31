@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "channel": "public-alpha",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "siteUrl": "https://browser.free",
+  "publicationScope": {
+    "channels": [
+      "GitHub",
+      "browser.free"
+    ],
+    "affpapa": "excluded by explicit user instruction; user updates manually"
+  },
+  "tag": "v0.8.12",
+  "version": "0.8.12",
+  "build": 124,
+  "sourceCommit": "ed511ee1e2164e4e91a464993a8d587345c6c845",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.8.12",
+  "rollbackRelease": "v0.8.11",
+  "distributionDirectory": "dist/distribution/v0.8.12-124-qualified",
+  "candidateManifestSHA256": "6d30f7650a35978c949ddce04a55ede7c77db04feaab70bffe54c39681b19a71",
+  "candidateSourceBindingSHA256": "d451a1b10a6cb68fa20b73091b95d8279efd51c6932cb0cf0e7cd291829e2985",
+  "managerSHA256": "77c8fc2755d5b3fbc54bb292dbe228778f454380b7175faab0c821f21ebd5ec0",
+  "publicationState": "GitHub published; browser.free saved version149 not deployed; exact downloaded headed gate remains open",
+  "changes": [
+    "Complete nested Chromium Framework inventory; actual old Foundation enumeration negative control and fixed exact inventory verified",
+    "Authenticated resumable retirement of temporary audit authority without another full fingerprint run; no real profiles opened",
+    "Same Chromium bytes, profile identity/schema, Developer ID certificate and rollback retained"
+  ],
+  "limitations": [
+    "Public alpha; full45 major1.0/hardware/macOS14/physicalVoiceOver remainopen",
+    "WebKit media/proxy/extensions/fullbackup/deletion/stdioGUIlaunch unavailable; media shipsdisabled",
+    "SafeBrowsing disabled; no anonymity/CAPTCHA/rulebypass guarantee",
+    "Updater synthetic metadata only; no freshcookie or crossMacKeychain portability claim",
+    "OS-default-trusted authenticated HTTPS upstream positive deferred by user",
+    "First cold downloaded MCP edit refused profile_not_stopped; explicit profile_status stopped workflow21checks passed. Original refusal retained; no product fix claimed",
+    "Downloaded headed resource refusal twice; kernel memory pressure2 confirmed, thermal nominal; no bypass. Original local exact signed headed passed, public hashes match; fresh published headed gate incomplete"
+  ],
+  "artifacts": [
+    {
+      "name": "NeAntik-0.8.12-arm64-notarized.zip",
+      "sha256": "cda3dd7f9229f4287404991df41c8c6b8287b4d38a9667061e910302f6ebdd6c",
+      "sizeBytes": 190389650,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.12/NeAntik-0.8.12-arm64-notarized.zip"
+    },
+    {
+      "name": "NeAntik-0.8.12-arm64-notarized.dmg",
+      "sha256": "45749d88f11d99b335183c686c48108b9d7e815fb40c7c6a77823152a0003a8a",
+      "sizeBytes": 215052885,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.12/NeAntik-0.8.12-arm64-notarized.dmg"
+    }
+  ],
+  "verification": {
+    "developerId": "same existing474F7C78F33EE324C24F6F5AE0443EB713E85E60/profile; no new certificate",
+    "notarization": {
+      "ZIP": "Accepted",
+      "ZIPSubmission": "125aa3a4-4e51-4bee-aac4-b88d790212b4",
+      "DMG": "Accepted",
+      "DMGSubmission": "b57e972d-8135-488f-bb11-a072a2e7a0df"
+    },
+    "stapling": "PASS",
+    "Gatekeeper": "PASS localZIP/DMG and anonymousdownloadedZIP/DMG",
+    "DirectDoctor": "13/13PASS",
+    "tests": {
+      "Swift": "1541reported/179suites;1471passedloglines/67skiploglines;76.328sPASS",
+      "Python": "full1383/19skip had one harness error; affected12testsPASS after correction; original full run not allgreen"
+    },
+    "nativeUpdater": {
+      "passed": true,
+      "exactShippingBinary": true,
+      "transition": "0.8.11(122)→0.8.12(124)",
+      "commitMarkerVerified": true,
+      "allCriticalBytesMatch": true,
+      "twoSyntheticProfilesRetained": true,
+      "newGUIObserved": true,
+      "normalQuitAndExit": true,
+      "limitations": "metadata only; old observer failure corrected without app changes"
+    },
+    "nativeRollback": {
+      "passed": true,
+      "beforeAcknowledgement": true,
+      "restoredVersion": "0.8.11",
+      "restoredBuild": 122,
+      "oldCriticalBytesMatch": true,
+      "twoSyntheticProfilesRetained": true
+    },
+    "authorityRetirement": "exact signed124 CLI/native Keychain; authorized temporary QA keys retired; releaseQualified:false receipt",
+    "MCPExactSigned": "18 management/7 read;20 metadata/refusal checksPASS",
+    "downloadedMCP": "18/7;21 checksPASS with profile_status=stopped before cold edit; original refusal retained",
+    "GUIFingerprint": "fresh authenticated headed exact local candidatePASS",
+    "hostedZIP": "anonymous SHA/sizeMATCH; candidate/evidence/privacy/notary/GatekeeperPASS",
+    "hostedDMG": "anonymous SHA/sizeMATCH; integrity/signature/stapling/GatekeeperPASS",
+    "downloadedHeaded": "OPEN: OS memory pressure warning2; both refusal records preserved, no override",
+    "site": "37 source tests/build/packaging/privacyPASS; saved149/source737a0b65; not deployed",
+    "releaseQualified": false
+  }
+}

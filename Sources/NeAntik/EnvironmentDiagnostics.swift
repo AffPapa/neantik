@@ -100,6 +100,7 @@ struct ProfileEnvironmentSnapshot: Equatable, Sendable {
     let generatedAt: Date
     let sections: [EnvironmentDiagnosticSection]
     let limitations: [String]
+    var siteCompatibility: SiteCompatibilityAssessment? = nil
 }
 
 enum FingerprintObservedRoute: Equatable, Sendable {
@@ -187,10 +188,14 @@ struct ProfileFingerprintConfigurationRevision: Equatable, Sendable {
     let identity: BrowserIdentity
     let proxy: ProxyConfiguration?
     let runtime: BrowserRuntime
+    let fontPolicy: BrowserFontPolicy
+    let privacyPolicy: BrowserPrivacyPolicy
 
     init(profile: BrowserProfile, runtime: BrowserRuntime) {
         identity = profile.identity
         proxy = profile.proxy
+        fontPolicy = profile.fontPolicy
+        privacyPolicy = profile.privacyPolicy
         self.runtime = runtime
     }
 }
@@ -202,6 +207,8 @@ enum ProfileEnvironmentInspector {
         proxyHealth: ProxyHealthState?,
         fingerprintObservation:
             ValidatedProfileFingerprintObservation? = nil,
+        siteCompatibility: SiteCompatibilityAssessment? = nil,
+        privacyParametersSent: Bool = false,
         now: Date = Date()
     ) -> ProfileEnvironmentSnapshot {
         let capabilities = runtime?.capabilities ?? []
@@ -231,9 +238,11 @@ enum ProfileEnvironmentInspector {
             profileID: profile.id,
             generatedAt: now,
             sections: [
+                protectionSection(profile: profile, runtime: runtime, parametersSent: privacyParametersSent),
                 routeSection(
                     policy: policy,
-                    proxyHealth: proxyHealth
+                    proxyHealth: proxyHealth,
+                    now: now
                 ),
                 fingerprintSection(
                     profile: profile,
@@ -249,7 +258,8 @@ enum ProfileEnvironmentInspector {
                 geolocationSection(
                     profile: profile,
                     policy: policy,
-                    proxyHealth: proxyHealth
+                    proxyHealth: proxyHealth,
+                    now: now
                 )
             ],
             limitations: [
@@ -259,13 +269,97 @@ enum ProfileEnvironmentInspector {
                     "маршрут запущенного Chromium.",
                 "Фактические HTTP, DNS, QUIC и публичный " +
                     "WebRTC-маршруты не измеряются."
+            ],
+            siteCompatibility: siteCompatibility?.isUsable(
+                for: profile, runtime: runtime, now: now
+            ) == true ? siteCompatibility : nil
+        )
+    }
+
+    private static func protectionSection(
+        profile: BrowserProfile, runtime: BrowserRuntime?, parametersSent: Bool
+    ) -> EnvironmentDiagnosticSection {
+        let compatible = runtime?.supportsProfilePrivacy == true
+        let localStart = BrowserStartURL.validate(profile.startURL)?.absoluteString == "about:blank"
+        let restoresSession = profile.startupMode == .restoreSession && profile.privacyPolicy.retention != .ephemeral
+        return EnvironmentDiagnosticSection(
+            id: "protection",
+            title: "Паспорт защиты",
+            fields: (profile.privacyPolicy == .legacy ? [] : [
+                EnvironmentDiagnosticField(
+                    id: "protection.policy",
+                    title: "Сохранённый режим защиты",
+                    value: profile.privacyPolicy.presetName,
+                    state: .configured,
+                    detail: "Это настройки профиля. Изменение режима не считается измерением защиты."
+                ),
+                EnvironmentDiagnosticField(
+                    id: "protection.runtime", title: "Поддержка движка",
+                    value: compatible ? "Точный подписанный движок распознан" : "Нужен совместимый движок",
+                    state: compatible ? .observed : .unavailable,
+                    severity: compatible ? .neutral : .blocking,
+                    detail: "Сверяются подпись и полный набор файлов. Синтетический тест на этом Mac проверил RTC-off, LAN, графику и изоляцию хранилищ; он не доказывает отсутствие всех утечек."
+                ),
+                EnvironmentDiagnosticField(
+                    id: "protection.applied", title: "Текущий сеанс",
+                    value: parametersSent ? "Параметры переданы запущенному процессу" : "Применение к текущему сеансу не подтверждено",
+                    state: parametersSent ? .configured : .unverified,
+                    detail: "Передача параметров не является измерением API страницы. Эффективные правила сайтов и сторонних cookies показаны в расширении «Защита сайтов»."
+                ),
+                EnvironmentDiagnosticField(
+                    id: "protection.controls", title: "Ограничения",
+                    value: "RTC: \(profile.privacyPolicy.rtc.rawValue) · LAN: \(profile.privacyPolicy.localNetwork.rawValue) · разрешения: \(profile.privacyPolicy.media.rawValue)",
+                    state: .configured,
+                    detail: "При RTC proxyOnly без прокси WebRTC выключен. С прокси запрещён UDP вне прокси; совместимый TCP TURN зависит от сайта. Строгий режим полностью запрещает создание RTCPeerConnection."
+                ),
+                EnvironmentDiagnosticField(
+                    id: "protection.extensions", title: "Расширения, Sync и autofill",
+                    value: profile.proxy != nil || profile.privacyPolicy.presetName == "strict" ? "Обычные расширения профиля отключены" : "Разрешены отдельные расширения профиля",
+                    state: .configured,
+                    detail: "Обычные расширения профиля ограничены; компоненты браузера и системные интеграции могут сохраняться. В совместимом движке обязательный прокси закреплён независимо от их настроек. Данные расширений не удаляются. Sync и autofill выключены в новых режимах."
+                ),
+                EnvironmentDiagnosticField(
+                    id: "protection.retention", title: "Данные сайтов",
+                    value: profile.privacyPolicy.retention == .ephemeral ? "Очистка после закрытия сеанса" : "Постоянное хранение",
+                    state: .configured,
+                    detail: "Для выбранного открытого профиля: расширение «Защита сайтов» → «Очистить данные этого профиля…» или ⌘⇧⌫. Очистка не меняет настройки личности; скачанные файлы сохраняются."
+                )
+            ]) + [
+                EnvironmentDiagnosticField(
+                    id: "protection.start-page",
+                    title: "При запуске",
+                    value: restoresSession ? "Сохранённые вкладки" :
+                        (localStart ? "Локальная пустая страница" : "Выбранная веб-страница"),
+                    state: .configured,
+                    detail: restoresSession
+                        ? "Восстановленные сайты могут обращаться в сеть. Стартовый адрес используется при первом запуске."
+                        : (localStart
+                            ? "Пустая страница не отправляет запросы внешнему чекеру. Это не проверка всего фонового трафика браузера."
+                            : "Открытие выбранного сайта передаёт ему обычные данные соединения. Полный адрес здесь не раскрывается.")
+                ),
+                EnvironmentDiagnosticField(
+                    id: "protection.malware",
+                    title: "Проверка вредоносных сайтов NeAntik",
+                    value: profile.privacyPolicy.siteProtection ? "CERT Polska и HaGeZi настроены" : "Выключена в настройках",
+                    state: .configured,
+                    severity: .attention,
+                    detail: "Дополнительные списки известных доменов; не полная защита от phishing/malware и не проверка файлов. Safe Browsing выключен. Свежесть CERT и дата снимка HaGeZi показаны в расширении. Проверка отпечатка для новых режимов пока недоступна."
+                ),
+                EnvironmentDiagnosticField(
+                    id: "protection.linkability",
+                    title: "Связывание профилей",
+                    value: "Полная несопоставимость не подтверждена",
+                    state: .unverified,
+                    detail: "Общий внешний IP, одинаковые аккаунты, файлы и поведение могут связывать посещения даже при разных настройках среды."
+                )
             ]
         )
     }
 
     private static func routeSection(
         policy: BrowserLaunchPolicy,
-        proxyHealth: ProxyHealthState?
+        proxyHealth: ProxyHealthState?,
+        now: Date
     ) -> EnvironmentDiagnosticSection {
         let routeValue: String
         switch policy.route {
@@ -284,8 +378,9 @@ enum ProfileEnvironmentInspector {
             )
         ]
         if let attempt = proxyHealth?.latestAttempt {
-            let routeContextIsComplete =
-                proxyHealth?.hasCompleteRouteContext == true
+            let routeContextIsComplete = proxyHealth.map {
+                ProxyCheckSummary.status(for: $0, now: now) == .currentSuccess
+            } == true
             let probeSucceeded = attempt.outcome == .succeeded
             let probeSeverity: DiagnosticFindingSeverity =
                 probeSucceeded && routeContextIsComplete
@@ -311,9 +406,9 @@ enum ProfileEnvironmentInspector {
                     id: "route.last-probe",
                     title: "Последняя проверка",
                     value: attempt.outcome == .succeeded
-                        ? responseSummary(
-                            milliseconds: attempt.responseTimeMilliseconds
-                          )
+                        ? (routeContextIsComplete
+                            ? responseSummary(milliseconds: attempt.responseTimeMilliseconds)
+                            : "Результат устарел или его время не подтверждено")
                         : attempt.outcome.userSummary,
                     state: .observed,
                     severity: probeSeverity,
@@ -532,6 +627,8 @@ enum ProfileEnvironmentInspector {
         observation: ValidatedProfileFingerprintObservation?
     ) -> EnvironmentDiagnosticSection {
         let policyValue = switch policy.webRTC {
+        case .disabledByProfile:
+            "WebRTC выключен политикой профиля"
         case .publicInterfaceOnly:
             "Только публичный интерфейс"
         case .disableNonProxiedUDP:
@@ -675,7 +772,8 @@ enum ProfileEnvironmentInspector {
     private static func geolocationSection(
         profile: BrowserProfile,
         policy: BrowserLaunchPolicy,
-        proxyHealth: ProxyHealthState?
+        proxyHealth: ProxyHealthState?,
+        now: Date
     ) -> EnvironmentDiagnosticSection {
         guard case .proxied = policy.route else {
             return EnvironmentDiagnosticSection(
@@ -696,8 +794,9 @@ enum ProfileEnvironmentInspector {
 
         var fields: [EnvironmentDiagnosticField] = []
         if let success = proxyHealth?.lastSuccess {
-            let routeContextIsComplete =
-                proxyHealth?.hasCompleteRouteContext == true
+            let routeContextIsComplete = proxyHealth.map {
+                ProxyCheckSummary.status(for: $0, now: now) == .currentSuccess
+            } == true
             let contextResolution = routeContextIsComplete
                 ? nil
                 : DiagnosticResolution(
@@ -709,7 +808,7 @@ enum ProfileEnvironmentInspector {
                 EnvironmentDiagnosticField(
                     id: "geolocation.source",
                     title: "Источник",
-                    value: "ipapi.co через проверку прокси",
+                    value: "\(success.source.rawValue) через проверку прокси",
                     state: .observed,
                     severity: routeContextIsComplete
                         ? .success
@@ -729,8 +828,8 @@ enum ProfileEnvironmentInspector {
                         : .attention,
                     resolution: contextResolution,
                     detail:
-                        "Определена по выходному IP прокси; " +
-                        "точный IP здесь не хранится.",
+                        (routeContextIsComplete ? "Определена по выходному IP прокси. " : "Локация из предыдущей проверки; сейчас не подтверждена. ") +
+                        "Точный IP здесь не хранится.",
                     observedAt: success.observedAt
                 )
             )

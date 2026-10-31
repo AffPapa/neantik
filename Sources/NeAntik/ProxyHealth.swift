@@ -1,6 +1,12 @@
 import Darwin
 import Foundation
 
+@_silgen_name("flock")
+private func proxyHealthFlock(
+    _ descriptor: Int32,
+    _ operation: Int32
+) -> Int32
+
 enum ProxyHealthOutcome: String, Codable, Equatable, Sendable {
     case succeeded
     case invalidConfiguration
@@ -21,20 +27,19 @@ enum ProxyHealthOutcome: String, Codable, Equatable, Sendable {
         case .invalidConfiguration:
             "Проверь тип, адрес и порт прокси."
         case .nameResolutionFailed:
-            "Не удалось найти адрес прокси."
+            "Не удалось разрешить адрес прокси или сервиса проверки. Проверь адрес прокси и доступность DNS."
         case .timedOut:
-            "Прокси не ответил за 12 секунд."
+            "Время проверки истекло. Ответ не получен от прокси или сервиса проверки; повтори проверку позже."
         case .connectionFailed:
             "Соединение с прокси не установлено."
         case .authenticationRejected:
             "Прокси отклонил логин или пароль."
         case .transportSecurityFailed:
-            "Защищённое соединение не установлено."
+            "Защищённое соединение не установлено. Сверь тип и порт прокси; HTTPS-прокси требует TLS до самого сервера прокси."
         case .protocolFailed:
-            "Прокси ответил в неподдерживаемом формате."
+            "Обмен с прокси прервался. Сверь тип и порт с данными провайдера; причина пока не определена."
         case .probeServiceFailed:
-            "Сервис проверки недоступен; состояние прокси " +
-                "не определено."
+            "IP-сервис отказал в ответе или ограничил запросы. Маршрут прокси не подтверждён; повтори проверку позже."
         case .invalidResponse:
             "Получен некорректный ответ; состояние прокси " +
                 "не определено."
@@ -42,10 +47,6 @@ enum ProxyHealthOutcome: String, Codable, Equatable, Sendable {
             "Проверку не удалось запустить."
         }
     }
-}
-
-enum ProxyHealthSource: String, Codable, Equatable, Sendable {
-    case ipAPI = "ipapi.co"
 }
 
 struct ProxyHealthAttempt: Codable, Equatable, Sendable {
@@ -162,6 +163,7 @@ enum ProxyHealthUpdatePolicy {
     ) -> ProxyHealthState {
         let success = ProxyHealthSuccess(
             observedAt: observation.observedAt,
+            source: observation.source,
             responseTimeMilliseconds: observation.responseTimeMilliseconds,
             exitAddressWasObserved: !observation.result.ipAddress.isEmpty,
             city: observation.result.city,
@@ -239,7 +241,7 @@ enum ProxyHealthStoreError: LocalizedError, Equatable {
     case unsupportedSchema
     case unsafePath
     case capacityExceeded
-    case writeFailed
+    case lockTimedOut
 
     var errorDescription: String? {
         switch self {
@@ -251,8 +253,9 @@ enum ProxyHealthStoreError: LocalizedError, Equatable {
                 "открыть."
         case .capacityExceeded:
             "История проверок прокси достигла безопасного лимита."
-        case .writeFailed:
-            "Историю проверок прокси не удалось надёжно сохранить."
+        case .lockTimedOut:
+            "История проверок прокси занята другим процессом. " +
+                "Повтори проверку позже."
         }
     }
 }
@@ -282,6 +285,14 @@ actor ProxyHealthStore {
             return nil
         }
         return record.state
+    }
+
+    func allStates() -> [UUID: ProxyHealthState] {
+        records.reduce(into: [:]) { result, entry in
+            if let id = UUID(uuidString: entry.key) {
+                result[id] = entry.value.state
+            }
+        }
     }
 
     func allRecords() -> [UUID: ProxyHealthRecord] {
@@ -450,15 +461,7 @@ actor ProxyHealthStore {
         else {
             throw ProxyHealthStoreError.unsafePath
         }
-        let data: Data
-        do {
-            data = try AppPaths.readStableRegularFile(
-                fileURL,
-                maximumBytes: Self.maximumFileBytes
-            )
-        } catch {
-            throw ProxyHealthStoreError.unsafePath
-        }
+        let data = try Data(contentsOf: fileURL, options: .mappedIfSafe)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let header = try decoder.decode(
@@ -542,94 +545,11 @@ actor ProxyHealthStore {
         guard data.count <= Self.maximumFileBytes else {
             throw ProxyHealthStoreError.capacityExceeded
         }
-        try replacePrivateFile(data, at: fileURL)
-    }
-
-    nonisolated private static func replacePrivateFile(
-        _ data: Data,
-        at fileURL: URL
-    ) throws {
-        let parent = fileURL.deletingLastPathComponent()
-        let name = fileURL.lastPathComponent
-        guard !name.isEmpty, name != ".", name != ".." else {
-            throw ProxyHealthStoreError.unsafePath
-        }
-        let parentDescriptor = parent.path.withCString {
-            Darwin.open($0, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
-        }
-        guard parentDescriptor >= 0 else {
-            throw ProxyHealthStoreError.unsafePath
-        }
-        defer { _ = Darwin.close(parentDescriptor) }
-
-        var parentStatus = stat()
-        guard Darwin.fstat(parentDescriptor, &parentStatus) == 0,
-              parentStatus.st_uid == geteuid(),
-              parentStatus.st_mode & mode_t(S_IFMT) == mode_t(S_IFDIR)
-        else {
-            throw ProxyHealthStoreError.unsafePath
-        }
-        guard Darwin.fchmod(parentDescriptor, mode_t(S_IRWXU)) == 0 else {
-            throw ProxyHealthStoreError.writeFailed
-        }
-        var existingStatus = stat()
-        let existingResult = name.withCString {
-            Darwin.fstatat(parentDescriptor, $0, &existingStatus, AT_SYMLINK_NOFOLLOW)
-        }
-        guard existingResult == 0 || errno == ENOENT else {
-            throw ProxyHealthStoreError.writeFailed
-        }
-        if existingResult == 0,
-           (existingStatus.st_mode & mode_t(S_IFMT)) != mode_t(S_IFREG) {
-            throw ProxyHealthStoreError.unsafePath
-        }
-
-        let temporaryName = ".\(name).\(UUID().uuidString).tmp"
-        let descriptor = temporaryName.withCString {
-            Darwin.openat(
-                parentDescriptor,
-                $0,
-                O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC,
-                mode_t(S_IRUSR | S_IWUSR)
-            )
-        }
-        guard descriptor >= 0 else { throw ProxyHealthStoreError.writeFailed }
-        var committed = false
-        defer {
-            _ = Darwin.close(descriptor)
-            if !committed {
-                _ = temporaryName.withCString { Darwin.unlinkat(parentDescriptor, $0, 0) }
-            }
-        }
-        var temporaryStatus = stat()
-        guard Darwin.fstat(descriptor, &temporaryStatus) == 0,
-              temporaryStatus.st_uid == geteuid(),
-              temporaryStatus.st_nlink == 1,
-              temporaryStatus.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG)
-        else {
-            throw ProxyHealthStoreError.unsafePath
-        }
-        try data.withUnsafeBytes { buffer in
-            guard var pointer = buffer.baseAddress else { return }
-            var remaining = buffer.count
-            while remaining > 0 {
-                let written = Darwin.write(descriptor, pointer, remaining)
-                if written < 0 {
-                    if errno == EINTR { continue }
-                    throw ProxyHealthStoreError.writeFailed
-                }
-                guard written > 0 else { throw ProxyHealthStoreError.writeFailed }
-                pointer = pointer.advanced(by: written)
-                remaining -= written
-            }
-        }
-        guard Darwin.fsync(descriptor) == 0,
-              temporaryName.withCString({ Darwin.renameat(parentDescriptor, $0, parentDescriptor, name) }) == 0,
-              Darwin.fsync(parentDescriptor) == 0
-        else {
-            throw ProxyHealthStoreError.writeFailed
-        }
-        committed = true
+        try data.write(to: fileURL, options: .atomic)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o600],
+            ofItemAtPath: fileURL.path
+        )
     }
 
     nonisolated private static func entryStatus(
@@ -661,7 +581,64 @@ actor ProxyHealthStore {
             attributes: [.posixPermissions: 0o700]
         )
         let lockURL = fileURL.appendingPathExtension("lock")
-        return try SecureFile.withExclusiveGuard(at: lockURL, policy: .proxyHealth, operation)
+        let descriptor = lockURL.path.withCString {
+            Darwin.open(
+                $0,
+                O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC,
+                mode_t(S_IRUSR | S_IWUSR)
+            )
+        }
+        guard descriptor >= 0 else {
+            throw ProxyHealthStoreError.unsafePath
+        }
+        defer { _ = Darwin.close(descriptor) }
+
+        let lockDeadline = ProcessInfo.processInfo.systemUptime + 3
+        while proxyHealthFlock(descriptor, LOCK_EX | LOCK_NB) != 0 {
+            let failure = errno
+            if failure == EINTR {
+                continue
+            }
+            if failure == EWOULDBLOCK || failure == EAGAIN {
+                if Task<Never, Never>.isCancelled {
+                    throw CancellationError()
+                }
+                guard ProcessInfo.processInfo.systemUptime < lockDeadline else {
+                    throw ProxyHealthStoreError.lockTimedOut
+                }
+                Darwin.usleep(10_000)
+                continue
+            }
+            throw POSIXError(
+                POSIXErrorCode(rawValue: failure) ?? .EIO
+            )
+        }
+        defer { _ = proxyHealthFlock(descriptor, LOCK_UN) }
+
+        var openedStatus = stat()
+        guard Darwin.fstat(descriptor, &openedStatus) == 0,
+              openedStatus.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG),
+              openedStatus.st_nlink == 1
+        else {
+            throw ProxyHealthStoreError.unsafePath
+        }
+        var pathStatus = stat()
+        let pathResult = lockURL.path.withCString {
+            Darwin.lstat($0, &pathStatus)
+        }
+        guard pathResult == 0,
+              pathStatus.st_dev == openedStatus.st_dev,
+              pathStatus.st_ino == openedStatus.st_ino,
+              pathStatus.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG)
+        else {
+            throw ProxyHealthStoreError.unsafePath
+        }
+        guard Darwin.fchmod(descriptor, mode_t(S_IRUSR | S_IWUSR)) == 0 else {
+            throw POSIXError(
+                POSIXErrorCode(rawValue: errno) ?? .EIO
+            )
+        }
+        return try operation()
     }
 
     nonisolated private static func isValid(

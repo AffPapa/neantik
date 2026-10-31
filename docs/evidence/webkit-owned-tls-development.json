@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-19T17:49:07.754890+00:00",
+  "status": "development-evidence-across-phases;latest-six-control-phase-PASS;not-release-qualified",
+  "productionWebKitProxyEnabled": false,
+  "publicAppRelease": "0.8.25(137)",
+  "runtimeReference": "webkit-standalone-bundle-development.json",
+  "hostCompilationCount": 1,
+  "systemTrustOrKeychainChanged": false,
+  "QAAnchorPolicy": {
+    "scope": "ephemeral CA inside research Host only;exact owned URL hosts/ports",
+    "chainSignatureAndHostnameValidation": true,
+    "externalTrustNetworkFetch": false,
+    "globalAnchorChange": false
+  },
+  "transport": "real authenticated HTTP CONNECT byte tunnel to own TLS origin;not a TLS-wrapping proxy upstream",
+  "evidencePhases": [
+    {
+      "scope": "initial",
+      "status": "FAIL",
+      "confirmedPositives": 2,
+      "harnessFailure": "hostname correctly rejected with two tunnel attempts;test incorrectly expected exactly one"
+    },
+    {
+      "scope": "TCP-counter diagnostic correction",
+      "status": "FAIL",
+      "confirmedConditions": 5,
+      "harnessFailure": "independent Direct produced one HTTP request over two TCP attempts;test incorrectly equated TCP connections with HTTP requests"
+    },
+    {
+      "scope": "remaining controls and fresh-fixture setup",
+      "status": "PASS",
+      "controlCount": 6,
+      "independentOriginAttribution": true,
+      "navigationCaseBound": true,
+      "sourceSnapshotHashMatches": true
+    }
+  ],
+  "observationsAcrossPhases": [
+    {
+      "case": "independent-direct-trusted-TLS",
+      "passed": true,
+      "success": true,
+      "code": 0,
+      "originHTTPResponses": 1,
+      "originTCPAccepted": 1,
+      "authenticatedTunnels": 0,
+      "tlsValidation": [
+        true
+      ]
+    },
+    {
+      "case": "trusted-TLS-through-authenticated-tunnel",
+      "passed": true,
+      "success": true,
+      "code": 0,
+      "originHTTPResponses": 1,
+      "actualNavigationCase": "trusted-TLS-through-authenticated-tunnel",
+      "originTCPAccepted": 1,
+      "authenticatedTunnels": 1,
+      "tlsValidation": [
+        true
+      ]
+    },
+    {
+      "case": "wrong-hostname-certificate-refused",
+      "passed": true,
+      "success": false,
+      "code": -999,
+      "originHTTPResponses": 0,
+      "originTCPAccepted": 2,
+      "authenticatedTunnels": 2,
+      "tlsValidation": [
+        false,
+        false
+      ]
+    },
+    {
+      "case": "private-HTTPS-direct-denied",
+      "passed": true,
+      "success": false,
+      "code": -1,
+      "originHTTPResponses": 0,
+      "originTCPAccepted": 0,
+      "authenticatedTunnels": 0,
+      "tlsValidation": []
+    },
+    {
+      "case": "tunnel-refusal-no-Direct",
+      "passed": true,
+      "success": false,
+      "code": -1000,
+      "originHTTPResponses": 0,
+      "actualNavigationCase": "tunnel-refusal-no-Direct",
+      "originTCPAccepted": 0,
+      "authenticatedTunnels": 0,
+      "tlsValidation": []
+    },
+    {
+      "case": "independent-direct-during-tunnel-refusal",
+      "passed": true,
+      "success": true,
+      "code": 0,
+      "originHTTPResponses": 1,
+      "actualNavigationCase": "independent-direct-during-tunnel-refusal",
+      "originTCPAccepted": 1,
+      "authenticatedTunnels": 0,
+      "tlsValidation": [
+        true
+      ]
+    },
+    {
+      "case": "trusted-TLS-tunnel-recovered",
+      "passed": true,
+      "success": true,
+      "code": 0,
+      "originHTTPResponses": 1,
+      "actualNavigationCase": "trusted-TLS-tunnel-recovered",
+      "originTCPAccepted": 2,
+      "authenticatedTunnels": 2,
+      "tlsValidation": [
+        true,
+        true
+      ]
+    },
+    {
+      "case": "wrong-CA-refused",
+      "passed": true,
+      "success": false,
+      "code": -999,
+      "originHTTPResponses": 0,
+      "actualNavigationCase": "wrong-CA-refused",
+      "originTCPAccepted": 2,
+      "authenticatedTunnels": 2,
+      "tlsValidation": [
+        false,
+        false
+      ]
+    },
+    {
+      "case": "unconfined-configured-proxy-HTTPS-bypass-control",
+      "passed": true,
+      "success": true,
+      "code": 0,
+      "originHTTPResponses": 1,
+      "actualNavigationCase": "unconfined-configured-proxy-HTTPS-bypass-control",
+      "originTCPAccepted": 1,
+      "authenticatedTunnels": 0,
+      "tlsValidation": [
+        true
+      ]
+    }
+  ],
+  "coverageIsSingleFinalCandidateMatrix": false,
+  "negativeHarnessControls": {
+    "count": 7,
+    "scope": "real retry observations accepted;leaked TCP,stale callback,missing/mixed trust and blocked-path TCP detected"
+  },
+  "TLSWireControls": {
+    "count": 6,
+    "scope": "real localhost TLS/CONNECT;correct trust,wrong hostname,wrong CA,407,unknown target and capability boundary"
+  },
+  "restrictedOwnNetworkingMapped": true,
+  "cleanup": {
+    "hostsNormalExit": [
+      true
+    ],
+    "relayDrained": true,
+    "originDrained": true,
+    "independentOriginDrained": true,
+    "ownHelpersAbsent": true,
+    "ephemeralKeysRemoved": true
+  },
+  "measuredFiles": {
+    "restrictedHostSHA256": "090693f9704704a64c9da1d056ae8ae2f7d176f8548690d976c341bb87663179",
+    "unconfinedHostSHA256": "a78281f583f5ffe5fafe15534089762b0c0b2feb74f67d610359710f626327e0",
+    "tlsHostSourceSHA256": "aca86f7374c542aeddf0984c18e18f97f037544c2c2fa53e19843556a44b8174",
+    "finalHarnessSHA256": "3e45073b268c0aed136d8754db1c7532e81f98d5f29ffccd3edcb222eca2bac9"
+  },
+  "limitations": [
+    "Earlier matrices remain FAIL,not retroactively relabelled PASS;observations span fresh ephemeral certificate fixtures and a corrected harness",
+    "A final exact candidate needs its own coherent consolidated matrix after integration;this research is not that gate",
+    "No controlled DNS/delegation,UDP/WebRTC,IPv6,WebSocket or background-network proof",
+    "No trusted real HTTPS proxy-upstream certification;this proves TLS from browser through an HTTP CONNECT tunnel to the owned origin",
+    "Nonpersistent QA stores only;no production profile/MCP lifecycle integration",
+    "Runtime still requires macOS26.5;not notarized,not timestamped or Gatekeeper-qualified as a NeAntik release"
+  ]
+}

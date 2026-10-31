@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "status": "bounded-factual-maintainer-review;two-WebKitSwift-images-traced-to-32-Apple-BSD2-inputs;source-notices-staged;candidate-package-integration-required",
+  "observedAt": "2026-10-25T02:05:40Z",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "runtimeImages": [
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Frameworks/libWebKitSwift.dylib",
+      "runtimeSHA256": "dea5f93e41db28c34708ff5bfa7367bbe6e760d3369e250ad772dd04d4c9d46e",
+      "sourceObjectCount": 32,
+      "exactHeaderSourceCount": 32,
+      "sourcePathSetMatchesManifest": true,
+      "uniqueHeaderSHA256Count": 6,
+      "internalStaticDependencies": 0
+    },
+    {
+      "runtimePath": "libWebKitSwift.dylib",
+      "runtimeSHA256": "0eaf8f24e2d534e1461c459dfa098735315143c62879d7eda2726fc59cfe5118",
+      "sourceObjectCount": 32,
+      "exactHeaderSourceCount": 32,
+      "sourcePathSetMatchesManifest": true,
+      "uniqueHeaderSHA256Count": 6,
+      "internalStaticDependencies": 0
+    }
+  ],
+  "inputs": {
+    "sourceHeaderManifest": {
+      "path": "docs/evidence/third-party/webkit-swift-source-notices/MANIFEST.json",
+      "sha256": "deb9fa209c9e572c6857573371137aafa27cbc5a28213145c48fc076979f667d",
+      "entryCount": 32,
+      "scope": "Every listed object source has an exact Apple BSD-2 source header; the manifest preserves source notices and does not by itself infer whole-image composition."
+    },
+    "runtimeImageSourceClosure": {
+      "path": "docs/evidence/webkit-v20-runtime-image-source-closure-20261025.json",
+      "sha256": "6e9a5a634e7e78fcb23d4e2b0d10bbda676bd264cc9b4127f4ce4d833c2e2304"
+    },
+    "productionLinkInputClosure": {
+      "path": "docs/evidence/webkit-v20-production-link-input-closure-20261025.json",
+      "sha256": "2aa173e04b793973469c261a3a7d7d573ba94e5d1ad814c863ab1f2b7d51be73"
+    },
+    "integrationPreflight": {
+      "path": "docs/evidence/webkit-v20-webkitswift-source-header-notice-integration-20261025.json",
+      "sha256": "5efcffb7c0c71f95b48af3f1d9f91d78e77b3ec7b564b6300f83fc889a3b4976",
+      "result": "31 focused tests passed; generated notices preflighted on isolated scratch copy; candidate 139 unchanged"
+    }
+  },
+  "sourceClassification": {
+    "uniqueSourcePathsPerImage": 32,
+    "sourcePathsExactMatchNoticeManifest": true,
+    "all32HeaderTextsHashAndSizeVerified": true,
+    "headerLicenseClass": "Apple BSD-2-Clause form",
+    "distinctHeaderHashesPerImage": 6,
+    "internalStaticLibraryDependenciesPerLinkNode": 0,
+    "scope": "Bounded to the two exact WebKitSwift images and their configured 32-object link node; external system frameworks and other runtime images are reviewed separately.",
+    "configuredObjectInputsPerLinkNode": 32,
+    "runtimeImageCopies": 2,
+    "uniqueSourcePaths": 32
+  },
+  "maintainerDecision": {
+    "applicableLicense": "For these two runtime images, the exact configured link node has 32 object inputs whose 32 source paths match the pinned notice manifest; all mapped source headers are Apple BSD-2-Clause form. The node has no internal static-library dependency. Preserve the 32 exact headers and BSD-2 binary notice text for both images.",
+    "noticeLocation": "Production app: Contents/Resources/NeAntikRuntimeLicenses/WebKitSwift/headers/<sourcePath>.LICENSE.txt plus the generated WebKitSwift section in NeAntikRuntimeNotices.md and .html. Matching source headers are already staged in the corresponding-source offer.",
+    "requiredNotice": "Retain all 32 exact source-header texts, including copyright, conditions and disclaimer, in distributed materials; keep the pinned source and linker evidence.",
+    "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact runtime image hashes, configured object linkage, complete 32-path notice-manifest match and all source-header bytes are evidenced for these two images only. This is not legal advice or a legal opinion."
+  },
+  "limitations": [
+    "Candidate 139 was not modified; its existing signature is already under diagnosis. The WebKitSwift notice integration must be included in the next production package.",
+    "This review does not cover dynamic dependencies or any other runtime image/resource.",
+    "WebKit LGPL corresponding-source/relink, remaining notice rows, trust/signature, runtime qualification, notarization and publication remain open."
+  ]
+}

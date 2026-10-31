@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-signed-headed-six-layer-research;not-release-qualified",
+  "capturedAt": "2026-10-15T22:08:23.553Z",
+  "runtime": {
+    "version": "156.0.8078.12",
+    "executableSHA256": "27d0378671dd946f2b19c518f928a60a44b19ae0f97552569adb3eecc7e95c6c",
+    "frameworkSHA256": "7bfe8e081bd94ea222e2a9ed304a56ef96a7edf342f12ecf079abf147c4b95f8"
+  },
+  "closureSHA256": "d5458b0b82c06bb3e7e9da6c3093cfa6b91176d2c3c9af29258909e99d827a59",
+  "machoCount": 16,
+  "runtimeTree": {
+    "digest": "f0bd944a15e57476f7f2d78ea8df8f743dd9d7dbd1647c69c8e89d5754485b80",
+    "entries": 948,
+    "bytes": 411230673,
+    "machoCount": 16
+  },
+  "bindingSHA256": "bf9c0e8fce4695049fc2d716869a264776a61b59ed6a518a8c3edfbd3806b65c",
+  "sourceContracts": {
+    "chromium-host-font-policy.json": "cc20f159fd9463722ef5dfbf1ff679f88c020f7e5cf44e1ec7e20bc665c35d62",
+    "chromium-font-witness.json": "9645de1b7dac136df452abe2a3e039a12beef1689c58686536b9281b5e7b55b7",
+    "chromium-font-cleanup.json": "5c5f93163671cbc87f98dbbb97ce25c8ef3876435d8a940f68328e6814ae4d0e",
+    "chromium-font-cleanup-cstring.json": "80803d1a9a2256fa052cc8962da1e226f134e162ddabaa241d923d3229f4aeb4",
+    "chromium-font-generic-defaults.json": "cf77818e5d3f92dd89d630ed201a28ce1fece773222231e7f8ac8390302442bd",
+    "chromium-font-variations.json": "5c6f00023ed4f4c63ed6f585544a5f61d3e239f640a56e1c53f058170d2e038d"
+  },
+  "sourcePolicyLayer": "runtime/font-policy-v1/chromium-font-variations.json",
+  "actualBrowser": true,
+  "headed": true,
+  "releaseQualified": false,
+  "managerActivation": false,
+  "sourceBuildSignProof": {
+    "buildReceiptSHA256": "64b6a1797acc9330c84455cd6478728b95bbf1020188168fc2d3c0be6569b7bc",
+    "signingReceiptSHA256": "8d81e3b9beab7d0217ee32d352e374dec8ecbd007aa8899c912b0275ce888889",
+    "checks": [
+      "exact six source contracts/patches/parent and variation preimage/owned-source bytes",
+      "final source postimages and raw changed framework from completed chrome build",
+      "raw build hashes equal signer input; signed closure/transcript equal actual bundle",
+      "existing Developer ID, nested signature, full Mach-O inventory and whole-tree verification",
+      "old app with new binding rejected; old code closure with new source labels rejected"
+    ]
+  },
+  "fontContexts": {
+    "observationsSHA256": "2c5078415b77b19e5ab5402dfa76f62dbf2f59969833a9edc3d7bd0817a94ba5",
+    "qualificationSHA256": "3d19f26862b5d139a35aaf4388f30b194bc735d8da49e5789d0bb58cf4d0026b",
+    "modes": [
+      "native",
+      "policy-a",
+      "policy-b",
+      "policy-a-repeat"
+    ],
+    "contextsPerMode": 9,
+    "drawableContexts": 8,
+    "lifecycleReceipts": 36,
+    "nativeAcknowledgements": 24,
+    "configuredPairAssertions": [
+      2954,
+      2954,
+      2954
+    ],
+    "genericRowsPerDrawableContext": 42,
+    "ABA": {
+      "status": "passed",
+      "pairAssertions": 1512,
+      "contexts": 9,
+      "scope": "same owned A root after B with new actual realms and stable font operations"
+    },
+    "nativeUpstreamGapIsNegative": true
+  },
+  "fontAccess": {
+    "observationsSHA256": "ff003fb5e84c556dbea353729156e438f3a62f637f9564ab70af98629db3af7b",
+    "qualificationSHA256": "5d539d832ab80fa9edcf8fc5ee2a2fdf3f2aefa158f18fe148b6c8be62bc0d02",
+    "modes": [
+      "native",
+      "seeded-native",
+      "policy-a",
+      "policy-b",
+      "policy-a-repeat"
+    ],
+    "behaviorAssertions": 273,
+    "nativeAcknowledgements": 35,
+    "permissionChangesPerMode": [
+      3,
+      3,
+      3,
+      3,
+      3
+    ],
+    "scope": "known-name filtering; actual denied/granted/revoked events, blobs/SFNT/FontFace drawing, standalone foreign top-level blocked; explicit iframe delegation and retained blobs after revoke follow upstream",
+    "systemFontBytesOrInventoryExported": false
+  },
+  "admission": {
+    "allNormal": true,
+    "thermalStates": [
+      0
+    ],
+    "warningExceptionUsed": false
+  },
+  "cleanup": {
+    "ownedProcessesRemaining": 0,
+    "ownedRootsRemaining": 0
+  },
+  "inputsRechecked": true,
+  "notRepeated": [
+    "earlier five-layer runtime/receipts remain frozen",
+    "unrelated Canvas/WebGL/Audio/platform vectors",
+    "manager Swift/Python regression",
+    "public release/notary or Sites delivery"
+  ],
+  "limitations": [
+    "Research successor not distributed as a new public app or 1.0",
+    "Manager UI/MCP opt-in and exact shipping qualification remain open",
+    "Native permission-dialog UX and forced managed-policy hardware conditions remain separate",
+    "Current macOS/architecture evidence does not prove all other macOS/hardware environments"
+  ]
+}

@@ -1,0 +1,154 @@
+--- a/chrome/browser/signin/signin_util.cc
++++ b/chrome/browser/signin/signin_util.cc
+@@ -29,7 +29,6 @@
+ #include "components/policy/core/browser/signin/profile_separation_policies.h"
+ #include "components/prefs/pref_service.h"
+ #include "components/signin/core/browser/account_reconcilor.h"
+-#include "components/signin/public/base/signin_pref_names.h"
+ #include "components/signin/public/identity_manager/account_managed_status_finder.h"
+ #include "components/signin/public/identity_manager/accounts_mutator.h"
+ #include "components/sync/base/user_selectable_type.h"
+--- a/chrome/browser/ui/hats/trust_safety_sentiment_service.cc
++++ b/chrome/browser/ui/hats/trust_safety_sentiment_service.cc
+@@ -31,7 +31,6 @@
+ #include "components/privacy_sandbox/privacy_sandbox_prefs.h"
+ #include "components/safe_browsing/core/browser/db/sb_protocol_manager_util.h"
+ #include "components/safe_browsing/core/common/safe_browsing_prefs.h"
+-#include "components/signin/public/base/signin_pref_names.h"
+ #include "components/unified_consent/pref_names.h"
+ #include "components/version_info/channel.h"
+ 
+--- a/chrome/browser/ui/webui/bookmarks/bookmark_promo_delegate.cc
++++ b/chrome/browser/ui/webui/bookmarks/bookmark_promo_delegate.cc
+@@ -22,7 +22,6 @@
+ #include "components/prefs/pref_service.h"
+ #include "components/signin/core/browser/account_preview_data_service.h"
+ #include "components/signin/public/base/signin_metrics.h"
+-#include "components/signin/public/base/signin_pref_names.h"
+ #include "components/signin/public/base/signin_prefs.h"
+ #include "components/signin/public/base/signin_switches.h"
+ #include "components/signin/public/identity_manager/account_info.h"
+@@ -37,11 +36,6 @@
+ constexpr int kBatchUploadBookmarkPromoMaxDismissCount = 3;
+ constexpr base::TimeDelta
+     kBatchUploadBookmarkPromoMinimumDelayToShowAfterDismiss = base::Days(7);
+-
+-#if BUILDFLAG(ENABLE_DICE_SUPPORT)
+-constexpr int kBookmarkManagerSigninPromoMaxImpressionCount = 5;
+-constexpr int kBookmarkManagerSigninPromoMaxDismissCount = 2;
+-#endif  // BUILDFLAG(ENABLE_DICE_SUPPORT)
+ 
+ GaiaId GetPrimaryAccountGaiaId(signin::IdentityManager* identity_manager) {
+   if (!identity_manager) {
+@@ -196,67 +190,7 @@
+ AccountAwareSignInPromoDelegate::~AccountAwareSignInPromoDelegate() = default;
+ 
+ bool AccountAwareSignInPromoDelegate::CanShowPromo() const {
+-  if (dismissed_in_session_ || !pref_service_ || !identity_manager_ ||
+-      !sync_service_ || !account_preview_data_service_ ||
+-      !base::FeatureList::IsEnabled(
+-          switches::kEnableAccountPreviewPreferredAccountFollowup) ||
+-      sync_service_->HasDisableReason(
+-          syncer::SyncService::DISABLE_REASON_ENTERPRISE_POLICY) ||
+-      syncer::SyncPrefs(pref_service_).IsLocalSyncEnabled() ||
+-      !pref_service_->GetBoolean(prefs::kSigninAllowed)) {
+-    return false;
+-  }
+-
+-  if (sync_service_->GetUserSettings()->IsTypeManagedByPolicy(
+-          syncer::UserSelectableType::kBookmarks) ||
+-      !sync_service_->GetDataTypesForTransportOnlyMode().Has(
+-          syncer::BOOKMARKS)) {
+-    return false;
+-  }
+-
+-  if (identity_manager_->HasPrimaryAccount(signin::ConsentLevel::kSignin)) {
+-    return false;
+-  }
+-
+-  AccountInfo account_info = signin_ui_util::GetSingleAccountForPromos(
+-      identity_manager_, account_preview_data_service_);
+-  if (account_info.IsEmpty()) {
+-    return false;
+-  }
+-
+-  std::optional<signin::AccountPreviewDataService::AccountPreviewPreference>
+-      preferred_account =
+-          account_preview_data_service_->GetPreferredAccountForPromo();
+-  if (!preferred_account.has_value() ||
+-      preferred_account->gaia_id != account_info.GetGaiaId()) {
+-    return false;
+-  }
+-
+-  bool has_bookmarks_in_preview = std::ranges::any_of(
+-      preferred_account->preferred_data_types,
+-      [](const signin::PreferredDataTypeInfo& info) {
+-        return info.data_type == syncer::BOOKMARKS &&
+-               info.quartile != signin::SyncDataQuartile::kZero;
+-      });
+-  if (!has_bookmarks_in_preview) {
+-    return false;
+-  }
+-
+-  SigninPrefs signin_prefs(*pref_service_);
+-  if (signin_prefs.GetBookmarkManagerSigninPromoDismissCount(
+-          account_info.GetGaiaId()) >=
+-      kBookmarkManagerSigninPromoMaxDismissCount) {
+-    return false;
+-  }
+-
+-  if (shown_for_gaia_id_ != account_info.GetGaiaId() &&
+-      signin_prefs.GetBookmarkManagerSigninPromoImpressionCount(
+-          account_info.GetGaiaId()) >=
+-          kBookmarkManagerSigninPromoMaxImpressionCount) {
+-    return false;
+-  }
+-
+-  return true;
++  return false;
+ }
+ 
+ void AccountAwareSignInPromoDelegate::GetPromoData(
+--- a/chrome/browser/ui/webui/bookmarks/bookmarks_message_handler.cc
++++ b/chrome/browser/ui/webui/bookmarks/bookmarks_message_handler.cc
+@@ -32,7 +32,6 @@
+ #include "components/policy/core/common/policy_pref_names.h"
+ #include "components/prefs/pref_change_registrar.h"
+ #include "components/prefs/pref_service.h"
+-#include "components/signin/public/base/signin_pref_names.h"
+ #include "components/signin/public/identity_manager/identity_manager.h"
+ #include "components/sync/base/data_type.h"
+ #include "components/sync/service/sync_service.h"
+@@ -97,10 +96,6 @@
+   pref_change_registrar_.Add(
+       bookmarks::prefs::kEditBookmarksEnabled,
+       base::BindRepeating(&BookmarksMessageHandler::UpdateCanEditBookmarks,
+-                          base::Unretained(this)));
+-  pref_change_registrar_.Add(
+-      prefs::kAccountPreviewPreference,
+-      base::BindRepeating(&BookmarksMessageHandler::RequestPromoDataUpdate,
+                           base::Unretained(this)));
+ 
+   // Identity manager is null in incognito mode.
+--- a/chrome/browser/ui/views/app_menu/action_app_menu_manager.cc
++++ b/chrome/browser/ui/views/app_menu/action_app_menu_manager.cc
+@@ -87,7 +87,6 @@
+ #include "components/search/ntp_features.h"
+ #include "components/send_tab_to_self/entry_point_display_reason.h"
+ #include "components/send_tab_to_self/features.h"
+-#include "components/signin/public/base/signin_pref_names.h"
+ #include "components/user_education/common/tutorial/tutorial_description.h"
+ #include "components/user_education/common/tutorial/tutorial_registry.h"
+ #include "components/user_education/common/tutorial/tutorial_service.h"
+@@ -570,11 +569,6 @@
+ #if !BUILDFLAG(IS_CHROMEOS)
+         std::u16string profile_name = GetProfileName(profile);
+         std::optional<std::u16string> chip_text;
+-        if (!profile->IsOffTheRecord() && !profile->IsGuestSession() &&
+-            !profile->IsEnterpriseIsolatedModeProfile() &&
+-            profile->GetPrefs()->GetBoolean(prefs::kSigninAllowed)) {
+-          chip_text = GetSigninStatusChipString(profile);
+-        }
+         section.AddSubmenu(
+             kActionProfileSubmenu,
+             [this, profile](AppMenuBuilder& sub) {

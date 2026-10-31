@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T13:01:47.654587+00:00",
+  "status": "build144-exact-signed-Dev-ZIP-preflight-PASS;no-Apple-submission-or-launch",
+  "archive": "/private/tmp/neantik-owned-webkit-qa-zkccb8b8/NeAntik-1.0.0-144-dev-owned-webkit-qa.zip",
+  "archiveSHA256": "3c1e01e3bec037654963dddfd705b01b09c4a2b5df7adb601c0fb172214a33dc",
+  "archiveBytes": 246399239,
+  "stageReceipt": "/private/tmp/neantik-owned-webkit-qa-zkccb8b8/stage.json",
+  "stageReceiptSHA256": "f307a95c2b555ea8fe2a33cb0b3342e15c20ef3cfa16c1111ada5896b03cf7a0",
+  "sourceChange": "Current 25-file standalone host compiled qualification mode and rebound to bundled WebKit; manager remains qualification mode from build143; model-encoded startPage seed renamed 144.",
+  "hostOwnedPreSignSHA256": "94b914de4b5f3bd657a0869df402f9cd0ee4e9b8cdb78bb36acf0af85406dd07",
+  "hostSignedSHA256": "4601c91afd710abcb1cfdd55b697cef0738fa02a1be330f7cfebc0b9831ace7e",
+  "webkitImageSHA256": "876cb2176bc9c722e64b8bbc31f29b1539f435994fda1d4a037c572984943276",
+  "webkitImageUnchangedVersus143": true,
+  "profileSeedSHA256": "e4143582dee985f33a94755b57700581fe3ae916c277c40f4ed66ea8a5fbd95a",
+  "generator": "NamedProxyQASeedDiagnosticTests.generateModelEncodedDisposablePair PASS 1/1",
+  "hostSourceBuild": "build-webkit-standalone-host.py --configuration release --qa-proxy PASS; no WebKit engine rebuild",
+  "preflight": "deep strict signature, notices and exact ZIP verifier, compiled launcher --check-only PASS",
+  "productionQualified": false,
+  "releaseQualified": false,
+  "nextAction": "Submit exact SHA once to Apple, Gatekeeper assess and one native A run to collect host fixed-vocabulary navigation stage plus broker counters."
+}

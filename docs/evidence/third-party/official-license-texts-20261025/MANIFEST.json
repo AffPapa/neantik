@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "retrievedAt": "2026-10-24T21:47:07Z",
+  "status": "official-license-text-reference;not-package-applicability-or-legal-approval",
+  "texts": [
+    {
+      "path": "MPL-1.1.txt",
+      "officialSourceURL": "https://www.mozilla.org/media/MPL/1.1/index.0c5913925d40.txt",
+      "bytes": 25755,
+      "sha256": "f849fc26a7a99981611a3a370e83078deb617d12a45776d6c4cada4d338be469"
+    },
+    {
+      "path": "GPL-2.0.txt",
+      "officialSourceURL": "https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt",
+      "bytes": 17984,
+      "sha256": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6"
+    },
+    {
+      "path": "Unicode-License-V3.txt",
+      "officialSourceURL": "https://www.unicode.org/license.txt",
+      "bytes": 1995,
+      "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+    }
+  ]
+}

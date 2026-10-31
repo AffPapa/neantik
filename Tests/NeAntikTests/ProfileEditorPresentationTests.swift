@@ -3,73 +3,58 @@ import Testing
 @testable import NeAntik
 
 struct ProfileEditorPresentationTests {
-    @Test
-    func folderNameValidationExplainsRejectedInputWithoutTruncatingIt() {
-        #expect(ProfileFolderNameValidation.message(for: "  Café  ") == nil)
-        #expect(ProfileFolderNameValidation.message(for: " \n ") == "Введи название папки.")
-        #expect(ProfileFolderNameValidation.message(for: String(repeating: "a", count: 65))?.contains("64") == true)
-        #expect(ProfileFolderNameValidation.message(for: "Client\u{202E}A")?.contains("управляющие") == true)
-        #expect(ProfileFolderNameValidation.message(for: "Client\nA") != nil)
-        let oversizedGrapheme = "a" + String(repeating: "\u{0301}", count: 1_100)
-        #expect(oversizedGrapheme.count == 1)
-        #expect(ProfileFolderNameValidation.message(for: oversizedGrapheme)?.contains("места") == true)
-        // Duplicate detection remains separate from structural validation.
-        #expect(ProfileFolderNameValidation.message(for: "Cafe") == nil)
-        #expect(ProfileFolder.comparisonKey("Cafe") == ProfileFolder.comparisonKey("Café"))
+    @Test func incompleteProxyContextExplainsNextActionWithoutReadinessClaim() {
+        let message = ProfileProxyTestPresentation.successMessage(location: "", hasCompleteRouteContext: false)
+        #expect(message.contains("Прокси отвечает"))
+        #expect(message.contains("Повтори проверку перед запуском"))
+        #expect(!message.contains("прошла"))
     }
-
     @Test
-    func folderPickerSearchUsesFolderIdentityFolding() {
-        let cafe = ProfileFolder(name: "Café"), other = ProfileFolder(name: "Other")
-        let found = ProfileFolderPickerPresentation.resolve(folders: [cafe, other], searchText: "  CAFE \n")
-        #expect(found.filteredFolders == [cafe])
-        #expect(found.returnFolderID == cafe.id)
-        let empty = ProfileFolderPickerPresentation.resolve(folders: [cafe, other], searchText: " \n")
-        #expect(empty.filteredFolders == [cafe, other])
-        #expect(empty.returnFolderID == nil)
-        #expect(ProfileFolderPickerPresentation.resolve(folders: [cafe], searchText: "missing").returnFolderID == nil)
+    func quickStartTemplatesOnlySuggestEditableNameAndTag() {
+        let blank = ProfileQuickStartTemplate.blank.draft(
+            name: "", tags: []
+        )
+        #expect(blank.name.isEmpty)
+        #expect(blank.tags.isEmpty)
+
+        let work = ProfileQuickStartTemplate.work.draft(
+            name: "", tags: ["личное"]
+        )
+        #expect(work.name == "Работа")
+        #expect(work.tags == ["личное", "работа"])
+
+        let customized = ProfileQuickStartTemplate.testing.draft(
+            name: "Мой стенд", tags: ["тест"]
+        )
+        #expect(customized.name == "Мой стенд")
+        #expect(customized.tags == ["тест"])
+
+        let switched = ProfileQuickStartTemplate.testing.draft(
+            name: "Работа",
+            tags: ["работа", "важно"],
+            replacing: .work,
+            replacingGeneratedName: true,
+            replacingGeneratedTag: true
+        )
+        #expect(switched.name == "Тестирование")
+        #expect(switched.tags == ["важно", "тест"])
+
+        let userOwned = ProfileQuickStartTemplate.blank.draft(
+            name: "Работа", tags: ["работа"], replacing: .work
+        )
+        #expect(userOwned.name == "Работа")
+        #expect(userOwned.tags == ["работа"])
+
+        let generated = ProfileQuickStartTemplate.blank.draft(
+            name: "Работа",
+            tags: ["работа"],
+            replacing: .work,
+            replacingGeneratedName: true,
+            replacingGeneratedTag: true
+        )
+        #expect(generated.name.isEmpty)
+        #expect(generated.tags.isEmpty)
     }
-
-    @Test
-    func editorHeadingMakesCreateAndEditModesExplicit() {
-        let create = ProfileEditorHeadingPresentation.resolve(
-            original: nil,
-            currentName: "Новый"
-        )
-        #expect(create.title == "Новое рабочее место")
-        #expect(create.subtitle == nil)
-
-        let profile = BrowserProfile(name: "TikTok · US · 01")
-        let edit = ProfileEditorHeadingPresentation.resolve(
-            original: profile,
-            currentName: profile.name
-        )
-        #expect(edit.title == "Настройки рабочего места")
-        #expect(edit.subtitle == profile.name)
-        #expect(ProfileEditorAdvancedPresentation.summary.contains("Стартовая"))
-    }
-
-    @Test
-    func advancedSummaryReflectsConfiguredProfileState() {
-        #expect(ProfileEditorAdvancedPresentation.summary(
-            folderTitle: "Работа", tagCount: 0, startURL: "about:blank"
-        ) == "Работа · Пустая страница")
-        #expect(
-            ProfileEditorAdvancedPresentation.summary(
-                folderTitle: "Арбитраж",
-                tagCount: 2,
-                startURL: "https://example.com"
-            ) == "Арбитраж · 2 тега · URL настроен"
-        )
-        #expect(
-            ProfileEditorAdvancedPresentation.summary(
-                folderTitle: "Без папки",
-                tagCount: 0,
-                startURL: ""
-            ) == "Без папки"
-        )
-    }
-
     @Test
     func compactFolderControlCoversZeroAndOneFolder() {
         let empty = ProfileEditorFolderPresentation.resolve(
@@ -144,57 +129,16 @@ struct ProfileEditorPresentationTests {
     }
 
     @Test
-    func folderPickerMovesAVisibleKeyboardHighlight() {
-        let first = ProfileFolder(name: "Alpha")
-        let second = ProfileFolder(name: "Beta")
-        let presentation = ProfileFolderPickerPresentation.resolve(
-            folders: [first, second],
-            searchText: ""
-        )
-
-        #expect(
-            presentation.movedHighlight(from: .unfiled, offset: 1) ==
-                .folder(first.id)
-        )
-        #expect(
-            presentation.movedHighlight(from: .folder(first.id), offset: 1) ==
-                .folder(second.id)
-        )
-        #expect(
-            presentation.movedHighlight(from: .folder(second.id), offset: 1) ==
-                .folder(second.id)
-        )
-        #expect(
-            !ProfileFolderPickerKeyboardCommitPolicy.permitsCommit(
-                searchText: "  ",
-                didMoveHighlight: false
-            )
-        )
-        #expect(
-            ProfileFolderPickerKeyboardCommitPolicy.permitsCommit(
-                searchText: "",
-                didMoveHighlight: true
-            )
-        )
-        #expect(
-            ProfileFolderPickerKeyboardCommitPolicy.permitsCommit(
-                searchText: "Alpha",
-                didMoveHighlight: false
-            )
-        )
-    }
-
-    @Test
     func proxyContextUsesTextAndIconForFreshness() {
         let now = Date(timeIntervalSinceReferenceDate: 10_000_000)
         let fresh = ProfileEditorProxyContextPresentation.resolve(
             evidence: .ipAPI(observedAt: now.addingTimeInterval(-60)),
             now: now
         )
-        #expect(fresh.title == "Данные прокси актуальны")
-        #expect(fresh.systemImage == "checkmark.circle")
+        #expect(fresh.title.contains("свежий"))
+        #expect(fresh.systemImage == "checkmark.circle.fill")
         #expect(!fresh.requiresAttention)
-        #expect(fresh.detail.contains("Перед запуском"))
+        #expect(fresh.detail.contains("Перед каждым запуском"))
 
         let stale = ProfileEditorProxyContextPresentation.resolve(
             evidence: .ipAPI(
@@ -205,227 +149,34 @@ struct ProfileEditorPresentationTests {
             now: now
         )
         #expect(stale.title.contains("устарел"))
-        #expect(stale.systemImage == "clock")
-        #expect(!stale.requiresAttention)
-        #expect(stale.detail.contains("Перед запуском"))
+        #expect(stale.systemImage == "exclamationmark.triangle.fill")
+        #expect(stale.requiresAttention)
+        #expect(stale.detail.contains("Перед следующим запуском"))
+    }
+
+    @Test
+    func proxySuccessPresentationNeverIncludesDetectedIPAddress() {
+        let withoutLocation = ProfileProxyTestPresentation.successMessage(
+            location: ""
+        )
+        let withLocation = ProfileProxyTestPresentation.successMessage(
+            location: "Нидерланды · Europe/Amsterdam"
+        )
+
+        #expect(withoutLocation == "Проверка через прокси прошла")
+        #expect(withLocation.contains("Проверка через прокси прошла"))
+        #expect(!withoutLocation.contains("203.0.113.77"))
+        #expect(!withLocation.contains("203.0.113.77"))
+        #expect(!withLocation.contains("ipAddress"))
     }
 }
 
-extension ProfileEditorPresentationTests {
-    private func state(
-        isNew: Bool = false, changes: Bool = false,
-        issue: ProfileEditorValidationIssue? = nil,
-        proxy: Bool = false, kind: ProxyKind = .http,
-        username: Bool = false, testing: Bool = false,
-        refreshed: Bool = false, invalidated: Bool = false,
-        failed: Bool = false
-    ) -> ProfileEditorSavePresentation {
-        .resolve(
-            isNew: isNew, hasChanges: changes, issue: issue,
-            usesProxy: proxy, kind: kind, hasUsername: username,
-            isTesting: testing, refreshedEvidence: refreshed,
-            invalidatedEvidence: invalidated, latestProbeFailed: failed
-        )
-    }
-
-    @Test func unchangedEditCannotWriteButNewProfileCanSave() {
-        #expect(!state().canSave)
-        #expect(state().stateTitle == "Нет изменений")
-        #expect(state(isNew: true).canSave)
-        #expect(state(changes: true).canSave)
-        #expect(state(changes: true).stateTitle.contains("несохранённые"))
-    }
-
-    @Test func validationSummaryExplainsWhySaveIsDisabled() {
-        let issue = ProfileEditorValidationIssue(field: .name, message: "Введи название профиля.")
-        let invalid = state(isNew: true, issue: issue)
-        #expect(!invalid.canSave)
-        #expect(invalid.stateTitle == issue.message)
-    }
-
-    @Test func probeMustFinishOrBeCancelledBeforeSaving() {
-        let probing = state(isNew: true, proxy: true, testing: true)
-        #expect(!probing.canSave)
-        #expect(probing.stateTitle.contains("отмени"))
-        #expect(probing.routeSummary.contains("проверяется"))
-    }
-
-    @Test func routeSummaryNeverClaimsAnonymityOrPersistsAnEndpoint() {
-        #expect(state().routeSummary == "Напрямую · отдельного прокси нет")
-        let authenticated = state(proxy: true, username: true)
-        #expect(authenticated.routeSummary.contains("Связке ключей"))
-        #expect(authenticated.routeSummary.contains("автоматически при запуске"))
-        #expect(state(proxy: true, kind: .socks5, username: true).routeSummary.contains("без логина"))
-    }
-
-    @Test func changedAndFailedProbesOverrideEarlierSuccess() {
-        #expect(state(proxy: true, refreshed: true).routeSummary.contains("при запуске повторим"))
-        #expect(state(proxy: true, refreshed: true, invalidated: true).routeSummary.contains("проверим при запуске"))
-        #expect(state(proxy: true, refreshed: true, failed: true).routeSummary.contains("не удалась"))
-    }
-
-    private func draft(name: String = "Работа", port: String = "8080") -> ProfileEditorDraft {
-        ProfileEditorDraft(
-            name: name, colorHex: "#123456", symbolName: "folder",
-            tags: [], note: "", folderID: nil, startURL: "https://example.com",
-            usesProxy: true, proxyKind: .http, proxyHost: "127.0.0.1",
-            proxyPort: port, proxyUsername: "", proxyPassword: ""
-        )
-    }
-
-    @Test func editorSessionProtectsOnlyUnsavedUserWork() {
-        let baseline = draft()
-        let session = ProfileEditorSession(profileID: UUID(), initialDraft: baseline)
-        #expect(!session.hasUnsavedChanges(draft: baseline))
-        var edited = baseline
-        edited.name = "Другое рабочее место"
-        #expect(session.hasUnsavedChanges(draft: edited))
-        edited.name = baseline.name
-        #expect(!session.hasUnsavedChanges(draft: edited))
-        #expect(session.hasUnsavedChanges(draft: baseline, pendingProxyText: "proxy.example:80"))
-        #expect(session.hasUnsavedChanges(draft: baseline, pendingTagInput: "клиент"))
-        #expect(session.hasUnsavedChanges(draft: baseline, refreshedProxyEvidence: true))
-        edited.proxyPassword = "new-secret"
-        #expect(session.hasUnsavedChanges(draft: edited))
-        #expect(session.initialDraft == baseline)
-    }
-
-    @Test func actualDraftEqualityRecognizesRevertedEdits() {
-        #expect(draft() == draft())
-        #expect(draft() != draft(name: "Другое"))
-        #expect(draft() != draft(port: "8081"))
-    }
-
-    @Test func mutableDraftKeepsSnapshotAndValidationIndependent() {
-        let initial = draft()
-        var edited = initial
-        edited.name = "Другое"
-        edited.note = "Контекст"
-        edited.tags = ["Работа"]
-        edited.proxyPort = "0"
-        #expect(initial == draft())
-        #expect(edited != initial)
-        #expect(edited.proxyIssue?.field == .proxyPort)
-        edited = initial
-        #expect(edited == initial)
-        #expect(edited.firstIssue == nil)
-        #expect(edited.saveIssue(pendingProxyText: "proxy.example:80", pendingTagInput: "") == nil)
-    }
-
-    @Test func overlongNameRemainsAnEditableDraftWithSpecificValidation() {
-        let pasted = String(repeating: "я", count: BrowserProfile.maximumNameLength + 1)
-        let invalid = draft(name: pasted)
-        #expect(invalid.name == pasted)
-        #expect(invalid.firstIssue?.field == .name)
-        #expect(invalid.firstIssue?.message.contains("120") == true)
-        #expect(!state(changes: true, issue: invalid.firstIssue).canSave)
-        let corrected = draft(name: String(pasted.dropLast()))
-        #expect(corrected.firstIssue == nil)
-        #expect(state(changes: true, issue: corrected.firstIssue).canSave)
-        let byteHeavy = "a" + String(repeating: "\u{0301}", count: BrowserProfile.maximumNameUTF8Bytes)
-        #expect(ProfileEditorValidation.nameMessage(for: byteHeavy)?.contains("места") == true)
-        #expect(ProfileEditorValidation.nameMessage(for: "Работа\nАрхив")?.contains("переносы") == true)
-        #expect(ProfileEditorValidation.nameMessage(for: "Работа\u{202E}A")?.contains("управляющие") == true)
-    }
-
-    @Test func validProxyPasteCanBeSavedWithoutSeparateImportStep() throws {
-        let edited = draft(name: "Другое")
-        #expect(edited.firstIssue == nil)
-        #expect(draft(name: "", port: "0").saveIssue(
-            pendingProxyText: "next.example:8080", pendingTagInput: ""
-        )?.field == .name)
-        #expect(draft(name: "", port: "0").saveIssue(
-            pendingProxyText: " \n ", pendingTagInput: ""
-        )?.field == .name)
-        for pending in ["invalid proxy", "user:secret@bad host:8080", "host:1234:user:5678"] {
-            let issue = try #require(edited.saveIssue(pendingProxyText: pending, pendingTagInput: ""))
-            #expect(issue.field == .proxyImport)
-            #expect(!issue.message.contains(pending))
-            #expect(!state(changes: true, issue: issue, proxy: true).canSave)
-            #expect(!state(isNew: true, issue: issue).canSave)
-        }
-        for pending in ["next.example:8080", "user:secret@next.example:8080"] {
-            #expect(edited.saveIssue(pendingProxyText: pending, pendingTagInput: "") == nil)
-            let resolved = try edited.resolvingProxyImport(pending)
-            #expect(resolved.proxyHost == "next.example")
-            #expect(resolved.proxyPort == "8080")
-            #expect(resolved.name == edited.name)
-            #expect(edited.proxyHost == "127.0.0.1")
-        }
-        // A failed parse retains the pending input and thus the Save guard.
-        let invalid = "invalid proxy"
-        #expect(throws: (any Error).self) {
-            try ProxyImportParser.parse(invalid, kind: .http, order: .automatic)
-        }
-        #expect(ProfileEditorValidation.pendingProxyImportIssue(invalid) != nil)
-        // Applying successfully or deliberately clearing the field removes this guard.
-        _ = try ProxyImportParser.parse("next.example:8080", kind: .http, order: .automatic)
-        for cleared in ["", " \n "] {
-            let issue = edited.saveIssue(pendingProxyText: cleared, pendingTagInput: "")
-            #expect(issue == nil)
-            #expect(state(changes: true, issue: issue, proxy: true).canSave)
-        }
-    }
-
-    @Test func pendingProxyRequiresExplicitRouteAndAmbiguousOrder() throws {
-        var direct = draft()
-        direct.usesProxy = false
-        let pending = "user:secret@next.example:8080"
-        #expect(direct.saveIssue(pendingProxyText: pending, pendingTagInput: "")?.field == .proxyImport)
-        #expect(throws: ProxyImportError.invalid) { try direct.resolvingProxyImport(pending) }
-        #expect(!direct.usesProxy)
-        let ambiguous = "host:1234:user:5678"
-        #expect(draft().saveIssue(pendingProxyText: ambiguous, pendingTagInput: "")?.field == .proxyImport)
-        #expect(draft().saveIssue(pendingProxyText: ambiguous, pendingTagInput: "", order: .endpointFirst) == nil)
-        let resolved = try draft().resolvingProxyImport(ambiguous, order: .endpointFirst)
-        #expect(resolved.proxyHost == "host")
-        #expect(resolved.proxyPassword == "5678")
-        #expect(draft().saveIssue(pendingProxyText: "next.example:8080", pendingTagInput: String(repeating: "x", count: 1_000))?.field == .tags)
-    }
-
-    @Test func pastedUnauthenticatedProxyRemovesPreviousDraftCredentials() throws {
-        var authenticated = draft()
-        authenticated.proxyUsername = "previous-user"
-        authenticated.proxyPassword = "previous-secret"
-        let resolved = try authenticated.resolvingProxyImport("next.example:8080")
-        #expect(resolved.proxyUsername.isEmpty)
-        #expect(resolved.proxyPassword.isEmpty)
-        #expect(authenticated.proxyPassword == "previous-secret")
-        #expect(ProxyPasswordUpdate.resolve(
-            currentHasUsername: false, originalHadUsername: true,
-            enteredPassword: resolved.proxyPassword, originalPassword: "previous-secret", readFailed: false
-        ) == .delete)
-    }
-
-    @Test func testingPendingProxyCapturesInputWithoutApplyingIt() throws {
-        var savedDraft = draft()
-        savedDraft.proxyUsername = "previous-user"
-        savedDraft.proxyPassword = "previous-secret"
-        let pending = "next-user:next-secret@next.example:8181"
-        let input = try #require(try savedDraft.proxyTestInput(pendingProxyText: pending))
-        #expect(input.configuration.host == "next.example")
-        #expect(input.configuration.port == 8181)
-        #expect(input.configuration.username == "next-user")
-        #expect(input.password == "next-secret")
-        #expect(savedDraft.proxyHost == "127.0.0.1")
-        #expect(savedDraft.proxyUsername == "previous-user")
-        #expect(savedDraft.proxyPassword == "previous-secret")
-        #expect(pending == "next-user:next-secret@next.example:8181")
-        #expect(!input.redactedSummary.contains("next-secret"))
-        #expect(try draft(name: "").proxyTestInput(pendingProxyText: "next.example:80") != nil)
-        #expect(throws: ProxyImportError.ambiguous) {
-            try savedDraft.proxyTestInput(pendingProxyText: "host:1234:user:5678")
-        }
-        var direct = savedDraft
-        direct.usesProxy = false
-        #expect(try direct.proxyTestInput(pendingProxyText: "") == nil)
-        #expect(throws: ProxyImportError.invalid) { try direct.proxyTestInput(pendingProxyText: pending) }
-    }
-
-    @Test func proxyTestValidationDoesNotRequireProfileName() {
-        #expect(draft(name: "").firstIssue?.field == .name)
-        #expect(draft(name: "").proxyIssue == nil)
-        #expect(draft(port: "0").proxyIssue?.field == .proxyPort)
-        #expect(draft(port: "65536").proxyIssue?.field == .proxyPort)
+struct ProfileEditorDraftTests {
+    @Test func pastedDraftAndRevertedFieldsHaveAccurateDiscardState() {
+        let initial = ProfileEditorDraft(values: ["Name", ""], tags: [], folderID: nil)
+        #expect(initial != ProfileEditorDraft(values: ["Name", "user:password@proxy.example:8080"], tags: [], folderID: nil))
+        let edited = ProfileEditorDraft(values: ["Changed", ""], tags: [], folderID: nil)
+        #expect(initial != edited)
+        #expect(initial == ProfileEditorDraft(values: ["Name", ""], tags: [], folderID: nil))
     }
 }

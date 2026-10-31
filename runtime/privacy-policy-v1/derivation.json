@@ -1,0 +1,510 @@
+{
+  "schemaVersion": 1,
+  "status": "compiled-and-relinked-unqualified",
+  "chromiumVersion": "156.0.8078.80",
+  "architecture": "arm64",
+  "base": {
+    "sourceContract": {
+      "file": "runtime/chromium-15680-source-contract.json",
+      "sha256": "47535a1d5a121e71a3bb77b5528d8e2ef6173863ff75b07657104324709be92f"
+    },
+    "portableCRC": {
+      "file": "runtime/chromium-15680-portable-crc.json",
+      "sha256": "81b2ab0cd60f08b59310f624eda403af0a23636c66bfaac097832a2a15e1cdf0"
+    },
+    "sourceOfferManifestSHA256": "1a28ebe4729b0cde8f3770315a15237f4a025aec9b6fd0fcd9edfc278fcdff5a"
+  },
+  "patch": {
+    "file": "runtime/privacy-policy-v1/privacy-policy-v1.patch",
+    "sha256": "aa86b95be3f77d33bb99cc9e1f5bcd26b4edb4886d977b9f3ec3014757a66d7a"
+  },
+  "files": [
+    {
+      "source": "third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc",
+        "sha256": "12841e22e0c67433b761e06159c5f0705e0a00057e423229b02197f49a9d7ba0"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc",
+        "sha256": "3517fc7c8777280ead4c93e6dbed15d203f240859f7961a0879480dce3bd1f1f"
+      },
+      "object": "obj/third_party/blink/renderer/modules/peerconnection/peerconnection/rtc_peer_connection.o",
+      "objectSHA256": "e6bdee5473ab52be3a4e679cb411661bcb90432ea820b30c79ab92c31b5c678a",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/third_party__blink__renderer__modules__peerconnection__rtc_peer_connection.cc.json",
+        "sha256": "5d9dc095b81d088a8807f38b5973edbdd88a9110d0b226b9d95bd3adeb2b6049"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "components/content_settings/core/browser/host_content_settings_map.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/components/content_settings/core/browser/host_content_settings_map.cc",
+        "sha256": "cf3835835a07b9515dc1037ff97fd0011d4f633100610a00776d58231e47d031"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/components/content_settings/core/browser/host_content_settings_map.cc",
+        "sha256": "85b98cdebe40e62a8a7a46e7af7349f4bd33d12619682b41ba804820199e217a"
+      },
+      "object": "obj/components/content_settings/core/browser/browser/host_content_settings_map.o",
+      "objectSHA256": "515e8341e1e94dd0a0ed9676b110a0ef29db169cb683195f4cadfb7223428aa3",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/components__content_settings__core__browser__host_content_settings_map.cc.json",
+        "sha256": "caf13b83d25fbd2e7abf15088a04e3e4a7931b103158583faa5070cf34d1876a"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc",
+        "sha256": "1b52a8cd6f1b632882374e774dadf389d4d3c49426531e677dca477ea6fe9444"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc",
+        "sha256": "1c276f770b906e9df06be2027cf03cc7cb65c8ea5de7a8dec6f6c4a4cd5d4c45"
+      },
+      "object": "obj/third_party/blink/renderer/modules/webgl/webgl/webgl_rendering_context_base.o",
+      "objectSHA256": "9746fbb2484d4dc79bc3a16c1396615603fa9ba58445bfc5b7501c53aaff98e2",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/third_party__blink__renderer__modules__webgl__webgl_rendering_context_base.cc.json",
+        "sha256": "da77d85e840748c3df0d5f64bf12a13d5694570397dc2a702ced5567f7f7d3c5"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "chrome/browser/ui/views/frame/contents_container_view.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/chrome/browser/ui/views/frame/contents_container_view.cc",
+        "sha256": "22c0ad7c456a6c3552e5b44a2cfe0f9bc901f9f4054e94734592902751bffae0"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/chrome/browser/ui/views/frame/contents_container_view.cc",
+        "sha256": "3fea2e76e61e67a00acd8f63e5721302107e3bf1461d3b9b928583e39d1b6163"
+      },
+      "object": "obj/chrome/browser/ui/views/frame/contents_container_view_impl/contents_container_view.o",
+      "objectSHA256": "f2a22d7c6d7a1aa61b12c508ed90af7596a724cf785b5222c2bc510af870ea82",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/chrome__browser__ui__views__frame__contents_container_view.cc.json",
+        "sha256": "98808ec74045df06fe8e42b3aee04020f76a38edfd9d2d0305c5fdf1019867c4"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "chrome/browser/chrome_content_browser_client.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/chrome/browser/chrome_content_browser_client.cc",
+        "sha256": "554743a910ba67f47cd6d3dbd1d74bef12f988931bb1ac4fb6a183ab8016d929"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/chrome/browser/chrome_content_browser_client.cc",
+        "sha256": "e83027b24319950caa695c4c04f2371c7e10fc97ed52b8725433d09e0f849043"
+      },
+      "object": "obj/chrome/browser/core/chrome_content_browser_client.o",
+      "objectSHA256": "c8756acb1923770cc1ed63665c770c952507c9134efce9df60ef1b6167df5ca0",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/chrome__browser__chrome_content_browser_client.cc.json",
+        "sha256": "a1582609a3d662b0b693c1aae21aa6a3e044b1fa8a7f6ec1b6745dc1a3c19054"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "components/autofill/core/common/autofill_prefs.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/components/autofill/core/common/autofill_prefs.cc",
+        "sha256": "d7a5d2f33a68597561a02701bd3f2f66130359127bbf73d5587838b36d5fb7f1"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/components/autofill/core/common/autofill_prefs.cc",
+        "sha256": "39de6fb20709149ddf5fa3f537de2387d31c0092cfccaf181105e92f15d2b2b6"
+      },
+      "object": "obj/components/autofill/core/common/common/autofill_prefs.o",
+      "objectSHA256": "34a9338dd37c51d7e1f3405a854f0234ed4457d0c62d254f6941ed64f400d151",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/components__autofill__core__common__autofill_prefs.cc.json",
+        "sha256": "15da9da9704574c047b3635c67f5508b2532a61819aa86035aec4898492c3406"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "chrome/browser/password_manager/chrome_password_manager_client.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/chrome/browser/password_manager/chrome_password_manager_client.cc",
+        "sha256": "7f733ca72014891ee7cb31ec6cd0fba15adaaa67228635e0ba12b11847abe180"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/chrome/browser/password_manager/chrome_password_manager_client.cc",
+        "sha256": "d7f9c3ce81ad2d85b6390d9122a2e9dc653ed29324658a8d74fb28cc1aa73b7e"
+      },
+      "object": "obj/chrome/browser/password_manager/impl/chrome_password_manager_client.o",
+      "objectSHA256": "1dee796e34f083a9cb8d53315d127a04a2fa6da8243b28160ddacdb9fc8d6d59",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/chrome__browser__password_manager__chrome_password_manager_client.cc.json",
+        "sha256": "c316b3bf90708c3352098b6d72b7387ca616c89eedc51a3eea40cced7773bb1a"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "chrome/common/chrome_paths_mac.mm",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/chrome/common/chrome_paths_mac.mm",
+        "sha256": "d1dfa65cbd46600c6340aa51fa3ebdc5559aa91d20f78a375364a0af6ab3e588"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/chrome/common/chrome_paths_mac.mm",
+        "sha256": "5d9577dbeb0324f29bb02b8c5b157b0201420ac35d3a95c3df1d80d4e6b9e37e"
+      },
+      "object": "obj/chrome/common/constants/chrome_paths_mac.o",
+      "objectSHA256": "752bf1ff857bfc7186446167e8af251aba4a8a959e1a2dee341e22648576cdb8",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/chrome__common__chrome_paths_mac.mm.json",
+        "sha256": "244063a15e12029bb6b39df8c9bd1e406988a5f82b7b122e06643538f5a98553"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "services/network/network_service_network_delegate.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/services/network/network_service_network_delegate.cc",
+        "sha256": "0b3100d35ed99789a3a218d8bec40f72e8726aef3678e826e5eb9255ee87ff72"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/services/network/network_service_network_delegate.cc",
+        "sha256": "be8cb8380d4c217821a090685e99da9d19fc790063675648b4f3ed3d1f5f2de0"
+      },
+      "object": "obj/services/network/network_service/network_service_network_delegate.o",
+      "objectSHA256": "66d44070db02355f76bbe3b6859725f41ee63d258cfd256ab44b87d8e849c068",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/services__network__network_service_network_delegate.cc.json",
+        "sha256": "d2e2ebf32c0b2c1bb42476aeeb78d8f6e2b1a057880a79d1096b900e03aa125a"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "components/ungoogled/nevision_fingerprint.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/components/ungoogled/nevision_fingerprint.cc",
+        "sha256": "039b44e03f8230b98ee584c8d089fd2425e5789fbfc0a955249f0785c9d2cf1a"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/components/ungoogled/nevision_fingerprint.cc",
+        "sha256": "0072302996de69a5f84149b09b37dcae3dd14d23d1931a5b3d3572204f12029b"
+      },
+      "object": "obj/components/ungoogled/ungoogled_switches/nevision_fingerprint.o",
+      "objectSHA256": "9734f590c3231b268434ab0a4ff756a776b9572bfe0a4d6b446a8e0922e470cd",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/components__ungoogled__nevision_fingerprint.cc.json",
+        "sha256": "2f117674ff817d83a8fe8b7e0c57877782f3d38a06ac0dadfc588e736275ae98"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "third_party/blink/renderer/platform/fonts/mac/font_cache_mac.mm",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/third_party/blink/renderer/platform/fonts/mac/font_cache_mac.mm",
+        "sha256": "5bd070fba9cd7ed1120de89bdf8c3fdbdb2e170ab536b521138bbc5107b5d360"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/third_party/blink/renderer/platform/fonts/mac/font_cache_mac.mm",
+        "sha256": "0d72359030904d1d78899e4bac1b478cc49d073cbc1c5aecdfbb55b57bcf4f89"
+      },
+      "object": "obj/third_party/blink/renderer/platform/platform/font_cache_mac.o",
+      "objectSHA256": "3fb512784229e90567f4c767d8d66a151a6d5e37f646c3d79888552c7b97ad22",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/third_party__blink__renderer__platform__fonts__mac__font_cache_mac.mm.json",
+        "sha256": "4ff86ce3730b7bc72f5e607c495e2231e2e24eaf04d3c177f3f743738bb7a0c9"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm",
+        "sha256": "000857c3231385b6104fae638ff6ee0cfea3b4b1046545607b79347150d8e953"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm",
+        "sha256": "f03e4651fa4e1a8454b518378fa083e345ff503d5be492bf1b1dcfc573c9e646"
+      },
+      "object": "obj/third_party/blink/renderer/platform/platform/font_matcher_mac.o",
+      "objectSHA256": "d86fce8f7ec8cab0e41a2a4fce271d7c22777c5448f765c01da6c45adb9befc0",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/third_party__blink__renderer__platform__fonts__mac__font_matcher_mac.mm.json",
+        "sha256": "7b1aa0a869183b73138099e26f00deeaec7f8c08697a563a7bc4e36bfeb93f1d"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm",
+        "sha256": "78cd6148a0ac5c58e8f0a5e7caa7da85196d51d24c31aafb29010bd42ba6881c"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm",
+        "sha256": "4a941c7e89bb007a4ec0ef34f59bf82e189fc785e4a4483956adaca3205fb89e"
+      },
+      "object": "obj/third_party/blink/renderer/platform/platform/font_platform_data_mac.o",
+      "objectSHA256": "a26a658e3a5f7c5e47e690a0af65f52fc231555609f9e1eae1b0a44669e844f3",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/third_party__blink__renderer__platform__fonts__mac__font_platform_data_mac.mm.json",
+        "sha256": "9e22688fb5cc0db58d8c1672799e6e38f915a6402295417af6848630d7bf696c"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "third_party/skia/src/ports/SkFontMgr_mac_ct.cpp",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/third_party/skia/src/ports/SkFontMgr_mac_ct.cpp",
+        "sha256": "59878bd33ceb56db699fc89a16d4ce74b0ca1516847a90c248a811806e373532"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/third_party/skia/src/ports/SkFontMgr_mac_ct.cpp",
+        "sha256": "d627d701b0d4387dbffc94b573b19526c8db952d55e0144d960aaca2e238cf25"
+      },
+      "object": "obj/skia/skia/SkFontMgr_mac_ct.o",
+      "objectSHA256": "c0f8d5bd41753468c825a3f096b9437bd5571b9c7166f35977e65eb0274dfda3",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/third_party__skia__src__ports__SkFontMgr_mac_ct.cpp.json",
+        "sha256": "e29865168f714f1e34ae23b021d42cb4d39b1358733d216ee28560ba2a5a8a2a"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "content/browser/font_access/font_enumeration_data_source_mac.mm",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/content/browser/font_access/font_enumeration_data_source_mac.mm",
+        "sha256": "b1a619e8dfe914be6ecf0548587daea444a7fc1fa4f567b4aaff550baeb7006d"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/content/browser/font_access/font_enumeration_data_source_mac.mm",
+        "sha256": "5fddf858aa8227662737370dff5487344ca3f693ded7bee4bbdb665ea178014d"
+      },
+      "object": "obj/content/browser/browser/font_enumeration_data_source_mac.o",
+      "objectSHA256": "0030c734c6032429b78ea47709af58488a3826741820647e00a4058c603567bd",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/content__browser__font_access__font_enumeration_data_source_mac.mm.json",
+        "sha256": "6c46823ce5763f280b04037915029c9f82d075d9d9dff46809643db26eade0a9"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "third_party/blink/renderer/platform/fonts/generic_font_family_settings.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/third_party/blink/renderer/platform/fonts/generic_font_family_settings.cc",
+        "sha256": "4ddc22ff2179a348a2cc01ea839e278ffe12e889a74745ff933f266eee393941"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/third_party/blink/renderer/platform/fonts/generic_font_family_settings.cc",
+        "sha256": "16c68a6470fc0b08c2ccfefe458e574109485e5b0d769d62019d9f09cee09c4c"
+      },
+      "object": "obj/third_party/blink/renderer/platform/platform/generic_font_family_settings.o",
+      "objectSHA256": "c19ec16079a6cc4da5e461783d99fc497508a9c64dba1ea8099536879e00fe08",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/third_party__blink__renderer__platform__fonts__generic_font_family_settings.cc.json",
+        "sha256": "a2576450037f3b822c327527b99cfa5db924ba98cf13b048c0145080be740da8"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "third_party/blink/renderer/core/workers/worker_settings.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/third_party/blink/renderer/core/workers/worker_settings.cc",
+        "sha256": "13f8ac1e14bde95d3d796b5b3bd83de923f2826d829e42c1ae6409fe69fd9f01"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/third_party/blink/renderer/core/workers/worker_settings.cc",
+        "sha256": "5f150428ab8617f088f9001c944cb7fe97906dec13ce853e6dbeb086dc6db089"
+      },
+      "object": "obj/third_party/blink/renderer/core/core/worker_settings.o",
+      "objectSHA256": "50f1211253aa1669255c1215f6e3d28d245fa51daa4408c7a402063269949cd8",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/third_party__blink__renderer__core__workers__worker_settings.cc.json",
+        "sha256": "9f779eb17f42a78936a470e54ffce1a424fccde6897d893473540244a1c86f9f"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "chrome/browser/net/proxy_config_monitor.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/chrome/browser/net/proxy_config_monitor.cc",
+        "sha256": "5c97ac5971fd5979073ad39de66388c12d7787fa853442d24f7b5107f84ff260"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/chrome/browser/net/proxy_config_monitor.cc",
+        "sha256": "9756c6798ea65a7ebf50286aa4ec86bf624878366cedfe628bc53ff781c1cbae"
+      },
+      "object": "obj/chrome/browser/net/impl/proxy_config_monitor.o",
+      "objectSHA256": "d0039a97738094c6e612fba5e99301d968b5a79b0b6df7b424bef40a9b3ee666",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/chrome__browser__net__proxy_config_monitor.cc.json",
+        "sha256": "36803ec96c79080384c8b652bae56563d6ac7094b77fe1ab6ec3e7c1e582196f"
+      },
+      "compileExitCode": 0
+    }
+  ],
+  "supplementalSources": [
+    {
+      "source": "components/ungoogled/system_font_policy_mac.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/components/ungoogled/system_font_policy_mac.cc",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/components/ungoogled/system_font_policy_mac.cc",
+        "sha256": "79ec0a54c2494082cff801cbd226191ed20a31b5303cbc754aafe674db26890f"
+      },
+      "beforeAbsent": true
+    },
+    {
+      "source": "components/ungoogled/system_font_policy_mac.h",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/components/ungoogled/system_font_policy_mac.h",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/components/ungoogled/system_font_policy_mac.h",
+        "sha256": "80e257a26c7fdb1ea94e8e839f37aade0494717fda68a3c8e69ae63915ac5d66"
+      },
+      "beforeAbsent": true
+    },
+    {
+      "source": "components/ungoogled/system_font_source.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/components/ungoogled/system_font_source.cc",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/components/ungoogled/system_font_source.cc",
+        "sha256": "a9a7bcdb47fac744895cd7bb04025813ab5aba70b50ee42875a8810f7693b627"
+      },
+      "beforeAbsent": true
+    },
+    {
+      "source": "components/ungoogled/system_font_source.h",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/components/ungoogled/system_font_source.h",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/components/ungoogled/system_font_source.h",
+        "sha256": "7d297bc1064a50fbcf1191502c1b5fc6de9cb5dfeed4127a29b3ebf18dbc4da5"
+      },
+      "beforeAbsent": true
+    },
+    {
+      "source": "third_party/blink/renderer/platform/fonts/neantik_system_generic_defaults.h",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/third_party/blink/renderer/platform/fonts/neantik_system_generic_defaults.h",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/third_party/blink/renderer/platform/fonts/neantik_system_generic_defaults.h",
+        "sha256": "8a483ceec214af118355323c5fb6148aa906f5447fbe33500049720f4cc60bf2"
+      },
+      "beforeAbsent": true
+    }
+  ],
+  "licenses": [
+    {
+      "spdx": "MPL-2.0",
+      "file": "runtime/privacy-policy-v1/licenses/MPL-2.0.txt",
+      "sha256": "3f3d9e0024b1921b067d6f7f88deb4a60cbe7a78e76c64e3f1d7fc3b779b9d04"
+    }
+  ],
+  "notice": {
+    "file": "runtime/privacy-policy-v1/SOURCE-NOTICE.txt",
+    "sha256": "b705c3ba462b14a954810c50ab61593f108dc409b703fbf5cc3c90b6c9325b3e"
+  },
+  "link": {
+    "recipe": {
+      "file": "runtime/privacy-policy-v1/link-command.txt",
+      "sha256": "a772e30e14493127bd637d6d3c48d60cf45112d9f81a58e56aa9951945cfbf26"
+    },
+    "responseFile": {
+      "file": "runtime/privacy-policy-v1/framework-link.rsp",
+      "sha256": "b72aab24ecbe6022bfae1af9dba138c23395d7993b0fa97509e990aa86c56b66"
+    },
+    "thinArchives": {
+      "obj/chrome/common/libconstants.a": {
+        "members": {
+          "file": "runtime/privacy-policy-v1/archive-members/obj__chrome__common__libconstants.a.json",
+          "sha256": "df65d774281e3cec47405c63b2ac167444c38d2212b67a29d29f168202051766"
+        },
+        "sha256": "e36c831e3312cdd22955707c522bc74e4038693f43cc8174a569debc7818de15"
+      },
+      "obj/components/autofill/core/common/libcommon.a": {
+        "members": {
+          "file": "runtime/privacy-policy-v1/archive-members/obj__components__autofill__core__common__libcommon.a.json",
+          "sha256": "f30a000debbfde662ffb8f40a4ffe13d4abf10a78a4a36fcfb79b097670c3aba"
+        },
+        "sha256": "667f173603c2741acf9b3b95f85e0a38e61a6d442ab8c228f2d76cebf4999351"
+      },
+      "obj/components/content_settings/core/browser/libbrowser.a": {
+        "members": {
+          "file": "runtime/privacy-policy-v1/archive-members/obj__components__content_settings__core__browser__libbrowser.a.json",
+          "sha256": "cf722329d665a4b8b0b0ed051a1cb38f2c4347adb51bf936bcec79f79c16da04"
+        },
+        "sha256": "4dc72cb283c6f288cb9d1015d6f88dbf57408d297023771a87d3d1ed57da3840"
+      },
+      "obj/components/ungoogled/libungoogled_switches.a": {
+        "members": {
+          "file": "runtime/privacy-policy-v1/archive-members/obj__components__ungoogled__libungoogled_switches.a.json",
+          "sha256": "dd773d4a961c132bf7e0bf87e66a7783bd2755872cd188af19f5e9c920a23e19"
+        },
+        "sha256": "d095b3afc6e8eef8b678d49cd26b3cb3dc0ce0ffb612bf66e1ea93ed1bc418bf"
+      },
+      "obj/services/network/libnetwork_service.a": {
+        "members": {
+          "file": "runtime/privacy-policy-v1/archive-members/obj__services__network__libnetwork_service.a.json",
+          "sha256": "efa8c637d85c3db85f1f1e63050f91eb21e2b536e7fca9d0bf43f89a03d7d44a"
+        },
+        "sha256": "525f335bf6e1a464e981c016dd5016ce618bc8c085ee4eb55ab9b1a929081501"
+      },
+      "obj/skia/libskia.a": {
+        "members": {
+          "file": "runtime/privacy-policy-v1/archive-members/obj__skia__libskia.a.json",
+          "sha256": "9177433dba8a69e28ddecba3ebecbc547496512c3b6be2c3a7fe3e1550074784"
+        },
+        "sha256": "970c495529912ff58a205e6e325f701f14951642fba8e1b59aaa712e7df70f02"
+      },
+      "obj/third_party/blink/renderer/core/libblink_core.a": {
+        "members": {
+          "file": "runtime/privacy-policy-v1/archive-members/obj__third_party__blink__renderer__core__libblink_core.a.json",
+          "sha256": "8dd63ddb7c0dc51c64eea59ea8acd7a3c7e3ca4fa0013451854404884e979edc"
+        },
+        "sha256": "b32f09e22b84d7a691c71b5eaa5e35b5b29a0b0e045428fc68f0865e14bc23fc"
+      },
+      "obj/third_party/blink/renderer/modules/peerconnection/libpeerconnection.a": {
+        "members": {
+          "file": "runtime/privacy-policy-v1/archive-members/obj__third_party__blink__renderer__modules__peerconnection__libpeerconnection.a.json",
+          "sha256": "6b9fc7840bec621b39372981e6cbea4ccf59425dbe1d6e358bee7af417c1d130"
+        },
+        "sha256": "324ea25bc4f234c7cb53668a7f261dfbf2807429e485e39aa8cd53ef7368f216"
+      },
+      "obj/third_party/blink/renderer/modules/webgl/libwebgl.a": {
+        "members": {
+          "file": "runtime/privacy-policy-v1/archive-members/obj__third_party__blink__renderer__modules__webgl__libwebgl.a.json",
+          "sha256": "b65be6c2763b3fdbab5f6f6fff888204f963d388169027ec7b3492cd56e729a2"
+        },
+        "sha256": "889219a8d32eae84b1eac116fae846d3847a0b7d36c33286b3bb3154337b07cc"
+      },
+      "obj/third_party/blink/renderer/platform/libblink_platform.a": {
+        "members": {
+          "file": "runtime/privacy-policy-v1/archive-members/obj__third_party__blink__renderer__platform__libblink_platform.a.json",
+          "sha256": "a2ade0ba034ebeac693202ad025d75942dd2906e1d8acec7317282e6d3c45f92"
+        },
+        "sha256": "52f3a50240c5f0b766b30bdb73bc4f15f873c7fd348617939d72583924f0c417"
+      }
+    },
+    "exitCode": 0,
+    "frameworkSHA256": "4446581ece6aec5e8baf990b4ef9f987da500c4e24953682d9efcebcb38f7e74",
+    "browserExecutableSHA256": "bcf4e0fe1cb003cd653a0c88eab9ab93af6810107412fddfebc2cb3274cdd53a",
+    "archiveRebuilds": {
+      "file": "runtime/privacy-policy-v1/archive-rebuilds.json",
+      "sha256": "323121e72a79259ea3acbdcdd21277cc9bba5e077dba9889f29bf2ec77289c7d"
+    }
+  },
+  "releaseReady": false
+}

@@ -21,6 +21,19 @@ struct ProxyTestObservation: Equatable, Sendable {
     let observedAt: Date
     let responseTimeMilliseconds: Int
     let result: ProxyTestResult
+    let source: ProxyHealthSource
+
+    init(
+        observedAt: Date,
+        responseTimeMilliseconds: Int,
+        result: ProxyTestResult,
+        source: ProxyHealthSource = .ipAPI
+    ) {
+        self.observedAt = observedAt
+        self.responseTimeMilliseconds = responseTimeMilliseconds
+        self.result = result
+        self.source = source
+    }
 }
 
 struct ProxyProbeError: LocalizedError, Equatable, Sendable {
@@ -38,9 +51,11 @@ struct ProxyProcessResult: Sendable {
 }
 
 struct ProxyTester: Sendable {
+    typealias ProcessRunner = @Sendable (URL, [String], Data, Int) async throws -> ProxyProcessResult
     static let maximumResponseBytes = 16_384
     static let maximumProbeOutputBytes = maximumResponseBytes + 256
     static let metricsPrefix = "\nNEANTIK_METRICS_V1:"
+    private static let routeMetricsPrefix = "\nNEANTIK_METRICS_V2:"
     private static let invalidResponseMessage =
         "IP-сервис вернул некорректный ответ."
 
@@ -53,18 +68,53 @@ struct ProxyTester: Sendable {
         "--max-filesize", "\(maximumResponseBytes)",
         "--noproxy", "",
         "--config", "-",
-        "--write-out", "\nNEANTIK_METRICS_V1:%{time_starttransfer}\n",
+        "--write-out", "\nNEANTIK_METRICS_V2:%{time_starttransfer}|%{http_connect}|%{response_code}\n",
         "https://ipapi.co/json/"
     ]
+    static let crossCheckURLs = [
+        "https://ipwho.is/",
+        "https://free.freeipapi.com/api/v1/json"
+    ]
 
-    static func sanitizedProcessEnvironment(
-        inherited _: [String: String] = ProcessInfo.processInfo.environment
-    ) -> [String: String] {
-        [
-            "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-            "LANG": "C",
-            "LC_ALL": "C"
-        ]
+    /// A custom endpoint is an exclusive manual observation. It cannot silently
+    /// fall back, supply GeoIP fields, redirect, or qualify Chromium routing.
+    func diagnose(
+        endpoint: ProxyDiagnosticEndpoint,
+        configuration: ProxyConfiguration,
+        password: String,
+        consent: Bool,
+        runProcess: ProcessRunner = ProxyTester.runCancellableProcess
+    ) async throws -> ProxyDiagnosticObservation {
+        guard consent else { throw ProxyDiagnosticError.consentRequired }
+        guard configuration.isValid, Self.isValidPassword(password) else {
+            throw ProxyProbeError(outcome: .invalidConfiguration)
+        }
+        try Task.checkCancellation()
+        var config = "proxy = \"\(Self.escaped(configuration.curlServer))\"\n"
+        if !configuration.username.isEmpty {
+            config += "proxy-user = \"\(Self.escaped(configuration.username + ":" + password))\"\n"
+        }
+        config += "url = \"\(Self.escaped(endpoint.address))\"\n"
+        let input = Data(config.utf8)
+        config.removeAll(keepingCapacity: false)
+        let arguments = Array(Self.curlArguments.dropLast()) + ["--proto", "=https", "--max-redirs", "0"]
+        let result: ProxyProcessResult
+        do {
+            result = try await runProcess(URL(fileURLWithPath: "/usr/bin/curl"), arguments, input, Self.maximumProbeOutputBytes)
+        } catch is CancellationError { throw CancellationError() }
+        catch { throw ProxyProbeError(outcome: .internalFailure) }
+        try Task.checkCancellation()
+        guard !result.outputExceeded else { throw ProxyProbeError(outcome: .invalidResponse) }
+        guard result.status == 0 else { throw ProxyProbeError(outcome: Self.outcome(forProcess: result)) }
+        do {
+            let parsed = try Self.splitProbeOutput(result.output)
+            guard parsed.httpConnectStatus != nil, parsed.responseStatus == 200 else {
+                throw ProxyProbeError(outcome: .invalidResponse)
+            }
+            try Self.validateSuccessfulMetrics(parsed.httpConnectStatus, parsed.responseStatus)
+            let ip = try Self.parseResponse(parsed.body).ipAddress
+            return ProxyDiagnosticObservation(observedAt: Date(), responseTimeMilliseconds: parsed.responseTimeMilliseconds, ipAddress: ip)
+        } catch { throw ProxyProbeError(outcome: .invalidResponse) }
     }
 
     func test(
@@ -89,8 +139,39 @@ struct ProxyTester: Sendable {
     func probe(
         configuration: ProxyConfiguration,
         password: String,
-        observedAt: @Sendable () -> Date = { Date() }
+        observedAt: @escaping @Sendable () -> Date = { Date() },
+        runProcess: @escaping ProcessRunner = ProxyTester.runCancellableProcess,
+        maximumDuration: Duration = .seconds(45)
     ) async throws -> ProxyTestObservation {
+        // The cross-check and fallback can launch three serial curl children.
+        // Bound the whole observation, not only each child, so one proxy cannot
+        // stall the serialized MCP worker or be mistaken for an expired account.
+        return try await withThrowingTaskGroup(of: ProxyTestObservation.self) { group in
+            group.addTask {
+                try await performProbe(
+                    configuration: configuration, password: password,
+                    observedAt: observedAt, runProcess: runProcess
+                )
+            }
+            group.addTask {
+                try await Task.sleep(for: maximumDuration)
+                throw ProxyProbeError(outcome: .timedOut)
+            }
+            defer { group.cancelAll() }
+            guard let first = try await group.next() else {
+                throw ProxyProbeError(outcome: .internalFailure)
+            }
+            return first
+        }
+    }
+
+    private func performProbe(
+        configuration: ProxyConfiguration,
+        password: String,
+        observedAt: @Sendable () -> Date,
+        runProcess: ProcessRunner
+    ) async throws -> ProxyTestObservation {
+        try Task.checkCancellation()
         guard configuration.isValid else {
             throw ProxyProbeError(outcome: .invalidConfiguration)
         }
@@ -107,37 +188,125 @@ struct ProxyTester: Sendable {
         }
         let inputData = Data(config.utf8)
         config.removeAll(keepingCapacity: false)
+        do {
+            let observation = try await crossCheckedProbe(
+                inputData: inputData,
+                observedAt: observedAt,
+                runProcess: runProcess
+            )
+            try Task.checkCancellation()
+            return observation
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as ProxyProbeError {
+            // A disagreement or malformed response is evidence of an unsafe
+            // context, so another service must not override it. A service or
+            // connection failure may use the legacy independent source.
+            guard error.outcome != .invalidResponse,
+                  error.outcome != .authenticationRejected,
+                  error.outcome != .protocolFailed else {
+                throw error
+            }
+        }
+        try Task.checkCancellation()
         let result: ProxyProcessResult
         do {
-            result = try await Self.runCancellableProcess(
-                executableURL: URL(fileURLWithPath: "/usr/bin/curl"),
-                arguments: Self.curlArguments,
-                standardInput: inputData,
-                maximumOutputBytes: Self.maximumProbeOutputBytes
+            result = try await runProcess(
+                URL(fileURLWithPath: "/usr/bin/curl"),
+                Self.curlArguments,
+                inputData,
+                Self.maximumProbeOutputBytes
             )
         } catch is CancellationError {
             throw CancellationError()
         } catch {
             throw ProxyProbeError(outcome: .internalFailure)
         }
+        try Task.checkCancellation()
         guard !result.outputExceeded else {
             throw ProxyProbeError(outcome: .invalidResponse)
         }
         guard result.status == 0 else {
             throw ProxyProbeError(
-                outcome: Self.outcome(forCurlStatus: result.status)
+                outcome: Self.outcome(forProcess: result)
             )
         }
 
         do {
             let parsed = try Self.parseProbeOutput(result.output)
-        return ProxyTestObservation(
+            try Task.checkCancellation()
+            return ProxyTestObservation(
                 observedAt: observedAt(),
                 responseTimeMilliseconds: parsed.responseTimeMilliseconds,
                 result: parsed.result
             )
         } catch is CancellationError {
             throw CancellationError()
+        } catch {
+            throw ProxyProbeError(outcome: .invalidResponse)
+        }
+    }
+
+    private func crossCheckedProbe(
+        inputData: Data,
+        observedAt: @Sendable () -> Date,
+        runProcess: ProcessRunner
+    ) async throws -> ProxyTestObservation {
+        var responses: [Data] = []
+        var responseTime = 0
+        for (service, url) in Self.crossCheckURLs.enumerated() {
+            try Task.checkCancellation()
+            let arguments = Self.curlArguments.dropLast() + [url]
+            let process: ProxyProcessResult
+            do {
+                process = try await runProcess(
+                    URL(fileURLWithPath: "/usr/bin/curl"),
+                    Array(arguments),
+                    inputData,
+                    Self.maximumProbeOutputBytes
+                )
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                throw ProxyProbeError(outcome: .internalFailure)
+            }
+            try Task.checkCancellation()
+            guard !process.outputExceeded else {
+                throw ProxyProbeError(outcome: .invalidResponse)
+            }
+            guard process.status == 0 else {
+                throw ProxyProbeError(
+                    outcome: Self.outcome(forProcess: process)
+                )
+            }
+            do {
+                let parsed = try Self.splitProbeOutput(process.output)
+                try Self.validateSuccessfulMetrics(parsed.httpConnectStatus, parsed.responseStatus)
+                try Self.validateCrossCheckBody(parsed.body, service: service)
+                responses.append(parsed.body)
+                responseTime += parsed.responseTimeMilliseconds
+            } catch {
+                throw ProxyProbeError(outcome: .invalidResponse)
+            }
+        }
+        try Task.checkCancellation()
+        guard responses.count == 2 else {
+            throw ProxyProbeError(outcome: .internalFailure)
+        }
+        do {
+            let result = try Self.parseCrossCheckedResponses(
+                ipWhois: responses[0],
+                freeIPAPI: responses[1]
+            )
+            return ProxyTestObservation(
+                observedAt: observedAt(),
+                responseTimeMilliseconds: min(
+                    responseTime,
+                    ProxyHealthAttempt.maximumResponseTimeMilliseconds
+                ),
+                result: result,
+                source: .crossChecked
+            )
         } catch {
             throw ProxyProbeError(outcome: .invalidResponse)
         }
@@ -169,27 +338,55 @@ struct ProxyTester: Sendable {
         }
     }
 
+    private static func outcome(forProcess process: ProxyProcessResult) -> ProxyHealthOutcome {
+        // curl --fail uses exit 22 for both a refused CONNECT tunnel and an
+        // endpoint HTTP error. Only curl's separate CONNECT metric identifies
+        // the proxy stage; never inspect stderr, which may contain credentials.
+        if let parsed = try? splitProbeOutput(process.output),
+           let connectStatus = parsed.httpConnectStatus,
+           connectStatus != 0, connectStatus != 200 {
+            return connectStatus == 407 ? .authenticationRejected : .protocolFailed
+        }
+        return outcome(forCurlStatus: process.status)
+    }
+
     static func parseProbeOutput(
         _ data: Data
     ) throws -> (
         result: ProxyTestResult,
         responseTimeMilliseconds: Int
     ) {
+        let parsed = try splitProbeOutput(data)
+        try validateSuccessfulMetrics(parsed.httpConnectStatus, parsed.responseStatus)
+        return (
+            try parseResponse(parsed.body),
+            parsed.responseTimeMilliseconds
+        )
+    }
+
+    private static func splitProbeOutput(
+        _ data: Data
+    ) throws -> (body: Data, responseTimeMilliseconds: Int, httpConnectStatus: Int?, responseStatus: Int?) {
         guard data.count <= maximumProbeOutputBytes,
-              let text = String(data: data, encoding: .utf8),
-              let marker = text.range(
-                of: metricsPrefix,
-                options: .backwards
-              )
+              let text = String(data: data, encoding: .utf8)
         else {
+            throw NeAntikError.proxyTestFailed(invalidResponseMessage)
+        }
+        let routeMarker = text.range(of: routeMetricsPrefix, options: .backwards)
+        let legacyMarker = text.range(of: metricsPrefix, options: .backwards)
+        guard let marker = [routeMarker, legacyMarker].compactMap({ $0 })
+            .max(by: { $0.lowerBound < $1.lowerBound }) else {
             throw NeAntikError.proxyTestFailed(invalidResponseMessage)
         }
         let bodyText = String(text[..<marker.lowerBound])
         let metricText = text[marker.upperBound...]
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        let fields = metricText.split(separator: "|", omittingEmptySubsequences: false)
+        let isRouteMetric = marker == routeMarker
         guard !metricText.isEmpty,
               metricText.utf8.count <= 64,
-              let seconds = Double(metricText),
+              fields.count == (isRouteMetric ? 3 : 1),
+              let seconds = Double(fields[0]),
               seconds.isFinite,
               seconds >= 0,
               seconds <= 120
@@ -202,10 +399,111 @@ struct ProxyTester: Sendable {
         else {
             throw NeAntikError.proxyTestFailed(invalidResponseMessage)
         }
-        return (
-            try parseResponse(Data(bodyText.utf8)),
-            milliseconds
+        var connectStatus: Int?
+        var responseStatus: Int?
+        if isRouteMetric {
+            func httpStatus(_ field: Substring) -> Int? {
+                guard field.utf8.count == 3,
+                      field.utf8.allSatisfy({ (48...57).contains($0) }),
+                      let value = Int(field), value == 0 || (100...599).contains(value)
+                else { return nil }
+                return value
+            }
+            guard let connect = httpStatus(fields[1]), let response = httpStatus(fields[2]) else {
+                throw NeAntikError.proxyTestFailed(invalidResponseMessage)
+            }
+            connectStatus = connect
+            responseStatus = response
+        }
+        return (Data(bodyText.utf8), milliseconds, connectStatus, responseStatus)
+    }
+
+    private static func validateSuccessfulMetrics(_ connect: Int?, _ response: Int?) throws {
+        guard (connect == nil || connect == 0 || connect == 200),
+              (response == nil || response == 200) else {
+            throw NeAntikError.proxyTestFailed(invalidResponseMessage)
+        }
+    }
+
+    static func parseCrossCheckedResponses(
+        ipWhois: Data,
+        freeIPAPI: Data
+    ) throws -> ProxyTestResult {
+        guard ipWhois.count <= maximumResponseBytes,
+              freeIPAPI.count <= maximumResponseBytes,
+              let first = try JSONSerialization.jsonObject(
+                with: ipWhois
+              ) as? [String: Any],
+              let second = try JSONSerialization.jsonObject(
+                with: freeIPAPI
+              ) as? [String: Any],
+              first["success"] as? Bool == true,
+              let firstIP = first["ip"] as? String,
+              let secondIP = second["ipAddress"] as? String,
+              let firstAddress = addressBytes(firstIP),
+              firstAddress == addressBytes(secondIP),
+              let firstCountry = safeCountryCode(first["country_code"]),
+              firstCountry == safeCountryCode(second["countryCode"]),
+              let zone = (first["timezone"] as? [String: Any])?["id"] as? String,
+              TimeZone(identifier: zone) != nil,
+              let countryZones = second["timeZones"] as? [String],
+              countryZones.contains(zone),
+              let languages = second["languages"] as? [String],
+              let firstLanguage = languages.first,
+              let locale = normalizedLocale(firstLanguage)
+        else {
+            throw NeAntikError.proxyTestFailed(invalidResponseMessage)
+        }
+        return ProxyTestResult(
+            ipAddress: firstIP,
+            city: safeDisplayText(first["city"]),
+            countryName: safeDisplayText(first["country"]),
+            countryCode: firstCountry,
+            timezoneIdentifier: zone,
+            localeIdentifier: locale
         )
+    }
+
+    private static func validateCrossCheckBody(_ data: Data, service: Int) throws {
+        guard let body = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw ProxyProbeError(outcome: .invalidResponse)
+        }
+        if service == 0 {
+            guard body["success"] as? Bool == true,
+                  let ip = body["ip"] as? String, isIPAddress(ip),
+                  safeCountryCode(body["country_code"]) != nil,
+                  let zone = (body["timezone"] as? [String: Any])?["id"] as? String,
+                  TimeZone(identifier: zone) != nil else { throw ProxyProbeError(outcome: .invalidResponse) }
+        } else {
+            guard let ip = body["ipAddress"] as? String, isIPAddress(ip),
+                  safeCountryCode(body["countryCode"]) != nil,
+                  let zones = body["timeZones"] as? [String], !zones.isEmpty,
+                  zones.allSatisfy({ TimeZone(identifier: $0) != nil }),
+                  let languages = body["languages"] as? [String],
+                  let first = languages.first, normalizedLocale(first) != nil else { throw ProxyProbeError(outcome: .invalidResponse) }
+        }
+    }
+
+    private static func safeCountryCode(_ value: Any?) -> String? {
+        guard let text = value as? String,
+              text.utf8.count == 2,
+              text.utf8.allSatisfy({
+                (65...90).contains($0) || (97...122).contains($0)
+              }) else { return nil }
+        return text.uppercased()
+    }
+
+    private static func addressBytes(_ value: String) -> Data? {
+        guard isIPAddress(value) else { return nil }
+        var ipv4 = in_addr()
+        if value.withCString({ inet_pton(AF_INET, $0, &ipv4) }) == 1 {
+            return Data([4]) + withUnsafeBytes(of: ipv4) { Data($0) }
+        }
+        var ipv6 = in6_addr()
+        guard value.withCString({ inet_pton(AF_INET6, $0, &ipv6) }) == 1 else {
+            return nil
+        }
+        return Data([6]) + withUnsafeBytes(of: ipv6) { Data($0) }
     }
 
     static func runCancellableProcess(
@@ -216,8 +514,7 @@ struct ProxyTester: Sendable {
     ) async throws -> ProxyProcessResult {
         let runner = CancellableProcessRunner(
             executableURL: executableURL,
-            arguments: arguments,
-            environment: Self.sanitizedProcessEnvironment()
+            arguments: arguments
         )
         let boundedOutput = BoundedProcessOutput(
             maximumBytes: maximumOutputBytes
@@ -225,13 +522,26 @@ struct ProxyTester: Sendable {
         let completion = ProcessOutputCompletion()
         let input = Pipe()
         let output = Pipe()
-        let inputWriter = CancellableProcessInputWriter(
-            handle: input.fileHandleForWriting,
-            data: standardInput
-        )
         runner.process.standardInput = input
         runner.process.standardOutput = output
         runner.process.standardError = FileHandle.nullDevice
+
+        // Darwin pipes otherwise send SIGPIPE when a cancelled child closes
+        // stdin. Keep that failure local to this writer, not the manager.
+        _ = fcntl(input.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)
+
+        // curl has its own 12-second limit, but a wedged child or inherited
+        // pipe descriptor must not keep the manager suspended indefinitely.
+        // Dispatch deadlines use the monotonic system clock.
+        let stop: @Sendable () -> Void = {
+            guard runner.requestStop() else { return }
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + .milliseconds(500)) {
+                runner.forceKillIfRunning()
+            }
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + .milliseconds(1_500)) {
+                completion.expire(output: boundedOutput.snapshot())
+            }
+        }
 
         return try await withTaskCancellationHandler {
             try Task.checkCancellation()
@@ -245,39 +555,90 @@ struct ProxyTester: Sendable {
                 }
                 do {
                     try runner.start()
-                    inputWriter.start { error in
-                        if error != nil {
-                            runner.cancel()
+                    DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + .seconds(18)) {
+                        if !completion.isFinished { stop() }
+                    }
+                    // Start the reader before filling its finite pipe. Large
+                    // valid credentials must never block the calling actor.
+                    DispatchQueue.global(qos: .utility).async {
+                        defer { try? input.fileHandleForWriting.close() }
+                        let fd = input.fileHandleForWriting.fileDescriptor
+                        guard Self.makeNonblocking(fd) else { stop(); return }
+                        standardInput.withUnsafeBytes { rawBytes in
+                            guard let base = rawBytes.baseAddress else { return }
+                            var offset = 0
+                            while offset < rawBytes.count && !runner.shouldStopIO && !completion.isFinished {
+                                let count = Darwin.write(fd, base.advanced(by: offset), rawBytes.count - offset)
+                                if count > 0 { offset += count; continue }
+                                if count == -1 && errno == EINTR { continue }
+                                if count == -1 && errno == EAGAIN {
+                                    Self.waitForPipe(fd, events: Int16(POLLOUT))
+                                    continue
+                                }
+                                // A child may exit without consuming all config.
+                                // Its bounded output/status remains the authority.
+                                break
+                            }
                         }
-                        completion.writerFinished(error)
                     }
                     DispatchQueue.global(qos: .utility).async {
-                        do {
-                            while let chunk = try output
-                                .fileHandleForReading
-                                .read(upToCount: 4_096),
-                                  !chunk.isEmpty {
-                                if boundedOutput.append(chunk) {
-                                    runner.stopForOutputLimit()
-                                }
-                            }
-                            completion.readerFinished(
-                                boundedOutput.snapshot()
-                            )
-                        } catch {
-                            completion.fail(error)
+                        defer { try? output.fileHandleForReading.close() }
+                        let fd = output.fileHandleForReading.fileDescriptor
+                        guard Self.makeNonblocking(fd) else {
+                            stop()
+                            completion.fail(ProxyProbeError(outcome: .internalFailure))
+                            return
                         }
+                        var buffer = [UInt8](repeating: 0, count: 4_096)
+                        while !completion.isFinished {
+                            let count = buffer.withUnsafeMutableBytes { bytes in
+                                Darwin.read(fd, bytes.baseAddress, bytes.count)
+                            }
+                            if count > 0 {
+                                if boundedOutput.append(Data(buffer.prefix(count))) { stop() }
+                                continue
+                            }
+                            if count == 0 { break }
+                            if errno == EINTR { continue }
+                            if errno == EAGAIN {
+                                Self.waitForPipe(fd, events: Int16(POLLIN))
+                                // A descendant can retain stdout after the
+                                // owned child exits. Drain available bytes,
+                                // then finish without waiting for its EOF.
+                                if completion.hasTerminated && !Self.pipeHasData(fd) { break }
+                                continue
+                            }
+                            stop()
+                            completion.fail(ProxyProbeError(outcome: .internalFailure))
+                            return
+                        }
+                        completion.readerFinished(boundedOutput.snapshot())
                     }
                 } catch {
-                    inputWriter.cancel()
+                    try? input.fileHandleForWriting.close()
                     completion.fail(error)
                 }
             }
         } onCancel: {
             completion.markCancelled()
-            inputWriter.cancel()
-            runner.cancel()
+            stop()
         }
+    }
+
+    private static func makeNonblocking(_ fd: Int32) -> Bool {
+        let flags = fcntl(fd, F_GETFL)
+        return flags >= 0 && fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0
+    }
+
+    private static func waitForPipe(_ fd: Int32, events: Int16) {
+        var descriptor = pollfd(fd: fd, events: events, revents: 0)
+        _ = Darwin.poll(&descriptor, 1, 100)
+    }
+
+    private static func pipeHasData(_ fd: Int32) -> Bool {
+        var descriptor = pollfd(fd: fd, events: Int16(POLLIN), revents: 0)
+        return Darwin.poll(&descriptor, 1, 0) > 0 &&
+            (descriptor.revents & Int16(POLLIN)) != 0
     }
 
     static func parseResponse(_ data: Data) throws -> ProxyTestResult {
@@ -291,6 +652,7 @@ struct ProxyTester: Sendable {
             throw NeAntikError.proxyTestFailed(invalidResponseMessage)
         }
         guard let dictionary = object as? [String: Any],
+              dictionary["error"] as? Bool != true,
               let ipAddress = dictionary["ip"] as? String,
               isIPAddress(ipAddress)
         else {
@@ -308,7 +670,7 @@ struct ProxyTester: Sendable {
                     in: .whitespacesAndNewlines
                 )
             }
-            .flatMap(LocaleIdentifierNormalization.normalize)
+            .flatMap(normalizedLocale)
         let timezone = (dictionary["timezone"] as? String).flatMap {
             TimeZone(identifier: $0) == nil ? nil : $0
         }
@@ -365,6 +727,35 @@ struct ProxyTester: Sendable {
         return trimmed
     }
 
+    private static func normalizedLocale(_ value: String) -> String? {
+        let components = value.replacingOccurrences(
+            of: "_",
+            with: "-"
+        ).split(separator: "-", omittingEmptySubsequences: false)
+        guard (1...2).contains(components.count),
+              (2...3).contains(components[0].count),
+              isASCIILetters(components[0])
+        else {
+            return nil
+        }
+        if components.count == 2 {
+            guard components[1].count == 2,
+                  isASCIILetters(components[1])
+            else {
+                return nil
+            }
+            return "\(components[0].lowercased())-\(components[1].uppercased())"
+        }
+        return components[0].lowercased()
+    }
+
+    private static func isASCIILetters(_ value: Substring) -> Bool {
+        value.utf8.count == value.count &&
+            value.utf8.allSatisfy {
+                (65...90).contains($0) || (97...122).contains($0)
+            }
+    }
+
     static func escaped(_ value: String) -> String {
         value
             .replacingOccurrences(of: "\\", with: "\\\\")
@@ -414,9 +805,19 @@ private final class ProcessOutputCompletion: @unchecked Sendable {
         CheckedContinuation<ProxyProcessResult, Error>?
     private var terminationStatus: Int32?
     private var readerSnapshot: (data: Data, exceeded: Bool)?
-    private var writerDidFinish = false
-    private var writerError: Error?
     private var cancelled = false
+
+    var isFinished: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return continuation == nil
+    }
+
+    var hasTerminated: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return terminationStatus != nil
+    }
 
     func install(
         _ continuation: CheckedContinuation<ProxyProcessResult, Error>
@@ -444,15 +845,6 @@ private final class ProcessOutputCompletion: @unchecked Sendable {
         completion?()
     }
 
-    func writerFinished(_ error: Error?) {
-        lock.lock()
-        writerDidFinish = true
-        writerError = error
-        let completion = takeCompletionIfReady()
-        lock.unlock()
-        completion?()
-    }
-
     func markCancelled() {
         lock.lock()
         cancelled = true
@@ -469,11 +861,25 @@ private final class ProcessOutputCompletion: @unchecked Sendable {
         continuation?.resume(throwing: error)
     }
 
+    func expire(output: (data: Data, exceeded: Bool)) {
+        lock.lock()
+        let continuation = continuation
+        self.continuation = nil
+        let cancelled = self.cancelled
+        lock.unlock()
+        if cancelled {
+            continuation?.resume(throwing: CancellationError())
+        } else {
+            continuation?.resume(returning: ProxyProcessResult(
+                status: 28, output: output.data, outputExceeded: output.exceeded
+            ))
+        }
+    }
+
     private func takeCompletionIfReady() -> (() -> Void)? {
         guard let continuation,
               let terminationStatus,
-              let readerSnapshot,
-              writerDidFinish
+              let readerSnapshot
         else {
             return nil
         }
@@ -481,11 +887,6 @@ private final class ProcessOutputCompletion: @unchecked Sendable {
         if cancelled {
             return {
                 continuation.resume(throwing: CancellationError())
-            }
-        }
-        if let writerError {
-            return {
-                continuation.resume(throwing: writerError)
             }
         }
         let result = ProxyProcessResult(
@@ -499,148 +900,24 @@ private final class ProcessOutputCompletion: @unchecked Sendable {
     }
 }
 
-private final class CancellableProcessInputWriter: @unchecked Sendable {
-    private static let writeChunkBytes = 16_384
-    private static let retryDelayMicroseconds: useconds_t = 5_000
-
-    private let handle: FileHandle
-    private var data: Data
-    private let lock = NSLock()
-    private var cancelled = false
-    private var started = false
-    private var finished = false
-
-    init(handle: FileHandle, data: Data) {
-        self.handle = handle
-        self.data = data
-    }
-
-    func start(
-        completion: @escaping @Sendable (Error?) -> Void
-    ) {
-        lock.lock()
-        guard !started, !finished else {
-            lock.unlock()
-            completion(nil)
-            return
-        }
-        started = true
-        lock.unlock()
-
-        DispatchQueue.global(qos: .utility).async { [self] in
-            let error = writeInput()
-            try? handle.close()
-
-            lock.lock()
-            data.removeAll(keepingCapacity: false)
-            finished = true
-            lock.unlock()
-            completion(error)
-        }
-    }
-
-    func cancel() {
-        lock.lock()
-        cancelled = true
-        let shouldClose = !started && !finished
-        if shouldClose {
-            data.removeAll(keepingCapacity: false)
-            finished = true
-        }
-        lock.unlock()
-
-        if shouldClose {
-            try? handle.close()
-        }
-    }
-
-    private func writeInput() -> Error? {
-        let descriptor = handle.fileDescriptor
-        let currentFlags = Darwin.fcntl(descriptor, F_GETFL)
-        guard currentFlags >= 0 else {
-            return POSIXError(.EIO)
-        }
-        guard Darwin.fcntl(
-            descriptor,
-            F_SETFL,
-            currentFlags | O_NONBLOCK
-        ) >= 0 else {
-            return POSIXError(.EIO)
-        }
-        guard Darwin.fcntl(descriptor, F_SETNOSIGPIPE, 1) >= 0 else {
-            return POSIXError(.EIO)
-        }
-
-        return data.withUnsafeBytes { rawBuffer in
-            guard let baseAddress = rawBuffer.baseAddress else {
-                return nil
-            }
-            var offset = 0
-            while offset < rawBuffer.count {
-                if isCancelled {
-                    return nil
-                }
-                let count = min(
-                    Self.writeChunkBytes,
-                    rawBuffer.count - offset
-                )
-                let written = Darwin.write(
-                    descriptor,
-                    baseAddress.advanced(by: offset),
-                    count
-                )
-                if written > 0 {
-                    offset += written
-                    continue
-                }
-                if written == 0 {
-                    Darwin.usleep(Self.retryDelayMicroseconds)
-                    continue
-                }
-
-                let errorCode = errno
-                switch errorCode {
-                case EINTR:
-                    continue
-                case EAGAIN:
-                    Darwin.usleep(Self.retryDelayMicroseconds)
-                case EPIPE:
-                    // The child exited or deliberately stopped reading stdin.
-                    return nil
-                default:
-                    if isCancelled && errorCode == EBADF {
-                        return nil
-                    }
-                    return POSIXError(
-                        POSIXErrorCode(rawValue: errorCode) ?? .EIO
-                    )
-                }
-            }
-            return nil
-        }
-    }
-
-    private var isCancelled: Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return cancelled
-    }
-}
-
 private final class CancellableProcessRunner: @unchecked Sendable {
     let process = Process()
 
     private let lock = NSLock()
     private var cancelled = false
 
-    init(
-        executableURL: URL,
-        arguments: [String],
-        environment: [String: String]
-    ) {
+    var shouldStopIO: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return cancelled
+    }
+
+    init(executableURL: URL, arguments: [String]) {
         process.executableURL = executableURL
         process.arguments = arguments
-        process.environment = environment
+        // Do not inherit proxy overrides, custom trust roots, TLS key logging
+        // or loader injection. Explicit config and OS trust are authoritative.
+        process.environment = ["PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "LANG": "C", "LC_ALL": "C"]
     }
 
     var wasCancelled: Bool {
@@ -667,19 +944,22 @@ private final class CancellableProcessRunner: @unchecked Sendable {
         }
     }
 
-    func cancel() {
+    @discardableResult
+    func requestStop() -> Bool {
         lock.lock()
+        let firstRequest = !cancelled
         cancelled = true
         let shouldTerminate = process.isRunning
         lock.unlock()
-        if shouldTerminate {
+        if firstRequest && shouldTerminate {
             process.terminate()
         }
+        return firstRequest
     }
 
-    func stopForOutputLimit() {
+    func forceKillIfRunning() {
         if process.isRunning {
-            process.terminate()
+            _ = Darwin.kill(process.processIdentifier, SIGKILL)
         }
     }
 }

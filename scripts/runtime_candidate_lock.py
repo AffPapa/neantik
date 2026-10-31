@@ -8,17 +8,32 @@ from pathlib import Path
 from typing import Any
 
 from runtime_source_provenance import (
+    CHROMIUM_153_LOCK,
+    CHROMIUM_153_VERSION,
+    DEFAULT_REBASE_PLAN,
     PROJECT_ROOT,
     SourceProvenanceError,
+    contract_paths_for_version,
     ensure_no_stale_markers,
     load_object,
     sha256_file,
+    verify_chromium_153_candidate_document,
     verify_contract,
     verify_document,
 )
+from chromium_154_release_evidence import (
+    M154EvidenceError,
+    verify_candidate_lock as verify_chromium_154_candidate_lock,
+)
+from chromium_15498_release_evidence import (
+    M15498EvidenceError,
+    verify_candidate_lock as verify_chromium_15498_candidate_lock,
+)
+
+from chromium_15540_release_evidence import M15540EvidenceError
+from chromium_15540_variant import (verify_candidate_lock as verify_chromium_15540_candidate_lock, prefix_for as chromium_15540_prefix)
 
 
-DEFAULT_CONTRACT = PROJECT_ROOT / "runtime" / "chromium-152-source-contract.json"
 DEFAULT_PATCH_MANIFEST = PROJECT_ROOT / "runtime" / "nevision-patches" / "series.json"
 DEFAULT_DEVICE_TUPLES = PROJECT_ROOT / "runtime" / "apple-device-tuples.json"
 DEFAULT_SECURITY_BASELINE = PROJECT_ROOT / "runtime" / "security-baseline.json"
@@ -52,19 +67,82 @@ def expected_candidate_lock(
     project_root: Path = PROJECT_ROOT,
 ) -> dict[str, Any]:
     project_root = project_root.resolve()
-    contract_path = project_root / "runtime" / "chromium-152-source-contract.json"
     provenance = load_object(
         provenance_path,
         "emitted Chromium source provenance",
     )
+    version = provenance.get("targetChromiumVersion")
+    if not isinstance(version, str) or not version:
+        raise SourceProvenanceError(
+            "Source provenance targetChromiumVersion must be a non-empty string"
+    )
+    if version == CHROMIUM_153_VERSION:
+        contract_path = project_root / "runtime" / "chromium-152-source-contract.json"
+        rebase_plan_path = DEFAULT_REBASE_PLAN
+    elif version == "154.0.8037.93":
+        try:
+            verify_document(provenance, project_root=project_root)
+        except M154EvidenceError as error:
+            raise SourceProvenanceError(str(error)) from error
+        return load_object(
+            project_root / "runtime" / "fingerprint-chromium-154.lock.json",
+            "Chromium 154 candidate runtime lock",
+        )
+    if version == "156.0.8078.48":
+        from chromium_15648_release_evidence import expected_lock as expected_m15648
+        try:
+            return expected_m15648(provenance_path, project_root)
+        except ValueError as error:
+            raise SourceProvenanceError(str(error)) from error
+    if version == "156.0.8078.74":
+        from chromium_15674_release_evidence import expected_lock as expected_m15674
+        try:
+            return expected_m15674(provenance_path, project_root)
+        except ValueError as error:
+            raise SourceProvenanceError(str(error)) from error
+    if provenance.get("variant") == "recipient-privacy-policy-v1":
+        from chromium_15680_privacy_derivation import expected_lock as expected_privacy
+        try:
+            return expected_privacy(provenance_path, project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+    if version == "156.0.8078.80":
+        from chromium_15680_release_evidence import expected_lock as expected_m15680
+        try:
+            return expected_m15680(provenance_path, project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+    elif version == "154.0.8037.98":
+        verify_document(provenance, project_root=project_root)
+        return load_object(
+            project_root / "runtime" / "fingerprint-chromium-15498.lock.json",
+            "Chromium 154.98 candidate runtime lock",
+        )
+    elif version == "156.0.8078.12":
+        verify_document(provenance, project_root=project_root)
+        from chromium_15612_variant import prefix_for
+        return load_object(project_root / 'runtime' / ('fingerprint-' + prefix_for(provenance) + '.lock.json'), 'M156 candidate lock')
+    elif version == "155.0.8059.40":
+        verify_document(provenance, project_root=project_root)
+        return load_object(
+            project_root / "runtime" / ("fingerprint-" + chromium_15540_prefix(provenance) + ".lock.json"),
+            "Chromium 155.40 candidate runtime lock",
+        )
+    else:
+        contract_path, rebase_plan_path = contract_paths_for_version(
+            version,
+            project_root=project_root,
+        )
     verify_document(
         provenance,
         project_root=project_root,
         contract_path=contract_path,
+        rebase_plan_path=rebase_plan_path,
     )
     contract = verify_contract(
         project_root=project_root,
         contract_path=contract_path,
+        rebase_plan_path=rebase_plan_path,
     )
     contract_sha = sha256_file(contract_path)
     if provenance.get("contractSHA256") != contract_sha:
@@ -136,6 +214,83 @@ def verify_candidate_lock(
     actual = load_object(candidate_path, "new-candidate runtime lock")
     ensure_no_stale_markers(actual, "new-candidate runtime lock")
     _reject_local_paths(actual)
+    provenance = load_object(
+        provenance_path,
+        "emitted Chromium source provenance",
+    )
+    if provenance.get("targetChromiumVersion") == "156.0.8078.48":
+        from chromium_15648_release_evidence import verify_lock as verify_m15648
+        try:
+            return verify_m15648(actual, provenance_path, project_root)
+        except ValueError as error:
+            raise SourceProvenanceError(str(error)) from error
+    if provenance.get("targetChromiumVersion") == "156.0.8078.74":
+        from chromium_15674_release_evidence import verify_lock as verify_m15674
+        try:
+            return verify_m15674(actual, provenance_path, project_root)
+        except ValueError as error:
+            raise SourceProvenanceError(str(error)) from error
+    if provenance.get("variant") == "recipient-privacy-policy-v1":
+        from chromium_15680_privacy_derivation import verify_lock as verify_privacy
+        try:
+            return verify_privacy(actual, provenance_path, project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+    if provenance.get("targetChromiumVersion") == "156.0.8078.80":
+        from chromium_15680_release_evidence import verify_lock as verify_m15680
+        try:
+            return verify_m15680(actual, provenance_path, project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+    if provenance.get("targetChromiumVersion") == "154.0.8037.93":
+        try:
+            verify_chromium_154_candidate_lock(
+                actual,
+                provenance=provenance,
+                project_root=project_root,
+            )
+        except M154EvidenceError as error:
+            raise SourceProvenanceError(str(error)) from error
+        return actual
+    if provenance.get("targetChromiumVersion") == "154.0.8037.98":
+        try:
+            verify_chromium_15498_candidate_lock(
+                actual,
+                provenance=provenance,
+                project_root=project_root,
+            )
+        except M15498EvidenceError as error:
+            raise SourceProvenanceError(str(error)) from error
+        return actual
+    if provenance.get("targetChromiumVersion") == "156.0.8078.12":
+        from chromium_15612_variant import verify_candidate_lock as verify_m156
+        try:
+            verify_m156(actual, provenance=provenance, project_root=project_root)
+        except ValueError as error:
+            raise SourceProvenanceError(str(error)) from error
+        return actual
+    if provenance.get("targetChromiumVersion") == "155.0.8059.40":
+        try:
+            verify_chromium_15540_candidate_lock(
+                actual,
+                provenance=provenance,
+                project_root=project_root,
+            )
+        except M15540EvidenceError as error:
+            raise SourceProvenanceError(str(error)) from error
+        return actual
+    if provenance.get("targetChromiumVersion") == CHROMIUM_153_VERSION:
+        verify_chromium_153_candidate_document(
+            provenance,
+            project_root=project_root,
+        )
+        expected_path = project_root / "runtime" / CHROMIUM_153_LOCK
+        expected = load_object(expected_path, "Chromium 153 source lock")
+        if actual != expected:
+            raise SourceProvenanceError(
+                "Chromium 153 candidate lock differs from the checked project lock"
+            )
+        return actual
     expected = expected_candidate_lock(
         provenance_path,
         project_root=project_root,

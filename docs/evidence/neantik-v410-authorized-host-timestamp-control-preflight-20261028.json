@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v410-authorized-host-timestamp-control-preflight-20261028",
+  "observedAtUTC": "2026-10-28T07:57:56Z",
+  "status": "PREFLIGHT_READY_FOR_ONE_DISPOSABLE_AUTHORIZED_HOST_CONTEXT_TIMESTAMP_CONTROL",
+  "scope": "One Developer ID secure timestamp operation on a byte-exact disposable copy of /usr/bin/true; no product candidate, app, profile, build, package, notarization, or publication.",
+  "input": {
+    "source": "/usr/bin/true",
+    "sourceSHA256": "3479b76af6a8597f3ea629bd941590d1aec4df85ff7733a3b53b6a736a12dd51",
+    "copy": "/private/tmp/neantik-v410-timestamp-control/true",
+    "copySHA256": "3479b76af6a8597f3ea629bd941590d1aec4df85ff7733a3b53b6a736a12dd51",
+    "bytes": 84032,
+    "mode": "-rwxr-xr-x",
+    "codesignVerifyBefore": "PASS --verify --strict"
+  },
+  "identitySHA1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+  "contextRationale": "V324 explicitly recorded one approved unsandboxed host-context timestamp PASS. Later V341/V376 receipts failed; V376 does not record execution context. This single control checks the known successful execution context without changing the artifact scope.",
+  "command": "codesign --force --timestamp --sign <pinned Developer ID SHA-1> <disposable copy>",
+  "retryLimit": 1,
+  "sideEffects": {
+    "onlyDisposableCopySignatureMayChange": true,
+    "productionCandidateChanged": false,
+    "releaseArtifactsChanged": false,
+    "publication": false
+  },
+  "releaseQualified": false
+}

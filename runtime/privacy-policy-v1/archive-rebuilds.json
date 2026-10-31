@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "method": "fresh-archive-with-recorded-GN-flags-verify-then-rename",
+  "flags": [
+    "-T",
+    "-s",
+    "-r",
+    "-c",
+    "-s",
+    "-D"
+  ],
+  "archives": [
+    {
+      "archive": "obj/components/ungoogled/libungoogled_switches.a",
+      "beforeSHA256": "bcc57d58b5ba5a8138595489db9f1a04e8d124180f55f994a73f5cd95d21d001",
+      "afterSHA256": "d095b3afc6e8eef8b678d49cd26b3cb3dc0ce0ffb612bf66e1ea93ed1bc418bf",
+      "memberCount": 2,
+      "membersUnchanged": true,
+      "memberInputs": {
+        "file": "runtime/privacy-policy-v1/archive-recipes/obj/components/ungoogled/libungoogled_switches.inputs.rsp",
+        "sha256": "99f5fb2b9efa28267b4ea1def2278b859a55e6b8d025161dd0769fb8c87dff0b"
+      },
+      "exitCode": 0,
+      "freshCreationRequired": true
+    },
+    {
+      "archive": "obj/skia/libskia.a",
+      "beforeSHA256": "5fb87b8d4b0e9095f12b296d35e3dec37b4ee6163c16b4768ae91b5d6e8c16a7",
+      "afterSHA256": "970c495529912ff58a205e6e325f701f14951642fba8e1b59aaa712e7df70f02",
+      "memberCount": 632,
+      "membersUnchanged": true,
+      "memberInputs": {
+        "file": "runtime/privacy-policy-v1/archive-recipes/obj/skia/libskia.inputs.rsp",
+        "sha256": "d2817ef57550a679417ac78184e4d85332c1b6b06ef57fa6f6f715d6884bd3c4"
+      },
+      "exitCode": 0,
+      "freshCreationRequired": true
+    },
+    {
+      "archive": "obj/third_party/blink/renderer/core/libblink_core.a",
+      "beforeSHA256": "188ec64224909ca6bdbd01d4a501630a4151b857f8d83a1e3b66f759c887305a",
+      "afterSHA256": "b32f09e22b84d7a691c71b5eaa5e35b5b29a0b0e045428fc68f0865e14bc23fc",
+      "memberCount": 2503,
+      "membersUnchanged": true,
+      "memberInputs": {
+        "file": "runtime/privacy-policy-v1/archive-recipes/obj/third_party/blink/renderer/core/libblink_core.inputs.rsp",
+        "sha256": "58138d71a2f0c040083e4f7fd7f7fa45774391d92acb5f9d2191a75be93659cc"
+      },
+      "exitCode": 0,
+      "freshCreationRequired": true
+    },
+    {
+      "archive": "obj/third_party/blink/renderer/platform/libblink_platform.a",
+      "beforeSHA256": "458b009570b824fa681aa9880912a0a6e597d55f4c514b6d5227071ae6717c9b",
+      "afterSHA256": "52f3a50240c5f0b766b30bdb73bc4f15f873c7fd348617939d72583924f0c417",
+      "memberCount": 615,
+      "membersUnchanged": true,
+      "memberInputs": {
+        "file": "runtime/privacy-policy-v1/archive-recipes/obj/third_party/blink/renderer/platform/libblink_platform.inputs.rsp",
+        "sha256": "13d285eca3c2c1a68b9264f6db9d101dd5190fb53ac4ac8c3cf5907550edd49e"
+      },
+      "exitCode": 0,
+      "freshCreationRequired": true
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v196-v193-source-offer-and-swift-regression-20261027",
+  "observedAtUTC": "2026-10-27T07:40:49Z",
+  "status": "V193_SOURCE_OFFER_527_COMPONENTS_AND_64_OVERLAYS_PASS; SWIFT_FULL_REGRESSION_PASS; PYTHON_FULL_REGRESSION_RUNNING",
+  "source": {
+    "commit": "50fd09c7407f38f41f18ed7563d08837603458f4",
+    "parent": "8e2148d03c75c565a561b31344efc2b18c6243fa",
+    "archiveSHA256": "37e805a459b135f3a0583a431d3ffb5896a4e2eeda87574c435a0291ed651faa",
+    "focusedNoticeTests": "60/60 PASS",
+    "v122NoticePreflight": "PASS disposable app"
+  },
+  "offer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v193-touch-source-offer-draft",
+    "manifestSHA256": "007cfb7c97437cd30a7647d1e9c4ae0dfa182a90d6091772e83242df67507866",
+    "componentCount": 527,
+    "overlayAssetCount": 64,
+    "componentVerifier": "PASS project packager source_offer_replacements",
+    "metadataPathHashPairs": "41/41 PASS",
+    "recipientInputPreflight": "PASS known pinned inputs only",
+    "managerSecretScan": "2413 classified; one metadata finding unresolved",
+    "candidateBound": false
+  },
+  "corrections": [
+    {
+      "field": "webkitBuildRecipe.sha256",
+      "previousDeclared": "6982335168fd313141140329a1667c1afdad0b08769f069313995b8140a67a27",
+      "previousActual": "be193eae335cabe9294fdf183e7ca706908e7bdd6318e753501d18d5c252de16",
+      "resolution": "V193 manifest points to the current recipe hash."
+    },
+    {
+      "field": "sourceSnapshotV125.sha256",
+      "previousDeclared": "ea9af3f2788623fbda4416bc37abe6e6451f5162f072271c92ca80fed7d3a71e",
+      "actual": "06d66aa614ecf779f0ef0f5d01b47e431707519478fc026e9a73551050b04254",
+      "resolution": "V193 manifest records actual preserved receipt bytes and retains historical declared hash."
+    },
+    {
+      "field": "supplemental notice extraction",
+      "resolution": "V193 clean source already contains 116 exact files; 54 historical supplemental files are absent. Recipe directs any extraction into a disposable copy."
+    }
+  ],
+  "swiftRegression": {
+    "receipt": "/private/tmp/neantik-v193-touch-qualified/.build/neantik-local/test-receipts/20261027T073504Z-38206.json",
+    "receiptSHA256": "b3db304d55fa078c52e9119b3bf4b7dba88b92c2d842551ae494be2f52911432",
+    "tests": 1841,
+    "suites": 222,
+    "skipped": 82,
+    "sourceUnchangedDuringRun": true,
+    "result": "PASS"
+  },
+  "pythonRegression": {
+    "status": "RUNNING at checkpoint; no result yet",
+    "sessionId": 2883,
+    "privateLog": "/private/tmp/neantik-v193-python-regression-ysjj0wmd/unittest.log"
+  },
+  "limitations": [
+    "The private source offer is not candidate-bound or a complete legal or recipient-relink qualification.",
+    "One scan finding remains unresolved; final app/offer scan coverage remains separate.",
+    "Owned-WebKit proxy runtime, secure timestamp signing, notarization and public delivery remain open."
+  ],
+  "nextAction": "Poll the existing Python regression session 2883; do not restart while it is live. On success record its result and continue one source-matched candidate, recipient replacement and proxy QA when timestamp signing succeeds."
+}

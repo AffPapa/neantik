@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "status": "official-guidance-pinned-no-item-level-legal-decisions-made",
+  "observedAt": "2026-10-25",
+  "source": {
+    "title": "WebKit Licensing",
+    "url": "https://docs.webkit.org/Other/Licensing.html",
+    "accessed": "2026-10-25",
+    "summary": "WebKit documents that inherited KHTML code can be LGPL, newly contributed code uses BSD-2-Clause, and an existing file’s license depends on that file; moved code keeps its original copyright/license notice."
+  },
+  "applicationToNeAntik": "Do not infer one license for every bundled WebKit image/resource from the repository-level license or a nearby file. Keep all candidate notice applicability decisions unresolved unless the exact runtime source file or upstream license metadata supports the decision.",
+  "candidateScope": {
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "candidateBoundUnresolvedNoticeDecisions": 94,
+    "imageTargetsUnresolved": 6,
+    "resourcesUnresolved": 13
+  },
+  "notPerformed": [
+    "No item-level license decision",
+    "No legal approval",
+    "No package notice change",
+    "No build or runtime test"
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "aa9cb28d5d25931b3b9a1bb2fa96ca14161c9f868ed44e06de1a63d4c7b0c11a",
+  "payload": {
+    "binaryBindingVerified": false,
+    "chromiumVersion": "156.0.8078.12",
+    "completedBuildAndFinalSnapshotBindingStillRequired": true,
+    "dawnDEPS_SHA256": "cf584a7a8cfe3534c60ea3c1c16ae732c6e1a8cb393579a3480f6ff36102580c",
+    "elapsedSeconds": 0.757,
+    "finishedAt": "2026-10-09T01:06:08.575996+00:00",
+    "launchContractSHA256": "dc49e81a69259de062b0e86e9b92445779ae4e87a956cc96102517e7dfe997fb",
+    "launcherSHA256": "63da94e4b62c75ed55533f7712c2e449e08ee6e5f2f4ba0ddfde493771bf3cf7",
+    "nativeBuildInvokedByVerifier": false,
+    "officialChromiumBase": {
+      "commit": "634b046faf2137b83af71c87baf362b533af9104",
+      "tree": "64e212cac2a53bcbd28b0530cf6eb092141bddec"
+    },
+    "packages": [
+      {
+        "DEPSSelectionVerified": {
+          "condition": "host_os == \"mac\"",
+          "dep_type": "cipd",
+          "packages": [
+            {
+              "package": "gn/gn/mac-${{arch}}",
+              "version": "git_revision:510ec7992c30f172205792f190e96111a896ba8f"
+            }
+          ]
+        },
+        "installedCopyVerified": true,
+        "instanceID": "pt5SZX89AaBzsAqpHbUS-F066dKywK1GlJzaToIE9ioC",
+        "kind": "cipd",
+        "manifestFiles": 2,
+        "manifestSHA256": "2fa99e65c8bc2de147d811aa1d6d0bcc49e7722f02ff1e15d95b72165dc88d29",
+        "package": "gn/gn/mac-arm64",
+        "payloadFiles": 2,
+        "payloadSHA256": {
+          ".versions/gn.cipd_version": "26fe42aa34445751ac103b7f3b421ae666902484d2e65a733a6f6dd7d1e73669",
+          "gn": "8b50f57cfac9eba62f07ce5d9ad15d738c6bfeb6e58de33fe2b586800545bee6"
+        },
+        "requested": "https://chrome-infra-packages.appspot.com/gn/gn/mac-${arch}@git_revision:510ec7992c30f172205792f190e96111a896ba8f",
+        "retainedPackageArchiveVerified": false,
+        "sourceRoot": "buildtools/mac",
+        "tool": "gn"
+      },
+      {
+        "DEPSSelectionVerified": {
+          "condition": "non_git_source",
+          "dep_type": "cipd",
+          "packages": [
+            {
+              "package": "infra/3pp/tools/ninja/${{platform}}",
+              "version": "version:3@1.12.1.chromium.4"
+            }
+          ]
+        },
+        "installedCopyVerified": true,
+        "instanceID": "xem0_6s7Lt77xBhJ_IHxFsjQR7JYkGvswGG-nsrwSv0C",
+        "kind": "cipd",
+        "manifestFiles": 3,
+        "manifestSHA256": "437218a6088dc9efd483365ddb882fcf986cbcd9dce86a917210b890e33790ac",
+        "package": "infra/3pp/tools/ninja/mac-arm64",
+        "payloadFiles": 3,
+        "payloadSHA256": {
+          "COPYING": "eb7e9ab9690124c5c9f42bdc81383d886a3dede26345b6ed15bbad7caf81f7ea",
+          "README.chromium": "1fe89ec10494f9bc4be9ff5279f73bf9879d1971080748a8e1be57423654866e",
+          "ninja": "6c03e94e3ee141301a7e5151227508ac8cec05c12d79ed9240062a86a0e2d14f"
+        },
+        "requested": "https://chrome-infra-packages.appspot.com/infra/3pp/tools/ninja/${platform}@version:3@1.12.1.chromium.4",
+        "retainedPackageArchiveVerified": false,
+        "sourceRoot": "third_party/ninja",
+        "tool": "ninja"
+      },
+      {
+        "DEPSSelectionVerified": {
+          "dep_type": "cipd",
+          "packages": [
+            {
+              "package": "infra/3pp/tools/ninja/${{platform}}",
+              "version": "version:3@1.12.1.chromium.4"
+            }
+          ]
+        },
+        "installedCopyVerified": true,
+        "instanceID": "xem0_6s7Lt77xBhJ_IHxFsjQR7JYkGvswGG-nsrwSv0C",
+        "kind": "cipd",
+        "manifestFiles": 3,
+        "manifestSHA256": "437218a6088dc9efd483365ddb882fcf986cbcd9dce86a917210b890e33790ac",
+        "package": "infra/3pp/tools/ninja/mac-arm64",
+        "payloadFiles": 3,
+        "payloadSHA256": {
+          "COPYING": "eb7e9ab9690124c5c9f42bdc81383d886a3dede26345b6ed15bbad7caf81f7ea",
+          "README.chromium": "1fe89ec10494f9bc4be9ff5279f73bf9879d1971080748a8e1be57423654866e",
+          "ninja": "6c03e94e3ee141301a7e5151227508ac8cec05c12d79ed9240062a86a0e2d14f"
+        },
+        "requested": "https://chrome-infra-packages.appspot.com/infra/3pp/tools/ninja/${platform}@version:3@1.12.1.chromium.4",
+        "retainedPackageArchiveVerified": false,
+        "sourceRoot": "third_party/dawn/third_party/ninja",
+        "tool": "dawn-ninja"
+      }
+    ],
+    "releaseReady": false,
+    "rootDEPS_SHA256": "b4de748ba5abac43952bdc0945795d9c3a07238d18b37ae0f82231669f68fc94",
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "sourceMutation": false,
+    "startedAt": "2026-10-09T01:06:07.819013+00:00",
+    "status": "selected-CIPD-tools-source-only",
+    "toolExecution": false,
+    "verifierSourcesBeforeAndAfterSHA256": {
+      "chromium_15612_cipd_tools.py": "a9a83700edc193aa2de0d782950c2cbb17d162aa214ca32c5e10806a48f1485b",
+      "chromium_15612_generated_cache.py": "e47c18b7eb70891f9a72d7aec1079defc7a0965e07c984e55bd429dc15f54461",
+      "chromium_15612_input_lineage.py": "07d543a6d6918beeda590417deeff3471c1c866db318f23e11f4cfa2f9aa951c",
+      "chromium_15612_receipt_projection.py": "42466d4047fde867ff4f24d8208c5099155b37bc5b6dbf55349e6975241cb2bc",
+      "chromium_15612_supplemental.py": "87803472e7c9f3715e7c3b91c11445c153da5f7c54cd4c2992c2a8f61a055981",
+      "chromium_15612_tool_packages.py": "a2c066560b149c91ad7c4f65c2fcd168538691a1c6c3e01a744f3cb7f928992d"
+    }
+  },
+  "payloadType": "json",
+  "receipt": "m156-cipd-tool-origins-attempt-4.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

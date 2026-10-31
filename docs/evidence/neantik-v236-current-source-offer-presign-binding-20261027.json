@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "status": "PRIVATE_SOURCE_OFFER_AND_PRESIGN_BINDING_PASS",
+  "managerCommit": "8903c602bd465b8575ae26522af655c7ba463890",
+  "managerArchiveSHA256": "b84664ee5a1da03be90ab3ddca10b7cf0a2ab7f8c1127a3f287d4bb94b2cb9b0",
+  "sourceOffer": "/private/tmp/neantik-release-v1/dist/private/source-offers/v235-public-source-offer-draft",
+  "offerManifestSHA256": "d83010d3f0d3fbc3ba0f9bea77b1d0497fd4c6768ed5502691cebbd2ac255b0c",
+  "componentCount": 540,
+  "overlayAssetCount": 64,
+  "pinnedInputPreflight": "PASS; four hashes, source markers and local toolchain",
+  "bindingDraft": "/private/tmp/neantik-release-v1/dist/private/neantik-v236-v135-presign-source-image-binding-draft.json",
+  "bindingDraftSHA256": "231fabe9ce75cd2da74f6890d7484395a2e5bc79d86bb4caea797daa436d76ec",
+  "bindingVerification": {
+    "buildOutputs": 14,
+    "stagedImages": 16,
+    "sourceEvidence": 12,
+    "partialNoticeGroups": 11
+  },
+  "limits": [
+    "V135 pre-sign images are not final candidate bytes",
+    "complete build inputs and portable recipe remain unproved",
+    "recipient relink and load, comprehensive notices, production runtime, signed archive and publication remain open"
+  ],
+  "releaseQualified": false
+}

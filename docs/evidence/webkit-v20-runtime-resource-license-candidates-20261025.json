@@ -1,0 +1,2491 @@
+{
+  "schemaVersion": 1,
+  "status": "exact-runtime-resource-to-source-license-candidates;not-applicability-review",
+  "observedAt": "2026-10-25",
+  "candidate": {
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "sourceCommit": "955bc0808a1e1a49d3a9f74f2b02e05af9fee3e2",
+    "version": "1.0.0"
+  },
+  "upstream": {
+    "repository": "WebKit/WebKit",
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+  },
+  "inputs": {
+    "noticeWorksheetSHA256": "fc9face5d21f7154028672bac340b66179cf1ccb607cdc441baff310ff0acd6c",
+    "licenseTextCorpusManifestSHA256": "959dcc0612f01f3e420837bb917c77cdaa6b06f9d94a6cc6804362bbb9e6fb71"
+  },
+  "summary": {
+    "runtimeResources": 84,
+    "resourceRowsWithMappedSource": 84,
+    "resourceRowsWithExactSourceHashMatch": 62,
+    "unknownResourceApplicabilityRows": 78,
+    "factualResolvedRows": 6,
+    "uniqueNearestCandidateLicenseTexts": 5
+  },
+  "resources": [
+    {
+      "runtimePath": "JavaScriptCore.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "76d18453a418d19a7c98dfd2b45b12b1e8cc8469703ab7b8992476efe6355ad6",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/JavaScriptCore/Info.plist",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1343,
+          "sha256": "07b2d1b5035d5a0dd88c7a958c1538479bbc94c3596256cb81c53648807d272b",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "07b2d1b5035d5a0dd88c7a958c1538479bbc94c3596256cb81c53648807d272b",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/JavaScriptCore/COPYING.LIB"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/JavaScriptCore/COPYING.LIB"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "JavaScriptCore.framework/Versions/A/Resources/framework.sb",
+      "runtimeSHA256": "dfe69686cb56ae2b98fe70af882fb66ea770c636f169fe417dc55cf1309a61a9",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/JavaScriptCore/framework.sb",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1386,
+          "sha256": "dfe69686cb56ae2b98fe70af882fb66ea770c636f169fe417dc55cf1309a61a9",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "dfe69686cb56ae2b98fe70af882fb66ea770c636f169fe417dc55cf1309a61a9",
+          "headerSignals": [
+            "Apple BSD-form"
+          ],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/JavaScriptCore/COPYING.LIB"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/JavaScriptCore/COPYING.LIB"
+      ],
+      "sourceHeaderSignals": [
+        "Apple BSD-form"
+      ],
+      "existingWorksheetDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/ContentFilterBlockedPage.html",
+      "runtimeSHA256": "7d03a657d8d42a281fcd4b86cdfef5fa5557022c1c4f9eac626fe9add922ee01",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/ContentFilterBlockedPage.html",
+          "exists": true,
+          "kind": "file",
+          "bytes": 44,
+          "sha256": "7d03a657d8d42a281fcd4b86cdfef5fa5557022c1c4f9eac626fe9add922ee01",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "7d03a657d8d42a281fcd4b86cdfef5fa5557022c1c4f9eac626fe9add922ee01",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "b38d826b325d9c5cc5fafe47c53988bc908d866578baf529ef9c8f4ae21399e1",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Info.plist",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1953,
+          "sha256": "c97eaceb531cce1eaefc0860e4277e137527f3b8b8ac27fd8034410889cfce8d",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "c97eaceb531cce1eaefc0860e4277e137527f3b8b8ac27fd8034410889cfce8d",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/ListButtonArrow.png",
+      "runtimeSHA256": "355c81f5ee8cd663384ccc1a1b1f591a9461db8f28c60566f25d5dc95bc004d4",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/ListButtonArrow.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 112,
+          "sha256": "355c81f5ee8cd663384ccc1a1b1f591a9461db8f28c60566f25d5dc95bc004d4",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "355c81f5ee8cd663384ccc1a1b1f591a9461db8f28c60566f25d5dc95bc004d4",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/ListButtonArrow@2x.png",
+      "runtimeSHA256": "6563d8f14e71a416f65195fd9c8d6aca10f5ce268d19e66d8abac8deccceaeac",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/ListButtonArrow@2x.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 208,
+          "sha256": "6563d8f14e71a416f65195fd9c8d6aca10f5ce268d19e66d8abac8deccceaeac",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "6563d8f14e71a416f65195fd9c8d6aca10f5ce268d19e66d8abac8deccceaeac",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/audio/Composite.wav",
+      "runtimeSHA256": "a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/platform/audio/resources/Composite.wav",
+          "exists": true,
+          "kind": "file",
+          "bytes": 245804,
+          "sha256": "a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "a04bb2a3dedee3a45873daf187b27b707aaf2b3681c3df8ef9759ba533dbf75f",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/copyCursor.png",
+      "runtimeSHA256": "6abba47e485d5681de3df619965afe1c30948b574f30f152a3d0c078f062196e",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/copyCursor.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1652,
+          "sha256": "6abba47e485d5681de3df619965afe1c30948b574f30f152a3d0c078f062196e",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "6abba47e485d5681de3df619965afe1c30948b574f30f152a3d0c078f062196e",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/deleteButtonPressed.tiff",
+      "runtimeSHA256": "41714bf43d3e9dcba593101efa54a0e163b87db4914c6fb7449ee2579fed1fe7",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/deleteButtonPressed.tiff",
+          "exists": true,
+          "kind": "file",
+          "bytes": 2550,
+          "sha256": "41714bf43d3e9dcba593101efa54a0e163b87db4914c6fb7449ee2579fed1fe7",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "41714bf43d3e9dcba593101efa54a0e163b87db4914c6fb7449ee2579fed1fe7",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/Localizable.strings",
+      "runtimeSHA256": "7cd6a1cb1803de65529bd903f173557d024bede8a8d3ff3df3c783aec2575f96",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/en.lproj/Localizable.strings",
+          "exists": true,
+          "kind": "file",
+          "bytes": 93705,
+          "sha256": "7cd6a1cb1803de65529bd903f173557d024bede8a8d3ff3df3c783aec2575f96",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "548277fc757b090f3e0ebb504f6a6af49beb418294913b97688bc050ede592a8",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/Localizable.stringsdict",
+      "runtimeSHA256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/en.lproj/Localizable.stringsdict",
+          "exists": true,
+          "kind": "file",
+          "bytes": 2179,
+          "sha256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/modern-media-controls-localized-strings.js",
+      "runtimeSHA256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/en.lproj/modern-media-controls-localized-strings.js",
+          "exists": true,
+          "kind": "file",
+          "bytes": 2001,
+          "sha256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/linearSRGB.icc",
+      "runtimeSHA256": "25e3578d2f8834f261f450fd18f5399fc822ccca9af583a5fa73d20241b2b7e6",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/linearSRGB.icc",
+          "exists": true,
+          "kind": "file",
+          "bytes": 460,
+          "sha256": "25e3578d2f8834f261f450fd18f5399fc822ccca9af583a5fa73d20241b2b7e6",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "25e3578d2f8834f261f450fd18f5399fc822ccca9af583a5fa73d20241b2b7e6",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/missingImage.png",
+      "runtimeSHA256": "c13b9dcf2f6a41033e540d85de3d1e30054bd3b54c0b35229b5a77bd403a7229",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/missingImage.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 449,
+          "sha256": "c13b9dcf2f6a41033e540d85de3d1e30054bd3b54c0b35229b5a77bd403a7229",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "c13b9dcf2f6a41033e540d85de3d1e30054bd3b54c0b35229b5a77bd403a7229",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/missingImage@2x.png",
+      "runtimeSHA256": "40b23dc2728d8499608654a4b89cfd5ad4bd04a09b5b27e4927004e167d41bf7",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/missingImage@2x.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 755,
+          "sha256": "40b23dc2728d8499608654a4b89cfd5ad4bd04a09b5b27e4927004e167d41bf7",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "40b23dc2728d8499608654a4b89cfd5ad4bd04a09b5b27e4927004e167d41bf7",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/missingImage@3x.png",
+      "runtimeSHA256": "99e0c1a9d026c61ea3ed12a7ad14087b0ceeac04b08caba7ab648c0ae8be5ed4",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/missingImage@3x.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1172,
+          "sha256": "99e0c1a9d026c61ea3ed12a7ad14087b0ceeac04b08caba7ab648c0ae8be5ed4",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "99e0c1a9d026c61ea3ed12a7ad14087b0ceeac04b08caba7ab648c0ae8be5ed4",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modelDefaultDiffuseData",
+      "runtimeSHA256": "29a81b4539dccf31a32618e7b7164a61677ed73abb16a1fbbe17c4c314c9632a",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/modelDefaultDiffuseData",
+          "exists": true,
+          "kind": "file",
+          "bytes": 49152,
+          "sha256": "29a81b4539dccf31a32618e7b7164a61677ed73abb16a1fbbe17c4c314c9632a",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "e1190f2095e36454bc63d244749d3c9ffce572115747791481e0c7a2b87d5465",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modelDefaultSpecularData",
+      "runtimeSHA256": "64fee6af9089b94448cbb0049763f6f8e7f62cd95042e8d44a6ee6514210458a",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/modelDefaultSpecularData",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1048572,
+          "sha256": "64fee6af9089b94448cbb0049763f6f8e7f62cd95042e8d44a6ee6514210458a",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "662fcb032b776b282843d753ff5afdc0b46568de1a31d6e4109b69aaadc5a494",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Airplay-fullscreen.svg",
+      "runtimeSHA256": "a205eeab51428db7ebd02bcca10371d81d118e0f6b5d53476f034bc0f5ab32ee",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Airplay-fullscreen.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1243,
+          "sha256": "a205eeab51428db7ebd02bcca10371d81d118e0f6b5d53476f034bc0f5ab32ee",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "a205eeab51428db7ebd02bcca10371d81d118e0f6b5d53476f034bc0f5ab32ee",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Airplay.svg",
+      "runtimeSHA256": "01a3e76dd4c7ef1cf3670df846c56e9f95a3e3daf860af3df4bf5f5d10701a40",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Airplay.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1241,
+          "sha256": "01a3e76dd4c7ef1cf3670df846c56e9f95a3e3daf860af3df4bf5f5d10701a40",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "01a3e76dd4c7ef1cf3670df846c56e9f95a3e3daf860af3df4bf5f5d10701a40",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Ellipsis.svg",
+      "runtimeSHA256": "994400892d32ce6f86c1c5907d680c3f552c3e0a76e7715a5d1cee97efee23f4",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Ellipsis.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 939,
+          "sha256": "994400892d32ce6f86c1c5907d680c3f552c3e0a76e7715a5d1cee97efee23f4",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "994400892d32ce6f86c1c5907d680c3f552c3e0a76e7715a5d1cee97efee23f4",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/EnterFullscreen.svg",
+      "runtimeSHA256": "585fbe6f89a5d7e3a83c9dc6b0cf2d96fcdb71dec4fb4844088452d0e2eba327",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/EnterFullscreen.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1690,
+          "sha256": "585fbe6f89a5d7e3a83c9dc6b0cf2d96fcdb71dec4fb4844088452d0e2eba327",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "585fbe6f89a5d7e3a83c9dc6b0cf2d96fcdb71dec4fb4844088452d0e2eba327",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/ExitFullscreen.svg",
+      "runtimeSHA256": "389cf6968410375531876045d87f6d01554ce7bb100854eff3b85b428194e19e",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/ExitFullscreen.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1711,
+          "sha256": "389cf6968410375531876045d87f6d01554ce7bb100854eff3b85b428194e19e",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "389cf6968410375531876045d87f6d01554ce7bb100854eff3b85b428194e19e",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Forward.svg",
+      "runtimeSHA256": "e7796fe2caf6a95c24938e77b1a7bc8e0511841566bad00852fef9d6caa364f2",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Forward.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1084,
+          "sha256": "e7796fe2caf6a95c24938e77b1a7bc8e0511841566bad00852fef9d6caa364f2",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "e7796fe2caf6a95c24938e77b1a7bc8e0511841566bad00852fef9d6caa364f2",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/MediaSelector-fullscreen.svg",
+      "runtimeSHA256": "8ce86ddc35d989ee22ea8fa5b06d6543c34fd6e4c4ad8ad38f8162e1bf38c426",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/MediaSelector-fullscreen.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 2956,
+          "sha256": "8ce86ddc35d989ee22ea8fa5b06d6543c34fd6e4c4ad8ad38f8162e1bf38c426",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "8ce86ddc35d989ee22ea8fa5b06d6543c34fd6e4c4ad8ad38f8162e1bf38c426",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/MediaSelector.svg",
+      "runtimeSHA256": "52eae82ea5ba789c9cacebe4a859900a7603dc244227c69c37a2bd0959d451a6",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/MediaSelector.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 2953,
+          "sha256": "52eae82ea5ba789c9cacebe4a859900a7603dc244227c69c37a2bd0959d451a6",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "52eae82ea5ba789c9cacebe4a859900a7603dc244227c69c37a2bd0959d451a6",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Overflow.svg",
+      "runtimeSHA256": "1e224e0e0c03a7ead095b3bbbff1fcda2d48fc84905db3ceab35ae2be5e2a4cb",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Overflow.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1384,
+          "sha256": "1e224e0e0c03a7ead095b3bbbff1fcda2d48fc84905db3ceab35ae2be5e2a4cb",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "1e224e0e0c03a7ead095b3bbbff1fcda2d48fc84905db3ceab35ae2be5e2a4cb",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Pause.svg",
+      "runtimeSHA256": "b84c8b189b9c215873c3047f521f41d7f39a4dc2d80b5c314448b5aec3d5bbca",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Pause.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 850,
+          "sha256": "b84c8b189b9c215873c3047f521f41d7f39a4dc2d80b5c314448b5aec3d5bbca",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "b84c8b189b9c215873c3047f521f41d7f39a4dc2d80b5c314448b5aec3d5bbca",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/PipIn-fullscreen.svg",
+      "runtimeSHA256": "92d244cf4e1b6944935495824546fe312fcbcd6f64f2fc5a40f6de79cdb21f8c",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/PipIn-fullscreen.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1711,
+          "sha256": "92d244cf4e1b6944935495824546fe312fcbcd6f64f2fc5a40f6de79cdb21f8c",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "92d244cf4e1b6944935495824546fe312fcbcd6f64f2fc5a40f6de79cdb21f8c",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/PipIn.svg",
+      "runtimeSHA256": "177e90824b6d206dd713c3d864ffa5c02a9d4aa8513eefe78c7e0a5a90c6d9bc",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/PipIn.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1708,
+          "sha256": "177e90824b6d206dd713c3d864ffa5c02a9d4aa8513eefe78c7e0a5a90c6d9bc",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "177e90824b6d206dd713c3d864ffa5c02a9d4aa8513eefe78c7e0a5a90c6d9bc",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Play.svg",
+      "runtimeSHA256": "0c3f0910bde6fa119539e587e2d6dd44e6e4f62cc1267b5348f4ccaa2a70d755",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Play.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 640,
+          "sha256": "0c3f0910bde6fa119539e587e2d6dd44e6e4f62cc1267b5348f4ccaa2a70d755",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "0c3f0910bde6fa119539e587e2d6dd44e6e4f62cc1267b5348f4ccaa2a70d755",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Rewind.svg",
+      "runtimeSHA256": "5e3c4d342b9adffcf22718cd7aedc6b05d6ee12f0d1a571026f66eb35e9f092a",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Rewind.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1088,
+          "sha256": "5e3c4d342b9adffcf22718cd7aedc6b05d6ee12f0d1a571026f66eb35e9f092a",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "5e3c4d342b9adffcf22718cd7aedc6b05d6ee12f0d1a571026f66eb35e9f092a",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipBack10.svg",
+      "runtimeSHA256": "48237b2391c45965c8d3470a759b35cd5d1822c68c08c52ea4304d39dea99ebd",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipBack10.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 4329,
+          "sha256": "48237b2391c45965c8d3470a759b35cd5d1822c68c08c52ea4304d39dea99ebd",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "48237b2391c45965c8d3470a759b35cd5d1822c68c08c52ea4304d39dea99ebd",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipBack15.svg",
+      "runtimeSHA256": "3cc8c5dafe25acc9b63350f4f379ff57e0bf6983f37e05eaecc9bb7e70099a69",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipBack15.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 5304,
+          "sha256": "3cc8c5dafe25acc9b63350f4f379ff57e0bf6983f37e05eaecc9bb7e70099a69",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "3cc8c5dafe25acc9b63350f4f379ff57e0bf6983f37e05eaecc9bb7e70099a69",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipForward10.svg",
+      "runtimeSHA256": "d098c6c9cacecc609bc7abead553cdb7e7ccadfdd15ff8a0f804f3f4dc1dbedc",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipForward10.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 4335,
+          "sha256": "d098c6c9cacecc609bc7abead553cdb7e7ccadfdd15ff8a0f804f3f4dc1dbedc",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "d098c6c9cacecc609bc7abead553cdb7e7ccadfdd15ff8a0f804f3f4dc1dbedc",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipForward15.svg",
+      "runtimeSHA256": "38304441d6a259c755e2a40110dd9fdd82ab9381d108df5f8b7b311268c130f3",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipForward15.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 5290,
+          "sha256": "38304441d6a259c755e2a40110dd9fdd82ab9381d108df5f8b7b311268c130f3",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "38304441d6a259c755e2a40110dd9fdd82ab9381d108df5f8b7b311268c130f3",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume0-RTL.svg",
+      "runtimeSHA256": "12fc441e9a16a6255f8fbad191782f258a81c0c8c58f19bd081f4ab18683ac24",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume0-RTL.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 854,
+          "sha256": "12fc441e9a16a6255f8fbad191782f258a81c0c8c58f19bd081f4ab18683ac24",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "12fc441e9a16a6255f8fbad191782f258a81c0c8c58f19bd081f4ab18683ac24",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume0.svg",
+      "runtimeSHA256": "fef1af73785a6209cd112e012bdc21390bbb24ab315c26716d8b8b7bc3e497e3",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume0.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 765,
+          "sha256": "fef1af73785a6209cd112e012bdc21390bbb24ab315c26716d8b8b7bc3e497e3",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "fef1af73785a6209cd112e012bdc21390bbb24ab315c26716d8b8b7bc3e497e3",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume1-RTL.svg",
+      "runtimeSHA256": "985be2fd9f1d308310dfc14e54ccb6b0a088dbabb2372cd3a9bddfd4a9e28000",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume1-RTL.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1343,
+          "sha256": "985be2fd9f1d308310dfc14e54ccb6b0a088dbabb2372cd3a9bddfd4a9e28000",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "985be2fd9f1d308310dfc14e54ccb6b0a088dbabb2372cd3a9bddfd4a9e28000",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume1.svg",
+      "runtimeSHA256": "04086b14f4b5a9fd2bb25a2d7198bf372887e8d134ec6d3bf03043a1bf101bcc",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume1.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1254,
+          "sha256": "04086b14f4b5a9fd2bb25a2d7198bf372887e8d134ec6d3bf03043a1bf101bcc",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "04086b14f4b5a9fd2bb25a2d7198bf372887e8d134ec6d3bf03043a1bf101bcc",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume2-RTL.svg",
+      "runtimeSHA256": "8a13ad7dfea2226665a1ba20e7e1a3f8a10152f3723533544532066f176eab40",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume2-RTL.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1846,
+          "sha256": "8a13ad7dfea2226665a1ba20e7e1a3f8a10152f3723533544532066f176eab40",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "8a13ad7dfea2226665a1ba20e7e1a3f8a10152f3723533544532066f176eab40",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume2.svg",
+      "runtimeSHA256": "67b934fa97245e3a72d44ad8fd1faa5333f5cbdb345b1924a19c069df01348eb",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume2.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1757,
+          "sha256": "67b934fa97245e3a72d44ad8fd1faa5333f5cbdb345b1924a19c069df01348eb",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "67b934fa97245e3a72d44ad8fd1faa5333f5cbdb345b1924a19c069df01348eb",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume3-RTL.svg",
+      "runtimeSHA256": "c793810d2462566c8ba0aed3aa458ba4525b75264a95fe9fbee81bae897f270c",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume3-RTL.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 2606,
+          "sha256": "c793810d2462566c8ba0aed3aa458ba4525b75264a95fe9fbee81bae897f270c",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "c793810d2462566c8ba0aed3aa458ba4525b75264a95fe9fbee81bae897f270c",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume3.svg",
+      "runtimeSHA256": "7eb427a1ff559df9053482e721c2af6af6a1c5b24de4658ca4b2ed37c07e0519",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume3.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 2517,
+          "sha256": "7eb427a1ff559df9053482e721c2af6af6a1c5b24de4658ca4b2ed37c07e0519",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "7eb427a1ff559df9053482e721c2af6af6a1c5b24de4658ca4b2ed37c07e0519",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/VolumeMuted-RTL.svg",
+      "runtimeSHA256": "820a216222f8cab50166815392a372ccae4950624da5fddb3d63f0da0747dc25",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/VolumeMuted-RTL.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1217,
+          "sha256": "820a216222f8cab50166815392a372ccae4950624da5fddb3d63f0da0747dc25",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "820a216222f8cab50166815392a372ccae4950624da5fddb3d63f0da0747dc25",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/VolumeMuted.svg",
+      "runtimeSHA256": "51d4758d87c22dfac3f2f9e6785131d7d31b75355fff33c90dab512dc0578431",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/VolumeMuted.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1305,
+          "sha256": "51d4758d87c22dfac3f2f9e6785131d7d31b75355fff33c90dab512dc0578431",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "51d4758d87c22dfac3f2f9e6785131d7d31b75355fff33c90dab512dc0578431",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/X.svg",
+      "runtimeSHA256": "cf45cbee32f642c830729dd3bb2b182ceef89c8eb33e7e90ccec446dda67e007",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/X.svg",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1098,
+          "sha256": "cf45cbee32f642c830729dd3bb2b182ceef89c8eb33e7e90ccec446dda67e007",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "cf45cbee32f642c830729dd3bb2b182ceef89c8eb33e7e90ccec446dda67e007",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/airplay-placard@1x.png",
+      "runtimeSHA256": "66f9a92669b95249589b3c0f41ffaf0dd6a0f2b94f39977a09fbe4c168062acc",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/airplay-placard@1x.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 145,
+          "sha256": "66f9a92669b95249589b3c0f41ffaf0dd6a0f2b94f39977a09fbe4c168062acc",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "66f9a92669b95249589b3c0f41ffaf0dd6a0f2b94f39977a09fbe4c168062acc",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/airplay-placard@2x.png",
+      "runtimeSHA256": "027c770c430b673f300b38f11fd6fee49066b8f260b08910344b285a72c4c4e8",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/airplay-placard@2x.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 175,
+          "sha256": "027c770c430b673f300b38f11fd6fee49066b8f260b08910344b285a72c4c4e8",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "027c770c430b673f300b38f11fd6fee49066b8f260b08910344b285a72c4c4e8",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/invalid-placard@1x.png",
+      "runtimeSHA256": "38c8818439eea65a351b0173a3bd9680b9222575b69db8e31badf5869bf3ac58",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/invalid-placard@1x.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 635,
+          "sha256": "38c8818439eea65a351b0173a3bd9680b9222575b69db8e31badf5869bf3ac58",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "38c8818439eea65a351b0173a3bd9680b9222575b69db8e31badf5869bf3ac58",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/invalid-placard@2x.png",
+      "runtimeSHA256": "5350e4005d0a71c7fa875084050bef398f44c3f44df9ae724b4b44dfe1341be7",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/invalid-placard@2x.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1207,
+          "sha256": "5350e4005d0a71c7fa875084050bef398f44c3f44df9ae724b4b44dfe1341be7",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "5350e4005d0a71c7fa875084050bef398f44c3f44df9ae724b4b44dfe1341be7",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/pip-placard@1x.png",
+      "runtimeSHA256": "7c1767b84a7c2931be8c902ec07c7d27614a0a2bc30de47a238fda02abbaff1a",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/pip-placard@1x.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 488,
+          "sha256": "7c1767b84a7c2931be8c902ec07c7d27614a0a2bc30de47a238fda02abbaff1a",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "7c1767b84a7c2931be8c902ec07c7d27614a0a2bc30de47a238fda02abbaff1a",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/pip-placard@2x.png",
+      "runtimeSHA256": "c98db6839c47362eb45bcea0a516566169b7c2d3e2b4429a2f803b663ae8761d",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/images/macOS/pip-placard@2x.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 975,
+          "sha256": "c98db6839c47362eb45bcea0a516566169b7c2d3e2b4429a2f803b663ae8761d",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "c98db6839c47362eb45bcea0a516566169b7c2d3e2b4429a2f803b663ae8761d",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/moveCursor.png",
+      "runtimeSHA256": "1f0018318f073a57aa89ae175bec415a2aef08404c72e535b8fefeb428590329",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/moveCursor.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 140,
+          "sha256": "1f0018318f073a57aa89ae175bec415a2aef08404c72e535b8fefeb428590329",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "1f0018318f073a57aa89ae175bec415a2aef08404c72e535b8fefeb428590329",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/northEastSouthWestResizeCursor.png",
+      "runtimeSHA256": "4046f55f3bf75fe95e97e89accf66abd3dbb1b3a3efcc11634d5a0445e41b567",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/northEastSouthWestResizeCursor.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 199,
+          "sha256": "4046f55f3bf75fe95e97e89accf66abd3dbb1b3a3efcc11634d5a0445e41b567",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "4046f55f3bf75fe95e97e89accf66abd3dbb1b3a3efcc11634d5a0445e41b567",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/northSouthResizeCursor.png",
+      "runtimeSHA256": "981f06426340c8f89d4a11ac74ed19761349f51971f5b008fbff89e7801a6e70",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/northSouthResizeCursor.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 130,
+          "sha256": "981f06426340c8f89d4a11ac74ed19761349f51971f5b008fbff89e7801a6e70",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "981f06426340c8f89d4a11ac74ed19761349f51971f5b008fbff89e7801a6e70",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/northWestSouthEastResizeCursor.png",
+      "runtimeSHA256": "22955be467d52156c11592f7f2d21682286f062177b0d9a832fd0b8ee5060e5d",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/northWestSouthEastResizeCursor.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 178,
+          "sha256": "22955be467d52156c11592f7f2d21682286f062177b0d9a832fd0b8ee5060e5d",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "22955be467d52156c11592f7f2d21682286f062177b0d9a832fd0b8ee5060e5d",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/nullPlugin.png",
+      "runtimeSHA256": "a843b525433e2af0368b1b71440e7d68d4bd186cbb1cb40167075e3e5b1b9e76",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/nullPlugin.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1031,
+          "sha256": "a843b525433e2af0368b1b71440e7d68d4bd186cbb1cb40167075e3e5b1b9e76",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "a843b525433e2af0368b1b71440e7d68d4bd186cbb1cb40167075e3e5b1b9e76",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/nullPlugin@2x.png",
+      "runtimeSHA256": "e42fe90f106796f57df13cf075684cced58b4a7be566af603a4b31f7577bcc5a",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/nullPlugin@2x.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 3898,
+          "sha256": "e42fe90f106796f57df13cf075684cced58b4a7be566af603a4b31f7577bcc5a",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "e42fe90f106796f57df13cf075684cced58b4a7be566af603a4b31f7577bcc5a",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/panIcon.png",
+      "runtimeSHA256": "1f0018318f073a57aa89ae175bec415a2aef08404c72e535b8fefeb428590329",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/panIcon.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 140,
+          "sha256": "1f0018318f073a57aa89ae175bec415a2aef08404c72e535b8fefeb428590329",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "1f0018318f073a57aa89ae175bec415a2aef08404c72e535b8fefeb428590329",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/textAreaResizeCorner.png",
+      "runtimeSHA256": "16d9c626d3faf3907a10819493d53d43ab4a09a0eeafec92e1492afbb03c4c8b",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/textAreaResizeCorner.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 86,
+          "sha256": "16d9c626d3faf3907a10819493d53d43ab4a09a0eeafec92e1492afbb03c4c8b",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "16d9c626d3faf3907a10819493d53d43ab4a09a0eeafec92e1492afbb03c4c8b",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/textAreaResizeCorner@2x.png",
+      "runtimeSHA256": "4557192b829da5e271abf02024cc0a7e1ae2153b79b98682a330bfa48c1e57bf",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebCore/Resources/textAreaResizeCorner@2x.png",
+          "exists": true,
+          "kind": "file",
+          "bytes": 167,
+          "sha256": "4557192b829da5e271abf02024cc0a7e1ae2153b79b98682a330bfa48c1e57bf",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "4557192b829da5e271abf02024cc0a7e1ae2153b79b98682a330bfa48c1e57bf",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebCore/LICENSE-APPLE",
+            "Source/WebCore/LICENSE-LGPL-2",
+            "Source/WebCore/LICENSE-LGPL-2.1"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebGPU.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "d1b62a69cb77ccc8cea6b51760021849ab53f472db0781cb6890a1106a7139a6",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebGPU/Info.plist",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1633,
+          "sha256": "99f7685c28e18f82935817519f9ef6e5ebd63af453c7c3414df591f34078a4af",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "99f7685c28e18f82935817519f9ef6e5ebd63af453c7c3414df591f34078a4af",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/Assets.car",
+      "runtimeSHA256": "554a204a45e7204fcf20f2aa2cf719ea4c7284a8f769289fc5ada9c4e0ab2a98",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/Contents.json",
+          "exists": true,
+          "kind": "file",
+          "bytes": 63,
+          "sha256": "0fd49ba3c3585c709678e0046a821c3c60685ec7063720d30d3a3448be3a208b",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "0fd49ba3c3585c709678e0046a821c3c60685ec7063720d30d3a3448be3a208b",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        },
+        {
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningBackground.colorset/Contents.json",
+          "exists": true,
+          "kind": "file",
+          "bytes": 707,
+          "sha256": "4b841cbb48667da6797cbf3d3601e6791073ff68eb36d9b17dc15ec011238d63",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "4b841cbb48667da6797cbf3d3601e6791073ff68eb36d9b17dc15ec011238d63",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        },
+        {
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningBoxBackground.colorset/Contents.json",
+          "exists": true,
+          "kind": "file",
+          "bytes": 701,
+          "sha256": "1a59d991a040f8eb48f77bec02ae3e736418fcc8a9c74e1975f74dc7d340f88e",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "1a59d991a040f8eb48f77bec02ae3e736418fcc8a9c74e1975f74dc7d340f88e",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        },
+        {
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningText.colorset/Contents.json",
+          "exists": true,
+          "kind": "file",
+          "bytes": 701,
+          "sha256": "ae08ab241bec196b9aa27cab789dd141cc539f4daa691a619cfdb817e5dc2609",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "ae08ab241bec196b9aa27cab789dd141cc539f4daa691a619cfdb817e5dc2609",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        },
+        {
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningTitle.colorset/Contents.json",
+          "exists": true,
+          "kind": "file",
+          "bytes": 701,
+          "sha256": "f9cdeb5f30d8a38a961d5b89cfa006748034abc1a0b8878bf569c1f26c386abf",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "f9cdeb5f30d8a38a961d5b89cfa006748034abc1a0b8878bf569c1f26c386abf",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        },
+        {
+          "path": "Source/WebKit/Resources/SafeBrowsing.xcassets/Contents.json",
+          "exists": true,
+          "kind": "file",
+          "bytes": 62,
+          "sha256": "972ec1fd42325872438eb085ac29e94f51c10788ec18ec5549439950866c541d",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "972ec1fd42325872438eb085ac29e94f51c10788ec18ec5549439950866c541d",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        },
+        {
+          "path": "Source/WebKit/Resources/SafeBrowsing.xcassets/WKSafeBrowsingWarningBackground.colorset/Contents.json",
+          "exists": true,
+          "kind": "file",
+          "bytes": 328,
+          "sha256": "36f3bcaec896d41f46ef00c68ea3717f1f90ba7b94dd8291cf33f419abc4cfc9",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "36f3bcaec896d41f46ef00c68ea3717f1f90ba7b94dd8291cf33f419abc4cfc9",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        },
+        {
+          "path": "Source/WebKit/Resources/SafeBrowsing.xcassets/WKSafeBrowsingWarningText.colorset/Contents.json",
+          "exists": true,
+          "kind": "file",
+          "bytes": 694,
+          "sha256": "21d402a6b70cf83ad5c66ae38d19772a0a18496742cbf5751805cb9a57bba003",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "21d402a6b70cf83ad5c66ae38d19772a0a18496742cbf5751805cb9a57bba003",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        },
+        {
+          "path": "Source/WebKit/Resources/SafeBrowsing.xcassets/WKSafeBrowsingWarningTitle.colorset/Contents.json",
+          "exists": true,
+          "kind": "file",
+          "bytes": 694,
+          "sha256": "555f2d5c30df9768567c622d50efdd7835c9bf9b287a325e3bc3cd57f4ac5935",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "555f2d5c30df9768567c622d50efdd7835c9bf9b287a325e3bc3cd57f4ac5935",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "8682dbe9e031cd97fa92985dee64f99726e4a544a470bb2f69dc99ab6493e135",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/Info.plist",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1140,
+          "sha256": "2693d09b3ce4fa4d9dc05a4dd99043bd2e07f3cc9c12c7eaba4b19e3f9a61eac",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "2693d09b3ce4fa4d9dc05a4dd99043bd2e07f3cc9c12c7eaba4b19e3f9a61eac",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/analytics/coremldata.bin",
+      "runtimeSHA256": "3219af1988907d86a9ca82a697935793d2b479ec9c38201dfd4ad8e79c241864",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+          "exists": true,
+          "kind": "file",
+          "bytes": 744397,
+          "sha256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "1926e1d045248663f338ec62427b79e0951088e4f5370e7356209cf46462baf2",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/coremldata.bin",
+      "runtimeSHA256": "4e604a85568f337e421b5c3f678dc3f17b94c469713017c6659e3cb28b5ab43c",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+          "exists": true,
+          "kind": "file",
+          "bytes": 744397,
+          "sha256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "1926e1d045248663f338ec62427b79e0951088e4f5370e7356209cf46462baf2",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/metadata.json",
+      "runtimeSHA256": "e024dd2713523eeaa0b3aceeaea98199bb9e7b42c2d001c3da49dbb3bd11b12e",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+          "exists": true,
+          "kind": "file",
+          "bytes": 744397,
+          "sha256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "1926e1d045248663f338ec62427b79e0951088e4f5370e7356209cf46462baf2",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebKit.GPUProcess.sb",
+      "runtimeSHA256": "101bdd370512434671c1e015f069e4086b25634060061a857f4c7af72854b560",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/GPUProcess/mac/com.apple.WebKit.GPUProcess.sb.in",
+          "exists": true,
+          "kind": "file",
+          "bytes": 55980,
+          "sha256": "a8e1f3d73eb240ceb51eca60feed7f6ae3121feeb5dec6c5c63586939ba440f9",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "a5bf8cf0bd47be101b3eefc8a93a620acf628cfc7a41fa674191ee6ecf6ac670",
+          "headerSignals": [
+            "Apple BSD-form"
+          ],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [
+        "Apple BSD-form"
+      ],
+      "existingWorksheetDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebKit.NetworkProcess.sb",
+      "runtimeSHA256": "e3e8a047e122938338f8e2a37e2d7e59d6f18ba20534c30765aaab9a579d2881",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/NetworkProcess/mac/com.apple.WebKit.NetworkProcess.sb.in",
+          "exists": true,
+          "kind": "file",
+          "bytes": 29590,
+          "sha256": "f0b254eb98476ab6211667852eb59a0e15ae310e7369040d52e40f675ae33410",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "0c39b00c4f1a4ff7f0ad10190edebdd5c52f5756ce283b967cd97b56db3a3677",
+          "headerSignals": [
+            "Apple BSD-form"
+          ],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [
+        "Apple BSD-form"
+      ],
+      "existingWorksheetDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebKit.webpushd.mac.sb",
+      "runtimeSHA256": "b634bb3a99d4cead1f50532535e1826230afab36217cabec05c6403d16f502e6",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/webpushd/mac/com.apple.WebKit.webpushd.mac.sb.in",
+          "exists": true,
+          "kind": "file",
+          "bytes": 11010,
+          "sha256": "efb6ff4f9cbdf976c2872e29e66bb593fd266f7ecbc9c955d499456ee214547c",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "efb6ff4f9cbdf976c2872e29e66bb593fd266f7ecbc9c955d499456ee214547c",
+          "headerSignals": [
+            "Apple BSD-form"
+          ],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [
+        "Apple BSD-form"
+      ],
+      "existingWorksheetDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebProcess.sb",
+      "runtimeSHA256": "8722db48f108e2f0341af9e6c543719155d6a986286e8683f484d32913e701d8",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/WebProcess/com.apple.WebProcess.sb.in",
+          "exists": true,
+          "kind": "file",
+          "bytes": 59879,
+          "sha256": "19afbed37437e34a121c56ff588b1e418f6d97083a98bcc8c6851424ef842628",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "e88dac75f2d98330114b9d3fa722cd4332090e7b5e7bb74605f12ac8a14d8a9d",
+          "headerSignals": [
+            "Apple BSD-form"
+          ],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [
+        "Apple BSD-form"
+      ],
+      "existingWorksheetDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebProcess.x86.sb",
+      "runtimeSHA256": "c52623e5732ef13ecc893fca2842f67ce97a11373112c0ffcd9d29ef9f886d16",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/WebProcess/com.apple.WebProcess.x86.sb.in",
+          "exists": true,
+          "kind": "file",
+          "bytes": 56796,
+          "sha256": "b3b636902f94db8ec556f1151cc2ad5062a3685b93172eb8daabd3d2d7ad1c76",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "139f3acef903d17be9de9c1e66852f8564cdcb3da80cf4da951d33b4b5cea8fd",
+          "headerSignals": [
+            "Apple BSD-form"
+          ],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [
+        "Apple BSD-form"
+      ],
+      "existingWorksheetDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/corePrediction_model",
+      "runtimeSHA256": "221555a2cdd2e957f18d478c4b9fd01f308c1613e6e10840cce924e5f543091a",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/Resources/ResourceLoadStatistics/corePrediction_model",
+          "exists": true,
+          "kind": "file",
+          "bytes": 17842,
+          "sha256": "221555a2cdd2e957f18d478c4b9fd01f308c1613e6e10840cce924e5f543091a",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "a809df67e958beb056a0b4e0986d048d4beee45ea501c62b09acc8744e77dd31",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/en.lproj/InfoPlist.strings",
+      "runtimeSHA256": "eb830b7d91792444feda119d8eb9b6fa400a05db02e6d9d5cd7b126361d000c2",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/en.lproj/InfoPlist.strings",
+          "exists": true,
+          "kind": "file",
+          "bytes": 48,
+          "sha256": "eb830b7d91792444feda119d8eb9b6fa400a05db02e6d9d5cd7b126361d000c2",
+          "matchesRuntimeBytes": true,
+          "headerPrefixSHA256": "eb830b7d91792444feda119d8eb9b6fa400a05db02e6d9d5cd7b126361d000c2",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/Info.plist",
+      "runtimeSHA256": "1727040f8d3a09f62bf750648f0388f3f65e6356bc53c3887caef2633609a40d",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/GPUProcess/EntryPoint/Cocoa/XPCService/GPUService/Info-OSX.plist",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1461,
+          "sha256": "7d4ce5ace213693923213b0b8e88a7df4aa9a461f2f9276d47fed7d9959bc0d1",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "7d4ce5ace213693923213b0b8e88a7df4aa9a461f2f9276d47fed7d9959bc0d1",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/Info.plist",
+      "runtimeSHA256": "1733fb8bd8df9a1360d7959150139c69bb14dbdb0bd9f266c742c100e94ebc82",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/NetworkProcess/EntryPoint/Cocoa/XPCService/NetworkService/Info-OSX.plist",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1327,
+          "sha256": "848d7eec33274e1f0054da75853b0cb150b66f075f16100a2b52f9b54eabaf81",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "848d7eec33274e1f0054da75853b0cb150b66f075f16100a2b52f9b54eabaf81",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/Info.plist",
+      "runtimeSHA256": "cf2804905b5ab48951d12b4c9ce0f0984c24821c340597e7af828ba49e073651",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1746,
+          "sha256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/Info.plist",
+      "runtimeSHA256": "707d6ca86c4d1b0c51c721c6cb86a64e35810092773eb8e040f93a73fe58c703",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1746,
+          "sha256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Info.plist",
+      "runtimeSHA256": "95eb37b4bd4a698898b2fa3a894c15bc4b9f5dd4323f04cf446f0d841e6616fc",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+          "exists": true,
+          "kind": "file",
+          "bytes": 1746,
+          "sha256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Resources/WebContentProcess.nib",
+      "runtimeSHA256": "90306f1e50ac0139b6057dd411b06fd49089cecfb59f01e144690b9cd86583a7",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKit/Resources/WebContentProcess.xib",
+          "exists": true,
+          "kind": "file",
+          "bytes": 582,
+          "sha256": "0583e5f26322ca810b6d84bcab7dfce7aa3c8e8cea9e4ca150fb8a98bf47ef36",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "0583e5f26322ca810b6d84bcab7dfce7aa3c8e8cea9e4ca150fb8a98bf47ef36",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": []
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKitLegacy.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "51c5deed98d97748855c83af6f860cb40beaf7878b8c039ef47324b81362798f",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKitLegacy/mac/Info.plist",
+          "exists": true,
+          "kind": "file",
+          "bytes": 990,
+          "sha256": "53f09dee33a6e17bae292d4360196d436eb32a890435a0d59125549b4f914a7b",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "53f09dee33a6e17bae292d4360196d436eb32a890435a0d59125549b4f914a7b",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebKitLegacy/LICENSE"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebKitLegacy/LICENSE"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKitLegacy.framework/Versions/A/Resources/en.lproj/WebAuthenticationPanel.nib",
+      "runtimeSHA256": "a09b229c2bd3b90427f7dc189cd8c8ae1e156cc15b297a7a50829b6b0eb364db",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKitLegacy/mac/Panels/en.lproj/WebAuthenticationPanel.xib",
+          "exists": true,
+          "kind": "file",
+          "bytes": 12740,
+          "sha256": "4158abb9d932b34da95aebdf14d52f34aae7c153a2f24bcc8c3835aa4faac10f",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "4158abb9d932b34da95aebdf14d52f34aae7c153a2f24bcc8c3835aa4faac10f",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebKitLegacy/LICENSE"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebKitLegacy/LICENSE"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKitLegacy.framework/Versions/A/Resources/en.lproj/WebJavaScriptTextInputPanel.nib",
+      "runtimeSHA256": "743bb0395249fea422d4efe7737b9296f022c8442a20aaf76a291270b784dc4f",
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        {
+          "path": "Source/WebKitLegacy/en.lproj/WebJavaScriptTextInputPanel.xib",
+          "exists": true,
+          "kind": "file",
+          "bytes": 5854,
+          "sha256": "80eb2b4eff6bdc5e712d6cbd4cbb917082f2e7b45c39f3cc0dc2c5970afe34bb",
+          "matchesRuntimeBytes": false,
+          "headerPrefixSHA256": "80eb2b4eff6bdc5e712d6cbd4cbb917082f2e7b45c39f3cc0dc2c5970afe34bb",
+          "headerSignals": [],
+          "nearestCandidateLicenseTextPaths": [
+            "Source/WebKitLegacy/LICENSE"
+          ]
+        }
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebKitLegacy/LICENSE"
+      ],
+      "sourceHeaderSignals": [],
+      "existingWorksheetDecision": "UNKNOWN"
+    }
+  ],
+  "scopeLimit": "This binds exact frozen candidate resource hashes to their mapped upstream source files/directories, records byte equality where a single file hash matches, scans resource text for leading license markers and lists nearest candidate license filenames. It does not determine applicability or required notices, especially where bytes are transformed or assets have multiple sources. Existing worksheet decisions are preserved; no row is promoted to resolved."
+}

@@ -1,0 +1,11 @@
+--- a/chrome/browser/enterprise/signals/context_info_fetcher.cc
++++ b/chrome/browser/enterprise/signals/context_info_fetcher.cc
+@@ -105,6 +105,8 @@
+ 
+   info.browser_affiliation_ids = GetBrowserAffiliationIDs();
+   info.profile_affiliation_ids = GetProfileAffiliationIDs();
++  info.enterprise_profile_id =
++      GetEnterpriseProfileId(Profile::FromBrowserContext(browser_context_));
+ #if BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS)
+   info.on_file_attached_providers =
+       GetAnalysisConnectorProviders(enterprise_connectors::FILE_ATTACHED);

@@ -1,0 +1,735 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T15:46:15Z",
+  "status": "PARTIAL_ROW_HISTORY_CLASSIFICATION",
+  "scope": "Current-image rebind for the same 32 exact JSC headerless generator inputs. Source history/terms classification unchanged; full-image applicability and per-file copyright attribution remain open.",
+  "sourceBinding": {
+    "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "webkitPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "runtimeImageSHA256": "fcfce29db5959a47d549b26c6e8539cc5b24ad63abec114189d3053fb9074238",
+    "priorHeaderlessReviewSHA256": "76ec212b196dd8956123d5b84a2d821615c2d470992975396a14e285b5f28f9f",
+    "pinnedSourceFilesHashMatched": 32,
+    "upstreamBlamePagesParsed": 32
+  },
+  "policy": {
+    "url": "https://docs.webkit.org/Other/Licensing.html",
+    "finding": "New WebKit contributions use BSD-2-Clause; inherited KHTML and other moved sources retain their original terms and notices. The official policy does not make path or a missing header sufficient by itself."
+  },
+  "classificationMethod": "Require exact pinned file hash plus upstream line history. For these 32 inputs the parsed blame origins are WebKit repository paths or line commits with no recovered previous path; no KHTML/KJS path or other source-project path appears in these 32 blame results. Earliest visible commits are all 2013 or later (some inspector data entered via the 2013 split from WebCore Inspector.json). On that bounded evidence, maintainer classifies these inputs BSD-2-Clause as WebKit contributions. No legal opinion; if further source evidence identifies an imported third-party origin, revoke the affected row and reassess.",
+  "licenseText": {
+    "path": "notices/webrtc-v20-notices-candidate-v3/files/Source/WebCore/LICENSE-APPLE",
+    "sha256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+    "bytes": 1313,
+    "offerComponentPresent": true
+  },
+  "counts": {
+    "headerlessInputs": 32,
+    "generatorGroups": {
+      "bytecode": 2,
+      "jscBuiltins": 1,
+      "inspector": 29,
+      "yarr": 0
+    },
+    "rowsWithHashMatch": 32,
+    "rowsWithParsedHistory": 32,
+    "classifiedBSD2": 32,
+    "stillUnclassified": 0
+  },
+  "rows": [
+    {
+      "path": "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/wkbuiltins.py",
+      "sha256": "f5ca2aab8844b05fbd80de51e9d61d90d17a65803fb7352e5f24723df0954b6e",
+      "bytes": 704,
+      "generatorGroup": "jscBuiltins",
+      "binding": "MATCH",
+      "lineCount": 15,
+      "rangeCount": 3,
+      "reblamePaths": {
+        "Source/JavaScriptCore/Scripts/builtins/builtins.py": 2,
+        "null": 1
+      },
+      "earliestVisibleCommit": {
+        "oid": "b65056e87af4842ce5f1d43ef8bb5f695b83a415",
+        "date": "2015-10-22T04:39:01.000Z",
+        "committer": "Brian Burg",
+        "message": "Restructure generate-js-bindings script to be modular and testable https://bugs.webkit.org/show_bug.cgi?id=149929 Reviewed by Alex Christensen. Source/JavaScriptCore: This is a new code generator, based on the replay inputs code generator and the inspector pro"
+      },
+      "commitCount": 3
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/generator/Wasm.rb",
+      "sha256": "03d1c91d1a100e954a3393b7d0ccf03a505c1008fe34714b9c67cbfc35e41769",
+      "bytes": 516,
+      "generatorGroup": "bytecode",
+      "binding": "MATCH",
+      "lineCount": 29,
+      "rangeCount": 5,
+      "reblamePaths": {
+        "null": 3,
+        "Source/JavaScriptCore/generator/Wasm.rb": 2
+      },
+      "earliestVisibleCommit": {
+        "oid": "21edee668723a167324b32a9ff063dc2acf05f9c",
+        "date": "2019-10-31T22:32:52.000Z",
+        "committer": "Tadeu Zagallo",
+        "message": "[WebAssembly] Create a Wasm interpreter https://bugs.webkit.org/show_bug.cgi?id=194257 <rdar://problem/44186794> Reviewed by Saam Barati. Source/JavaScriptCore: Add an interpreter tier to WebAssembly which reuses the LLInt infrastructure. The interpreter curre"
+      },
+      "commitCount": 3
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Animation.json",
+      "sha256": "b331e29ca59252aa44ff078f0322b1229064b754cd17f2c73a7a391fa7cf0a63",
+      "bytes": 8542,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 183,
+      "rangeCount": 23,
+      "reblamePaths": {
+        "null": 5,
+        "Source/JavaScriptCore/inspector/protocol/Animation.json": 18
+      },
+      "earliestVisibleCommit": {
+        "oid": "068618744a34b4a71b6942462ca9d708baaef51e",
+        "date": "2019-11-02T00:45:35.000Z",
+        "committer": "Devin Rousso",
+        "message": "Web Inspector: Timelines: add a timeline that shows information about any recorded CSS animation/transition https://bugs.webkit.org/show_bug.cgi?id=203651 <rdar://problem/56128726> Reviewed by Brian Burg. Source/JavaScriptCore: Unlike all other forms of Web An"
+      },
+      "commitCount": 8
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Audit.json",
+      "sha256": "0ee790fa148880cc10b4e405d94da46125737646d245d04719cb23a68e9d6554",
+      "bytes": 2229,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 32,
+      "rangeCount": 5,
+      "reblamePaths": {
+        "null": 2,
+        "Source/JavaScriptCore/inspector/protocol/Audit.json": 3
+      },
+      "earliestVisibleCommit": {
+        "oid": "0fce9e3830b89533c08fd00043c9e1c7f4da91e9",
+        "date": "2019-01-15T08:25:33.000Z",
+        "committer": "Devin Rousso",
+        "message": "Web Inspector: Audit: create new IDL type for exposing special functionality in test context https://bugs.webkit.org/show_bug.cgi?id=193149 <rdar://problem/46801218> Reviewed by Joseph Pecoraro. Source/JavaScriptCore: Create a new `AuditAgent` (and various sub"
+      },
+      "commitCount": 4
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Browser.json",
+      "sha256": "08b6f4170e6c225bade1fcefe391a1751a00b0bcad4dd7b8694c0b8aadad09a9",
+      "bytes": 1557,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 46,
+      "rangeCount": 1,
+      "reblamePaths": {
+        "null": 1
+      },
+      "earliestVisibleCommit": {
+        "oid": "e77b31ef2eab886e26ada89ed94d3e7bf2b8c5e0",
+        "date": "2020-02-26T06:05:13.000Z",
+        "committer": "Devin Rousso",
+        "message": "Web Inspector: safari app extension isolated worlds and injected files use the extension's identifier instead of its name https://bugs.webkit.org/show_bug.cgi?id=206911 <rdar://problem/58026635> Reviewed by Brian Burg. Source/JavaScriptCore: * inspector/protoc"
+      },
+      "commitCount": 1
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/CPUProfiler.json",
+      "sha256": "ed857e8a4ff4243886b931b2b0624be6686dec24f1ecaa1f09c0ff37f34fe2b6",
+      "bytes": 2558,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 62,
+      "rangeCount": 11,
+      "reblamePaths": {
+        "null": 5,
+        "Source/JavaScriptCore/inspector/protocol/CPUProfiler.json": 6
+      },
+      "earliestVisibleCommit": {
+        "oid": "0f659a1e8d9c7a9ed8427a7bda04bce1a0c9b257",
+        "date": "2019-01-25T01:06:17.000Z",
+        "committer": "Commit Queue",
+        "message": "Web Inspector: CPU Usage Timeline https://bugs.webkit.org/show_bug.cgi?id=193730 <rdar://problem/46797201> Patch by Joseph Pecoraro <pecoraro@apple.com> on 2019-01-24 Reviewed by Devin Rousso. Source/JavaScriptCore: * CMakeLists.txt: * DerivedSources-input.xcf"
+      },
+      "commitCount": 6
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/CSS.json",
+      "sha256": "939aee6d6b5a9de5cca7b7785d515c55511b8a90aed4b88b70472b37ea037362",
+      "bytes": 33245,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 536,
+      "rangeCount": 230,
+      "reblamePaths": {
+        "null": 69,
+        "Source/JavaScriptCore/inspector/protocol/CSS.json": 159,
+        "Source/WebCore/inspector/protocol/CSS.json": 2
+      },
+      "earliestVisibleCommit": {
+        "oid": "9fe392ea07f66466335cecd51d8599bade9f50b7",
+        "date": "2013-11-13T21:40:41.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Split Inspector.json into individual domain json files https://bugs.webkit.org/show_bug.cgi?id=124098 Reviewed by Timothy Hatcher. Source/WebCore: Split the Inspector domains into their own json file. Generate a combined Inspector.json from all "
+      },
+      "commitCount": 52
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Canvas.json",
+      "sha256": "5220dfa2ed3665ec63f626157b58468ee041fcc597603e0f6b6dd109154e922a",
+      "bytes": 14345,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 311,
+      "rangeCount": 119,
+      "reblamePaths": {
+        "null": 10,
+        "Source/JavaScriptCore/inspector/protocol/Canvas.json": 109
+      },
+      "earliestVisibleCommit": {
+        "oid": "6fe75a6ef21efe7aa285bb127abcafed2881d0d0",
+        "date": "2017-06-17T02:58:24.000Z",
+        "committer": "Matt Baker",
+        "message": "Web Inspector: Instrument 2D/WebGL canvas contexts in the backend https://bugs.webkit.org/show_bug.cgi?id=172623 <rdar://problem/32415986> Reviewed by Devin Rousso and Joseph Pecoraro. Source/JavaScriptCore: This patch adds a basic Canvas protocol. It includes"
+      },
+      "commitCount": 41
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Console.json",
+      "sha256": "f511e25026b8cb316b4bc6ca3c81afe8bb0ea445bae89b2c7a121bb43c87ade2",
+      "bytes": 9087,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 166,
+      "rangeCount": 53,
+      "reblamePaths": {
+        "null": 14,
+        "Source/JavaScriptCore/inspector/protocol/Console.json": 39
+      },
+      "earliestVisibleCommit": {
+        "oid": "9fe392ea07f66466335cecd51d8599bade9f50b7",
+        "date": "2013-11-13T21:40:41.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Split Inspector.json into individual domain json files https://bugs.webkit.org/show_bug.cgi?id=124098 Reviewed by Timothy Hatcher. Source/WebCore: Split the Inspector domains into their own json file. Generate a combined Inspector.json from all "
+      },
+      "commitCount": 22
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/DOM.json",
+      "sha256": "cda62440f05a5a6fa65fe4f5137f6663c77d5e248cba3199f6f0ed27df98b77a",
+      "bytes": 67754,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 999,
+      "rangeCount": 397,
+      "reblamePaths": {
+        "null": 108,
+        "Source/JavaScriptCore/inspector/protocol/DOM.json": 255,
+        "Source/WebCore/inspector/protocol/DOM.json": 34
+      },
+      "earliestVisibleCommit": {
+        "oid": "9fe392ea07f66466335cecd51d8599bade9f50b7",
+        "date": "2013-11-13T21:40:41.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Split Inspector.json into individual domain json files https://bugs.webkit.org/show_bug.cgi?id=124098 Reviewed by Timothy Hatcher. Source/WebCore: Split the Inspector domains into their own json file. Generate a combined Inspector.json from all "
+      },
+      "commitCount": 81
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/DOMDebugger.json",
+      "sha256": "9ed434164cdf5cd045f8b3c6c53824b750b16c8bd6cc593b1bd1a082f72109ca",
+      "bytes": 4731,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 79,
+      "rangeCount": 44,
+      "reblamePaths": {
+        "null": 15,
+        "Source/JavaScriptCore/inspector/protocol/DOMDebugger.json": 29
+      },
+      "earliestVisibleCommit": {
+        "oid": "9fe392ea07f66466335cecd51d8599bade9f50b7",
+        "date": "2013-11-13T21:40:41.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Split Inspector.json into individual domain json files https://bugs.webkit.org/show_bug.cgi?id=124098 Reviewed by Timothy Hatcher. Source/WebCore: Split the Inspector domains into their own json file. Generate a combined Inspector.json from all "
+      },
+      "commitCount": 12
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/DOMStorage.json",
+      "sha256": "76a043bd79a991d041aa4c5c1f0ab1a515aa5ffa807ca56283cd69cb76d0a4cb",
+      "bytes": 3123,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 95,
+      "rangeCount": 14,
+      "reblamePaths": {
+        "null": 7,
+        "Source/JavaScriptCore/inspector/protocol/DOMStorage.json": 3,
+        "Source/WebCore/inspector/protocol/DOMStorage.json": 4
+      },
+      "earliestVisibleCommit": {
+        "oid": "9fe392ea07f66466335cecd51d8599bade9f50b7",
+        "date": "2013-11-13T21:40:41.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Split Inspector.json into individual domain json files https://bugs.webkit.org/show_bug.cgi?id=124098 Reviewed by Timothy Hatcher. Source/WebCore: Split the Inspector domains into their own json file. Generate a combined Inspector.json from all "
+      },
+      "commitCount": 5
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Debugger.json",
+      "sha256": "0c90f53d52a3a0e5039d89d78d4c82b411ccb32a5417535b55b55707bef78d15",
+      "bytes": 28935,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 442,
+      "rangeCount": 169,
+      "reblamePaths": {
+        "null": 58,
+        "Source/JavaScriptCore/inspector/protocol/Debugger.json": 110,
+        "Source/WebCore/inspector/protocol/Debugger.json": 1
+      },
+      "earliestVisibleCommit": {
+        "oid": "9fe392ea07f66466335cecd51d8599bade9f50b7",
+        "date": "2013-11-13T21:40:41.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Split Inspector.json into individual domain json files https://bugs.webkit.org/show_bug.cgi?id=124098 Reviewed by Timothy Hatcher. Source/WebCore: Split the Inspector domains into their own json file. Generate a combined Inspector.json from all "
+      },
+      "commitCount": 41
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/GenericTypes.json",
+      "sha256": "a914a4c6c7e46fa6ad647fdd9db513f53ea993a4517eb3720d4c79eb5fd375da",
+      "bytes": 805,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 24,
+      "rangeCount": 3,
+      "reblamePaths": {
+        "null": 2,
+        "Source/JavaScriptCore/inspector/protocol/GenericTypes.json": 1
+      },
+      "earliestVisibleCommit": {
+        "oid": "f57730dffc01f158c31fa258d6aa146d621e1020",
+        "date": "2013-12-14T06:50:33.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Move Inspector and Debugger protocol domains into JavaScriptCore https://bugs.webkit.org/show_bug.cgi?id=125707 Reviewed by Timothy Hatcher. Source/JavaScriptCore: * CMakeLists.txt: * DerivedSources.make: * GNUmakefile.am: * inspector/protocol/D"
+      },
+      "commitCount": 2
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Heap.json",
+      "sha256": "5aac84c0f6eda17598ffc799068916ce68dd3fe9de4592074ab5e48e78335575",
+      "bytes": 4223,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 101,
+      "rangeCount": 14,
+      "reblamePaths": {
+        "null": 6,
+        "Source/JavaScriptCore/inspector/protocol/Heap.json": 8
+      },
+      "earliestVisibleCommit": {
+        "oid": "c0df8e8fff5830c15bfd9ede27b94a107de646f7",
+        "date": "2015-10-16T02:15:56.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Include Garbage Collection Event in Timeline https://bugs.webkit.org/show_bug.cgi?id=142510 Reviewed by Geoffrey Garen and Brian Burg. Source/JavaScriptCore: * CMakeLists.txt: * DerivedSources.make: * JavaScriptCore.xcodeproj/project.pbxproj: In"
+      },
+      "commitCount": 7
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/IndexedDB.json",
+      "sha256": "2939dd21d91f865f39e67e63733d6144b8296112b3b56b3cc342c2aeebaf2d6a",
+      "bytes": 7269,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 143,
+      "rangeCount": 22,
+      "reblamePaths": {
+        "null": 11,
+        "Source/JavaScriptCore/inspector/protocol/IndexedDB.json": 10,
+        "Source/WebCore/inspector/protocol/IndexedDB.json": 1
+      },
+      "earliestVisibleCommit": {
+        "oid": "9fe392ea07f66466335cecd51d8599bade9f50b7",
+        "date": "2013-11-13T21:40:41.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Split Inspector.json into individual domain json files https://bugs.webkit.org/show_bug.cgi?id=124098 Reviewed by Timothy Hatcher. Source/WebCore: Split the Inspector domains into their own json file. Generate a combined Inspector.json from all "
+      },
+      "commitCount": 5
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Inspector.json",
+      "sha256": "05377ff0c0de268cd028d68e9fa909050759fa19ff82df010ba8ac6fa8a20482",
+      "bytes": 1039,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 34,
+      "rangeCount": 6,
+      "reblamePaths": {
+        "null": 3,
+        "Source/JavaScriptCore/inspector/protocol/Inspector.json": 2,
+        "Source/JavaScriptCore/inspector/protocol/InspectorDomain.json": 1
+      },
+      "earliestVisibleCommit": {
+        "oid": "9fe392ea07f66466335cecd51d8599bade9f50b7",
+        "date": "2013-11-13T21:40:41.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Split Inspector.json into individual domain json files https://bugs.webkit.org/show_bug.cgi?id=124098 Reviewed by Timothy Hatcher. Source/WebCore: Split the Inspector domains into their own json file. Generate a combined Inspector.json from all "
+      },
+      "commitCount": 4
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/LayerTree.json",
+      "sha256": "39b44ab88f4b5ce70af457dcd540d8238832334a60dc60ab6638b86d93227db8",
+      "bytes": 10277,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 128,
+      "rangeCount": 18,
+      "reblamePaths": {
+        "null": 8,
+        "Source/JavaScriptCore/inspector/protocol/LayerTree.json": 8,
+        "Source/WebCore/inspector/protocol/LayerTree.json": 2
+      },
+      "earliestVisibleCommit": {
+        "oid": "9fe392ea07f66466335cecd51d8599bade9f50b7",
+        "date": "2013-11-13T21:40:41.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Split Inspector.json into individual domain json files https://bugs.webkit.org/show_bug.cgi?id=124098 Reviewed by Timothy Hatcher. Source/WebCore: Split the Inspector domains into their own json file. Generate a combined Inspector.json from all "
+      },
+      "commitCount": 10
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Memory.json",
+      "sha256": "b0c0e363d021d2e675b5b2197beca04217eb8e4784bc8ade28009ee0fc2b2146",
+      "bytes": 2556,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 74,
+      "rangeCount": 11,
+      "reblamePaths": {
+        "null": 5,
+        "Source/JavaScriptCore/inspector/protocol/Memory.json": 6
+      },
+      "earliestVisibleCommit": {
+        "oid": "ff7ee6debfc89e7445f7279e85224d8c52798881",
+        "date": "2016-02-02T01:52:16.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: High Level Memory Overview Instrument https://bugs.webkit.org/show_bug.cgi?id=153516 <rdar://problem/24356378> Reviewed by Brian Burg. Source/JavaScriptCore: * CMakeLists.txt: * Configurations/FeatureDefines.xcconfig: * DerivedSources.make: * in"
+      },
+      "commitCount": 6
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Network.json",
+      "sha256": "99d52095b3368c60e7b2ef79e7c0aaa36de17a8ab6c93e65a643a584db6b4588",
+      "bytes": 32341,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 529,
+      "rangeCount": 130,
+      "reblamePaths": {
+        "null": 32,
+        "Source/JavaScriptCore/inspector/protocol/Network.json": 94,
+        "Source/WebCore/inspector/protocol/Network.json": 4
+      },
+      "earliestVisibleCommit": {
+        "oid": "9fe392ea07f66466335cecd51d8599bade9f50b7",
+        "date": "2013-11-13T21:40:41.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Split Inspector.json into individual domain json files https://bugs.webkit.org/show_bug.cgi?id=124098 Reviewed by Timothy Hatcher. Source/WebCore: Split the Inspector domains into their own json file. Generate a combined Inspector.json from all "
+      },
+      "commitCount": 38
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Page.json",
+      "sha256": "7b91fc694a847dca30edb2875273b55d8863bbf6e99c973cde1100752fd0da36",
+      "bytes": 19616,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 375,
+      "rangeCount": 127,
+      "reblamePaths": {
+        "null": 39,
+        "Source/JavaScriptCore/inspector/protocol/Page.json": 78,
+        "Source/WebCore/inspector/protocol/Page.json": 10
+      },
+      "earliestVisibleCommit": {
+        "oid": "9fe392ea07f66466335cecd51d8599bade9f50b7",
+        "date": "2013-11-13T21:40:41.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Split Inspector.json into individual domain json files https://bugs.webkit.org/show_bug.cgi?id=124098 Reviewed by Timothy Hatcher. Source/WebCore: Split the Inspector domains into their own json file. Generate a combined Inspector.json from all "
+      },
+      "commitCount": 37
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Recording.json",
+      "sha256": "ff5065961136e62e024036d008b5c020a92aef48f6b597e1cf2815fb5289e97f",
+      "bytes": 3503,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 58,
+      "rangeCount": 20,
+      "reblamePaths": {
+        "null": 7,
+        "Source/JavaScriptCore/inspector/protocol/Recording.json": 13
+      },
+      "earliestVisibleCommit": {
+        "oid": "1122c2bc5608855918a644332c3e8b7503e14220",
+        "date": "2017-07-26T21:45:22.000Z",
+        "committer": "Devin Rousso",
+        "message": "Web Inspector: create protocol for recording Canvas contexts https://bugs.webkit.org/show_bug.cgi?id=174481 Reviewed by Joseph Pecoraro. Source/JavaScriptCore: * inspector/protocol/Canvas.json: - Add `requestRecording` command to mark the provided canvas as ha"
+      },
+      "commitCount": 11
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Runtime.json",
+      "sha256": "5e0758337714ba89c3e1168d8c82bb800466ae752412c998e5b8eadcedd5ec1f",
+      "bytes": 32648,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 413,
+      "rangeCount": 138,
+      "reblamePaths": {
+        "null": 37,
+        "Source/JavaScriptCore/inspector/protocol/Runtime.json": 101
+      },
+      "earliestVisibleCommit": {
+        "oid": "9fe392ea07f66466335cecd51d8599bade9f50b7",
+        "date": "2013-11-13T21:40:41.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Split Inspector.json into individual domain json files https://bugs.webkit.org/show_bug.cgi?id=124098 Reviewed by Timothy Hatcher. Source/WebCore: Split the Inspector domains into their own json file. Generate a combined Inspector.json from all "
+      },
+      "commitCount": 39
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/ScriptProfiler.json",
+      "sha256": "0f2dc16e486851f361b7d4640a75ccdcf503bca1130343846ef9fb023f49ce9e",
+      "bytes": 3748,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 94,
+      "rangeCount": 22,
+      "reblamePaths": {
+        "null": 7,
+        "Source/JavaScriptCore/inspector/protocol/ScriptProfiler.json": 15
+      },
+      "earliestVisibleCommit": {
+        "oid": "69b5a040319c0ebba7f9e69d92bbe911c9cb64b9",
+        "date": "2015-12-17T23:37:48.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Add JSContext Script Profiling https://bugs.webkit.org/show_bug.cgi?id=151899 Reviewed by Brian Burg. Source/JavaScriptCore: Extend JSC::Debugger to include a profiling client interface that the Inspector can implement to be told about script ex"
+      },
+      "commitCount": 8
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Security.json",
+      "sha256": "5dc8d92c0c1cd5ae50206925f1d582de10760281e2c9669a5c606a663cad3de0",
+      "bytes": 1869,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 38,
+      "rangeCount": 8,
+      "reblamePaths": {
+        "null": 4,
+        "Source/JavaScriptCore/inspector/protocol/Security.json": 4
+      },
+      "earliestVisibleCommit": {
+        "oid": "e78a6228c50b470655bdff786db86b64f0c7938f",
+        "date": "2018-11-13T07:07:21.000Z",
+        "committer": "Devin Rousso",
+        "message": "Web Inspector: Network: show secure certificate details per-request https://bugs.webkit.org/show_bug.cgi?id=191447 <rdar://problem/30019476> Reviewed by Joseph Pecoraro. Source/JavaScriptCore: Add Security domain to hold security related protocol types. * CMak"
+      },
+      "commitCount": 4
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/ServiceWorker.json",
+      "sha256": "66e3b59ed76b17d1864027f81c7e07b599500f51a0f4d347980ade9911f9047a",
+      "bytes": 1027,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 28,
+      "rangeCount": 9,
+      "reblamePaths": {
+        "null": 5,
+        "Source/JavaScriptCore/inspector/protocol/ServiceWorker.json": 4
+      },
+      "earliestVisibleCommit": {
+        "oid": "34d354ee47ad1aa73ff66e9f6b566844e355a529",
+        "date": "2017-11-14T19:44:18.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Add a ServiceWorker domain to get information about an inspected ServiceWorker https://bugs.webkit.org/show_bug.cgi?id=179640 <rdar://problem/35517361> Reviewed by Devin Rousso. Source/JavaScriptCore: * CMakeLists.txt: * DerivedSources.make: Gat"
+      },
+      "commitCount": 3
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Storage.json",
+      "sha256": "9a9302688b29bcf8b85d82c05be89e82a0d5ab58e80a01dccab3c17fc60eb8ed",
+      "bytes": 7034,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 114,
+      "rangeCount": 1,
+      "reblamePaths": {
+        "null": 1
+      },
+      "earliestVisibleCommit": {
+        "oid": "74bc5de8363385d200ce43338756dcb6969bd424",
+        "date": "2026-07-13T23:41:39.000-07:00",
+        "committer": "Anuj Panta",
+        "message": "WIP: [SI] Add a Storage domain for cookie inspection https://bugs.webkit.org/show_bug.cgi?id=308900 rdar://171780948 Reviewed by Qianlang Chen. Introduce a new Storage domain (cookies only for this pass) that runs entirely UIProcess-side and talks to the autho"
+      },
+      "commitCount": 1
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Target.json",
+      "sha256": "b13176a366ed8d9ef4e70cd2f7235a0873cc188ce5d11fc079238fc10673f8c8",
+      "bytes": 3117,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 71,
+      "rangeCount": 10,
+      "reblamePaths": {
+        "null": 5,
+        "Source/JavaScriptCore/inspector/protocol/Target.json": 5
+      },
+      "earliestVisibleCommit": {
+        "oid": "e573ea68c782b20d23d8ec9aa4c116888f0b14e4",
+        "date": "2018-11-14T21:03:49.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Keep Web Inspector window alive across process swaps (PSON) (Remote Inspector) https://bugs.webkit.org/show_bug.cgi?id=191494 <rdar://problem/45469854> Reviewed by Devin Rousso. Source/JavaScriptCore: * CMakeLists.txt: * DerivedSources.make: * J"
+      },
+      "commitCount": 5
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Timeline.json",
+      "sha256": "d21e87755ca55d92a2f90a1714b69a8ad0ee0e429f70590848e358781aae44d0",
+      "bytes": 5034,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 129,
+      "rangeCount": 53,
+      "reblamePaths": {
+        "null": 11,
+        "Source/JavaScriptCore/inspector/protocol/Timeline.json": 38,
+        "Source/WebCore/inspector/protocol/Timeline.json": 4
+      },
+      "earliestVisibleCommit": {
+        "oid": "9fe392ea07f66466335cecd51d8599bade9f50b7",
+        "date": "2013-11-13T21:40:41.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Split Inspector.json into individual domain json files https://bugs.webkit.org/show_bug.cgi?id=124098 Reviewed by Timothy Hatcher. Source/WebCore: Split the Inspector domains into their own json file. Generate a combined Inspector.json from all "
+      },
+      "commitCount": 19
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/protocol/Worker.json",
+      "sha256": "5eda858703a9ef01a87783abc940f3829d8fa62272d07fdf37f49a72c1f13b7a",
+      "bytes": 1894,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 53,
+      "rangeCount": 8,
+      "reblamePaths": {
+        "null": 4,
+        "Source/JavaScriptCore/inspector/protocol/Worker.json": 4
+      },
+      "earliestVisibleCommit": {
+        "oid": "735328141e5caea592550a02166e5902ca66f103",
+        "date": "2016-10-27T22:18:55.000Z",
+        "committer": "Joseph Pecoraro",
+        "message": "Web Inspector: Introduce Page WorkerAgent and Worker InspectorController https://bugs.webkit.org/show_bug.cgi?id=163817 <rdar://problem/28899063> Reviewed by Brian Burg. Source/JavaScriptCore: * CMakeLists.txt: * DerivedSources.make: * inspector/protocol/Worke"
+      },
+      "commitCount": 5
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/__init__.py",
+      "sha256": "faf73581039ead7a88fd926d4e45cc004ce8b883b38df5a7224ee8dd9d431b05",
+      "bytes": 1184,
+      "generatorGroup": "inspector",
+      "binding": "MATCH",
+      "lineCount": 25,
+      "rangeCount": 4,
+      "reblamePaths": {
+        "null": 2,
+        "Source/JavaScriptCore/inspector/scripts/codegen/__init__.py": 2
+      },
+      "earliestVisibleCommit": {
+        "oid": "8dbaba67e101e7c12907cab4b794187ae3361bed",
+        "date": "2014-08-15T22:40:33.000Z",
+        "committer": "Brian Burg",
+        "message": "Web Inspector: rewrite CodeGeneratorInspector to be modular and testable https://bugs.webkit.org/show_bug.cgi?id=131596 Reviewed by Joseph Pecoraro. Source/JavaScriptCore: Replace CodeGeneratorInspector.py with generate-inspector-protocol-bindings.py. The new "
+      },
+      "commitCount": 2
+    },
+    {
+      "path": "WebKit/Source/JavaScriptCore/wasm/wasm.json",
+      "sha256": "4f0b9ec4475a3c88cb21e00a4e1d34b4346b6ece542ecf0701b7f6e0825f2aae",
+      "bytes": 88508,
+      "generatorGroup": "bytecode",
+      "binding": "MATCH",
+      "lineCount": 398,
+      "rangeCount": 79,
+      "reblamePaths": {
+        "null": 8,
+        "Source/JavaScriptCore/wasm/wasm.json": 71
+      },
+      "earliestVisibleCommit": {
+        "oid": "f524801f7a61f8e2ff1ae6cd4680e3f5a8a4103d",
+        "date": "2016-10-31T16:24:59.000Z",
+        "committer": "Keith Miller",
+        "message": "autogenerated files from wasm.json should be in derived sources. https://bugs.webkit.org/show_bug.cgi?id=164152 Reviewed by Filip Pizlo. JSTests: Delete generation script since it is no longer used. * wasm/generate-wasmops-header.js: Removed. Source/JavaScript"
+      },
+      "commitCount": 33
+    }
+  ],
+  "limitations": [
+    "Git blame establishes repository line history, not copyright ownership by itself.",
+    "The source offer contains the BSD-2 WebCore LICENSE-APPLE text, but binary notice integration must be verified against the final frozen package.",
+    "JSC runtime image license applicability and the four image/resource worksheet rows remain separate; no image-level UNKNOWN is cleared by this receipt.",
+    "Existing historical generator replay and 89/89 source-offer tests were not repeated because source hashes and harness are unchanged."
+  ],
+  "decision": "The exact 32 input files are now classified as BSD-2-Clause for maintainer source-closure purposes, based on pinned line history and WebKit policy. Per-file copyright attribution and integration into final binary notices remain open; the JSC image is not thereby qualified.",
+  "v122BuildBinding": {
+    "buildReceiptSHA256": "804a60911bf67912d8f17665958f88051b3085a175f145db0fd76fa7ea23bd9c",
+    "buildID": "neantik-v122-fresh-owned-webkit-build-and-staging-20261026",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "sourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "overlayApplicationLogSHA256": "1492e55293943dc85c3f624742daeae30f727796e90f673cebc46ae0e12b19de",
+    "cmakeCacheSHA256": "d79a82d81ca422e1f75cd5a3175065c6992d25ab89c33cea6cbf25660ef68d42",
+    "buildNinjaSHA256": "99284c39a6e3f96eca852c293d7d3f877568d460fb2e31e01f9fd6428a60da34",
+    "buildLogSHA256": "08c476869d46850f8efe6f74794a12943a9ca5ea2d6bfab1f4d299bcb30e988e"
+  },
+  "v135Binding": {
+    "buildReceiptPath": "docs/evidence/neantik-v135-clean-relocated-v132-webkit-relink-20261026.json",
+    "buildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "webkitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "mainSourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "scope": "Exact runtime output identity only; preserves referenced historical source/license reviews without expanding their legal scope."
+  },
+  "currentV424BuildRebind": {
+    "candidateId": "25aea06ab1f84885a5e35f2a75623322",
+    "currentSignedJavaScriptCoreSHA256": "872521a04840be1aa51b65038c4180c7340da7185d7eeae9fa04f443225ce740",
+    "currentBuildOutputSHA256": "fcfce29db5959a47d549b26c6e8539cc5b24ad63abec114189d3053fb9074238",
+    "V382BuildReceiptSHA256": "319afbac5c8a7b55daeb54912b3c7614537a4d26315885127d54694dc3bc7a7f",
+    "V420ReceiptSHA256": "4af630d3134b5da7140593096cdfc7669635ab00cd0a9fb753713b8cc3761715",
+    "currentSourceArchiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+    "exactGeneratorInputsRehashed": 32,
+    "exactGeneratorInputsMatched": 32,
+    "sourceArchiveNote": "The current V20 source archive bytes differ from the archive used by the V135 history review. This rebind compares all 32 exact generator input paths and hashes in the current V20 source tree; it makes no whole-archive equivalence claim.",
+    "scopeLimit": "Factual input-history and notice binding only; not legal advice, not per-file copyright ownership proof, and not a whole-JSC-image license decision."
+  },
+  "portabilityCorrection": {
+    "originalReviewSHA256": "d972d9a6aabeea932a56aa96c2bc551b95294d370f98505aa80ef5e95cd46ba4",
+    "changedFields": [
+      "licenseText.path"
+    ],
+    "description": "Use the source-offer-relative license text path; classification, hashes and rows are unchanged."
+  }
+}

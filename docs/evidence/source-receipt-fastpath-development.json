@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-18",
+  "status": "local-privacy-hotpath-controls-pass;integration-resuming",
+  "scope": "Source-receipt privacy traversal only;no artifact approval cache",
+  "diagnosis": {
+    "originalFullPythonSeconds": 252.006,
+    "originalExitCode": -2,
+    "originalFullRunPass": false,
+    "completedMarkersAtInterruption": 319,
+    "passedMarkers": 310,
+    "skippedMarkers": 9,
+    "sampledCPUPercent": 99,
+    "stackCategory": "regex in repeated receipt privacy traversal",
+    "exactInterruptedTest": "test_chromium_15612_packaged_evidence.PackagedM156Tests.test_exact_copy_and_changed_missing_extra_or_linked_proof_refused",
+    "catastrophicRegexProven": false,
+    "dirtyCheckoutProven": false,
+    "earlierFontTestEstimateWasDiagnosis": false
+  },
+  "change": {
+    "pathlessStringsSkipImpossibleLexicalMatchersOnly": true,
+    "constantSecretKeyNamesPrecomputed": true,
+    "secretFieldAndDepthGuardsRetained": true,
+    "slashBackslashURLChecksRetained": true,
+    "sourcePrivacyTraversalCountUnchanged": true,
+    "proofHashesOrHistoryRewritten": false,
+    "globalApprovalCache": false
+  },
+  "controls": {
+    "targetedTests": 23,
+    "canonicalPayloads": 58,
+    "outputsIdentical": true,
+    "priorLexicalSeconds": 2.708817,
+    "newLexicalSeconds": 1.125386,
+    "lexicalStepSpeedRatio": 2.407
+  },
+  "nativeAppRuntimeChangedByThisOptimization": false,
+  "releaseGate": false,
+  "newReleaseQualified": false,
+  "limits": [
+    "Timing applies only to the lexical projection step over these58 payloads,not whole builds or tests.",
+    "Initial fullPython was interrupted;it is not an all-green run.",
+    "An existing sealed source context must invalidate on any tracked source change.",
+    "Historical observer hashes remain historical;new candidate source pin is required before build."
+  ]
+}

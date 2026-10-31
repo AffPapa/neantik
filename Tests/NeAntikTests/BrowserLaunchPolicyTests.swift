@@ -31,7 +31,8 @@ struct BrowserLaunchPolicyTests {
         #expect(policy.webGPUDisabled)
         #expect(
             policy.disabledFeatures == [
-                "AsyncDns", "DnsOverHttpsUpgrade", "WebGPUService"
+                "AsyncDns", "DnsOverHttpsUpgrade", "DirectSockets",
+                "DirectSocketsInSharedWorkers", "DirectSocketsInServiceWorkers", "WebGPUService"
             ]
         )
         #expect(arguments.contains("--disable-quic"))
@@ -42,7 +43,7 @@ struct BrowserLaunchPolicyTests {
         )
         #expect(
             arguments.contains(
-                "--disable-features=AsyncDns,DnsOverHttpsUpgrade,WebGPUService"
+                "--disable-features=AsyncDns,DirectSockets,DirectSocketsInServiceWorkers,DirectSocketsInSharedWorkers,DnsOverHttpsUpgrade,WebGPUService"
             )
         )
     }
@@ -135,7 +136,7 @@ struct BrowserLaunchPolicyTests {
 
         #expect(policy.fingerprintSeedConfigured)
         #expect(!policy.fingerprintIdentityConfigured)
-        #expect(policy.fingerprintNoiseArgumentsEnabled)
+        #expect(!policy.fingerprintNoiseArgumentsEnabled)
         #expect(environment["NEANTIK_PROFILE_SEED"] != nil)
     }
 }

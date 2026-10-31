@@ -2,19 +2,24 @@ import SwiftUI
 
 struct ProfileCommandPresentation: Equatable, Sendable {
     let profileName: String?
+    var openTitle = "Показать в менеджере"
     let launchTitle: String
     let launchSystemImage: String
     let launchHelp: String
     let launchIsEnabled: Bool
-    let focusIsEnabled: Bool
     let editIsEnabled: Bool
-    let noteIsEnabled: Bool
     let pinTitle: String
     let pinSystemImage: String
     let archiveTitle: String
     let archiveSystemImage: String
     let archiveIsEnabled: Bool
     let deleteIsEnabled: Bool
+    var extensionsIsEnabled = false
+    var engine: BrowserEngine = .chromium
+    var pinIsEnabled: Bool { profileName != nil && (engine == .chromium || editIsEnabled) }
+    var cacheIsEnabled: Bool { profileName != nil && editIsEnabled }
+    var cacheHelp: String { engine == .webkit ? "Очистить HTTP-кэш закрытого WebKit-профиля, сохранив входы и данные сайтов." : "Посчитать и удалить HTTP Cache и Code Cache остановленного профиля, сохранив данные сайтов." }
+    var browserDataIsAvailable: Bool { profileName != nil && engine == .chromium }
 
     static let unavailable = ProfileCommandPresentation(
         profileName: nil,
@@ -22,9 +27,7 @@ struct ProfileCommandPresentation: Equatable, Sendable {
         launchSystemImage: "play.fill",
         launchHelp: "Сначала выбери профиль",
         launchIsEnabled: false,
-        focusIsEnabled: false,
         editIsEnabled: false,
-        noteIsEnabled: false,
         pinTitle: "Закрепить",
         pinSystemImage: "pin",
         archiveTitle: "В архив",
@@ -33,6 +36,10 @@ struct ProfileCommandPresentation: Equatable, Sendable {
         deleteIsEnabled: false
     )
 
+    static func openTitle(for state: BrowserProfileProcessState) -> String {
+        state == .stopped ? "Запустить профиль" : "Показать в менеджере"
+    }
+
     static func resolve(
         profile: BrowserProfile,
         processState: BrowserProfileProcessState,
@@ -40,14 +47,12 @@ struct ProfileCommandPresentation: Equatable, Sendable {
     ) -> Self {
         ProfileCommandPresentation(
             profileName: profile.name,
+            openTitle: openTitle(for: processState),
             launchTitle: launchAction.title,
             launchSystemImage: launchAction.systemImage,
             launchHelp: launchAction.help,
             launchIsEnabled: launchAction.isEnabled,
-            focusIsEnabled: processState.isConfirmedRunning,
-            editIsEnabled:
-                processState == .stopped || processState.isConfirmedRunning,
-            noteIsEnabled: true,
+            editIsEnabled: !processState.isRunning,
             pinTitle: profile.isPinned ? "Открепить" : "Закрепить",
             pinSystemImage: profile.isPinned ? "pin.slash" : "pin",
             archiveTitle:
@@ -57,7 +62,9 @@ struct ProfileCommandPresentation: Equatable, Sendable {
                     ? "arrow.uturn.backward"
                     : "archivebox",
             archiveIsEnabled: !processState.isRunning,
-            deleteIsEnabled: !processState.isRunning
+            deleteIsEnabled: !processState.isRunning,
+            extensionsIsEnabled: profile.engine == .chromium && processState == .stopped && !profile.isArchived && launchAction.isEnabled,
+            engine: profile.engine
         )
     }
 }
@@ -129,12 +136,9 @@ struct ProfileCommandSet {
     let presentation: ProfileCommandPresentation
     let folderOptions: [ProfileFolderCommandOption]
     let hasMoreFolderOptions: Bool
+    let openOrShow: () -> Void
     let toggleRunning: () -> Void
-    let cleanLaunch: () -> Void
-    let focusRunning: () -> Void
     let edit: () -> Void
-    let editTags: () -> Void
-    let editNote: () -> Void
     let togglePinned: () -> Void
     let duplicate: () -> Void
     let moveToFolder: (UUID?) -> Void
@@ -142,17 +146,16 @@ struct ProfileCommandSet {
     let toggleArchived: () -> Void
     let revealInFinder: () -> Void
     let delete: () -> Void
+    var clearCache: () -> Void = {}
+    var openExtensions: () -> Void = {}
 
     static let unavailable = ProfileCommandSet(
         presentation: .unavailable,
         folderOptions: [],
         hasMoreFolderOptions: false,
+        openOrShow: {},
         toggleRunning: {},
-        cleanLaunch: {},
-        focusRunning: {},
         edit: {},
-        editTags: {},
-        editNote: {},
         togglePinned: {},
         duplicate: {},
         moveToFolder: { _ in },
@@ -171,31 +174,42 @@ struct ProfileCommandSet {
 struct WorkspaceCommandSet {
     let isEnabled: Bool
     let selectedFolderName: String?
-    let canToggleInspector: Bool
-    let showsInspector: Bool
     let createProfile: () -> Void
     let createFolder: () -> Void
+    let exportProfiles: () -> Void
+    let exportSupportBundle: () -> Void
+    let saveSnapshot: () -> Void
+    let restoreSnapshot: () -> Void
+    let importProfiles: () -> Void
+    let importBookmarks: () -> Void
+    let exportEncryptedProfiles: () -> Void
+    let importEncryptedProfiles: () -> Void
+    let canUndoMetadata: Bool
+    let undoMetadata: () -> Void
+    let showManagerLibrary: () -> Void
+    let showQuickCommands: () -> Void
     let focusProfileSearch: () -> Void
-    let showShortcutReference: () -> Void
-    let toggleInspector: () -> Void
     let renameSelectedFolder: () -> Void
     let deleteSelectedFolder: () -> Void
-    var showWorkplaceCatalog: () -> Void = {}
-    /// Opens the keyboard-first command surface. Keeping this in the focused
-    /// command set means the menu and palette share the same modal guards.
-    var presentCommandPalette: () -> Void = {}
-    var commandPaletteAction: (WorkspaceCommand) -> Void = { _ in }
 
     static let unavailable = WorkspaceCommandSet(
         isEnabled: false,
         selectedFolderName: nil,
-        canToggleInspector: false,
-        showsInspector: false,
         createProfile: {},
         createFolder: {},
+        exportProfiles: {},
+        exportSupportBundle: {},
+        saveSnapshot: {},
+        restoreSnapshot: {},
+        importProfiles: {},
+        importBookmarks: {},
+        exportEncryptedProfiles: {},
+        importEncryptedProfiles: {},
+        canUndoMetadata: false,
+        undoMetadata: {},
+        showManagerLibrary: {},
+        showQuickCommands: {},
         focusProfileSearch: {},
-        showShortcutReference: {},
-        toggleInspector: {},
         renameSelectedFolder: {},
         deleteSelectedFolder: {}
     )
@@ -231,67 +245,92 @@ struct WorkspaceCommandMenu: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
-            Button("Новое рабочее место…", action: resolved.createProfile)
-                .keyboardShortcut(
-                    NeAntikShortcut.newProfile.keyEquivalent,
-                    modifiers: NeAntikShortcut.newProfile.modifiers
-                )
+            Button("Новый профиль…", action: resolved.createProfile)
+                .keyboardShortcut("n")
                 .disabled(!resolved.isEnabled)
 
             Button("Новая папка…", action: resolved.createFolder)
-                .keyboardShortcut(
-                    NeAntikShortcut.newFolder.keyEquivalent,
-                    modifiers: NeAntikShortcut.newFolder.modifiers
-                )
+                .keyboardShortcut("n", modifiers: [.command, .shift])
                 .disabled(!resolved.isEnabled)
         }
 
         CommandGroup(after: .textEditing) {
-            Button("Найти рабочее место", action: resolved.focusProfileSearch)
-                .keyboardShortcut(
-                    NeAntikShortcut.findProfiles.keyEquivalent,
-                    modifiers: NeAntikShortcut.findProfiles.modifiers
-                )
-                .disabled(!resolved.isEnabled)
-
-            Button("Палитра команд…", systemImage: "command", action: resolved.presentCommandPalette)
+            Button("Быстрые команды…", action: resolved.showQuickCommands)
                 .keyboardShortcut("p", modifiers: [.command, .shift])
+                .disabled(!resolved.isEnabled)
+            Button("Найти профиль", action: resolved.focusProfileSearch)
+                .keyboardShortcut("f")
                 .disabled(!resolved.isEnabled)
         }
 
-        CommandMenu("Рабочее пространство") {
-            Button("Полный каталог", action: resolved.showWorkplaceCatalog)
-                .keyboardShortcut(NeAntikShortcut.workplaceCatalog.keyEquivalent,
-                                  modifiers: NeAntikShortcut.workplaceCatalog.modifiers)
+        CommandMenu("Профили") {
+            Button("Отменить изменение метаданных", action: resolved.undoMetadata)
+                .keyboardShortcut("z", modifiers: [.command, .option])
+                .disabled(!resolved.isEnabled || !resolved.canUndoMetadata)
+
+            Button("Шаблоны, фильтры и журнал…", action: resolved.showManagerLibrary)
                 .disabled(!resolved.isEnabled)
-            Divider()
-            Button(
-                resolved.showsInspector
-                    ? "Скрыть сведения"
-                    : "Показать сведения",
-                systemImage: "sidebar.right",
-                action: resolved.toggleInspector
-            )
-            .keyboardShortcut(
-                NeAntikShortcut.toggleInspector.keyEquivalent,
-                modifiers: NeAntikShortcut.toggleInspector.modifiers
-            )
-            .disabled(
-                !resolved.isEnabled || !resolved.canToggleInspector
-            )
-
-            Divider()
 
             Button(
-                "Сочетания клавиш…",
-                systemImage: "keyboard",
-                action: resolved.showShortcutReference
-            )
-            .keyboardShortcut(
-                NeAntikShortcut.shortcutReference.keyEquivalent,
-                modifiers: NeAntikShortcut.shortcutReference.modifiers
+                "Экспортировать настройки профилей…",
+                systemImage: "square.and.arrow.up",
+                action: resolved.exportProfiles
             )
             .disabled(!resolved.isEnabled)
+            .help("Сохранить настройки профилей в файл. BrowserData, cookies и пароли не входят.")
+
+            Button(
+                "Экспортировать безопасную диагностику…",
+                systemImage: "stethoscope",
+                action: resolved.exportSupportBundle
+            )
+            .disabled(!resolved.isEnabled)
+
+            Button(
+                "Сохранить локальный снимок настроек",
+                systemImage: "clock.arrow.circlepath",
+                action: resolved.saveSnapshot
+            )
+            .disabled(!resolved.isEnabled)
+            .help("Снимок настроек остановленных профилей для создания новых профилей. Это не резервная копия BrowserData, cookies или паролей.")
+
+            Button(
+                "Создать профили из снимка настроек…",
+                systemImage: "arrow.counterclockwise",
+                action: resolved.restoreSnapshot
+            )
+            .disabled(!resolved.isEnabled)
+            .help("Создать новые профили из снимка настроек. Данные сайтов и авторизация не восстановятся.")
+
+            Button(
+                "Импортировать настройки профилей…",
+                systemImage: "square.and.arrow.down",
+                action: resolved.importProfiles
+            )
+            .disabled(!resolved.isEnabled)
+            .help("Импортировать настройки как новые профили без данных сайтов и паролей.")
+
+            Button("Создать профиль из закладок…", systemImage: "bookmark", action: resolved.importBookmarks)
+                .disabled(!resolved.isEnabled)
+                .help("Перенести закладки HTML или Chromium JSON в новый профиль с новой identity. Cookies и пароли не импортируются.")
+
+            Divider()
+
+            Button(
+                "Экспортировать зашифрованные настройки…",
+                systemImage: "lock.doc",
+                action: resolved.exportEncryptedProfiles
+            )
+            .disabled(!resolved.isEnabled)
+            .help("Зашифровать настройки профилей. BrowserData, cookies и пароли прокси не входят.")
+
+            Button(
+                "Импортировать зашифрованные настройки…",
+                systemImage: "lock.open",
+                action: resolved.importEncryptedProfiles
+            )
+            .disabled(!resolved.isEnabled)
+            .help("Создать новые профили из зашифрованного файла настроек без данных сайтов.")
         }
 
         CommandMenu("Папка") {
@@ -329,57 +368,79 @@ struct ProfileCommandMenu: Commands {
 
     var body: some Commands {
         CommandMenu("Профиль") {
-            Button(
-                "Показать окно браузера",
-                systemImage: "macwindow.on.rectangle",
-                action: resolved.focusRunning
-            )
-            .keyboardShortcut(
-                NeAntikShortcut.focusSelectedProfile.keyEquivalent,
-                modifiers: NeAntikShortcut.focusSelectedProfile.modifiers
-            )
-            .disabled(!resolved.presentation.focusIsEnabled)
+            Button(resolved.presentation.openTitle, action: resolved.openOrShow)
+                .disabled(!resolved.hasProfile)
 
             Button(
                 resolved.presentation.launchTitle,
                 systemImage: resolved.presentation.launchSystemImage,
                 action: resolved.toggleRunning
             )
-            .keyboardShortcut(
-                NeAntikShortcut.toggleSelectedProfile.keyEquivalent,
-                modifiers: NeAntikShortcut.toggleSelectedProfile.modifiers
-            )
             .disabled(!resolved.presentation.launchIsEnabled)
-
-            Button("Чистый запуск", systemImage: "sparkles", action: resolved.cleanLaunch)
-                .help("Открыть этот профиль в пустой временной среде")
-                .disabled(!resolved.presentation.launchIsEnabled)
 
             Button(
                 "Изменить…",
                 systemImage: "pencil",
                 action: resolved.edit
             )
-            .keyboardShortcut(
-                NeAntikShortcut.editSelectedProfile.keyEquivalent,
-                modifiers: NeAntikShortcut.editSelectedProfile.modifiers
-            )
             .disabled(!resolved.presentation.editIsEnabled)
 
-            Button(
-                "Изменить заметку…",
-                systemImage: "note.text",
-                action: resolved.editNote
-            )
-            .keyboardShortcut(
-                NeAntikShortcut.editSelectedNote.keyEquivalent,
-                modifiers: NeAntikShortcut.editSelectedNote.modifiers
-            )
-            .disabled(!resolved.presentation.noteIsEnabled)
+            Button("Расширения профиля…", systemImage: "puzzlepiece.extension", action: resolved.openExtensions)
+                .disabled(!resolved.presentation.extensionsIsEnabled)
+                .help("Запустить выбранный профиль на странице управления расширениями Chromium")
 
             Divider()
 
-            ProfileOrganizationActions(commands: resolved, registersShortcuts: true)
+            Button(
+                resolved.presentation.pinTitle,
+                systemImage: resolved.presentation.pinSystemImage,
+                action: resolved.togglePinned
+            )
+            .disabled(!resolved.presentation.pinIsEnabled)
+
+            Button(
+                "Копировать настройки",
+                systemImage: "plus.square.on.square",
+                action: resolved.duplicate
+            )
+            .keyboardShortcut("d")
+            .disabled(!resolved.hasProfile)
+            .help("Создать отдельный профиль из настроек; данные сайтов и заметка не копируются")
+
+            Menu("Переместить в папку", systemImage: "folder") {
+                ForEach(resolved.folderOptions) { option in
+                    Button {
+                        resolved.moveToFolder(option.folderID)
+                    } label: {
+                        Label(
+                            option.title,
+                            systemImage:
+                                option.isSelected
+                                    ? "checkmark"
+                                    : (option.folderID == nil
+                                        ? "tray"
+                                        : "folder")
+                        )
+                    }
+                }
+
+                if resolved.hasMoreFolderOptions {
+                    Divider()
+                    Button(
+                        "Выбрать другую папку…",
+                        systemImage: "magnifyingglass",
+                        action: resolved.chooseFolder
+                    )
+                }
+            }
+            .disabled(!resolved.hasProfile)
+
+            Button(
+                resolved.presentation.archiveTitle,
+                systemImage: resolved.presentation.archiveSystemImage,
+                action: resolved.toggleArchived
+            )
+            .disabled(!resolved.presentation.archiveIsEnabled)
 
             Divider()
 
@@ -388,7 +449,11 @@ struct ProfileCommandMenu: Commands {
                 systemImage: "folder",
                 action: resolved.revealInFinder
             )
-            .disabled(!resolved.hasProfile)
+            .disabled(!resolved.presentation.browserDataIsAvailable)
+
+            Button("Очистить кэш…", systemImage: "arrow.triangle.2.circlepath", action: resolved.clearCache)
+                .disabled(!resolved.presentation.cacheIsEnabled)
+                .help(resolved.presentation.cacheHelp)
 
             Divider()
 

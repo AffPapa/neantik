@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "V382",
+  "observedAtUTC": "2026-10-28T05:14:48Z",
+  "status": "PASS_FILTERED_WEBKIT_ARCHIVE_AND_DEPLOYMENT_SCOPE_CONFIGURE; SOURCE_OFFER_INTEGRATION_AND_RUNTIME_OPEN",
+  "scope": "Derived a detached filtered archive from the exact pinned V372 WebKit archive, omitting only two model source assets with UNKNOWN rights; archive integrity and exclusion configure evidence are recorded. Clean macOS 15.4 configure passed and the deployment-scope guard correctly rejected 26.0. No source-offer consumer, license/notices, full build, candidate, signature, runtime, publication or downloaded-byte gate was changed or passed.",
+  "inputs": {
+    "upstreamArchive": "/private/tmp/neantik-release-v1/dist/private/source-offers/v372-webkitlegacy-resource-license-binding/upstream/WebKit-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c.tar.zst",
+    "upstreamArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "upstreamTree": "86b6ee8faf130e81a149280914e4ea5718f60129",
+    "filteredArchive": "/private/tmp/neantik-v382-webkit-no-model-assets.tar.zst",
+    "filteredArchiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+    "filteredArchiveBytes": 1603356903,
+    "filteredArchiveUncompressedBytes": 6399907840,
+    "inventoryComparison": "PASS: 493632 entries equal upstream inventory after excluding exactly the two listed assets; excluded paths absent; zstd -t passed",
+    "excludedAssets": [
+      {
+        "path": "WebKit/Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+        "sha256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f"
+      },
+      {
+        "path": "WebKit/Source/WebKit/Resources/ResourceLoadStatistics/corePrediction_model",
+        "sha256": "221555a2cdd2e957f18d478c4b9fd01f308c1613e6e10840cce924e5f543091a"
+      }
+    ],
+    "patch": "/private/tmp/neantik-v382-deployment-target-scope.patch",
+    "patchSHA256": "5889129ffef355e29e4db9ca5d5ca47f2865e030523c6f4de9fdc5ef869cfdf6",
+    "priorGates": [
+      "V377 TextExtractionFilter model gate",
+      "V381 CorePrediction model gate"
+    ]
+  },
+  "configure": {
+    "deploymentTarget": "15.4",
+    "architecture": "arm64",
+    "sdk": "macosx27.0",
+    "sourceTree": "/private/tmp/neantik-v382-filtered-webkit-source-20261028/WebKit",
+    "buildTree": "/private/tmp/neantik-v382-filtered-source-configure-20261028/build",
+    "configureLogSHA256": "85b747d21ba6bad0745eb3378bc7e7753a2dbc226cae630284a2e842d3ad6810",
+    "cmakeCacheSHA256": "4ab22c1d4e0281af81a7296e78acfb294ca99ba9798f87dfdc38946d7a63c682",
+    "buildNinjaSHA256": "9449312e8e0aee36e01fb90217eaa0186f86465650d07625047456b72bb5c779",
+    "exitCode": 0,
+    "modelSourceFilesAbsent": true,
+    "modelTargetsAndOutputReferencesAbsent": true,
+    "fullBuild": false
+  },
+  "scopeGuard": {
+    "deploymentTarget": "26.0",
+    "logSHA256": "06f1904a0fb3997cfb54daa665caedf1f279903cf940f79de58a9c2e250a2ff4",
+    "exitCode": 1,
+    "expectedGuardMessage": "This filtered NeAntik WebKit source offer supports deployment targets below macOS 26.0"
+  },
+  "limitations": [
+    "Filtered archive is not integrated into a V382 detached source-offer manifest or release consumer.",
+    "Runtime resource rows remain UNKNOWN until package binding or are removed only after exact candidate proof.",
+    "Removing model source assets does not establish license rights; it avoids distributing those assets only if the final package also omits their compiled outputs.",
+    "No full WebKit build, stage, candidate, signing, notarization, publication, or downloaded-byte verification."
+  ],
+  "actions": {
+    "sourceOfferChanged": false,
+    "build": false,
+    "stage": false,
+    "candidateMutation": false,
+    "signOrNotarize": false,
+    "publish": false
+  },
+  "nextAction": "Integrate the filtered archive and scope patch into a detached source-offer derivative; regenerate its manifest and source crosswalk/notices, then run the exact consumer preflight. Separately freeze Chromium .74 inputs before any full WebKit build; do not repeat timestamp signing without a new observable environment change."
+}

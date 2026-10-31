@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "upstream": "HaGeZi Multi LIGHT",
+  "source": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/light-onlydomains.txt",
+  "fetchedAt": "2026-10-31T13:44:51.173148+00:00",
+  "sourceSHA256": "9338e73ea81523498a648ac3a85712a7b3bebf6bb473c009bb3fccc91f3a753b",
+  "rulesSHA256": "79a323d17916c2edac35def4e56c88f983dafe8018315ebeab10fada78697657",
+  "domains": 77852,
+  "license": "GPL-3.0",
+  "sourceSnapshot": "runtime/site-protection-data/hagezi-light/upstream-domains.txt",
+  "scope": "Basic third-party ads/trackers/telemetry and some badware; not complete protection",
+  "updatePolicy": "Bundled snapshot updated with NeAntik releases; CERT feed refresh is separate",
+  "conversion": "Modified/converted by NeAntik; no endorsement"
+}

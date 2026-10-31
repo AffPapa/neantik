@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import re
 import subprocess
 import sys
@@ -11,7 +12,8 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-MAXIMUM_SCANNED_BLOB_BYTES = 4 * 1024 * 1024
+SCAN_CHUNK_BYTES = 1024 * 1024
+SCAN_OVERLAP_BYTES = 1024
 FORBIDDEN_NAMES = {".env", "credentials.json", "service-account.json"}
 FORBIDDEN_SUFFIXES = {
     ".key",
@@ -43,6 +45,35 @@ SECRET_PATTERNS = {
 
 class HistorySecretAuditError(RuntimeError):
     pass
+
+
+def nonsecret_pem_check_spans(data: bytes, paths: set[str]) -> list[tuple[int, int]]:
+    """A header-only startswith check contains no key bytes. Everything else
+    retains the original marker refusal, including incomplete/invalid source.
+    There are no filename hashes or per-repository secret exceptions.
+    """
+    if not paths or not all(Path(path).suffix == ".py" for path in paths):
+        return []
+    try:
+        tree = ast.parse(data.decode("utf-8"))
+    except (SyntaxError, UnicodeError, ValueError, RecursionError):
+        return []
+    lines = data.splitlines(keepends=True); offsets = [0]
+    for line in lines: offsets.append(offsets[-1] + len(line))
+    headers = {"-----BEGIN " + kind + "PRIVATE KEY-----\n" for kind in ("", "RSA ", "EC ", "OPENSSH ")}
+    spans = []
+    for call in ast.walk(tree):
+        if not (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
+                and call.func.attr == "startswith" and len(call.args) == 1 and not call.keywords):
+            continue
+        value = call.args[0]
+        if not isinstance(value, ast.Constant) or not isinstance(value.value, (str, bytes)):
+            continue
+        content = value.value.decode("ascii", errors="replace") if isinstance(value.value, bytes) else value.value
+        if content in headers:
+            spans.append((offsets[value.lineno - 1] + value.col_offset,
+                          offsets[value.end_lineno - 1] + value.end_col_offset))
+    return spans
 
 
 def git_output(repo: Path, *arguments: str) -> bytes:
@@ -93,8 +124,24 @@ def read_batch_header(stream: object) -> tuple[str, str, int]:
 
 def audit(repo: Path = PROJECT_ROOT) -> tuple[int, int]:
     repo = repo.resolve()
+    if git_output(repo, "rev-parse", "--is-shallow-repository").strip() != b"false":
+        raise HistorySecretAuditError(
+            "Cannot audit complete history from a shallow repository. Fetch full history first."
+        )
     objects = reachable_objects(repo)
     findings: list[str] = []
+    # rev-list deduplicates objects and retains only one traversal path for a
+    # blob. Check names independently, including both sides of every rename
+    # and merge, so moving identical bytes cannot hide an earlier secret file.
+    historical_paths = git_output(
+        repo, "log", "--all", "--format=", "--name-only", "-z", "--no-renames", "--root", "-m"
+    )
+    for raw_path in sorted(set(historical_paths.split(b"\0"))):
+        if not raw_path:
+            continue
+        path = raw_path.decode("utf-8", errors="surrogateescape")
+        if reason := unsafe_path_reason(path):
+            findings.append(f"historical path {path}: {reason}")
     scanned_blobs = 0
     process = subprocess.Popen(
         ["git", "-C", str(repo), "cat-file", "--batch"],
@@ -109,8 +156,26 @@ def audit(repo: Path = PROJECT_ROOT) -> tuple[int, int]:
             process.stdin.write(requested_oid.encode("ascii") + b"\n")
             process.stdin.flush()
             actual_oid, object_type, size = read_batch_header(process.stdout)
-            payload = process.stdout.read(size)
-            if len(payload) != size or process.stdout.read(1) != b"\n":
+            # Scan large blobs as well; a size ceiling must not silently turn
+            # unexamined public bytes into a passing privacy verdict.
+            remaining = size
+            tail = b""
+            matched_labels: set[str] = set()
+            while remaining:
+                chunk = process.stdout.read(min(remaining, SCAN_CHUNK_BYTES))
+                if not chunk:
+                    raise HistorySecretAuditError("git cat-file returned truncated data")
+                remaining -= len(chunk)
+                if object_type == "blob":
+                    window = tail + chunk
+                    for label, pattern in SECRET_PATTERNS.items():
+                        matches = list(pattern.finditer(window))
+                        marker_spans = nonsecret_pem_check_spans(window, paths) if label == "private key" and matches else []
+                        if any(not any(start <= match.start() and match.end() <= end for start, end in marker_spans)
+                               for match in matches):
+                            matched_labels.add(label)
+                    tail = window[-SCAN_OVERLAP_BYTES:]
+            if process.stdout.read(1) != b"\n":
                 raise HistorySecretAuditError("git cat-file returned truncated data")
             if actual_oid != requested_oid or object_type != "blob":
                 continue
@@ -120,11 +185,8 @@ def audit(repo: Path = PROJECT_ROOT) -> tuple[int, int]:
                 if reason := unsafe_path_reason(path):
                     findings.append(f"{requested_oid} {display_path}: {reason}")
                     break
-            if size > MAXIMUM_SCANNED_BLOB_BYTES:
-                continue
-            for label, pattern in SECRET_PATTERNS.items():
-                if pattern.search(payload):
-                    findings.append(f"{requested_oid} {display_path}: {label}")
+            for label in matched_labels:
+                findings.append(f"{requested_oid} {display_path}: {label}")
         process.stdin.close()
         return_code = process.wait(timeout=30)
         if return_code != 0:

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T12:32:35.251155+00:00",
+  "status": "private-signed-Dev-ZIP-exact-byte-preflight-PASS;not-notarized-or-launched",
+  "source": "current dirty implementation worktree, arm64 release manager build with qualification feature flag; based on candidate139 Dev owned-WebKit/Chromium runtime copied to a new private stage, manager replaced and current notices installed; candidate139 bytes preserved",
+  "managerBuild": {
+    "build": "141",
+    "path": "/private/tmp/neantik-dev-manager-20261025/build/arm64-apple-macosx/release/NeAntik",
+    "qualificationMode": true,
+    "sourceBinarySHA256": "39a4f7d425c9a58f0a7a31cc944564a6c9a9cf68da3edbfaafee46b57328cfa5",
+    "signedStagedBinarySHA256": "4e80f4b54d18a26c6d0ce3bfb36af58905fcf218d08d3dad4f9a95199377564d"
+  },
+  "sourceApp": "/private/tmp/neantik-dev-assembled-141-20261025/NeAntik.app",
+  "fixture": {
+    "root": "/private/tmp/neantik-devqa141-seed-20261025",
+    "seedSHA256": "fcf7a07cfe21282194f2e946ae53ff120c333014c026514f5a0247ebe6103a58",
+    "origin": "code-generated synthetic two-profile schema-5 pair; shape verified with recipient-qa-fixture, not app-produced and not runtime-qualified"
+  },
+  "archive": {
+    "path": "/private/tmp/neantik-owned-webkit-qa-5hhhlamj/NeAntik-1.0.0-141-dev-owned-webkit-qa.zip",
+    "sha256": "59e47bc715493a36f4240a777966551d98d07886c700527303638d915e4127e5",
+    "bytes": 247562250,
+    "stageReceipt": "/private/tmp/neantik-owned-webkit-qa-5hhhlamj/stage.json",
+    "runPlan": "/private/tmp/neantik-owned-webkit-qa-5hhhlamj/run-plan.json",
+    "launcherSHA256": "388bc5f6ae41cac87f9e525ca51e97a2659c9a1e0cd5e097bf323e07475ec1b3"
+  },
+  "staticChecks": {
+    "sourceAppDeepStrictSignature": "PASS",
+    "currentOwnedWebKitNotices": "PASS",
+    "managerHostRuntimeNetworkPin": "PASS",
+    "exactZIPInspector": "PASS",
+    "SwiftLauncherCheckOnly": "PASS"
+  },
+  "failedFirstAttempt": "Producer invoked swift interpreter on @main file; no ZIP retained. Diagnosed compiler error and changed producer to swiftc -parse-as-library; second attempt PASS.",
+  "appleSubmission": false,
+  "nativeLaunch": false,
+  "releaseQualified": false,
+  "nextAction": "Resolve notary Keychain profile route without creating credentials; if using this synthetic seed for native QA, treat profile-origin limitation explicitly and require actual app/runtime behavior before any PASS. Continue 82 license UNKNOWN and matching source/relink."
+}

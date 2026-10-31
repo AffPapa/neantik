@@ -1,0 +1,1086 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "920464429410e4ca0f490644f94a84a7b9d7966a19fc89967d040f869cfc578e",
+  "payload": {
+    "outputFilesInspected": 150725,
+    "records": [
+      {
+        "device": 16777230,
+        "inode": 118712137,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/resources/accessibility/reading_mode_gdocs_helper/gdocs_script.js"
+        ],
+        "path": "chrome/browser/resources/chromeos/accessibility/common/gdocs_script.js",
+        "sha256": "d291adabcfcb1a4a4a2ffacdd9d04fdb473ab0d6903556bef7446be9c3646d86",
+        "sizeBytes": 1425,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714368,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api/geic_api.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api/geic_api.ts",
+        "sha256": "2c25a45678c8f4f2671a6425fcb117f58555fe1d2bfee61c4ffe423bdde765eb",
+        "sizeBytes": 1192,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714369,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api/glic_api.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api/glic_api.ts",
+        "sha256": "3c359a904cceac6bbe537afcf52b97ba46096be95de8faef813834251fecadfc",
+        "sizeBytes": 81809,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714370,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api/glic_api_generated.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api/glic_api_generated.ts",
+        "sha256": "c0f8751cef8f7e800a12c0e1f609ed28dc6a598882ea7b4c73c15d8d66b05243",
+        "sizeBytes": 55876,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714374,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/actor/actor_client.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/actor/actor_client.ts",
+        "sha256": "0c72ef5db0fc555937263eb57a7a93b722b335c16f3c7b5e6250375cc6399cfa",
+        "sizeBytes": 27416,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714376,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/annotation/annotation_client.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/annotation/annotation_client.ts",
+        "sha256": "d8bf01d69ac938f1612d25c0cfa656bf7065c4089741ceafdae898ca2a0813fd",
+        "sizeBytes": 4360,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714378,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/client/glic_api_client.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/client/glic_api_client.ts",
+        "sha256": "eea434c4fd2ef701afcba77ed9bf284d613361cab878f83257c4bd7d7682417b",
+        "sizeBytes": 55473,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714379,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/client/glic_client_common.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/client/glic_client_common.ts",
+        "sha256": "f6e7487d3a0af0e2860f29706744d1e0916d8702b1df6d58fb2991153b06b379",
+        "sizeBytes": 4339,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714380,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/client/image_utils.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/client/image_utils.ts",
+        "sha256": "dd89131a6222f421fc9114f321bee3b0a2a4ffb6ff05df30df485e9caca39e3a",
+        "sizeBytes": 5162,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714381,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/client/observable_set_by_tab_id.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/client/observable_set_by_tab_id.ts",
+        "sha256": "9de84abf7516d1f984ba1d76f1ca9a42dd7b0f958d23206be78e0d1c25659311",
+        "sizeBytes": 4323,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714382,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/conversions.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/conversions.ts",
+        "sha256": "734c332a0b1ad668efef051e0eb388866b0c36e49c31d5cb9ae7aba9be44c53c",
+        "sizeBytes": 3394,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714384,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/experimental_triggering/experimental_triggering_client.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/experimental_triggering/experimental_triggering_client.ts",
+        "sha256": "412ac125f909fef01fddd7948f7d4769a5edf94c61a7adb29a31363dea859533",
+        "sizeBytes": 9033,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714387,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/geic/geic_client.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/geic/geic_client.ts",
+        "sha256": "925b585522dc0f940c450cf501a7bad29b0cce36a131e4fc882ebbf8d1f0000b",
+        "sizeBytes": 2070,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714402,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/glic_api_injected_client.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/glic_api_injected_client.ts",
+        "sha256": "a56ab197270443af5cc1f9fc4702fe8d4f22db67248e77eb1de0e1ca09f556bc",
+        "sizeBytes": 2780,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714403,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/guest_load_time_data.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/guest_load_time_data.ts",
+        "sha256": "e28f38bffd2d08b402e5ea169104eedd0a73ffb7b9fd4f55b66a692a2d41941a",
+        "sizeBytes": 623,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714405,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/host/conversions.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/host/conversions.ts",
+        "sha256": "89933eb5118dcd454a5df7a063f788c74127439452a9be28c937438b7dbadda6",
+        "sizeBytes": 32233,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714406,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/host/glic_api_host.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/host/glic_api_host.ts",
+        "sha256": "f77df1de217ed159c5303cbd7772da524a5d00d5dc7fe5ddca5d09ffa52d2646",
+        "sizeBytes": 9466,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714407,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/host/host_from_client.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/host/host_from_client.ts",
+        "sha256": "cfb909a5792c8cc356b4a31001a0171da412a681318bc9b5fc15be994b43580c",
+        "sizeBytes": 15529,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714408,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/host/host_utils.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/host/host_utils.ts",
+        "sha256": "7dba8beff75fad44d4e5e28622d04a54647e9b79ee86e103d5bbb0dfc6554068",
+        "sizeBytes": 2603,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714409,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/host/types.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/host/types.ts",
+        "sha256": "22d1ced113fb65b95c0c1e1e03a799c11e5e2a28c6a0c33e0195fddff6f13b7d",
+        "sizeBytes": 246,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714410,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/mojo_bindings_stub.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/mojo_bindings_stub.ts",
+        "sha256": "f053b16d1246c087e6ee6d27a6e25458c704d3b42aa9b6761648acb6aea3cd72",
+        "sizeBytes": 298,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714411,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/mojo_logging.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/mojo_logging.ts",
+        "sha256": "85c3217b2b0711234dc82235d569cf40affaf678208a3ccaac1847a7aab2059c",
+        "sizeBytes": 4641,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714412,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/request_types.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/request_types.ts",
+        "sha256": "dd779a6ce6807ea93f935b3aac67bce0188b12568e8cb7a0b9cbd73e7eb127ed",
+        "sizeBytes": 21722,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714414,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/skills/skills_client.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/skills/skills_client.ts",
+        "sha256": "b90d17eafc30b1b77a67f724c60aa780216a1e024cd2ca1d7f02c330337c79d7",
+        "sizeBytes": 8585,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714416,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/tools/tools_client.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/tools/tools_client.ts",
+        "sha256": "472cf08ab59bbb06f8c5e501f7bbda9aa917a8747f6aa9c2537f2dad3d63569d",
+        "sizeBytes": 8711,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714418,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/transport/messaging.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/transport/messaging.ts",
+        "sha256": "13e1cf8d5b989c243cfcf776f380cb45faf3c5c1c149536a2badff2a7631acf7",
+        "sizeBytes": 4428,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714419,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/transport/post_message_transport.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/transport/post_message_transport.ts",
+        "sha256": "b61d6050cf73504e867a006bc9b6f5d78543cb140bb97c1df67ffb998b7fa45e",
+        "sizeBytes": 30400,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714421,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/glic_api_impl/zero_state_suggestions/zero_state_suggestions_client.ts"
+        ],
+        "path": "chrome/browser/resources/glic/glic_api_impl/zero_state_suggestions/zero_state_suggestions_client.ts",
+        "sha256": "e23abf3929d9a583bb668f99fe0efa11064e9b442e30c99184a4e522f5aab506",
+        "sizeBytes": 4141,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714434,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/observable.ts"
+        ],
+        "path": "chrome/browser/resources/glic/observable.ts",
+        "sha256": "a563941970f2d02ac7bc7088f34bba2f8e828d8395ed399381fcbc46f09e2928",
+        "sizeBytes": 8970,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714462,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/task_queue.ts"
+        ],
+        "path": "chrome/browser/resources/glic/task_queue.ts",
+        "sha256": "293cf734f9eb7e869531e7c512b7dc6e72c3dde4ca9b81cef3495aca2ff768ad",
+        "sizeBytes": 1092,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118714463,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/glic/glic_api_tsc_input/timer.ts"
+        ],
+        "path": "chrome/browser/resources/glic/timer.ts",
+        "sha256": "6abe5db92fae3a0cd9b62a1afcb1ca919c9bce0b3873a47a7204d057dc5c9e89",
+        "sizeBytes": 1299,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118780923,
+        "links": 5,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/tab_strip_internals/preprocessed/node_id_converter.ts",
+          "out/NeAntikM156Qualified20261009/gen/chrome/browser/resources/webui_browser/preprocessed/node_id_converter.ts",
+          "out/NeAntikM156Qualified20261009/gen/components/browser_apis/tab_strip/node_id_converter.ts",
+          "out/NeAntikM156Qualified20261009/gen/components/browser_apis/tab_strip/resources/preprocessed/node_id_converter.ts"
+        ],
+        "path": "components/browser_apis/tab_strip/node_id_converter.ts",
+        "sha256": "524477b1792080a7ae491117ebc03bffcc8a014dc2e3990b96a39fc037e1c430",
+        "sizeBytes": 1072,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118880641,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/mojo/public/mojom/base/jserror_converter.ts"
+        ],
+        "path": "mojo/public/mojom/base/jserror_converter.ts",
+        "sha256": "ac3c00e1caf5a5fd71a5ea61e7894b836e6c72136aa057c8129a7a8b2633b087",
+        "sizeBytes": 794,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118880656,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/mojo/public/mojom/base/string16_converter.ts"
+        ],
+        "path": "mojo/public/mojom/base/string16_converter.ts",
+        "sha256": "79bb148468850e1608487e12f259514efca1050078827e63ade16fac73fdc3e8",
+        "sizeBytes": 1396,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118880660,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/mojo/public/mojom/base/time_converters.ts"
+        ],
+        "path": "mojo/public/mojom/base/time_converters.ts",
+        "sha256": "3afec47fda6f4c441bc648faab552cea15be5423f9e89ddfcf400a94bfcd2d35",
+        "sizeBytes": 458,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118880663,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/mojo/public/mojom/base/unguessable_token_converter.ts"
+        ],
+        "path": "mojo/public/mojom/base/unguessable_token_converter.ts",
+        "sha256": "baef6c63655b2ae4cea15a980dfd65028a64d6a3e598bca75fe1c47e51a97019",
+        "sizeBytes": 1438,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 118887137,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/package.json"
+        ],
+        "path": "package.json",
+        "sha256": "dff52d6b799f4b6dc7ab2d4af7fe7663d2e8249458ae4aeff2caf420e1d7ae6e",
+        "sizeBytes": 452,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119394520,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/third_party/devtools-frontend/src/front_end/generated/protocol-mapping.d.ts"
+        ],
+        "path": "third_party/devtools-frontend/src/front_end/generated/protocol-mapping.d.ts",
+        "sha256": "bffc6635e14c2c1e67e98fc0ce38dd575ff3679873d6ddefb325fdeb6ff056a6",
+        "sizeBytes": 209170,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119394521,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/third_party/devtools-frontend/src/front_end/generated/protocol-proxy-api.d.ts"
+        ],
+        "path": "third_party/devtools-frontend/src/front_end/generated/protocol-proxy-api.d.ts",
+        "sha256": "340bac2017fbf462b02f40017bebb04d122d32871beaee22fc6650fe9649a4a8",
+        "sizeBytes": 209662,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119400502,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/resources/inspector_overlay/inspector_overlay_resources.grd"
+        ],
+        "path": "third_party/devtools-frontend/src/inspector_overlay/resources.grd",
+        "sha256": "5bbd199200f04f0d8d5866ca4faf215cdd49376b8698ac18183ae50046b79f30",
+        "sizeBytes": 496,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119454894,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/icudtl.dat"
+        ],
+        "path": "third_party/icu/common/icudtl.dat",
+        "sha256": "319501bd0fdf9c9cb9926c0d0fd64ed95961118af700fbb4342981f088e73e8c",
+        "sizeBytes": 10822000,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119497158,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/third_party/litert/src/litert/build_common/build_config.h"
+        ],
+        "path": "third_party/litert/src/litert/build_common/config/build_config_gpu.h",
+        "sha256": "43957016e5f78881be3a53f57b3e2678278bd6d77d00314553bafe204d022b62",
+        "sizeBytes": 754,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148506,
+        "links": 2,
+        "mode": 493,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/__init__.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/__init__.py",
+        "sha256": "5b3af98ae1b57e1de43e10adf3714503364f9d3ca3dfb596524c0a997d8f265b",
+        "sizeBytes": 349,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148507,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/any.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/any.py",
+        "sha256": "c90e0a770b8c79be8661dd7524d665cad940e77d129a3b071cc218910899ea9d",
+        "sizeBytes": 1324,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148512,
+        "links": 2,
+        "mode": 493,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/descriptor.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/descriptor.py",
+        "sha256": "c82e91904557558e317ed4bbc12ed94e7a3b2fd6285a00cb42526c3e5a9eaf3d",
+        "sizeBytes": 53321,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148513,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/descriptor_database.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/descriptor_database.py",
+        "sha256": "51bc95aac632c881e7fd7dc12e33ae8ef6e093e66f7978ab4018f4fb5cf5969d",
+        "sizeBytes": 6345,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148514,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/descriptor_pb2.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/descriptor_pb2.py",
+        "sha256": "1fc7fde70dd922b96fc2a8d006e6a79ecd47ac2b4f9b281c9572e9f4991e31ae",
+        "sizeBytes": 369823,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148515,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/descriptor_pool.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/descriptor_pool.py",
+        "sha256": "8d49f57de01248141361719819f37f994c41c057e6a8834d1663bf3b790ea4f6",
+        "sizeBytes": 49027,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148516,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/duration.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/duration.py",
+        "sha256": "760726b00e13605759b9400abe3114fdae3d8174bf3d0a66dd510f2883733cdc",
+        "sizeBytes": 2675,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148518,
+        "links": 2,
+        "mode": 493,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/__init__.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/__init__.py",
+        "sha256": "d84335c9e7fae8099f595f9407809ea95ae181d9fb685ba568a4c51461a9b9c2",
+        "sizeBytes": 274,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148521,
+        "links": 2,
+        "mode": 493,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/api_implementation.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/api_implementation.py",
+        "sha256": "732183edda12c8b742bd8ccda33111cc4b3d8f5f3dcd105867c3e48c428dedf5",
+        "sizeBytes": 4621,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148522,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/builder.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/builder.py",
+        "sha256": "f081a4b9a6ffd5860a6b3863cc0dcc8a9b713c5145da2925aa2c7b2b764b8bb4",
+        "sizeBytes": 4163,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148523,
+        "links": 2,
+        "mode": 493,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/containers.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/containers.py",
+        "sha256": "3750ddc124176fd39705396eeeae9e20759365b9ffbe15ed6bc0d19983466b32",
+        "sizeBytes": 25620,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148524,
+        "links": 2,
+        "mode": 493,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/decoder.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/decoder.py",
+        "sha256": "33bbf78329f112000926202ca770cfb7b638ae217bea3889d8ad91c340045fe7",
+        "sizeBytes": 37855,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148532,
+        "links": 2,
+        "mode": 493,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/encoder.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/encoder.py",
+        "sha256": "6f31e1e91eb911e3e38cc3839164254a2d9532b12c542ae6b463a36995b0234a",
+        "sizeBytes": 27019,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148533,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/enum_type_wrapper.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/enum_type_wrapper.py",
+        "sha256": "07db8d61f7cfa55345a6326f6074c0de9879a076a928efe041398af25c46cde5",
+        "sizeBytes": 3902,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148534,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/extension_dict.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/extension_dict.py",
+        "sha256": "9086ad78f13d1192d1b7cc84339d990d159df383f203e722d7a119c1e954d422",
+        "sizeBytes": 7265,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148537,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/field_mask.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/field_mask.py",
+        "sha256": "6e08f6fc34790820abefcec2faa4cb9e1d6669f772ae5b1dc345447bf9680b35",
+        "sizeBytes": 11320,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148552,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/message_listener.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/message_listener.py",
+        "sha256": "7e20253b0cc19aa9945f0703d831262583ffee4a2c49b07decf47ee981b236c7",
+        "sizeBytes": 2008,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148572,
+        "links": 2,
+        "mode": 493,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/python_edition_defaults.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/python_edition_defaults.py",
+        "sha256": "7fb7071b6bc4845347c1f3312dcb8de0451949a476cbff94af7a793fa3097118",
+        "sizeBytes": 645,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148574,
+        "links": 2,
+        "mode": 493,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/python_message.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/python_message.py",
+        "sha256": "e96cfd4bc319f648f1e1bfba84dfb14325f42a12e24dc7a7f0f34f52c8bac9e0",
+        "sizeBytes": 59722,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148593,
+        "links": 2,
+        "mode": 493,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/type_checkers.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/type_checkers.py",
+        "sha256": "7bce7c3965d6b8effc59cc5a2d3535cace9d59685185237e30a49328adc03227",
+        "sizeBytes": 16832,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148595,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/well_known_types.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/well_known_types.py",
+        "sha256": "c9d564c17d883ab4ed3f235328432f9ae6b103cf165a39a29f597da01fdfb8b4",
+        "sizeBytes": 23345,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148598,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/internal/wire_format.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/internal/wire_format.py",
+        "sha256": "d2dd0306027223dba59383ddeb99dcac8c8f4ea008a30a279647724dab65a375",
+        "sizeBytes": 7115,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148600,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/json_format.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/json_format.py",
+        "sha256": "ff24132f8bd6c012fc7627ef25617dc03773289467e5ee15870ac8a523cdb7a0",
+        "sizeBytes": 39427,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148604,
+        "links": 2,
+        "mode": 493,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/message.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/message.py",
+        "sha256": "81e225d8338b1070cc58540cc499b037e1cc68b9aa0797ca8c7da46c49c961a1",
+        "sizeBytes": 15608,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148605,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/message_factory.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/message_factory.py",
+        "sha256": "7b746231c1a91b890f98ee377a6a794bf1df35db1a5cdcf042257b9f5a4474ba",
+        "sizeBytes": 6611,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148606,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/proto.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/proto.py",
+        "sha256": "83c112c806258488d7724a53a91d73177797f8510e14941c0372e0cbc6c768c1",
+        "sizeBytes": 4403,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148609,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/proto_builder.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/proto_builder.py",
+        "sha256": "a21c42d6118c0340baa97485d99f251a518726a4afc03852429ddac49c16e4d4",
+        "sizeBytes": 4249,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148610,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/proto_json.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/proto_json.py",
+        "sha256": "ec414a61a96faf4332a3a4479473a3f1ca701616b7dd6b4a5e3228523b363ff1",
+        "sizeBytes": 2966,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148611,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/proto_text.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/proto_text.py",
+        "sha256": "17f51bd35b9587c67f028aacf82062c3ad132f8f69640026f8758c805ee8d9b0",
+        "sizeBytes": 4649,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148649,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/reflection.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/reflection.py",
+        "sha256": "feb2235110b1b989d9deabf1766d0c5c70db234bb08b277df409dfb598281809",
+        "sizeBytes": 1247,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148650,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/runtime_version.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/runtime_version.py",
+        "sha256": "e58327f339aeaf7633b08cf3e713be7ea476cf396c16488273c8d19b92140864",
+        "sizeBytes": 3040,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148651,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/service_reflection.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/service_reflection.py",
+        "sha256": "a14e400454a40c30d0fc60b9a5acb86d69a197664b20629aaf6daebf8f565db0",
+        "sizeBytes": 10108,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148652,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/symbol_database.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/symbol_database.py",
+        "sha256": "dea860011d12860b9b3e45d400d2809585af1528b881659454bcb132a81d1bac",
+        "sizeBytes": 5752,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148655,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/text_encoding.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/text_encoding.py",
+        "sha256": "3f04747bdb078d0b9e3349fff54c70a415cab1f6e136d49178a0fdd39ff16429",
+        "sizeBytes": 3628,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148656,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/text_format.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/text_format.py",
+        "sha256": "947d7a49770c5f107ffb7de2a672683a60c3179aebbe6f0c5468c7a19ddbd98d",
+        "sizeBytes": 66522,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148657,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/timestamp.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/timestamp.py",
+        "sha256": "025ff58a4cb080d1eb2879f626fab6376fbab4d5eecefd65205abb85f3be52d9",
+        "sizeBytes": 3136,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119148658,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/pyproto/google/protobuf/unknown_fields.py"
+        ],
+        "path": "third_party/protobuf/python/google/protobuf/unknown_fields.py",
+        "sha256": "88acc92aaaf091e59597cde441a3189fc45dc994a93e1755d2185d42a1dbf465",
+        "sizeBytes": 3050,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119190423,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/ui/webui/resources/tsc/mojo/mojo/public/js/bindings.d.ts"
+        ],
+        "path": "ui/webui/resources/mojo/bindings.d.ts",
+        "sha256": "b8f60f48e86c9d3d08ef83055c2d69d7fe75e0eb686ef6d90c25cb0ab7d9cddd",
+        "sizeBytes": 12087,
+        "uid": 502
+      },
+      {
+        "device": 16777230,
+        "inode": 119190841,
+        "links": 2,
+        "mode": 420,
+        "outputAliases": [
+          "out/NeAntikM156Qualified20261009/gen/url/mojom/url_converter.ts"
+        ],
+        "path": "url/mojom/url_converter.ts",
+        "sha256": "6a2a3f46cfb3ffee25240a624b7b6ce68e26a5f339f5ef89fea3dc1a918c73d0",
+        "sizeBytes": 397,
+        "uid": 502
+      }
+    ],
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "unmatchedCount": 0
+  },
+  "payloadType": "json",
+  "receipt": "m156-freeze7-source-output-hardlink-map.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

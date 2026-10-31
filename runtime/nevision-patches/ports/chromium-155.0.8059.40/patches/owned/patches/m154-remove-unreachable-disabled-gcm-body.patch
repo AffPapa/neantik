@@ -1,0 +1,100 @@
+--- a/components/gcm_driver/gcm_client_impl.cc
++++ b/components/gcm_driver/gcm_client_impl.cc
+@@ -78,7 +78,6 @@
+ const char kMessageTypeKey[] = "message_type";
+ const char kMessageTypeSendErrorKey[] = "send_error";
+ const char kSubtypeKey[] = "subtype";
+-const char kSendMessageFromValue[] = "gcm@chrome.com";
+ const int64_t kDefaultUserSerialNumber = 0LL;
+ const int kDestroyGCMStoreDelayMS = 5 * 60 * 1000;  // 5 minutes.
+ constexpr base::TimeDelta kTokenInvalidationInterval = base::Days(7);
+@@ -99,61 +98,6 @@
+       NOTREACHED();
+   }
+   return GCMClientImpl::UNKNOWN_ERROR;
+-}
+-
+-void ToCheckinProtoVersion(
+-    const GCMClient::ChromeBuildInfo& chrome_build_info,
+-    checkin_proto::ChromeBuildProto* android_build_info) {
+-  checkin_proto::ChromeBuildProto_Platform platform =
+-      checkin_proto::ChromeBuildProto_Platform_PLATFORM_LINUX;
+-  switch (chrome_build_info.platform) {
+-    case GCMClient::PLATFORM_WIN:
+-      platform = checkin_proto::ChromeBuildProto_Platform_PLATFORM_WIN;
+-      break;
+-    case GCMClient::PLATFORM_MAC:
+-      platform = checkin_proto::ChromeBuildProto_Platform_PLATFORM_MAC;
+-      break;
+-    case GCMClient::PLATFORM_LINUX:
+-      platform = checkin_proto::ChromeBuildProto_Platform_PLATFORM_LINUX;
+-      break;
+-    case GCMClient::PLATFORM_IOS:
+-      platform = checkin_proto::ChromeBuildProto_Platform_PLATFORM_IOS;
+-      break;
+-    case GCMClient::PLATFORM_ANDROID:
+-      platform = checkin_proto::ChromeBuildProto_Platform_PLATFORM_ANDROID;
+-      break;
+-    case GCMClient::PLATFORM_CROS:
+-      platform = checkin_proto::ChromeBuildProto_Platform_PLATFORM_CROS;
+-      break;
+-    case GCMClient::PLATFORM_UNSPECIFIED:
+-      // For unknown platform, return as LINUX.
+-      platform = checkin_proto::ChromeBuildProto_Platform_PLATFORM_LINUX;
+-      break;
+-  }
+-  android_build_info->set_platform(platform);
+-
+-  checkin_proto::ChromeBuildProto_Channel channel =
+-      checkin_proto::ChromeBuildProto_Channel_CHANNEL_UNKNOWN;
+-  switch (chrome_build_info.channel) {
+-    case GCMClient::CHANNEL_STABLE:
+-      channel = checkin_proto::ChromeBuildProto_Channel_CHANNEL_STABLE;
+-      break;
+-    case GCMClient::CHANNEL_BETA:
+-      channel = checkin_proto::ChromeBuildProto_Channel_CHANNEL_BETA;
+-      break;
+-    case GCMClient::CHANNEL_DEV:
+-      channel = checkin_proto::ChromeBuildProto_Channel_CHANNEL_DEV;
+-      break;
+-    case GCMClient::CHANNEL_CANARY:
+-      channel = checkin_proto::ChromeBuildProto_Channel_CHANNEL_CANARY;
+-      break;
+-    case GCMClient::CHANNEL_UNKNOWN:
+-      channel = checkin_proto::ChromeBuildProto_Channel_CHANNEL_UNKNOWN;
+-      break;
+-  }
+-  android_build_info->set_channel(channel);
+-
+-  android_build_info->set_chrome_version(chrome_build_info.version);
+ }
+ 
+ MessageType DecodeMessageType(const std::string& value) {
+@@ -400,27 +344,6 @@
+ void GCMClientImpl::InitializeMCSClient() {
+   DCHECK(network_connection_tracker_);
+   return;
+-  std::vector<GURL> endpoints;
+-  endpoints.push_back(gservices_settings_.GetMCSMainEndpoint());
+-  GURL fallback_endpoint = gservices_settings_.GetMCSFallbackEndpoint();
+-  if (fallback_endpoint.is_valid())
+-    endpoints.push_back(fallback_endpoint);
+-  connection_factory_ = internals_builder_->BuildConnectionFactory(
+-      endpoints, GetGCMBackoffPolicy(), get_socket_factory_callback_,
+-      io_task_runner_, &recorder_, network_connection_tracker_);
+-  connection_factory_->SetConnectionListener(this);
+-  mcs_client_ = internals_builder_->BuildMCSClient(
+-      chrome_build_info_.version, clock_, connection_factory_.get(),
+-      gcm_store_.get(), io_task_runner_, &recorder_);
+-
+-  mcs_client_->Initialize(
+-      base::BindRepeating(&GCMClientImpl::OnMCSError,
+-                          weak_ptr_factory_.GetWeakPtr()),
+-      base::BindRepeating(&GCMClientImpl::OnMessageReceivedFromMCS,
+-                          weak_ptr_factory_.GetWeakPtr()),
+-      base::BindRepeating(&GCMClientImpl::OnMessageSentToMCS,
+-                          weak_ptr_factory_.GetWeakPtr()),
+-      std::move(load_result_));
+ }
+ 
+ void GCMClientImpl::OnFirstTimeDeviceCheckinCompleted(

@@ -1,9 +1,15 @@
+import base64
 import hashlib
+import json
+import os
 import importlib.util
 import plistlib
 import shutil
+import socket
+import subprocess
 import sys
 import tempfile
+import traceback
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -21,7 +27,128 @@ sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
 
 
+def public_attestation_fixture():
+    """Existing signed synthetic evidence; structural preflight is not its auth."""
+    fixture = json.loads((ROOT / 'scripts/tests/fixtures/fingerprint-evidence-schema9-swift.json').read_text())
+    verified = MODULE.PRIVACY.EVIDENCE_SCHEMA.verify_fingerprint_evidence(
+        candidate_manifest_raw=base64.b64decode(fixture['manifestBase64'], validate=True),
+        envelope_raw=base64.b64decode(fixture['envelopeBase64'], validate=True))
+    return MODULE.PRIVACY.expected_authenticated_public_attestation(json.loads(verified.payload), verified)
+
+
 class DirectHostedDownloadOSSTests(unittest.TestCase):
+    def test_wrong_public_input_stops_before_archive_or_download_and_redacts_values(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); archive = self.make_fixture(root, version='1.2.3')
+            manifest = root / 'dist/manifest.json'; manifest.write_text('{}')
+            evidence = root / 'dist/evidence.json'; evidence.write_text('{}')
+            attestation = root / 'dist/summary.json'
+            for bad in ({'schemaVersion': 1, 'kind': 'private-envelope', 'value': 'own-rejected-marker'},
+                        {**public_attestation_fixture(), 'createdAt': 'own-rejected-marker'},
+                        {**public_attestation_fixture(), 'unexpected': 'own-rejected-marker'}):
+                attestation.write_text(json.dumps(bad))
+                archive_check, download, binding_check = mock.Mock(), mock.Mock(), mock.Mock()
+                with self.assertRaisesRegex(MODULE.HostedDownloadError, 'public.*preflight') as caught:
+                    MODULE.verify_hosted_download(project_root=root, archive=archive,
+                        download_url='https://github.com/AffPapa/neantik/releases/download/v1.2.3/' + archive.name,
+                        archive_verifier=archive_check, downloader=download,
+                        candidate_manifest=manifest, release_channel='public-alpha',
+                        fingerprint_evidence=evidence, fingerprint_attestation=attestation,
+                        candidate_verifier=mock.Mock(), release_evidence_verifier=binding_check)
+                self.assertNotIn('own-rejected-marker', ''.join(traceback.format_exception(caught.exception)))
+                archive_check.assert_not_called(); download.assert_not_called(); binding_check.assert_not_called()
+
+    def test_preflight_accepts_valid_summary_but_retains_full_binding_refusal(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); archive = self.make_fixture(root, version='1.2.3')
+            manifest = root / 'dist/manifest.json'; manifest.write_text('{}')
+            evidence = root / 'dist/evidence.json'; evidence.write_text('{}')
+            attestation = root / 'dist/summary.json'; attestation.write_text(json.dumps(public_attestation_fixture()))
+            archive_check, download, candidate_check = mock.Mock(), mock.Mock(), mock.Mock()
+            full_binding = mock.Mock(side_effect=MODULE.HostedDownloadError('own full binding refusal'))
+            with self.assertRaisesRegex(MODULE.HostedDownloadError, 'full binding refusal'):
+                MODULE.verify_hosted_download(project_root=root, archive=archive,
+                    download_url='https://github.com/AffPapa/neantik/releases/download/v1.2.3/' + archive.name,
+                    archive_verifier=archive_check, downloader=download,
+                    candidate_manifest=manifest, release_channel='public-alpha',
+                    fingerprint_evidence=evidence, fingerprint_attestation=attestation,
+                    candidate_verifier=candidate_check, release_evidence_verifier=full_binding)
+            archive_check.assert_called_once(); candidate_check.assert_called_once()
+            full_binding.assert_called_once(); download.assert_not_called()
+
+    def test_preflight_rejects_duplicate_oversized_json_and_channel_mismatch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'summary.json'
+            valid = json.dumps(public_attestation_fixture())
+            for raw, channel in ((valid[:-1] + ',"managerVersion":"own-rejected-marker"}', 'public-alpha'),
+                                 (' ' * 65537, 'public-alpha'), ('{', 'public-alpha'),
+                                 ('[' * 2000 + ']' * 2000, 'public-alpha'),
+                                 (valid, 'production')):
+                path.write_text(raw)
+                with self.assertRaisesRegex(MODULE.HostedDownloadError, 'public.*preflight'):
+                    MODULE.preflight_public_attestation(path, channel)
+            path.write_text(valid)
+            self.assertIsNone(MODULE.preflight_public_attestation(path, 'public-alpha'))
+
+    @unittest.skipUnless(Path('/usr/bin/curl').is_file(), 'system curl required')
+    def test_home_curlrc_cannot_add_an_unrequested_file_transfer(self):
+        # A real curl control: default config can add an earlier transfer
+        # before the caller's HTTPS-only operation. Own files/loopback only.
+        actual_run = subprocess.run
+        with tempfile.TemporaryDirectory() as temporary, socket.socket() as listener:
+            home = Path(temporary)
+            canary = home / 'own-canary'; canary.write_text('owned-synthetic-marker')
+            injected = home / 'unexpected-copy'
+            (home / '.curlrc').write_text(
+                f'url = "{canary.as_uri()}"\noutput = "{injected}"\nnext\n')
+            listener.bind(('127.0.0.1', 0)); listener.listen(1)
+            url = f'https://127.0.0.1:{listener.getsockname()[1]}/owned'
+            with mock.patch.dict(os.environ, {'HOME': str(home), 'CURL_HOME': str(home)}):
+                with self.assertRaises(MODULE.HostedDownloadError):
+                    MODULE.download_with_curl(url, home / 'actual.zip', 1024, timeout=1)
+                self.assertFalse(injected.exists())
+                def config_enabled(command, **kwargs):
+                    return actual_run([arg for arg in command if arg != '--disable'], **kwargs)
+                with mock.patch.object(MODULE.subprocess, 'run', side_effect=config_enabled):
+                    with self.assertRaises(MODULE.HostedDownloadError):
+                        MODULE.download_with_curl(url, home / 'broken-control.zip', 1024, timeout=1)
+                self.assertEqual(injected.read_text(), 'owned-synthetic-marker')
+
+    def test_anonymous_child_has_no_ambient_secrets_and_error_is_redacted(self):
+        marker = 'synthetic-do-not-report-credential'
+        child = subprocess.CompletedProcess([], 22, stdout='', stderr=marker)
+        with mock.patch.dict(os.environ, {'HTTPS_PROXY': marker, 'GH_TOKEN': marker,
+                'CURL_CA_BUNDLE': marker, 'SSLKEYLOGFILE': marker}), \
+                mock.patch.object(MODULE.subprocess, 'run', return_value=child) as invoke:
+            with self.assertRaises(MODULE.HostedDownloadError) as caught:
+                MODULE.download_with_curl('https://example.com/owned.zip', Path('/unused'), 10)
+        self.assertNotIn(marker, str(caught.exception))
+        self.assertIn('22', str(caught.exception))
+        passed = invoke.call_args.kwargs['env']
+        for key in ['HTTPS_PROXY', 'GH_TOKEN', 'CURL_CA_BUNDLE', 'SSLKEYLOGFILE']:
+            self.assertNotIn(key, passed)
+
+    def test_distribution_fifo_receipt_does_not_block_verification(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = self.make_fixture(root)
+            destination = root / "dist" / "distribution" / "fixture"
+            destination.mkdir(parents=True)
+            archive = destination / source.name
+            shutil.copyfile(source, archive)
+            os.mkfifo(destination / "distribution.json", 0o600)
+            script = """
+import importlib.util,sys
+from pathlib import Path
+spec=importlib.util.spec_from_file_location('hosted_fifo',sys.argv[3])
+m=importlib.util.module_from_spec(spec);sys.modules[spec.name]=m;spec.loader.exec_module(m)
+try: m._bound_distribution_digest(Path(sys.argv[1]),Path(sys.argv[2]),Path(sys.argv[2]).name)
+except m.HostedDownloadError: sys.exit(0)
+sys.exit(2)
+"""
+            result = subprocess.run([sys.executable, "-c", script, str(root), str(archive), str(SCRIPT)], timeout=2, capture_output=True)
+            self.assertEqual(result.returncode, 0)
+
     def make_fixture(
         self,
         root: Path,
@@ -44,6 +171,53 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
             encoding="utf-8",
         )
         return archive
+
+    def test_independent_distribution_copy_is_bound_without_relaxing_snapshot(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = self.make_fixture(root)
+            os.link(source, root / "retained-notary-output")
+            destination = root / "dist" / "distribution" / "fixture"
+            destination.mkdir(parents=True, mode=0o700)
+            archive = destination / source.name
+            shutil.copyfile(source, archive)
+            shutil.copyfile(source.with_suffix(".zip.sha256"), archive.with_suffix(".zip.sha256"))
+            digest = hashlib.sha256(source.read_bytes()).hexdigest()
+            receipt = {"schemaVersion": 1, "files": [{"name": source.name, "sha256": digest, "bytes": source.stat().st_size}, {}, {}, {}]}
+            (destination / "distribution.json").write_text(json.dumps(receipt))
+            legacy_pair = (source.name, digest)
+            def downloader(_url, output, _expected_size): shutil.copyfile(source, output)
+            with mock.patch.object(MODULE, "LEGACY_ARCHIVE_ALLOWLIST", {legacy_pair}):
+                result = MODULE.verify_hosted_download(project_root=root, archive=archive,
+                    download_url="https://github.com/AffPapa/neantik/releases/download/v0.3.12/" + source.name,
+                    downloader=downloader, archive_verifier=lambda _: None, legacy_archive_only=True)
+            self.assertIn("verified", result["status"])
+            self.assertEqual(source.stat().st_nlink, 2)
+            self.assertEqual(archive.stat().st_nlink, 1)
+            def mutating_downloader(_url, output, _expected_size):
+                shutil.copyfile(archive, output)
+                source.write_bytes(b"changed after original binding")
+            with mock.patch.object(MODULE, "LEGACY_ARCHIVE_ALLOWLIST", {legacy_pair}):
+                with self.assertRaises(MODULE.HostedDownloadError):
+                    MODULE.verify_hosted_download(project_root=root, archive=archive,
+                        download_url="https://github.com/AffPapa/neantik/releases/download/v0.3.12/" + source.name,
+                        downloader=mutating_downloader, archive_verifier=lambda _: None, legacy_archive_only=True)
+            receipt["files"][0]["sha256"] = "0" * 64
+            (destination / "distribution.json").write_text(json.dumps(receipt))
+            with self.assertRaises(MODULE.HostedDownloadError):
+                MODULE._bound_distribution_digest(root, archive, source.name)
+
+    def test_distribution_receipt_is_bounded_and_requires_an_object(self):
+        for value in (b"x" * (64 * 1024 + 1), b"[]"):
+            with tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary); source = self.make_fixture(root)
+                destination = root / "dist" / "distribution" / "fixture"
+                destination.mkdir(parents=True)
+                archive = destination / source.name
+                shutil.copyfile(source, archive)
+                (destination / "distribution.json").write_bytes(value)
+                with self.assertRaises(MODULE.HostedDownloadError):
+                    MODULE._bound_distribution_digest(root, archive, source.name)
 
     def test_download_is_byte_identical_and_reverified_from_fresh_path(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -147,7 +321,7 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
             evidence = root / "dist" / "fingerprint-audit.json"
             evidence.write_text("{}\n", encoding="utf-8")
             attestation = root / "dist" / "fingerprint-audit-summary.json"
-            attestation.write_text("{}\n", encoding="utf-8")
+            attestation.write_text(json.dumps(public_attestation_fixture()), encoding="utf-8")
             candidate_checks: list[tuple[Path, Path, str]] = []
             evidence_checks: list[tuple[Path, Path, Path, str]] = []
 
@@ -217,7 +391,7 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
             evidence = root / "dist" / "fingerprint-audit.json"
             evidence.write_text("{}\n", encoding="utf-8")
             attestation = root / "dist" / "fingerprint-audit-summary.json"
-            attestation.write_text("{}\n", encoding="utf-8")
+            attestation.write_text(json.dumps(public_attestation_fixture()), encoding="utf-8")
 
             with mock.patch.object(
                 MODULE,
@@ -266,7 +440,7 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
             evidence = root / "dist" / "fingerprint-audit.json"
             evidence.write_text("{}\n", encoding="utf-8")
             attestation = root / "dist" / "fingerprint-audit-summary.json"
-            attestation.write_text("{}\n", encoding="utf-8")
+            attestation.write_text(json.dumps(public_attestation_fixture()), encoding="utf-8")
             observed_manifest_bytes: list[bytes] = []
 
             def verify_evidence(
@@ -327,7 +501,7 @@ class DirectHostedDownloadOSSTests(unittest.TestCase):
             evidence = root / "dist" / "fingerprint-audit.json"
             evidence.write_text("{}\n", encoding="utf-8")
             attestation = root / "dist" / "fingerprint-audit-summary.json"
-            attestation.write_text("{}\n", encoding="utf-8")
+            attestation.write_text(json.dumps(public_attestation_fixture()), encoding="utf-8")
             pinned_manifest: Path | None = None
 
             def verify_evidence(

@@ -4,6 +4,43 @@ import Testing
 @testable import NeAntik
 
 struct SecureEnclaveFingerprintEvidenceSignerTests {
+    @Test func retirementRequiresAbsenceOfBothPrivateKeyAndReservation() throws {
+        let backend = InMemoryFingerprintEvidenceKeyBackend()
+        let authority = SecureEnclaveFingerprintEvidenceAuthority(backend: backend)
+        let session = UUID(), tag = SecureEnclaveFingerprintEvidenceAuthority.applicationTag(for: session)
+        #expect(try authority.isRetired(sessionID: session))
+        try backend.reserveEnrollment(applicationTag: tag)
+        #expect(try !authority.isRetired(sessionID: session))
+        _ = try backend.createPrivateKey(applicationTag: tag)
+        try backend.releaseEnrollment(applicationTag: tag)
+        #expect(try !authority.isRetired(sessionID: session))
+        try backend.deletePrivateKey(applicationTag: tag)
+        #expect(try authority.isRetired(sessionID: session))
+    }
+    @Test func failedPreflightReleasesOnlyOwnReservation() throws {
+        let backend = InMemoryFingerprintEvidenceKeyBackend()
+        backend.lookupFailure = .operationFailed(-25308)
+        let authority = SecureEnclaveFingerprintEvidenceAuthority(backend: backend)
+        #expect(throws: (any Error).self) { try authority.enroll(sessionID: UUID()) }
+        #expect(backend.reservationCount == 0)
+        #expect(backend.releaseCallCount == 1)
+        #expect(backend.createCallCount == 0)
+        #expect(backend.deleteCallCount == 0)
+    }
+
+    @Test func preexistingKeyRefusalPreservesKeyAndReleasesOwnReservation() throws {
+        let backend = InMemoryFingerprintEvidenceKeyBackend()
+        let session = UUID()
+        let tag = SecureEnclaveFingerprintEvidenceAuthority.applicationTag(for: session)
+        let original = try backend.createPrivateKey(applicationTag: tag)
+        let authority = SecureEnclaveFingerprintEvidenceAuthority(backend: backend)
+        #expect(throws: (any Error).self) { try authority.enroll(sessionID: session) }
+        #expect(try backend.publicKeyX963(applicationTag: tag) == original)
+        #expect(backend.reservationCount == 0)
+        #expect(backend.releaseCallCount == 1)
+        #expect(backend.deleteCallCount == 0)
+    }
+
     @Test
     func secureEnclaveAuditDoesNotCreateMissingAuthority() throws {
         let backend = InMemoryFingerprintEvidenceKeyBackend()
@@ -51,30 +88,6 @@ struct SecureEnclaveFingerprintEvidenceSignerTests {
         }
         #expect(backend.createCallCount == 1)
         #expect(backend.reserveCallCount == 2)
-        #expect(backend.reservationCount == 1)
-        #expect(backend.keyCount == 1)
-    }
-
-    @Test
-    func failedSecureEnclaveEnrollmentRollsBackAndCanRetry() throws {
-        let backend = InMemoryFingerprintEvidenceKeyBackend()
-        let authority = SecureEnclaveFingerprintEvidenceAuthority(
-            backend: backend
-        )
-        let sessionID = UUID()
-        backend.failNextCreation()
-
-        #expect(throws: InMemoryFingerprintEvidenceKeyBackendError.self) {
-            try authority.enroll(sessionID: sessionID)
-        }
-        #expect(backend.reservationCount == 0)
-        #expect(backend.keyCount == 0)
-        #expect(backend.deleteCallCount == 1)
-        #expect(backend.releaseCallCount == 1)
-
-        let publicKey = try authority.enroll(sessionID: sessionID)
-
-        #expect(publicKey.count == 65)
         #expect(backend.reservationCount == 1)
         #expect(backend.keyCount == 1)
     }
@@ -318,7 +331,7 @@ private final class InMemoryFingerprintEvidenceKeyBackend:
     private var signatureCalls = 0
     private var deleteCalls = 0
     private var releaseCalls = 0
-    private var createFailuresRemaining = 0
+    var lookupFailure: SecureEnclaveFingerprintEvidenceAuthorityError?
 
     var publicKeyCallCount: Int {
         locked { publicKeyCalls }
@@ -362,9 +375,12 @@ private final class InMemoryFingerprintEvidenceKeyBackend:
         }
     }
 
+    func hasEnrollment(applicationTag: Data) throws -> Bool { locked { reservations.contains(applicationTag) } }
+
     func publicKeyX963(applicationTag: Data) throws -> Data? {
-        locked {
+        try locked {
             publicKeyCalls += 1
+            if let lookupFailure { throw lookupFailure }
             return keys[applicationTag]?.publicKey.x963Representation
         }
     }
@@ -372,11 +388,6 @@ private final class InMemoryFingerprintEvidenceKeyBackend:
     func createPrivateKey(applicationTag: Data) throws -> Data {
         try locked {
             createCalls += 1
-            if createFailuresRemaining > 0 {
-                createFailuresRemaining -= 1
-                throw InMemoryFingerprintEvidenceKeyBackendError
-                    .creationFailed
-            }
             guard keys[applicationTag] == nil else {
                 throw InMemoryFingerprintEvidenceKeyBackendError
                     .duplicateKey
@@ -425,12 +436,6 @@ private final class InMemoryFingerprintEvidenceKeyBackend:
         }
     }
 
-    func failNextCreation() {
-        locked {
-            createFailuresRemaining += 1
-        }
-    }
-
     private func locked<T>(
         _ operation: () throws -> T
     ) rethrows -> T {
@@ -442,7 +447,6 @@ private final class InMemoryFingerprintEvidenceKeyBackend:
 
 private enum InMemoryFingerprintEvidenceKeyBackendError: Error {
     case duplicateKey
-    case creationFailed
 }
 
 private final class EnrollmentOutcomeRecorder: @unchecked Sendable {

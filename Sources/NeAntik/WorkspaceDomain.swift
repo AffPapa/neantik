@@ -68,7 +68,9 @@ struct WorkspaceProfileState: Identifiable, Equatable, Sendable {
     let proxyResponseTimeMilliseconds: Int?
 }
 
-/// Explicit allowlist for a future opt-in local API, MCP adapter and SDK.
+/// Explicit output allowlist for local API/SDK projections. MCP management
+/// uses its own bounded configuration DTO and canonical ProfileStore operations;
+/// private write-only input (such as a password) never enters this snapshot.
 /// Browser paths, proxy endpoints, usernames, passwords, exact IP addresses,
 /// fingerprint seeds/codes/hashes and raw WebRTC evidence have no fields here.
 struct WorkspacePublicSnapshotDTO: Codable, Equatable, Sendable {
@@ -105,6 +107,8 @@ enum WorkspaceDomain {
         proxyHealth: ProxyHealthState?,
         fingerprintObservation:
             ValidatedProfileFingerprintObservation? = nil,
+        siteCompatibility: SiteCompatibilityAssessment? = nil,
+        privacyParametersSent: Bool = false,
         now: Date = Date()
     ) -> ProfileEnvironmentSnapshot {
         ProfileEnvironmentInspector.snapshot(
@@ -112,6 +116,8 @@ enum WorkspaceDomain {
             runtime: runtime,
             proxyHealth: proxyHealth,
             fingerprintObservation: fingerprintObservation,
+            siteCompatibility: siteCompatibility,
+            privacyParametersSent: privacyParametersSent,
             now: now
         )
     }

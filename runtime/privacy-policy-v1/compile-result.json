@@ -1,0 +1,24 @@
+{
+  "createdAt": "2026-10-31T11:57:22.346634+00:00",
+  "status": "compiled-unqualified",
+  "results": [
+    {
+      "source": "/private/tmp/neantik-privacy20-runtime/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc",
+      "sourceSHA256": "3517fc7c8777280ead4c93e6dbed15d203f240859f7961a0879480dce3bd1f1f",
+      "target": "obj/third_party/blink/renderer/modules/peerconnection/peerconnection/rtc_peer_connection.o",
+      "exitCode": 0,
+      "objectSHA256": "e6bdee5473ab52be3a4e679cb411661bcb90432ea820b30c79ab92c31b5c678a",
+      "log": "/private/tmp/neantik-privacy20-runtime-delta/compile-0.log"
+    },
+    {
+      "source": "/private/tmp/neantik-privacy20-runtime/components/content_settings/core/browser/host_content_settings_map.cc",
+      "sourceSHA256": "85b98cdebe40e62a8a7a46e7af7349f4bd33d12619682b41ba804820199e217a",
+      "target": "obj/components/content_settings/core/browser/browser/host_content_settings_map.o",
+      "exitCode": 0,
+      "objectSHA256": "515e8341e1e94dd0a0ed9676b110a0ef29db169cb683195f4cadfb7223428aa3",
+      "log": "/private/tmp/neantik-privacy20-runtime-delta/compile-1.log"
+    }
+  ],
+  "nativeExecution": false,
+  "runtimeReleaseQualified": false
+}

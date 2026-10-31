@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "id": "V372",
+  "observedAtUTC": "2026-10-28T04:14:53Z",
+  "status": "PASS_3_WEBKITLEGACY_RESOURCE_LICENSE_AND_NOTICE_ROWS_BOUND_TO_CANDIDATE139",
+  "scope": "Resolved three candidate-139 WebKitLegacy resource UNKNOWN rows using exact source files, the component LICENSE text, and the byte-identical notice file already present in the exact candidate and source offer. No other engine/resource row is changed; this is not final .74 release qualification.",
+  "candidate": {
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "worksheetSHA256": "b5d00e7589a67102c62372a6feddc9e7d06a50c6d0c3b6fde047bd42b9954441",
+    "candidateMutated": false
+  },
+  "sourceOffer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v372-webkitlegacy-resource-license-binding",
+    "baseV371ManifestSHA256": "0eb5475163b664758035a9c7bdd466d0fd29b5d108773be6a301ae7ef3d236b5",
+    "manifestSHA256": "283dcb3ef84bb6b19a2b67a4e11edd9d75c2555ba2737c26ae230a0ecec87ea4",
+    "componentCount": 649
+  },
+  "boundResources": [
+    {
+      "runtimePath": "WebKitLegacy.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "51c5deed98d97748855c83af6f860cb40beaf7878b8c039ef47324b81362798f",
+      "sourcePath": "Source/WebKitLegacy/mac/Info.plist",
+      "sourceSHA256": "53f09dee33a6e17bae292d4360196d436eb32a890435a0d59125549b4f914a7b",
+      "sourceBytes": 990,
+      "applicableLicense": "BSD-2-Clause",
+      "basis": "The source is within the WebKitLegacy component and is accompanied by its exact component LICENSE; the selected source has no per-file alternate license notice.",
+      "requiredNoticePath": "NeAntikRuntimeLicenses/WebKitSourceCandidates/files/Source/WebKitLegacy/LICENSE",
+      "requiredNoticeSHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+      "candidatePackageNoticeSHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+      "sourceOfferNoticePath": "notices/webkit-legacy/WebKitLegacy-LICENSE",
+      "sourceOfferNoticeSHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+      "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW limited to this exact resource/source/license/candidate-notice binding; not legal advice or legal opinion."
+    },
+    {
+      "runtimePath": "WebKitLegacy.framework/Versions/A/Resources/en.lproj/WebAuthenticationPanel.nib",
+      "runtimeSHA256": "a09b229c2bd3b90427f7dc189cd8c8ae1e156cc15b297a7a50829b6b0eb364db",
+      "sourcePath": "Source/WebKitLegacy/mac/Panels/en.lproj/WebAuthenticationPanel.xib",
+      "sourceSHA256": "4158abb9d932b34da95aebdf14d52f34aae7c153a2f24bcc8c3835aa4faac10f",
+      "sourceBytes": 12740,
+      "applicableLicense": "BSD-2-Clause",
+      "basis": "The source is within the WebKitLegacy component and is accompanied by its exact component LICENSE; the selected source has no per-file alternate license notice.",
+      "requiredNoticePath": "NeAntikRuntimeLicenses/WebKitSourceCandidates/files/Source/WebKitLegacy/LICENSE",
+      "requiredNoticeSHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+      "candidatePackageNoticeSHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+      "sourceOfferNoticePath": "notices/webkit-legacy/WebKitLegacy-LICENSE",
+      "sourceOfferNoticeSHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+      "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW limited to this exact resource/source/license/candidate-notice binding; not legal advice or legal opinion."
+    },
+    {
+      "runtimePath": "WebKitLegacy.framework/Versions/A/Resources/en.lproj/WebJavaScriptTextInputPanel.nib",
+      "runtimeSHA256": "743bb0395249fea422d4efe7737b9296f022c8442a20aaf76a291270b784dc4f",
+      "sourcePath": "Source/WebKitLegacy/en.lproj/WebJavaScriptTextInputPanel.xib",
+      "sourceSHA256": "80eb2b4eff6bdc5e712d6cbd4cbb917082f2e7b45c39f3cc0dc2c5970afe34bb",
+      "sourceBytes": 5854,
+      "applicableLicense": "BSD-2-Clause",
+      "basis": "The source is within the WebKitLegacy component and is accompanied by its exact component LICENSE; the selected source has no per-file alternate license notice.",
+      "requiredNoticePath": "NeAntikRuntimeLicenses/WebKitSourceCandidates/files/Source/WebKitLegacy/LICENSE",
+      "requiredNoticeSHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+      "candidatePackageNoticeSHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+      "sourceOfferNoticePath": "notices/webkit-legacy/WebKitLegacy-LICENSE",
+      "sourceOfferNoticeSHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+      "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW limited to this exact resource/source/license/candidate-notice binding; not legal advice or legal opinion."
+    }
+  ],
+  "consumerPreflight": {
+    "status": "PASS",
+    "script": "scripts/package-owned-webkit-release.py::source_offer_replacements",
+    "scriptSHA256": "69e9f39db424ca1c8f2810d8cd31b620d01d8e6370c2b17b9678c166db22d4cd",
+    "components": 649,
+    "overlayManifests": 8,
+    "firstPartyOverlayAssets": 64,
+    "manifestSHA256": "283dcb3ef84bb6b19a2b67a4e11edd9d75c2555ba2737c26ae230a0ecec87ea4"
+  },
+  "embeddedReceiptSHA256": "e94636fbed21d065931d458fd2c98d14c6d475b6d9d4d139d4b32798b70bfa97",
+  "candidateMutated": false,
+  "releaseQualified": false,
+  "nextAction": "Review the remaining 19 resource rows using exact evidence already indexed; do not repeat the 81-row inventory. Bind the three mixed-term engine image notices to exact V135-derived .74 images in the final package."
+}

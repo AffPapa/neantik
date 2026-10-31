@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T13:57:39+00:00",
+  "status": "PASS_SOURCE_INPUT_RECONCILIATION; reuse existing clean relocated relink; do not repeat build",
+  "candidate": {
+    "version": "1.0.0",
+    "build": "139",
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "existingRelinkReceipt": {
+    "path": "/private/tmp/neantik-release-v1/docs/evidence/webkit-v20-clean-relocated-recipient-relink-20261025.json",
+    "sha256": "77b9e4e89ec1dd2b3c8a1f84cf9ce228ccecdff3514993ee3f2e5737051ce2b4",
+    "status": "PASS_CLEAN_RELOCATED_CONFIGURE_BUILD_RELINK;NOT_BINARY_REPRODUCIBILITY_OR_PRODUCT_QA",
+    "outputs": 14
+  },
+  "currentSourceOffer": {
+    "manifestPath": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/manifest.json",
+    "manifestSHA256": "a02e54a22a45001a42485454bacc543d225d8a6334e6189952b51eb905c2a214",
+    "components": 143,
+    "sourceCommit": "955bc0808a1e1a49d3a9f74f2b02e05af9fee3e2",
+    "buildConfiguration": {
+      "path": "BUILD-CONFIG-v20.json",
+      "sha256": "87fa45899da4edc66eefd6b48fabae83331a0d52fc22f178d991789204f0837e",
+      "observedSHA256": "87fa45899da4edc66eefd6b48fabae83331a0d52fc22f178d991789204f0837e"
+    }
+  },
+  "relinkInputBindings": [
+    {
+      "path": "upstream/WebKit-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c.tar.zst",
+      "manifestSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+      "observedSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+      "relinkReceiptSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+      "exactMatch": true
+    },
+    {
+      "path": "webkit-v20-source-modifications.patch",
+      "manifestSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+      "observedSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+      "relinkReceiptSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+      "exactMatch": true
+    }
+  ],
+  "configurationReconciliation": {
+    "originalCacheEntries": 637,
+    "cleanCacheEntries": 637,
+    "differencesAfterRootNormalization": [
+      {
+        "key": "CLANGD_AUTO_SETUP:BOOL",
+        "original": "ON",
+        "clean": "OFF"
+      }
+    ],
+    "interpretation": "Six cache entries differ after normalizing root paths: one non-build CLANGD_AUTO_SETUP developer-tooling option (ON in original, OFF from default in clean configure) and five expected relocated build/source path fields. All WebKit feature options, SDK, compiler, architecture, deployment target and build type match."
+  },
+  "decision": "The source archive and WebKit patch in the current 143-component offer are byte-identical to the archive and patch used by the retained clean relocated 14-target relink. The added offer components are notice/source-evidence material and do not invalidate the relink. Do not rebuild merely because the temporary build directory is gone. The relink remains same-Mac engineering evidence, not binary reproducibility, final signed application replacement, production QA, or license approval.",
+  "nextGate": "Resolve exact applicability and notice obligations; reuse the retained relink proof. The existing recipient re-sign/host packaging path is an implementation mechanism, not an additional independent-recipient requirement under the current release fast path."
+}

@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-research-early-bootstrap-refusals",
+  "actualBrowser": true,
+  "capturedAt": "2026-10-15T20:45:40.512Z",
+  "runtime": {
+    "executableSHA256": "34d6c4fff38015c91ad8052d0452b4309bb191f64ff825518cbddc8fb59c456a",
+    "frameworkSHA256": "fdbceb62fe9abcc0f2adab08e37c4f9d712943387c4867d0f615e1966a4af932",
+    "closureSHA256": "45aab353afa841ee6dd00e68e2e77cad0218b47b0268c367f08b020067e27468"
+  },
+  "observationsSHA256": "6f161083d7c74e23036a032fad28da774cda259eddf61a110dfad4cdcede5955",
+  "cases": [
+    {
+      "name": "marker-fifo",
+      "exitCode": 13,
+      "signal": null,
+      "timedOut": false,
+      "nativeACKs": 0,
+      "profileEntries": 0,
+      "crashEntries": 0,
+      "ownedProcessesRemaining": 0,
+      "ownedRootRemoved": true,
+      "stderrDrainComplete": true
+    },
+    {
+      "name": "log-fifo",
+      "exitCode": 13,
+      "signal": null,
+      "timedOut": false,
+      "nativeACKs": 0,
+      "profileEntries": 0,
+      "crashEntries": 0,
+      "ownedProcessesRemaining": 0,
+      "ownedRootRemoved": true,
+      "stderrDrainComplete": true
+    },
+    {
+      "name": "profile-symlink",
+      "exitCode": 13,
+      "signal": null,
+      "timedOut": false,
+      "nativeACKs": 0,
+      "profileEntries": 0,
+      "crashEntries": 0,
+      "ownedProcessesRemaining": 0,
+      "ownedRootRemoved": true,
+      "stderrDrainComplete": true
+    },
+    {
+      "name": "permissive-root",
+      "exitCode": 13,
+      "signal": null,
+      "timedOut": false,
+      "nativeACKs": 0,
+      "profileEntries": 0,
+      "crashEntries": 0,
+      "ownedProcessesRemaining": 0,
+      "ownedRootRemoved": true,
+      "stderrDrainComplete": true
+    },
+    {
+      "name": "invalid-marker",
+      "exitCode": 13,
+      "signal": null,
+      "timedOut": false,
+      "nativeACKs": 0,
+      "profileEntries": 0,
+      "crashEntries": 0,
+      "ownedProcessesRemaining": 0,
+      "ownedRootRemoved": true,
+      "stderrDrainComplete": true
+    },
+    {
+      "name": "redirected-raw-profile",
+      "exitCode": 13,
+      "signal": null,
+      "timedOut": false,
+      "nativeACKs": 0,
+      "profileEntries": 0,
+      "crashEntries": 0,
+      "ownedProcessesRemaining": 0,
+      "ownedRootRemoved": true,
+      "stderrDrainComplete": true
+    },
+    {
+      "name": "forged-approval",
+      "exitCode": 13,
+      "signal": null,
+      "timedOut": false,
+      "nativeACKs": 0,
+      "profileEntries": 0,
+      "crashEntries": 0,
+      "ownedProcessesRemaining": 0,
+      "ownedRootRemoved": true,
+      "stderrDrainComplete": true
+    },
+    {
+      "name": "malformed-request",
+      "exitCode": 13,
+      "signal": null,
+      "timedOut": false,
+      "nativeACKs": 0,
+      "profileEntries": 0,
+      "crashEntries": 0,
+      "ownedProcessesRemaining": 0,
+      "ownedRootRemoved": true,
+      "stderrDrainComplete": true
+    },
+    {
+      "name": "missing-pipe",
+      "exitCode": 13,
+      "signal": null,
+      "timedOut": false,
+      "nativeACKs": 0,
+      "profileEntries": 0,
+      "crashEntries": 0,
+      "ownedProcessesRemaining": 0,
+      "ownedRootRemoved": true,
+      "stderrDrainComplete": true
+    }
+  ],
+  "expectedUnsupportedParameterExit": 13,
+  "normalResourceAdmissionAllCases": true,
+  "redirectedRawTargetCreated": false,
+  "cleanup": {
+    "ownedProcessesRemaining": 0,
+    "ownedRootsRemaining": 0
+  },
+  "inputsRechecked": true,
+  "shippedRuntimeChanged": false,
+  "releaseQualified": false,
+  "limitations": [
+    "actual raw-path redirect refusal; not forced managed-policy qualification",
+    "macOS forced-policy path requires separate isolated managed environment",
+    "no real profiles or Keychain; no default-profile inspection",
+    "does not replace five-mode drawing, remaining font contexts, Font Access or exact release gates"
+  ],
+  "offlineControlTests": 2,
+  "harnessCorrection": "Wait for child close and drained stderr before counting ACKs; actual own tail-marker process control catches final-byte loss",
+  "priorResultBoundary": "First nine-refusal attempt retained; exact exit/cleanup observed, stderr completeness unqualified; affected short gate repeated after diagnosis"
+}

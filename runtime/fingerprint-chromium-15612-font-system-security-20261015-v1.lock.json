@@ -1,0 +1,47 @@
+{
+  "binaryBinding": {
+    "requiredEvidence": "runtime/chromium-15612-font-system-security-20261015-v1-port-candidate.json",
+    "status": "source-and-unsigned-output-bound-not-signed-qualified"
+  },
+  "commonChromium": {
+    "commit": "37085e47cf580c815a30402917d350ce97399ded",
+    "patchCount": 109,
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
+    "seriesSHA256": "4ff99a455ee8e0b6f66c167ebb0b79ec063daa1038ce5bc659a485965d7abae7",
+    "tree": "e0754007a836944e1365c17ce502907594af12f6"
+  },
+  "fingerprintChromium": {
+    "chromiumVersion": "156.0.8078.12",
+    "commit": "634b046faf2137b83af71c87baf362b533af9104",
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "156.0.8078.12",
+    "tree": "64e212cac2a53bcbd28b0530cf6eb092141bddec"
+  },
+  "macPackaging": {
+    "commit": "f7ba75f94442abda7ac3ea81790c217f8636d3ba",
+    "packagedChromiumVersion": "156.0.8078.12",
+    "patchCount": 20,
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
+    "seriesSHA256": "f432ba4b0188b9e4dd4bbe9e1d21760f76048c70df69e70b2d2881ede6378510",
+    "tree": "019bd2588e47f70b301e09e5475b1b1abd82ad35"
+  },
+  "ownedManifests": {
+    "appleDeviceTuplesSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+    "neantikPatchSeriesSHA256": "c79ee59b55b1ad474229313660c31c19fcc3b67051bca4f1da1e6098b0b69748",
+    "securityBaselineSHA256": "dd9bb55d39b249754489a9c31aea70c6805273a7481b33ce27a5d830122e9447"
+  },
+  "releaseReady": false,
+  "schemaVersion": 4,
+  "sourceContract": "runtime/chromium-15612-font-system-security-20261015-v1-source-contract.json",
+  "sourceContractSHA256": "5da10213b79c97a4bc3b13a0fd6af5e26d6034179bcdbe160bd244463a06f903",
+  "sourceProvenance": "runtime/chromium-15612-font-system-security-20261015-v1-port-candidate.json",
+  "sourceProvenanceSHA256": "4483da5335c04fdb9895d1d472ea0628f9e26f1d208c480da4f2998f25cde949",
+  "sourceVariant": "font-system-security-20261015-v1",
+  "status": "source-qualified",
+  "targetArchitecture": "arm64",
+  "verification": {
+    "coherentAppleDeviceTuples": "pending",
+    "guiProductionQualified": false,
+    "signedRuntime": "research-copy-scoped-only"
+  }
+}

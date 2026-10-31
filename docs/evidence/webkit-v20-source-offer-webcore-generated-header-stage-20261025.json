@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T12:11:16.542833+00:00",
+  "priorManifestSHA256": "00935f2b2e6d107dd7ebdf9a1d549ddd751fa5afd78eef2dec5c98dc5cdaabd8",
+  "manifestSHA256": "9ebe7cf9efe14eb09f0d95dbd04d4dd6bd7b95aa4fc4ce35fbe58c5f9c6ee442",
+  "componentCount": 141,
+  "recipeSHA256": "a21b6450ce96365e94366b9ba424269a9f954a662f44d13172c21a8d2dfe92e7",
+  "generatedLineageSHA256": "0213b058809cfbb87cd1b369354e5fc3c819aeb96bd40579e49a58218f005d49",
+  "generatedHeaderEvidenceSHA256": "df432d9c60267e79a95e1f07f99171138930a51a543c3253d68eaa60c3fb5d51",
+  "generatedHeaderNoticeSHA256": "94c29d9a04ff8d1a3090d5bd63a2b6990189f1695ec7ba302b8130e920aa9468",
+  "noticeTests": "39/39 PASS after installer copy/verify/tamper checks",
+  "status": "source-only-and-next-package-installer-stage;no-binary-or-UNKNOWN-decision-change"
+}

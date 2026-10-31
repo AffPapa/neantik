@@ -1,0 +1,28 @@
+diff --git a/content/browser/file_system_access/file_system_access_safe_move_helper.cc b/content/browser/file_system_access/file_system_access_safe_move_helper.cc
+index 77285f3..0000000 100644
+--- a/content/browser/file_system_access/file_system_access_safe_move_helper.cc
++++ b/content/browser/file_system_access/file_system_access_safe_move_helper.cc
+@@ -159,8 +159,7 @@ FileSystemAccessSafeMoveHelper::FileSystemAccessSafeMoveHelper(
+       dest_url_(dest_url),
+       options_(options),
+       quarantine_connection_callback_(
+-          std::move(quarantine_connection_callback)),
+-      has_transient_user_activation_(has_transient_user_activation) {}
++          std::move(quarantine_connection_callback)) {}
+ 
+ FileSystemAccessSafeMoveHelper::~FileSystemAccessSafeMoveHelper() = default;
+ 
+diff --git a/content/browser/file_system_access/file_system_access_safe_move_helper.h b/content/browser/file_system_access/file_system_access_safe_move_helper.h
+index aedccdb..0000000 100644
+--- a/content/browser/file_system_access/file_system_access_safe_move_helper.h
++++ b/content/browser/file_system_access/file_system_access_safe_move_helper.h
+@@ -93,9 +93,6 @@ class CONTENT_EXPORT FileSystemAccessSafeMoveHelper {
+   download::QuarantineConnectionCallback quarantine_connection_callback_
+       GUARDED_BY_CONTEXT(sequence_checker_);
+ 
+-  bool has_transient_user_activation_ GUARDED_BY_CONTEXT(sequence_checker_) =
+-      false;
+-
+   FileSystemAccessSafeMoveHelperCallback callback_
+       GUARDED_BY_CONTEXT(sequence_checker_);
+

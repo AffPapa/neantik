@@ -1,0 +1,3438 @@
+# libwebrtc generated-input header notice candidate
+Exact WebKit v20 BoringSSL generator inputs for 124 linked generated assembly files.
+This preserves source attribution evidence; component, patent and complete notice decisions remain open.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-armv4.pl | SHA-256 d0c8b27f91874d3dd2bd531584e8625d149b72b328258ce2b11a992974c9cc56 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# December 2014
+#
+# ChaCha20 for ARMv4.
+#
+# Performance in cycles per byte out of large buffer.
+#
+#			IALU/gcc-4.4    1xNEON      3xNEON+1xIALU
+#
+# Cortex-A5		19.3(*)/+95%    21.8        14.1
+# Cortex-A8		10.5(*)/+160%   13.9        6.35
+# Cortex-A9		12.9(**)/+110%  14.3        6.50
+# Cortex-A15		11.0/+40%       16.0        5.00
+# Snapdragon S4		11.5/+125%      13.6        4.90
+#
+# (*)	most "favourable" result for aligned data on little-endian
+#	processor, result for misaligned data is 10-15% lower;
+# (**)	this result is a trade-off: it can be improved by 20%,
+#	but then Snapdragon S4 and Cortex-A8 results get
+#	20-25% worse;
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-armv8.pl | SHA-256 28b1552719406d03e7f967b3391cbd85a995165eee49aaa847d7bd0f9891631f | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# June 2015
+#
+# ChaCha20 for ARMv8.
+#
+# Performance in cycles per byte out of large buffer.
+#
+#			IALU/gcc-4.9    3xNEON+1xIALU	6xNEON+2xIALU
+#
+# Apple A7		5.50/+49%       3.33            1.70
+# Cortex-A53		8.40/+80%       4.72		4.72(*)
+# Cortex-A57		8.06/+43%       4.90            4.43(**)
+# Denver		4.50/+82%       2.63		2.67(*)
+# X-Gene		9.50/+46%       8.82		8.89(*)
+# Mongoose		8.00/+44%	3.64		3.25
+# Kryo			8.17/+50%	4.83		4.65
+#
+# (*)	it's expected that doubling interleave factor doesn't help
+#	all processors, only those with higher NEON latency and
+#	higher instruction issue rate;
+# (**)	expected improvement was actually higher;
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-x86.pl | SHA-256 b8b8061e7162cd9e106b91278d6292713b0d0609cbc901a57508ba231820c486 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# January 2015
+#
+# ChaCha20 for x86.
+#
+# Performance in cycles per byte out of large buffer.
+#
+#		1xIALU/gcc	4xSSSE3
+# Pentium	17.5/+80%
+# PIII		14.2/+60%
+# P4		18.6/+84%
+# Core2		9.56/+89%	4.83
+# Westmere	9.50/+45%	3.35
+# Sandy Bridge	10.5/+47%	3.20
+# Haswell	8.15/+50%	2.83
+# Skylake	7.53/+22%	2.75
+# Silvermont	17.4/+36%	8.35
+# Goldmont	13.4/+40%	4.36
+# Sledgehammer	10.2/+54%
+# Bulldozer	13.4/+50%	4.38(*)
+#
+# (*)	Bulldozer actually executes 4xXOP code path that delivers 3.55;
+#
+# Modified from upstream OpenSSL to remove the XOP code.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/chacha/asm/chacha-x86_64.pl | SHA-256 b39cdaa7317209fb094c80a5d9b8dfc6d112da08a741629dc7fdfa7817acef56 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# November 2014
+#
+# ChaCha20 for x86_64.
+#
+# December 2016
+#
+# Add AVX512F code path.
+#
+# Performance in cycles per byte out of large buffer.
+#
+#		IALU/gcc 4.8(i)	1xSSSE3/SSE2	4xSSSE3	    NxAVX(v)
+#
+# P4		9.48/+99%	-/22.7(ii)	-
+# Core2		7.83/+55%	7.90/8.08	4.35
+# Westmere	7.19/+50%	5.60/6.70	3.00
+# Sandy Bridge	8.31/+42%	5.45/6.76	2.72
+# Ivy Bridge	6.71/+46%	5.40/6.49	2.41
+# Haswell	5.92/+43%	5.20/6.45	2.42	    1.23
+# Skylake[-X]	5.87/+39%	4.70/-		2.31	    1.19[0.57]
+# Silvermont	12.0/+33%	7.75/7.40	7.03(iii)
+# Knights L	11.7/-		-		9.60(iii)   0.80
+# Goldmont	10.6/+17%	5.10/-		3.28
+# Sledgehammer	7.28/+52%	-/14.2(ii)	-
+# Bulldozer	9.66/+28%	9.85/11.1	3.06(iv)
+# Ryzen		5.96/+50%	5.19/-		2.40        2.09
+# VIA Nano	10.5/+46%	6.72/8.60	6.05
+#
+# (i)	compared to older gcc 3.x one can observe >2x improvement on
+#	most platforms;
+# (ii)	as it can be seen, SSE2 performance is too low on legacy
+#	processors; NxSSE2 results are naturally better, but not
+#	impressively better than IALU ones, which is why you won't
+#	find SSE2 code below;
+# (iii)	this is not optimal result for Atom because of MSROM
+#	limitations, SSE2 can do better, but gain is considered too
+#	low to justify the [maintenance] effort;
+# (iv)	Bulldozer actually executes 4xXOP code path that delivers 2.20;
+#
+# Modified from upstream OpenSSL to remove the XOP code.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/cipher/asm/aes128gcmsiv-x86_64.pl | SHA-256 42ba2e50f59d82f67330b2836373d2cdcbe640b32de3dc0ff78c4464e05238cb | Apache-2.0 source header =====
+#!/usr/bin/env perl
+
+# Copyright (c) 2017, Shay Gueron.
+# Copyright 2017 The BoringSSL Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/cipher/asm/chacha20_poly1305_armv8.pl | SHA-256 8105f8d748f487829121b140a5c98f2867c9ab5443fc8edcc8ea2a8863ce1112 | Apache-2.0 source header =====
+#!/usr/bin/env perl
+
+# Copyright (c) 2020, CloudFlare Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+##############################################################################
+#                                                                            #
+# Author:  Vlad Krasnov                                                      #
+#                                                                            #
+##############################################################################
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/cipher/asm/chacha20_poly1305_x86_64.pl | SHA-256 ce69e1153e39b00f3935b7c1a33d57331e0e6911f8125fa69b97c4b53eac71a4 | Apache-2.0 source header =====
+#!/usr/bin/env perl
+
+# Copyright (c) 2015, CloudFlare Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+##############################################################################
+#                                                                            #
+# Author:  Vlad Krasnov                                                      #
+#                                                                            #
+##############################################################################
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aes-gcm-avx2-x86_64.pl | SHA-256 e927f0ffa828c8200ad25e7c3fd1bb5cc9621c1e4bbd7c52becc0553391c4dce | Apache-2.0 source header =====
+#!/usr/bin/env perl
+# Copyright 2024 The BoringSSL Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#------------------------------------------------------------------------------
+#
+# This is an AES-GCM implementation for x86_64 CPUs that support the following
+# CPU features: VAES && VPCLMULQDQ && AVX2.
+#
+# This is similar to aes-gcm-avx512-x86_64.pl, but it uses AVX2 instead of
+# AVX512.  This means it can only use 16 vector registers instead of 32, the
+# maximum vector length is 32 bytes, and some instructions such as vpternlogd
+# and masked loads/stores are unavailable.  However, it is able to run on CPUs
+# that have VAES without AVX512, namely AMD Zen 3 (including "Milan" server
+# processors) and some Intel client CPUs such as Alder Lake.
+#
+# This implementation also uses Karatsuba multiplication instead of schoolbook
+# multiplication for GHASH in its main loop.  This does not help much on Intel,
+# but it improves performance by ~5% on AMD Zen 3 which is the main target for
+# this implementation.  Other factors weighing slightly in favor of Karatsuba
+# multiplication in this implementation are the lower maximum vector length
+# (which means there is space left in the Htable array to cache the halves of
+# the key powers XOR'd together) and the unavailability of the vpternlogd
+# instruction (which helped schoolbook a bit more than Karatsuba).
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aes-gcm-avx512-x86_64.pl | SHA-256 55f00c82804622a2cceb36359505bacd9ef8fae9fc2c76558921b278a29583b8 | Apache-2.0 source header =====
+#!/usr/bin/env perl
+# Copyright 2024 The BoringSSL Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#------------------------------------------------------------------------------
+#
+# This is an AES-GCM implementation for x86_64 CPUs that support the following
+# CPU features: VAES && VPCLMULQDQ && AVX512BW && AVX512VL && BMI2.
+#
+# This file is based on aes-gcm-avx10-x86_64.S from the Linux kernel
+# (https://git.kernel.org/linus/b06affb1cb580e13).  The following notable
+# changes have been made:
+#
+# - Relicensed under BoringSSL's preferred license.
+#
+# - Converted from GNU assembler to "perlasm".  This was necessary for
+#   compatibility with BoringSSL's Windows builds which use NASM instead of the
+#   GNU assembler.  It was also necessary for compatibility with the 'delocate'
+#   tool used in BoringSSL's FIPS builds.
+#
+# - Added support for the Windows ABI.
+#
+# - Changed function prototypes to be compatible with what BoringSSL wants.
+#
+# - Removed the optimized finalization function, as BoringSSL doesn't want it.
+#
+# - Added a single-block GHASH multiplication function, as BoringSSL needs this.
+#
+# - Added optimization for large amounts of AAD.
+#
+# - Removed support for maximum vector lengths other than 512 bits.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesni-gcm-x86_64.pl | SHA-256 44254d0bf68ccf3e694aa9eebd9dfe33970f5a9b1a7dd266c5aea5def3f2b2e4 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2013-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+#
+# AES-NI-CTR+GHASH stitch.
+#
+# February 2013
+#
+# OpenSSL GCM implementation is organized in such way that its
+# performance is rather close to the sum of its streamed components,
+# in the context parallelized AES-NI CTR and modulo-scheduled
+# PCLMULQDQ-enabled GHASH. Unfortunately, as no stitch implementation
+# was observed to perform significantly better than the sum of the
+# components on contemporary CPUs, the effort was deemed impossible to
+# justify. This module is based on combination of Intel submissions,
+# [1] and [2], with MOVBE twist suggested by Ilya Albrekht and Max
+# Locktyukhin of Intel Corp. who verified that it reduces shuffles
+# pressure with notable relative improvement, achieving 1.0 cycle per
+# byte processed with 128-bit key on Haswell processor, 0.74 - on
+# Broadwell, 0.63 - on Skylake... [Mentioned results are raw profiled
+# measurements for favourable packet size, one divisible by 96.
+# Applications using the EVP interface will observe a few percent
+# worse performance.]
+#
+# Knights Landing processes 1 byte in 1.25 cycles (measured with EVP).
+#
+# [1] http://rt.openssl.org/Ticket/Display.html?id=2900&user=guest&pass=guest
+# [2] http://www.intel.com/content/dam/www/public/us/en/documents/software-support/enabling-high-performance-gcm.pdf
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesni-x86.pl | SHA-256 5946d7dcf50cd102f188624081dfaee5afba5eccde7847962ce4dd20cc05b861 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2009-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# This module implements support for Intel AES-NI extension. In
+# OpenSSL context it's used with Intel engine, but can also be used as
+# drop-in replacement for crypto/aes/asm/aes-586.pl [see below for
+# details].
+#
+# Performance.
+#
+# To start with see corresponding paragraph in aesni-x86_64.pl...
+# Instead of filling table similar to one found there I've chosen to
+# summarize *comparison* results for raw ECB, CTR and CBC benchmarks.
+# The simplified table below represents 32-bit performance relative
+# to 64-bit one in every given point. Ratios vary for different
+# encryption modes, therefore interval values.
+#
+#	16-byte     64-byte     256-byte    1-KB        8-KB
+#	53-67%      67-84%      91-94%      95-98%      97-99.5%
+#
+# Lower ratios for smaller block sizes are perfectly understandable,
+# because function call overhead is higher in 32-bit mode. Largest
+# 8-KB block performance is virtually same: 32-bit code is less than
+# 1% slower for ECB, CBC and CCM, and ~3% slower otherwise.
+
+# January 2011
+#
+# See aesni-x86_64.pl for details. Unlike x86_64 version this module
+# interleaves at most 6 aes[enc|dec] instructions, because there are
+# not enough registers for 8x interleave [which should be optimal for
+# Sandy Bridge]. Actually, performance results for 6x interleave
+# factor presented in aesni-x86_64.pl (except for CTR) are for this
+# module.
+
+# April 2011
+#
+# Add aesni_xts_[en|de]crypt. Westmere spends 1.50 cycles processing
+# one byte out of 8KB with 128-bit key, Sandy Bridge - 1.09.
+
+# November 2015
+#
+# Add aesni_ocb_[en|de]crypt. [Removed in BoringSSL]
+
+######################################################################
+# Current large-block performance in cycles per byte processed with
+# 128-bit key (less is better).
+#
+#		CBC en-/decrypt	CTR	XTS	ECB	OCB
+# Westmere	3.77/1.37	1.37	1.52	1.27
+# * Bridge	5.07/0.98	0.99	1.09	0.91	1.10
+# Haswell	4.44/0.80	0.97	1.03	0.72	0.76
+# Skylake	2.68/0.65	0.65	0.66	0.64	0.66
+# Silvermont	5.77/3.56	3.67	4.03	3.46	4.03
+# Goldmont	3.84/1.39	1.39	1.63	1.31	1.70
+# Bulldozer	5.80/0.98	1.05	1.24	0.93	1.23
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesni-x86_64.pl | SHA-256 4ae0b34e2609cbdfe5b461ba01ac70252662d0ff836852297e7d9a7665f06a54 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2009-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# This module implements support for Intel AES-NI extension. In
+# OpenSSL context it's used with Intel engine, but can also be used as
+# drop-in replacement for crypto/aes/asm/aes-x86_64.pl [see below for
+# details].
+#
+# Performance.
+#
+# Given aes(enc|dec) instructions' latency asymptotic performance for
+# non-parallelizable modes such as CBC encrypt is 3.75 cycles per byte
+# processed with 128-bit key. And given their throughput asymptotic
+# performance for parallelizable modes is 1.25 cycles per byte. Being
+# asymptotic limit it's not something you commonly achieve in reality,
+# but how close does one get? Below are results collected for
+# different modes and block sized. Pairs of numbers are for en-/
+# decryption.
+#
+#	16-byte     64-byte     256-byte    1-KB        8-KB
+# ECB	4.25/4.25   1.38/1.38   1.28/1.28   1.26/1.26	1.26/1.26
+# CTR	5.42/5.42   1.92/1.92   1.44/1.44   1.28/1.28   1.26/1.26
+# CBC	4.38/4.43   4.15/1.43   4.07/1.32   4.07/1.29   4.06/1.28
+# CCM	5.66/9.42   4.42/5.41   4.16/4.40   4.09/4.15   4.06/4.07
+# OFB	5.42/5.42   4.64/4.64   4.44/4.44   4.39/4.39   4.38/4.38
+# CFB	5.73/5.85   5.56/5.62   5.48/5.56   5.47/5.55   5.47/5.55
+#
+# ECB, CTR, CBC and CCM results are free from EVP overhead. This means
+# that otherwise used 'openssl speed -evp aes-128-??? -engine aesni
+# [-decrypt]' will exhibit 10-15% worse results for smaller blocks.
+# The results were collected with specially crafted speed.c benchmark
+# in order to compare them with results reported in "Intel Advanced
+# Encryption Standard (AES) New Instruction Set" White Paper Revision
+# 3.0 dated May 2010. All above results are consistently better. This
+# module also provides better performance for block sizes smaller than
+# 128 bytes in points *not* represented in the above table.
+#
+# Looking at the results for 8-KB buffer.
+#
+# CFB and OFB results are far from the limit, because implementation
+# uses "generic" CRYPTO_[c|o]fb128_encrypt interfaces relying on
+# single-block aesni_encrypt, which is not the most optimal way to go.
+# CBC encrypt result is unexpectedly high and there is no documented
+# explanation for it. Seemingly there is a small penalty for feeding
+# the result back to AES unit the way it's done in CBC mode. There is
+# nothing one can do and the result appears optimal. CCM result is
+# identical to CBC, because CBC-MAC is essentially CBC encrypt without
+# saving output. CCM CTR "stays invisible," because it's neatly
+# interleaved with CBC-MAC. This provides ~30% improvement over
+# "straightforward" CCM implementation with CTR and CBC-MAC performed
+# disjointly. Parallelizable modes practically achieve the theoretical
+# limit.
+#
+# Looking at how results vary with buffer size.
+#
+# Curves are practically saturated at 1-KB buffer size. In most cases
+# "256-byte" performance is >95%, and "64-byte" is ~90% of "8-KB" one.
+# CTR curve doesn't follow this pattern and is "slowest" changing one
+# with "256-byte" result being 87% of "8-KB." This is because overhead
+# in CTR mode is most computationally intensive. Small-block CCM
+# decrypt is slower than encrypt, because first CTR and last CBC-MAC
+# iterations can't be interleaved.
+#
+# Results for 192- and 256-bit keys.
+#
+# EVP-free results were observed to scale perfectly with number of
+# rounds for larger block sizes, i.e. 192-bit result being 10/12 times
+# lower and 256-bit one - 10/14. Well, in CBC encrypt case differences
+# are a tad smaller, because the above mentioned penalty biases all
+# results by same constant value. In similar way function call
+# overhead affects small-block performance, as well as OFB and CFB
+# results. Differences are not large, most common coefficients are
+# 10/11.7 and 10/13.4 (as opposite to 10/12.0 and 10/14.0), but one
+# observe even 10/11.2 and 10/12.4 (CTR, OFB, CFB)...
+
+# January 2011
+#
+# While Westmere processor features 6 cycles latency for aes[enc|dec]
+# instructions, which can be scheduled every second cycle, Sandy
+# Bridge spends 8 cycles per instruction, but it can schedule them
+# every cycle. This means that code targeting Westmere would perform
+# suboptimally on Sandy Bridge. Therefore this update.
+#
+# In addition, non-parallelizable CBC encrypt (as well as CCM) is
+# optimized. Relative improvement might appear modest, 8% on Westmere,
+# but in absolute terms it's 3.77 cycles per byte encrypted with
+# 128-bit key on Westmere, and 5.07 - on Sandy Bridge. These numbers
+# should be compared to asymptotic limits of 3.75 for Westmere and
+# 5.00 for Sandy Bridge. Actually, the fact that they get this close
+# to asymptotic limits is quite amazing. Indeed, the limit is
+# calculated as latency times number of rounds, 10 for 128-bit key,
+# and divided by 16, the number of bytes in block, or in other words
+# it accounts *solely* for aesenc instructions. But there are extra
+# instructions, and numbers so close to the asymptotic limits mean
+# that it's as if it takes as little as *one* additional cycle to
+# execute all of them. How is it possible? It is possible thanks to
+# out-of-order execution logic, which manages to overlap post-
+# processing of previous block, things like saving the output, with
+# actual encryption of current block, as well as pre-processing of
+# current block, things like fetching input and xor-ing it with
+# 0-round element of the key schedule, with actual encryption of
+# previous block. Keep this in mind...
+#
+# For parallelizable modes, such as ECB, CBC decrypt, CTR, higher
+# performance is achieved by interleaving instructions working on
+# independent blocks. In which case asymptotic limit for such modes
+# can be obtained by dividing above mentioned numbers by AES
+# instructions' interleave factor. Westmere can execute at most 3
+# instructions at a time, meaning that optimal interleave factor is 3,
+# and that's where the "magic" number of 1.25 come from. "Optimal
+# interleave factor" means that increase of interleave factor does
+# not improve performance. The formula has proven to reflect reality
+# pretty well on Westmere... Sandy Bridge on the other hand can
+# execute up to 8 AES instructions at a time, so how does varying
+# interleave factor affect the performance? Here is table for ECB
+# (numbers are cycles per byte processed with 128-bit key):
+#
+# instruction interleave factor		3x	6x	8x
+# theoretical asymptotic limit		1.67	0.83	0.625
+# measured performance for 8KB block	1.05	0.86	0.84
+#
+# "as if" interleave factor		4.7x	5.8x	6.0x
+#
+# Further data for other parallelizable modes:
+#
+# CBC decrypt				1.16	0.93	0.74
+# CTR					1.14	0.91	0.74
+#
+# Well, given 3x column it's probably inappropriate to call the limit
+# asymptotic, if it can be surpassed, isn't it? What happens there?
+# Rewind to CBC paragraph for the answer. Yes, out-of-order execution
+# magic is responsible for this. Processor overlaps not only the
+# additional instructions with AES ones, but even AES instructions
+# processing adjacent triplets of independent blocks. In the 6x case
+# additional instructions  still claim disproportionally small amount
+# of additional cycles, but in 8x case number of instructions must be
+# a tad too high for out-of-order logic to cope with, and AES unit
+# remains underutilized... As you can see 8x interleave is hardly
+# justifiable, so there no need to feel bad that 32-bit aesni-x86.pl
+# utilizes 6x interleave because of limited register bank capacity.
+#
+# Higher interleave factors do have negative impact on Westmere
+# performance. While for ECB mode it's negligible ~1.5%, other
+# parallelizables perform ~5% worse, which is outweighed by ~25%
+# improvement on Sandy Bridge. To balance regression on Westmere
+# CTR mode was implemented with 6x aesenc interleave factor.
+
+# April 2011
+#
+# Add aesni_xts_[en|de]crypt. Westmere spends 1.25 cycles processing
+# one byte out of 8KB with 128-bit key, Sandy Bridge - 0.90. Just like
+# in CTR mode AES instruction interleave factor was chosen to be 6x.
+
+# November 2015
+#
+# Add aesni_ocb_[en|de]crypt. AES instruction interleave factor was
+# chosen to be 6x.
+
+######################################################################
+# Current large-block performance in cycles per byte processed with
+# 128-bit key (less is better).
+#
+#		CBC en-/decrypt	CTR	XTS	ECB	OCB
+# Westmere	3.77/1.25	1.25	1.25	1.26
+# * Bridge	5.07/0.74	0.75	0.90	0.85	0.98
+# Haswell	4.44/0.63	0.63	0.73	0.63	0.70
+# Skylake	2.62/0.63	0.63	0.63	0.63
+# Silvermont	5.75/3.54	3.56	4.12	3.87(*)	4.11
+# Knights L	2.54/0.77	0.78	0.85	-	1.50
+# Goldmont	3.82/1.26	1.26	1.29	1.29	1.50
+# Bulldozer	5.77/0.70	0.72	0.90	0.70	0.95
+# Ryzen		2.71/0.35	0.35	0.44	0.38	0.49
+#
+# (*)	Atom Silvermont ECB result is suboptimal because of penalties
+#	incurred by operations on %xmm8-15. As ECB is not considered
+#	critical, nothing was done to mitigate the problem.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesv8-armx.pl | SHA-256 d0ffbe025d102275c5bb6202a48534d08008beeba1fa832b23acb489fbb0312a | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2014-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# This module implements support for ARMv8 AES instructions. The
+# module is endian-agnostic in sense that it supports both big- and
+# little-endian cases. As does it support both 32- and 64-bit modes
+# of operation. Latter is achieved by limiting amount of utilized
+# registers to 16, which implies additional NEON load and integer
+# instructions. This has no effect on mighty Apple A7, where results
+# are literally equal to the theoretical estimates based on AES
+# instruction latencies and issue rates. On Cortex-A53, an in-order
+# execution core, this costs up to 10-15%, which is partially
+# compensated by implementing dedicated code path for 128-bit
+# CBC encrypt case. On Cortex-A57 parallelizable mode performance
+# seems to be limited by sheer amount of NEON instructions...
+#
+# Performance in cycles per byte processed with 128-bit key:
+#
+#		CBC enc		CBC dec		CTR
+# Apple A7	2.39		1.20		1.20
+# Cortex-A53	1.32		1.29		1.46
+# Cortex-A57(*)	1.95		0.85		0.93
+# Denver	1.96		0.86		0.80
+# Mongoose	1.33		1.20		1.20
+#
+# (*)	original 3.64/1.34/1.32 results were for r0p0 revision
+#	and are still same even for updated module;
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/aesv8-gcm-armv8.pl | SHA-256 3cdacb252aad4ea1068a8412932f17ecaa5139b1e766d271246673fa2dde79fe | Apache-2.0 source header =====
+#! /usr/bin/env perl
+
+# Copyright (c) 2022, ARM Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#========================================================================
+# Written by Fangming Fang <fangming.fang@arm.com> for the OpenSSL project,
+# derived from https://github.com/ARM-software/AArch64cryptolib, original
+# author Samuel Lee <Samuel.Lee@arm.com>.
+#========================================================================
+#
+# Approach - assume we don't want to reload constants, so reserve ~half of
+# vector register file for constants
+#
+# main loop to act on 4 16B blocks per iteration, and then do modulo of the
+# accumulated intermediate hashes from the 4 blocks
+#
+#  ____________________________________________________
+# |                                                    |
+# | PRE                                                |
+# |____________________________________________________|
+# |                |                |                  |
+# | CTR block 4k+8 | AES block 4k+4 | GHASH block 4k+0 |
+# |________________|________________|__________________|
+# |                |                |                  |
+# | CTR block 4k+9 | AES block 4k+5 | GHASH block 4k+1 |
+# |________________|________________|__________________|
+# |                |                |                  |
+# | CTR block 4k+10| AES block 4k+6 | GHASH block 4k+2 |
+# |________________|________________|__________________|
+# |                |                |                  |
+# | CTR block 4k+11| AES block 4k+7 | GHASH block 4k+3 |
+# |________________|____(mostly)____|__________________|
+# |                                                    |
+# | MODULO                                             |
+# |____________________________________________________|
+#
+# PRE: Ensure previous generated intermediate hash is aligned and merged with
+# result for GHASH 4k+0
+#
+# EXT low_acc, low_acc, low_acc, #8
+# EOR res_curr (4k+0), res_curr (4k+0), low_acc
+#
+# CTR block: Increment and byte reverse counter in scalar registers and transfer
+# to SIMD registers
+#
+# REV     ctr32, rev_ctr32
+# ORR     ctr64, constctr96_top32, ctr32, LSL #32
+# // Keeping this in scalar registers to free up space in SIMD RF
+# INS     ctr_next.d[0], constctr96_bottom64
+# INS     ctr_next.d[1], ctr64X
+# ADD     rev_ctr32, #1
+#
+# AES block:
+#
+# Do AES encryption/decryption on CTR block X and EOR it with input block X.
+# Take 256 bytes key below for example. Doing small trick here of loading input
+# in scalar registers, EORing with last key and then transferring Given we are
+# very constrained in our ASIMD registers this is quite important
+#
+#     Encrypt:
+# LDR     input_low, [ input_ptr  ], #8
+# LDR     input_high, [ input_ptr  ], #8
+# EOR     input_low, k14_low
+# EOR     input_high, k14_high
+# INS     res_curr.d[0], input_low
+# INS     res_curr.d[1], input_high
+# AESE    ctr_curr, k0; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k1; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k2; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k3; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k4; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k5; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k6; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k7; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k8; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k9; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k10; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k11; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k12; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k13
+# EOR     res_curr, res_curr, ctr_curr
+# ST1     { res_curr.16b  }, [ output_ptr  ], #16
+#
+#     Decrypt:
+# AESE    ctr_curr, k0; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k1; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k2; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k3; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k4; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k5; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k6; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k7; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k8; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k9; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k10; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k11; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k12; AESMC ctr_curr, ctr_curr
+# AESE    ctr_curr, k13
+# LDR     res_curr, [ input_ptr  ], #16
+# EOR     res_curr, res_curr, ctr_curr
+# MOV     output_low, res_curr.d[0]
+# MOV     output_high, res_curr.d[1]
+# EOR     output_low, k14_low
+# EOR     output_high, k14_high
+# STP     output_low, output_high, [ output_ptr  ], #16
+#
+# GHASH block X:
+#     Do 128b karatsuba polynomial multiplication on block. We only have
+#     64b->128b polynomial multipliers, naively that means we need to do 4 64b
+#     multiplies to generate a 128b.
+#
+# multiplication:
+#     Pmull(A,B) == (Pmull(Ah,Bh)<<128 | Pmull(Al,Bl)) ^
+#                   (Pmull(Ah,Bl) ^ Pmull(Al,Bh))<<64
+#
+#     The idea behind Karatsuba multiplication is that we can do just 3 64b
+#     multiplies:
+#     Pmull(A,B) == (Pmull(Ah,Bh)<<128 | Pmull(Al,Bl)) ^
+#                   (Pmull(Ah^Al,Bh^Bl) ^ Pmull(Ah,Bh) ^
+#                   Pmull(Al,Bl))<<64
+#
+#     There is some complication here because the bit order of GHASH's PMULL is
+#     reversed compared to elsewhere, so we are multiplying with "twisted"
+#     powers of H
+#
+# Note: We can PMULL directly into the acc_x in first GHASH of the loop
+#
+# Note: For scheduling big cores we want to split the processing to happen over
+#       two loop iterations - otherwise the critical path latency dominates the
+#       performance.
+#
+#       This has a knock on effect on register pressure, so we have to be a bit
+#       more clever with our temporary registers than indicated here
+#
+# REV64   res_curr, res_curr
+# INS     t_m.d[0], res_curr.d[1]
+# EOR     t_m.8B, t_m.8B, res_curr.8B
+# PMULL2  t_h, res_curr, HX
+# PMULL   t_l, res_curr, HX
+# PMULL   t_m, t_m, HX_k
+# EOR     acc_h, acc_h, t_h
+# EOR     acc_l, acc_l, t_l
+# EOR     acc_m, acc_m, t_m
+#
+# MODULO: take the partial accumulators (~representing sum of 256b
+#         multiplication results), from GHASH and do modulo reduction on them
+#         There is some complication here because the bit order of GHASH's
+#         PMULL is reversed compared to elsewhere, so we are doing modulo with
+#         a reversed constant
+#
+# EOR     acc_m, acc_m, acc_h
+# EOR     acc_m, acc_m, acc_l                // Finish off karatsuba processing
+# PMULL   t_mod, acc_h, mod_constant
+# EXT     acc_h, acc_h, acc_h, #8
+# EOR     acc_m, acc_m, acc_h
+# EOR     acc_m, acc_m, t_mod
+# PMULL   acc_h, acc_m, mod_constant
+# EXT     acc_m, acc_m, acc_m, #8
+# EOR     acc_l, acc_l, acc_h
+# EOR     acc_l, acc_l, acc_m
+#
+# Key Optimizations:
+#
+# NOTE: This implementation is heavily NEON-bound due to the large amount of
+# vector computation. The original code from which this was derived often
+# avoided unnecessary Load/Store operations, but at the expense of
+# increased NEON pipeline pressure and more GPR <-> NEON data movements.
+# The primary goal of the optimizations applied here is to reduce NEON
+# pipeline pressure. This includes minimizing NEON register-to-register moves,
+# GPR to NEON transfers (and vice versa), and other operations that consume
+# execution slots on the NEON pipes.
+#
+# 1.  Merged Kernels: AES-128, AES-192, and AES-256 GCM encryption and
+#     decryption are handled by single kernels each, reducing code size.
+#     Conditional branching is used for the key-size specific rounds.
+#
+# 2.  Aggressive Pipelining: GHASH and AES operations for different blocks
+#     (4k to 4k+3) are heavily interleaved within the main loop. GHASH for
+#     block `n` starts while AES for block `n` is still in progress, and
+#     AES for block `n+4` begins. This hides instruction latencies.
+#
+# 3.  Optimized Counter Handling: Instead of incrementing, reversing, and
+#     moving the counter to NEON registers for each of the four blocks in
+#     every loop iteration, we precompute and cache counter values on the
+#     stack.
+#     - The lower 96 bits of the counter are constant across the four blocks
+#       within an iteration.
+#     - The upper 32 bits (the byte-swapped incrementing part) are calculated
+#       for all four blocks (N, N+1, N+2, N+3) and stored on the stack at
+#       the start of the loop.
+#     - Values are calculated one loop iteration ahead of time. That is,
+#       immediately after loading values N-N+3 we calculate and store values
+#       N+4-N+7. This ensures that the data is available when loaded without
+#       store-load forwarding.
+#     - This strategy eliminates repeated scalar-to-vector transfers (FMOV)
+#       and scalar increment/reverse operations inside the tight loop.
+#
+# 4.  Reduced Scalar-NEON Transfers:
+#     - For encryption, the final XOR with the last round key (rkN) and the
+#       AES-encrypted counter is done entirely in NEON registers using
+#       EOR or PLATFORM_EOR3, avoiding costly FMOV instructions to move
+#       plaintext data from GPRs to NEON after partial operations. A similar
+#       optimization is used for decryption.
+#
+# 5.  EOR3 Optimization: The PLATFORM_EOR3 macro allows using the single
+#     EOR3 instruction (if available) to replace two EOR instructions,
+#     i.e., D = A ^ B ^ C. This is used in both GHASH accumulator updates
+#     and the final AES output XOR. Both versions of encrypt and decrypt are
+#     stored in the same assembly file.
+#
+# 6.  Instruction scheduling was significantly modified both to directly improve
+#     performance as well as to remove false dependencies when that allowed
+#     additional improvements. There is still a bit of additional speedup
+#     possible but would be easiest to extract with platform-specific
+#     implementations.
+#
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/bsaes-armv7.pl | SHA-256 8b3bcd22a715cee65f71e204b23c7993920585be8e77caae2d2a3643c9043c43 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2012-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+#
+# Specific modes and adaptation for Linux kernel by Ard Biesheuvel
+# of Linaro.
+# ====================================================================
+
+# Bit-sliced AES for ARM NEON
+#
+# February 2012.
+#
+# This implementation is direct adaptation of bsaes-x86_64 module for
+# ARM NEON. Except that this module is endian-neutral [in sense that
+# it can be compiled for either endianness] by courtesy of vld1.8's
+# neutrality. Initial version doesn't implement interface to OpenSSL,
+# only low-level primitives and unsupported entry points, just enough
+# to collect performance results, which for Cortex-A8 core are:
+#
+# encrypt	19.5 cycles per byte processed with 128-bit key
+# decrypt	22.1 cycles per byte processed with 128-bit key
+# key conv.	440  cycles per 128-bit key/0.18 of 8x block
+#
+# Snapdragon S4 encrypts byte in 17.6 cycles and decrypts in 19.7,
+# which is [much] worse than anticipated (for further details see
+# http://www.openssl.org/~appro/Snapdragon-S4.html).
+#
+# Cortex-A15 manages in 14.2/16.1 cycles [when integer-only code
+# manages in 20.0 cycles].
+#
+# When comparing to x86_64 results keep in mind that NEON unit is
+# [mostly] single-issue and thus can't [fully] benefit from
+# instruction-level parallelism. And when comparing to aes-armv4
+# results keep in mind key schedule conversion overhead (see
+# bsaes-x86_64.pl for further details)...
+#
+#						<appro@openssl.org>
+
+# April-August 2013
+# Add CBC, CTR and XTS subroutines and adapt for kernel use; courtesy of Ard.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-armv4.pl | SHA-256 da4ca6f0b774f9eafa8a5fd553e7849b167e8593a411e96a777d02e9e1fb1067 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2010-2018 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# April 2010
+#
+# The module implements "4-bit" GCM GHASH function and underlying
+# single multiplication operation in GF(2^128). "4-bit" means that it
+# uses 256 bytes per-key table [+32 bytes shared table]. There is no
+# experimental performance data available yet. The only approximation
+# that can be made at this point is based on code size. Inner loop is
+# 32 instructions long and on single-issue core should execute in <40
+# cycles. Having verified that gcc 3.4 didn't unroll corresponding
+# loop, this assembler loop body was found to be ~3x smaller than
+# compiler-generated one...
+#
+# July 2010
+#
+# Rescheduling for dual-issue pipeline resulted in 8.5% improvement on
+# Cortex A8 core and ~25 cycles per processed byte (which was observed
+# to be ~3 times faster than gcc-generated code:-)
+#
+# February 2011
+#
+# Profiler-assisted and platform-specific optimization resulted in 7%
+# improvement on Cortex A8 core and ~23.5 cycles per byte.
+#
+# March 2011
+#
+# Add NEON implementation featuring polynomial multiplication, i.e. no
+# lookup tables involved. On Cortex A8 it was measured to process one
+# byte in 15 cycles or 55% faster than integer-only code.
+#
+# April 2014
+#
+# Switch to multiplication algorithm suggested in paper referred
+# below and combine it with reduction algorithm from x86 module.
+# Performance improvement over previous version varies from 65% on
+# Snapdragon S4 to 110% on Cortex A9. In absolute terms Cortex A8
+# processes one byte in 8.45 cycles, A9 - in 10.2, A15 - in 7.63,
+# Snapdragon S4 - in 9.33.
+#
+# Câmara, D.; Gouvêa, C. P. L.; López, J. & Dahab, R.: Fast Software
+# Polynomial Multiplication on ARM Processors using the NEON Engine.
+#
+# http://conradoplg.cryptoland.net/files/2010/12/mocrysen13.pdf
+
+# ====================================================================
+# Note about "528B" variant. In ARM case it makes lesser sense to
+# implement it for following reasons:
+#
+# - performance improvement won't be anywhere near 50%, because 128-
+#   bit shift operation is neatly fused with 128-bit xor here, and
+#   "538B" variant would eliminate only 4-5 instructions out of 32
+#   in the inner loop (meaning that estimated improvement is ~15%);
+# - ARM-based systems are often embedded ones and extra memory
+#   consumption might be unappreciated (for so little improvement);
+#
+# Byte order [in]dependence. =========================================
+#
+# Caller is expected to maintain specific *dword* order in Htable,
+# namely with *least* significant dword of 128-bit value at *lower*
+# address. This differs completely from C code and has everything to
+# do with ldm instruction and order in which dwords are "consumed" by
+# algorithm. *Byte* order within these dwords in turn is whatever
+# *native* byte order on current platform. See gcm128.c for working
+# example...
+
+# This file was patched in BoringSSL to remove the variable-time 4-bit
+# implementation.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-neon-armv8.pl | SHA-256 0e8980f6f0f23655ef31983aac8c3041f05f8973d1b3ead3294aaaa6d91d874b | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2010-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+
+# This file was adapted to AArch64 from the 32-bit version in ghash-armv4.pl. It
+# implements the multiplication algorithm described in:
+#
+# Câmara, D.; Gouvêa, C. P. L.; López, J. & Dahab, R.: Fast Software
+# Polynomial Multiplication on ARM Processors using the NEON Engine.
+#
+# http://conradoplg.cryptoland.net/files/2010/12/mocrysen13.pdf
+#
+# The main distinction to keep in mind between 32-bit NEON and AArch64 SIMD is
+# AArch64 cannot compute over the upper halves of SIMD registers. In 32-bit
+# NEON, the low and high halves of the 128-bit register q0 are accessible as
+# 64-bit registers d0 and d1, respectively. In AArch64, dN is the lower half of
+# vN. Where the 32-bit version would use the upper half, this file must keep
+# halves in separate registers.
+#
+# The other distinction is in syntax. 32-bit NEON embeds lane information in the
+# instruction name, while AArch64 uses suffixes on the registers. For instance,
+# left-shifting 64-bit lanes of a SIMD register in 32-bit would be written:
+#
+#     vshl.i64 q0, q0, #1
+#
+# in 64-bit, it would be written:
+#
+#     shl v0.2d, v0.2d, #1
+#
+# See Programmer's Guide for ARMv8-A, section 7 for details.
+# http://infocenter.arm.com/help/topic/com.arm.doc.den0024a/DEN0024A_v8_architecture_PG.pdf
+#
+# Finally, note the 8-bit and 64-bit polynomial multipliers in AArch64 differ
+# only by suffix. pmull vR.8h, vA.8b, vB.8b multiplies eight 8-bit polynomials
+# and is always available. pmull vR.1q, vA.1d, vB.1d multiplies a 64-bit
+# polynomial and is conditioned on the PMULL extension. This file emulates the
+# latter with the former.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-ssse3-x86.pl | SHA-256 9f316b2e399fe6e741a6e47bc8448e7e51dbad70a553c98c738ae3ac2793e9bd | Apache-2.0 source header =====
+#!/usr/bin/env perl
+# Copyright 2019 The BoringSSL Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# ghash-ssse3-x86.pl is a constant-time variant of the traditional 4-bit
+# table-based GHASH implementation. It requires SSSE3 instructions.
+#
+# For background, the table-based strategy is a 4-bit windowed multiplication.
+# It precomputes all 4-bit multiples of H (this is 16 128-bit rows), then loops
+# over 4-bit windows of the input and indexes them up into the table. Visually,
+# it multiplies as in the schoolbook multiplication diagram below, but with
+# more terms. (Each term is 4 bits, so there are 32 terms in each row.) First
+# it incorporates the terms labeled '1' by indexing the most significant term
+# of X into the table. Then it shifts and repeats for '2' and so on.
+#
+#        hhhhhh
+#  *     xxxxxx
+#  ============
+#        666666
+#       555555
+#      444444
+#     333333
+#    222222
+#   111111
+#
+# This implementation changes the order. We treat the table as a 16×16 matrix
+# and transpose it. The first row is then the first byte of each multiple of H,
+# and so on. We then reorder terms as below. Observe that the terms labeled '1'
+# and '2' are all lookups into the first row, etc. This maps well to the SSSE3
+# pshufb instruction, using alternating terms of X in parallel as indices. This
+# alternation is needed because pshufb maps 4 bits to 8 bits. Then we shift and
+# repeat for each row.
+#
+#        hhhhhh
+#  *     xxxxxx
+#  ============
+#        224466
+#       113355
+#      224466
+#     113355
+#    224466
+#   113355
+#
+# Next we account for GCM's confusing bit order. The "first" bit is the least
+# significant coefficient, but GCM treats the most significant bit within a byte
+# as first. Bytes are little-endian, and bits are big-endian. We reverse the
+# bytes in XMM registers for a consistent bit and byte ordering, but this means
+# the least significant bit is the most significant coefficient and vice versa.
+#
+# For consistency, "low", "high", "left-shift", and "right-shift" refer to the
+# bit ordering within the XMM register, rather than the reversed coefficient
+# ordering. Low bits are less significant bits and more significant
+# coefficients. Right-shifts move from MSB to the LSB and correspond to
+# increasing the power of each coefficient.
+#
+# Note this bit reversal enters into the table's column indices. H*1 is stored
+# in column 0b1000 and H*x^3 is stored in column 0b0001. It also means earlier
+# table rows contain more significant coefficients, so we iterate forwards.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-ssse3-x86_64.pl | SHA-256 cf88c3c5b2a5718a242d9ea66a73326a67519f6c1679169ccfdcea7836eb0ac9 | Apache-2.0 source header =====
+#!/usr/bin/env perl
+# Copyright 2019 The BoringSSL Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# ghash-ssse3-x86_64.pl is a constant-time variant of the traditional 4-bit
+# table-based GHASH implementation. It requires SSSE3 instructions.
+#
+# For background, the table-based strategy is a 4-bit windowed multiplication.
+# It precomputes all 4-bit multiples of H (this is 16 128-bit rows), then loops
+# over 4-bit windows of the input and indexes them up into the table. Visually,
+# it multiplies as in the schoolbook multiplication diagram below, but with
+# more terms. (Each term is 4 bits, so there are 32 terms in each row.) First
+# it incorporates the terms labeled '1' by indexing the most significant term
+# of X into the table. Then it shifts and repeats for '2' and so on.
+#
+#        hhhhhh
+#  *     xxxxxx
+#  ============
+#        666666
+#       555555
+#      444444
+#     333333
+#    222222
+#   111111
+#
+# This implementation changes the order. We treat the table as a 16×16 matrix
+# and transpose it. The first row is then the first byte of each multiple of H,
+# and so on. We then reorder terms as below. Observe that the terms labeled '1'
+# and '2' are all lookups into the first row, etc. This maps well to the SSSE3
+# pshufb instruction, using alternating terms of X in parallel as indices. This
+# alternation is needed because pshufb maps 4 bits to 8 bits. Then we shift and
+# repeat for each row.
+#
+#        hhhhhh
+#  *     xxxxxx
+#  ============
+#        224466
+#       113355
+#      224466
+#     113355
+#    224466
+#   113355
+#
+# Next we account for GCM's confusing bit order. The "first" bit is the least
+# significant coefficient, but GCM treats the most significant bit within a byte
+# as first. Bytes are little-endian, and bits are big-endian. We reverse the
+# bytes in XMM registers for a consistent bit and byte ordering, but this means
+# the least significant bit is the most significant coefficient and vice versa.
+#
+# For consistency, "low", "high", "left-shift", and "right-shift" refer to the
+# bit ordering within the XMM register, rather than the reversed coefficient
+# ordering. Low bits are less significant bits and more significant
+# coefficients. Right-shifts move from MSB to the LSB and correspond to
+# increasing the power of each coefficient.
+#
+# Note this bit reversal enters into the table's column indices. H*1 is stored
+# in column 0b1000 and H*x^3 is stored in column 0b0001. It also means earlier
+# table rows contain more significant coefficients, so we iterate forwards.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-x86.pl | SHA-256 ce7dcf2df26f2004ef2876a6566e1b7d70cc2c3d420a54d335f0fbef5de11a2c | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2010-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# March, May, June 2010
+#
+# The module implements "4-bit" GCM GHASH function and underlying
+# single multiplication operation in GF(2^128). "4-bit" means that it
+# uses 256 bytes per-key table [+64/128 bytes fixed table]. It has two
+# code paths: vanilla x86 and vanilla SSE. Former will be executed on
+# 486 and Pentium, latter on all others. SSE GHASH features so called
+# "528B" variant of "4-bit" method utilizing additional 256+16 bytes
+# of per-key storage [+512 bytes shared table]. Performance results
+# are for streamed GHASH subroutine and are expressed in cycles per
+# processed byte, less is better:
+#
+#		gcc 2.95.3(*)	SSE assembler	x86 assembler
+#
+# Pentium	105/111(**)	-		50
+# PIII		68 /75		12.2		24
+# P4		125/125		17.8		84(***)
+# Opteron	66 /70		10.1		30
+# Core2		54 /67		8.4		18
+# Atom		105/105		16.8		53
+# VIA Nano	69 /71		13.0		27
+#
+# (*)	gcc 3.4.x was observed to generate few percent slower code,
+#	which is one of reasons why 2.95.3 results were chosen,
+#	another reason is lack of 3.4.x results for older CPUs;
+#	comparison with SSE results is not completely fair, because C
+#	results are for vanilla "256B" implementation, while
+#	assembler results are for "528B";-)
+# (**)	second number is result for code compiled with -fPIC flag,
+#	which is actually more relevant, because assembler code is
+#	position-independent;
+# (***)	see comment in non-MMX routine for further details;
+#
+# To summarize, it's >2-5 times faster than gcc-generated code. To
+# anchor it to something else SHA1 assembler processes one byte in
+# ~7 cycles on contemporary x86 cores. As for choice of MMX/SSE
+# in particular, see comment at the end of the file...
+
+# May 2010
+#
+# Add PCLMULQDQ version performing at 2.10 cycles per processed byte.
+# The question is how close is it to theoretical limit? The pclmulqdq
+# instruction latency appears to be 14 cycles and there can't be more
+# than 2 of them executing at any given time. This means that single
+# Karatsuba multiplication would take 28 cycles *plus* few cycles for
+# pre- and post-processing. Then multiplication has to be followed by
+# modulo-reduction. Given that aggregated reduction method [see
+# "Carry-less Multiplication and Its Usage for Computing the GCM Mode"
+# white paper by Intel] allows you to perform reduction only once in
+# a while we can assume that asymptotic performance can be estimated
+# as (28+Tmod/Naggr)/16, where Tmod is time to perform reduction
+# and Naggr is the aggregation factor.
+#
+# Before we proceed to this implementation let's have closer look at
+# the best-performing code suggested by Intel in their white paper.
+# By tracing inter-register dependencies Tmod is estimated as ~19
+# cycles and Naggr chosen by Intel is 4, resulting in 2.05 cycles per
+# processed byte. As implied, this is quite optimistic estimate,
+# because it does not account for Karatsuba pre- and post-processing,
+# which for a single multiplication is ~5 cycles. Unfortunately Intel
+# does not provide performance data for GHASH alone. But benchmarking
+# AES_GCM_encrypt ripped out of Fig. 15 of the white paper with aadt
+# alone resulted in 2.46 cycles per byte of out 16KB buffer. Note that
+# the result accounts even for pre-computing of degrees of the hash
+# key H, but its portion is negligible at 16KB buffer size.
+#
+# Moving on to the implementation in question. Tmod is estimated as
+# ~13 cycles and Naggr is 2, giving asymptotic performance of ...
+# 2.16. How is it possible that measured performance is better than
+# optimistic theoretical estimate? There is one thing Intel failed
+# to recognize. By serializing GHASH with CTR in same subroutine
+# former's performance is really limited to above (Tmul + Tmod/Naggr)
+# equation. But if GHASH procedure is detached, the modulo-reduction
+# can be interleaved with Naggr-1 multiplications at instruction level
+# and under ideal conditions even disappear from the equation. So that
+# optimistic theoretical estimate for this implementation is ...
+# 28/16=1.75, and not 2.16. Well, it's probably way too optimistic,
+# at least for such small Naggr. I'd argue that (28+Tproc/Naggr),
+# where Tproc is time required for Karatsuba pre- and post-processing,
+# is more realistic estimate. In this case it gives ... 1.91 cycles.
+# Or in other words, depending on how well we can interleave reduction
+# and one of the two multiplications the performance should be between
+# 1.91 and 2.16. As already mentioned, this implementation processes
+# one byte out of 8KB buffer in 2.10 cycles, while x86_64 counterpart
+# - in 2.02. x86_64 performance is better, because larger register
+# bank allows interleaving reduction and multiplication better.
+#
+# Does it make sense to increase Naggr? To start with it's virtually
+# impossible in 32-bit mode, because of limited register bank
+# capacity. Otherwise improvement has to be weighed against slower
+# setup, as well as code size and complexity increase. As even
+# optimistic estimate doesn't promise 30% performance improvement,
+# there are currently no plans to increase Naggr.
+#
+# Special thanks to David Woodhouse for providing access to a
+# Westmere-based system on behalf of Intel Open Source Technology Centre.
+
+# January 2010
+#
+# Tweaked to optimize transitions between integer and FP operations
+# on same XMM register, PCLMULQDQ subroutine was measured to process
+# one byte in 2.07 cycles on Sandy Bridge, and in 2.12 - on Westmere.
+# The minor regression on Westmere is outweighed by ~15% improvement
+# on Sandy Bridge. Strangely enough attempt to modify 64-bit code in
+# similar manner resulted in almost 20% degradation on Sandy Bridge,
+# where original 64-bit code processes one byte in 1.95 cycles.
+
+#####################################################################
+# For reference, AMD Bulldozer processes one byte in 1.98 cycles in
+# 32-bit mode and 1.89 in 64-bit.
+
+# February 2013
+#
+# Overhaul: aggregate Karatsuba post-processing, improve ILP in
+# reduction_alg9. Resulting performance is 1.96 cycles per byte on
+# Westmere, 1.95 - on Sandy/Ivy Bridge, 1.76 - on Bulldozer.
+
+# This file was patched in BoringSSL to remove the variable-time 4-bit
+# implementation.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghash-x86_64.pl | SHA-256 5fc403c9b2d581076f9f745d27f14c7e3f91f41a9362e11a1b4e2a26bf9ce430 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2010-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# March, June 2010
+#
+# The module implements "4-bit" GCM GHASH function and underlying
+# single multiplication operation in GF(2^128). "4-bit" means that
+# it uses 256 bytes per-key table [+128 bytes shared table]. GHASH
+# function features so called "528B" variant utilizing additional
+# 256+16 bytes of per-key storage [+512 bytes shared table].
+# Performance results are for this streamed GHASH subroutine and are
+# expressed in cycles per processed byte, less is better:
+#
+#		gcc 3.4.x(*)	assembler
+#
+# P4		28.6		14.0		+100%
+# Opteron	19.3		7.7		+150%
+# Core2		17.8		8.1(**)		+120%
+# Atom		31.6		16.8		+88%
+# VIA Nano	21.8		10.1		+115%
+#
+# (*)	comparison is not completely fair, because C results are
+#	for vanilla "256B" implementation, while assembler results
+#	are for "528B";-)
+# (**)	it's mystery [to me] why Core2 result is not same as for
+#	Opteron;
+
+# May 2010
+#
+# Add PCLMULQDQ version performing at 2.02 cycles per processed byte.
+# See ghash-x86.pl for background information and details about coding
+# techniques.
+#
+# Special thanks to David Woodhouse for providing access to a
+# Westmere-based system on behalf of Intel Open Source Technology Centre.
+
+# December 2012
+#
+# Overhaul: aggregate Karatsuba post-processing, improve ILP in
+# reduction_alg9, increase reduction aggregate factor to 4x. As for
+# the latter. ghash-x86.pl discusses that it makes lesser sense to
+# increase aggregate factor. Then why increase here? Critical path
+# consists of 3 independent pclmulqdq instructions, Karatsuba post-
+# processing and reduction. "On top" of this we lay down aggregated
+# multiplication operations, triplets of independent pclmulqdq's. As
+# issue rate for pclmulqdq is limited, it makes lesser sense to
+# aggregate more multiplications than it takes to perform remaining
+# non-multiplication operations. 2x is near-optimal coefficient for
+# contemporary Intel CPUs (therefore modest improvement coefficient),
+# but not for Bulldozer. Latter is because logical SIMD operations
+# are twice as slow in comparison to Intel, so that critical path is
+# longer. A CPU with higher pclmulqdq issue rate would also benefit
+# from higher aggregate factor...
+#
+# Westmere	1.78(+13%)
+# Sandy Bridge	1.80(+8%)
+# Ivy Bridge	1.80(+7%)
+# Haswell	0.55(+93%) (if system doesn't support AVX)
+# Broadwell	0.45(+110%)(if system doesn't support AVX)
+# Skylake	0.44(+110%)(if system doesn't support AVX)
+# Bulldozer	1.49(+27%)
+# Silvermont	2.88(+13%)
+# Knights L	2.12(-)    (if system doesn't support AVX)
+# Goldmont	1.08(+24%)
+
+# March 2013
+#
+# ... 8x aggregate factor AVX code path is using reduction algorithm
+# suggested by Shay Gueron[1]. Even though contemporary AVX-capable
+# CPUs such as Sandy and Ivy Bridge can execute it, the code performs
+# sub-optimally in comparison to above mentioned version. But thanks
+# to Ilya Albrekht and Max Locktyukhin of Intel Corp. we knew that
+# it performs in 0.41 cycles per byte on Haswell processor, in
+# 0.29 on Broadwell, and in 0.36 on Skylake.
+#
+# Knights Landing achieves 1.09 cpb.
+#
+# [1] http://rt.openssl.org/Ticket/Display.html?id=2900&user=guest&pass=guest
+
+# This file was patched in BoringSSL to remove the variable-time 4-bit
+# implementation.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/ghashv8-armx.pl | SHA-256 53c9a6a9845f275be5c5e549157bccaf48570c8d125d375854f7a41a09291cf5 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2014-2020 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# GHASH for ARMv8 Crypto Extension, 64-bit polynomial multiplication.
+#
+# June 2014
+#
+# Initial version was developed in tight cooperation with Ard
+# Biesheuvel of Linaro from bits-n-pieces from other assembly modules.
+# Just like aesv8-armx.pl this module supports both AArch32 and
+# AArch64 execution modes.
+#
+# July 2014
+#
+# Implement 2x aggregated reduction [see ghash-x86.pl for background
+# information].
+#
+# November 2017
+#
+# AArch64 register bank to "accommodate" 4x aggregated reduction and
+# improve performance by 20-70% depending on processor.
+#
+# Current performance in cycles per processed byte:
+#
+#		64-bit PMULL	32-bit PMULL	32-bit NEON(*)
+# Apple A7	0.58		0.92		5.62
+# Cortex-A53	0.85		1.01		8.39
+# Cortex-A57	0.73		1.17		7.61
+# Denver	0.51		0.65		6.02
+# Mongoose	0.65		1.10		8.06
+# Kryo		0.76		1.16		8.00
+#
+# (*)	presented for reference/comparison purposes;
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-armv7.pl | SHA-256 d65bea325df6c3d765731c260540c3d9970e841be803756771b6ae6c42f5d25c | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2015-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+######################################################################
+## Constant-time SSSE3 AES core implementation.
+## version 0.1
+##
+## By Mike Hamburg (Stanford University), 2009
+## Public domain.
+##
+## For details see http://shiftleft.org/papers/vector_aes/ and
+## http://crypto.stanford.edu/vpaes/.
+##
+######################################################################
+# Adapted from the original x86_64 version and <appro@openssl.org>'s ARMv8
+# version.
+#
+# armv7, aarch64, and x86_64 differ in several ways:
+#
+# * x86_64 SSSE3 instructions are two-address (destination operand is also a
+#   source), while NEON is three-address (destination operand is separate from
+#   two sources).
+#
+# * aarch64 has 32 SIMD registers available, while x86_64 and armv7 have 16.
+#
+# * x86_64 instructions can take memory references, while ARM is a load/store
+#   architecture. This means we sometimes need a spare register.
+#
+# * aarch64 and x86_64 have 128-bit byte shuffle instructions (tbl and pshufb),
+#   while armv7 only has a 64-bit byte shuffle (vtbl).
+#
+# This means this armv7 version must be a mix of both aarch64 and x86_64
+# implementations. armv7 and aarch64 have analogous SIMD instructions, so we
+# base the instructions on aarch64. However, we cannot use aarch64's register
+# allocation. x86_64's register count matches, but x86_64 is two-address.
+# vpaes-armv8.pl already accounts for this in the comments, which use
+# three-address AVX instructions instead of the original SSSE3 ones. We base
+# register usage on these comments, which are preserved in this file.
+#
+# This means we do not use separate input and output registers as in aarch64 and
+# cannot pin as many constants in the preheat functions. However, the load/store
+# architecture means we must still deviate from x86_64 in places.
+#
+# Next, we account for the byte shuffle instructions. vtbl takes 64-bit source
+# and destination and 128-bit table. Fortunately, armv7 also allows addressing
+# upper and lower halves of each 128-bit register. The lower half of q{N} is
+# d{2*N}. The upper half is d{2*N+1}. Instead of the following non-existent
+# instruction,
+#
+#     vtbl.8 q0, q1, q2   @ Index each of q2's 16 bytes into q1. Store in q0.
+#
+# we write:
+#
+#     vtbl.8 d0, q1, d4   @ Index each of d4's 8 bytes into q1. Store in d0.
+#     vtbl.8 d1, q1, d5   @ Index each of d5's 8 bytes into q1. Store in d1.
+#
+# For readability, we write d0 and d1 as q0#lo and q0#hi, respectively and
+# post-process before outputting. (This is adapted from ghash-armv4.pl.) Note,
+# however, that destination (q0) and table (q1) registers may no longer match.
+# We adjust the register usage from x86_64 to avoid this. (Unfortunately, the
+# two-address pshufb always matched these operands, so this is common.)
+#
+# This file also runs against the limit of ARMv7's ADR pseudo-instruction. ADR
+# expands to an ADD or SUB of the pc register to find an address. That immediate
+# must fit in ARM's encoding scheme: 8 bits of constant and 4 bits of rotation.
+# This means larger values must be more aligned.
+#
+# ARM additionally has two encodings, ARM and Thumb mode. Our assembly files may
+# use either encoding (do we actually need to support this?). In ARM mode, the
+# distances get large enough to require 16-byte alignment. Moving constants
+# closer to their use resolves most of this, but common constants in
+# _vpaes_consts are used by the whole file. Affected ADR instructions must be
+# placed at 8 mod 16 (the pc register is 8 ahead). Instructions with this
+# constraint have been commented.
+#
+# For details on ARM's immediate value encoding scheme, see
+# https://alisdair.mcdiarmid.org/arm-immediate-value-encoding/
+#
+# Finally, a summary of armv7 and aarch64 SIMD syntax differences:
+#
+# * armv7 prefixes SIMD instructions with 'v', while aarch64 does not.
+#
+# * armv7 SIMD registers are named like q0 (and d0 for the half-width ones).
+#   aarch64 names registers like v0, and denotes half-width operations in an
+#   instruction suffix (see below).
+#
+# * aarch64 embeds size and lane information in register suffixes. v0.16b is
+#   16 bytes, v0.8h is eight u16s, v0.4s is four u32s, and v0.2d is two u64s.
+#   armv7 embeds the total size in the register name (see above) and the size of
+#   each element in an instruction suffix, which may look like vmov.i8,
+#   vshr.u8, or vtbl.8, depending on instruction.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-armv8.pl | SHA-256 808c3f8254b153d77e06a3409c6c56433a66a96614576b7deec2f13676cc64d6 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2015-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+######################################################################
+## Constant-time SSSE3 AES core implementation.
+## version 0.1
+##
+## By Mike Hamburg (Stanford University), 2009
+## Public domain.
+##
+## For details see http://shiftleft.org/papers/vector_aes/ and
+## http://crypto.stanford.edu/vpaes/.
+##
+######################################################################
+# ARMv8 NEON adaptation by <appro@openssl.org>
+#
+# Reason for undertaken effort is that there is at least one popular
+# SoC based on Cortex-A53 that doesn't have crypto extensions.
+#
+#                   CBC enc     ECB enc/dec(*)   [bit-sliced enc/dec]
+# Cortex-A53        21.5        18.1/20.6        [17.5/19.8         ]
+# Cortex-A57        36.0(**)    20.4/24.9(**)    [14.4/16.6         ]
+# X-Gene            45.9(**)    45.8/57.7(**)    [33.1/37.6(**)     ]
+# Denver(***)       16.6(**)    15.1/17.8(**)    [8.80/9.93         ]
+# Apple A7(***)     22.7(**)    10.9/14.3        [8.45/10.0         ]
+# Mongoose(***)     26.3(**)    21.0/25.0(**)    [13.3/16.8         ]
+#
+# (*)	ECB denotes approximate result for parallelizable modes
+#	such as CBC decrypt, CTR, etc.;
+# (**)	these results are worse than scalar compiler-generated
+#	code, but it's constant-time and therefore preferred;
+# (***)	presented for reference/comparison purposes;
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-x86.pl | SHA-256 4dfef90c1549528052df37982cc4940cfa8532b1c59c8e818cd63885beb3fc55 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2011-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+######################################################################
+## Constant-time SSSE3 AES core implementation.
+## version 0.1
+##
+## By Mike Hamburg (Stanford University), 2009
+## Public domain.
+##
+## For details see http://shiftleft.org/papers/vector_aes/ and
+## http://crypto.stanford.edu/vpaes/.
+
+######################################################################
+# September 2011.
+#
+# Port vpaes-x86_64.pl as 32-bit "almost" drop-in replacement for
+# aes-586.pl. "Almost" refers to the fact that AES_cbc_encrypt
+# doesn't handle partial vectors (doesn't have to if called from
+# EVP only). "Drop-in" implies that this module doesn't share key
+# schedule structure with the original nor does it make assumption
+# about its alignment...
+#
+# Performance summary. aes-586.pl column lists large-block CBC
+# encrypt/decrypt/with-hyper-threading-off(*) results in cycles per
+# byte processed with 128-bit key, and vpaes-x86.pl column - [also
+# large-block CBC] encrypt/decrypt.
+#
+#		aes-586.pl		vpaes-x86.pl
+#
+# Core 2(**)	28.1/41.4/18.3		21.9/25.2(***)
+# Nehalem	27.9/40.4/18.1		10.2/11.9
+# Atom		70.7/92.1/60.1		61.1/75.4(***)
+# Silvermont	45.4/62.9/24.1		49.2/61.1(***)
+#
+# (*)	"Hyper-threading" in the context refers rather to cache shared
+#	among multiple cores, than to specifically Intel HTT. As vast
+#	majority of contemporary cores share cache, slower code path
+#	is common place. In other words "with-hyper-threading-off"
+#	results are presented mostly for reference purposes.
+#
+# (**)	"Core 2" refers to initial 65nm design, a.k.a. Conroe.
+#
+# (***)	Less impressive improvement on Core 2 and Atom is due to slow
+#	pshufb,	yet it's respectable +28%/64%  improvement on Core 2
+#	and +15% on Atom (as implied, over "hyper-threading-safe"
+#	code path).
+#
+#						<appro@openssl.org>
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/aes/asm/vpaes-x86_64.pl | SHA-256 b33a281b7a48845eb04653836a5a5ce5bccbf3dc15ea61352b1ba4648d672c12 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2011-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+######################################################################
+## Constant-time SSSE3 AES core implementation.
+## version 0.1
+##
+## By Mike Hamburg (Stanford University), 2009
+## Public domain.
+##
+## For details see http://shiftleft.org/papers/vector_aes/ and
+## http://crypto.stanford.edu/vpaes/.
+
+######################################################################
+# September 2011.
+#
+# Interface to OpenSSL as "almost" drop-in replacement for
+# aes-x86_64.pl. "Almost" refers to the fact that AES_cbc_encrypt
+# doesn't handle partial vectors (doesn't have to if called from
+# EVP only). "Drop-in" implies that this module doesn't share key
+# schedule structure with the original nor does it make assumption
+# about its alignment...
+#
+# Performance summary. aes-x86_64.pl column lists large-block CBC
+# encrypt/decrypt/with-hyper-threading-off(*) results in cycles per
+# byte processed with 128-bit key, and vpaes-x86_64.pl column -
+# [also large-block CBC] encrypt/decrypt.
+#
+#		aes-x86_64.pl		vpaes-x86_64.pl
+#
+# Core 2(**)	29.6/41.1/14.3		21.9/25.2(***)
+# Nehalem	29.6/40.3/14.6		10.0/11.8
+# Atom		57.3/74.2/32.1		60.9/77.2(***)
+# Silvermont	52.7/64.0/19.5		48.8/60.8(***)
+# Goldmont	38.9/49.0/17.8		10.6/12.6
+#
+# (*)	"Hyper-threading" in the context refers rather to cache shared
+#	among multiple cores, than to specifically Intel HTT. As vast
+#	majority of contemporary cores share cache, slower code path
+#	is common place. In other words "with-hyper-threading-off"
+#	results are presented mostly for reference purposes.
+#
+# (**)	"Core 2" refers to initial 65nm design, a.k.a. Conroe.
+#
+# (***)	Less impressive improvement on Core 2 and Atom is due to slow
+#	pshufb,	yet it's respectable +36%/62% improvement on Core 2
+#	(as implied, over "hyper-threading-safe" code path).
+#
+#						<appro@openssl.org>
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/armv4-mont.pl | SHA-256 04a95cb260f4478f92b261f4360058088f96a4f63b5be6745a536453e4bc1b6c | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+
+# January 2007.
+
+# Montgomery multiplication for ARMv4.
+#
+# Performance improvement naturally varies among CPU implementations
+# and compilers. The code was observed to provide +65-35% improvement
+# [depending on key length, less for longer keys] on ARM920T, and
+# +115-80% on Intel IXP425. This is compared to pre-bn_mul_mont code
+# base and compiler generated code with in-lined umull and even umlal
+# instructions. The latter means that this code didn't really have an
+# "advantage" of utilizing some "secret" instruction.
+#
+# The code is interoperable with Thumb ISA and is rather compact, less
+# than 1/2KB. Windows CE port would be trivial, as it's exclusively
+# about decorations, ABI and instruction syntax are identical.
+
+# November 2013
+#
+# Add NEON code path, which handles lengths divisible by 8. RSA/DSA
+# performance improvement on Cortex-A8 is ~45-100% depending on key
+# length, more for longer keys. On Cortex-A15 the span is ~10-105%.
+# On Snapdragon S4 improvement was measured to vary from ~70% to
+# incredible ~380%, yes, 4.8x faster, for RSA4096 sign. But this is
+# rather because original integer-only code seems to perform
+# suboptimally on S4. Situation on Cortex-A9 is unfortunately
+# different. It's being looked into, but the trouble is that
+# performance for vectors longer than 256 bits is actually couple
+# of percent worse than for integer-only code. The code is chosen
+# for execution on all NEON-capable processors, because gain on
+# others outweighs the marginal loss on Cortex-A9.
+
+# September 2015
+#
+# Align Cortex-A9 performance with November 2013 improvements, i.e.
+# NEON code is now ~20-105% faster than integer-only one on this
+# processor. But this optimization further improved performance even
+# on other processors: NEON code path is ~45-180% faster than original
+# integer-only on Cortex-A8, ~10-210% on Cortex-A15, ~70-450% on
+# Snapdragon S4.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/armv8-mont.pl | SHA-256 f298b027a36f7ec26bacc8dc1d699f245c69371b6de65b0de9d1c8745bee8bc6 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2015-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+
+# March 2015
+#
+# "Teaser" Montgomery multiplication module for ARMv8. Needs more
+# work. While it does improve RSA sign performance by 20-30% (less for
+# longer keys) on most processors, for some reason RSA2048 is not
+# faster and RSA4096 goes 15-20% slower on Cortex-A57. Multiplication
+# instruction issue rate is limited on processor in question, meaning
+# that dedicated squaring procedure is a must. Well, actually all
+# contemporary AArch64 processors seem to have limited multiplication
+# issue rate, i.e. they can't issue multiplication every cycle, which
+# explains moderate improvement coefficients in comparison to
+# compiler-generated code. Recall that compiler is instructed to use
+# umulh and therefore uses same amount of multiplication instructions
+# to do the job. Assembly's edge is to minimize number of "collateral"
+# instructions and of course instruction scheduling.
+#
+# April 2015
+#
+# Squaring procedure that handles lengths divisible by 8 improves
+# RSA/DSA performance by 25-40-60% depending on processor and key
+# length. Overall improvement coefficients are always positive in
+# comparison to compiler-generated code. On Cortex-A57 improvement
+# is still modest on longest key lengths, while others exhibit e.g.
+# 50-70% improvement for RSA4096 sign. RSA2048 sign is ~25% faster
+# on Cortex-A57 and ~60-100% faster on others.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/bn-586.pl | SHA-256 a7e21fc851411988214733b7f6e2ffbe056c435d6773d7f539a49dbe225a458e | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/bn-armv8.pl | SHA-256 067b8dcb85687beb0251ef6d5b9417f9b16cc3bf36fec8cef8310bad5441be35 | Apache-2.0 source header =====
+#!/usr/bin/env perl
+# Copyright 2023 The BoringSSL Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/co-586.pl | SHA-256 b7e59ab48a27a8b9e31097cda74777dfbab86fa0780821e3b95e6e3f76b30816 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/rsaz-avx2.pl | SHA-256 3b77a4a5914c1c9bdaf2298626d559d88812791b1cc5d5327be0ae1b6fb211ae | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2013-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright (c) 2012, Intel Corporation. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Originally written by Shay Gueron (1, 2), and Vlad Krasnov (1)
+# (1) Intel Corporation, Israel Development Center, Haifa, Israel
+# (2) University of Haifa, Israel
+#
+# References:
+# [1] S. Gueron, V. Krasnov: "Software Implementation of Modular
+#     Exponentiation,  Using Advanced Vector Instructions Architectures",
+#     F. Ozbudak and F. Rodriguez-Henriquez (Eds.): WAIFI 2012, LNCS 7369,
+#     pp. 119?135, 2012. Springer-Verlag Berlin Heidelberg 2012
+# [2] S. Gueron: "Efficient Software Implementations of Modular
+#     Exponentiation", Journal of Cryptographic Engineering 2:31-43 (2012).
+# [3] S. Gueron, V. Krasnov: "Speeding up Big-numbers Squaring",IEEE
+#     Proceedings of 9th International Conference on Information Technology:
+#     New Generations (ITNG 2012), pp.821-823 (2012)
+# [4] S. Gueron, V. Krasnov: "[PATCH] Efficient and side channel analysis
+#     resistant 1024-bit modular exponentiation, for optimizing RSA2048
+#     on AVX2 capable x86_64 platforms",
+#     http://rt.openssl.org/Ticket/Display.html?id=2850&user=guest&pass=guest
+#
+# +13% improvement over original submission by <appro@openssl.org>
+#
+# rsa2048 sign/sec	OpenSSL 1.0.1	scalar(*)	this
+# 2.3GHz Haswell	621		765/+23%	1113/+79%
+# 2.3GHz Broadwell(**)	688		1200(***)/+74%	1120/+63%
+#
+# (*)	if system doesn't support AVX2, for reference purposes;
+# (**)	scaled to 2.3GHz to simplify comparison;
+# (***)	scalar AD*X code is faster than AVX2 and is preferred code
+#	path for Broadwell;
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/x86-mont.pl | SHA-256 d27070f7bbf2e238903f587b81bc8534f9db48853e42b42c8b7383b411f2871e | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+
+# October 2005
+#
+# This is a "teaser" code, as it can be improved in several ways...
+# First of all non-SSE2 path should be implemented (yes, for now it
+# performs Montgomery multiplication/convolution only on SSE2-capable
+# CPUs such as P4, others fall down to original code). Then inner loop
+# can be unrolled and modulo-scheduled to improve ILP and possibly
+# moved to 128-bit XMM register bank (though it would require input
+# rearrangement and/or increase bus bandwidth utilization). Dedicated
+# squaring procedure should give further performance improvement...
+# Yet, for being draft, the code improves rsa512 *sign* benchmark by
+# 110%(!), rsa1024 one - by 70% and rsa4096 - by 20%:-)
+
+# December 2006
+#
+# Modulo-scheduling SSE2 loops results in further 15-20% improvement.
+# Integer-only code [being equipped with dedicated squaring procedure]
+# gives ~40% on rsa512 sign benchmark...
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/x86_64-mont.pl | SHA-256 0b0e7ab0a34c5f04d09da47c8082397c82bcee6c8932bbeb48c07fc24c1ec2fc | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+
+# October 2005.
+#
+# Montgomery multiplication routine for x86_64. While it gives modest
+# 9% improvement of rsa4096 sign on Opteron, rsa512 sign runs more
+# than twice, >2x, as fast. Most common rsa1024 sign is improved by
+# respectful 50%. It remains to be seen if loop unrolling and
+# dedicated squaring routine can provide further improvement...
+
+# July 2011.
+#
+# Add dedicated squaring procedure. Performance improvement varies
+# from platform to platform, but in average it's ~5%/15%/25%/33%
+# for 512-/1024-/2048-/4096-bit RSA *sign* benchmarks respectively.
+
+# August 2011.
+#
+# Unroll and modulo-schedule inner loops in such manner that they
+# are "fallen through" for input lengths of 8, which is critical for
+# 1024-bit RSA *sign*. Average performance improvement in comparison
+# to *initial* version of this module from 2005 is ~0%/30%/40%/45%
+# for 512-/1024-/2048-/4096-bit RSA *sign* benchmarks respectively.
+
+# June 2013.
+#
+# Optimize reduction in squaring procedure and improve 1024+-bit RSA
+# sign performance by 10-16% on Intel Sandy Bridge and later
+# (virtually same on non-Intel processors).
+
+# August 2013.
+#
+# Add MULX/ADOX/ADCX code path.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/bn/asm/x86_64-mont5.pl | SHA-256 41d4709dcb1c694997491c5ecaabb94791ee53af96dffe039539ecbd1c624de7 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2011-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+
+# August 2011.
+#
+# Companion to x86_64-mont.pl that optimizes cache-timing attack
+# countermeasures. The subroutines are produced by replacing bp[i]
+# references in their x86_64-mont.pl counterparts with cache-neutral
+# references to powers table computed in BN_mod_exp_mont_consttime.
+# In addition subroutine that scatters elements of the powers table
+# is implemented, so that scatter-/gathering can be tuned without
+# bn_exp.c modifications.
+
+# August 2013.
+#
+# Add MULX/AD*X code paths and additional interfaces to optimize for
+# branch prediction unit. For input lengths that are multiples of 8
+# the np argument is not just modulus value, but one interleaved
+# with 0. This is to optimize post-condition...
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256-armv8-asm.pl | SHA-256 8037f2deefa4a53a44883e10d56478fdc7ddc4762a78bac83bfabc55457348a1 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2015-2020 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# ECP_NISTZ256 module for ARMv8.
+#
+# February 2015.
+#
+# Original ECP_NISTZ256 submission targeting x86_64 is detailed in
+# http://eprint.iacr.org/2013/816.
+#
+#			with/without -DECP_NISTZ256_ASM
+# Apple A7		+190-360%
+# Cortex-A53		+190-400%
+# Cortex-A57		+190-350%
+# Denver		+230-400%
+#
+# Ranges denote minimum and maximum improvement coefficients depending
+# on benchmark. Lower coefficients are for ECDSA sign, server-side
+# operation. Keep in mind that +400% means 5x improvement.
+
+# The first two arguments should always be the flavour and output file path.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256-x86_64-asm.pl | SHA-256 f627647ccf7ec2988492f12822235f6e3aee6e4d334168e40ffa63c2ad98a6ff | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2014-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright (c) 2014, Intel Corporation. All Rights Reserved.
+# Copyright (c) 2015 CloudFlare, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Originally written by Shay Gueron (1, 2), and Vlad Krasnov (1, 3)
+# (1) Intel Corporation, Israel Development Center, Haifa, Israel
+# (2) University of Haifa, Israel
+# (3) CloudFlare, Inc.
+#
+# Reference:
+# S.Gueron and V.Krasnov, "Fast Prime Field Elliptic Curve Cryptography with
+#                          256 Bit Primes"
+
+# Further optimization by <appro@openssl.org>:
+#
+#		this/original	with/without -DECP_NISTZ256_ASM(*)
+# Opteron	+15-49%		+150-195%
+# Bulldozer	+18-45%		+175-240%
+# P4		+24-46%		+100-150%
+# Westmere	+18-34%		+87-160%
+# Sandy Bridge	+14-35%		+120-185%
+# Ivy Bridge	+11-35%		+125-180%
+# Haswell	+10-37%		+160-200%
+# Broadwell	+24-58%		+210-270%
+# Atom		+20-50%		+180-240%
+# VIA Nano	+50-160%	+480-480%
+#
+# (*)	"without -DECP_NISTZ256_ASM" refers to build with
+#	"enable-ec_nistp_64_gcc_128";
+#
+# Ranges denote minimum and maximum improvement coefficients depending
+# on benchmark. In "this/original" column lower coefficient is for
+# ECDSA sign, while in "with/without" - for ECDH key agreement, and
+# higher - for ECDSA sign, relatively fastest server-side operation.
+# Keep in mind that +100% means 2x improvement.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256_beeu-armv8-asm.pl | SHA-256 dea71deab50c8a2efac96d57af90eb1de8ecc7c62537f2cb34105b44f76eb909 | Apache-2.0 source header =====
+# Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#
+# This code is based on p256_beeu-x86_64-asm.pl (which is based on BN_mod_inverse_odd).
+#
+
+# The first two arguments should always be the flavour and output file path.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/ec/asm/p256_beeu-x86_64-asm.pl | SHA-256 3bfd1b854c838b56af34cdc8e376a40bd1bc01272773c64f1ab4080e5f6abcad | Apache-2.0 source header =====
+# Copyright (c) 2018, Amazon Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Written by Nir Drucker, and Shay Gueron
+# AWS Cryptographic Algorithms Group
+# (ndrucker@amazon.com, gueron@amazon.com)
+# based on BN_mod_inverse_odd
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/rand/asm/rdrand-x86_64.pl | SHA-256 a8cbb94a6f4449363788ed8609b231f89048f2d5e3ba788be1b5df6f29ac9c71 | Apache-2.0 source header =====
+#!/usr/bin/env perl
+
+# Copyright 2015 The BoringSSL Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-586.pl | SHA-256 89b45cc3134bed48d6c77df5cc25a15ed4b1ce0f9de43688fc595caa93f44a8a | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 1998-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# ====================================================================
+# [Re]written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+
+# "[Re]written" was achieved in two major overhauls. In 2004 BODY_*
+# functions were re-implemented to address P4 performance issue [see
+# commentary below], and in 2006 the rest was rewritten in order to
+# gain freedom to liberate licensing terms.
+
+# January, September 2004.
+#
+# It was noted that Intel IA-32 C compiler generates code which
+# performs ~30% *faster* on P4 CPU than original *hand-coded*
+# SHA1 assembler implementation. To address this problem (and
+# prove that humans are still better than machines:-), the
+# original code was overhauled, which resulted in following
+# performance changes:
+#
+#		compared with original	compared with Intel cc
+#		assembler impl.		generated code
+# Pentium	-16%			+48%
+# PIII/AMD	+8%			+16%
+# P4		+85%(!)			+45%
+#
+# As you can see Pentium came out as looser:-( Yet I reckoned that
+# improvement on P4 outweighs the loss and incorporate this
+# re-tuned code to 0.9.7 and later.
+# ----------------------------------------------------------------
+
+# August 2009.
+#
+# George Spelvin has tipped that F_40_59(b,c,d) can be rewritten as
+# '(c&d) + (b&(c^d))', which allows accumulating partial results
+# and lighten "pressure" on scratch registers. This resulted in
+# >12% performance improvement on contemporary AMD cores (with no
+# degradation on other CPUs:-). Also, the code was revised to maximize
+# "distance" between instructions producing input to 'lea' instruction
+# and the 'lea' instruction itself, which is essential for Intel Atom
+# core and resulted in ~15% improvement.
+
+# October 2010.
+#
+# Add SSSE3, Supplemental[!] SSE3, implementation. The idea behind it
+# is to offload message schedule denoted by Wt in NIST specification,
+# or Xupdate in OpenSSL source, to SIMD unit. The idea is not novel,
+# and in SSE2 context was first explored by Dean Gaudet in 2004, see
+# http://arctic.org/~dean/crypto/sha1.html. Since then several things
+# have changed that made it interesting again:
+#
+# a) XMM units became faster and wider;
+# b) instruction set became more versatile;
+# c) an important observation was made by Max Locktykhin, which made
+#    it possible to reduce amount of instructions required to perform
+#    the operation in question, for further details see
+#    http://software.intel.com/en-us/articles/improving-the-performance-of-the-secure-hash-algorithm-1/.
+
+# April 2011.
+#
+# Add AVX code path, probably most controversial... The thing is that
+# switch to AVX alone improves performance by as little as 4% in
+# comparison to SSSE3 code path. But below result doesn't look like
+# 4% improvement... Trouble is that Sandy Bridge decodes 'ro[rl]' as
+# pair of µ-ops, and it's the additional µ-ops, two per round, that
+# make it run slower than Core2 and Westmere. But 'sh[rl]d' is decoded
+# as single µ-op by Sandy Bridge and it's replacing 'ro[rl]' with
+# equivalent 'sh[rl]d' that is responsible for the impressive 5.1
+# cycles per processed byte. But 'sh[rl]d' is not something that used
+# to be fast, nor does it appear to be fast in upcoming Bulldozer
+# [according to its optimization manual]. Which is why AVX code path
+# is guarded by *both* AVX and synthetic bit denoting Intel CPUs.
+# One can argue that it's unfair to AMD, but without 'sh[rl]d' it
+# makes no sense to keep the AVX code path. If somebody feels that
+# strongly, it's probably more appropriate to discuss possibility of
+# using vector rotate XOP on AMD...
+
+# March 2014.
+#
+# Add support for Intel SHA Extensions.
+
+######################################################################
+# Current performance is summarized in following table. Numbers are
+# CPU clock cycles spent to process single byte (less is better).
+#
+#		x86		SSSE3		AVX
+# Pentium	15.7		-
+# PIII		11.5		-
+# P4		10.6		-
+# AMD K8	7.1		-
+# Core2		7.3		6.0/+22%	-
+# Westmere	7.3		5.5/+33%	-
+# Sandy Bridge	8.8		6.2/+40%	5.1(**)/+73%
+# Ivy Bridge	7.2		4.8/+51%	4.7(**)/+53%
+# Haswell	6.5		4.3/+51%	4.1(**)/+58%
+# Skylake	6.4		4.1/+55%	4.1(**)/+55%
+# Bulldozer	11.6		6.0/+92%
+# VIA Nano	10.6		7.5/+41%
+# Atom		12.5		9.3(*)/+35%
+# Silvermont	14.5		9.9(*)/+46%
+# Goldmont	8.8		6.7/+30%	1.7(***)/+415%
+#
+# (*)	Loop is 1056 instructions long and expected result is ~8.25.
+#	The discrepancy is because of front-end limitations, so
+#	called MS-ROM penalties, and on Silvermont even rotate's
+#	limited parallelism.
+#
+# (**)	As per above comment, the result is for AVX *plus* sh[rl]d.
+#
+# (***)	SHAEXT result
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-armv4-large.pl | SHA-256 ac98ca0bbff45bcecaed45893564174038d729a32b166d5a08d7ef06307c12ea | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+
+# sha1_block procedure for ARMv4.
+#
+# January 2007.
+
+# Size/performance trade-off
+# ====================================================================
+# impl		size in bytes	comp cycles[*]	measured performance
+# ====================================================================
+# thumb		304		3212		4420
+# armv4-small	392/+29%	1958/+64%	2250/+96%
+# armv4-compact	740/+89%	1552/+26%	1840/+22%
+# armv4-large	1420/+92%	1307/+19%	1370/+34%[***]
+# full unroll	~5100/+260%	~1260/+4%	~1300/+5%
+# ====================================================================
+# thumb		= same as 'small' but in Thumb instructions[**] and
+#		  with recurring code in two private functions;
+# small		= detached Xload/update, loops are folded;
+# compact	= detached Xload/update, 5x unroll;
+# large		= interleaved Xload/update, 5x unroll;
+# full unroll	= interleaved Xload/update, full unroll, estimated[!];
+#
+# [*]	Manually counted instructions in "grand" loop body. Measured
+#	performance is affected by prologue and epilogue overhead,
+#	i-cache availability, branch penalties, etc.
+# [**]	While each Thumb instruction is twice smaller, they are not as
+#	diverse as ARM ones: e.g., there are only two arithmetic
+#	instructions with 3 arguments, no [fixed] rotate, addressing
+#	modes are limited. As result it takes more instructions to do
+#	the same job in Thumb, therefore the code is never twice as
+#	small and always slower.
+# [***]	which is also ~35% better than compiler generated code. Dual-
+#	issue Cortex A8 core was measured to process input block in
+#	~990 cycles.
+
+# August 2010.
+#
+# Rescheduling for dual-issue pipeline resulted in 13% improvement on
+# Cortex A8 core and in absolute terms ~870 cycles per input block
+# [or 13.6 cycles per byte].
+
+# February 2011.
+#
+# Profiler-assisted and platform-specific optimization resulted in 10%
+# improvement on Cortex A8 core and 12.2 cycles per byte.
+
+# September 2013.
+#
+# Add NEON implementation (see sha1-586.pl for background info). On
+# Cortex A8 it was measured to process one byte in 6.7 cycles or >80%
+# faster than integer-only code. Because [fully unrolled] NEON code
+# is ~2.5x larger and there are some redundant instructions executed
+# when processing last block, improvement is not as big for smallest
+# blocks, only ~30%. Snapdragon S4 is a tad faster, 6.4 cycles per
+# byte, which is also >80% faster than integer-only code. Cortex-A15
+# is even faster spending 5.6 cycles per byte outperforming integer-
+# only code by factor of 2.
+
+# May 2014.
+#
+# Add ARMv8 code path performing at 2.35 cpb on Apple A7.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-armv8.pl | SHA-256 a9813252a7acbf80ecc87a2f14d722f2c9395ad551f8aeeb2efbc0701ba63a58 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2014-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# SHA1 for ARMv8.
+#
+# Performance in cycles per processed byte and improvement coefficient
+# over code generated with "default" compiler:
+#
+#		hardware-assisted	software(*)
+# Apple A7	2.31			4.13 (+14%)
+# Cortex-A53	2.24			8.03 (+97%)
+# Cortex-A57	2.35			7.88 (+74%)
+# Denver	2.13			3.97 (+0%)(**)
+# X-Gene				8.80 (+200%)
+# Mongoose	2.05			6.50 (+160%)
+# Kryo		1.88			8.00 (+90%)
+#
+# (*)	Software results are presented mostly for reference purposes.
+# (**)	Keep in mind that Denver relies on binary translation, which
+#	optimizes compiler output at run-time.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha1-x86_64.pl | SHA-256 eb794afe1f68aa5ae27a1b74992eecf000134601810dc7d57adc02def07a5059 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2006-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# sha1_block procedure for x86_64.
+#
+# It was brought to my attention that on EM64T compiler-generated code
+# was far behind 32-bit assembler implementation. This is unlike on
+# Opteron where compiler-generated code was only 15% behind 32-bit
+# assembler, which originally made it hard to motivate the effort.
+# There was suggestion to mechanically translate 32-bit code, but I
+# dismissed it, reasoning that x86_64 offers enough register bank
+# capacity to fully utilize SHA-1 parallelism. Therefore this fresh
+# implementation:-) However! While 64-bit code does perform better
+# on Opteron, I failed to beat 32-bit assembler on EM64T core. Well,
+# x86_64 does offer larger *addressable* bank, but out-of-order core
+# reaches for even more registers through dynamic aliasing, and EM64T
+# core must have managed to run-time optimize even 32-bit code just as
+# good as 64-bit one. Performance improvement is summarized in the
+# following table:
+#
+#		gcc 3.4		32-bit asm	cycles/byte
+# Opteron	+45%		+20%		6.8
+# Xeon P4	+65%		+0%		9.9
+# Core2		+60%		+10%		7.0
+
+# August 2009.
+#
+# The code was revised to minimize code size and to maximize
+# "distance" between instructions producing input to 'lea'
+# instruction and the 'lea' instruction itself, which is essential
+# for Intel Atom core.
+
+# October 2010.
+#
+# Add SSSE3, Supplemental[!] SSE3, implementation. The idea behind it
+# is to offload message schedule denoted by Wt in NIST specification,
+# or Xupdate in OpenSSL source, to SIMD unit. See sha1-586.pl module
+# for background and implementation details. The only difference from
+# 32-bit code is that 64-bit code doesn't have to spill @X[] elements
+# to free temporary registers.
+
+# April 2011.
+#
+# Add AVX code path. See sha1-586.pl for further information.
+
+# May 2013.
+#
+# Add AVX2+BMI code path. Initial attempt (utilizing BMI instructions
+# and loading pair of consecutive blocks to 256-bit %ymm registers)
+# did not provide impressive performance improvement till a crucial
+# hint regarding the number of Xupdate iterations to pre-compute in
+# advance was provided by Ilya Albrekht of Intel Corp.
+
+# March 2014.
+#
+# Add support for Intel SHA Extensions.
+
+######################################################################
+# Current performance is summarized in following table. Numbers are
+# CPU clock cycles spent to process single byte (less is better).
+#
+#		x86_64		SSSE3		AVX[2]
+# P4		9.05		-
+# Opteron	6.26		-
+# Core2		6.55		6.05/+8%	-
+# Westmere	6.73		5.30/+27%	-
+# Sandy Bridge	7.70		6.10/+26%	4.99/+54%
+# Ivy Bridge	6.06		4.67/+30%	4.60/+32%
+# Haswell	5.45		4.15/+31%	3.57/+53%
+# Skylake	5.18		4.06/+28%	3.54/+46%
+# Bulldozer	9.11		5.95/+53%
+# Ryzen		4.75		3.80/+24%	1.93/+150%(**)
+# VIA Nano	9.32		7.15/+30%
+# Atom		10.3		9.17/+12%
+# Silvermont	13.1(*)		9.37/+40%
+# Knights L	13.2(*)		9.68/+36%	8.30/+59%
+# Goldmont	8.13		6.42/+27%	1.70/+380%(**)
+#
+# (*)	obviously suboptimal result, nothing was done about it,
+#	because SSSE3 code is compiled unconditionally;
+# (**)	SHAEXT result
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha256-586.pl | SHA-256 fc3ed031e8686d70f2b9d3f86be79a5cc6205b3f8d23c9a9f301bbe711f603c7 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# SHA256 block transform for x86. September 2007.
+#
+# Performance improvement over compiler generated code varies from
+# 10% to 40% [see below]. Not very impressive on some µ-archs, but
+# it's 5 times smaller and optimizes amount of writes.
+#
+# May 2012.
+#
+# Optimization including two of Pavel Semjanov's ideas, alternative
+# Maj and full unroll, resulted in ~20-25% improvement on most CPUs,
+# ~7% on Pentium, ~40% on Atom. As fully unrolled loop body is almost
+# 15x larger, 8KB vs. 560B, it's fired only for longer inputs. But not
+# on P4, where it kills performance, nor Sandy Bridge, where folded
+# loop is approximately as fast...
+#
+# June 2012.
+#
+# Add AMD XOP-specific code path, >30% improvement on Bulldozer over
+# May version, >60% over original. Add AVX+shrd code path, >25%
+# improvement on Sandy Bridge over May version, 60% over original.
+#
+# May 2013.
+#
+# Replace AMD XOP code path with SSSE3 to cover more processors.
+# (Biggest improvement coefficient is on upcoming Atom Silvermont,
+# not shown.) Add AVX+BMI code path.
+#
+# March 2014.
+#
+# Add support for Intel SHA Extensions.
+#
+# Performance in clock cycles per processed byte (less is better):
+#
+#		gcc	icc	x86 asm(*)	SIMD	x86_64 asm(**)
+# Pentium	46	57	40/38		-	-
+# PIII		36	33	27/24		-	-
+# P4		41	38	28		-	17.3
+# AMD K8	27	25	19/15.5		-	14.9
+# Core2		26	23	18/15.6		14.3	13.8
+# Westmere	27	-	19/15.7		13.4	12.3
+# Sandy Bridge	25	-	15.9		12.4	11.6
+# Ivy Bridge	24	-	15.0		11.4	10.3
+# Haswell	22	-	13.9		9.46	7.80
+# Skylake	20	-	14.9		9.50	7.70
+# Bulldozer	36	-	27/22		17.0	13.6
+# VIA Nano	36	-	25/22		16.8	16.5
+# Atom		50	-	30/25		21.9	18.9
+# Silvermont	40	-	34/31		22.9	20.6
+# Goldmont	29	-	20		16.3(***)
+#
+# (*)	numbers after slash are for unrolled loop, where applicable;
+# (**)	x86_64 assembly performance is presented for reference
+#	purposes, results are best-available;
+# (***)	SHAEXT result is 4.1, strangely enough better than 64-bit one;
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha256-armv4.pl | SHA-256 09a01c24871adbd911862be62f4381b537c0a1fee12b22d761df921d4f42f66c | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+
+# SHA256 block procedure for ARMv4. May 2007.
+
+# Performance is ~2x better than gcc 3.4 generated code and in "abso-
+# lute" terms is ~2250 cycles per 64-byte block or ~35 cycles per
+# byte [on single-issue Xscale PXA250 core].
+
+# July 2010.
+#
+# Rescheduling for dual-issue pipeline resulted in 22% improvement on
+# Cortex A8 core and ~20 cycles per processed byte.
+
+# February 2011.
+#
+# Profiler-assisted and platform-specific optimization resulted in 16%
+# improvement on Cortex A8 core and ~15.4 cycles per processed byte.
+
+# September 2013.
+#
+# Add NEON implementation. On Cortex A8 it was measured to process one
+# byte in 12.5 cycles or 23% faster than integer-only code. Snapdragon
+# S4 does it in 12.5 cycles too, but it's 50% faster than integer-only
+# code (meaning that latter performs sub-optimally, nothing was done
+# about it).
+
+# May 2014.
+#
+# Add ARMv8 code path performing at 2.0 cpb on Apple A7.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-586.pl | SHA-256 d8a8a6595a88a5cb537bd8abc04ecdf8ea401b554ef613529b924b0e74d311b4 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# SHA512 block transform for x86. September 2007.
+#
+# May 2013.
+#
+# Add SSSE3 code path, 20-25% improvement [over original SSE2 code].
+#
+# Performance in clock cycles per processed byte (less is better):
+#
+#		gcc	icc	x86 asm	SIMD(*)	x86_64(**)
+# Pentium	100	97	61	-	-
+# PIII		75	77	56	-	-
+# P4		116	95	82	34.6	30.8
+# AMD K8	54	55	36	20.7	9.57
+# Core2		66	57	40	15.9	9.97
+# Westmere	70	-	38	12.2	9.58
+# Sandy Bridge	58	-	35	11.9	11.2
+# Ivy Bridge	50	-	33	11.5	8.17
+# Haswell	46	-	29	11.3	7.66
+# Skylake	40	-	26	13.3	7.25
+# Bulldozer	121	-	50	14.0	13.5
+# VIA Nano	91	-	52	33	14.7
+# Atom		126	-	68	48(***)	14.7
+# Silvermont	97	-	58	42(***)	17.5
+# Goldmont	80	-	48	19.5	12.0
+#
+# (*)	whichever best applicable.
+# (**)	x86_64 assembler performance is presented for reference
+#	purposes, the results are for integer-only code.
+# (***)	paddq is incredibly slow on Atom.
+#
+# IALU code-path is optimized for elder Pentiums. On vanilla Pentium
+# performance improvement over compiler generated code reaches ~60%,
+# while on PIII - ~35%. On newer µ-archs improvement varies from 15%
+# to 50%, but it's less important as they are expected to execute SSE2
+# code-path, which is commonly ~2-3x faster [than compiler generated
+# code]. SSE2 code-path is as fast as original sha512-sse2.pl, even
+# though it does not use 128-bit operations. The latter means that
+# SSE2-aware kernel is no longer required to execute the code. Another
+# difference is that new code optimizes amount of writes, but at the
+# cost of increased data cache "footprint" by 1/2KB.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-armv4.pl | SHA-256 e5b6cc84602f2fd6058dca78a89b99e9b8587038cb03aa67d380f5b327bd6705 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+
+# SHA512 block procedure for ARMv4. September 2007.
+
+# This code is ~4.5 (four and a half) times faster than code generated
+# by gcc 3.4 and it spends ~72 clock cycles per byte [on single-issue
+# Xscale PXA250 core].
+#
+# July 2010.
+#
+# Rescheduling for dual-issue pipeline resulted in 6% improvement on
+# Cortex A8 core and ~40 cycles per processed byte.
+
+# February 2011.
+#
+# Profiler-assisted and platform-specific optimization resulted in 7%
+# improvement on Coxtex A8 core and ~38 cycles per byte.
+
+# March 2011.
+#
+# Add NEON implementation. On Cortex A8 it was measured to process
+# one byte in 23.3 cycles or ~60% faster than integer-only code.
+
+# August 2012.
+#
+# Improve NEON performance by 12% on Snapdragon S4. In absolute
+# terms it's 22.6 cycles per byte, which is disappointing result.
+# Technical writers asserted that 3-way S4 pipeline can sustain
+# multiple NEON instructions per cycle, but dual NEON issue could
+# not be observed, see http://www.openssl.org/~appro/Snapdragon-S4.html
+# for further details. On side note Cortex-A15 processes one byte in
+# 16 cycles.
+
+# Byte order [in]dependence. =========================================
+#
+# Originally caller was expected to maintain specific *dword* order in
+# h[0-7], namely with most significant dword at *lower* address, which
+# was reflected in below two parameters as 0 and 4. Now caller is
+# expected to maintain native byte order for whole 64-bit values.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-armv8.pl | SHA-256 8342665105035a16c71c073dec6fe6fdcb76f5ac0132b62298c92879ec9c317b | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2014-2020 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project.
+# ====================================================================
+#
+# SHA256/512 for ARMv8.
+#
+# Performance in cycles per processed byte and improvement coefficient
+# over code generated with "default" compiler:
+#
+#		SHA256-hw	SHA256(*)	SHA512
+# Apple A7	1.97		10.5 (+33%)	6.73 (-1%(**))
+# Cortex-A53	2.38		15.5 (+115%)	10.0 (+150%(***))
+# Cortex-A57	2.31		11.6 (+86%)	7.51 (+260%(***))
+# Denver	2.01		10.5 (+26%)	6.70 (+8%)
+# X-Gene			20.0 (+100%)	12.8 (+300%(***))
+# Mongoose	2.36		13.0 (+50%)	8.36 (+33%)
+# Kryo		1.92		17.4 (+30%)	11.2 (+8%)
+#
+# (*)	Software SHA256 results are of lesser relevance, presented
+#	mostly for informational purposes.
+# (**)	The result is a trade-off: it's possible to improve it by
+#	10% (or by 1 cycle per round), but at the cost of 20% loss
+#	on Cortex-A53 (or by 4 cycles per round).
+# (***)	Super-impressive coefficients over gcc-generated code are
+#	indication of some compiler "pathology", most notably code
+#	generated with -mgeneral-regs-only is significantly faster
+#	and the gap is only 40-90%.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/fipsmodule/sha/asm/sha512-x86_64.pl | SHA-256 9b146261941ad283055307951a5bddbbdd138ffce5935809d931ddf92773e5db | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# ====================================================================
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
+# project. Rights for redistribution and usage in source and binary
+# forms are granted according to the License.
+# ====================================================================
+#
+# sha256/512_block procedure for x86_64.
+#
+# 40% improvement over compiler-generated code on Opteron. On EM64T
+# sha256 was observed to run >80% faster and sha512 - >40%. No magical
+# tricks, just straight implementation... I really wonder why gcc
+# [being armed with inline assembler] fails to generate as fast code.
+# The only thing which is cool about this module is that it's very
+# same instruction sequence used for both SHA-256 and SHA-512. In
+# former case the instructions operate on 32-bit operands, while in
+# latter - on 64-bit ones. All I had to do is to get one flavor right,
+# the other one passed the test right away:-)
+#
+# sha256_block runs in ~1005 cycles on Opteron, which gives you
+# asymptotic performance of 64*1000/1005=63.7MBps times CPU clock
+# frequency in GHz. sha512_block runs in ~1275 cycles, which results
+# in 128*1000/1275=100MBps per GHz. Is there room for improvement?
+# Well, if you compare it to IA-64 implementation, which maintains
+# X[16] in register bank[!], tends to 4 instructions per CPU clock
+# cycle and runs in 1003 cycles, 1275 is very good result for 3-way
+# issue Opteron pipeline and X[16] maintained in memory. So that *if*
+# there is a way to improve it, *then* the only way would be to try to
+# offload X[16] updates to SSE unit, but that would require "deeper"
+# loop unroll, which in turn would naturally cause size blow-up, not
+# to mention increased complexity! And once again, only *if* it's
+# actually possible to noticeably improve overall ILP, instruction
+# level parallelism, on a given CPU implementation in this case.
+#
+# Special note on Intel EM64T. While Opteron CPU exhibits perfect
+# performance ratio of 1.5 between 64- and 32-bit flavors [see above],
+# [currently available] EM64T CPUs apparently are far from it. On the
+# contrary, 64-bit version, sha512_block, is ~30% *slower* than 32-bit
+# sha256_block:-( This is presumably because 64-bit shifts/rotates
+# apparently are not atomic instructions, but implemented in microcode.
+#
+# May 2012.
+#
+# Optimization including one of Pavel Semjanov's ideas, alternative
+# Maj, resulted in >=5% improvement on most CPUs, +20% SHA256 and
+# unfortunately -2% SHA512 on P4 [which nobody should care about
+# that much].
+#
+# June 2012.
+#
+# Add SIMD code paths, see below for improvement coefficients. SSSE3
+# code path was not attempted for SHA512, because improvement is not
+# estimated to be high enough, noticeably less than 9%, to justify
+# the effort, not on pre-AVX processors. [Obviously with exclusion
+# for VIA Nano, but it has SHA512 instruction that is faster and
+# should be used instead.] For reference, corresponding estimated
+# upper limit for improvement for SSSE3 SHA256 is 28%. The fact that
+# higher coefficients are observed on VIA Nano and Bulldozer has more
+# to do with specifics of their architecture [which is topic for
+# separate discussion].
+#
+# November 2012.
+#
+# Add AVX2 code path. Two consecutive input blocks are loaded to
+# 256-bit %ymm registers, with data from first block to least
+# significant 128-bit halves and data from second to most significant.
+# The data is then processed with same SIMD instruction sequence as
+# for AVX, but with %ymm as operands. Side effect is increased stack
+# frame, 448 additional bytes in SHA256 and 1152 in SHA512, and 1.2KB
+# code size increase.
+#
+# March 2014.
+#
+# Add support for Intel SHA Extensions.
+
+######################################################################
+# Current performance in cycles per processed byte (less is better):
+#
+#		SHA256	SSSE3       AVX/XOP(*)	    SHA512  AVX/XOP(*)
+#
+# AMD K8	14.9	-	    -		    9.57    -
+# P4		17.3	-	    -		    30.8    -
+# Core 2	15.6	13.8(+13%)  -		    9.97    -
+# Westmere	14.8	12.3(+19%)  -		    9.58    -
+# Sandy Bridge	17.4	14.2(+23%)  11.6(+50%(**))  11.2    8.10(+38%(**))
+# Ivy Bridge	12.6	10.5(+20%)  10.3(+22%)	    8.17    7.22(+13%)
+# Haswell	12.2	9.28(+31%)  7.80(+56%)	    7.66    5.40(+42%)
+# Skylake	11.4	9.03(+26%)  7.70(+48%)      7.25    5.20(+40%)
+# Bulldozer	21.1	13.6(+54%)  13.6(+54%(***)) 13.5    8.58(+57%)
+# Ryzen		11.0	9.02(+22%)  2.05(+440%)     7.05    5.67(+20%)
+# VIA Nano	23.0	16.5(+39%)  -		    14.7    -
+# Atom		23.0	18.9(+22%)  -		    14.7    -
+# Silvermont	27.4	20.6(+33%)  -               17.5    -
+# Knights L	27.4	21.0(+30%)  19.6(+40%)	    17.5    12.8(+37%)
+# Goldmont	18.9	14.3(+32%)  4.16(+350%)     12.0    -
+#
+# (*)	whichever best applicable, including SHAEXT;
+# (**)	switch from ror to shrd stands for fair share of improvement;
+# (***)	execution time is fully determined by remaining integer-only
+#	part, body_00_15; reducing the amount of SIMD instructions
+#	below certain limit makes no difference/sense; to conserve
+#	space SHA256 XOP code path is therefore omitted;
+#
+# Modified from upstream OpenSSL to remove the XOP code.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/md5/asm/md5-586.pl | SHA-256 e85f94eaefdaad297bcba8f6afcfa032deb54f50d2da103dc4c1fbd9d06f4863 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# Normal is the
+# md5_block_x86(MD5_CTX *c, ULONG *X);
+# version, non-normal is the
+# md5_block_x86(MD5_CTX *c, ULONG *X,int blocks);
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/md5/asm/md5-x86_64.pl | SHA-256 c35b3b5fa3d93378d920efe4d2fc2fb447ee5e2397ba576834b00058b792fd80 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Author: Marc Bevand <bevand_m (at) epita.fr>
+# Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# MD5 optimized for AMD64.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/arm-xlate.pl | SHA-256 83716f395f43284b107c69303c91078ce2ef4a4cf02f9b59c01cedced5dc54ba | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2015-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86_64-xlate.pl | SHA-256 b5ef5c8ffadfcaad4e8a0730299b24331b584cf50f6c9ead6e8bc7e8399fdbc1 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# Ascetic x86_64 AT&T to MASM/NASM assembler translator by <appro>.
+#
+# Why AT&T to MASM and not vice versa? Several reasons. Because AT&T
+# format is way easier to parse. Because it's simpler to "gear" from
+# Unix ABI to Windows one [see cross-reference "card" at the end of
+# file]. Because Linux targets were available first...
+#
+# In addition the script also "distills" code suitable for GNU
+# assembler, so that it can be compiled with more rigid assemblers,
+# such as Solaris /usr/ccs/bin/as.
+#
+# This translator is not designed to convert *arbitrary* assembler
+# code from AT&T format to MASM one. It's designed to convert just
+# enough to provide for dual-ABI OpenSSL modules development...
+# There *are* limitations and you might have to modify your assembler
+# code or this script to achieve the desired result...
+#
+# Currently recognized limitations:
+#
+# - can't use multiple ops per line;
+#
+# Dual-ABI styling rules.
+#
+# 1. Adhere to Unix register and stack layout [see cross-reference
+#    ABI "card" at the end for explanation].
+# 2. Forget about "red zone," stick to more traditional blended
+#    stack frame allocation. If volatile storage is actually required
+#    that is. If not, just leave the stack as is.
+# 3. Functions tagged with ".type name,@function" get crafted with
+#    unified Win64 prologue and epilogue automatically. If you want
+#    to take care of ABI differences yourself, tag functions as
+#    ".type name,@abi-omnipotent" instead.
+# 4. To optimize the Win64 prologue you can specify number of input
+#    arguments as ".type name,@function,N." Keep in mind that if N is
+#    larger than 6, then you *have to* write "abi-omnipotent" code,
+#    because >6 cases can't be addressed with unified prologue.
+# 5. Name local labels as .L*, do *not* use dynamic labels such as 1:
+#    (sorry about latter).
+# 6. Don't use [or hand-code with .byte] "rep ret." "ret" mnemonic is
+#    required to identify the spots, where to inject Win64 epilogue!
+# 7. Stick to explicit ip-relative addressing. If you have to use
+#    GOTPCREL addressing, stick to mov symbol@GOTPCREL(%rip),%r??.
+#    Both are recognized and translated to proper Win64 addressing
+#    modes.
+#
+# 8. In order to provide for structured exception handling unified
+#    Win64 prologue copies %rsp value to %rax. For further details
+#    see SEH paragraph at the end.
+# 9. .init segment is allowed to contain calls to functions only.
+# a. If function accepts more than 4 arguments *and* >4th argument
+#    is declared as non 64-bit value, do clear its upper part.
+#
+# TODO(https://crbug.com/boringssl/259): The dual-ABI mechanism described here
+# does not quite unwind correctly on Windows. The seh_directive logic below has
+# the start of a new mechanism.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86asm.pl | SHA-256 c0b66ab63490be2386ae173d50c26e27ed825bbaacf3bc047bddc9bf2e2ed35f | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# require 'x86asm.pl';
+# &asm_init(<flavor>[,$i386only]);
+# &function_begin("foo");
+# ...
+# &function_end("foo");
+# &asm_finish
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86gas.pl | SHA-256 ab0479ca77ee1658b37f2bb6a3b0dcb4e1a49e5fe0266f5c7d4eb7fa423e4cc2 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86masm.pl | SHA-256 b97055030e4bd1ca23a061ce8b82cb2621c1a2994d1e612cc1aa137c8937120b | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/perlasm/x86nasm.pl | SHA-256 ce63871fd50e440802f755c293ddbe6382609dc688cff80847c26211b9fbeba3 | Apache-2.0 source header =====
+#! /usr/bin/env perl
+# Copyright 1999-2018 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-armv4.pl | SHA-256 72a9e27e6489f044a76b4a2a04bccd1745911a8611975b4b1b965376cad65e2b | Apache-2.0 source header =====
+#!/usr/bin/env perl
+# Copyright 2019 The BoringSSL Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This file defines helper functions for crypto/test/abi_test.h on 32-bit
+# ARM. See that header for details on how to use this.
+#
+# For convenience, this file is linked into libcrypto, where consuming builds
+# already support architecture-specific sources. The static linker should drop
+# this code in non-test binaries. This includes a shared library build of
+# libcrypto, provided --gc-sections (ELF), -dead_strip (iOS), or equivalent is
+# used.
+#
+# References:
+#
+# AAPCS: http://infocenter.arm.com/help/topic/com.arm.doc.ihi0042f/IHI0042F_aapcs.pdf
+# iOS ARMv6: https://developer.apple.com/library/archive/documentation/Xcode/Conceptual/iPhoneOSABIReference/Articles/ARMv6FunctionCallingConventions.html
+# iOS ARMv7: https://developer.apple.com/library/archive/documentation/Xcode/Conceptual/iPhoneOSABIReference/Articles/ARMv7FunctionCallingConventions.html
+# Linux: http://sourcery.mentor.com/sgpp/lite/arm/portal/kbattach142/arm_gnu_linux_%20abi.pdf
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-armv8.pl | SHA-256 3ba406620a34ae94aedac1192d92f9d310f2b9311bddded5653b4d09ec18885c | Apache-2.0 source header =====
+#!/usr/bin/env perl
+# Copyright 2019 The BoringSSL Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This file defines helper functions for crypto/test/abi_test.h on aarch64. See
+# that header for details on how to use this.
+#
+# For convenience, this file is linked into libcrypto, where consuming builds
+# already support architecture-specific sources. The static linker should drop
+# this code in non-test binaries. This includes a shared library build of
+# libcrypto, provided --gc-sections (ELF), -dead_strip (iOS), or equivalent is
+# used.
+#
+# References:
+#
+# AAPCS64: http://infocenter.arm.com/help/topic/com.arm.doc.ihi0055b/IHI0055B_aapcs64.pdf
+# iOS ARM64: https://developer.apple.com/library/archive/documentation/Xcode/Conceptual/iPhoneOSABIReference/Articles/ARM64FunctionCallingConventions.html
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-x86.pl | SHA-256 f4796ca89b0d9c04397d13827fd5c0c63bfd87279df2cc61e66abc936095e830 | Apache-2.0 source header =====
+#!/usr/bin/env perl
+# Copyright 2018 The BoringSSL Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This file defines helper functions for crypto/test/abi_test.h on x86. See
+# that header for details on how to use this.
+#
+# For convenience, this file is linked into libcrypto, where consuming builds
+# already support architecture-specific sources. The static linker should drop
+# this code in non-test binaries. This includes a shared library build of
+# libcrypto, provided --gc-sections (ELF), -dead_strip (Mac), or equivalent is
+# used.
+#
+# References:
+#
+# SysV ABI: https://uclibc.org/docs/psABI-i386.pdf
+# Win32 ABI: https://docs.microsoft.com/en-us/cpp/cpp/argument-passing-and-naming-conventions?view=vs-2017
+
+===== Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/crypto/test/asm/trampoline-x86_64.pl | SHA-256 5b9f506e53fe6e889d2e3cdc76399cfd72196e1a20d9b66b7d79bfd2afc58618 | Apache-2.0 source header =====
+#!/usr/bin/env perl
+# Copyright 2018 The BoringSSL Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This file defines helper functions for crypto/test/abi_test.h on x86_64. See
+# that header for details on how to use this.
+#
+# For convenience, this file is linked into libcrypto, where consuming builds
+# already support architecture-specific sources. The static linker should drop
+# this code in non-test binaries. This includes a shared library build of
+# libcrypto, provided --gc-sections (ELF), -dead_strip (Mac), or equivalent is
+# used.
+#
+# References:
+#
+# SysV ABI: https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf
+# Win64 ABI: https://docs.microsoft.com/en-us/cpp/build/x64-software-conventions?view=vs-2017
+

@@ -5,8 +5,13 @@
 *.py text eol=lf
 *.json text eol=lf
 *.plist text eol=lf
-# Unified diffs use a literal space for empty context lines.
-*.patch text eol=lf whitespace=-blank-at-eol,-blank-at-eof
+*.patch text eol=lf
 *.icns binary
 *.png binary
 *.zip binary
+docs/evidence/third-party/webkit-v20-license-text-corpus/** -text
+
+# Byte-exact reviewed upstream images/patches retain original whitespace.
+runtime/privacy-policy-v1/privacy-policy-v1.patch whitespace=-blank-at-eol
+runtime/privacy-policy-v1/preimages/** whitespace=-blank-at-eol
+runtime/privacy-policy-v1/postimages/** whitespace=-blank-at-eol

@@ -1,0 +1,36 @@
+{
+  "freshCandidate": {
+    "externalProfileSHA256": "77ded78e082fa612288475c34845ab4547caff900c995060dd6134e6a18f53bf",
+    "managerExecutableSHA256": "17c767f961de21a14d9720acb01b61cc54a6ccca44e22166ff15a6e28fde964c",
+    "parentCandidateId": "b96006a994664a80bf89cd757f932eff",
+    "parentUnmodified": true,
+    "root": "/private/tmp/neantik-release-v1/dist/private/candidates/cac3157c5fdf47f7b77332208648eb68",
+    "strictDeepCodeSignature": "PASS before mutation"
+  },
+  "id": "V290",
+  "next": "Run one production owned-WebKit packaging attempt on this fresh disposable candidate with required --timestamp behavior and the external immutable profile input. Preserve b960 and prior failed V287 candidate.",
+  "observedAtUTC": "2026-10-27T18:19:20Z",
+  "releaseQualified": false,
+  "scope": "Private disposable source reconstruction and package preparation only. No timestamped signing has yet been retried; no launch, notarization, publication, or release qualification.",
+  "sourceReconstruction": {
+    "baseSourceArchiveSHA256": "047ad8b493ff2710a277ac4526ee899aa9165e1ab18f7ca6deab63a6e0523958",
+    "overlayInputCount": 28,
+    "recipientBuildElapsedSeconds": 19.41,
+    "recipientBuiltHostSHA256": "bb460fee881860ff8da04e51f3d51845176d3ff88dd025a9cbdbb1fdbe018127",
+    "recipientOwnedHostSHA256": "dcdf45840aaa1428fdf3620d84e5c22c3a9a1e329e9423eb8be2e5bd65282880",
+    "releaseWorktreeHostSHA256": "bb460fee881860ff8da04e51f3d51845176d3ff88dd025a9cbdbb1fdbe018127",
+    "releaseWorktreeOwnedHostSHA256": "dcdf45840aaa1428fdf3620d84e5c22c3a9a1e329e9423eb8be2e5bd65282880",
+    "sourceOverlayOfferManifestSHA256": "73b83130fc540e65dc238f6fe510e831654b39a93fb691690de1532335ebcc42",
+    "status": "built-production-mode-unqualified; exact byte match; same Mac toolchain, not independent-recipient proof"
+  },
+  "status": "RECIPIENT_SOURCE_OVERLAY_HOST_BUILD_BYTE_MATCH_PASS; APPLE_TSA_HTTP_ENDPOINT_REACHABLE; FRESH_CANDIDATE_STRICT_VERIFY_PASS",
+  "tsaRoute": {
+    "appleReference": "https://developer.apple.com/documentation/technotes/tn3161-inside-code-signing-certificates",
+    "httpResponse": "302",
+    "ipv4Port443": "connection refused",
+    "ipv4Port80": "connected",
+    "ipv6Port443": "connection refused",
+    "ipv6Port80": "connected",
+    "meaning": "Apple codesign uses its default timestamp service at timestamp.apple.com; port 80 HTTP reachability is the relevant route; do not substitute an arbitrary timestamp URL."
+  }
+}

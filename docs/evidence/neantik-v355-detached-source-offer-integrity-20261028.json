@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "V355",
+  "observedAtUTC": "2026-10-28T03:04:19Z",
+  "status": "PASS_DETACHED_SOURCE_OFFER_INTEGRITY_AND_PATH_REDACTION",
+  "scope": "Read-only validation of the detached V288-derived source-offer copy after adding the V346 and V348-V354 Swift dependency recipe evidence.",
+  "offer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v353-swiftdeps-supplement-draft",
+    "manifestSHA256": "a30f75df1d079d5953bd69d0bef0cb2651a23fccaf6fb8f1661872b899d19aba",
+    "componentCount": 620,
+    "componentBytes": 1933913228,
+    "directoryInventoryExact": true,
+    "allComponentHashesAndSizesMatch": true,
+    "addedComponents": 8,
+    "addedComponentHostPathLeakCount": 0
+  },
+  "frozenBase": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v288-v135-webkit-host-source-supplement",
+    "manifestSHA256": "73b83130fc540e65dc238f6fe510e831654b39a93fb691690de1532335ebcc42",
+    "matchesPinnedV288": true
+  },
+  "sourceClosure": {
+    "receiptPath": "evidence/neantik-v353-swiftdeps-source-path-closure-20261028.json",
+    "normalizedV351ReceiptSHA256": "58568fedf06ceca8108aa3b840665eb8bc449c4cb3e561ca1c00823991079703",
+    "normalizedV352ReceiptSHA256": "bd8f1ba5d0119184a6581200ca2c6c3fa0c2c224061ff46d5cae35bb08a2f9ee",
+    "allDirectSourceInputsPresent": true,
+    "recipientBuildProved": false,
+    "signedReplacementLoadProved": false
+  },
+  "limits": [
+    "Detached source-offer integrity does not prove recipient reproducibility, complete licensing applicability, final candidate notice bytes, signed WebKit replacement/load, notarization, or release qualification.",
+    "No build, source checkout, candidate, signature, publication, or external site was changed."
+  ],
+  "releaseQualified": false,
+  "nextAction": "Run the existing recipient preflight against this exact detached offer only if the consumer can run without a current build-201 manager; otherwise wait for the already separate Apple timestamp-signing boundary to clear, then bind the offer to a fresh exact candidate."
+}

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v131-v130-v122-package-input-check-only-20261026",
+  "observedAtUTC": "2026-10-26T12:22:00Z",
+  "status": "PASS_EXACT_V130_SOURCE_OFFER_AND_V122_WEBKIT_BUILD_SOURCE_OVERLAY_CHECK_ONLY; NOT_RUNTIME_OR_RELEASE_QUALIFIED",
+  "scope": "Non-mutating production packager check-only using the exact V122 build/source, V130 offer, and a temporary unsigned manager metadata container. No app package was assembled or signed; app was not launched.",
+  "inputs": {
+    "sourceOfferManifestSHA256": "d94c7c8059ef515fe10a7522315fade3273fa2e6478caf217f17d380ead59de4",
+    "sourceOfferComponents": 517,
+    "sourceArchiveSHA256": "9422e5bfdbb70c7a9f44e2e757a40b5c3ac7fd79fe0298ced5cff807ffe1005e",
+    "buildReceiptSHA256": "804a60911bf67912d8f17665958f88051b3085a175f145db0fd76fa7ea23bd9c",
+    "buildRoot": "/private/tmp/neantik-v120-owned-webkit-build/build",
+    "sourceRoot": "/private/tmp/neantik-v120-owned-webkit-build/WebKit"
+  },
+  "verification": {
+    "command": "python3 -B scripts/package-owned-webkit-release.py --check-only (exact paths and identity pinned in invocation)",
+    "exitCode": 0,
+    "status": "PASS_OWNED_WEBKIT_EXACT_BUILD_SOURCE_AND_OVERLAY_CHECK_ONLY",
+    "matchedRuntimeBuildReceipt": "PASS exact V122 outputs, size/hash/arm64",
+    "matchedSource": "PASS pinned archive/patch/crosswalk and configured source tree",
+    "sourceOffer": "PASS V130 517/517 hashes and exact 64-overlay inputs"
+  },
+  "fixture": {
+    "kind": "temporary unsigned metadata-only container assembled from V125-recipient manager binary and the V1.0 production Info.plist",
+    "launched": false,
+    "signed": false,
+    "archived": false,
+    "removedAfterCheck": true
+  },
+  "limitations": [
+    "This is not a browser app candidate and contains no runtime; no package or signature was produced.",
+    "No page load, proxy, DNS, A-B-A, no-direct, or storage runtime result.",
+    "Recipient full WebKit rebuild/relink/load remains open.",
+    "Apple secure timestamp, notarization, Gatekeeper, publication and downloaded-byte gates remain open.",
+    "The historical Candidate139 worksheet remains unchanged at 82 UNKNOWN."
+  ],
+  "sideEffects": {
+    "sourceChanged": false,
+    "runtimeChanged": false,
+    "candidateChanged": false,
+    "signed": false,
+    "notarized": false,
+    "published": false
+  },
+  "next": "Complete recipient-owned full-WebKit replacement/relink/load on the exact source offer after standard secure-timestamp signing is available; then freeze and qualify one new candidate."
+}

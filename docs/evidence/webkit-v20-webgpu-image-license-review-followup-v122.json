@@ -1,0 +1,94 @@
+{
+  "candidate": {
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0"
+  },
+  "candidateDisposition": "Candidate 139 remains frozen and unchanged; this notice is for a future package after its source and runtime gates close.",
+  "decision": {
+    "applicableLicense": "Apple BSD 2-Clause, bounded to this exact runtime image based on its exact WebKit source lineage and documented WebKit contribution policy.",
+    "noticeLocation": "NeAntikRuntimeNotices.md and NeAntikRuntimeCompliance/THIRD-PARTY-NOTICES.html; exact license text at NeAntikRuntimeLicenses/WebKit-WebGPU-BSD-2-Clause.txt.",
+    "requiredNotice": "Preserve the exact Apple BSD-2 copyright, both redistribution conditions, and disclaimer in binary distribution materials.",
+    "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW; not legal advice or legal opinion."
+  },
+  "licenseText": {
+    "bytes": 1313,
+    "packagedPath": "NeAntikRuntimeLicenses/WebKit-WebGPU-BSD-2-Clause.txt",
+    "sha256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+    "sourcePath": "docs/evidence/third-party/webkit-v20-license-text-corpus/Source/WebCore/LICENSE-APPLE"
+  },
+  "observedAt": "2026-10-25",
+  "productionBuildEvidence": {
+    "compiledLeafSourceCount": 65,
+    "compiledLeafSourcesWithAppleBSD2Headers": 65,
+    "generatedOutputsReplayedExactly": true,
+    "generatorReplayReceipt": "docs/evidence/webkit-v20-webgpu-generator-replay-20261025.json",
+    "generatorReplayReceiptSHA256": "4f6052b1840541556c0ded75ea7024674fdcc266f2766f9ca0a8abc26a6afb0d",
+    "rubyGeneratorInputsHaveExplicitLicenseHeaders": false,
+    "v122GeneratedInputs": [
+      {
+        "path": "Source/WebGPU/WGSL/TypeDeclarations.rb",
+        "sha256": "e18e6d38fe4f11f97e46c0935b3d7dbbfb7e71e0ab1fd23e90f60994a4b46809",
+        "bytes": 50822
+      },
+      {
+        "path": "Source/WebGPU/WGSL/generator/main.rb",
+        "sha256": "55e2f00b4506f078d5507d83d3ba0dc1ad9463b03906e0d0d63bee9f75a6d8d6",
+        "bytes": 18065
+      },
+      {
+        "path": "Source/WebGPU/WGSL/CMakeLists.txt",
+        "sha256": "51e567aa0497b19a764639777305eab08710ae925902f9a8272996c0839674d4",
+        "bytes": 6336
+      },
+      {
+        "path": "WebKitBuild/neantik-v20-production-arm64/Source/WebGPU/WGSL/TypeDeclarations.h",
+        "sha256": "70a6d9e56c58f001bea4c81960139f3a8ae7c9deaee7b943dad9f35af43adfbd",
+        "bytes": 3030
+      },
+      {
+        "path": "WebKitBuild/neantik-v20-production-arm64/Source/WebGPU/WGSL/TypeOverloads.h",
+        "sha256": "11f4ba1c6b1f97dc042b1725598954afcb40d2e89706a06d7666cf8f0b74047a",
+        "bytes": 381605
+      }
+    ]
+  },
+  "reviewerRole": "NeAntik maintainer technical source/link review; not legal advice or legal opinion",
+  "runtimeImage": {
+    "path": "WebGPU.framework/Versions/A/WebGPU",
+    "sha256": "033f978342498b2dbeba3ec265ace4ac6995b7454f496d8dd6396c73de9bb684"
+  },
+  "schemaVersion": 1,
+  "scopeLimit": "Only the exact WebGPU runtime image hash above. This does not resolve WebGPU.framework resources, WebKit/WebCore/JavaScriptCore or any other runtime image/resource, complete source/relink obligations, or release qualification. Rebound for V122 from identical source rows and generated WGSL outputs; this preserves UNKNOWN on generated generator/license applicability.",
+  "sourceLineage": {
+    "author": "Tadeu Zagallo",
+    "commitDate": "2023-03-01",
+    "filesAddedInThatWebKitCommit": [
+      "Source/WebGPU/WGSL/TypeDeclarations.rb",
+      "Source/WebGPU/WGSL/generator/main.rb"
+    ],
+    "firstAdditionCommit": "af938b06692c084c46725628bcdf9a0e0fc96f32",
+    "officialCommitURL": "https://github.com/WebKit/WebKit/commit/af938b06692c084c46725628bcdf9a0e0fc96f32",
+    "officialLicensingPolicyURL": "https://docs.webkit.org/Other/Licensing.html",
+    "policySummary": "WebKit documentation states new code contributed to WebKit uses the two-clause BSD license; moving existing code keeps its original license.",
+    "sourceHistoryEvidenceMethod": "Official WebKit GitHub API file-history and commit-patch review; both Ruby inputs were introduced as new files in the cited WebKit commit."
+  },
+  "status": "bounded-factual-maintainer-review;exact-WebGPU-image-BSD-2-notice-mapped",
+  "upstream": {
+    "pinnedCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "repository": "WebKit/WebKit",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f"
+  },
+  "v122BuildBinding": {
+    "buildReceiptSHA256": "804a60911bf67912d8f17665958f88051b3085a175f145db0fd76fa7ea23bd9c",
+    "buildID": "neantik-v122-fresh-owned-webkit-build-and-staging-20261026",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "sourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "overlayApplicationLogSHA256": "1492e55293943dc85c3f624742daeae30f727796e90f673cebc46ae0e12b19de",
+    "cmakeCacheSHA256": "d79a82d81ca422e1f75cd5a3175065c6992d25ab89c33cea6cbf25660ef68d42",
+    "buildNinjaSHA256": "99284c39a6e3f96eca852c293d7d3f877568d460fb2e31e01f9fd6428a60da34",
+    "buildLogSHA256": "08c476869d46850f8efe6f74794a12943a9ca5ea2d6bfab1f4d299bcb30e988e"
+  }
+}

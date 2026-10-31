@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.26",
+  "version": "0.7.26",
+  "build": 89,
+  "releasedAt": "2026-10-10",
+  "channel": "public-alpha",
+  "sourceCommit": "ab0bc0ab4ddb28752f9ada5cdd5d95926058d876",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "archive": {
+    "name": "NeAntik-0.7.26-arm64-notarized.zip",
+    "sizeBytes": 187921996,
+    "sha256": "9678eab95f75fc38d40501be688355597bda80b3688473be2a9766aa9e9ebeae"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.26-arm64-notarized.dmg",
+    "sizeBytes": 211793813,
+    "sha256": "79bdbe1fb7dfa28f75b86a716638cecb0e7d826340b90a654c94a45aaa60f058"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "Accepted ZIP and DMG",
+    "zipNotarySubmissionId": "bfd1499d-557d-4a4b-9689-e0a0123166ce",
+    "dmgNotarySubmissionId": "c177c760-9ecc-45f6-bcaa-91b80b3dfca3",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "hostedDownload": "fresh ZIP/DMG SHA256, size, signing, notarization, candidate and evidence gates passed",
+    "fingerprint": "fresh authenticated headed run of downloaded signed app, with new one-time enrollment; all criticalFiles identical to qualified candidate",
+    "first15Platform": {
+      "cases": 18,
+      "status": "passed on exact signed headed candidate",
+      "independentNegativeControls": true
+    },
+    "swiftTests": {
+      "tests": 1009,
+      "suites": 115,
+      "optionalFixturesSkipped": 23,
+      "status": "passed",
+      "execution": "explicit no-parallel; earlier three parallel timing failures retained, limits unchanged"
+    },
+    "pythonTests": {
+      "releaseTests": 54,
+      "cliAdapterTests": 5,
+      "targetedSourceTests": 161,
+      "status": "passed",
+      "fullSuiteRerun": false
+    },
+    "siteTests": {
+      "tests": 32,
+      "status": "passed"
+    },
+    "privacy": "recognized-format exact artifacts/new source and complete reachable Git history scans passed; site placeholder classified separately; no guarantee for unknown credential formats",
+    "physicalKeyboard": "fresh Dev launch/Cmd+N/paste/Tab observed; durable create and full keyboard sequence unverified after native automation pipe failure",
+    "sessionPersistence": "no new independent cookie/IndexedDB session-persistence qualification in this first15 scope"
+  },
+  "siteVersion": 128,
+  "siteSourceCommit": "711dd8c8bbb74db39698922367a28ce182ff694e",
+  "siteDeploymentId": "appgdep_6aca1ae3823c819192e82c267f5974e7",
+  "siteDeploymentStatus": "succeeded",
+  "siteUrl": "https://browser.free",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.26",
+  "affpapa": "unchanged: restricted deploy credential unavailable; validated six-file package prepared",
+  "rollbackRelease": "v0.7.25",
+  "candidateManifestSHA256": "e3b53071f56046baaf24fb36fe14276e93de2b91f51b060e37a61727ed0c4a33",
+  "candidateSourceBindingSHA256": "218c625c074a5f0ecabff2374cd49626f90662937dd781d9926bd2d0e168d634",
+  "platformBindingSHA256": "a586fb2248068d9482614dca0beb8113807f7b5d7b4b80d119cfcd9c519435a8",
+  "limitations": [
+    "Major1.0 and full production hardware-cohort qualification remain open.",
+    "Second physical display, actual network/power changes and all Mac/OS combinations were not tested.",
+    "Media operations used synthetic camera/microphone only.",
+    "Identity endpoint used loopback HTTP; external HTTPS/proxy route is a separate network gate.",
+    "WebGPU remains disabled in configured profiles; native compute was tested as a separate control.",
+    "Safe Browsing remains disabled. No anonymity, CAPTCHA or site-rule bypass guarantee.",
+    "Rows16-45, BrowserData backup/updater and new MCP observations are outside this interim scope.",
+    "Recognized-format scans cannot prove absence of every unknown secret."
+  ]
+}

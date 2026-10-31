@@ -1,0 +1,30 @@
+--- a/components/update_client/BUILD.gn
++++ b/components/update_client/BUILD.gn
+@@ -390,3 +390,27 @@
+   ]
+   seed_corpus = "fuzzer_corpuses/protocol_parser/"
+ }
++
++# NeAntik: focused real checker regression; no components_unittests aggregate.
++executable("neantik_component_completion_tests") {
++  testonly = true
++  sources = [ "update_checker_unittest.cc" ]
++  deps = [
++    ":test_support",
++    ":update_client",
++    "//base",
++    "//base/test:run_all_unittests",
++    "//base/test:test_support",
++    "//build:branding_buildflags",
++    "//components/client_update_protocol",
++    "//components/crx_file",
++    "//components/prefs",
++    "//components/prefs:test_support",
++    "//components/version_info",
++    "//net:test_support",
++    "//services/network:test_support",
++    "//testing/gmock",
++    "//testing/gtest",
++    "//url",
++  ]
++}

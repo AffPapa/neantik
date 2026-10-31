@@ -1,0 +1,1602 @@
+{
+  "buildPolicy": {
+    "argsGNSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+    "enterpriseCloudContentAnalysis": true,
+    "ninjaJobs": 2,
+    "safeBrowsingMode": 0,
+    "sourceInputSnapshotSHA256": "61636de70b6e5d11305d93fbc715e7a8c05901952b23255cce70be8c15edc977",
+    "thinLTOJobs": 2,
+    "toolchainLockSHA256": "4285c9094ebee74a8b8cbb626a8a4468de876ae3eb9934db7d6befab8a3d2ad6"
+  },
+  "executedDiagnosticReplayToolSHA256": "99f1298c12a6ad6ae10bacb8c71493ba097f3359f52a3d8988786885a24a726c",
+  "officialChromiumBase": {
+    "commit": "cfaadc5a132d78e1828635aa8405a499f3e14864",
+    "repository": "https://chromium.googlesource.com/chromium/src",
+    "tree": "6ff797d22a0943b4a56a38dc6e27a87f158246d3"
+  },
+  "orderedPatchInputs": [
+    {
+      "label": "common:upstream-fixes/missing-dependencies.patch",
+      "originalSHA256": "b995699ed9abedbaec394b924f08de19f0474a53b55199b8323ef2335fe02499",
+      "patchSHA256": "b995699ed9abedbaec394b924f08de19f0474a53b55199b8323ef2335fe02499"
+    },
+    {
+      "label": "common:core/inox-patchset/0001-fix-building-without-safebrowsing.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/common/core/inox-patchset/0001-fix-building-without-safebrowsing.patch",
+      "originalSHA256": "04c3421cd8a20f116e00279da4bfda21f5834d5b1842c4b70bb578d766a7b5fd",
+      "patchSHA256": "1e41b3430c7b4d374a7a46393bf214f03e6df357693f611a5a31e0fd168047ed"
+    },
+    {
+      "label": "common:core/inox-patchset/0003-disable-autofill-download-manager.patch",
+      "originalSHA256": "c09f36ba3314fa24473de480b43dd480783e2d6d8752d17217aaff4a4fff3349",
+      "patchSHA256": "c09f36ba3314fa24473de480b43dd480783e2d6d8752d17217aaff4a4fff3349"
+    },
+    {
+      "label": "common:core/inox-patchset/0005-disable-default-extensions.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/common/core/inox-patchset/0005-disable-default-extensions.patch",
+      "originalSHA256": "eb9103089d8dc422dfa8e4ce560f6e778d583cc3fc92ac29887cf23221fa9b30",
+      "patchSHA256": "266121cbc11cac9e9729bf6586af37ce415ed2af985fea5bf2cfd5da45406af2"
+    },
+    {
+      "label": "common:core/inox-patchset/0015-disable-update-pings.patch",
+      "originalSHA256": "2d55af29e85ea1825930c1bf0ff79931a942450d9c5475ee6344c58c9e46debe",
+      "patchSHA256": "2d55af29e85ea1825930c1bf0ff79931a942450d9c5475ee6344c58c9e46debe"
+    },
+    {
+      "label": "common:core/inox-patchset/0021-disable-rlz.patch",
+      "originalSHA256": "fd0283a48f09bbd68d8cf845d8822c3df1aa10ff9aacf4fa0c9c464d7779c1ab",
+      "patchSHA256": "fd0283a48f09bbd68d8cf845d8822c3df1aa10ff9aacf4fa0c9c464d7779c1ab"
+    },
+    {
+      "label": "common:core/iridium-browser/safe_browsing-disable-incident-reporting.patch",
+      "originalSHA256": "a0db3e85556e074c7920469fa22bf7773c4e5d237cb8c97a561814efdf1646b7",
+      "patchSHA256": "a0db3e85556e074c7920469fa22bf7773c4e5d237cb8c97a561814efdf1646b7"
+    },
+    {
+      "label": "common:core/iridium-browser/safe_browsing-disable-reporting-of-safebrowsing-over.patch",
+      "originalSHA256": "f7c5a21a183418e51980420b00286c5d3d4a636e3196313a0ed57db5e049e745",
+      "patchSHA256": "f7c5a21a183418e51980420b00286c5d3d4a636e3196313a0ed57db5e049e745"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-crash-reporter.patch",
+      "originalSHA256": "aaf21816a4974b9841ca5f0d9e0cbf55d96948b622991071ca6767f5699b339e",
+      "patchSHA256": "aaf21816a4974b9841ca5f0d9e0cbf55d96948b622991071ca6767f5699b339e"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-google-host-detection.patch",
+      "originalSHA256": "daca4b4de02ec8873758184677a9bca45b9ad894e09bbf56cb7613abf1ee74e5",
+      "patchSHA256": "daca4b4de02ec8873758184677a9bca45b9ad894e09bbf56cb7613abf1ee74e5"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/replace-google-search-engine-with-nosearch.patch",
+      "originalSHA256": "a45013bd0db8e527899c08ddaf8fec58d24496a9e96e2284b393902f19a03008",
+      "patchSHA256": "a45013bd0db8e527899c08ddaf8fec58d24496a9e96e2284b393902f19a03008"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/toggle-translation-via-switch.patch",
+      "originalSHA256": "4f59410b7457f7ee80c4f705c846284bc7d40c3d7ac4f4beae4022fe3f2d60a4",
+      "patchSHA256": "4f59410b7457f7ee80c4f705c846284bc7d40c3d7ac4f4beae4022fe3f2d60a4"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-untraceable-urls.patch",
+      "originalSHA256": "febb342c492d09257e2e7a79059e0d87770f6f7d8ac14754c70732e4aa3174fc",
+      "patchSHA256": "febb342c492d09257e2e7a79059e0d87770f6f7d8ac14754c70732e4aa3174fc"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-profile-avatar-downloading.patch",
+      "originalSHA256": "3f105601f1b15815bd14c7a6c0aaba8e9443c7239db97644cd36220859576a22",
+      "patchSHA256": "3f105601f1b15815bd14c7a6c0aaba8e9443c7239db97644cd36220859576a22"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-gcm.patch",
+      "originalSHA256": "3dc9dd0a2924d6fb8449ac9b71f54cb0bab5da7705ab167ed461c9ddb444f23b",
+      "patchSHA256": "3dc9dd0a2924d6fb8449ac9b71f54cb0bab5da7705ab167ed461c9ddb444f23b"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-domain-reliability.patch",
+      "originalSHA256": "5a1314c9e123bfac43c3e26d36b06e420c523053904a2e4fb0aabcddb122a6a4",
+      "patchSHA256": "5a1314c9e123bfac43c3e26d36b06e420c523053904a2e4fb0aabcddb122a6a4"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/block-trk-and-subdomains.patch",
+      "originalSHA256": "10d01e4f15b11a48fc6833ef4c39323ba4211e13e0b56b32cc274a4cb8663bc3",
+      "patchSHA256": "10d01e4f15b11a48fc6833ef4c39323ba4211e13e0b56b32cc274a4cb8663bc3"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-gaia.patch",
+      "originalSHA256": "046ed0cf962254b1963da43ce57c2b2cab399bab722d3a0565cc59bf3c035112",
+      "patchSHA256": "046ed0cf962254b1963da43ce57c2b2cab399bab722d3a0565cc59bf3c035112"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-fonts-googleapis-references.patch",
+      "originalSHA256": "3d9ddb1eb2917c7f54e4734f4d92b21d54b653e935eab7454006a9edfd377f45",
+      "patchSHA256": "3d9ddb1eb2917c7f54e4734f4d92b21d54b653e935eab7454006a9edfd377f45"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-webstore-urls.patch",
+      "originalSHA256": "cbbc106c54ad090de04cf93a9441a70358921e20406f31472b9b72db8fb4e471",
+      "patchSHA256": "cbbc106c54ad090de04cf93a9441a70358921e20406f31472b9b72db8fb4e471"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/fix-learn-doubleclick-hsts.patch",
+      "originalSHA256": "b375d4923e22893b5bda4df533aff4ceca5b8f2de354197dabf6f01b1551daa3",
+      "patchSHA256": "b375d4923e22893b5bda4df533aff4ceca5b8f2de354197dabf6f01b1551daa3"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-webrtc-log-uploader.patch",
+      "originalSHA256": "87025da2cd78fc438fddbaabb151804caf301f5feb6d5803ac1458f480b44435",
+      "patchSHA256": "87025da2cd78fc438fddbaabb151804caf301f5feb6d5803ac1458f480b44435"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-ai.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/common/core/ungoogled-chromium/disable-ai.patch",
+      "originalSHA256": "bca6203c488a454fbb920ed8c4cfa0d79417d91127ae05e4319845ebd57aeefe",
+      "patchSHA256": "ca49891008786aacc03075e3166f5918b9236d82ee87681d4236940e9d176aa4"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/fix-building-with-prunned-binaries.patch",
+      "originalSHA256": "2fd2dfca1e053883a75645efd68866d6426403222f6eb60000278f3300486d2a",
+      "patchSHA256": "2fd2dfca1e053883a75645efd68866d6426403222f6eb60000278f3300486d2a"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-network-time-tracker.patch",
+      "originalSHA256": "04278b44bfa8f0a3979e406e7208d6f27f278bfea1e3fd500c176cf7eac52d4e",
+      "patchSHA256": "04278b44bfa8f0a3979e406e7208d6f27f278bfea1e3fd500c176cf7eac52d4e"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-mei-preload.patch",
+      "originalSHA256": "7cb66bc4c87cf0c2bcd654ca5702580638ca54dbdd64c2c15e2668810dde4d90",
+      "patchSHA256": "7cb66bc4c87cf0c2bcd654ca5702580638ca54dbdd64c2c15e2668810dde4d90"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/fix-building-without-safebrowsing.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/common/core/ungoogled-chromium/fix-building-without-safebrowsing.patch",
+      "originalSHA256": "4cfab7a1a77d0faf2dbb5c6be42dc9f89e242ae264d88a55d2a37873e2a01ba2",
+      "patchSHA256": "a345a050da8dc0331af1d6471380800f817a30b091188e13865d43f6679ab37d"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/remove-unused-preferences-fields.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/common/core/ungoogled-chromium/remove-unused-preferences-fields.patch",
+      "originalSHA256": "1d9319e420773dda1c6ee33cc200665ace002f099b00e51c6b18633ea00f8b36",
+      "patchSHA256": "ed4f4733ca70bc08e2a5fad10535ef171721c967b62f94f4ef8ec7634d0a0341"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/block-requests.patch",
+      "originalSHA256": "782c0444c67208efa642280154299c14f35f37d7f12d3e5d16a1f0907f7ae77f",
+      "patchSHA256": "782c0444c67208efa642280154299c14f35f37d7f12d3e5d16a1f0907f7ae77f"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-privacy-sandbox.patch",
+      "originalSHA256": "564d1132649a540a7ea84d7d44404d937cd81f7704b9b7bb867103638d39d8d3",
+      "patchSHA256": "564d1132649a540a7ea84d7d44404d937cd81f7704b9b7bb867103638d39d8d3"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/doh-changes.patch",
+      "originalSHA256": "89f8811b5adb64b32b3c7b9d685d726969c1f300553ae96e5e0bc100c4eb2488",
+      "patchSHA256": "89f8811b5adb64b32b3c7b9d685d726969c1f300553ae96e5e0bc100c4eb2488"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/extensions-manifestv2.patch",
+      "originalSHA256": "840d656629da18e395b15c960d5d29d36dd8eae4f44b31b907a10a4c43af3ae7",
+      "patchSHA256": "840d656629da18e395b15c960d5d29d36dd8eae4f44b31b907a10a4c43af3ae7"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/remove-f1-shortcut.patch",
+      "originalSHA256": "20abe8b3d6e72aa1502293d1480089b43ed40a86e4640bc3c73c78effa372d55",
+      "patchSHA256": "20abe8b3d6e72aa1502293d1480089b43ed40a86e4640bc3c73c78effa372d55"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/move-js-optimizer-unfamiliar-sites.patch",
+      "originalSHA256": "f43fc7c1fb5e989df2c5621a0eca2b6aa2ab6356d182205aef870c89cbeac604",
+      "patchSHA256": "f43fc7c1fb5e989df2c5621a0eca2b6aa2ab6356d182205aef870c89cbeac604"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/build-with-wasm-rollup.patch",
+      "originalSHA256": "cfef4a4eeed2272b3101131af6c1bb63c7932a715c36634a1e027f770634e013",
+      "patchSHA256": "cfef4a4eeed2272b3101131af6c1bb63c7932a715c36634a1e027f770634e013"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/remove-navigation-source-param.patch",
+      "originalSHA256": "640eea992b89e8683b2717ae852ea288a6a29728a6333b2d5b3810de4a5bcf3d",
+      "patchSHA256": "640eea992b89e8683b2717ae852ea288a6a29728a6333b2d5b3810de4a5bcf3d"
+    },
+    {
+      "label": "common:core/ungoogled-chromium/disable-tos-dialog.patch",
+      "originalSHA256": "b8d1364f3b6aaf641827a23474338fa97358eda9738ba3df6e09c1e6f349c640",
+      "patchSHA256": "b8d1364f3b6aaf641827a23474338fa97358eda9738ba3df6e09c1e6f349c640"
+    },
+    {
+      "label": "common:core/bromite/disable-fetching-field-trials.patch",
+      "originalSHA256": "0be43b4c847db3dd9b34d8fc1e8fc4a4dc23ed6e7846377f9b380226aa1866f8",
+      "patchSHA256": "0be43b4c847db3dd9b34d8fc1e8fc4a4dc23ed6e7846377f9b380226aa1866f8"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-ungoogled-flag-headers.patch",
+      "originalSHA256": "86e9c7065e3c33463e639204f610109a9d40542439e042976426e2cb8588944e",
+      "patchSHA256": "86e9c7065e3c33463e639204f610109a9d40542439e042976426e2cb8588944e"
+    },
+    {
+      "label": "common:extra/inox-patchset/0006-modify-default-prefs.patch",
+      "originalSHA256": "fed252c8b0018834b9282e5a6e11aef721fc44cd267f8a1a97dce9db6449c6e1",
+      "patchSHA256": "fed252c8b0018834b9282e5a6e11aef721fc44cd267f8a1a97dce9db6449c6e1"
+    },
+    {
+      "label": "common:extra/inox-patchset/0008-restore-classic-ntp.patch",
+      "originalSHA256": "631a11deecce14dba44075abd5fb37a021fc1f1dff28a0f9b8e78b6951bce73c",
+      "patchSHA256": "631a11deecce14dba44075abd5fb37a021fc1f1dff28a0f9b8e78b6951bce73c"
+    },
+    {
+      "label": "common:extra/inox-patchset/0013-disable-missing-key-warning.patch",
+      "originalSHA256": "edd43900b50b01327d1cc4253198a9759477ba1796dacca40e9666f3d2666a68",
+      "patchSHA256": "edd43900b50b01327d1cc4253198a9759477ba1796dacca40e9666f3d2666a68"
+    },
+    {
+      "label": "common:extra/inox-patchset/0016-chromium-sandbox-pie.patch",
+      "originalSHA256": "76fe0544e492fb539279fea96f20d994acdb927ca9ead00aaee68476bd69eac2",
+      "patchSHA256": "76fe0544e492fb539279fea96f20d994acdb927ca9ead00aaee68476bd69eac2"
+    },
+    {
+      "label": "common:extra/inox-patchset/0019-disable-battery-status-service.patch",
+      "originalSHA256": "aa88071a85afede12dbb0c1e8abe52a13b41ecacf01f1f7f0bf3989da6181eac",
+      "patchSHA256": "aa88071a85afede12dbb0c1e8abe52a13b41ecacf01f1f7f0bf3989da6181eac"
+    },
+    {
+      "label": "common:extra/debian/disable/google-api-warning.patch",
+      "originalSHA256": "9e548b6b6008cb04b2091b1e3cad6531e493a674d40b5e5b01f8c467eff1f9f6",
+      "patchSHA256": "9e548b6b6008cb04b2091b1e3cad6531e493a674d40b5e5b01f8c467eff1f9f6"
+    },
+    {
+      "label": "common:extra/iridium-browser/mime_util-force-text-x-suse-ymp-to-be-downloaded.patch",
+      "originalSHA256": "8a883b1ce4461b61c2e969d872725bb771c439638502192932303321ac028c28",
+      "patchSHA256": "8a883b1ce4461b61c2e969d872725bb771c439638502192932303321ac028c28"
+    },
+    {
+      "label": "common:extra/iridium-browser/prefs-always-prompt-for-download-directory-by-defaul.patch",
+      "originalSHA256": "3dbc9b3e329333efef00b5ba4c0e09ba3e3eff638694c4d6007a9935caa8c12c",
+      "patchSHA256": "3dbc9b3e329333efef00b5ba4c0e09ba3e3eff638694c4d6007a9935caa8c12c"
+    },
+    {
+      "label": "common:extra/iridium-browser/updater-disable-auto-update.patch",
+      "originalSHA256": "464ec3a0a9bdec56658dc5a58e3b50f4fd1b61d68a411bb83e42bfde2993a7d1",
+      "patchSHA256": "464ec3a0a9bdec56658dc5a58e3b50f4fd1b61d68a411bb83e42bfde2993a7d1"
+    },
+    {
+      "label": "common:extra/iridium-browser/Remove-EV-certificates.patch",
+      "originalSHA256": "f156cc4717ae85c8344dc9579263fec5735eb0516b474963e43a7d00b26b512f",
+      "patchSHA256": "f156cc4717ae85c8344dc9579263fec5735eb0516b474963e43a7d00b26b512f"
+    },
+    {
+      "label": "common:extra/iridium-browser/browser-disable-profile-auto-import-on-first-run.patch",
+      "originalSHA256": "c20a6ad20dc5e44e7cc223c9dbd6486a71598e5e7b45f68b7dd6c3f4e31e87f1",
+      "patchSHA256": "c20a6ad20dc5e44e7cc223c9dbd6486a71598e5e7b45f68b7dd6c3f4e31e87f1"
+    },
+    {
+      "label": "common:extra/bromite/fingerprinting-flags-client-rects-and-measuretext.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/common/extra/bromite/fingerprinting-flags-client-rects-and-measuretext.patch",
+      "originalSHA256": "bbd0aab015c962f103d9a4a8a9dca9539e3259f88dad6a4e9950b03190389d47",
+      "patchSHA256": "d84b55bc2d638f622ecb75a31beddc8f7fc4432f2c35d019b4d1e5e42959ca2d"
+    },
+    {
+      "label": "common:extra/bromite/flag-max-connections-per-host.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/common/extra/bromite/flag-max-connections-per-host.patch",
+      "originalSHA256": "c906e41439c2eda07776ef045b4875ab6d13a1a40d2f6e6844862149c902bb01",
+      "patchSHA256": "5dc1faeaf543276b3dc08c78575b2bbef5a2f2c40378102dfae1707ad650b168"
+    },
+    {
+      "label": "common:extra/bromite/flag-fingerprinting-canvas-image-data-noise.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/common/extra/bromite/flag-fingerprinting-canvas-image-data-noise.patch",
+      "originalSHA256": "487987fd46b8a409c4a7dd22f9054f160dcc5de8befab6b81ed4a4ca34dabed5",
+      "patchSHA256": "7cb219978e278cbc46f6e57ad36ae66cf4f5e2c45c4d7a17ba63d5f6aebb952b"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-components-ungoogled.patch",
+      "originalSHA256": "e9527032fe6efc0981e98c52c11c016854fbab07268f0ea8eb27d72fcb844d68",
+      "patchSHA256": "e9527032fe6efc0981e98c52c11c016854fbab07268f0ea8eb27d72fcb844d68"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/disable-formatting-in-omnibox.patch",
+      "originalSHA256": "83bfa47b85eb59ebcc88bfd810de5bcfc44c837bf7e643116a896462a5c4b064",
+      "patchSHA256": "83bfa47b85eb59ebcc88bfd810de5bcfc44c837bf7e643116a896462a5c4b064"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-ipv6-probing-option.patch",
+      "originalSHA256": "3b27a09e0e1e966924be7cf866ee06a3aeadd1d611482c6da4a024a558c82c76",
+      "patchSHA256": "3b27a09e0e1e966924be7cf866ee06a3aeadd1d611482c6da4a024a558c82c76"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/remove-disable-setuid-sandbox-as-bad-flag.patch",
+      "originalSHA256": "3aa2c529662ac81dfcdc27cb33e88219887461e05533e583ba5612bc31a76547",
+      "patchSHA256": "3aa2c529662ac81dfcdc27cb33e88219887461e05533e583ba5612bc31a76547"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/disable-intranet-redirect-detector.patch",
+      "originalSHA256": "7e7106e0cacf438a7d97f7f5d337f691637423b8192da3e07697f8e56851165b",
+      "patchSHA256": "7e7106e0cacf438a7d97f7f5d337f691637423b8192da3e07697f8e56851165b"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/disable-download-quarantine.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/common/extra/ungoogled-chromium/disable-download-quarantine.patch",
+      "originalSHA256": "5bcab10359a1b9227facae688364e639a6bdb5f1798450948fecf748507576ae",
+      "patchSHA256": "2606e909e26cad488c7fc7ce00f820608e93038d9852fb6f57ab2053ed87313b"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/fix-building-without-mdns-and-service-discovery.patch",
+      "originalSHA256": "77b56b96898e4d4b5278087a4867cabc29ecc282674bb824962e3a84ea255f66",
+      "patchSHA256": "77b56b96898e4d4b5278087a4867cabc29ecc282674bb824962e3a84ea255f66"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-configure-extension-downloading.patch",
+      "originalSHA256": "35506383dd004370652a753109cb4d3d1aefb117c3119440c250b65f1f12fa1b",
+      "patchSHA256": "35506383dd004370652a753109cb4d3d1aefb117c3119440c250b65f1f12fa1b"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-for-search-engine-collection.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/common/extra/ungoogled-chromium/add-flag-for-search-engine-collection.patch",
+      "originalSHA256": "6a5044f159d4aa3249d3261c70004dc20003ac03f16e80c1dbdda4d7616ef50a",
+      "patchSHA256": "ff6f5d31ab4ca490a22be5afeb1977f2d1300ef6796b5429536d05cc4928a148"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-disable-beforeunload.patch",
+      "originalSHA256": "4304444883e24d395fe43e9ddc5a6bc51cff4b55ac7bcf6bbf8dfa0b995b8c03",
+      "patchSHA256": "4304444883e24d395fe43e9ddc5a6bc51cff4b55ac7bcf6bbf8dfa0b995b8c03"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-force-punycode-hostnames.patch",
+      "originalSHA256": "52480662769d166f2df93e37088e8ffcf94f1386d1c9aff238fc7ebb6a8b66fd",
+      "patchSHA256": "52480662769d166f2df93e37088e8ffcf94f1386d1c9aff238fc7ebb6a8b66fd"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-show-avatar-button.patch",
+      "originalSHA256": "3afd450f21ececf0f5474b782cadfac5621e1ae4c8e2fa6e544490fdc40cf717",
+      "patchSHA256": "3afd450f21ececf0f5474b782cadfac5621e1ae4c8e2fa6e544490fdc40cf717"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-suggestions-url-field.patch",
+      "originalSHA256": "47ff8550d91975100d48f87cc56fad76493d7e31881c93967bf27ff44dd5b8bf",
+      "patchSHA256": "47ff8550d91975100d48f87cc56fad76493d7e31881c93967bf27ff44dd5b8bf"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-hide-crashed-bubble.patch",
+      "originalSHA256": "eee0fa345187edd691ea92acf2b7c2585d26e11b725f2dee3145f599633f287d",
+      "patchSHA256": "eee0fa345187edd691ea92acf2b7c2585d26e11b725f2dee3145f599633f287d"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-scroll-tabs.patch",
+      "originalSHA256": "6b52c0d999084cb0729b718ebf70f2340e0ef1ee9e86dcc72ac97fc7fd9af16a",
+      "patchSHA256": "6b52c0d999084cb0729b718ebf70f2340e0ef1ee9e86dcc72ac97fc7fd9af16a"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/enable-paste-and-go-new-tab-button.patch",
+      "originalSHA256": "b5559d481f0b6d06f71f74ebc884f961f2c6e4f3d451b68185bcfd309d50ce22",
+      "patchSHA256": "b5559d481f0b6d06f71f74ebc884f961f2c6e4f3d451b68185bcfd309d50ce22"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-for-bookmark-bar-ntp.patch",
+      "originalSHA256": "ebcd5c6da7c240a314698d505521bdca68f0f32842f4b468a9434d34241cde24",
+      "patchSHA256": "ebcd5c6da7c240a314698d505521bdca68f0f32842f4b468a9434d34241cde24"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/enable-menu-on-reload-button.patch",
+      "originalSHA256": "f82fca9b9b8da8b2e8212945cb8ab65da3bcadedab1952315d3e0046754ad501",
+      "patchSHA256": "f82fca9b9b8da8b2e8212945cb8ab65da3bcadedab1952315d3e0046754ad501"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-for-omnibox-autocomplete-filtering.patch",
+      "originalSHA256": "e631dd9d6f498bca74416a3cd3729c5ca8bf975d936ef1d038a1821090682cef",
+      "patchSHA256": "e631dd9d6f498bca74416a3cd3729c5ca8bf975d936ef1d038a1821090682cef"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/disable-dial-repeating-discovery.patch",
+      "originalSHA256": "74ac795c6b5f734786b5dd9ae6e19360dfbed25083e643d521118ed8d19b1ff3",
+      "patchSHA256": "74ac795c6b5f734786b5dd9ae6e19360dfbed25083e643d521118ed8d19b1ff3"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/remove-uneeded-ui.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/common/extra/ungoogled-chromium/remove-uneeded-ui.patch",
+      "originalSHA256": "1d61ad24b0dcd88a7c758665aadc86dc945ffe57099c0ddcae0e0f7f2e66695b",
+      "patchSHA256": "46fbe885b4ffa68eccf2e9b58a5bf34d1987c0d4a718c1529065e79f8df4cbf4"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-close-window-with-last-tab.patch",
+      "originalSHA256": "81ab9bd4455def59d90288be44d6e399719ca767ffd2780a2948f6e81a159614",
+      "patchSHA256": "81ab9bd4455def59d90288be44d6e399719ca767ffd2780a2948f6e81a159614"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-convert-popups-to-tabs.patch",
+      "originalSHA256": "22e459a91b634f9c4430dbbcfed6a73025bad0fab31186a862ac7fbac7cb2465",
+      "patchSHA256": "22e459a91b634f9c4430dbbcfed6a73025bad0fab31186a862ac7fbac7cb2465"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-disable-local-history-expiration.patch",
+      "originalSHA256": "8314cb57e23313d55cb194856429238c089bafdb6e26fd54dfc360b3a3b86c79",
+      "patchSHA256": "8314cb57e23313d55cb194856429238c089bafdb6e26fd54dfc360b3a3b86c79"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-extra-channel-info.patch",
+      "originalSHA256": "09f61f47469553c768f8eff48171529448af1f356a47fb42b3d9653c86a3c634",
+      "patchSHA256": "09f61f47469553c768f8eff48171529448af1f356a47fb42b3d9653c86a3c634"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/prepopulated-search-engines.patch",
+      "originalSHA256": "7c688533edadd241895727382c53214ce68d7cf99c1a3d323079c1640b19b73a",
+      "patchSHA256": "7c688533edadd241895727382c53214ce68d7cf99c1a3d323079c1640b19b73a"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-clear-data-on-exit.patch",
+      "originalSHA256": "e0222e206a770c33d91150f34a30cbde8a5fef896b7a62baf3d6d81b9cab8552",
+      "patchSHA256": "e0222e206a770c33d91150f34a30cbde8a5fef896b7a62baf3d6d81b9cab8552"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-for-qr-generator.patch",
+      "originalSHA256": "d9209b760847f676e74bc0dd748de3684c5af1d3f05c5aad80e415879757b4dc",
+      "patchSHA256": "d9209b760847f676e74bc0dd748de3684c5af1d3f05c5aad80e415879757b4dc"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-for-grab-handle.patch",
+      "originalSHA256": "dfe8f179f9702a8935c2085cbdde9185e396416d34da52d38d64a07de76ad75a",
+      "patchSHA256": "dfe8f179f9702a8935c2085cbdde9185e396416d34da52d38d64a07de76ad75a"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-for-close-confirmation.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/common/extra/ungoogled-chromium/add-flag-for-close-confirmation.patch",
+      "originalSHA256": "4ace681413df45407a3fa5db25c2cba8cfc86afa3d10ac927be1df16a86bbca7",
+      "patchSHA256": "f03f895e0fe477157e7f1a7c1d3140b528017917c07b63e565f789e920cbd93b"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/keep-expired-flags.patch",
+      "originalSHA256": "eb8bec5bb72053653d3e6a578affb3d62de2a85cd8e37913b1d9d5f8beb8cc4f",
+      "patchSHA256": "eb8bec5bb72053653d3e6a578affb3d62de2a85cd8e37913b1d9d5f8beb8cc4f"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-for-custom-ntp.patch",
+      "originalSHA256": "2e808985a9faf177b4abe9cd787e06907369790260364c142a311265c644ad8e",
+      "patchSHA256": "2e808985a9faf177b4abe9cd787e06907369790260364c142a311265c644ad8e"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-for-tab-hover-cards.patch",
+      "originalSHA256": "11de1cfd542f91cca7875642f40dfeef0d546c1930426e6df3f787448251a181",
+      "patchSHA256": "11de1cfd542f91cca7875642f40dfeef0d546c1930426e6df3f787448251a181"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-hide-tab-close-buttons.patch",
+      "originalSHA256": "fa0f7547b82caee5ee3b6670250cf19fee35db715bef145d522af746cce65a3d",
+      "patchSHA256": "fa0f7547b82caee5ee3b6670250cf19fee35db715bef145d522af746cce65a3d"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-disable-tls-grease.patch",
+      "originalSHA256": "d3072f8f4bfd844efa2f37e5eddc13dc6eee07c4d4370161b7359b0b92702c65",
+      "patchSHA256": "d3072f8f4bfd844efa2f37e5eddc13dc6eee07c4d4370161b7359b0b92702c65"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-change-http-accept-header.patch",
+      "originalSHA256": "c13eb210c1f00e66be33ec63b31c5909becd0de6b86dc46b4f0fd4b2b92be86f",
+      "patchSHA256": "c13eb210c1f00e66be33ec63b31c5909becd0de6b86dc46b4f0fd4b2b92be86f"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-for-disabling-link-drag.patch",
+      "originalSHA256": "c5ec74396f45074ddb2b6577d73c704a0cc2b34111ab7a9b3b450dc8d14993fe",
+      "patchSHA256": "c5ec74396f45074ddb2b6577d73c704a0cc2b34111ab7a9b3b450dc8d14993fe"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-hide-extensions-menu.patch",
+      "originalSHA256": "ccba49a55c12545990d5000513b4985256d15f9996687f6f472bfb2de04b3f63",
+      "patchSHA256": "ccba49a55c12545990d5000513b4985256d15f9996687f6f472bfb2de04b3f63"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-hide-fullscreen-exit-ui.patch",
+      "originalSHA256": "635a3ba269465005cb27367caebb96966b8d5013964fb5eb99fcf6ff1dc3e307",
+      "patchSHA256": "635a3ba269465005cb27367caebb96966b8d5013964fb5eb99fcf6ff1dc3e307"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-for-incognito-themes.patch",
+      "originalSHA256": "d790ffbe78569d2ae4511eabe7942c5272bca91fb5a95b5634dddcbfcedcbb61",
+      "patchSHA256": "d790ffbe78569d2ae4511eabe7942c5272bca91fb5a95b5634dddcbfcedcbb61"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flags-for-referrer-customization.patch",
+      "originalSHA256": "5a57319d67830f52c5781ee0c1a8a8019739c0637a0eae943a362b8c5cc83ae4",
+      "patchSHA256": "5a57319d67830f52c5781ee0c1a8a8019739c0637a0eae943a362b8c5cc83ae4"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/default-webrtc-ip-handling-policy.patch",
+      "originalSHA256": "9dd3275f38a1e31bd532b40e6ef0a5f185036863f26dd593c595c7d5c5c93a7e",
+      "patchSHA256": "9dd3275f38a1e31bd532b40e6ef0a5f185036863f26dd593c595c7d5c5c93a7e"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flags-for-existing-switches.patch",
+      "originalSHA256": "78333d41678615e8ddda202d658f823564c10d1012cb134b43817bbf262ec975",
+      "patchSHA256": "78333d41678615e8ddda202d658f823564c10d1012cb134b43817bbf262ec975"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/first-run-page.patch",
+      "originalSHA256": "dd653df6b37dae3345b169ffcaa1900985d741a7a947e607751f8a59aa20fc8e",
+      "patchSHA256": "dd653df6b37dae3345b169ffcaa1900985d741a7a947e607751f8a59aa20fc8e"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-reduce-system-info.patch",
+      "originalSHA256": "ffcc646e86113f2546b1adbe122a14078309e7a51799519243e2b386d445cd52",
+      "patchSHA256": "ffcc646e86113f2546b1adbe122a14078309e7a51799519243e2b386d445cd52"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-remove-client-hints.patch",
+      "originalSHA256": "1c0674ebda6137e3ac7dcfe9264c030ebe3a46a7d7921bdf9cedef6ef40018bc",
+      "patchSHA256": "1c0674ebda6137e3ac7dcfe9264c030ebe3a46a7d7921bdf9cedef6ef40018bc"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/enable-extra-locales.patch",
+      "originalSHA256": "2b597f8db5b811a1ffefb86638539583799f06f2dfbd5b5f04cd8088dd0d65b2",
+      "patchSHA256": "2b597f8db5b811a1ffefb86638539583799f06f2dfbd5b5f04cd8088dd0d65b2"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/remove-pac-size-limit.patch",
+      "originalSHA256": "437dfe711214144b0df4138d5eb34cf4c86c43ac12ed7fc881b4568c06380bee",
+      "patchSHA256": "437dfe711214144b0df4138d5eb34cf4c86c43ac12ed7fc881b4568c06380bee"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/enable-certificate-transparency-and-add-flag.patch",
+      "originalSHA256": "84684e6d90d5675858c96a90af8483d2e79c10d403cd6fb89c194e4acec74fce",
+      "patchSHA256": "84684e6d90d5675858c96a90af8483d2e79c10d403cd6fb89c194e4acec74fce"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-spoof-webgl-renderer-info.patch",
+      "originalSHA256": "d89ec1d5e5209b442b806550165694cd0044378287e5ddc8e4f97d0099d8852d",
+      "patchSHA256": "d89ec1d5e5209b442b806550165694cd0044378287e5ddc8e4f97d0099d8852d"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-to-increase-incognito-storage-quota.patch",
+      "originalSHA256": "0c4c7b98868a35ef25e8f2e1a0a0c6c7a72118762096729d6d2a8fb54e9920df",
+      "patchSHA256": "0c4c7b98868a35ef25e8f2e1a0a0c6c7a72118762096729d6d2a8fb54e9920df"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-credits.patch",
+      "originalSHA256": "9804fd81ace177b532a910618db0323e2c217416a3ea6333a895e3c9cdb8ac31",
+      "patchSHA256": "9804fd81ace177b532a910618db0323e2c217416a3ea6333a895e3c9cdb8ac31"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/disable-ai-search-shortcuts.patch",
+      "originalSHA256": "4fa40ab6927754efb04a028006fe02dbda55fd7560133fa0934a99d84dff1aca",
+      "patchSHA256": "4fa40ab6927754efb04a028006fe02dbda55fd7560133fa0934a99d84dff1aca"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/disable-fedcm-by-default.patch",
+      "originalSHA256": "68d087c1036584ef4ca74dfaf7e5de9c395280251485d354a9cd7cb5f57e84e5",
+      "patchSHA256": "68d087c1036584ef4ca74dfaf7e5de9c395280251485d354a9cd7cb5f57e84e5"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/bundle-hyphenation-patterns.patch",
+      "originalSHA256": "4f6628073c5cc7e7d22943483921fddc42ed19cb0979d06014c8aa52cc2dea27",
+      "patchSHA256": "4f6628073c5cc7e7d22943483921fddc42ed19cb0979d06014c8aa52cc2dea27"
+    },
+    {
+      "label": "common:extra/ungoogled-chromium/add-flag-for-disabling-jit.patch",
+      "originalSHA256": "95c9075c224736a2be979a8a1b4d15d48290d172fcb7259a09155c4566b666df",
+      "patchSHA256": "95c9075c224736a2be979a8a1b4d15d48290d172fcb7259a09155c4566b666df"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/build-bindgen.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/macos/ungoogled-chromium/macos/build-bindgen.patch",
+      "originalSHA256": "f4a3b542d338cc0976286fb2f71a39d7a686ba6db3a7f123253e7fe3cf1aa9da",
+      "patchSHA256": "48bbc5b6f55f23bed19c8fb3b3b1802302c4758c0f52ad293ac0196e0b07b22f"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/disable-clang-version-check.patch",
+      "originalSHA256": "1ec9d36202a5627f462305f7dd9e2857bfcbae203f24be154cd719b38800171d",
+      "patchSHA256": "1ec9d36202a5627f462305f7dd9e2857bfcbae203f24be154cd719b38800171d"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/disable-crashpad-handler.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/macos/ungoogled-chromium/macos/disable-crashpad-handler.patch",
+      "originalSHA256": "c398174bb146e6f4e5f28ac79d3019e1886bb0d383c4c7c549ecb69f25fc821b",
+      "patchSHA256": "a75c302ae9cd110ec702b0884c0a3bc4472d856fc7834daebdd312b7b3c30b7c"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/disable-symbol-order-verification.patch",
+      "originalSHA256": "4880cde4c84e0bca67e96b77ff2bb93b64b7ee3b5f53dbf05839473b72ac9da7",
+      "patchSHA256": "4880cde4c84e0bca67e96b77ff2bb93b64b7ee3b5f53dbf05839473b72ac9da7"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/fix-build-with-rust.patch",
+      "originalSHA256": "92c2627e253cabc8b678981f14619744ba5853c7302f15d7606cf6912249b958",
+      "patchSHA256": "92c2627e253cabc8b678981f14619744ba5853c7302f15d7606cf6912249b958"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/fix-clang-format-path.patch",
+      "originalSHA256": "9c17ec553026025ba994cf8c4395e1249751a49e7dd554165d2cc5af25fda644",
+      "patchSHA256": "9c17ec553026025ba994cf8c4395e1249751a49e7dd554165d2cc5af25fda644"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/fix-disabling-safebrowsing.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/macos/ungoogled-chromium/macos/fix-disabling-safebrowsing.patch",
+      "originalSHA256": "cdf94a992c21e466d439fdb2a04c64ef11bd7a1b543473353d3dc06db5ae70e6",
+      "patchSHA256": "5dd8ee079f4b649d509339756e469c1c6c5460cc26dd56c2054689d1a2919bf9"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/fix-dsymutil.patch",
+      "originalSHA256": "c2ce394fdcb1b22328ab5cf161f9b72a76da537fc3ddb6fbb3229617191a0f2c",
+      "patchSHA256": "c2ce394fdcb1b22328ab5cf161f9b72a76da537fc3ddb6fbb3229617191a0f2c"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/no-unknown-warnings.patch",
+      "originalSHA256": "fe1734ec4bef5b7eb7ca2d772b04afd93e7a8c738e309f0eaaf47380a4bcf6e1",
+      "patchSHA256": "fe1734ec4bef5b7eb7ca2d772b04afd93e7a8c738e309f0eaaf47380a4bcf6e1"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/build-bindgen-target-override.patch",
+      "originalSHA256": "a34d9f345974f2a53214fe782b72efd4ccc449c9624674f18da0db3919efa26c",
+      "patchSHA256": "a34d9f345974f2a53214fe782b72efd4ccc449c9624674f18da0db3919efa26c"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/bindgen-disable-static.patch",
+      "originalSHA256": "92ab8ef8a9bfd63b49bc431554daaae832ea90db4410bc4b8c024d06c543805a",
+      "patchSHA256": "92ab8ef8a9bfd63b49bc431554daaae832ea90db4410bc4b8c024d06c543805a"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/set-rustc-nightly-capability.patch",
+      "originalSHA256": "0c02a139dc5db01a167fe4740dbd4eeffec748ad7b83bce2136934a340137ea8",
+      "patchSHA256": "0c02a139dc5db01a167fe4740dbd4eeffec748ad7b83bce2136934a340137ea8"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/revert-v8-sanitizer-changes.patch",
+      "originalSHA256": "d5e9d1a096d0939a02332afd970e466f836cc77826c5029bd1cc10ff77415996",
+      "patchSHA256": "d5e9d1a096d0939a02332afd970e466f836cc77826c5029bd1cc10ff77415996"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/fix-nasm-build-config.patch",
+      "originalSHA256": "7edab94489ce48ceac4d1c682c698e8663df563aa319d709abfe7f9afc277297",
+      "patchSHA256": "7edab94489ce48ceac4d1c682c698e8663df563aa319d709abfe7f9afc277297"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/fix-anyappleos-availability.patch",
+      "originalSHA256": "242ecabba4db1f799aaef4f5db953e80bed29d9b5d62ad349c83aa6f1243931e",
+      "patchSHA256": "242ecabba4db1f799aaef4f5db953e80bed29d9b5d62ad349c83aa6f1243931e"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/fix-build-without-crubit.patch",
+      "originalSHA256": "9e650d883ef34e1f526476054d5f67472705e5cf8f661ac97aaa59be854348d3",
+      "patchSHA256": "9e650d883ef34e1f526476054d5f67472705e5cf8f661ac97aaa59be854348d3"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/use-system-python.patch",
+      "originalSHA256": "2a79214f80cd0d1851dc7b759bf87029a0c00affa8213a02f002df2ae7a5f65a",
+      "patchSHA256": "2a79214f80cd0d1851dc7b759bf87029a0c00affa8213a02f002df2ae7a5f65a"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/fix-disable-verification-token.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/macos/ungoogled-chromium/macos/fix-disable-verification-token.patch",
+      "originalSHA256": "89133df06c62adcbc7dff04e6164ecf9bbe807dbf1363106fd66eb671d14da2a",
+      "patchSHA256": "bb4a49aacbd15597f51a20ada52a253cba7b894cf92e457f8cb784aa55dd385c"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/fix-esbuild.patch",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/macos/ungoogled-chromium/macos/fix-esbuild.patch",
+      "originalSHA256": "db050704d0beaa1da438e91a03275a7a511ad734614716c3df4aeb2f179f90bd",
+      "patchSHA256": "d9128dc910fc2f52fd26ee582504dd42f746166ac9c2382a4003b518ec6275ef"
+    },
+    {
+      "label": "macos:ungoogled-chromium/macos/fix-typescript.patch",
+      "originalSHA256": "48176806bc7822099940fe75bba5c79bce6c46d66a7824b5cb04cea077df8679",
+      "patchSHA256": "48176806bc7822099940fe75bba5c79bce6c46d66a7824b5cb04cea077df8679"
+    },
+    {
+      "label": "owned:profile-seed-contract",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/profile-seed-contract.patch",
+      "originalSHA256": "936d823ea8374ff96b5a77478d34a9a4bcd44a73f981e7b788a785788e8e75b4",
+      "patchSHA256": "936d823ea8374ff96b5a77478d34a9a4bcd44a73f981e7b788a785788e8e75b4"
+    },
+    {
+      "label": "owned:deterministic-rendered-surfaces",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/deterministic-rendered-surfaces.patch",
+      "originalSHA256": "32046d721722653b9484469283902577d360bb075b178c7bc4b1f32b69e3365e",
+      "patchSHA256": "32046d721722653b9484469283902577d360bb075b178c7bc4b1f32b69e3365e"
+    },
+    {
+      "label": "owned:deterministic-offline-audio",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/deterministic-offline-audio.patch",
+      "originalSHA256": "9d59d33d4cb16c89795349c64b44c11963c4137e2f10d2f112612a87a5611652",
+      "patchSHA256": "9d59d33d4cb16c89795349c64b44c11963c4137e2f10d2f112612a87a5611652"
+    },
+    {
+      "label": "owned:deterministic-webgl-pixels",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/deterministic-webgl-pixels.patch",
+      "originalSHA256": "751faad4e1d01bd28f65c4510f1612d3bd1648bd41efa9a8d47a7f7b623806d0",
+      "patchSHA256": "751faad4e1d01bd28f65c4510f1612d3bd1648bd41efa9a8d47a7f7b623806d0"
+    },
+    {
+      "label": "owned:timezone-locale-network-context",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/timezone-locale-network-context.patch",
+      "originalSHA256": "b90aab37047d35e0c0e4bbe1938eaac965779bc7b241f534d27b9debf930985b",
+      "patchSHA256": "b90aab37047d35e0c0e4bbe1938eaac965779bc7b241f534d27b9debf930985b"
+    },
+    {
+      "label": "owned:real-browser-version-contract",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/real-browser-version-contract.patch",
+      "originalSHA256": "368a83a9f6b042f117c631ce7a8b8b6291dcf4043b93bd226a17a22f563109ce",
+      "patchSHA256": "368a83a9f6b042f117c631ce7a8b8b6291dcf4043b93bd226a17a22f563109ce"
+    },
+    {
+      "label": "owned:minimal-apple-device-tuple",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/minimal-apple-device-tuple.patch",
+      "originalSHA256": "7b13ccd09c4cec5d2fb685252d312f4c8fd9c27186c8e684d5aaba8b3b0254d7",
+      "patchSHA256": "7b13ccd09c4cec5d2fb685252d312f4c8fd9c27186c8e684d5aaba8b3b0254d7"
+    },
+    {
+      "label": "owned:neantik-branding-and-source-lock",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/neantik-branding-and-source-lock.patch",
+      "originalSHA256": "8a2c36bec88fa99554f6a48aacfce864ed917804508bfa35d6e0d3a705952f87",
+      "patchSHA256": "8a2c36bec88fa99554f6a48aacfce864ed917804508bfa35d6e0d3a705952f87"
+    },
+    {
+      "label": "owned:official-lite-archive-build-contract",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/official-lite-archive-build-contract.patch",
+      "originalSHA256": "4d6bf38dbd7d15539b29ebbddf090e64b82bc34f3f8d496063bc1fb1c41e26c3",
+      "patchSHA256": "4d6bf38dbd7d15539b29ebbddf090e64b82bc34f3f8d496063bc1fb1c41e26c3"
+    },
+    {
+      "label": "owned:private-runtime-config-environment",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/private-runtime-config-environment.patch",
+      "originalSHA256": "30881d9440c3c02f32d340595f7b3d1c07f11010921337482dcef65348dd4fd1",
+      "patchSHA256": "30881d9440c3c02f32d340595f7b3d1c07f11010921337482dcef65348dd4fd1"
+    },
+    {
+      "label": "owned:cached-runtime-profile-seed",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/cached-runtime-profile-seed.patch",
+      "originalSHA256": "45717ea4ecabb3cb81a391df9badd51571e8ffe010ee2c1fcbc05d63adfaef9b",
+      "patchSHA256": "45717ea4ecabb3cb81a391df9badd51571e8ffe010ee2c1fcbc05d63adfaef9b"
+    },
+    {
+      "label": "owned:m154-unused-signin-helpers",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-unused-signin-helpers.patch",
+      "originalSHA256": "05e16c61c527b40f21d59784504387d43ad191b4d1a654907777f26b65abde92",
+      "patchSHA256": "05e16c61c527b40f21d59784504387d43ad191b4d1a654907777f26b65abde92"
+    },
+    {
+      "label": "owned:m154-remove-unreachable-disabled-gcm-body",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/owned/patches/m154-remove-unreachable-disabled-gcm-body.patch",
+      "originalSHA256": "39c2fac5ab57d17e07d830b03969fa262c2b36773ce8f4229d6f8c0f550e553b",
+      "patchSHA256": "264828d1375f66d88d47080b78eee7778f45a459541e96d09d910d2f445803d2"
+    },
+    {
+      "label": "owned:m154-remove-unreachable-domain-reliability-upload-body",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-remove-unreachable-domain-reliability-upload-body.patch",
+      "originalSHA256": "f359a7265dba9ffc5c2a4e01aad2f91a13a3de36fc5b65f5bddab6bc626f8428",
+      "patchSHA256": "f359a7265dba9ffc5c2a4e01aad2f91a13a3de36fc5b65f5bddab6bc626f8428"
+    },
+    {
+      "label": "owned:m154-template-url-service-init-order",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-template-url-service-init-order.patch",
+      "originalSHA256": "0ecc9192845a88690e0428b39993faf5b3c71e01aeccaf076a0678498d07f032",
+      "patchSHA256": "0ecc9192845a88690e0428b39993faf5b3c71e01aeccaf076a0678498d07f032"
+    },
+    {
+      "label": "owned:enterprise-cloud-archive-analysis-mode0-common-overlay",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/owned/patches/enterprise-cloud-archive-analysis-mode0-common-overlay.patch",
+      "originalSHA256": "06e2ca25388163e3300b05cb50ee90ca3a7c2ed2939f85f13de9ac07e2d3df75",
+      "patchSHA256": "08c6eb4dce541f80fc15d9179645643b72c6056bed21a9da3029774d1690dd7a"
+    },
+    {
+      "label": "owned:m154-remove-unreachable-assist-ranker-body",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/owned/patches/m154-remove-unreachable-assist-ranker-body.patch",
+      "originalSHA256": "3a6a19a56acd5709d3431614da1c0ecebdaba5e76c9ef7463c40c91642b76c92",
+      "patchSHA256": "17a6ef0629217ae625eff87f287ed6c5da47ebfe005418c9edce66e9126f4aac"
+    },
+    {
+      "label": "owned:m154-remove-unreachable-translate-ranker-body",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-remove-unreachable-translate-ranker-body.patch",
+      "originalSHA256": "e9e78dc06fa5a078fa213c2af21c84c8d3faf1f39ce7ca7189f9c2de255a6ff4",
+      "patchSHA256": "e9e78dc06fa5a078fa213c2af21c84c8d3faf1f39ce7ca7189f9c2de255a6ff4"
+    },
+    {
+      "label": "owned:m154-prune-disabled-autofill-network-helpers",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-autofill-network-helpers.patch",
+      "originalSHA256": "2ef2ef8060f538b53e1f661c7307e9a7d7620f2da80829ee0c54973e64d6549d",
+      "patchSHA256": "2ef2ef8060f538b53e1f661c7307e9a7d7620f2da80829ee0c54973e64d6549d"
+    },
+    {
+      "label": "owned:m154-remove-disabled-safe-move-activation-field",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-remove-disabled-safe-move-activation-field.patch",
+      "originalSHA256": "5e84a629c25a599c172abc7e621f7f97b573b3749db29b0f8ef4587a4432452e",
+      "patchSHA256": "5e84a629c25a599c172abc7e621f7f97b573b3749db29b0f8ef4587a4432452e"
+    },
+    {
+      "label": "owned:restore-download-quarantine-provenance",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/owned/patches/restore-download-quarantine-provenance.patch",
+      "originalSHA256": "e46f0c1beb8af118faa78b845edf484a75f836fb3cff0218800ac5957ab5668b",
+      "patchSHA256": "3ffd42482aba7f4442906be702933061cf947d7ebb35150a73172bc5b1ccca0c"
+    },
+    {
+      "label": "owned:m154-file-system-access-quarantine-provenance-test",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-file-system-access-quarantine-provenance-test.patch",
+      "originalSHA256": "35ac40363df829f2899d792921278f0801d142932ff722b2e36a5143f17b64d7",
+      "patchSHA256": "35ac40363df829f2899d792921278f0801d142932ff722b2e36a5143f17b64d7"
+    },
+    {
+      "label": "owned:m154-prune-disabled-ssl-interstitial-prefs-helper",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-ssl-interstitial-prefs-helper.patch",
+      "originalSHA256": "b6a35a6ec88459461f2d1c7368f1c9db40264f72d96099b2ea5061b13599ec3f",
+      "patchSHA256": "b6a35a6ec88459461f2d1c7368f1c9db40264f72d96099b2ea5061b13599ec3f"
+    },
+    {
+      "label": "owned:m154-disable-nonlinux-crashpad-unreachable-body",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-disable-nonlinux-crashpad-unreachable-body.patch",
+      "originalSHA256": "befab35f324679ac2693587026822eadb839fd51ffba2ae71ebf917ab38591fd",
+      "patchSHA256": "befab35f324679ac2693587026822eadb839fd51ffba2ae71ebf917ab38591fd"
+    },
+    {
+      "label": "owned:m154-prune-disabled-safe-browsing-metrics-helpers",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-safe-browsing-metrics-helpers.patch",
+      "originalSHA256": "ce4a290cf183e08b37569cb50abc030bf5e3d4eea22caadd23f35758f49140dd",
+      "patchSHA256": "ce4a290cf183e08b37569cb50abc030bf5e3d4eea22caadd23f35758f49140dd"
+    },
+    {
+      "label": "owned:m154-restore-safe-browsing-prefs-declarations-include",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-restore-safe-browsing-prefs-declarations-include.patch",
+      "originalSHA256": "7532382a17a3d5967531bd9a241389d3f095c5b396e8ddd4c4db880563bff749",
+      "patchSHA256": "7532382a17a3d5967531bd9a241389d3f095c5b396e8ddd4c4db880563bff749"
+    },
+    {
+      "label": "owned:m154-prune-disabled-webstore-download-helper",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-webstore-download-helper.patch",
+      "originalSHA256": "5723a1a77a250cef9165c5e02ca5ef97cda0e59e5dafc01a03cc27ff830835b4",
+      "patchSHA256": "5723a1a77a250cef9165c5e02ca5ef97cda0e59e5dafc01a03cc27ff830835b4"
+    },
+    {
+      "label": "owned:m154-prune-disabled-omaha-action-flag",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-omaha-action-flag.patch",
+      "originalSHA256": "ad7535d9258ca8140219694a9a5b7af5e08bf35a05a0a8139a7167a5179563dd",
+      "patchSHA256": "ad7535d9258ca8140219694a9a5b7af5e08bf35a05a0a8139a7167a5179563dd"
+    },
+    {
+      "label": "owned:m154-prune-disabled-bound-session-helper-state",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-bound-session-helper-state.patch",
+      "originalSHA256": "8b959bb3d9c482759b68fbd33cc425271b983fd75fb1bc299e3b9faf7a090b63",
+      "patchSHA256": "8b959bb3d9c482759b68fbd33cc425271b983fd75fb1bc299e3b9faf7a090b63"
+    },
+    {
+      "label": "owned:m154-prune-disabled-signin-promo-metric-state",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-signin-promo-metric-state.patch",
+      "originalSHA256": "771e6ac5ac3c5fd228364175ed7d43bdf0e663396dc135843bede4a695ee5f1c",
+      "patchSHA256": "771e6ac5ac3c5fd228364175ed7d43bdf0e663396dc135843bede4a695ee5f1c"
+    },
+    {
+      "label": "owned:m154-prune-disabled-mdns-helpers-and-client-init",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-mdns-helpers-and-client-init.patch",
+      "originalSHA256": "2fa8ba537577c66765e742c0a675dae3c2378369844bcc321c6e56f0f853b773",
+      "patchSHA256": "2fa8ba537577c66765e742c0a675dae3c2378369844bcc321c6e56f0f853b773"
+    },
+    {
+      "label": "owned:m154-mark-disabled-advanced-protection-branch-intentional",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-mark-disabled-advanced-protection-branch-intentional.patch",
+      "originalSHA256": "f208b169165a8c7a2c41461ab8b8f7c67229813ca7dad6f29dbdae76020292a5",
+      "patchSHA256": "f208b169165a8c7a2c41461ab8b8f7c67229813ca7dad6f29dbdae76020292a5"
+    },
+    {
+      "label": "owned:m154-include-enterprise-file-type-policy-resource",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-include-enterprise-file-type-policy-resource.patch",
+      "originalSHA256": "f15e0fb204874f902932b080d79c214584fe683a4ddaf71995d4219d62581cab",
+      "patchSHA256": "f15e0fb204874f902932b080d79c214584fe683a4ddaf71995d4219d62581cab"
+    },
+    {
+      "label": "owned:m154-remove-dead-ntp-collection-fetch-body",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-remove-dead-ntp-collection-fetch-body.patch",
+      "originalSHA256": "701d7aa05d4e7a3fd4b122aedb9af22bf6fe1328bba8e96bdae36979cc207bdd",
+      "patchSHA256": "701d7aa05d4e7a3fd4b122aedb9af22bf6fe1328bba8e96bdae36979cc207bdd"
+    },
+    {
+      "label": "owned:m154-include-safe-browsing-prefs-in-enterprise-upload",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-include-safe-browsing-prefs-in-enterprise-upload.patch",
+      "originalSHA256": "a507447c8353ce7c4bc14bb5bb975c721219f65c7b33d3eded47c6456a08d961",
+      "patchSHA256": "a507447c8353ce7c4bc14bb5bb975c721219f65c7b33d3eded47c6456a08d961"
+    },
+    {
+      "label": "owned:m154-prune-disabled-supervised-ntp-helpers",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-supervised-ntp-helpers.patch",
+      "originalSHA256": "9cef1c7c47288860bb8126acebfe4e1a2123ffa57ba888baeb6b1df8525b82f5",
+      "patchSHA256": "9cef1c7c47288860bb8126acebfe4e1a2123ffa57ba888baeb6b1df8525b82f5"
+    },
+    {
+      "label": "owned:m154-prune-disabled-sync-builder-helpers",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/owned/patches/m154-prune-disabled-sync-builder-helpers.patch",
+      "originalSHA256": "8a7f111ad1a320cdd9060030c14efed591076e18f16b48ed97014beaed54df75",
+      "patchSHA256": "e9693dbaa46f627830f0bf7d679aab4fbe840d6ce7eafec944be9f74b87653b8"
+    },
+    {
+      "label": "owned:m154-prune-disabled-sync-service-helpers",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-sync-service-helpers.patch",
+      "originalSHA256": "8aff1e11e5b4e8e1469c4fd639ddfda177c6f745a82535ebe4e5129075eba6ac",
+      "patchSHA256": "8aff1e11e5b4e8e1469c4fd639ddfda177c6f745a82535ebe4e5129075eba6ac"
+    },
+    {
+      "label": "owned:m154-prune-disabled-offstore-safety-helper",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-offstore-safety-helper.patch",
+      "originalSHA256": "4fac4af67fa9ee4bd56f7d76d3337f03cbc97dd53fb055c6caf2fe1f2bb51c9b",
+      "patchSHA256": "4fac4af67fa9ee4bd56f7d76d3337f03cbc97dd53fb055c6caf2fe1f2bb51c9b"
+    },
+    {
+      "label": "owned:m154-guard-force-save-cloud-helper",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-guard-force-save-cloud-helper.patch",
+      "originalSHA256": "d03af5514e15223ae053be14ab5fc2bb6c14298fca4fb2c5c3457d3fe1083df4",
+      "patchSHA256": "d03af5514e15223ae053be14ab5fc2bb6c14298fca4fb2c5c3457d3fe1083df4"
+    },
+    {
+      "label": "owned:m154-prune-disabled-download-warning-surface-local",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-download-warning-surface-local.patch",
+      "originalSHA256": "54aaa31d472f478d274874d0756f02ef7124bcf41a75ddbd313c0ad6bf68a8d1",
+      "patchSHA256": "54aaa31d472f478d274874d0756f02ef7124bcf41a75ddbd313c0ad6bf68a8d1"
+    },
+    {
+      "label": "owned:m154-prune-disabled-warning-action-serializer",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-warning-action-serializer.patch",
+      "originalSHA256": "c97f14d7bb656126ff9e03b0aab81f9dca6567e39d30c38158a98b318eeb0f15",
+      "patchSHA256": "c97f14d7bb656126ff9e03b0aab81f9dca6567e39d30c38158a98b318eeb0f15"
+    },
+    {
+      "label": "owned:m154-restore-enterprise-context-realtime-url-mode",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-restore-enterprise-context-realtime-url-mode.patch",
+      "originalSHA256": "d698f7e1ebd3657435e77d9c39f37f8e08709cd7d0008b1461387abdd8468b85",
+      "patchSHA256": "d698f7e1ebd3657435e77d9c39f37f8e08709cd7d0008b1461387abdd8468b85"
+    },
+    {
+      "label": "owned:m154-populate-enterprise-profile-id",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-populate-enterprise-profile-id.patch",
+      "originalSHA256": "0d3ed40044102114bea3013947a59875e2e114817362914ac2795a14aa0e41fa",
+      "patchSHA256": "0d3ed40044102114bea3013947a59875e2e114817362914ac2795a14aa0e41fa"
+    },
+    {
+      "label": "owned:m154-honor-download-bypass-justification-policy",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-honor-download-bypass-justification-policy.patch",
+      "originalSHA256": "219602699989c695d84e23369ce11ae28954f00c94cc98c2b5d38a01f3daac93",
+      "patchSHA256": "219602699989c695d84e23369ce11ae28954f00c94cc98c2b5d38a01f3daac93"
+    },
+    {
+      "label": "owned:m154-complete-disabled-one-google-bar-callback",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-complete-disabled-one-google-bar-callback.patch",
+      "originalSHA256": "071b3e9e6d2a89bb8211ef4e222798787b92ebfaff71666ddabeeb38a98bd683",
+      "patchSHA256": "071b3e9e6d2a89bb8211ef4e222798787b92ebfaff71666ddabeeb38a98bd683"
+    },
+    {
+      "label": "owned:m154-prune-disabled-one-google-account-consistency-state",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-one-google-account-consistency-state.patch",
+      "originalSHA256": "e6dfac839a4e7ccb852ab0560734ba11a71081ee5cea4654e2e7161fc67dca9c",
+      "patchSHA256": "e6dfac839a4e7ccb852ab0560734ba11a71081ee5cea4654e2e7161fc67dca9c"
+    },
+    {
+      "label": "owned:m154-prune-disabled-page-annotation-helpers",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-page-annotation-helpers.patch",
+      "originalSHA256": "d40f5f68daea3176c678e0109841e9df92394dcf1f8042a5f5b517af4c22ea66",
+      "patchSHA256": "d40f5f68daea3176c678e0109841e9df92394dcf1f8042a5f5b517af4c22ea66"
+    },
+    {
+      "label": "owned:m154-prune-disabled-avatar-url-constant",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-avatar-url-constant.patch",
+      "originalSHA256": "055555bf28aa26c79e5c7081dd4adbb81cbceb901d0da7333cda36643aa6ee9d",
+      "patchSHA256": "055555bf28aa26c79e5c7081dd4adbb81cbceb901d0da7333cda36643aa6ee9d"
+    },
+    {
+      "label": "owned:m154-prune-disabled-account-consistency-entry",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-account-consistency-entry.patch",
+      "originalSHA256": "e729347e83e4453e734f2409c678b0ee76618cc5235ea007e52ca2b53a025f50",
+      "patchSHA256": "e729347e83e4453e734f2409c678b0ee76618cc5235ea007e52ca2b53a025f50"
+    },
+    {
+      "label": "owned:m154-prune-disabled-signin-promo-helpers",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-signin-promo-helpers.patch",
+      "originalSHA256": "56cda7edb6775c6b053e442118aecc39e6ce2b96f1e72c68173c6ba96022f560",
+      "patchSHA256": "56cda7edb6775c6b053e442118aecc39e6ce2b96f1e72c68173c6ba96022f560"
+    },
+    {
+      "label": "owned:m154-prune-inactive-signin-promo-helper-chain",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-inactive-signin-promo-helper-chain.patch",
+      "originalSHA256": "7228f791ff7e744829852078dbfa0149657933b0f85e00477413edb11f08210e",
+      "patchSHA256": "7228f791ff7e744829852078dbfa0149657933b0f85e00477413edb11f08210e"
+    },
+    {
+      "label": "owned:m154-prune-unused-https-first-pref-local",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-unused-https-first-pref-local.patch",
+      "originalSHA256": "32515dd258d1703e7700d9f847233c32e7c1ef6b723df772e08650d2ff75e367",
+      "patchSHA256": "32515dd258d1703e7700d9f847233c32e7c1ef6b723df772e08650d2ff75e367"
+    },
+    {
+      "label": "owned:m154-rename-shadowed-extension-anchor-view",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-rename-shadowed-extension-anchor-view.patch",
+      "originalSHA256": "0d04d6aa4b8a3bbfd3ba27bb31d2caaed50eab3224d316c0479b8531b78433ae",
+      "patchSHA256": "0d04d6aa4b8a3bbfd3ba27bb31d2caaed50eab3224d316c0479b8531b78433ae"
+    },
+    {
+      "label": "owned:m154-prune-disabled-signout-sync-lookup",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-signout-sync-lookup.patch",
+      "originalSHA256": "8308537c612ddc6d20623846a105ac5818373133ba13ae42370797d6ce12d8e5",
+      "patchSHA256": "8308537c612ddc6d20623846a105ac5818373133ba13ae42370797d6ce12d8e5"
+    },
+    {
+      "label": "owned:m154-prune-disabled-sync-menu-title-helper",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/owned/patches/m154-prune-disabled-sync-menu-title-helper.patch",
+      "originalSHA256": "c408f47d246022f3ec2ad83f3d0514597380db9962e73aa46e1c1d66019d1e4a",
+      "patchSHA256": "cb950bcd6cef35e89aac5f55874f3783f7f6c789f0bc8d2d75d92c89122da6e3"
+    },
+    {
+      "label": "owned:m154-prune-disabled-signin-status-chip-helper",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-signin-status-chip-helper.patch",
+      "originalSHA256": "afb89c67e5b6286d597609746e315175d1bb24009ca5739620fbc2f77acf9dc7",
+      "patchSHA256": "afb89c67e5b6286d597609746e315175d1bb24009ca5739620fbc2f77acf9dc7"
+    },
+    {
+      "label": "owned:m154-handle-safe-browsing-settings-command",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-handle-safe-browsing-settings-command.patch",
+      "originalSHA256": "091dc9af5b48723404c68b087396f4a8f8c85b6ca7466f795bed6e5d92023ca0",
+      "patchSHA256": "091dc9af5b48723404c68b087396f4a8f8c85b6ca7466f795bed6e5d92023ca0"
+    },
+    {
+      "label": "owned:m154-include-safe-browsing-command-prefs",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-include-safe-browsing-command-prefs.patch",
+      "originalSHA256": "f229f67c83e3210e9ad6685edfdcd6b48673252655d83e61c753417ce5153562",
+      "patchSHA256": "f229f67c83e3210e9ad6685edfdcd6b48673252655d83e61c753417ce5153562"
+    },
+    {
+      "label": "owned:m154-remove-unused-read-anything-screen-ai-parameter",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-remove-unused-read-anything-screen-ai-parameter.patch",
+      "originalSHA256": "c1cc766f46e08db87f072c541488ff8bc7b23d7501d4ce6e6490634e56cc93f9",
+      "patchSHA256": "c1cc766f46e08db87f072c541488ff8bc7b23d7501d4ce6e6490634e56cc93f9"
+    },
+    {
+      "label": "owned:m154-remove-remaining-read-anything-screen-ai-parameter",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-remove-remaining-read-anything-screen-ai-parameter.patch",
+      "originalSHA256": "6786ba60ab42b38f5df13fd53a3c3dc6395832943589499a3365e7c9cebbfcc1",
+      "patchSHA256": "6786ba60ab42b38f5df13fd53a3c3dc6395832943589499a3365e7c9cebbfcc1"
+    },
+    {
+      "label": "owned:m154-remove-unreferenced-protego-sampling-constant",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-remove-unreferenced-protego-sampling-constant.patch",
+      "originalSHA256": "12caf756cb9fb5df60d4f6c5b2686ddbbca82adda4abf1091dfa4e52a5c1fbb6",
+      "patchSHA256": "12caf756cb9fb5df60d4f6c5b2686ddbbca82adda4abf1091dfa4e52a5c1fbb6"
+    },
+    {
+      "label": "owned:m154-guard-enterprise-analysis-include-with-enterprise-buildflag",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-guard-enterprise-analysis-include-with-enterprise-buildflag.patch",
+      "originalSHA256": "f87538f85404fa2e1a160afe8380b489e25a779c73f83d48e928549ce2c97328",
+      "patchSHA256": "f87538f85404fa2e1a160afe8380b489e25a779c73f83d48e928549ce2c97328"
+    },
+    {
+      "label": "owned:m154-prune-unreferenced-navigation-predictor-helpers",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-unreferenced-navigation-predictor-helpers.patch",
+      "originalSHA256": "6a9de052ca32dc581c8146f778e7510f0400ff438521a56d1fc9f8349cc9a157",
+      "patchSHA256": "6a9de052ca32dc581c8146f778e7510f0400ff438521a56d1fc9f8349cc9a157"
+    },
+    {
+      "label": "owned:m154-restore-safe-browsing-prefs-plumbing",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/owned/patches/m154-restore-safe-browsing-prefs-plumbing.patch",
+      "originalSHA256": "51ffee29032e0f3a311d16316a230df1aa6317b54717fd9eb5ee07d3158f2bef",
+      "patchSHA256": "41cf31ded37ef2e1701b13a1f7528705d7e1026fe52792f560d864d5279a104c"
+    },
+    {
+      "label": "owned:m154-include-content-settings-prefs-in-js-optimizer-tests",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/owned/patches/m154-include-content-settings-prefs-in-js-optimizer-tests.patch",
+      "originalSHA256": "cff2b738b6ef49cb25e08fe31ff6b1e7c7bf07fab9fc12e605e3cee820398afd",
+      "patchSHA256": "10501a16a881c7671722c1a2916ddcd512f6af4ee3c6d32d69c4ff8252cab75e"
+    },
+    {
+      "label": "owned:m154-fix-blocklist-state-fetcher-test-seam",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/owned/patches/m154-fix-blocklist-state-fetcher-test-seam.patch",
+      "originalSHA256": "b87023e10c4f4e2cdb221c8ee2727640447f0bb286edb948102ef8bb8133ca7c",
+      "patchSHA256": "712bd79507c4259fa065cb5101c2a5241e7b4562850032e347462366fd5588b3"
+    },
+    {
+      "label": "owned:m154-prune-disabled-testing-browser-process-members",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-prune-disabled-testing-browser-process-members.patch",
+      "originalSHA256": "794361e5f6a09e4c07c43e6f77261b2937d3230e14548edbf2828d95d38794d9",
+      "patchSHA256": "794361e5f6a09e4c07c43e6f77261b2937d3230e14548edbf2828d95d38794d9"
+    },
+    {
+      "label": "owned:m154-include-safe-browsing-prefs-in-notification-telemetry-test",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-include-safe-browsing-prefs-in-notification-telemetry-test.patch",
+      "originalSHA256": "c188779c0a823a211db3e067fb5f3df30657e77fff288bec1d3e80a011a6721c",
+      "patchSHA256": "c188779c0a823a211db3e067fb5f3df30657e77fff288bec1d3e80a011a6721c"
+    },
+    {
+      "label": "owned:m154-include-safe-browsing-prefs-in-advanced-protection-test",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-include-safe-browsing-prefs-in-advanced-protection-test.patch",
+      "originalSHA256": "b977609cd5136705ba7073238666129e3a0150ad563d7e47363009f9b550063d",
+      "patchSHA256": "b977609cd5136705ba7073238666129e3a0150ad563d7e47363009f9b550063d"
+    },
+    {
+      "label": "owned:m154-resolve-sdkroot-symlink-for-apple-build-tools",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-resolve-sdkroot-symlink-for-apple-build-tools.patch",
+      "originalSHA256": "712fd430b3090969330b4100d56ffba237a371f2d893a2c3a4f527ecb0569d2c",
+      "patchSHA256": "712fd430b3090969330b4100d56ffba237a371f2d893a2c3a4f527ecb0569d2c"
+    },
+    {
+      "label": "owned:m154-use-deps-pinned-devtools-node-tools",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/owned/patches/m154-use-pinned-devtools-node-tools.patch",
+      "originalSHA256": "15452c59a6657a6408d8e42ef8d3fba71035012219247bef6bcd04228e8f2b33",
+      "patchSHA256": "0c8b6e53836bbd621bcbf07a2132f386e668887dc0b6e233f81d8cc858cf2d4a"
+    },
+    {
+      "label": "owned:m154-use-pinned-xnu-mig-definitions-when-sdk-omits-them",
+      "localPatchPath": "runtime/nevision-patches/ports/chromium-154.0.8037.93/patches/m154-use-pinned-xnu-mig-definitions-when-sdk-omits-them.patch",
+      "originalSHA256": "66dec147745b26d5b5346c7752ac086a7674e5d6d57f65a6a458b29cac8d5293",
+      "patchSHA256": "66dec147745b26d5b5346c7752ac086a7674e5d6d57f65a6a458b29cac8d5293"
+    }
+  ],
+  "ownedPort": {
+    "patchGroupCount": 73,
+    "patches": [
+      {
+        "id": "profile-seed-contract",
+        "order": 1,
+        "path": "patches/profile-seed-contract.patch",
+        "sha256": "936d823ea8374ff96b5a77478d34a9a4bcd44a73f981e7b788a785788e8e75b4"
+      },
+      {
+        "id": "deterministic-rendered-surfaces",
+        "order": 2,
+        "path": "patches/deterministic-rendered-surfaces.patch",
+        "sha256": "32046d721722653b9484469283902577d360bb075b178c7bc4b1f32b69e3365e"
+      },
+      {
+        "id": "deterministic-offline-audio",
+        "order": 3,
+        "path": "patches/deterministic-offline-audio.patch",
+        "sha256": "9d59d33d4cb16c89795349c64b44c11963c4137e2f10d2f112612a87a5611652"
+      },
+      {
+        "id": "deterministic-webgl-pixels",
+        "order": 4,
+        "path": "patches/deterministic-webgl-pixels.patch",
+        "sha256": "751faad4e1d01bd28f65c4510f1612d3bd1648bd41efa9a8d47a7f7b623806d0"
+      },
+      {
+        "id": "timezone-locale-network-context",
+        "order": 5,
+        "path": "patches/timezone-locale-network-context.patch",
+        "sha256": "b90aab37047d35e0c0e4bbe1938eaac965779bc7b241f534d27b9debf930985b"
+      },
+      {
+        "id": "real-browser-version-contract",
+        "order": 6,
+        "path": "patches/real-browser-version-contract.patch",
+        "sha256": "368a83a9f6b042f117c631ce7a8b8b6291dcf4043b93bd226a17a22f563109ce"
+      },
+      {
+        "id": "minimal-apple-device-tuple",
+        "order": 7,
+        "path": "patches/minimal-apple-device-tuple.patch",
+        "sha256": "7b13ccd09c4cec5d2fb685252d312f4c8fd9c27186c8e684d5aaba8b3b0254d7"
+      },
+      {
+        "id": "neantik-branding-and-source-lock",
+        "order": 8,
+        "path": "patches/neantik-branding-and-source-lock.patch",
+        "sha256": "8a2c36bec88fa99554f6a48aacfce864ed917804508bfa35d6e0d3a705952f87"
+      },
+      {
+        "id": "official-lite-archive-build-contract",
+        "order": 9,
+        "path": "patches/official-lite-archive-build-contract.patch",
+        "sha256": "4d6bf38dbd7d15539b29ebbddf090e64b82bc34f3f8d496063bc1fb1c41e26c3"
+      },
+      {
+        "id": "private-runtime-config-environment",
+        "order": 10,
+        "path": "patches/private-runtime-config-environment.patch",
+        "sha256": "30881d9440c3c02f32d340595f7b3d1c07f11010921337482dcef65348dd4fd1"
+      },
+      {
+        "id": "cached-runtime-profile-seed",
+        "order": 11,
+        "path": "patches/cached-runtime-profile-seed.patch",
+        "sha256": "45717ea4ecabb3cb81a391df9badd51571e8ffe010ee2c1fcbc05d63adfaef9b"
+      },
+      {
+        "id": "m154-unused-signin-helpers",
+        "order": 12,
+        "path": "patches/m154-unused-signin-helpers.patch",
+        "sha256": "05e16c61c527b40f21d59784504387d43ad191b4d1a654907777f26b65abde92"
+      },
+      {
+        "id": "m154-remove-unreachable-disabled-gcm-body",
+        "order": 13,
+        "path": "patches/m154-remove-unreachable-disabled-gcm-body.patch",
+        "sha256": "39c2fac5ab57d17e07d830b03969fa262c2b36773ce8f4229d6f8c0f550e553b"
+      },
+      {
+        "id": "m154-remove-unreachable-domain-reliability-upload-body",
+        "order": 14,
+        "path": "patches/m154-remove-unreachable-domain-reliability-upload-body.patch",
+        "sha256": "f359a7265dba9ffc5c2a4e01aad2f91a13a3de36fc5b65f5bddab6bc626f8428"
+      },
+      {
+        "id": "m154-template-url-service-init-order",
+        "order": 15,
+        "path": "patches/m154-template-url-service-init-order.patch",
+        "sha256": "0ecc9192845a88690e0428b39993faf5b3c71e01aeccaf076a0678498d07f032"
+      },
+      {
+        "id": "enterprise-cloud-archive-analysis-mode0-common-overlay",
+        "order": 16,
+        "path": "patches/enterprise-cloud-archive-analysis-mode0-common-overlay.patch",
+        "sha256": "06e2ca25388163e3300b05cb50ee90ca3a7c2ed2939f85f13de9ac07e2d3df75"
+      },
+      {
+        "id": "m154-remove-unreachable-assist-ranker-body",
+        "order": 17,
+        "path": "patches/m154-remove-unreachable-assist-ranker-body.patch",
+        "sha256": "3a6a19a56acd5709d3431614da1c0ecebdaba5e76c9ef7463c40c91642b76c92"
+      },
+      {
+        "id": "m154-remove-unreachable-translate-ranker-body",
+        "order": 18,
+        "path": "patches/m154-remove-unreachable-translate-ranker-body.patch",
+        "sha256": "e9e78dc06fa5a078fa213c2af21c84c8d3faf1f39ce7ca7189f9c2de255a6ff4"
+      },
+      {
+        "id": "m154-prune-disabled-autofill-network-helpers",
+        "order": 19,
+        "path": "patches/m154-prune-disabled-autofill-network-helpers.patch",
+        "sha256": "2ef2ef8060f538b53e1f661c7307e9a7d7620f2da80829ee0c54973e64d6549d"
+      },
+      {
+        "id": "m154-remove-disabled-safe-move-activation-field",
+        "order": 20,
+        "path": "patches/m154-remove-disabled-safe-move-activation-field.patch",
+        "sha256": "5e84a629c25a599c172abc7e621f7f97b573b3749db29b0f8ef4587a4432452e"
+      },
+      {
+        "id": "restore-download-quarantine-provenance",
+        "order": 21,
+        "path": "patches/restore-download-quarantine-provenance.patch",
+        "sha256": "e46f0c1beb8af118faa78b845edf484a75f836fb3cff0218800ac5957ab5668b"
+      },
+      {
+        "id": "m154-file-system-access-quarantine-provenance-test",
+        "order": 22,
+        "path": "patches/m154-file-system-access-quarantine-provenance-test.patch",
+        "sha256": "35ac40363df829f2899d792921278f0801d142932ff722b2e36a5143f17b64d7"
+      },
+      {
+        "id": "m154-prune-disabled-ssl-interstitial-prefs-helper",
+        "order": 23,
+        "path": "patches/m154-prune-disabled-ssl-interstitial-prefs-helper.patch",
+        "sha256": "b6a35a6ec88459461f2d1c7368f1c9db40264f72d96099b2ea5061b13599ec3f"
+      },
+      {
+        "id": "m154-disable-nonlinux-crashpad-unreachable-body",
+        "order": 24,
+        "path": "patches/m154-disable-nonlinux-crashpad-unreachable-body.patch",
+        "sha256": "befab35f324679ac2693587026822eadb839fd51ffba2ae71ebf917ab38591fd"
+      },
+      {
+        "id": "m154-prune-disabled-safe-browsing-metrics-helpers",
+        "order": 25,
+        "path": "patches/m154-prune-disabled-safe-browsing-metrics-helpers.patch",
+        "sha256": "ce4a290cf183e08b37569cb50abc030bf5e3d4eea22caadd23f35758f49140dd"
+      },
+      {
+        "id": "m154-restore-safe-browsing-prefs-declarations-include",
+        "order": 26,
+        "path": "patches/m154-restore-safe-browsing-prefs-declarations-include.patch",
+        "sha256": "7532382a17a3d5967531bd9a241389d3f095c5b396e8ddd4c4db880563bff749"
+      },
+      {
+        "id": "m154-prune-disabled-webstore-download-helper",
+        "order": 27,
+        "path": "patches/m154-prune-disabled-webstore-download-helper.patch",
+        "sha256": "5723a1a77a250cef9165c5e02ca5ef97cda0e59e5dafc01a03cc27ff830835b4"
+      },
+      {
+        "id": "m154-prune-disabled-omaha-action-flag",
+        "order": 28,
+        "path": "patches/m154-prune-disabled-omaha-action-flag.patch",
+        "sha256": "ad7535d9258ca8140219694a9a5b7af5e08bf35a05a0a8139a7167a5179563dd"
+      },
+      {
+        "id": "m154-prune-disabled-bound-session-helper-state",
+        "order": 29,
+        "path": "patches/m154-prune-disabled-bound-session-helper-state.patch",
+        "sha256": "8b959bb3d9c482759b68fbd33cc425271b983fd75fb1bc299e3b9faf7a090b63"
+      },
+      {
+        "id": "m154-prune-disabled-signin-promo-metric-state",
+        "order": 30,
+        "path": "patches/m154-prune-disabled-signin-promo-metric-state.patch",
+        "sha256": "771e6ac5ac3c5fd228364175ed7d43bdf0e663396dc135843bede4a695ee5f1c"
+      },
+      {
+        "id": "m154-prune-disabled-mdns-helpers-and-client-init",
+        "order": 31,
+        "path": "patches/m154-prune-disabled-mdns-helpers-and-client-init.patch",
+        "sha256": "2fa8ba537577c66765e742c0a675dae3c2378369844bcc321c6e56f0f853b773"
+      },
+      {
+        "id": "m154-mark-disabled-advanced-protection-branch-intentional",
+        "order": 32,
+        "path": "patches/m154-mark-disabled-advanced-protection-branch-intentional.patch",
+        "sha256": "f208b169165a8c7a2c41461ab8b8f7c67229813ca7dad6f29dbdae76020292a5"
+      },
+      {
+        "id": "m154-include-enterprise-file-type-policy-resource",
+        "order": 33,
+        "path": "patches/m154-include-enterprise-file-type-policy-resource.patch",
+        "sha256": "f15e0fb204874f902932b080d79c214584fe683a4ddaf71995d4219d62581cab"
+      },
+      {
+        "id": "m154-remove-dead-ntp-collection-fetch-body",
+        "order": 34,
+        "path": "patches/m154-remove-dead-ntp-collection-fetch-body.patch",
+        "sha256": "701d7aa05d4e7a3fd4b122aedb9af22bf6fe1328bba8e96bdae36979cc207bdd"
+      },
+      {
+        "id": "m154-include-safe-browsing-prefs-in-enterprise-upload",
+        "order": 35,
+        "path": "patches/m154-include-safe-browsing-prefs-in-enterprise-upload.patch",
+        "sha256": "a507447c8353ce7c4bc14bb5bb975c721219f65c7b33d3eded47c6456a08d961"
+      },
+      {
+        "id": "m154-prune-disabled-supervised-ntp-helpers",
+        "order": 36,
+        "path": "patches/m154-prune-disabled-supervised-ntp-helpers.patch",
+        "sha256": "9cef1c7c47288860bb8126acebfe4e1a2123ffa57ba888baeb6b1df8525b82f5"
+      },
+      {
+        "id": "m154-prune-disabled-sync-builder-helpers",
+        "order": 37,
+        "path": "patches/m154-prune-disabled-sync-builder-helpers.patch",
+        "sha256": "8a7f111ad1a320cdd9060030c14efed591076e18f16b48ed97014beaed54df75"
+      },
+      {
+        "id": "m154-prune-disabled-sync-service-helpers",
+        "order": 38,
+        "path": "patches/m154-prune-disabled-sync-service-helpers.patch",
+        "sha256": "8aff1e11e5b4e8e1469c4fd639ddfda177c6f745a82535ebe4e5129075eba6ac"
+      },
+      {
+        "id": "m154-prune-disabled-offstore-safety-helper",
+        "order": 39,
+        "path": "patches/m154-prune-disabled-offstore-safety-helper.patch",
+        "sha256": "4fac4af67fa9ee4bd56f7d76d3337f03cbc97dd53fb055c6caf2fe1f2bb51c9b"
+      },
+      {
+        "id": "m154-guard-force-save-cloud-helper",
+        "order": 40,
+        "path": "patches/m154-guard-force-save-cloud-helper.patch",
+        "sha256": "d03af5514e15223ae053be14ab5fc2bb6c14298fca4fb2c5c3457d3fe1083df4"
+      },
+      {
+        "id": "m154-prune-disabled-download-warning-surface-local",
+        "order": 41,
+        "path": "patches/m154-prune-disabled-download-warning-surface-local.patch",
+        "sha256": "54aaa31d472f478d274874d0756f02ef7124bcf41a75ddbd313c0ad6bf68a8d1"
+      },
+      {
+        "id": "m154-prune-disabled-warning-action-serializer",
+        "order": 42,
+        "path": "patches/m154-prune-disabled-warning-action-serializer.patch",
+        "sha256": "c97f14d7bb656126ff9e03b0aab81f9dca6567e39d30c38158a98b318eeb0f15"
+      },
+      {
+        "id": "m154-restore-enterprise-context-realtime-url-mode",
+        "order": 43,
+        "path": "patches/m154-restore-enterprise-context-realtime-url-mode.patch",
+        "sha256": "d698f7e1ebd3657435e77d9c39f37f8e08709cd7d0008b1461387abdd8468b85"
+      },
+      {
+        "id": "m154-populate-enterprise-profile-id",
+        "order": 44,
+        "path": "patches/m154-populate-enterprise-profile-id.patch",
+        "sha256": "0d3ed40044102114bea3013947a59875e2e114817362914ac2795a14aa0e41fa"
+      },
+      {
+        "id": "m154-honor-download-bypass-justification-policy",
+        "order": 45,
+        "path": "patches/m154-honor-download-bypass-justification-policy.patch",
+        "sha256": "219602699989c695d84e23369ce11ae28954f00c94cc98c2b5d38a01f3daac93"
+      },
+      {
+        "id": "m154-complete-disabled-one-google-bar-callback",
+        "order": 46,
+        "path": "patches/m154-complete-disabled-one-google-bar-callback.patch",
+        "sha256": "071b3e9e6d2a89bb8211ef4e222798787b92ebfaff71666ddabeeb38a98bd683"
+      },
+      {
+        "id": "m154-prune-disabled-one-google-account-consistency-state",
+        "order": 47,
+        "path": "patches/m154-prune-disabled-one-google-account-consistency-state.patch",
+        "sha256": "e6dfac839a4e7ccb852ab0560734ba11a71081ee5cea4654e2e7161fc67dca9c"
+      },
+      {
+        "id": "m154-prune-disabled-page-annotation-helpers",
+        "order": 48,
+        "path": "patches/m154-prune-disabled-page-annotation-helpers.patch",
+        "sha256": "d40f5f68daea3176c678e0109841e9df92394dcf1f8042a5f5b517af4c22ea66"
+      },
+      {
+        "id": "m154-prune-disabled-avatar-url-constant",
+        "order": 49,
+        "path": "patches/m154-prune-disabled-avatar-url-constant.patch",
+        "sha256": "055555bf28aa26c79e5c7081dd4adbb81cbceb901d0da7333cda36643aa6ee9d"
+      },
+      {
+        "id": "m154-prune-disabled-account-consistency-entry",
+        "order": 50,
+        "path": "patches/m154-prune-disabled-account-consistency-entry.patch",
+        "sha256": "e729347e83e4453e734f2409c678b0ee76618cc5235ea007e52ca2b53a025f50"
+      },
+      {
+        "id": "m154-prune-disabled-signin-promo-helpers",
+        "order": 51,
+        "path": "patches/m154-prune-disabled-signin-promo-helpers.patch",
+        "sha256": "56cda7edb6775c6b053e442118aecc39e6ce2b96f1e72c68173c6ba96022f560"
+      },
+      {
+        "id": "m154-prune-inactive-signin-promo-helper-chain",
+        "order": 52,
+        "path": "patches/m154-prune-inactive-signin-promo-helper-chain.patch",
+        "sha256": "7228f791ff7e744829852078dbfa0149657933b0f85e00477413edb11f08210e"
+      },
+      {
+        "id": "m154-prune-unused-https-first-pref-local",
+        "order": 53,
+        "path": "patches/m154-prune-unused-https-first-pref-local.patch",
+        "sha256": "32515dd258d1703e7700d9f847233c32e7c1ef6b723df772e08650d2ff75e367"
+      },
+      {
+        "id": "m154-rename-shadowed-extension-anchor-view",
+        "order": 54,
+        "path": "patches/m154-rename-shadowed-extension-anchor-view.patch",
+        "sha256": "0d04d6aa4b8a3bbfd3ba27bb31d2caaed50eab3224d316c0479b8531b78433ae"
+      },
+      {
+        "id": "m154-prune-disabled-signout-sync-lookup",
+        "order": 55,
+        "path": "patches/m154-prune-disabled-signout-sync-lookup.patch",
+        "sha256": "8308537c612ddc6d20623846a105ac5818373133ba13ae42370797d6ce12d8e5"
+      },
+      {
+        "id": "m154-prune-disabled-sync-menu-title-helper",
+        "order": 56,
+        "path": "patches/m154-prune-disabled-sync-menu-title-helper.patch",
+        "sha256": "c408f47d246022f3ec2ad83f3d0514597380db9962e73aa46e1c1d66019d1e4a"
+      },
+      {
+        "id": "m154-prune-disabled-signin-status-chip-helper",
+        "order": 57,
+        "path": "patches/m154-prune-disabled-signin-status-chip-helper.patch",
+        "sha256": "afb89c67e5b6286d597609746e315175d1bb24009ca5739620fbc2f77acf9dc7"
+      },
+      {
+        "id": "m154-handle-safe-browsing-settings-command",
+        "order": 58,
+        "path": "patches/m154-handle-safe-browsing-settings-command.patch",
+        "sha256": "091dc9af5b48723404c68b087396f4a8f8c85b6ca7466f795bed6e5d92023ca0"
+      },
+      {
+        "id": "m154-include-safe-browsing-command-prefs",
+        "order": 59,
+        "path": "patches/m154-include-safe-browsing-command-prefs.patch",
+        "sha256": "f229f67c83e3210e9ad6685edfdcd6b48673252655d83e61c753417ce5153562"
+      },
+      {
+        "id": "m154-remove-unused-read-anything-screen-ai-parameter",
+        "order": 60,
+        "path": "patches/m154-remove-unused-read-anything-screen-ai-parameter.patch",
+        "sha256": "c1cc766f46e08db87f072c541488ff8bc7b23d7501d4ce6e6490634e56cc93f9"
+      },
+      {
+        "id": "m154-remove-remaining-read-anything-screen-ai-parameter",
+        "order": 61,
+        "path": "patches/m154-remove-remaining-read-anything-screen-ai-parameter.patch",
+        "sha256": "6786ba60ab42b38f5df13fd53a3c3dc6395832943589499a3365e7c9cebbfcc1"
+      },
+      {
+        "id": "m154-remove-unreferenced-protego-sampling-constant",
+        "order": 62,
+        "path": "patches/m154-remove-unreferenced-protego-sampling-constant.patch",
+        "sha256": "12caf756cb9fb5df60d4f6c5b2686ddbbca82adda4abf1091dfa4e52a5c1fbb6"
+      },
+      {
+        "id": "m154-guard-enterprise-analysis-include-with-enterprise-buildflag",
+        "order": 63,
+        "path": "patches/m154-guard-enterprise-analysis-include-with-enterprise-buildflag.patch",
+        "sha256": "f87538f85404fa2e1a160afe8380b489e25a779c73f83d48e928549ce2c97328"
+      },
+      {
+        "id": "m154-prune-unreferenced-navigation-predictor-helpers",
+        "order": 64,
+        "path": "patches/m154-prune-unreferenced-navigation-predictor-helpers.patch",
+        "sha256": "6a9de052ca32dc581c8146f778e7510f0400ff438521a56d1fc9f8349cc9a157"
+      },
+      {
+        "id": "m154-restore-safe-browsing-prefs-plumbing",
+        "order": 65,
+        "path": "patches/m154-restore-safe-browsing-prefs-plumbing.patch",
+        "sha256": "51ffee29032e0f3a311d16316a230df1aa6317b54717fd9eb5ee07d3158f2bef"
+      },
+      {
+        "id": "m154-include-content-settings-prefs-in-js-optimizer-tests",
+        "order": 66,
+        "path": "patches/m154-include-content-settings-prefs-in-js-optimizer-tests.patch",
+        "sha256": "cff2b738b6ef49cb25e08fe31ff6b1e7c7bf07fab9fc12e605e3cee820398afd"
+      },
+      {
+        "id": "m154-fix-blocklist-state-fetcher-test-seam",
+        "order": 67,
+        "path": "patches/m154-fix-blocklist-state-fetcher-test-seam.patch",
+        "sha256": "b87023e10c4f4e2cdb221c8ee2727640447f0bb286edb948102ef8bb8133ca7c"
+      },
+      {
+        "id": "m154-prune-disabled-testing-browser-process-members",
+        "order": 68,
+        "path": "patches/m154-prune-disabled-testing-browser-process-members.patch",
+        "sha256": "794361e5f6a09e4c07c43e6f77261b2937d3230e14548edbf2828d95d38794d9"
+      },
+      {
+        "id": "m154-include-safe-browsing-prefs-in-notification-telemetry-test",
+        "order": 69,
+        "path": "patches/m154-include-safe-browsing-prefs-in-notification-telemetry-test.patch",
+        "sha256": "c188779c0a823a211db3e067fb5f3df30657e77fff288bec1d3e80a011a6721c"
+      },
+      {
+        "id": "m154-include-safe-browsing-prefs-in-advanced-protection-test",
+        "order": 70,
+        "path": "patches/m154-include-safe-browsing-prefs-in-advanced-protection-test.patch",
+        "sha256": "b977609cd5136705ba7073238666129e3a0150ad563d7e47363009f9b550063d"
+      },
+      {
+        "id": "m154-resolve-sdkroot-symlink-for-apple-build-tools",
+        "order": 71,
+        "path": "patches/m154-resolve-sdkroot-symlink-for-apple-build-tools.patch",
+        "sha256": "712fd430b3090969330b4100d56ffba237a371f2d893a2c3a4f527ecb0569d2c"
+      },
+      {
+        "id": "m154-use-deps-pinned-devtools-node-tools",
+        "order": 72,
+        "path": "patches/m154-use-pinned-devtools-node-tools.patch",
+        "sha256": "15452c59a6657a6408d8e42ef8d3fba71035012219247bef6bcd04228e8f2b33"
+      },
+      {
+        "id": "m154-use-pinned-xnu-mig-definitions-when-sdk-omits-them",
+        "order": 73,
+        "path": "patches/m154-use-pinned-xnu-mig-definitions-when-sdk-omits-them.patch",
+        "sha256": "66dec147745b26d5b5346c7752ac086a7674e5d6d57f65a6a458b29cac8d5293"
+      }
+    ],
+    "sourcePatchVersion": "154.0.8037.93"
+  },
+  "postReplayBuildCompatibility": "Recorded exact post-replay compiler and PDF fixes in port-compatibility.json. M155 DevTools uses pinned native TypeScript7.0.2; legacy npm6.0.2 redirection is replaced after reproducing declaration emit failure. Type checks and fingerprint policy retained. M155 ComputeSigninSectionInfo now preserves disabled signin metadata after the obsolete helper was pruned; exact postimages and distinct patch bound in port-compatibility.json. BiDi now restricts bare runtime import resolution to its DEPS-pinned modules and copies package/LICENSE into generated GN source boundary; unresolved bare imports and license violations still fail. New enterprise download referrer call is guarded by SAFE_BROWSING_AVAILABLE to preserve existing mode0 without adding Safe Browsing implementation.",
+  "releaseReady": false,
+  "reviewedTools": [
+    {
+      "path": "scripts/chromium_15540_source_snapshot.py",
+      "sha256": "6b1d685bd4efd0859a75f1837487ace6666d7e9a0b4cb728343271f99bafa04a"
+    },
+    {
+      "path": "scripts/runtime_locked_overlay.py",
+      "sha256": "81a14baa45e1797b6815198e7dded4f8736acd1cb984b0242b8680280ce46e26"
+    },
+    {
+      "path": "scripts/apply-reviewed-overlay-15540.py",
+      "sha256": "93705316d39f6ba4492a24b0df0e8e36e58cca5825b2bc87cb592e6cc3b877d4"
+    },
+    {
+      "path": "scripts/restore-pinned-build-types-15540.py",
+      "sha256": "d34ef178dc582492b51db8beca75a7976fa4df752625606550a1e13b58d412e8"
+    }
+  ],
+  "reviewedToolsScope": "Current reviewed preparation and verification utilities; this list does not assert that these exact utility revisions originally executed source preparation. Applied source bytes are independently bound by pre/postimage receipts and the final snapshot; the executed diagnostic ordered replay has a separate digest.",
+  "schemaVersion": 2,
+  "status": "source-replayed",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "155.0.8059.40",
+  "upstreamCommonOverlay": {
+    "commit": "37085e47cf580c815a30402917d350ce97399ded",
+    "patchCount": 109,
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
+    "seriesSHA256": "4ff99a455ee8e0b6f66c167ebb0b79ec063daa1038ce5bc659a485965d7abae7",
+    "tree": "e0754007a836944e1365c17ce502907594af12f6"
+  },
+  "upstreamMacPackaging": {
+    "commit": "f7ba75f94442abda7ac3ea81790c217f8636d3ba",
+    "patchCount": 20,
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git",
+    "seriesSHA256": "f432ba4b0188b9e4dd4bbe9e1d21760f76048c70df69e70b2d2881ede6378510",
+    "tree": "019bd2588e47f70b301e09e5475b1b1abd82ad35"
+  }
+}

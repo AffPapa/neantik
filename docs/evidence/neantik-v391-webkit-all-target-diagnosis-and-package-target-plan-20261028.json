@@ -1,0 +1,40 @@
+{
+  "classification": "DEFAULT_ALL_BUILD_FAILED_IN_AUXILIARY_SWIFTBROWSER; EXACT_PACKAGE_OUTPUT_BUILD_NEXT",
+  "createdAt": "2026-10-28T05:52:11Z",
+  "failedAttempt": {
+    "completedActions": 11754,
+    "errors": [
+      "SwiftBrowser could not resolve WebPage/WebView/WKMediaCaptureState/WebKit SwiftUI APIs; several cascading contextual type errors.",
+      "The failing target is SwiftBrowser.app, which is not one of the package consumer BUILD_TARGETS."
+    ],
+    "freeGiBAfter": 15.49,
+    "log": "/private/tmp/neantik-v382-full-build-v390.log",
+    "totalActions": 12942
+  },
+  "id": "V391",
+  "nextAction": "Run the 14 exact package runtime output targets at -j2 with the existing 8 GiB disk reserve. On success, verify exact output hashes and write a filtered V382 build receipt. Do not patch SwiftBrowser unless it proves to be a required runtime output.",
+  "scope": "Read-only diagnosis after the guarded V382 Ninja all-target invocation failed. No source/recipe patches applied.",
+  "targetEvidence": {
+    "exactPackageOutputCount": 14,
+    "exactPackageOutputs": [
+      "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "WebCore.framework/Versions/A/WebCore",
+      "WebGPU.framework/Versions/A/WebGPU",
+      "WebInspectorUI.framework/Versions/A/WebInspectorUI",
+      "WebKit.framework/Versions/A/WebKit",
+      "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development",
+      "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development",
+      "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development",
+      "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development",
+      "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development",
+      "WebKitLegacy.framework/Versions/A/WebKitLegacy",
+      "libANGLE-shared.dylib",
+      "libWebKitSwift.dylib",
+      "libwebrtc.dylib"
+    ],
+    "ninjaDryRunWebKitActions": 141,
+    "ninjaDryRunWebKitSwiftUIActions": 144,
+    "packageScript": "/private/tmp/neantik-release-v1/scripts/package-owned-webkit-release.py",
+    "selectionRationale": "Build every exact arm64 runtime output required by the package consumer, excluding unrelated all-target samples/tests. Ninja dry-run shows incremental target graph and already completed work is retained."
+  }
+}

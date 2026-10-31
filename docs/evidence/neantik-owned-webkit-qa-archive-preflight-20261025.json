@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T09:54:02+00:00",
+  "status": "preflight-guard-implemented-and-tested",
+  "guard": {
+    "path": "scripts/verify_owned_webkit_qa_archive.py",
+    "sha256": "5ff6bd63a8b2da828c36c45067c6da391884b06a5993cf40a6ec1469eb742d7e",
+    "scope": "Exact archive hash, Dev bundle identity/version/build, embedded fixture root, manager/host executable hashes, required owned-WebKit images and runtime notices; static only."
+  },
+  "tests": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest scripts.tests.test_verify_owned_webkit_qa_archive",
+    "testSourceSHA256": "f58115859387af7d76607d991377299b538755c5c6441f677fda766f8db371ab",
+    "result": "4 passed"
+  },
+  "regressionFixture": {
+    "archiveSHA256": "d4f385093cb3a450dd4c253035a45f9d56a54069228041bd662abeb860341e39",
+    "expectedSHA256": "d4f385093cb3a450dd4c253035a45f9d56a54069228041bd662abeb860341e39",
+    "result": "REFUSED before external action: embedded-root-mismatch",
+    "launchPerformed": false,
+    "resubmissionPerformed": false
+  },
+  "limitations": "Does not verify code signatures, Gatekeeper, notarization, launch behavior, proxy routing, or release eligibility; those remain separate gates."
+}

@@ -1,0 +1,248 @@
+{
+  "binding": {
+    "candidateManifestSHA256": "5090e6a6d1421f107957a2191a03a9f74e1aec48ea5699370d36aee09ac00204",
+    "managerExecutableSHA256": "3bf637bc8fa352fa72ae8163752fb5642119f0dc230a53b3e800f648fd64bf01",
+    "runtimeExecutableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "runtimeFrameworkRelativePath": "Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.12/NeAntik Browser Framework",
+    "runtimeFrameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815",
+    "runtimeVersion": "156.0.8078.12",
+    "schemaVersion": 1
+  },
+  "headed": true,
+  "managerPolicySourceSHA256": "e089be1946dddf56539a57dba71bfc85022f46a5014f1ef26994d5dbb1596310",
+  "open": [
+    "full API operations reused only from matching archived receipts",
+    "font policy",
+    "voices locales/events",
+    "codec/PDF compatibility",
+    "HTTPS identity",
+    "other OS/hardware"
+  ],
+  "releaseGate": false,
+  "result": "finite-cohort-projection-pass",
+  "runnerSHA256": "95b87df100bb09e33ba1270bdb9dc11f40fe63fd402a826132131439ed8684d1",
+  "schemaVersion": 1,
+  "scope": "11 synthetic tuple projections: CPU, web memory, screen/DPR, platform hints, canonical GPU and repeat reads",
+  "tuples": [
+    {
+      "captureSHA256": "aa2108aae59f44eb17fb1dfbecaff76e2361893971208d3a6b98598aaae61616",
+      "negativeControls": [
+        "cpu",
+        "memory",
+        "screen",
+        "gpu-family-substring",
+        "platform",
+        "repeat-drift",
+        "wrong-seed",
+        "missing-cleanup",
+        "wrong-runtime",
+        "missing-document",
+        "missing-source"
+      ],
+      "result": "scoped-projection-pass",
+      "tupleID": "macbook-air-m1"
+    },
+    {
+      "captureSHA256": "48b96fd790e102d9445ae3b5355eb5be6b99e32b1aeedb3632d90f7249d1507b",
+      "negativeControls": [
+        "cpu",
+        "memory",
+        "screen",
+        "gpu-family-substring",
+        "platform",
+        "repeat-drift",
+        "wrong-seed",
+        "missing-cleanup",
+        "wrong-runtime",
+        "missing-document",
+        "missing-source"
+      ],
+      "result": "scoped-projection-pass",
+      "tupleID": "macbook-pro-m1-pro"
+    },
+    {
+      "captureSHA256": "acfd14fd9fb4a815057b18151cdef26d936ed648c1a071d95aeda474239e9cae",
+      "negativeControls": [
+        "cpu",
+        "memory",
+        "screen",
+        "gpu-family-substring",
+        "platform",
+        "repeat-drift",
+        "wrong-seed",
+        "missing-cleanup",
+        "wrong-runtime",
+        "missing-document",
+        "missing-source"
+      ],
+      "result": "scoped-projection-pass",
+      "tupleID": "macbook-air-m2"
+    },
+    {
+      "captureSHA256": "149c73f25d6d47149a2adf4e132ddf255bf35434018e25283518f828a8db7689",
+      "negativeControls": [
+        "cpu",
+        "memory",
+        "screen",
+        "gpu-family-substring",
+        "platform",
+        "repeat-drift",
+        "wrong-seed",
+        "missing-cleanup",
+        "wrong-runtime",
+        "missing-document",
+        "missing-source"
+      ],
+      "result": "scoped-projection-pass",
+      "tupleID": "macbook-pro-m2-max"
+    },
+    {
+      "captureSHA256": "409d047e9cc83701a6802848ef71ddb12b1ca14888723ef190aabe52c53b126b",
+      "negativeControls": [
+        "cpu",
+        "memory",
+        "screen",
+        "gpu-family-substring",
+        "platform",
+        "repeat-drift",
+        "wrong-seed",
+        "missing-cleanup",
+        "wrong-runtime",
+        "missing-document",
+        "missing-source"
+      ],
+      "result": "scoped-projection-pass",
+      "tupleID": "macbook-pro-m2-pro"
+    },
+    {
+      "captureSHA256": "128c71b13c821a0b8716ff171b4031b007d188d5aeb62448b3fc5a8f0b430970",
+      "negativeControls": [
+        "cpu",
+        "memory",
+        "screen",
+        "gpu-family-substring",
+        "platform",
+        "repeat-drift",
+        "wrong-seed",
+        "missing-cleanup",
+        "wrong-runtime",
+        "missing-document",
+        "missing-source"
+      ],
+      "result": "scoped-projection-pass",
+      "tupleID": "macbook-air-m3"
+    },
+    {
+      "captureSHA256": "2ca4b0480e0bfd358e81cf26704683dace96d7e0f29610029aed3f73836958cd",
+      "negativeControls": [
+        "cpu",
+        "memory",
+        "screen",
+        "gpu-family-substring",
+        "platform",
+        "repeat-drift",
+        "wrong-seed",
+        "missing-cleanup",
+        "wrong-runtime",
+        "missing-document",
+        "missing-source"
+      ],
+      "result": "scoped-projection-pass",
+      "tupleID": "macbook-pro-m3-max"
+    },
+    {
+      "captureSHA256": "1718ecd1ca2c3b2310cbde2499569f308a519783619bda5e910a0fd7b812d349",
+      "negativeControls": [
+        "cpu",
+        "memory",
+        "screen",
+        "gpu-family-substring",
+        "platform",
+        "repeat-drift",
+        "wrong-seed",
+        "missing-cleanup",
+        "wrong-runtime",
+        "missing-document",
+        "missing-source"
+      ],
+      "result": "scoped-projection-pass",
+      "tupleID": "macbook-pro-m3-pro"
+    },
+    {
+      "captureSHA256": "104ac5417380418328838c76572ca8208db87167e85e80ec55aa3bb9cff2b3d6",
+      "negativeControls": [
+        "cpu",
+        "memory",
+        "screen",
+        "gpu-family-substring",
+        "platform",
+        "repeat-drift",
+        "wrong-seed",
+        "missing-cleanup",
+        "wrong-runtime",
+        "missing-document",
+        "missing-source"
+      ],
+      "result": "scoped-projection-pass",
+      "tupleID": "macbook-air-m4"
+    },
+    {
+      "captureSHA256": "1d5200e6b2609e7b8d078cbc4b891e59453036941d554cf4fa47c3022b65c94e",
+      "negativeControls": [
+        "cpu",
+        "memory",
+        "screen",
+        "gpu-family-substring",
+        "platform",
+        "repeat-drift",
+        "wrong-seed",
+        "missing-cleanup",
+        "wrong-runtime",
+        "missing-document",
+        "missing-source"
+      ],
+      "result": "scoped-projection-pass",
+      "tupleID": "macbook-pro-m4-max"
+    },
+    {
+      "captureSHA256": "80805647dc8ce3e3dc0c15a8b3ffbce51f4cfb3873b3f7599d534e73b3c3c7b6",
+      "negativeControls": [
+        "cpu",
+        "memory",
+        "screen",
+        "gpu-family-substring",
+        "platform",
+        "repeat-drift",
+        "wrong-seed",
+        "missing-cleanup",
+        "wrong-runtime",
+        "missing-document",
+        "missing-source"
+      ],
+      "result": "scoped-projection-pass",
+      "tupleID": "macbook-pro-m4-pro"
+    }
+  ],
+  "observedOn": "2026-10-15",
+  "version": "0.8.16",
+  "build": 128,
+  "osVersion": "27.0",
+  "architecture": "arm64",
+  "productBytesChanged": false,
+  "managerLaunchScope": "Compiled current manager Direct policy, bound to source hash; not11GUI launches",
+  "persistedMatrix": {
+    "tests": "15legacy/current migration\u2192persist/reload\u2192rename/context edit\u2192collision\u2192reload rows plus4incompatible-identity controls",
+    "result": "pass",
+    "receiptSHA256": "5ab4fd0d3dc80f882951b449fb909f633d0a8af3bf5ed2802fa8f7d0db99c1b9"
+  },
+  "receiptExporter": {
+    "result": "pass",
+    "receiptSHA256": "a016544e0ac248de01da40e89ed072de249e45fbf4c5c6e6949d7b146976d528"
+  },
+  "controls": {
+    "actualNativeSessions": 11,
+    "offlineContradictoryCapturesRejected": 121,
+    "nativeBrokenRuntimeVariants": 0
+  },
+  "privacy": "Only canonical cohort identifiers, hashes and scoped verdicts published; own raw captures/private profiles stay local"
+}

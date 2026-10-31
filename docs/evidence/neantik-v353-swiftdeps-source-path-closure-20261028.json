@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "V353",
+  "observedAtUTC": "2026-10-28T02:58:22Z",
+  "status": "PASS_OBSERVED_SWIFTDEP_PATHS_MAPPED_TO_SOURCE_AND_GENERATOR_EDGES; DETACHED_OFFER_PREFLIGHT_OPEN",
+  "scope": "Read-only closure map for existing V135 Swift dependency paths and Ninja edges, plus a detached source-recipe draft. No source/build output, browser, signature, candidate, frozen V288 offer, or release artifact changed.",
+  "inputs": {
+    "v288ManifestSHA256": "73b83130fc540e65dc238f6fe510e831654b39a93fb691690de1532335ebcc42",
+    "v348PathManifestSHA256": "34e6c4e2f5b0b25210eae181228461ae6c5ef92b5d3e1ba7b5f69af5a0167ae7",
+    "v351EdgeReceiptSHA256": "d9ac6f9a2087077de4c8b5ec13561e33a77af3b55e2a5dcb6509ab8eaee2ba72",
+    "v352SymlinkEdgeReceiptSHA256": "1195d3b7cb1381613fca9a4100df125d31fb16ee45e4c92a0f3c23a4295664aa",
+    "v135BuildNinjaSHA256": "2a28e27f417390a2f24e8dfe28b5e094e30eee2b22aae165cfbeba308dd38836",
+    "v135BuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4"
+  },
+  "result": {
+    "swiftdepsRecords": 106,
+    "literalPathCount": 11415,
+    "sourceDirectSymlinks": 6077,
+    "generatedSymlinkTargets": 73,
+    "generatedSymlinkTargetsWithCustomCommandEdges": 73,
+    "regularBuildFiles": 308,
+    "exactSourceContentMatches": 87,
+    "regularFilesWithoutIndividualNinjaEdge": 46,
+    "noEdgeFilesAmongExactSourceMatches": 46,
+    "remainingRegularPathsWithNinjaEdges": 221,
+    "customCommandEdges": 220,
+    "swiftModuleEdges": 1,
+    "uniqueDirectSourceInputs": 2807,
+    "missingDirectSourceInputs": 0,
+    "generatedIntermediateBuildInputs": 3,
+    "allIntermediatesMappedToQueriedTargets": true
+  },
+  "draft": {
+    "path": "/private/tmp/neantik-release-v1/docs/recipient-work/V353-swift-dependency-path-closure-supplement.md",
+    "sha256": "913a9ee75f2480d0fd1148efa808a0fce3750a858d70b9da05dc720f368e2fa7"
+  },
+  "limits": "Observed path provenance only; independent generator replay, detached offer manifest/preflight, recipient signed replacement/load, final candidate notices, license applicability, timestamped signing, notarization, publication and downloaded bytes remain open. No blanket legal/patent conclusion.",
+  "releaseQualified": false,
+  "nextAction": "Create a detached V288 offer revision containing the V353 recipe supplement without mutating the frozen source offer. Verify every manifest component, then run the exact source-offer consumer preflight against the detached revision. Keep Apple timestamp signing independent."
+}

@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "status": "bounded-factual-maintainer-review;WebInspectorUI-code-image-traced-to-one-Apple-BSD2-object;resource-licenses-separate",
+  "observedAt": "2026-10-25T02:06:40Z",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "runtimeImage": {
+    "path": "WebInspectorUI.framework/Versions/A/WebInspectorUI",
+    "sha256": "b1bb2202335233b4e2c479ba0cc65b5947bd44a2ac2b2173e28d3bdeb6b5b2a1",
+    "configuredLinkNode": "WebInspectorUI.framework/Versions/A/WebInspectorUI",
+    "explicitObjectCount": 1,
+    "internalStaticLibraryDependencies": [],
+    "sourceInput": "Source/WebInspectorUI/WebInspectorUI.cpp",
+    "sourceSHA256": "57893c96cec431ef5fc1f7bef7728980769140e96a776f528aa6de7319b37b07",
+    "candidateRuntimeHashMatched": true
+  },
+  "inputs": {
+    "runtimeImageSourceClosure": {
+      "path": "docs/evidence/webkit-v20-runtime-image-source-closure-20261025.json",
+      "sha256": "6e9a5a634e7e78fcb23d4e2b0d10bbda676bd264cc9b4127f4ce4d833c2e2304"
+    },
+    "productionLinkInputClosure": {
+      "path": "docs/evidence/webkit-v20-production-link-input-closure-20261025.json",
+      "sha256": "2aa173e04b793973469c261a3a7d7d573ba94e5d1ad814c863ab1f2b7d51be73"
+    },
+    "sourceLicenseCandidateMap": {
+      "path": "docs/evidence/webkit-v20-link-source-license-candidates-20261025.json",
+      "sha256": "70a07ede311458659ba1a9d5b91a90a6bfbd130d809dfe19865bc684cf952f6a"
+    },
+    "noticeMap": {
+      "path": "docs/evidence/webkit-v20-webinspector-image-notice-map-20261025.json",
+      "sha256": "96240de028a35eea2032793c91fa26327bda006c097607cdf20e55ffbe045e80"
+    },
+    "isolatedCopyIntegration": {
+      "path": "docs/evidence/webkit-v20-webinspector-notice-integration-20261025.json",
+      "sha256": "0bcb0b053a70728696b562ce64d413bdb754e4e838346e487fb35fff90c0d5f7",
+      "result": "PASS install and verify; focused notice tests passed; production candidate not modified"
+    }
+  },
+  "licenseEvidence": {
+    "sourceHeaderClass": "Apple BSD-2-Clause form",
+    "exactHeaderText": "docs/evidence/third-party/webinspector/WebInspectorUI-framework.LICENSE",
+    "sha256": "c1493fcceabb2c162ca8a603fd4505c51a24024d8f9aa35ae75aa72df412fc00",
+    "noticePath": "Contents/Resources/NeAntikRuntimeLicenses/WebInspectorUI-framework-BSD-2-Clause.txt",
+    "webNoticeReference": true
+  },
+  "maintainerDecision": {
+    "applicableLicense": "For the WebInspectorUI code image only, the configured link node contains one object input from WebInspectorUI.cpp, with an exact Apple BSD-2 source header; the node has no internal static-library dependencies. The four separately packaged WebInspectorUI framework resources remain independent rows.",
+    "noticeLocation": "Contents/Resources/NeAntikRuntimeLicenses/WebInspectorUI-framework-BSD-2-Clause.txt and the generated NeAntik runtime notices; exact text is staged in the source offer.",
+    "requiredNotice": "Retain the full exact BSD-2 source header, including copyright, conditions, and disclaimer, in distributed materials.",
+    "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW for this code image only; not a legal opinion."
+  },
+  "limitations": [
+    "The isolated-copy integration passed; candidate 139 itself remains unchanged and its future package must include this notice.",
+    "The separately packaged JavaScript/CSS resources are not covered by this image-only decision.",
+    "No other runtime image/resource, overall legal compliance, candidate signature/trust, qualification, notarization or publication is closed."
+  ]
+}

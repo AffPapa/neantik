@@ -1,0 +1,152 @@
+Generated third-party notice index for the pinned libwebrtc source inputs.
+
+This file is generated from exact pinned README.chromium records and additional exact source/license lineage evidence. It is not an upstream LICENSE_THIRD_PARTY file and is not a legal applicability decision for every object in libwebrtc.dylib. Full referenced license and patent files are retained in this notice tree.
+
+## README.chromium declarations
+
+### Abseil
+- Declared upstream license: Apache-2.0
+- Revision: 7f008af1930f59d869a816795ac5d445e3628e4d
+- Project URL: https://github.com/abseil/abseil-cpp
+- README.chromium: Source/ThirdParty/libwebrtc/Source/third_party/abseil-cpp/README.chromium (SHA-256 684e2808c663320b43a9173fab9d314043c55e0fcec54f11bd11fdf130b8352f)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/third_party/abseil-cpp/LICENSE (SHA-256 c79a7fea0e3cac04cd43f20e7b648e5a0ff8fa5344e644b0ee09ca1162b62747)
+
+### BoringSSL
+- Declared upstream license: Apache-2.0, BSD-3-Clause
+- Revision: 2ea3200c3a3ec176613ab7a0b9a4ffc6db846120
+- Project URL: https://boringssl.googlesource.com/boringssl
+- README.chromium: Source/ThirdParty/libwebrtc/Source/third_party/boringssl/README.chromium (SHA-256 b902b0ba3d65cb26d2c043ff586b9959462b54601f82467120a565c97d977fe8)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/LICENSE (SHA-256 827c8d8fc207c2392794eef9e00fe246f9f61fdcc132556c275be3dd8c3cd97f)
+
+### CRC32C
+- Declared upstream license: BSD-3-Clause
+- Revision: 2bbb3be42e20a0e6c0f7b39dc07dc863d9ffbc07
+- Project URL: https://github.com/google/crc32c
+- README.chromium: Source/ThirdParty/libwebrtc/Source/third_party/crc32c/README.chromium (SHA-256 e4a95f5f631efc7d262b2e24cf55c15834d942187515c2bd6eaf2c2f9972ec30)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/third_party/crc32c/src/LICENSE (SHA-256 a1f30b77c01e0995fa32a00119e00749e8731ee8a3c4c3549bce74083c72b0b6)
+
+### Alliance for Open Media Video Codec
+- Declared upstream license: Alliance-for-Open-Media-Patent, BSD-2-Clause
+- Revision: 7b6197cb8fdc1ce555a03d23a9d25242c61d38e6
+- Project URL: https://aomedia.googlesource.com/aom/
+- README.chromium: Source/ThirdParty/libwebrtc/Source/third_party/libaom/README.chromium (SHA-256 9e1ef9a39ac31787ad23d7e5f9f3a22feb3788b7dc9baf212369a7a205cf93ae)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/LICENSE (SHA-256 4764a286d8b2faeaf42f4418e7d7a28d58fc8fd4d00a3d0a7f44b0a4099de7f2)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/PATENTS (SHA-256 661fb8e504744e95587b556b94a58343448300606a41bea8c7a9b97125696e61)
+
+### libsrtp
+- Declared upstream license: BSD-3-Clause
+- Revision: None
+- Project URL: https://github.com/cisco/libsrtp
+- README.chromium: Source/ThirdParty/libwebrtc/Source/third_party/libsrtp/README.chromium (SHA-256 e8fb1758e7903b45f4a233108f610addd6120f7e2d2f6c19d46fd332021deb8d)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/third_party/libsrtp/LICENSE (SHA-256 8e19d42a1eec9561f3f347253ddf2e385c55f392f025bb0fd41b88dbf38db5ae)
+
+### libvpx
+- Declared upstream license: BSD-3-Clause, WebM-Project-Patent
+- Revision: 5e680f30801d03c21078f8c4b772464752516211
+- Project URL: https://chromium.googlesource.com/webm/libvpx
+- README.chromium: Source/ThirdParty/libwebrtc/Source/third_party/libvpx/README.chromium (SHA-256 b263c95b0e800304ff754b2244448afb1312ec147f707239a8a8f720d7f0b1b6)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/LICENSE (SHA-256 8267348d5af1262c11d1a08de2f5afc77457755f1ac658627dd9acf71011d615)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/PATENTS (SHA-256 cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c)
+
+### libyuv
+- Declared upstream license: BSD-3-Clause
+- Revision: DEPS
+- Project URL: https://chromium.googlesource.com/libyuv/libyuv/
+- README.chromium: Source/ThirdParty/libwebrtc/Source/third_party/libyuv/README.chromium (SHA-256 5ba54148f57cf59ed76aaaeae4cd428bbadadedf50ffd6bd48743b5ceef3de99)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/third_party/libyuv/LICENSE (SHA-256 2b2cc1180c7e6988328ad2033b04b80117419db9c4c584918bbb3cfec7e9364f)
+
+### opus
+- Declared upstream license: Opus-Patent-BSD-3-Clause
+- Revision: 55513e81d8f606bd75d0ff773d2144e5f2a732f5
+- Project URL: https://gitlab.xiph.org/xiph/opus
+- README.chromium: Source/ThirdParty/libwebrtc/Source/third_party/opus/README.chromium (SHA-256 b3462b72d621616f2e62f5c9954f0e30288d6fc102bed5b358c99ac23811f604)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/third_party/opus/src/COPYING (SHA-256 01e1167d54a096d123cf6dfbbeb19587278845c6481d2d66d545669846079551)
+
+### PFFFT: a pretty fast FFT.
+- Declared upstream license: pffft
+- Revision: 483453d8f766
+- Project URL: https://bitbucket.org/jpommier/pffft/
+- README.chromium: Source/ThirdParty/libwebrtc/Source/third_party/pffft/README.chromium (SHA-256 6d53a57a94467b529def637e84fe00969f088394749a95ccf77d7dcc6e0bb5e7)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/third_party/pffft/LICENSE (SHA-256 a46200592eb193853527250da098e6bb0c75424e7a2c7db8da526c4f301c3d88)
+
+### Recurrent neural network for audio noise reduction
+- Declared upstream license: BSD-3-Clause
+- Revision: 91ef401f4c3536c6de999ac609262691ec888c4c
+- Project URL: https://github.com/xiph/rnnoise
+- README.chromium: Source/ThirdParty/libwebrtc/Source/third_party/rnnoise/README.chromium (SHA-256 396a75a64c73e0348967bc08460b19fab2829b04368088f8cd61dfed47d4d7eb)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/third_party/rnnoise/COPYING (SHA-256 e2f59ff41d9d03adc3dcf3deff170f8c8cf4a6eb4a9b174762a7656d23200ffa)
+
+### Sframe
+- Declared upstream license: BSD-2-Clause, MIT
+- Revision: 6a37f061f4eda0c6594c91ecf99b5ff498c8c124
+- Project URL: https://github.com/cisco/sframe
+- README.chromium: Source/ThirdParty/libwebrtc/Source/third_party/sframe/README.chromium (SHA-256 8a6ab69f6d7b1b855dd4dc8ea30c81337436e85f1639d132a73b8c3a6a19ab0a)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/third_party/sframe/src/LICENSE (SHA-256 55942e3b6ebf4df940d32e2fc8ce7ba59cdd4b32babcf479c1a9b5bb45bbad40)
+
+### WebRTC
+- Declared upstream license: BSD-3-Clause
+- Revision: None
+- Project URL: This is the canonical repository
+- README.chromium: Source/ThirdParty/libwebrtc/Source/webrtc/README.chromium (SHA-256 51be870b76b91e8b107b56063433470f197cbaea7660f7657fa93cde312f44e7)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/webrtc/LICENSE (SHA-256 ab00a482b6a3902e40211b43c5d0441962ea99b6cc7c25c0f243fa270b78d482)
+
+### General Purpose FFT (Fast Fourier/Cosine/Sine Transform) Package
+- Declared upstream license: LicenseRef-takuya-ooura
+- Revision: None
+- Project URL: http://www.kurims.kyoto-u.ac.jp/~ooura/fft.html
+- README.chromium: Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/ooura/README.chromium (SHA-256 80392fe13803dcea137e4c7fb5f3f6d78f66c12269c89b046c660b12d5061538)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/ooura/LICENSE (SHA-256 25b7731b70c77ecd5f3bb19303fbaa99be18860f81d44f71da670fdcd04829db)
+
+### spl sqrt floor
+- Declared upstream license: SPL-SQRT-FLOOR
+- Revision: None
+- Project URL: http://www.pertinentdetail.org/sqrt
+- README.chromium: Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/spl_sqrt_floor/README.chromium (SHA-256 292b6fa1147d681f40ff6ff81cccbca4e933ab06ef0212e5d589ddccc6ed2d69)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/spl_sqrt_floor/LICENSE (SHA-256 41d791701e3e1c1073470403de7e342442d1e6a2af72681023b13a2f45f2125c)
+
+### fft
+- Declared upstream license: dtoa
+- Revision: None
+- Project URL: This is the canonical repository.
+- README.chromium: Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/fft/README.chromium (SHA-256 f656f4c66749cae59dc5daaa9a477b39e2d28758f292cfd82a5d1ab900e303d7)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/fft/LICENSE (SHA-256 6fdbabd2c95c5efc6f1e46175278239afb9343120a3022ed0e0cb04267a6aeb3)
+
+### In line A-law and u-law conversion routines
+- Declared upstream license: LicenseRef-Public-Domain-SpanDSP
+- Revision: None
+- Project URL: https://www.soft-switch.org/downloads/spandsp/
+- README.chromium: Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g711/README.chromium (SHA-256 5d57cb71736037846f858d4db1cd28ce20443b81a84a8af6ceae2e7662a37be6)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g711/LICENSE (SHA-256 b29c8f13f91feb2dab7d6655444369fa9f29c0d7121a52dab90ff97e40343a85)
+
+### The ITU G.722 codec, encode and decode part.
+- Declared upstream license: LicenseRef-Public-Domain-SpanDSP
+- Revision: None
+- Project URL: https://www.soft-switch.org/downloads/spandsp/
+- README.chromium: Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g722/README.chromium (SHA-256 e0d7a24ab30fb0fd49165e0f30c1171be418cec109997e2152f3b3daf1bba589)
+- License/patent file: Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g722/LICENSE (SHA-256 61862327fd00d6a4deb2c1276577782c2500f4fe103e072018fc369d8e37e876)
+
+## Additional source groups outside README.chromium ancestry
+
+The exact source join contains 2505 unique compiler source paths. README.chromium ancestry covers 2272; the four groups below account for the remaining 233. This is source/license-file mapping only.
+
+### Source/ThirdParty/libwebrtc/Source/third_party/libwebm (48 source/object paths)
+- Exact notice file: Source/ThirdParty/libwebrtc/Source/third_party/libwebm/LICENSE.TXT (SHA-256 5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf)
+- Exact notice file: Source/ThirdParty/libwebrtc/Source/third_party/libwebm/PATENTS.TXT (SHA-256 cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c)
+- No README.chromium parent record was found in the pinned 17-record metadata inventory.
+
+### Source/ThirdParty/libwebrtc/cmake/usage_exit_stub.c (1 source/object paths)
+- Source: Source/ThirdParty/libwebrtc/cmake/usage_exit_stub.c (declared MPL-2.0); pinned patch SHA-256 b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735.
+- Separate exact MPL notice: NeAntik-usage_exit_stub-MPL-2.0.txt (SHA-256 3f3d9e0024b1921b067d6f7f88deb4a60cbe7a78e76c64e3f1d7fc3b779b9d04).
+
+### Source/WebCore/PAL/ThirdParty/dav1d (58 source/object paths)
+- Exact notice file: Source/WebCore/PAL/ThirdParty/dav1d/COPYING (SHA-256 dd92c3c2247c5651606fc23a5e2d6a1ebc5ace9a3e49cbde0e12f05ad1cb1ee5).
+
+### WebKitBuild/neantik-v20-production-arm64/Source/ThirdParty/libwebrtc (126 source/object paths)
+- Exact generated-input lineage receipt: webkit-v20-libwebrtc-unmapped-generated-lineage-20261025.json (SHA-256 d938fc1beb978016db36304f91476142b1dc07658bfe394ff1811a23b322f376).
+- 124 generated assembly outputs map to 62 exact generator inputs with Apache-2.0 header signals; 2 exact CMake PCH object stubs are recorded separately.
+- Generated-output license applicability is not inferred from generator headers.
+
+## Scope limit
+
+Source map: webkit-v20-link-source-license-candidates-20261025.json (SHA-256 70a07ede311458659ba1a9d5b91a90a6bfbd130d809dfe19865bc684cf952f6a); source archive SHA-256 658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f; exact runtime image SHA-256 ce802e6ea83ba3e5faecc7e6b77f156821c74f30ca47fc6cf310caf19d4ffd6f.
+No legal opinion, full patent analysis, complete binary notice approval, corresponding-source/relink closure, recipient replacement/load proof, or release qualification is claimed.

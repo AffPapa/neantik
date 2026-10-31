@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "V366",
+  "observedAtUTC": "2026-10-28T03:51:22Z",
+  "status": "PASS_DETACHED_SWIFTDEP_RECIPE_INTEGRATED_AND_SOURCE_OFFER_CONSUMER_PREFLIGHT",
+  "scope": "Integrated the V353 Swift dependency path-closure recipe into a detached V365 source-offer copy and ran the exact package-owned-WebKit consumer source-offer validator against final V366 manifest bytes. V365, V359, source/build outputs, candidate, signatures, and release artifacts were not changed.",
+  "sourceOffer": {
+    "baseOffer": "V365",
+    "baseManifestSHA256": "4f71e4d9a5a8355cf88901b416acb88b547ec47143e7e1780f861d367241a7e7",
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v366-chromium-15674-swiftdep-recipe-closure",
+    "manifestSHA256": "469ba1dce4154ae1481f844c37f8137181a96fbc19862890578db4bf74806be3",
+    "componentCount": 637,
+    "candidateBound": false
+  },
+  "supplement": {
+    "sourceReceiptSHA256": "489d27bb95c3fe91245d3343655bb3913c624441598264f5142d812cfa835618",
+    "recipePath": "overlay/docs/recipient-work/V353-swift-dependency-path-closure-supplement.md",
+    "recipeBytes": 2320,
+    "recipeSHA256": "913a9ee75f2480d0fd1148efa808a0fce3750a858d70b9da05dc720f368e2fa7",
+    "boundSwiftdepsRecords": 106,
+    "literalPaths": 11415,
+    "uniqueSourceInputs": 2807,
+    "missingDirectSourceInputs": 0,
+    "generatorReplay": false
+  },
+  "consumerPreflight": {
+    "script": "/private/tmp/neantik-release-v1/scripts/package-owned-webkit-release.py",
+    "scriptSHA256": "69e9f39db424ca1c8f2810d8cd31b620d01d8e6370c2b17b9678c166db22d4cd",
+    "function": "source_offer_replacements",
+    "status": "PASS",
+    "componentsChecked": 637,
+    "overlayManifests": 8,
+    "firstPartyOverlayAssets": 64,
+    "expectedManifestSHA256": "469ba1dce4154ae1481f844c37f8137181a96fbc19862890578db4bf74806be3"
+  },
+  "limitations": [
+    "Source-offer consumer integrity is not complete corresponding-source sufficiency or legal applicability approval.",
+    "13 target-codegen generator replay, independent recipient signed replacement/load, final signed .74 notice rebinding, exact privacy runtime tuple, secure timestamp signing, notarization, publication, and downloaded-byte verification remain open."
+  ],
+  "nonActions": [
+    "No Chromium or WebKit build",
+    "No browser launch or native QA",
+    "No signing or notarization",
+    "No publication"
+  ],
+  "releaseQualified": false,
+  "nextAction": "Use the pinned V20/V135 target-codegen input and generator-edge evidence to close the remaining 13 generated outputs in a disposable source tree without rebuilding Chromium or mutating the pinned V135 outputs; then integrate the exact recipe and rerun V366 consumer preflight only if the offer changes."
+}

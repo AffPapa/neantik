@@ -1,0 +1,22 @@
+{
+  "status": "PASS_V135_OWNED_LAUNCHER_SOURCE_IMAGE_AND_XPC_IDENTITY",
+  "checkerSHA256": "89093b014d9513af7e920cb48f9cb09b46a0de9092d85903af33fd7c22b6717c",
+  "sourceSHA256": {
+    "Source/WebKit/UIProcess/Launcher/cocoa/ProcessLauncherCocoa.mm": "a14e2f5ef8b865cdade13a1ac0958c555e99ea564ba8db282b33ba602edfedfe",
+    "Source/WebKit/Shared/WebKitServiceNames.h": "8382c40b30b6542711e2c2c489a762a4e7e4bbe844ea76ca326a3703bd415629",
+    "Source/WTF/wtf/PlatformHave.h": "738a140a50024ed9159ce53fba3780de4df21f00dc7e9c1f3c2c9ef34a16162e"
+  },
+  "imageSHA256": {
+    "WebKit.framework/Versions/A/WebKit": "9d22770904538771607524af37bba48f45959d3aadc41b96ba8bf40f02018ab6",
+    "JavaScriptCore.framework/Versions/A/JavaScriptCore": "8e6d73e593ee32196767b35a236cffc1f172bd12f23073cdc35ef290f506ef63"
+  },
+  "fiveXPCBundlePlists": {
+    "app.neantik.desktop.webkit.GPU.xpc": "1727040f8d3a09f62bf750648f0388f3f65e6356bc53c3887caef2633609a40d",
+    "app.neantik.desktop.webkit.Networking.xpc": "1733fb8bd8df9a1360d7959150139c69bb14dbdb0bd9f266c742c100e94ebc82",
+    "app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc": "cf2804905b5ab48951d12b4c9ce0f0984c24821c340597e7af828ba49e073651",
+    "app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc": "707d6ca86c4d1b0c51c721c6cb86a64e35810092773eb8e040f93a73fe58c703",
+    "app.neantik.desktop.webkit.WebContent.xpc": "95eb37b4bd4a698898b2fa3a894c15bc4b9f5dd4323f04cf446f0d841e6616fc"
+  },
+  "scope": "static identity, Mach handler symbol and source probe; does not sign, launch or prove proxy or page load",
+  "releaseQualified": false
+}

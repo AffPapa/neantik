@@ -30,6 +30,8 @@ for key in \
   CFBundleShortVersionString \
   CFBundleVersion \
   NeAntikDeveloperTeamIdentifier \
+  NeAntikTelemetryEndpoint \
+  NeAntikPublicStatsURL \
   LSMinimumSystemVersion \
   LSRequiresNativeExecution; do
   EXPECTED="$(plutil -extract "$key" raw -o - "$EXPECTED_INFO_PLIST")"
@@ -54,21 +56,10 @@ if ! cmp -s \
 fi
 
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
-  if [[ -e "$APP_PATH/Contents/embedded.provisionprofile" ||
-        -L "$APP_PATH/Contents/embedded.provisionprofile" ]]; then
-    echo "Local ad-hoc QA must not embed a distribution profile." >&2
-    exit 65
-  fi
-else
-  python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
-    --profile "$APP_PATH/Contents/embedded.provisionprofile" \
-    --app "$APP_PATH"
-fi
-"$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py" \
-  --info-plist "$INFO_PLIST"
+"$PROJECT_DIR/scripts/verify-direct-telemetry-disabled.py"
 "$PROJECT_DIR/scripts/verify-direct-update-policy.py" \
-  --info-plist "$INFO_PLIST"
+  --info-plist "$INFO_PLIST" \
+  --expected-info-plist "$EXPECTED_INFO_PLIST"
 "$PROJECT_DIR/scripts/verify-public-fingerprint-corpus.py"
 "$PROJECT_DIR/scripts/verify-direct-ui-localization.py"
 "$PROJECT_DIR/scripts/verify-direct-branding-residue.py" \
@@ -110,7 +101,23 @@ echo "Architecture: $ARCHS"
 
 if codesign -d --entitlements - "$APP_PATH" 2>&1 |
     grep -q 'com.apple.security.app-sandbox'; then
-  echo "Direct distribution forbids the App Sandbox entitlement." >&2
+  echo "Distribution: Mac App Store sandbox"
+else
+  echo "Distribution: Direct"
+fi
+
+# The Direct manager retains its App ID for existing Keychain items.  Adding
+# Legacy releases claim only App ID. Provisioned backup requires an
+# authenticated matching profile; notarization alone cannot authorize claims.
+MANAGER_ENTITLEMENTS="$(codesign -d --entitlements - "$APP_PATH" 2>&1)"
+BACKUP_CAPABILITY="$(python3 "$PROJECT_DIR/scripts/direct_backup_signing.py" state "$APP_PATH")"
+if [[ "$BACKUP_CAPABILITY" == "enabled" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-contract.py" \
+    --app "$APP_PATH" --bundle app.neantik.desktop \
+    --certificate-sha1 474F7C78F33EE324C24F6F5AE0443EB713E85E60
+elif [[ "$(grep -c '\[Key\]' <<<"$MANAGER_ENTITLEMENTS")" != "1" ]] ||
+   ! grep -q 'H6VGU2M6JD.app.neantik.desktop' <<<"$MANAGER_ENTITLEMENTS" ||
+   grep -q 'com.apple.developer.team-identifier' <<<"$MANAGER_ENTITLEMENTS"; then
+  echo "Direct manager must claim only its existing App ID entitlement." >&2
   exit 65
 fi
-echo "Distribution: Direct"

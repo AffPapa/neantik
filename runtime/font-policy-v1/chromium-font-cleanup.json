@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "status": "source-prepared;not-applied-or-built",
+  "feature": "profile-free code-sign-clone cleanup and QA environment isolation",
+  "parentManifest": "chromium-font-witness.json",
+  "parentManifestSHA256": "9645de1b7dac136df452abe2a3e039a12beef1689c58686536b9281b5e7b55b7",
+  "patchFile": "chromium-font-cleanup.patch",
+  "patchSHA256": "631feb18bf9fbd5efbd9842ebfd00320aa4aaaffb010c549427f4fd79be549e9",
+  "files": [
+    {
+      "path": "chrome/browser/mac/code_sign_clone_manager.mm",
+      "preimageSHA256": "b876a588a115ef8e851085937cfa17b614b42b0d9d3f4db7c93ceccb5b9358f9",
+      "postimageSHA256": "acd591be492ca48e3cda76d03d2da4d0a85fbe38ec114cb977a43511218cb9cc"
+    },
+    {
+      "path": "chrome/common/chrome_paths_mac.mm",
+      "preimageSHA256": "d1dfa65cbd46600c6340aa51fa3ebdc5559aa91d20f78a375364a0af6ab3e588",
+      "postimageSHA256": "77bfc7bbf2a3b3cb02af613490a28d8395ddd301d399b2845d5f5e317e2b80a3"
+    }
+  ],
+  "reason": "actual first headed font run reached browser/renderer ACK but cleanup child inherited QA flags without profile argv, leaving own hardlink clone",
+  "releaseReady": false,
+  "actualBrowserForThisChange": false,
+  "remainingGates": [
+    "apply and changed-object compile/link",
+    "headed helper exit and owned clone removal; main executable nlink1 and full closure match",
+    "font behavior and full candidate qualification"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v269-composite-source-offer-and-recipient-preflight-20261027",
+  "observedAtUTC": "2026-10-27T15:22:00Z",
+  "status": "V269_COMPOSITE_AND_PACKAGE_CONSUMER_CONTRACT_PASS; RECIPIENT_SOURCE_TREE_AND_FULL_RELINK_OPEN",
+  "scope": "Composed a separate draft from V246 plus the verified V266 supplement. Read-only package-consumer verification and recipient input preflight only. No Chromium/WebKit build, source extraction, signing, launch, notarization, publication, or mutation of V246/b960.",
+  "base": {
+    "path": "dist/private/source-offers/v246-public-source-offer-draft",
+    "manifestSHA256": "6240d928c933b9b44d6d5376cadc66fee0a1107cd9e1528281a016363ad7c59c",
+    "sourceArchiveSHA256": "047ad8b493ff2710a277ac4526ee899aa9165e1ab18f7ca6deab63a6e0523958",
+    "unchanged": true
+  },
+  "supplement": {
+    "path": "dist/private/source-offers/v266-chromium-recipient-build-supplement-draft",
+    "manifestSHA256": "17bf182b6a2acfd3161bc55a1988fb18d473fe3e7bf290e5a0a9e41fe9223468",
+    "components": 21,
+    "integrity": "pass"
+  },
+  "composite": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v269-composite-source-offer-draft",
+    "manifestSHA256": "080113344b7b4616bcf879a32fce448a0a0762c6ace8612344242d07671b2252",
+    "componentCount": 569,
+    "construction": "Hardlink view of V246 plus new copied supplement files and metadata; base and archive hashes rechecked after composition.",
+    "sourceOfferPackageConsumer": "pass; source_offer_replacements verified 569 manifest components, 8 attribution manifests and 64 overlay assets.",
+    "candidateBound": false,
+    "releaseQualified": false
+  },
+  "recipientPreflight": {
+    "script": "scripts/check-webkit-recipient-prereqs.py",
+    "inputManifest": "evidence/recipient-input-manifest-v246.json",
+    "inputManifestSHA256": "52d67675e4db6d52dbdb5c15ee0078604723615b8e6333b60aeee4ec4cdb2a59",
+    "passed": "WebKit archive, current NeAntik archive, source patch, build configuration, host toolchain, candidate manager signing team, embedded Frameworks layout.",
+    "missing": "Extracted physical WebKit source tree; independent recipient-built Frameworks; local identity preflight not requested.",
+    "unresolved": "Complete transitive dependency/build recipe and full portable build/relink; reviewed final image licenses/notices and final binary/source binding.",
+    "exitCode": 2,
+    "interpretation": "Correct pinned archive inputs are present; recipient preflight remains incomplete because the source tree and independent recipient outputs are absent. The Frameworks check is layout-only."
+  },
+  "setupNote": "An initial preflight selected historical input-pins-v20.json (V132 manager archive SHA b880...), so its NeAntik archive check mismatched. The V246 recipe names evidence/recipient-input-manifest-v246.json; the corrected check used that exact manifest and all supplied pinned file hashes passed. No pin or base file was edited.",
+  "openGates": [
+    "four exact runtime image license/notice determinations",
+    "complete recipient source/build/relink and signed-load",
+    "owned-WebKit production proxy route",
+    "Apple timestamped signing",
+    "notarization/stapling/Gatekeeper",
+    "GitHub and browser.free publication plus downloaded-byte verification"
+  ],
+  "releaseQualified": false
+}

@@ -1,0 +1,611 @@
+{
+  "schemaVersion": 1,
+  "id": "chromium-15680-actual-macos-dependency-lock-V904",
+  "upstreamChromiumCommit": "fb096c0011f9d50f0a264a9376420cdea9c421e3",
+  "upstreamChromiumTree": "9daca4c0f1670a0ead9a94888c1bfe4ace733f4d",
+  "gclientConfigSHA256": "d7b653802f655ed185c922874fb46b9e46f9a3a9951356a28f864bbffd67c74e",
+  "gclientEntriesSHA256": "4673c17615effc9d67e0b4939fc52e7a13043dad0a2c476953efec67dad03108",
+  "processedGitCheckoutCount": 150,
+  "checkouts": {
+    "src/agents/shared": {
+      "commit": "865684c4f7092e4ab05adcd3fcf068672ff28d27",
+      "tree": "aa1f0697fe18186da34fc70598368b94018448b7"
+    },
+    "src/chrome/test/data/perf/canvas_bench": {
+      "commit": "a7b40ea5ae0239517d78845a5fc9b12976bfc732",
+      "tree": "edf33faa2362240de3b5887cd23a4d9af71d958e"
+    },
+    "src/chrome/test/data/perf/frame_rate/content": {
+      "commit": "c10272c88463efeef6bb19c9ec07c42bc8fe22b9",
+      "tree": "1bddba7664d12c00d320037521ea891103913017"
+    },
+    "src/chrome/test/data/xr/webvr_info": {
+      "commit": "c58ae99b9ff9e2aa4c524633519570bf33536248",
+      "tree": "a67763186183f2b65d81dcbb28d8f9103843aaae"
+    },
+    "src/docs/website": {
+      "commit": "70bb13377fed8671966ab9565b7627f2e73ae1a2",
+      "tree": "024f211e8210473382e02132766cbe0e922eb5bb"
+    },
+    "src/media/cdm/api": {
+      "commit": "d6c4e1ea4c8fc3dcd98ac3ab5a981f63067223a4",
+      "tree": "43f4039d29a330a07d1e7d0f30fe32472b494a49"
+    },
+    "src/net/third_party/quiche/src": {
+      "commit": "a1628192cf32ba40d21e0dd80f485d68c24ff87a",
+      "tree": "c9ae52ccf307c5e0ac7747996167f8441f4c5d6d"
+    },
+    "src/testing/libfuzzer/fuzzers/wasm_corpus": {
+      "commit": "1df5e50a45db9518a56ebb42cb020a94a090258b",
+      "tree": "b9647be6e149f1efd456bdaf5278032110471dc4"
+    },
+    "src/third_party/angle": {
+      "commit": "127e783de33425c27a70a3f48da9d9202d6a0745",
+      "tree": "0018e21e38337199eb4b3b8b0d6d595a94f3b7f3"
+    },
+    "src/third_party/angle/third_party/VK-GL-CTS/src": {
+      "commit": "93bca01861b0e3ef3c387027a9791e6d065f900c",
+      "tree": "131abbdec2d1f05fdf7fd6bba285c6745083a4b8"
+    },
+    "src/third_party/angle/third_party/glmark2/src": {
+      "commit": "6edcf02205fd1e8979dc3f3964257a81959b80c8",
+      "tree": "5705228f66ec24bfd36caffd56e8c4b90753def9"
+    },
+    "src/third_party/angle/third_party/rapidjson/src": {
+      "commit": "24b5e7a8b27f42fa16b96fc70aade9106cf7102f",
+      "tree": "42220faaa684c14bfc42aeebc6d5006fb6c51eff"
+    },
+    "src/third_party/anonymous_tokens/src": {
+      "commit": "1ae8df5e40bab28959cc182c2c0d88923059e278",
+      "tree": "2f3d47bf9702e3dc0ceea793a01686b423b1b901"
+    },
+    "src/third_party/boringssl/src": {
+      "commit": "2ea3200c3a3ec176613ab7a0b9a4ffc6db846120",
+      "tree": "9b5523abbf17407648fa5426dfcf02d77ba05001"
+    },
+    "src/third_party/breakpad/breakpad": {
+      "commit": "868abe6f016cfeabfb7208681e89031ae667c336",
+      "tree": "1f8d3c9d54d71dc42b3aa4a147c93add58bb6853"
+    },
+    "src/third_party/cast_core/public/src": {
+      "commit": "f5ee589bdaea60418f670fa176be15ccb9a34942",
+      "tree": "6ae5f4f4c0e264616e807bbbf00f0d0c23627d5a"
+    },
+    "src/third_party/catapult": {
+      "commit": "f411808cd159db5e47be79ebee59fffca3da1bd4",
+      "tree": "f59c5600c73109661c1b9be3152be8cd92234e0d"
+    },
+    "src/third_party/ced/src": {
+      "commit": "d127078cedef9c6642cbe592dacdd2292b50bb19",
+      "tree": "235ccfd44deaee7f998a98133cfa9da58615144d"
+    },
+    "src/third_party/clang-format/script": {
+      "commit": "9f796802e5d633c96dbe97e0b6683d5e62594f9f",
+      "tree": "5f33aa6fa9d255066a8d13ed0135ae5ac67c75a6"
+    },
+    "src/third_party/cld_3/src": {
+      "commit": "b48dc46512566f5a2d41118c8c1116c4f96dc661",
+      "tree": "cd07b0747b2a2676b6762b3d866024d4c000a383"
+    },
+    "src/third_party/colorama/src": {
+      "commit": "3de9f013df4b470069d03d250224062e8cf15c49",
+      "tree": "7832a6a9c86aa935e29c35ca78a809095f94c67e"
+    },
+    "src/third_party/compiler-rt/src": {
+      "commit": "627967b9c76e9a9d09a29e2c48a9283556f5a3a3",
+      "tree": "7cf01ec8378487fa89b644b49d6317e63c6980cd"
+    },
+    "src/third_party/content_analysis_sdk/src": {
+      "commit": "0a0e7ea516249e786d5a8884552bbd6e163d89cb",
+      "tree": "7b226d7b43a5576d985956e20a69611d30ac03b4"
+    },
+    "src/third_party/cpu_features/src": {
+      "commit": "81d13c49649f0714dd41fb56bb246398b6584085",
+      "tree": "8e77d955ceb10a10a17a840d52bbb17ca9d37e6b"
+    },
+    "src/third_party/cpuinfo/src": {
+      "commit": "66ee79c038d70dad9f08705b2c9b3e58f6d8f512",
+      "tree": "6fa72253182068bce65eb8af443237641096a1dc"
+    },
+    "src/third_party/crabbyavif/src": {
+      "commit": "d25069779cc7258d5f8816d3ca175d463b0b6444",
+      "tree": "5814f5674be06d678cb8f575069bb567b68bb0dd"
+    },
+    "src/third_party/crc32c/src": {
+      "commit": "2bbb3be42e20a0e6c0f7b39dc07dc863d9ffbc07",
+      "tree": "8de2c11aa592e981680c7474f9e858814020acae"
+    },
+    "src/third_party/cros-components/src": {
+      "commit": "0abb2efaa3d16db861c9710b193c39e657ac3bdf",
+      "tree": "8bfcb1b7c8ae4f49b8579b0cbb10f43e446731b5"
+    },
+    "src/third_party/crossbench": {
+      "commit": "043866e26bee4936f0a6a3cf87813fb928d7ea1f",
+      "tree": "c809273966bac5e8cfc7398b95229f2d4525b51b"
+    },
+    "src/third_party/crossbench-web-tests": {
+      "commit": "4483f71db32259409d9c5f7c4c95e2605b7a3b13",
+      "tree": "6b93d847ef1ab90bf89c07df5d4232b133e680af"
+    },
+    "src/third_party/dav1d/libdav1d": {
+      "commit": "bf5a8792744ee78c977dfb16503f9156dde6401d",
+      "tree": "61847c7f7771f432465b97181e21fa5ca8648c74"
+    },
+    "src/third_party/dawn": {
+      "commit": "8114a24a35eed1db88d1d897e8bd193a8c334712",
+      "tree": "03f5713be3965efd1fa9957a5500de77417d9188"
+    },
+    "src/third_party/dawn/third_party/EGL-Registry/src": {
+      "commit": "db3425b8246136faccb5e2782b5694960bd6edf1",
+      "tree": "fcb1eec37c441a7613052efbf8f75cc75ea5b0ae"
+    },
+    "src/third_party/dawn/third_party/OpenGL-Registry/src": {
+      "commit": "1cdd228e34966dd6b95bd203e9f84faba0f371a1",
+      "tree": "c62851d098d1c4acd746b69b9e7b323a20601c49"
+    },
+    "src/third_party/dawn/third_party/directx-headers/src": {
+      "commit": "980971e835876dc0cde415e8f9bc646e64667bf7",
+      "tree": "344fb8e5885ab196e438c0d97b52cdd2c9152077"
+    },
+    "src/third_party/dawn/third_party/directx-shader-compiler/src": {
+      "commit": "9757d44faa47de7e8d1bb731c30551ec608624f9",
+      "tree": "a1d9663d60c176eb02ce00c41427110fc52f7b1b"
+    },
+    "src/third_party/dawn/third_party/glfw3/src": {
+      "commit": "92dcf4ce74f2e2554a98fea09be7c705c17daa5a",
+      "tree": "ab016f529f621ea7c925e8c5e4148f17deb2b10e"
+    },
+    "src/third_party/dawn/third_party/webgpu-cts": {
+      "commit": "81aeeb49e5b15587ec6c1f59b2fdcb4074ffcf63",
+      "tree": "bfde07153a628650689b3783b30cc9b1b4369033"
+    },
+    "src/third_party/dawn/third_party/webgpu-headers/src": {
+      "commit": "0caa056b5c804e9219d5f8c668a7c29d4dd9c95b",
+      "tree": "4fc126e685e8d3e067b6e7701e7b7dfbc90a1449"
+    },
+    "src/third_party/depot_tools": {
+      "commit": "a07c06fe67a1a9d64ac4728df3a11c1ceb0cf73e",
+      "tree": "a59233ee05e841357e3fb99d5e2c3bb255422931"
+    },
+    "src/third_party/devtools-frontend/src": {
+      "commit": "8c62f844ad8e0664ff41a633bfc17c472f1c5fd6",
+      "tree": "5ec979a5d1f1352418a5a35085618694878a225e"
+    },
+    "src/third_party/disarm/src": {
+      "commit": "2d960dae4b4fb29dba05cfc48210fbed423f3d2c",
+      "tree": "7ce3976a8a3165fb55a528068e475a03214a1ba6"
+    },
+    "src/third_party/dom_distiller_js/dist": {
+      "commit": "015cda307cf81e293889c0887cffff4f0aa090ce",
+      "tree": "8ecbe439a802d75b2553383726cd433e5f91635e"
+    },
+    "src/third_party/domato/src": {
+      "commit": "fadff396cc45d521cc594d3e2396e27e887b1963",
+      "tree": "d2417db04033e51da84ce36784b5ecba87853b4f"
+    },
+    "src/third_party/dragonbox/src": {
+      "commit": "beeeef91cf6fef89a4d4ba5e95d47ca64ccb3a44",
+      "tree": "176383f02746d0248e7b04409367f691cc231cef"
+    },
+    "src/third_party/ds_store/src": {
+      "commit": "6f971c764a511f609615c6c4f5ae2a9403ff32cb",
+      "tree": "1fd44c5bc6def7a1e035b03bf82639ec210d5f21"
+    },
+    "src/third_party/eigen3/src": {
+      "commit": "04bfe22876d3bab4260f39491cce7a8df17daa40",
+      "tree": "b7d3ea19d86467e90ae5e92420c99c262ae4695e"
+    },
+    "src/third_party/emoji-segmenter/src": {
+      "commit": "955936be8b391e00835257059607d7c5b72ce744",
+      "tree": "119f3d5193c0eac99995ed6a55038e0d42bebd7c"
+    },
+    "src/third_party/expat/src": {
+      "commit": "a851869e111c06fbcdc89edf639abf5fc2b6deba",
+      "tree": "b7b4f742c001346d94f9708c1cfc025086e74fde"
+    },
+    "src/third_party/fadec/src": {
+      "commit": "c9f78f532b9004de278489019ab2c6c28ae9746e",
+      "tree": "386ddffc8ba27b168f4e9ec6dd1bc2a6b24a3a75"
+    },
+    "src/third_party/farmhash/src": {
+      "commit": "9d99331eb762e9ee22fd97d15a594525ad98310a",
+      "tree": "f3d1022226fc117992c25442f384464ccc5f0307"
+    },
+    "src/third_party/fast_float/src": {
+      "commit": "b0ab987b3dfdde13fa1915f65ef2a5c068d9208c",
+      "tree": "1ee625bf004cd1be57ae3642b80da6f069394000"
+    },
+    "src/third_party/federated_compute/src": {
+      "commit": "f5241fb459426f88af484a909927044a71306209",
+      "tree": "cdf69003748758f7799b64e7a6725de6314d0873"
+    },
+    "src/third_party/ffmpeg": {
+      "commit": "9db86ce5b5b454dfc96c435f9f0723012980c37f",
+      "tree": "92494155280ad804b8f3da29425fb0b32b6c27e4"
+    },
+    "src/third_party/flac": {
+      "commit": "e7108e2ed031547c3759217819a032065c820d73",
+      "tree": "cddb1ba751aa8a0d082f552d5dbb9779d2bd614b"
+    },
+    "src/third_party/flatbuffers/src": {
+      "commit": "a86afae9399bbe631d1ea0783f8816e780e236cc",
+      "tree": "f2c86deb747b9b579c4b4cc08e83ea065bb4031a"
+    },
+    "src/third_party/fp16/src": {
+      "commit": "782eea126dc5c755827be751a099eb01826175cf",
+      "tree": "e27b4cdd20d6f95e62ccb2fe446fc3a566943105"
+    },
+    "src/third_party/freetype/src": {
+      "commit": "891f904e2e7b4289f615598cd4b69832f87d2f3a",
+      "tree": "827919ae864cd7e890d106d85a3a8b08bf560f79"
+    },
+    "src/third_party/fuzztest/src": {
+      "commit": "7a8e9056de2a4f745082a4b3861a67ada47ced36",
+      "tree": "069dacca6bf85462edddbe7119a39eb6646a4929"
+    },
+    "src/third_party/fxdiv/src": {
+      "commit": "63058eff77e11aa15bf531df5dd34395ec3017c8",
+      "tree": "f49cdff6b7a861d0097471edcca842fe685477c0"
+    },
+    "src/third_party/gemmlowp/src": {
+      "commit": "16e8662c34917be0065110bfcd9cc27d30f52fdf",
+      "tree": "c624d80dca3991dceaebb120b9659c73e273baaa"
+    },
+    "src/third_party/glslang/src": {
+      "commit": "2ff6f609379ce43c4291c732cf6a19dd2461a680",
+      "tree": "c5ad187d54286dfde0dcb359b7ed77dd9981b8ba"
+    },
+    "src/third_party/google_benchmark/src": {
+      "commit": "8abf1e701fbd88c8170f48fe0558247e2e5f8e7d",
+      "tree": "690d67cf043f30e8931ad205811d693ea84aac76"
+    },
+    "src/third_party/googletest/src": {
+      "commit": "4fe3307fb2d9f86d19777c7eb0e4809e9694dde7",
+      "tree": "feafbf9cf5deeb64dbe983f5574cb50f96fc330b"
+    },
+    "src/third_party/harfbuzz/src": {
+      "commit": "f5efbbef3841bdcdc6427bde7c2971f62ac8c8f1",
+      "tree": "a269e4dad2ae6136d9858ca2b4d33ba0e7394f14"
+    },
+    "src/third_party/highway/src": {
+      "commit": "2607d3b5b0113992fe84d3848859eae13b3b52c1",
+      "tree": "e240dc0bc54afd953256adbe67eb2f267beb9d86"
+    },
+    "src/third_party/hunspell_dictionaries": {
+      "commit": "cee14e319bb7603a1157bb4d1e216be64ee82b77",
+      "tree": "6821a117eb90edd8ff6ed67e5cf7bd72e2b5ee54"
+    },
+    "src/third_party/icu": {
+      "commit": "2a51536dfb3b448bdf3dae70c782ea2879c90904",
+      "tree": "17a90a2720823af2e72e402599443c47af681fb7"
+    },
+    "src/third_party/ink/src": {
+      "commit": "1d5a871aefe0a401685cd4388b9b92f9b1c5cadb",
+      "tree": "30e15d795698acc3a986d514ad180b82fdc61efd"
+    },
+    "src/third_party/jetstream/main": {
+      "commit": "c603c04db8505477867974a69789309ded2cc948",
+      "tree": "ab1b4b65de3f32f1b09d6cebbd64e88f1e6e8c83"
+    },
+    "src/third_party/jetstream/v2.2": {
+      "commit": "2145cedef4ca2777b792cb0059d3400ee2a6153c",
+      "tree": "930555fc6e0eb09fe2fd9abb65f3d8a1089bd35d"
+    },
+    "src/third_party/jetstream/v3.0": {
+      "commit": "06785cf861ac44855f168cbbe829278c2802e6de",
+      "tree": "023523cf8b77355d7a4a7d9d2756c231ad9da59a"
+    },
+    "src/third_party/jsoncpp/source": {
+      "commit": "3347a4b86bb914cb565f0cbda19c06e109513300",
+      "tree": "dbdbdbc62ff88cd8931550391255f311cc4a3b0d"
+    },
+    "src/third_party/leveldatabase/src": {
+      "commit": "7ee830d02b623e8ffe0b95d59a74db1e58da04c5",
+      "tree": "3da4be7481faec7a2103432e0ed8f0aeaa00cc3a"
+    },
+    "src/third_party/libFuzzer/src": {
+      "commit": "9951014982324338ea932dfdba259aeb1cca70f7",
+      "tree": "e76e65c04908c5be08da8fef2618a1a8612dd06c"
+    },
+    "src/third_party/libaddressinput/src": {
+      "commit": "81eb9628382b07d371d8ea0b11badf7de3857fd5",
+      "tree": "1351c2638167158e4d2c856be300c276a07725fa"
+    },
+    "src/third_party/libaom/source/libaom": {
+      "commit": "016144ea8b8b84b9cfa1c3fba56227b2d3471229",
+      "tree": "2276e2893edd7a7f0b1d4ecf721895bd3924292b"
+    },
+    "src/third_party/libc++/src": {
+      "commit": "97b436da4c33663581d394f4ee0a5977fc38c2f4",
+      "tree": "62dc2ce1ba43e63d8224ab63ffc9afab8ac61823"
+    },
+    "src/third_party/libc++abi/src": {
+      "commit": "127292c11d332549ba1e0aebcece6d4c91de9239",
+      "tree": "1a448798c06e65aa8eada832542918fdbd757be8"
+    },
+    "src/third_party/libgav1/src": {
+      "commit": "085032331f60c10055d32ab52932bd7bd77e6f53",
+      "tree": "6abb2fff8bf189fac44ec9df53e0095b21685cbb"
+    },
+    "src/third_party/libjpeg_turbo": {
+      "commit": "640f254ad0fa03f6b1f29f89b7dd9366f2f6e533",
+      "tree": "cddc4a33897ebf52326f564a2ec1cc9dd09f3b50"
+    },
+    "src/third_party/libpfm4/src": {
+      "commit": "995ad37079531b7c3a98cbd164b7619f3b0adc0d",
+      "tree": "8fe2f16d49628cdfcb71eef1e770f29437cc0a74"
+    },
+    "src/third_party/libphonenumber/src": {
+      "commit": "0ae309f1940227efe688f5eb1815ef45a6fbee8d",
+      "tree": "49e4be99bd9e423d80ec0a5f56df74afe1907abf"
+    },
+    "src/third_party/libprotobuf-mutator/src": {
+      "commit": "c1c950eae0440c3808f2b8bd7c57d0c6a42c1a90",
+      "tree": "566c07ef5b9dca715e4075fc7de33dc823d8c0a9"
+    },
+    "src/third_party/libsrtp": {
+      "commit": "cd5d177bf1fde755ddb4c7f0d9ff7693f8b49e5e",
+      "tree": "cdeae421122fcd9a29170d3274172fc71a1ee4aa"
+    },
+    "src/third_party/libunwind/src": {
+      "commit": "8d41badfccd4bc7dfd17817f65217f2868d69be8",
+      "tree": "c3f031407d6e1828b31836e5b8ad02a524086c99"
+    },
+    "src/third_party/libva-fake-driver/src": {
+      "commit": "04f902b9ba9f8083b19d22e7b55591bbcaae31c0",
+      "tree": "2f4046826335833d67b5b6afc3837e66776e3874"
+    },
+    "src/third_party/libvpx/source/libvpx": {
+      "commit": "de61454cf81594d5927899da122fc53dcc4a846e",
+      "tree": "9c0e4fe813f083d3fbd1be24569c8422c02fa591"
+    },
+    "src/third_party/libwebm/source": {
+      "commit": "6184f4484a826724b5293837134ab9492261b941",
+      "tree": "a4e3ca686b245d3bb6c7e50708a25f2115048805"
+    },
+    "src/third_party/libwebp/src": {
+      "commit": "b43b2caa710c0c997c066cb32c7fea1391fad70a",
+      "tree": "3657c37b75d659dc69aa2f13da5c68f5270fddb8"
+    },
+    "src/third_party/libyuv": {
+      "commit": "f1c9b5898619f2ced836030c023249f5a8b189d1",
+      "tree": "954fd96ebb2d643487d5dda6936e4a42eb49bdd2"
+    },
+    "src/third_party/litert/src": {
+      "commit": "4dac1538b76bc20bb7f2ba314bcc89dc57c0ee2b",
+      "tree": "9e30fb3b26c362720df30fb308b2b73cffdc04f2"
+    },
+    "src/third_party/llvm-libc/src": {
+      "commit": "b8b28272d32b75f0ee71acd2fa1144c8b5b95460",
+      "tree": "ef18c625d2b3681a486ba3981982e93b30587d24"
+    },
+    "src/third_party/mac_alias/src": {
+      "commit": "d0c076b4562541c1509d9874f42880378245d268",
+      "tree": "e4b2fe5284bfa7aa92f33a466da2eed74aaf1071"
+    },
+    "src/third_party/material_color_utilities/src": {
+      "commit": "5b3618b16fdc3825e21d5679bafd144662088ea1",
+      "tree": "559dfd208966831b860483723d96357857f9a4e8"
+    },
+    "src/third_party/nasm": {
+      "commit": "525a09a813be0f75b646ee93fc2a31c27b87d722",
+      "tree": "d6d4d137fd4e885d7efe55b38308c7b0b4495784"
+    },
+    "src/third_party/nearby/src": {
+      "commit": "0bad8b0c9877f92eeeb550654f1ea51a71a085e4",
+      "tree": "bdd866e24e88a86213d49138890f9d2b48f73bbd"
+    },
+    "src/third_party/neon_2_sse/src": {
+      "commit": "183fc88bcb90dbfaefba33a292eae8a5ce94bd67",
+      "tree": "2abc9a65ae1ec3e622b88d90f642e0db4e7c1669"
+    },
+    "src/third_party/nlohmann_json/src": {
+      "commit": "55f93686c01528224f448c19128836e7df245f72",
+      "tree": "1eb780542e829bf1615828ed0d5f407497bbce7b"
+    },
+    "src/third_party/oak/src": {
+      "commit": "14031232cec7d3d454e89bbae36404d74abf18dc",
+      "tree": "799f498e6e73a2547a2f5f0734c4ceee548faa69"
+    },
+    "src/third_party/openh264/src": {
+      "commit": "9547f96ea5c47f4d465d97b07264b997ecc4b4b6",
+      "tree": "0c7cd6faa82b7cfaa625348295b9b113476b9cc5"
+    },
+    "src/third_party/openscreen/src": {
+      "commit": "a515d3a249e7411fa251a27125815a06a2d73862",
+      "tree": "3ff096fa4039ede51390862226fb5f5f16d2307e"
+    },
+    "src/third_party/openscreen/src/buildtools": {
+      "commit": "4277578aa9c45906e51ad33cac1a5a7ad5288010",
+      "tree": "2e71f80b3639795aa6ba2b37873c22dbc9e46f80"
+    },
+    "src/third_party/openscreen/src/third_party/tinycbor/src": {
+      "commit": "bac6648fed8c0ff3d34616e4fff7cdcca634a18e",
+      "tree": "319186d65ab3e6aeed27ee3560d0a6d4512a25b3"
+    },
+    "src/third_party/ots/src": {
+      "commit": "46bea9879127d0ff1c6601b078e2ce98e83fcd33",
+      "tree": "909e6e11351cbdb62e08e6d758b7901470d3b4d7"
+    },
+    "src/third_party/pdfium": {
+      "commit": "c97f02a3519c99d5969514970fd8186318cdb2b0",
+      "tree": "9498db7cf9ae0428d9cd52d1284345ca88945a19"
+    },
+    "src/third_party/perfetto": {
+      "commit": "403906f4adfbf287a02e5546f8430dcc9d56b649",
+      "tree": "552f108c09b493452eb9ccd53041511d9bb446d0"
+    },
+    "src/third_party/protobuf-javascript/src": {
+      "commit": "e6d763860001ba1a76a63adcff5efb12b1c96024",
+      "tree": "959213c9a64a13d0b05babb914396796bf2238ff"
+    },
+    "src/third_party/pthreadpool/src": {
+      "commit": "15a6644ba1c45f1acc16ac1e883efc3e56c6bed2",
+      "tree": "504170c5313d497a5f01949589b15fec170c9f6d"
+    },
+    "src/third_party/pywebsocket3/src": {
+      "commit": "139224e0d71db84fe1922601cb92ec8c8f3885ba",
+      "tree": "09936fb60e012e6e2875ae83ec40b02c16458be0"
+    },
+    "src/third_party/quic_trace/src": {
+      "commit": "6ecf6aa8e604655f1dfa72c4a1ae733c4c7fc883",
+      "tree": "64edfdfe05a8ffa4a3f99836f84290058018758f"
+    },
+    "src/third_party/re2/src": {
+      "commit": "972a15cedd008d846f1a39b2e88ce48d7f166cbd",
+      "tree": "c32c4a66c2376aa0b32d6313346dd0e41dabe93d"
+    },
+    "src/third_party/readability/src": {
+      "commit": "d7949dc47dd9ed9ee1d3b34ffdcf3bce28cde435",
+      "tree": "7f36618f5faf1150e9fdd9c0022da902718744e8"
+    },
+    "src/third_party/ruy/src": {
+      "commit": "2264753777198e4393fb83c44c693462d57a2be1",
+      "tree": "8cc8ca1193f2a36ccb9e017cbcf1af91dc32fdb3"
+    },
+    "src/third_party/search_engines_data/resources": {
+      "commit": "5dc9f1afd38a8ac2b26b1972eb4fc1bbd5754e8c",
+      "tree": "d730002eeda3425fe70c59aedffa9942888128d8"
+    },
+    "src/third_party/securemessage/src": {
+      "commit": "fa07beb12babc3b25e0c5b1f38c16aa8cb6b8f84",
+      "tree": "f2bd58038b22308a37aaa253a4bfd892722242ff"
+    },
+    "src/third_party/sframe/src": {
+      "commit": "6a37f061f4eda0c6594c91ecf99b5ff498c8c124",
+      "tree": "278eede2936a4fdffc863f6f7c160f388f5a0518"
+    },
+    "src/third_party/skia": {
+      "commit": "aa789d9bd566b9865add4070dc6777b3266c64e9",
+      "tree": "13a86268b721dbe466da1bc5fa753d1a4dd301ea"
+    },
+    "src/third_party/smhasher/src": {
+      "commit": "07bb4de10a63e8cc2e1724865454eba635742383",
+      "tree": "5aa7692cf9dca961047cffc4ba62b0db98364940"
+    },
+    "src/third_party/snappy/src": {
+      "commit": "32ded457c0b1fe78ceb8397632c416568d6714a0",
+      "tree": "b7e02e09ad4a56bdaf5b4117f88f9214dae47700"
+    },
+    "src/third_party/speedometer/main": {
+      "commit": "f866d2b077038bc85bea5edb7bff8e05cadef0b2",
+      "tree": "510e6bd79bd5e94f3cc680dd9030e85d2e981b91"
+    },
+    "src/third_party/speedometer/v2.0": {
+      "commit": "732af0dfe867f8815e662ac637357e55f285dbbb",
+      "tree": "c4cab3f929d3c5a8cb27451e72af430f3e27c7c6"
+    },
+    "src/third_party/speedometer/v2.1": {
+      "commit": "8bf7946e39e47c875c00767177197aea5727e84a",
+      "tree": "b6a5767d6625e59c3d25186166a9e47015bf7e8d"
+    },
+    "src/third_party/speedometer/v3.0": {
+      "commit": "8d67f28d0281ac4330f283495b7f48286654ad7d",
+      "tree": "32bc885fc0b2e36018ff660bdca34e53a72e1b95"
+    },
+    "src/third_party/speedometer/v3.1": {
+      "commit": "1386415be8fef2f6b6bbdbe1828872471c5d802a",
+      "tree": "d6839bc6f5a239b0dc1c18b419024a27ba5a1fb9"
+    },
+    "src/third_party/spirv-cross/src": {
+      "commit": "b8fcf307f1f347089e3c46eb4451d27f32ebc8d3",
+      "tree": "5ebe6c14e72f2d401c56421f7b2a73e8c691ee0d"
+    },
+    "src/third_party/spirv-headers/src": {
+      "commit": "cb42dec3830d3ac67fa449ecdc0c0f73d5e74498",
+      "tree": "1e1f5974d8b3ed73a937d5e43506b1fd3233aff3"
+    },
+    "src/third_party/spirv-tools/src": {
+      "commit": "1d0401cd2b68ae34cda9ff625bedd1be4ed6214a",
+      "tree": "1301796f8bcd51a73ef850720f2f05ad5e53811f"
+    },
+    "src/third_party/sqlite/src": {
+      "commit": "ba8c54c83337618a9f15dd368a267e46b672fc84",
+      "tree": "429c2a7b166252717760fe0cd5379e314f4187d2"
+    },
+    "src/third_party/swiftshader": {
+      "commit": "1e80438d2b93ef36a7c05f8d2b81233bac0e3d16",
+      "tree": "e40334ce754d4845073c34a6ab9fa9907c9f7414"
+    },
+    "src/third_party/text-fragments-polyfill/src": {
+      "commit": "abc6ed408b3f20e91d9cbda9977748459f5e3877",
+      "tree": "ce521686cebf9ad1a078f3a8afe81f431a858354"
+    },
+    "src/third_party/tflite/src": {
+      "commit": "9edd58f895c58c3db484a9e39ab2e953baca4bca",
+      "tree": "5099044ada9822c26c16acb1462b66b3c5615a27"
+    },
+    "src/third_party/ukey2/src": {
+      "commit": "0275885d8e6038c39b8a8ca55e75d1d4d1727f47",
+      "tree": "d2da3a87e6558cde2cd3a66fa8f6bc5db7e76401"
+    },
+    "src/third_party/vulkan-deps": {
+      "commit": "f86e6c66b639c9a6b24640218931d30a9b0f1e3e",
+      "tree": "346e172aba629f461b2aea250eb8adab6701e78b"
+    },
+    "src/third_party/vulkan-headers/src": {
+      "commit": "3c65a01745e4a1134d32b9c2c456472212dba16d",
+      "tree": "51743b573333c0bdc801552bbe10cd4c6dc45402"
+    },
+    "src/third_party/vulkan-loader/src": {
+      "commit": "3270cf8a1349306f0ddee1b500ee2b0d552e1c82",
+      "tree": "73c4e8afc00bbf905ae93535751b34d7d524e999"
+    },
+    "src/third_party/vulkan-tools/src": {
+      "commit": "69ca4d4b6590ab32e7a398725bfc90f81e6338e6",
+      "tree": "9dccb5eb21a299cd7ef1a72c2bb138090e690b72"
+    },
+    "src/third_party/vulkan-utility-libraries/src": {
+      "commit": "666fdaa0f87b9d49ae576473227b4b4cf428ba7e",
+      "tree": "e22123505c1910be3c97358ae35f87ddf2cacd03"
+    },
+    "src/third_party/vulkan-validation-layers/src": {
+      "commit": "b0688753f1fc04a382ef0fd8c46ecb5a7c91486c",
+      "tree": "496a01309c000b1295fd2e3b00fa19c1ccc93a42"
+    },
+    "src/third_party/vulkan_memory_allocator": {
+      "commit": "82a9d47e4f9d91f0e32d2b6acd9714fcee1933a0",
+      "tree": "9668073a3157a4b4a3fbf21170365ed461fdf80d"
+    },
+    "src/third_party/webdriver/pylib": {
+      "commit": "1e954903022e9386b9acf452c24f4458dd4c4fc1",
+      "tree": "dc61faf2cc441dd4cff2bb246451d398ae148559"
+    },
+    "src/third_party/webgl/src": {
+      "commit": "714857a28445e8f5d8d6ae1c78498578009534d8",
+      "tree": "73ece97a12c117d172ac284e047886f4d84be8b5"
+    },
+    "src/third_party/webgpu-cts/src": {
+      "commit": "a5e5d7440fa036b74ea13c3c5cb6b618a3c884e9",
+      "tree": "e115610a781cec5f02e000a9ee35c74beb143045"
+    },
+    "src/third_party/webpagereplay": {
+      "commit": "219ee9a2bb0d0d1440832a0e1d44716833da1ff3",
+      "tree": "079ac09f90d1390d54accbb679dc0d0d2301d8f8"
+    },
+    "src/third_party/webpagereplay/third_party/clang-format/script": {
+      "commit": "9f796802e5d633c96dbe97e0b6683d5e62594f9f",
+      "tree": "5f33aa6fa9d255066a8d13ed0135ae5ac67c75a6"
+    },
+    "src/third_party/webrtc": {
+      "commit": "19576e37870bfe5a0a910a32f98ff411f722f43a",
+      "tree": "9219268c49d9c98570f4f1e6d9c99cc76243c8a0"
+    },
+    "src/third_party/wuffs/src": {
+      "commit": "7411f488fe2e2c205c3d3b3d28638b7356522930",
+      "tree": "535c20875e1845cd04718e27b6a34ae84e2d5328"
+    },
+    "src/third_party/xnnpack/src": {
+      "commit": "b6d54fe94520ee6e1181ca1b402f71dbb5d50efa",
+      "tree": "196c79913d6836e5536e83db9fa39e5cc743c42a"
+    },
+    "src/third_party/zstd/src": {
+      "commit": "10da6ba6de05e29169261fa4b68eb99239f770dd",
+      "tree": "56c90e128bb222bcfb2d68d892f90636e45dacd5"
+    },
+    "src/v8": {
+      "commit": "c9b3cfcab30ace06c21f9b48a0f0a34805e81e9d",
+      "tree": "bbe5364f583d45c0a0fdb651f188600fc0de47d3"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "status": "PRIVATE_V222_SOURCE_OFFER_AND_PRESIGN_BINDING_VERIFIED",
+  "sourceCommit": "3d999c55efee7b51d6e809debd3e1f51c0d40898",
+  "archiveSHA256": "105162a26825a869d661ae0540f63b6e1fefa30fef48bf71c1a3269adf4dcbf7",
+  "trackedArchiveFilesMatched": 2730,
+  "extractedTreeCheck": "PASS 2730",
+  "scanner": "2413 prior classified finding keys, no new keys; manager source only",
+  "scanReportSHA256": "35712c7ba29ad1931cba14e7ba5cdaa29902ac7e738d8851686bedb15891fe5f",
+  "offer": "/private/tmp/neantik-release-v1/dist/private/source-offers/v222-public-source-offer-draft",
+  "offerManifestSHA256": "3780fc11936c81540bc2b46da0138b12342167153187c3182b6b0e48770a8e3e",
+  "componentsVerified": 537,
+  "overlayAssetsVerified": 64,
+  "knownPinnedPreflight": "PASS; complete build inputs and recipient relink remain open",
+  "presignDraft": "/private/tmp/neantik-release-v1/dist/private/neantik-v223-v135-presign-source-image-binding-draft.json",
+  "presignDraftSHA256": "f32547478c9f8673f5ef6b9fead8a8c6b0be25419ff28f58b35e64b4aa16deb8",
+  "checker": "PASS; 14 build outputs, 16 staged images, 9 evidence receipts, 8 partial notice groups",
+  "limitations": [
+    "not candidate-bound; original and new runtime images differ",
+    "source/license completeness, secure timestamp, signed recipient load and proxy QA remain open",
+    "not a release qualification"
+  ],
+  "releaseQualified": false
+}

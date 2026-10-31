@@ -1,0 +1,23 @@
+{
+  "baseSnapshotSHA256": "968a8637ed86af782e610b64fec8e5c972ff0d58306fcac377b82e24f16c07ef",
+  "files": [
+    {
+      "patchSHA256": "ac580b7fa38575580269e917bdc491c18a712ae667d4e91147af865ae1388fa1",
+      "postimageSHA256": "2be31380d7db1ba440d46c64905b52faed3e501027a247b6145883fbc7a0da88",
+      "preimageSHA256": "c7075f21c5e6f775a065d0d510a8536293f4d30729ecdac8c6496864677d82c8",
+      "sourcePath": "content/browser/client_hints/client_hints.cc"
+    },
+    {
+      "patchSHA256": "ec258437e41b36fa2b6ac65ca3342d4be7bebe46c4e33536fc8442c31f295620",
+      "postimageSHA256": "a5f947773c91771b488bf7102454e20f74a2367575b4a5ed683ba1df7c4612c7",
+      "preimageSHA256": "c06e26367ea60d49001384ea71de202f9bbe8ff513f025379ae8090a7b42f1b0",
+      "sourcePath": "third_party/blink/renderer/core/loader/frame_fetch_context.cc"
+    }
+  ],
+  "policy": "Bound source correction only; runtime behavior, signing, notarization and hosted release require separate evidence.",
+  "postSnapshotSHA256": "f930cc91ad03df8f3698c84b26ac3f4c57db0482e3ce54ba85ed9912ed5a0b5f",
+  "releaseReady": false,
+  "schemaVersion": 2,
+  "status": "two-file-source-hotfix",
+  "transitionSHA256": "b62a2748dda23a35d71cbffbb195022444c1c88b0b026965ce0736002fea3352"
+}

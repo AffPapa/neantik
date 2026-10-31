@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T15:30:28Z",
+  "scope": "Row-specific source-history and notice review of the seven WebCore generated inputs with no recognized leading license header; no build, product mutation, source-offer mutation, or publication.",
+  "sourceBinding": {
+    "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "patchedSourceSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "sourceRoot": "/private/tmp/neantik-v20-production-rebuild/WebKit",
+    "prior36InputHashesRevalidated": true,
+    "allSevenCurrentHashesMatch": true,
+    "sevenInputHashes": {
+      "Source/WebCore/css/CSSProperties.json": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343",
+      "Source/WebCore/css/CSSValueKeywords.in": "fa5b9337b00c1acadacfd9ce5da60b234ee1a0a74e5be6fcebe93ce266f9621d",
+      "Source/WebCore/css/SVGCSSValueKeywords.in": "bf79271aa57cb8f68425b767ea9c3be8ef00bf8f7ef6a29add484d04bdd38ef4",
+      "Source/WebCore/css/popover.css": "0c46fec1026f3c6b9b2fa90724cf12c39b3a8628857a30675f39e4f14f6a62a6",
+      "Source/WebCore/html/shadow/meterElementShadow.css": "05fb0074aa91ca58ac5de909d0f3e4e3dcb2e7b3d82ebf5af0e4c2d99fa6f9c9",
+      "Source/WebCore/platform/ColorData.gperf": "dc1f82bbdc6090f232b5aabd9a86eacb44df1dd23e6f68f4e08e0b378ee8836d",
+      "WebKitBuild/neantik-v20-production-arm64/DerivedSources/platform-feature-defines.txt": "64f8297fe907ea66889189df9d8b55f278ea3bf0eb9dcd013859c30ffd603249"
+    }
+  },
+  "sourcePolicy": {
+    "url": "https://docs.webkit.org/Other/Licensing.html",
+    "rule": "WebKit says new code uses BSD-2-Clause; inherited KHTML code may be LGPL; moved files retain their original copyright/license; policy alone cannot classify legacy files without provenance."
+  },
+  "existingNoticeCoverage": {
+    "headerBundle": {
+      "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/notices/webcore/WebCore-GENERATED-INPUT-HEADERS.txt",
+      "sha256": "94c29d9a04ff8d1a3090d5bd63a2b6990189f1695ec7ba302b8130e920aa9468",
+      "contains": "Source/WebCore/css/html.css leading copyright/license header with Lars Knoll and Apple notices; the exact pinned source hash is recorded in the bundle."
+    },
+    "lgplText": {
+      "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/notices/webcore/WebCore-LICENSE-LGPL-2.txt",
+      "sha256": "7555fa34bc131a75ca56d65c40cc1ea8f9515d23e353d4c15d58573a042f7805",
+      "presentInManifest": true
+    },
+    "appleLicense": {
+      "path": "Source/WebCore/LICENSE-APPLE",
+      "sha256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+      "terms": "BSD-2-Clause text; source-offer archive includes upstream source."
+    },
+    "sourceOfferManifest": {
+      "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/manifest.json",
+      "sha256": "8cd91c3f9222d061183f0380e2b07569627903296be2744f52997340ef0bb3fa"
+    },
+    "noticeScope": "These files exist in the current private source-offer candidate; this review does not amend their manifest or qualify the offer."
+  },
+  "reviewedInputs": [
+    {
+      "path": "Source/WebCore/html/shadow/meterElementShadow.css",
+      "sha256": "05fb0074aa91ca58ac5de909d0f3e4e3dcb2e7b3d82ebf5af0e4c2d99fa6f9c9",
+      "lineage": "Introduced as a new file by 57724d207e75aa94ffead8dc4d8f9b13e1bf0501 (2016-10-13), while the same change extracted the HTML meter UA style rules from Source/WebCore/css/html.css into this stylesheet. Historical source rules match the selectors/declarations; shared height/box-sizing declarations were factored into the new base selector. The source html.css header says Copyright (C) 2000 Lars Knoll and Copyright (C) 2003-2011, 2014 Apple Inc., LGPL-2.0-or-later. Later stylesheet edits are new WebKit contributions governed by the BSD-2 policy.",
+      "disposition": "LGPL-2.0-or-later inherited content plus applicable BSD-2 notice for later contributions; current source-offer candidate already contains the html.css header, LGPL text, and WebCore LICENSE-APPLE. Provenance/notice coverage supported; not a legal opinion.",
+      "upstreamCommit": "https://github.com/WebKit/WebKit/commit/57724d207e75aa94ffead8dc4d8f9b13e1bf0501",
+      "sourceHash": "3a1fd55b5ef15a401ab288f3c23cf504bab95d14be7a10e5330fb348fb13b578"
+    },
+    {
+      "path": "Source/WebCore/css/popover.css",
+      "sha256": "0c46fec1026f3c6b9b2fa90724cf12c39b3a8628857a30675f39e4f14f6a62a6",
+      "lineage": "First added as a new file in d4485d2afa7b018f2b75f15c2050e3b94971881d (2023-02-11), author Tim Nguyen (Apple); no file header.",
+      "disposition": "BSD-2-Clause terms follow WebKit new-code policy. Per-file copyright attribution remains open: upstream licensing documentation asks contributors to update the copyright date, but this file and its addition do not state a copyright line. Do not invent one.",
+      "upstreamCommit": "https://github.com/WebKit/WebKit/commit/d4485d2afa7b018f2b75f15c2050e3b94971881d"
+    },
+    {
+      "path": "WebKitBuild/neantik-v20-production-arm64/DerivedSources/platform-feature-defines.txt",
+      "sha256": "64f8297fe907ea66889189df9d8b55f278ea3bf0eb9dcd013859c30ffd603249",
+      "lineage": "Generated build-tree metadata. Source/cmake/OptionsCocoa.cmake points WEBKIT_PLATFORM_FEATURE_DEFINES_FILE at this output; WebKitMacros.cmake generates it by preprocessing Source/WTF/wtf/Platform.h and collecting truthy feature names.",
+      "disposition": "No independent third-party source or per-file notice; treat as generated build configuration, not a separately licensed upstream component. Its source generator/configuration is present in the full source archive and build recipe.",
+      "generatorHashes": {
+        "Source/cmake/OptionsCocoa.cmake": "de1d7071ad56f151aa1d8044dfe51eaa241bcafff8646b9af8cd5505cc88e272",
+        "Source/cmake/WebKitMacros.cmake": "95af9fa56a11c1108fc0c7544cef0952c337190737ed70afe44736250e62cbc4"
+      }
+    },
+    {
+      "path": "Source/WebCore/css/CSSProperties.json",
+      "sha256": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343",
+      "lineage": "Created by e3191baa3d42b9c15fa44c7b7ea21726a64ce968 (2016-11-28) as replacement for the pre-existing CSSPropertyNames.in input. This is a conversion, not evidence of newly authored underlying property data; old input has no recognized license header.",
+      "disposition": "UNKNOWN: exact applicable terms and copyright holder not established.",
+      "upstreamCommit": "https://github.com/WebKit/WebKit/commit/e3191baa3d42b9c15fa44c7b7ea21726a64ce968"
+    },
+    {
+      "path": "Source/WebCore/css/CSSValueKeywords.in",
+      "sha256": "fa5b9337b00c1acadacfd9ce5da60b234ee1a0a74e5be6fcebe93ce266f9621d",
+      "lineage": "100%-similarity rename from WebCore/css/cssvalues.in in 621f9cebf499307403af4fb00193e77cad1dcf39 (2006-03-20); legacy file predates the rename and contains KHTML-specific entries.",
+      "disposition": "UNKNOWN: KHTML-era provenance is plausible, but the evidence does not assign exact file-level rights/notice to the complete current file.",
+      "upstreamCommit": "https://github.com/WebKit/WebKit/commit/621f9cebf499307403af4fb00193e77cad1dcf39"
+    },
+    {
+      "path": "Source/WebCore/css/SVGCSSValueKeywords.in",
+      "sha256": "bf79271aa57cb8f68425b767ea9c3be8ef00bf8f7ef6a29add484d04bdd38ef4",
+      "lineage": "Moved with 100%-similarity from WebCore/ksvg2/css/SVGCSSValueKeywords.in in f21933ab8d8e07f1ca52d0962f9cea643cae6842 (2007-11-30); file existed before move.",
+      "disposition": "UNKNOWN: KSVG2 lineage is established; exact file-level license and copyright notice are not.",
+      "upstreamCommit": "https://github.com/WebKit/WebKit/commit/f21933ab8d8e07f1ca52d0962f9cea643cae6842"
+    },
+    {
+      "path": "Source/WebCore/platform/ColorData.gperf",
+      "sha256": "dc1f82bbdc6090f232b5aabd9a86eacb44df1dd23e6f68f4e08e0b378ee8836d",
+      "lineage": "Moved with 98%-similarity from WebCore/kwq/KWQColorData.gperf in a979f925f49f2be0ff588dab5c254f8d2577abbc (2006-01-25); source predates move and has no recognized header.",
+      "disposition": "UNKNOWN: Qt-port data lineage is established; exact file-level license and copyright notice are not.",
+      "upstreamCommit": "https://github.com/WebKit/WebKit/commit/a979f925f49f2be0ff588dab5c254f8d2577abbc"
+    }
+  ],
+  "tallies": {
+    "inputsReviewed": 7,
+    "historicalTermsUnknown": 4,
+    "newCodeTermsKnownButCopyrightNoticeOpen": 1,
+    "generatedBuildMetadataNotIndependentlyLicensed": 1,
+    "derivedLicenseAndNoticeCoverageEstablished": 1,
+    "leadingHeadersAbsent": 7
+  },
+  "releaseImpact": {
+    "worksheetUnknownDecisions": 82,
+    "worksheetStatus": "unchanged; this source-level evidence does not close the WebCore runtime image row or any image/resource decision",
+    "releaseQualified": false,
+    "recipientReplacementRelinkPreflight": "still open"
+  },
+  "next": "Resolve exact rights/copyright for four legacy data inputs; obtain/derive a supported per-file copyright notice for popover.css or replace it with a licensed alternative; then continue 32 JSC inputs and image/resource review."
+}

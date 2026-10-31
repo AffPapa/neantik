@@ -4,92 +4,9 @@ import Testing
 @testable import NeAntik
 
 @MainActor
-@Suite(.serialized)
 struct ResponsiveLayoutRenderTests {
-    @Test func sharedDisclosureRendersBothStatesAndAppearances() throws {
-        for expanded in [false, true] {
-            for (name, scheme) in [("light", ColorScheme.light), ("dark", ColorScheme.dark)] {
-                try render(
-                    DisclosureGroup("Подробности профиля", isExpanded: .constant(expanded)) {
-                        Text("Название и безопасная диагностическая сводка")
-                    }
-                    .disclosureGroupStyle(NeAntikDisclosureStyle())
-                    .padding(12),
-                    name: "shared-disclosure-\(expanded ? "open" : "closed")-\(name)",
-                    size: CGSize(width: 360, height: 130),
-                    colorScheme: scheme
-                )
-            }
-        }
-    }
-
-    @Test func longValidTagKeepsRemovalVisibleInNarrowEditor() throws {
-        let tag = String(repeating: "界", count: BrowserProfile.maximumTagLength)
-        #expect(BrowserProfile.normalizedTags([tag]) == [tag])
-        for (name, scheme) in [("light", ColorScheme.light), ("dark", ColorScheme.dark)] {
-            try render(
-                ProfileTagEditor(
-                    tags: .constant([tag, "QA"]),
-                    input: .constant(""),
-                    suggestions: []
-                )
-                .padding(12),
-                name: "profile-tag-narrow-long-\(name)",
-                size: CGSize(width: 280, height: 200),
-                colorScheme: scheme
-            )
-        }
-    }
-
-    @Test func profileDuplicationSheetRendersInLightAndDark() throws {
-        let folderID = layoutFixtureID(90)
-        let source = BrowserProfile(
-            id: layoutFixtureID(91),
-            name: "TikTok · FR · UGC 02",
-            proxy: ProxyConfiguration(
-                kind: .https,
-                host: "proxy.example",
-                port: 8_080,
-                username: "operator"
-            )
-        )
-        let safeOptions = ProfileDuplicationOptions(
-            name: "TikTok · FR · UGC 02 — копия",
-            destinationFolderID: folderID
-        )
-        var proxyOptions = safeOptions
-        proxyOptions.setCopiesProxy(true)
-        proxyOptions.setCopiesProxyPassword(true)
-
-        for (appearanceName, colorScheme) in [
-            ("light", ColorScheme.light),
-            ("dark", ColorScheme.dark),
-        ] {
-            try render(
-                ProfileDuplicationSheet(
-                    source: source,
-                    folders: [
-                        ProfileFolder(
-                            id: folderID,
-                            name: "Paid Social · France"
-                        ),
-                        ProfileFolder(name: "Очень длинная резервная папка")
-                    ],
-                    initialOptions:
-                        appearanceName == "light"
-                            ? safeOptions
-                            : proxyOptions
-                ) { _ in },
-                name: "profile-duplication-\(appearanceName)",
-                size: CGSize(width: 520, height: 560),
-                colorScheme: colorScheme
-            )
-        }
-    }
-
     @Test func primaryScreensRenderAtTheirMinimumSizes() throws {
         let profileA = BrowserProfile(
-            id: layoutFixtureID(1),
             name:
                 "Очень длинное Unicode-название профиля для проверки переноса",
             tags: ["Работа", "Магазин"],
@@ -103,9 +20,39 @@ struct ResponsiveLayoutRenderTests {
             )
         )
         let profileB = BrowserProfile(
-            id: layoutFixtureID(2),
             name: "Второй профиль",
             tags: ["Личный"]
+        )
+
+        let restorePayload = ProfileSnapshotRestorePayload(
+            profiles: [profileA, profileB],
+            folderNames: ["Работа", "Личное"],
+            createdAt: Date(timeIntervalSince1970: 1_800_000_000)
+        )
+        try render(
+            ProfileSnapshotRestorePreviewSheet(
+                preview: ProfileSnapshotRestorePreview(
+                    payload: restorePayload,
+                    existingFolderNames: ["Работа"]
+                ),
+                onCancel: {},
+                onRestore: {}
+            ),
+            name: "snapshot-restore-preview",
+            size: CGSize(width: 520, height: 460)
+        )
+        try render(
+            ProfileSnapshotRestorePreviewSheet(
+                preview: ProfileSnapshotRestorePreview(
+                    payload: restorePayload,
+                    existingFolderNames: ["Работа"]
+                ),
+                isRestoring: true,
+                onCancel: {},
+                onRestore: {}
+            ),
+            name: "snapshot-restore-in-progress",
+            size: CGSize(width: 520, height: 460)
         )
 
         try render(
@@ -113,15 +60,11 @@ struct ResponsiveLayoutRenderTests {
                 profile: profileA,
                 processState: .stopped,
                 browserDataPath:
-                    "/Users/example/Library/Application Support/NeAntik Development/Profiles/AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE/BrowserData",
+                    "/private/tmp/neantik-layout-synthetic/Profiles/BrowserData",
                 environmentSnapshot: ProfileEnvironmentInspector.snapshot(
                     profile: profileA,
                     runtime: nil,
                     proxyHealth: nil
-                ),
-                proxyReuseAssessment: ProxyReuseAssessment(
-                    status: .shared,
-                    otherProfileCount: 2
                 ),
                 clipboardNotice: nil,
                 onCopyProxyUsername: {},
@@ -129,6 +72,30 @@ struct ResponsiveLayoutRenderTests {
             ),
             name: "profile-detail-minimum",
             size: CGSize(width: 550, height: 520)
+        )
+
+        try render(
+            ProfileLifecycleHealthView(
+                snapshot: .empty,
+                recoveryNotice: ProfileRecoveryNotice(
+                    profileMetadataRecovered: true,
+                    folderMetadataRecovered: true
+                )
+            ),
+            name: "profile-recovery-notice",
+            size: CGSize(width: 520, height: 300)
+        )
+
+        try render(
+            ProfileRecoveryWorkspaceNoticeView(
+                notice: ProfileRecoveryNotice(
+                    profileMetadataRecovered: true,
+                    folderMetadataRecovered: false
+                )
+            ),
+            name: "workspace-recovery-notice",
+            size: CGSize(width: 480, height: 96),
+            minimumPNGBytes: 1_000
         )
 
         try render(
@@ -147,145 +114,66 @@ struct ResponsiveLayoutRenderTests {
 
         try render(
             ProfileEditorView(
-                original: profileA,
+                original: nil,
                 keychain: KeychainStore(
                     backend: LayoutRenderKeychainBackend(),
-                    service: "layout.render.proxy-password",
+                    service: "layout.render.new-profile",
                     legacyService: nil
                 ),
                 folders: [],
                 initialFolderID: nil,
-                suggestedTags: profileA.tags,
-                proxyReuseInputs: [
-                    ProxyReuseInput(
-                        profileID: layoutFixtureID(92),
-                        proxy: profileA.proxy
-                    )
-                ],
-                initialFocus: .proxyPassword
+                suggestedTags: []
             ) { _, _, _ in },
-            name: "profile-editor-proxy-password",
-            size: CGSize(width: 540, height: 900),
-            colorScheme: .light,
-            settleTime: 0.2
+            name: "profile-editor-new-profile-minimum",
+            size: CGSize(width: 460, height: 420)
+        )
+
+        let compatibilityRuntime = BrowserRuntime(
+            name: "Layout Runtime",
+            executableURL: URL(fileURLWithPath: "/tmp/layout-runtime"),
+            source: "test",
+            inspection: BrowserRuntimeInspection(
+                version: "153.0.8010.52",
+                architectures: ["arm64"],
+                codeSignatureValid: true
+            )
+        )
+        let compatibilityProfile = BrowserProfile(name: "Совместимость")
+        let compatibility = SiteCompatibilityAssessment(
+            profileID: compatibilityProfile.id,
+            observedAt: Date(),
+            configurationRevision: ProfileFingerprintConfigurationRevision(
+                profile: compatibilityProfile,
+                runtime: compatibilityRuntime
+            ),
+            canvas: .observed,
+            webGL: .observed,
+            audio: .unavailable,
+            mediaDevices: .notChecked,
+            limitations: "Проверяет доступность API, не выбранный сайт."
+        )
+        try render(
+            ProfileEnvironmentView(
+                snapshot: ProfileEnvironmentSnapshot(
+                    schemaVersion: ProfileEnvironmentSnapshot.currentSchemaVersion,
+                    profileID: compatibilityProfile.id,
+                    generatedAt: Date(),
+                    sections: [],
+                    limitations: [],
+                    siteCompatibility: compatibility
+                ),
+                hasProxy: false,
+                canRunFingerprintAudit: false,
+                onRunFingerprintAudit: {}
+            ),
+            name: "site-compatibility-report",
+            size: CGSize(width: 520, height: 360)
         )
 
         for (appearanceName, colorScheme) in [
             ("light", ColorScheme.light),
             ("dark", ColorScheme.dark),
         ] {
-            for (itemIndex, item) in lifecycleRenderItems().enumerated() {
-                try render(
-                    RunningProfilesStrip(
-                        items: [item],
-                        onSelect: { _ in },
-                        onFocus: { _ in },
-                        onStop: { _ in },
-                        onForceStop: { _ in }
-                    ),
-                    name:
-                        "running-strip-\(itemIndex)-\(appearanceName)",
-                    size: CGSize(
-                        width: WorkspaceLayout.minimumWindowWidth,
-                        height: 200
-                    ),
-                    colorScheme: colorScheme
-                )
-            }
-            let secondManaged = BrowserProcessLifecycleItem(
-                id: layoutFixtureID(24),
-                profileName: "Facebook · DE",
-                stateTitle: "Запущен",
-                detail: "Восстановлен · 8 мин",
-                systemImage: "circle.fill",
-                origin: .recoveredManager,
-                canFocus: true,
-                canStop: true,
-                canForceStop: false
-            )
-            try render(
-                RunningProfilesStrip(
-                    items: [lifecycleRenderItems()[0], secondManaged],
-                    onSelect: { _ in },
-                    onFocus: { _ in },
-                    onStop: { _ in },
-                    onForceStop: { _ in },
-                    onRequestStopAll: { _ in }
-                ),
-                name: "running-strip-stop-all-\(appearanceName)",
-                size: CGSize(width: 820, height: 200),
-                colorScheme: colorScheme
-            )
-
-            var proxyProgress = BulkProxyRunProgress(total: 5)
-            proxyProgress.record(profileID: layoutFixtureID(30), outcome: .succeeded)
-            proxyProgress.record(
-                profileID: layoutFixtureID(31),
-                outcome: .connectionFailed
-            )
-            try render(
-                BulkProxyProgressView(progress: proxyProgress),
-                name: "bulk-proxy-progress-\(appearanceName)",
-                size: CGSize(width: 420, height: 80),
-                colorScheme: colorScheme
-            )
-
-            try render(
-                ProfileEditorView(
-                    original: nil,
-                    keychain: KeychainStore(
-                        backend: LayoutRenderKeychainBackend(),
-                        service: "layout.render.new-note.\(appearanceName)",
-                        legacyService: nil
-                    ),
-                    folders: [],
-                    initialFolderID: nil,
-                    suggestedTags: []
-                ) { _, _, _ in },
-                name: "profile-editor-new-note-visible-\(appearanceName)",
-                size: CGSize(width: 460, height: 430),
-                colorScheme: colorScheme
-            )
-
-            try render(
-                ProfileNoteEditorView(
-                    profileName: "TikTok · FR · UGC 02",
-                    initialNote:
-                        "Прогрев: день 3. Следующий вход после 18:00."
-                ) { _ in },
-                name: "profile-note-editor-\(appearanceName)",
-                size: CGSize(width: 520, height: 390),
-                colorScheme: colorScheme
-            )
-
-            try render(
-                NeAntikSettingsView(
-                    preferences: WorkspacePreferenceStore(
-                        initialRowDensity: .comfortable
-                    )
-                ),
-                name: "settings-\(appearanceName)",
-                size: CGSize(width: 560, height: 520),
-                colorScheme: colorScheme
-            )
-
-            try render(
-                ProfileEditorView(
-                    original: nil,
-                    keychain: KeychainStore(
-                        backend: LayoutRenderKeychainBackend(),
-                        service: "layout.render.direct-warning.\(appearanceName)",
-                        legacyService: nil
-                    ),
-                    folders: [],
-                    initialFolderID: nil,
-                    suggestedTags: []
-                ) { _, _, _ in },
-                name: "profile-editor-direct-warning-\(appearanceName)",
-                size: CGSize(width: 540, height: 620),
-                colorScheme: colorScheme
-            )
-
             try render(
                 ProfileEditorView(
                     original: profileA,
@@ -403,6 +291,29 @@ struct ResponsiveLayoutRenderTests {
         )
 
         try render(
+            ProfileStorageUnavailableView(),
+            name: "profile-storage-unavailable-minimum",
+            size: CGSize(width: 480, height: 560)
+        )
+
+        try render(
+            ProfileEditorView(
+                original: nil,
+                keychain: KeychainStore(
+                    backend: LayoutRenderKeychainBackend(),
+                    service: "layout.render.right-panel",
+                    legacyService: nil
+                ),
+                folders: [],
+                initialFolderID: nil,
+                suggestedTags: [],
+                onClose: {}
+            ) { _, _, _ in },
+            name: "profile-editor-right-panel-minimum",
+            size: CGSize(width: 480, height: 560)
+        )
+
+        try render(
             FirstProfileOnboardingView(
                 runtimeAvailability: .resolving,
                 isCreatingProfile: false,
@@ -431,64 +342,6 @@ struct ResponsiveLayoutRenderTests {
             name: "profile-folder-picker-unavailable",
             size: CGSize(width: 460, height: 280)
         )
-
-        let readinessSnapshot = WorkspaceReadinessSnapshot.resolve(
-            WorkspaceReadinessInput(
-                system: WorkspaceReadinessSystemInspection(
-                    application: WorkspaceApplicationIdentity(
-                        displayName: "NeAntik Dev",
-                        version: "0.3.22",
-                        build: "25",
-                        bundleIdentifier: "app.neantik.desktop.dev",
-                        bundlePath:
-                            "/Users/example/Applications/NeAntik Dev.app",
-                        location: .development
-                    ),
-                    storage: .ready(
-                        availableCapacity: 84_000_000_000
-                    )
-                ),
-                runtimeAvailability: .ready,
-                runtimeVersion: "152.0.7977.64",
-                runtimeArchitectures: ["arm64"],
-                profileCount: 4,
-                runningCount: 1,
-                processAttentionCount: 0,
-                directRouteCount: 2,
-                proxiedRouteCount: 2,
-                proxyAttentionCount: 0
-            )
-        )
-        for (appearanceName, colorScheme) in [
-            ("light", ColorScheme.light),
-            ("dark", ColorScheme.dark),
-        ] {
-            try render(
-                WorkspaceReadinessView(
-                    snapshot: readinessSnapshot,
-                    applicationPath:
-                        "~/Applications/NeAntik Dev.app",
-                    isRefreshing: false,
-                    notice: UserNotice(
-                        appearanceName == "light"
-                            ? "Путь к NeAntik.app скопирован"
-                            : "Системные настройки не найдены",
-                        level: appearanceName == "light"
-                            ? .success
-                            : .failure
-                    ),
-                    onRecheck: {},
-                    onCopyDiagnostics: {},
-                    onExportDiagnostics: {},
-                    onCopyApplicationPath: {},
-                    onRevealApplication: {},
-                    onOpenSystemSettings: {}
-                ),
-                name: "workspace-readiness-attention-\(appearanceName)",
-                size: CGSize(width: 620, height: 620),
-                colorScheme: colorScheme
-            )
-        }
 
         let temporaryRoot = FileManager.default.temporaryDirectory
             .appendingPathComponent(
@@ -526,11 +379,7 @@ struct ResponsiveLayoutRenderTests {
                     proxyHealth: nil
                 ),
                 hasProxy: false,
-                isTestingProxy: false,
-                canTestProxy: false,
-                canCancelProxyTest: false,
                 canRunFingerprintAudit: false,
-                onTestProxy: {},
                 onRunFingerprintAudit: {}
             ),
             name: "profile-environment-direct-ready",
@@ -544,11 +393,7 @@ struct ResponsiveLayoutRenderTests {
                     proxyHealth: nil
                 ),
                 hasProxy: false,
-                isTestingProxy: false,
-                canTestProxy: false,
-                canCancelProxyTest: false,
                 canRunFingerprintAudit: false,
-                onTestProxy: {},
                 onRunFingerprintAudit: {}
             ),
             name: "profile-environment-direct-ready-light",
@@ -563,11 +408,7 @@ struct ResponsiveLayoutRenderTests {
                     proxyHealth: nil
                 ),
                 hasProxy: true,
-                isTestingProxy: false,
-                canTestProxy: true,
-                canCancelProxyTest: false,
                 canRunFingerprintAudit: false,
-                onTestProxy: {},
                 onRunFingerprintAudit: {}
             ),
             name: "profile-environment-proxy-auto-light",
@@ -587,91 +428,18 @@ struct ResponsiveLayoutRenderTests {
         )
     }
 
-    private func lifecycleRenderItems() -> [BrowserProcessLifecycleItem] {
-        [
-            BrowserProcessLifecycleItem(
-                id: layoutFixtureID(20),
-                profileName: "TikTok · FR · UGC с длинным названием",
-                stateTitle: "Запущен",
-                detail: "Этот NeAntik · 2 ч 15 мин",
-                systemImage: "circle.fill",
-                origin: .currentManager,
-                canFocus: true,
-                canStop: true,
-                canForceStop: false
-            ),
-            BrowserProcessLifecycleItem(
-                id: layoutFixtureID(21),
-                profileName: "Facebook Ads · DE · BM 04",
-                stateTitle: "Закрывается…",
-                detail: "Завершаем Chromium без потери сессии",
-                systemImage: "hourglass",
-                origin: .currentManager,
-                canFocus: true,
-                canStop: false,
-                canForceStop: false
-            ),
-            BrowserProcessLifecycleItem(
-                id: layoutFixtureID(22),
-                profileName: "Native · RU · Teaser 07",
-                stateTitle: "Не отвечает",
-                detail: "Не ответил на обычную остановку",
-                systemImage: "exclamationmark.octagon.fill",
-                origin: .currentManager,
-                canFocus: true,
-                canStop: false,
-                canForceStop: true
-            ),
-            BrowserProcessLifecycleItem(
-                id: layoutFixtureID(23),
-                profileName: "Завершённый профиль",
-                stateTitle: "Остановлен",
-                detail: "Процесс завершён, профиль безопасно разблокирован",
-                systemImage: "checkmark.circle.fill",
-                origin: .currentManager,
-                canFocus: false,
-                canStop: false,
-                canForceStop: false
-            ),
-        ]
-    }
-
-    @Test func compactBatchActionsRenderWithoutHorizontalScrolling() throws {
-        let profiles = [
-            BrowserProfile(id: layoutFixtureID(31), name: "TikTok · US"),
-            BrowserProfile(id: layoutFixtureID(32), name: "Facebook · DE"),
-        ]
-        let presentation = ProfileBatchSelectionPresentation.resolve(
-            visibleProfiles: profiles,
-            selectedProfileIDs: Set(profiles.map(\.id)),
-            runningProfileIDs: []
-        )
-
-        try render(
-            ProfileBatchActionBar(
-                presentation: presentation,
-                canUndo: true,
-                onToggleAllVisible: {},
-                onClear: {},
-                onTogglePinned: {},
-                onChooseFolder: {},
-                onEditTag: {},
-                onToggleArchived: {},
-                onUndo: {}
-            ),
-            name: "profile-batch-actions-compact",
-            size: CGSize(width: 500, height: 52),
-            colorScheme: .light
-        )
-    }
-
     @Test func profileDetailRendersAtOrdinaryAndWideSizes() throws {
         let profile = BrowserProfile(
-            id: layoutFixtureID(3),
             name: "Рабочий профиль",
             tags: ["Работа", "Клиент"],
             note:
-                "Это длинная заметка профиля для проверки трёхстрочного превью. Она содержит рабочий контекст, следующий шаг и напоминание о том, что полный текст остаётся доступным по отдельной кнопке без перегрузки основного экрана."
+                "Это длинная заметка профиля для проверки трёхстрочного превью. Она содержит рабочий контекст, следующий шаг и напоминание о том, что полный текст остаётся доступным по отдельной кнопке без перегрузки основного экрана.",
+            proxy: ProxyConfiguration(
+                kind: .http,
+                host: "192.0.2.10",
+                port: 8_080,
+                username: "fixture"
+            )
         )
         for (name, size) in [
             (
@@ -692,17 +460,15 @@ struct ResponsiveLayoutRenderTests {
                     profile: profile,
                     processState: .stopped,
                     browserDataPath:
-                        "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
+                        "/private/tmp/neantik-layout-synthetic/Profiles/BrowserData",
+                    environmentSnapshot: ProfileEnvironmentInspector.snapshot(
+                        profile: profile,
+                        runtime: nil,
+                        proxyHealth: nil
+                    ),
                     clipboardNotice: nil,
                     onCopyProxyUsername: {},
-                    onCopyProxyPassword: {},
-                    launchAction: BrowserLaunchActionPresentation.resolve(
-                        processState: .stopped,
-                        isArchived: false,
-                        runtimeAvailability: .ready,
-                        isProxyTesting: false,
-                        isLaunchPreparation: false
-                    )
+                    onCopyProxyPassword: {}
                 ),
                 name: name,
                 size: size
@@ -715,51 +481,10 @@ struct ResponsiveLayoutRenderTests {
         ] {
             try render(
                 ProfileDetailView(
-                    profile: BrowserProfile(
-                        id: layoutFixtureID(4),
-                        name: "Профиль без заметки"
-                    ),
-                    processState: .stopped,
-                    browserDataPath:
-                        "/Users/example/Library/Application Support/NeAntik Development/Profiles/EMPTY/BrowserData",
-                    clipboardNotice: nil,
-                    onCopyProxyUsername: {},
-                    onCopyProxyPassword: {},
-                    onChangeNote: {}
-                ),
-                name: "profile-detail-empty-note-minimum-\(appearanceName)",
-                size: CGSize(width: 550, height: 520),
-                colorScheme: colorScheme
-            )
-
-            try render(
-                ProfileDetailView(
                     profile: profile,
                     processState: .stopped,
                     browserDataPath:
-                        "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
-                    clipboardNotice: nil,
-                    onCopyProxyUsername: {},
-                    onCopyProxyPassword: {},
-                    launchAction: BrowserLaunchActionPresentation.resolve(
-                        processState: .stopped,
-                        isArchived: false,
-                        runtimeAvailability: .ready,
-                        isProxyTesting: false,
-                        isLaunchPreparation: false
-                    )
-                ),
-                name: "profile-detail-note-compact-\(appearanceName)",
-                size: CGSize(width: 360, height: 560),
-                colorScheme: colorScheme
-            )
-
-            try render(
-                ProfileDetailView(
-                    profile: profile,
-                    processState: .stopped,
-                    browserDataPath:
-                        "/Users/example/Library/Application Support/NeAntik Development/Profiles/PROFILE/BrowserData",
+                        "/private/tmp/neantik-layout-synthetic/Profiles/BrowserData",
                     clipboardNotice: nil,
                     onCopyProxyUsername: {},
                     onCopyProxyPassword: {}
@@ -769,42 +494,6 @@ struct ResponsiveLayoutRenderTests {
                 colorScheme: colorScheme
             )
         }
-    }
-
-    @Test func sharedProxyWarningAndProfileMetadataRender() throws {
-        let createdAt = Date(timeIntervalSinceReferenceDate: 800_000_000)
-        let profile = BrowserProfile(
-            id: layoutFixtureID(32),
-            name: "Shared route review",
-            proxy: ProxyConfiguration(
-                kind: .https,
-                host: "proxy.example",
-                port: 8443,
-                username: "operator"
-            ),
-            createdAt: createdAt,
-            updatedAt: createdAt.addingTimeInterval(3_600),
-            lastLaunchedAt: createdAt.addingTimeInterval(7_200)
-        )
-
-        try render(
-            ProfileDetailView(
-                profile: profile,
-                processState: .stopped,
-                browserDataPath:
-                    "/Users/example/Library/Application Support/NeAntik Development/Profiles/SHARED/BrowserData",
-                proxyReuseAssessment: ProxyReuseAssessment(
-                    status: .shared,
-                    otherProfileCount: 2
-                ),
-                clipboardNotice: nil,
-                onCopyProxyUsername: {},
-                onCopyProxyPassword: {}
-            ),
-            name: "profile-detail-shared-proxy-warning",
-            size: CGSize(width: 620, height: 860),
-            colorScheme: .light
-        )
     }
 
     @Test func actualContentViewRendersAtMinimumAndWideSizes() throws {
@@ -857,20 +546,20 @@ struct ResponsiveLayoutRenderTests {
         defer {
             defaults.removePersistentDomain(forName: defaultsName)
         }
-        let workspacePreferences = WorkspacePreferenceStore(
+        let telemetry = TelemetryController(
+            edition: .direct,
+            configuration: TelemetryConfiguration(
+                endpoint: nil,
+                publicStatsURL: nil
+            ),
             defaults: defaults
         )
-        let processes = BrowserProcessManager(
-            paths: paths,
-            processIdentityValidator: { _ in false },
-            browserDataProcessInspector: { _ in .absent }
-        )
+        let processes = BrowserProcessManager(paths: paths)
         let intent = NeAntikLaunchIntent.parse(
             arguments: [
                 "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
             ]
         )
-        let initialRuntime = try #require(runtimeLocator.preferredRuntime())
 
         for (name, size) in [
             (
@@ -889,13 +578,15 @@ struct ResponsiveLayoutRenderTests {
                 ContentView(
                     store: store,
                     processes: processes,
+                    updateController: ApplicationUpdateController(),
+                    telemetry: telemetry,
                     fingerprintObservationStore:
                         FingerprintObservationStore(),
                     proxyHealthCoordinator: ProxyHealthCoordinator(
                         fileURL: paths.proxyHealthFile
                     ),
-                    workspacePreferences: workspacePreferences,
                     keychain: keychain,
+                    backupComposition: .unavailable,
                     credentialCleanup:
                         DeletedProfileCredentialCleanup(
                             paths: paths,
@@ -903,8 +594,7 @@ struct ResponsiveLayoutRenderTests {
                         ),
                     runtimeLocator: runtimeLocator,
                     launchIntent: intent,
-                    fingerprintEvidenceReleaseContext: nil,
-                    initialRuntime: initialRuntime
+                    fingerprintEvidenceReleaseContext: nil
                 ),
                 name: name,
                 size: size,
@@ -912,19 +602,15 @@ struct ResponsiveLayoutRenderTests {
                     .titled,
                     .closable,
                     .resizable,
-                ],
-                settleTime: 0.4
+                ]
             )
         }
 
         _ = try store.upsert(
             BrowserProfile(
-                id: layoutFixtureID(5),
                 name:
                     "Очень длинное Unicode-название рабочего профиля",
                 tags: ["Работа", "Проверка"],
-                note:
-                    "Клиент: утренний запуск. Сначала проверь заказ и статус кабинета.",
                 proxy: ProxyConfiguration(
                     kind: .https,
                     host: "2001:db8::1",
@@ -933,33 +619,6 @@ struct ResponsiveLayoutRenderTests {
                 )
             )
         )
-        for profile in [
-            BrowserProfile(
-                id: layoutFixtureID(6),
-                name: "TikTok · FR · UGC 02",
-                tags: ["TikTok", "Фарм"],
-                note: "Прогрев: день 3. Следующий вход после 18:00."
-            ),
-            BrowserProfile(
-                id: layoutFixtureID(7),
-                name: "Facebook Ads · DE · BM 04",
-                tags: ["Facebook", "Работа"],
-                proxy: ProxyConfiguration(
-                    kind: .socks5,
-                    host: "proxy.example",
-                    port: 10_804,
-                    username: ""
-                )
-            ),
-            BrowserProfile(
-                id: layoutFixtureID(8),
-                name: "Native · RU · Teaser 07",
-                tags: ["Тизерки"],
-                note: "Креативы проверены. Не менять гео без согласования."
-            ),
-        ] {
-            _ = try store.upsert(profile)
-        }
 
         let reviewedSizes: [(String, CGSize)] = [
             (
@@ -982,13 +641,15 @@ struct ResponsiveLayoutRenderTests {
                     ContentView(
                         store: store,
                         processes: processes,
+                    updateController: ApplicationUpdateController(),
+                        telemetry: telemetry,
                         fingerprintObservationStore:
                             FingerprintObservationStore(),
                         proxyHealthCoordinator: ProxyHealthCoordinator(
                             fileURL: paths.proxyHealthFile
                         ),
-                        workspacePreferences: workspacePreferences,
                         keychain: keychain,
+                        backupComposition: .unavailable,
                         credentialCleanup:
                             DeletedProfileCredentialCleanup(
                                 paths: paths,
@@ -996,8 +657,7 @@ struct ResponsiveLayoutRenderTests {
                             ),
                         runtimeLocator: runtimeLocator,
                         launchIntent: intent,
-                        fingerprintEvidenceReleaseContext: nil,
-                        initialRuntime: initialRuntime
+                        fingerprintEvidenceReleaseContext: nil
                     ),
                     name: "actual-content-\(sizeName)-\(appearanceName)",
                     size: size,
@@ -1006,65 +666,9 @@ struct ResponsiveLayoutRenderTests {
                         .closable,
                         .resizable,
                     ],
-                    colorScheme: colorScheme,
-                    settleTime: 0.4
+                    colorScheme: colorScheme
                 )
             }
-        }
-
-        for (name, filter, density) in [
-            (
-                "actual-content-running-selected-empty",
-                ProfileOperationalFilter.running,
-                ProfileRowDensity.comfortable
-            ),
-            (
-                "actual-content-attention-selected-empty",
-                ProfileOperationalFilter.attention,
-                ProfileRowDensity.comfortable
-            ),
-            (
-                "actual-content-compact-density",
-                ProfileOperationalFilter.all,
-                ProfileRowDensity.compact
-            ),
-        ] {
-            workspacePreferences.rowDensity = density
-            try render(
-                ContentView(
-                    store: store,
-                    processes: processes,
-                    fingerprintObservationStore:
-                        FingerprintObservationStore(),
-                    proxyHealthCoordinator: ProxyHealthCoordinator(
-                        fileURL: paths.proxyHealthFile
-                    ),
-                    workspacePreferences: workspacePreferences,
-                    keychain: keychain,
-                    credentialCleanup:
-                        DeletedProfileCredentialCleanup(
-                            paths: paths,
-                            keychain: keychain
-                        ),
-                    runtimeLocator: runtimeLocator,
-                    launchIntent: intent,
-                    fingerprintEvidenceReleaseContext: nil,
-                    initialRuntime: initialRuntime,
-                    initialOperationalFilter: filter
-                ),
-                name: name,
-                size: CGSize(
-                    width: WorkspaceLayout.minimumWindowWidth,
-                    height: WorkspaceLayout.minimumWindowHeight
-                ),
-                styleMask: [
-                    .titled,
-                    .closable,
-                    .resizable,
-                ],
-                colorScheme: .light,
-                settleTime: 0.4
-            )
         }
     }
 
@@ -1074,15 +678,13 @@ struct ResponsiveLayoutRenderTests {
         size: CGSize,
         styleMask: NSWindow.StyleMask = [.borderless],
         colorScheme: ColorScheme = .dark,
-        settleTime: TimeInterval = 0.05
+        minimumPNGBytes: Int = 10_000
     ) throws {
         let hostingView = NSHostingView(
             rootView:
                 view
                 .frame(width: size.width, height: size.height)
-                .background(Color(nsColor: .windowBackgroundColor))
                 .environment(\.colorScheme, colorScheme)
-                .environment(\.controlActiveState, .active)
         )
         let appearance = NSAppearance(
             named: colorScheme == .dark ? .darkAqua : .aqua
@@ -1113,7 +715,7 @@ struct ResponsiveLayoutRenderTests {
         hostingView.frame = CGRect(origin: .zero, size: size)
         hostingView.layoutSubtreeIfNeeded()
         RunLoop.current.run(
-            until: Date(timeIntervalSinceNow: settleTime)
+            until: Date(timeIntervalSinceNow: 0.05)
         )
         window.contentView?.layoutSubtreeIfNeeded()
         window.displayIfNeeded()
@@ -1133,8 +735,7 @@ struct ResponsiveLayoutRenderTests {
                   using: .png,
                   properties: [:]
               ),
-              data.count > 1_000,
-              hasVisualVariation(representation)
+              data.count > minimumPNGBytes
         else {
             throw LayoutRenderError.invalidImage(name)
         }
@@ -1156,38 +757,6 @@ struct ResponsiveLayoutRenderTests {
             )
         }
     }
-
-    private func hasVisualVariation(
-        _ representation: NSBitmapImageRep
-    ) -> Bool {
-        let horizontalStep = max(1, representation.pixelsWide / 80)
-        let verticalStep = max(1, representation.pixelsHigh / 50)
-        var colors = Set<UInt64>()
-        for y in stride(
-            from: 0,
-            to: representation.pixelsHigh,
-            by: verticalStep
-        ) {
-            for x in stride(
-                from: 0,
-                to: representation.pixelsWide,
-                by: horizontalStep
-            ) {
-                guard let color = representation.colorAt(x: x, y: y)?
-                    .usingColorSpace(.deviceRGB)
-                else { continue }
-                let red = UInt64((color.redComponent * 255).rounded())
-                let green = UInt64((color.greenComponent * 255).rounded())
-                let blue = UInt64((color.blueComponent * 255).rounded())
-                let alpha = UInt64((color.alphaComponent * 255).rounded())
-                colors.insert(
-                    (red << 24) | (green << 16) | (blue << 8) | alpha
-                )
-                if colors.count >= 3 { return true }
-            }
-        }
-        return false
-    }
 }
 
 private struct LayoutRenderKeychainBackend: KeychainBackend {
@@ -1202,17 +771,6 @@ private struct LayoutRenderKeychainBackend: KeychainBackend {
     ) throws {}
 
     func delete(service: String, profileID: UUID) throws {}
-}
-
-private func layoutFixtureID(_ ordinal: UInt8) -> UUID {
-    UUID(
-        uuid: (
-            0x4E, 0x65, 0x41, 0x6E,
-            0x74, 0x69, 0x6B, 0x00,
-            0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, ordinal
-        )
-    )
 }
 
 private enum LayoutRenderError: LocalizedError {

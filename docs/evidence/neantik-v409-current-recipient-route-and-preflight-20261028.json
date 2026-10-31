@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v409-current-recipient-route-and-known-input-preflight-20261028",
+  "observedAtUTC": "2026-10-28T07:54:44Z",
+  "status": "PASS_V409_SOURCE_OFFER_AND_KNOWN_INPUT_PREFLIGHT; COMPLETE_BUILD_INPUTS_AND_RECIPIENT_RELINK_OPEN",
+  "scope": "Private successor to V408 correcting current-recipient documentation, packaging the exact known-input manifest, and running source-offer, supplement, and read-only known-input checks. No build, signing, runtime launch, candidate, publication, or broad regression.",
+  "inputs": {
+    "v408ManifestSHA256": "dfefa024875fbc7a33a2ee09b21f0ead5e2237dfee967a8c6b7e21a3139e8820",
+    "v409ManifestSHA256": "a81640f1e15c4addf804a0e36aed343cc8e67bf91c504f1e78e32108cfb58291",
+    "v409Root": "/private/tmp/neantik-release-v1/dist/private/source-offers/v409-v382-v399-current-recipient-map-draft",
+    "v20RecipeSHA256": "af84b3fafc9a6ecf9d7de253a1fe5e7f050926707c544a2b69fd013c0c88ad4a",
+    "currentRecipientRouteSHA256": "30af43ba9318692edb3681a9359066b937ebc889bf63f3e8f99f6dffc6b6ac69",
+    "knownInputManifestSHA256": "0fe3073f96994eb4306e28d832dc3b2ed85f17113f20f01dfb655b0fd0f1185d",
+    "v408PathCount": 1326,
+    "v409PathCount": 1328,
+    "v409ManifestComponentCount": 664,
+    "packageConsumerScriptSHA256": "3050d56cddeb05681dee5cac279cf3cba6354411724e62432ab3cddaec9233a9",
+    "supplementCheckerScriptSHA256": "e2e934906da24761d3a95f72639ebbf495526c15e0b9fe4762e830c36ed4206b",
+    "recipientPrereqCheckerScriptSHA256": "5c87a0dc91efb2b2ef5f58e2e259ece7428536ad2479d233e7b4e12fa4cc0f84",
+    "sourceCrosswalkSHA256": "7a0a90589615ebf7979dfff659e82546dd9770693d8e4ac82f7aa9dafe1f2580",
+    "filteredBuildReceiptSHA256": "319afbac5c8a7b55daeb54912b3c7614537a4d26315885127d54694dc3bc7a7f",
+    "v382ArchiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+    "v399SupplementManifestSHA256": "688c8f4681e8c79cfdc69a6124fb4cf868c32a8e54738b03e6ba732a1a4e5ecd"
+  },
+  "checks": {
+    "sourceOfferConsumer": "PASS; 664 components verified; 64 overlay assets; exact V382 crosswalk and build-receipt binding pass",
+    "V382V399Supplement": "PASS; frozen V382 base manifest and archive pins match; V399 has one component; completeSourceOffer false for supplement alone",
+    "knownPinnedInputs": "PASS; exact WebKit archive, manager source archive, patch, build config, source markers, Xcode/SDK toolchain all match",
+    "packagingInputs": "MISSING; no exact signed production manager app was supplied and identity check was not requested in this preflight",
+    "completeDependencyInputs": "UNRESOLVED; checker explicitly does not establish full transitive source/build inventory or portable recipe",
+    "recipientRelink": "NOT_PROVED; no recipient-owned modified image rebuild/re-sign/load",
+    "V408Preserved": "PASS; 1326 existing paths compared; only WEBKIT_BUILD_RECIPE_V20_DRAFT.md and manifest.json changed, and two V409 paths were added",
+    "documentationReconciliation": "V265 remains historical V246/.48 instructions; root V20 now routes current work to V409 and identifies V265 as superseded for the current release"
+  },
+  "setupCorrections": [
+    "The first V409 consumer attempt rejected a stale recipe component hash; the component binding was refreshed.",
+    "A duplicate recipe row in the first V409 manifest draft was removed; the final manifest has 664 unique component paths and consumer validation passes."
+  ],
+  "limitations": [
+    "This is not an independent recipient build or a complete build recipe.",
+    "No integrated signed .74 manager app, recipient relink/load, production privacy qualification, candidate-bound notices, notarization, publication, or downloaded-byte verification.",
+    "Four excluded WebKit model runtime rows remain governed by the V382 exact absence evidence; rights UNKNOWN is not clearance."
+  ],
+  "sideEffects": {
+    "build": false,
+    "runtimeLaunch": false,
+    "signing": false,
+    "candidateChanged": false,
+    "publication": false
+  },
+  "releaseQualified": false,
+  "nextAction": "After an observable Apple secure timestamp recovery, produce the exact signed Chromium .74 Metal runtime report and promote its lock. Then create the integrated production package once against V409 and complete recipient rebuild/relink/load and final release gates."
+}

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "status": "blocked-before-upload",
+  "observedAt": "2026-10-25T09:12:00Z",
+  "candidate": {
+    "version": "1.0.0",
+    "build": "139",
+    "bundleIdentifier": "app.neantik.desktop.dev",
+    "qaZip": "dist/private/qa/neantik-1.0.0-139-webkit-dev-20261025-r1/NeAntik-1.0.0-139-dev-qa.zip",
+    "sha256": "6982f7ebace03658ad4fa5321153d2e9f984b474c0c9657c779a9996ce9b40cf",
+    "bytes": 247145496
+  },
+  "action": "Apple notarization submission through existing Keychain profile neantik-notary",
+  "review": {
+    "decision": "rejected before command execution/upload",
+    "reason": "The private QA archive contains application code, no exact user authorization was recorded for this SHA, and an earlier attempt to submit this same ZIP was explicitly marked no-retry/no-reroute.",
+    "bytesTransferred": false,
+    "credentialsReadOrPrinted": false
+  },
+  "next": "Do not submit this ZIP through another command or repackage it to bypass review. Request exact hash-specific authorization if the user still wants this QA-only Apple transfer. GitHub, browser.free and production candidate are unaffected."
+}

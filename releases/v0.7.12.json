@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.12",
+  "version": "0.7.12",
+  "build": 75,
+  "releasedAt": "2026-10-02",
+  "channel": "production",
+  "platform": "macOS",
+  "minimumSystemVersion": "14.0",
+  "architecture": "arm64",
+  "runtime": {
+    "name": "NeAntik Browser",
+    "chromiumVersion": "154.0.8037.93",
+    "gpuMode": "metal",
+    "rebuilt": true,
+    "securityCurrent": true,
+    "qualifiedBaseline": "154.0.8037.93",
+    "strictProductionFingerprintCoherence": true,
+    "safeBrowsingEnabled": false
+  },
+  "archive": {
+    "name": "NeAntik-0.7.12-arm64-notarized.zip",
+    "sizeBytes": 175080627,
+    "sha256": "dacd0cb60eb81d1d28be631d0d90517639aa4994d2c5e52e1da24fa57ab68179"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.12-arm64-notarized.dmg",
+    "sizeBytes": 197468080,
+    "sha256": "ab7cb97c58b0e45e8ebc2b3bbf4a7fbe869aa16e9e4be9abee016b06f99c5f7c"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "accepted",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "hostedDownload": "passed",
+    "hostedDmg": "passed",
+    "fingerprint": "production-qualified",
+    "strictProductionFingerprintCoherence": "passed for exact authenticated A-B-A candidate",
+    "physicalVoiceOver": "not claimed",
+    "physicalKeyboard": "not independently verified",
+    "tests": {
+      "pythonBroadPassed": 795,
+      "pythonSkipped": 1,
+      "schema8TargetedPassed": 18,
+      "swiftReleaseContextPassed": 14,
+      "site": 25
+    }
+  },
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.12",
+  "siteUrl": "https://browser.free",
+  "siteVersion": 99,
+  "siteSourceCommit": "8d9551152d1862db630dbc5ed33ba39279ca8750",
+  "siteDeploymentStatus": "succeeded",
+  "sourceCommit": "24de0234122ae49257011eef573502b822fcb157",
+  "candidateManifestSHA256": "14eb2c2c094193a99c9320fef860283ab896c9b1837b8a16dab62242443c4a47",
+  "candidateSourceBindingSHA256": "b0fc74ba3e2ebe4fe8dfc2811e2554d5b80597ac7f70c9a3dcf618ac67b33f66",
+  "rollbackRelease": "v0.7.11",
+  "verificationDetails": {
+    "hostedDownload": "Fresh single-link downloaded archive pinned and checked with existing notarized archive, candidate manifest and authenticated evidence gates. Standard wrapper rejects publisher local hard-link; published artifact unchanged.",
+    "safeBrowsing": "Build retains safe_browsing_mode=0; Google Safe Browsing protection is not provided."
+  },
+  "siteApiLive": "0.7.12/75, Chromium154.0.8037.93, canDownload=true, exact ZIP SHA256; direct ZIP/DMG links on / and /download",
+  "siteDeploymentId": "appgdep_6abf4f0301dc81919c72ace1ccac4aa1"
+}

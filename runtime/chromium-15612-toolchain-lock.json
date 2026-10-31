@@ -1,0 +1,25 @@
+{
+  "CIPDOriginOriginalSHA256": "aa9cb28d5d25931b3b9a1bb2fa96ca14161c9f868ed44e06de1a63d4c7b0c11a",
+  "chromiumVersion": "156.0.8078.12",
+  "frozenToolHashes": {
+    "buildtools/mac/gn": "8b50f57cfac9eba62f07ce5d9ad15d738c6bfeb6e58de33fe2b586800545bee6",
+    "third_party/llvm-build/Release+Asserts/bin/clang": "a0acdda5df49257a38004653c4689a76be76e90bdf01393be2055848528069fd",
+    "third_party/ninja/ninja": "6c03e94e3ee141301a7e5151227508ac8cec05c12d79ed9240062a86a0e2d14f",
+    "third_party/rust-toolchain/bin/bindgen": "b29fedc4a718ace0a7beaa73e95301247a7b4d8ad67465d3bca0a9252bcadae8",
+    "third_party/rust-toolchain/bin/cc_bindings_from_rs": "2ad8ff14e11986b321150952422de1b23e706b26824ba01ff375668c4d8edbd1",
+    "third_party/rust-toolchain/bin/rustc": "ea97a97cdfa70463afb5408af91d48aad1b58792037432319ac07b1a445f686b"
+  },
+  "jobs": 2,
+  "limitations": [
+    "Selected consumed tool packages and SDK metadata; not an archive of the entire SDK",
+    "CIPD installed manifests; do not claim retained archive validation where unavailable"
+  ],
+  "nodeOriginOriginalSHA256": "877d47acee590ec703b8e71f44405b5174ef621ea81f1837d1d1a112a107530f",
+  "packageClosureOriginalSHA256": "7ef8c581cce4612e6671f7da53eb2e251d42f3b43a2bea9d6bc244909f243bf1",
+  "pythonProducerSHA256": "5c3ea934d18a7979253ca08ff16151db78a896be29dbc37fd9bf7e7c549593b8",
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "sdkVersion": "27.0",
+  "status": "selected-consumed-tools-bound-to-completed-build",
+  "xcodeVersion": "Xcode 27.0\nBuild version 27A5228h"
+}

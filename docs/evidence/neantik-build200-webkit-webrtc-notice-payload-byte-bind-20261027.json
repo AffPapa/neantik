@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-build200-webkit-webrtc-notice-payload-byte-bind-20261027",
+  "observedAt": "2026-10-27",
+  "status": "NOTICE_PAYLOAD_BYTES_PASS; IMAGE_HASH_JOIN_SEPARATE; LICENSE_APPLICABILITY_AND_RELEASE_OPEN",
+  "scope": "Read-only exact-byte verification of notice payloads inside one existing private build-200 Dev QA ZIP. No launch, build, package edit, license election, notarization or publication.",
+  "archive": {
+    "path": "/private/tmp/neantik-owned-webkit-qa-x77ltbpd/NeAntik-1.0.0-200-dev-owned-webkit-qa.zip",
+    "sha256": "3bdc4b7646a3d1806c6a0944e187ec442024455de19af7b132452b7e28c10656",
+    "bundleID": "app.neantik.desktop.dev",
+    "version": "1.0.0",
+    "build": "200"
+  },
+  "webkitLinkedSourceHeaders": {
+    "manifestPath": "NeAntik.app/Contents/Resources/NeAntikRuntimeLicenses/WebKitLinkedSourceHeaders/MANIFEST.json",
+    "manifestSHA256": "786d6f2533c982cf1ffdabec092999a52e38cf5f6f1c1f6128627a5d3d32a998",
+    "manifestRows": 3127,
+    "noticePayloads": [
+      {
+        "runtimePath": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+        "sourceHeaderManifestRows": 906,
+        "noticeArchivePath": "NeAntik.app/Contents/Resources/NeAntikRuntimeLicenses/WebKitLinkedSourceHeaders/JavaScriptCore-SOURCE-HEADERS.txt",
+        "noticeBytes": 1265763,
+        "noticeSHA256": "d3060d740022138adadfe3f95a9001e90e1c5772e9c03a74af115ef98d0bcf66",
+        "runtimeSHA256FieldPresent": true,
+        "runtimeSHA256FieldMeaning": "source/runtime input hash in this sidecar; final signed ZIP image hashes are independently bound by recipient sidecar receipt"
+      },
+      {
+        "runtimePath": "WebCore.framework/Versions/A/WebCore",
+        "sourceHeaderManifestRows": 2028,
+        "noticeArchivePath": "NeAntik.app/Contents/Resources/NeAntikRuntimeLicenses/WebKitLinkedSourceHeaders/WebCore-SOURCE-HEADERS.txt",
+        "noticeBytes": 2920371,
+        "noticeSHA256": "51076aa2647dbb00c9d8091ae32f313cc7f504459f45f14983a75b5773166d5f",
+        "runtimeSHA256FieldPresent": true,
+        "runtimeSHA256FieldMeaning": "source/runtime input hash in this sidecar; final signed ZIP image hashes are independently bound by recipient sidecar receipt"
+      },
+      {
+        "runtimePath": "WebKit.framework/Versions/A/WebKit",
+        "sourceHeaderManifestRows": 193,
+        "noticeArchivePath": "NeAntik.app/Contents/Resources/NeAntikRuntimeLicenses/WebKitLinkedSourceHeaders/WebKit-SOURCE-HEADERS.txt",
+        "noticeBytes": 276515,
+        "noticeSHA256": "b8923c87281b420e4150cf1bde7571dea3c276517879ab1a8a582a942f146eeb",
+        "runtimeSHA256FieldPresent": true,
+        "runtimeSHA256FieldMeaning": "source/runtime input hash in this sidecar; final signed ZIP image hashes are independently bound by recipient sidecar receipt"
+      }
+    ],
+    "result": "3/3 embedded notice payload byte lengths and SHA-256 values match manifest."
+  },
+  "webRTC": {
+    "manifestPath": "NeAntik.app/Contents/Resources/NeAntikRuntimeLicenses/WebRTC/MANIFEST.json",
+    "manifestSHA256": "cb37e67480e7feb9e900e1932a2879cf7bd0ed4c6bad365d8fb670095ba5b376",
+    "noticeCount": 60,
+    "verifiedCount": 60,
+    "result": "60/60 embedded notice payload byte lengths and SHA-256 values match manifest."
+  },
+  "separateImageBinding": "The source-header sidecar runtimeSHA256 values are not asserted as hashes of the final recipient-signed ZIP images. Final signed image hashes are handled by the separate V153 recipient image-binding reconciliation.",
+  "limitations": [
+    "Proves payload bytes exist in this exact private QA archive; does not determine legal applicability, patent scope, attribution completeness, or legal sufficiency.",
+    "Not the production candidate, notarized release, or published artifact.",
+    "Does not close candidate-139 worksheet UNKNOWN entries.",
+    "Do not transfer to another archive or build."
+  ]
+}

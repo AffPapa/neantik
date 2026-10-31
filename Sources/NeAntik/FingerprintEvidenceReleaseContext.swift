@@ -6,6 +6,12 @@ import Security
 struct FingerprintEvidenceReleaseRequest: Equatable, Sendable {
     let candidateManifestURL: URL
     let evidenceOutputURL: URL
+
+    /// A validated release attempt must never initialize the user's store or
+    /// run pending credential cleanup against production profiles.
+    var managerDataRoot: URL {
+        evidenceOutputURL.deletingLastPathComponent().appendingPathComponent("manager-data", isDirectory: true)
+    }
 }
 
 enum FingerprintEvidenceReleaseLoadResult {
@@ -147,7 +153,8 @@ final class FingerprintEvidenceReleaseContext {
             SecureEnclaveFingerprintEvidenceAuthority =
                 SecureEnclaveFingerprintEvidenceAuthority(),
         claimStore: any FingerprintEvidenceChallengeClaiming =
-            KeychainFingerprintEvidenceChallengeClaimStore()
+            KeychainFingerprintEvidenceChallengeClaimStore(),
+        recoverExistingEvidence: Bool = true
     ) throws -> FingerprintEvidenceReleaseLoadResult {
         let manifest = try readStableRegularFile(
             request.candidateManifestURL,
@@ -214,7 +221,7 @@ final class FingerprintEvidenceReleaseContext {
                 FileFingerprintEvidenceRecoveryStore(),
             output: output
         )
-        if let recovered = try context.recoverPersistedEnvelope() {
+        if recoverExistingEvidence, let recovered = try context.recoverPersistedEnvelope() {
             return .recovered(recovered)
         }
         return .audit(context)
@@ -267,6 +274,101 @@ final class FingerprintEvidenceReleaseContext {
         self.claimStore = claimStore
         self.recoveryStore = recoveryStore
         self.output = output
+    }
+
+    /// Prove access to the already enrolled authority before starting an
+    /// interactive updater experiment. This signs no release report, consumes
+    /// no qualification claim and transfers no signer to the next app.
+    func authenticateUpdateAuditIsolation() throws {
+        try authenticateAuthority(domain: "NeAntik update audit authorization v1\u{0}")
+    }
+
+    private func authenticateAuthority(domain: String) throws {
+        let validated = try binding.validated()
+        let signer = try signerProvider()
+        guard signer.publicKeyX963 == validated.publicKey.x963Representation else {
+            throw FingerprintEvidenceError.signingAuthorityMismatch
+        }
+        var transcript = Data(domain.utf8)
+        transcript.append(Data(SHA256.hash(data: candidateManifest)))
+        transcript.append(Data(UUID().uuidString.utf8))
+        let signature = try P256.Signing.ECDSASignature(derRepresentation: signer.signatureDER(for: transcript))
+        guard validated.publicKey.isValidSignature(signature, for: transcript) else {
+            throw FingerprintEvidenceError.invalidSignature
+        }
+    }
+
+    /// Retires only the manifest-bound temporary audit authority. This neither
+    /// consumes a release claim nor creates fingerprint qualification evidence.
+    /// A failed deletion or missing post-delete confirmation never writes PASS.
+    func retireAuditAuthority(validateCandidate: () throws -> Void,
+                              existingIntent: Data? = nil,
+                              confirmRetired: () throws -> Bool,
+                              persistIntent: (Data) throws -> Void) throws {
+        guard !attempted else { throw FingerprintEvidenceReleaseError.challengeAlreadyConsumed }
+        guard existingIntent != nil || !output.hasExistingEntry else { throw FingerprintEvidenceReleaseError.outputUnavailable }
+        let key = try binding.validated().publicKey
+        let prefix = Data("NeAntik fingerprint authority retirement v1\u{0}".utf8) + Data(SHA256.hash(data: candidateManifest))
+        if let existingIntent {
+            guard let value = try JSONSerialization.jsonObject(with: existingIntent) as? [String: String],
+                  Set(value.keys) == ["kind", "transcript", "signature"],
+                  value["kind"] == "neantik-fingerprint-retirement-intent-v1",
+                  let transcript = Data(base64Encoded: value["transcript"] ?? ""),
+                  transcript.count == prefix.count + 36, transcript.starts(with: prefix),
+                  let nonce = String(data: transcript.suffix(36), encoding: .utf8),
+                  UUID(uuidString: nonce)?.uuidString == nonce,
+                  let der = Data(base64Encoded: value["signature"] ?? ""),
+                  let signature = try? P256.Signing.ECDSASignature(derRepresentation: der),
+                  key.isValidSignature(signature, for: transcript)
+            else { throw FingerprintEvidenceError.invalidSignature }
+            // Reconcile a partial deletion only with its previously signed
+            // intent. A surviving foreign key must never be deleted.
+            do {
+                let signer = try signerProvider()
+                guard signer.publicKeyX963 == key.x963Representation else {
+                    throw FingerprintEvidenceError.signingAuthorityMismatch
+                }
+                guard !output.hasExistingEntry else { throw FingerprintEvidenceReleaseError.outputUnavailable }
+            } catch SecureEnclaveFingerprintEvidenceAuthorityError.notEnrolled {}
+        } else {
+            let signer = try signerProvider()
+            guard signer.publicKeyX963 == key.x963Representation else {
+                throw FingerprintEvidenceError.signingAuthorityMismatch
+            }
+            let transcript = prefix + Data(UUID().uuidString.utf8)
+            let der = try signer.signatureDER(for: transcript)
+            guard key.isValidSignature(try P256.Signing.ECDSASignature(derRepresentation: der), for: transcript) else {
+                throw FingerprintEvidenceError.invalidSignature
+            }
+            let intent = try JSONSerialization.data(withJSONObject: [
+                "kind": "neantik-fingerprint-retirement-intent-v1",
+                "transcript": transcript.base64EncodedString(),
+                "signature": der.base64EncodedString()
+            ], options: [.sortedKeys, .withoutEscapingSlashes])
+            try persistIntent(intent)
+        }
+        try validateCandidate()
+        attempted = true
+        try abandonAuthority(binding.sessionID)
+        do {
+            _ = try signerProvider()
+            throw FingerprintEvidenceReleaseError.outputUnavailable
+        } catch SecureEnclaveFingerprintEvidenceAuthorityError.notEnrolled {
+            // A successful delete alone is insufficient; query the exact key.
+        }
+        guard try confirmRetired() else { throw FingerprintEvidenceReleaseError.outputUnavailable }
+        let receipt: [String: Any] = [
+            "schemaVersion": 1,
+            "kind": "neantik-fingerprint-authority-retirement",
+            "candidateManifestSHA256": Self.hex(SHA256.hash(data: candidateManifest)),
+            "managerVersion": metadata.managerVersion,
+            "managerBuild": metadata.managerBuild,
+            "authorityRetired": true,
+            "releaseQualified": false
+        ]
+        let bytes = try JSONSerialization.data(withJSONObject: receipt,
+                                              options: [.sortedKeys, .withoutEscapingSlashes])
+        try output.commit(bytes)
     }
 
     @discardableResult
@@ -429,13 +531,20 @@ final class FingerprintEvidenceReleaseContext {
         return Self.hex(SHA256.hash(data: material))
     }
 
-    private static func parseCandidateMetadata(
+    static func parseCandidateMetadata(
         _ data: Data
     ) throws -> (
         metadata: FingerprintEvidenceCandidateMetadata,
         managerExecutableSHA256: String
     ) {
-        guard let root = CanonicalEvidenceJSON.object(data),
+        guard let object =
+                try? JSONSerialization.jsonObject(with: data),
+              let canonical = try? JSONSerialization.data(
+                  withJSONObject: object,
+                  options: [.sortedKeys, .withoutEscapingSlashes]
+              ),
+              canonical == data,
+              let root = object as? [String: Any],
               Set(root.keys) == [
                   "boundary", "bundle", "bundleInventory",
                   "criticalFiles", "fingerprintEvidence", "kind",
@@ -543,8 +652,24 @@ final class FingerprintEvidenceReleaseContext {
                 "Contents/Resources/NeAntikRuntimeEvidence/runtime-verification.json",
             "runtimeCandidateLock":
                 "Contents/Resources/NeAntikRuntimeEvidence/fingerprint-chromium.lock.json",
-            "sourceContract":
+            "sourceContract": [
                 "Contents/Resources/NeAntikRuntimeEvidence/chromium-152-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-153-port-status.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-154-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15540-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15540-semantic-v1-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15540-semantic-v2-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15540-semantic-v3-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15540-semantic-v4-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15540-semantic-v5-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15612-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15612-font-system-v1-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15612-font-system-security-20261015-v1-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15612-component-completion-v1-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15674-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15680-source-contract.json",
+                "Contents/Resources/NeAntikRuntimeEvidence/chromium-15680-privacy-v1-source-contract.json"
+            ].contains(path) ? path : "",
             "sourceProvenance":
                 "Contents/Resources/NeAntikRuntimeEvidence/source-provenance.json",
             "buildArguments":
@@ -599,7 +724,7 @@ final class FingerprintEvidenceReleaseContext {
             throw FingerprintEvidenceReleaseError.unsafeManifest
         }
         let descriptor = url.path.withCString {
-            Darwin.open($0, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+            Darwin.open($0, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
         }
         guard descriptor >= 0 else {
             throw FingerprintEvidenceReleaseError.unsafeManifest

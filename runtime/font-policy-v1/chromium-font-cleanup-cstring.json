@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "status": "source-prepared;not-built",
+  "feature": "typed null-terminated environment keys for M156 Environment API",
+  "parentManifest": "chromium-font-cleanup.json",
+  "parentManifestSHA256": "5c5f93163671cbc87f98dbbb97ce25c8ef3876435d8a940f68328e6814ae4d0e",
+  "patchFile": "chromium-font-cleanup-cstring.patch",
+  "patchSHA256": "fdb5dfd47e4fabec8e05b989bed07961a6c0fc4706352b44246b60abe11607af",
+  "files": [
+    {
+      "path": "chrome/browser/mac/code_sign_clone_manager.mm",
+      "preimageSHA256": "acd591be492ca48e3cda76d03d2da4d0a85fbe38ec114cb977a43511218cb9cc",
+      "postimageSHA256": "1d3b89ced774829ff5711789acc935f2b6ef47fec0951faec87d344b4d02ee49"
+    }
+  ],
+  "reason": "first cleanup compile diagnosed const char pointer not convertible to M156 base::cstring_view; original failed contract preserved",
+  "releaseReady": false,
+  "actualBrowserForThisChange": false
+}

@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T16:40:18Z",
+  "status": "TERMS_CLASSIFIED_PROJECT_LEVEL_NOTICE_PRESERVED_PER_FILE_RIGHTSHOLDER_UNRESOLVED",
+  "scope": "Three exact linked WebCore generated CSS inputs: source lineage, row-specific maintainer term classification and existing project-level notice preservation. No unique per-file rights holder is inferred where pinned upstream files have no copyright header.",
+  "sourceBinding": {
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "webkitArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "webkitPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "runtimeImagePath": "WebCore.framework/Versions/A/WebCore",
+    "runtimeImageSHA256": "d23bba6a1e368635e781d3f6c795a355ee0e1a43263651f5c86a6fd0ac46aa80",
+    "inputs": [
+      {
+        "path": "Source/WebCore/css/CSSProperties.json",
+        "sha256": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343",
+        "terms": "BSD-2-Clause for WebCore-native contributions; no KHTML lineage found in bounded source review.",
+        "upstreamEvidence": {
+          "conversionCommit": "e3191baa3d42b9c15fa44c7b7ea21726a64ce968",
+          "conversionAuthor": "Daniel Bates",
+          "parentCommit": "4446fbec5326323b3a3a8d8eff42d633c469210b",
+          "predecessorPath": "Source/WebCore/css/CSSPropertyNames.in",
+          "predecessorSHA256": "07369c539fb1ed26129b75ec9a71f03ac927d9ad32562638ff9113dc209d11b4",
+          "predecessorHeaderPresent": false,
+          "blameSummary": "16523 current source lines: 14169 direct path lineage and 2354 commit ranges without recovered path."
+        },
+        "perFileCopyrightHeaderPresent": false,
+        "individualRightsAssignmentProven": false
+      },
+      {
+        "path": "Source/WebCore/css/CSSValueKeywords.in",
+        "sha256": "fa5b9337b00c1acadacfd9ce5da60b234ee1a0a74e5be6fcebe93ce266f9621d",
+        "terms": "Mixed LGPL-2.0-or-later for mapped KHTML-derived portions and BSD-2-Clause for WebKit-authored contributions.",
+        "upstreamEvidence": {
+          "initialRepositoryCommit": "a063c2b75ddebd1edfe9c54c428d762bdb61f794",
+          "initialCommitAuthor": "Ken Kocienda",
+          "initialRawPath": "WebCore/khtml/css/cssvalues.in",
+          "initialRawSHA256": "5f26e4bb55b2f1a18f8b67d524ef7705caf591167c86c3cdc242c8640a19ada1",
+          "laterKDEMergeCommit": "9491afaacd12b6bf4db25278b9f0657f3874d12f",
+          "moveCommit": "621f9cebf499307403af4fb00193e77cad1dcf39",
+          "blameSummary": "2045 lines: 124 map to WebCore/khtml/css/cssvalues.in, 179 to WebCore/css/CSSValueKeywords.in, 1597 direct current path, and 145 ranges without a recovered path."
+        },
+        "perFileCopyrightHeaderPresent": false,
+        "individualRightsAssignmentProven": false
+      },
+      {
+        "path": "Source/WebCore/css/SVGCSSValueKeywords.in",
+        "sha256": "bf79271aa57cb8f68425b767ea9c3be8ef00bf8f7ef6a29add484d04bdd38ef4",
+        "terms": "Mixed LGPL-2 for mapped KSVG2-derived content and BSD-2-Clause for WebKit-authored contributions.",
+        "upstreamEvidence": {
+          "ksvg2ImportCommit": "c5046b37da159eb6b4b4ec9a483af29b23339285",
+          "sourceMoveCommit": "f21933ab8d8e07f1ca52d0962f9cea643cae6842",
+          "copiedFromKSVG2Change": "26522",
+          "originalKSVG2Path": "WebCore/ksvg2/css/CSSValueKeywords.in",
+          "preMoveRawSHA256": "7b7dbeb0f65fa21f410a6dd2968d35b1fdb2ec3dcc000c99d637efeddc399a2d",
+          "blameSummary": "271 lines: 160 map to KSVG2 import, 110 to current Source/WebCore, and 1 to prior WebCore path."
+        },
+        "perFileCopyrightHeaderPresent": false,
+        "individualRightsAssignmentProven": false
+      }
+    ]
+  },
+  "noticeDecision": {
+    "appleLicenseTextPath": "docs/evidence/third-party/webcore/WebCore-LICENSE-APPLE.txt",
+    "appleLicenseTextSHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+    "lgpl2LicenseTextPath": "docs/evidence/third-party/webcore/WebCore-LICENSE-LGPL-2.txt",
+    "lgpl2LicenseTextSHA256": "7555fa34bc131a75ca56d65c40cc1ea8f9515d23e353d4c15d58573a042f7805",
+    "reason": "The three exact WebKit source files and historical pre-conversion paths have no copyright header at their pinned revisions. Preserve the project-level WebCore BSD-2/Apple notice and LGPL-2 text for mapped KHTML/KSVG2 portions without inventing an individual owner line.",
+    "uniqueCopyrightAttributionClosed": false,
+    "runtimeNoticeBindingClosed": false
+  },
+  "limitations": [
+    "Maintainer term classifications are not a legal opinion.",
+    "The exact per-file rights holders remain unresolved for the three files; project-level license text alone is not independent proof of assignment.",
+    "WebCore image remains UNKNOWN; other runtime images/resources, complete corresponding source, recipient rebuild/re-sign/load and release gates remain open.",
+    "No native build, app install, signing, notarization or publication occurred."
+  ]
+}

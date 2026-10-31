@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "status": "SWIFT_DEPENDENCY_SCAN_INCONCLUSIVE_DIAGNOSTIC_ERRORS_DESPITE_EXIT_ZERO",
+  "input": "V135 relocated PAL Swift module; existing declared source inputs and driver arguments, redirected module cache to disposable /private/tmp",
+  "attempts": [
+    {
+      "result": "swift driver refused output path with multiple-output flags; harness setup failure",
+      "candidateModified": false
+    },
+    {
+      "result": "driver exited 0 but emitted empty dependency graph and hundreds of dependency-scanning diagnostic errors, including Clang PCM/PCH configuration mismatch",
+      "candidateModified": false
+    }
+  ],
+  "diagnostics": {
+    "logSHA256": "5c3328b987b62910db878a3218771a412520bfcd3991f9e61b2e666aae111845",
+    "distinctNamedModulesInDiagnosticChains": 20,
+    "expectedStructuredGraphBytes": 0
+  },
+  "conclusion": "No complete Swift transitive module/plugin input list or portable build proof. Exit zero alone is not a positive scan. Diagnose cache/driver action configuration before another attempt.",
+  "macIsolationObservation": {
+    "knownDisposableAccountsPresent": false,
+    "passwordlessAdminAvailable": false,
+    "productionAppUsesRealUserSupportDirectory": true,
+    "existingProductionManagersPreserved": true
+  },
+  "releaseQualified": false
+}

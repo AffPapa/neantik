@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-18",
+  "status": "PASS scoped headed manager/authenticated relay WS observation",
+  "version": "0.8.23",
+  "build": 135,
+  "managerSHA256": "b8092ce4db11c0053bdac9b72384464733056a8b0c90d4b5c77e63d588750c21",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "executableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+    "frameworkSHA256": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7"
+  },
+  "scope": {
+    "headed": true,
+    "app": "Exact downloaded notarized0.8.23;no app/runtime change",
+    "protocol": "ws",
+    "upstream": "Own authenticated HTTP proxy with public dummy credentials",
+    "fault": "Cut live WS tunnels and reject new WS CONNECT with502;HTTP control retained",
+    "loopback": "IPv4 only",
+    "CDP": false,
+    "TLSOverride": false
+  },
+  "observations": {
+    "actualOriginHandshakes": 5,
+    "protectedDirectHandshakes": 0,
+    "protectedProxyHandshakes": 2,
+    "normalBrowserExits": 2
+  },
+  "behavior": {
+    "protectedLiveCloseCode": 1006,
+    "protectedNewDuringFault": "error/1006;no origin WS handshake",
+    "sameSessionRecovery": "echo/normal1000",
+    "directControl": "3actual Direct handshakes;existing connection stays open during proxy WS fault",
+    "sameProtectedProfileSessionConfiguration": true,
+    "routeEvidence": "Actual origin peer port joined to proxy upstream socket and live signed relay generation;Direct joined to browser/helper chain"
+  },
+  "cleanup": {
+    "managerExitCode": 0,
+    "browserMainExits": [
+      0,
+      0
+    ],
+    "fixtureSignals": 0,
+    "ownedProcessesRemaining": 0,
+    "serverThreadsDrained": true,
+    "temporaryAuthorityRetired": true,
+    "ordinaryInstanceTouched": false,
+    "privateSyntheticFixtureDataRetainedForEvidence": true
+  },
+  "controls": {
+    "fixtureWireTests": 6,
+    "affectedSharedTests": 45,
+    "newPublicReaderTest": 1,
+    "modeledNegativeVariants": 24,
+    "realCaptureNegativeVariants": 17,
+    "negativeBrowserReruns": 0
+  },
+  "retainedFailures": [
+    {
+      "stage": "initial socket tests",
+      "classification": "sandbox setup",
+      "result": "Bind denied before owned server creation;only affected tests executed in authorized context."
+    },
+    {
+      "stage": "first offline CLI analysis",
+      "classification": "harness public-input reader",
+      "result": "Private0600 reader rejected public0644 release source. Corrected bounded no-symlink public reader has its own positive/negative control;native receipts and acceptance unchanged."
+    }
+  ],
+  "nativeUI": {
+    "ownNormalPageCompletionVisible": true,
+    "nativeStopAndQuitUsed": true,
+    "typeTextSetupIssue": "Dropped letters in dummy import;corrected exact fields through native UI before baseline/launch.",
+    "existingFlagDiagnosticVisible": "Chromium warns about host-resolver-rules;the existing DNS restriction was retained."
+  },
+  "globalNetworkQualified": false,
+  "WSSQualified": false,
+  "WebKitQualified": false,
+  "releaseGate": false,
+  "limits": [
+    "Not physical listener loss;the separate physical-TCP measurement remains distinct.",
+    "WSS success through the manager still needs a normally trusted owned endpoint.",
+    "Not global DNS/UDP,IPv6,network switching or HTTPS-upstream trust qualification.",
+    "No product binary or public app release from this source-only harness."
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T14:25:00Z",
+  "status": "INCOMPLETE_READ_ONLY_INPUT_PREFLIGHT_EXIT_2",
+  "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/check-webkit-recipient-prereqs.py --input-manifest <offer>/input-pins-v20.json --webkit-archive <offer>/upstream/WebKit-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c.tar.zst --neantik-archive <offer>/NeAntik-source-955bc08.tar.zst --patch <offer>/webkit-v20-source-modifications.patch --build-config <offer>/BUILD-CONFIG-v20.json",
+  "inputs": {
+    "checkerSHA256": "5c87a0dc91efb2b2ef5f58e2e259ece7428536ad2479d233e7b4e12fa4cc0f84",
+    "inputManifestSHA256": "e1cc2889a47bed299eecc07fc839ccab09645d40af84cf776963b1a776d58cd3",
+    "webkitArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "managerArchiveSHA256": "b880531a56aced46dbf8cda817b3c1c52a8294dc1c38a4b13a2c2177cb556197",
+    "webkitPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "buildConfigSHA256": "87fa45899da4edc66eefd6b48fabae83331a0d52fc22f178d991789204f0837e"
+  },
+  "result": {
+    "exitCode": 2,
+    "mode": "read-only-pinned-input-preflight",
+    "webkitArchive": "pass",
+    "neantikArchive": "pass",
+    "patch": "pass",
+    "buildConfig": "pass",
+    "toolchain": "pass; no missing tools",
+    "knownPinnedInputsPresent": false,
+    "completeBuildInputsEstablished": false,
+    "packagingInputsPresent": false,
+    "recipientRelinkProved": false,
+    "licenseOrSourceOfferQualified": false
+  },
+  "remainingProof": [
+    "complete transitive build-input inventory and portable build/relink procedure",
+    "sourceTree must be extracted and checked against exact archive before configure/build",
+    "manager app and built frameworks are absent from this input-only preflight; cannot check recipient packaging inputs",
+    "modified-image rebuild/load evidence for selected signing scope",
+    "reviewed licenses, notices and final binary/source binding"
+  ],
+  "interpretation": "Exit 2 is the checker contract for incomplete recipient inputs, not evidence of a build/product failure. This read-only pass verified archive, patch, build-config and local tool availability only; it did not extract, build, sign, launch, install or publish."
+}

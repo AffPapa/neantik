@@ -1,0 +1,32 @@
+{
+  "observedAt": "2026-10-25T13:48:08+00:00",
+  "source": "CUA app inventory and direct Info.plist reads; no profile contents inspected",
+  "installedNeAntik": {
+    "path": "/Applications/NeAntik.app",
+    "bundleID": "app.neantik.desktop",
+    "version": "0.7.18",
+    "build": "81",
+    "runningAtObservation": true
+  },
+  "qaCandidate": {
+    "path": "/private/tmp/neantik-owned-webkit-qa-vw48xl6o/NeAntik.app",
+    "version": "1.0.0",
+    "build": "148",
+    "purpose": "retired private synthetic QA; exact fixture root remains embedded; not suitable for /Applications or user profiles"
+  },
+  "separateHelper": "NeAntik Network QA is a separate QA helper, not a browser version",
+  "disposition": "No installed browser or profile deleted/replaced. Production 1.0 candidate is absent; preserve current app and user data until a production candidate passes source/license, notice, runtime and installation gates with rollback.",
+  "cleanup": {
+    "removed": [
+      "/private/tmp/neantik-dns-tls-stage-f5vg9dib",
+      "/private/tmp/neantik-dns-tls-root-0xkm4xxp"
+    ],
+    "scope": "only exact failed synthetic TLS fixture; contents allowlisted before removal",
+    "preserved": "build148 archive, successful fixture root/stage, app installs, QA receipts, user profiles"
+  },
+  "currentInputHashes": {
+    "worksheet": "430a6e166105d46dd2e7f8699db21e96a8c72b76f8fd664a2fd1f6019ceea6e9",
+    "reviewPacket": "99ec10c609b5a91a2c1b5146295570fea755920ce37a4ae98c71eb529c0ee9e6",
+    "sourceManifest": "a02e54a22a45001a42485454bacc543d225d8a6334e6189952b51eb905c2a214"
+  }
+}

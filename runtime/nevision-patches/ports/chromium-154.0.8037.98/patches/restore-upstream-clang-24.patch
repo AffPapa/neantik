@@ -1,0 +1,7 @@
+--- a/build/toolchain/toolchain.gni
++++ b/build/toolchain/toolchain.gni
+@@ -43,3 +43,3 @@
+ declare_args() {
+-  clang_version = "23"
++  clang_version = "24"
+ }

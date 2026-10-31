@@ -12,7 +12,6 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_WORKFLOW_ENTRYPOINTS = (
     ".github/workflows/ci.yml",
-    ".github/workflows/codeql.yml",
     "README.md",
     "README.en.md",
     "CONTRIBUTING.md",
@@ -30,7 +29,7 @@ LOCAL_REFERENCE = re.compile(
     r"|(?<![A-Za-z0-9_./-])(?:\./)?"
     r")"
     r"(?P<path>(?:scripts|docs)/[A-Za-z0-9_./-]+"
-    r"\.(?:py|sh|command|md))"
+    r"\.(?:py|sh|command|md|swift))"
 )
 SCRIPT_DIR_REFERENCE = re.compile(
     r"\$SCRIPT_DIR/"

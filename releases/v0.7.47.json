@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "channel": "public-alpha",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "siteUrl": "https://browser.free",
+  "publicationScope": {
+    "channels": [
+      "GitHub",
+      "browser.free"
+    ],
+    "affpapa": "excluded by explicit user instruction; user updates manually"
+  },
+  "limitations": [
+    "Public alpha; major 1.0 acceptance remains open.",
+    "Isolated ARM64 macOS checks do not prove every Mac/OS or physical VoiceOver.",
+    "Safe Browsing disabled; no anonymity, CAPTCHA or service-rule bypass guarantee.",
+    "No continuous universal HTTP/HTTPS/DNS verdict. Final bounded browser-origin session/revision/runtime observation qualification remains open; production OS-default-trusted authenticated HTTPS CONNECT end-to-end separately unmeasured.",
+    "BrowserData-only backup requires original stopped profile, Mac, Keychain and exact runtime; no cross-Mac OS-encrypted secret portability. Data recovery was qualified separately in signed QA; production secrets were not used.",
+    "Full packed CRX installer and lifecycle qualification remain open; native unpacked lifecycle and extension inventory are distinct evidence.",
+    "Actual signed updater old-to-new gate used isolated Developer ID signed .46/109 baseline, not a notarized public .46. User-owned supported install directory required; no privileged system-wide installation fallback.",
+    "Exact .47 MCP smoke covers metadata/revision/access controls, not all 18 tools or every external AI client."
+  ],
+  "tag": "v0.7.47",
+  "version": "0.7.47",
+  "build": 110,
+  "releasedAt": "2026-10-12T11:09:25Z",
+  "sourceCommit": "098f7279ee595baf0dc1d06481340480b6b39177",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.47",
+  "rollbackRelease": "v0.7.34",
+  "distributionDirectory": "dist/distribution/v0.7.47-110-20261012T110020Z-57691",
+  "candidateManifestSHA256": "ba6ab162fc12c08af810d70482dce23e3cf1ae1c209e4e2830e57ae308062295",
+  "candidateSourceBindingSHA256": "7f1426fea8072d62ec88c0c1c6bcff9a13d5c46f19375c34f67fc1b27a00a155",
+  "archive": {
+    "name": "NeAntik-0.7.47-arm64-notarized.zip",
+    "sizeBytes": 189541205,
+    "sha256": "49b9174ea18214a1f44050dc02c1b5083ed3788591fa692b4e9c8d2d336ec870",
+    "url": "https://github.com/AffPapa/neantik/releases/download/v0.7.47/NeAntik-0.7.47-arm64-notarized.zip"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.47-arm64-notarized.dmg",
+    "sizeBytes": 214208840,
+    "sha256": "00484fb01ab09dc23abffd0403a566bc3a17637a00b68a880c1e5b6a18cf4a4b",
+    "url": "https://github.com/AffPapa/neantik/releases/download/v0.7.47/NeAntik-0.7.47-arm64-notarized.dmg"
+  },
+  "verification": {
+    "developerId": "PASS; same pinned certificate 474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "notarization": "Accepted ZIP and DMG",
+    "zipNotarySubmissionId": "509b69fc-886f-43aa-98e6-b10163f14081",
+    "dmgNotarySubmissionId": "40bc6ea8-8a9e-45b9-8e85-14709f9b67be",
+    "stapling": "PASS",
+    "gatekeeper": "PASS local and hosted ZIP/DMG",
+    "managerSHA256": "d2dd3cdd6b3ea198027b252337f4a56e7305048eb644ef2f6bf1b4721d067234",
+    "swiftTests": {
+      "reportedTests": 1426,
+      "suites": 164,
+      "seconds": 75.413,
+      "status": "PASS",
+      "scope": "one complete relevant run on changed updater implementation; .47 version-only transition not redundantly retested"
+    },
+    "targetedUpdater": "20 tests / 4 suites PASS; real signed own-QA allocation perturbation and strict semantic negatives",
+    "hostedDownload": "PASS fresh ZIP/DMG hashes, sizes, signatures, notarization, stapling, Gatekeeper and provenance",
+    "downloadedHeaded": "PASS fresh authenticated isolated headed enrollment; critical files match; owned processes drained",
+    "exactCandidateMCP": "PASS bounded metadata creation/update/restart, stale revision, invalid mode and read-only refusal; 18 management / 7 read catalogue",
+    "updater": {
+      "status": "PASS",
+      "fromVersion": "0.7.46",
+      "fromBuild": 109,
+      "baselineStatus": "Developer ID signed isolated QA; not notarized/public",
+      "offer": true,
+      "controlledPreACKRollback": true,
+      "normalInstallCommitACK": true,
+      "automaticRelaunch": true,
+      "profilesRetained": 2,
+      "tabsRestored": 2,
+      "syntheticCookieLocalStorageIndexedDBRetained": true,
+      "separateProfileNegativeControl": true,
+      "reseeded": false,
+      "runtimeChanged": false
+    },
+    "signedFeed": "Independent Ed25519 verification of actual public HTTPS envelope PASS; exact equality with offline envelope; installed .47 GUI verified HTTPS feed and reported no newer version",
+    "privacy": "Changed source/tests and public artifacts recognized-format privacy gates PASS; 7 changed Site files recognized-pattern scan PASS. No universal guarantee for unknown secret formats. Production profiles and credentials not used.",
+    "siteTests": "34 checks and Vinext build PASS; MCP 5, rendered 12, SEO 10, signed feed 2, telemetry 5",
+    "liveAPI": "PASS ordinary HTTPS200 version0.7.47/build110/canDownload true; homepage download URLs, updater FAQ and signed feed link match"
+  },
+  "changes": [
+    "Reserve standard descriptors before updater bootstrap instead of closing them",
+    "Compare authenticated plist semantics strictly instead of unstable serialized dictionary order",
+    "Deliver signed update channel and actual install/ACK/rollback with isolated persistence verification",
+    "Enable backup creation through validated Direct provisioning packaging; preserve BrowserData-only contract",
+    "Publish factual updater FAQ and offline-signed update envelope without private signer in Site"
+  ],
+  "sitePublication": {
+    "status": "succeeded",
+    "projectId": "appgprj_6a643e28baa08191bf23bf4803345907",
+    "versionNumber": 136,
+    "versionId": "appgprj_6a643e28baa08191bf23bf4803345907~appgver_a4e93059f85c8191a42a81794eb97679",
+    "sourceCommit": "c2123410316b45c5af06740144ccbb2048b744ec",
+    "deploymentId": "appgdep_6accc107eb4c8191b207c0d86fb40e99",
+    "nativeURL": "https://neantik-browser.iryadom.chatgpt.site",
+    "customDomain": "https://browser.free/",
+    "audience": "public",
+    "updateFeedURL": "https://browser.free/api/update.json"
+  },
+  "githubPublication": {
+    "status": "published",
+    "draft": false,
+    "publishedAt": "2026-10-12T11:09:25Z",
+    "targetCommit": "098f7279ee595baf0dc1d06481340480b6b39177",
+    "assetsImmutable": true,
+    "assetCount": 4
+  }
+}

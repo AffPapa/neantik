@@ -1,8 +1,14 @@
 import Foundation
 
-struct ProxyImportDraft: Equatable, Sendable {
+struct ProxyImportDraft: Equatable, Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     let configuration: ProxyConfiguration
     let password: String
+
+    // Imported endpoints and credentials must not appear in accidental debug
+    // output. The explicit UI summary has its own redaction policy below.
+    var description: String { "ProxyImportDraft(<redacted>)" }
+    var debugDescription: String { description }
+    var customMirror: Mirror { Mirror(self, children: [:]) }
 
     var redactedSummary: String {
         let authentication = configuration.username.isEmpty
@@ -57,34 +63,49 @@ enum ProxyImportParser {
         guard value.utf8.count <= maximumInputBytes else {
             throw ProxyImportError.tooLong
         }
-        guard value.rangeOfCharacter(from: .controlCharacters) == nil,
-              !value.contains("://")
-        else {
+        guard value.rangeOfCharacter(from: .controlCharacters) == nil else {
             throw ProxyImportError.invalid
+        }
+        let effectiveKind: ProxyKind
+        let body: String
+        if let schemeEnd = value.range(of: "://") {
+            switch value[..<schemeEnd.lowerBound].lowercased() {
+            case "http": effectiveKind = .http
+            case "https": effectiveKind = .https
+            case "socks5", "socks5h": effectiveKind = .socks5
+            default: throw ProxyImportError.invalid
+            }
+            body = String(value[schemeEnd.upperBound...])
+            guard !body.contains("://") else {
+                throw ProxyImportError.invalid
+            }
+        } else {
+            effectiveKind = kind
+            body = value
         }
 
         let parsedCandidates: [ProxyImportDraft]
-        if value.contains("@") {
-            guard value.filter({ $0 == "@" }).count == 1,
-                  let marker = value.firstIndex(of: "@")
+        if body.contains("@") {
+            guard body.filter({ $0 == "@" }).count == 1,
+                  let marker = body.firstIndex(of: "@")
             else {
                 throw ProxyImportError.invalid
             }
-            let left = String(value[..<marker])
-            let right = String(value[value.index(after: marker)...])
+            let left = String(body[..<marker])
+            let right = String(body[body.index(after: marker)...])
             parsedCandidates = candidates(
                 left: left,
                 right: right,
-                kind: kind,
+                kind: effectiveKind,
                 order: order
             )
         } else {
-            let parts = try topLevelComponents(value, separator: ":")
+            let parts = try topLevelComponents(body, separator: ":")
             if parts.count == 2 {
                 guard let endpoint = endpoint(
                     host: parts[0],
                     port: parts[1],
-                    kind: kind,
+                    kind: effectiveKind,
                     username: ""
                 ) else {
                     throw ProxyImportError.invalid
@@ -99,7 +120,7 @@ enum ProxyImportParser {
             }
             parsedCandidates = colonCandidates(
                 parts: parts,
-                kind: kind,
+                kind: effectiveKind,
                 order: order
             )
         }
@@ -116,8 +137,10 @@ enum ProxyImportParser {
             throw ProxyImportError.ambiguous
         }
         let result = unique[0]
-        if kind == .socks5 && !result.configuration.username.isEmpty {
-            throw ProxyImportError.socksAuthenticationUnsupported
+        if effectiveKind == .socks5 && !result.configuration.username.isEmpty {
+            guard !result.password.isEmpty, result.password.utf8.count <= 255 else {
+                throw ProxyImportError.invalidSOCKSCredentials
+            }
         }
         return result
     }
@@ -295,18 +318,6 @@ enum ProxyImportParser {
         if configuration.isValid {
             return configuration
         }
-        // Validate the endpoint and credentials independently so callers can
-        // produce the specific SOCKS5-authentication error below instead of a
-        // misleading generic parser failure.
-        if kind == .socks5, !username.isEmpty {
-            let credentialValidation = ProxyConfiguration(
-                kind: .http,
-                host: rawHost,
-                port: port,
-                username: username
-            )
-            return credentialValidation.isValid ? configuration : nil
-        }
         return nil
     }
 
@@ -359,7 +370,7 @@ enum ProxyImportError: LocalizedError, Equatable {
     case tooLong
     case invalid
     case ambiguous
-    case socksAuthenticationUnsupported
+    case invalidSOCKSCredentials
 
     var errorDescription: String? {
         switch self {
@@ -371,8 +382,8 @@ enum ProxyImportError: LocalizedError, Equatable {
             "Не удалось распознать прокси. Проверь адрес, порт и формат."
         case .ambiguous:
             "Неясно, где адрес прокси. Выбери «Адрес прокси слева» или «Адрес прокси справа»."
-        case .socksAuthenticationUnsupported:
-            "SOCKS5 в Chromium поддерживается только без логина и пароля."
+        case .invalidSOCKSCredentials:
+            "Для SOCKS5 нужны логин и пароль длиной до 255 байт UTF-8 каждый."
         }
     }
 }

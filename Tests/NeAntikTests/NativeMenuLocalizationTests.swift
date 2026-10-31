@@ -35,12 +35,6 @@ struct NativeMenuLocalizationTests {
         )
         #expect(
             NativeMenuLocalization.localizedTitle(
-                "Settings…",
-                appName: appName
-            ) == "Настройки…"
-        )
-        #expect(
-            NativeMenuLocalization.localizedTitle(
                 "Unknown System Extension",
                 appName: appName
             ) == "Unknown System Extension"

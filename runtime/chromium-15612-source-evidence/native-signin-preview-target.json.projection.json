@@ -1,0 +1,40 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "292f393dddf32f451ea7048e17d4df422733ef0e468901f93858bbd3253e769d",
+  "payload": {
+    "argsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+    "correctionReceiptSHA256": "9fd9df8dd7c90f2df7a2d13845177ad0a3d743ef9c565f16c871837983cad89c",
+    "exitCode": 0,
+    "finishedAt": "2026-10-09T03:21:31.852977+00:00",
+    "jobs": 2,
+    "logSHA256": "5e8e53a4e55163f25c11e3afbca933a8c9edf51db8675e8a339cc98a2c554799",
+    "logSizeBytes": 386,
+    "nativeNinjaSHA256": "6c03e94e3ee141301a7e5151227508ac8cec05c12d79ed9240062a86a0e2d14f",
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "startedAt": "2026-10-09T03:21:25.928845+00:00",
+    "status": "exact-native-signin-targets-passed",
+    "targets": [
+      "obj/components/signin/core/browser/browser/account_preview_data_service.o",
+      "obj/components/signin/core/browser/browser/account_preview_metrics_recorder.o"
+    ]
+  },
+  "payloadType": "json",
+  "receipt": "native-signin-preview-target.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

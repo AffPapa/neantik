@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "V325",
+  "observedAtUTC": "2026-10-27T21:02:48Z",
+  "status": "BASELINE_REFRESHED; CURRENT_RUNTIME_BELOW_STABLE_FLOOR",
+  "scope": "Release security gate only. No Chromium source, binary, manager, package, signing, or public artifact changed.",
+  "officialReference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_0562499947.html",
+  "publishedAt": "2026-10-27",
+  "checkedAt": "2026-10-28",
+  "observedStableVersions": {
+    "windows": "156.0.8078.73",
+    "macOS": "156.0.8078.74",
+    "linux": "156.0.8078.73"
+  },
+  "securityChanges": "The official post says details will be updated shortly. securityFixCount=0 records not enumerated; it does not mean no security fixes.",
+  "priorBaselineSHA256": "42ff2372587184ca5de290382cb078d3fc2c2979fd5a2a39fd0c60f05d3e97c0",
+  "priorBaselineBackup": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v325-security-baseline-before-refresh-20261028.json",
+  "newBaselineSHA256": "7f056eb8f0ec05f9baf8397854cdda36193fba787835563631341a1c45a4dfce",
+  "runtimeVersion": "156.0.8078.48",
+  "disposition": "BELOW_CURRENT_MACOS_STABLE_156.0.8078.74; cannot proceed to public package. Chromium source/runtime update and all affected runtime qualification are required.",
+  "priorPreparationFailure": "V324 candidate preparation stopped at the stale baseline-age guard before manager or host compilation.",
+  "nextAction": "Locate the exact retained M156.48 source/build inputs, compare official 156.0.8078.74 branch source against them, and plan a source-bound update; do not package or publish .48."
+}

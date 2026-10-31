@@ -7,14 +7,15 @@ node_modules/
 __pycache__/
 *.pyc
 *.p12
-*.p8
 *.pem
 *.key
 *.mobileprovision
-*.provisionprofile
 .env
 .env.*
 .DS_Store
 *.xcuserstate
 xcuserdata/
 .runtime-test/
+.swiftpm-major-clang/
+.swiftpm-major-cache/
+.swiftpm-major-validation/

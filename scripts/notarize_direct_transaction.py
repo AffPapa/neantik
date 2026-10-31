@@ -8,7 +8,6 @@ import json
 import os
 import plistlib
 import re
-import shutil
 import stat
 import subprocess
 import sys
@@ -25,6 +24,7 @@ import release_input_snapshot as SNAPSHOT
 import release_source_receipt as SOURCE
 import release_transaction as TRANSACTION
 import notary_transaction_state as STATE
+import release_candidate_location as LOCATION
 
 
 MAXIMUM_ARCHIVE_BYTES = 16 * 1024 * 1024 * 1024
@@ -39,37 +39,6 @@ MAXIMUM_UNCOMPRESSED_BYTES = 32 * 1024 * 1024 * 1024
 
 class DirectNotaryTransactionError(RuntimeError):
     pass
-
-
-def notarytool_auth_arguments(
-    notary_profile: str,
-    notary_keychain: Path | None,
-) -> tuple[str, ...]:
-    arguments = ("--keychain-profile", notary_profile)
-    if notary_keychain is None:
-        return arguments
-    raw_path = os.fspath(notary_keychain)
-    if not notary_keychain.is_absolute() or "\x00" in raw_path:
-        raise DirectNotaryTransactionError(
-            "explicit notary Keychain path must be absolute"
-        )
-    try:
-        status = notary_keychain.lstat()
-    except OSError as error:
-        raise DirectNotaryTransactionError(
-            "explicit notary Keychain is unavailable"
-        ) from error
-    if (
-        not stat.S_ISREG(status.st_mode)
-        or stat.S_ISLNK(status.st_mode)
-        or status.st_uid != os.geteuid()
-        or status.st_nlink != 1
-        or status.st_mode & 0o077
-    ):
-        raise DirectNotaryTransactionError(
-            "explicit notary Keychain must be one private owner-only regular file"
-        )
-    return (*arguments, "--keychain", raw_path)
 
 
 @dataclass(frozen=True)
@@ -157,6 +126,70 @@ PhaseHook = Callable[[str, dict[str, Path]], None]
 SourceAssertion = Callable[[SOURCE.ReleaseSourceSnapshot], None]
 
 
+# Only reviewed names enter timing logs. In particular, an argv, credential,
+# profile name, path or child output must never become a diagnostic field.
+_TIMED_STAGES = frozenset({
+    "candidate archive extraction",
+    "candidate manifest verification",
+    "fingerprint evidence envelope verification",
+    "public artifact privacy verification",
+    "integrated release verification",
+    "code signature verification",
+    "runtime security baseline",
+    "runtime security reference",
+    "Direct telemetry contract",
+    "Direct update policy",
+    "public fingerprint corpus",
+    "Developer ID signature inspection",
+    "stale Apple notarization history reconciliation",
+    "Apple notarization history reconciliation",
+    "Apple notarization recovery wait",
+    "Apple notarization recovery confirmation",
+    "Apple Accepted recovery confirmation",
+    "recovery stapling accepted candidate",
+    "recovery stapled ticket validation",
+    "recovery Gatekeeper assessment",
+    "recovery final ZIP packaging",
+    "recovery final notarized archive verification",
+    "recovered public archive verification",
+    "submission ZIP packaging",
+    "Apple notarization submission",
+    "Apple notarization wait",
+    "Apple notarization status confirmation",
+    "stapling accepted candidate",
+    "stapled ticket validation",
+    "Gatekeeper assessment",
+    "final ZIP packaging",
+    "final notarized archive verification",
+    "published notarized archive verification",
+})
+
+
+def _stage_diagnostic(
+    label: str,
+    event: str,
+    *,
+    elapsed_ns: int | None = None,
+    outcome: str | None = None,
+) -> None:
+    """Observe commands without altering gates or their evidence receipts."""
+    record: dict[str, object] = {
+        "kind": "neantik.direct-stage",
+        "stage": label if label in _TIMED_STAGES else "unclassified",
+        "event": event,
+    }
+    if elapsed_ns is not None:
+        record["elapsedSeconds"] = round(elapsed_ns / 1_000_000_000, 6)
+    if outcome is not None:
+        record["outcome"] = outcome
+    try:
+        print(json.dumps(record, sort_keys=True), file=sys.stderr, flush=True)
+    except (OSError, ValueError):
+        # Diagnostics are not admission: a closed log must neither skip a gate
+        # nor turn a refused candidate into a successful transaction.
+        pass
+
+
 def default_runner(command: list[str], cwd: Path) -> CommandResult:
     executable = Path(command[0])
     if (
@@ -208,7 +241,20 @@ def run_checked(
     label: str,
     include_stderr: bool = False,
 ) -> str:
-    result = runner(command, cwd)
+    started = time.monotonic_ns()
+    _stage_diagnostic(label, "start")
+    try:
+        result = runner(command, cwd)
+    except BaseException:
+        _stage_diagnostic(
+            label, "end", elapsed_ns=time.monotonic_ns() - started,
+            outcome="runner-error",
+        )
+        raise
+    _stage_diagnostic(
+        label, "end", elapsed_ns=time.monotonic_ns() - started,
+        outcome="exit-zero" if result.returncode == 0 else "exit-nonzero",
+    )
     if result.returncode != 0:
         detail = "\n".join(
             part
@@ -233,33 +279,6 @@ def run_checked(
     return result.output
 
 
-def run_stapler_checked(
-    command: list[str],
-    *,
-    cwd: Path,
-    runner: CommandRunner,
-    label: str,
-) -> str:
-    """Retry transient Apple ticket propagation failures (stapler error 73)."""
-    last_error: DirectNotaryTransactionError | None = None
-    # Apple may report Accepted before the CDN ticket is available to
-    # stapler. Allow a bounded six-minute propagation window.
-    for attempt in range(1, 13):
-        result = runner(command, cwd)
-        if result.returncode == 0:
-            return result.output
-        detail = "\n".join(
-            part for part in (result.output.strip(), result.stderr.strip()) if part
-        )
-        last_error = DirectNotaryTransactionError(
-            f"{label} failed" + (f":\n{detail}" if detail else "")
-        )
-        if "Error 73" not in detail or attempt == 12:
-            raise last_error
-        time.sleep(30)
-    raise last_error or DirectNotaryTransactionError(f"{label} failed")
-
-
 def _reject_duplicate_json_pairs(
     pairs: list[tuple[str, object]],
 ) -> dict[str, object]:
@@ -277,7 +296,6 @@ def preflight_notary_profile(
     *,
     project_root: Path,
     notary_profile: str,
-    notary_keychain: Path | None,
     runner: CommandRunner,
 ) -> None:
     """Prove the configured Keychain profile works before durable state.
@@ -287,16 +305,13 @@ def preflight_notary_profile(
     missing, invalid, or unreachable profile fails before a notarization
     transaction directory or submit-intent receipt can exist.
     """
-    auth_arguments = notarytool_auth_arguments(
-        notary_profile,
-        notary_keychain,
-    )
     result = runner(
         [
             "xcrun",
             "notarytool",
             "history",
-            *auth_arguments,
+            "--keychain-profile",
+            notary_profile,
             "--output-format",
             "json",
         ],
@@ -601,74 +616,6 @@ def extract_candidate_app(
     return app
 
 
-def extract_staple_app(
-    archive: Path,
-    destination: Path,
-    *,
-    project_root: Path,
-    runner: CommandRunner,
-) -> Path:
-    app = extract_candidate_app(
-        archive,
-        destination,
-        project_root=project_root,
-        runner=runner,
-    )
-    root_value = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
-    if not root_value:
-        return app
-    root = Path(root_value)
-    root.mkdir(parents=True, exist_ok=True)
-    target = root / "NeAntik.app"
-    if target.exists() or target.is_symlink():
-        if target.is_dir() and not target.is_symlink():
-            shutil.rmtree(target)
-        else:
-            target.unlink()
-    subprocess.run(
-        ["/usr/bin/ditto", "--norsrc", str(app), str(target)],
-        check=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    shutil.rmtree(app)
-    return target
-
-
-def canonicalize_stapled_app(app: Path) -> Path:
-    root_value = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
-    if not root_value:
-        return app
-    target = Path(root_value) / "NeAntik.app"
-    if target.exists() or target.is_symlink():
-        if target.is_dir() and not target.is_symlink():
-            shutil.rmtree(target)
-        else:
-            target.unlink()
-    shutil.move(str(app), str(target))
-    return target
-
-
-def move_app_for_stapling(app: Path) -> tuple[Path, Path | None]:
-    # Apple's stapler expects the canonical bundle name and can reject a
-    # notarized ticket when the app is renamed immediately before stapling.
-    # `extract_staple_app` already copies with ditto --norsrc, so no further
-    # relocation is needed here.
-    return app, None
-
-
-def restore_canonical_app(app: Path, canonical: Path | None) -> Path:
-    if canonical is None:
-        return app
-    if canonical.exists() or canonical.is_symlink():
-        if canonical.is_dir() and not canonical.is_symlink():
-            shutil.rmtree(canonical)
-        else:
-            canonical.unlink()
-    shutil.move(str(app), str(canonical))
-    return canonical
-
-
 def read_version(info_plist: Path) -> str:
     with info_plist.open("rb") as file:
         value = plistlib.load(file).get("CFBundleShortVersionString")
@@ -946,16 +893,6 @@ def verify_candidate_app(
                         project_root
                         / "scripts"
                         / "verify-direct-update-policy.py"
-                    )
-                ],
-            ),
-            (
-                "Secure Enclave release authority",
-                [
-                    str(
-                        project_root
-                        / "scripts"
-                        / "verify-secure-enclave-release-authority.py"
                     )
                 ],
             ),
@@ -1599,7 +1536,7 @@ def reconcile_mismatched_submit_intent(
     active: tuple[Path, tuple[STATE.StateReceipt, ...]],
     *,
     project_root: Path,
-    notary_auth_arguments: tuple[str, ...],
+    notary_profile: str,
     runner: CommandRunner,
 ) -> bool:
     """Prove a stale submit intent had no Apple effect, then retain it.
@@ -1631,7 +1568,8 @@ def reconcile_mismatched_submit_intent(
             "xcrun",
             "notarytool",
             "history",
-            *notary_auth_arguments,
+            "--keychain-profile",
+            notary_profile,
             "--output-format",
             "json",
         ],
@@ -1758,7 +1696,6 @@ def resume_known_transaction(
     runtime_build_evidence: dict[str, object],
     release_channel: str,
     notary_profile: str,
-    notary_auth_arguments: tuple[str, ...],
     runner: CommandRunner,
     hook: PhaseHook,
     source_assertion: SourceAssertion,
@@ -1822,7 +1759,8 @@ def resume_known_transaction(
                 "xcrun",
                 "notarytool",
                 "history",
-                *notary_auth_arguments,
+                "--keychain-profile",
+                notary_profile,
                 "--output-format",
                 "json",
             ],
@@ -1858,7 +1796,6 @@ def resume_known_transaction(
             runtime_build_evidence=runtime_build_evidence,
             release_channel=release_channel,
             notary_profile=notary_profile,
-            notary_auth_arguments=notary_auth_arguments,
             runner=runner,
             hook=hook,
             source_assertion=source_assertion,
@@ -1879,7 +1816,8 @@ def resume_known_transaction(
                     "notarytool",
                     "wait",
                     submission_identifier,
-                    *notary_auth_arguments,
+                    "--keychain-profile",
+                    notary_profile,
                     "--timeout",
                     "30m",
                     "--output-format",
@@ -1901,7 +1839,8 @@ def resume_known_transaction(
                 "notarytool",
                 "info",
                 submission_identifier,
-                *notary_auth_arguments,
+                "--keychain-profile",
+                notary_profile,
                 "--output-format",
                 "json",
             ],
@@ -1937,7 +1876,8 @@ def resume_known_transaction(
                 "notarytool",
                 "info",
                 submission_identifier,
-                *notary_auth_arguments,
+                "--keychain-profile",
+                notary_profile,
                 "--output-format",
                 "json",
             ],
@@ -1989,17 +1929,9 @@ def resume_known_transaction(
             final_check_root,
         ):
             directory.mkdir(mode=0o700)
-        staple_work_root = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
-        if staple_work_root:
-            staging_parent = Path(staple_work_root) / f"neantik-staple-{uuid.uuid4().hex}"
-            staging_parent.mkdir(parents=True, mode=0o755)
-            staging_parent.chmod(0o755)
-            accepted_root = staging_parent / "accepted"
-            accepted_root.mkdir(parents=True, mode=0o700)
-            accepted_root.chmod(0o755)
         staged_app = TRANSACTION.observe_sealed_phase(
             submitted_seal,
-            lambda: extract_staple_app(
+            lambda: extract_candidate_app(
                 submitted,
                 accepted_root,
                 project_root=project_root,
@@ -2015,20 +1947,18 @@ def resume_known_transaction(
             runner=runner,
             full_preflight=False,
         )
-        staple_target, canonical_target = move_app_for_stapling(staged_app)
-        run_stapler_checked(
+        run_checked(
             ["xcrun", "stapler", "staple", str(staged_app)],
             cwd=project_root,
             runner=runner,
             label="recovery stapling accepted candidate",
         )
-        run_stapler_checked(
-            ["xcrun", "stapler", "validate", str(staple_target)],
+        run_checked(
+            ["xcrun", "stapler", "validate", str(staged_app)],
             cwd=project_root,
             runner=runner,
             label="recovery stapled ticket validation",
         )
-        staged_app = restore_canonical_app(staple_target, canonical_target)
         run_checked(
             [
                 "spctl",
@@ -2358,7 +2288,6 @@ def run_transaction(
     attestation: Path,
     release_channel: str,
     notary_profile: str,
-    notary_keychain: Path | None = None,
     source_binding: Path | None = None,
     runner: CommandRunner = default_runner,
     phase_hook: PhaseHook | None = None,
@@ -2383,11 +2312,17 @@ def run_transaction(
         raise DirectNotaryTransactionError(
             "dist directory is unsafe"
         )
-    expected_app = dist / "NeAntik.app"
-    if app.resolve() != expected_app.resolve():
+    try:
+        LOCATION.validate_inputs(project_root, app, {
+            "direct-candidate-manifest.json": manifest,
+            "direct-candidate-source.json": source_binding or manifest.parent / "direct-candidate-source.json",
+            "fingerprint-audit.json": evidence,
+            "fingerprint-audit-summary.json": attestation,
+        })
+    except (LOCATION.CandidateLocationError, OSError, ValueError) as error:
         raise DirectNotaryTransactionError(
-            "notarization requires the exact prepared dist/NeAntik.app"
-        )
+            "notarization requires the exact prepared dist/NeAntik.app or a registered private candidate"
+        ) from error
     if (
         release_channel not in {"public-alpha", "production"}
         or not notary_profile
@@ -2400,14 +2335,9 @@ def run_transaction(
         raise DirectNotaryTransactionError(
             "prepared NeAntik.app is missing or unsafe"
         )
-    notary_auth = notarytool_auth_arguments(
-        notary_profile,
-        notary_keychain,
-    )
     preflight_notary_profile(
         project_root=project_root,
         notary_profile=notary_profile,
-        notary_keychain=notary_keychain,
         runner=runner,
     )
     (
@@ -2513,7 +2443,7 @@ def run_transaction(
                 and reconcile_mismatched_submit_intent(
                     active,
                     project_root=project_root,
-                    notary_auth_arguments=notary_auth,
+                    notary_profile=notary_profile,
                     runner=runner,
                 )
             ):
@@ -2529,7 +2459,6 @@ def run_transaction(
                 runtime_build_evidence=bound_runtime_build_evidence,
                 release_channel=release_channel,
                 notary_profile=notary_profile,
-                notary_auth_arguments=notary_auth,
                 runner=runner,
                 hook=hook,
                 source_assertion=source_assertion,
@@ -2722,7 +2651,8 @@ def run_transaction(
                     "notarytool",
                     "submit",
                     str(submitted),
-                    *notary_auth,
+                    "--keychain-profile",
+                    notary_profile,
                     "--no-wait",
                     "--output-format",
                     "json",
@@ -2757,7 +2687,8 @@ def run_transaction(
                     "notarytool",
                     "wait",
                     submission_identifier,
-                    *notary_auth,
+                    "--keychain-profile",
+                    notary_profile,
                     "--timeout",
                     "30m",
                     "--output-format",
@@ -2779,7 +2710,8 @@ def run_transaction(
                 "notarytool",
                 "info",
                 submission_identifier,
-                *notary_auth,
+                "--keychain-profile",
+                notary_profile,
                 "--output-format",
                 "json",
             ],
@@ -2835,18 +2767,9 @@ def run_transaction(
         )
         hook("notary-accepted", context)
 
-        staple_work_root = os.environ.get("NEANTIK_STAPLE_WORK_ROOT")
-        if staple_work_root:
-            staging_parent = Path(staple_work_root) / f"neantik-staple-{uuid.uuid4().hex}"
-            staging_parent.mkdir(parents=True, mode=0o755)
-            staging_parent.chmod(0o755)
-            accepted_root = staging_parent / "accepted"
-            accepted_root.mkdir(parents=True, mode=0o700)
-            accepted_root.chmod(0o755)
-
         staged_app = TRANSACTION.observe_sealed_phase(
             submitted_seal,
-            lambda: extract_staple_app(
+            lambda: extract_candidate_app(
                 submitted,
                 accepted_root,
                 project_root=project_root,
@@ -2863,20 +2786,18 @@ def run_transaction(
             runner=runner,
             full_preflight=False,
         )
-        staple_target, canonical_target = move_app_for_stapling(staged_app)
-        run_stapler_checked(
+        run_checked(
             ["xcrun", "stapler", "staple", str(staged_app)],
             cwd=project_root,
             runner=runner,
             label="stapling accepted candidate",
         )
-        run_stapler_checked(
-            ["xcrun", "stapler", "validate", str(staple_target)],
+        run_checked(
+            ["xcrun", "stapler", "validate", str(staged_app)],
             cwd=project_root,
             runner=runner,
             label="stapled ticket validation",
         )
-        staged_app = restore_canonical_app(staple_target, canonical_target)
         run_checked(
             [
                 "spctl",
@@ -3221,8 +3142,6 @@ def main() -> int:
     )
     args = parser.parse_args()
     notary_profile = os.environ.get("NEANTIK_NOTARY_PROFILE", "")
-    notary_keychain_value = os.environ.get("NEANTIK_NOTARY_KEYCHAIN", "").strip()
-    notary_keychain = Path(notary_keychain_value) if notary_keychain_value else None
     try:
         result = run_transaction(
             project_root=args.project_root,
@@ -3233,7 +3152,6 @@ def main() -> int:
             attestation=args.attestation,
             release_channel=args.release_channel,
             notary_profile=notary_profile,
-            notary_keychain=notary_keychain,
         )
     except DirectNotaryTransactionError as error:
         print(f"Direct notarization failed: {error}", file=sys.stderr)

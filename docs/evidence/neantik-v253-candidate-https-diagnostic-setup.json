@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "status": "DIAGNOSTIC_SETUP_FAILED_NO_BROWSER_PAGE_RUN",
+  "candidate": "b96006a994664a80bf89cd757f932eff",
+  "endpointCheck": {
+    "endpoint": "https://browser.free/api/route-qa/https",
+    "result": "HTTP 403 for syntactically valid ephemeral nonce/callback request from local shell",
+    "scope": "No redirect payload or private values retained; this does not establish browser route."
+  },
+  "alternateHttpsFixture": {
+    "origin": "https://example.com/",
+    "profileStarted": false,
+    "observed": "App UI showed unfinished Create Profile form with unsaved text while two synthetic QA profiles were present. Unsaved form was preserved. No profile launched and no network event recorded.",
+    "fixtureExit": "manager stopped, server threads drained, owned runtime processes remaining 0"
+  },
+  "interpretation": "Setup failure only. Not another runtime proxy result. Do not count the absence of events as a product failure or pass. P252 exact production run remains the route failure evidence.",
+  "next": "Fix fixture-to-window custody and route-qa endpoint signing availability before another exact-candidate HTTPS attempt; do not alter the candidate based on this setup failure alone.",
+  "releaseQualified": false
+}

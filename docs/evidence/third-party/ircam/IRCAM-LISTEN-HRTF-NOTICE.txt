@@ -1,0 +1,29 @@
+IRCAM LISTEN HRTF data notice
+=============================
+
+The WebKit WebAudio HRTF resource identified below contains the composite HRTF
+dataset derived from measurements in the IRCAM LISTEN database. IRCAM's
+published LISTEN terms state that the database is public and available for any
+use, and request acknowledgement of the database. IRCAM retains the stated
+copyright. This is a separate data permission and attribution; it is not an
+SPDX license and does not change the license of WebKit or NeAntik code.
+
+Copyright (c) 2002 IRCAM (Institut de Recherche et Coordination
+Acoustique/Musique). All Rights Reserved.
+
+Acknowledgement: IRCAM LISTEN HRTF Database.
+
+Bound runtime resource:
+  WebCore.framework/Versions/A/Resources/audio/Composite.wav
+  SHA-256: a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3
+
+Bound corresponding source:
+  Source/WebCore/platform/audio/resources/Composite.wav
+  SHA-256: a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3
+
+References:
+  IRCAM LISTEN database: http://recherche.ircam.fr/equipes/salles/listen/
+  Archived IRCAM measurement record: https://web.archive.org/web/20230408181607/http://recherche.ircam.fr/equipes/salles/listen/info_display.php?subject=IRC_1002
+  Reproduced IRCAM terms: https://doc.sccode.org/Other/ATKLicensing.html
+  WebKit HRTF consolidation history: https://bugs.webkit.org/show_bug.cgi?id=69703
+  WebAudio discussion identifying the WebKit composite as derived from LISTEN: https://lists.w3.org/Archives/Public/public-audio/2012OctDec/0337.html

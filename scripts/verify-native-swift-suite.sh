@@ -15,72 +15,149 @@ case "$SUITE" in
   BrowserLaunchActionPresentationTests|\
   BrowserLaunchBuilderTests|\
   BrowserLaunchPreparationPolicyTests|\
-  BrowserLaunchStagedPreflightTests|\
   BrowserLaunchPolicyTests|\
   BrowserProcessInventoryTests|\
-  BrowserProcessLifecyclePresentationTests|\
   BrowserProcessManagerTests|\
-  BrowserTerminationPresentationTests|\
+  BrowserSessionObservationTests|\
   BrowserRuntimeInspectorTests|\
-  BrowserRuntimeLaunchTrustTests|\
   BrowserRuntimePreflightTests|\
   BulkProxyActionProjectionTests|\
   BulkProxyImportTests|\
-  BulkProxyRunProgressTests|\
+  CRX3SignatureVerifierTests|\
   DisplayDateFormattingTests|\
   EnvironmentDiagnosticAssessmentTests|\
+  FingerprintAuditReadinessPolicyTests|\
   FingerprintAuditAutomationPolicyTests|\
   FingerprintAuditLoopbackSTUNServerTests|\
   FingerprintAuditObservationTests|\
+  FingerprintAuditTriggerPolicyTests|\
   FingerprintAuditTests|\
   FingerprintEvidenceEnrollmentTests|\
   FingerprintEvidenceEnvelopeTests|\
   FingerprintEvidenceReleaseContextTests|\
   FirstProfileBootstrapTests|\
+  ProfileArtifactProvenanceTests|\
+  ProfileDiagnosticsSummaryTests|\
+  RedactedSupportBundleTests|\
   SecureEnclaveFingerprintEvidenceSignerTests|\
-  SensitiveRevealLeaseTests|\
   KeychainStoreTests|\
   LaunchIntentTests|\
-  ManagerSessionEvidenceTests|\
-  ManagerStartupProbeTests|\
   NativeMenuLocalizationTests|\
-  NeAntikShortcutCatalogTests|\
-  NeAntikErrorPresentationTests|\
   ProfileCommandPresentationTests|\
-  ProfileBatchActionsTests|\
-  ProfileEditorProcessPolicyTests|\
+  ProfileConfigurationTransferFileImportTests|\
+  ProfileConfigurationTransferTests|\
   ProfileEditorPasswordTests|\
   ProfileEditorPresentationTests|\
+  ProfileSnapshotSaveSummaryTests|\
   ProfileEditorValidationTests|\
-  ProfileDuplicationTests|\
   ProfileEnvironmentInspectorTests|\
   ProfileEnvironmentPresentationTests|\
   ProfileEnvironmentAccessibilityTests|\
+  ProfileLifecycleHealthTests|\
   ProfileListProjectionTests|\
-  ProfileOperationalProjectionTests|\
-  ProfileListOrderingTests|\
+  ProfileManagerPerformanceBudgetTests|\
   ProfileOrganizationTests|\
   ProfileOrganizationPersistenceTests|\
   ProfilePostSaveRevealPolicyTests|\
+  ProfilePrivacyPanelTests|\
+  ProxyCheckSummaryTests|\
+  ProfileSnapshotTests|\
+  SiteCompatibilityAssessmentTests|\
   ProfileRevisionAndTransactionTests|\
   ProfileTagAppearanceTests|\
   ProfileTagEditorTests|\
+  ManagedBrowserQuitTests|\
+  ManagerLaunchAdmissionTests|\
+  ManagerLibraryTests|\
+  ManagerSearchBenchmarkTests|\
+  ProfileMetadataUndoTests|\
   ProfileStoreTests|\
-  ProfileStorageMeasurementTests|\
+  PrivateGuardLeaseTests|\
   ProxyHealthTests|\
   ProxyImportParserTests|\
-  ProxyReuseAssessmentTests|\
   ProxyTestOperationRegistryTests|\
   ProxyTesterTests|\
   ResponsiveLayoutRenderTests|\
-  ProfileInspectorPolicyTests|\
-  ProfileRowLayoutTests|\
+  RuntimeProvenanceCardTests|\
   WorkspaceDomainTests|\
   WorkspaceLayoutTests|\
-  WorkspacePreferenceStoreTests|\
   WorkspaceQueryStateTests|\
-  WorkspaceReadinessTests|\
-  WorkspaceUXPresentationTests)
+  RuntimePreferenceStoreTests|\
+  TelemetryTests|\
+  DevelopmentWorkspaceFixtureTests|\
+  HelpContentTests|\
+  MCPInteroperabilityTests|\
+  MCPProfileManagementTests|\
+  MCPStdioServerTests|\
+  MCPWorkspaceQueryTests|\
+  ProfileQuickCommandProjectionTests|\
+  ProxyTesterLiveFixtureTests|\
+  DirectUpdateArchiveIntegrityTests|\
+  BackupCompatibilityScopeStoreTests|\
+  BackupScopeQualificationTests|\
+  BookmarkImportTests|\
+  BrowserDataBackupStorageTests|\
+  BrowserDataRestoreTransactionTests|\
+  DevelopmentFixtureBackupScopeTests|\
+  DevelopmentFixtureKeychainTests|\
+  EncryptedBackupArchiveTests|\
+  EncryptedBackupFramingTests|\
+  OwnedProfileDirectoryTests|\
+  ProfileBrowserDataBackupServiceTests|\
+  ProfileCacheMaintenanceTests|\
+  ProxyDiagnosticTests|\
+  ProxyRelayBrowserRoleDecoderTests|\
+  ProxyRelayClientWireCodecTests|\
+  ProxyRelayControlPeerInspectorTests|\
+  ProxyRelayLiveCodeVerifierTests|\
+  ProxyRelaySessionAuthorityTests|\
+  ProxyRelayBindingGateTests|\
+  ProxyRelayPrivatePipeTests|\
+  ProxyRelayOwnerProtocolTests|ProxyRelayLeaseReceiptTests|\
+  ProxyRelayOwnerQualificationTests|\
+  ProxyRelayLoopbackServerTests|\
+  ProxyRelaySocketOwnerInspectorTests|\
+  ProxyRelayWireCodecTests|\
+  StoppedProfileRestoreAuthorityTests|\
+  ApplicationUpdateAdmissionTests|\
+  ApplicationUpdateControllerTests|\
+  BackupApplicationCompositionTests|\
+  BrowserRelayActivityTests|\
+  BrowserStartupModeTests|\
+  CRXPackageInspectionTests|\
+  CRXPackagePreparationTests|\
+  DirectAssessmentParentTests|\
+  DirectInstallFilesystemTests|\
+  DirectProvisioningCMSTests|\
+  DirectUpdateAssessmentTests|\
+  DirectUpdateAuditIsolationTests|\
+  DirectUpdateCodeSignatureTests|\
+  DirectUpdateCoreBoundaryTests|\
+  DirectUpdateInstallSessionTests|\
+  DirectUpdateInstalledPolicyTests|\
+  DirectUpdateOwnerClientTests|\
+  DirectUpdateOwnerPipeTests|\
+  DirectUpdateOwnerProtocolTests|\
+  DirectUpdateOwnerTransportTests|\
+  DirectUpdateOwnerWorkspaceTests|\
+  DirectUpdateProvisioningTests|\
+  DirectUpdateRuntimeProvenanceTests|\
+  DirectUpdateStageStorageTests|\
+  DirectUpdateStoppedAuthorityTests|\
+  DirectUpdateZIPTests|\
+  InstallLifecycleTests|\
+  ManagerClarityRegressionTests|\
+  PlatformLaunchReceiptTests|\
+  ProfileExtensionInventoryTests|\
+  ProxyRelayObservationProtocolTests|\
+  ProxyRelayObservationSocketTests|\
+  ProxyRelayQualificationQuitTests|\
+  ProxyRelayTLSQualificationTests|\
+  ReleaseAuditBrowserIsolationTests|\
+  SignedUpdateManifestFetcherTests|\
+  UpdateManifestTests|\
+  WebKitProfileTests|\
+  WebKitProxyConfigurationFactoryTests)
     ;;
   *)
     echo "Unknown Swift test suite: $SUITE" >&2
@@ -89,13 +166,37 @@ case "$SUITE" in
 esac
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-export DEVELOPER_DIR="$(
+if ! RESOLVED_DEVELOPER_DIR="$(
   "$PROJECT_DIR/scripts/resolve-compatible-developer-dir.sh"
-)"
-SWIFT_TEST_ROOT="$(mktemp -d /private/tmp/neantik-swift-suite-XXXXXX)"
+)"; then
+  echo "No compatible Xcode developer directory; refusing to run Swift tests with an implicit toolchain." >&2
+  exit 69
+fi
+if [[ -z "$RESOLVED_DEVELOPER_DIR" ]]; then
+  echo "Xcode resolver returned an empty developer directory; refusing an implicit toolchain." >&2
+  exit 69
+fi
+export DEVELOPER_DIR="$RESOLVED_DEVELOPER_DIR"
+PERSISTENT_CACHE_ROOT="${NEANTIK_SWIFT_SUITE_CACHE_DIR:-}"
+if [[ -n "$PERSISTENT_CACHE_ROOT" ]]; then
+  # Incremental local runs may retain SwiftPM outputs in the checkout's
+  # existing ignored build directory; never remove it on exit.
+  EXPECTED_CACHE_ROOT="$PROJECT_DIR/.build"
+  if [[ "$PERSISTENT_CACHE_ROOT" != "$EXPECTED_CACHE_ROOT" ]]; then
+    echo "NEANTIK_SWIFT_SUITE_CACHE_DIR must be exactly: $EXPECTED_CACHE_ROOT" >&2
+    exit 64
+  fi
+  SWIFT_TEST_ROOT="$PERSISTENT_CACHE_ROOT"
+  PERSISTENT_CACHE=1
+  SWIFT_BUILD_ROOT="$SWIFT_TEST_ROOT"
+else
+  SWIFT_TEST_ROOT="$(mktemp -d /private/tmp/neantik-swift-suite-XXXXXX)"
+  PERSISTENT_CACHE=0
+  SWIFT_BUILD_ROOT="$SWIFT_TEST_ROOT/build"
+fi
 
 cleanup() {
-  if [[ -n "${SWIFT_TEST_ROOT:-}" && "$SWIFT_TEST_ROOT" == /private/tmp/neantik-swift-suite-* && -d "$SWIFT_TEST_ROOT" ]]; then
+  if [[ "$PERSISTENT_CACHE" == 0 && -n "${SWIFT_TEST_ROOT:-}" && "$SWIFT_TEST_ROOT" == /private/tmp/neantik-swift-suite-* && -d "$SWIFT_TEST_ROOT" ]]; then
     rm -rf "$SWIFT_TEST_ROOT"
   fi
 }
@@ -106,7 +207,7 @@ mkdir -p \
   "$SWIFT_TEST_ROOT/module-cache" \
   "$SWIFT_TEST_ROOT/build"
 
-echo "Running NeAntik Swift suite: $SUITE via $DEVELOPER_DIR"
+echo "Running NeAntik Swift suite: $SUITE via $DEVELOPER_DIR (cache: $SWIFT_TEST_ROOT)"
 TEST_OUTPUT="$SWIFT_TEST_ROOT/test-output.txt"
 
 (
@@ -114,8 +215,11 @@ TEST_OUTPUT="$SWIFT_TEST_ROOT/test-output.txt"
   SWIFTPM_HOME="$SWIFT_TEST_ROOT/swiftpm-home" \
   CLANG_MODULE_CACHE_PATH="$SWIFT_TEST_ROOT/module-cache" \
     swift test \
+      --build-system native \
+      --jobs 2 \
+      --no-parallel \
       --disable-sandbox \
-      --scratch-path "$SWIFT_TEST_ROOT/build" \
+      --scratch-path "$SWIFT_BUILD_ROOT" \
       --filter "$SUITE"
 ) 2>&1 | tee "$TEST_OUTPUT"
 

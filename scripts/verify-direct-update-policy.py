@@ -1,84 +1,179 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
+import base64
+import binascii
 import plistlib
+import re
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 INFO_PLIST = PROJECT_ROOT / "Resources" / "Info.plist"
-FORBIDDEN_INFO_KEYS = (
-    "NeAntikUpdateChannelEnabled",
-    "NeAntikUpdateAutoDownload",
-    "NeAntikUpdateManifestURL",
-    "NeAntikUpdatePublicKeyID",
-    "NeAntikUpdatePublicKeyBase64",
-)
-FORBIDDEN_SOURCE_MARKERS = (
-    "UpdateManifest",
-    "UpdateChannelConfiguration",
-    "NeAntikUpdate",
-)
+SWIFT_SOURCE = PROJECT_ROOT / "Sources" / "DirectUpdateCore" / "UpdateManifest.swift"
+APPROVED_PUBLIC_HOSTS = {"affpapa.org", "browser.free", "github.com"}
 
 
 class UpdatePolicyError(ValueError):
     pass
 
 
+def validate_https_manifest_url(value: str) -> None:
+    try:
+        parsed = urlsplit(value)
+        host = (parsed.hostname or "").lower()
+    except ValueError as error:
+        raise UpdatePolicyError(
+            "enabled update manifest URL must be credential-free HTTPS JSON"
+        ) from error
+    if (
+        parsed.scheme != "https"
+        or not host
+        or host not in APPROVED_PUBLIC_HOSTS
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+        or not parsed.path.endswith(".json")
+        or host == "localhost"
+        or host == "::1"
+        or host.startswith("127.")
+        or host.endswith((".local", ".test", ".invalid", ".example"))
+    ):
+        raise UpdatePolicyError(
+            "enabled update manifest URL must be credential-free HTTPS JSON"
+        )
+
+
+def validate_public_key(key_id: str, encoded: str) -> None:
+    if not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", key_id):
+        raise UpdatePolicyError("enabled update public key ID is invalid")
+    try:
+        decoded = base64.b64decode(encoded, validate=True)
+    except (binascii.Error, ValueError) as error:
+        raise UpdatePolicyError(
+            "enabled update public key is not valid Base64"
+        ) from error
+    if len(decoded) != 32:
+        raise UpdatePolicyError(
+            "enabled Ed25519 update public key must contain exactly 32 bytes"
+        )
+
+
 def verify(
     *,
     info_plist: Path = INFO_PLIST,
-    source_root: Path | None = None,
+    swift_source: Path = SWIFT_SOURCE,
+    expected_info_plist: Path | None = None,
 ) -> str:
     with info_plist.open("rb") as handle:
         info = plistlib.load(handle)
-    present_keys = [key for key in FORBIDDEN_INFO_KEYS if key in info]
-    if present_keys:
-        raise UpdatePolicyError(
-            "Direct build must not contain dormant update configuration keys: "
-            + ", ".join(present_keys)
-        )
+    source = swift_source.read_text(encoding="utf-8")
 
-    resolved_source_root = source_root or (
-        PROJECT_ROOT / "Sources/NeAntik"
-    )
-    if not resolved_source_root.is_dir():
-        raise UpdatePolicyError(
-            f"Direct source directory is missing: {resolved_source_root}"
-        )
-    update_source = resolved_source_root / "UpdateManifest.swift"
-    if update_source.exists():
-        raise UpdatePolicyError(
-            "Direct build must not contain a dormant update implementation"
-        )
+    if expected_info_plist is not None:
+        with expected_info_plist.open("rb") as handle:
+            expected = plistlib.load(handle)
+        # Read the candidate's actual packaged values, including exact types.
+        # Never print URLs/key material when reporting configuration drift.
+        for key in (
+            "NeAntikUpdateChannelEnabled", "NeAntikUpdateAutoDownload",
+            "NeAntikUpdateManifestURL", "NeAntikUpdatePublicKeyID",
+            "NeAntikUpdatePublicKeyBase64",
+        ):
+            if (key not in expected or key not in info
+                    or type(info[key]) is not type(expected[key])
+                    or info[key] != expected[key]):
+                raise UpdatePolicyError(f"packaged {key} does not match approved project metadata")
 
-    for source_path in resolved_source_root.glob("*.swift"):
-        source = source_path.read_text(encoding="utf-8")
-        for marker in FORBIDDEN_SOURCE_MARKERS:
-            if marker not in source:
-                continue
+    enabled = info.get("NeAntikUpdateChannelEnabled")
+    automatic_download = info.get("NeAntikUpdateAutoDownload")
+    manifest_url = info.get("NeAntikUpdateManifestURL")
+    key_id = info.get("NeAntikUpdatePublicKeyID")
+    public_key = info.get("NeAntikUpdatePublicKeyBase64")
+
+    if not isinstance(enabled, bool):
+        raise UpdatePolicyError("NeAntikUpdateChannelEnabled must be Boolean")
+    if automatic_download is not False:
+        raise UpdatePolicyError(
+            "Direct automatic update download must remain explicitly disabled"
+        )
+    for name, value in (
+        ("NeAntikUpdateManifestURL", manifest_url),
+        ("NeAntikUpdatePublicKeyID", key_id),
+        ("NeAntikUpdatePublicKeyBase64", public_key),
+    ):
+        if not isinstance(value, str):
+            raise UpdatePolicyError(f"{name} must be a string")
+
+    if enabled:
+        validate_https_manifest_url(manifest_url)
+        validate_public_key(key_id, public_key)
+        status = "configured"
+    else:
+        if manifest_url or key_id or public_key:
             raise UpdatePolicyError(
-                "Direct source contains dormant update marker "
-                f"{marker}: {source_path.name}"
+                "disabled update channel must not retain partial trust material"
             )
+        status = "disabled-manual"
 
-    return "Direct update policy verified: manual immutable releases only."
+    required_contracts = (
+        'envelope.algorithm == "Ed25519"',
+        "publicKey.isValidSignature",
+        'payload.architecture == "arm64"',
+        'payload.artifactKind == "public-notarized"',
+        'payload.publicReleaseState == "public-ready"',
+        "minimumPublicChromiumVersion",
+        "maximumLifetime",
+        "components.scheme == \"https\"",
+        "NeAntikPublicHostPolicy.allows",
+    )
+    missing = [item for item in required_contracts if item not in source]
+    if missing:
+        raise UpdatePolicyError(
+            "Swift update verifier is missing fail-closed contracts: "
+            + ", ".join(missing)
+        )
+
+    forbidden_network_implementation = (
+        "URLSession",
+        "downloadTask(",
+        "download(from:",
+        "Process()",
+    )
+    present = [
+        item for item in forbidden_network_implementation if item in source
+    ]
+    if present:
+        raise UpdatePolicyError(
+            "update verifier must remain offline until updater review: "
+            + ", ".join(present)
+        )
+
+    return (
+        "Direct signed-update policy verified: "
+        f"{status}; Ed25519 offline verifier; automatic download disabled."
+    )
 
 
 def main() -> int:
-    info_plist = INFO_PLIST
-    if len(sys.argv) == 3 and sys.argv[1] == "--info-plist":
-        info_plist = Path(sys.argv[2]).resolve()
-    elif len(sys.argv) != 1:
-        print(
-            "usage: verify-direct-update-policy.py "
-            "[--info-plist /absolute/path/to/Info.plist]",
-            file=sys.stderr,
-        )
-        return 64
+    parser = argparse.ArgumentParser(
+        description="Verify the fail-closed NeAntik Direct update policy."
+    )
+    parser.add_argument("--info-plist", type=Path, default=INFO_PLIST)
+    parser.add_argument("--swift-source", type=Path, default=SWIFT_SOURCE)
+    parser.add_argument("--expected-info-plist", type=Path)
+    args = parser.parse_args()
     try:
-        print(verify(info_plist=info_plist))
+        print(
+            verify(
+                info_plist=args.info_plist.resolve(),
+                swift_source=args.swift_source.resolve(),
+                expected_info_plist=args.expected_info_plist.resolve() if args.expected_info_plist else None,
+            )
+        )
     except (OSError, plistlib.InvalidFileException, UpdatePolicyError) as error:
         print(f"Direct update policy verification failed: {error}", file=sys.stderr)
         return 1

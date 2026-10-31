@@ -1,0 +1,20 @@
+# Own QA executable only; production targets and args.gn stay unchanged.
+assert(is_mac)
+executable("neantik_font_probe") {
+  testonly = true
+  output_name = "neantik_font_probe_qa"
+  sources = [ "neantik_font_probe.mm" ]
+  deps = [
+    "//base",
+    "//skia",
+    "//components/ungoogled:system_font_policy_mac",
+  ]
+  frameworks = [
+    "CoreFoundation.framework",
+    "CoreText.framework",
+    "CoreGraphics.framework",
+    "Foundation.framework",
+  ]
+  # Bound this QA link as well as the Ninja scheduler.
+  ldflags = [ "-Wl,--thinlto-jobs=2" ]
+}

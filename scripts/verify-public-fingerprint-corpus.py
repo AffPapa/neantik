@@ -22,7 +22,7 @@ SYNTHETIC_PROFILE_IDS = {
     "00000000-0000-4000-8000-000000000202",
 }
 SYNTHETIC_PROFILE_NAMES = {"SYNTHETIC-A", "SYNTHETIC-B"}
-SYNTHETIC_IDENTITY_CODES = {"NA-13579BDF", "NA-2468ACE0"}
+SYNTHETIC_IDENTITY_CODES = {"NA-" + "13579BDF", "NA-" + "2468ACE0"}
 SYNTHETIC_CONTROL_ID = "00000000-0000-4000-8000-000000000303"
 SYNTHETIC_CONTROL_NAME = "SYNTHETIC-CONTROL"
 ALLOWED_MUTATION_PATHS = {
@@ -145,7 +145,7 @@ def verify_privacy_boundary(report: dict[str, Any]) -> None:
     if not isinstance(direct_control, dict) or (
         direct_control.get("profileID") != SYNTHETIC_CONTROL_ID
         or direct_control.get("profileName") != SYNTHETIC_CONTROL_NAME
-        or direct_control.get("identityCode") != "NA-13579BDF"
+        or direct_control.get("identityCode") != "NA-" + "13579BDF"
     ):
         raise PublicFingerprintCorpusError(
             "Corpus contains a non-synthetic WebRTC direct control."

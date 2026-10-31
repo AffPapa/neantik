@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v153-v122-recipient-resign-load-reconciliation-20261027",
+  "observedAt": "2026-10-27",
+  "status": "PARTIAL_LOCAL_RECIPIENT_RESIGN_RELOCATE_AND_SYNTHETIC_LOAD_PASS; CLEAN_RECIPIENT_BUILD_OUTPUT_NOT_THE_LOADED_BYTES",
+  "scope": "Reconciliation of already-collected evidence for one exact private Dev QA ZIP. No relaunch, engine build, archive mutation, notarization, or publication occurred in this slice.",
+  "sourceAndBuildChain": {
+    "sourceOfferManifestSHA256": "51363c5319b7b639e5f35c0c68c667eada730d0f0871da61aca472b08c3e54be",
+    "sourceOfferComponentCount": 517,
+    "sourceOfferCheckOnlyReceipt": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v133-v132-recipe-and-v122-package-check-only-20261026.json",
+    "sourceOfferCheckOnlyStatus": "exact V132 source offer and V122 build/64 overlays check-only PASS",
+    "cleanRelocatedSourceBuildReceipt": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v135-clean-relocated-v132-webkit-relink-20261026.json",
+    "cleanRelocatedSourceBuild": "14/14 ARM64 targets; exact V132 source archive and V20+V36 patches; same Mac/toolchain; outputs later removed",
+    "loadedRuntimeSourceInputHashesMatch": "All 16 sourceInputSHA256 rows in the recipient binding sidecar match the V122 build/staging inputs."
+  },
+  "recipientSigningAndPackage": {
+    "archiveSHA256": "3bdc4b7646a3d1806c6a0944e187ec442024455de19af7b132452b7e28c10656",
+    "archivePath": "/private/tmp/neantik-owned-webkit-qa-x77ltbpd/NeAntik-1.0.0-200-dev-owned-webkit-qa.zip",
+    "bundleID": "app.neantik.desktop.dev",
+    "version": "1.0.0",
+    "build": "200",
+    "bindingSidecar": "/private/tmp/neantik-v153-v122-devqa-20261027/Frameworks-recipient-final.NeAntikRuntimeImageBinding.json",
+    "bindingSidecarSHA256": "7e2ac26245e4b267bcd4a6961c4c73d387fdc6886a1941d9bc848eb5de5a6dc2",
+    "bindingStatus": "recipient-signed-runtime-image-binding",
+    "machoImages": 16,
+    "embeddedRecipientSignedHashesMatchSidecar": true,
+    "managerTeam": "H6VGU2M6JD",
+    "hostTeam": "H6VGU2M6JD",
+    "managerAndHostDeveloperIDTimestamp": "present",
+    "deepStrictCodeSignature": "PASS",
+    "hostPin": "PASS; python3 -B scripts/verify-webkit-host-pin.py <exact-app>"
+  },
+  "runtimeEvidence": {
+    "phaseResults": "/private/tmp/neantik-webkit-ab-root-tiokgx8u/phase-results.json",
+    "phaseResultsSHA256": "5297be1fb9d6becbf8fa7aa4a9bd824952fd6e2488e1f385e3e4e06d31376a3b",
+    "status": "PASS",
+    "phases": [
+      {
+        "phase": "A1",
+        "routeBoundary": "PASS",
+        "storageBoundary": "PASS",
+        "stateDelta": {
+          "pageResponses": 1,
+          "stateInitial": 1,
+          "stateRestored": 0
+        },
+        "proxyAOriginDelta": 2,
+        "proxyBOriginDelta": 0
+      },
+      {
+        "phase": "B1",
+        "routeBoundary": "PASS",
+        "storageBoundary": "PASS",
+        "stateDelta": {
+          "pageResponses": 1,
+          "stateInitial": 1,
+          "stateRestored": 0
+        },
+        "proxyAOriginDelta": 0,
+        "proxyBOriginDelta": 2
+      },
+      {
+        "phase": "A2",
+        "routeBoundary": "PASS",
+        "storageBoundary": "PASS",
+        "stateDelta": {
+          "pageResponses": 1,
+          "stateInitial": 0,
+          "stateRestored": 1
+        },
+        "proxyAOriginDelta": 2,
+        "proxyBOriginDelta": 0
+      }
+    ],
+    "scope": "Owned runtime and local broker, synthetic HTTPS loopback origin only; not public internet or real proxy services."
+  },
+  "limitations": [
+    "The loaded images are the exact V122 source-build outputs, recipient-signed and relocated; they are not the different Mach-O outputs produced by the clean V135 relocated rebuild, whose temporary output was removed.",
+    "This is local same-team Dev QA signing/load evidence, not a third-party recipient or separate-machine test.",
+    "Exact production bundle, candidate-specific license applicability, 78 resource rows, patents, complete corresponding-source delivery, notarization, Gatekeeper, and publication remain open."
+  ],
+  "next": "Do not repeat V122 build, V132 check-only, V135 clean rebuild, or the exact synthetic A1/B1/A2. Close remaining per-image/resource source and notice decisions, then use the clean source-offer workflow to produce and load a recipient-built replacement only if the accepted LGPL replacement gate still requires the same rebuilt output to be loaded."
+}

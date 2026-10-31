@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "status": "PRIVATE_V206_SOURCE_OFFER_VERIFIED_NOT_RELEASE_QUALIFIED",
+  "sourceCommit": "c2a0135bf19c464d79bee0a67cf06d808c4edc19",
+  "sourceArchiveSHA256": "8e347d23d58cde97ee79f1529ac73e128e928cd1c6c02e57d7e2cdd2b0b7af8e",
+  "trackedArchiveFilesMatched": 2728,
+  "extractedOpenSourceTree": "PASS 2728 files",
+  "gitleaks": {
+    "findings": 2413,
+    "previouslyClassifiedKeys": 2413,
+    "newKeys": 0,
+    "removedHistoricalKey": 1,
+    "scope": "extracted manager archive only",
+    "reportSHA256": "1f68502276fde6c22c733cb233fcf48f21c263d5580d2e4adef41f3d92ae3498",
+    "caution": "removed value not classified or revoked; historical copies remain"
+  },
+  "offer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v206-public-source-offer-draft",
+    "manifestSHA256": "e5bfa9c617bed41545541cf442554346c05b71bb59d20fd16fb1a25210d8ee95",
+    "componentsVerified": 534,
+    "overlayAssetsVerified": 64,
+    "knownPinnedInputPreflight": "PASS; complete inputs and recipient relink unresolved",
+    "previousMatchedToken": "absent from 305 scanned small text files; other offer components not covered",
+    "candidateBound": false
+  },
+  "limitations": [
+    "legal applicability, complete source/relink and final notices open",
+    "secure timestamp, notarization, runtime/proxy and publication open",
+    "no private key or credential revocation conclusion"
+  ],
+  "releaseQualified": false
+}

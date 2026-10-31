@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "id": "V360",
+  "observedAtUTC": "2026-10-28T03:21:37Z",
+  "status": "PASS_FIRST_PARTY_WEBCORE_NOTICE_INSTALLER_AND_EXACT_RUNTIME_BINDING",
+  "scope": "Bound five first-party WebCore resource overlays (18 assets) to exact source-offer manifest components, pinned attribution/license bytes, and WebCore runtime resource hashes. Installer writes per-overlay license and attribution files and renders both notices documents. Does not mutate or qualify a production candidate.",
+  "inputs": {
+    "sourceOffer": "dist/private/source-offers/v359-webmodel-resource-closure",
+    "sourceOfferManifestSHA256": "b9404c2eb5c67ea5b6c6f3afc175a1fb6539f11ab6ec9a35aad73f4662750644",
+    "installerPath": "scripts/webkit_runtime_notices.py",
+    "installerSHA256": "d3f320f6c2a1100082f85b2e68ca086ba4d174b1a5b0f80acdabed954acc20d6",
+    "testPath": "scripts/tests/test_webkit_runtime_notices.py",
+    "testSHA256": "775f1229c395eeaf8cb6104da41b56dd4b8f3a089292f437b7059e1dc5630bbd",
+    "exactBuild200RuntimeResource": "dist/private/candidates/ef2ce9cf159242c3a147027867403460/NeAntik.app/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/Resources/ListButtonArrow.png",
+    "sampleRuntimeSHA256": "460301e8cc7637155746acf0725a1bc1b0bd056bc90ebc98ae3a8bb1385173a2",
+    "overlays": [
+      {
+        "overlay": "neantik-core-ui-original-v1",
+        "assetCount": 7,
+        "attributionSHA256": "42d7a46b8ac2d76bb5f6008dc689d0d34a8598f80987623e9c1eb421a3b7b4a8",
+        "licenseSHA256": "3ab0de831861966f2c2ec76d3ba1b24473c64ee08cb7699327a2005fca688ff7"
+      },
+      {
+        "overlay": "neantik-original-cursors-v1",
+        "assetCount": 8,
+        "attributionSHA256": "b356f3ed6c8346aade670cbb991e8196974baf2563866e22a452b70e18ae2d73",
+        "licenseSHA256": "3ab0de831861966f2c2ec76d3ba1b24473c64ee08cb7699327a2005fca688ff7"
+      },
+      {
+        "overlay": "neantik-delete-button-first-party-v1",
+        "assetCount": 1,
+        "attributionSHA256": "077042f44b6e17f7c70d13d59241528a20f952a47688149f310bf46ac8f22c81",
+        "licenseSHA256": "3ab0de831861966f2c2ec76d3ba1b24473c64ee08cb7699327a2005fca688ff7"
+      },
+      {
+        "overlay": "neantik-linear-srgb-icc-v1",
+        "assetCount": 1,
+        "attributionSHA256": "406fab52fca09ecf6fc4bc168a7ae16814b6e69d4b3dc689cdbe0b2aaa4737dd",
+        "licenseSHA256": "3ab0de831861966f2c2ec76d3ba1b24473c64ee08cb7699327a2005fca688ff7"
+      },
+      {
+        "overlay": "neantik-first-party-webcore-contentfilter-v1",
+        "assetCount": 1,
+        "attributionSHA256": "377c48c73dc16070915c9488922c6725a4d28a1d478ee8d7934c017fe48a46a7",
+        "licenseSHA256": "3ab0de831861966f2c2ec76d3ba1b24473c64ee08cb7699327a2005fca688ff7"
+      }
+    ]
+  },
+  "verification": {
+    "focusedCommand": "python3 -B scripts/tests/test_webkit_runtime_notices.py",
+    "status": "PASS",
+    "tests": 65,
+    "integration": "temporary fixture installer + verifier passed; all five license/attribution pairs present; HTML/Markdown marker checked",
+    "negativeControl": "tampered runtime resource rejected",
+    "pythonCompilation": "PASS",
+    "gitDiffCheck": "PASS"
+  },
+  "nonActions": [
+    "No build",
+    "No production candidate mutation",
+    "No signing or notarization",
+    "No publication",
+    "No network navigation"
+  ],
+  "limitations": [
+    "Build-200 exact resource binding only; current final Chromium .74 candidate must pass notice verifier after packaging.",
+    "Compiled warning-color assets, corresponding-source recipient build/relink/replacement/load and release gates remain open."
+  ],
+  "nextAction": "Bind compiled warning-color resources from the exact WebCore build output, then rebind every first-party resource notice against the final Chromium .74 candidate."
+}

@@ -1,0 +1,388 @@
+{
+  "id": "V401",
+  "timestampUTC": "2026-10-28T07:21:49Z",
+  "status": "PASS_PINNED_UPSTREAM_SOURCE_AND_HISTORY_BATCH; 13_RESOURCE_LICENSE_ROWS_REMAIN_UNKNOWN",
+  "scope": "Batch review of all 13 exact current V382 UNKNOWN resource rows other than the HRTF row addressed by V399/V400. Used pinned upstream commit bytes, exact source/runtime hashes from V397, file histories, and official WebKit licensing policy.",
+  "priorCheckpoint": {
+    "receipt": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v400-v382-ircam-hrtf-source-offer-supplement-integrity-20261028.json",
+    "sha256": "9ffbf04144a6ef74110b35c166f99cfa82f5c15bfdaadaa10d0bd470de93e8c1",
+    "currentSHA256": "e7a850fc52bcf7d995468c2bb4124aa5ed0a112d3b704277f704fa1a9661d160"
+  },
+  "inputs": {
+    "sourceMatrixReceipt": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v397-v382-current-fourteen-resource-license-rebind-20261028.json",
+    "sourceMatrixSHA256": "bedd3f17bb58ce5faa2ad2f3515e664e8672e2879c2ddc256df6a5b7bdfaa768",
+    "upstreamRepository": "https://github.com/WebKit/WebKit",
+    "pinnedCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "officialLicensePolicy": "https://docs.webkit.org/Other/Licensing.html",
+    "policyFinding": "Official policy says much inherited KHTML code is LGPL, new code uses two-clause BSD, and file terms vary; moving code preserves original terms."
+  },
+  "counts": {
+    "resourceRows": 13,
+    "uniqueSourceFiles": 11,
+    "exactPinRawSourcesFetched": 11,
+    "sourceHashMatchedV397": 11
+  },
+  "findings": {
+    "copyrightMetadataFiles": 7,
+    "filesWithNoCopyrightOrLicenseHeaderInSourceText": 4,
+    "newExactPerFileLicenseEvidence": false,
+    "decision": "UNKNOWN retained for all 13 rows. Copyright metadata and file history do not state the operative license/conditions for these exact files; official policy explicitly requires file-specific terms. No broad license inference made."
+  },
+  "rows": [
+    {
+      "runtimePath": "WebGPU.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "d1b62a69cb77ccc8cea6b51760021849ab53f472db0781cb6890a1106a7139a6",
+      "sourcePath": "Source/WebGPU/Info.plist",
+      "sourceSHA256": "99f7685c28e18f82935817519f9ef6e5ebd63af453c7c3414df591f34078a4af",
+      "sourceBytes": 1633,
+      "priorWorksheetSHA256": "d1b62a69cb77ccc8cea6b51760021849ab53f472db0781cb6890a1106a7139a6",
+      "matchesPriorUnknownBytes": true,
+      "priorDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "8682dbe9e031cd97fa92985dee64f99726e4a544a470bb2f69dc99ab6493e135",
+      "sourcePath": "Source/WebKit/Info.plist",
+      "sourceSHA256": "2693d09b3ce4fa4d9dc05a4dd99043bd2e07f3cc9c12c7eaba4b19e3f9a61eac",
+      "sourceBytes": 1140,
+      "priorWorksheetSHA256": "8682dbe9e031cd97fa92985dee64f99726e4a544a470bb2f69dc99ab6493e135",
+      "matchesPriorUnknownBytes": true,
+      "priorDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/Info.plist",
+      "runtimeSHA256": "1727040f8d3a09f62bf750648f0388f3f65e6356bc53c3887caef2633609a40d",
+      "sourcePath": "Source/WebKit/GPUProcess/EntryPoint/Cocoa/XPCService/GPUService/Info-OSX.plist",
+      "sourceSHA256": "7d4ce5ace213693923213b0b8e88a7df4aa9a461f2f9276d47fed7d9959bc0d1",
+      "sourceBytes": 1461,
+      "priorWorksheetSHA256": "1727040f8d3a09f62bf750648f0388f3f65e6356bc53c3887caef2633609a40d",
+      "matchesPriorUnknownBytes": true,
+      "priorDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/Info.plist",
+      "runtimeSHA256": "1733fb8bd8df9a1360d7959150139c69bb14dbdb0bd9f266c742c100e94ebc82",
+      "sourcePath": "Source/WebKit/NetworkProcess/EntryPoint/Cocoa/XPCService/NetworkService/Info-OSX.plist",
+      "sourceSHA256": "848d7eec33274e1f0054da75853b0cb150b66f075f16100a2b52f9b54eabaf81",
+      "sourceBytes": 1327,
+      "priorWorksheetSHA256": "1733fb8bd8df9a1360d7959150139c69bb14dbdb0bd9f266c742c100e94ebc82",
+      "matchesPriorUnknownBytes": true,
+      "priorDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/Info.plist",
+      "runtimeSHA256": "cf2804905b5ab48951d12b4c9ce0f0984c24821c340597e7af828ba49e073651",
+      "sourcePath": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+      "sourceSHA256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+      "sourceBytes": 1746,
+      "priorWorksheetSHA256": "cf2804905b5ab48951d12b4c9ce0f0984c24821c340597e7af828ba49e073651",
+      "matchesPriorUnknownBytes": true,
+      "priorDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/Info.plist",
+      "runtimeSHA256": "707d6ca86c4d1b0c51c721c6cb86a64e35810092773eb8e040f93a73fe58c703",
+      "sourcePath": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+      "sourceSHA256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+      "sourceBytes": 1746,
+      "priorWorksheetSHA256": "707d6ca86c4d1b0c51c721c6cb86a64e35810092773eb8e040f93a73fe58c703",
+      "matchesPriorUnknownBytes": true,
+      "priorDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Info.plist",
+      "runtimeSHA256": "95eb37b4bd4a698898b2fa3a894c15bc4b9f5dd4323f04cf446f0d841e6616fc",
+      "sourcePath": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+      "sourceSHA256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+      "sourceBytes": 1746,
+      "priorWorksheetSHA256": "95eb37b4bd4a698898b2fa3a894c15bc4b9f5dd4323f04cf446f0d841e6616fc",
+      "matchesPriorUnknownBytes": true,
+      "priorDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Resources/WebContentProcess.nib",
+      "runtimeSHA256": "90306f1e50ac0139b6057dd411b06fd49089cecfb59f01e144690b9cd86583a7",
+      "sourcePath": "Source/WebKit/Resources/WebContentProcess.xib",
+      "sourceSHA256": "0583e5f26322ca810b6d84bcab7dfce7aa3c8e8cea9e4ca150fb8a98bf47ef36",
+      "sourceBytes": 582,
+      "priorWorksheetSHA256": "90306f1e50ac0139b6057dd411b06fd49089cecfb59f01e144690b9cd86583a7",
+      "matchesPriorUnknownBytes": true,
+      "priorDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "JavaScriptCore.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "76d18453a418d19a7c98dfd2b45b12b1e8cc8469703ab7b8992476efe6355ad6",
+      "sourcePath": "Source/JavaScriptCore/Info.plist",
+      "sourceSHA256": "07b2d1b5035d5a0dd88c7a958c1538479bbc94c3596256cb81c53648807d272b",
+      "sourceBytes": 1343,
+      "priorWorksheetSHA256": "76d18453a418d19a7c98dfd2b45b12b1e8cc8469703ab7b8992476efe6355ad6",
+      "matchesPriorUnknownBytes": true,
+      "priorDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "b38d826b325d9c5cc5fafe47c53988bc908d866578baf529ef9c8f4ae21399e1",
+      "sourcePath": "Source/WebCore/Info.plist",
+      "sourceSHA256": "c97eaceb531cce1eaefc0860e4277e137527f3b8b8ac27fd8034410889cfce8d",
+      "sourceBytes": 1953,
+      "priorWorksheetSHA256": "b38d826b325d9c5cc5fafe47c53988bc908d866578baf529ef9c8f4ae21399e1",
+      "matchesPriorUnknownBytes": true,
+      "priorDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/Localizable.strings",
+      "runtimeSHA256": "7cd6a1cb1803de65529bd903f173557d024bede8a8d3ff3df3c783aec2575f96",
+      "sourcePath": "Source/WebCore/en.lproj/Localizable.strings",
+      "sourceSHA256": "7cd6a1cb1803de65529bd903f173557d024bede8a8d3ff3df3c783aec2575f96",
+      "sourceBytes": 93705,
+      "priorWorksheetSHA256": "7cd6a1cb1803de65529bd903f173557d024bede8a8d3ff3df3c783aec2575f96",
+      "matchesPriorUnknownBytes": true,
+      "priorDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/Localizable.stringsdict",
+      "runtimeSHA256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+      "sourcePath": "Source/WebCore/en.lproj/Localizable.stringsdict",
+      "sourceSHA256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+      "sourceBytes": 2179,
+      "priorWorksheetSHA256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+      "matchesPriorUnknownBytes": true,
+      "priorDecision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/modern-media-controls-localized-strings.js",
+      "runtimeSHA256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+      "sourcePath": "Source/WebCore/en.lproj/modern-media-controls-localized-strings.js",
+      "sourceSHA256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+      "sourceBytes": 2001,
+      "priorWorksheetSHA256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+      "matchesPriorUnknownBytes": true,
+      "priorDecision": "UNKNOWN"
+    }
+  ],
+  "sourceHistory": {
+    "Source/WebGPU/Info.plist": {
+      "latestCommits": [
+        {
+          "sha": "cd1b6f4700c6",
+          "date": "2026-01-27",
+          "message": "copyright year update"
+        },
+        {
+          "sha": "26ab5bf50f09",
+          "date": "2024-12-20",
+          "message": "copyright year update"
+        },
+        {
+          "sha": "a2dd4989ff12",
+          "date": "2023-12-20",
+          "message": "copyright year update"
+        }
+      ],
+      "rawSourceSHA256": "99f7685c28e18f82935817519f9ef6e5ebd63af453c7c3414df591f34078a4af",
+      "matchesV397SourceSHA256": true
+    },
+    "Source/WebKit/Info.plist": {
+      "latestCommits": [
+        {
+          "sha": "d401799f3c75",
+          "date": "2026-05-05",
+          "message": "CMake iOS build fix"
+        },
+        {
+          "sha": "cd1b6f4700c6",
+          "date": "2026-01-27",
+          "message": "copyright year update"
+        },
+        {
+          "sha": "26ab5bf50f09",
+          "date": "2024-12-20",
+          "message": "copyright year update"
+        }
+      ],
+      "rawSourceSHA256": "2693d09b3ce4fa4d9dc05a4dd99043bd2e07f3cc9c12c7eaba4b19e3f9a61eac",
+      "matchesV397SourceSHA256": true
+    },
+    "Source/WebKit/GPUProcess/EntryPoint/Cocoa/XPCService/GPUService/Info-OSX.plist": {
+      "latestCommits": [
+        {
+          "sha": "cd1b6f4700c6",
+          "date": "2026-01-27",
+          "message": "copyright year update"
+        },
+        {
+          "sha": "26ab5bf50f09",
+          "date": "2024-12-20",
+          "message": "copyright year update"
+        }
+      ],
+      "rawSourceSHA256": "7d4ce5ace213693923213b0b8e88a7df4aa9a461f2f9276d47fed7d9959bc0d1",
+      "matchesV397SourceSHA256": true
+    },
+    "Source/WebKit/NetworkProcess/EntryPoint/Cocoa/XPCService/NetworkService/Info-OSX.plist": {
+      "latestCommits": [
+        {
+          "sha": "cd1b6f4700c6",
+          "date": "2026-01-27",
+          "message": "copyright year update"
+        },
+        {
+          "sha": "26ab5bf50f09",
+          "date": "2024-12-20",
+          "message": "copyright year update"
+        }
+      ],
+      "rawSourceSHA256": "848d7eec33274e1f0054da75853b0cb150b66f075f16100a2b52f9b54eabaf81",
+      "matchesV397SourceSHA256": true
+    },
+    "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist": {
+      "latestCommits": [
+        {
+          "sha": "cd1b6f4700c6",
+          "date": "2026-01-27",
+          "message": "copyright year update"
+        },
+        {
+          "sha": "26ab5bf50f09",
+          "date": "2024-12-20",
+          "message": "copyright year update"
+        }
+      ],
+      "rawSourceSHA256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+      "matchesV397SourceSHA256": true
+    },
+    "Source/WebKit/Resources/WebContentProcess.xib": {
+      "latestCommits": [
+        {
+          "sha": "5da10924b347",
+          "date": "2018-10-29",
+          "message": "localization modernization"
+        },
+        {
+          "sha": "c97acb9d4a8e",
+          "date": "2017-07-14",
+          "message": "Source/WebKit2 rename"
+        }
+      ],
+      "rawSourceSHA256": "0583e5f26322ca810b6d84bcab7dfce7aa3c8e8cea9e4ca150fb8a98bf47ef36",
+      "matchesV397SourceSHA256": true
+    },
+    "Source/JavaScriptCore/Info.plist": {
+      "latestCommits": [
+        {
+          "sha": "ad5d78e1d47c",
+          "date": "2026-05-05",
+          "message": "CMake iOS build fix"
+        },
+        {
+          "sha": "cd1b6f4700c6",
+          "date": "2026-01-27",
+          "message": "copyright year update"
+        },
+        {
+          "sha": "26ab5bf50f09",
+          "date": "2024-12-20",
+          "message": "copyright year update"
+        }
+      ],
+      "rawSourceSHA256": "07b2d1b5035d5a0dd88c7a958c1538479bbc94c3596256cb81c53648807d272b",
+      "matchesV397SourceSHA256": true
+    },
+    "Source/WebCore/Info.plist": {
+      "latestCommits": [
+        {
+          "sha": "f1234a3b1753",
+          "date": "2026-05-22",
+          "message": "CMake build fix reland"
+        },
+        {
+          "sha": "543dc9968272",
+          "date": "2026-05-05",
+          "message": "revert"
+        },
+        {
+          "sha": "41480e464ef0",
+          "date": "2026-05-05",
+          "message": "CMake build fix"
+        },
+        {
+          "sha": "cd1b6f4700c6",
+          "date": "2026-01-27",
+          "message": "copyright year update"
+        }
+      ],
+      "rawSourceSHA256": "c97eaceb531cce1eaefc0860e4277e137527f3b8b8ac27fd8034410889cfce8d",
+      "matchesV397SourceSHA256": true
+    },
+    "Source/WebCore/en.lproj/Localizable.strings": {
+      "latestCommits": [
+        {
+          "sha": "341de3a113ee",
+          "date": "2026-10-16",
+          "message": "declarativeNetRequest user-facing strings"
+        },
+        {
+          "sha": "7275e58cccc2",
+          "date": "2026-10-12",
+          "message": "ad unloading strings"
+        },
+        {
+          "sha": "5077aef4a326",
+          "date": "2026-09-22",
+          "message": "select control strings"
+        }
+      ],
+      "rawSourceSHA256": "7cd6a1cb1803de65529bd903f173557d024bede8a8d3ff3df3c783aec2575f96",
+      "matchesV397SourceSHA256": true
+    },
+    "Source/WebCore/en.lproj/Localizable.stringsdict": {
+      "latestCommits": [
+        {
+          "sha": "5da10924b347",
+          "date": "2018-10-29",
+          "message": "localization modernization"
+        }
+      ],
+      "rawSourceSHA256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+      "matchesV397SourceSHA256": true
+    },
+    "Source/WebCore/en.lproj/modern-media-controls-localized-strings.js": {
+      "latestCommits": [
+        {
+          "sha": "262583ce3aeb",
+          "date": "2026-03-10",
+          "message": "fullscreen placard localization"
+        },
+        {
+          "sha": "92efb14991fa",
+          "date": "2025-03-04",
+          "message": "media stats localization"
+        },
+        {
+          "sha": "4d134575ba2e",
+          "date": "2024-08-06",
+          "message": "media metadata localization"
+        }
+      ],
+      "rawSourceSHA256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+      "matchesV397SourceSHA256": true
+    }
+  },
+  "process": {
+    "all13ReviewedInOneBatch": true,
+    "repeatBroadInventory": false,
+    "build": false,
+    "runtimeLaunch": false,
+    "signingProbe": false,
+    "publication": false
+  },
+  "nextAction": "The 13 rows need an authoritative per-file license map or an evidenced supported removal/replacement path before a notice decision; do not retry source history alone. In parallel, bind the V382 base plus V399 supplement into the next candidate consumer preflight only after those rights rows are resolved.",
+  "releaseQualified": false,
+  "worktree": {
+    "path": "/private/tmp/neantik-release-v1",
+    "branch": "codex/neantik-1-0-prep-20261025",
+    "HEAD": "63c3bc620163ae6354f3dc359b47b9fd72e921d0",
+    "dirty": true,
+    "preserveUniqueChanges": true
+  }
+}

@@ -1,0 +1,29 @@
+--- a/chrome/common/google_url_loader_throttle.cc
++++ b/chrome/common/google_url_loader_throttle.cc
+@@ -68,16 +68,6 @@
+   return RequestBoundSessionStatus::kCoveredWithMissingCookie;
+ }
+ 
+-bool IsCoveredRequestBoundSessionStatus(RequestBoundSessionStatus status) {
+-  switch (status) {
+-    case RequestBoundSessionStatus::kNotCovered:
+-      return false;
+-    case RequestBoundSessionStatus::kCoveredWithFreshCookie:
+-    case RequestBoundSessionStatus::kCoveredWithMissingCookie:
+-      return true;
+-  }
+-}
+-
+ void RecordBoundSessionStatusMetrics(bool was_deferred,
+                                      bool is_main_frame_navigation,
+                                      bool is_request_succeeded) {
+--- a/chrome/common/google_url_loader_throttle.h
++++ b/chrome/common/google_url_loader_throttle.h
+@@ -86,7 +86,6 @@
+       bound_session_request_throttled_handler_;
+   std::optional<base::TimeTicks> bound_session_request_throttled_start_time_;
+   bool is_main_frame_navigation_ = false;
+-  bool sends_cookies_ = false;
+   // `true` if at least one URL in the redirect chain was affected.
+   bool is_covered_by_bound_session_ = false;
+   bool is_deferred_for_bound_session_ = false;

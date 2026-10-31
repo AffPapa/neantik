@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-17",
+  "status": "Previous staging-repair recommendation withdrawn;OS-supported QA3 uninstall queued for reboot;native filter unqualified",
+  "shippingWebKitProxy": false,
+  "exactQA5Stage": {
+    "authorizationReceived": true,
+    "activationAttempts": 1,
+    "result": "requestCanceled11;no new filter or A/B probes",
+    "oldProvider": "QA3 remains activated disabled",
+    "cleanup": "own controller exited and origins closed"
+  },
+  "evidence": {
+    "SDK": "SystemExtensions.h maps RequestCanceled11;replacement Cancel triggers this code",
+    "OS": "sysextd requested replacement of inactiveQA3;old staged MacOS isroot-owned0700 and ordinary userstat returnsPermissionDenied",
+    "limitation": "Unreadable old code independently causes signature guard refusal;exact failing delegate clause not logged. Do not claim missing/unsigned code from unprivileged codesign errors."
+  },
+  "change": "Normalize only fresh owned QA assemblies:directories/executables0755,resources0644;private parent/templates unchanged",
+  "newControls": {
+    "count": 5,
+    "seconds": 0.005,
+    "scope": "Filesystem fixtures only;old0700refusal,correctmodes/bytes/privateparent,symlink,hardlink,missing/directoryexecutable"
+  },
+  "exactRetainedCopy": {
+    "actualOldModesRefused": true,
+    "fileContentsUnchanged": true,
+    "strictSignatureMacOSExit": 0,
+    "gatekeeper": "accepted;Notarized Developer ID",
+    "sandboxCodesignExit": 1,
+    "sandboxFailure": "Setup/context failure;not product signature failure",
+    "frozenOriginalOrOSStagingChanged": false
+  },
+  "notRepeated": [
+    "Swift or Chromium build",
+    "signing/certificate/profile creation",
+    "Apple submission",
+    "prior native baseline4",
+    "old pure suites",
+    "public release gates"
+  ],
+  "next": "After user-chosen reboot,verify QA3 registration removed;resume authorized frozenQA5. Retain baseline4historically;newmonotonicepoch requires scoped freshclock binding/pre-filtercontrols if needed,with explicitreason. No protected filesystem repair,build/sign/Apple replay.",
+  "sourceSHA256": {
+    "Experiments/WebKitIsolation/prepare-qa.py": "59dd15e44ee07022734df27cd6a41a1d266a9bb8de7af754720ea4eaecb9eef3",
+    "Experiments/WebKitIsolation/test-prepare-qa.py": "13d57e3d673fb5a93e9a7d8fffd79ab973d9810d4b43c0d4721687c48b4d03e9"
+  },
+  "correction20261017": {
+    "rootRepairOutcome": "User-reported root fchmod EPERM,then rollback fchmod EPERM;observed directory remained0700. Helper retired.",
+    "actualRootInspection": {
+      "directoryMode": "0700",
+      "fileMode": "0604",
+      "digestAndSignature": "user-rootinspection verified"
+    },
+    "operatorErrors": [
+      "Speculative mode allowlists before observing actual permissions",
+      "Synthetic filesystem tests mistaken for assurance that OS-managed staging could be repaired",
+      "Moving registered container inode into rollback while replacing its canonical path"
+    ],
+    "confirmedLifecycleFinding": "OS registration followed original containing-app file identity into rollback;removing a different QA5 object at the original path did not uninstall QA3",
+    "supportedAction": "Original registered app returned to canonicalApplications location;Finder systemextension removal prompt;OSstate terminated waiting to uninstall on reboot",
+    "frozenQA5": "Restored exact filebytes without launch",
+    "codeOrSecurityWeakened": false,
+    "newNativeABProbes": 0,
+    "rebootPerformed": false,
+    "futureRule": "Use framework/Finder lifecycle;copy backups without moving registered container;no staging chmod/chown/removal/registry edits/SIP change",
+    "sources": [
+      "https://developer.apple.com/documentation/systemextensions/installing-system-extensions-and-drivers",
+      "https://developer.apple.com/documentation/systemextensions/ossystemextensionrequest/deactivationrequest(forextensionwithidentifier:queue:)"
+    ],
+    "clockBoundary": "Reboot changes uptime epoch;oldbaseline uptimes cannot directly order newprovider events. Oldsignedbyte/sign/notary evidence remains reusable."
+  }
+}

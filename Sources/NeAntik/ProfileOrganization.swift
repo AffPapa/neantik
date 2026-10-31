@@ -66,19 +66,38 @@ struct ProfileOrganizationDocument: Codable, Equatable, Sendable {
     let schemaVersion: Int
     var folders: [ProfileFolder]
     var assignments: [ProfileFolderAssignment]
+    var mutationRevision: UUID?
 
     init(
         schemaVersion: Int = Self.currentSchemaVersion,
         folders: [ProfileFolder] = [],
-        assignments: [ProfileFolderAssignment] = []
+        assignments: [ProfileFolderAssignment] = [],
+        mutationRevision: UUID? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.folders = folders
         self.assignments = assignments
+        self.mutationRevision = mutationRevision
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, folders, assignments, mutationRevision
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try values.decode(Int.self, forKey: .schemaVersion)
+        guard schemaVersion == Self.currentSchemaVersion else {
+            throw ProfileOrganizationDocumentError.unsupportedSchema
+        }
+        folders = try values.decode([ProfileFolder].self, forKey: .folders)
+        assignments = try values.decode([ProfileFolderAssignment].self, forKey: .assignments)
+        mutationRevision = try values.decodeIfPresent(UUID.self, forKey: .mutationRevision)
     }
 
     init(state: ProfileOrganizationState) {
         schemaVersion = Self.currentSchemaVersion
+        mutationRevision = state.mutationRevision
         folders = state.folders.sorted(by: ProfileFolder.areInIncreasingOrder)
         assignments = state.assignmentsByProfileID
             .map {
@@ -145,7 +164,8 @@ struct ProfileOrganizationDocument: Codable, Equatable, Sendable {
 
         let state = ProfileOrganizationState(
             folders: sortedFolders,
-            assignmentsByProfileID: assignmentsByProfileID
+            assignmentsByProfileID: assignmentsByProfileID,
+            mutationRevision: mutationRevision
         )
         if ProfileOrganizationDocument(state: state) != self {
             changed = true
@@ -157,13 +177,16 @@ struct ProfileOrganizationDocument: Codable, Equatable, Sendable {
 struct ProfileOrganizationState: Equatable, Sendable {
     static let empty = ProfileOrganizationState()
 
+    var mutationRevision: UUID?
     private(set) var folders: [ProfileFolder]
     fileprivate(set) var assignmentsByProfileID: [UUID: UUID]
 
     init(
         folders: [ProfileFolder] = [],
-        assignmentsByProfileID: [UUID: UUID] = [:]
+        assignmentsByProfileID: [UUID: UUID] = [:],
+        mutationRevision: UUID? = nil
     ) {
+        self.mutationRevision = mutationRevision
         self.folders = folders.sorted(by: ProfileFolder.areInIncreasingOrder)
         self.assignmentsByProfileID = assignmentsByProfileID
     }
@@ -185,6 +208,12 @@ struct ProfileOrganizationState: Equatable, Sendable {
 
     mutating func addFolder(_ folder: ProfileFolder) {
         folders.append(folder)
+        folders.sort(by: ProfileFolder.areInIncreasingOrder)
+    }
+
+    mutating func addFolders(_ newFolders: [ProfileFolder]) {
+        guard !newFolders.isEmpty else { return }
+        folders.append(contentsOf: newFolders)
         folders.sort(by: ProfileFolder.areInIncreasingOrder)
     }
 
@@ -239,7 +268,7 @@ enum ProfileOrganizationError: LocalizedError, Equatable {
     }
 }
 
-private enum ProfileOrganizationDocumentError: LocalizedError {
+enum ProfileOrganizationDocumentError: LocalizedError {
     case unsupportedSchema
     case invalidFolder
     case duplicateFolderName

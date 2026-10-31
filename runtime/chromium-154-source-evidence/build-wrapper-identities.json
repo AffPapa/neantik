@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "pythonVersion": "Python 3.11.3",
+  "files": [
+    {
+      "role": "blink-python-wrapper",
+      "sha256": "e79b8b0570a3930fb77be8914508eeb45b8ac981087efe5db5d60a84e4d0ef31",
+      "sizeBytes": 416,
+      "executable": true
+    },
+    {
+      "role": "python3",
+      "sha256": "c220ae7b6c2b9da2a4e498c09cdbc64b03b43db96dbbf9f64d26bfbbd698e2bd",
+      "sizeBytes": 152624,
+      "executable": true
+    },
+    {
+      "role": "xcrun-wrapper",
+      "sha256": "d835c35fc3f2b990a12e06437eb7c9b93d23b989b1f0151c08c69d037d347699",
+      "sizeBytes": 1269,
+      "executable": true
+    },
+    {
+      "role": "greadlink-wrapper",
+      "sha256": "cd906fd4cf9f8a6037c9106280a63f6c332ef7581bae306442df00a0cb8e7eb7",
+      "sizeBytes": 182,
+      "executable": true
+    },
+    {
+      "role": "metal",
+      "sha256": "959c62ccf6371b86e1a842126570fb668c1664d43d019bcf9b12a761ef70fdb9",
+      "sizeBytes": 238464,
+      "executable": true
+    },
+    {
+      "role": "metallib",
+      "sha256": "a9b76eb239d1d02f157defb707a5accde9ac92876130a64a1ce7ff82d64e46d9",
+      "sizeBytes": 238480,
+      "executable": true
+    }
+  ],
+  "scope": "Observed exact wrapper and executable identities. Existing Metal mount became available after /usr/bin/xcrun --find metal; no installation/global Xcode change."
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "status": "FAIL_PROXY_ROUTE_NOT_OBSERVED_IN_EXACT_SIGNED_CANDIDATE",
+  "candidate": "b96006a994664a80bf89cd757f932eff",
+  "candidateManifestSHA256": "4d10449a7674c908c333f31d81f2b1ce3a5ce0178716ecda0b8daddd6c6924c8",
+  "fixtureScriptSHA256": "be52f23710471bf473694487da56da19d27f5735c55048eadb5f7acaa1bb0750",
+  "test": "owned HTTPS route-qa endpoint, synthetic QA WebKit proxy profile; no accounts or user profiles",
+  "ui": "exact candidate opened with two tagged synthetic profiles; selected proxy row showed WebKit proxy profile running",
+  "fixtureEvents": [
+    {
+      "kind": "owned-https-receipt",
+      "phase": "proxy-success",
+      "valid": false,
+      "throughOwnedUpstream": false
+    }
+  ],
+  "expectation": "a CONNECT to the local owned proxy must create owned-https-tunnel before callback",
+  "result": "no owned-https-tunnel event; callback for proxy-success was invalid and did not carry the owned-upstream marker",
+  "cleanup": {
+    "fixtureServerThreadsDrained": true,
+    "ownedRuntimeProcessesRemaining": 0,
+    "profileStoppedInUI": true,
+    "personalProfilesTouched": false
+  },
+  "interpretation": "FAIL. The expected brokered tunnel was not observed. The HTTP callback marker alone can be affected by WebKit loopback bypass, so it is not treated as proof by itself; absence of the separately logged HTTPS CONNECT plus invalid receipt fails this run. Diagnose whether production WebKit host applies its proxy configuration or fails closed.",
+  "releaseQualified": false
+}

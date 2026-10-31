@@ -1,492 +1,663 @@
 # NeAntik changelog
 
-## Direct 0.6.4 (46) — согласованная среда профиля
+## Unreleased — certificate pin hardening
 
-- CSS media queries и Screen API теперь получают одну и ту же геометрию профиля; устранено точное расхождение, найденное строгим аудитом A → B → A.
-- Чтение и кодирование Canvas используют единое детерминированное преобразование, а цифровая тишина OfflineAudio остаётся тишиной.
-- Отчёт выпуска перечисляет безопасные идентификаторы строгих несоответствий без URL, cookies, прокси и данных профиля.
-- Проверка расширений читает фактический каталог Chromium `Default/Extensions`.
-- Центр профиля отличает «настроено» от доказанной сетевой готовности, а повторяющаяся карточка проверки удалена.
-- Проверка открытого репозитория корректно отличает резерв версии от полного контракта опубликованного архива и больше не падает на неполной записи.
+- Source-only: the updater now compares the existing public Developer ID certificate using its reviewed SHA-256 digest. Apple chain/team/role, helper payload, timestamp and signed manifest checks remain. This patch is not present in published 0.9.2 binaries; incorporating it requires a separately qualified future manager/helper release, without rebuilding Chromium. No replacement key or certificate was created.
 
-## Direct 0.6.3 (45) — запуск без лишних блокировок
+## Direct 0.9.2 (202) — published public alpha
 
-- Исправлено ошибочное блокирование запуска, когда macOS ещё не успела сообщить размер экрана.
-- Профиль теперь использует безопасные значения среды по умолчанию и открывается сразу.
-- Основная колонка каталога адаптируется к широкому окну без пустой правой области.
+- Added versioned balanced/strict privacy presets, a local blank start page, explicit WebRTC policy, per-profile permissions, standard-font protection, WebGL debug-renderer reduction and optional letterboxing. Existing saved profiles preserve their choices.
+- Required proxy selection is fixed when creating network contexts. Owned-fixture tests cover extension DIRECT override, proxy failure/recovery, A→B→A storage, disk cache and TLS-session separation, workers, WebSocket and downloads. Packet-wide leak freedom and absolute anonymity are not claimed.
+- Bundled CERT/HaGeZi domain protection, limited tracking-query cleanup and Chromium bounce-tracking mitigation include effective-state disclosure and temporary tracker exceptions. This is not full Safe Browsing or downloaded-file scanning.
+- Added ephemeral-profile lifecycle, derived-cache-safe encrypted backup/restore, extension permission warnings, privacy passport and bounded authenticated update downloading. Exact manager A→B→A, scoped native privacy checks, separate signed backup QA, Apple ZIP/DMG, anonymous public downloads and Sites162 live binding passed on this Mac; WebKit remains deferred. See [release evidence](releases/v0.9.2.json).
+- Build/relink sources, license notices and privacy limitations are documented in [privacy modes](docs/PRIVACY_MODES.md) and [recipient replay](docs/RELINK_PRIVACY_V1.md). Per-site secret derivation remains research, not an enabled identity feature.
 
-## Direct 0.6.1 (43) — корректная статистика
+## Direct 0.9.1 (201) — published public alpha
 
-- Исправлена отправка версии и build в обезличенной статистике: при запуске без Info.plist больше не появляются `0.0.0 (0)`.
-- Telegram-отчёты получают корректную редакцию, событие, количество профилей и профилей с прокси.
+- Chromium156.0.8078.80, owned WebKit deferred. Published ZIP/DMG and scoped evidence are recorded in [the public release record](releases/v0.9.1.json). Compiled source39e3814 remains immutable; this feature branch is subsequent development.
 
-## Direct 0.6.1 (42) — цельный рабочий профиль
+## Direct 1.0.0 (200) — development candidate, not released
 
-- Инспектор показывает контракт среды, историю стабильности, локальные события и риски расширений.
-- Перед запуском автоматически создаётся атомарный snapshot; восстановление поддерживает rollback.
-- Локальная резервная копия шифруется AES-GCM; данные прокси остаются в Keychain.
-- Экономия памяти обратимо приостанавливает только управляемые процессы и возобновляет их перед остановкой.
-- Командная палитра, чистый запуск, стартовые вкладки, clone-preview и импорт cookies объединены в единый рабочий поток.
-- Privacy-safe диагностика и open-source проверки сохранены; URL, cookies, пароли и значения прокси не попадают в журнал.
+- The next 1.0 candidate build number is now above the published 0.9.0 (140) release and matches the owned-WebKit production packager. This is version metadata only; runtime, privacy, source/notices, notarization, and release gates remain open.
 
-## Direct 0.6.0 (39) — простой профиль, автоматическая проверка
+## Direct 1.0.0 (139) — development candidate, superseded and unpublished
 
-- Быстрое создание рабочего места по названию и назначению: работа, исследование, тестирование или личное.
-- Добавлены Identity Contract и единый центр готовности с понятными причинами проблем.
-- Стабильность профиля хранится локально ограниченной историей; добавлены атомарные snapshots и проверка совместимости Chromium.
-- Командная палитра, смысловой поиск по имени, заметкам, тегам и стартовому сайту, автоматические подсказки группировки.
-- Чистый запуск, стартовый набор вкладок, компактный локальный журнал и объяснение fingerprint по запросу.
-- Безопасный импорт cookies из JSON и Netscape с ограничением размера, количества и проверкой формата.
-- Исправлено чтение истории стабильности с ISO-датами; все новые операции остаются локальными и не получают URL, cookies или секреты.
+- Candidate 139 is retained as source history only. It was superseded, never qualified for distribution, and is not a public NeAntik 1.0 release.
 
-## Direct 0.5.8 (38) — обезличенная статистика
+## Direct 0.9.0 (140) — published public alpha
 
-- Добавлен opt-out переключатель обезличенной статистики в настройках.
-- Передаются только агрегированные события запусков, создания профилей и текущих счётчиков профилей и прокси.
-- URL, cookies, имена и идентификаторы профилей, значения прокси и fingerprint-данные никогда не сериализуются.
-- Сайт принимает события через privacy-thresholded API; Telegram-уведомления работают только при заданных серверных секретах.
+- GitHub published this release with the ZIP/DMG sizes and SHA-256 values recorded in [`releases/v0.9.0.json`](releases/v0.9.0.json). It remains a public-alpha release; the bundled owned-WebKit 1.0 runtime is a separate, unqualified candidate.
 
-## Direct 0.5.7 (37) — September 11, 2026
+## Direct 0.8.26 (138) — public alpha — WebKit preview lifecycle
 
-- В шапке каталога скрываются пустые оперативные фильтры, чтобы не перегружать ежедневный экран.
-- Активный пустой фильтр остаётся видимым, поэтому из него всегда можно вернуться к «Все».
+- Менеджер теперь отдельно отслеживает подготовку и завершение изолированного WebKit-сеанса, чтобы блокировки профиля и обновления не снимались раньше времени. WebKit-прокси и поставляемый изолированный runtime в этом выпуске не включены и не заявляются как готовые.
+- Проверен headed-запуск системного WebKit в отдельном окне на пустом QA-профиле. Это не подтверждает прокси, подмену отпечатка или работу bundled runtime. Chromium runtime остаётся прежним.
 
-## Direct 0.5.6 (36) — September 11, 2026
+## Direct 0.8.25 (137) — published public alpha — актуальность диагностики прокси
 
-- Каталог рабочих мест стал единственным стартовым экраном: поиск, папки, теги и действия находятся в одном месте.
-- Убрана постоянная кнопка перехода на дублирующий Home; резервный маршрут сохранён в меню и горячей клавише.
-- Пустой каталог сразу предлагает создать первое рабочее место без промежуточного экрана.
+- Ручная проверка своего HTTPS-адреса больше не показывает прежний успех, если во время завершающего чтения настроек изменились профиль, пароль или сохранённый адрес. Согласие, отмена и ограничения ответа сохранены. Это предварительная проверка через curl, а не измерение маршрута Chromium.
+- Подготовка служебного QA-ключа теперь освобождает только подтверждённо принадлежащую попытке запись и сообщает ошибки очистки отдельно. Неопределённый исход сохраняет запрет повторного использования. Реальные пользовательские ключи и старые незавершённые записи не мигрируются автоматически.
+- Связанные source-контроли пройдены: [диагностика](docs/evidence/proxy-diagnostic-publication-development.json), [подготовка QA](docs/evidence/enrollment-failure-development.json). Интеграция, Dev-окно, подпись, exact headed, Apple, публичные ZIP/DMG и MCP скачанной копии проверены. [Отчёт выпуска](releases/v0.8.25.json) сохраняет ограничения и первоначальные setup-ошибки. Chromium и сертификат прежние; полный WebKit proxy/backup и 1.0 не заявляются.
 
-## Direct 0.5.5 (35) — September 11, 2026
+## Direct 0.8.24 (136) — published public alpha — проверка backup до обращения к ключу
 
-- Проверка отпечатка безопасно открывается даже при пустом или ещё не загруженном списке профилей.
-- Расширенные настройки и диагностика остаются скрытыми до явного запроса; основной сценарий не изменён.
+- Прямой запрос полной копии или восстановления WebKit теперь отклоняется до проверки Chromium, чтения/создания локального ключа и обработки архива. Если настройки профиля уже изменились, запрос тоже отклоняется заранее. Полная копия данных сайтов WebKit пока не поддерживается.
+- Прежний лишний доступ воспроизведён тестом; после исправления прошли 50 связанных Swift-тестов и 35 Python-проверок. Формат архива, данные и identity профиля не менялись. Доставлено в 0.8.24: точный подписанный headed-кандидат, Direct ZIP/DMG, публичные байты и downloaded MCP проверены. Source-контроли приватной backup-ветки не подменяются общей headed-проверкой. [Доказательства и границы](docs/evidence/webkit-backup-admission-0.8.24.json).
 
-## Direct 0.5.4 (34) — September 10, 2026
+- Полный [отчёт выпуска](releases/v0.8.24.json) сохраняет пропуски тестов и ограничения. Chromium и сертификат прежние; browser.free отдельно остаётся на 0.8.16 (128).
 
-- Make Home search faster on large local workplace lists: the sorted index and
-  existing operational state are reused while you type, and quick-view counts
-  always match the visible search result.
-- Keep the menu lightweight by projecting only the eight recent workplaces it
-  needs. Resolving a newer browser runtime can no longer let an older result
-  overwrite it.
-- Open tags directly when Home requests them, including keyboard focus in the
-  advanced editor section.
-- Store coarse local proxy-health observations through a descriptor-bound,
-  owner-only write path with durable file and directory commits.
+## Direct 0.8.23 (135) — published public alpha — определить тип прокси
 
-## Direct 0.5.3 (33) — September 10, 2026
+- В редакторе появилась отдельная кнопка «Определить тип без пароля». Она пробует SOCKS5 и HTTP по указанному адресу и порту; логин и пароль не передаются. Вставка строки остаётся локальной.
+- Найденный тип применяется отдельной кнопкой. Изменение полей отменяет пробу и убирает прежний результат. Сохранение профиля и проверка доступности остаются отдельными действиями.
+- Неоднозначный HTTP-ответ и HTTPS требуют ручного выбора. Определение протокола не подтверждает авторизацию, выход в интернет или маршрут Chromium.
+- Проверены Dev-окно, точный подписанный редактор и headed-кандидат. Apple приняла ZIP/DMG; подпись, stapling, Gatekeeper, публичные байты и скачанный MCP прошли проверки. Chromium, сертификат, identity и форматы данных не менялись. browser.free остаётся отдельно заблокированным. [Отчёт и ограничения](releases/v0.8.23.json).
 
-- Home now makes the current state visible without a second dashboard: local
-  quick views show running workplaces, items requiring attention, workplaces
-  without folders and workplaces without tags. Counts never inspect browser
-  data, credentials or proxy endpoints.
-- Running means a confirmed browser process only. Attention reuses existing
-  recovery and credential-free route-health state; opening a quick view never
-  starts a browser, checks a proxy or changes a profile.
-- The Home row menu now offers a bounded folder picker, opens tags directly in
-  the existing validated editor and can create a similar workplace. It reuses
-  the current local store, undo-aware folder move and fresh-identity copy flow.
+## Direct 0.8.22 (134) — published public alpha — понятное завершение профиля
 
-## Direct 0.5.2 (32) — September 10, 2026
+- После принятого Stop менеджер сразу показывает «Закрывается…». Пока браузер и его оставшиеся процессы завершаются, повторный запуск и изменение данных заблокированы. Краткий обычный выход больше не должен выглядеть как просьба закрыть браузер вручную.
+- Намерение закрытия связано с конкретным процессом, владельцем и неизменённым файлом запуска. Замена файла, неподтверждённое владение или превышение срока ожидания сохраняют защитные ограничения; принудительное завершение не добавлено.
+- MCP явно возвращает `closing`; повторный Stop не отправляет ещё один запрос. WebKit сохраняет отдельный контракт `stopPending`.
+- Проверены Dev-окно и точный подписанный кандидат. Apple приняла ZIP/DMG; подпись, stapling, Gatekeeper, публично скачанные байты и MCP прошли проверки. Chromium не пересобирался. browser.free остаётся на 0.8.16 (128) из-за отдельного блока публикации. [Отчёт и ограничения](releases/v0.8.22.json).
 
-- A newly created workplace now appears immediately on the Home screen even
-  when the first 24 rows are occupied by pinned workplaces. It is revealed and
-  scrolled into view without changing its pin state or your saved ordering.
-- Keep Home search local to workplace names, tags and notes; proxy endpoints
-  and credentials remain outside the Home search surface.
-- Stabilize the cancellation boundary for proxy-operation tests so the full
-  isolated native suite does not race under parallel load.
+## Direct 0.8.21 (133) — published public alpha — завершение проверки компонентов
 
-## Direct 0.5.1 (31) — September 10, 2026
+- Отключённая проверка компонентов Chromium теперь асинхронно возвращает явный отказ вместо зависания очереди. Сетевые запросы компонентов по-прежнему отключены.
+- На отдельном подписанном runtime прошли4реальных C++ теста и2последовательные оконные проверки; старый checker намеренно проваливает все4теста. Ошибки setup/cleanup сохранены и отделены от продукта. [Доказательства и границы](docs/evidence/component-completion-development.json).
+- Новый runtime привязан к собственным source/evidence/report pins; предыдущие font/security contracts и опубликованные архивы сохранены. Измерение маршрута браузера, CUP и все фоновые DNS/UDP этим не доказываются.
+- Точный кандидат, updater QA commit/preACKrollback, doctor13/13, Apple ZIP/DMG, Gatekeeper, анонимные файлы и downloadedMCP18/7 проверены. Первый переход с132на новый runtime потребует ручного DMG/ZIP: старый updater не содержит новой compiled record. Это public-alpha candidate, не1.0.
 
-- Keep the same workplace home from first launch onward, with one-click creation,
-  visible runtime recovery, a direct archive entry and clearable search.
-- Offer pin, edit, details and ordinary stop from a compact workplace menu;
-  show notes/tags for recognition and keep advanced tools in the catalog.
-- Keep a stable editor draft identity and baseline. Cancel closes an untouched
-  form immediately; actual unsaved changes still require confirmation.
-- Restore the previous tabs when reopening an existing workplace with the default
-  blank startup page. Explicit startup pages and audit launches remain explicit.
-- Explain unexpected browser exits on the affected workplace. Ordinary stops and
-  user-requested force stops do not produce crash warnings.
-- Disable menu actions during modal work and use workplace terminology in the
-  main creation, editing and search commands. Add no new user settings.
-- Provide a runtime fallback for submitted HTTPS DuckDuckGo queries without
-  suggestions/prefetch, preserving explicit user search choices, and remove the
-  unreachable distribution-provided Web Store shortcut. The release includes the rebuilt and verified runtime.
+## Direct 0.8.20 (132) — published public alpha — исправления безопасности Chromium
 
-## Direct 0.5.0 (30) — September 9, 2026 (candidate)
+- В отдельную сборку Chromium/V8 включены восемь полных upstream patches; ещё два исправления подтверждены в исходной базе. Каждый patch, лицензия и source/build/sign evidence сохранены отдельно. Номер Chromium остаётся 156.0.8078.12: исправления перенесены в нашу ветку, это не новая upstream-версия.
+- В headed research runtime прошли девять ограниченных security/worker controls и 422 проверки настроенного режима системных шрифтов. Это не полная квалификация релиза и не все upstream native suites.
+- Менеджер и updater выбирают одну полную запись runtime/evidence/report. Публикационная политика требует полный разбор исправлений для точного source contract. UI больше не выдаёт старую ветку за безопасную по одному номеру версии.
+- Первый переход с 0.8.18 на новый runtime планируется через подписанный DMG/ZIP: установленный updater130 не знает новую compiled record. Данные профилей, сертификат, WebKit и старые immutable assets сохранены. Точный кандидат, doctor13/13, новые QA ACK/rollback, Apple ZIP/DMG, Gatekeeper, анонимные скачивания/checksums и downloaded MCP18/7 проверены. [Отчёт и ограничения](releases/v0.8.20.json).
 
-- Introduce a workplace home with pinned/recent sessions, local name/tag/note
-  search, Open/Continue actions and a separate full catalog (Command-1/2).
-- Add a native macOS menu for recent workplaces and verified active context.
-  Navigation is blocked while an editor or confirmation is presented.
-- Revalidate process identity and unchanged ownership evidence before returning
-  to a browser window. Never activate a process from an unverified retained PID.
-- Preserve existing profile storage, credentials, cookies and identity. No new
-  cloud service, setting, runtime patch or data migration is introduced.
+## Direct 0.8.19 (131) — held, not published — понятный статус сети
 
-## Direct 0.4.0 (29) — September 8, 2026 (candidate)
+- Общая сводка теперь показывает нейтральное «Настройки готовы» и сразу объясняет, что доступность сайтов в открытом браузере не проверяется автоматически. Успешная предварительная проверка прокси больше не окрашивает всю среду в зелёный. Датированные результаты и отдельные ошибки сохранены.
+- На неизменённом runtime130 выполнено ограниченное наблюдение startup/80s, настоящего скачивания и отмены, отказа прокси и восстановления; семь собственных соединений связаны с relay, независимый Direct-контроль распознан. Это DEBUG QA, не доказательство всех DNS/UDP или отсутствия фоновых запросов.
+- Полная source-интеграция: Swift1637/194 (71skip), Python1543 (19skip). Реальный Dev UI прошёл. Пропуски не являются нативными PASS. Подписанный кандидат, нотарификация и публичные байты ещё не квалифицированы; версия остаётся development candidate. Chromium, WebKit, данные профилей и сертификат не менялись.
 
-- Simplify the daily workflow to create, open and return. New profiles get an
-  editable unique name; Create and open saves the profile and credentials first,
-  then runs the existing guarded launch after the editor closes. Create without
-  opening remains available. A launch failure does not discard the profile.
-- Proxy entry is paste-first, with a redacted local preview and manual fields
-  available on demand. Launch preparation remains automatic; manual checking
-  is optional and never replaces fresh route validation before launch.
-- The primary action on a running profile returns to its verified browser
-  window. Explicit Stop remains available in the profile menu.
-- New profiles start on a blank page without opening an external diagnostic
-  site. Existing saved startup URLs, cookies, data and identity are preserved.
-- Based on a fresh review/workflow study: no task-specific fingerprint presets,
-  country selector without a real proxy, extra dependencies or cloud service.
-  This is a public-alpha candidate, not a promise of universal anonymity or a
-  published download until all Direct gates pass.
+## Direct 0.8.18 (130) — published public alpha — системные шрифты Chromium
 
-## Direct 0.3.25 (28) — September 7, 2026 (candidate)
+- Добавлен opt-in режим системных шрифтов Mac в редактор и MCP. Обычный режим старых профилей сохранён; данные не сбрасываются. Исправлена provenance variable fonts.
+- Новая compiled policy связывает полный runtime/evidence/report; смешанные записи отклоняются. Нативная QA-проверка выявила чтение прежнего пути после transfer; исправлено чтение через retained slot, проверены реальные ACK/install и preACK rollback. Это QA-копии, не production feed hop.
+- Полные source-прогоны и релевантные delta-наборы, первый exact headed130b, doctor13, Apple ZIP/DMG, публичные архивы/checksums и downloaded MCP18/7+fontPolicy edit/restart прошли. Пропуски не считались нативными PASS.
+- Первый переход на этот runtime — вручную через подписанный DMG/ZIP; updater129 его не примет. Runtime APP4 и его подпись сохранены при упаковке. Сертификат прежний. WebKit не расширялся. Сайт пока на128; это не готовая1.0. [Отчёт и ограничения](releases/v0.8.18.json).
 
-- The profile inspector can be closed after a search returns no profiles;
-  opening it still requires a selection and modal actions remain protected.
-- Search help names all existing searchable fields. Shortcut search has a
-  consistent click target, selected batch controls expose their selected state,
-  and screen readers can read the same bounded note preview shown in the row.
-- Carries the unpublished native layout polish: aligned list headings and rows,
-  clearer profile creation hierarchy and a secondary shortcut reference.
-  No new dependency, setting, profile schema or runtime is introduced.
-- Compact profile rows keep folder and tag context visible alongside a note;
-  the editor's collapsed “Дополнительно” summary now reflects the actual
-  folder, tag count and start URL instead of a static label.
-- Proxy import now shows a redacted local preview of the parsed endpoint and
-  username before applying it; credentials remain protected.
+## Direct 0.8.17 (129) — published public alpha — WebKit через MCP
 
-## Direct 0.3.24 (27) — September 5, 2026 (candidate)
+- Запуск, статус и остановка WebKit доступны через открытый интерфейс NeAntik после явного разрешения подключения и выбранных профилей. Повторное подключение не получает чужие окна.
+- Отключение AI и отзыв доступа оставляют окна пользователю. Остановка ожидает сохранения вкладок и завершения загрузок; ошибка сохранения не обозначается как успешное закрытие.
+- Исправлено закрытие WebKit при открытом диалоге загрузки: сначала отменяется собственная загрузка и завершается callback, затем закрывается окно. Старый отказ и исправленный оконный сценарий сохранены.
+- Активная проверка отпечатка теперь завершает только собственную временную сессию независимо от фоновой паузы интерфейса. Launch-разрешение остаётся одноразовым; отдельный completion permit проверяет owner, каталог, отмену и неизменность lease после ожидания.
+- Локальная интеграция и затронутые delta-наборы, подписанный Dev UI и точный кандидат проверены в указанном scope. Apple ZIP/DMG, Gatekeeper, публичные байты и downloaded MCP18/7 прошли. GitHub опубликован; browser.free пока остаётся на0.8.16 из-за отказа автоматической проверки передачи Sites credential. Chromium156, сертификат и форматы данных не менялись. [Отчёт и ограничения](releases/v0.8.17.json).
 
-- Shortcut help now opens directly at its search field, including repeat
-  requests. Native settings remove the redundant density reset button and use
-  shorter instructions. The startup URL keeps a visible label after entry;
-  profile-note headings expose their full name in a tooltip.
+## Direct 0.8.16 (128) — published public alpha — удаление WebKit
 
-- Runtime builds fail early when an ancestor `node_modules` directory would
-  contaminate Chromium's TypeScript dependencies. Use an isolated build root;
-  bundled dependencies and the upstream dependency checker remain unchanged.
-  Resumed builds also verify installed Dawn Go package contents and restore
-  missing or modified files instead of trusting cached installation metadata.
+- Реализованы удаление закрытого UUID-хранилища через public WebKit API и отдельное необратимое подтверждение. Журнал защищает запуск и позволяет явно продолжить прерванную операцию.
+- Перед нативным удалением профиль исключается из обоих metadata snapshots, включая защиту от запуска старой127. Ошибка сохранения не возвращает удалённую запись в интерфейс; очистка пароля следует за долговечным commit.
+- Каталог NeAntik изолируется через descriptor-based rename и проверку inode. Удаляются только пустые служебные папки; неожиданные локальные файлы сохраняются с предупреждением. Chromium Trash-путь не менялся.
+- Итоговая Swift-интеграция1572/183 (1498passed log lines,71explicit skips) и Python1482/19skips прошли. После filesystem correction пройдены3fresh source-native фазы и точные signed GUI удаление A/сохранность B, очистка собственных UUID и recovery после перезапуска. Exact headed128, doctor13, Apple ZIP/DMG, Gatekeeper, публичные байты, downloaded MCP и browser.free153/live прошли. Пропуски и границы — в [отчёте](releases/v0.8.16.json).
+- Chromium156.0.8078.12, сертификат, identity и формат WebKit-сессий сохранены. Это public alpha, не завершённая1.0. [0.8.15](releases/v0.8.15.json) сохранена для отката приложения; удалённые данные сайтов не восстанавливаются downgrade.
 
-- September 6 optimization shares localized name ranks across all six list
-  orders and consolidates tag ordering, locale validation and Russian count
-  formatting. Existing ordering, strict metadata validation and proxy response
-  normalization remain covered by equivalence and boundary tests.
-- Folder drafts now confirm discard and reject unchanged renames; folder search
-  can be cleared without losing focus. Note editing clears stale save errors
-  and no longer advertises Save for invalid text. Retry/create/proxy-status
-  hints use plain language; screen-reader counts avoid incorrect declension.
+## Direct 0.8.15 (127) — published public alpha — безопасный выбор восстановления
 
-- Refresh the official Chromium security baseline to the September 3 macOS
-  Stable release (`152.0.7977.82/.83`, 12 security fixes). Public candidate
-  preparation now correctly rejects the embedded `152.0.7977.64` runtime.
-  The candidate now pins source-built `152.0.7977.82`, verified with Metal,
-  ARM64-only binaries and Developer ID signing. Existing installations remain
-  unchanged until the new Direct release is published and installed.
+- Подтверждение восстановления привязано к выбранному профилю и конкретному журналу. Wrong-profile и stale-stage отказываются до изменения данных; профильное окно не предлагает завершить чужое/неподтверждённое восстановление.
+- Полные Swift/Python и новые recovery units, canonical Dev GUI, exact signed headed127, signed WebKit startPage control, doctor13, JS/HTTP DeviceMemory, Apple ZIP/DMG, hosted bytes, downloaded MCP и browser.free152/live прошли. Пропуски и границы — в [отчёте](releases/v0.8.15.json).
+- Новый controlled DNS/DoH срез прошёл на headed signed runtime:8наблюдений/3сессии, SERVFAIL/обрыв/восстановление и чувствительность к Direct обходу. Это raw runtime, не завершение manager/relay и всех19–22.
+- Doctor больше не создаёт executable Python bytecode через потомков. Chromium156, identity, backup/metadata/session schemas и существующие updater helpers сохранены. [0.8.14](releases/v0.8.14.json) остаётся для отката; это не завершённая1.0.
 
-- A thirteen-point unification pass retains overlong profile-name drafts and
-  blocks Save while proxy import text remains unapplied, with explicit Direct
-  recovery that does not change routes on validation navigation. Bulk import
-  names the failing line and provides actionable generated-name validation.
-  Combined folder/scope empty states preserve folder context on recovery.
-  Settings and workspace share density metrics and clear-search focus rules;
-  inspector launch hints reuse the row policy. Long tags keep removal controls
-  visible; tag suggestions and folder navigation avoid repeated render work.
+## Исходные инструменты после 0.8.14
 
-- Usability follow-up preserves unfinished text when picking existing tags,
-  directs proxy-login validation to the login field, explains invalid folder
-  names without silently truncating them, and matches accented folder names
-  consistently. Settings gain two-stage Escape, local Find focus and searchable
-  named Return chords. Note placeholders use a clearer semantic color. Search
-  indexing reuses folded values, and list headers reuse the current operational
-  subset without caching action-time eligibility.
+- Анонимный hosted-downloader использует системный curl без пользовательского конфига/ambient credentials и редактирует ошибки; настоящий отрицательный контроль ловит незапрошенную передачу собственного тестового файла.
+- Fast runner запрещает bytecode Python-потомкам тестов. CI проверяет вводные release-ссылки README и fine-grained GitHub tokens, не выводя их значения. Исправлен текущий сетевой инвентарь и очередь 1.0.
+- Это source-only изменения инструментов. Неизменяемые бинарные assets 0.8.14 относятся к app-source commit 77edb549ebd634f84064de77460cb7e38ea15e1c.
 
-- Goal quality pass protects notes against concurrent overwrite, keeps the
-  folder picker open on save failure and preserves batch Undo after retryable
-  storage errors. Pending tags survive collapsed settings and participate in
-  Save/dirty-state validation; empty suggestion search no longer selects an
-  arbitrary tag. Folder keyboard selection scrolls into view. Batch-tag
-  previews/suggestions and route indexing avoid duplicate work; tag suggestion
-  search handles diacritics consistently. No runtime or dependency change.
+## Direct 0.8.14 (126) — published public alpha — автоматическое сохранение вкладок WebKit
 
-- Batch tag editing previews coverage and changed/unchanged counts, disables
-  no-op submissions, warns about tag-limit blockers before an atomic save and
-  offers only selected-profile tags for removal. Shortcut search gains an
-  always-available clear button for nonempty queries with retained focus.
+- Режим «Предыдущие вкладки» сохраняет подтверждённые адреса, порядок и выбор вкладки автоматически, объединяя быстрые изменения в короткое окно. Непрерывные изменения не откладывают запись бесконечно. Выключенный режим не создаёт session-файл; частично восстановленная сессия не заменяет исходную.
+- Одна очередь записи объединяет быстрые изменения; закрытие ждёт текущую запись и сохраняет окончательный список последним. Запись атомарная; ошибка показывается без циклических повторов. После ошибки операция не выдаётся за успешно завершённую.
+- Четыре реальных оконных сценария прошли без пропусков; на точном signed-кандидате подтверждены autosave до закрытия, History API и удаление вкладки из файла. Дополнительный signedB запуск остановлен сохранённой защитой памяти и не засчитан как PASS. Это не полный backup сайтов.
+- Swift integration, exact headed, doctor13, Apple ZIP/DMG/stapling/Gatekeeper, публичные байты, downloaded MCP smoke и browser.free151/live проверены. [Отчёт и ограничения](releases/v0.8.14.json).
+- [Следующие приоритеты 1.0 и ограничения WebKit](docs/NEXT_1_0_SLICES.md).
 
-- Follow-up usability audit preserves apostrophes inside search terms, explains
-  unfinished quoted queries and avoids unnecessary repeated field/tag folding.
-  Settings collapse the optional density preview so shortcut search is easier
-  to reach. Failed batch-tag saves retain the dialog and its draft instead of
-  dismissing it; the existing atomic metadata and Undo policy is unchanged.
-  The workspace uses the native sidebar toggle only, removing its duplicate.
+## Direct 0.8.13 (125) — GitHub/browser.free public alpha
 
-- The September 5 ND4 follow-up ranks 100 recommendations and implements 25
-  small improvements across four existing workflows: field-specific and
-  presence search with actionable syntax help; profile-save validation and
-  route/probe summaries; searchable contextual shortcuts and density preview;
-  note draft recovery and two maintenance-oriented sort orders. No new
-  dependency, profile schema, runtime or public binary is introduced.
+- Исправлена проверка SOCKS5: логин проверяется после той же нормализации, что используется при сохранении. Значимые пробелы в пароле сохраняются.
+- WebKit соблюдает общий интервал между успешными запусками профилей. Неуспешный запуск освобождает слот без задержки.
+- Стартовая страница, адресная строка WebKit и MCP принимают адреса с портом: `example.com:8443`, `localhost:8080`, `[::1]:8080`. Неизвестные схемы, credentials и неверные порты отклоняются.
+- MCP возвращает `engineCapabilities`: поддержку настройки окружения, прокси, запуска через MCP, расширений, backup и постоянных данных сайтов. Это возможности движка, а не результат проверки текущей сессии.
+- WebKit с явно сохранённым Chromium context языка/часового пояса отказывается запускаться вместо молчаливого игнорирования настройки. Старые metadata остаются читаемыми и не стираются. Системный WebKit не подменяет полный fingerprint.
 
-- A new three-track review of thirty current profile browsers deduplicates 124
-  raw ideas into an evidence-linked matrix of exactly one hundred
-  recommendations. Twenty-five bounded local improvements were selected;
-  cloud accounts, remote control, automation, secret export, proxy sales and
-  arbitrary extensions remain explicitly outside the product.
-- Profile metadata now has a versioned document envelope with a legacy-array
-  decoder, a realistic bounded read limit and age/count/byte-bounded Recovery
-  retention. Process locks, proxy health and embedded-runtime metadata use
-  stable descriptor-first bounded reads, while the readiness center performs
-  a non-destructive write/read/rename/lock/unlink storage check.
-- Proxy passwords are validated at every Keychain read and write boundary.
-  Unsupported profile schemas fail closed without rewriting user data, and
-  privacy-safe browser-exit state stores only a bounded classification and
-  timestamp, never profile IDs, process IDs, paths, arguments, URLs or proxy
-  details.
-- Quitting with managed browsers open now offers three explicit outcomes:
-  ordinary stop and bounded wait, leave browsers running, or cancel. A timeout
-  cancels manager exit without silently escalating to Force Stop. The app-size
-  audit reports deterministic largest paths and optional component deltas.
-- Empty-list causes now have specific recovery actions; the folder picker has
-  visible keyboard selection; bulk-import errors jump to the exact source
-  line and replacing pasted input from a file requires confirmation. Profile
-  rows, menus and the inspector expose consistent safe actions with proxy-test
-  progress and VoiceOver custom actions.
-- The workspace adds a visible filtered count, batch-selection reset feedback,
-  native sidebar visibility control, responsive command/detail-header actions,
-  delayed-runtime retry guidance and one semantic high-contrast notice style.
-  No dependency, bundled asset, Chromium byte or public release changed.
+- Опубликованы неизменяемые ZIP/DMG; exact headed/MCP, Apple notarization/stapling/Gatekeeper, публичные байты и downloaded stdio smoke проверены. Сайт обновлён до версии150. [Отчёт](releases/v0.8.13.json).
 
-- A 29-product research pass records exactly one hundred bounded candidates
-  and implements twenty-five dependency-free, asset-free operator safeguards.
-  Password reveal is now a short focus-bound lease, proxy stdin and storage
-  measurement are cancellable, and the running-session timeline no longer
-  exists while idle.
-- Profile duplication is now an explicit reviewed operation: Direct is the
-  default, proxy and Keychain password require separate consent, the target
-  folder is visible, and every copy gets fresh UUID, BrowserData and browser
-  identity. Profile metadata adds recent-change ordering and a credential-free
-  warning when a normalized proxy endpoint is shared.
-- A confirmed Stop All action sends only ordinary stop requests and revalidates
-  each process before acting; force stop remains per-profile. The embedded
-  runtime is also re-inspected immediately before every launch and fails closed
-  if trust, architecture, version or executable identity drifted.
-- Note and bulk-proxy drafts now confirm destructive Cancel/Escape/interactive
-  dismissal. Profile create/edit mode is explicit, compact bulk actions no
-  longer hide horizontally, structured-search examples are visible, shortcut
-  chords are spoken as words, and proxy passwords have a temporary explicit
-  reveal control.
-- Fingerprint runtime preflight now fails closed on an unknown signature,
-  rejects ambiguous versioned framework binaries, removes the dormant
-  unsandboxed diagnostic launch, reads `DevToolsActivePort` through a bounded
-  no-follow descriptor and accepts only exact loopback DevTools WebSockets.
-  Proxy probes run in a fixed environment without inherited proxy, TLS or
-  dynamic-loader overrides.
-- Direct release entrypoints now use a private umask and reviewed PATH. The DMG
-  path invokes critical Apple security tools by absolute path, while isolated
-  Python requires `-I -B`, system Git and standard-library-first imports.
-- Provisioning-profile authorization now compares SHA-256 certificate
-  fingerprints. The 40-character value reported by macOS remains only an
-  opaque selector for the installed codesigning identity; NeAntik no longer
-  hashes certificate data with SHA-1. Signed-app verification extracts the
-  leaf certificate and binds that exact certificate to the profile by
-  SHA-256.
-- Publication gates no longer relay a child verifier's captured output through
-  a generic failure printer. Intentional plaintext privacy-test fixtures are
-  explicitly scoped to private temporary directories, keeping CodeQL findings
-  actionable without weakening the leak detector.
-- Notes in the wide profile list are now direct edit actions, and an empty
-  note has an explicit `Add note` action. The control remains available while
-  a profile runs because note metadata does not change Chromium launch state;
-  its accessibility value reports presence without repeating plaintext note
-  content.
-- The Direct release launcher no longer pins a stale certificate SHA-1. It
-  rejects a locked GUI session early and selects the one installed Developer
-  ID Application identity authorized by the external provisioning profile.
-- Notarization can use an explicitly selected owner-only Keychain file without
-  changing the default login-Keychain path. Both ZIP and DMG transactions pass
-  the same validated Keychain to every notarytool call.
-- The normal-width profile toolbar keeps readable `Actions`, `Filters` and
-  `Create profile` labels instead of stretching icon-only fallbacks into empty
-  pills. Search now visibly mentions profiles and notes, while wide-table
-  headers identify selection/start and note/last-launch content directly.
-- The actual root view was re-rendered at the 820x560 minimum, ordinary and
-  wide sizes in light and dark appearances. The change adds no dependency,
-  asset, profile field, background work or runtime byte.
-- GitHub CI now performs SHA-pinned CodeQL analysis for Swift and Python,
-  cancels superseded runs and receives weekly pinned-action update proposals.
-  A local release contract rejects mutable Action tags, broad root permissions
-  and missing CodeQL/Dependabot coverage.
-- A new zero-base audit records fifteen independent professional review
-  prompts and one hundred security, correctness, usability, accessibility and
-  Direct-release checks. The current tree and every reachable Git blob remain
-  separate secret-leak gates.
-- The only forced CoreFoundation bridge in Secure Enclave lookup now documents
-  its preceding runtime type proof. No entitlement, Keychain scope,
-  fingerprint policy, launch argument or Chromium runtime changed.
+### Ранее подготовленные исправления, включаемые в кандидат125
 
-## Direct 0.3.23 (26) — September 1, 2026
+- Сохранён `profile_not_stopped`; добавляется фиксированная причина отказа и подходящее действие. Неизвестное владение больше не описывается как установленный факт запущенного браузера. Защита metadata и запрет автоматического повтора сохранены.
+- Исправлено двойное чтение температуры: переход critical→serious ошибочно пропускал запуск через два сравнения. Теперь используется одно наблюдение. Memory-pressure guard не ослаблен.
+- Legacy/modern JSON-RPC проверки используют синтетические metadata, real regular/symlink lease fixtures, unknown/found/absent controls и mock Keychain. Исправлено влияние ambient OS pressure на три теста tombstone; production поведение не изменено этой настройкой тестов.
+- Старый thermal guard реально отклонён новым deterministic тестом; исправленный и семь связанных наборов прошли114 reported/111passed/3explicit skips. Это локальная разработка, не квалификация подписанного релиза; текущие124 ZIP/DMG неизменны.
 
-- Removed the dormant telemetry network client, signed-manifest prototype and
-  historical external Chrome/Cloak preference path. Direct now contains no
-  telemetry/update configuration keys, launches only the declared embedded
-  runtime and enforces those absences in source, privacy and release gates.
-- Creating a new Direct profile without proxy authentication no longer makes
-  a redundant Keychain deletion request.
-- The primary Create button keeps opening the full editor, while its menu now
-  offers a safe quick path that creates and opens a permanent Direct profile
-  with a collision-free local name, fresh session and fresh identity. It does
-  not copy a proxy, note, account secret or previous BrowserData.
-- A selected running profile can bring its Chromium window forward from the
-  row menu or the fixed local `Shift-Command-Return` command. The existing
-  visible Stop action and Force Stop confirmation remain separate.
-- Keyboard commands now stay disabled under every sheet and alert, including
-  Force Stop. Start/Stop, inspector, profile edit and note edit use one fixed
-  menu-backed shortcut catalog; the batch bar no longer steals `Command-Z`
-  from text editing, the hidden readiness `Command-R` is gone, and Escape
-  clears then leaves profile search.
-- A native Settings window remembers only the local row density and shows the
-  complete shortcut reference. It adds no remappable/global hotkeys,
-  dependency, background service, profile field or runtime byte.
-- Direct release preflight now verifies that the external provisioning
-  profile actually authorizes the exact pinned Developer ID certificate, then
-  repeats that certificate-to-profile check on the signed app before Secure
-  Enclave enrollment. A wrong certificate selection now fails before the
-  expensive build instead of being killed later by macOS `taskgated`.
-- GitHub README and project documentation now identify the actual immutable
-  `0.3.22 (25)` release instead of continuing to label it a source candidate.
-  A current code-owner map and a dated comparison of twenty profile browsers
-  record what is delivered, deferred and deliberately excluded.
-- Readiness and proxy feedback use explicit information, success, warning and
-  failure semantics. Permission help is collapsed so the real readiness rows
-  stay visible, and the compact workspace keeps Start/Stop on the same side as
-  the wide layout.
-- Notes open in a small dedicated editor with existing plaintext and size
-  warnings; users no longer need to open unrelated proxy/fingerprint fields.
-  Secondary list actions have a visible name, search has a shorter prompt and
-  Force Stop is a visible destructive action with the existing confirmation.
-- No dependency, profile schema, runtime byte, fingerprint policy, launch
-  argument or public release artifact changes in this source iteration.
-- The default release `doctor` now verifies Direct/GitHub tooling and the
-  latest immutable GitHub assets without requiring a website deploy key.
-  The restricted AffPapa access check is an explicit `site-doctor` used only
-  for a separately authorized website transaction.
-- ContentView request, presentation and list-cache state now has a separate
-  source owner. The main view is 182 lines smaller and its fail-closed budget
-  was lowered from 4,400/170,000 to 3,800/145,000 lines/bytes without changing
-  profile, runtime, filesystem, network or Keychain behavior.
-- CI now scans every reachable Git blob and historical filename for private
-  keys, provisioning profiles, `.env` files, known service-token formats and
-  assigned recovery phrases without printing a matched value. Current-tree
-  publication checks and GitHub secret scanning remain separate gates.
+## Direct 0.8.12 (124) — GitHub public alpha — audit lifecycle
 
-## Direct 0.3.22 (25) — August 31, 2026
+- Добавлен внутренний защищённый режим удаления временного ключа fingerprint-аудита без повторного A→B→A. Проверяются вызывающий процесс, точный подписанный кандидат, manifest inventory и отдельное подписанное разрешение на удаление. Квитанция очистки не является отчётом готовности релиза.
+- Подписанный intent сохраняется до удаления; повтор после сбоя проверяет отсутствие ключа и reservation, не создавая новую authority. Нативная проверка Secure Enclave/Keychain на точном подписанном кандидате пройдена.
+- Нативная проверка кандидата123 выявила пропуск framework descendants при вызове `skipDescendants()` для символьной ссылки. Валидатор исправлен; реальный и синтетический framework inventory совпадает полностью. Кандидат123 сохранён для диагностики и не опубликован.
+- Исправлены противоречивые инструкции повторных прогонов и гонка EOF/ledger в тесте стенда. Chromium остаётся156.0.8078.12; публичные артефакты0.8.11 сохраняются. ZIP/DMG опубликованы на GitHub; сайт и downloaded headed gate пока не завершены. [Отчёт](releases/v0.8.12.json).
 
-- Direct-кандидат теперь подписывается только с проверенным внешним Developer
-  ID distribution provisioning profile и точными `keychain-access-groups` для
-  `app.neantik.desktop`. Профиль не хранится в Git; release gate проверяет его
-  CMS-подпись, срок, team/bundle, запрет development/ad-hoc и уже подписанные
-  entitlements до обращения к физическому Secure Enclave.
-- Основной сценарий редактора перестроен вокруг ежедневной задачи: название
-  и видимая необязательная заметка идут первыми, затем необязательный прокси;
-  папка, теги, стартовая страница, цвет и иконка собраны под одной строкой
-  «Дополнительно».
-- Строка профиля теперь текстом показывает состояние и маршрут, выводит
-  ограниченную однострочную заметку и оставляет подписанную кнопку
-  «Старт»/«Стоп» непосредственно рядом с профилем. Редактор предупреждает не
-  хранить в заметках пароли, ключи и seed-фразы.
-- Обычное создание стало главным действием списка, а массовые создание и
-  проверка прокси перенесены в дополнительное меню. Новых зависимостей,
-  изображений, фоновых запросов и изменений Chromium runtime нет.
-- Список профилей получил компактные режимы
-  сортировки и фильтр «с прокси»/«без прокси». Общий поиск умеет находить
-  профиль по отображаемому маршруту, но не индексирует учётные данные прокси
-  и другие секреты.
-- Остановка встроенного Chromium теперь имеет ограниченный трёхсекундный
-  grace-период: если управляемый текущим NeAntik процесс игнорирует SIGTERM,
-  завершается только этот точный дочерний процесс. Чужие и восстановленные
-  PID по-прежнему не получают принудительный сигнал.
-- Локальная Dev.app синхронизирует version/build с source candidate. Live
-  manager и browser-mode fingerprint gate выполняются на точной подписанной
-  dist-сборке, поскольку ad-hoc Dev-клон не является release evidence.
-- Workspace стал list-first: профили занимают основную область, а полная
-  карточка открывается в необязательном нативном inspector по `Command-I`.
-  Широкая строка показывает профиль, статус, подключение, контекст и действие,
-  а на минимальном окне автоматически становится компактной.
-- Появился явный множественный выбор профилей и атомарные пакетные действия:
-  закрепить, переместить в папку, добавить или убрать тег и архивировать.
-  Последнее пакетное изменение можно отменить; конфликт новой ревизии
-  прекращает откат без частичного восстановления.
-- Поиск получил локальные операторы `тег:`, `папка:`, `прокси:` и `статус:` с
-  кавычками для значений с пробелами. Обычный поиск по имени, заметке и
-  отображаемому маршруту сохранил прежнюю семантику и линейный бюджет на
-  10 000 профилей.
-- Массовый импорт прокси принимает вставленный текст и локальные TXT/CSV-файлы.
-  Файл читается с ограничением размера, без перехода по symlink и без
-  автоматических сетевых запросов; UTF-8 BOM удаляется до предпросмотра.
-- В карточке профиля появилось запускаемое только по запросу измерение места:
-  оно показывает реально выделенные байты и число файлов BrowserData, не
-  переходит по символическим ссылкам и не замедляет список профилей.
-- Приватные metadata-файлы профилей, организации и release evidence теперь
-  открываются descriptor-first с `O_NOFOLLOW`, проверкой типа, hardlink,
-  предельного размера и неизменности inode до и после чтения. Заведомо большой
-  файл отклоняется до выделения памяти.
-- Запуск разделён на пять проверяемых этапов: runtime, storage, proxy,
-  consistency и process. Ошибка указывает точный этап, а запуск блокируется
-  при недоступной папке данных или менее 1 ГиБ свободного места.
-- Жизненный цикл профиля различает запуск, штатное закрытие, ожидание и
-  отдельную подтверждаемую принудительную остановку. Компактная полоса
-  активных профилей показывает Focus/Stop и время работы; SIGKILL больше не
-  выполняется автоматически после тайм-аута.
-- NeAntik записывает минимальное локальное доказательство неожиданного
-  завершения менеджера без профилей, путей или сетевых данных. Одновременно
-  разрешено не больше 12 управляемых запусков.
-- Запущенный профиль можно редактировать с предупреждением, что параметры
-  применятся при следующем запуске. «Дублировать» заменено на «Создать
-  похожий» с явным пояснением новой сессии и идентичности.
-- Массовая проверка прокси показывает успешные и ошибочные результаты и умеет
-  повторить только ошибки. Форматы стали короче, а подробности проверки и
-  авторизации собраны в один раскрываемый блок.
-- Добавлен нативный «Центр готовности»: он локально проверяет приложение,
-  встроенный Chromium, общую папку данных, процессы и подключения, объясняет,
-  что в разрешениях macOS нужно выбирать основной `NeAntik.app`, и копирует
-  только ограниченную диагностику без секретов, IP и путей профилей.
-- Детерминированный аудит установленного размера разделяет manager, runtime,
-  compliance и прочее и показывает фактическую причину веса — встроенный
-  Chromium. Добавлены бюджеты Swift-файлов, cold/warm readiness и CPU/RSS
-  менеджера без Chromium.
-- Direct release evidence прекращается при любой ошибке Secure Enclave:
-  production-код не создаёт экспортируемый software-key, release gate
-  запрещает App Sandbox и проверяет update metadata упакованного кандидата.
-- Удалённый профиль сразу исчезает из локальных UI-состояний даже при
-  отложенной очистке Keychain. VoiceOver получил явные подписи выбора,
-  профиля, статуса и подключения.
-- Изменение не добавляет зависимости, изображения, фоновые службы и не меняет
-  встроенный Chromium `152.0.7977.64`.
+## Direct 0.8.11 (122) — published public alpha — proxy check freshness
 
-## Direct 0.3.21 (24) — August 30, 2026
+- Список профилей обновляет возраст сохранённой проверки прокси раз в минуту. Устаревший результат перестаёт выглядеть успешным даже при остановленных профилях. Это обновление текста/значка, без новых сетевых запросов и изменения настроек.
+- Исправлена подготовка кэшированной Dev.app, в которой отсутствовал новый служебный ключ. Проверка открытых исходников поддерживает текущие ZIP/DMG checksum records и прежний формат ZIP; конфликты и повреждения отклоняются.
+- Отдельный DEBUG QA-режим теперь измеряет фоновые попытки без отключения background/component/sync/extensions. В 80-секундной записи точного M156 все пять HTTP(S) попыток выбрали relay, одна завершилась ошибкой при отказе; настоящий Direct-контроль распознан. Это не доказательство отсутствия DNS/UDP на проводе и не новая пользовательская диагностика.
+- Chromium156.0.8078.12, profile identity/schema и существующий сертификат сохраняются. WebKit media/proxy/extensions/full backup остаются недоступны. Версия опубликована; подпись, точный runtime/GUI, updater hop, Apple и hosted gates пройдены. Глобальная1.0 остаётся открытой.
 
-- Исправлена фактическая причина пользовательского сбоя обновления: release
-  flow и документация теперь однозначно отделяют старую ссылку сайта от
-  immutable GitHub-артефакта, а пустая ошибка запуска ведёт к диагностике
-  среды и переустановке из официального DMG без удаления данных профиля.
-- Заметка раскрыта по умолчанию при создании профиля и явно помечена как
-  необязательная. В карточке профиля блок заметки показывается всегда: пустое
-  состояние предлагает «Добавить заметку…», заполненное — изменить её.
-- Перед Developer ID signing локальные символы Chromium удаляются только из
-  временной неподписанной копии Apple `strip` из совместимого Xcode. Каждый
-  Mach-O повторно проверяется как ARM64 и должен содержать не больше одного
-  служебного local symbol; llvm-strip 22 по-прежнему запрещён. На Chromium
-  152 это убирает около 125 МиБ из установленного приложения без удаления
-  локалей, лицензий, notices, SwiftShader, crashpad или security evidence.
+- Exact headed/DeviceMemory/MCP18/7, doctor13, AppleZIP+DMG/stapling/Gatekeeper, native0810→0811install/ACK/relaunch+preACKrollback, 4GitHubdigests, anonymoushostedbytes/downloadedheaded/MCP/DMG, Sites148/live dualfeeds PASS. [Доказательства и ограничения](releases/v0.8.11.json).
 
-## Direct 0.3.20 (23) — August 30, 2026
+## Direct 0.8.10 (121) — published public alpha — signed installer continuity
+
+- Сохранены предыдущие подписанные модули; новая primary-пара размещена в фиксированном V2-каталоге. Подпись, сертификат, SHA-256 и CodeDirectory проверяются; malformed V2 не откатывается к legacy. Packaging защищён от временной подмены файлов во время проверки и пропущенного continuity input.
+- Настоящие 0.8.8→0.8.10 install/ACK/relaunch и pre-ACK rollback PASS; два синтетических metadata-only профиля сохранились без изменения байтов. Клавиатура/editor/WebKit choice и отмена черновика проверены. Это не новый свежий cookie durability gate.
+- Developer ID/Apple ZIP+DMG/stapling/Gatekeeper/doctor13/draft4digests/anonymoushostedbytes/freshdownloadedheaded/MCP/Sites147/live dualfeeds PASS. Первая downloaded попытка отказала по ресурсам; после снижения нагрузки свежий отчёт проверен, защиты сохранены.
+- Chromium156.0.8078.12 и сертификат прежние. WebKit media остаётся disabled; глобальная1.0/аппаратная квалификация открыты. [Доказательства и ограничения](releases/v0.8.10.json).
+
+## Direct 0.8.9 (120) — development candidate — updater transition
+
+- Готовится переходный выпуск с прежними правами подписи. Новый validator умеет проверять будущие camera/audio-input claims по signed purpose strings; дополнительные и неполные права отклоняются. У уже выпущенного0.8.8 validator не меняется.
+- Камера и микрофон WebKit в этом кандидате отключены: нет новых прав устройства или purpose strings, настройки не показываются и MCP их не предлагает. Media-функция остаётся в разработке до реальной проверки capture, отказа, отзыва и прежнего разрешения сайта.
+- Signed Info кандидата указывает отдельный канал `/api/update-v2.json`; старый канал должен предложить переходную версию старым клиентам. Feeds, точный native переход и публикация пока не квалифицированы. Старые архивы и rollback сохраняются.
+- Полный Swift1529reported/178suites PASS. Python1354 первоначально обнаружил отсутствующий changelog нового кандидата; после добавления записи повторяются только затронутые documentation contracts. Developer ID/Apple/hosted и native install ещё не PASS.
+- Этот кандидат не опубликован: настоящая проверка 0.8.8→0.8.9 отказала до установки из-за изменения модуля установщика. Подписанные архивы сохранены для диагностики; исправление продолжается в 0.8.10 (121).
+
+## Direct 0.8.8 (119) — published public alpha — WebKit cache
+
+- Очистка HTTP-кэша закрытого WebKit-профиля стала доступна из меню профиля. Удаляются только временные файлы страниц в памяти и на диске; cookies, LocalStorage, IndexedDB, Service Worker, CacheStorage и предыдущие вкладки не входят в очистку. Точный объём WebKit не показывает.
+- Во время очистки запуск и изменение этого профиля защищены от второго менеджера. Выход и обновление ждут завершения операции. Отмена действует до обращения к WebKit; после него операция ждёт настоящего завершения.
+- Раздел редактора «Запуск и оформление» теперь прямо указывает, где настроить стартовую страницу и предыдущие вкладки. Прокси, расширения и полный backup WebKit остаются недоступны.
+- Full Swift1521reported/176suites и Python1352 PASS; отдельные native и exact signed UI подтвердили A v2/Bv1 с сохранением данных. Developer ID/Apple ZIP+DMG/stapling/Gatekeeper/hosted/headed/MCP/Sites146/live feed проверены. Cloud CI dispatch403; облачный PASS не заявляется. [Доказательства и ограничения](releases/v0.8.8.json).
+
+## Direct 0.8.7 (118) — published public alpha — WebKit session restore
+
+- В WebKit можно выбрать «Предыдущие вкладки»: после штатного закрытия сохраняются адреса, порядок и выбранная вкладка. Полные HTTP(S) адреса с query/fragment хранятся отдельно в приватном файле профиля, без включения в MCP или metadata export.
+- Обычные закрытие и ⌘Q ждут завершения записи и отмены загрузок. При ошибке записи профиль остаётся занят; «Остановить» повторяет сохранение. Повреждённая сессия открывает стартовую страницу с предупреждением; частичное восстановление из-за нехватки памяти не заменяет прежний полный список.
+- Настройка доступна в редакторе и MCP metadata. Стдио-запуск WebKit, прокси, расширения и полный backup WebKit остаются недоступны. Переименование сохраняет сессию; копирование создаёт новый UUID и пустую сессию.
+- Отключение очищает только список вкладок после окончательного metadata/credential commit. Ошибка очистки возвращает сохранённую настройку с предупреждением; повторное включение требует очистки прежнего OFF списка.
+- Полный Swift regression и Python1352 PASS; real headed3 session tests, Dev GUI и exact signed ⌘Q/перезапуск прошли. Apple ZIP/DMG, Gatekeeper, hosted bytes, downloaded headed/MCP и Sites144/live feed проверены. [Доказательства и ограничения](releases/v0.8.7.json). Для отката к0.8.6 сначала верни WebKit к режиму «Стартовая страница»; прежняя версия не поддерживает его restoreSession.
+
+## Direct 0.8.6 (117) — published public alpha — WebKit downloads
+
+- WebKit получает собственные загрузки: выбор места сохранения, прогресс, отмена и показ файла в Finder. Сохранение через временный файл и exclusive rename не перезаписывает существующие файлы.
+- Закрытие профиля и выход ждут подтверждённой отмены; pending policy conversion учитывается до появления WKDownload.
+- Реальные синтетические HTTP/attachment/blob, cookiesA/B, отмена, раннее закрытие и Dev SavePanel/⌘Q проверены; точный подписанный кандидат и скачанные ZIP/DMG прошли native/Apple/Gatekeeper, headed/MCP и live Sites143 проверки. Chromium156.0.8078.12 сохранён. [Результаты и ограничения](releases/v0.8.6.json).
+
+## Direct 0.8.5 (116) — published public alpha — profile management and UTC release checks
+
+- Сохранены исправления статуса прокси, завершения процессов и копирования профилей без лишнего обращения к Связке ключей из кандидата 0.8.4.
+- Дата проверки безопасности теперь считается по UTC одинаково на локальном Mac и CI. Проверки будущей и просроченной даты сохранены; тесты времени имеют заданную дату.
+- Chromium 156.0.8078.12 не пересобирался. Подпись, notarization, stapling, Gatekeeper, публичные ZIP/DMG, свежий headed запуск и metadata MCP проверены. [Результаты и ограничения](releases/v0.8.5.json).
+- 0.8.4 не опубликована: её принятый Apple ZIP сохранён как неизменяемый результат проверки и продолжения транзакции. Опубликована 0.8.5; 0.8.3 сохранена для отката.
+
+## Direct 0.8.4 (115) — release candidate — proxy status and safe shutdown
+
+- Результат проверки прокси сохраняется при обычной отметке запуска. GUI и MCP используют подтверждение сохранённого перехода; смена пароля или конфигурации не наследует старый результат.
+- Ожидание вспомогательных процессов больше не обозначается как повреждение файла. Разблокировка по-прежнему требует безопасной проверки завершения.
+- Копирование через MCP/интерфейс и открытие редактора профилей без авторизации прокси больше не зависят от доступности Связки ключей. Для прокси с авторизацией сохранены чтение пароля и безопасный отказ при ошибке; устаревшее сообщение MCP о запрете SOCKS5 удалено.
+- Lifecycle-тесты получают явное состояние нагрузки; отдельные отрицательные проверки требуют отказ при нехватке памяти и критической температуре. Приложение продолжает использовать системный admission.
+- Local: 153 targeted tests passed; full Swift summary1483/168suites (59skip lines) and Python1307 (19skips) passed. Dev CmdN/create/select/save/quit verified on one disposable profile. Exact signed candidate and publication remain pending; public release is still0.8.3.
+
+## Direct 0.8.3 (114)
+
+Published public alpha on GitHub and browser.free Sites141. Chromium156.0.8078.12 unchanged. Exact signing/notarization/stapling/Gatekeeper, public ZIP/DMG bytes, fresh downloaded headed launch and metadata MCP PASS. [Results and limits](releases/v0.8.3.json).
+
+- WebKit: вкладки, ⌘T/⌘W, переключение и ссылки в новой вкладке внутри того же профиля. Закрытие последней вкладки останавливает профиль; команда Stop закрывает всё его окно.
+- Выбор Chromium/WebKit двумя видимыми кнопками. Активная вкладка выделена; добавлены подсказки клавиатуры и справка.
+- Всплывающие окна без действия пользователя заблокированы; до 32 вкладок, при нехватке памяти новые не создаются.
+- 1479 Swift tests / 168 suites passed locally. Headed own WebKit fixtures verify same-profile sharing, A/B cookie/LocalStorage/IndexedDB isolation, cleanup and popup negative control. Dev GUI and exact signed WebKit A/B full restart passed. Local reported counts include optional skips; separate native fixtures and public-byte gates are recorded.
+- CI uses four clean shards with separate suite processes, scoped check recommendations and one lease per physical developer cache. Release gates are retained.
+- WebKit proxy, downloads, session restore, extensions, full backup and stdio MCP launch remain unsupported. Public alpha; full major1.0 acceptance remains open.
+
+## Direct 0.8.2 (113)
+
+Published public alpha on GitHub and browser.free Sites140. Chromium156.0.8078.12 and the Developer ID are unchanged. [Exact results and limits](releases/v0.8.2.json).
+
+- Исправлено воспроизведённое падение карточки прокси при чтении accessibility label. Выбор, изменение и сохранение проверены в точном подписанном ZIP.
+- Штатный authenticated HTTP relay, HTTP/HTTPS destination, отказ upstream и Direct negative control проверены на синтетических профилях; это ограниченные наблюдения, не whole-session DNS/UDP guarantee.
+- Fast developer tests используют общий project cache и batched suites, jobs2/serial; пустая выборка не даёт PASS.1477reported tests/168suites/59optional skips,74.088s.
+- ZIP/DMG notarization/stapling/Gatekeeper и публичные байты PASS; скачанный manager/Chromium и metadata MCP PASS. WebKit preview и прежние ограничения сохранены; rollbackv0.8.1.
+
+## Direct 0.8.1 (112)
+
+Published public alpha on GitHub and browser.free Sites139. Includes WebKit preview from unpublished0.8.0. Chromium156.0.8078.12 unchanged. Exact signed, WebKit native persistence, Developer ID/notarization/stapling/Gatekeeper, public ZIP/DMG bytes, downloaded headed/MCP and live feed PASS. [Results and limits](releases/v0.8.1.json).
+
+- Исправлена live-code классификация посторонних процессов и ожидание завершения транспорта updater.1477reported Swift tests/168suitesPASS.
+- Native packed CRX lifecycle и exact WebKit A/B full restart PASS; это ограниченные синтетические сценарии. DNS/default-trusted HTTPS upstream и major1.0 остаются открытыми. Rollbackv0.7.47; schema2 metadata не открывать старым manager.
+
+- Импортируемые адреса и учётные данные прокси скрыты от стандартного debug-вывода Swift; парсинг и сохранение значений не изменены. Отрицательный контроль воспроизвёл прежний отказ, 13 targeted tests PASS.
+- Изолированная авторизованная проверка updater явно открывает окно manager после предыдущего закрытого окна. Она не запускает fingerprint-аудит автоматически и не обходит авторизацию. 12 targeted launch tests PASS.
+- В осмотре установленных расширений доступны локализованные имена вместо `__MSG_*`; это не новый центр управления и не доказательство native packed CRX installation.
+- Qualification aggregator требует полные отрицательные контроли; timeout наблюдения голосов означает inconclusive, а не PASS. Это изменение harness, не browser fingerprint policy.
+- Перед переносом и заменой локального bundle release-скрипты проверяют отсутствие работающего manager и вложенного браузера; при обнаружении процессов выпуск останавливается. После компиляции выполняется повторная проверка. Это не атомарная блокировка нового запуска.
+
+## Direct 0.8.0 (111)
+
+Public-alpha candidate; not yet published. Exact signed app, notarization, hosted bytes and WebKit smoke remain release gates. Chromium 156.0.8078.12 is unchanged.
+
+- При создании профиля можно выбрать Chromium или системный WebKit — движок Safari. WebKit открывается в собственном окне NeAntik с адресной строкой и командами навигации; это не Safari.app и не эмуляция Safari в Chromium.
+- У WebKit-профиля отдельное постоянное хранилище cookies, LocalStorage и IndexedDB. Изоляция двух синтетических профилей и сохранение после штатного перезапуска проверены в Dev.app; старые профили остаются Chromium. Движок существующего профиля менять нельзя.
+- Движок сохраняется в настройках, копировании, шаблонах и MCP metadata tools. Данные с WebKit используют schema 2: старые версии менеджера не должны их открывать. Перед обновлением сохраните отдельную копию настроек; она не является backup данных WebKit.
+- WebKit — preview: только прямое подключение, одно окно без вкладок; прокси, расширения Chromium, полный backup, очистка кэша и удаление явно недоступны. Профиль можно архивировать. Запуск через MCP stdio требует будущего GUI IPC и сейчас отклоняется. [Возможности и ограничения](docs/WEBKIT_PROFILES.md).
+- Внутренний протокол relay передаёт привязанное к сессии наблюдение маршрута с проверкой срока действия и revision. Полная HTTPS/DNS-квалификация не завершена; MCP по-прежнему не объявляет маршрут Chromium доказанным.
+- Интеграция: 1467 тестов / 166 suites PASS, 56 явных skips; signed QA подтвердил HTTP browser ACK и отрицательный HTTPS-контроль. Это не заменяет проверку поставляемого кандидата.
+
+## Direct 0.7.47 (110)
+
+Published public alpha on GitHub and browser.free (Sites 136). Chromium 156.0.8078.12 is unchanged. [Release evidence](releases/v0.7.47.json).
+
+- Исправлены два подтверждённых отказа updater: закрытые standard descriptors мешали bootstrap; сериализация одинакового подписанного plist давала различный порядок ключей. Сравнение учитывает все значения, типы и порядок массивов; доверие подписи не ослаблено.
+- 1426 тестов / 164 suites PASS; реальные отрицательные контроли воспроизводят прежние отказы. Точная подписанная установка 0.7.46 → 0.7.47, управляемый сбой до ACK, откат, успешный commit и автоматический перезапуск проверены на изолированных данных.
+- После установки восстановлены две вкладки и свежие cookies/LocalStorage/IndexedDB тестового профиля A; профиль B не получил эти данные. Исходная .46 — отдельная подписанная QA-база, не публичный и не нотарифицированный релиз.
+- ZIP/DMG прошли Developer ID, notarization, stapling, Gatekeeper, проверку скачанных байтов и свежий headed запуск. Сайт отдаёт подписанный Ed25519 feed; установленная .47 проверила его по HTTPS в настоящем интерфейсе.
+- Создание зашифрованного backup включено в квалифицированной упаковке; сохраняются ограничения исходного профиля/Mac/Keychain/runtime. Полный CRX installer и окончательная квалификация наблюдения маршрута остаются открытыми. Предыдущий публичный релиз .34 сохранён без изменения assets.
+
+## Direct 0.7.43 (106)
+
+Public-alpha candidate. Publication requires the exact signed .42 → .43 installation, controlled rollback and BrowserData persistence checks.
+
+- Рабочий updater сохраняет дескрипторы для запуска новой версии после закрытия manager. Подписанный канал, явное согласие, проверка приложения и откат сохранены.
+- 1421 Swift-тест / 162 suites прошли, включая реальные subprocess controls старого отказа и исправленного запуска. Повторный полный прогон для изменения только номера версии не требуется.
+- Chromium 156.0.8078.12 и Developer ID сертификат сохранены. Авторизованный relay, зашифрованная копия закрытого профиля, центр расширений и MCP входят в кандидат; перенос OS-encrypted входов между Mac и полный CRX installer остаются ограничениями.
+
+## Direct 0.7.42 (105)
+
+Private corrected qualification candidate; not published.
+
+- Исправлен отказ рабочего updater до запуска новой версии: после завершения диалога старые каналы заменяются на `/dev/null`, а дескрипторы 0–2 остаются занятыми для безопасного создания приватных bootstrap pipes.
+- Реальные subprocess regression controls: прежнее закрытие stdio отказывает до spawn; исправленный handoff запускает и дожидается своего дочернего процесса. Подпись, согласие, custody, ACK и rollback gates сохранены.
+- Точная подписанная установка, контролируемый сбой, BrowserData persistence и публикация ещё не квалифицированы.
+
+## Direct 0.7.41 (104)
+
+Public-alpha candidate; exact paired .40 → .41 installer, rollback, persistence and publication are pending.
+
+- Same manager and fixed helper code as private .40; version-only transition for real signed updater qualification.
+- Окно закрывается до выхода приложения; истёкшее предложение установки требует новой проверки.
+- Сохранены подписанный канал, авторизованный relay, зашифрованный backup закрытого профиля, центр расширений и MCP. Ограничения каталога установки, CRX и переноса OS-encrypted данных на другой Mac остаются явными.
+
+## Direct 0.7.40 (103)
+
+Private paired qualification candidate; not published.
+
+- Окно обновления закрывается до штатного выхода manager: AppKit больше не получает запрос завершения при открытом modal sheet. То же правило применяется к безопасному выходу после ошибки.
+- Предложение установки ограничено сроком: до timeout owner оно снимается, owner завершается и требуется новая проверка файлов.
+- 1421 Swift-тест / 162 suites PASS. Реальные installation, rollback и сохранность синтетических BrowserData остаются обязательными gates.
+
+## Direct 0.7.39 (102)
+
+Private candidate retained; native update-sheet termination defect was reproduced before publication. Not published.
+
+- Исправлены admission и bootstrap updater: историческое происхождение runtime проверяется отдельно от подписанной справки о текущем релизе, с общими ограничениями размера.
+- Подписанный канал описания обновлений, ручной выбор оригинального ZIP, подтверждение установки и перезапуск. Private key остаётся вне Git и сайта.
+- 1420 Swift-тестов/162suites PASS. Chromium156.0.8078.12, Developer ID сертификат, per-profile relay, закрытый зашифрованный BrowserData backup и управление расширениями сохранены.
+- Полные CRX lifecycle, перенос OS-encrypted входов на другой Mac и production hardware cohorts не объявляются квалифицированными.
+
+## Direct 0.7.38 (101)
+
+Release candidate; publication awaits exact paired installation and rollback.
+
+- Исправлена проверка provenance при обновлении даты security baseline; исторические runtime bytes и reports остаются неизменными.
+- Подписанный updater проверяет Ed25519 manifest, точный ZIP, Developer ID, runtime и системную оценку; установка требует подтверждения и закрытых профилей.
+- Существующий Chromium156.0.8078.12, авторизованный per-profile relay, закрытый зашифрованный BrowserData backup и управление расширениями сохранены. Ограничения восстановления на другом Mac и CRX-инсталляции не скрыты.
+- Локально:Общая проверка provenance используется до установки и при bootstrap: текущая security-справка проверяется отдельно, включая bounded byte budget. Положительные и отрицательные контроли прежнего bootstrap limit добавлены. Точная квалификация релиза записывается отдельно.
+
+## Direct 0.7.37 (100)
+
+Private qualification candidate; not published. Fixes the publication-baseline closure defect found in private0.7.35/0.7.36. Qualified earlier local artifacts are retained unchanged. Paired shipping installation remains pending.
+
+## Direct 0.7.36 (99)
+
+Development qualification candidate; not published.
+
+- Same qualified Chromium156.0.8078.12 and Developer ID certificate as public0.7.34.
+- Paired with private notarized0.7.35/98 to qualify the shipping updater, retained synthetic browser data, refusal and rollback. These installation results are pending.
+- Signed update policy and explicit backup provisioning selection retained; public0.7.34 and its immutable downloads remain unchanged.
+
+## Direct 0.7.35 (98)
+
+Development qualification candidate; not published.
+
+- Исправлено смешение исторической provenance движка и даты публикации: смена checkedAt больше не блокирует тот же точный runtime. Данные текущего релиза проверяются отдельно под подписью приложения.
+- Упаковка сверяет runtime pins до подписи. После изменения: 1419 Swift-тестов / 162 suites, целевые отрицательные контроли и независимые Python измерения PASS; whole installation ещё проверяется.
+
+- Pinned Ed25519 update policy and offline release-envelope signer; automatic downloads remain disabled.
+- Authenticated interactive updater audit retains disposable storage and proves enrolled authority before startup; no fingerprint PASS is produced by this mode.
+- Explicit macOS provisioning selection for BrowserData backup is checked before preparation. Public0.7.34 did not enable creation; the current candidate requests it using the existing certificate/profile.
+-29 targeted Swift,1417/162 full Swift and32 targeted Python checks passed. Whole signed installation, bootstrap and rollback qualification remain open.
+- Restored exact public0.7.34 checksum source sidecars missing from the release record; immutable public assets unchanged.
+
+## Direct 0.7.34 (97) — public alpha
+
+- Исправлена защита временных данных проверки: заменённая папка или symlink не используются для запуска и не удаляются при отмене. Неиспользованные разрешения запуска освобождаются.
+- Изолированный release audit получает отдельные данные до чтения ProfileStore; обычные профили не получают mock Keychain.
+- Исправлен SOCKS5-обработчик внутреннего relay; уточнена инструкция работы с CRX через Finder и Chromium.
+- 1392 Swift-теста в 161 наборе прошли; 52 opt-in проверки пропущены; Dev.app и клавиатура, точный подписанный кандидат, публичные ZIP/DMG, свежие downloaded headed/MCP gates PASS. Сайт иAPI0.7.34/97, Sites 135. [Отчёт](releases/v0.7.34.json).
+- Chromium 156.0.8078.12 и сертификат сохранены. Автоматический updater выключен; полный CRX installer открыт. Rollback 0.7.33. AffPapa пользователь обновляет вручную.
+
+## Direct 0.7.33 (96) — public alpha
+
+- Добавлена команда «Обновить NeAntik…»: понятная инструкция, ссылка на скачивание и предупреждение сохранить данные профилей. В этом выпуске обновление выполняется вручную.
+- Подготовлен интерфейс проверки подписанного ZIP: отмена дожидается завершения установщика; повторные нажатия не создают второй сеанс; незавершённая очистка требует перезапуска и сохраняет блокировку.
+- Операции с данными, импорт, восстановление, кэш, расширения и проверка прокси удерживают допуск до фактического окончания работы, включая отмену и публикацию результата. Это основа безопасной установки, а не заявление о готовом автоматическом updater.
+- Локально: 1372 Swift-теста / 159 suites; Release build; Dev.app создание, запуск, остановка, клавиатура и сохранение metadata после перезапуска. Точный подписанный кандидат, публичные ZIP/DMG, скачанный headed manager и MCP прошли проверки. browser.free, Sites 134 и API 200 показывают 0.7.33/96. [Отчёт и ограничения](releases/v0.7.33.json).
+- Chromium 156.0.8078.12 сохранён. Автоматический канал выключен до полного подписанного old→new gate; полный CRX installer остаётся в работе. Rollback 0.7.32.
+
+## Direct 0.7.32 (95) — public alpha
+
+- Авторизация HTTP, HTTPS и SOCKS5 через отдельный relay профиля; HTTPS проверяет сертификат до пароля и не переходит на HTTP/Direct при отказе.
+- Обновлены подсказки сети, справка и MCP. Тесты собственного kernel record updater больше не зависят от посторонних процессов; production inventory остаётся полным и строгим.
+- 1317 Swift-тестов; actual TLS/negative controls, headed relay и Dev keyboard/persistence PASS. Точный кандидат и публичные ZIP/DMG прошли Direct-гейты, скачанный headed manager и MCP. browser.free Sites133/API200 синхронизированы.
+- Chromium 156.0.8078.12 не менялся. Full CRX installer и public updater открыты; rollback0.7.31. [Точный отчёт и ограничения](releases/v0.7.32.json).
+
+## Direct 0.7.30 (93) — public alpha
+
+- Зашифрованный backup BrowserData остановленного профиля: отдельный пароль архива и привязка к локальной Связке ключей. Настройки, прокси и папки экспортируются отдельно и сохраняются при restore. Неверный пароль и повреждённый архив не заменяют данные. Перенос авторизации между Mac не поддерживается.
+- Явный выбор запуска: стартовая страница или предыдущие вкладки. Восстановление не добавляет стартовый адрес заново при каждом запуске; старые профили сохраняют прежний режим. Настройка доступна в редакторе и MCP.
+- Режим сохраняется в копиях, шаблонах и configuration export; новая копия/import начинает с чистой identity и стартовой страницы.
+- Исправлено двойное расширение имени backup. Direct opt-in требует проверенного macOS provisioning profile и существующего Developer ID сертификата; неподходящие claims отклоняются.
+- 1140 Swift-тестов прошли; отдельный подписанный QA проверил настоящий изолированный Keychain, миграцию случайных proxy-паролей, encrypted restore, повреждения, прерывания, живые вкладки и повторный запуск без дублей. Production Keychain для тестов не использовался.
+- ZIP/DMG опубликованы на GitHub и прошли свежие hosted signing/notarization/stapling/Gatekeeper и hash/size gates. Скачанный manager прошёл headed fingerprint и metadata MCP проверки. Подробные data/keyboard сценарии остаются отдельно связанным signed QA evidence. [Отчёт и ограничения](releases/v0.7.30.json).
+- Chromium 156.0.8078.12 не менялся. HTTPS relay, CRX install и атомарный updater остаются отдельными незавершёнными частями программы.
+
+## Direct 0.7.29 (92) — public alpha
+
+- Центр расширений закрытого профиля: поиск, сохранённый статус, источник и запрошенные разрешения. Неполные данные явно отмечаются; внешние папки расширений автоматически не читаются.
+- Установка, включение, отключение и удаление остаются в штатном интерфейсе Chromium. Центр объясняет переход через меню и позволяет скопировать адрес управления.
+- Исправлен запуск управления расширениями: Chromium отвергает внутренний адрес в командной строке, поэтому открывается пустая вкладка с инструкцией перехода. Сохранённая стартовая страница не меняется.
+- Backup использует единый контекст для экспорта и восстановления; production-операции удерживаются до квалификации подписи. QA-проверка не объявляется production-доказательством.
+- 123 targeted и 1089 full Swift-тестов прошли; собственное расширение проверено в изолированном headed Dev с перезапусками и двумя профилями. Точный подписанный кандидат и скачанные ZIP/DMG прошли Direct gates; свежий headed запуск и MCP-проверка скачанного приложения прошли. [Результаты и ограничения](releases/v0.7.29.json).
+- Исправлен дневной release gate: текущая security-справка упаковывается отдельно от неизменяемой записи проверки runtime; исторические хэши и происхождение сохранены. 36 release regression-тестов прошли.
+- Chromium 156.0.8078.12 сохранён без пересборки. HTTPS relay, атомарный updater и major1.0 остаются в работе.
+
+## Direct 0.7.28 (91) — public alpha
+
+- HTTP и SOCKS5 с авторизацией подключаются через отдельный локальный relay профиля. Пароли остаются в Связке ключей и не попадают в аргументы Chromium. HTTPS-прокси сохраняет нативный способ авторизации.
+- Relay переживает закрытие manager вместе с работающим браузером; повторный запуск защищён от дублирования. Отмена до активации не открывает соединение с upstream. Проверены два параллельных профиля и отказ upstream на синтетических fixtures.
+- Исправлена изоляция паролей MCP для отдельных --data-root: совпавшие ID профилей больше не дают доступ к паролю основной библиотеки. Для прежнего custom workspace пароль нужно ввести заново.
+- Карточки профиля получили простую структуру для accessibility; проверены создание с клавиатуры и отмена редактирования. Кнопка расширений открывает штатную страницу Chromium, сохраняя стартовую страницу.
+- Полный backup BrowserData и атомарный updater остаются в разработке. Реальные QA-проверки восстановления не означают готовность их production-интерфейса.
+- Chromium 156.0.8078.12 сохранён без пересборки. Safe Browsing остаётся отключённым; совместимость всех Mac и всех сторонних AI-клиентов не заявляется. Подписанные ZIP/DMG прошли Direct и hosted gates; скачанное приложение прошло свежую headed-проверку. [Результаты и ограничения](releases/v0.7.28.json).
+
+## Direct 0.7.27 (90) — public alpha
+
+- Проверка прокси и GeoIP автоматически показывают истечение срока результата; настроенные параметры не выдаются за независимое измерение.
+- Снимок настроек добавляет новые профили без закрытия работающих браузеров. BrowserData и исходные профили не заменяются.
+- Отмена проверки прекращает fallback и запросы к следующим сервисам. Уточнены ошибки DNS и timeout.
+- Окно очистки кэша не закрывается во время операции; подсказка объясняет необратимую фазу удаления.
+- Запуск и выбор профиля получили общие названия в меню и быстрых командах; справка и план проверяются CI.
+- Chromium 156.0.8078.12 не пересобирался. Точный подписанный кандидат и публичные ZIP/DMG прошли Direct gates. [Результаты и ограничения](releases/v0.7.27.json).
+
+## Direct 0.7.26 (89) — public alpha, 10 октября 2026
+
+Промежуточное обновление manager с Chromium 156.0.8078.12. Подписанный кандидат и публично скачанные ZIP/DMG прошли release gates; публичное приложение прошло свежий изолированный headed запуск. GitHub и browser.free обновлены; affpapa.org ожидает restricted deploy credential. Глобальный план 1.0.0 остаётся открытым.
+
+- Проверка списка медиаустройств и разрешений различает успешное чтение, отсутствие API, ошибку и timeout. Наличие API больше не выдаётся за успешную операцию; отчёт не содержит имён или ID устройств.
+- Шрифты проверяются измерениями DOM и Canvas, повторным чтением и отсутствующим контрольным шрифтом. Загрузка ограничена по времени. Старый список названий шрифтов больше не допускает новый релиз.
+- ClientRects отклоняет пустые, нечисловые и внутренне противоречивые результаты. Подробности диагностики отделяют базовое сравнение page/worker от полной квалификации платформы.
+- Поддерживаемый headed harness связывает реальные операции первых15 пунктов плана с хэшами кандидата, framework и текущими исходниками. Он использует настройки, экспортированные настоящим Swift manager, и сохраняет независимые отрицательные контроли.
+- Проверяются девять контекстов, способы чтения Canvas, WebGL, Audio, HTTP/JS identity, окна при масштабе100% и125%, память, IndexedDB и синтетическая камера/микрофон с отзывом разрешений. Эти тесты не устанавливают шрифты и не используют реальные профили или оборудование пользователя.
+- Проверка второго физического дисплея, событий реальной смены сети/питания и всех моделей Mac остаётся отдельной. WebGPU по прежнему отключён в настроенном профиле; его операции проверяются отдельно в native control. Safe Browsing остаётся отключённым. Гарантии прохождения CAPTCHA или правил сторонних сайтов не заявляются.
+
+## Direct 0.7.25 (88) — public alpha, 10 октября 2026
+
+Manager-only обновление с прежним квалифицированным Chromium 156.0.8078.12. Собственные signing, headed runtime, notarization, Gatekeeper и hosted-byte проверки завершены; опубликованные байты прошли свежий headed запуск. Версия 1.0.0 пока не готова.
+
+- Отмена проверки прокси и изменение пароля во время обновления metadata больше не публикуют устаревший результат и не меняют контекст запуска. Сохранённые данные проверяются до commit; уже выполненный durable commit остаётся отдельным состоянием.
+- Manager обновляет состояние процесса при изменениях metadata от MCP, сохраняя состояние остальных профилей. Неизменённый список и правки только папок не запускают повторный scan.
+- MCP получил `template_list` и применение сохранённого шаблона через `templateID` в `profile_create`: новая identity, безопасные настройки, теги и папка; без копирования cookies, заметок и паролей. Всего 18 инструментов управления и 7 чтения. Старые подключения только для чтения сохраняют свои права.
+- Справка MCP объясняет подключение в три шага; редактор поясняет стартовую страницу и `about:blank`. На главной browser.free опубликованы практические примеры для вебмастера и рекламных проектов, FAQ об оплате, прокси, данных и возможностях AI.
+- Проверка публичной Git-истории отклоняет неполный shallow checkout и учитывает все исторические имена, включая удалённый `.env` с повторно использованным blob. CI получает полную историю и сверяет документацию MCP с фактическими инструментами.
+- Уточнены ограничения: снимок настроек не восстанавливает BrowserData; session cookies могут исчезать при закрытии; внешний AI-клиент может отправлять metadata своей модели; управление страницами и authenticated SOCKS5 в production не добавлены. Safe Browsing остаётся отключённым, полная аппаратная production-квалификация открыта.
+
+## Direct 0.7.24 (87) — public alpha
+
+Версия использует Chromium 156.0.8078.12 ARM64 Metal. Исходники, toolchain, выполненная сборка и payload связаны проверяемыми receipts. Exact headed, notarization, Gatekeeper и hosted gates должны завершиться до публикации. Это public alpha; глобальное обновление 1.0.0 ещё не завершено.
+
+- Повреждённый файл папок больше не блокирует исправные профили после фонового обновления. Последнее состояние папок сохраняется, их изменение остаётся запрещённым до восстановления.
+- Ожидание metadata guard ограничено 50 мс: долгий чужой commit не замораживает синхронный UI/MCP. Краткие записи локального журнала успевают завершиться; при занятости нужно перечитать состояние и повторить действие.
+- IP-ответ с явным error:true не принимается как успешный контекст прокси. Некорректный первый ответ больше не перекрывается резервным источником после отказа второго сервиса. Сбой IP-сервиса и отказ прокси остаются разными результатами.
+- В узкой справке подпись доступа MCP больше не сжимается по буквам. Disposable Dev root сохраняется в тестовом пакете и при повторном открытии без environment; production игнорирует этот ключ.
+- Справка MCP уточняет 6 инструментов чтения / 17 управления; примеры сайта используют стандартный каталог и объясняют выбор workspace.
+- Проверка секретов больше не пропускает большие Git blobs. CI включает все восемь ранее пропущенных наборов тестов; manager test/build helpers используют native SwiftPM и два jobs.
+- Новый M156 runtime исправляет семантику Canvas/Audio/WebGL и согласованность HTTP/JS identity; подробные ограничения квалификации сохраняются в release evidence. Safe Browsing остаётся отключённым; authenticated SOCKS5 relay не включён в production. Совместимость всех Mac и сторонних AI-клиентов не заявляется.
+- Импорт закладок создаёт отдельный профиль с новой identity; безопасная очистка кэша доступна только при подтверждённом закрытом профиле и сохраняет cookies/IndexedDB/расширения.
+- CRX3 проверяется криптографически; отсутствие корректной подписи не обозначается verified.
+- Разрабатываемые encrypted BrowserData backup, relay и atomic updater не включены в production: их локальные тесты не заменяют полный пользовательский release gate.
+
+- MCP: новая настройка подключения включает полное текущее управление профилями; только просмотр доступен дополнительно. Старые настройки без разрешающего флага остаются только для чтения.
+- MCP: повреждённый файл папок больше не блокирует статус и штатную остановку своего браузера; повреждённая primary metadata по-прежнему закрывает операции.
+- Browser.free снова предлагает последний реально опубликованный ZIP/DMG независимо от готовности следующего runtime. Источник URL ограничен точным GitHub repository/tag/asset.
+
+## Direct 0.7.23 (86) — 7 октября 2026
+
+- MCP поддерживает современный 2026-07-28 через metadata каждого запроса и server/discover, сохраняя 2025-11-25/2025-06-18 handshake. Исправлены malformed initialized и ответы после принятой cancellation.
+- 17 инструментов: новый workspace_query_profiles ищет по имени, тегам, проектам, закреплению и архиву; заметки исключены. Cursor связан с metadata и фильтром.
+- Папки читаются страницами; изменения возвращают компактный receipt. Лимит учитывает text и structuredContent вместе, включая современный resultType.
+- Все management-инструменты получили outputSchema; ошибки — стабильный код и следующий шаг. Три MCP prompts предлагают безопасные workflows без выполнения операций.
+- Встроенная справка генерирует настройки семи клиентов: Claude Desktop/Code, ChatGPT Desktop/Codex, Grok CLI, Cursor, VS Code/Copilot, Gemini CLI. Web-транспорт и документационная совместимость описаны отдельно.
+- Обновлены MCP cookbook, FAQ и browser.free: традиционный антидетект с дополнительным управлением профилями через AI.
+- Chromium 154.0.8037.98 сохранён. Safe Browsing остаётся отключённым. Физический VoiceOver/сторонние AI-клиенты не квалифицированы.
+
+## Direct 0.7.22 (85) — 7 октября 2026
+
+- 16 MCP-инструментов управления профилями, прокси, папками, metadata и штатным запуском/остановкой. Read-only по умолчанию; управление включается явно.
+- UUID/revision checks, Keychain и process ownership; GUI обновляет внешние metadata, сохраняя черновики.
+- 731 Swift/82 suites, 29 privacy, 27 Site tests; реальный Dev/stdIO, cookies/LS/IDB persistence/isolation, cancellation/EOF/reconnect и keyboard. Direct signing/notary/stapling/Gatekeeper и hosted ZIP/DMG проверены.
+- Chromium 154.0.8037.98 без пересборки. Ограничения: session-owned stop, нет DOM/JS/shell, удаления BrowserData, полного backup или remote bridge.
+
+## Direct 0.7.21 (84) — 7 октября 2026
+
+- Встроенная локальная справка с поиском по восьми темам; контекстные кнопки в редакторе, среде и библиотеке, без сброса черновика.
+- Готовые настройки MCP для текущего executable и фактического workspace: JSON для Claude Desktop, TOML для Codex; примеры запросов и устранение ошибок.
+- MCP отклоняет null/дробные ID и неполную инициализацию. Добавлены read-only annotations, outputSchema и structuredContent с общим ограничением размера. Два инструмента чтения; создание/запуск и web-мост не реализованы.
+- Исправлено пояснение о хранении пароля прокси, понятнее диагностика, шаблоны и фильтры. Синхронизированы RU/EN инструкции и название снимка настроек.
+- Прошли 720 Swift-проверок, реальный Dev.app smoke, поиск с клавиатуры, сохранность черновика после справки, copied-config stdio и запуск/остановка профиля с открытой справкой.
+- Chromium 154.0.8037.98 не пересобирался. Физический проход VoiceOver не заявляется проверенным. Safe Browsing остаётся отключённым.
+
+## Direct 0.7.20 (83) — 7 октября 2026
+
+- Исправлено чтение старых профилей с `about:blank`. Старые Dev-данные проверены без изменения файлов; отдельно подготовлен заполненный синтетический стенд.
+- Неизвестные схемы хранения отклоняются до чтения содержимого; более новый файл папок не заменяется старой резервной копией. Перемещение и metadata Undo блокируются во время импорта.
+- Запуск перепроверяет сохранённую ревизию, прокси, identity, архивирование и стартовую страницу: устаревшее значение из другого окна не выбирает сетевой маршрут.
+- Исправлены передача больших данных дочернему процессу и отмена подготовки прокси. Неполные сведения о маршруте не обозначаются готовой средой.
+- Редактор сохраняет исходный черновик и его ID при обновлениях SwiftUI. В Dev.app проверены возврат имени без ложного предупреждения и защита несохранённой строки прокси. В быстрых командах добавлено явное открытие через кнопку и Cmd+Return; обычный Return выбирает профиль в manager.
+- Убрано скрытие интерактивных окон и подсказок от macOS accessibility tree; физическая проверка всех вложенных диалогов ещё не завершена. Read-only MCP получил страницы с проверкой ревизии и ограничением ответа, без конфиденциальных полей.
+- Для загрузки сохраняются независимые ZIP/DMG с проверкой байтов; recovery journal остаётся нетронутым.
+- Прошли 715 Swift, 45 Python и 4 snapshot-проверки; отдельные сценарии запуска, persistent storage, контролируемого сбоя и локального HTTP-прокси проверены на прежнем Chromium 154.0.8037.98 без пересборки.
+- Выпуск опубликован после проверки форм, клавиатуры, привязки кандидата и скачанных байтов; ограничения GUI перечислены в delivery evidence. Физический проход VoiceOver не заявляется проверенным. Safe Browsing остаётся отключённым.
+
+## Direct 0.7.19 (82) — 7 октября 2026
+
+- Карточка профиля стала читабельнее: увеличены основные подписи, а состояние профиля, прокси и действия сгруппированы по важности.
+- Подробная диагностика среды остаётся доступной по раскрытию; основной сценарий запуска больше не требует просматривать все технические поля.
+- Добавлены проверки компоновки на узком окне и с длинным содержимым. Профили пользователя и встроенный Chromium 154.0.8037.98 не изменялись.
+
+## Direct 0.7.16 (79) — 5 октября 2026
+
+- Проверка прокси больше не зависит от одного IP-сервиса: два независимых ответа сверяются по выходному IP, стране и часовому поясу; язык берётся из проверенного ответа. При недоступности сервиса остаётся резервный источник. Противоречивые ответы не засчитываются как успех.
+- Ошибка или лимит IP-сервиса показывается отдельно от неисправности прокси. Проверка не обещает маршрут Chromium: он подтверждается отдельно.
+- В форме явно показаны тип и порт прокси, варианты вставки строки и результат проверки; узкое окно отдаёт редактору всю основную область.
+- Тесты: 682 Swift-проверки, живой прогон 33 выборочных HTTP-прокси через два сервиса и авторизованный маршрут на существующем Chromium 154.0.8037.93. Пользовательские профили в этом прогоне не менялись.
+
+## Direct 0.7.15 (78) — 5 октября 2026
+
+- Исправлено чтение сохранённого формата профилей версии 1 и его резервной копии: существующие профили больше не выглядят пустым списком после обновления.
+- При недоступных данных создание профиля заблокировано с понятным сообщением; сохранённые файлы не заменяются пустыми.
+- Создание профиля доступно явной кнопкой в списке и в пустом состоянии; прямой запуск без прокси назван отдельно. Форма настройки открывается в правой области окна с постоянно видимыми действиями.
+- Добавлены regression tests для восстановления, неподдерживаемой схемы и формата прокси с авторизацией. Локальный импорт и проверка маршрута Chromium различаются в диагностике.
+- Chromium 154.0.8037.93 сохранён без пересборки; это обновление manager.
+
+## Direct 0.7.14 (77) — 4 октября 2026
+
+- Исправлена согласованность `navigator.deviceMemory` и HTTP Client Hints на навигации и запросах из страницы в том же Chromium 154.0.8037.93.
+- Подпись manager сохраняет App ID для Keychain и больше не заявляет лишний Team ID, который мог блокировать запуск через AMFI.
+- Release gate проверяет оба пути Device Memory на локальном fixture и требует связанное runtime evidence; пользовательские профили не используются.
+
+## Direct 0.7.13 (76) — 3 октября 2026
+
+- Исправлена штатная остановка browser: graceful quit сохраняет буферизованные persistent data; отказ не приводит к принудительному завершению.
+- Быстрые команды, пользовательские безопасные шаблоны, сохранённые фильтры, revision-safe metadata Undo и локальный ограниченный журнал.
+- Ограничена подготовка запусков; memory pressure/thermal warning блокируют новые старты, не останавливая работающие профили.
+- Chromium 154.0.8037.93 сохранён без пересборки. ZIP/DMG прошли Direct gates и fresh hosted hashes.
+- G/H и batch UI отложены; session cookies и полный session backup не обещаются. Подробные ограничения: releases/v0.7.13.json.
+
+## Direct 0.7.12 (75) — 2 октября 2026
+
+- Chromium пересобран и обновлён до 154.0.8037.93 для Apple Silicon / Metal.
+- Исправлены обработка лимита размера профиля и согласованность импорта; preview прокси выполняется в фоне и отклоняет устаревший ввод.
+- Из упаковки менеджера убраны пути локального Swift/Metal toolchain; проверка приватности выполняется до отправки Apple.
+- Речевые объявления приложения убраны; Tab и горячие клавиши сохранены. Физический проход клавиатуры/VoiceOver не заявляется проверенным.
+- ZIP/DMG подписаны, notarized, stapled, приняты Gatekeeper и проверены после скачивания с GitHub. На browser.free открыты прямые загрузки.
+- Safe Browsing остаётся отключённым; защита Google Safe Browsing не предоставляется.
+- Rollback: неизменяемый v0.7.11.
+
+## Direct 0.7.11 (74) — 24 сентября 2026
+
+- В предварительном просмотре восстановления VoiceOver теперь получает
+  отдельное имя сводки и произносит число добавляемых профилей и изменения
+  папок одной понятной фразой.
+- Действия озвучиваются с контекстом: отмена закрывает просмотр без изменений,
+  подтверждение добавляет профили из снимка.
+- Keyboard Return/Escape, безопасная отмена, повторная проверка активных
+  профилей и транзакционное восстановление сохранены.
+- Добавлены проверки accessibility summary и приватности. Физический
+  VoiceOver проход ими не подтверждается.
+- Chromium 153.0.8010.52 / Metal сохранён без пересборки.
+
+## Direct 0.7.10 (73) — 24 сентября 2026
+
+- Перед восстановлением snapshot показывается его дата, количество профилей и
+  aggregate-сводка папок. В preview нет имён профилей, заметок, proxy-данных
+  или identity values.
+- Восстановление выполняется только после явного подтверждения; отмена не
+  меняет хранилище. Подготовленный и проверенный payload используется для
+  commit без повторного чтения snapshot, а guard работающих профилей
+  перепроверяется непосредственно перед транзакцией.
+- Preview поддерживает Return/Escape, VoiceOver labels и подсказки; добавлены
+  privacy/unit и responsive-render regression tests. Физический VoiceOver
+  acceptance отдельно не подтверждён автоматическими тестами.
+- Chromium 153.0.8010.52 / Metal сохраняется; Chromium не пересобирается.
+
+## Direct 0.7.9 (72) — 24 сентября 2026
+
+- New-profile quick-start offers editable «Работа» and «Тестирование» templates;
+  they prefill only a suggested name and tag and leave runtime settings alone.
+- Profile diagnostics can show a 24-hour, exact-profile/runtime-bound summary
+  of observed browser feature availability. It explicitly does not claim that a
+  particular site works or that its login/business flows were tested.
+- `scripts/neantik-release-evidence-summary.py` prints a local read-only release
+  gate summary, separating historical release records from current candidate
+  evidence without reading credentials or raw fingerprint reports.
+- Snapshot save/restore and plain/encrypted profile export prepare data off the
+  UI thread; restore rechecks running profiles before its atomic commit.
+- Diagnostics retains a compact, read-only recovery notice for the current
+  app session after profile or folder metadata is recovered. It remains
+  visible with no selected profile, including an empty workspace.
+- Closing the workspace cancels in-flight profile import, export, and snapshot
+  tasks before any pending restore commit.
+- Plain and encrypted export files are written atomically off the UI thread.
+- Cancelling import validation remains a cancellation state, not a corrupt-file
+  error.
+- Snapshot completion says how many stopped profiles were saved and how many
+  running profiles were skipped.
+- Export/import copy explicitly states that proxy login is included, while
+  proxy passwords, BrowserData, cookies, notes, identity seeds and Keychain
+  secrets are not.
+- Snapshot read failures do not expose local paths in the UI.
+- Chromium 153.0.8010.52 is retained unchanged; this is a manager-only release,
+  not a Chromium security update. Publication still requires exact-candidate
+  Developer ID, notarization, Gatekeeper, hosted-asset and live-site gates.
+
+## Direct 0.7.8 (71) — 24 сентября 2026
+
+- Подсчёт объёма BrowserData выполняется отменяемой фоновой задачей; интерфейс
+  показывает состояние подсчёта и не блокируется обходом файлов.
+- Импорт конфигураций читает, проверяет и расшифровывает файл в фоне; атомарная
+  запись профилей остаётся под контролем хранилища.
+- Давность проверки прокси видна в профиле; старый результат, последний сбой
+  и изменившиеся настройки не обозначаются свежей успешной проверкой.
+- Защищённое помещение файла в карантин отклоняет symlink-путь к данным вне
+  профиля; добавлен bounded corpus отказов для повреждённого импорта.
+- Chromium 153.0.8010.52 сохранён. Это manager-only релиз, не обновление
+  Chromium и не security update ядра.
+
+## Direct 0.7.7 (70) — 24 сентября 2026
+
+- Исправлены ложные предупреждения диагностики: собственный запущенный
+  профиль не считается занятым другим процессом, архив успешного
+  восстановления не требует повторного восстановления всех профилей.
+- VoiceOver произносит конкретный следующий шаг диагностики.
+- Панель медиа явно обозначает временное тестовое окружение.
+- Chromium 153.0.8010.52 сохранён без пересборки. Это manager-only обновление,
+  не обновление безопасности Chromium.
+
+## Direct 0.7.6 (69) — 24 сентября 2026
+
+- Диагностика профиля теперь сразу объясняет следующее безопасное действие
+  для состояний «Требует внимания» и «Проверка недоступна», а готовый профиль
+  остаётся без лишнего текста. В UI не добавляются raw paths, PID, IP, device
+  IDs или fingerprint values.
+- Добавлен глобальный продуктовый план 2026 с актуальной матрицей done/next/
+  runtime-gate/defer и отдельными границами для Chromium rebuild, cloud,
+  automation и anti-fraud bypass.
+
+- Manager-only обновление diagnostics next-step UX на проверенном Chromium
+  `153.0.8010.52`; ядро браузера не пересобиралось и не заменялось.
+- Публичные ZIP и DMG прошли Developer ID, notarization, stapling,
+  Gatekeeper и fresh-download gates.
+
+## Direct 0.7.5 (68) — release candidate
+
+- Менеджер получил завершённый pass по lifecycle health, безопасному импорту
+  и экспорту, metadata-only snapshots, privacy-safe diagnostics/support bundle,
+  quarantine/provenance и manager performance budgets.
+- Обычный UI сохраняет короткий сценарий профиля; A → B → A остаётся явной
+  release-only проверкой и не запускается скрыто при обычном старте.
+- Исправлена release-проверка source contract: она теперь выбирает контракт
+  Chromium 153 по фактическому runtime lock, а не ошибочно требует старый
+  Chromium 152.
+- Runtime Chromium `153.0.8010.52` не пересобирался и не заменялся.
+
+- Release hygiene теперь учитывает канонические markdown-записи публичных
+  релизов и разрешает версию исходников ниже публичного floor только при
+  явной bilingual-пометке development preview; это не меняет бинарный
+  runtime и не открывает путь к публикации неподтверждённого кандидата.
+- Исторические `.command`-обёртки релиза `0.3.12` переведены в явный
+  fail-closed режим; актуальные операции используют version-neutral entrypoint
+  и не могут случайно обратиться к старому публичному DMG.
+- Отдельный DMG release-flow теперь повторно проверяет публичный version/build
+  floor перед любыми signing и notarization-действиями, даже если ZIP уже был
+  подготовлен предыдущей фазой.
+- Read-only Direct preflight теперь показывает тот же публичный version/build
+  floor отдельным gate и не может выглядеть готовым при кандидате ниже
+  последнего опубликованного релиза.
+- Ошибки AffPapa release-client больше не выводят абсолютные пути к deploy
+  credential или pinned known_hosts; приватные пути редактируются даже при
+  неготовом окружении доступа.
+- Ошибки запуска браузера, восстановления proxy-состояния и отката профиля
+  больше не выводят абсолютные пути или системные детали; в приватной
+  диагностике сохраняются только ограниченные категории событий.
+
+## Direct 0.7.4 (67) — September 23, 2026
+
+- Публичный Direct public-alpha релиз с Chromium `153.0.8010.52`, ARM64 и
+  Metal; manager и runtime прошли подпись, notarization, stapling, Gatekeeper
+  и повторную проверку опубликованного ZIP.
+- Manager/UI pass и последующие verifier-изменения переходят в кандидата
+  `0.7.5 (68)` и не смешиваются с уже опубликованным бинарным архивом.
+
+## Direct 0.3.20 (23) — August 29, 2026
 
 - Встроенный движок перенесён на Chromium 152.0.7977.64 из официального
   macOS Stable-релиза от 25 августа 2026 года. Source contract, toolchain,

@@ -1,0 +1,30 @@
+{
+  "appleDeviceTuplesSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+  "baseOrderedReplaySHA256": "c936de57c8cf27ee00e3220a2c5a8bb69d3c6194a93c1405d53f921fb79b69a0",
+  "baseSourceContractSHA256": "5c1f8789fe9f586a075b98d29a969c62aa86cc8562b0c6a489fa9fc66a865716",
+  "baseSourceSnapshotSHA256": "61636de70b6e5d11305d93fbc715e7a8c05901952b23255cce70be8c15edc977",
+  "buildArgsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+  "correctionsManifestSHA256": "8b1a5fae94274a4a6c2c156625fb1a2f0ea8dc853276acd5f9ca4e706808d4fe",
+  "correctionsReceiptSHA256": "20d002f4ecfa922131d8f9d50541a22487b67f41bd63fd83535211c8ce908009",
+  "enterpriseCloudContentAnalysis": true,
+  "generatedBuildCacheEvidenceSHA256": "8bc163d54804cc9e25ff3535eafd27d0e0862263b5831ed66c33c357ffc122aa",
+  "officialChromiumBase": {
+    "commit": "cfaadc5a132d78e1828635aa8405a499f3e14864",
+    "tree": "6ff797d22a0943b4a56a38dc6e27a87f158246d3"
+  },
+  "ownedPatchGroupCount": 73,
+  "rebasePlanSHA256": "a3d1aae17fe58ac4dcb4fcc5414b7e68c520248dba42a4554398eadb31246720",
+  "releaseReady": false,
+  "safeBrowsingMode": 0,
+  "schemaVersion": 3,
+  "securityBaselineSHA256": "dd9bb55d39b249754489a9c31aea70c6805273a7481b33ce27a5d830122e9447",
+  "semanticCorrectionSet": "canvas-audio-webgl-native-webrtc-layout-text-event-v5",
+  "sourceInputManifestSHA256": "e5b5a67b19e1e7364cb6137e1549ed0a833b9e7c46cb97f94e945e6423163803",
+  "sourceInputSnapshotSHA256": "ee8096b06457e4c7d3fafd9f3dcd6bd642ffefe6aad6ad280483af93e749274b",
+  "sourceMode": "official-chromium-owned-macos-port",
+  "sourceSnapshotSHA256": "ee8096b06457e4c7d3fafd9f3dcd6bd642ffefe6aad6ad280483af93e749274b",
+  "status": "source-qualified",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "155.0.8059.40",
+  "toolchainLockSHA256": "4285c9094ebee74a8b8cbb626a8a4468de876ae3eb9934db7d6befab8a3d2ad6"
+}

@@ -1,0 +1,1371 @@
+diff --git a/chrome/browser/download/chrome_download_manager_delegate.cc b/chrome/browser/download/chrome_download_manager_delegate.cc
+index d0b653e5ea..eb67cd99e9 100644
+--- a/chrome/browser/download/chrome_download_manager_delegate.cc
++++ b/chrome/browser/download/chrome_download_manager_delegate.cc
+@@ -47,6 +47,7 @@
+ #include "chrome/browser/download/insecure_download_blocking.h"
+ #include "chrome/browser/download/save_package_file_picker.h"
+ #include "chrome/browser/enterprise/connectors/common.h"
++#include "chrome/browser/enterprise/connectors/connectors_service.h"
+ #include "chrome/browser/history/history_service_factory.h"
+ #include "chrome/browser/platform_util.h"
+ #include "chrome/browser/policy/chrome_policy_blocklist_service_factory.h"
+@@ -69,6 +70,9 @@
+ #include "components/download/public/common/download_item_rename_handler.h"
+ #include "components/download/public/common/download_stats.h"
+ #include "components/enterprise/connectors/core/reporting_utils.h"
++#if BUILDFLAG(IS_ANDROID)
++#include "components/enterprise/connectors/core/features.h"
++#endif
+ #include "components/offline_pages/buildflags/buildflags.h"
+ #include "components/pdf/common/constants.h"
+ #include "components/pdf/common/pdf_util.h"
+@@ -1184,11 +1188,33 @@ bool ChromeDownloadManagerDelegate::ShouldObfuscateDownload(
+   }
+ 
+   // Skip obfuscation if there are no matching connector policies and for
+-  // report-only scans.
++  // report-only scans. Resolve enterprise policy directly so this prerequisite
++  // remains available when Safe Browsing download protection is compiled out.
+   Profile* profile = Profile::FromBrowserContext(
+       content::DownloadItemUtils::GetBrowserContext(item));
+   if (profile) {
+-    auto settings = safe_browsing::ShouldUploadBinaryForDeepScanning(item);
++#if BUILDFLAG(IS_ANDROID)
++    if (!base::FeatureList::IsEnabled(
++            enterprise_connectors::kEnableDownloadEnterpriseScanOnClank)) {
++      return false;
++    }
++#endif
++    // Match DeepScanningRequest::ShouldUploadBinary: files already on disk
++    // aren't uploaded, and only matching FILE_DOWNLOADED connector policies
++    // qualify for block-until-verdict obfuscation.
++    if (item->GetURL().SchemeIsFile()) {
++      return false;
++    }
++    auto* service = enterprise_connectors::ConnectorsServiceFactory::
++        GetForBrowserContext(profile);
++    if (!service || !service->IsConnectorEnabled(
++                        enterprise_connectors::AnalysisConnector::
++                            FILE_DOWNLOADED)) {
++      return false;
++    }
++    auto settings = service->GetAnalysisSettings(
++        item->GetURL(),
++        enterprise_connectors::AnalysisConnector::FILE_DOWNLOADED);
+     if (settings.has_value() &&
+         settings.value().block_until_verdict ==
+             enterprise_connectors::BlockUntilVerdict::kBlock) {
+diff --git a/chrome/browser/download/chrome_download_manager_delegate_unittest.cc b/chrome/browser/download/chrome_download_manager_delegate_unittest.cc
+index ba00af80a1..50ff1f9c13 100644
+--- a/chrome/browser/download/chrome_download_manager_delegate_unittest.cc
++++ b/chrome/browser/download/chrome_download_manager_delegate_unittest.cc
+@@ -56,6 +56,7 @@
+ #include "components/download/public/common/download_target_info.h"
+ #include "components/download/public/common/mock_download_item.h"
+ #include "components/enterprise/buildflags/buildflags.h"
++#include "components/enterprise/obfuscation/core/download_obfuscator.h"
+ #include "components/policy/core/common/policy_pref_names.h"
+ #include "components/prefs/pref_service.h"
+ #include "components/safe_browsing/buildflags.h"
+@@ -75,14 +76,16 @@
+ #include "ui/shell_dialogs/selected_file_info.h"
+ #include "url/origin.h"
+ 
+-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
++#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
+ #include "chrome/browser/enterprise/connectors/common.h"
+ #include "chrome/browser/enterprise/connectors/test/deep_scanning_test_utils.h"
+ #include "chrome/browser/policy/dm_token_utils.h"
++#endif
++
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+ #include "chrome/browser/safe_browsing/download_protection/download_protection_service.h"
+ #include "chrome/browser/safe_browsing/download_protection/download_protection_util.h"
+ #include "chrome/browser/safe_browsing/test_safe_browsing_service.h"
+-#include "components/enterprise/obfuscation/core/utils.h"
+ #include "components/safe_browsing/core/common/features.h"
+ #include "components/safe_browsing/core/common/proto/csd.pb.h"
+ #include "components/safe_browsing/core/common/safe_browsing_prefs.h"
+@@ -2302,11 +2305,13 @@ TEST_F(ChromeDownloadManagerDelegateTestWithSafeBrowsing,
+   EXPECT_CALL(*download_item, RequireSafetyChecks())
+       .WillRepeatedly(Return(true));
+ 
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+   auto sb_state =
+       std::make_unique<ChromeDownloadManagerDelegate::SafeBrowsingState>();
+   download_item->SetUserData(&ChromeDownloadManagerDelegate::SafeBrowsingState::
+                                  kSafeBrowsingUserDataKey,
+                              std::move(sb_state));
++#endif  // BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+ 
+   // Expect OnContentCheckCompleted with FORCE_SAVE_TO_ONEDRIVE
+   EXPECT_CALL(*download_item,
+@@ -2972,6 +2977,41 @@ TEST_F(ChromeDownloadManagerDelegateTestWithSafeBrowsing,
+ #endif  // BUILDFLAG(IS_CHROMEOS)
+ #endif  // SAFE_BROWSING_DOWNLOAD_PROTECTION
+ 
++#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++TEST_F(ChromeDownloadManagerDelegateTest,
++       ShouldObfuscateDownloadEnterprisePolicyWithoutSafeBrowsing) {
++  base::test::ScopedFeatureList scoped_feature_list;
++  scoped_feature_list.InitAndEnableFeature(
++      enterprise_obfuscation::kEnterpriseFileObfuscation);
++  policy::SetDMTokenForTesting(policy::DMToken::CreateValidToken("dm_token"));
++
++  std::unique_ptr<download::MockDownloadItem> download_item =
++      CreateActiveDownloadItem(0);
++  EXPECT_CALL(*download_item, RequireSafetyChecks())
++      .WillRepeatedly(Return(true));
++
++  enterprise_connectors::test::SetAnalysisConnector(
++      pref_service(), enterprise_connectors::FILE_DOWNLOADED,
++      R"({
++        "service_provider": "google",
++        "enable": [{"url_list": ["*"], "tags": ["malware", "dlp"]}],
++        "block_until_verdict": 1
++      })");
++  EXPECT_TRUE(delegate()->ShouldObfuscateDownload(download_item.get()));
++
++  enterprise_connectors::test::SetAnalysisConnector(
++      pref_service(), enterprise_connectors::FILE_DOWNLOADED,
++      R"({
++        "service_provider": "google",
++        "enable": [{"url_list": ["*"], "tags": ["malware", "dlp"]}],
++        "block_until_verdict": 0
++      })");
++  EXPECT_FALSE(delegate()->ShouldObfuscateDownload(download_item.get()));
++
++  policy::SetDMTokenForTesting(policy::DMToken::CreateEmptyToken());
++}
++#endif  // BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++
+ #if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS) || BUILDFLAG(IS_ANDROID)
+ TEST_F(ChromeDownloadManagerDelegateTest, DeobfuscationBeforeCompletion) {
+   base::test::ScopedFeatureList enable_feature(
+@@ -3006,11 +3046,13 @@ TEST_F(ChromeDownloadManagerDelegateTest, DeobfuscationBeforeCompletion) {
+   download_item->SetUserData(
+       enterprise_obfuscation::DownloadObfuscationData::kUserDataKey,
+       std::move(obfuscation_data));
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+   auto sb_state =
+       std::make_unique<ChromeDownloadManagerDelegate::SafeBrowsingState>();
+   download_item->SetUserData(&ChromeDownloadManagerDelegate::SafeBrowsingState::
+                                  kSafeBrowsingUserDataKey,
+                              std::move(sb_state));
++#endif  // BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+ 
+   base::RunLoop run_loop;
+   EXPECT_FALSE(delegate()->ShouldCompleteDownload(download_item.get(),
+diff --git a/chrome/browser/enterprise/connectors/analysis/BUILD.gn b/chrome/browser/enterprise/connectors/analysis/BUILD.gn
+index b42be0b381..10111f0fde 100644
+--- a/chrome/browser/enterprise/connectors/analysis/BUILD.gn
++++ b/chrome/browser/enterprise/connectors/analysis/BUILD.gn
+@@ -4,6 +4,7 @@
+ 
+ import("//components/enterprise/buildflags/buildflags.gni")
+ import("//extensions/buildflags/buildflags.gni")
++import("//testing/test.gni")
+ 
+ source_set("sdk_manager") {
+   configs += [ "//components/enterprise:extra_warnings" ]
+@@ -157,3 +158,14 @@ if (!is_android && enterprise_cloud_content_analysis) {
+     ]
+   }
+ }
++if (enterprise_cloud_content_analysis) {
++  test("enterprise_connectors_analysis_focused_unittests") {
++    sources = [
++      "//chrome/browser/safe_browsing/cloud_content_scanning/test_binary_upload_service.cc",
++    ]
++    deps = [
++      ":unit_tests",
++      "//chrome/test:test_support_unit",
++    ]
++  }
++}
+diff --git a/chrome/browser/enterprise/connectors/analysis/page_print_request_handler.cc b/chrome/browser/enterprise/connectors/analysis/page_print_request_handler.cc
+index f641928802..a24a68ebb7 100644
+--- a/chrome/browser/enterprise/connectors/analysis/page_print_request_handler.cc
++++ b/chrome/browser/enterprise/connectors/analysis/page_print_request_handler.cc
+@@ -18,7 +18,11 @@
+ #include "components/enterprise/connectors/core/cloud_content_scanning/request_handler_base.h"
+ #include "components/enterprise/connectors/core/features.h"
+ #include "components/enterprise/connectors/core/reporting_constants.h"
++#include "components/safe_browsing/buildflags.h"
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+ #include "components/safe_browsing/content/browser/web_ui/web_ui_content_info_singleton.h"
++#endif
++#include "content/public/browser/browser_thread.h"
+ 
+ namespace enterprise_connectors {
+ 
+@@ -201,6 +205,7 @@ void PagePrintRequestHandler::FinishLargeDataRequestEarly(
+     std::unique_ptr<BinaryUploadRequest> request) {
+   // We add the request here in case we never actually uploaded anything, so
+   // it wasn't added in OnGetRequestData
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+   safe_browsing::WebUIContentInfoSingleton::GetInstance()
+       ->AddToDeepScanRequests(request->per_profile_request(),
+                               /*access_token*/ "", /*upload_info*/
+@@ -212,6 +217,7 @@ void PagePrintRequestHandler::FinishLargeDataRequestEarly(
+           ScanRequestUploadResultToString(
+               ScanRequestUploadResult::kFileTooLarge),
+           enterprise_connectors::ContentAnalysisResponse());
++#endif  // BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+ 
+   request->FinishRequest(ScanRequestUploadResult::kFileTooLarge,
+                          enterprise_connectors::ContentAnalysisResponse());
+diff --git a/chrome/browser/enterprise/connectors/common.cc b/chrome/browser/enterprise/connectors/common.cc
+index b6797ccce9..b42beb5e6a 100644
+--- a/chrome/browser/enterprise/connectors/common.cc
++++ b/chrome/browser/enterprise/connectors/common.cc
+@@ -34,13 +34,14 @@
+ #include "components/prefs/pref_service.h"
+ #endif
+ 
+-#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
++#if BUILDFLAG(SAFE_BROWSING_AVAILABLE) || \
++    BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
+ #include "chrome/browser/enterprise/connectors/analysis/local_binary_upload_service_factory.h"
+ #include "chrome/browser/safe_browsing/cloud_content_scanning/cloud_binary_upload_service_factory.h"
+ #include "components/enterprise/connectors/core/cloud_content_scanning/binary_upload_service.h"
+ 
+ using safe_browsing::CloudBinaryUploadServiceFactory;
+-#endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE)
++#endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE) || BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
+ 
+ #if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
+ #include "chrome/browser/enterprise/connectors/analysis/content_analysis_dialog_controller.h"
+@@ -205,7 +206,8 @@ google::protobuf::RepeatedPtrField<std::string> CollectFrameUrls(
+ #endif
+ }
+ 
+-#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
++#if BUILDFLAG(SAFE_BROWSING_AVAILABLE) || \
++    BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
+ 
+ BinaryUploadService* GetBinaryUploadServiceForConnector(
+     Profile* profile,
+@@ -222,7 +224,7 @@ BinaryUploadService* GetBinaryUploadServiceForConnector(
+ #endif
+ }
+ 
+-#endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE)
++#endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE) || BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
+ 
+ #if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
+ bool ShouldPromptReviewForDownload(
+diff --git a/chrome/browser/enterprise/connectors/common.h b/chrome/browser/enterprise/connectors/common.h
+index 0e2777be39..3290949637 100644
+--- a/chrome/browser/enterprise/connectors/common.h
++++ b/chrome/browser/enterprise/connectors/common.h
+@@ -17,10 +17,11 @@
+ #include "content/public/browser/download_manager_delegate.h"
+ #include "content/public/browser/global_routing_id.h"
+ 
+-#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
++#if BUILDFLAG(SAFE_BROWSING_AVAILABLE) || \
++    BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
+ #include "chrome/browser/safe_browsing/cloud_content_scanning/deep_scanning_utils.h"  // nogncheck crbug.com/40147906
+ #include "components/enterprise/connectors/core/cloud_content_scanning/binary_upload_service.h"
+-#endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE)
++#endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE) || BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
+ 
+ class Profile;
+ 
+@@ -80,7 +81,8 @@ google::protobuf::RepeatedPtrField<std::string> CollectFrameUrls(
+     DeepScanAccessPoint access_point,
+     std::optional<content::GlobalRenderFrameHostId> initiating_frame_id);
+ 
+-#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
++#if BUILDFLAG(SAFE_BROWSING_AVAILABLE) || \
++    BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
+ 
+ // Returns the appropriate BinaryUploadService for the given `profile` and
+ // `settings`. This can be a cloud or local service.
+@@ -88,7 +90,7 @@ BinaryUploadService* GetBinaryUploadServiceForConnector(
+     Profile* profile,
+     const enterprise_connectors::AnalysisSettings& settings);
+ 
+-#endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE)
++#endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE) || BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
+ 
+ #if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
+ // Returns whether the download danger type implies the user should be allowed
+diff --git a/chrome/browser/interstitials/enterprise_util.cc b/chrome/browser/interstitials/enterprise_util.cc
+index 7feedd41ba..3af87e148b 100644
+--- a/chrome/browser/interstitials/enterprise_util.cc
++++ b/chrome/browser/interstitials/enterprise_util.cc
+@@ -12,6 +12,7 @@
+ #include "components/safe_browsing/content/browser/safe_browsing_navigation_observer_manager.h"
+ #include "components/safe_browsing/core/common/features.h"
+ #include "components/sessions/content/session_tab_helper.h"
++#include "components/safe_browsing/buildflags.h"
+ #include "content/public/browser/web_contents.h"
+ #include "extensions/buildflags/buildflags.h"
+ 
+@@ -117,8 +118,10 @@ void MaybeTriggerSecurityInterstitialShownEvent(
+ #endif  // BUILDFLAG(ENABLE_EXTENSIONS) && BUILDFLAG(SAFE_BROWSING_AVAILABLE)
+ 
+ #if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS) || BUILDFLAG(IS_ANDROID)
++#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
+   content::BrowserContext* browser_context = web_contents->GetBrowserContext();
+   PrefService* prefs = Profile::FromBrowserContext(browser_context)->GetPrefs();
++#endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE)
+   enterprise_connectors::ReportingEventRouter* reporting_event_router =
+       GetReportingEventRouter(web_contents);
+ 
+@@ -132,9 +135,13 @@ void MaybeTriggerSecurityInterstitialShownEvent(
+     SetReferrerChain(web_contents, page_url, referrer_chain);
+   }
+ 
++  bool proceed_anyway_disabled = false;
++#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
++  proceed_anyway_disabled =
++      prefs->GetBoolean(prefs::kSafeBrowsingProceedAnywayDisabled);
++#endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE)
+   reporting_event_router->OnSecurityInterstitialShown(
+-      page_url, reason, net_error_code,
+-      prefs->GetBoolean(prefs::kSafeBrowsingProceedAnywayDisabled),
++      page_url, reason, net_error_code, proceed_anyway_disabled,
+       referrer_chain);
+ 
+ #endif  // BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS) || BUILDFLAG(IS_ANDROID)
+diff --git a/chrome/browser/interstitials/enterprise_util_unittest.cc b/chrome/browser/interstitials/enterprise_util_unittest.cc
+index 0243a5de2a..fb56c9f595 100644
+--- a/chrome/browser/interstitials/enterprise_util_unittest.cc
++++ b/chrome/browser/interstitials/enterprise_util_unittest.cc
+@@ -20,6 +20,7 @@
+ #include "components/enterprise/connectors/core/reporting_test_utils.h"
+ #include "components/policy/core/common/cloud/dm_token.h"
+ #include "components/policy/core/common/cloud/mock_cloud_policy_client.h"
++#include "components/safe_browsing/buildflags.h"
+ #include "components/safe_browsing/content/browser/safe_browsing_navigation_observer_manager.h"
+ #include "components/safe_browsing/core/browser/referrer_chain_provider.h"
+ #include "components/safe_browsing/core/common/features.h"
+@@ -280,6 +281,7 @@ TEST_F(InterstitialEnterpriseUtilTest,
+   ValidateReferrerChainForInterstitialEvent(event_request);
+ }
+ 
++#if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
+ TEST_F(InterstitialEnterpriseUtilTest,
+        UrlFilteringInterstitialEventSentInGuestMode) {
+   scoped_feature_list_.InitAndEnableFeature(
+@@ -384,3 +386,4 @@ TEST_F(InterstitialEnterpriseUtilTest, ReferrerChainFallsbackToEventUrl) {
+ 
+   ValidateReferrerChainForUrlFilteringEvent(event_request);
+ }
++#endif  // BUILDFLAG(SAFE_BROWSING_AVAILABLE)
+diff --git a/chrome/browser/safe_browsing/BUILD.gn b/chrome/browser/safe_browsing/BUILD.gn
+index 1ca01e1f5e..5d899f13d1 100644
+--- a/chrome/browser/safe_browsing/BUILD.gn
++++ b/chrome/browser/safe_browsing/BUILD.gn
+@@ -193,7 +193,6 @@ static_library("safe_browsing") {
+       "cloud_content_scanning/cloud_binary_upload_service.h",
+       "cloud_content_scanning/cloud_binary_upload_service_factory.h",
+       "cloud_content_scanning/deep_scanning_utils.h",
+-      "cloud_content_scanning/file_analysis_request.h",
+       "delayed_warning_navigation_throttle.h",
+       "download_protection/check_client_download_request.h",
+       "download_protection/check_client_download_request_base.h",
+@@ -256,7 +255,6 @@ static_library("safe_browsing") {
+       "cloud_content_scanning/cloud_binary_upload_service.cc",
+       "cloud_content_scanning/cloud_binary_upload_service_factory.cc",
+       "cloud_content_scanning/deep_scanning_utils.cc",
+-      "cloud_content_scanning/file_analysis_request.cc",
+       "delayed_warning_navigation_throttle.cc",
+       "download_protection/check_client_download_request.cc",
+       "download_protection/check_client_download_request_base.cc",
+@@ -654,6 +652,30 @@ static_library("safe_browsing") {
+       ]
+     }
+   }
++
++  if (enterprise_cloud_content_analysis && safe_browsing_mode == 0) {
++    public += [
++      "cloud_content_scanning/cloud_binary_upload_service.h",
++      "cloud_content_scanning/cloud_binary_upload_service_factory.h",
++      "cloud_content_scanning/deep_scanning_utils.h",
++      "cloud_content_scanning/file_analysis_request.h",
++    ]
++    sources += [
++      "cloud_content_scanning/cloud_binary_upload_service.cc",
++      "cloud_content_scanning/cloud_binary_upload_service_factory.cc",
++      "cloud_content_scanning/deep_scanning_utils.cc",
++      "cloud_content_scanning/file_analysis_request.cc",
++      "extension_telemetry/search_hijacking_detector.cc",
++      "safe_browsing_navigation_observer_manager_factory.cc",
++    ]
++    deps += [
++      "//chrome/common/safe_browsing:archive_analyzer_results",
++      "//chrome/browser/security_events",
++      "//chrome/services/file_util/public/cpp",
++      "//components/enterprise/connectors/core:cloud_content_scanning",
++      "//components/safe_browsing/core/browser/sync",
++    ]
++  }
+ }
+ 
+ source_set("verdict_cache_manager_factory") {
+@@ -756,9 +778,6 @@ source_set("unit_tests") {
+     "advanced_protection_status_manager_unittest.cc",
+     "application_advanced_protection_status_detector_unittest.cc",
+     "gemini_antiscam_protection/gemini_antiscam_protection_service_factory_unittest.cc",
+-    "metrics/bundled_settings_metrics_provider_unittest.cc",
+-    "notification_content_detection/notification_content_detection_service_factory_unittest.cc",
+-    "notification_telemetry/notification_telemetry_service_factory_unittest.cc",
+     "notification_telemetry/notification_telemetry_service_unittest.cc",
+   ]
+ 
+@@ -781,6 +800,9 @@ source_set("unit_tests") {
+ 
+   if (safe_browsing_mode != 0) {
+     sources += [
++      "metrics/bundled_settings_metrics_provider_unittest.cc",
++      "notification_content_detection/notification_content_detection_service_factory_unittest.cc",
++      "notification_telemetry/notification_telemetry_service_factory_unittest.cc",
+       "chrome_password_protection_service_unittest.cc",
+       "chrome_ui_manager_delegate_unittest.cc",
+       "chrome_user_population_helper_unittest.cc",
+diff --git a/chrome/browser/safe_browsing/cloud_content_scanning/file_analysis_request.cc b/chrome/browser/safe_browsing/cloud_content_scanning/file_analysis_request.cc
+index 54f38f57ca..cb8ea77efa 100644
+--- a/chrome/browser/safe_browsing/cloud_content_scanning/file_analysis_request.cc
++++ b/chrome/browser/safe_browsing/cloud_content_scanning/file_analysis_request.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "chrome/browser/safe_browsing/cloud_content_scanning/file_analysis_request.h"
+ 
++#include "chrome/services/file_util/public/mojom/safe_archive_analyzer_param_traits.h"
++
+ #include <algorithm>
+ #include <string_view>
+ 
+diff --git a/chrome/common/common_message_generator.h b/chrome/common/common_message_generator.h
+index d192c761d8..ab48e3d2b5 100644
+--- a/chrome/common/common_message_generator.h
++++ b/chrome/common/common_message_generator.h
+@@ -5,6 +5,7 @@
+ // Multiply-included file, hence no include guard.
+ 
+ #include "chrome/common/search/instant_mojom_traits.h"
++#include "components/enterprise/buildflags/buildflags.h"
+ #include "components/safe_browsing/buildflags.h"
+ #include "content/public/common/common_param_traits.h"
+ #include "content/public/common/common_param_traits_macros.h"
+@@ -12,6 +13,7 @@
+ #include "media/media_buildflags.h"
+ #include "services/network/public/cpp/p2p_param_traits.h"
+ 
+-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_ANDROID)
++#if (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_ANDROID)) || \
++    BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS)
+ #include "chrome/services/file_util/public/mojom/safe_archive_analyzer_param_traits.h"
+ #endif
+diff --git a/chrome/common/safe_browsing/BUILD.gn b/chrome/common/safe_browsing/BUILD.gn
+index e49c165fb8..81768e0ceb 100644
+--- a/chrome/common/safe_browsing/BUILD.gn
++++ b/chrome/common/safe_browsing/BUILD.gn
+@@ -3,11 +3,12 @@
+ # found in the LICENSE file.
+ 
+ import("//chrome/common/features.gni")
++import("//components/enterprise/buildflags/buildflags.gni")
+ import("//components/safe_browsing/buildflags.gni")
+ 
+ assert(!is_fuchsia, "Fuchsia shouldn't use anything in //chrome")
+ 
+-if (safe_browsing_mode != 0) {
++if (safe_browsing_mode != 0 || enterprise_cloud_content_analysis) {
+   source_set("archive_analyzer_results") {
+     sources = [
+       "archive_analyzer_results.cc",
+diff --git a/chrome/services/file_util/BUILD.gn b/chrome/services/file_util/BUILD.gn
+index ffabb3866b..5939993bd8 100644
+--- a/chrome/services/file_util/BUILD.gn
++++ b/chrome/services/file_util/BUILD.gn
+@@ -21,6 +21,7 @@ source_set("file_util") {
+     "//base",
+     "//build:chromeos_buildflags",
+     "//components/enterprise/obfuscation/core:enterprise_obfuscation",
++    "//components/enterprise/buildflags",
+     "//components/safe_browsing:buildflags",
+     "//extensions/buildflags",
+     "//mojo/public/cpp/bindings",
+@@ -49,11 +50,7 @@ source_set("file_util") {
+     deps += [ "//components/services/filesystem/public/mojom" ]
+   }
+ 
+-  if (is_mac) {
+-    deps += [ "//chrome/utility/safe_browsing" ]
+-  }
+-
+-  if (safe_browsing_mode == 1) {
++  if (safe_browsing_mode == 1 || enterprise_archive_analysis) {
+     sources += [
+       "obfuscated_archive_analysis_delegate.cc",
+       "obfuscated_archive_analysis_delegate.h",
+@@ -68,6 +65,7 @@ source_set("file_util") {
+       "//chrome/common/safe_browsing:archive_analyzer_results",
+       "//chrome/utility/safe_browsing",
+       "//components/enterprise/obfuscation/core:enterprise_obfuscation",
++      "//third_party/zlib/google:zip",
+     ]
+   }
+ 
+@@ -119,6 +117,7 @@ source_set("test_support") {
+     "//base",
+     "//build:chromeos_buildflags",
+     "//chrome/services/file_util/public/mojom",
++    "//components/enterprise/buildflags",
+     "//components/safe_browsing:buildflags",
+     "//extensions/buildflags",
+     "//mojo/public/cpp/bindings",
+diff --git a/chrome/services/file_util/fake_file_util_service.cc b/chrome/services/file_util/fake_file_util_service.cc
+index 395eaff83b..efb529307e 100644
+--- a/chrome/services/file_util/fake_file_util_service.cc
++++ b/chrome/services/file_util/fake_file_util_service.cc
+@@ -12,7 +12,9 @@ FakeFileUtilService::FakeFileUtilService(
+ 
+ FakeFileUtilService::~FakeFileUtilService() = default;
+ 
+-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && \
++    (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) || \
++     BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS))
+ MockSafeArchiveAnalyzer& FakeFileUtilService::GetSafeArchiveAnalyzer() {
+   return safe_archive_analyzer_;
+ }
+@@ -25,7 +27,9 @@ void FakeFileUtilService::BindZipFileCreator(
+ }
+ #endif
+ 
+-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && \
++    (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) || \
++     BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS))
+ void FakeFileUtilService::BindSafeArchiveAnalyzer(
+     mojo::PendingReceiver<chrome::mojom::SafeArchiveAnalyzer> receiver) {
+   safe_archive_analyzer_.Bind(std::move(receiver));
+@@ -44,7 +48,9 @@ void FakeFileUtilService::BindSingleFileTarFileExtractor(
+ }
+ #endif
+ 
+-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && \
++    (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) || \
++     BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS))
+ MockSafeArchiveAnalyzer::MockSafeArchiveAnalyzer() = default;
+ MockSafeArchiveAnalyzer::~MockSafeArchiveAnalyzer() = default;
+ void MockSafeArchiveAnalyzer::Bind(
+diff --git a/chrome/services/file_util/fake_file_util_service.h b/chrome/services/file_util/fake_file_util_service.h
+index dce5cc57d4..ccfc51d07b 100644
+--- a/chrome/services/file_util/fake_file_util_service.h
++++ b/chrome/services/file_util/fake_file_util_service.h
+@@ -12,16 +12,21 @@
+ #include "chrome/services/file_util/buildflags.h"
+ #include "chrome/services/file_util/public/mojom/file_util_service.mojom.h"
+ #include "components/safe_browsing/buildflags.h"
++#include "components/enterprise/buildflags/buildflags.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+ #include "mojo/public/cpp/bindings/receiver.h"
+ #include "mojo/public/cpp/bindings/receiver_set.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+ 
+-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && \
++    (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) || \
++     BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS))
+ #include "chrome/services/file_util/public/mojom/safe_archive_analyzer.mojom.h"
+ #endif
+ 
+-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && \
++    (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) || \
++     BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS))
+ // An implementation of the SafeArchiveAnalyzer interface that delegates all the
+ // Mojo methods to mocks.
+ class MockSafeArchiveAnalyzer : public chrome::mojom::SafeArchiveAnalyzer {
+@@ -43,6 +48,7 @@ class MockSafeArchiveAnalyzer : public chrome::mojom::SafeArchiveAnalyzer {
+        mojo::PendingRemote<chrome::mojom::TemporaryFileGetter> temp_file_getter,
+        AnalyzeZipFileCallback callback),
+       (override));
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+   MOCK_METHOD(
+       void,
+       AnalyzeDmgFile,
+@@ -50,6 +56,7 @@ class MockSafeArchiveAnalyzer : public chrome::mojom::SafeArchiveAnalyzer {
+        mojo::PendingRemote<chrome::mojom::TemporaryFileGetter> temp_file_getter,
+        AnalyzeDmgFileCallback callback),
+       (override));
++#endif
+   MOCK_METHOD(
+       void,
+       AnalyzeRarFile,
+@@ -58,6 +65,7 @@ class MockSafeArchiveAnalyzer : public chrome::mojom::SafeArchiveAnalyzer {
+        mojo::PendingRemote<chrome::mojom::TemporaryFileGetter> temp_file_getter,
+        AnalyzeRarFileCallback callback),
+       (override));
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+   MOCK_METHOD(
+       void,
+       AnalyzeSevenZipFile,
+@@ -65,6 +73,7 @@ class MockSafeArchiveAnalyzer : public chrome::mojom::SafeArchiveAnalyzer {
+        mojo::PendingRemote<chrome::mojom::TemporaryFileGetter> temp_file_getter,
+        AnalyzeSevenZipFileCallback callback),
+       (override));
++#endif
+   MOCK_METHOD(
+       void,
+       AnalyzeObfuscatedZipFile,
+@@ -101,7 +110,9 @@ class FakeFileUtilService : public chrome::mojom::FileUtilService {
+ 
+   ~FakeFileUtilService() override;
+ 
+-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && \
++    (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) || \
++     BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS))
+   MockSafeArchiveAnalyzer& GetSafeArchiveAnalyzer();
+ #endif
+ 
+@@ -112,7 +123,9 @@ class FakeFileUtilService : public chrome::mojom::FileUtilService {
+       mojo::PendingReceiver<chrome::mojom::ZipFileCreator> receiver) override;
+ #endif
+ 
+-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && \
++    (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) || \
++     BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS))
+   void BindSafeArchiveAnalyzer(
+       mojo::PendingReceiver<chrome::mojom::SafeArchiveAnalyzer> receiver)
+       override;
+@@ -129,7 +142,9 @@ class FakeFileUtilService : public chrome::mojom::FileUtilService {
+ 
+   mojo::Receiver<chrome::mojom::FileUtilService> receiver_;
+ 
+-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && \
++    (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) || \
++     BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS))
+   MockSafeArchiveAnalyzer safe_archive_analyzer_;
+ #endif
+ };
+diff --git a/chrome/services/file_util/file_util_service.cc b/chrome/services/file_util/file_util_service.cc
+index 8a013d6c64..c128d706d5 100644
+--- a/chrome/services/file_util/file_util_service.cc
++++ b/chrome/services/file_util/file_util_service.cc
+@@ -13,9 +13,12 @@
+ #include "build/build_config.h"
+ #include "chrome/services/file_util/buildflags.h"
+ #include "components/safe_browsing/buildflags.h"
++#include "components/enterprise/buildflags/buildflags.h"
+ #include "mojo/public/cpp/bindings/self_owned_receiver.h"
+ 
+-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && \
++    (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) || \
++     BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS))
+ #include "chrome/services/file_util/safe_archive_analyzer.h"
+ #endif
+ 
+@@ -41,7 +44,9 @@ void FileUtilService::BindZipFileCreator(
+ }
+ #endif
+ 
+-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && \
++    (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) || \
++     BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS))
+ void FileUtilService::BindSafeArchiveAnalyzer(
+     mojo::PendingReceiver<chrome::mojom::SafeArchiveAnalyzer> receiver) {
+   scoped_refptr<base::SequencedTaskRunner> runner =
+diff --git a/chrome/services/file_util/file_util_service.h b/chrome/services/file_util/file_util_service.h
+index d4ad6f41e2..441568f43c 100644
+--- a/chrome/services/file_util/file_util_service.h
++++ b/chrome/services/file_util/file_util_service.h
+@@ -9,6 +9,7 @@
+ #include "chrome/services/file_util/buildflags.h"
+ #include "chrome/services/file_util/public/mojom/file_util_service.mojom.h"
+ #include "components/safe_browsing/buildflags.h"
++#include "components/enterprise/buildflags/buildflags.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+ #include "mojo/public/cpp/bindings/receiver.h"
+ 
+@@ -29,7 +30,9 @@ class FileUtilService : public chrome::mojom::FileUtilService {
+       mojo::PendingReceiver<chrome::mojom::ZipFileCreator> receiver) override;
+ #endif
+ 
+-#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && \
++    (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) || \
++     BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS))
+   void BindSafeArchiveAnalyzer(
+       mojo::PendingReceiver<chrome::mojom::SafeArchiveAnalyzer> receiver)
+       override;
+diff --git a/chrome/services/file_util/public/cpp/BUILD.gn b/chrome/services/file_util/public/cpp/BUILD.gn
+index 7efbd1ff44..5a544abfcf 100644
+--- a/chrome/services/file_util/public/cpp/BUILD.gn
++++ b/chrome/services/file_util/public/cpp/BUILD.gn
+@@ -3,25 +3,31 @@
+ # found in the LICENSE file.
+ 
+ import("//components/safe_browsing/buildflags.gni")
++import("//chrome/services/file_util/public/features.gni")
+ import("//printing/buildflags/buildflags.gni")
++import("//testing/test.gni")
+ 
+ source_set("cpp") {
+   configs += [ "//build/config/compiler:wexit_time_destructors" ]
+   deps = [ "//chrome/common/safe_browsing:archive_analyzer_results" ]
+   public_deps = [ "//chrome/services/file_util/public/mojom" ]
+ 
+-  if (safe_browsing_mode == 1) {
++  if (safe_browsing_mode == 1 || enterprise_archive_analysis) {
+     sources = [
+       "sandboxed_rar_analyzer.cc",
+       "sandboxed_rar_analyzer.h",
+-      "sandboxed_seven_zip_analyzer.cc",
+-      "sandboxed_seven_zip_analyzer.h",
+       "sandboxed_zip_analyzer.cc",
+       "sandboxed_zip_analyzer.h",
+       "temporary_file_getter.cc",
+       "temporary_file_getter.h",
+     ]
+-    if (is_mac) {
++    if (safe_browsing_mode == 1) {
++      sources += [
++        "sandboxed_seven_zip_analyzer.cc",
++        "sandboxed_seven_zip_analyzer.h",
++      ]
++    }
++    if (safe_browsing_mode == 1 && is_mac) {
+       sources += [
+         "sandboxed_dmg_analyzer_mac.cc",
+         "sandboxed_dmg_analyzer_mac.h",
+@@ -44,17 +50,19 @@ source_set("cpp") {
+   }
+ }
+ 
+-if (safe_browsing_mode == 1) {
++if (safe_browsing_mode == 1 || enterprise_archive_analysis) {
+   source_set("unit_tests") {
+     testonly = true
+ 
+     sources = [
+       "sandboxed_rar_analyzer_unittest.cc",
+-      "sandboxed_seven_zip_analyzer_unittest.cc",
+       "sandboxed_zip_analyzer_unittest.cc",
+       "temporary_file_getter_unittest.cc",
+     ]
+-    if (is_mac) {
++    if (safe_browsing_mode == 1) {
++      sources += [ "sandboxed_seven_zip_analyzer_unittest.cc" ]
++    }
++    if (safe_browsing_mode == 1 && is_mac) {
+       sources += [ "sandboxed_dmg_analyzer_mac_unittest.cc" ]
+     }
+ 
+@@ -76,6 +84,15 @@ if (safe_browsing_mode == 1) {
+   }
+ }
+ 
++if (safe_browsing_mode == 0 && enterprise_archive_analysis) {
++  test("enterprise_archive_analyzer_unittests") {
++    deps = [
++      ":unit_tests",
++      "//chrome/test:test_support_unit",
++    ]
++  }
++}
++
+ if (is_chromeos) {
+   source_set("browser_tests") {
+     testonly = true
+diff --git a/chrome/services/file_util/public/cpp/sandboxed_zip_analyzer_unittest.cc b/chrome/services/file_util/public/cpp/sandboxed_zip_analyzer_unittest.cc
+index 62411e79fb..59878f6bd3 100644
+--- a/chrome/services/file_util/public/cpp/sandboxed_zip_analyzer_unittest.cc
++++ b/chrome/services/file_util/public/cpp/sandboxed_zip_analyzer_unittest.cc
+@@ -28,6 +28,7 @@
+ #include "chrome/services/file_util/file_util_service.h"
+ #include "chrome/services/file_util/public/mojom/safe_archive_analyzer.mojom.h"
+ #include "components/enterprise/obfuscation/core/download_obfuscator.h"
++#include "components/enterprise/buildflags/buildflags.h"
+ #include "components/enterprise/obfuscation/core/obfuscated_file_reader.h"
+ #include "components/enterprise/obfuscation/core/utils.h"
+ #include "components/safe_browsing/core/common/features.h"
+@@ -619,6 +620,30 @@ TEST_F(SandboxedZipAnalyzerTest, CanDeleteDuringExecution) {
+   run_loop.Run();
+ }
+ 
++#if BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS)
++TEST_F(SandboxedZipAnalyzerTest,
++       FileUtilServiceDisconnectCompletesEnterpriseAnalysis) {
++  mojo::PendingRemote<chrome::mojom::FileUtilService> remote;
++  auto service = std::make_unique<FakeFileUtilService>(
++      remote.InitWithNewPipeAndPassReceiver());
++  base::RunLoop run_loop;
++  safe_browsing::ArchiveAnalyzerResults results;
++  ResultsGetter results_getter(run_loop.QuitClosure(), &results);
++  auto analyzer = SandboxedZipAnalyzer::CreateAnalyzer(
++      dir_test_data_.AppendASCII("download_protection/encrypted.zip"),
++      /*password=*/std::nullopt, results_getter.GetCallback(),
++      std::move(remote));
++
++  // Simulate the utility service disappearing after the nested analyzer bind
++  // request is sent. The client disconnect handler must complete the callback.
++  service.reset();
++  analyzer->Start();
++  run_loop.Run();
++
++  EXPECT_FALSE(results.success);
++}
++#endif  // BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS)
++
+ TEST_F(SandboxedZipAnalyzerTest, InvalidPath) {
+   safe_browsing::ArchiveAnalyzerResults results;
+   RunAnalyzer(dir_test_data_.AppendASCII("download_protection/does_not_exist"),
+diff --git a/chrome/services/file_util/public/features.gni b/chrome/services/file_util/public/features.gni
+index b8aadc6a5f..2b2d157280 100644
+--- a/chrome/services/file_util/public/features.gni
++++ b/chrome/services/file_util/public/features.gni
+@@ -3,6 +3,7 @@
+ # found in the LICENSE file.
+ 
+ import("//extensions/buildflags/buildflags.gni")
++import("//components/enterprise/buildflags/buildflags.gni")
+ 
+ # IMPORTANT
+ # We are not accepting any new build flags in //chrome. See
+@@ -14,3 +15,9 @@ declare_args() {
+   # when Extensions are enabled.
+   enable_extractors = enable_extensions
+ }
++
++# Enterprise Cloud Analysis also consumes the sandboxed archive metadata API.
++# Keep this independent of Safe Browsing's download-protection mode and limit
++# the archive analyzers to desktop platforms.
++enterprise_archive_analysis = enterprise_cloud_content_analysis &&
++                              (is_win || is_mac || is_linux || is_chromeos)
+diff --git a/chrome/services/file_util/public/mojom/BUILD.gn b/chrome/services/file_util/public/mojom/BUILD.gn
+index b412bcbf6f..f58a2dff91 100644
+--- a/chrome/services/file_util/public/mojom/BUILD.gn
++++ b/chrome/services/file_util/public/mojom/BUILD.gn
+@@ -10,11 +10,17 @@ mojom("mojom") {
+   sources = [ "file_util_service.mojom" ]
+   enabled_features = []
+ 
+-  if (safe_browsing_mode == 1) {
++  if (safe_browsing_mode == 1 || enterprise_archive_analysis) {
+     sources += [ "safe_archive_analyzer.mojom" ]
+ 
++    if (enterprise_archive_analysis) {
++      enabled_features += [ "enterprise_archive_analysis" ]
++    }
++
+     # This is equivalent to SAFE_BROWSING_DOWNLOAD_PROTECTION && !IS_ANDROID.
+-    enabled_features += [ "safe_browsing_desktop_download_protection" ]
++    if (safe_browsing_mode == 1) {
++      enabled_features += [ "safe_browsing_desktop_download_protection" ]
++    }
+   }
+ 
+   public_deps = [
+@@ -37,7 +43,7 @@ mojom("mojom") {
+ 
+   cpp_typemaps = []
+ 
+-  if (safe_browsing_mode == 1) {
++  if (safe_browsing_mode == 1 || enterprise_archive_analysis) {
+     cpp_typemaps += [
+       {
+         types = [
+@@ -52,6 +58,7 @@ mojom("mojom") {
+         traits_public_deps = [
+           "//chrome/common/safe_browsing:archive_analyzer_results",
+           "//components/safe_browsing:buildflags",
++          "//components/enterprise/buildflags",
+           "//components/safe_browsing/core/common/proto:crx_info_proto",
+           "//components/safe_browsing/core/common/proto:csd_proto",
+           "//ipc:protobuf_support",
+diff --git a/chrome/services/file_util/public/mojom/file_util_service.mojom b/chrome/services/file_util/public/mojom/file_util_service.mojom
+index aace667a6e..c3540a8e59 100644
+--- a/chrome/services/file_util/public/mojom/file_util_service.mojom
++++ b/chrome/services/file_util/public/mojom/file_util_service.mojom
+@@ -6,7 +6,7 @@ module chrome.mojom;
+ 
+ import "sandbox/policy/mojom/sandbox.mojom";
+ 
+-[EnableIf=safe_browsing_desktop_download_protection]
++[EnableIf=safe_browsing_desktop_download_protection|enterprise_archive_analysis]
+ import "chrome/services/file_util/public/mojom/safe_archive_analyzer.mojom";
+ 
+ [EnableIf=is_chromeos]
+@@ -24,7 +24,7 @@ interface FileUtilService {
+   BindZipFileCreator(pending_receiver<ZipFileCreator> receiver);
+ 
+   // Binds an instance of the SafeArchiveAnalyzer interface.
+-  [EnableIf=safe_browsing_desktop_download_protection]
++  [EnableIf=safe_browsing_desktop_download_protection|enterprise_archive_analysis]
+   BindSafeArchiveAnalyzer(pending_receiver<SafeArchiveAnalyzer> receiver);
+ 
+   // Binds a SingleFileTarFileExtractor instance of the SingleFileExtractor
+diff --git a/chrome/services/file_util/public/mojom/safe_archive_analyzer.mojom b/chrome/services/file_util/public/mojom/safe_archive_analyzer.mojom
+index 3660afb174..087b106634 100644
+--- a/chrome/services/file_util/public/mojom/safe_archive_analyzer.mojom
++++ b/chrome/services/file_util/public/mojom/safe_archive_analyzer.mojom
+@@ -25,6 +25,7 @@ interface SafeArchiveAnalyzer {
+ 
+   // Build flag SAFE_BROWSING_DOWNLOAD_PROTECTION, on OS_MAC: Analyze the
+   // `dmg_file` for malicious download protection.
++  [EnableIf=safe_browsing_desktop_download_protection]
+   AnalyzeDmgFile(mojo_base.mojom.ReadOnlyFile dmg_file,
+                  pending_remote<TemporaryFileGetter> temp_file_getter)
+       => (SafeArchiveAnalyzerResults results);
+@@ -47,6 +48,7 @@ interface SafeArchiveAnalyzer {
+   // performance, each folder is extracted in its entirety (using the first temp
+   // file), and then files are extracted from the decompressed folders (using
+   // the second).
++  [EnableIf=safe_browsing_desktop_download_protection]
+   AnalyzeSevenZipFile(mojo_base.mojom.ReadOnlyFile seven_zip_file,
+                       pending_remote<TemporaryFileGetter> temp_file_getter)
+       => (SafeArchiveAnalyzerResults results);
+diff --git a/chrome/services/file_util/public/mojom/safe_archive_analyzer_param_traits.h b/chrome/services/file_util/public/mojom/safe_archive_analyzer_param_traits.h
+index 0da9cc660e..581a993aa6 100644
+--- a/chrome/services/file_util/public/mojom/safe_archive_analyzer_param_traits.h
++++ b/chrome/services/file_util/public/mojom/safe_archive_analyzer_param_traits.h
+@@ -10,11 +10,13 @@
+ #include "chrome/common/safe_browsing/archive_analyzer_results.h"
+ #include "chrome/common/safe_browsing/ipc_protobuf_message_macros.h"
+ #include "components/safe_browsing/buildflags.h"
++#include "components/enterprise/buildflags/buildflags.h"
+ #include "ipc/param_traits_macros.h"
+ #include "ipc/param_traits_protobuf_utils.h"
+ 
+-#if !BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+-#error BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) should be set.
++#if !BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && \
++    !BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS)
++#error Archive analysis requires Safe Browsing download protection or Enterprise Cloud Analysis.
+ #endif
+ 
+ #undef IPC_MESSAGE_EXPORT
+diff --git a/chrome/services/file_util/safe_archive_analyzer.cc b/chrome/services/file_util/safe_archive_analyzer.cc
+index 1e4b57253d..07998e97b2 100644
+--- a/chrome/services/file_util/safe_archive_analyzer.cc
++++ b/chrome/services/file_util/safe_archive_analyzer.cc
+@@ -11,6 +11,7 @@
+ #include "chrome/services/file_util/regular_archive_analysis_delegate.h"
+ #include "chrome/services/file_util/safe_archive_analyzer.h"
+ #include "chrome/utility/safe_browsing/archive_analysis_delegate.h"
++#include "components/safe_browsing/buildflags.h"
+ #include "components/enterprise/obfuscation/core/utils.h"
+ 
+ namespace {
+@@ -47,6 +48,7 @@ void SafeArchiveAnalyzer::AnalyzeZipFile(
+                         std::move(temp_file_getter_callback), &results_);
+ }
+ 
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+ void SafeArchiveAnalyzer::AnalyzeDmgFile(
+     base::File dmg_file,
+     mojo::PendingRemote<chrome::mojom::TemporaryFileGetter> temp_file_getter,
+@@ -77,6 +79,7 @@ void SafeArchiveAnalyzer::AnalyzeDmgFile(
+   NOTREACHED();
+ #endif
+ }
++#endif
+ 
+ void SafeArchiveAnalyzer::AnalyzeRarFile(
+     base::File rar_file,
+@@ -107,6 +110,7 @@ void SafeArchiveAnalyzer::AnalyzeRarFile(
+ #endif
+ }
+ 
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+ void SafeArchiveAnalyzer::AnalyzeSevenZipFile(
+     base::File seven_zip_file,
+     mojo::PendingRemote<chrome::mojom::TemporaryFileGetter> temp_file_getter,
+@@ -132,6 +136,7 @@ void SafeArchiveAnalyzer::AnalyzeSevenZipFile(
+                               std::move(analysis_finished_callback),
+                               std::move(temp_file_getter_callback), &results_);
+ }
++#endif
+ 
+ void SafeArchiveAnalyzer::AnalyzeObfuscatedZipFile(
+     base::File zip_file,
+diff --git a/chrome/services/file_util/safe_archive_analyzer.h b/chrome/services/file_util/safe_archive_analyzer.h
+index 817aa4ad0e..80503d8332 100644
+--- a/chrome/services/file_util/safe_archive_analyzer.h
++++ b/chrome/services/file_util/safe_archive_analyzer.h
+@@ -9,11 +9,14 @@
+ 
+ #include "chrome/common/safe_browsing/archive_analyzer_results.h"
+ #include "chrome/services/file_util/public/mojom/safe_archive_analyzer.mojom.h"
++#include "components/safe_browsing/buildflags.h"
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+ #include "chrome/utility/safe_browsing/seven_zip_analyzer.h"
++#endif
+ #include "chrome/utility/safe_browsing/zip_analyzer.h"
+ #include "mojo/public/cpp/bindings/remote.h"
+ 
+-#if BUILDFLAG(IS_MAC)
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && BUILDFLAG(IS_MAC)
+ #include "chrome/utility/safe_browsing/mac/dmg_analyzer.h"
+ #endif
+ 
+@@ -44,19 +47,23 @@ class SafeArchiveAnalyzer : public chrome::mojom::SafeArchiveAnalyzer {
+       const std::optional<std::string>& password,
+       mojo::PendingRemote<chrome::mojom::TemporaryFileGetter> temp_file_getter,
+       AnalyzeZipFileCallback callback) override;
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+   void AnalyzeDmgFile(
+       base::File dmg_file,
+       mojo::PendingRemote<chrome::mojom::TemporaryFileGetter> temp_file_getter,
+       AnalyzeDmgFileCallback callback) override;
++#endif
+   void AnalyzeRarFile(
+       base::File rar_file,
+       const std::optional<std::string>& password,
+       mojo::PendingRemote<chrome::mojom::TemporaryFileGetter> temp_file_getter,
+       AnalyzeRarFileCallback callback) override;
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+   void AnalyzeSevenZipFile(
+       base::File seven_zip_file,
+       mojo::PendingRemote<chrome::mojom::TemporaryFileGetter> temp_file_getter,
+       AnalyzeSevenZipFileCallback callback) override;
++#endif
+ 
+   void AnalyzeObfuscatedZipFile(
+       base::File zip_file,
+@@ -84,10 +91,12 @@ class SafeArchiveAnalyzer : public chrome::mojom::SafeArchiveAnalyzer {
+   void Timeout();
+ 
+   safe_browsing::ZipAnalyzer zip_analyzer_;
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+   safe_browsing::SevenZipAnalyzer seven_zip_analyzer_;
+ #if BUILDFLAG(IS_MAC)
+   safe_browsing::dmg::DMGAnalyzer dmg_analyzer_;
+ #endif
++#endif
+ #if USE_UNRAR
+   safe_browsing::RarAnalyzer rar_analyzer_;
+ #endif
+diff --git a/chrome/utility/BUILD.gn b/chrome/utility/BUILD.gn
+index 500cbc7ed8..9a3c151fa9 100644
+--- a/chrome/utility/BUILD.gn
++++ b/chrome/utility/BUILD.gn
+@@ -4,6 +4,7 @@
+ 
+ import("//build/config/sysroot.gni")
+ import("//chrome/common/features.gni")
++import("//chrome/services/file_util/public/features.gni")
+ import("//chrome/services/speech/buildflags/buildflags.gni")
+ import("//components/on_device_translation/buildflags/features.gni")
+ import("//crypto/features.gni")
+@@ -241,7 +242,7 @@ static_library("utility") {
+     }
+   }
+ 
+-  if (safe_browsing_mode == 1) {
++  if (safe_browsing_mode == 1 || enterprise_archive_analysis) {
+     deps += [
+       "//chrome/services/file_util",
+       "//chrome/utility/safe_browsing",
+diff --git a/chrome/utility/safe_browsing/BUILD.gn b/chrome/utility/safe_browsing/BUILD.gn
+index fd0c7d1205..0af06ab592 100644
+--- a/chrome/utility/safe_browsing/BUILD.gn
++++ b/chrome/utility/safe_browsing/BUILD.gn
+@@ -3,23 +3,29 @@
+ # found in the LICENSE file.
+ 
+ import("//components/safe_browsing/buildflags.gni")
++import("//chrome/services/file_util/public/features.gni")
+ 
+ source_set("safe_browsing") {
+   deps = []
+ 
+-  if (safe_browsing_mode == 1) {
++  if (safe_browsing_mode == 1 || enterprise_archive_analysis) {
+     sources = [
+       "archive_analysis_delegate.h",
+       "archive_analyzer.cc",
+       "archive_analyzer.h",
+-      "seven_zip_analyzer.cc",
+-      "seven_zip_analyzer.h",
+       "zip_analyzer.cc",
+       "zip_analyzer.h",
+       "zip_writer_delegate.h",
+     ]
+ 
+-    if (is_mac) {
++    if (safe_browsing_mode == 1) {
++      sources += [
++        "seven_zip_analyzer.cc",
++        "seven_zip_analyzer.h",
++      ]
++    }
++
++    if (safe_browsing_mode == 1 && is_mac) {
+       sources += [
+         "mac/dmg_analyzer.cc",
+         "mac/dmg_analyzer.h",
+@@ -34,10 +40,13 @@ source_set("safe_browsing") {
+       "//chrome/common/safe_browsing:download_type_util",
+       "//components/safe_browsing/content/common:file_type_policies",
+       "//components/safe_browsing/core/common",
+-      "//third_party/lzma_sdk/google:seven_zip_reader",
+       "//third_party/zlib",
+     ]
+ 
++    if (safe_browsing_mode == 1) {
++      deps += [ "//third_party/lzma_sdk/google:seven_zip_reader" ]
++    }
++
+     if (safe_browsing_use_unrar) {
+       deps += [ "//third_party/unrar" ]
+       sources += [
+@@ -47,7 +56,7 @@ source_set("safe_browsing") {
+     }
+     defines = [ "USE_UNRAR=$safe_browsing_use_unrar" ]
+ 
+-    if (is_mac) {
++    if (safe_browsing_mode == 1 && is_mac) {
+       deps += [
+         "//base",
+         "//chrome/common/safe_browsing:archive_analyzer_results",
+diff --git a/chrome/utility/safe_browsing/archive_analyzer.cc b/chrome/utility/safe_browsing/archive_analyzer.cc
+index 49e7ae814b..71664f34e1 100644
+--- a/chrome/utility/safe_browsing/archive_analyzer.cc
++++ b/chrome/utility/safe_browsing/archive_analyzer.cc
+@@ -8,12 +8,15 @@
+ #include "build/build_config.h"
+ #include "build/buildflag.h"
+ #include "chrome/common/safe_browsing/archive_analyzer_results.h"
++#include "components/safe_browsing/buildflags.h"
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+ #include "chrome/utility/safe_browsing/seven_zip_analyzer.h"
++#endif
+ #include "chrome/utility/safe_browsing/zip_analyzer.h"
+ #include "components/safe_browsing/content/common/proto/download_file_types.pb.h"
+ #include "components/safe_browsing/core/common/features.h"
+ 
+-#if BUILDFLAG(IS_MAC)
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && BUILDFLAG(IS_MAC)
+ #include "chrome/utility/safe_browsing/mac/dmg_analyzer.h"
+ #endif
+ 
+@@ -28,11 +31,14 @@ std::unique_ptr<ArchiveAnalyzer> ArchiveAnalyzer::CreateForArchiveType(
+     DownloadFileType_InspectionType file_type) {
+   if (file_type == DownloadFileType::ZIP) {
+     return std::make_unique<ZipAnalyzer>();
+-  } else if (file_type == DownloadFileType::SEVEN_ZIP) {
++  }
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
++  else if (file_type == DownloadFileType::SEVEN_ZIP) {
+     return std::make_unique<SevenZipAnalyzer>();
+   }
++#endif
+ 
+-#if BUILDFLAG(IS_MAC)
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && BUILDFLAG(IS_MAC)
+   if (file_type == DownloadFileType::DMG) {
+     return std::make_unique<dmg::DMGAnalyzer>();
+   }
+diff --git a/chrome/utility/services.cc b/chrome/utility/services.cc
+index 22b15ea3a1..9783a1a49e 100644
+--- a/chrome/utility/services.cc
++++ b/chrome/utility/services.cc
+@@ -16,6 +16,7 @@
+ #include "components/password_manager/services/csv_password/public/mojom/csv_password_parser.mojom.h"
+ #include "components/private_ai/oak_session_service/oak_session_service.h"  // nogncheck
+ #include "components/safe_browsing/buildflags.h"
++#include "components/enterprise/buildflags/buildflags.h"
+ #include "components/services/patch/file_patcher_impl.h"
+ #include "components/services/patch/public/mojom/file_patcher.mojom.h"
+ #include "components/services/unzip/public/mojom/unzipper.mojom.h"
+@@ -83,6 +84,7 @@
+ 
+ #if (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && \
+      !BUILDFLAG(IS_ANDROID)) ||                      \
++    BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS) ||   \
+     BUILDFLAG(IS_CHROMEOS)
+ #include "chrome/services/file_util/file_util_service.h"  // nogncheck
+ #endif
+@@ -302,6 +304,7 @@ auto RunScreenAIServiceFactory(
+ 
+ #if (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && \
+      !BUILDFLAG(IS_ANDROID)) ||                      \
++    BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS) ||   \
+     BUILDFLAG(IS_CHROMEOS)
+ auto RunFileUtil(
+     mojo::PendingReceiver<chrome::mojom::FileUtilService> receiver) {
+@@ -524,6 +527,7 @@ void RegisterMainThreadServices(mojo::ServiceFactory& services) {
+ 
+ #if (BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && \
+      !BUILDFLAG(IS_ANDROID)) ||                      \
++    BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS) ||   \
+     BUILDFLAG(IS_CHROMEOS)
+   services.Add(RunFileUtil);
+ #endif
+diff --git a/components/enterprise/connectors/core/cloud_content_scanning/cloud_binary_upload_service_base.cc b/components/enterprise/connectors/core/cloud_content_scanning/cloud_binary_upload_service_base.cc
+index c5472352b6..8172440e61 100644
+--- a/components/enterprise/connectors/core/cloud_content_scanning/cloud_binary_upload_service_base.cc
++++ b/components/enterprise/connectors/core/cloud_content_scanning/cloud_binary_upload_service_base.cc
+@@ -8,6 +8,7 @@
+ #include "base/metrics/histogram_functions.h"
+ #include "base/task/bind_post_task.h"
+ #include "base/task/thread_pool.h"
++#include "components/safe_browsing/buildflags.h"
+ #include "components/enterprise/common/proto/connectors.pb.h"
+ #include "components/enterprise/connectors/core/cloud_content_scanning/binary_upload_service.h"
+ #include "components/enterprise/connectors/core/cloud_content_scanning/deep_scanning_utils.h"
+@@ -19,7 +20,7 @@
+ #include "net/traffic_annotation/network_traffic_annotation.h"
+ #include "url/gurl.h"
+ 
+-#if !BUILDFLAG(IS_IOS)
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_IOS)
+ #include "components/safe_browsing/content/browser/web_ui/web_ui_content_info_singleton.h"
+ #endif
+ 
+@@ -362,7 +363,7 @@ void CloudBinaryUploadServiceBase::LogResponseDebugInfo(
+     ScanRequestUploadResult result,
+     BinaryUploadRequest* request,
+     const ContentAnalysisResponse& response) {
+-#if !BUILDFLAG(IS_IOS)
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_IOS)
+   safe_browsing::WebUIContentInfoSingleton::GetInstance()
+       ->AddToDeepScanRequests(request->per_profile_request(),
+                               request->access_token(), upload_info,
+diff --git a/components/enterprise/connectors/core/cloud_content_scanning/files_request_handler_base.cc b/components/enterprise/connectors/core/cloud_content_scanning/files_request_handler_base.cc
+index 4dea9da6e2..01815e2ff3 100644
+--- a/components/enterprise/connectors/core/cloud_content_scanning/files_request_handler_base.cc
++++ b/components/enterprise/connectors/core/cloud_content_scanning/files_request_handler_base.cc
+@@ -8,13 +8,14 @@
+ #include "base/notreached.h"
+ #include "base/strings/strcat.h"
+ #include "base/task/bind_post_task.h"
++#include "components/safe_browsing/buildflags.h"
+ #include "components/enterprise/connectors/core/cloud_content_scanning/deep_scanning_utils.h"
+ #include "components/enterprise/connectors/core/common.h"
+ #include "components/enterprise/connectors/core/features.h"
+ #include "components/enterprise/connectors/core/reporting_constants.h"
+ #include "components/enterprise/connectors/core/reporting_event_router.h"
+ 
+-#if !BUILDFLAG(IS_IOS)
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_IOS)
+ #include "components/safe_browsing/content/browser/web_ui/web_ui_content_info_singleton.h"
+ #endif
+ 
+@@ -240,7 +241,7 @@ void FilesRequestHandlerBase::MaybeTrackCancellation() {
+ void FilesRequestHandlerBase::FinishRequestEarly(
+     std::unique_ptr<BinaryUploadRequest> request,
+     ScanRequestUploadResult result) {
+-#if !BUILDFLAG(IS_IOS)
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_IOS)
+   // We add the request here in case we never actually uploaded anything, so it
+   // wasn't added in OnGetRequestData
+   safe_browsing::WebUIContentInfoSingleton::GetInstance()
+diff --git a/components/enterprise/connectors/core/cloud_content_scanning/multipart_uploader.cc b/components/enterprise/connectors/core/cloud_content_scanning/multipart_uploader.cc
+index 61ae85a6db..d748b9eb3c 100644
+--- a/components/enterprise/connectors/core/cloud_content_scanning/multipart_uploader.cc
++++ b/components/enterprise/connectors/core/cloud_content_scanning/multipart_uploader.cc
+@@ -20,6 +20,7 @@
+ #include "build/build_config.h"
+ #include "components/file_access/scoped_file_access.h"
+ #include "components/file_access/scoped_file_access_delegate.h"
++#include "components/safe_browsing/buildflags.h"
+ #include "components/safe_browsing/core/common/features.h"
+ #include "components/safe_browsing/core/common/utils.h"
+ #include "net/base/mime_util.h"
+@@ -32,7 +33,7 @@
+ #include "services/network/public/mojom/data_pipe_getter.mojom.h"
+ #include "services/network/public/mojom/url_response_head.mojom.h"
+ 
+-#if !BUILDFLAG(IS_IOS)
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_IOS)
+ #include "components/safe_browsing/content/browser/web_ui/web_ui_content_info_singleton.h"
+ #endif
+ 
+@@ -309,7 +310,7 @@ void MultipartUploadRequest::SendRequest() {
+   resource_request->url = base_url_;
+   resource_request->method = "POST";
+   SetRequestHeaders(resource_request.get());
+-#if !BUILDFLAG(IS_IOS)
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_IOS)
+   safe_browsing::WebUIContentInfoSingleton::GetInstance()
+       ->AddHeadersToDeepScanRequests(request_token_, resource_request->headers);
+ #endif
+diff --git a/components/enterprise/connectors/core/cloud_content_scanning/resumable_uploader_base.cc b/components/enterprise/connectors/core/cloud_content_scanning/resumable_uploader_base.cc
+index 258606a476..3025b30873 100644
+--- a/components/enterprise/connectors/core/cloud_content_scanning/resumable_uploader_base.cc
++++ b/components/enterprise/connectors/core/cloud_content_scanning/resumable_uploader_base.cc
+@@ -20,6 +20,7 @@
+ #include "base/time/time.h"
+ #include "components/enterprise/connectors/core/features.h"
+ #include "components/file_access/scoped_file_access_delegate.h"
++#include "components/safe_browsing/buildflags.h"
+ #include "components/safe_browsing/core/common/utils.h"
+ #include "net/http/http_status_code.h"
+ #include "net/traffic_annotation/network_traffic_annotation.h"
+@@ -28,7 +29,7 @@
+ #include "services/network/public/cpp/simple_url_loader.h"
+ #include "services/network/public/mojom/url_response_head.mojom.h"
+ 
+-#if !BUILDFLAG(IS_IOS)
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_IOS)
+ #include "components/safe_browsing/content/browser/web_ui/web_ui_content_info_singleton.h"
+ #endif
+ 
+@@ -274,7 +275,7 @@ void ResumableUploadRequestBase::SendMetadataRequest() {
+   resource_request->url = base_url_;
+   resource_request->method = "POST";
+   SetMetadataRequestHeaders(resource_request.get());
+-#if !BUILDFLAG(IS_IOS)
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION) && !BUILDFLAG(IS_IOS)
+   safe_browsing::WebUIContentInfoSingleton::GetInstance()
+       ->AddHeadersToDeepScanRequests(request_token_, resource_request->headers);
+ #endif
+diff --git a/components/safe_browsing/content/browser/BUILD.gn b/components/safe_browsing/content/browser/BUILD.gn
+index 0eb3494b09..48e3b31a28 100644
+--- a/components/safe_browsing/content/browser/BUILD.gn
++++ b/components/safe_browsing/content/browser/BUILD.gn
+@@ -2,6 +2,7 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
++import("//components/enterprise/buildflags/buildflags.gni")
+ import("//components/safe_browsing/buildflags.gni")
+ 
+ # NOTE: This target is separated from :browser as
+@@ -142,7 +143,7 @@ source_set("browser") {
+     "//net:extras",
+     "//services/network/public/mojom",
+   ]
+-  if (safe_browsing_mode > 0) {
++  if (safe_browsing_mode > 0 || enterprise_cloud_content_analysis) {
+     sources += [
+       "safe_browsing_navigation_observer.cc",
+       "safe_browsing_navigation_observer.h",
+diff --git a/components/safe_browsing/content/common/BUILD.gn b/components/safe_browsing/content/common/BUILD.gn
+index c40b90483e..b7b6a34669 100644
+--- a/components/safe_browsing/content/common/BUILD.gn
++++ b/components/safe_browsing/content/common/BUILD.gn
+@@ -3,6 +3,7 @@
+ # found in the LICENSE file.
+ 
+ import("//components/safe_browsing/buildflags.gni")
++import("//components/enterprise/buildflags/buildflags.gni")
+ import("//mojo/public/tools/bindings/mojom.gni")
+ 
+ mojom("interfaces") {
+@@ -22,7 +23,7 @@ mojom("interfaces") {
+   }
+ }
+ 
+-if (safe_browsing_mode != 0) {
++if (safe_browsing_mode != 0 || enterprise_cloud_content_analysis) {
+   source_set("file_type_policies") {
+     sources = [
+       "file_type_policies.cc",

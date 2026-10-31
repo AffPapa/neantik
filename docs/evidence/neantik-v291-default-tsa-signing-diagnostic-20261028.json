@@ -1,0 +1,29 @@
+{
+  "attempt": {
+    "candidate": "/private/tmp/neantik-release-v1/dist/private/candidates/cac3157c5fdf47f7b77332208648eb68/NeAntik.app",
+    "candidateManagerExecutableSHA256": "17c767f961de21a14d9720acb01b61cc54a6ccca44e22166ff15a6e28fde964c",
+    "candidateSignatureMetadata": {
+      "CDHash": "5a2a6f3825d16f8ad6886a275103449dccedc6f4",
+      "TeamIdentifier": "H6VGU2M6JD",
+      "Timestamp": "27 Oct 2026\u202f\u0433. at 19:14:50"
+    },
+    "candidateSignatureMetadataMatchesParent": true,
+    "exactError": "A timestamp was expected but was not found",
+    "packageStage": "manager signing",
+    "parentManagerExecutableSHA256": "17c767f961de21a14d9720acb01b61cc54a6ccca44e22166ff15a6e28fde964c"
+  },
+  "diagnosticInterpretation": "The 302 GET response is not evidence of a signing timestamp. codesign still failed to bind a timestamp despite TCP/80 availability; probe explicit Apple TSA URL before another candidate signing attempt.",
+  "id": "V291",
+  "network": {
+    "httpPort80": "open over IPv4/IPv6",
+    "httpsPort443": "connection refused",
+    "rootAndTs01GET": "HTTP 302 to https://www.apple.com/certificateauthority/",
+    "syntheticRfc3161POST": "HTTP 200 application/timestamp-reply; response 4297 bytes; cryptographic verification not yet performed"
+  },
+  "observedAtUTC": "2026-10-27T18:24:30Z",
+  "parentCandidateUnmodified": true,
+  "releaseQualified": false,
+  "scope": "Private candidate packaging diagnostic. Candidate remains unqualified; no launch/notarization/publication.",
+  "status": "DEFAULT_CODESIGN_TIMESTAMP_STILL_MISSING; APPLE_TSA_TCP80_REACHABLE_BUT_SIGNER_DID_NOT_BIND_TIMESTAMP",
+  "timestampBypass": "not used"
+}

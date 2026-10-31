@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from runtime_candidate_lock import PROJECT_ROOT, verify_candidate_lock
+from runtime_build_path import verify_build_args
 from runtime_source_provenance import (
     SourceProvenanceError,
     atomic_write_json,
@@ -45,15 +46,16 @@ def validate_report_binding(
     report_path: Path,
     *,
     project_root: Path = PROJECT_ROOT,
+    source_root: Path | None = None,
 ) -> None:
-    expected_args = (
-        provenance.parent / "src" / "out" / "Default" / "args.gn"
-    )
-    if args_gn.resolve() != expected_args.resolve():
-        raise SourceProvenanceError(
-            "Candidate promotion requires canonical build-root "
-            "src/out/Default/args.gn"
-        )
+    try:
+        lock = load_report(candidate_lock)
+        if lock.get('variant') == 'recipient-privacy-policy-v1' and source_root is None:
+            raise ValueError('Recipient privacy promotion requires explicit --source-root')
+        verify_build_args(source_root if source_root is not None else provenance.parent / "src", args_gn,
+                          lock, project_root)
+    except (OSError, ValueError) as error:
+        raise SourceProvenanceError(str(error)) from error
     candidate = verify_candidate_lock(
         candidate_lock,
         provenance,
@@ -109,6 +111,7 @@ def promote(
     runtime_report: Path,
     *,
     project_root: Path = PROJECT_ROOT,
+    source_root: Path | None = None,
 ) -> Path:
     project_root = project_root.resolve()
     published_lock = (
@@ -134,7 +137,7 @@ def promote(
         provenance,
         args_gn,
         runtime_report,
-        project_root=project_root,
+        project_root=project_root, source_root=source_root,
     )
     with tempfile.TemporaryDirectory(prefix="neantik-candidate-promotion-") as temp:
         fresh_report = Path(temp) / "fresh-runtime-report.json"
@@ -163,7 +166,7 @@ def promote(
             provenance,
             args_gn,
             fresh_report,
-            project_root=project_root,
+            project_root=project_root, source_root=source_root,
         )
     candidate = load_report(candidate_lock)
     atomic_write_json(published_lock, candidate)
@@ -187,6 +190,7 @@ def main() -> int:
     parser.add_argument("args_gn", type=Path)
     parser.add_argument("runtime_report", type=Path)
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
+    parser.add_argument("--source-root", type=Path)
     parser.add_argument(
         "--confirm-promote-source-lock",
         action="store_true",
@@ -207,7 +211,7 @@ def main() -> int:
             args.runtime_app,
             args.args_gn,
             args.runtime_report,
-            project_root=args.project_root,
+            project_root=args.project_root, source_root=args.source_root,
         )
     except (
         OSError,

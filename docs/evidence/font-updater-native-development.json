@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-on-isolated-development-copies",
+  "candidateVersion": "0.8.18",
+  "candidateBuild": 130,
+  "runtimeVersion": "156.0.8078.12",
+  "runtimeRecord": "font-system-v1",
+  "runtimeSHA256": "f0bd944a15e57476f7f2d78ea8df8f743dd9d7dbd1647c69c8e89d5754485b80",
+  "evidenceSHA256": "dd2804eff2ebf60cccf1e99a072837278814bd1a13e6c6110014785517dd0d19",
+  "nativeControls": [
+    {
+      "control": "successful-install-and-authenticated-ACK",
+      "passed": true,
+      "seconds": 58.619,
+      "committed": true,
+      "handedOff": true,
+      "bothSlotsAndDecisionHistoryVerified": true
+    },
+    {
+      "control": "failure-before-ACK-and-actual-rollback",
+      "passed": true,
+      "seconds": 55.8,
+      "committed": false,
+      "handedOff": false,
+      "bothSlotsAndDecisionHistoryVerified": true
+    }
+  ],
+  "correction": "DEBUG QA owner observes resources via retained install-slot custody after transfer, rather than the previous source path",
+  "targetedSwift": {"tests": 22, "suites": 3, "skipped": 3, "result": "PASS"},
+  "isolation": {
+    "temporarySlots": true,
+    "separateQABundleIdentities": true,
+    "existingCertificate": true,
+    "newCertificates": false,
+    "userProfilesUsed": false,
+    "productionKeychainUsed": false,
+    "shippingCandidateModified": false
+  },
+  "releaseQualified": false,
+  "limitations": [
+    "Current DEBUG manager/owner and exact candidate runtime/evidence copied into separately signed QA applications",
+    "Production signed-feed installation is a separate gate",
+    "Published129 updater cannot admit the successor runtime; first upgrade requires signed DMG/ZIP",
+    "Exact final signed candidate, notarization, Gatekeeper and hosted bytes remain pending"
+  ]
+}

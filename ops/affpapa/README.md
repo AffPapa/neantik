@@ -3,16 +3,24 @@
 This directory is the source of truth for the least-privilege hosted release
 channel at `https://affpapa.org/neantik`.
 
+The tracked `bootstrap/content.json` and the Blade template fallback values
+are a historical source snapshot for this checkout (currently `0.3.19`), not
+the live public release contract. Live `release.json` is authoritative when
+it exists. Do not hand-edit the fallback to copy a newer public release: the
+six-file snapshot must be generated from the exact verified candidate with
+`prepare-affpapa-release-snapshot.py`, then published only through the guarded
+release client.
+
 ## Operator command
 
 Both local Claude and Codex use the same wrapper:
 
 ```bash
 cd /path/to/neantik-open-source
-./scripts/neantik-affpapa-release site-doctor
+./scripts/neantik-affpapa-release doctor
 ```
 
-`site-doctor` is the explicit site access check: it verifies the local key permissions and
+`doctor` is the single access check: it verifies the local key permissions and
 both pinned fingerprints, connects through the restricted SSH identity,
 confirms that arbitrary commands remain denied, and checks the live landing,
 JSON manifests, DMG and ZIP.
@@ -141,6 +149,6 @@ Root-owned command updates are intentionally outside the restricted identity.
 When these reviewed scripts change, a server administrator installs one
 transactional batch with `install-server-batch.sh`; the installer backs up the
 old commands, preserves live `release.json`, validates syntax/sudoers/view
-cache, and records a root-owned SHA-256 manifest. Subsequent `site-doctor`
-and `publish` calls fail closed if the server manifest differs from the
-reviewed local scripts.
+cache, and records a root-owned SHA-256 manifest. Subsequent `doctor` and
+`publish` calls fail closed if the server manifest differs from the reviewed
+local scripts.

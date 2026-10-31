@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v257-production-qa-data-root-boundary-20261027",
+  "observedAtUTC": "2026-10-27T13:59:35.061329+00:00",
+  "status": "EXACT_PRODUCTION_CANDIDATE_AND_SIGNATURE_VERIFIED; ISOLATED_DATA_ROOT_HOOK_ABSENT; NO_LAUNCH",
+  "scope": "Read-only verification of the retained exact b960 candidate and production data-root behavior; no package mutation or native launch.",
+  "candidate": {
+    "id": "b96006a994664a80bf89cd757f932eff",
+    "root": "/private/tmp/neantik-v193-touch-qualified/dist/private/candidates/b96006a994664a80bf89cd757f932eff",
+    "manifestSHA256": "4d10449a7674c908c333f31d81f2b1ce3a5ce0178716ecda0b8daddd6c6924c8",
+    "bundleID": "app.neantik.desktop",
+    "version": "1.0.0 (200)",
+    "strictDeepSignature": "PASS",
+    "releaseQualified": false
+  },
+  "dataSafety": {
+    "source": "Sources/NeAntik/ApplicationEnvironment.swift",
+    "finding": "The disposable NEANTIK_DEVELOPMENT_DATA_ROOT override is accepted only by the development bundle. The production bundle resolves to ~/Library/Application Support/NeAntik.",
+    "candidateFinding": "The b960 production app is not the existing build200 Dev QA app and cannot use the Dev fixture-root override.",
+    "decision": "Do not relaunch the exact production candidate through the real production data root. V252 remains valid historical route evidence and is not repeated."
+  },
+  "nextAction": "Prepare a private production-mode diagnostic harness with a synthetic data-root capability compiled only into diagnostic bytes, strict root/path/permission checks, exact PID/window/broker/upstream observers, and release-packager rejection of diagnostic mode. Then run one headed isolated test after consumer preflight and fresh native admission; do not change shipped proxy behavior without the resulting evidence.",
+  "noMutation": true,
+  "releaseQualified": false
+}

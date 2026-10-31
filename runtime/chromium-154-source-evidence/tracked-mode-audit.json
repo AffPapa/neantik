@@ -1,0 +1,2946 @@
+{
+  "scope": "tracked executable bit and symlink kind compared to index; deletions covered separately",
+  "checked": 971576,
+  "changes": [
+    {
+      "path": "PRESUBMIT_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "agents/infra/review_rag_indexer/gerrit_steps_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "agents/infra/review_rag_indexer/local_git_steps_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "agents/infra/review_rag_indexer/text_protos_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "agents/skills/chrome-performance-optimizer/scripts/analyze_profile.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "agents/skills/chrome-performance-optimizer/scripts/fetch_tried_cls.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "agents/skills/chrome-performance-optimizer/scripts/pinpoint_evaluator.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "agents/skills/chrome-releases/scripts/chrome_releases.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "agents/testing/skia_perf_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "base/tracing/test/test_data.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/apk_operations.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/dump_apk_resource_strings.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/fast_local_dev_server.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/generate_wrap_sh.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/gradle/generate_gradle.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/gyp/apkbuilder.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/gyp/assert_static_initializers.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/gyp/bundletool.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/gyp/create_app_bundle.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/gyp/create_java_binary_script.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/gyp/dex.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/gyp/errorprone.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/gyp/lint.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/gyp/merge_manifest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/gyp/write_build_config.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/incremental_install/generate_android_manifest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/method_count.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/pylib/dex/dex_parser.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/pylib/results/presentation/test_results_presentation.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/pylib/utils/maven_downloader.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/resource_sizes.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/test_runner.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/android/test_wrapper/logdog_wrapper.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/apple/tweak_info_plist.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/bench/compare_autoninja.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/chromeos/test_runner.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/config/siso/configure_siso.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/fuchsia/binary_size_differ.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/fuchsia/binary_sizes.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/fuchsia/get_auth_token.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/fuchsia/starview/avbtool.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/install-build-deps.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/linux/install-chromeos-fonts.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/linux/unbundle/remove_bundled_libraries.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/mac_toolchain.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/rust/gni_impl/rustc_wrapper.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/toolchain/check_rewrapper_cfg.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/toolchain/win/rc/rc.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/util/lib/common/google_storage_helper_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "build/vs_toolchain.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "buildtools/reclient_cfgs/configure_reclient_cfgs.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "chrome/browser/chrome_for_testing/tools/generate_about_file.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "chrome/browser/preloading/prefetch/no_state_prefetch/tools/prerender_test_server/prerender_test_server.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "chrome/installer/linux/common/update_key_include.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "chrome/installer/linux/debian/build_repo_package.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "chrome/test/base/chromeos/crosier/helper/reset_dut.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "chrome/test/chromedriver/test/run_py_tests.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "chrome/test/mini_installer/create_zip.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "chrome/tools/build/win/makecab.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "chrome/tools/check_ownership.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "chrome/tools/webforms_aggregator_tests.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "chrome/updater/enterprise/win/google/build_group_policy_template_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "chrome/updater/enterprise/win/google/public_apps.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "chrome/updater/fix_licenses.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "chrome/updater/win/signing/msi_from_standalone.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/cronet/gn2bp/run_gn2bp.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/cronet/tools/cr_cronet.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/cronet/tools/utils.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/domain_reliability/bake_in_configs.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/optimization_guide/tools/gen_on_device_proto_descriptors.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/policy/resources/policy_templates.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/policy/tools/syntax_check_policy_template_json.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/policy/tools/syntax_check_policy_template_json_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/policy/tools/template_writers/PRESUBMIT.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/adm_writer.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/doc_atomic_groups_writer.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/doc_writer.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/ios_app_config_writer.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/policy/tools/template_writers/writers/ios_app_config_writer_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/safe_browsing/content/resources/real_time_url_checks_allowlist/store_real_time_url_allowlist_prefixes.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "components/url_formatter/spoof_checks/top_domains/fetch_crux_domains.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "content/test/gpu/find_unknown_typ_tags.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "content/test/gpu/flake_suppressor/gpu_results_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "content/test/gpu/gather_power_measurement_results.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "content/test/gpu/gather_swarming_json_results.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "content/test/gpu/power_measurement_results/analyze_power_measurement_results.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "content/test/gpu/suppress_flakes.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "content/test/gpu/trim_culprit_cls.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "content/test/gpu/unexpected_pass_finder.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "content/test/gpu/unexpected_passes/gpu_queries_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "docs/enterprise/extension_query.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "docs/enterprise/extension_query_py2.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "infra/config/scripts/sync-pyl-files.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "media/ffmpeg/scripts/build_ffmpeg.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "media/ffmpeg/scripts/credits_updater.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "media/ffmpeg/scripts/generate_gn.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "media/ffmpeg/scripts/robo_branch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "media/ffmpeg/scripts/robo_setup.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "net/tools/print_certificates.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "remoting/host/linux/linux_me2me_host.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "remoting/tools/build/remoting_localize.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "remoting/tools/zip2msi.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/buildbot/check.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/buildbot/generate_buildbot_json.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/buildbot/scripts/upload_test_result_artifacts.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/flake_suppressor_common/expectations_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/flake_suppressor_common/results_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/generate_location_tags.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/merge_scripts/code_coverage/merge_results.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/merge_scripts/results_merger.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/scripts/run_performance_tests.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/scripts/rust/test_filtering_unittests.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/test_env.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/trigger_scripts/base_test_triggerer.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/trigger_scripts/perf_device_trigger_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/unexpected_passes_common/data_types_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "testing/unexpected_passes_common/result_output_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/abseil-cpp/absl/abseil.podspec.gen.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/abseil-cpp/conanfile.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/abseil-cpp/generate_def_files.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/abseil-cpp/roll_abseil.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/android_build_tools/aapt2/3pp/3pp.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/android_deps/libs/com_android_tools_common/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/android_deps/libs/com_android_tools_layoutlib_layoutlib_api/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/android_deps/libs/com_android_tools_sdk_common/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/android_deps/libs/com_google_android_apps_common_testing_accessibility_framework_accessibility_test_framework/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/blink/renderer/build/scripts/core/style/make_computed_style_base.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/blink/renderer/build/scripts/make_event_factory.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/blink/renderer/core/trustedtypes/generate_eventhandler_names.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/crashpad/crashpad/build/install_linux_sysroot.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/crashpad/crashpad/snapshot/win/end_to_end_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/crashpad/update.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/dav1d/generate_source.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/fuchsia-gn-sdk/src/gen_fidl_response_file.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/fuchsia-gn-sdk/src/prepare_package_inputs.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/google-closure-library/closure/bin/build/depswriter.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/google-closure-library/closure/bin/build/treescan.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/google-closure-library/closure/bin/labs/code/generate_jsdoc_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/closurebuilder.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/depstree.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/depstree_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/depswriter.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/jscompiler.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/source.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/source_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/build/treescan.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/google_input_tools/third_party/closure_library/closure/bin/scopify.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/inspector_protocol/roll.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libaddressinput/chromium/tools/require_fields.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libxslt/chromium/roll.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/pefile_py3/pefile.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/pipewire/on_update.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/benchmarks/compare.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/conformance/conformance_python.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/conformance/update_failure_list.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/docs/upb/render.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/objectivec/DevTools/pddm.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/objectivec/DevTools/pddm_tests.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/dist/setup.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/docs/generate_docs.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/__init__.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/descriptor.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/__init__.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/api_implementation.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/containers.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/decoder.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/descriptor_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/encoder.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/message_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/numpy/__init__.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/python_message.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/reflection_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/test_util.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/text_encoding_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/type_checkers.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/unknown_fields_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/internal/wire_format_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/python/google/protobuf/message.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/ruby/ext/google/protobuf_c/ruby-upb.h",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf/upb/bazel/private/oss/amalgamate.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/r8/3pp/3pp.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/rust/chromium_crates_io/crate_utils.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/updater/chrome_mac_universal/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/updater/chrome_mac_universal_prod/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/updater/chrome_win_arm64/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/updater/chrome_win_x86/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/updater/chrome_win_x86_64/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/updater/chromium_mac_amd64/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/updater/chromium_mac_arm64/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/updater/chromium_win_arm64/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/updater/chromium_win_x86/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/updater/chromium_win_x86_64/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/webxr_test_pages/update_bucket.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/win_virtual_display/3pp/build.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/win_virtual_display/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/wpt_tools/roll_wpt.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/wpt_tools/wpt/tools/third_party/pywebsocket3/setup.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/accessibility/codereview/download_issue.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/accessibility/codereview/mph.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/accessibility/rebase_dump_accessibility_tree_tests.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/android/avd/3pp/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/android/checkxmlstyle/checkxmlstyle_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/android/customtabs_benchmark/scripts/customtabs_benchmark.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/android/customtabs_benchmark/scripts/run_benchmark.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/android/dependency_analysis/upload_html_viewer.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/android/generate_java_test/generate_java_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/android/modularization/convenience/touch_resources.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/android/tracing/systrace-extract-startup.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/binary_size/diagnose_bloat.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/binary_size/generate_milestone_reports.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/binary_size/libsupersize/arsc_parser.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/binary_size/libsupersize/dex_parser.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/binary_size/libsupersize/ninja_parser_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/binary_size/libsupersize/viewer/upload_html_viewer.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/binary_size/libsupersize/zip_util_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/binary_size/sizes.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/binary_size/trybot_commit_size_checker.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/bisect-builds.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/bisect_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/boilerplate.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/captured_sites/refresh.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/check_git_config.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/checkbins/checkbins.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/checkteamtags/checkteamtags.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/checkteamtags/extract_components.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/clang/rewrite_templated_container_fields/extract_edits.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/clang/scripts/build.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/clang/scripts/dashboard.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/clang/scripts/package.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/clang/scripts/update.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/clang/spanify/2p_perftest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/clang/spanify/evaluate_patches.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/clang/spanify/extract_edits.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/clang/spanify/gnconfigs.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/clang/spanify/list-required-pragma.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/clang/spanify/remove-unneeded-pragmas.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/clang/spanify/rewrite_multiple_platforms.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/clang/spanify/upload-rewrites.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/clang/translation_unit/test_translation_unit.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/code_coverage/coverage.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/code_coverage/fetch_coverage_metrics.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/code_coverage/find_affected_coverage_guided_fuzzers.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/code_coverage/inspect_coverage_build.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/code_coverage/inspect_coverage_build_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/code_coverage/parse_gerrit_url_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/crates/create_draft_comments.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/crates/create_update_cl.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/cygprofile/android_profile_tool.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/determinism/compare_build_artifacts.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/diagnose-me.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/disable_tests/disable.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/download_optimization_profile.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/dromaeo_benchmark_runner/dromaeo_benchmark_runner.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/flags/generate_clank_feature_flag.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/flags/list_flags.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/fuchsia/3pp/fetch_archive.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/generate_stubs/generate_stubs.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/gerrit/send_after_cq_dryrun.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/gerrit/send_after_cq_dryrun_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/get_asan_chrome/get_asan_chrome.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/git/suggest_owners.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/git/worktree.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/grit/grit/gather/policy_json_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/grit/grit/gather/tr_html_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/grit/grit/grd_reader_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/grit/grit/tclib_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/grit/pak_util.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/grit/setup.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/include_tracer.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/infra/find_bad_builds.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/jj/setup.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/jj/upload.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/json_schema_compiler/js_externs_generator_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/json_schema_compiler/js_interface_generator_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/json_schema_compiler/preview.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/licenses/tests/integration_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/mac/download_symbols.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/mac/icons/compile_car.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/mb/mb.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/md_browser/md_browser.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/media_engagement_preload/make_dafsa_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/metrics/actions/extract_actions_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/metrics/histograms/find_unmapped_histograms.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/metrics/histograms/generate_expired_histograms_array_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/metrics/histograms/merge_xml.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/metrics/histograms/pretty_print_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/metrics/histograms/split_enums.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/metrics/md2xml.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/metrics/private_metrics/private_metrics_model_shared_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/metrics/private_metrics/private_metrics_validations_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/metrics/structured/sync/model_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/metrics/ukm/ukm_model_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/nocompile/driver.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/omahaproxy.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/perf/contrib/cluster_telemetry/ct_benchmarks_util.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/perf/core/perf_data_generator.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/perf/core/results_dashboard.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/perf/core/retrieve_story_timing.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/perf/download_proto_trace.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/perf/generate_legacy_perf_dashboard_json.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/perf/generate_perf_sharding.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/perf/json_util_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/perf/process_perf_results.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/perf/process_perf_results_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/pgo/generate_profile.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/python/google/gethash_timer.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/resources/find_unused_resources.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/resources/icon_checker/update_icon_list.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/roll_webgl_conformance.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/run-build.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/run-swarmed.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/rust/build_crubit.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/rust/build_rust.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/sample_clang_tidy_results.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/site_compare/scrapers/chrome/chromebase.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/site_compare/scrapers/firefox/firefox2.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/site_compare/scrapers/ie/ie7.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/symsrc/source_index.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/test_selection/decisiongraph_invoker.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/traffic_annotation/scripts/auditor/auditor.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/traffic_annotation/scripts/auditor/auditor_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/traffic_annotation/scripts/update_annotations_doc.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/traffic_annotation/scripts/update_annotations_sheet.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/translation/check_grd_for_unused_strings.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/translation/upload_screenshots.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/utr/output_adapter_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/variations/bisect_variations.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/warning_analysis/pull_logs.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "tools/web_dev_style/js_checker_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "ui/accessibility/extensions/tools/webstore_extension_util.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "agents/shared/skills/git-cl-helper/scripts/git_cl_helper.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "agents/shared/skills/git-cl-helper/scripts/git_cl_helper_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "docs/website/scripts/fetch_lobs.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "docs/website/scripts/fetch_node_modules.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "docs/website/site/chromium-os/developer-library/reference/linux-constants/syscalls/syscalls.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/angle/scripts/bootstrap.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/angle/scripts/export_targets.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/angle/scripts/process_angle_perf_results.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/angle/scripts/roll_chromium_deps.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/angle/scripts/roll_chromium_deps_v2.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/angle/scripts/trigger.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/angle/scripts/update_extension_data.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/angle/src/program_serialize_data_version.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/angle/src/tests/restricted_traces/gen_restricted_traces.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/angle/src/tests/restricted_traces/sync_restricted_traces_to_cipd.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/angle/src/tests/run_perf_tests.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/catapult_build/perfbot_stats/chrome_perf_stats.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/catapult_build/perfbot_stats/chrome_perf_step_timings.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/common/bin/update_chrome_reference_binaries.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/common/lab/commits.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/common/lab/hardware.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/devil/devil/android/device_utils_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/devil/devil/android/tools/system_app.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/devil/devil/utils/markdown.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/devil/devil/utils/markdown_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/experimental/alert_configs/memory.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/experimental/bisect_lib/fetch_intervening_revisions.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/experimental/bisect_lib/fetch_revision_info.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/experimental/bisect_lib/fetch_revision_info_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/experimental/tracing/bin/diff_heap_profiler.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/systrace/profile_chrome/main.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/telemetry/third_party/png/png.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/gslib/vendored/boto/boto/gs/connection.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/gsutil.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/setup.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/apitools/apitools/gen/testdata/compute/compute_2025-01-01-preview.json",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/cmpdump.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/crldump.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/crmfdump.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/ocspclient.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/ocspreqdump.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/ocsprspdump.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/pkcs10dump.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/pkcs1dump.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/pkcs7dump.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/pkcs8dump.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/snmpget.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/x509dump-rfc5280.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/pyasn1-modules/tools/x509dump.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/gsutil/third_party/retry-decorator/setup.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/mocha/mocha.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/polymer/components/paper-card/paper-card.html",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/webapp2/setup.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/third_party/webapp2/webapp2.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/tracing/third_party/mocha/mocha.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/catapult/tracing/tracing/extras/symbolizer/symbolize_trace.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/crossbench/protoc/compile.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/dawn/scripts/roll_chromium_deps.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/agents/skills/buildbucket/scripts/bb_wrapper.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/agents/skills/buildbucket/scripts/bb_wrapper_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/agents/skills/luci-test-results/scripts/find_cl_builds.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/agents/skills/luci-test-results/scripts/luci_client.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/agents/skills/luci-test-results/scripts/luci_scripts_integration_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/autoninja.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/build_telemetry.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/fetch.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/gclient-new-workdir.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/gclient.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/gerrit_client.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/git_cache.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/git_cl.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/git_number.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/git_retry.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/gsutil.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/luci_auth_fido2_plugin.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/my_activity.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/ninja.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/ninjalog_uploader.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/presubmit_diff.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/presubmit_support.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/recipes/recipe_modules/bot_update/resources/bot_update.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/recipes/recipe_modules/gitiles/resources/gerrit_client.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/recipes/recipe_proto/turboci/update.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/recipes/recipes.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/roll_dep.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/testing_support/fake_repos.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/bot_update_coverage_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/build_telemetry_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/fetch_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/gclient_eval_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/gclient_git_smoketest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/gclient_scm_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/gclient_utils_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/gerrit_util_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/git_auth_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/git_cache_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/git_cl_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/luci_auth_fido2_plugin_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/metrics_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/presubmit_canned_checks_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/presubmit_support_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/presubmit_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/reclient_helper_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/roll_dep_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/scm_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/siso_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/split_cl_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/tests/watchlists_unittest.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/watchlists.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/depot_tools/win_toolchain/get_toolchain_if_necessary.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/devtools-frontend/src/.agents/skills/gerrit-cli/scripts/import_upstream.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/devtools-frontend/src/front_end/third_party/intl-messageformat/package/package.json",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/devtools-frontend/src/node_modules/esrecurse/package.json",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/devtools-frontend/src/node_modules/uri-js/dist/es5/uri.all.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/devtools-frontend/src/node_modules/uri-js/dist/esnext/uri.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/devtools-frontend/src/node_modules/uri-js/package.json",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/devtools-frontend/src/scripts/deps/roll_to_chromium.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/devtools-frontend/src/scripts/tools/update_goldens.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/domato/src/generator.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/domato/src/grammar.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/domato/src/jscript/generator.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/domato/src/php/generator.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/domato/src/vbscript/generator.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/eigen3/src/scripts/add_spdx_headers.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/ffmpeg/.forgejo/inject-pr-samples.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/harfbuzz/src/src/gen-indic-table.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/harfbuzz/src/src/gen-os2-unicode-ranges.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/harfbuzz/src/src/gen-tag-table.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libaom/source/libaom/test/gviz_api.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libaom/source/libaom/test/visual_metrics.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libaom/source/libaom/tools/cpplint.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libaom/source/libaom/tools/intersect-diffs.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libaom/source/libaom/tools/wrap-commit-msg.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libpfm4/src/perf_examples/syst_smpl.c",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libpfm4/src/python/self.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libpfm4/src/python/setup.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libpfm4/src/python/sys.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libvpx/source/libvpx/tools/cpplint.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libvpx/source/libvpx/tools/intersect-diffs.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libvpx/source/libvpx/tools/wrap-commit-msg.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libyuv/tools_libyuv/autoroller/roll_deps.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/libyuv/tools_libyuv/autoroller/unittests/roll_deps_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/benchmarks/compare.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/conformance/conformance_python.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/conformance/update_failure_list.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/docs/upb/render.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/dist/setup.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/docs/generate_docs.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/__init__.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/descriptor.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/__init__.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/api_implementation.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/containers.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/decoder.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/descriptor_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/encoder.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/message_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/numpy/__init__.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/python_message.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/reflection_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/test_util.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/text_encoding_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/type_checkers.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/unknown_fields_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/internal/wire_format_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/python/google/protobuf/message.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/third_party/protobuf/upb/bazel/amalgamate.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/tools/download-chromium-file.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/pdfium/testing/tools/safetynet_compare.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/infra/ci/config.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/infra/luci/recipes.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/python/perfetto/prebuilts/manifests/heapprofd_glibc_preload.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/python/perfetto/prebuilts/manifests/perfetto-c-sdk-src.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/python/perfetto/prebuilts/manifests/perfetto-cpp-sdk-src.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/python/perfetto/prebuilts/manifests/trace_processor_shell.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/python/perfetto/prebuilts/manifests/tracebox.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/python/perfetto/prebuilts/manifests/traceconv.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/python/tools/install_test_reporter_app.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/python/tools/record_android_trace.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/python/tools/roll_emscripten.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/python/tools/roll_node.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/python/tools/roll_pnpm.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/python/tools/update_permalink.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/tools/download_changed_screenshots.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/perfetto/tools/release/release_perfetto.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/arith.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/arith_test.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/decoder.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/decoder_test.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/encoder.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/proto_test.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/reader.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/reader_test.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/test_utils.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/utils.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/utils_test.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/writer.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/protobuf-javascript/src/binary/writer_test.js",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/pywebsocket3/src/setup.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/pywebsocket3/src/test/test_handshake_hybi.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/experimental/tools/pdf-comparison.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/gn/gn_to_bp.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/infra/bots/assets/android_ndk_darwin/create.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/infra/bots/assets/android_ndk_linux/create.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/infra/bots/assets/android_ndk_windows/create.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/infra/bots/assets/clang_mac_arm/create.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/infra/bots/assets/clang_mac_intel/create.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/infra/bots/assets/clang_win/create.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/infra/bots/assets/gcloud_linux/create.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/infra/bots/check_deps.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/infra/bots/git_utils.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/infra/bots/recipes.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/infra/bots/run_recipe.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/infra/bots/utils.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/platform_tools/android/tradefed/upload_dm_results.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/resources/sksl/es2_conformance/import_conformance_tests.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/tools/abandon_gerrit_cls.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/tools/bloaty_treemap.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/tools/skp/generate_page_set.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/tools/skp/webpages_playback.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/skia/tools/skpbench/sheet.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/tflite/src/tensorflow/tools/android/test/jni/rgb2yuv.cc",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/vulkan-loader/src/scripts/gn/gn.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/vulkan-tools/src/scripts/android.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/vulkan-tools/src/scripts/gn/gn.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/vulkan-utility-libraries/src/scripts/gn/gn.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/vulkan-validation-layers/src/scripts/android.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/vulkan-validation-layers/src/scripts/gn/export_targets.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/webrtc/PRESUBMIT.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/webrtc/rtc_tools/testing/utils.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/webrtc/tools_webrtc/apply_clang_tidy.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/webrtc/tools_webrtc/autoroller/roll_deps.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/webrtc/tools_webrtc/autoroller/unittests/roll_deps_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/webrtc/tools_webrtc/generate_changelog.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/webrtc/tools_webrtc/iwyu/apply_include_cleaner.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/webrtc/tools_webrtc/summarize_external_commits.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/agents/scripts/validate_cl_description.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/agents/skills/workflow-perf/scripts/upload_and_pinpoint.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/third_party/inspector_protocol/roll.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/builtins-pgo/download_profiles.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/callstats.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/cppgc/gen_cmake.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/dev/gm.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/dev/setup-reclient.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/grokdump.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/mb/mb.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/release/create_release.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/release/merge_to_branch_gerrit.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/release/roll_bisect.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/release/roll_merge_gerrit.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/release/test_scripts.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/run_perf.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/sanitizers/sancov_formatter.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/sanitizers/sancov_merger.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/try_perf.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "v8/tools/unittests/run_perf_test.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/dawn/third_party/OpenGL-Registry/src/extensions/NV/NV_uniform_buffer_std430_layout.txt",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    },
+    {
+      "path": "third_party/openscreen/src/buildtools/reclient_cfgs/configure_reclient_cfgs.py",
+      "gitMode": "100755",
+      "snapshotMode": "100644"
+    }
+  ]
+}

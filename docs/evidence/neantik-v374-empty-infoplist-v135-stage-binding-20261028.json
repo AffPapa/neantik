@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "V374",
+  "observedAtUTC": "2026-10-28T04:28:38Z",
+  "status": "PASS_V36_EMPTY_WEBKIT_INFOPLIST_RESOURCE_ABSENT_FROM_V135_BUILD_AND_RECIPIENT_STAGE_FINAL_CANDIDATE_BINDING_OPEN",
+  "scope": "Binds one candidate-139 UNKNOWN resource row to the existing V36 source exclusion and an exact V135 WebKit build/recipient stage. The old signed candidate is immutable. No build, signing, runtime, or publication occurred in this review.",
+  "row": {
+    "runtimePath": "WebKit.framework/Versions/A/Resources/en.lproj/InfoPlist.strings",
+    "candidate139RuntimeSHA256": "eb830b7d91792444feda119d8eb9b6fa400a05db02e6d9d5cd7b126361d000c2",
+    "candidate139StillContainsOriginalBytes": true,
+    "sourcePath": "Source/WebKit/en.lproj/InfoPlist.strings",
+    "sourceBytes": 48,
+    "sourceSHA256": "eb830b7d91792444feda119d8eb9b6fa400a05db02e6d9d5cd7b126361d000c2",
+    "sourceContent": "UTF-8 BOM, one block comment, and whitespace only; no localized key/value pairs.",
+    "reviewerDecision": "PASS_FACTUAL_REMOVAL_REVIEW for the exact empty localized resource; final .74 package binding remains open."
+  },
+  "bindings": {
+    "worksheetSHA256": "b5d00e7589a67102c62372a6feddc9e7d06a50c6d0c3b6fde047bd42b9954441",
+    "v36ReceiptSHA256": "2e358982333a9662a64a7ade20fc932c567fc7b666c66c793b69ca810a453034",
+    "exclusionPatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "v135BuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "v135OutputCount": "14/14 ARM64 outputs exact",
+    "v135DeploymentTarget": "15.4",
+    "v135UpstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "recipientStageReceiptSHA256": "1a2a890f459e1f771fd69ea9629e0a171964d8d9272fded535aaf2933f76e007",
+    "recipientStageV135OutputMatches": "14/14",
+    "buildOutputPath": "/private/tmp/neantik-v132-recipient-relink-20261026/build/WebKit.framework/Versions/A/Resources/en.lproj/InfoPlist.strings",
+    "recipientStagePath": "/private/tmp/neantik-v197-v135-recipient-staging/Frameworks/WebKit.framework/Versions/A/Resources/en.lproj/InfoPlist.strings",
+    "resourceAbsentFromBuildOutput": true,
+    "resourceAbsentFromRecipientStage": true
+  },
+  "decision": "The exact row is resolved by source-preserving removal at the current V135 WebKit build/staging scope. Keep one final-candidate binding open until the signed production .74 package proves the same path absent.",
+  "candidate139Mutated": false,
+  "sourceOfferMutated": false,
+  "sourceCheckoutMutated": false,
+  "signed": false,
+  "notarized": false,
+  "published": false,
+  "releaseQualified": false,
+  "remainingSourceRows": {
+    "licenseApplicabilityUnknown": 18,
+    "resolvedAtStageAwaitingFinalCandidateBinding": 1,
+    "engineImageNoticesAwaitingFinal74Binding": 3
+  },
+  "nextAction": "On the frozen .74 production candidate, verify this exact empty resource remains absent; resolve the 18 other resource rows through per-file rights evidence or source-preserving replacement/removal, then bind the three image dispositions to exact final .74 package bytes."
+}

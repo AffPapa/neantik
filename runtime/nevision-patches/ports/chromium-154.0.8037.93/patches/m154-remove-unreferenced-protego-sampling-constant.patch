@@ -1,0 +1,10 @@
+diff --git a/components/safe_browsing/core/browser/realtime/url_lookup_service.cc b/components/safe_browsing/core/browser/realtime/url_lookup_service.cc
+--- a/components/safe_browsing/core/browser/realtime/url_lookup_service.cc
++++ b/components/safe_browsing/core/browser/realtime/url_lookup_service.cc
+@@ -38,6 +38,5 @@
+ // Probability for sending protego requests for urls on the allowlist
+-const float kProbabilityForSendingSampledRequests = 0.01;
+ 
+ GURL* GetRealTimeLookupUrlTestOverride() {
+   static base::NoDestructor<GURL> test_override;
+   return test_override.get();

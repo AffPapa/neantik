@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "status": "chromium-source-build-succeeded-unqualified",
+  "chromiumVersion": "156.0.8078.74",
+  "targetArchitecture": "arm64",
+  "officialCommit": "d331de35ca8ab1358c7a17e4bd41627d55eaef51",
+  "officialTree": "ffe41d3ec78c520fbe20a43802869358d3e18961",
+  "buildConfigurationSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+  "sourcePatchSHA256": "2f48cb944f6e51439322776e3ec0519bd0567e300049253791c60faca46481ea",
+  "dependencyLockSHA256": "13947f0d4f8655664bdffd2a3541f3bf7ac418b88f6874b628f117286c7f6dcf",
+  "ninjaTarget": "chrome",
+  "ninjaActionsCompleted": 29717,
+  "ninjaExitCode": 0,
+  "browserExecutableSHA256": "f680cafc46eb202845aeeebfe51c65542eaa201f75637ead26b14a7240ce0648",
+  "frameworkSHA256": "70b1a6656de3d1138ab8fc5340506bcbbfd679300f6a6112da4b14a002a7a773",
+  "versionCommand": "NeAntik Browser 156.0.8078.74; exit 0",
+  "signature": "adhoc linker signature; not Developer ID or notarized",
+  "releaseReady": false,
+  "buildOutputDirectory": "out/NeAntikStable156_48"
+}

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v259-apple-tsa-grant-codesign-boundary-20261027",
+  "observedAtUTC": "2026-10-27T14:34:48Z",
+  "status": "RFC3161_ENDPOINT_GRANTED; DEVELOPER_ID_CODESIGN_TIMESTAMP_STILL_MISSING; NO_NATIVE_LAUNCH",
+  "scope": "Fresh direct RFC 3161 service probe and exact private diagnostic packaging attempt after V258. No public action, no candidate mutation, no profile launch.",
+  "probe": {
+    "endpoint": "http://timestamp.apple.com/ts01",
+    "request": "OpenSSL RFC 3161 query for SHA-256 of an empty local file; no application signature or user data",
+    "httpStatus": 200,
+    "contentType": "application/timestamp-reply",
+    "replyParser": "OpenSSL PASS",
+    "status": "Granted",
+    "statusDescription": "Operation Okay",
+    "timestampUTC": "2026-10-27T14:28:04Z",
+    "policyOID": "1.2.3",
+    "cryptographicTSAChainValidation": "not performed; generic RFC 3161 diagnostic request is not a Developer ID code-signing timestamp"
+  },
+  "diagnosticCandidate": {
+    "baseCandidateID": "b96006a994664a80bf89cd757f932eff",
+    "baseManifestSHA256": "4d10449a7674c908c333f31d81f2b1ce3a5ce0178716ecda0b8daddd6c6924c8",
+    "baseDeepStrictSignature": "PASS before copying; source candidate unmodified",
+    "managerInputSHA256": "9af002c40987c9668b6ed85c4334d58e2d29d8528469e16ed4a0d741b1ff78a1",
+    "ownedHostInputSHA256": "ab85bbb6cd88d1f71a2d22d8bb23e878cc598cf66b99639faaceb67ebcff56b9",
+    "runtimeWebKitSHA256": "db6cb3c0c9eb1179c56bbb947a4b5eb66daf65baf547292dfaac03e14469cb7a",
+    "bindingSHA256": "d7125fbe92511faf6439e0bf48ef992d6a52dd736a6b4c5a2408a4329e3874a9",
+    "hostPackager": "failed while codesigning the host bundle with --timestamp",
+    "codesignError": "A timestamp was expected but was not found",
+    "failureCommand": "codesign --force --options runtime --identifier app.neantik.desktop.webkit-host --timestamp --sign <Developer ID identity> <private host bundle>",
+    "consumerPreflight": "not reached; no exact diagnostic package assembled",
+    "nativeAdmission": "not sampled; no app launch or data-root creation",
+    "temporaryStaging": "two diagnostic copies cleaned after failure"
+  },
+  "publication": {
+    "notarization": false,
+    "github": false,
+    "browserFree": false
+  },
+  "candidateModified": false,
+  "priorCurrentSHA256": "1195364f2004fe971629e58a4950594d9e39362360f1db6ac7daad7e7958ba76",
+  "nextAction": "Diagnose why macOS codesign does not obtain or accept a timestamp although timestamp.apple.com/ts01 grants a generic RFC 3161 request. Do not repeat codesign signing until the failure boundary changes or a concrete diagnostic identifies a corrective action. Continue independent source/license/notices and Chromium gates."
+}

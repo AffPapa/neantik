@@ -1,8 +1,6 @@
 #!/bin/zsh
 
 set -euo pipefail
-umask 077
-export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 export DEVELOPER_DIR="$(
@@ -18,6 +16,15 @@ BUILD="$(
     -c 'Print :CFBundleVersion' \
     "$PROJECT_DIR/Resources/Info.plist"
 )"
+# A 1.0.0 release must use production qualification, never silently inherit
+# the public-alpha default used for 0.x releases.
+if [[ "$VERSION" == "1.0.0" ]]; then
+  if [[ -n "${NEANTIK_RELEASE_CHANNEL:-}" && "$NEANTIK_RELEASE_CHANNEL" != "production" ]]; then
+    echo "NeAntik 1.0.0 requires NEANTIK_RELEASE_CHANNEL=production." >&2
+    exit 64
+  fi
+  export NEANTIK_RELEASE_CHANNEL=production
+fi
 RELEASE_SCRIPT="$PROJECT_DIR/scripts/Run-NeAntik-Release.command"
 ZIP_PATH="$PROJECT_DIR/dist/NeAntik-$VERSION-arm64-notarized.zip"
 DMG_PATH="$PROJECT_DIR/dist/NeAntik-$VERSION-arm64-notarized.dmg"
@@ -28,6 +35,23 @@ if [[ ! -x "$RELEASE_SCRIPT" ]]; then
   echo "$RELEASE_SCRIPT" >&2
   echo "Публикация не запускалась." >&2
   exit 66
+fi
+
+CANDIDATE_APP="$PROJECT_DIR/dist/NeAntik.app"
+if [[ -n "${NEANTIK_DIRECT_CANDIDATE_ROOT:-}" ]]; then
+  CANDIDATE_ROOT="$(python3 -I -B "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+    "$PROJECT_DIR/scripts/release_candidate_location.py" \
+    --project-root "$PROJECT_DIR" --validate "$NEANTIK_DIRECT_CANDIDATE_ROOT")"
+  CANDIDATE_APP="$CANDIDATE_ROOT/NeAntik.app"
+fi
+# Never move immutable public-version assets even if invoked directly.
+python3 "$PROJECT_DIR/scripts/verify-direct-version-bump.py" --floor-only
+
+# A manager or embedded browser may still use resources from this bundle.
+# Refuse before moving archives or letting the inner workflow replace it.
+if [[ -e "$CANDIDATE_APP" ]]; then
+  python3 "$PROJECT_DIR/scripts/wait-for-neantik-runtime-drain.py" \
+    --app "$CANDIDATE_APP" --timeout 2
 fi
 
 echo "NeAntik $VERSION — единый Direct release"
@@ -71,7 +95,13 @@ echo "[2/2] Готовлю подписанный и notarized DMG из точн
 "$PROJECT_DIR/scripts/release-direct-dmg.sh"
 
 echo
+DISTRIBUTION_PARENT="$PROJECT_DIR/dist/distribution"
+mkdir -p "$DISTRIBUTION_PARENT"
+DISTRIBUTION_DIR="$DISTRIBUTION_PARENT/v$VERSION-$BUILD-$(date -u '+%Y%m%dT%H%M%SZ')-$$"
+python3 "$PROJECT_DIR/scripts/export-direct-distribution.py" \
+  --source-dir "$PROJECT_DIR/dist" --destination "$DISTRIBUTION_DIR" --version "$VERSION"
+echo "Distribution upload directory: $DISTRIBUTION_DIR"
 echo "PASS: локальный Direct release готов."
-echo "ZIP: $ZIP_PATH"
-echo "DMG: $DMG_PATH"
+echo "ZIP upload: $DISTRIBUTION_DIR/$(basename "$ZIP_PATH")"
+echo "DMG upload: $DISTRIBUTION_DIR/$(basename "$DMG_PATH")"
 echo "GitHub и сайт этим сценарием не изменялись."

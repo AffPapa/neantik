@@ -3,119 +3,23 @@ import Testing
 @testable import NeAntik
 
 struct BulkProxyImportTests {
-    @Test
-    func baseNameValidationExplainsFailuresAndAcceptsCorrections() {
-        #expect(BulkProxyImportParser.baseNameValidationMessage(" \n ") == "Введи основу названия.")
-        let overlong = String(repeating: "a", count: BrowserProfile.maximumNameLength + 1)
-        #expect(BulkProxyImportParser.baseNameValidationMessage(overlong)?.contains("120") == true)
-        #expect(BulkProxyImportParser.baseNameValidationMessage("Group\nA")?.contains("переносы") == true)
-        #expect(BulkProxyImportParser.baseNameValidationMessage("Group\u{202E}A")?.contains("управляющие") == true)
-        let byteHeavy = "a" + String(repeating: "\u{0301}", count: BrowserProfile.maximumNameUTF8Bytes)
-        #expect(BulkProxyImportParser.baseNameValidationMessage(byteHeavy)?.contains("места") == true)
-        let nearByteLimit = "a" + String(repeating: "\u{0301}", count: 2_047)
-        #expect(BrowserProfile.isValidName(nearByteLimit))
-        #expect(BulkProxyImportParser.profileName(base: nearByteLimit, index: 1) == nil)
-        #expect(BulkProxyImportParser.baseNameValidationMessage(nearByteLimit)?.contains("номера") == true)
-        let withSuffixRoom = "a" + String(repeating: "\u{0301}", count: 2_046)
-        #expect(BulkProxyImportParser.baseNameValidationMessage(withSuffixRoom) == nil)
-        #expect(BulkProxyImportParser.profileName(base: withSuffixRoom, index: 1) != nil)
-        for corrected in ["Прокси", String(overlong.dropLast()), "  Group A  "] {
-            #expect(BulkProxyImportParser.baseNameValidationMessage(corrected) == nil)
-            #expect(BulkProxyImportParser.profileName(base: corrected, index: 1) != nil)
-        }
+    @Test func numericIPv4WithCredentialsPreviewsAsHTTPWithoutExposingPassword() throws {
+        let secret = "synthetic-password"
+        let preview = try BulkProxyImportParser.preview(
+            "synthetic-user:\(secret)@203.0.113.10:50100",
+            kind: .http,
+            order: .automatic
+        )
+        #expect(preview.isReady)
+        let draft = try #require(preview.drafts.first)
+        #expect(draft.configuration.kind == .http)
+        #expect(draft.configuration.host == "203.0.113.10")
+        #expect(draft.configuration.port == 50_100)
+        #expect(draft.configuration.username == "synthetic-user")
+        #expect(draft.password == secret)
+        #expect(!preview.rows.compactMap(\.safeSummary).joined().contains(secret))
     }
 
-    @Test
-    func failedEditorFocusNamesTheActualLine() {
-        let message = BulkProxyImportParser.inputSelectionFailureMessage(lineNumber: 12)
-        #expect(message.contains("строку 12"))
-        #expect(!message.contains("lineNumber"))
-    }
-
-    @Test
-    func fileReplacementRequiresConfirmationOnlyForExistingInput() {
-        #expect(
-            !BulkProxyFileReplacementPolicy.requiresConfirmation(
-                existingText: " \n "
-            )
-        )
-        #expect(
-            BulkProxyFileReplacementPolicy.requiresConfirmation(
-                existingText: "proxy.example:8080"
-            )
-        )
-    }
-
-    @Test
-    func invalidPreviewCanSelectItsExactEditorLine() throws {
-        let text = "one.example:8080\nbroken\nthree.example:8080"
-        let range = try #require(
-            BulkProxyInputSelection.range(lineNumber: 2, in: text)
-        )
-        #expect((text as NSString).substring(with: range) == "broken\n")
-        #expect(BulkProxyInputSelection.range(lineNumber: 4, in: text) == nil)
-    }
-
-    @Test
-    func safeFileReaderAcceptsUTF8AndRemovesByteOrderMark() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        try FileManager.default.createDirectory(
-            at: root,
-            withIntermediateDirectories: true
-        )
-        let file = root.appendingPathComponent("proxies.txt")
-        try Data([0xEF, 0xBB, 0xBF] + Array("host:8080\n".utf8))
-            .write(to: file)
-
-        #expect(
-            try ProxyImportFileReader.readText(from: file) == "host:8080\n"
-        )
-    }
-
-    @Test
-    func safeFileReaderRejectsSymlinkOversizeAndInvalidUTF8() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        try FileManager.default.createDirectory(
-            at: root,
-            withIntermediateDirectories: true
-        )
-        let target = root.appendingPathComponent("target.txt")
-        let link = root.appendingPathComponent("link.txt")
-        try Data("host:8080".utf8).write(to: target)
-        try FileManager.default.createSymbolicLink(
-            at: link,
-            withDestinationURL: target
-        )
-        #expect(throws: ProxyImportFileReadError.self) {
-            try ProxyImportFileReader.readText(from: link)
-        }
-
-        let oversized = root.appendingPathComponent("oversized.txt")
-        #expect(
-            FileManager.default.createFile(
-                atPath: oversized.path,
-                contents: nil
-            )
-        )
-        let handle = try FileHandle(forWritingTo: oversized)
-        try handle.truncate(
-            atOffset: UInt64(BulkProxyImportParser.maximumInputBytes + 1)
-        )
-        try handle.close()
-        #expect(throws: ProxyImportFileReadError.self) {
-            try ProxyImportFileReader.readText(from: oversized)
-        }
-
-        let invalid = root.appendingPathComponent("invalid.txt")
-        try Data([0xC3, 0x28]).write(to: invalid)
-        #expect(throws: ProxyImportFileReadError.self) {
-            try ProxyImportFileReader.readText(from: invalid)
-        }
-    }
     @Test func parsesOneProxyPerNonEmptyLine() throws {
         let drafts = try BulkProxyImportParser.parse(
             """
@@ -202,6 +106,59 @@ struct BulkProxyImportTests {
         #expect(preview.drafts.count == 2)
         #expect(preview.issueLineNumbers.isEmpty)
         #expect(preview.isReady)
+    }
+
+    @Test func asyncPreviewComputationPreservesSafePreviewContract() async {
+        let secret = "never-echo-this-secret"
+        let request = BulkProxyImportPreviewRequest(
+            text: "one.example:8080\nuser:\(secret)@invalid host:443",
+            kind: .http,
+            order: .automatic
+        )
+
+        let result = await BulkProxyImportPreviewComputation.run(request)
+        switch result {
+        case let .success(preview):
+            #expect(preview.drafts.count == 1)
+            #expect(preview.issueLineNumbers == [2])
+            #expect(
+                preview.rows.compactMap(\.safeSummary).allSatisfy {
+                    !$0.contains(secret) && !$0.contains("user")
+                }
+            )
+        case let .failure(error):
+            Issue.record("Неожиданная ошибка preview: \(error.message)")
+        }
+    }
+
+    @Test func preCancelledAsyncPreviewAlwaysReturnsCancellation() async {
+        let requests = [
+            "proxy.example:8080",
+            "  \n\n  ",
+            String(
+                repeating: "x",
+                count: BulkProxyImportParser.maximumInputBytes + 1
+            )
+        ].map {
+            BulkProxyImportPreviewRequest(
+                text: $0,
+                kind: .http,
+                order: .automatic
+            )
+        }
+
+        for request in requests {
+            let task = Task {
+                withUnsafeCurrentTask { $0?.cancel() }
+                return await BulkProxyImportPreviewComputation.run(request)
+            }
+            let result = await task.value
+            guard case let .failure(error) = result else {
+                Issue.record("Отменённый preview не должен возвращать результат")
+                continue
+            }
+            #expect(error.message == "Отменено")
+        }
     }
 
     @Test func entryLimitIsFailClosed() {

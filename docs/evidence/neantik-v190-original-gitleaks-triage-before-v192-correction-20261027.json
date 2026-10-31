@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v190-v187-manager-source-gitleaks-triage-20261027",
+  "status": "PASS_EXACT_V184_MANAGER_ARCHIVE_SECRET_SCAN_TRIAGED; NO_CREDENTIAL_VALUE_CONFIRMED; COVERAGE_LIMITED_TO_THIS_ARCHIVE",
+  "scope": "Gitleaks scan of the extracted exact manager source archive only. This is not a scan of all offer components, final app, hosted files, or public release.",
+  "scanner": {
+    "name": "gitleaks",
+    "version": "8.30.1",
+    "explicitConfig": "none",
+    "maxArchiveDepth": 3,
+    "maxTargetMegabytes": 2048,
+    "redactionPercent": 100,
+    "scanNoGit": true,
+    "configurationOverridePresent": false
+  },
+  "input": {
+    "path": "NeAntik-source-8e2148d-clean-tree.tar.zst",
+    "sha256": "ce9fb37eeed73e752c5829213ea688a59a871afe521e042baef435b0f1787e1e",
+    "bytes": 17550653,
+    "extractedMembers": 3407,
+    "regularFiles": 2723,
+    "uncompressedRegularBytes": 119845200
+  },
+  "result": {
+    "exitCode": 1,
+    "findingCount": 2414,
+    "rules": {
+      "generic-api-key": 2414
+    },
+    "triage": {
+      "64HexSHA256ValuesInHashProjectionsOrEvidence": 2410,
+      "sourcePrivateKeyTypeOrPropertyDeclarationsWithoutKeyMaterial": 3,
+      "plainReleaseMetadataTextWithoutCredentialFormat": 1
+    },
+    "confirmedCredentialFindings": 0,
+    "untriagedFindings": 0,
+    "redactedReportSHA256": "927800aebc09b1733428c87d9524033cb5c23f13d41fb413803e603005b9cbab",
+    "reportHandling": "100-percent-redacted report retained in private temporary storage; values and raw findings were not copied into this receipt or public-facing output"
+  },
+  "classificationBasis": [
+    "All 2,410 JSON matches are exactly 64 hexadecimal characters used as digest values in hash projections and evidence fields.",
+    "Three Swift matches are private-key property/type declarations or synthetic test constructors; they contain no embedded key bytes.",
+    "The remaining release manifest field is ordinary metadata text (10 words) and matches no recognized API-token, bearer-token, or PEM-private-key format."
+  ],
+  "limitations": [
+    "This triage is limited to Gitleaks findings for the exact manager source archive and the recorded default scanner rules.",
+    "The other 520 offer components, final app/archive, download channels, and future candidate bytes need their own applicable scan or verification.",
+    "A zero confirmed finding count is not a general security certification."
+  ],
+  "sourceModified": false,
+  "candidateBound": false,
+  "releaseQualified": false,
+  "publicMutation": false,
+  "nextAction": "Run the exact source-offer component verifier against the updated 521-component private V187 manifest; keep unresolved license applicability and recipient replacement gates open."
+}

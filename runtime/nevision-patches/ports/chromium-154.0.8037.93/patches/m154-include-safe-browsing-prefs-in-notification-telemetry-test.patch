@@ -1,0 +1,11 @@
+diff --git a/chrome/browser/safe_browsing/notification_telemetry/notification_telemetry_service_unittest.cc b/chrome/browser/safe_browsing/notification_telemetry/notification_telemetry_service_unittest.cc
+--- a/chrome/browser/safe_browsing/notification_telemetry/notification_telemetry_service_unittest.cc
++++ b/chrome/browser/safe_browsing/notification_telemetry/notification_telemetry_service_unittest.cc
+@@ -24,6 +24,7 @@
+ #include "components/safe_browsing/content/browser/notification_content_detection/mock_safe_browsing_database_manager.h"
+ #include "components/safe_browsing/content/browser/notification_content_detection/notifications_global_cache_list.h"
+ #include "components/safe_browsing/core/common/features.h"
++#include "components/safe_browsing/core/common/safe_browsing_prefs.h"
+ #include "components/safe_browsing/core/common/proto/csd.pb.h"
+ #include "content/public/browser/service_worker_registration_information.h"
+ #include "content/public/test/browser_task_environment.h"

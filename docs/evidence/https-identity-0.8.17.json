@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-on-exact-published-runtime; bounded scope",
+  "applicationVersion": "0.8.17",
+  "build": 129,
+  "applicationSource": "7bee33e113e7a7dfc44393758b83b2a9d3a6ff66",
+  "runtime": {
+    "version": "156.0.8078.12",
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "managerSHA256": "9a82d0044219725b292d003f048b2f0f87e1d02dff64b557a5f66ab153460871",
+  "reference": {
+    "version": "155.0.8059.80",
+    "executableSHA256": "5f423d624250e67f2ae453400d485e7547a533a2f872232c54bb551a79bf552d",
+    "frameworkSHA256": "32fa7771f0277d5593f03e66813b5429c8d260d0f99cd86d7e036826a7c86209"
+  },
+  "environment": {
+    "os": "27.0",
+    "architecture": "arm64",
+    "headed": true
+  },
+  "capturedAt": "2026-10-15T17:42:56.650Z",
+  "observationsSHA256": "cbd7c62aed2d99ed8ea64f6204c54d51aa08c5f47c7bd585d076033834788453",
+  "sourceFiles": {
+    "runtime-platform/run-https-identity.mjs": "9b7ba56ea0a66bcbb11e3a21be32c74710e87b893abe310affb54641bd07ca4f",
+    "runtime-platform/fixtures/https-identity-fixture.mjs": "e81ab1281763029627707a4e247b476259210a16cc36ffff976c65cb709405fc",
+    "runtime-platform/fixtures/https-identity-probe.mjs": "6d23cf9d7364ef9c1a4889fd6d57a498bd6d6a5dbc7beafb0074e1eefae5da0e",
+    "runtime-platform/fixtures/qa-browser-environment.mjs": "32d73021fb8514cb55781f4cc56183c0cec7d0d1adcca0865394c3fdf90a6a14",
+    "runtime-network/run-controlled-dns.mjs": "9c69c3a49672e03397520a2bfc2906ac0604430ea47e1828d51de9a8bff9cfda"
+  },
+  "qualification": {
+    "checks": 396,
+    "issues": [],
+    "negativeControls": [
+      {
+        "name": "missing-operation",
+        "rejected": true
+      },
+      {
+        "name": "missing-SW",
+        "rejected": true
+      },
+      {
+        "name": "wrong-nonce",
+        "rejected": true
+      },
+      {
+        "name": "TLS-missing",
+        "rejected": true
+      },
+      {
+        "name": "proxy-custody-missing",
+        "rejected": true
+      },
+      {
+        "name": "header-missing",
+        "rejected": true
+      },
+      {
+        "name": "duplicate-receipt",
+        "rejected": true
+      },
+      {
+        "name": "missing-Direct-negative",
+        "rejected": true
+      }
+    ],
+    "sessionCount": 4,
+    "nativeMatrixRepeated": false,
+    "profileDataUsed": "own fresh synthetic profiles; mock Keychain",
+    "systemTrustChanged": false,
+    "ownTLSKeyRemoved": true,
+    "runtimeBytesRecheckedAfterRun": true
+  },
+  "paths": [
+    "cold HTTPS document before Accept-CH",
+    "primed same-origin request",
+    "same-origin redirect",
+    "delegated cross-origin fetch",
+    "cross-origin redirect",
+    "explicit non-delegation control",
+    "DedicatedWorker same/cross-origin fetch",
+    "actual ServiceWorker-controlled request and unregister"
+  ],
+  "sessions": [
+    {
+      "mode": "chrome-reference",
+      "status": "observed",
+      "identityOperations": 8,
+      "actualLanguageContradictionRejected": true,
+      "TLSReceipts": 17,
+      "CONNECTs": 4,
+      "browserOwnedProxyReceipts": 17,
+      "browserOwnedDirectReceipts": 0,
+      "nonOwnedDestinationsRefused": 14,
+      "cleanup": {
+        "browserExited": true,
+        "gracefulBrowserClose": true,
+        "exitCode": 0,
+        "ownedProcessesRemaining": 0
+      }
+    },
+    {
+      "mode": "unconfigured",
+      "status": "observed",
+      "identityOperations": 8,
+      "actualLanguageContradictionRejected": true,
+      "TLSReceipts": 17,
+      "CONNECTs": 5,
+      "browserOwnedProxyReceipts": 17,
+      "browserOwnedDirectReceipts": 0,
+      "nonOwnedDestinationsRefused": 0,
+      "cleanup": {
+        "browserExited": true,
+        "gracefulBrowserClose": true,
+        "exitCode": 0,
+        "ownedProcessesRemaining": 0
+      }
+    },
+    {
+      "mode": "configured",
+      "status": "observed",
+      "identityOperations": 8,
+      "actualLanguageContradictionRejected": true,
+      "TLSReceipts": 17,
+      "CONNECTs": 4,
+      "browserOwnedProxyReceipts": 17,
+      "browserOwnedDirectReceipts": 0,
+      "nonOwnedDestinationsRefused": 0,
+      "cleanup": {
+        "browserExited": true,
+        "gracefulBrowserClose": true,
+        "exitCode": 0,
+        "ownedProcessesRemaining": 0
+      }
+    },
+    {
+      "mode": "direct-negative",
+      "status": "observed",
+      "identityOperations": 8,
+      "actualLanguageContradictionRejected": true,
+      "TLSReceipts": 17,
+      "CONNECTs": 0,
+      "browserOwnedProxyReceipts": 0,
+      "browserOwnedDirectReceipts": 17,
+      "nonOwnedDestinationsRefused": 0,
+      "cleanup": {
+        "browserExited": true,
+        "gracefulBrowserClose": true,
+        "exitCode": 0,
+        "ownedProcessesRemaining": 0
+      }
+    }
+  ],
+  "limitations": [
+    "Raw signed runtime with fixed synthetic configuration; this does not add production-manager/relay proof",
+    "Own one-day TLS certificate and scoped SPKI exception; not OS-default-trusted authenticated HTTPS upstream qualification",
+    "Client Hint availability measured on fresh retained ordinary Chrome155.0.8059.80; older HTTP worker availability policy was not reused",
+    "No HTTP2/3, global DNS/UDP, idle/background, network-change or other-Mac qualification",
+    "HTTP headers and synthetic JS identity remain in private evidence; public report contains hashes, counts and outcomes only",
+    "No application/runtime binary change or new release implied; existing signed129 artifacts retained"
+  ],
+  "analysis": {
+    "sourceSHA256": "4990cae491430648f013a542a5b8961bf7759b29d0f7a5b4295da7e2e87f4f27",
+    "verificationSHA256": "fade9de1c6e0b72f64c469cc1da4f325bd2076825b9a1e00b709929ebb7dacac",
+    "localUnitTests": 4,
+    "localControlsLogSHA256": "f260b934ce0649c1c72a6ab8b524db4b0a81ee2f281f8b71ea110c500614eb17",
+    "reviewCorrections": [
+      "Expected origin roles and all-hop custody",
+      "Affirmative Direct browser proof; missing proxy proof is failure",
+      "Runtime byte recheck after matrix",
+      "Exact retained source copies"
+    ],
+    "scope": "Analyzer and harness controls do not substitute for actual headed observations"
+  }
+}

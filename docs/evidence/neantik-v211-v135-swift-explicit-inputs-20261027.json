@@ -1,0 +1,35 @@
+{
+  "status": "SWIFT_EXPLICIT_INPUT_SOURCE_COMPARISON_PASS_MODULE_BINARIES_DIFFER",
+  "checks": [
+    {
+      "target": "WebCore.framework/Versions/A/WebCore",
+      "missingDependencyRecords": 2,
+      "allObjectsSwift": true,
+      "matchingInputPathSetsAcrossBuilds": true,
+      "allObjectsShareInputSet": true,
+      "explicitSwiftInputs": 2,
+      "explicitSwiftInputsMatch": 2,
+      "generatedModuleInputs": 2,
+      "generatedModuleDifferent": 2
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "missingDependencyRecords": 62,
+      "allObjectsSwift": true,
+      "matchingInputPathSetsAcrossBuilds": true,
+      "allObjectsShareInputSet": true,
+      "explicitSwiftInputs": 62,
+      "explicitSwiftInputsMatch": 62,
+      "generatedModuleInputs": 2,
+      "generatedModuleDifferent": 2
+    }
+  ],
+  "queryScriptSHA256": "0e9e6495169d6785460cdabb67e4a176826cb76f0f4a1504d20a9fa92cfd8202",
+  "rawResultSHA256": "fed8ccccb38e6d4a268b2751de9d2873cd6f0d29c06aa1ea33f3a762f9e006b5",
+  "limits": [
+    "Ninja Swift compiler input declarations only, not complete transitive module inputs",
+    "generated Swift module binaries differ; binary equivalence is not established",
+    "not an executed rebuild, licensing conclusion, signature or runtime test"
+  ],
+  "releaseQualified": false
+}

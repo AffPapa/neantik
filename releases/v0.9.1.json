@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "version": "0.9.1",
+  "tag": "v0.9.1",
+  "build": 201,
+  "channel": "public-alpha",
+  "publishedAt": "2026-10-31T11:13:07Z",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.9.1",
+  "sourceCommit": "39e3814e9caa14ec1f7d7c6ec22022611480692c",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.80",
+    "webkit": "Deferred; existing profile data retained, launch unavailable"
+  },
+  "assets": [
+    {
+      "name": "NeAntik-0.9.1-arm64-notarized.zip",
+      "bytes": 180715138,
+      "sha256": "c1faae38d335f351566229d4a999de3fc06d6b9f330c45bd978a3a901808e5ef"
+    },
+    {
+      "name": "NeAntik-0.9.1-arm64-notarized.dmg",
+      "bytes": 203379941,
+      "sha256": "e83cbca6bf4a7c993fb6729314a9eb0703e3780dfd0347e010e9bae53137767a"
+    }
+  ],
+  "verificationScope": [
+    "Developer ID, Apple Accepted ZIP/DMG, stapling and Gatekeeper",
+    "Anonymous ZIP/DMG download: byte-identical and consumer checks passed",
+    "Signed A-B-A on this Mac; scoped authenticated TCP proxy refusal/recovery",
+    "Google and Booking rendered through a test local authenticated HTTP proxy with normal TLS",
+    "All 12 uploaded asset server digests matched; source manifest guest downloaded; five source parts guest accessible, not wholly redownloaded",
+    "browser.free Sites160 deployed; live release/download/signed-v2 envelope binding verified"
+  ],
+  "limitations": [
+    "Public alpha, not stable 1.0; no absolute anonymity claim",
+    "Safe Browsing is disabled",
+    "Qualification on this Mac only; global DNS/UDP/proxy leak and all hardware combinations not established",
+    "Full clean Chromium rebuild/binary equivalence and independent recipient hardware not claimed",
+    "WebKit, production privacy/backup qualification and physical VoiceOver remain follow-ups"
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "attempt": "V305",
+  "createdAt": "2026-10-27T19:28:38Z",
+  "status": "LAUNCHSERVICES_REGISTRATION_DIAGNOSTIC_INCONCLUSIVE; NO_CANDIDATE_PROCESS; FIXTURE_DRAINED",
+  "candidate": {
+    "candidateId": "ef2ce9cf159242c3a147027867403460",
+    "bundlePath": "/private/tmp/neantik-release-v1/dist/private/candidates/ef2ce9cf159242c3a147027867403460/NeAntik.app",
+    "manifestSHA256": "145531171b5d999490a5a94b523cb5623d3f32d58a600925f9d639f946500020",
+    "managerSHA256": "5df59960da46e634ba81b1cc592b4d2ec8c3b5c6b99913b8ed86987ce569ba9c",
+    "hostSHA256": "ae0a88849e20814f4883dc895459082855eeb53f903920d6957910729124106a"
+  },
+  "diagnostic": {
+    "launchServicesDatabaseLookup": "exact private candidate path not present in lsregister dump",
+    "inMemoryRegistration": "LSRegisterURL returned noErr with inDatabase=false; no persistent LS database change",
+    "subsequentNSWorkspaceOpen": "threw NSCocoaErrorDomain code 4 before PID returned",
+    "classification": "launch/setup boundary; not owned-WebKit runtime or network failure",
+    "thirdAttempt": "stopped after repeated pre-process Launch Services failure"
+  },
+  "isolation": {
+    "mode": "CFFIXED_USER_HOME",
+    "home": "/private/tmp/neantik-home-v306",
+    "seedSHA256": "ab654fcc3a41ae1b2205831b3fe47f8a278942bd3a12a242df9ae2d0ffd9160e",
+    "ownerOnly": true,
+    "credentialsUsed": false,
+    "productionProfilesTouched": false
+  },
+  "nativeReadiness": {
+    "eligibleForAttempt": true,
+    "memoryPressure": 1,
+    "thermalState": 0,
+    "observedAt": "2026-10-27T19:27:55.521740+00:00"
+  },
+  "fixture": {
+    "stage": "/private/tmp/neantik-webkit-ab-stage-797w1dq0",
+    "root": "/private/tmp/neantik-production-diagnostic-a8hufp7v",
+    "planSHA256": "7e364237dccc83b15f6e0328dd802171dab6394153319951810857fb8e9f17bc",
+    "profileSeedSHA256": "ab654fcc3a41ae1b2205831b3fe47f8a278942bd3a12a242df9ae2d0ffd9160e",
+    "phaseCount": 0,
+    "dnsAccepted": 0,
+    "originAccepted": 0,
+    "originResponses": 0,
+    "proxyAAccepted": 0,
+    "proxyBAccepted": 0,
+    "allChannelsDrained": true
+  },
+  "candidateProcessObserved": false,
+  "publicStateChanged": false,
+  "releaseQualified": false,
+  "nextAction": "Do not repeat NSWorkspace launch on this unchanged candidate. Diagnose a supported exact-bundle Launch Services path and establish CFFIXED_USER_HOME isolation before spawning. Only then run WebKit A1/B1/A2 and refusal/recovery once. Continue exact recipient source/relink/legal and final notarized ZIP/DMG gates independently."
+}

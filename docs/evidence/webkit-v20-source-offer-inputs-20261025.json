@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "status": "pass-exact-source-build-input-hashes-pinned;portable-dependency-and-relink-offer-open",
+  "observedAt": "2026-10-25",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "inputManifest": {
+    "path": "dist/private/source-offers/1.0.0-manager-955/input-pins-v20.json",
+    "sha256": "e1cc2889a47bed299eecc07fc839ccab09645d40af84cf776963b1a776d58cd3",
+    "pinnedWebKitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "expectedSHA256": {
+      "buildConfig": "87fa45899da4edc66eefd6b48fabae83331a0d52fc22f178d991789204f0837e",
+      "neantikArchive": "b880531a56aced46dbf8cda817b3c1c52a8294dc1c38a4b13a2c2177cb556197",
+      "patch": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+      "webkitArchive": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f"
+    }
+  },
+  "buildConfig": {
+    "path": "dist/private/source-offers/1.0.0-manager-955/BUILD-CONFIG-v20.json",
+    "sha256": "87fa45899da4edc66eefd6b48fabae83331a0d52fc22f178d991789204f0837e",
+    "featureOptionCount": 146,
+    "cmakeCacheSHA256": "bf38a4db6cf695dbc6b88d878c379521a97b87d7ea93c1ef493c0f9b929ea17c",
+    "buildNinjaSHA256": "691f704d4a75b80b5f4e8652a1d758b78e135f83b089b61a378df3c20bffc570",
+    "stagingManifestSHA256": "15b87655149ee85164cec6268a8ca711a20a1c299ad2a2504e53b47a6f8e5a6a"
+  },
+  "sourceArchive": {
+    "path": "dist/private/source-offers/1.0.0-manager-955/NeAntik-source-955bc08.tar.zst",
+    "sha256": "b880531a56aced46dbf8cda817b3c1c52a8294dc1c38a4b13a2c2177cb556197",
+    "bytes": 22117688
+  },
+  "webkitArchive": {
+    "path": "artifacts/neantik/webkit-v20-source-20261025/WebKit-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c.tar.zst",
+    "sha256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "bytes": 1748508866
+  },
+  "patch": {
+    "path": "artifacts/neantik/webkit-v20-source-20261025/webkit-v20-source-modifications.patch",
+    "sha256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "bytes": 37950
+  },
+  "scopeLimit": "Exact source/build inputs are now pinned for these components. The observed config is not a complete portable transitive dependency/build/relink offer; notice applicability remains unresolved; no package or release qualification is implied."
+}

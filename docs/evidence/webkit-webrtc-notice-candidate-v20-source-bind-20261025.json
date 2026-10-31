@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25",
+  "status": "research-notice-candidate-rebound-to-current-v20-source;not-approved-or-packaged",
+  "upstream": {
+    "repository": "WebKit/WebKit",
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+  },
+  "currentPinnedSourceArchive": {
+    "path": "artifacts/neantik/webkit-v20-source-20261025/WebKit-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c.tar.zst",
+    "sha256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f"
+  },
+  "historicalNoticeCandidate": {
+    "markdown": "docs/evidence/webkit-webrtc-notices-candidate-v3-20261021.md",
+    "sha256": "e45da3d1ce766d3b6bd00e96dd72a7276d1188a0f8d9b0172a36c1ef8d8e1df6",
+    "metadata": "docs/evidence/webkit-webrtc-notice-candidate-v3-20261021.json",
+    "metadataSHA256": "0ce4ddfe1f91583dd091d3e68bfd27401e7fdc8475dc8655ae5e41e16d37861a",
+    "historicalSourceArchiveSHA256": "5283e980fb4a691d9cc1bd05a0fa046a88c0d924c892259c7475311e828885dc"
+  },
+  "verifiedNoticeBlobs": [
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/abseil-cpp/LICENSE",
+      "sha256": "c79a7fea0e3cac04cd43f20e7b648e5a0ff8fa5344e644b0ee09ca1162b62747",
+      "bytes": 11361,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/LICENSE",
+      "sha256": "827c8d8fc207c2392794eef9e00fe246f9f61fdcc132556c275be3dd8c3cd97f",
+      "bytes": 13115,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/third_party/fiat/LICENSE",
+      "sha256": "9eacbcb81be660840c714a560a9d65ba07913db98dd4baf969f78dd499fdd60f",
+      "bytes": 638,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/crc32c/src/LICENSE",
+      "sha256": "a1f30b77c01e0995fa32a00119e00749e8731ee8a3c4c3549bce74083c72b0b6",
+      "bytes": 1460,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/LICENSE",
+      "sha256": "4764a286d8b2faeaf42f4418e7d7a28d58fc8fd4d00a3d0a7f44b0a4099de7f2",
+      "bytes": 1316,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/PATENTS",
+      "sha256": "661fb8e504744e95587b556b94a58343448300606a41bea8c7a9b97125696e61",
+      "bytes": 5701,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/vector/LICENSE",
+      "sha256": "ff6c857ce2708e87701323078aef115c1872a1f80a9649f86dc899b48083bc60",
+      "bytes": 1084,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libsrtp/LICENSE",
+      "sha256": "8e19d42a1eec9561f3f347253ddf2e385c55f392f025bb0fd41b88dbf38db5ae",
+      "bytes": 1614,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/LICENSE",
+      "sha256": "8267348d5af1262c11d1a08de2f5afc77457755f1ac658627dd9acf71011d615",
+      "bytes": 1537,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/PATENTS",
+      "sha256": "cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c",
+      "bytes": 1436,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libwebm/LICENSE.txt",
+      "sha256": "5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf",
+      "bytes": 1496,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libyuv/LICENSE",
+      "sha256": "2b2cc1180c7e6988328ad2033b04b80117419db9c4c584918bbb3cfec7e9364f",
+      "bytes": 1506,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libyuv/PATENTS",
+      "sha256": "4da84211f947c6f9f7dd8fbce513e1522e01833407ae732b8c9a2bbb75fed495",
+      "bytes": 1387,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/opus/src/COPYING",
+      "sha256": "01e1167d54a096d123cf6dfbbeb19587278845c6481d2d66d545669846079551",
+      "bytes": 1945,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/pffft/LICENSE",
+      "sha256": "a46200592eb193853527250da098e6bb0c75424e7a2c7db8da526c4f301c3d88",
+      "bytes": 1919,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/rnnoise/COPYING",
+      "sha256": "e2f59ff41d9d03adc3dcf3deff170f8c8cf4a6eb4a9b174762a7656d23200ffa",
+      "bytes": 1581,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/LICENSE",
+      "sha256": "ab00a482b6a3902e40211b43c5d0441962ea99b6cc7c25c0f243fa270b78d482",
+      "bytes": 1511,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/PATENTS",
+      "sha256": "01462e2068d1a04c2274f3389773014c14ed9bc3446b28303543bd3e3c064145",
+      "bytes": 1388,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/ooura/LICENSE",
+      "sha256": "25b7731b70c77ecd5f3bb19303fbaa99be18860f81d44f71da670fdcd04829db",
+      "bytes": 272,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/spl_sqrt_floor/LICENSE",
+      "sha256": "41d791701e3e1c1073470403de7e342442d1e6a2af72681023b13a2f45f2125c",
+      "bytes": 915,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/fft/LICENSE",
+      "sha256": "6fdbabd2c95c5efc6f1e46175278239afb9343120a3022ed0e0cb04267a6aeb3",
+      "bytes": 1125,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g711/LICENSE",
+      "sha256": "b29c8f13f91feb2dab7d6655444369fa9f29c0d7121a52dab90ff97e40343a85",
+      "bytes": 429,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g722/LICENSE",
+      "sha256": "61862327fd00d6a4deb2c1276577782c2500f4fe103e072018fc369d8e37e876",
+      "bytes": 611,
+      "exactPinnedV20SourceMatch": true
+    },
+    {
+      "sourcePath": "Source/WebCore/PAL/ThirdParty/dav1d/COPYING",
+      "sha256": "dd92c3c2247c5651606fc23a5e2d6a1ebc5ace9a3e49cbde0e12f05ad1cb1ee5",
+      "bytes": 1317,
+      "exactPinnedV20SourceMatch": true
+    }
+  ],
+  "summary": {
+    "candidateSections": 24,
+    "uniqueNoticeBlobs": 24,
+    "exactCurrentSourceMatches": 24,
+    "missingOrMismatched": 0
+  },
+  "decisionBoundary": "This binds the 24 draft notice text bodies to same-path, same-hash files in the current v20 pinned source tree. It does not decide legal applicability, linked-image scope, patent applicability, source/relink obligations, notice completeness, or authorize packaging/publication."
+}

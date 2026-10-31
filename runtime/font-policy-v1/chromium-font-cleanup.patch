@@ -1,0 +1,54 @@
+--- a/chrome/browser/mac/code_sign_clone_manager.mm
++++ b/chrome/browser/mac/code_sign_clone_manager.mm
+@@ -24,6 +24,7 @@
+ 
+ #include "base/apple/foundation_util.h"
+ #include "base/containers/fixed_flat_set.h"
++#include "base/environment.h"
+ #include "base/feature_list.h"
+ #include "base/files/file_enumerator.h"
+ #include "base/files/file_path.h"
+@@ -363,6 +364,20 @@
+   base::LaunchOptions options;
+   options.new_process_group = true;
+ 
++  // The font witness is process-scoped to browser/renderers. This helper has
++  // no profile and must not inherit QA guards, seeds or developer credentials.
++  auto environment = base::Environment::Create();
++  if (environment->GetVar("NEANTIK_FONT_QA") == "owned-v1") {
++    options.clear_environment = true;
++    constexpr const char* keys[] = {"HOME", "LANG", "LC_ALL", "LC_CTYPE",
++        "LOGNAME", "PATH", "SHELL", "TMPDIR", "USER", "XPC_FLAGS",
++        "XPC_SERVICE_NAME", "__CFBundleIdentifier", "BREAKPAD_DUMP_LOCATION"};
++    for (const char* key : keys) {
++      if (auto value = environment->GetVar(key))
++        options.environment[key] = *value;
++    }
++  }
++
+   // Null out stdout and stderr to prevent unexpected output after the browser
+   // has exited if launching from a terminal.
+   // `base::LaunchProcess` maps stdin to /dev/null.
+--- a/chrome/common/chrome_paths_mac.mm
++++ b/chrome/common/chrome_paths_mac.mm
+@@ -19,6 +19,7 @@
+ #include "build/branding_buildflags.h"
+ #include "build/build_config.h"
+ #include "chrome/common/chrome_constants.h"
++#include "chrome/common/chrome_switches.h"
+ #include "chrome/common/chrome_paths_internal.h"
+ 
+ namespace {
+@@ -187,9 +188,9 @@
+ }
+ 
+ bool ProcessNeedsProfileDir(const std::string& process_type) {
+-  // For now we have no reason to forbid this on other macOS as we don't
+-  // have the roaming profile troubles there.
+-  return true;
++  // Clone cleanup uses only its validated code-clone suffix. It must not
++  // resolve or create the user's default profile while retiring a code copy.
++  return process_type != switches::kCodeSignCloneCleanupProcess;
+ }
+ 
+ }  // namespace chrome

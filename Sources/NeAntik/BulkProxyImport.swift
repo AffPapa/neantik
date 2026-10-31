@@ -1,65 +1,6 @@
 import AppKit
-import Darwin
 import Foundation
 import SwiftUI
-import UniformTypeIdentifiers
-
-struct AccessibilityAnnouncementGate<Value: Equatable> {
-    private(set) var lastValue: Value?
-
-    init() {
-        lastValue = nil
-    }
-
-    mutating func shouldAnnounce(_ value: Value) -> Bool {
-        guard lastValue != value else { return false }
-        lastValue = value
-        return true
-    }
-
-    mutating func reset() {
-        lastValue = nil
-    }
-}
-
-enum BulkProxyImportAccessibilityAnnouncement: Equatable {
-    case validationFailed
-    case ready(Int)
-    case created(Int)
-    case creationFailed
-
-    var message: String {
-        switch self {
-        case .validationFailed:
-            "Список прокси не готов. Проверь сообщение под полем."
-        case let .ready(count):
-            "Готово к созданию профилей: \(count)."
-        case let .created(count):
-            "Создано профилей: \(count)."
-        case .creationFailed:
-            "Не удалось создать профили. Проверь сообщение в окне."
-        }
-    }
-}
-
-struct BulkProxyImportDraftSnapshot: Equatable, Sendable {
-    let text: String
-    let baseName: String
-    let kind: ProxyKind
-    let order: ProxyImportOrder
-
-    func hasUnsavedChanges(
-        text: String,
-        baseName: String,
-        kind: ProxyKind,
-        order: ProxyImportOrder
-    ) -> Bool {
-        self.text != text ||
-            self.baseName != baseName ||
-            self.kind != kind ||
-            self.order != order
-    }
-}
 
 enum BulkProxyImportRowIssue: Equatable, Sendable {
     case invalid
@@ -76,7 +17,7 @@ enum BulkProxyImportRowIssue: Equatable, Sendable {
         case .tooLong:
             "Строка слишком длинная."
         case .unsupportedAuthentication:
-            "SOCKS5 поддерживается только без логина и пароля."
+            "Проверь логин и пароль SOCKS5: до 255 байт UTF-8 каждый."
         }
     }
 
@@ -86,7 +27,7 @@ enum BulkProxyImportRowIssue: Equatable, Sendable {
             .ambiguous
         case .tooLong:
             .tooLong
-        case .socksAuthenticationUnsupported:
+        case .invalidSOCKSCredentials:
             .unsupportedAuthentication
         default:
             .invalid
@@ -133,27 +74,65 @@ struct BulkProxyImportPreview: Equatable, Sendable {
     }
 }
 
+struct BulkProxyImportPreviewRequest: Equatable, Sendable {
+    let text: String
+    let kind: ProxyKind
+    let order: ProxyImportOrder
+}
+
+enum BulkProxyImportPreviewComputation {
+    static func run(
+        _ request: BulkProxyImportPreviewRequest
+    ) async -> Result<BulkProxyImportPreview, BulkProxyImportPreviewFailure> {
+        guard !Task.isCancelled else {
+            return .failure(BulkProxyImportPreviewFailure("Отменено"))
+        }
+        let worker: Task<
+            Result<BulkProxyImportPreview, BulkProxyImportPreviewFailure>?,
+            Never
+        > = Task.detached(priority: .userInitiated) {
+            do {
+                return Result<
+                    BulkProxyImportPreview,
+                    BulkProxyImportPreviewFailure
+                >.success(
+                    try BulkProxyImportParser.preview(
+                        request.text,
+                        kind: request.kind,
+                        order: request.order
+                    )
+                )
+            } catch is CancellationError {
+                return nil
+            } catch {
+                return .failure(
+                    BulkProxyImportPreviewFailure(error.localizedDescription)
+                )
+            }
+        }
+        return await withTaskCancellationHandler {
+            let result = await worker.value
+            guard !Task.isCancelled else {
+                return .failure(BulkProxyImportPreviewFailure("Отменено"))
+            }
+            return result ?? .failure(BulkProxyImportPreviewFailure("Отменено"))
+        } onCancel: {
+            worker.cancel()
+        }
+    }
+}
+
+struct BulkProxyImportPreviewFailure: Error, Sendable {
+    let message: String
+
+    init(_ message: String) {
+        self.message = message
+    }
+}
+
 enum BulkProxyImportParser {
     static let maximumEntries = 100
     static let maximumInputBytes = 512 * 1_024
-
-    static func baseNameValidationMessage(_ value: String) -> String? {
-        if value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "Введи основу названия."
-        }
-        if let message = ProfileEditorValidation.nameMessage(for: value) {
-            return message
-        }
-        guard profileName(base: value, index: 1) != nil else {
-            return "Сократи основу названия: нужно место для номера профиля."
-        }
-        return nil
-    }
-
-    static func inputSelectionFailureMessage(lineNumber: Int) -> String {
-        "Не удалось выделить строку \(lineNumber). " +
-            "Щёлкни в поле и перейди к ней вручную."
-    }
 
     static func parse(
         _ input: String,
@@ -192,24 +171,29 @@ enum BulkProxyImportParser {
             throw BulkProxyImportError.tooMany
         }
 
-        let rows = nonEmpty.map { lineNumber, line in
+        var rows: [BulkProxyImportPreviewRow] = []
+        rows.reserveCapacity(nonEmpty.count)
+        for (lineNumber, line) in nonEmpty {
+            if withUnsafeCurrentTask(body: { $0?.isCancelled ?? false }) {
+                throw CancellationError()
+            }
             do {
                 let draft = try ProxyImportParser.parse(
                     line,
                     kind: kind,
                     order: order
                 )
-                return BulkProxyImportPreviewRow(
+                rows.append(BulkProxyImportPreviewRow(
                     lineNumber: lineNumber,
                     draft: draft,
                     issue: nil
-                )
+                ))
             } catch {
-                return BulkProxyImportPreviewRow(
+                rows.append(BulkProxyImportPreviewRow(
                     lineNumber: lineNumber,
                     draft: nil,
                     issue: .resolve(error)
-                )
+                ))
             }
         }
         return BulkProxyImportPreview(rows: rows)
@@ -245,87 +229,6 @@ enum BulkProxyImportError: LocalizedError, Equatable {
         case .rollbackFailed:
             "Импорт остановлен, но часть данных Связки ключей не удалось очистить. Профили не созданы; обратись в поддержку, не передавая пароль."
         }
-    }
-}
-
-enum ProxyImportFileReadError: LocalizedError, Equatable {
-    case unsupportedFile
-    case tooLarge
-    case invalidEncoding
-    case unreadable
-
-    var errorDescription: String? {
-        switch self {
-        case .unsupportedFile:
-            "Выбери обычный текстовый файл, а не папку или ссылку."
-        case .tooLarge:
-            "Файл больше 512 КиБ. Раздели список на несколько файлов."
-        case .invalidEncoding:
-            "Файл должен быть сохранён в UTF-8."
-        case .unreadable:
-            "Не удалось безопасно прочитать выбранный файл."
-        }
-    }
-}
-
-enum ProxyImportFileReader {
-    static func readText(from url: URL) throws -> String {
-        let descriptor = Darwin.open(
-            url.path,
-            O_RDONLY | O_NOFOLLOW | O_CLOEXEC
-        )
-        guard descriptor >= 0 else {
-            if errno == ELOOP {
-                throw ProxyImportFileReadError.unsupportedFile
-            }
-            throw ProxyImportFileReadError.unreadable
-        }
-        defer { _ = Darwin.close(descriptor) }
-
-        var metadata = stat()
-        guard fstat(descriptor, &metadata) == 0 else {
-            throw ProxyImportFileReadError.unreadable
-        }
-        guard metadata.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG) else {
-            throw ProxyImportFileReadError.unsupportedFile
-        }
-        guard metadata.st_size >= 0,
-              metadata.st_size <= BulkProxyImportParser.maximumInputBytes
-        else {
-            throw ProxyImportFileReadError.tooLarge
-        }
-
-        let handle = FileHandle(
-            fileDescriptor: descriptor,
-            closeOnDealloc: false
-        )
-        var data = Data()
-        do {
-            while data.count <= BulkProxyImportParser.maximumInputBytes {
-                guard let chunk = try handle.read(
-                    upToCount: min(
-                        64 * 1_024,
-                        BulkProxyImportParser.maximumInputBytes + 1 -
-                            data.count
-                    )
-                ), !chunk.isEmpty else {
-                    break
-                }
-                data.append(chunk)
-            }
-        } catch {
-            throw ProxyImportFileReadError.unreadable
-        }
-        guard data.count <= BulkProxyImportParser.maximumInputBytes else {
-            throw ProxyImportFileReadError.tooLarge
-        }
-        if data.starts(with: [0xEF, 0xBB, 0xBF]) {
-            data.removeFirst(3)
-        }
-        guard let text = String(data: data, encoding: .utf8) else {
-            throw ProxyImportFileReadError.invalidEncoding
-        }
-        return text
     }
 }
 
@@ -525,6 +428,7 @@ enum BulkProfileImporter {
             }
             return BrowserProfile(
                 name: name,
+                fontPolicy: .systemV1, privacyPolicy: .balanced,
                 proxy: draft.configuration
             )
         }
@@ -568,66 +472,23 @@ enum BulkProfileImporter {
     }
 }
 
-struct PendingProxyFileReplacement: Identifiable, Equatable, Sendable {
-    let id = UUID()
-    let fileName: String
-    let text: String
-}
-
-enum BulkProxyFileReplacementPolicy {
-    static func requiresConfirmation(existingText: String) -> Bool {
-        !existingText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-}
-
-enum BulkProxyInputSelection {
-    static func range(lineNumber: Int, in text: String) -> NSRange? {
-        guard lineNumber > 0 else { return nil }
-        let source = text as NSString
-        var currentLine = 1
-        var location = 0
-        while currentLine < lineNumber, location < source.length {
-            let lineRange = source.lineRange(
-                for: NSRange(location: location, length: 0)
-            )
-            location = NSMaxRange(lineRange)
-            currentLine += 1
-        }
-        guard currentLine == lineNumber, location < source.length else {
-            return nil
-        }
-        return source.lineRange(
-            for: NSRange(location: location, length: 0)
-        )
-    }
-}
-
 struct BulkProxyImportView: View {
     @Environment(\.dismiss) private var dismiss
 
     let targetFolderName: String?
     let onCreate: ([ProxyImportDraft], String) async throws -> Void
-    private let initialDraft: BulkProxyImportDraftSnapshot
 
     @State private var text = ""
     @State private var baseName = "Прокси"
     @State private var kind: ProxyKind = .http
     @State private var order: ProxyImportOrder = .automatic
     @State private var preview = BulkProxyImportPreview.empty
+    @State private var parsedRequest: BulkProxyImportPreviewRequest?
     @State private var inputMessage: String?
     @State private var creationError: String?
     @State private var isCreating = false
     @State private var showsOptions = false
-    @State private var showingFileImporter = false
-    @State private var importedFileName: String?
-    @State private var showingDiscardConfirmation = false
-    @State private var pendingFileReplacement: PendingProxyFileReplacement?
     @FocusState private var proxyInputIsFocused: Bool
-    @FocusState private var baseNameIsFocused: Bool
-    @State private var announcementGate =
-        AccessibilityAnnouncementGate<
-            BulkProxyImportAccessibilityAnnouncement
-        >()
 
     init(
         targetFolderName: String? = nil,
@@ -644,22 +505,7 @@ struct BulkProxyImportView: View {
         _kind = State(initialValue: initialKind)
         _order = State(initialValue: initialOrder)
         _showsOptions = State(initialValue: showsOptionsInitially)
-        initialDraft = BulkProxyImportDraftSnapshot(
-            text: initialText,
-            baseName: initialBaseName,
-            kind: initialKind,
-            order: initialOrder
-        )
         self.onCreate = onCreate
-    }
-
-    private var hasUnsavedChanges: Bool {
-        initialDraft.hasUnsavedChanges(
-            text: text,
-            baseName: baseName,
-            kind: kind,
-            order: order
-        )
     }
 
     var body: some View {
@@ -677,33 +523,21 @@ struct BulkProxyImportView: View {
 
             Form {
                 Section("Прокси — по одному на строку") {
-                    HStack(alignment: .firstTextBaseline, spacing: 12) {
-                        Text(
-                            "Вставь список или выбери текстовый файл. " +
-                                "Каждая непустая строка станет отдельным " +
-                                "постоянным профилем."
-                        )
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        Spacer(minLength: 8)
-                        Button("Из файла…", systemImage: "doc.text") {
-                            showingFileImporter = true
+                    Picker("Тип прокси", selection: $kind) {
+                        ForEach(ProxyKind.allCases) { value in
+                            Text(value.title).tag(value)
                         }
-                        .controlSize(.small)
-                        .accessibilityHint(
-                            "Выбирает локальный UTF-8 файл размером до 512 КиБ"
-                        )
                     }
-
-                    if let importedFileName {
-                        Label(
-                            "Загружен файл: \(importedFileName)",
-                            systemImage: "checkmark.circle"
-                        )
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    }
+                    Text(
+                        "Сверь тип и соответствующий ему порт с кабинетом провайдера: порты HTTP и SOCKS5 могут различаться. HTTP-прокси подходит для HTTPS-сайтов, а HTTPS-прокси требует TLS до самого прокси. Строка без схемы использует выбранный тип. Прокси с авторизацией подключается через отдельный локальный relay профиля."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    Text(
+                        "Вставь список. Каждая непустая строка создаст новый профиль; существующие профили не изменятся."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                     ZStack(alignment: .topLeading) {
                         if text.isEmpty {
@@ -756,27 +590,52 @@ struct BulkProxyImportView: View {
                 }
 
                 Section {
-                    DisclosureGroup(isExpanded: $showsOptions) {
-                        TextField("Основа названия", text: $baseName)
-                            .focused($baseNameIsFocused)
-                        if let message = BulkProxyImportParser.baseNameValidationMessage(baseName) {
-                            Text(message)
+                    Button {
+                        showsOptions.toggle()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(
+                                systemName: showsOptions
+                                    ? "chevron.down"
+                                    : "chevron.right"
+                            )
+                            .font(.caption.weight(.semibold))
+                            Text("Параметры")
+                                .fontWeight(.semibold)
+                            Spacer()
+                            Text(optionsSummary)
                                 .font(.caption)
-                                .foregroundStyle(.red)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
                         }
+                        .frame(
+                            maxWidth: .infinity,
+                            minHeight: 32,
+                            alignment: .leading
+                        )
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Параметры импорта")
+                    .accessibilityValue(
+                        showsOptions ? "Развёрнуто" : "Свёрнуто"
+                    )
+                    .accessibilityHint(
+                        showsOptions
+                            ? "Скрывает параметры импорта"
+                            : "Показывает параметры импорта"
+                    )
+
+                    if showsOptions {
+                        TextField("Основа названия", text: $baseName)
 
                         LabeledContent("Будут названы") {
-                            Text(baseNameIsValid ? "\(previewName)…" : "Исправь основу названия")
+                            Text("\(previewName)…")
                         }
 
                         LabeledContent("Папка") {
                             Text(targetFolderName ?? "Без папки")
-                        }
-
-                        Picker("Тип прокси", selection: $kind) {
-                            ForEach(ProxyKind.allCases) { value in
-                                Text(value.title).tag(value)
-                            }
                         }
 
                         Picker("Порядок полей", selection: $order) {
@@ -791,19 +650,7 @@ struct BulkProxyImportView: View {
                         )
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    } label: {
-                        HStack {
-                            Text("Параметры").fontWeight(.semibold)
-                            Spacer()
-                            Text(optionsSummary)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        }
-                        .accessibilityLabel("Параметры импорта")
                     }
-                    .disclosureGroupStyle(NeAntikDisclosureStyle(minimumHeight: 32))
                 }
             }
             .formStyle(.grouped)
@@ -813,7 +660,7 @@ struct BulkProxyImportView: View {
             HStack {
                 Spacer()
                 Button("Отмена", role: .cancel) {
-                    requestDismiss()
+                    dismiss()
                 }
                 .disabled(isCreating)
                 .keyboardShortcut(.cancelAction)
@@ -822,116 +669,46 @@ struct BulkProxyImportView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(
-                    isCreating || !preview.isReady || !baseNameIsValid
+                    isCreating || !previewIsCurrent || !preview.isReady
+                        || !baseNameIsValid
                 )
                 .keyboardShortcut(.defaultAction)
             }
             .padding()
         }
         .frame(minWidth: 500, idealWidth: 620, minHeight: 500)
-        .interactiveDismissDisabled(isCreating || hasUnsavedChanges)
-        .alert(
-            "Отменить импорт?",
-            isPresented: $showingDiscardConfirmation
-        ) {
-            Button("Продолжить редактирование", role: .cancel) {}
-            Button("Отменить импорт", role: .destructive) {
-                dismiss()
-            }
-        } message: {
-            Text("Вставленный список и параметры импорта будут потеряны.")
-        }
-        .alert(item: $pendingFileReplacement) { replacement in
-            Alert(
-                title: Text("Заменить вставленный список?"),
-                message: Text(
-                    "Файл «\(replacement.fileName)» заменит весь текущий список прокси."
-                ),
-                primaryButton: .destructive(Text("Заменить")) {
-                    applyFileReplacement(replacement)
-                },
-                secondaryButton: .cancel(Text("Оставить текущий"))
-            )
-        }
         .onAppear {
-            refreshPreview()
             Task { @MainActor in
                 await Task.yield()
                 proxyInputIsFocused = true
             }
         }
-        .onChange(of: text) { _, _ in refreshPreview() }
-        .onChange(of: kind) { _, _ in refreshPreview() }
-        .onChange(of: order) { _, _ in refreshPreview() }
+        .task(id: previewRequest) { [request = previewRequest] in
+            await refreshPreview(for: request)
+        }
         .onChange(of: baseName) { _, _ in validateBaseName() }
-        .fileImporter(
-            isPresented: $showingFileImporter,
-            allowedContentTypes: [.plainText, .commaSeparatedText],
-            allowsMultipleSelection: false,
-            onCompletion: importProxyFile
-        )
         .onDisappear {
             text = ""
             preview = .empty
+            parsedRequest = nil
         }
-    }
-
-    private func requestDismiss() {
-        if hasUnsavedChanges {
-            showingDiscardConfirmation = true
-        } else {
-            dismiss()
-        }
-    }
-
-    private func importProxyFile(_ result: Result<[URL], Error>) {
-        do {
-            let url = try result.get().first
-            guard let url else { return }
-            let didAccess = url.startAccessingSecurityScopedResource()
-            defer {
-                if didAccess { url.stopAccessingSecurityScopedResource() }
-            }
-            let replacement = PendingProxyFileReplacement(
-                fileName: url.lastPathComponent,
-                text: try ProxyImportFileReader.readText(from: url)
-            )
-            if BulkProxyFileReplacementPolicy.requiresConfirmation(
-                existingText: text
-            ) {
-                pendingFileReplacement = replacement
-            } else {
-                applyFileReplacement(replacement)
-            }
-        } catch let error as CocoaError where error.code == .userCancelled {
-            return
-        } catch {
-            preview = .empty
-            importedFileName = nil
-            inputMessage = error.localizedDescription
-            creationError = nil
-            announce(.validationFailed)
-        }
-    }
-
-    private func applyFileReplacement(
-        _ replacement: PendingProxyFileReplacement
-    ) {
-        text = replacement.text
-        importedFileName = replacement.fileName
-        inputMessage = nil
-        creationError = nil
-        refreshPreview()
-        proxyInputIsFocused = true
     }
 
     private var baseNameIsValid: Bool {
-        BulkProxyImportParser.baseNameValidationMessage(baseName) == nil
+        BulkProxyImportParser.profileName(base: baseName, index: 1) != nil
+    }
+
+    private var previewRequest: BulkProxyImportPreviewRequest {
+        BulkProxyImportPreviewRequest(text: text, kind: kind, order: order)
+    }
+
+    private var previewIsCurrent: Bool {
+        parsedRequest == previewRequest
     }
 
     private var previewName: String {
         BulkProxyImportParser.profileName(base: baseName, index: 1)
-            ?? "Название не задано"
+            ?? "Прокси 1"
     }
 
     private var optionsSummary: String {
@@ -951,24 +728,18 @@ struct BulkProxyImportView: View {
 
     @ViewBuilder
     private var previewStatus: some View {
-        if !baseNameIsValid {
-            Button {
-                showsOptions = true
-                proxyInputIsFocused = false
-                Task { @MainActor in
-                    await Task.yield()
-                    baseNameIsFocused = true
-                }
-            } label: {
-                statusLabel(
-                    BulkProxyImportParser.baseNameValidationMessage(baseName) ?? "Проверь основу названия.",
-                    systemImage: "arrow.down.circle",
-                    color: .orange
-                )
-            }
-            .buttonStyle(.plain)
-            .help("Открыть параметры и исправить основу названия")
-            .accessibilityHint("Открывает параметры и переводит фокус в основу названия")
+        if !previewIsCurrent {
+            statusLabel(
+                "Проверяю список прокси…",
+                systemImage: "hourglass",
+                color: .secondary
+            )
+        } else if !baseNameIsValid {
+            statusLabel(
+                "Проверь основу названия в параметрах.",
+                systemImage: "exclamationmark.triangle.fill",
+                color: .orange
+            )
         } else if let inputMessage {
             statusLabel(
                 inputMessage,
@@ -993,7 +764,7 @@ struct BulkProxyImportView: View {
 
     @ViewBuilder
     private var previewRows: some View {
-        if !preview.rows.isEmpty {
+        if previewIsCurrent, !preview.rows.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 let validLimit = preview.hasIssues ? 3 : 6
                 ForEach(Array(validPreviewRows.prefix(validLimit))) { row in
@@ -1034,25 +805,7 @@ struct BulkProxyImportView: View {
         preview.rows.filter { $0.issue != nil }
     }
 
-    @ViewBuilder
     private func previewRow(_ row: BulkProxyImportPreviewRow) -> some View {
-        if row.issue != nil {
-            Button {
-                focusInput(lineNumber: row.lineNumber)
-            } label: {
-                previewRowContent(row)
-            }
-            .buttonStyle(.plain)
-            .help("Перейти к строке \(row.lineNumber) в редакторе")
-            .accessibilityHint("Переводит фокус в проблемную строку")
-        } else {
-            previewRowContent(row)
-        }
-    }
-
-    private func previewRowContent(
-        _ row: BulkProxyImportPreviewRow
-    ) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text("\(row.lineNumber)")
                 .font(.caption.monospacedDigit())
@@ -1068,9 +821,6 @@ struct BulkProxyImportView: View {
                     systemImage: "exclamationmark.circle.fill"
                 )
                 .foregroundStyle(.orange)
-                Image(systemName: "arrow.right.circle")
-                    .foregroundStyle(.orange)
-                    .accessibilityHidden(true)
             }
         }
         .font(.caption)
@@ -1084,72 +834,42 @@ struct BulkProxyImportView: View {
         )
     }
 
-    private func focusInput(lineNumber: Int) {
-        guard let range = BulkProxyInputSelection.range(
-            lineNumber: lineNumber,
-            in: text
-        ) else { return }
-        proxyInputIsFocused = true
-        Task { @MainActor in
-            for attempt in 0..<4 {
-                await Task.yield()
-                if let textView = NSApp.keyWindow?.firstResponder
-                    as? NSTextView
-                {
-                    textView.setSelectedRange(range)
-                    textView.scrollRangeToVisible(range)
-                    return
-                }
-                guard attempt < 3 else { break }
-                try? await Task.sleep(for: .milliseconds(25))
-            }
-            inputMessage = BulkProxyImportParser.inputSelectionFailureMessage(
-                lineNumber: lineNumber
-            )
-        }
-    }
-
-    private func refreshPreview() {
-        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    private func refreshPreview(
+        for request: BulkProxyImportPreviewRequest
+    ) async {
+        try? await Task.sleep(for: .milliseconds(150))
+        guard !Task.isCancelled else { return }
+        guard !request.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         else {
             preview = .empty
+            parsedRequest = request
             inputMessage = nil
             creationError = nil
-            announcementGate.reset()
             return
         }
-        do {
-            preview = try BulkProxyImportParser.preview(
-                text,
-                kind: kind,
-                order: order
-            )
+        switch await BulkProxyImportPreviewComputation.run(request) {
+        case let .success(result):
+            guard !Task.isCancelled, request == previewRequest else { return }
+            preview = result
+            parsedRequest = request
             inputMessage = nil
             creationError = nil
-            if baseNameIsValid && preview.isReady {
-                announce(.ready(preview.drafts.count))
-            } else {
-                announce(.validationFailed)
-            }
-        } catch {
+        case let .failure(error):
+            guard !Task.isCancelled, request == previewRequest else { return }
             preview = .empty
-            inputMessage = error.localizedDescription
+            parsedRequest = request
+            inputMessage = error.message
             creationError = nil
-            announce(.validationFailed)
         }
     }
 
     private func validateBaseName() {
         creationError = nil
-        if baseNameIsValid && preview.isReady {
-            announce(.ready(preview.drafts.count))
-        } else if !baseNameIsValid {
-            announce(.validationFailed)
-        }
     }
 
     private func create() {
-        guard !isCreating, preview.isReady, baseNameIsValid else { return }
+        guard !isCreating, previewIsCurrent, preview.isReady,
+              baseNameIsValid else { return }
         let drafts = preview.drafts
         let capturedBaseName = baseName
         isCreating = true
@@ -1158,35 +878,64 @@ struct BulkProxyImportView: View {
             // Publish the busy state before the existing atomic transaction.
             await Task.yield()
             do {
-                let createdCount = drafts.count
                 try await onCreate(drafts, capturedBaseName)
-                announcementGate.reset()
-                announce(.created(createdCount))
                 dismiss()
             } catch {
                 isCreating = false
                 creationError = error.localizedDescription
-                announcementGate.reset()
-                announce(.creationFailed)
             }
         }
     }
 
     private func profileCountTitle(_ count: Int) -> String {
-        RussianCount.title(count, one: "профиль", few: "профиля", many: "профилей")
+        let modulo100 = count % 100
+        let modulo10 = count % 10
+        let noun: String
+        if (11...14).contains(modulo100) {
+            noun = "профилей"
+        } else if modulo10 == 1 {
+            noun = "профиль"
+        } else if (2...4).contains(modulo10) {
+            noun = "профиля"
+        } else {
+            noun = "профилей"
+        }
+        return "\(count) \(noun)"
     }
 
     private func issueCountTitle(_ count: Int) -> String {
-        RussianCount.title(count, one: "строку", few: "строки", many: "строк")
+        let modulo100 = count % 100
+        let modulo10 = count % 10
+        let noun: String
+        if (11...14).contains(modulo100) {
+            noun = "строк"
+        } else if modulo10 == 1 {
+            noun = "строку"
+        } else if (2...4).contains(modulo10) {
+            noun = "строки"
+        } else {
+            noun = "строк"
+        }
+        return "\(count) \(noun)"
     }
 
     private func issueStatusTitle(_ count: Int) -> String {
-        RussianCount.title(
-            count,
-            one: "строка требует исправления",
-            few: "строки требуют исправления",
-            many: "строк требуют исправления"
-        )
+        let modulo100 = count % 100
+        let modulo10 = count % 10
+        let isSingular = modulo10 == 1 && modulo100 != 11
+        let noun: String
+        if (11...14).contains(modulo100) {
+            noun = "строк"
+        } else if modulo10 == 1 {
+            noun = "строка"
+        } else if (2...4).contains(modulo10) {
+            noun = "строки"
+        } else {
+            noun = "строк"
+        }
+        return "\(count) \(noun) " +
+            (isSingular ? "требует" : "требуют") +
+            " исправления"
     }
 
     private func statusLabel(
@@ -1207,18 +956,4 @@ struct BulkProxyImportView: View {
         .accessibilityLabel(title)
     }
 
-    @MainActor
-    private func announce(
-        _ announcement: BulkProxyImportAccessibilityAnnouncement
-    ) {
-        guard announcementGate.shouldAnnounce(announcement) else { return }
-        NSAccessibility.post(
-            element: NSApp as Any,
-            notification: .announcementRequested,
-            userInfo: [
-                .announcement: announcement.message,
-                .priority: NSAccessibilityPriorityLevel.medium.rawValue
-            ]
-        )
-    }
 }

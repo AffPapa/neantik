@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v272-recipient-source-frameworks-preflight-20261027",
+  "observedAtUTC": "2026-10-27T15:38:00Z",
+  "status": "PINNED_INPUTS_SOURCE_TREE_AND_FRAMEWORKS_LAYOUT_PASS; COMPLETE_DEPENDENCY_RECIPE_AND_SIGNED_LOAD_OPEN",
+  "scope": "Reused existing exact V20 WebKit source/build tree for read-only recipient input preflight. No engine rebuild, signing, app launch, candidate change, or release action.",
+  "inputs": {
+    "inputManifestSHA256": "52d67675e4db6d52dbdb5c15ee0078604723615b8e6333b60aeee4ec4cdb2a59",
+    "webkitArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "managerSourceArchiveSHA256": "047ad8b493ff2710a277ac4526ee899aa9165e1ab18f7ca6deab63a6e0523958",
+    "mainPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "buildConfigSHA256": "87fa45899da4edc66eefd6b48fabae83331a0d52fc22f178d991789204f0837e"
+  },
+  "reusedTree": {
+    "sourceTree": "/private/tmp/neantik-v20-production-rebuild/WebKit",
+    "frameworks": "/private/tmp/neantik-v20-production-rebuild/WebKit/WebKitBuild/neantik-v20-production-arm64",
+    "cmakeCacheSHA256": "bf38a4db6cf695dbc6b88d878c379521a97b87d7ea93c1ef493c0f9b929ea17c",
+    "buildNinjaSHA256": "691f704d4a75b80b5f4e8652a1d758b78e135f83b089b61a378df3c20bffc570",
+    "archivePatchRelinkReceipt": "/private/tmp/neantik-release-v1/dist/private/source-offers/v269-composite-source-offer-draft/evidence/neantik-v135-clean-relocated-v132-webkit-relink-20261026.json",
+    "archivePatchRelinkReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4"
+  },
+  "check": {
+    "mode": "read-only-pinned-input-preflight",
+    "exitCode": 0,
+    "knownPinnedInputsPresent": true,
+    "sourceTree": "pass",
+    "builtFrameworksLayout": "pass",
+    "managerTeam": "H6VGU2M6JD",
+    "toolchain": "pass",
+    "completeDependencyInputs": "unresolved",
+    "recipientRelinkProved": false,
+    "identityPreflight": "not requested"
+  },
+  "reusedEvidenceLimit": "The V135 clean relocated build confirms 14 ARM64 outputs and its own exact archive/main patch/v36 patch pair on this Mac. It is not a new recipient team, signed-load, binary identity match to b960, complete transitive dependency inventory, legal clearance, or release qualification.",
+  "cleanup": "Removed only this turn’s duplicate /private/tmp/neantik-recipient-v271-source extraction after confirming the existing V20 source/build tree; recovered about 6 GiB and retained the existing V20 tree.",
+  "nextAction": "Do not rebuild the unchanged WebKit source set. Reconcile the portable dependency/build recipe, exact notices/image determinations, and signed-load path; keep the new private diagnostic harness separate.",
+  "releaseQualified": false
+}

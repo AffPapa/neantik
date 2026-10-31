@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T00:37:50Z",
+  "status": "pass-exact-v20-link-output-inventory;no-build-rerun",
+  "candidate": null,
+  "upstream": {
+    "repository": "https://github.com/WebKit/WebKit",
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "tree": "86b6ee8faf130e81a149280914e4ea5718f60129",
+    "archiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "patchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "crosswalkSHA256": "a4855fed2d0f33b31c791440538dbc481b0176665268e9dd57dbdbc9c23d9191",
+    "crosswalkFiles": 3344,
+    "missing": 0,
+    "hashDeltas": 0
+  },
+  "configuration": {
+    "buildNinjaSHA256": "691f704d4a75b80b5f4e8652a1d758b78e135f83b089b61a378df3c20bffc570",
+    "cmakeCacheSHA256": "bf38a4db6cf695dbc6b88d878c379521a97b87d7ea93c1ef493c0f9b929ea17c",
+    "existingRecordedTargetListSHA256": "9c32432e717a5c3d8661d30027ff0d31c0c9930cc8ceef98b60638378c56925e",
+    "requestedOutputCount": 14,
+    "buildLogSHA256": "a9ddd39c99ddfc9dbe991004b0f172992b18b3661a80e580bb4888fc2c0cb229",
+    "stagingManifestSHA256": "15b87655149ee85164cec6268a8ca711a20a1c299ad2a2504e53b47a6f8e5a6a"
+  },
+  "outputInventory": {
+    "count": 14,
+    "buildLogLinkEntries": [
+      {
+        "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+        "buildLogLine": 9275,
+        "line": "[7463/10903] Linking CXX shared library JavaScriptCore.framework/Versions/A/JavaScriptCore",
+        "ninjaRule": "CXX_SHARED_LIBRARY_LINKER__JavaScriptCore_Release"
+      },
+      {
+        "path": "WebGPU.framework/Versions/A/WebGPU",
+        "buildLogLine": 9387,
+        "line": "[7490/10903] Linking Swift shared library WebGPU.framework/Versions/A/WebGPU",
+        "ninjaRule": "Swift_SHARED_LIBRARY_LINKER__WebGPU_Release"
+      },
+      {
+        "path": "libANGLE-shared.dylib",
+        "buildLogLine": 11454,
+        "line": "[9556/10903] Linking CXX shared library libANGLE-shared.dylib; Code signing ANGLE-shared",
+        "ninjaRule": "CXX_SHARED_LIBRARY_LINKER__ANGLE-shared_Release"
+      },
+      {
+        "path": "libwebrtc.dylib",
+        "buildLogLine": 11455,
+        "line": "[9557/10903] Linking CXX shared library libwebrtc.dylib; Code signing webrtc",
+        "ninjaRule": "CXX_SHARED_LIBRARY_LINKER__webrtc_Release"
+      },
+      {
+        "path": "WebCore.framework/Versions/A/WebCore",
+        "buildLogLine": 12676,
+        "line": "[1120/1311] Linking CXX shared library WebCore.framework/Versions/A/WebCore",
+        "ninjaRule": "CXX_SHARED_LIBRARY_LINKER__WebCore_Release"
+      },
+      {
+        "path": "WebKitLegacy.framework/Versions/A/WebKitLegacy",
+        "buildLogLine": 12770,
+        "line": "[1156/1311] Linking CXX shared library WebKitLegacy.framework/Versions/A/WebKitLegacy",
+        "ninjaRule": "CXX_SHARED_LIBRARY_LINKER__WebKitLegacy_Release"
+      },
+      {
+        "path": "WebInspectorUI.framework/Versions/A/WebInspectorUI",
+        "buildLogLine": 12783,
+        "line": "[1169/1311] Linking CXX shared library WebInspectorUI.framework/Versions/A/WebInspectorUI",
+        "ninjaRule": "CXX_SHARED_LIBRARY_LINKER__WebInspectorUIFramework_Release"
+      },
+      {
+        "path": "WebKit.framework/Versions/A/WebKit",
+        "buildLogLine": 13150,
+        "line": "[1305/1311] Linking Swift shared library WebKit.framework/Versions/A/WebKit",
+        "ninjaRule": "Swift_SHARED_LIBRARY_LINKER__WebKit_Release"
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development",
+        "buildLogLine": 13153,
+        "line": "[1306/1311] Linking CXX executable WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development; Code signing GPUProcess",
+        "ninjaRule": "CXX_EXECUTABLE_LINKER__GPUProcess_Release"
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development",
+        "buildLogLine": 13154,
+        "line": "[1307/1311] Linking CXX executable WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development; Code signing WebProcess",
+        "ninjaRule": "CXX_EXECUTABLE_LINKER__WebProcess_Release"
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development",
+        "buildLogLine": 13155,
+        "line": "[1308/1311] Linking CXX executable WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development; Code signing NetworkProcess",
+        "ninjaRule": "CXX_EXECUTABLE_LINKER__NetworkProcess_Release"
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development",
+        "buildLogLine": 13156,
+        "line": "[1309/1311] Linking CXX executable WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development; Code signing WebProcessCaptivePortal",
+        "ninjaRule": "CXX_EXECUTABLE_LINKER__WebProcessCaptivePortal_Release"
+      },
+      {
+        "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development",
+        "buildLogLine": 13157,
+        "line": "[1310/1311] Linking CXX executable WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development; Code signing WebProcessEnhancedSecurity",
+        "ninjaRule": "CXX_EXECUTABLE_LINKER__WebProcessEnhancedSecurity_Release"
+      },
+      {
+        "path": "libWebKitSwift.dylib",
+        "buildLogLine": 13158,
+        "line": "[1311/1311] Linking Swift shared library libWebKitSwift.dylib; Code signing WebKitSwift",
+        "ninjaRule": "Swift_SHARED_LIBRARY_LINKER__WebKitSwift_Release"
+      }
+    ],
+    "sortedPathListSHA256": "36f7c875d646e3857f4ff68e7140e6e39d89b513568d591be5b780d8ae256067",
+    "graphResolution": "14/14 exact output paths resolve uniquely via ninja -t targets all; no build was invoked"
+  },
+  "scopeLimit": "This binds the 14 linked WebKit outputs to the matching existing build log and configured Ninja graph. The normalized path digest is distinct from the previously recorded targetListSHA256, whose original serialization is not reconstructed here. It does not close transitive dependencies, license applicability, source offer, signature, runtime qualification or release readiness."
+}

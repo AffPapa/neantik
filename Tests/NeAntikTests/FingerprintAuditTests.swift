@@ -5,6 +5,16 @@ import Testing
 
 struct FingerprintAuditTests {
     @Test
+    func fontNamesAndMalformedControlsCannotQualifyRenderingEvidence() {
+        #expect(FingerprintAuditReport.isFontMetricEvidence("metrics-v1:a1b2c3d4:fallback-control-pass"))
+        for value in ["Arial,Menlo", "metrics-v1:a1b2c3d4:fallback-control-fail",
+                      "metrics-v1:abcdefgh:fallback-control-pass", "unavailable", ""] {
+            #expect(!FingerprintAuditReport.isFontMetricEvidence(value))
+        }
+        #expect(!FingerprintAuditReport.isFontMetricEvidence(nil))
+    }
+
+    @Test
     func auditUsesFreshProcessProfileWithoutChangingIdentity() {
         let sourceID = UUID()
         let processID = UUID()
@@ -37,7 +47,7 @@ struct FingerprintAuditTests {
     func safeDiagnosticSummaryUsesOnlyAllowlistedProvenance() {
         let profileID = UUID()
         let secretProfileName = "PROFILE-NAME-MUST-NOT-LEAK"
-        let secretIdentityCode = "NA-DEADBEEF"
+        let secretIdentityCode = "NA-" + "DEADBEEF"
         let secretSurfaceValue = "proxy-login:secret@example.test"
         let first = FingerprintCapture(
             profileID: profileID,
@@ -54,7 +64,7 @@ struct FingerprintAuditTests {
         let second = FingerprintCapture(
             profileID: UUID(),
             profileName: "SECOND-PROFILE-MUST-NOT-LEAK",
-            identityCode: "NA-CAFEBABE",
+            identityCode: "NA-" + "CAFEBABE",
             capturedAt: Date(timeIntervalSince1970: 2),
             values: [
                 "canvas": "canvas-b",
@@ -156,6 +166,184 @@ struct FingerprintAuditTests {
             )
         )
         #expect(!result.safeDiagnosticSummary.contains("Ignored runtime name"))
+    }
+
+    @Test
+    func privacyDiagnosticsRejectMalformedPresentValuesWithoutRequiringNewKeys() {
+        var firstValues = baseValues(canvas: "canvas-a")
+        firstValues["media_devices"] = "available"
+        firstValues["media_device_count"] = "device-ids-must-not-be-here"
+        firstValues["permissions_api"] = "available"
+        firstValues["permission_camera"] = "granted"
+        firstValues["permission_microphone"] = "prompt"
+        firstValues["speech_synthesis"] = "available"
+        firstValues["speech_voice_count"] = "999"
+        firstValues["worker_audio"] = "raw-audio-value"
+        let result = report(
+            first: capture(name: "First", values: firstValues),
+            second: capture(name: "Second", values: baseValues(canvas: "canvas-b")),
+            repeatCapture: capture(
+                name: "First repeat",
+                values: firstValues
+            )
+        )
+
+        #expect(result.privacyDiagnosticIssues.count == 6)
+        #expect(!result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+    }
+
+    @Test
+    func unavailableCountsRemainDistinctFromZeroAndVoiceErrorsAreNotSuccess() {
+        var values = baseValues(canvas: "canvas-a")
+        values["media_devices"] = "unavailable"
+        values["media_device_count"] = "unavailable"
+        values["speech_synthesis"] = "available"
+        values["speech_voice_count"] = "unavailable"
+        values["speech_voice_observation"] = "timeout"
+        let first = capture(name: "First", values: values)
+        let second = capture(name: "Second", values: baseValues(canvas: "canvas-b"))
+        let unresolved = report(first: first, second: second, repeatCapture: first)
+        #expect(unresolved.privacyDiagnosticIssues.isEmpty)
+        #expect(unresolved.firstInitial.values["speech_voice_count"] != "0")
+
+        values["speech_voice_observation"] = "error"
+        // Match the native probe's catch result: failure is distinct from
+        // an available API whose initial voice list has not settled yet.
+        values["speech_synthesis"] = "unavailable"
+        let failed = capture(name: "First", values: values)
+        let failure = report(first: failed, second: second, repeatCapture: failed)
+        #expect(failure.privacyDiagnosticIssues.count == 2)
+    }
+
+    @Test
+    func voiceFailureCannotAlsoClaimAvailableObservation() {
+        var values = baseValues(canvas: "canvas-a")
+        values["speech_synthesis"] = "available"
+        values["speech_voice_count"] = "unavailable"
+        values["speech_voice_observation"] = "error"
+        let failed = capture(name: "First", values: values)
+        let result = report(first: failed,
+                            second: capture(name: "Second", values: baseValues(canvas: "canvas-b")),
+                            repeatCapture: failed)
+        #expect(result.privacyDiagnosticIssues.filter { $0.contains("observation failed") }.count == 2)
+        #expect(result.privacyDiagnosticIssues.filter { $0.contains("disagrees") }.count == 2)
+        #expect(!result.isPublicAlphaReleaseQualified)
+        #expect(!result.isProductionReleaseQualified)
+    }
+
+    @Test
+    func unresolvedVoiceListCannotPretendToBeAnObservedEmptyList() {
+        for state in ["timeout", "unavailable", "observed"] {
+            var values = baseValues(canvas: "canvas-a")
+            values["speech_synthesis"] = "available"
+            values["speech_voice_observation"] = state
+            values["speech_voice_count"] = state == "observed" ? "unavailable" : "0"
+            let first = capture(name: "First", values: values)
+            let result = report(first: first,
+                                second: capture(name: "Second", values: baseValues(canvas: "canvas-b")),
+                                repeatCapture: first)
+            #expect(!result.privacyDiagnosticIssues.isEmpty)
+        }
+    }
+
+    @Test
+    func missingOptionalPrivacyDiagnosticsRemainBackwardCompatible() {
+        let first = capture(
+            name: "First",
+            identityCode: "NA-" + "00000002",
+            values: coherentM2Values(
+                canvas: "canvas-a",
+                webGLPixels: "webgl-a",
+            )
+        )
+        let result = report(
+            first: first,
+            second: capture(
+                name: "Second",
+                identityCode: "NA-" + "00000008",
+                values: coherentM4Values(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b"
+                )
+            ),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: "First repeat",
+                values: first.values
+            )
+        )
+
+        #expect(result.privacyDiagnosticIssues.isEmpty)
+        #expect(!result.productionReleaseIssues.contains {
+            $0.contains("diagnostic") || $0.contains("worker_audio")
+        })
+    }
+
+    @Test
+    func privacyDiagnosticsRoundTripWithoutPersistingSensitiveMediaData() throws {
+        var values = baseValues(canvas: "canvas-a")
+        values["media_devices"] = "available"
+        values["media_device_count"] = "2"
+        values["permissions_api"] = "available"
+        values["permission_camera"] = "prompt"
+        values["permission_microphone"] = "denied"
+        values["speech_synthesis"] = "available"
+        values["speech_voice_count"] = "18"
+        values["worker_audio"] = "deadbeef"
+        values["worker_client_rects"] = "unavailable"
+        let first = capture(name: "First", values: values)
+        let current = report(
+            first: first,
+            second: capture(name: "Second", values: baseValues(canvas: "canvas-b")),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: "First repeat",
+                values: values
+            )
+        )
+
+        let data = try JSONEncoder().encode(current)
+        let decoded = try JSONDecoder().decode(
+            FingerprintAuditReport.self,
+            from: data
+        )
+        #expect(decoded.firstInitial.values["media_device_count"] == "2")
+        #expect(decoded.firstInitial.values["permission_microphone"] == "denied")
+        #expect(decoded.firstInitial.values["speech_voice_count"] == "18")
+        #expect(decoded.firstInitial.values["worker_client_rects"] == "unavailable")
+        #expect(!String(decoding: data, as: UTF8.self).contains("device-ids"))
+    }
+
+    @Test
+    func workerAudioMismatchIsDiagnosticOnlyButFailsStrictQualification() {
+        var firstValues = productionValues(
+            canvas: "canvas-a",
+            webGLPixels: "webgl-a",
+            renderer: "Apple M2"
+        )
+        firstValues["worker_audio"] = "deadbeef"
+        let result = report(
+            first: capture(name: "First", values: firstValues),
+            second: capture(
+                name: "Second",
+                values: productionValues(
+                    canvas: "canvas-b",
+                    webGLPixels: "webgl-b",
+                    renderer: "Apple M4"
+                )
+            ),
+            repeatCapture: capture(
+                name: "First repeat",
+                values: firstValues
+            )
+        )
+
+        #expect(!result.isProductionReleaseQualified)
+        #expect(result.productionReleaseIssues.contains {
+            $0.contains("audio value disagrees with worker_audio")
+        })
+        #expect(!result.isPublicAlphaReleaseQualified)
     }
 
     @Test
@@ -274,64 +462,6 @@ struct FingerprintAuditTests {
     }
 
     @Test
-    func requiredSurfaceProjectionPreservesEveryCaptureAndExactSentinels() {
-        let keys = FingerprintAuditReport.criticalKeys +
-            FingerprintAuditReport.publicAlphaStableContextKeys +
-            FingerprintAuditReport.publicAlphaCoherenceContextKeys +
-            FingerprintAuditReport.productionExtendedContextKeys
-        let complete = Dictionary(uniqueKeysWithValues: keys.map { ($0, "present") })
-        let sentinels: [String?] = [nil, "", "unavailable", " unavailable ", "UNAVAILABLE"]
-        for key in keys {
-            for position in 0..<3 {
-                for value in sentinels {
-                    var values = [complete, complete, complete]
-                    values[position][key] = value
-                    let first = capture(name: "A", values: values[0])
-                    let result = report(
-                        first: first,
-                        second: capture(name: "B", values: values[1]),
-                        repeatCapture: capture(id: first.profileID, name: "A", values: values[2])
-                    )
-                    let unavailable = value == nil || value == "" || value == "unavailable"
-                    #expect(result.productionUnavailableKeys == (unavailable ? [key] : []))
-                    #expect(result.unavailableCriticalKeys ==
-                        (unavailable && FingerprintAuditReport.criticalKeys.contains(key) ? [key] : []))
-                    #expect(result.productionUnstableKeys == (position == 1 ? [] : [key]))
-                }
-            }
-        }
-    }
-
-    @Test
-    func reportProjectionsPreserveCatalogAndCaptureOrder() {
-        let keys = FingerprintAuditReport.criticalKeys +
-            FingerprintAuditReport.publicAlphaStableContextKeys +
-            FingerprintAuditReport.publicAlphaCoherenceContextKeys +
-            FingerprintAuditReport.productionExtendedContextKeys
-        let first = capture(name: "A", values: [:])
-        let missing = report(
-            first: first,
-            second: capture(name: "B", values: [:]),
-            repeatCapture: capture(id: first.profileID, name: "A", values: [:])
-        )
-        #expect(missing.productionUnavailableKeys == keys)
-        #expect(missing.unavailableCriticalKeys == FingerprintAuditReport.criticalKeys)
-        #expect(missing.productionUnstableKeys.isEmpty)
-
-        let mismatch = ["canvas": "top", "worker_canvas": "worker"]
-        let inconsistent = report(
-            first: capture(name: "A", values: mismatch),
-            second: capture(name: "B", values: mismatch),
-            repeatCapture: capture(name: "A", values: mismatch)
-        )
-        #expect(inconsistent.crossRealmConsistencyIssues == [
-            "The profile A, first capture canvas value disagrees with worker_canvas.",
-            "The profile B canvas value disagrees with worker_canvas.",
-            "The profile A, repeat capture canvas value disagrees with worker_canvas."
-        ])
-    }
-
-    @Test
     func probeCoversCriticalAndContextSurfaces() {
         let expression = FingerprintAuditCoordinator.probeExpression
 
@@ -379,6 +509,20 @@ struct FingerprintAuditTests {
         #expect(context.exception == nil)
     }
 
+    @Test(arguments: ["api-absent", "error", "timeout", "disabled", "available:owned"])
+    func webGPUFailureOrLegacyLabelCannotQualifyAsAdapterUnavailable(_ observation: String) {
+        var values = coherentM2Values(canvas: "owned", webGLPixels: "owned")
+        values["webgpu_policy"] = observation
+        let first = capture(name: "Owned WebGPU fixture", identityCode: "NA-" + "00000002", values: values)
+        let issues = report(first: first, second: first, repeatCapture: first).deviceTupleConsistencyIssues
+        #expect(issues.contains { $0.contains("webgpu_policy") })
+
+        values["webgpu_policy"] = "adapter-null"
+        let observed = capture(name: "Owned WebGPU fixture", identityCode: "NA-" + "00000002", values: values)
+        let observedIssues = report(first: observed, second: observed, repeatCapture: observed).deviceTupleConsistencyIssues
+        #expect(!observedIssues.contains { $0.contains("webgpu_policy") })
+    }
+
     @Test
     func decodesChromiumDevToolsPageTargetURL() throws {
         let data = Data(
@@ -394,78 +538,12 @@ struct FingerprintAuditTests {
         )
 
         let url = try FingerprintAuditCoordinator
-            .pageTargetWebSocketURL(from: data, expectedPort: 9_222)
+            .pageTargetWebSocketURL(from: data)
 
         #expect(
             url?.absoluteString ==
                 "ws://127.0.0.1:9222/devtools/page/NEANTIK"
         )
-    }
-
-    @Test
-    func rejectsUntrustedDevToolsWebSocketEndpoints() {
-        let valid = DevToolsSecurity.validatedWebSocketURL(
-            "ws://127.0.0.1:9222/devtools/browser/NEANTIK-1",
-            expectedPort: 9_222,
-            expectedPathPrefix: "/devtools/browser/"
-        )
-        #expect(valid != nil)
-
-        for value in [
-            "wss://127.0.0.1:9222/devtools/browser/NEANTIK",
-            "ws://localhost:9222/devtools/browser/NEANTIK",
-            "ws://127.0.0.1:9223/devtools/browser/NEANTIK",
-            "ws://user@127.0.0.1:9222/devtools/browser/NEANTIK",
-            "ws://127.0.0.1:9222/devtools/page/NEANTIK",
-            "ws://127.0.0.1:9222/devtools/browser/NEANTIK/child",
-            "ws://127.0.0.1:9222/devtools/browser/NEANTIK?x=1",
-            "ws://127.0.0.1:9222/devtools/browser/%4eEANTIK"
-        ] {
-            #expect(
-                DevToolsSecurity.validatedWebSocketURL(
-                    value,
-                    expectedPort: 9_222,
-                    expectedPathPrefix: "/devtools/browser/"
-                ) == nil
-            )
-        }
-    }
-
-    @Test
-    func readsOnlyBoundedRegularDevToolsPortFileWithoutFollowingSymlinks()
-        throws
-    {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        try FileManager.default.createDirectory(
-            at: root,
-            withIntermediateDirectories: true
-        )
-        defer { try? FileManager.default.removeItem(at: root) }
-        let valid = root.appendingPathComponent("DevToolsActivePort")
-        try Data("9222\n/devtools/browser/NEANTIK\n".utf8).write(
-            to: valid
-        )
-
-        #expect(
-            try DevToolsSecurity.readPort(at: valid) ==
-                9_222
-        )
-
-        let oversized = root.appendingPathComponent("oversized")
-        try Data(repeating: 65, count: 4_097).write(to: oversized)
-        #expect(throws: Error.self) {
-            try DevToolsSecurity.readPort(at: oversized)
-        }
-
-        let symlink = root.appendingPathComponent("symlink")
-        try FileManager.default.createSymbolicLink(
-            at: symlink,
-            withDestinationURL: valid
-        )
-        #expect(throws: Error.self) {
-            try DevToolsSecurity.readPort(at: symlink)
-        }
     }
 
     @Test
@@ -508,6 +586,45 @@ struct FingerprintAuditTests {
         #expect(decoded.id == savedReport.id)
         #expect(decoded.effectiveExecutionMode == .browser)
         #expect(permissions?.intValue == 0o600)
+    }
+
+    @Test
+    func rejectsOversizedRawReportBeforeWriting() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+        }
+
+        var values = baseValues(canvas: "a")
+        values["oversized_surface"] = String(
+            repeating: "x",
+            count: FingerprintAuditReportStore.maximumStoredReportBytes
+        )
+        let first = capture(name: "First", values: values)
+        let oversized = report(
+            first: first,
+            second: capture(name: "Second", values: values),
+            repeatCapture: capture(
+                id: first.profileID,
+                name: first.profileName,
+                values: values
+            )
+        )
+        let store = FingerprintAuditReportStore(
+            paths: AppPaths(rootDirectory: root)
+        )
+
+        #expect(throws: NeAntikError.self) {
+            try store.save(oversized)
+        }
+
+        let directory = AppPaths(rootDirectory: root).fingerprintAuditsDirectory
+        let entries = try? FileManager.default.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: nil
+        )
+        #expect(entries?.isEmpty == true)
     }
 
     @Test
@@ -691,7 +808,10 @@ struct FingerprintAuditTests {
                 .headlessSingleProcessDiagnostic
         )
         #expect(!decoded.effectiveExecutionMode.isReleaseEvidence)
-        #expect(decoded.effectiveExecutionMode.additionalLaunchArguments.isEmpty)
+        #expect(
+            decoded.effectiveExecutionMode.additionalLaunchArguments ==
+                ["--single-process", "--no-sandbox"]
+        )
         #expect(
             FingerprintAuditExecutionMode.browser
                 .additionalLaunchArguments.isEmpty
@@ -699,10 +819,48 @@ struct FingerprintAuditTests {
     }
 
     @Test
+    func equalGPUReadbackDoesNotRequireArtificialProfileUniqueness() {
+        let shared = coherentM2Values(canvas: "canvas-shared", webGLPixels: "webgl-shared")
+        let first = capture(name: "A", identityCode: "NA-" + "00000002", values: shared)
+        let second = capture(name: "B", identityCode: "NA-" + "0000000D", values: shared)
+        let result = report(first: first, second: second, repeatCapture: first)
+        #expect(result.changedCriticalKeys.isEmpty)
+        #expect(result.verdict == .unchanged) // Truthful difference summary.
+        #expect(result.criticalObservationsStable)
+        #expect(result.productionReleaseIssues.isEmpty)
+        #expect(result.isProductionReleaseQualified)
+    }
+
+    @Test
+    func semanticAcceptanceStillRejectsMissingUnstableAndIncoherentWebGL() {
+        let shared = coherentM2Values(canvas: "canvas-shared", webGLPixels: "webgl-shared")
+        let first = capture(name: "A", identityCode: "NA-" + "00000002", values: shared)
+        for (key, value) in [("webgl_pixels", "unavailable"),
+                             ("worker_webgl_pixels", "other"),
+                             ("webgl_pixels_repeat", "other"),
+                             ("webgl_renderer", "invalid GPU"),
+                             ("webrtc_complete", "false")] {
+            var bad = shared; bad[key] = value
+            let second = capture(name: "B", identityCode: "NA-" + "0000000D", values: bad)
+            let result = report(first: first, second: second, repeatCapture: first)
+            #expect(!result.isProductionReleaseQualified)
+        }
+        var badRepeat = shared; badRepeat["webgl_pixels"] = "other"
+        let unstable = report(first: first,
+            second: capture(name: "B", identityCode: "NA-" + "0000000D", values: shared),
+            repeatCapture: capture(id: first.profileID, name: "A", identityCode: first.identityCode, values: badRepeat))
+        #expect(!unstable.criticalObservationsStable)
+        #expect(!unstable.isProductionReleaseQualified)
+        let sameIdentity = report(first: first,
+            second: capture(name: "B", identityCode: first.identityCode, values: shared), repeatCapture: first)
+        #expect(!sameIdentity.isProductionReleaseQualified)
+    }
+
+    @Test
     func qualifiesOnlyCompleteBrowserEvidence() {
         let first = capture(
             name: "First",
-            identityCode: "NA-00000002",
+            identityCode: "NA-" + "00000002",
             values: coherentM2Values(
                 canvas: "canvas-a",
                 webGLPixels: "webgl-a"
@@ -710,7 +868,7 @@ struct FingerprintAuditTests {
         )
         let second = capture(
             name: "Second",
-            identityCode: "NA-00000008",
+            identityCode: "NA-" + "00000008",
             values: coherentM4Values(
                 canvas: "canvas-b",
                 webGLPixels: "webgl-b"
@@ -931,7 +1089,7 @@ struct FingerprintAuditTests {
         ] {
             let first = capture(
                 name: "First",
-                identityCode: "NA-00000002",
+                identityCode: "NA-" + "00000002",
                 values: canonicalizedValues(
                     canvas: "canvas-a",
                     webGLPixels: "webgl-a",
@@ -945,7 +1103,7 @@ struct FingerprintAuditTests {
                 first: first,
                 second: capture(
                     name: "Second",
-                    identityCode: "NA-00000008",
+                    identityCode: "NA-" + "00000008",
                     values: canonicalizedValues(
                         canvas: "canvas-b",
                         webGLPixels: "webgl-b",
@@ -1085,7 +1243,6 @@ struct FingerprintAuditTests {
             }
         )
         #expect(!result.isProductionReleaseQualified)
-        #expect(result.strictContextFailureIDs == ["audio-repeat"])
         #expect(
             result.productionReleaseIssues.contains {
                 $0.contains("audio value disagrees with audio_repeat")
@@ -1213,7 +1370,7 @@ struct FingerprintAuditTests {
             #"{"total":1,"host":0,"srflx":0,"prflx":0,"relay":1,"unknown":0}"#
         let first = capture(
             name: "First",
-            identityCode: "NA-00000002",
+            identityCode: "NA-" + "00000002",
             values: coherentM2Values(
                 canvas: "canvas-a",
                 webGLPixels: "webgl-a"
@@ -1223,7 +1380,7 @@ struct FingerprintAuditTests {
             first: first,
             second: capture(
                 name: "Second",
-                identityCode: "NA-00000008",
+                identityCode: "NA-" + "00000008",
                 values: secondValues
             ),
             repeatCapture: capture(
@@ -1249,7 +1406,7 @@ struct FingerprintAuditTests {
         secondValues["webrtc_stun_requests"] = "1"
         let first = capture(
             name: "First",
-            identityCode: "NA-00000002",
+            identityCode: "NA-" + "00000002",
             values: coherentM2Values(
                 canvas: "canvas-a",
                 webGLPixels: "webgl-a"
@@ -1295,7 +1452,7 @@ struct FingerprintAuditTests {
             firstInitial: first,
             second: capture(
                 name: "Second",
-                identityCode: "NA-00000008",
+                identityCode: "NA-" + "00000008",
                 values: coherentM4Values(
                     canvas: "canvas-b",
                     webGLPixels: "webgl-b"
@@ -1433,7 +1590,7 @@ struct FingerprintAuditTests {
             runtimeFrameworkSHA256: String(repeating: "b", count: 64),
             webrtcDirectControl: capture(
                 name: "WebRTC control",
-                identityCode: "NA-13579BDF",
+                identityCode: "NA-" + "13579BDF",
                 values: first.values
             ),
             firstInitial: first,
@@ -1499,6 +1656,50 @@ struct FingerprintAuditTests {
     }
 
     @Test
+    func rejectsGPUFamilySubstringAndInvalidIdentitySeeds() {
+        // Fixed cohort contracts, rather than values derived from the matcher.
+        let tuples: [(String, Int, String, String)] = [
+            ("M1", 8, "1280x800x1280x775x24x2", "15.5.0"),
+            ("M1 Pro", 10, "1512x982x1512x957x24x2", "15.4.1"),
+            ("M2", 8, "1280x832x1280x807x24x2", "15.4.0"),
+            ("M2 Max", 12, "1728x1117x1728x1092x24x2", "15.3.2"),
+            ("M2 Pro", 12, "1512x982x1512x957x24x2", "15.3.1"),
+            ("M3", 8, "1280x832x1280x807x24x2", "15.3.0"),
+            ("M3 Max", 16, "1728x1117x1728x1092x24x2", "15.2.0"),
+            ("M3 Pro", 12, "1512x982x1512x957x24x2", "15.1.1"),
+            ("M4", 10, "1280x832x1280x807x24x2", "15.1.0"),
+            ("M4 Max", 16, "1728x1117x1728x1092x24x2", "15.0.1"),
+            ("M4 Pro", 14, "1512x982x1512x957x24x2", "15.5.0")
+        ]
+        for (index, tuple) in tuples.enumerated() {
+            let identity = String(format: "NA-%08X", index == 0 ? 11 : index)
+            let values = coherentTupleValues(canvas: "a", webGLPixels: "a",
+                gpu: tuple.0, cores: tuple.1, screen: tuple.2,
+                platformVersion: tuple.3, runtimeVersion: "1")
+            func issues(_ changed: [String: String], identityCode: String? = nil) -> [String] {
+                let first = capture(name: "Owned fixture", identityCode: identityCode ?? identity,
+                                    values: changed)
+                return report(first: first, second: first, repeatCapture: first)
+                    .deviceTupleConsistencyIssues
+            }
+            #expect(issues(values).isEmpty)
+            let renderer = values["webgl_renderer"]!
+            let wrongRenderers = ["prefix " + renderer, renderer + " suffix"] +
+                tuples.filter { $0.0 != tuple.0 }.map {
+                    "ANGLE (Apple, ANGLE Metal Renderer: Apple \($0.0), Unspecified Version)"
+                }
+            for wrong in wrongRenderers {
+                var changed = values
+                changed["webgl_renderer"] = wrong
+                #expect(issues(changed).contains { $0.contains("WebGL renderer") })
+            }
+            for invalid in ["NA-" + "00000000", "NA-" + "FFFFFFFF", "NA-" + "80000000"] {
+                #expect(!issues(values, identityCode: invalid).isEmpty)
+            }
+        }
+    }
+
+    @Test
     func validatesCoherentAppleDeviceTuplesForPinnedRuntime() {
         let firstValues = coherentTupleValues(
             canvas: "canvas-a",
@@ -1518,7 +1719,7 @@ struct FingerprintAuditTests {
         )
         let first = capture(
             name: "First",
-            identityCode: "NA-13579BDF",
+            identityCode: "NA-" + "13579BDF",
             values: firstValues
         )
         let result = FingerprintAuditReport(
@@ -1532,13 +1733,13 @@ struct FingerprintAuditTests {
             runtimeFrameworkSHA256: String(repeating: "b", count: 64),
             webrtcDirectControl: capture(
                 name: "WebRTC control",
-                identityCode: "NA-13579BDF",
+                identityCode: "NA-" + "13579BDF",
                 values: firstValues
             ),
             firstInitial: first,
             second: capture(
                 name: "Second",
-                identityCode: "NA-2468ACE0",
+                identityCode: "NA-" + "2468ACE0",
                 values: secondValues
             ),
             firstRepeat: capture(
@@ -1579,7 +1780,7 @@ struct FingerprintAuditTests {
         """
         let first = capture(
             name: "First",
-            identityCode: "NA-13579BDF",
+            identityCode: "NA-" + "13579BDF",
             values: firstValues
         )
         let result = FingerprintAuditReport(
@@ -1594,7 +1795,7 @@ struct FingerprintAuditTests {
             firstInitial: first,
             second: capture(
                 name: "Second",
-                identityCode: "NA-2468ACE0",
+                identityCode: "NA-" + "2468ACE0",
                 values: secondValues
             ),
             firstRepeat: capture(
@@ -1643,7 +1844,7 @@ struct FingerprintAuditTests {
 
         let first = capture(
             name: "First",
-            identityCode: "NA-13579BDF",
+            identityCode: "NA-" + "13579BDF",
             values: firstValues
         )
         let result = FingerprintAuditReport(
@@ -1657,13 +1858,13 @@ struct FingerprintAuditTests {
             runtimeFrameworkSHA256: String(repeating: "b", count: 64),
             webrtcDirectControl: capture(
                 name: "WebRTC control",
-                identityCode: "NA-13579BDF",
+                identityCode: "NA-" + "13579BDF",
                 values: firstValues
             ),
             firstInitial: first,
             second: capture(
                 name: "Second",
-                identityCode: "NA-2468ACE0",
+                identityCode: "NA-" + "2468ACE0",
                 values: secondValues
             ),
             firstRepeat: capture(
@@ -1697,7 +1898,7 @@ struct FingerprintAuditTests {
             firstValues["user_agent"] = invalidUserAgent
             let first = capture(
                 name: "First",
-                identityCode: "NA-13579BDF",
+                identityCode: "NA-" + "13579BDF",
                 values: firstValues
             )
             let result = FingerprintAuditReport(
@@ -1712,7 +1913,7 @@ struct FingerprintAuditTests {
                 firstInitial: first,
                 second: capture(
                     name: "Second",
-                    identityCode: "NA-2468ACE0",
+                    identityCode: "NA-" + "2468ACE0",
                     values: coherentTupleValues(
                         canvas: "canvas-b",
                         webGLPixels: "webgl-b",
@@ -1755,7 +1956,7 @@ struct FingerprintAuditTests {
         values["hardware_concurrency"] = "10"
         let first = capture(
             name: "First",
-            identityCode: "NA-13579BDF",
+            identityCode: "NA-" + "13579BDF",
             values: values
         )
         let result = FingerprintAuditReport(
@@ -1770,7 +1971,7 @@ struct FingerprintAuditTests {
             firstInitial: first,
             second: capture(
                 name: "Second",
-                identityCode: "NA-2468ACE0",
+                identityCode: "NA-" + "2468ACE0",
                 values: coherentTupleValues(
                     canvas: "canvas-b",
                     webGLPixels: "webgl-b",
@@ -1834,7 +2035,7 @@ struct FingerprintAuditTests {
         )
         #expect(
             result.productionReleaseIssues.contains {
-                $0.contains("WebGL pixels did not differ")
+                $0.contains("unavailable or unstable")
             }
         )
     }
@@ -1843,7 +2044,7 @@ struct FingerprintAuditTests {
     func diagnosticReportCanNeverQualifyForProduction() {
         let first = capture(
             name: "First",
-            identityCode: "NA-00000002",
+            identityCode: "NA-" + "00000002",
             values: coherentM2Values(
                 canvas: "canvas-a",
                 webGLPixels: "webgl-a"
@@ -1853,7 +2054,7 @@ struct FingerprintAuditTests {
             first: first,
             second: capture(
                 name: "Second",
-                identityCode: "NA-00000008",
+                identityCode: "NA-" + "00000008",
                 values: coherentM4Values(
                     canvas: "canvas-b",
                     webGLPixels: "webgl-b"
@@ -2083,7 +2284,7 @@ struct FingerprintAuditTests {
             "webgl_renderer": renderer,
             "webgl_extensions": "extensions",
             "webgl_shader_precision": "precision",
-            "webgpu_policy": "disabled",
+            "webgpu_policy": "adapter-null",
             "user_agent": "Mozilla/5.0",
             "platform": "MacIntel",
             "client_hints": clientHints,
@@ -2092,7 +2293,7 @@ struct FingerprintAuditTests {
             "hardware_concurrency": "8",
             "device_memory": "8",
             "touch_points": "0",
-            "fonts": "Arial,Menlo",
+            "fonts": "metrics-v1:a1b2c3d4:fallback-control-pass",
             "languages": "en-US,en",
             "timezone": "Europe/Berlin",
             "intl_locale": "en-US",

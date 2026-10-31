@@ -1,12 +1,20 @@
 #!/bin/zsh
 
 set -euo pipefail
-umask 077
-export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
+
+# Only a registered owned location may replace the default candidate paths.
+if [[ -n "${NEANTIK_DIRECT_CANDIDATE_ROOT:-}" ]]; then
+  CANDIDATE_ROOT="$(python3 -I -B "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+    "$PROJECT_DIR/scripts/release_candidate_location.py" \
+    --project-root "$PROJECT_DIR" --validate "$NEANTIK_DIRECT_CANDIDATE_ROOT")"
+  APP_PATH="$CANDIDATE_ROOT/NeAntik.app"
+  CANDIDATE_MANIFEST="$CANDIDATE_ROOT/direct-candidate-manifest.json"
+fi
+
 VERSION="$(/usr/libexec/PlistBuddy -c \
   'Print :CFBundleShortVersionString' \
   "$PROJECT_DIR/Resources/Info.plist")"
@@ -56,7 +64,7 @@ fi
   --app "$APP_PATH" \
   --manifest "$CANDIDATE_MANIFEST" \
   --release-channel "$NEANTIK_RELEASE_CHANNEL" \
-  --fingerprint-evidence "$PROJECT_DIR/dist/fingerprint-audit.json"
+  --fingerprint-evidence "$(dirname "$CANDIDATE_MANIFEST")/fingerprint-audit.json"
 "$RELEASE_PYTHON" -I -B \
   "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
   "$PROJECT_DIR/scripts/verify-direct-version-bump.py"
@@ -68,4 +76,4 @@ fi
   --release-gate
 "$PROJECT_DIR/scripts/notarize-direct-candidate.sh"
 
-echo "Next: upload the versioned archive, then run scripts/verify-direct-hosted-download.py with --candidate-manifest, --release-channel, --fingerprint-evidence and --fingerprint-attestation."
+echo "Next: complete ZIP/DMG packaging with Release-NeAntik.command and use its independent dist/distribution upload files; run scripts/verify-direct-hosted-download.py with that --archive, --candidate-manifest, --release-channel, --fingerprint-evidence and --fingerprint-attestation."

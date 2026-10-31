@@ -1,0 +1,15 @@
+diff --git a/chrome/browser/ssl/https_upgrades_util.cc b/chrome/browser/ssl/https_upgrades_util.cc
+--- a/chrome/browser/ssl/https_upgrades_util.cc
++++ b/chrome/browser/ssl/https_upgrades_util.cc
+@@ -91,11 +91,8 @@
+       !state->HttpsFirstBalancedModeSuppressedForTesting()) {
+     interstitial_state.enabled_in_balanced_mode = true;
+ 
+     // Determine if Balanced Mode was enabled specifically due to ESB pairing.
+-    bool user_has_modified_settings =
+-        prefs->HasPrefPath(prefs::kHttpsOnlyModeEnabled) ||
+-        prefs->HasPrefPath(prefs::kHttpsFirstBalancedMode);
+   }
+ 
+   auto* storage_partition =
+       web_contents->GetPrimaryMainFrame()->GetStoragePartition();

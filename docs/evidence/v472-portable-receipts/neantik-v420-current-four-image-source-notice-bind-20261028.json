@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "id": "V420",
+  "createdAt": "2026-10-28T09:16:34Z",
+  "kind": "current-four-runtime-image-source-and-notice-binding",
+  "candidate": {
+    "candidateId": "25aea06ab1f84885a5e35f2a75623322",
+    "version": "1.0.0",
+    "build": "201",
+    "bundleInventorySHA256": "5af632a0b0fce9e04e8e9875301f906d3d4027e6b683bde344957fa5b8e42a12"
+  },
+  "source": {
+    "webkitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+    "sourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "buildReceiptSHA256": "319afbac5c8a7b55daeb54912b3c7614537a4d26315885127d54694dc3bc7a7f",
+    "linkCompileInputSetEqualToPriorV20": true,
+    "compileInputRows": 3040,
+    "allLinkNodesEqualToPriorV20": true
+  },
+  "images": [
+    {
+      "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "currentSignedSHA256": "872521a04840be1aa51b65038c4180c7340da7185d7eeae9fa04f443225ce740",
+      "currentBuildOutputSHA256": "fcfce29db5959a47d549b26c6e8539cc5b24ad63abec114189d3053fb9074238",
+      "stagedBuildOutputMatches": true,
+      "rawOutputHashInCandidateNotice": true,
+      "sourceLinkNode": {
+        "linkNode": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+        "internalLibraryDependencies": [],
+        "explicitObjectLinkInputCount": 35,
+        "implicitObjectDependencyCount": 395,
+        "orderOnlyObjectDependencyCount": 0
+      }
+    },
+    {
+      "path": "WebCore.framework/Versions/A/WebCore",
+      "currentSignedSHA256": "704dfa701ba5bc72cfd45bca9682d5d9b5c3602cb88a31706933af6472e863ae",
+      "currentBuildOutputSHA256": "eaba91766570f71bf3bc4af0ce7e226e7e7415aa8bd5c90649c530349acfef12",
+      "stagedBuildOutputMatches": true,
+      "rawOutputHashInCandidateNotice": true,
+      "sourceLinkNode": {
+        "linkNode": "WebCore.framework/Versions/A/WebCore",
+        "internalLibraryDependencies": [
+          "libPAL.a",
+          "libPAL.a",
+          "libdav1d.a",
+          "libdav1d.a"
+        ],
+        "explicitObjectLinkInputCount": 69,
+        "implicitObjectDependencyCount": 85,
+        "orderOnlyObjectDependencyCount": 0
+      }
+    },
+    {
+      "path": "WebKit.framework/Versions/A/WebKit",
+      "currentSignedSHA256": "73ef4e6f6072e89c3f4d371beeb81e9ef52a5055cd2b4c4986a06f3ea6f7783a",
+      "currentBuildOutputSHA256": "13b735470dc5e3689d101ca3a207f08c5bed00d7e796d59b3217d78c17fcbeda",
+      "stagedBuildOutputMatches": true,
+      "rawOutputHashInCandidateNotice": true,
+      "sourceLinkNode": {
+        "linkNode": "WebKit.framework/Versions/A/WebKit",
+        "internalLibraryDependencies": [],
+        "explicitObjectLinkInputCount": 90,
+        "implicitObjectDependencyCount": 90,
+        "orderOnlyObjectDependencyCount": 0
+      }
+    },
+    {
+      "path": "libwebrtc.dylib",
+      "currentSignedSHA256": "541ccb55490aa2848c569a4012dd927f5fce51d48570285c25fa36249782dae4",
+      "currentBuildOutputSHA256": "309d95abf602e59d25bf3dc38abe719edc10829ff79cb6a917027edad43e965f",
+      "stagedBuildOutputMatches": true,
+      "rawOutputHashInCandidateNotice": true,
+      "sourceLinkNode": {
+        "linkNode": "libwebrtc.dylib",
+        "internalLibraryDependencies": [
+          "libaom.a",
+          "libaom.a",
+          "libdav1d.a",
+          "libdav1d.a",
+          "libopus.a",
+          "libopus.a",
+          "libwebm.a",
+          "libwebm.a",
+          "libyuv.a",
+          "libyuv.a"
+        ],
+        "explicitObjectLinkInputCount": 1988,
+        "implicitObjectDependencyCount": 0,
+        "orderOnlyObjectDependencyCount": 0
+      }
+    }
+  ],
+  "findings": {
+    "WebKit": "V419 bounded BSD-2 and candidate notice decision PASS for exact image.",
+    "JavaScriptCore": "Exact current image/source/build/notice bytes now rebound. Applicability remains UNKNOWN: LGPL-form COPYING.LIB scope, JSDateMath license choice, Binary Ninja attribution, and 32 headerless generator-input attribution are not fully closed.",
+    "WebCore": "Exact current image/source/build/notice bytes now rebound. Applicability remains UNKNOWN across mapped BSD and LGPL inputs, PAL/dav1d linked dependencies, generated inputs, and complete image terms.",
+    "libwebrtc": "Exact current image/source/build/notice bytes now rebound. Applicability remains UNKNOWN for full GN-generated dependency notice scope and component patent terms; existing review did not execute the license generator and retains four Opus IPR references."
+  },
+  "releaseBoundary": {
+    "runtimeQA": "not run; Mac remains locked and native readiness returned permission_denied for memory pressure.",
+    "recipientBuildRelinkLoad": "not independently reproduced.",
+    "releaseQualified": false,
+    "builds": 0,
+    "publication": false
+  },
+  "evidenceReferences": {
+    "V419WebKitImageReview": "artifacts/neantik/looper-goals/20261020-webkit-1_0/evidence/neantik-v419-current-webkit-image-bsd2-notice-review-20261028.json",
+    "linkClosure": "source-offer V409 nested V382 WEBKIT_PRODUCTION_LINK_INPUT_CLOSURE_V20.json",
+    "candidateStaticReceipt": "docs/evidence/neantik-v414-integrated-webkit-private-candidate-static-verification-20261028.json"
+  },
+  "priorCurrent": {
+    "path": "[local checkpoint path redacted]",
+    "sha256": "b3a9129179f9eb64b3f9548717346d465e30c72ea99f8dd7a1d952e493c23d54",
+    "bytes": 27210
+  },
+  "portableRedaction": {
+    "originalReceiptSHA256": "4af630d3134b5da7140593096cdfc7669635ab00cd0a9fb753713b8cc3761715",
+    "redactedFields": [
+      "priorCurrent.path"
+    ],
+    "scope": "Path only; all other fields preserved."
+  }
+}

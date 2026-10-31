@@ -1,0 +1,502 @@
+{
+  "candidate": {
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "sourceCommit": "955bc0808a1e1a49d3a9f74f2b02e05af9fee3e2",
+    "version": "1.0.0"
+  },
+  "inputs": {
+    "docs/evidence/webkit-runtime-license-evidence-index-20261025.json": "37d27d03769fdd87cbaa7a7376ca8e6e2fbbed9eb069ccbd8c8b86326ca18924",
+    "docs/evidence/webkit-runtime-package-notice-worksheet-20261025.json": "fc9face5d21f7154028672bac340b66179cf1ccb607cdc441baff310ff0acd6c",
+    "webkitArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "webkitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+  },
+  "interpretation": "This report binds exact retained source files for the 19 resource rows that initially lacked a direct candidate-license-file association. Six sandbox resources now have exact BSD-2 source-header and bundled-copy evidence; thirteen other rows remain UNKNOWN. Literal header markers do not decide unrelated components, and this report is not legal approval.",
+  "recordedAt": "2026-10-24T23:54:19Z",
+  "rows": [
+    {
+      "candidateLicenseTexts": [],
+      "decision": "UNKNOWN",
+      "mappedSourcePaths": [
+        {
+          "bytes": 1633,
+          "fileType": "XML 1.0 document text, ASCII text, with very long lines (880)",
+          "path": "Source/WebGPU/Info.plist",
+          "sha256": "99f7685c28e18f82935817519f9ef6e5ebd63af453c7c3414df591f34078a4af",
+          "sourceHeaderMarkers": [
+            "copyright text"
+          ]
+        }
+      ],
+      "runtimePath": "WebGPU.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "d1b62a69cb77ccc8cea6b51760021849ab53f472db0781cb6890a1106a7139a6"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": "UNKNOWN",
+      "mappedSourcePaths": [
+        {
+          "assetCatalogColors": 0,
+          "bytes": 63,
+          "fileType": "JSON data",
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/Contents.json",
+          "referencedImageFiles": 0,
+          "sha256": "0fd49ba3c3585c709678e0046a821c3c60685ec7063720d30d3a3448be3a208b",
+          "sourceHeaderMarkers": []
+        },
+        {
+          "assetCatalogColors": 2,
+          "bytes": 707,
+          "fileType": "JSON data",
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningBackground.colorset/Contents.json",
+          "referencedImageFiles": 0,
+          "sha256": "4b841cbb48667da6797cbf3d3601e6791073ff68eb36d9b17dc15ec011238d63",
+          "sourceHeaderMarkers": []
+        },
+        {
+          "assetCatalogColors": 2,
+          "bytes": 701,
+          "fileType": "JSON data",
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningBoxBackground.colorset/Contents.json",
+          "referencedImageFiles": 0,
+          "sha256": "1a59d991a040f8eb48f77bec02ae3e736418fcc8a9c74e1975f74dc7d340f88e",
+          "sourceHeaderMarkers": []
+        },
+        {
+          "assetCatalogColors": 2,
+          "bytes": 701,
+          "fileType": "JSON data",
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningText.colorset/Contents.json",
+          "referencedImageFiles": 0,
+          "sha256": "ae08ab241bec196b9aa27cab789dd141cc539f4daa691a619cfdb817e5dc2609",
+          "sourceHeaderMarkers": []
+        },
+        {
+          "assetCatalogColors": 2,
+          "bytes": 701,
+          "fileType": "JSON data",
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningTitle.colorset/Contents.json",
+          "referencedImageFiles": 0,
+          "sha256": "f9cdeb5f30d8a38a961d5b89cfa006748034abc1a0b8878bf569c1f26c386abf",
+          "sourceHeaderMarkers": []
+        },
+        {
+          "assetCatalogColors": 0,
+          "bytes": 62,
+          "fileType": "JSON data",
+          "path": "Source/WebKit/Resources/SafeBrowsing.xcassets/Contents.json",
+          "referencedImageFiles": 0,
+          "sha256": "972ec1fd42325872438eb085ac29e94f51c10788ec18ec5549439950866c541d",
+          "sourceHeaderMarkers": []
+        },
+        {
+          "assetCatalogColors": 1,
+          "bytes": 328,
+          "fileType": "JSON data",
+          "path": "Source/WebKit/Resources/SafeBrowsing.xcassets/WKSafeBrowsingWarningBackground.colorset/Contents.json",
+          "referencedImageFiles": 0,
+          "sha256": "36f3bcaec896d41f46ef00c68ea3717f1f90ba7b94dd8291cf33f419abc4cfc9",
+          "sourceHeaderMarkers": []
+        },
+        {
+          "assetCatalogColors": 2,
+          "bytes": 694,
+          "fileType": "JSON data",
+          "path": "Source/WebKit/Resources/SafeBrowsing.xcassets/WKSafeBrowsingWarningText.colorset/Contents.json",
+          "referencedImageFiles": 0,
+          "sha256": "21d402a6b70cf83ad5c66ae38d19772a0a18496742cbf5751805cb9a57bba003",
+          "sourceHeaderMarkers": []
+        },
+        {
+          "assetCatalogColors": 2,
+          "bytes": 694,
+          "fileType": "JSON data",
+          "path": "Source/WebKit/Resources/SafeBrowsing.xcassets/WKSafeBrowsingWarningTitle.colorset/Contents.json",
+          "referencedImageFiles": 0,
+          "sha256": "555f2d5c30df9768567c622d50efdd7835c9bf9b287a325e3bc3cd57f4ac5935",
+          "sourceHeaderMarkers": []
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/Resources/Assets.car",
+      "runtimeSHA256": "554a204a45e7204fcf20f2aa2cf719ea4c7284a8f769289fc5ada9c4e0ab2a98"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": "UNKNOWN",
+      "mappedSourcePaths": [
+        {
+          "bytes": 1140,
+          "fileType": "XML 1.0 document text, ASCII text",
+          "path": "Source/WebKit/Info.plist",
+          "sha256": "2693d09b3ce4fa4d9dc05a4dd99043bd2e07f3cc9c12c7eaba4b19e3f9a61eac",
+          "sourceHeaderMarkers": [
+            "copyright text"
+          ]
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "8682dbe9e031cd97fa92985dee64f99726e4a544a470bb2f69dc99ab6493e135"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": "UNKNOWN",
+      "mappedSourcePaths": [
+        {
+          "bytes": 744397,
+          "fileType": "data",
+          "path": "Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+          "sha256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f",
+          "sourceHeaderMarkers": []
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/analytics/coremldata.bin",
+      "runtimeSHA256": "3219af1988907d86a9ca82a697935793d2b479ec9c38201dfd4ad8e79c241864"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": "UNKNOWN",
+      "mappedSourcePaths": [
+        {
+          "bytes": 744397,
+          "fileType": "data",
+          "path": "Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+          "sha256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f",
+          "sourceHeaderMarkers": []
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/coremldata.bin",
+      "runtimeSHA256": "4e604a85568f337e421b5c3f678dc3f17b94c469713017c6659e3cb28b5ab43c"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": "UNKNOWN",
+      "mappedSourcePaths": [
+        {
+          "bytes": 744397,
+          "fileType": "data",
+          "path": "Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+          "sha256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f",
+          "sourceHeaderMarkers": []
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/metadata.json",
+      "runtimeSHA256": "e024dd2713523eeaa0b3aceeaea98199bb9e7b42c2d001c3da49dbb3bd11b12e"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": {
+        "applicableLicense": "Apple BSD 2-Clause (two conditions stated in the exact mapped source header)",
+        "noticeLocation": "NeAntikRuntimeNotices.md; exact matching source copy at NeAntikRuntimeLicenses/WebKitSandbox/WebKit-GPUProcess.sb.in",
+        "requiredNotice": "Retain copyright, both conditions, and warranty disclaimer in source; reproduce those terms for binary distribution. Exact mapped source template is included in the app resources.",
+        "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
+      },
+      "factualReviewEvidence": {
+        "bundledCopyPath": "NeAntikRuntimeLicenses/WebKitSandbox/WebKit-GPUProcess.sb.in",
+        "bundledCopySHA256": "a8e1f3d73eb240ceb51eca60feed7f6ae3121feeb5dec6c5c63586939ba440f9",
+        "noticeMarkdownSHA256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375",
+        "officialReference": "https://docs.webkit.org/Other/Licensing.html",
+        "runtimeSHA256": "101bdd370512434671c1e015f069e4086b25634060061a857f4c7af72854b560",
+        "scopeLimit": "Only this sandbox resource row; no inference to its containing image/framework or other rows.",
+        "sourceHeader": "Apple copyright + two BSD-style redistribution conditions + warranty disclaimer",
+        "sourcePath": "Source/WebKit/GPUProcess/mac/com.apple.WebKit.GPUProcess.sb.in",
+        "sourceSHA256": "a8e1f3d73eb240ceb51eca60feed7f6ae3121feeb5dec6c5c63586939ba440f9"
+      },
+      "factualReviewStatus": "RESOLVED_BSD_2_CLAUSE_NOTICE_INCLUDED",
+      "mappedSourcePaths": [
+        {
+          "bytes": 55980,
+          "fileType": "c program text, ASCII text",
+          "path": "Source/WebKit/GPUProcess/mac/com.apple.WebKit.GPUProcess.sb.in",
+          "sha256": "a8e1f3d73eb240ceb51eca60feed7f6ae3121feeb5dec6c5c63586939ba440f9",
+          "sourceHeaderMarkers": [
+            "copyright text",
+            "BSD marker"
+          ]
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebKit.GPUProcess.sb",
+      "runtimeSHA256": "101bdd370512434671c1e015f069e4086b25634060061a857f4c7af72854b560"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": {
+        "applicableLicense": "Apple BSD 2-Clause (two conditions stated in the exact mapped source header)",
+        "noticeLocation": "NeAntikRuntimeNotices.md; exact matching source copy at NeAntikRuntimeLicenses/WebKitSandbox/WebKit-NetworkProcess.sb.in",
+        "requiredNotice": "Retain copyright, both conditions, and warranty disclaimer in source; reproduce those terms for binary distribution. Exact mapped source template is included in the app resources.",
+        "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
+      },
+      "factualReviewEvidence": {
+        "bundledCopyPath": "NeAntikRuntimeLicenses/WebKitSandbox/WebKit-NetworkProcess.sb.in",
+        "bundledCopySHA256": "f0b254eb98476ab6211667852eb59a0e15ae310e7369040d52e40f675ae33410",
+        "noticeMarkdownSHA256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375",
+        "officialReference": "https://docs.webkit.org/Other/Licensing.html",
+        "runtimeSHA256": "e3e8a047e122938338f8e2a37e2d7e59d6f18ba20534c30765aaab9a579d2881",
+        "scopeLimit": "Only this sandbox resource row; no inference to its containing image/framework or other rows.",
+        "sourceHeader": "Apple copyright + two BSD-style redistribution conditions + warranty disclaimer",
+        "sourcePath": "Source/WebKit/NetworkProcess/mac/com.apple.WebKit.NetworkProcess.sb.in",
+        "sourceSHA256": "f0b254eb98476ab6211667852eb59a0e15ae310e7369040d52e40f675ae33410"
+      },
+      "factualReviewStatus": "RESOLVED_BSD_2_CLAUSE_NOTICE_INCLUDED",
+      "mappedSourcePaths": [
+        {
+          "bytes": 29590,
+          "fileType": "c program text, ASCII text",
+          "path": "Source/WebKit/NetworkProcess/mac/com.apple.WebKit.NetworkProcess.sb.in",
+          "sha256": "f0b254eb98476ab6211667852eb59a0e15ae310e7369040d52e40f675ae33410",
+          "sourceHeaderMarkers": [
+            "copyright text",
+            "BSD marker"
+          ]
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebKit.NetworkProcess.sb",
+      "runtimeSHA256": "e3e8a047e122938338f8e2a37e2d7e59d6f18ba20534c30765aaab9a579d2881"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": {
+        "applicableLicense": "Apple BSD 2-Clause (two conditions stated in the exact mapped source header)",
+        "noticeLocation": "NeAntikRuntimeNotices.md; exact matching source copy at NeAntikRuntimeLicenses/WebKitSandbox/WebKit-webpushd.mac.sb.in",
+        "requiredNotice": "Retain copyright, both conditions, and warranty disclaimer in source; reproduce those terms for binary distribution. Exact mapped source template is included in the app resources.",
+        "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
+      },
+      "factualReviewEvidence": {
+        "bundledCopyPath": "NeAntikRuntimeLicenses/WebKitSandbox/WebKit-webpushd.mac.sb.in",
+        "bundledCopySHA256": "efb6ff4f9cbdf976c2872e29e66bb593fd266f7ecbc9c955d499456ee214547c",
+        "noticeMarkdownSHA256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375",
+        "officialReference": "https://docs.webkit.org/Other/Licensing.html",
+        "runtimeSHA256": "b634bb3a99d4cead1f50532535e1826230afab36217cabec05c6403d16f502e6",
+        "scopeLimit": "Only this sandbox resource row; no inference to its containing image/framework or other rows.",
+        "sourceHeader": "Apple copyright + two BSD-style redistribution conditions + warranty disclaimer",
+        "sourcePath": "Source/WebKit/webpushd/mac/com.apple.WebKit.webpushd.mac.sb.in",
+        "sourceSHA256": "efb6ff4f9cbdf976c2872e29e66bb593fd266f7ecbc9c955d499456ee214547c"
+      },
+      "factualReviewStatus": "RESOLVED_BSD_2_CLAUSE_NOTICE_INCLUDED",
+      "mappedSourcePaths": [
+        {
+          "bytes": 11010,
+          "fileType": "c program text, ASCII text",
+          "path": "Source/WebKit/webpushd/mac/com.apple.WebKit.webpushd.mac.sb.in",
+          "sha256": "efb6ff4f9cbdf976c2872e29e66bb593fd266f7ecbc9c955d499456ee214547c",
+          "sourceHeaderMarkers": [
+            "copyright text",
+            "BSD marker"
+          ]
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebKit.webpushd.mac.sb",
+      "runtimeSHA256": "b634bb3a99d4cead1f50532535e1826230afab36217cabec05c6403d16f502e6"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": {
+        "applicableLicense": "Apple BSD 2-Clause (two conditions stated in the exact mapped source header)",
+        "noticeLocation": "NeAntikRuntimeNotices.md; exact matching source copy at NeAntikRuntimeLicenses/WebKitSandbox/WebKit-WebProcess.sb.in",
+        "requiredNotice": "Retain copyright, both conditions, and warranty disclaimer in source; reproduce those terms for binary distribution. Exact mapped source template is included in the app resources.",
+        "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
+      },
+      "factualReviewEvidence": {
+        "bundledCopyPath": "NeAntikRuntimeLicenses/WebKitSandbox/WebKit-WebProcess.sb.in",
+        "bundledCopySHA256": "19afbed37437e34a121c56ff588b1e418f6d97083a98bcc8c6851424ef842628",
+        "noticeMarkdownSHA256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375",
+        "officialReference": "https://docs.webkit.org/Other/Licensing.html",
+        "runtimeSHA256": "8722db48f108e2f0341af9e6c543719155d6a986286e8683f484d32913e701d8",
+        "scopeLimit": "Only this sandbox resource row; no inference to its containing image/framework or other rows.",
+        "sourceHeader": "Apple copyright + two BSD-style redistribution conditions + warranty disclaimer",
+        "sourcePath": "Source/WebKit/WebProcess/com.apple.WebProcess.sb.in",
+        "sourceSHA256": "19afbed37437e34a121c56ff588b1e418f6d97083a98bcc8c6851424ef842628"
+      },
+      "factualReviewStatus": "RESOLVED_BSD_2_CLAUSE_NOTICE_INCLUDED",
+      "mappedSourcePaths": [
+        {
+          "bytes": 59879,
+          "fileType": "c program text, ASCII text",
+          "path": "Source/WebKit/WebProcess/com.apple.WebProcess.sb.in",
+          "sha256": "19afbed37437e34a121c56ff588b1e418f6d97083a98bcc8c6851424ef842628",
+          "sourceHeaderMarkers": [
+            "copyright text",
+            "BSD marker"
+          ]
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebProcess.sb",
+      "runtimeSHA256": "8722db48f108e2f0341af9e6c543719155d6a986286e8683f484d32913e701d8"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": {
+        "applicableLicense": "Apple BSD 2-Clause (two conditions stated in the exact mapped source header)",
+        "noticeLocation": "NeAntikRuntimeNotices.md; exact matching source copy at NeAntikRuntimeLicenses/WebKitSandbox/WebKit-WebProcess.x86.sb.in",
+        "requiredNotice": "Retain copyright, both conditions, and warranty disclaimer in source; reproduce those terms for binary distribution. Exact mapped source template is included in the app resources.",
+        "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW: exact candidate runtime row maps to one source template; the source header states the two BSD conditions and the bundled template copy matches its SHA-256. Limited to this resource row; not a legal opinion."
+      },
+      "factualReviewEvidence": {
+        "bundledCopyPath": "NeAntikRuntimeLicenses/WebKitSandbox/WebKit-WebProcess.x86.sb.in",
+        "bundledCopySHA256": "b3b636902f94db8ec556f1151cc2ad5062a3685b93172eb8daabd3d2d7ad1c76",
+        "noticeMarkdownSHA256": "bf161066026fb9c6845a150a56647a31dcc2f2f1305de0250ffb50f47cc27375",
+        "officialReference": "https://docs.webkit.org/Other/Licensing.html",
+        "runtimeSHA256": "c52623e5732ef13ecc893fca2842f67ce97a11373112c0ffcd9d29ef9f886d16",
+        "scopeLimit": "Only this sandbox resource row; no inference to its containing image/framework or other rows.",
+        "sourceHeader": "Apple copyright + two BSD-style redistribution conditions + warranty disclaimer",
+        "sourcePath": "Source/WebKit/WebProcess/com.apple.WebProcess.x86.sb.in",
+        "sourceSHA256": "b3b636902f94db8ec556f1151cc2ad5062a3685b93172eb8daabd3d2d7ad1c76"
+      },
+      "factualReviewStatus": "RESOLVED_BSD_2_CLAUSE_NOTICE_INCLUDED",
+      "mappedSourcePaths": [
+        {
+          "bytes": 56796,
+          "fileType": "c program text, ASCII text",
+          "path": "Source/WebKit/WebProcess/com.apple.WebProcess.x86.sb.in",
+          "sha256": "b3b636902f94db8ec556f1151cc2ad5062a3685b93172eb8daabd3d2d7ad1c76",
+          "sourceHeaderMarkers": [
+            "copyright text",
+            "BSD marker"
+          ]
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebProcess.x86.sb",
+      "runtimeSHA256": "c52623e5732ef13ecc893fca2842f67ce97a11373112c0ffcd9d29ef9f886d16"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": "UNKNOWN",
+      "mappedSourcePaths": [
+        {
+          "bytes": 17842,
+          "fileType": "ASCII text",
+          "path": "Source/WebKit/Resources/ResourceLoadStatistics/corePrediction_model",
+          "sha256": "221555a2cdd2e957f18d478c4b9fd01f308c1613e6e10840cce924e5f543091a",
+          "sourceHeaderMarkers": []
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/Resources/corePrediction_model",
+      "runtimeSHA256": "221555a2cdd2e957f18d478c4b9fd01f308c1613e6e10840cce924e5f543091a"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": "UNKNOWN",
+      "mappedSourcePaths": [
+        {
+          "bytes": 48,
+          "fileType": "Unicode text, UTF-8 (with BOM) text",
+          "path": "Source/WebKit/en.lproj/InfoPlist.strings",
+          "sha256": "eb830b7d91792444feda119d8eb9b6fa400a05db02e6d9d5cd7b126361d000c2",
+          "sourceHeaderMarkers": []
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/Resources/en.lproj/InfoPlist.strings",
+      "runtimeSHA256": "eb830b7d91792444feda119d8eb9b6fa400a05db02e6d9d5cd7b126361d000c2"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": "UNKNOWN",
+      "mappedSourcePaths": [
+        {
+          "bytes": 1461,
+          "fileType": "XML 1.0 document text, ASCII text",
+          "path": "Source/WebKit/GPUProcess/EntryPoint/Cocoa/XPCService/GPUService/Info-OSX.plist",
+          "sha256": "7d4ce5ace213693923213b0b8e88a7df4aa9a461f2f9276d47fed7d9959bc0d1",
+          "sourceHeaderMarkers": [
+            "copyright text"
+          ]
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/Info.plist",
+      "runtimeSHA256": "1727040f8d3a09f62bf750648f0388f3f65e6356bc53c3887caef2633609a40d"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": "UNKNOWN",
+      "mappedSourcePaths": [
+        {
+          "bytes": 1327,
+          "fileType": "XML 1.0 document text, ASCII text",
+          "path": "Source/WebKit/NetworkProcess/EntryPoint/Cocoa/XPCService/NetworkService/Info-OSX.plist",
+          "sha256": "848d7eec33274e1f0054da75853b0cb150b66f075f16100a2b52f9b54eabaf81",
+          "sourceHeaderMarkers": [
+            "copyright text"
+          ]
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/Info.plist",
+      "runtimeSHA256": "1733fb8bd8df9a1360d7959150139c69bb14dbdb0bd9f266c742c100e94ebc82"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": "UNKNOWN",
+      "mappedSourcePaths": [
+        {
+          "bytes": 1746,
+          "fileType": "XML 1.0 document text, ASCII text",
+          "path": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+          "sha256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "sourceHeaderMarkers": [
+            "copyright text"
+          ]
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/Info.plist",
+      "runtimeSHA256": "cf2804905b5ab48951d12b4c9ce0f0984c24821c340597e7af828ba49e073651"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": "UNKNOWN",
+      "mappedSourcePaths": [
+        {
+          "bytes": 1746,
+          "fileType": "XML 1.0 document text, ASCII text",
+          "path": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+          "sha256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "sourceHeaderMarkers": [
+            "copyright text"
+          ]
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/Info.plist",
+      "runtimeSHA256": "707d6ca86c4d1b0c51c721c6cb86a64e35810092773eb8e040f93a73fe58c703"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": "UNKNOWN",
+      "mappedSourcePaths": [
+        {
+          "bytes": 1746,
+          "fileType": "XML 1.0 document text, ASCII text",
+          "path": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+          "sha256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "sourceHeaderMarkers": [
+            "copyright text"
+          ]
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Info.plist",
+      "runtimeSHA256": "95eb37b4bd4a698898b2fa3a894c15bc4b9f5dd4323f04cf446f0d841e6616fc"
+    },
+    {
+      "candidateLicenseTexts": [],
+      "decision": "UNKNOWN",
+      "mappedSourcePaths": [
+        {
+          "bytes": 582,
+          "fileType": "XML 1.0 document text, ASCII text",
+          "path": "Source/WebKit/Resources/WebContentProcess.xib",
+          "sha256": "0583e5f26322ca810b6d84bcab7dfce7aa3c8e8cea9e4ca150fb8a98bf47ef36",
+          "sourceHeaderMarkers": []
+        }
+      ],
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Resources/WebContentProcess.nib",
+      "runtimeSHA256": "90306f1e50ac0139b6057dd411b06fd49089cecfb59f01e144690b9cd86583a7"
+    }
+  ],
+  "schemaVersion": 1,
+  "status": "exact-source-review-of-resource-rows-without-candidate-license-files;six-notice-rows-resolved-thirteen-unknown",
+  "summary": {
+    "candidateLicenseTextAssociations": 0,
+    "decisionsStillUnknown": 13,
+    "factualNoticeRowsResolved": 6,
+    "resourceRowsReviewed": 19,
+    "sourceFilesPresent": 23,
+    "uniqueMappedSourceFiles": 23
+  }
+}

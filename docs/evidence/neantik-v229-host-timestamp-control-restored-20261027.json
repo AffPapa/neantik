@@ -1,0 +1,11 @@
+{
+  "status": "HOST_DEVELOPER_ID_TIMESTAMP_CONTROL_PASS",
+  "networkDiagnostic": "RFC3161 host request for exact QA host digest: HTTP 200, timestamp status Granted",
+  "controlSigning": "Developer ID sign exit 0, strict verification exit 0, secure timestamp present",
+  "controlSHA256": "f4df15f050739e12db17e5c9d0c837fcc24e53fa714191efa925dc09568bb300",
+  "initialSetup": "copy2 failed before signing due to protected system flags; copyfile succeeded",
+  "qaApp": "/private/tmp/neantik-v230-proxy-qa-qewj162r/NeAntik.app",
+  "qaAppStatus": "private fresh copy, manager build 201, fixture root pinned; unsigned and not qualified",
+  "scope": "one disposable control only; no app or release signing yet",
+  "releaseQualified": false
+}

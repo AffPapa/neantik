@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "status": "future-fixture-diagnostics-implemented;native-not-rerun",
+  "sourceBase": "7cbb1b5a37185edc34149609daa61a4877b88884",
+  "sourceSHA256": {
+    "scripts/runtime-network/manager-route-fixture.py": "25b1238282008eb8050e8c4323004f242687a3e1c325700901a71beefa1eefdf",
+    "scripts/runtime-network/manager-webrtc-fixture.py": "db29b081e3f4eff52544b5ccbc85ce67841d8594c9b099b8503ad4ed4d8adf82",
+    "scripts/runtime-network/analyze-manager-webrtc.py": "30ce071b99efb26d892a09f8ee9192a54c0ca4f4019a0d0324f4a0dce2bbae17"
+  },
+  "observedAt": "2026-10-16T12:29:19.380035+00:00",
+  "controls": {
+    "ownedPythonSocketTests": 30,
+    "additionalAffectedFormatterTest": 1,
+    "uniqueSocketTests": 30,
+    "pureAnalyzerTests": 8,
+    "browserLaunches": 0,
+    "nativeBuilds": 0,
+    "fixtureSockets": "own loopback HTTP/DNS/STUN only;temporary roots and public dummy credentials",
+    "cleanup": "all socket modules and affected formatter test terminal exit0;fixture tearDown requires server/thread drain"
+  },
+  "implemented": [
+    "closed stage/request/failure categories;no raw request or exception text",
+    "private per-run salted hash of actual own loopback TCP tuple",
+    "generic fixtures empty hook;formatter errors/non-object results retain refusal",
+    "strict enum/version/type/complete metadata validation",
+    "legacy events remain unclassified;unique close event pairs are only hints;duplicate/distant/unpaired groups stay ambiguous"
+  ],
+  "negativeControls": [
+    "non-loopback/foreign origin/closed socket produce null digest",
+    "different port or per-run salt changes digest;incoming/outgoing own tuple matches",
+    "raw private target/query/error text not copied",
+    "formatter exception/null/list/string preserves original refusal",
+    "partial/unknown/bool diagnostic values rejected",
+    "duplicate and distant groups cannot form unique hint",
+    "unknown legacy fields never become cause or custody proof"
+  ],
+  "originalNativeEvidence": {
+    "path": "docs/evidence/manager-webrtc-0.8.21.json",
+    "SHA256": "cda0c6efacd337119f9757a87f892fb0da848222ad29ef873ff9d1e09f52007f",
+    "unchanged": true,
+    "HTTPDiagnosticCounts": {
+      "proxy-operation-failure": 2,
+      "webrtc-origin-refused": 2
+    },
+    "cause": "unclassified;missing original target/categories cannot be reconstructed"
+  },
+  "allHTTPCleanQualified": false,
+  "causeEstablished": false,
+  "browserCustodyEstablished": false,
+  "globalNetworkQualified": false,
+  "allPoint21GatesComplete": false,
+  "releaseGate": false,
+  "limitations": [
+    "Tuple digest is an event-correlation hint;not unique kernel connection identity or browser custody",
+    "Port reuse not excluded by two-second pairing",
+    "No new native/browser observation;production route unchanged",
+    "Other interface,IPv6/TURN,OS managed policies and network transitions remain open"
+  ],
+  "releaseUnchanged": {
+    "version": "0.8.23",
+    "build": 135,
+    "archivesReplaced": false
+  }
+}

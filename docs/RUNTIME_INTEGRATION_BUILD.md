@@ -1,5 +1,10 @@
 # NeAntik Chromium integration build
 
+> **Historical integration record.** The 144.x artifact names in this
+> document are preserved build-history references and are not a current or
+> release-qualified runtime. The present candidate is separately governed by
+> the Chromium security baseline and exact source-lock gates.
+
 Verified on 25 July 2026.
 
 This is an Apple Silicon integration artifact, not a public production
@@ -175,10 +180,14 @@ Raw schema-7 reports cannot enter the Direct release matrix. A release uses
 the exact prepared manager, schema-3 manifest and an explicit new schema-8
 output; the signed manager derives and signs the public-safe aggregate.
 
-The Codex environment cannot perform this GUI gate: Chromium processes inherit
-the `com.openai.codex` coalition and abort inside Apple's
-`_RegisterApplication`; LaunchServices also returns a false
-`kLSNoExecutableErr` for the otherwise verified bundle.
+A later limited GUI startup smoke succeeded through the native CUA interface
+for the exact M154 attempt8 diagnostic app: `chrome://version` showed the
+expected Chromium version, architecture, source commit, and executable path.
+A shell LaunchServices probe in the Codex execution context still returned
+`kLSNoExecutableErr`; that result did not prevent the native GUI launch. The
+smoke used the existing Chromium Default profile and opened no external site.
+It proves only startup/version display, not this behavioral GUI gate, profile
+isolation, networking, recovery, fingerprint coherence, or A→B→A persistence.
 
 ## Still required before public distribution
 
@@ -189,10 +198,13 @@ the `com.openai.codex` coalition and abort inside Apple's
 - a public update/download channel;
 - final regression and user-context GUI QA.
 
-Это историческое доказательство Chromium 144 сохранено только для
-воспроизводимости. Текущий продукт имеет единственный Direct release path;
-новая публикация должна использовать Chromium 152 source contract и полный
-Direct release gate.
+Этот абзац выше сохранён только как историческая заметка и устарел: он
+называет Chromium 152 текущим кандидатом и baseline 153. Для активной сборки
+источником версии служит точный candidate lock и соответствующий ему
+source-contract. На 28 октября V411 подписал runtime-компонент Chromium
+156.0.8078.74; он ещё не интегрирован в приложение и не является публичным
+релизом. Текущий статус и следующий шаг находятся только в
+`artifacts/neantik/looper-goals/20261020-webkit-1_0/CURRENT.json`.
 
 ## Integration branding
 
@@ -203,12 +215,14 @@ helper binaries:
 ```bash
 ./scripts/brand-runtime-integration.sh \
   /absolute/path/to/Chromium.app \
-  "/absolute/path/to/NeAntik Browser.app"
+  "/absolute/path/to/NeAntik Browser.app" \
+  /absolute/path/to/runtime-candidate-lock.json
 ```
 
-It requires the exact pinned Chromium version, refuses to replace an existing
-output, applies the NeAntik icon and outer bundle metadata, ad-hoc signs the
-result, and runs strict deep signature verification. This is suitable for the
-legacy user-context integration audit only. NeAntik `0.3.8` now uses
-source-level branding; public distribution still requires the final Developer
-ID signing flow.
+With the third argument it checks the raw Chromium app version against that
+build's candidate lock. The two-argument form remains for the legacy
+156.0.8078.12 lock. It refuses to replace an existing output, applies the
+NeAntik icon and outer bundle metadata, ad-hoc signs the result, and runs
+strict deep signature verification. The ad-hoc signature is an intermediate
+packaging step; public distribution requires the final Developer ID signing
+flow.

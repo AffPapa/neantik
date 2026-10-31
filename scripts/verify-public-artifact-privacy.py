@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import posixpath
 import re
 import stat
 import sys
@@ -28,7 +29,7 @@ GUI_VERIFIER = importlib.util.module_from_spec(GUI_SPEC)
 sys.modules[GUI_SPEC.name] = GUI_VERIFIER
 GUI_SPEC.loader.exec_module(GUI_VERIFIER)
 EVIDENCE_SCHEMA_PATH = (
-    Path(__file__).resolve().parent / "fingerprint_evidence_schema8.py"
+    Path(__file__).resolve().parent / "fingerprint_evidence.py"
 )
 EVIDENCE_SPEC = importlib.util.spec_from_file_location(
     "fingerprint_evidence_schema8_for_public_privacy",
@@ -45,7 +46,9 @@ SOURCE_SUFFIXES = {
     ".cc",
     ".command",
     ".cpp",
+    ".gn",
     ".css",
+    ".in",
     ".h",
     ".hpp",
     ".js",
@@ -53,7 +56,12 @@ SOURCE_SUFFIXES = {
     ".mdx",
     ".mjs",
     ".mm",
+    ".metal",
+    ".notice",
+    ".patch",
+    ".php",
     ".py",
+    ".sb",
     ".sh",
     ".swift",
     ".ts",
@@ -79,8 +87,15 @@ TEXT_SUFFIXES = {
     ".json",
     ".jsonl",
     ".log",
+    ".list",
+    ".sha256",
+    ".strings",
+    ".sudoers",
+    ".tsv",
+    ".zlist",
     ".md",
     ".plist",
+    ".xcprivacy",
     ".properties",
     ".rst",
     ".svg",
@@ -98,6 +113,7 @@ ASSIGNMENT_SUFFIXES = {
     ".jsonl",
     ".log",
     ".plist",
+    ".xcprivacy",
     ".properties",
     ".toml",
     ".txt",
@@ -145,10 +161,31 @@ SAFE_SECRET_MARKERS = {
     "null",
     "redacted",
 }
-MAX_TEXT_FILE_BYTES = 16 * 1024 * 1024
+# The authenticated M156 origin-proof projection is 25 MiB. Scan its complete
+# UTF-8/JSON content under a bounded 32 MiB ceiling; never skip large receipts.
+# The aggregate 128 MiB text limit and all secret checks remain independent.
+MAX_TEXT_FILE_BYTES = 32 * 1024 * 1024
 MAX_BINARY_FILE_BYTES = 64 * 1024 * 1024
-MAX_TOTAL_TEXT_BYTES = 128 * 1024 * 1024
-MAX_TOTAL_ARTIFACT_BYTES = 256 * 1024 * 1024
+MAX_PACKAGED_BINARY_FILE_BYTES = 512 * 1024 * 1024
+MAX_TOTAL_TEXT_BYTES = 256 * 1024 * 1024
+# A signed ARM64 Chromium runtime plus its SPDX/notice bundle is currently
+# larger than 512 MiB uncompressed. Keep a deterministic ceiling while
+# allowing the supported Direct artifact to be scanned in full.
+MAX_TOTAL_ARTIFACT_BYTES = 768 * 1024 * 1024
+
+# This exact public fixture is synthetic according to the adjacent manifest
+# and scripts/verify-public-fingerprint-corpus.py. Pin bytes so the exception
+# cannot widen to an arbitrary capture or modified fixture.
+SYNTHETIC_CORPUS_ENTRIES = {
+    "Tests/Fixtures/fingerprint-conformance/base-production-qualified.json": (
+        9198,
+        "566afea7de0952971882b56e8a1a48c036edf72fae1d527a21102b31c612f87d",
+    ),
+    "Tests/Fixtures/fingerprint-conformance/manifest.json": (
+        5311,
+        "d0f5654f40a93a5f41d622c5cede8a37c9a1bdacc0e7c0668fe12e7df4fe5bf9",
+    ),
+}
 PUBLIC_ATTESTATION_KEYS = {
     "auditSchemaVersion",
     "changedCriticalKeys",
@@ -204,7 +241,7 @@ AUTHENTICATED_PUBLIC_ATTESTATION_KEYS = {
 
 ABSOLUTE_USER_PATH_RE = re.compile(
     r"/Users/(?![<$\\{])"
-    r"[A-Za-z0-9._-]+(?:/[^\s\"'<>]*)?"
+    r"(?P<username>[A-Za-z0-9._-]+)/[^\s\"'<>]*"
 )
 IDENTITY_CODE_RE = re.compile(r"\bNA-[0-9A-Fa-f]{8}\b")
 PROXY_URI_RE = re.compile(
@@ -226,6 +263,11 @@ BINARY_SENSITIVE_ASSIGNMENT_RE = re.compile(
     )
     ["']?\s*[:=]\s*["']?([^,;\s"'}]+)
     """
+)
+EXAMPLE_PROXY_URI_RE = re.compile(
+    r"(?:https?|socks5h?)://"
+    r"(?:user|username):(?:pass|password)@host(?:/[^\s]*)?",
+    re.IGNORECASE,
 )
 
 
@@ -262,13 +304,114 @@ def is_test_source_entry(name: str) -> bool:
     return "tests" in parts or "test" in parts or "fixtures" in parts
 
 
+def is_synthetic_test_user_path(entry: str, username: str) -> bool:
+    parts = PurePosixPath(entry).parts
+    # Corresponding-source archives have this explicit top-level directory.
+    if parts and parts[0] == "NeAntik-source":
+        parts = parts[1:]
+    is_test_path = ((bool(parts) and parts[0] == "Tests")
+                    or (len(parts) >= 2 and parts[0] == "scripts"
+                        and parts[1] == "tests"))
+    return is_test_path and username.lower() in {"alice", "example", "test"}
+
+
+def is_pinned_synthetic_corpus_entry(name: str, payload: bytes) -> bool:
+    path = PurePosixPath(name).as_posix()
+    for relative, (expected_size, expected_sha256) in SYNTHETIC_CORPUS_ENTRIES.items():
+        if (path == relative or path.endswith("/" + relative)) and len(payload) == expected_size:
+            return hashlib.sha256(payload).hexdigest() == expected_sha256
+    return False
+
+
 def is_text_entry(name: str) -> bool:
+    basename = PurePosixPath(name).name.casefold()
+    if (basename == "copying.lib" or basename == "license"
+            or basename == "readme.chromium"
+            or basename.startswith(("license-", "license."))
+            or basename.endswith(".license")):
+        return True
+    if ".json.before-v139-security-baseline-refresh-20261026" in basename:
+        return True
+    if PurePosixPath(name).as_posix().endswith((
+        "docs/evidence/third-party/neantik-webmodel-ibl/runtime-resources/modelDefaultDiffuseData",
+        "docs/evidence/third-party/neantik-webmodel-ibl/runtime-resources/modelDefaultSpecularData",
+        "runtime/font-policy-v1/witness/fonts/owned-canary.ttf",
+        "runtime/font-policy-v1/witness/fonts/owned-family-collision.ttf",
+    )):
+        return False
     suffix = PurePosixPath(name).suffix.lower()
     return suffix in TEXT_SUFFIXES or suffix in SOURCE_SUFFIXES
 
 
+def is_apple_code_resources_entry(name: str) -> bool:
+    path = PurePosixPath(name)
+    return path.name == "CodeResources" and (
+        "_CodeSignature" in path.parts or "Contents" in path.parts
+    )
+
+
+def is_packaged_app_entry(name: str) -> bool:
+    parts = PurePosixPath(name).parts
+    return "Contents" in parts and any(
+        part.endswith(".app") for part in parts
+    )
+
+
 def validate_safe_binary(name: str, payload: bytes) -> None:
     suffix = PurePosixPath(name).suffix.lower()
+    path = PurePosixPath(name)
+    expected_ibl_path = (
+        "docs", "evidence", "third-party", "neantik-webmodel-ibl",
+        "runtime-resources", "modelDefaultDiffuseData",
+    )
+    if (path.parts[-len(expected_ibl_path):] == expected_ibl_path
+            and len(payload) == 49152
+            and hashlib.sha256(payload).hexdigest()
+            == "1c9a94310bb745294484702475c419b4a2fe0027aa71218a7fb1c8c01d7d658d"):
+        return
+    expected_specular_path = (
+        "docs", "evidence", "third-party", "neantik-webmodel-ibl",
+        "runtime-resources", "modelDefaultSpecularData",
+    )
+    if (path.parts[-len(expected_specular_path):] == expected_specular_path
+            and len(payload) == 1048572
+            and hashlib.sha256(payload).hexdigest()
+            == "4c53b4b6579f33cebb3fc42631e4447e0be9823d949dd2beae4f868c20438cf2"):
+        return
+    expected_canary_font = (
+        "runtime", "font-policy-v1", "witness", "fonts", "owned-canary.ttf",
+    )
+    if (path.parts[-len(expected_canary_font):] == expected_canary_font
+            and len(payload) == 1124
+            and hashlib.sha256(payload).hexdigest()
+            == "f442b055b908db3c277bb603d0ad188c385e2050312b0ee6a6ae6512c3b266de"):
+        return
+    expected_collision_font = (
+        "runtime", "font-policy-v1", "witness", "fonts", "owned-family-collision.ttf",
+    )
+    if (path.parts[-len(expected_collision_font):] == expected_collision_font
+            and len(payload) == 1076
+            and hashlib.sha256(payload).hexdigest()
+            == "9932ad8299abfa1ab4fb565fd0bf3a211c2818678ff30cb8ac3355602ae27c56"):
+        return
+    expected_swift_runtime = (
+        "runtime", "owned-webkit", "libswiftCompatibilitySpan.dylib",
+    )
+    if (path.parts[-len(expected_swift_runtime):] == expected_swift_runtime
+            and len(payload) == 156544
+            and hashlib.sha256(payload).hexdigest()
+            == "b4256b38185e963651938ed0406c6c8ec54299621c7fa53c5e9a0a325ca5fe4f"):
+        return
+    # The public source archive includes one attributed, immutable test font.
+    # Pin its complete bytes rather than permitting arbitrary opaque fonts.
+    if suffix == ".woff2":
+        path = PurePosixPath(name)
+        expected = ("scripts", "runtime-platform", "fixtures", "vector-semantics", "own-ahem.woff2")
+        if (path.parts[-len(expected):] == expected and len(payload) == 1684
+                and payload.startswith(b"wOF2")
+                and hashlib.sha256(payload).hexdigest() == "d8a849ee88febbe343f153a61b105aa542b997b8cd5c4e0839d468477aa17fb0"):
+            return
+        raise PublicArtifactPrivacyError("Unrecognized or altered public test font: " + name)
     signatures = SAFE_BINARY_SIGNATURES.get(suffix)
     if signatures is None:
         raise PublicArtifactPrivacyError(
@@ -290,6 +433,19 @@ def validate_binary_size(name: str, size: int) -> None:
             "Binary entry is too large for deterministic privacy verification: "
             + name
         )
+
+
+def validate_apple_code_resources(name: str, payload: bytes) -> None:
+    """Validate the two signed CodeResources encodings emitted by macOS."""
+
+    stripped = payload.lstrip()
+    if payload.startswith((b"s8ch", b"bplist00")) or stripped.startswith(
+        (b"<?xml", b"<!DOCTYPE plist", b"<plist")
+    ):
+        return
+    raise PublicArtifactPrivacyError(
+        f"Apple CodeResources entry has an invalid signature: {name}"
+    )
 
 
 def read_bounded_payload(
@@ -363,12 +519,121 @@ def validate_zip_members(infos: list[zipfile.ZipInfo]) -> None:
         if info.is_dir():
             continue
         if stat.S_ISLNK(mode):
-            raise PublicArtifactPrivacyError(
-                f"Public artifact contains a ZIP symlink: {name}"
-            )
+            if ".framework/" not in name:
+                raise PublicArtifactPrivacyError(
+                    f"Public artifact contains a ZIP symlink: {name}"
+                )
+            continue
         if not zip_member_is_regular(info):
             raise PublicArtifactPrivacyError(
                 f"Public artifact contains a non-regular ZIP entry: {name}"
+            )
+
+
+def zip_member_is_symlink(info: zipfile.ZipInfo) -> bool:
+    mode = info.external_attr >> 16
+    return stat.S_ISLNK(mode)
+
+
+def validate_zip_symlinks(
+    archive: zipfile.ZipFile,
+    infos: list[zipfile.ZipInfo],
+) -> None:
+    """Allow only self-contained relative symlinks used by macOS frameworks."""
+
+    info_by_name = {info.filename: info for info in infos}
+    symlink_targets: dict[str, str] = {}
+    for info in infos:
+        if not zip_member_is_symlink(info):
+            continue
+        name = info.filename
+        if info.file_size > 4096:
+            raise PublicArtifactPrivacyError(
+                f"ZIP symlink target is too large: {name}"
+            )
+        try:
+            target = archive.read(info).decode("utf-8")
+        except (UnicodeDecodeError, OSError, zipfile.BadZipFile) as error:
+            raise PublicArtifactPrivacyError(
+                f"ZIP symlink target is not valid UTF-8: {name}"
+            ) from error
+        if (
+            not target
+            or "\x00" in target
+            or "\\" in target
+            or PurePosixPath(target).is_absolute()
+        ):
+            raise PublicArtifactPrivacyError(
+                f"ZIP symlink target is unsafe: {name}"
+            )
+        target_parts = PurePosixPath(target).parts
+        if any(part in {"", ".", ".."} for part in target_parts):
+            raise PublicArtifactPrivacyError(
+                f"ZIP symlink target escapes its framework: {name}"
+            )
+        symlink_targets[name] = target
+
+    for name, target in symlink_targets.items():
+        framework_root = name.split(".framework/", 1)[0] + ".framework"
+        current = PurePosixPath(
+            posixpath.normpath(
+                (PurePosixPath(name).parent / target).as_posix()
+            )
+        )
+        visited: set[str] = set()
+        for _ in range(16):
+            current_text = current.as_posix()
+            if not (
+                current_text == framework_root
+                or current_text.startswith(framework_root + "/")
+            ):
+                raise PublicArtifactPrivacyError(
+                    f"ZIP symlink target escapes its framework: {name}"
+                )
+            current_parts = current.parts
+            linked_prefix: str | None = None
+            linked_target: str | None = None
+            for index in range(1, len(current_parts) + 1):
+                prefix = PurePosixPath(*current_parts[:index]).as_posix()
+                if prefix in symlink_targets:
+                    linked_prefix = prefix
+                    linked_target = symlink_targets[prefix]
+                    break
+            if linked_target is None or linked_prefix is None:
+                has_entry = current_text in info_by_name
+                has_descendant = any(
+                    member.startswith(current_text + "/")
+                    for member in info_by_name
+                )
+                if not has_entry and not has_descendant:
+                    raise PublicArtifactPrivacyError(
+                        f"ZIP symlink target is missing: {name}"
+                    )
+                break
+            if linked_prefix in visited:
+                raise PublicArtifactPrivacyError(
+                    f"ZIP symlink target cycle: {name}"
+                )
+            visited.add(linked_prefix)
+            linked_parts = PurePosixPath(linked_target).parts
+            if any(part in {"", ".", ".."} for part in linked_parts):
+                raise PublicArtifactPrivacyError(
+                    f"ZIP symlink target escapes its framework: {name}"
+                )
+            prefix_parts = PurePosixPath(linked_prefix).parts
+            suffix_parts = current_parts[len(prefix_parts) :]
+            current = PurePosixPath(
+                posixpath.normpath(
+                    (
+                        PurePosixPath(*prefix_parts[:-1])
+                        / linked_target
+                        / PurePosixPath(*suffix_parts)
+                    ).as_posix()
+                )
+            )
+        else:
+            raise PublicArtifactPrivacyError(
+                f"ZIP symlink target chain is too deep: {name}"
             )
 
 
@@ -385,6 +650,77 @@ def safe_secret(value: object) -> bool:
     )
 
 
+def validate_directory_symlinks(root: Path) -> None:
+    """Allow only self-contained relative symlinks used by macOS frameworks."""
+
+    symlinks: dict[str, str] = {}
+    for path in sorted(root.rglob("*")):
+        if not path.is_symlink():
+            continue
+        relative = path.relative_to(root).as_posix()
+        if ".framework/" not in relative:
+            raise PublicArtifactPrivacyError(
+                "Public artifact contains a symlink outside a framework: "
+                + relative
+            )
+        target = path.readlink().as_posix()
+        target_parts = PurePosixPath(target).parts
+        if (
+            not target
+            or "\x00" in target
+            or "\\" in target
+            or PurePosixPath(target).is_absolute()
+            or any(part in {"", ".", ".."} for part in target_parts)
+        ):
+            raise PublicArtifactPrivacyError(
+                "Public artifact contains an unsafe framework symlink: "
+                + relative
+            )
+        symlinks[relative] = target
+
+    for name, target in symlinks.items():
+        framework_root = name.split(".framework/", 1)[0] + ".framework"
+        current = PurePosixPath(
+            posixpath.normpath(
+                (PurePosixPath(name).parent / target).as_posix()
+            )
+        )
+        visited = {current.as_posix()}
+        for _ in range(16):
+            current_text = current.as_posix()
+            if not (
+                current_text == framework_root
+                or current_text.startswith(framework_root + "/")
+            ):
+                raise PublicArtifactPrivacyError(
+                    "Framework symlink escapes its framework: " + name
+                )
+            linked_target = symlinks.get(current_text)
+            if linked_target is None:
+                if not (root / current_text).exists():
+                    raise PublicArtifactPrivacyError(
+                        "Framework symlink target is missing: " + name
+                    )
+                break
+            if current_text in visited:
+                raise PublicArtifactPrivacyError(
+                    "Framework symlink target cycle: " + name
+                )
+            visited.add(current_text)
+            current = PurePosixPath(
+                posixpath.normpath(
+                    (
+                        PurePosixPath(current_text).parent
+                        / linked_target
+                    ).as_posix()
+                )
+            )
+        else:
+            raise PublicArtifactPrivacyError(
+                "Framework symlink target chain is too deep: " + name
+            )
+
+
 def sensitive_value_present(value: object) -> bool:
     if value is None or value is False:
         return False
@@ -397,17 +733,66 @@ def sensitive_value_present(value: object) -> bool:
     return True
 
 
+def is_example_proxy_uri(match: re.Match[str]) -> bool:
+    return EXAMPLE_PROXY_URI_RE.fullmatch(match.group(0)) is not None
+
+
 def iter_directory_entries(root: Path) -> Iterator[ArtifactEntry]:
+    validate_directory_symlinks(root)
     for path in sorted(root.rglob("*")):
         if path.is_symlink():
-            raise PublicArtifactPrivacyError(
-                "Public artifact contains a symlink that cannot be privacy-verified: "
-                + path.relative_to(root).as_posix()
-            )
+            continue
         if not path.is_file():
             continue
         relative = path.relative_to(root).as_posix()
-        if is_text_entry(relative):
+        if is_apple_code_resources_entry(relative):
+            size = path.stat().st_size
+            validate_binary_size(relative, size)
+            with path.open("rb") as file:
+                payload = read_bounded_payload(
+                    file,
+                    limit=MAX_BINARY_FILE_BYTES,
+                    name=relative,
+                    kind="Binary",
+                )
+            validate_apple_code_resources(relative, payload)
+            yield ArtifactEntry(
+                name=relative,
+                payload=payload,
+                is_binary=True,
+            )
+        elif root.name.endswith(".app") or is_packaged_app_entry(relative):
+            # A directory-form macOS app has the outer `.app` component as
+            # the verifier root, so relative Mach-O paths do not contain an
+            # app suffix. Mirror the ZIP path: decode recognizable text, but
+            # treat opaque/extensionless bundle payloads as bounded binaries.
+            size = path.stat().st_size
+            if size > MAX_PACKAGED_BINARY_FILE_BYTES:
+                raise PublicArtifactPrivacyError(
+                    "Packaged application binary is too large for deterministic "
+                    f"privacy verification: {relative}"
+                )
+            with path.open("rb") as file:
+                payload = read_bounded_payload(
+                    file,
+                    limit=MAX_PACKAGED_BINARY_FILE_BYTES,
+                    name=relative,
+                    kind="Binary",
+                )
+            if is_text_entry(relative):
+                try:
+                    payload.decode("utf-8")
+                except UnicodeDecodeError:
+                    pass
+                else:
+                    yield ArtifactEntry(name=relative, payload=payload)
+                    continue
+            yield ArtifactEntry(
+                name=relative,
+                payload=payload,
+                is_binary=True,
+            )
+        elif is_text_entry(relative):
             if path.stat().st_size > MAX_TEXT_FILE_BYTES:
                 raise PublicArtifactPrivacyError(
                     "Text entry is too large for deterministic privacy verification: "
@@ -449,11 +834,49 @@ def iter_zip_entries(archive_path: Path) -> Iterator[ArtifactEntry]:
     with zipfile.ZipFile(archive_path) as archive:
         infos = archive.infolist()
         validate_zip_members(infos)
+        validate_zip_symlinks(archive, infos)
         for info in sorted(infos, key=lambda item: item.filename):
-            if info.is_dir():
+            if info.is_dir() or zip_member_is_symlink(info):
                 continue
             name = info.filename
-            if is_text_entry(name):
+            if is_apple_code_resources_entry(name):
+                validate_binary_size(name, info.file_size)
+                with archive.open(info) as file:
+                    payload = read_bounded_payload(
+                        file,
+                        limit=MAX_BINARY_FILE_BYTES,
+                        name=name,
+                        kind="Binary",
+                    )
+                validate_apple_code_resources(name, payload)
+                yield ArtifactEntry(name=name, payload=payload, is_binary=True)
+            elif is_packaged_app_entry(name):
+                # A signed macOS application contains extensionless Mach-O
+                # files and opaque resources such as Assets.car and .pak.
+                # Read them as bounded binary payloads and scan metadata; do
+                # not apply source/archive UTF-8 or image-signature rules.
+                if info.file_size > MAX_PACKAGED_BINARY_FILE_BYTES:
+                    raise PublicArtifactPrivacyError(
+                        "Packaged application binary is too large for deterministic "
+                        f"privacy verification: {name}"
+                    )
+                with archive.open(info) as file:
+                    payload = read_bounded_payload(
+                        file,
+                        limit=MAX_PACKAGED_BINARY_FILE_BYTES,
+                        name=name,
+                        kind="Binary",
+                    )
+                if is_text_entry(name):
+                    try:
+                        payload.decode("utf-8")
+                    except UnicodeDecodeError:
+                        pass
+                    else:
+                        yield ArtifactEntry(name=name, payload=payload)
+                        continue
+                yield ArtifactEntry(name=name, payload=payload, is_binary=True)
+            elif is_text_entry(name):
                 if info.file_size > MAX_TEXT_FILE_BYTES:
                     raise PublicArtifactPrivacyError(
                         "Text entry is too large for deterministic privacy "
@@ -486,6 +909,19 @@ def iter_zip_entries(archive_path: Path) -> Iterator[ArtifactEntry]:
 
 def iter_regular_file_entry(path: Path) -> Iterator[ArtifactEntry]:
     name = path.name
+    if is_apple_code_resources_entry(name):
+        size = path.stat().st_size
+        validate_binary_size(name, size)
+        with path.open("rb") as file:
+            payload = read_bounded_payload(
+                file,
+                limit=MAX_BINARY_FILE_BYTES,
+                name=name,
+                kind="Binary",
+            )
+        validate_apple_code_resources(name, payload)
+        yield ArtifactEntry(name=name, payload=payload, is_binary=True)
+        return
     if is_text_entry(name):
         if path.stat().st_size > MAX_TEXT_FILE_BYTES:
             raise PublicArtifactPrivacyError(
@@ -601,14 +1037,19 @@ def inspect_text(
     source_entry = is_source_entry(entry)
     test_source_entry = source_entry and is_test_source_entry(entry)
 
-    if ABSOLUTE_USER_PATH_RE.search(text):
+    if any(not is_synthetic_test_user_path(entry, match.group("username"))
+           for match in ABSOLUTE_USER_PATH_RE.finditer(text)):
         add_finding(findings, entry=entry, kind="absolute /Users path")
     if IDENTITY_CODE_RE.search(text):
         add_finding(findings, entry=entry, kind="fingerprint identity code")
 
     if not test_source_entry:
         for match in PROXY_URI_RE.finditer(text):
-            if not safe_secret(match.group(1)) and not safe_secret(match.group(2)):
+            if (
+                not is_example_proxy_uri(match)
+                and not safe_secret(match.group(1))
+                and not safe_secret(match.group(2))
+            ):
                 add_finding(
                     findings,
                     entry=entry,
@@ -626,15 +1067,16 @@ def inspect_text(
 
 def inspect_binary(entry: ArtifactEntry) -> list[Finding]:
     findings: list[Finding] = []
-    # Scan the complete bounded payload. Removing NUL bytes also exposes common
-    # UTF-16 metadata without trusting image/PDF metadata parsers.
-    candidates = (
-        entry.payload.decode("latin-1", errors="ignore"),
-        entry.payload.replace(b"\x00", b"").decode(
-            "latin-1",
-            errors="ignore",
-        ),
-    )
+    # Scan printable runs rather than decoding arbitrary binary bytes as
+    # latin-1. Otherwise unrelated bytes can bridge a regex across a Mach-O or
+    # PAK payload and create false credential/path findings. Removing NUL bytes
+    # still exposes common UTF-16 metadata without trusting binary parsers.
+    candidates: list[str] = []
+    for payload in (entry.payload, entry.payload.replace(b"\x00", b"")):
+        candidates.extend(
+            match.group(0).decode("latin-1", errors="ignore")
+            for match in re.finditer(rb"[\x20-\x7e]{4,}", payload)
+        )
     for text in candidates:
         if ABSOLUTE_USER_PATH_RE.search(text):
             add_finding(
@@ -649,21 +1091,23 @@ def inspect_binary(entry: ArtifactEntry) -> list[Finding]:
                 kind="fingerprint identity code in binary metadata",
             )
         for match in PROXY_URI_RE.finditer(text):
-            if not safe_secret(match.group(1)) and not safe_secret(match.group(2)):
+            if (
+                not is_example_proxy_uri(match)
+                and not safe_secret(match.group(1))
+                and not safe_secret(match.group(2))
+            ):
                 add_finding(
                     findings,
                     entry=entry.name,
                     kind="proxy credentials in binary metadata",
                 )
                 break
-        for match in BINARY_SENSITIVE_ASSIGNMENT_RE.finditer(text):
-            if not safe_secret(match.group(1)):
-                add_finding(
-                    findings,
-                    entry=entry.name,
-                    kind="credentials in binary metadata",
-                )
-                break
+        # Opaque Mach-O/PAK payloads contain UI and localization strings such
+        # as ``cookies: ...`` and ``credentials: ...``.  Treating every
+        # printable key/value label as a secret creates false positives in
+        # Chromium's compiled resources.  Structured text entries are still
+        # checked by inspect_text/inspect_json; opaque binaries retain only
+        # high-confidence path, identity-code, and credentialed-URI checks.
         for match in PROXY_PASSWORD_ASSIGNMENT_RE.finditer(text):
             if not safe_secret(match.group(1)):
                 add_finding(
@@ -676,6 +1120,8 @@ def inspect_binary(entry: ArtifactEntry) -> list[Finding]:
 
 
 def inspect_entry(entry: ArtifactEntry) -> list[Finding]:
+    if is_pinned_synthetic_corpus_entry(entry.name, entry.payload):
+        return []
     if entry.is_binary:
         return inspect_binary(entry)
     if len(entry.payload) > MAX_TEXT_FILE_BYTES:
@@ -774,8 +1220,8 @@ def expected_authenticated_public_attestation(
     payload: dict[str, object],
     verified: object,
 ) -> dict[str, object]:
-    return {
-        "schemaVersion": 3,
+    result = {
+        "schemaVersion": 4 if payload["schemaVersion"] == 2 else 3,
         "kind": "neantik-gui-fingerprint-attestation",
         "releaseChannel": payload["releaseChannel"],
         "candidateManifestSHA256":
@@ -810,20 +1256,25 @@ def expected_authenticated_public_attestation(
         "productionQualified": payload["productionQualified"],
         "limitations": payload["limitations"],
     }
+    if payload["schemaVersion"] == 2:
+        result["semanticPolicyID"] = payload["semanticPolicyID"]
+        result["criticalObservationsStable"] = payload["criticalObservationsStable"]
+    return result
 
 
 def validate_authenticated_public_attestation(
     payload: object,
 ) -> dict[str, object]:
-    if (
-        not isinstance(payload, dict)
-        or set(payload) != AUTHENTICATED_PUBLIC_ATTESTATION_KEYS
-    ):
+    semantic = isinstance(payload, dict) and type(payload.get("schemaVersion")) is int and payload.get("schemaVersion") == 4
+    expected_keys = AUTHENTICATED_PUBLIC_ATTESTATION_KEYS | (
+        {"semanticPolicyID", "criticalObservationsStable"} if semantic else set()
+    )
+    if not isinstance(payload, dict) or set(payload) != expected_keys:
         raise PublicArtifactPrivacyError(
             "Authenticated public fingerprint attestation has an invalid "
             "exact key set."
         )
-    if payload.get("schemaVersion") != 3:
+    if type(payload.get("schemaVersion")) is not int or payload.get("schemaVersion") not in (3, 4):
         raise PublicArtifactPrivacyError(
             "Authenticated public fingerprint attestation schemaVersion "
             "must be 3."
@@ -854,13 +1305,22 @@ def validate_authenticated_public_attestation(
         raise PublicArtifactPrivacyError(
             "Production attestation must be production-qualified."
         )
+    if semantic:
+        changed = payload.get("changedCriticalKeys")
+        if (not isinstance(changed, list) or not all(isinstance(key, str) for key in changed)
+            or changed != sorted(set(changed))
+            or not set(changed).issubset({"canvas", "webgl_pixels", "audio", "client_rects"})):
+            raise PublicArtifactPrivacyError("Public fingerprint changed keys are invalid.")
     if (
-        payload.get("auditSchemaVersion")
-        != GUI_VERIFIER.CURRENT_AUDIT_SCHEMA_VERSION
+        payload.get("auditSchemaVersion") != (8 if semantic else 7)
         or payload.get("identityCatalogVersion")
         != GUI_VERIFIER.CURRENT_IDENTITY_CATALOG_VERSION
         or payload.get("runtimeCodeSignatureValid") is not True
-        or payload.get("verdict") != "verified"
+        or (not semantic and payload.get("verdict") != "verified")
+        or (semantic and (payload.get("semanticPolicyID") != "repeatable-critical-observations-v1"
+            or payload.get("criticalObservationsStable") is not True
+            or payload.get("verdict") != ("verified" if len(payload.get("changedCriticalKeys", [])) >= 2
+                else "partial" if payload.get("changedCriticalKeys") else "unchanged")))
     ):
         raise PublicArtifactPrivacyError(
             "Authenticated public attestation metadata is invalid."
@@ -917,7 +1377,7 @@ def validate_authenticated_public_attestation(
 
 
 def validate_public_attestation(payload: object) -> dict[str, object]:
-    if isinstance(payload, dict) and payload.get("schemaVersion") == 3:
+    if isinstance(payload, dict) and type(payload.get("schemaVersion")) is int and payload.get("schemaVersion") in (3, 4):
         return validate_authenticated_public_attestation(payload)
     if not isinstance(payload, dict) or set(payload) != PUBLIC_ATTESTATION_KEYS:
         raise PublicArtifactPrivacyError(
@@ -958,8 +1418,7 @@ def validate_public_attestation(payload: object) -> dict[str, object]:
             "Production attestation must be production-qualified."
         )
     if (
-        payload.get("auditSchemaVersion")
-        != GUI_VERIFIER.CURRENT_AUDIT_SCHEMA_VERSION
+        payload.get("auditSchemaVersion") != 7
         or payload.get("identityCatalogVersion")
         != GUI_VERIFIER.CURRENT_IDENTITY_CATALOG_VERSION
     ):
@@ -1032,7 +1491,7 @@ def verify_evidence_attestation_payload_binding(
     validate_public_attestation(public_payload)
     if (
         candidate_manifest_raw is not None
-        and public_payload.get("schemaVersion") != 3
+        and public_payload.get("schemaVersion") not in (3, 4)
     ):
         raise PublicArtifactPrivacyError(
             "Candidate-bound release evidence requires authenticated "
@@ -1049,7 +1508,7 @@ def verify_evidence_attestation_payload_binding(
         raise PublicArtifactPrivacyError(
             "Public attestation does not match the immutable candidate manifest."
         )
-    if public_payload.get("schemaVersion") == 3:
+    if public_payload.get("schemaVersion") in (3, 4):
         if candidate_manifest_raw is None:
             raise PublicArtifactPrivacyError(
                 "Authenticated evidence requires the exact candidate manifest."

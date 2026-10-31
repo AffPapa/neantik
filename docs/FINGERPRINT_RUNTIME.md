@@ -4,6 +4,14 @@ NeAntik itself is a native profile and process manager. Browser-visible
 fingerprint values are implemented by a compatible Chromium runtime, not by
 JavaScript injected into pages.
 
+## Evidence policy status
+
+Current major development uses [audit8 / authenticated envelope9](FINGERPRINT_EVIDENCE_POLICY.md).
+This changes the interpretation of measurements, not the browser-visible
+runtime policy. The final integrated candidate, notarization and hosted bytes
+still require independent qualification. Historical release reports below
+remain historical evidence.
+
 ## Private launch protocol
 
 A compatible runtime must support:
@@ -28,9 +36,14 @@ they represent current market share. A stable seed is not anonymous: it makes
 one profile repeatable and therefore linkable between visits. The policy does
 not hide NeAntik-specific runtime behavior or guarantee a populated anonymity
 set. Issuance v2 reduces the hardware tuple set only: the 780,903,144 full seed
-values still make Canvas, Audio, WebGL and ClientRects effectively distinct at
-public-alpha population sizes. Shared full-fingerprint cohorts remain a
-separate production design problem.
+values are configuration identities; they do not guarantee different values
+from every web API. The semantic Canvas, Audio, WebGL and ClientRects
+corrections preserve native readback/output/geometry instead of forcing
+per-seed differences that violate those APIs. The same own Canvas drawing
+can therefore legitimately match across two seeds in one hardware cohort.
+[The same-cohort isolation evidence](evidence/same-cohort-isolation-0.8.23.json)
+keeps configuration identity, data separation and repeatability distinct.
+Shared full-fingerprint cohorts remain a separate production design problem.
 
 The current owned runtime parses this private environment value as an unsigned
 integer constrained to Chromium's signed `int` range. NeAntik therefore never
@@ -76,16 +89,9 @@ inside the exact Chromium runtime and proven by the three-pass check. A
 tag-specific GPU table cannot safely be assumed for an arbitrary compatible
 runtime.
 
-## Runtime modes
+## Runtime mode
 
-### Stock Chrome or Chromium
-
-- Separate cookies, cache, local storage, and sessions.
-- Separate proxy configuration.
-- No claim that Canvas, Audio, WebGL, fonts, or hardware values differ.
-- NeAntik does not send unsupported fingerprint flags.
-
-### Explicitly compatible Chromium
+### Bundled compatible Chromium
 
 - Receives the persistent profile seed through the private child-process
   environment contract. The runtime is ARM64-only and its macOS platform is
@@ -93,28 +99,31 @@ runtime.
 - The runtime, not NeAntik, is responsible for coherent Canvas, Audio, WebGL,
   font, ClientRects, WebRTC, language, timezone, and Client Hints behavior.
 
+The production app resolves only the signed runtime bundled with NeAntik. It
+does not select, fall back to, or redistribute an independently installed
+Chrome, Chromium, or Cloak binary. The locator retains an external-runtime
+path for isolated tests and future work; that path is disabled in production
+and is not a supported distribution mode.
+
 ## Selection
 
-NeAntik Direct uses only the `NeAntik Browser.app` embedded in the signed
-application resources. The runtime must declare bundle identifier
-`app.neantik.runtime` and flavor `fingerprint-chromium`; otherwise startup
-fails closed. There is no external-runtime picker, persisted custom path or
-fallback to an installed Chrome, Chromium or Cloak build.
-
-Run **Fingerprint Check** before treating the embedded binary as verified.
-Release evidence remains bound to the exact signed candidate rather than a
-mutable path or a separately installed browser.
+1. Launch the signed NeAntik application.
+2. The app verifies the bundled ARM64 runtime before offering profile launch.
+3. Run **Fingerprint Check** when diagnostic evidence is needed; it does not
+   turn an unverified runtime or an unmeasured network route into a release
+   qualification.
 
 ## Privacy boundary
 
-A distinct seed is necessary but not sufficient for anonymity. Proxy exit
+NeAntik gives each profile a stable seed; this alone does not provide anonymity. Proxy exit
 location, DNS, WebRTC, timezone, language, screen geometry, extensions,
 behavior, and authenticated accounts can still link sessions. NeAntik should
 present consistency checks as future privacy controls and must not promise that
 any third-party service cannot correlate a user.
 
 Proxy-derived timezone and locale values are applied only when a proxy is
-still configured and the local `ipapi.co` evidence is valid and no older than
+still configured and the local `ipapi.co` or independently cross-checked
+`ipwho.is` + `free.freeipapi.com` evidence is valid and no older than
 30 days. Clock skew up to five minutes is tolerated. The ordinary UI launch
 path has a stricter route gate: every Start for a proxied profile makes a fresh
 observation. It must be bound to the current profile revision, describe the
@@ -181,9 +190,8 @@ NEANTIK_PROFILE_TIMEZONE=<IANA timezone>
 ```
 
 Timezone is intentionally transported only through NeAntik's private
-environment contract. Chromium 151 does not expose a supported
-`--timezone` command-line switch, so the manager never emits that no-op
-argument.
+environment contract. Chromium does not expose a supported `--timezone`
+command-line switch, so the manager never emits that no-op argument.
 
 The custom `--fingerprint*` argv family is intentionally unsupported and the
 release verifier rejects those legacy NUL-terminated markers in the packaged
@@ -230,6 +238,19 @@ Context values:
   counts. Candidate strings, addresses, hostnames, and hashes derived from
   them are never stored.
 
+Optional privacy diagnostics:
+
+- `media_devices` and a bounded device count (never device IDs, labels, or
+  names);
+- Permissions API availability plus camera/microphone state enums;
+- speech-synthesis availability plus a bounded voice count (never voice names);
+- worker Audio hash and an explicit `unavailable` ClientRects marker because
+  ClientRects is a DOM API and is not available in a Worker.
+
+These fields are backward-compatible and diagnostic-only. Missing or
+unavailable optional values remain `partial`/`unverified`; they cannot create a
+production qualification. Malformed present values invalidate the report.
+
 Verdicts:
 
 - **Distinct and stable**: at least two critical values differ across profiles
@@ -258,7 +279,7 @@ separates two levels:
   worker coherence. A legacy schema 1 report may remain valid public-alpha
   evidence, but can never satisfy the strict production gate.
 
-A schema 8 report is production-qualified only when all of the following are
+A schema 7 report is production-qualified only when all of the following are
 true:
 
 - it was captured in normal browser mode, not a headless diagnostic;
@@ -271,8 +292,6 @@ true:
 - WebGL pixels differ between profiles A and B.
 - repeated Canvas, OfflineAudio, WebGL pixel, and ClientRects reads match the
   first read in each capture, so per-call random noise cannot pass;
-- Canvas readback and encoded output use one deterministic profile transform,
-  and exact OfflineAudio digital silence remains exact silence;
 - Canvas and WebGL results from the main realm agree with a dedicated Web
   Worker using OffscreenCanvas;
 - main-realm and worker UA, Client Hints, platform, languages, timezone,
@@ -317,10 +336,6 @@ OffscreenCanvas, CSS media-query, or shader-precision evidence is a confirmed
 strict-production limitation; the gates must not synthesize or substitute
 values to obtain a pass.
 
-Schema 8 also records a sorted, allowlisted set of privacy-safe strict failure
-identifiers. The identifiers name the failed invariant only; they never contain
-captured surface values, URLs, profile metadata, proxy endpoints, or secrets.
-
 NeAntik re-inspects the signature, version, architecture, and both binary
 hashes before and after A -> B -> A. If the runtime changes during the check,
 the audit aborts instead of saving ambiguous evidence.
@@ -363,8 +378,9 @@ current Codex process coalition cannot run Chromium's normal macOS
 multiprocess rendezvous. The GUI and ordinary CLI modes remain unchanged and
 do not receive those arguments.
 
-Four independent real Blink runs passed with stable, distinct Canvas, Audio,
+Historical July2026 evidence: four independent real Blink runs passed with stable, distinct Canvas, Audio,
 and ClientRects values, including two runs from the rebuilt Metal target.
 WebGL remained unavailable in headless mode, so these reports are explicitly
 not production-qualified and do not replace the production Metal GUI gate.
-See `docs/FINGERPRINT_DIAGNOSTIC_EVIDENCE.md`.
+See `docs/FINGERPRINT_DIAGNOSTIC_EVIDENCE.md`. These observations precede the
+semantic corrections and do not describe the current M156 readback policy.

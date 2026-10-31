@@ -1,382 +1,285 @@
 import Darwin
+import Combine
 import Foundation
 import Testing
 @testable import NeAntik
 
 @MainActor
 struct BrowserProcessManagerTests {
-    @Test
-    func memorySavingCanPauseAndResumeOnlyManagedProcess() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        let executable = root.appendingPathComponent("fake-browser")
-        try Data("#!/bin/sh\nexec /bin/sleep 30\n".utf8).write(to: executable)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
-        let manager = BrowserProcessManager(
-            paths: AppPaths(rootDirectory: root.appendingPathComponent("data")),
-            processIdentityValidator: { _ in false },
-            browserDataProcessInspector: { _ in .absent }
-        )
-        let profile = BrowserProfile(name: "Memory saver")
-        let runtime = BrowserRuntime(name: "Test", executableURL: executable, source: "Test")
-        defer { manager.stop(profileID: profile.id) }
-
-        try manager.launch(profile: profile, runtime: runtime)
-        #expect(manager.suspendForMemorySaving(profileID: profile.id))
-        #expect(manager.memorySavingSuspendedProfileIDs == [profile.id])
-        #expect(manager.resumeFromMemorySaving(profileID: profile.id))
-        #expect(manager.memorySavingSuspendedProfileIDs.isEmpty)
-    }
-
-    @Test
-    func managedRecordCleanupDoesNotLetOldTerminationEraseRelaunch() async throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        let executable = root.appendingPathComponent("fake-browser")
-        try Data("#!/bin/sh\nexec /bin/sleep 30\n".utf8).write(to: executable)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
-        var terminated: Process?
-        let manager = BrowserProcessManager(
-            paths: AppPaths(rootDirectory: root.appendingPathComponent("data")),
-            processIdentityValidator: { _ in false },
-            managedProcessTerminator: {
-                terminated = $0
-                $0.terminate()
-            },
-            browserDataProcessInspector: { _ in .absent }
-        )
-        let profile = BrowserProfile(name: "Managed lifetime")
-        let runtime = BrowserRuntime(name: "Test", executableURL: executable, source: "Test")
-        defer { manager.stop(profileID: profile.id) }
-        try manager.launch(profile: profile, runtime: runtime)
-        #expect(manager.startedAt(for: profile.id) != nil)
+    @Test(arguments: [BrowserDataProcessInspection.found, .unknown])
+    func acceptedStopKeepsClosingAndFencesUntilHelpersSettle(inspection: BrowserDataProcessInspection) async throws {
+        let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
+        let manager = fixture.manager, profile = fixture.profile
+        try fixture.launch(); fixture.inspection = inspection
         manager.stop(profileID: profile.id)
-        let previous = try #require(terminated)
-        for _ in 0..<200 where manager.runningProfileIDs.contains(profile.id) {
-            try await Task.sleep(nanoseconds: 5_000_000)
+        #expect(manager.processState(for: profile.id) == .closing)
+        manager.stop(profileID: profile.id)
+        #expect(fixture.stopCalls == 1)
+        #expect(throws: BrowserProfileDeletionBlockedError.self) {
+            try manager.withVerifiedStoppedProfileOperation(profileID: profile.id) {}
         }
-        #expect(manager.processState(for: profile.id) == .stopped)
-        #expect(manager.startedAt(for: profile.id) == nil)
-        try manager.launch(profile: profile, runtime: runtime)
-        let relaunchedAt = try #require(manager.startedAt(for: profile.id))
-        previous.terminationHandler?(previous)
-        for _ in 0..<10 { await Task.yield() }
-        #expect(manager.processState(for: profile.id) == .managed)
-        #expect(manager.startedAt(for: profile.id) == relaunchedAt)
-        #expect(manager.managerTerminationSnapshot().managedProfileIDs == [profile.id])
+        try fixture.finishMain(); try await fixture.waitForMainExit()
+        #expect(manager.processState(for: profile.id) == .closing)
+        #expect(FileManager.default.fileExists(atPath: fixture.paths.lockFile(for: profile.id).path))
+        #expect(manager.hasWorkPreventingUpdate)
+        #expect(throws: NeAntikError.self) { try fixture.launch() }
+        #expect(throws: BrowserProfileDeletionBlockedError.self) {
+            try manager.withVerifiedStoppedProfileOperation(profileID: profile.id) {}
+        }
+        manager.reconcile(profiles: [profile])
+        #expect(manager.processState(for: profile.id) == .closing)
+        fixture.inspection = .absent
+        try await fixture.waitForStopped()
+        #expect(!FileManager.default.fileExists(atPath: fixture.paths.lockFile(for: profile.id).path))
+        #expect(!manager.hasWorkPreventingUpdate)
     }
 
     @Test
-    func passiveObservationReplacementKeepsOtherPurposesIndependent() async throws {
-        let observations = BrowserProcessObservations()
-        defer { observations.cancelAll() }
-        let id = UUID()
-        var supersededCalls = 0
-        var externalCalls = 0
-        var recoveryCalls = 0
-        observations.replace(.external(id), enabled: true, interval: 1_000_000) {
-            supersededCalls += 1
-            return true
-        }
-        observations.replace(.external(id), enabled: true, interval: 1_000_000) {
-            externalCalls += 1
-            return false
-        }
-        observations.replace(.recovery(id), enabled: true, interval: 1_000_000) {
-            recoveryCalls += 1
-            return false
-        }
-        for _ in 0..<200 where externalCalls == 0 || recoveryCalls == 0 {
-            try await Task.sleep(nanoseconds: 1_000_000)
-        }
-        #expect(supersededCalls == 0)
-        #expect(externalCalls == 1)
-        #expect(recoveryCalls == 1)
+    func refusedStopDoesNotCreateClosingAndAcceptedRepeatIsIdempotent() async throws {
+        let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
+        try fixture.launch(); fixture.acceptsStop = false
+        fixture.manager.stop(profileID: fixture.profile.id)
+        #expect(fixture.manager.processState(for: fixture.profile.id) == .managed)
+        #expect(fixture.manager.lastError != nil)
+        fixture.acceptsStop = true; fixture.manager.lastError = nil
+        fixture.manager.stop(profileID: fixture.profile.id)
+        // A live owned child must be identified as such during reconciliation.
+        // "Unrelated + no BrowserData process" deliberately authorizes stale
+        // lease removal and is not evidence for an ordinary pending Stop.
+        fixture.identity = .expected
+        fixture.manager.reconcile(profiles: [fixture.profile])
+        #expect(fixture.manager.processState(for: fixture.profile.id) == .closing)
+        fixture.manager.stop(profileID: fixture.profile.id)
+        #expect(fixture.stopCalls == 2)
+        fixture.identity = .unrelated
+        try fixture.finishMain(); try await fixture.waitForStopped()
     }
 
     @Test
-    func passiveObservationDisableAndCancelAllPreventPendingPolls() async throws {
-        let observations = BrowserProcessObservations()
-        let id = UUID()
-        var calls = 0
-        for key in [BrowserProcessObservations.Key.external(id), .recovery(id), .tombstone(id)] {
-            observations.replace(key, enabled: true, interval: 1_000_000) {
-                calls += 1
-                return true
-            }
-        }
-        observations.cancelAll()
-        observations.replace(.external(id), enabled: true, interval: 1_000_000) {
-            calls += 1
-            return true
-        }
-        observations.replace(.external(id), enabled: false, interval: 1_000_000) {
-            calls += 1
-            return true
-        }
-        try await Task.sleep(nanoseconds: 10_000_000)
-        #expect(calls == 0)
+    func acceptedStopPublishesPendingPresentationBeforeMainExit() throws {
+        let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
+        try fixture.launch()
+        var notifications = 0
+        let subscription = fixture.manager.objectWillChange.sink { notifications += 1 }
+        fixture.manager.stop(profileID: fixture.profile.id)
+        #expect(notifications > 0)
+        #expect(fixture.manager.processState(for: fixture.profile.id) == .closing)
+        withExtendedLifetime(subscription) {}
     }
 
     @Test
-    func recordsStartupFailureWithoutOperationalDetails() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    func closingDeadlineDoesNotReleaseUnknownDataOrLease() async throws {
+        let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
+        try fixture.launch(); fixture.inspection = .unknown
+        fixture.manager.stop(profileID: fixture.profile.id)
+        try fixture.finishMain(); try await fixture.waitForMainExit()
+        fixture.time.addTimeInterval(9)
+        fixture.manager.reconcile(profiles: [fixture.profile])
+        #expect(fixture.manager.processState(for: fixture.profile.id) == .recoveryRequired)
+        #expect(fixture.manager.lastError?.contains("больше времени") == true)
+        #expect(FileManager.default.fileExists(atPath: fixture.paths.lockFile(for: fixture.profile.id).path))
+        #expect(fixture.manager.hasWorkPreventingUpdate)
+        #expect(throws: NeAntikError.self) { try fixture.launch() }
+        #expect(throws: BrowserProfileDeletionBlockedError.self) {
+            try fixture.manager.withVerifiedStoppedProfileOperation(profileID: fixture.profile.id) {}
+        }
+        fixture.inspection = .absent; try await fixture.waitForStopped()
+    }
+
+    @Test(arguments: [false, true])
+    func closingNeverFollowsReplacedLeaseEvenWithSameOwner(replaceOwner: Bool) async throws {
+        let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
+        try fixture.launch(); fixture.inspection = .found
+        fixture.manager.stop(profileID: fixture.profile.id)
+        try fixture.finishMain(); try await fixture.waitForMainExit()
+        let file = fixture.paths.lockFile(for: fixture.profile.id), original = try Data(contentsOf: file)
+        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+        let old = try decoder.decode(BrowserProcessLock.self, from: original)
+        let replacement = BrowserProcessLock(pid: old.pid, executablePath: old.executablePath,
+            browserDataPath: old.browserDataPath, createdAt: old.createdAt, schemaVersion: old.schemaVersion,
+            ownerToken: replaceOwner ? UUID() : old.ownerToken, managerPID: old.managerPID, phase: old.phase)
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        let data = replaceOwner ? try encoder.encode(replacement) : original
+        try data.write(to: file, options: .atomic)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
+        fixture.identity = .expected
+        fixture.manager.reconcile(profiles: [fixture.profile])
+        #expect(fixture.manager.processState(for: fixture.profile.id) == .externalVerified)
+        #expect(try Data(contentsOf: file) == data)
+    }
+
+    @Test
+    func closingDoesNotHideUnsafeReplacementLease() async throws {
+        let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
+        try fixture.launch(); fixture.inspection = .found
+        fixture.manager.stop(profileID: fixture.profile.id)
+        try fixture.finishMain(); try await fixture.waitForMainExit()
+        let file = fixture.paths.lockFile(for: fixture.profile.id), retained = fixture.root.appendingPathComponent("own-retained-lease")
+        try FileManager.default.moveItem(at: file, to: retained)
+        try FileManager.default.createSymbolicLink(at: file, withDestinationURL: retained)
+        fixture.manager.reconcile(profiles: [fixture.profile])
+        #expect(fixture.manager.processState(for: fixture.profile.id) == .recoveryRequired)
+        #expect(try FileManager.default.destinationOfSymbolicLink(atPath: file.path) == retained.path)
+    }
+
+    private var nominalAdmission: ManagerLaunchAdmission {
+        ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal })
+    }
+    @Test(arguments: [false, true])
+    func suppliedPressureAndThermalAdmissionRefuseBeforeLaunch(thermal: Bool) throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("synthetic-pressure-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }
-        let manager = BrowserProcessManager(
-            paths: AppPaths(rootDirectory: root),
-            processIdentityValidator: { _ in false },
-            browserDataProcessInspector: { _ in .absent }
-        )
-        let profile = BrowserProfile(name: "Sensitive profile name")
-        let runtime = BrowserRuntime(
-            name: "Missing",
-            executableURL: root.appendingPathComponent("missing-browser"),
-            source: "Test"
-        )
-
-        #expect(throws: NeAntikError.self) {
-            try manager.launch(profile: profile, runtime: runtime)
-        }
-        let event = try #require(manager.lastBrowserExit)
-        #expect(event.classification == .startupFailure)
-        #expect(!event.presentation.detail.contains(profile.name))
-        #expect(!event.presentation.detail.contains(root.path))
-    }
-
-    @Test
-    func ordinaryTerminationRequestWaitsBoundedlyWithoutForcing() async throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        try FileManager.default.createDirectory(
-            at: root,
-            withIntermediateDirectories: true
-        )
-        let fakeBrowser = root.appendingPathComponent("fake-browser")
-        FileManager.default.createFile(
-            atPath: fakeBrowser.path,
-            contents: Data(
-                "#!/bin/sh\ntrap '' TERM\nwhile :; do :; done\n".utf8
-            )
-        )
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o755],
-            ofItemAtPath: fakeBrowser.path
-        )
-        var signals: [Int32] = []
-        let manager = BrowserProcessManager(
-            paths: AppPaths(
-                rootDirectory: root.appendingPathComponent("data")
-            ),
-            processIdentityValidator: { _ in false },
-            processSignaler: { pid, signal in
-                signals.append(signal)
-                return Darwin.kill(pid, signal)
-            },
-            managedProcessTerminator: { _ in },
-            managedStopGracePeriodNanoseconds: 10_000_000,
-            browserDataProcessInspector: { _ in .absent }
-        )
-        let profile = BrowserProfile(name: "Quit policy")
-        let runtime = BrowserRuntime(
-            name: "Fake Chromium",
-            executableURL: fakeBrowser,
-            source: "Test"
-        )
-
-        try manager.launch(profile: profile, runtime: runtime)
-        let initial = manager.managerTerminationSnapshot()
-        #expect(initial.managedProfileIDs == [profile.id])
-        #expect(initial.ordinaryStopProfileIDs == [profile.id])
-
-        manager.requestOrdinaryStopsForManagerTermination()
-        let completed = await manager.waitForManagedBrowsersToExit(
-            timeoutNanoseconds: 30_000_000,
-            pollIntervalNanoseconds: 5_000_000
-        )
-        #expect(!completed)
-        #expect(signals.isEmpty)
-
-        for _ in 0..<100 {
-            if manager.processState(for: profile.id) == .forceStopAvailable {
-                break
-            }
-            try await Task.sleep(nanoseconds: 5_000_000)
-        }
-        #expect(manager.forceStop(profileID: profile.id))
-        for _ in 0..<100 where manager.runningProfileIDs.contains(profile.id) {
-            try await Task.sleep(nanoseconds: 5_000_000)
-        }
-        #expect(signals == [SIGKILL])
-        #expect(manager.lastBrowserExit?.classification == .crashOrSignal)
-    }
-
-    @Test
-    func recoveryAndUnverifiedLocksDoNotConsumeManagedLaunchCapacity() {
-        #expect(
-            BrowserProcessManager.confirmedConcurrentProfileCount(
-                Array(
-                    repeating: BrowserProfileProcessState.recoveryRequired,
-                    count: BrowserProcessManager.maximumConcurrentProfiles
-                ) + [.checking, .externalUnverified]
-            ) == 0
-        )
-        #expect(
-            BrowserProcessManager.confirmedConcurrentProfileCount([
-                .managed,
-                .closing,
-                .forceStopAvailable,
-                .externalVerified,
-                .externalManualOnly,
-            ]) == 5
-        )
-    }
-
-    @Test
-    func boundsConcurrentManagedProfileLaunches() async throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        try FileManager.default.createDirectory(
-            at: root,
-            withIntermediateDirectories: true
-        )
-        let fakeBrowser = root.appendingPathComponent("fake-browser")
-        FileManager.default.createFile(
-            atPath: fakeBrowser.path,
-            contents: Data("#!/bin/sh\nsleep 5\n".utf8)
-        )
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o755],
-            ofItemAtPath: fakeBrowser.path
-        )
-        let manager = BrowserProcessManager(
-            paths: AppPaths(
-                rootDirectory: root.appendingPathComponent("data")
-            ),
-            processIdentityValidator: { _ in false },
-            browserDataProcessInspector: { _ in .absent }
-        )
-        let runtime = BrowserRuntime(
-            name: "Fake Chromium",
-            executableURL: fakeBrowser,
-            source: "Test"
-        )
-        let profiles = (0...BrowserProcessManager.maximumConcurrentProfiles)
-            .map { BrowserProfile(name: "Profile \($0)") }
-
-        for profile in profiles.dropLast() {
-            try manager.launch(profile: profile, runtime: runtime)
-        }
+        let admission = ManagerLaunchAdmission(observePressure: false, thermalState: { thermal ? .critical : .nominal })
+        if !thermal { admission.setPressureForTesting(true) }
+        let manager = BrowserProcessManager(launchAdmission: admission, paths: AppPaths(rootDirectory: root),
+                                           processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent })
+        let profile = BrowserProfile(name: "Refused launch")
+        let runtime = BrowserRuntime(name: "Not launched", executableURL: root.appendingPathComponent("must-not-exist"), source: "Synthetic")
         do {
-            try manager.launch(
-                profile: try #require(profiles.last),
-                runtime: runtime
-            )
-            Issue.record("Expected concurrent launch limit")
-        } catch let error as NeAntikError {
-            #expect(
-                error.localizedDescription.contains(
-                    "\(BrowserProcessManager.maximumConcurrentProfiles)"
-                )
-            )
-        }
-        #expect(
-            manager.runningProfileIDs.count ==
-                BrowserProcessManager.maximumConcurrentProfiles
-        )
-
-        for profile in profiles.dropLast() {
-            manager.stop(profileID: profile.id)
-        }
-        for _ in 0..<100 where !manager.runningProfileIDs.isEmpty {
-            try await Task.sleep(nanoseconds: 10_000_000)
+            try manager.launch(profile: profile, runtime: runtime)
+            Issue.record("Pressure/thermal admission did not refuse")
+        } catch let error as ManagerLaunchAdmissionError {
+            guard case .pressure = error else { Issue.record("Unexpected admission failure"); return }
         }
         #expect(manager.runningProfileIDs.isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: AppPaths(rootDirectory: root).lockFile(for: profile.id).path))
     }
-
+    @Test(arguments: [ProxyKind.http, .https, .socks5])
+    func everyAuthenticatedProtocolRequiresRelayPreparationBeforeLaunch(kind: ProxyKind) async throws {
+        let root = URL(fileURLWithPath: "/private/tmp/neantik-relay-selector-" + UUID().uuidString)
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission, paths: AppPaths(rootDirectory: root),
+            processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent })
+        defer { manager.suspendPassiveObservations(); try? FileManager.default.removeItem(at: root) }
+        let profile = BrowserProfile(name: "Owned selector fixture",
+            proxy: .init(kind: kind, host: "owned.example.test", port: 8000, username: "fixture-user"))
+        let runtime = BrowserRuntime(name: "Never launched", executableURL: root.appendingPathComponent("missing"), source: "Synthetic")
+        let keychain = KeychainStore(backend: DevelopmentFixtureKeychain(), service: "owned-selector", legacyService: nil)
+        do {
+            try await manager.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: nil, keychain: keychain)
+            Issue.record("Authenticated protocol bypassed relay preparation")
+        } catch {
+            guard let error = error as? NeAntikError, case .proxyPreparationRequired = error else {
+                Issue.record("Authenticated protocol did not require relay preparation"); return
+            }
+        }
+        #expect(!manager.runningProfileIDs.contains(profile.id))
+        #expect(!FileManager.default.fileExists(atPath: root.appendingPathComponent("missing").path))
+    }
+    @Test func sharedExtensionsLaunchUsesSelectedDataRootAndDoesNotChangeStartURL() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let fake = root.appendingPathComponent("owned-browser")
+        // Publish only a complete argument capture. File existence before the
+        // writer closes stdout was not proof of its final argument list.
+        try Data("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$0.arguments.pending\"\n/bin/mv \"$0.arguments.pending\" \"$0.arguments\"\nsleep 0.2\n".utf8).write(to: fake)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: fake.path)
+        let paths = AppPaths(rootDirectory: root.appendingPathComponent("data"))
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission, paths: paths, processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent })
+        defer { manager.suspendPassiveObservations() }
+        let profile = BrowserProfile(name: "Owned extensions", startURL: "https://owned.test/start")
+        let runtime = BrowserRuntime(name: "Owned fixture", executableURL: fake, source: "Synthetic")
+        let keychain = KeychainStore(backend: DevelopmentFixtureKeychain(), service: "owned-test", legacyService: nil)
+        try await manager.launchUserProfile(profile: profile, runtime: runtime, preparationReceipt: nil, keychain: keychain, target: .extensions)
+        let captured = fake.appendingPathExtension("arguments")
+        // Process scheduling can exceed 500 ms while the full serial suite is
+        // compiling other native helpers. Keep the behavioral assertion, but
+        // give this local shell stub a bounded launch window.
+        for _ in 0..<600 {
+            if FileManager.default.fileExists(atPath: captured.path) { break }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        try #require(FileManager.default.fileExists(atPath: captured.path))
+        let arguments = try String(contentsOf: captured, encoding: .utf8).split(separator: "\n").map(String.init)
+        #expect(arguments.last == "about:blank")
+        #expect(arguments.contains("--user-data-dir=" + paths.browserDataDirectory(for: profile.id).path))
+        #expect(profile.startURL == "https://owned.test/start")
+        try await Task.sleep(for: .milliseconds(250))
+        manager.reconcile(profiles: [profile])
+        #expect(!manager.runningProfileIDs.contains(profile.id))
+    }
     @Test
-    func managedStopRequiresExplicitForceForUnresponsiveProcess() async throws {
+    func contendedLaunchPreservesRetryReasonWithoutStartingBrowser() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-
-        try FileManager.default.createDirectory(
-            at: root,
-            withIntermediateDirectories: true
-        )
-        let fakeBrowser = root.appendingPathComponent("fake-browser")
-        FileManager.default.createFile(
-            atPath: fakeBrowser.path,
-            contents: Data(
-                "#!/bin/sh\ntrap '' TERM\nwhile :; do :; done\n".utf8
-            )
-        )
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o755],
-            ofItemAtPath: fakeBrowser.path
-        )
-
-        let paths = AppPaths(
-            rootDirectory: root.appendingPathComponent("data")
-        )
-        let profile = BrowserProfile(name: "Unresponsive managed browser")
-        var forcedSignals: [(pid_t, Int32)] = []
-        let manager = BrowserProcessManager(
-            paths: paths,
-            processIdentityValidator: { _ in false },
-            processSignaler: { pid, signal in
-                forcedSignals.append((pid, signal))
-                return Darwin.kill(pid, signal)
-            },
-            managedProcessTerminator: { _ in },
-            managedStopGracePeriodNanoseconds: 20_000_000,
+        let paths = AppPaths(rootDirectory: root)
+        let profile = BrowserProfile(name: "Owned contention fixture")
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
+            paths: paths, processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
         )
         let runtime = BrowserRuntime(
-            name: "Fake Chromium",
-            executableURL: fakeBrowser,
-            source: "Test"
+            name: "Owned fixture", executableURL: URL(fileURLWithPath: "/usr/bin/true"),
+            source: "Owned fixture"
         )
-
+        let acquired = DispatchSemaphore(value: 0)
+        let release = DispatchSemaphore(value: 0)
+        let finished = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            defer { finished.signal() }
+            try? paths.withProcessLockGuard(for: profile.id) {
+                acquired.signal()
+                _ = release.wait(timeout: .now() + 3)
+            }
+        }
+        var joined = false
+        defer {
+            release.signal()
+            if !joined { _ = finished.wait(timeout: .now() + 3) }
+            try? FileManager.default.removeItem(at: root)
+        }
+        try #require(acquired.wait(timeout: .now() + 2) == .success)
+        #expect(throws: ProfileProcessBusyError.self) {
+            try manager.launch(profile: profile, runtime: runtime)
+        }
+        #expect(!manager.runningProfileIDs.contains(profile.id))
+        #expect(try paths.privateFileEntryKind(paths.lockFile(for: profile.id)) == .missing)
+        #expect(!FileManager.default.fileExists(atPath: paths.logFile(for: profile.id).path))
+        release.signal()
+        try #require(finished.wait(timeout: .now() + 2) == .success)
+        joined = true
+        // The same launch becomes possible once the other operation releases
+        // the guard; contention must not create a stale provisional lease.
         try manager.launch(profile: profile, runtime: runtime)
-        try await Task.sleep(nanoseconds: 100_000_000)
+        #expect(FileManager.default.fileExists(atPath: paths.logFile(for: profile.id).path))
         manager.stop(profileID: profile.id)
+    }
 
-        for _ in 0..<100 {
-            if manager.processState(for: profile.id) == .forceStopAvailable {
-                break
-            }
-            try await Task.sleep(nanoseconds: 10_000_000)
+    @Test(arguments: ["proxy", "archive", "delete"])
+    func staleCapturedLaunchNeverStartsProcess(change: String) throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let store = ProfileStore(paths: paths)
+        let captured = try store.upsert(BrowserProfile(name: "Captured direct"))
+        let other = ProfileStore(paths: paths)
+        var changed = captured
+        if change == "proxy" {
+            changed.proxy = ProxyConfiguration(kind: .http, host: "proxy.example", port: 8080, username: "")
+        } else { changed.isArchived = true }
+        _ = try other.upsert(changed)
+        if change == "delete" { try paths.writePrivateFile(Data("[]".utf8), to: paths.profilesFile) }
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission, paths: paths, processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }, validatesPersistedProfiles: true)
+        let runtime = BrowserRuntime(name: "Fixture", executableURL: URL(fileURLWithPath: "/usr/bin/true"), source: "Fixture")
+        #expect(throws: (any Error).self) { try manager.launch(profile: captured, runtime: runtime) }
+        #expect(!manager.runningProfileIDs.contains(captured.id))
+        #expect(try paths.privateFileEntryKind(paths.lockFile(for: captured.id)) == .missing)
+        if change != "delete" {
+            #expect(try ProfileStore.readProfiles(from: paths.profilesFile).first?.proxy == changed.proxy)
         }
-
-        #expect(forcedSignals.isEmpty)
-        #expect(manager.processState(for: profile.id) == .forceStopAvailable)
-        #expect(manager.forceStop(profileID: profile.id))
-
-        for _ in 0..<100 {
-            if manager.processState(for: profile.id) == .stopped {
-                break
-            }
-            try await Task.sleep(nanoseconds: 10_000_000)
-        }
-        #expect(forcedSignals.count == 1)
-        #expect((forcedSignals.first?.0 ?? 0) > 0)
-        #expect(forcedSignals.first?.1 == SIGKILL)
-        #expect(manager.processState(for: profile.id) == .stopped)
     }
 
     @Test
     func proxiedNormalLaunchRequiresPreparationReceipt() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
         defer { try? FileManager.default.removeItem(at: root) }
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: AppPaths(rootDirectory: root),
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -414,7 +317,7 @@ struct BrowserProcessManagerTests {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: AppPaths(rootDirectory: root),
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -525,7 +428,7 @@ struct BrowserProcessManagerTests {
         )
 
         let paths = AppPaths(rootDirectory: root.appendingPathComponent("data"))
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -588,7 +491,7 @@ struct BrowserProcessManagerTests {
         )
 
         let paths = AppPaths(rootDirectory: root.appendingPathComponent("data"))
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -655,7 +558,7 @@ struct BrowserProcessManagerTests {
         let paths = AppPaths(
             rootDirectory: root.appendingPathComponent("data")
         )
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -725,7 +628,7 @@ struct BrowserProcessManagerTests {
         let paths = AppPaths(
             rootDirectory: root.appendingPathComponent("data")
         )
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .unknown }
@@ -783,7 +686,7 @@ struct BrowserProcessManagerTests {
         let paths = AppPaths(
             rootDirectory: root.appendingPathComponent("data")
         )
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .found }
@@ -834,7 +737,7 @@ struct BrowserProcessManagerTests {
         )
 
         let paths = AppPaths(rootDirectory: root.appendingPathComponent("data"))
-        let firstManager = BrowserProcessManager(
+        let firstManager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -847,7 +750,7 @@ struct BrowserProcessManagerTests {
         )
         try firstManager.launch(profile: profile, runtime: runtime)
 
-        let restoredManager = BrowserProcessManager(
+        let restoredManager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { lock in
                 lock.pid > 0 &&
@@ -874,6 +777,79 @@ struct BrowserProcessManagerTests {
         }
         #expect(!restoredManager.runningProfileIDs.contains(profile.id))
         #expect(restoredManager.processState(for: profile.id) == .stopped)
+    }
+
+    @Test
+    func recoversLeaseAfterAbruptBrowserProcessTermination() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let fakeBrowser = root.appendingPathComponent("fake-browser")
+        FileManager.default.createFile(
+            atPath: fakeBrowser.path,
+            contents: Data("#!/bin/sh\nsleep 30\n".utf8)
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: fakeBrowser.path
+        )
+
+        let paths = AppPaths(rootDirectory: root.appendingPathComponent("data"))
+        let profile = BrowserProfile(name: "Abrupt termination")
+        let runtime = BrowserRuntime(
+            name: "Fake Chromium",
+            executableURL: fakeBrowser,
+            source: "SIGKILL recovery test"
+        )
+        let pid: pid_t
+        do {
+            let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
+                paths: paths,
+                processIdentityValidator: { _ in false },
+                browserDataProcessInspector: { _ in .absent }
+            )
+            try manager.launch(profile: profile, runtime: runtime)
+            let lockData = try Data(contentsOf: paths.lockFile(for: profile.id))
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            pid = try decoder.decode(BrowserProcessLock.self, from: lockData).pid
+            #expect(pid > 0)
+        }
+
+        #expect(Darwin.kill(pid, SIGKILL) == 0)
+        for _ in 0..<40 {
+            if Darwin.kill(pid, 0) != 0 {
+                break
+            }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+
+        let restoredManager = BrowserProcessManager(launchAdmission: nominalAdmission,
+            paths: paths,
+            processIdentityValidator: { lock in
+                DarwinBrowserProcessInventoryProvider.isProcessAlive(lock.pid) &&
+                    lock.pid == pid &&
+                    lock.executablePath == fakeBrowser.path &&
+                    lock.browserDataPath ==
+                        paths.browserDataDirectory(for: profile.id).path
+            },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        restoredManager.reconcile(profiles: [profile])
+        for _ in 0..<20 {
+            if restoredManager.processState(for: profile.id) == .stopped {
+                break
+            }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        #expect(restoredManager.processState(for: profile.id) == .stopped)
+        #expect(!restoredManager.runningProfileIDs.contains(profile.id))
+        #expect(!FileManager.default.fileExists(atPath: paths.lockFile(for: profile.id).path))
     }
 
     @Test
@@ -909,7 +885,7 @@ struct BrowserProcessManagerTests {
             to: paths.lockFile(for: profile.id)
         )
 
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .unrelated },
             processLivenessValidator: { _ in true },
@@ -946,8 +922,10 @@ struct BrowserProcessManagerTests {
             executableURL: URL(fileURLWithPath: "/usr/bin/true"),
             source: "Test"
         )
-        let manager = BrowserProcessManager(
-            paths: AppPaths(rootDirectory: root)
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
+            paths: AppPaths(rootDirectory: root),
+            processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent },
+            validatesPersistedProfiles: true
         )
 
         #expect(throws: NeAntikError.self) {
@@ -971,8 +949,10 @@ struct BrowserProcessManagerTests {
             executableURL: URL(fileURLWithPath: "/usr/bin/true"),
             source: "Test"
         )
-        let manager = BrowserProcessManager(
-            paths: AppPaths(rootDirectory: root)
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
+            paths: AppPaths(rootDirectory: root),
+            processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent },
+            validatesPersistedProfiles: true
         )
 
         #expect(throws: NeAntikError.self) {
@@ -1005,7 +985,7 @@ struct BrowserProcessManagerTests {
 
         var isAlive = true
         var sentSignal: Int32?
-        let restored = BrowserProcessManager(
+        let restored = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: {
                 $0.pid == lock.pid &&
@@ -1069,7 +1049,7 @@ struct BrowserProcessManagerTests {
             to: paths.lockFile(for: profile.id)
         )
         var isAlive = true
-        let restored = BrowserProcessManager(
+        let restored = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .expected },
             processLivenessValidator: { _ in isAlive },
@@ -1117,7 +1097,7 @@ struct BrowserProcessManagerTests {
         )
         var isAlive = true
         var signalWasSent = false
-        let restored = BrowserProcessManager(
+        let restored = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .unknown },
             processLivenessValidator: { _ in isAlive },
@@ -1164,7 +1144,7 @@ struct BrowserProcessManagerTests {
             corruptData,
             to: paths.lockFile(for: profile.id)
         )
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .unrelated },
             processLivenessValidator: { _ in false },
@@ -1204,12 +1184,13 @@ struct BrowserProcessManagerTests {
             to: paths.lockFile(for: profile.id)
         )
         var inspection = BrowserDataProcessInspection.found
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .unrelated },
             processLivenessValidator: { _ in false },
             observationIntervalNanoseconds: 20_000_000,
-            browserDataProcessInspector: { _ in inspection }
+            browserDataProcessInspector: { _ in inspection },
+            potentialRelayOwnerInspector: { .absent }
         )
 
         manager.reconcile(profiles: [profile])
@@ -1253,12 +1234,13 @@ struct BrowserProcessManagerTests {
             to: paths.lockFile(for: profile.id)
         )
         var inspection = BrowserDataProcessInspection.found
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .unrelated },
             processLivenessValidator: { _ in false },
             observationIntervalNanoseconds: 20_000_000,
-            browserDataProcessInspector: { _ in inspection }
+            browserDataProcessInspector: { _ in inspection },
+            potentialRelayOwnerInspector: { .absent }
         )
 
         manager.reconcile(profiles: [profile])
@@ -1307,7 +1289,7 @@ struct BrowserProcessManagerTests {
             .appendingPathComponent("keep.txt")
         try Data("keep".utf8).write(to: marker)
         var inspection = BrowserDataProcessInspection.absent
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             observationIntervalNanoseconds: 20_000_000,
@@ -1320,8 +1302,6 @@ struct BrowserProcessManagerTests {
         )
 
         try manager.launch(profile: profile, runtime: runtime)
-        let runningIDsAfterLaunch = manager.runningProfileIDs
-        let stateRevisionAfterLaunch = manager.processStateRevision
         inspection = .found
         manager.suspendPassiveObservations()
         for _ in 0..<100 {
@@ -1333,8 +1313,6 @@ struct BrowserProcessManagerTests {
         #expect(
             manager.processState(for: profile.id) == .recoveryRequired
         )
-        #expect(manager.runningProfileIDs == runningIDsAfterLaunch)
-        #expect(manager.processStateRevision > stateRevisionAfterLaunch)
 
         inspection = .absent
         try await Task.sleep(nanoseconds: 120_000_000)
@@ -1361,11 +1339,12 @@ struct BrowserProcessManagerTests {
             Data("broken".utf8),
             to: paths.lockFile(for: profile.id)
         )
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .unrelated },
             processLivenessValidator: { _ in false },
-            browserDataProcessInspector: { _ in .absent }
+            browserDataProcessInspector: { _ in .absent },
+            potentialRelayOwnerInspector: { .absent }
         )
 
         manager.reconcile(profiles: [profile])
@@ -1398,7 +1377,7 @@ struct BrowserProcessManagerTests {
             at: paths.lockFile(for: profile.id),
             withDestinationURL: outside
         )
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .unrelated },
             processLivenessValidator: { _ in false },
@@ -1416,36 +1395,6 @@ struct BrowserProcessManagerTests {
             atPath: paths.lockFile(for: profile.id).path
         )
         #expect(destination == outside.path)
-    }
-
-    @Test
-    func oversizedProcessLockFailsClosedWithoutReadingOrRemovingIt() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let paths = AppPaths(rootDirectory: root)
-        let profile = BrowserProfile(name: "Oversized lock")
-        try paths.prepareProfileDirectories(for: profile.id)
-        let lockURL = paths.lockFile(for: profile.id)
-        try paths.createPrivateFileExclusively(Data(), at: lockURL)
-        let handle = try FileHandle(forWritingTo: lockURL)
-        try handle.truncate(atOffset: 64 * 1_024 + 1)
-        try handle.close()
-        let manager = BrowserProcessManager(
-            paths: paths,
-            processIdentityInspector: { _ in .unrelated },
-            processLivenessValidator: { _ in false },
-            browserDataProcessInspector: { _ in .absent }
-        )
-
-        manager.reconcile(profiles: [profile])
-
-        #expect(manager.runningProfileIDs.contains(profile.id))
-        #expect(manager.processState(for: profile.id) == .recoveryRequired)
-        let size = try FileManager.default.attributesOfItem(
-            atPath: lockURL.path
-        )[.size] as? NSNumber
-        #expect(size?.intValue == 64 * 1_024 + 1)
     }
 
     @Test
@@ -1469,7 +1418,7 @@ struct BrowserProcessManagerTests {
             at: paths.lockGuardFile(for: profile.id),
             withDestinationURL: outside
         )
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .unrelated },
             processLivenessValidator: { _ in false },
@@ -1510,7 +1459,7 @@ struct BrowserProcessManagerTests {
             lockData,
             to: paths.lockFile(for: profile.id)
         )
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .unrelated },
             processLivenessValidator: { _ in false },
@@ -1559,12 +1508,12 @@ struct BrowserProcessManagerTests {
             executableURL: fakeBrowser,
             source: "Test"
         )
-        let first = BrowserProcessManager(
+        let first = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
         )
-        let second = BrowserProcessManager(
+        let second = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .expected },
             processLivenessValidator: { _ in true },
@@ -1628,23 +1577,24 @@ struct BrowserProcessManagerTests {
             executableURL: fakeBrowser,
             source: "Test"
         )
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
-            processIdentityValidator: { _ in false },
+            processIdentityInspector: { _ in .expected },
+            processLivenessValidator: { $0 == getpid() },
             browserDataProcessInspector: { _ in .absent }
         )
         try manager.launch(profile: profile, runtime: runtime)
 
         let replacementOwner = UUID()
         let replacement = BrowserProcessLock(
-            pid: 777,
+            pid: getpid(),
             executablePath: fakeBrowser.path,
             browserDataPath:
                 paths.browserDataDirectory(for: profile.id).path,
             createdAt: Date(),
             schemaVersion: BrowserProcessLock.currentSchemaVersion,
             ownerToken: replacementOwner,
-            managerPID: 777,
+            managerPID: getpid(),
             phase: .running
         )
         let encoder = JSONEncoder()
@@ -1655,7 +1605,7 @@ struct BrowserProcessManagerTests {
         )
 
         for _ in 0..<100 {
-            if !manager.runningProfileIDs.contains(profile.id) {
+            if manager.processState(for: profile.id) == .externalVerified {
                 break
             }
             try await Task.sleep(nanoseconds: 20_000_000)
@@ -1670,6 +1620,76 @@ struct BrowserProcessManagerTests {
             from: persistedData
         )
         #expect(persisted.ownerToken == replacementOwner)
+        #expect(manager.processState(for: profile.id) == .externalVerified)
+        manager.suspendPassiveObservations()
+    }
+
+    @Test(arguments: [false, true])
+    func terminationContentionRetainsStateAndRevalidatesOwner(replace: Bool) async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let fake = root.appendingPathComponent("owned-browser")
+        try Data("#!/bin/sh\nwhile [ ! -f \"$0.finish\" ]; do sleep 0.01; done\n".utf8).write(to: fake)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: fake.path)
+        let paths = AppPaths(rootDirectory: root.appendingPathComponent("data"))
+        let profile = BrowserProfile(name: "Owned termination contention")
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
+            paths: paths, processIdentityInspector: { _ in .expected },
+            processLivenessValidator: { $0 == getpid() },
+            observationIntervalNanoseconds: 20_000_000,
+            browserDataProcessInspector: { _ in .absent }
+        )
+        let runtime = BrowserRuntime(name: "Owned fixture", executableURL: fake, source: "Owned fixture")
+        try manager.launch(profile: profile, runtime: runtime)
+        let replacement = BrowserProcessLock(pid: getpid(), executablePath: fake.path,
+            browserDataPath: paths.browserDataDirectory(for: profile.id).path,
+            createdAt: Date(), schemaVersion: BrowserProcessLock.currentSchemaVersion,
+            ownerToken: UUID(), managerPID: getpid(), phase: .running)
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        let replacementData = try encoder.encode(replacement)
+        let acquired = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        let finished = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            defer { finished.signal() }
+            try? paths.withProcessLockGuard(for: profile.id) {
+                acquired.signal()
+                release.wait()
+                if replace { try paths.writePrivateFile(replacementData, to: paths.lockFile(for: profile.id)) }
+            }
+        }
+        defer {
+            try? Data().write(to: fake.appendingPathExtension("finish"))
+            if manager.processState(for: profile.id) == .managed { manager.stop(profileID: profile.id) }
+            release.signal(); _ = finished.wait(timeout: .now() + 3)
+            manager.suspendPassiveObservations()
+            try? FileManager.default.removeItem(at: root)
+        }
+        try #require(acquired.wait(timeout: .now() + 2) == .success)
+        try Data().write(to: fake.appendingPathExtension("finish"))
+        var terminationObserved = false
+        for _ in 0..<100 {
+            terminationObserved = (try? String(contentsOf: paths.logFile(for: profile.id), encoding: .utf8))?
+                .contains("browser_exit") == true
+            if terminationObserved { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        try #require(terminationObserved)
+        #expect(FileManager.default.fileExists(atPath: paths.lockFile(for: profile.id).path))
+        #expect(manager.processState(for: profile.id) != .stopped)
+        release.signal()
+        for _ in 0..<100 {
+            if replace {
+                if manager.processState(for: profile.id) == .externalVerified { break }
+            } else if manager.processState(for: profile.id) == .stopped { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        if replace {
+            #expect(try Data(contentsOf: paths.lockFile(for: profile.id)) == replacementData)
+            #expect(manager.processState(for: profile.id) == .externalVerified)
+        } else {
+            #expect(manager.processState(for: profile.id) == .stopped)
+            #expect(!FileManager.default.fileExists(atPath: paths.lockFile(for: profile.id).path))
+        }
     }
 
     @Test
@@ -1693,23 +1713,25 @@ struct BrowserProcessManagerTests {
         )
 
         var firstInspection = BrowserDataProcessInspection.found
-        let first = BrowserProcessManager(
+        let first = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .expected },
             processLivenessValidator: { _ in true },
             observationIntervalNanoseconds: 20_000_000,
-            browserDataProcessInspector: { _ in firstInspection }
+            browserDataProcessInspector: { _ in firstInspection },
+            potentialRelayOwnerInspector: { .absent }
         )
         first.reconcile(profiles: [profile])
         #expect(
             first.processState(for: profile.id) == .recoveryRequired
         )
 
-        let second = BrowserProcessManager(
+        let second = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .unrelated },
             processLivenessValidator: { _ in false },
-            browserDataProcessInspector: { _ in .absent }
+            browserDataProcessInspector: { _ in .absent },
+            potentialRelayOwnerInspector: { .absent }
         )
         second.reconcile(profiles: [profile])
         #expect(
@@ -1731,10 +1753,11 @@ struct BrowserProcessManagerTests {
             [.posixPermissions: 0o755],
             ofItemAtPath: fakeBrowser.path
         )
-        let third = BrowserProcessManager(
+        let third = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
-            browserDataProcessInspector: { _ in .absent }
+            browserDataProcessInspector: { _ in .absent },
+            potentialRelayOwnerInspector: { .absent }
         )
         let runtime = BrowserRuntime(
             name: "Fake Chromium",
@@ -1795,7 +1818,7 @@ struct BrowserProcessManagerTests {
                 to: paths.lockFile(for: profile.id)
             )
         }
-        let restored = BrowserProcessManager(
+        let restored = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .expected },
             processLivenessValidator: { _ in true },
@@ -1868,7 +1891,7 @@ struct BrowserProcessManagerTests {
                 to: paths.lockFile(for: profile.id)
             )
         }
-        let restored = BrowserProcessManager(
+        let restored = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .unknown },
             processLivenessValidator: { _ in true },
@@ -1919,7 +1942,7 @@ struct BrowserProcessManagerTests {
             encoder.encode(starting),
             to: paths.lockFile(for: profile.id)
         )
-        let restored = BrowserProcessManager(
+        let restored = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .unknown },
             processLivenessValidator: { _ in true },
@@ -1953,7 +1976,7 @@ struct BrowserProcessManagerTests {
             Data("deleted-v1".utf8),
             to: paths.profileDeletionTombstone(for: profile.id)
         )
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             observationIntervalNanoseconds: 20_000_000,
@@ -2041,7 +2064,7 @@ struct BrowserProcessManagerTests {
         try Data("browser-data".utf8).write(to: marker)
         var keychainSecret: String? = "proxy-secret"
 
-        let staleManager = BrowserProcessManager(
+        let staleManager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -2058,7 +2081,7 @@ struct BrowserProcessManagerTests {
             [.posixPermissions: 0o755],
             ofItemAtPath: fakeBrowser.path
         )
-        let liveManager = BrowserProcessManager(
+        let liveManager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -2115,7 +2138,7 @@ struct BrowserProcessManagerTests {
             try Data("browser-data".utf8).write(to: marker)
             var keychainSecret: String? = "proxy-secret"
             var inspectedURL: URL?
-            let manager = BrowserProcessManager(
+            let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
                 paths: paths,
                 processIdentityValidator: { _ in false },
                 browserDataProcessInspector: { url in
@@ -2160,7 +2183,7 @@ struct BrowserProcessManagerTests {
             withIntermediateDirectories: false
         )
         var unsafeSecret: String? = "proxy-secret"
-        let unsafeManager = BrowserProcessManager(
+        let unsafeManager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: unsafePaths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -2208,7 +2231,7 @@ struct BrowserProcessManagerTests {
                 rootDirectory: root.appendingPathComponent("data")
             )
             let profile = BrowserProfile(name: "Missing lease")
-            let manager = BrowserProcessManager(
+            let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
                 paths: paths,
                 processIdentityValidator: { _ in false },
                 browserDataProcessInspector: { _ in inspection }
@@ -2254,7 +2277,7 @@ struct BrowserProcessManagerTests {
         )
         let profile = BrowserProfile(name: "Helper lifetime")
         var inspection = BrowserDataProcessInspection.absent
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             observationIntervalNanoseconds: 20_000_000,
@@ -2276,6 +2299,9 @@ struct BrowserProcessManagerTests {
         }
 
         #expect(manager.processState(for: profile.id) == .recoveryRequired)
+        let guidance = try #require(manager.processState(for: profile.id).guidance)
+        #expect(guidance.contains("завершены ли все процессы"))
+        #expect(!guidance.contains("повреждён"))
         #expect(
             FileManager.default.fileExists(
                 atPath: paths.lockFile(for: profile.id).path
@@ -2327,7 +2353,7 @@ struct BrowserProcessManagerTests {
         )
         let profile = BrowserProfile(name: "Late callback")
         var inspection = BrowserDataProcessInspection.absent
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             observationIntervalNanoseconds: 20_000_000,
@@ -2402,7 +2428,7 @@ struct BrowserProcessManagerTests {
             to: paths.lockFile(for: profile.id)
         )
         var signalCount = 0
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityInspector: { _ in .expected },
             processLivenessValidator: { _ in true },
@@ -2480,10 +2506,10 @@ struct BrowserProcessManagerTests {
             at: paths.lockFile(for: profile.id),
             withIntermediateDirectories: false
         )
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
-            managedProcessTerminator: { _ in }
+            managedProcessTerminator: { _ in true }
         )
         let runtime = BrowserRuntime(
             name: "Fake Chromium",
@@ -2525,7 +2551,7 @@ struct BrowserProcessManagerTests {
             at: paths.logFile(for: profile.id),
             withDestinationURL: outsideLog
         )
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }
@@ -2567,7 +2593,7 @@ struct BrowserProcessManagerTests {
             rootDirectory: root.appendingPathComponent("data")
         )
         let profile = BrowserProfile(name: "Private log")
-        let manager = BrowserProcessManager(
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission,
             paths: paths,
             processIdentityValidator: { _ in false },
             browserDataProcessInspector: { _ in .absent }

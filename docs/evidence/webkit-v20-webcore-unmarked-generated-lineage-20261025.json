@@ -1,0 +1,436 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T11:56:09.554872+00:00",
+  "scope": "Exact Ninja generator edges for 12 unmarked direct generated WebCore unity leaves; no license decision or transitive generator analysis",
+  "leafMapSHA256": "8bb04ee7825b73e29eef531cfa4f430f4c11bf18c2c983ace102f8c9d78a9a68",
+  "outputCount": 12,
+  "outputs": [
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/CSSPropertyParsing.cpp",
+      "outputSHA256": "40f16dcb36bf1e57bd315f4432cf5cf989c20dee90000830221273b7f0c374ec",
+      "ninjaTarget": "WebCore/DerivedSources/CSSPropertyParsing.cpp",
+      "generatorInputs": [
+        {
+          "path": "Source/WebCore/css/scripts/process-css-properties.py",
+          "sha256": "c117ea34b0a8e7f74125da9f92efbf1a17df2dc2d79681e34edd42596c1da5d3",
+          "bytes": 557673
+        },
+        {
+          "path": "Source/WebCore/css/CSSProperties.json",
+          "sha256": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343",
+          "bytes": 690740
+        },
+        {
+          "path": "WebKitBuild/neantik-v20-production-arm64/DerivedSources/platform-feature-defines.txt",
+          "sha256": "64f8297fe907ea66889189df9d8b55f278ea3bf0eb9dcd013859c30ffd603249",
+          "bytes": 15255
+        },
+        {
+          "reference": "Source/WTF/wtf/WTF_CopyPreferences",
+          "physicalFile": false
+        }
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/CSSValueKeywords.cpp",
+      "outputSHA256": "22ac6807b2ab5f45c757118c4026d3c5290d791e8e29b58c118e8a290e2d8383",
+      "ninjaTarget": "WebCore/DerivedSources/CSSValueKeywords.cpp",
+      "generatorInputs": [
+        {
+          "path": "Source/WebCore/css/scripts/process-css-values.py",
+          "sha256": "6a08a654b51ede037de31569b714b10e7c4d1e67c0c5c43d6b1f6c173e42bdd8",
+          "bytes": 18734
+        },
+        {
+          "path": "Source/WebCore/css/CSSValueKeywords.in",
+          "sha256": "fa5b9337b00c1acadacfd9ce5da60b234ee1a0a74e5be6fcebe93ce266f9621d",
+          "bytes": 29393
+        },
+        {
+          "path": "Source/WebCore/css/SVGCSSValueKeywords.in",
+          "sha256": "bf79271aa57cb8f68425b767ea9c3be8ef00bf8f7ef6a29add484d04bdd38ef4",
+          "bytes": 3260
+        },
+        {
+          "path": "WebKitBuild/neantik-v20-production-arm64/DerivedSources/platform-feature-defines.txt",
+          "sha256": "64f8297fe907ea66889189df9d8b55f278ea3bf0eb9dcd013859c30ffd603249",
+          "bytes": 15255
+        },
+        {
+          "reference": "Source/WTF/wtf/WTF_CopyPreferences",
+          "physicalFile": false
+        }
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/ColorData.cpp",
+      "outputSHA256": "85a9abad89489dc5e96a7de7048919996b71dfc2ebc0e1466b13c4f61a1c7b4b",
+      "ninjaTarget": "WebCore/DerivedSources/ColorData.cpp",
+      "generatorInputs": [
+        {
+          "path": "Source/WebCore/platform/ColorData.gperf",
+          "sha256": "dc1f82bbdc6090f232b5aabd9a86eacb44df1dd23e6f68f4e08e0b378ee8836d",
+          "bytes": 4052
+        },
+        {
+          "reference": "Source/WTF/wtf/WTF_CopyPreferences",
+          "physicalFile": false
+        }
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/StyleBuilderGenerated.cpp",
+      "outputSHA256": "41815ba05243ce786368d6bb2e3361a842fcaffb3052af9b4f5b39b6fb40e841",
+      "ninjaTarget": "WebCore/DerivedSources/StyleBuilderGenerated.cpp",
+      "generatorInputs": [
+        {
+          "path": "Source/WebCore/css/scripts/process-css-properties.py",
+          "sha256": "c117ea34b0a8e7f74125da9f92efbf1a17df2dc2d79681e34edd42596c1da5d3",
+          "bytes": 557673
+        },
+        {
+          "path": "Source/WebCore/css/CSSProperties.json",
+          "sha256": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343",
+          "bytes": 690740
+        },
+        {
+          "path": "WebKitBuild/neantik-v20-production-arm64/DerivedSources/platform-feature-defines.txt",
+          "sha256": "64f8297fe907ea66889189df9d8b55f278ea3bf0eb9dcd013859c30ffd603249",
+          "bytes": 15255
+        },
+        {
+          "reference": "Source/WTF/wtf/WTF_CopyPreferences",
+          "physicalFile": false
+        }
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/StyleChangedAnimatablePropertiesGenerated.cpp",
+      "outputSHA256": "383234b94e95beef3108b35adf23501d6c14838f8beeee28cde1e9bec1553230",
+      "ninjaTarget": "WebCore/DerivedSources/StyleChangedAnimatablePropertiesGenerated.cpp",
+      "generatorInputs": [
+        {
+          "path": "Source/WebCore/css/scripts/process-css-properties.py",
+          "sha256": "c117ea34b0a8e7f74125da9f92efbf1a17df2dc2d79681e34edd42596c1da5d3",
+          "bytes": 557673
+        },
+        {
+          "path": "Source/WebCore/css/CSSProperties.json",
+          "sha256": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343",
+          "bytes": 690740
+        },
+        {
+          "path": "WebKitBuild/neantik-v20-production-arm64/DerivedSources/platform-feature-defines.txt",
+          "sha256": "64f8297fe907ea66889189df9d8b55f278ea3bf0eb9dcd013859c30ffd603249",
+          "bytes": 15255
+        },
+        {
+          "reference": "Source/WTF/wtf/WTF_CopyPreferences",
+          "physicalFile": false
+        }
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/StyleComputedStyleProperties.cpp",
+      "outputSHA256": "cd3dff552f50d514637c4f27548550ffb4b872f5c6d2746bc552299dd7a6133b",
+      "ninjaTarget": "WebCore/DerivedSources/StyleComputedStyleProperties.cpp",
+      "generatorInputs": [
+        {
+          "path": "Source/WebCore/css/scripts/process-css-properties.py",
+          "sha256": "c117ea34b0a8e7f74125da9f92efbf1a17df2dc2d79681e34edd42596c1da5d3",
+          "bytes": 557673
+        },
+        {
+          "path": "Source/WebCore/css/CSSProperties.json",
+          "sha256": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343",
+          "bytes": 690740
+        },
+        {
+          "path": "WebKitBuild/neantik-v20-production-arm64/DerivedSources/platform-feature-defines.txt",
+          "sha256": "64f8297fe907ea66889189df9d8b55f278ea3bf0eb9dcd013859c30ffd603249",
+          "bytes": 15255
+        },
+        {
+          "reference": "Source/WTF/wtf/WTF_CopyPreferences",
+          "physicalFile": false
+        }
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/StyleExtractorGenerated.cpp",
+      "outputSHA256": "49e1051266511a6820226ce346711ddb63a4d48240fa22a500908c806a206399",
+      "ninjaTarget": "WebCore/DerivedSources/StyleExtractorGenerated.cpp",
+      "generatorInputs": [
+        {
+          "path": "Source/WebCore/css/scripts/process-css-properties.py",
+          "sha256": "c117ea34b0a8e7f74125da9f92efbf1a17df2dc2d79681e34edd42596c1da5d3",
+          "bytes": 557673
+        },
+        {
+          "path": "Source/WebCore/css/CSSProperties.json",
+          "sha256": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343",
+          "bytes": 690740
+        },
+        {
+          "path": "WebKitBuild/neantik-v20-production-arm64/DerivedSources/platform-feature-defines.txt",
+          "sha256": "64f8297fe907ea66889189df9d8b55f278ea3bf0eb9dcd013859c30ffd603249",
+          "bytes": 15255
+        },
+        {
+          "reference": "Source/WTF/wtf/WTF_CopyPreferences",
+          "physicalFile": false
+        }
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/StyleInterpolationWrapperMap.cpp",
+      "outputSHA256": "d24ce54508049e3920586cffe9a4d4636d42026cc89db23ca79401c372143af9",
+      "ninjaTarget": "WebCore/DerivedSources/StyleInterpolationWrapperMap.cpp",
+      "generatorInputs": [
+        {
+          "path": "Source/WebCore/css/scripts/process-css-properties.py",
+          "sha256": "c117ea34b0a8e7f74125da9f92efbf1a17df2dc2d79681e34edd42596c1da5d3",
+          "bytes": 557673
+        },
+        {
+          "path": "Source/WebCore/css/CSSProperties.json",
+          "sha256": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343",
+          "bytes": 690740
+        },
+        {
+          "path": "WebKitBuild/neantik-v20-production-arm64/DerivedSources/platform-feature-defines.txt",
+          "sha256": "64f8297fe907ea66889189df9d8b55f278ea3bf0eb9dcd013859c30ffd603249",
+          "bytes": 15255
+        },
+        {
+          "reference": "Source/WTF/wtf/WTF_CopyPreferences",
+          "physicalFile": false
+        }
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/StylePropertyShorthandFunctions.cpp",
+      "outputSHA256": "6c15aa676c26d38b70b25a27476b7761e3a0a63d29f2e682ce3abe8e029fd2d8",
+      "ninjaTarget": "WebCore/DerivedSources/StylePropertyShorthandFunctions.cpp",
+      "generatorInputs": [
+        {
+          "path": "Source/WebCore/css/scripts/process-css-properties.py",
+          "sha256": "c117ea34b0a8e7f74125da9f92efbf1a17df2dc2d79681e34edd42596c1da5d3",
+          "bytes": 557673
+        },
+        {
+          "path": "Source/WebCore/css/CSSProperties.json",
+          "sha256": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343",
+          "bytes": 690740
+        },
+        {
+          "path": "WebKitBuild/neantik-v20-production-arm64/DerivedSources/platform-feature-defines.txt",
+          "sha256": "64f8297fe907ea66889189df9d8b55f278ea3bf0eb9dcd013859c30ffd603249",
+          "bytes": 15255
+        },
+        {
+          "reference": "Source/WTF/wtf/WTF_CopyPreferences",
+          "physicalFile": false
+        }
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/UsedStyleProperties.cpp",
+      "outputSHA256": "b48b307a0b1bc13486468ae186e2ab9544dd39f11360cdb48564093d0f2b683f",
+      "ninjaTarget": "WebCore/DerivedSources/UsedStyleProperties.cpp",
+      "generatorInputs": [
+        {
+          "path": "Source/WebCore/css/scripts/process-css-properties.py",
+          "sha256": "c117ea34b0a8e7f74125da9f92efbf1a17df2dc2d79681e34edd42596c1da5d3",
+          "bytes": 557673
+        },
+        {
+          "path": "Source/WebCore/css/CSSProperties.json",
+          "sha256": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343",
+          "bytes": 690740
+        },
+        {
+          "path": "WebKitBuild/neantik-v20-production-arm64/DerivedSources/platform-feature-defines.txt",
+          "sha256": "64f8297fe907ea66889189df9d8b55f278ea3bf0eb9dcd013859c30ffd603249",
+          "bytes": 15255
+        },
+        {
+          "reference": "Source/WTF/wtf/WTF_CopyPreferences",
+          "physicalFile": false
+        }
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/UserAgentStyleSheetsData.cpp",
+      "outputSHA256": "33b7cd921a707594caf415a08e63a8473e05a3014f1dde6348db876503e209dc",
+      "ninjaTarget": "WebCore/DerivedSources/UserAgentStyleSheetsData.cpp",
+      "generatorInputs": [
+        {
+          "path": "Source/WebCore/css/make-css-file-arrays.pl",
+          "sha256": "58c4a95601bdcf636ad5b40dfa11ddf4905968d70ad7b7f202d1e311c4c157ea",
+          "bytes": 3360
+        },
+        {
+          "path": "Source/WebCore/css/counterStyles.css",
+          "sha256": "b6d86567156d9cf5a4bad090a74f2f511704ddc5000fc429ce5d7d7a6661a332",
+          "bytes": 27476
+        },
+        {
+          "path": "Source/WebCore/css/fullscreen.css",
+          "sha256": "961bba1e818a0dd3824c3b1c458bb97d25e237e68e2a8fde69950c48b39b4a02",
+          "bytes": 3042
+        },
+        {
+          "path": "Source/WebCore/css/horizontalFormControls.css",
+          "sha256": "23a42bb68bb33fdf0f76d309161f009087a464eaa464fb84dcfa9629fe8c34f9",
+          "bytes": 1532
+        },
+        {
+          "path": "Source/WebCore/css/html.css",
+          "sha256": "3a1fd55b5ef15a401ab288f3c23cf504bab95d14be7a10e5330fb348fb13b578",
+          "bytes": 55041
+        },
+        {
+          "path": "Source/WebCore/css/htmlSwitchControl.css",
+          "sha256": "aada29e36a2775cc1ff381400db546e32235b08fa838ad8f6cdb32c5ee0127c8",
+          "bytes": 2032
+        },
+        {
+          "path": "Source/WebCore/css/mathml.css",
+          "sha256": "be9d8f47d99260efb00422334cf11ad1fa95a09bfb82d0bab142df66486ca535",
+          "bytes": 6266
+        },
+        {
+          "path": "Source/WebCore/css/mathmlCoreExtras.css",
+          "sha256": "48b18b850cb8771644f1bc95ec54bc6d1a345207b61586fa731c257386f22858",
+          "bytes": 1746
+        },
+        {
+          "path": "Source/WebCore/css/mathmlCoreMathvariant.css",
+          "sha256": "9b0b11ea47fa87e6d04e0a2bf3cfcf9f9d885973ab8a7c9712250dad98803a9e",
+          "bytes": 1692
+        },
+        {
+          "path": "Source/WebCore/css/mathmlFontSizeMath.css",
+          "sha256": "ef0c419c31fc78ce9148080efaa0eb06c737b2a0c522a4316382ce2629e578d5",
+          "bytes": 1722
+        },
+        {
+          "path": "Source/WebCore/css/mathmlLegacyFontSizeMath.css",
+          "sha256": "d7678b960a95aa51888bb30ee399e1fd57f447bf38d0195ff9656607d173b3d4",
+          "bytes": 2054
+        },
+        {
+          "path": "Source/WebCore/css/popover.css",
+          "sha256": "0c46fec1026f3c6b9b2fa90724cf12c39b3a8628857a30675f39e4f14f6a62a6",
+          "bytes": 662
+        },
+        {
+          "path": "Source/WebCore/css/quirks.css",
+          "sha256": "65b9247d80cf24391ec2fdf6cd8198c9f64d50ad12e9e681feb491c5c4993ccb",
+          "bytes": 2283
+        },
+        {
+          "path": "Source/WebCore/css/selectMultipleAndListBox.css",
+          "sha256": "db9e6ddc7c1bcff20e9d03db36ba16ab8fdf83d665c4f817a382db5fbe397567",
+          "bytes": 7709
+        },
+        {
+          "path": "Source/WebCore/css/selectMultipleSelectedContent.css",
+          "sha256": "e2efe72efdc053d9d0f12d24576c805638d8540093e1593db85c9dfd3225594a",
+          "bytes": 1753
+        },
+        {
+          "path": "Source/WebCore/css/svg.css",
+          "sha256": "bc80664ec1dfeb71fef598dd512a6e641916eff0213a9df4d819fc89c30fa0d9",
+          "bytes": 3168
+        },
+        {
+          "path": "Source/WebCore/css/viewTransitions.css",
+          "sha256": "34aafe2fbb800ef79177f6e318b538ad5f4ed3e61198b35b625337d24b721fde",
+          "bytes": 2529
+        },
+        {
+          "path": "Source/WebCore/html/shadow/attachmentElementShadow.css",
+          "sha256": "ef1e982c726518e5f54c7af9cc5181f2788dc7ea8817861ea054676f0448b137",
+          "bytes": 10514
+        },
+        {
+          "path": "Source/WebCore/html/shadow/detailsElementShadow.css",
+          "sha256": "80a91a87449031f198e29569e7bf224259222ee733013ca4499672c4a810862d",
+          "bytes": 1611
+        },
+        {
+          "path": "Source/WebCore/html/shadow/imageOverlay.css",
+          "sha256": "7a4f3ecb0cd264c24800345fa9a29e5e6f3cbe84847049243c7e98a857585d22",
+          "bytes": 2862
+        },
+        {
+          "path": "Source/WebCore/html/shadow/meterElementShadow.css",
+          "sha256": "05fb0074aa91ca58ac5de909d0f3e4e3dcb2e7b3d82ebf5af0e4c2d99fa6f9c9",
+          "bytes": 724
+        },
+        {
+          "path": "Source/WebCore/html/shadow/spatialImageControls.css",
+          "sha256": "623bb8b8b92cd62656486dfd26065e1d5710dea28292922cb63a2813c3866f0b",
+          "bytes": 8137
+        },
+        {
+          "path": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/ModernMediaControls.css",
+          "sha256": "9071c650b9d7114cfd7227e7a9df3fc7b25d4a898031615cf873303bf1e557ab",
+          "bytes": 71513
+        },
+        {
+          "path": "Source/WebCore/html/shadow/mac/imageControlsMac.css",
+          "sha256": "d9bd92f0696736ec8f5f92f56057d21dffa2fa7115817393f82de7c16b56b67c",
+          "bytes": 1765
+        },
+        {
+          "path": "Source/WebCore/bindings/scripts/preprocessor.pm",
+          "sha256": "02b994b2c85ecceb7a00fc50ec1e5fdc32c6c01c7b2b5996a4f9b31b557089c0",
+          "bytes": 4207
+        },
+        {
+          "path": "WebKitBuild/neantik-v20-production-arm64/DerivedSources/platform-feature-defines.txt",
+          "sha256": "64f8297fe907ea66889189df9d8b55f278ea3bf0eb9dcd013859c30ffd603249",
+          "bytes": 15255
+        },
+        {
+          "reference": "Source/WTF/wtf/WTF_CopyPreferences",
+          "physicalFile": false
+        }
+      ]
+    },
+    {
+      "outputPath": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/UserAgentScriptsData.cpp",
+      "outputSHA256": "f877568fb27a15a2dd2c9f055a47710fbc869a4ea06b0d8240a6f03ea6afc444",
+      "ninjaTarget": "WebCore/DerivedSources/UserAgentScriptsData.cpp",
+      "generatorInputs": [
+        {
+          "path": "WebKitBuild/neantik-v20-production-arm64/JavaScriptCore.framework/Versions/A/PrivateHeaders/make-js-file-arrays.py",
+          "sha256": "c3a1920baa751a894a24f680fd0b31f6be43601f41843073b3f05beb53efae86",
+          "bytes": 4306
+        },
+        {
+          "path": "WebKitBuild/neantik-v20-production-arm64/WebCore/DerivedSources/ModernMediaControls.js",
+          "sha256": "752ac233fdc7c2a6be14376d05e026458fd6015d3b047356501f535ce8052194",
+          "bytes": 327466
+        },
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/media/YouTubeCaptionQuirk.js",
+          "sha256": "94bbb8c3510fe43046337f0d885ae37f5f99b07105d23f4de2eb014bbb9b15c0",
+          "bytes": 11212
+        },
+        {
+          "path": "Source/WebCore/Modules/modern-media-controls/media/CNNCaptionQuirk.js",
+          "sha256": "0e4616b0d70d16fcaad22b7c8bb39b718ff8dddc49e3e4290d19c448183bf166",
+          "bytes": 7430
+        },
+        {
+          "reference": "Source/WTF/wtf/WTF_CopyPreferences",
+          "physicalFile": false
+        }
+      ]
+    }
+  ]
+}

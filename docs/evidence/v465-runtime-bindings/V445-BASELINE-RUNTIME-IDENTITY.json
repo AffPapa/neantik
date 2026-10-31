@@ -1,0 +1,194 @@
+{
+  "buildOutputs": [
+    {
+      "architecture": "arm64",
+      "bytes": 40078704,
+      "matchesPriorBuild": false,
+      "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "sha256": "f76792a84b7cba5247199d2780e7563127cc08d17bc7042f4ad2dfb92d7b63ec"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 98279648,
+      "matchesPriorBuild": false,
+      "path": "WebCore.framework/Versions/A/WebCore",
+      "sha256": "0257c013902d6c2fcf63192b59be1beaeb4fcfdbd78e382b8d79131f2dad009d"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 4007776,
+      "matchesPriorBuild": false,
+      "path": "WebGPU.framework/Versions/A/WebGPU",
+      "sha256": "f87d4f3d7143cf01633b07831e09cfd5442c67761f77b034bce83f4968abe2a7"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 16832,
+      "matchesPriorBuild": true,
+      "path": "WebInspectorUI.framework/Versions/A/WebInspectorUI",
+      "sha256": "aa5f2f762b8f02f4679f488b32836e6d8fc099ed9fb0ce0802900bcf5ad47c35"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 56488952,
+      "matchesPriorBuild": false,
+      "path": "WebKit.framework/Versions/A/WebKit",
+      "sha256": "6b66599514891ac5852210c77eddbc3b8cea24e74216883a81138e8768a61451"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 34000,
+      "matchesPriorBuild": false,
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development",
+      "sha256": "7fffec84b1b93025e72b80adceeebeeceab3c75664ba96ccdef4d90789d3ae4f"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 34000,
+      "matchesPriorBuild": false,
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development",
+      "sha256": "dd3f118f92b87c8b9c504f3b1279d3247438b12daa5bebd7a48f17251ce8e40b"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 34016,
+      "matchesPriorBuild": false,
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development",
+      "sha256": "3c8d9ac8ac062805888371f2c027eaa4c1d6e46a26d27bd2b8fc89f7ece451d8"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 34016,
+      "matchesPriorBuild": false,
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development",
+      "sha256": "4824da345697a25bc5d886a9530992d354de45dabc2a77345f5bafb690b44a7a"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 34096,
+      "matchesPriorBuild": false,
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development",
+      "sha256": "bb7a60cc97f629626c6653562ab15a1655b61745c79ece3b310ffe8a1590ada4"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 4695792,
+      "matchesPriorBuild": false,
+      "path": "WebKitLegacy.framework/Versions/A/WebKitLegacy",
+      "sha256": "222328ba083d23e44f8e886c441f6034e6f7ee8890422d91bb7f232c331644cc"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 5743216,
+      "matchesPriorBuild": false,
+      "path": "libANGLE-shared.dylib",
+      "sha256": "0787cf34ea6d4c727a6e214c57572efeea433eb94718f55dab33028b6340fd26"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 160832,
+      "matchesPriorBuild": false,
+      "path": "libWebKitSwift.dylib",
+      "sha256": "0aebe0e0eaa40741a4c7ea5fbfb82c2c55392d4f9e62ae3c53f99813249ad124"
+    },
+    {
+      "architecture": "arm64",
+      "bytes": 14515152,
+      "matchesPriorBuild": false,
+      "path": "libwebrtc.dylib",
+      "sha256": "ac6173286d8530ec5a5f6baf0298a7b84a8071fe689dabad7a8ffd7d4415d685"
+    }
+  ],
+  "compiledAssets": {
+    "bytes": 22824,
+    "path": "WebKit.framework/Versions/A/Resources/Assets.car",
+    "sha256": "4554bf51ecaed1db9021776be273b73cbebd3b97809f50bfc80b20f735559ed4"
+  },
+  "id": "V465-clean-baseline-runtime-binding",
+  "schemaVersion": 1,
+  "scope": "Exact V445 clean baseline and V464 same-team signed copy; no legal applicability, complete source or recipient browser load claim.",
+  "sourceArchiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+  "stageAndSignedImages": [
+    {
+      "buildStageSHA256": "f76792a84b7cba5247199d2780e7563127cc08d17bc7042f4ad2dfb92d7b63ec",
+      "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "signedSHA256": "3a55abf6e9a52c17e2dc5b750f04d5b8208e68f3c0b69fcf9abf319527e623a8"
+    },
+    {
+      "buildStageSHA256": "0257c013902d6c2fcf63192b59be1beaeb4fcfdbd78e382b8d79131f2dad009d",
+      "path": "WebCore.framework/Versions/A/WebCore",
+      "signedSHA256": "176045e096e0b14da44c5c7c83220bf72c24e4ab31966b8607053b1db671bc6b"
+    },
+    {
+      "buildStageSHA256": "f87d4f3d7143cf01633b07831e09cfd5442c67761f77b034bce83f4968abe2a7",
+      "path": "WebGPU.framework/Versions/A/WebGPU",
+      "signedSHA256": "4c2a6ceded7f2f2a631e80f24286f59bc032757badca6d44a96708920bc54e65"
+    },
+    {
+      "buildStageSHA256": "aa5f2f762b8f02f4679f488b32836e6d8fc099ed9fb0ce0802900bcf5ad47c35",
+      "path": "WebInspectorUI.framework/Versions/A/WebInspectorUI",
+      "signedSHA256": "25b5cd348495f61232ee435600fb9816860d97e99b4dbfd977512753675ac838"
+    },
+    {
+      "buildStageSHA256": "0aebe0e0eaa40741a4c7ea5fbfb82c2c55392d4f9e62ae3c53f99813249ad124",
+      "path": "WebKit.framework/Versions/A/Frameworks/libWebKitSwift.dylib",
+      "signedSHA256": "90b7fad2f08292b5fa13884cbe740f30bf1f9c2b9c9936511679b94f046fd6c2"
+    },
+    {
+      "buildStageSHA256": "6b66599514891ac5852210c77eddbc3b8cea24e74216883a81138e8768a61451",
+      "path": "WebKit.framework/Versions/A/WebKit",
+      "signedSHA256": "af4888bc06e027c8665e6834161a8a15ea0979ab53d76d9dcd4064ce8339710f"
+    },
+    {
+      "buildStageSHA256": "7fffec84b1b93025e72b80adceeebeeceab3c75664ba96ccdef4d90789d3ae4f",
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development",
+      "signedSHA256": "069bda756f5f7db2e697721a33cbf53b22df89a4a5e9c38a9da0a581165f5dcd"
+    },
+    {
+      "buildStageSHA256": "dd3f118f92b87c8b9c504f3b1279d3247438b12daa5bebd7a48f17251ce8e40b",
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development",
+      "signedSHA256": "86a68fc3166d5ee61a88276e7fc544a64f847bf7c6542bca5ecac7e245ee4157"
+    },
+    {
+      "buildStageSHA256": "3c8d9ac8ac062805888371f2c027eaa4c1d6e46a26d27bd2b8fc89f7ece451d8",
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development",
+      "signedSHA256": "7d8deda31c4983b63ac92e97c1992ff0a92f48a9e4c2d70b574313b6ab6f0887"
+    },
+    {
+      "buildStageSHA256": "4824da345697a25bc5d886a9530992d354de45dabc2a77345f5bafb690b44a7a",
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development",
+      "signedSHA256": "939690663e31bbd39c09a6a1e4131941913d14cba461374ebbcc5062d55a2d3c"
+    },
+    {
+      "buildStageSHA256": "bb7a60cc97f629626c6653562ab15a1655b61745c79ece3b310ffe8a1590ada4",
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development",
+      "signedSHA256": "03f9ed136c21972dc68c6c681edfe877c940af00e2816bef04f9c7bf9aa57d91"
+    },
+    {
+      "buildStageSHA256": "222328ba083d23e44f8e886c441f6034e6f7ee8890422d91bb7f232c331644cc",
+      "path": "WebKitLegacy.framework/Versions/A/WebKitLegacy",
+      "signedSHA256": "79cfe1347d3c2a058a43fddcdcc20e8b50dddeee42c9ba9b93b8f07d6e0dbdfd"
+    },
+    {
+      "buildStageSHA256": "0787cf34ea6d4c727a6e214c57572efeea433eb94718f55dab33028b6340fd26",
+      "path": "libANGLE-shared.dylib",
+      "signedSHA256": "af14f949f2ff951d5e209e86e9cb0d89017e761646d073232d6d16763c15372b"
+    },
+    {
+      "buildStageSHA256": "0aebe0e0eaa40741a4c7ea5fbfb82c2c55392d4f9e62ae3c53f99813249ad124",
+      "path": "libWebKitSwift.dylib",
+      "signedSHA256": "6f4a6f15bc1c40c8759e107c44c423fd7e1f81c43e254062f2ebd07b92a9d183"
+    },
+    {
+      "buildStageSHA256": "b4256b38185e963651938ed0406c6c8ec54299621c7fa53c5e9a0a325ca5fe4f",
+      "path": "libswiftCompatibilitySpan.dylib",
+      "signedSHA256": "adbc9bedeabc030e0ac4d8958d9e8d90497bebac325a82b81efc98011a1bc02b"
+    },
+    {
+      "buildStageSHA256": "ac6173286d8530ec5a5f6baf0298a7b84a8071fe689dabad7a8ffd7d4415d685",
+      "path": "libwebrtc.dylib",
+      "signedSHA256": "62e26b13b8deba2946f68bc2c72eb5ea6bb10d643abf7b901a9940d3fef0cfe7"
+    }
+  ],
+  "status": "PRIVATE_EXACT_RUNTIME_IDENTITY_ONLY_NOT_RELEASE_QUALIFIED"
+}

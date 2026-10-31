@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T12:07:57.847054+00:00",
+  "sourceArchiveSHA256": "b880531a56aced46dbf8cda817b3c1c52a8294dc1c38a4b13a2c2177cb556197",
+  "priorManifestSHA256": "fcd7471e2f63f3fcea57c2362b3b1544c07ef8c80bbbf406fc5c2853fcf170e0",
+  "newManifestSHA256": "00935f2b2e6d107dd7ebdf9a1d549ddd751fa5afd78eef2dec5c98dc5cdaabd8",
+  "components": 139,
+  "companionPatchSHA256": "b8141e001cde0d0ff573eb87a850dbda5ef2a9f9059eef8414cf219758b1c2ff",
+  "replayedTargetSHA256": "5c87a0dc91efb2b2ef5f58e2e259ece7428536ad2479d233e7b4e12fa4cc0f84",
+  "recipeSHA256": "49ce55fab84caa541c1fca3a40aaba1f011f79ad7b2d26aff7f568e915d5c726",
+  "status": "all-offer-components-byte-verified;preflight-patch-replayed;portable-relink-and-license-open"
+}

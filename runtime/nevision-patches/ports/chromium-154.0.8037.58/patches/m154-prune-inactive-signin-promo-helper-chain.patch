@@ -1,0 +1,174 @@
+diff --git a/chrome/browser/signin/signin_promo_util.cc b/chrome/browser/signin/signin_promo_util.cc
+--- a/chrome/browser/signin/signin_promo_util.cc
++++ b/chrome/browser/signin/signin_promo_util.cc
+@@ -70,11 +70,8 @@
+ #if BUILDFLAG(ENABLE_DICE_SUPPORT)
+ 
+ using signin::SignInPromoType;
+ using signin_util::SignedInState;
+-
+-constexpr int kSigninPromoShownThreshold = 5;
+-constexpr int kSigninPromoDismissedThreshold = 2;
+ 
+ // Profile based dictionary for AvatarButton promos.
+ constexpr char kAvatarButtonPromoProfileDictionary[] =
+     "signin.avatar_button_promo_dict";
+@@ -285,41 +282,8 @@
+ 
+   return usage_info;
+ }
+ 
+-bool IsAllowedByPromoFrequency(Profile& profile,
+-                               SignInPromoType type,
+-                               const GaiaId& gaia_id) {
+-  switch (type) {
+-    case SignInPromoType::kPassword:
+-    case SignInPromoType::kAddress:
+-    case SignInPromoType::kBookmark:
+-    case SignInPromoType::kExtension:
+-    case SignInPromoType::kSendTabToSelf:
+-    case SignInPromoType::kComposeboxDriveContextMenuOption:
+-      // No specific frequency exists for this promo type.
+-      return true;
+-    case SignInPromoType::kSearchAIMode:
+-      break;
+-  }
+-  // For the Search AI Mode there should be a gap between impressions,
+-  // configured in `kSearchAIModePromoFrequency`.
+-  std::optional<base::Time> last_impression_time;
+-  if (gaia_id.empty()) {
+-    last_impression_time = profile.GetPrefs()->GetTime(
+-        prefs::kSearchAIModeSignInPromoLastImpressionTimestampPerProfile);
+-  } else {
+-    SigninPrefs signin_prefs(*profile.GetPrefs());
+-    last_impression_time =
+-        signin_prefs.GetSearchAIModeSigninPromoLastImpressionTime(gaia_id);
+-  }
+-  if (!last_impression_time.has_value()) {
+-    return true;
+-  }
+-  base::TimeDelta gap = base::Time::Now() - last_impression_time.value();
+-  return (gap >= switches::kSearchAIModePromoFrequency.Get());
+-}
+-
+ bool WasPreviouslySyncingWithPrimaryAccount(Profile* profile) {
+     return false;
+ }
+ 
+@@ -377,116 +341,8 @@
+   }
+ 
+   // No promo.
+   return {.type = std::nullopt, .local_data_count = local_data_count};
+-}
+-
+-syncer::DataType GetDataTypeFromSignInPromoType(SignInPromoType type) {
+-  switch (type) {
+-    case SignInPromoType::kPassword:
+-      return syncer::PASSWORDS;
+-    case SignInPromoType::kAddress:
+-      return syncer::CONTACT_INFO;
+-    case SignInPromoType::kBookmark:
+-      return syncer::BOOKMARKS;
+-    case SignInPromoType::kExtension:
+-      return syncer::EXTENSIONS;
+-    case SignInPromoType::kSearchAIMode:
+-      // Search AI Mode sign-in promo is not related to any synced data type.
+-      NOTREACHED();
+-    case SignInPromoType::kComposeboxDriveContextMenuOption:
+-      // Composebox Drive context menu option sign-in promo is not related to
+-      // any synced data type.
+-      NOTREACHED();
+-    case SignInPromoType::kSendTabToSelf:
+-      return syncer::SEND_TAB_TO_SELF;
+-  }
+-}
+-
+-
+-int GetAddressPromoShownCount(Profile& profile, const GaiaId& gaia_id) {
+-  return 0;
+-}
+-
+-int GetPasswordPromoShownCount(Profile& profile, const GaiaId& gaia_id) {
+-  return 0;
+-}
+-
+-int GetSearchAIModePromoShownCount(Profile& profile, const GaiaId& gaia_id) {
+-  return 0;
+-}
+-
+-int GetBookmarkPromoShownCount(Profile& profile, const GaiaId& gaia_id) {
+-  return 0;
+-}
+-
+-int GetContextualPromoDismissCountPerSignedOutProfile(Profile& profile,
+-                                                      SignInPromoType type) {
+-  if (ShouldUseAutofillSignInPromoLimits(type)) {
+-    return profile.GetPrefs()->GetInteger(
+-        prefs::kAutofillSignInPromoDismissCountPerProfile);
+-  }
+-
+-  switch (type) {
+-    case SignInPromoType::kAddress:
+-      return profile.GetPrefs()->GetInteger(
+-          prefs::kAddressSignInPromoDismissCountPerProfileForLimitsExperiment);
+-    case SignInPromoType::kPassword:
+-      return profile.GetPrefs()->GetInteger(
+-          prefs::kPasswordSignInPromoDismissCountPerProfileForLimitsExperiment);
+-    case SignInPromoType::kBookmark:
+-      return profile.GetPrefs()->GetInteger(
+-          prefs::kBookmarkSignInPromoDismissCountPerProfileForLimitsExperiment);
+-    case SignInPromoType::kExtension:
+-    case SignInPromoType::kSendTabToSelf:
+-    case SignInPromoType::kComposeboxDriveContextMenuOption:
+-      NOTREACHED();
+-    case SignInPromoType::kSearchAIMode:
+-      return profile.GetPrefs()->GetInteger(
+-          prefs::kSearchAIModeSignInPromoDismissCountPerProfile);
+-  }
+-}
+-
+-int GetContextualPromoDismissCountPerAccount(Profile& profile,
+-                                             SignInPromoType type,
+-                                             const GaiaId& gaia_id) {
+-  if (ShouldUseAutofillSignInPromoLimits(type)) {
+-    return SigninPrefs(*profile.GetPrefs())
+-        .GetAutofillSigninPromoDismissCount(gaia_id);
+-  }
+-
+-  switch (type) {
+-    case SignInPromoType::kAddress:
+-      return SigninPrefs(*profile.GetPrefs())
+-          .GetAddressSigninPromoDismissCount(gaia_id);
+-    case SignInPromoType::kPassword:
+-      return SigninPrefs(*profile.GetPrefs())
+-          .GetPasswordSigninPromoDismissCount(gaia_id);
+-    case SignInPromoType::kSearchAIMode:
+-      return SigninPrefs(*profile.GetPrefs())
+-          .GetSearchAIModeSigninPromoDismissCount(gaia_id);
+-      NOTREACHED();
+-    case SignInPromoType::kBookmark:
+-      return SigninPrefs(*profile.GetPrefs())
+-          .GetBookmarkSigninPromoDismissCount(gaia_id);
+-    case SignInPromoType::kExtension:
+-    case SignInPromoType::kSendTabToSelf:
+-    case SignInPromoType::kComposeboxDriveContextMenuOption:
+-      NOTREACHED();
+-  }
+-}
+-
+-
+-bool IsDataTypeManagedByPolicy(const syncer::SyncService* sync_service,
+-                               syncer::DataType data_type) {
+-  if (!sync_service) {
+-    return false;
+-  }
+-  std::optional<syncer::UserSelectableType> selectable_type =
+-      syncer::GetUserSelectableTypeFromDataType(data_type);
+-  return selectable_type.has_value() &&
+-         sync_service->GetUserSettings()->IsTypeManagedByPolicy(
+-             *selectable_type);
+ }
+ 
+ // Common eligibility checks for signin promos relating to the syncing of an
+ // underlying syncable data type.

@@ -1,0 +1,48 @@
+{
+  "id": "V398",
+  "timestampUTC": "2026-10-28T07:00:58Z",
+  "scope": "Addressed primary-source rights research for the runtime WebCore HRTF resource and reviewed process/memory routing against current checkpoint; no source/build/runtime/release mutation.",
+  "priorCheckpoint": {
+    "receipt": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v397-v382-current-fourteen-resource-license-rebind-20261028.json",
+    "sha256": "bedd3f17bb58ce5faa2ad2f3515e664e8672e2879c2ddc256df6a5b7bdfaa768"
+  },
+  "resource": {
+    "runtimePath": "WebCore.framework/Versions/A/Resources/audio/Composite.wav",
+    "sourcePath": "Source/WebCore/platform/audio/resources/Composite.wav",
+    "sha256": "a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3",
+    "runtimeRole": "WebAudio HRTF impulse-response data required by PannerNode/HRTF runtime; removal or silence substitution would change supported audio behavior."
+  },
+  "primarySources": [
+    {
+      "url": "https://docs.webkit.org/Other/Licensing.html",
+      "finding": "WebKit policy confirms file-specific mixed BSD/LGPL terms and says moving code preserves original terms; no exact license assignment for Composite.wav."
+    },
+    {
+      "url": "https://lists.w3.org/Archives/Public/public-audio/2012AprJun/0835.html",
+      "finding": "Chris Rogers discusses the LISTEN/IRCAM HRTF dataset as the source used for WebAudio spatialization; message does not grant redistribution rights."
+    },
+    {
+      "url": "https://www.ircam.fr/en/research/projects/176",
+      "finding": "IRCAM describes HRTF research/database sharing and notes general-public use has been limited; no redistribution license for the exact legacy LISTEN dataset identified."
+    },
+    {
+      "url": "https://bugzilla.mozilla.org/show_bug.cgi?id=865241",
+      "finding": "Mozilla engineering history records importing the HRTF implementation/data but does not establish rights for this exact WebKit asset; secondary comments about public-domain status are not sufficient rights evidence."
+    },
+    {
+      "url": "https://bugs.webkit.org/show_bug.cgi?id=69703",
+      "finding": "WebKit history documents concatenation/consolidation of HRTF data into Composite.wav; no per-file rights declaration found."
+    }
+  ],
+  "decision": "UNKNOWN_RETAINED. No primary rights-holder grant, dataset license, or exact-file license was found. Do not infer public domain from secondary discussion. Do not remove or replace the runtime asset without preserving/qualifying HRTF behavior.",
+  "processRecheck": {
+    "broadInventoryRepeated": false,
+    "testsRepeated": false,
+    "buildRepeated": false,
+    "signingProbeRepeated": false,
+    "dirtyWorktreePreserved": true,
+    "finding": "Current checkpoint is authoritative; V397 already binds the exact 14 current resources. This pass narrowed rights research to the runtime-critical data origin and did not justify repeating package or runtime gates."
+  },
+  "nextAction": "Continue the 14-row matrix only with exact upstream commit/author/license evidence. For Composite.wav, seek the original LISTEN dataset rights statement or written permission from the relevant rights holder. If absent, identify a legally clear replacement dataset and separately qualify its WebAudio behavior. Do not repeat inventory, tests, build, or timestamp probe without changed inputs or observable recovery.",
+  "releaseQualified": false
+}

@@ -1,23 +1,48 @@
 #!/bin/zsh
 
 set -euo pipefail
-umask 077
-export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 export DEVELOPER_DIR="$(
   "$PROJECT_DIR/scripts/resolve-compatible-developer-dir.sh"
 )"
-SOURCE_APP="$PROJECT_DIR/dist/NeAntik-Integrated.app"
+SOURCE_APP="${NEANTIK_SOURCE_APP:-$PROJECT_DIR/dist/NeAntik-Integrated.app}"
+# A runtime successor can use a separately authenticated private bundle input.
+# It remains subject to the ordinary source signature/provenance checks; only
+# a registered destination may receive it, never the working dist application.
+if [[ -n "${NEANTIK_SOURCE_APP:-}" ]]; then
+  if [[ -z "${NEANTIK_DIRECT_CANDIDATE_ROOT:-}" || "$SOURCE_APP" != /* ||
+        ! -d "$SOURCE_APP" || -L "$SOURCE_APP" || "$SOURCE_APP" != "${SOURCE_APP:A}" ]]; then
+    echo "Explicit source app requires a canonical directory and registered candidate destination." >&2
+    exit 64
+  fi
+fi
 APP_PATH="$PROJECT_DIR/dist/NeAntik.app"
 CANDIDATE_MANIFEST="$PROJECT_DIR/dist/direct-candidate-manifest.json"
 CANDIDATE_SOURCE_BINDING="$PROJECT_DIR/dist/direct-candidate-source.json"
 REPORT_PATH="$PROJECT_DIR/dist/fingerprint-audit.json"
+SUMMARY_PATH="$PROJECT_DIR/dist/fingerprint-audit-summary.json"
+
+# Only a registered owned location may replace the default candidate paths.
+if [[ -n "${NEANTIK_DIRECT_CANDIDATE_ROOT:-}" ]]; then
+  CANDIDATE_ROOT="$(python3 -I -B "$PROJECT_DIR/scripts/run-isolated-release-python.py" \
+    "$PROJECT_DIR/scripts/release_candidate_location.py" \
+    --project-root "$PROJECT_DIR" --validate "$NEANTIK_DIRECT_CANDIDATE_ROOT")"
+  APP_PATH="$CANDIDATE_ROOT/NeAntik.app"
+  CANDIDATE_MANIFEST="$CANDIDATE_ROOT/direct-candidate-manifest.json"
+  CANDIDATE_SOURCE_BINDING="$CANDIDATE_ROOT/direct-candidate-source.json"
+  REPORT_PATH="$CANDIDATE_ROOT/fingerprint-audit.json"
+  SUMMARY_PATH="$CANDIDATE_ROOT/fingerprint-audit-summary.json"
+fi
+
 ATTEMPT_STATE_ROOT="$PROJECT_DIR/artifacts/neantik/private-release-attempts/$(date -u '+%Y%m%dT%H%M%SZ')-$$"
 DEFAULT_SOURCE_PROVENANCE="/private/tmp/nevision-chromium-152/build/source-provenance.json"
 EXPECTED_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PROJECT_DIR/Resources/Info.plist")"
 EXPECTED_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PROJECT_DIR/Resources/Info.plist")"
 
+# Keep using the one NeAntik Developer ID identity in the login Keychain.
+# This fingerprint is also pinned by AGENTS.md and verify-release.sh.
+export NEANTIK_SIGNING_IDENTITY="${NEANTIK_SIGNING_IDENTITY:-474F7C78F33EE324C24F6F5AE0443EB713E85E60}"
 export NEANTIK_NOTARY_PROFILE="${NEANTIK_NOTARY_PROFILE:-neantik-notary}"
 export NEANTIK_RELEASE_CHANNEL="${NEANTIK_RELEASE_CHANNEL:-public-alpha}"
 pause_on_error() {
@@ -33,30 +58,58 @@ pause_on_error() {
 }
 trap pause_on_error ERR
 
-if [[ -z "${NEANTIK_PROVISIONING_PROFILE:-}" ]]; then
-  echo "Не задан внешний Developer ID provisioning profile." >&2
-  echo "Запустите с NEANTIK_PROVISIONING_PROFILE=/absolute/path/to/profile.provisionprofile." >&2
-  echo "Профиль должен разрешать Keychain Sharing для app.neantik.desktop." >&2
-  exit 64
-fi
-python3 "$PROJECT_DIR/scripts/verify-active-gui-session-unlocked.py"
-if [[ -z "${NEANTIK_SIGNING_IDENTITY:-}" ]]; then
-  export NEANTIK_SIGNING_IDENTITY="$(
-    python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
-      --profile "$NEANTIK_PROVISIONING_PROFILE" \
-      --print-signing-identity
-  )"
-else
-  python3 "$PROJECT_DIR/scripts/verify-direct-provisioning-profile.py" \
-    --profile "$NEANTIK_PROVISIONING_PROFILE" \
-    --signing-identity "$NEANTIK_SIGNING_IDENTITY" >/dev/null
-fi
+runtime_version_from_lock() {
+  python3 - "$1" <<'PY'
+import json
+import sys
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as handle:
+        document = json.load(handle)
+    version = document["fingerprintChromium"]["chromiumVersion"]
+except (OSError, KeyError, TypeError, json.JSONDecodeError):
+    raise SystemExit(1)
+if not isinstance(version, str) or not version:
+    raise SystemExit(1)
+print(version)
+PY
+}
+
+runtime_version_from_provenance() {
+  python3 - "$1" <<'PY'
+import json
+import sys
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as handle:
+        document = json.load(handle)
+    version = document["targetChromiumVersion"]
+except (OSError, KeyError, TypeError, json.JSONDecodeError):
+    raise SystemExit(1)
+if not isinstance(version, str) or not version:
+    raise SystemExit(1)
+print(version)
+PY
+}
 
 cache_runtime_source_evidence() {
   local cached_dir="$ATTEMPT_STATE_ROOT/runtime-source-evidence"
   local configured_provenance="${NEANTIK_SOURCE_PROVENANCE:-}"
   local configured_lock="${NEANTIK_RUNTIME_CANDIDATE_LOCK:-}"
+  local packaged_lock="$SOURCE_APP/Contents/Resources/NeAntikRuntimeEvidence/fingerprint-chromium.lock.json"
+  local packaged_version
   local -a evidence_dirs
+
+  if [[ ! -f "$packaged_lock" || -L "$packaged_lock" ]] ||
+     ! packaged_version="$(runtime_version_from_lock "$packaged_lock")"; then
+    echo "Не удалось определить версию Chromium из runtime evidence точного исходного приложения." >&2
+    return 66
+  fi
+  if [[ ( "$packaged_version" == 154.* || "$packaged_version" == 155.* ) &&
+        ( -z "$configured_provenance" || -z "$configured_lock" ) ]]; then
+    echo "Chromium 154/155 требует явно заданные runtime source evidence; исторический M152 default запрещён." >&2
+    return 66
+  fi
 
   if [[ -n "$configured_provenance" || -n "$configured_lock" ]]; then
     if [[ -z "$configured_provenance" || -z "$configured_lock" ||
@@ -70,6 +123,15 @@ cache_runtime_source_evidence() {
       ! "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
         "$configured_lock" "$configured_provenance" >/dev/null 2>&1; then
       echo "Configured runtime source evidence did not pass verification." >&2
+      return 66
+    fi
+    local configured_version
+    local configured_provenance_version
+    if ! configured_version="$(runtime_version_from_lock "$configured_lock")" ||
+       ! configured_provenance_version="$(runtime_version_from_provenance "$configured_provenance")" ||
+       [[ "$configured_version" != "$packaged_version" ||
+          "$configured_provenance_version" != "$packaged_version" ]]; then
+      echo "Configured runtime source evidence does not match Chromium $packaged_version in the exact source app." >&2
       return 66
     fi
     mkdir -p "$cached_dir"
@@ -105,6 +167,15 @@ cache_runtime_source_evidence() {
       lock="$evidence_dir/fingerprint-chromium.lock.json"
     fi
     [[ -f "$provenance" && -f "$lock" ]] || continue
+    local evidence_version
+    local provenance_version
+    if ! evidence_version="$(runtime_version_from_lock "$lock")" ||
+       ! provenance_version="$(runtime_version_from_provenance "$provenance")" ||
+       [[ "$evidence_version" != "$packaged_version" ||
+          "$provenance_version" != "$packaged_version" ]]; then
+      echo "Skipping runtime evidence for a different Chromium version than the exact source app." >&2
+      continue
+    fi
     if ! "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
         "$provenance" >/dev/null 2>&1 ||
       ! "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
@@ -162,6 +233,22 @@ echo "NeAntik $EXPECTED_VERSION — защищённый локальный эт
 echo "Секреты не запрашиваются: подпись и notarization используют Keychain."
 echo "Этапы: сборка → проверка профилей → Apple notarization → готовый ZIP."
 echo
+
+# This script can also be invoked without the outer release entrypoint.
+# Never move a bundle still used by a manager or its embedded browser.
+if [[ -e "$APP_PATH" ]]; then
+  python3 "$PROJECT_DIR/scripts/wait-for-neantik-runtime-drain.py" \
+    --app "$APP_PATH" --timeout 2
+fi
+
+# A freshly prepared runtime candidate needs an explicit clean-source binding.
+# Do not move it away and invoke the unrelated manager-only preparation path.
+if [[ -d "$APP_PATH" && -f "$CANDIDATE_MANIFEST" && ! -L "$CANDIDATE_MANIFEST" &&
+      ! -e "$CANDIDATE_SOURCE_BINDING" && ! -L "$CANDIDATE_SOURCE_BINDING" ]]; then
+  echo "Prepared candidate has no source binding; preserve it and bind the exact clean source before release." >&2
+  echo "Use direct-candidate-source-binding.py create with this candidate manifest and source binding path." >&2
+  exit 65
+fi
 
 mkdir -p "$ATTEMPT_STATE_ROOT"
 chmod 0700 "$ATTEMPT_STATE_ROOT"
@@ -224,6 +311,9 @@ else
   prepare_candidate
 fi
 
+echo "Проверяю JS/HTTP Device Memory на точном кандидате и временном профиле…"
+node "$PROJECT_DIR/scripts/verify-device-memory-coherence.mjs" "$APP_PATH"
+
 echo "[2/4] Проверяю изоляцию профилей A → B → A…"
 REUSED_GUI_EVIDENCE=0
 REUSE_CHECK_LOG="$ATTEMPT_STATE_ROOT/fingerprint-reuse-check.log"
@@ -235,6 +325,7 @@ for EXISTING_SCHEMA8_SOURCE in \
       --candidate-manifest "$CANDIDATE_MANIFEST" \
       --release-channel "$NEANTIK_RELEASE_CHANNEL" \
       --not-before 1970-01-01T00:00:00Z \
+      --summary-output "$SUMMARY_PATH" \
       --output "$REPORT_PATH" \
       >>"$REUSE_CHECK_LOG" 2>&1; then
     echo
@@ -251,7 +342,8 @@ verify_current_gui_attempt_evidence() {
     --candidate-manifest "$CANDIDATE_MANIFEST" \
     --release-channel "$NEANTIK_RELEASE_CHANNEL" \
     --not-before "$GUI_NOT_BEFORE" \
-    --output "$REPORT_PATH"
+    --summary-output "$SUMMARY_PATH" \
+      --output "$REPORT_PATH"
 }
 
 evaluate_current_gui_attempt() {
@@ -284,7 +376,8 @@ while (( REUSED_GUI_EVIDENCE == 0 && attempt <= 3 )); do
   python3 "$PROJECT_DIR/scripts/collect-gui-fingerprint-evidence.py" \
     --prepare-attempt-state "$ATTEMPT_STATE_DIR" \
     --release-channel "$NEANTIK_RELEASE_CHANNEL" \
-    --output "$REPORT_PATH"
+    --summary-output "$SUMMARY_PATH" \
+      --output "$REPORT_PATH"
   SCHEMA8_SOURCE="$ATTEMPT_STATE_DIR/fingerprint-evidence-schema8.json"
   GUI_NOT_BEFORE="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   echo
@@ -356,6 +449,15 @@ python3 "$PROJECT_DIR/scripts/direct-candidate-source-binding.py" verify \
   --manifest "$CANDIDATE_MANIFEST" \
   --binding "$CANDIDATE_SOURCE_BINDING"
 
+if [[ -n "${NEANTIK_PLATFORM_LAUNCH_RECEIPT:-}" ]]; then
+  run_logged_stage \
+    "Проверяю Web Platform на точном подписанном кандидате…" \
+    "$ATTEMPT_STATE_ROOT/platform-qualification.log" \
+    python3 "$PROJECT_DIR/scripts/runtime-platform/qualify-candidate.py" \
+      --app "$APP_PATH" --manifest "$CANDIDATE_MANIFEST" \
+      --launch-receipt "$NEANTIK_PLATFORM_LAUNCH_RECEIPT" \
+      --output "$ATTEMPT_STATE_ROOT/platform-qualification"
+fi
 echo "[3/4] Отправляю кандидат в Apple notarization…"
 "$PROJECT_DIR/scripts/notarize-direct-candidate.sh"
 

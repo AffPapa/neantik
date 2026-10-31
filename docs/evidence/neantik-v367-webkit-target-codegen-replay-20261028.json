@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "V367",
+  "observedAtUTC": "2026-10-28T03:58:51Z",
+  "status": "PASS_13_WEBKIT_TARGET_CODEGEN_OUTPUTS_REPLAYED_AND_BOUND_TO_DETACHED_SOURCE_OFFER",
+  "scope": "Replayed the 13 V20-inventoried WebKit target-codegen outputs using seven unique terminal commands extracted from the retained V135 build.ninja, in an isolated COW clone. Every replayed output byte-matches its V20-recorded size/SHA. Original V135 source inputs and outputs remain unchanged.",
+  "sourceOffer": {
+    "base": "V366",
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v367-webkit-target-codegen-replay-closure",
+    "manifestSHA256": "98dfd44003d69f089c5cfaab053cb883783441de1da648b4154c8a05a1610f2b",
+    "componentCount": 639,
+    "candidateBound": false
+  },
+  "replay": {
+    "embeddedEvidence": "evidence/neantik-v367-webkit-target-codegen-replay-20261028.json",
+    "embeddedEvidenceSHA256": "53e753244bdc702d145cc67b7edd054244f1747f4744a24c5eb0c80efd3a86a2",
+    "recipePath": "overlay/docs/recipient-work/V367-WEBKIT-TARGET-CODEGEN-REPLAY.md",
+    "recipeSHA256": "f1fcb10f434d6006464f7587bde2a92a861cb481a2ea8bf0be9d82e4f1bf8508",
+    "outputs": 13,
+    "uniqueCommands": 7,
+    "hashBoundInputsVerified": 465,
+    "originalV135OutputsUnchanged": true,
+    "originalV135InputsUnchanged": true
+  },
+  "graphBoundary": {
+    "V135BuildNinjaSHA256": "2a28e27f417390a2f24e8dfe28b5e094e30eee2b22aae165cfbeba308dd38836",
+    "V135CMakeCacheSHA256": "245c791f4088fbd079a1dc5c7161116dff09c3e45de9bf757c1ea397710c92f5",
+    "V20EvidenceBuildNinjaSHA256": "691f704d4a75b80b5f4e8652a1d758b78e135f83b089b61a378df3c20bffc570",
+    "V20EvidenceCMakeCacheSHA256": "bf38a4db6cf695dbc6b88d878c379521a97b87d7ea93c1ef493c0f9b929ea17c",
+    "claim": "V135 graph replay only; historical V20 graph differs"
+  },
+  "consumerPreflight": {
+    "script": "scripts/package-owned-webkit-release.py",
+    "status": "PASS",
+    "components": 639,
+    "overlayManifests": 8,
+    "firstPartyOverlayAssets": 64,
+    "manifestSHA256": "98dfd44003d69f089c5cfaab053cb883783441de1da648b4154c8a05a1610f2b"
+  },
+  "limitations": [
+    "Target-codegen replay does not prove legal applicability, all source obligations, recipient signed replacement/load, candidate notice binding, or release qualification.",
+    "Chromium signed .74 candidate, runtime privacy tuple, Apple timestamp signing, ZIP/DMG notarization, publication, and downloaded-byte checks remain open."
+  ],
+  "nonActions": [
+    "No Chromium build",
+    "No full WebKit build or binary relink",
+    "No browser launch",
+    "No signing, notarization, or publication"
+  ],
+  "releaseQualified": false,
+  "nextAction": "Use the existing V294 maintainer dispositions and exact V135 source/image/notice evidence to reconcile the four WebKit image UNKNOWNs; close factual license/notice/source rows that are supported and preserve unresolved legal applicability as open."
+}

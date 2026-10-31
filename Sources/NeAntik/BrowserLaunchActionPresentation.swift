@@ -20,8 +20,7 @@ extension BrowserProfileProcessState {
             .activity
         case .managed, .externalVerified:
             .healthy
-        case .forceStopAvailable, .externalManualOnly,
-             .externalUnverified, .recoveryRequired:
+        case .externalManualOnly, .externalUnverified, .recoveryRequired:
             .attention
         }
     }
@@ -55,9 +54,13 @@ struct BrowserLaunchActionPresentation: Equatable, Sendable {
         isArchived: Bool,
         runtimeAvailability: BrowserRuntimeAvailability,
         isProxyTesting: Bool = false,
-        isLaunchPreparation: Bool = false
+        isLaunchPreparation: Bool = false,
+        isManagerPreparing: Bool = false
     ) -> Self {
         switch processState {
+        case .closing:
+            return Self(title: "Закрывается…", systemImage: "hourglass", isEnabled: false,
+                        help: processState.guidance ?? "Завершается браузер и прокси")
         case .managed, .externalVerified:
             // A known running process always keeps its safe stop action. In
             // particular, an unrelated runtime lookup must not strand it.
@@ -66,23 +69,6 @@ struct BrowserLaunchActionPresentation: Equatable, Sendable {
                 systemImage: "stop.fill",
                 isEnabled: true,
                 help: processState.guidance ?? "Остановить профиль"
-            )
-
-        case .closing:
-            return Self(
-                title: "Закрывается…",
-                systemImage: "hourglass",
-                isEnabled: false,
-                help: processState.guidance ?? "Chromium завершает работу"
-            )
-
-        case .forceStopAvailable:
-            return Self(
-                title: "Не отвечает",
-                systemImage: "exclamationmark.octagon.fill",
-                isEnabled: false,
-                help: processState.guidance ??
-                    "Принудительная остановка доступна в сведениях профиля"
             )
 
         case .checking:
@@ -127,6 +113,16 @@ struct BrowserLaunchActionPresentation: Equatable, Sendable {
                     systemImage: "hourglass",
                     isEnabled: false,
                     help: "Проверка прокси уже выполняется"
+                )
+            }
+
+            if isManagerPreparing {
+                return Self(
+                    title: "Подготовка запуска…",
+                    systemImage: "hourglass",
+                    isEnabled: false,
+                    help: "Сейчас подготавливается запуск профиля. " +
+                        "Дождись результата; повторно нажимать не нужно."
                 )
             }
 

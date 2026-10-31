@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T16:31:00Z",
+  "status": "TERMS_AND_AUTHOR_ATTRIBUTION_CLASSIFIED_RUNTIME_NOTICE_BINDING_OPEN",
+  "scope": "Exact source lineage and row-specific BSD-2 maintainer attribution for the linked WebCore generated input Source/WebCore/platform/ColorData.gperf. Rebound to V122 after mapped source hashes matched the pinned source tree; prior UNKNOWN/attribution limits are unchanged.",
+  "sourceBinding": {
+    "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "webkitPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "sourcePath": "Source/WebCore/platform/ColorData.gperf",
+    "sourceSHA256": "dc1f82bbdc6090f232b5aabd9a86eacb44df1dd23e6f68f4e08e0b378ee8836d",
+    "runtimeImage": "WebCore.framework/Versions/A/WebCore",
+    "runtimeImageSHA256": "2dfb23280d68b0b89bf493a16de3696a326ccf8cdb88722593998bb00bbdd6a8",
+    "runtimeImageSHA256V122": "6c894ce051a20dee391a1bfd99648546b3797b51dc46999ba2b83a4644833174"
+  },
+  "origin": {
+    "sourcePath": "WebCore/kwq/KWQColorData.gperf",
+    "firstAddedByCommit": "5f5a2bc50fe448d0881140493bfd7786025ef8e9",
+    "apiURL": "https://api.github.com/repos/WebKit/WebKit/commits/5f5a2bc50fe448d0881140493bfd7786025ef8e9",
+    "apiResponseSHA256": "8e8813710cf29db33251a50f02fe4c0821d83454cb747b9312ee8168a6fe5174",
+    "rawFileSHA256": "23d8556e375c045860b4571912ae5a953ea5b3fe5b485d4ef5620aab6f8a761e",
+    "rawBytes": 3024,
+    "initialChange": "new file, 151 lines",
+    "author": "Darin Adler",
+    "date": "2002-12-15T09:15:07Z",
+    "sourceHistory": "Current source lineage receipt records 98 percent similarity from the KWQ file to the pinned ColorData.gperf, preserving the initial source ancestry.",
+    "historyReceipt": "docs/evidence/webkit-v20-webcore-legacy-data-terms-disposition-20261025.json",
+    "historyReceiptSHA256": "0a82336a78490a0a62513b02d18b1d5fafd23d1ed1338312b832ab0addeb7f51",
+    "sourceHasCopyrightHeader": false
+  },
+  "policy": {
+    "url": "https://docs.webkit.org/Other/Licensing.html",
+    "finding": "New WebKit contributions use the two-clause BSD license; original license/copyright must be retained when moving existing code.",
+    "classification": "Maintainer classifies the exact newly added source file as BSD-2 based on its initial WebKit add commit, bounded source lineage with no identified KHTML/KSVG2 predecessor, and official WebKit policy. Not a legal opinion."
+  },
+  "attribution": {
+    "adoptedCopyrightLine": "Copyright (C) 2002 Darin Adler.",
+    "basis": "Exact first-added upstream commit identifies Darin Adler as author. WebKit contributing guidance recommends new-file authors use the WebCore LICENSE-APPLE text with their own copyright information; maintainer adopts individual-author attribution for this file.",
+    "independentRightsAssignmentProven": false
+  },
+  "licenseNotice": {
+    "derivedFromTemplate": "Source/WebCore/LICENSE-APPLE",
+    "templateSHA256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+    "licensePath": "docs/evidence/third-party/webcore/WEBCORE-COLORDATA-BSD-2-Clause.txt",
+    "licenseSHA256": "c1729f9029d1331d6ee663853411d9dd5f3fa4f2b831880fbc91743c323df401",
+    "bytes": 1270
+  },
+  "noticeStatus": {
+    "runtimeNoticeBoundToThisFile": false,
+    "completeWebCoreImageTerms": false
+  },
+  "limitations": [
+    "This row-specific maintainer attribution is not a legal opinion or independent proof of rights assignment.",
+    "WebCore image remains UNKNOWN because other inputs and resources remain unresolved.",
+    "No upstream source file or runtime image bytes changed; no build, installation, signing, notarization, or publication occurred."
+  ],
+  "next": "Integrate this exact source/attribution/license evidence into owned-WebKit runtime notices and frozen source offer, then close remaining WebCore/JSC lineage and full image/resource decisions.",
+  "v122BuildBinding": {
+    "buildReceiptSHA256": "804a60911bf67912d8f17665958f88051b3085a175f145db0fd76fa7ea23bd9c",
+    "buildID": "neantik-v122-fresh-owned-webkit-build-and-staging-20261026",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "sourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "overlayApplicationLogSHA256": "1492e55293943dc85c3f624742daeae30f727796e90f673cebc46ae0e12b19de",
+    "cmakeCacheSHA256": "d79a82d81ca422e1f75cd5a3175065c6992d25ab89c33cea6cbf25660ef68d42",
+    "buildNinjaSHA256": "99284c39a6e3f96eca852c293d7d3f877568d460fb2e31e01f9fd6428a60da34",
+    "buildLogSHA256": "08c476869d46850f8efe6f74794a12943a9ca5ea2d6bfab1f4d299bcb30e988e"
+  },
+  "v135Binding": {
+    "buildReceiptPath": "docs/evidence/neantik-v135-clean-relocated-v132-webkit-relink-20261026.json",
+    "buildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "webkitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "mainSourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "scope": "Exact runtime output identity only; preserves referenced historical source/license reviews without expanding their legal scope."
+  }
+}

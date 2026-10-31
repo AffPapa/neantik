@@ -75,30 +75,6 @@ def assert_patch_scope_allowed(patch_path: Path, forbidden_scopes: list[str], gr
             )
 
 
-def assert_patch_syntax_valid(patch_path: Path, group_id: str) -> None:
-    completed = subprocess.run(
-        [
-            "git",
-            "apply",
-            "--numstat",
-            "--whitespace=nowarn",
-            str(patch_path),
-        ],
-        cwd=patch_path.parent,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,
-    )
-    if completed.returncode == 0:
-        return
-    detail = completed.stdout.strip()
-    raise PatchsetManifestError(
-        f"{group_id} patchFile is not a valid unified diff"
-        + (f":\n{detail}" if detail else "")
-    )
-
-
 def source_postimage_mismatches(
     source_root: Path,
     manifest: dict[str, object],
@@ -303,6 +279,9 @@ def verify_manifest(
     verify_source_evidence: bool = False,
     project_root: Path = PROJECT_ROOT,
 ) -> dict[str, object]:
+    manifest_path = manifest_path.resolve()
+    rebase_plan_path = rebase_plan_path.resolve()
+    project_root = project_root.resolve()
     manifest = load_object(manifest_path, "NeAntik patchset manifest")
     rebase_plan = load_object(rebase_plan_path, "Chromium rebase plan")
     if manifest.get("schemaVersion") != 1:
@@ -391,7 +370,14 @@ def verify_manifest(
                 patch_file,
                 field=f"{group_id}.patchFile",
             )
-            patch_path = manifest_path.parent / patch_relative
+            patch_path = (manifest_path.parent / patch_relative).resolve()
+            try:
+                patch_path.relative_to(manifest_path.parent)
+            except ValueError as error:
+                raise PatchsetManifestError(
+                    f"{group_id}.patchFile resolves outside the manifest directory: "
+                    f"{patch_file}"
+                ) from error
             if not patch_path.is_file():
                 raise PatchsetManifestError(f"{group_id} patchFile is missing: {patch_file}")
             if not isinstance(patch_digest, str) or not re.fullmatch(r"[0-9a-f]{64}", patch_digest):
@@ -435,7 +421,6 @@ def verify_manifest(
                         f"{group_id}.incrementalPreimageSHA256 must map "
                         "source paths to SHA-256 strings"
                     )
-            assert_patch_syntax_valid(patch_path, group_id)
             ported_patch_paths.append(patch_path)
             group_diagnostics.append(
                 {

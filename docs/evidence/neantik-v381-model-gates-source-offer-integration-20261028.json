@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "V381",
+  "observedAtUTC": "2026-10-28T05:04:34Z",
+  "status": "PASS_TWO_MODEL_DEPLOYMENT_GATES_CONFIGURE_AND_SOURCE_OFFER_CONSUMER; RIGHTS_AND_RUNTIME_OPEN",
+  "scope": "V381 detached source offer integrates the V381 CorePrediction model gate alongside existing V377 TextExtractionFilter gate. Exact source-offer consumer integrity passed for 653 components and 64 overlay assets. A separate clean macOS 15.4 configure with both model source files absent succeeded and generated no model targets. No full build, stage, candidate, package, signature, runtime, or publication changed.",
+  "sourceOffer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v381-model-deployment-gates-draft",
+    "manifestSHA256": "ae3f0b79b8910e8f9e06fbd5dd29cb1fefb474993a91e8f372ea0ce2e4f2b83b",
+    "componentCount": 653,
+    "overlayAssets": 64,
+    "candidateBound": false,
+    "releaseQualified": false
+  },
+  "patch": {
+    "path": "patches/webkit-coreprediction-model-macos-deployment-gate-v381.patch",
+    "sha256": "e2aea7ebc6fba39295e4f4cbdbef157afcae34db252c98d76ae60ffab2cb8d83",
+    "dryRun": "PASS after V377 against detached V135 source tree"
+  },
+  "sourceProof": {
+    "receipt": "docs/evidence/neantik-v380-text-extraction-source-exclusion-configure-20261028.json",
+    "observed": {
+      "deploymentTarget": "15.4",
+      "bothModelSourceFilesAbsent": true,
+      "modelBuildTargetsAbsent": true,
+      "configureExitCode": 0,
+      "fullBuild": false
+    },
+    "fallback": "ResourceLoadStatisticsClassifierCocoa falls back to classifyWithVectorThreshold when the model cannot be loaded."
+  },
+  "rights": {
+    "TextExtractionFilter": "UNKNOWN; still included in V372/V378/V381 upstream archive",
+    "corePrediction_model": "UNKNOWN; still included in V372/V378/V381 upstream archive",
+    "runtimeRows": "Four UNKNOWN rows remain (three TextExtractionFilter outputs and one corePrediction_model resource)."
+  },
+  "actions": {
+    "build": false,
+    "stage": false,
+    "candidateMutation": false,
+    "signOrNotarize": false,
+    "publish": false
+  },
+  "nextAction": "Create a detached filtered source archive excluding both model assets, update the source-offer consumer/crosswalk and notices to bind the filtered archive, then build/stage once after the exact Chromium .74 candidate inputs are frozen. Runtime rows remain UNKNOWN until candidate binding."
+}

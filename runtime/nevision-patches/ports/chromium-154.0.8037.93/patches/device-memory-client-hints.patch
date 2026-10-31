@@ -1,0 +1,30 @@
+--- a/content/browser/client_hints/client_hints.cc
++++ b/content/browser/client_hints/client_hints.cc
+@@ -20,6 +20,8 @@
+ #include "base/strings/string_util.h"
+ #include "base/time/time.h"
+ #include "build/build_config.h"
++#include "components/ungoogled/neantik_apple_device_tuples.h"
++#include "components/ungoogled/nevision_fingerprint.h"
+ #include "content/browser/devtools/devtools_instrumentation.h"
+ #include "content/browser/preloading/prerender/prerender_host.h"
+ #include "content/browser/renderer_host/frame_tree.h"
+@@ -238,9 +240,15 @@
+ void AddDeviceMemoryHeader(net::HttpRequestHeaders* headers,
+                            bool use_deprecated_version = false) {
+   DCHECK(headers);
+-  blink::ApproximatedDeviceMemory::Initialize();
+-  const float device_memory =
+-      blink::ApproximatedDeviceMemory::GetApproximatedDeviceMemory();
++  float device_memory;
++  if (const auto seed = ungoogled::nevision::GetProfileSeed()) {
++    device_memory = static_cast<float>(
++        ungoogled::nevision::GetAppleDeviceTuple(*seed).web_device_memory_gb);
++  } else {
++    blink::ApproximatedDeviceMemory::Initialize();
++    device_memory =
++        blink::ApproximatedDeviceMemory::GetApproximatedDeviceMemory();
++  }
+   DCHECK_LT(0.0, device_memory);
+   SetHeaderToDouble(headers,
+                     use_deprecated_version

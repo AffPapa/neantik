@@ -1,0 +1,22 @@
+{
+  "status": "NINJA_GENERATED_COMMAND_STRINGS_MATCH_AFTER_BOUNDED_NORMALIZATION",
+  "targets": {
+    "WebGPU.framework/Versions/A/WebGPU": 2653,
+    "libWGSLCore.a": 2631
+  },
+  "normalizations": [
+    "replace each build root with common marker",
+    "replace CMake-generated 64-hex dependency-file names with common marker"
+  ],
+  "differencesBeforeDepfileNormalization": {
+    "WebGPU.framework/Versions/A/WebGPU": 3,
+    "libWGSLCore.a": 1
+  },
+  "orderedCommandsMatchAfterNormalization": true,
+  "limitations": [
+    "ninja generated command strings, not proof commands executed",
+    "no complete transitive input or runtime proof",
+    "no license or signed image authorization"
+  ],
+  "releaseQualified": false
+}

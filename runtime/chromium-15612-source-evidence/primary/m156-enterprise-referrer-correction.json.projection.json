@@ -1,0 +1,36 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "922a9bd9b3a210e36bd833f96be00dda6f5674f4d1c60b995588c2a49df26af7",
+  "payload": {
+    "applyOutputSHA256": "1702e689e6f9ccf924a90efee904b647d722a01779c2adcb1202c0d4cd7bb7a0",
+    "label": "native-enterprise-download-referrer-buildflag",
+    "patchSHA256": "ac4e7d04ba1ff40c5034d6e246c7b3ed70af3ae42d022427f9f58a7ba53fbd0c",
+    "policyChanged": false,
+    "postimages": {
+      "chrome/browser/enterprise/connectors/analysis/content_analysis_info.cc": "da89e97e5c94273efd9aee066eae3a606d8fea2be53de165478eb9ffdaab85c8"
+    },
+    "preimages": {
+      "chrome/browser/enterprise/connectors/analysis/content_analysis_info.cc": "31c7191106ee4f92eef67b9235fb06ae2d5abf29fb88d89680bf6041e9f8d7ed"
+    },
+    "releaseReady": false,
+    "schemaVersion": 1,
+    "sourceEvidence": "Graph compiles content_analysis_info.cc; SAFE_BROWSING_AVAILABLE false; GetOrIdentifyReferrerChainForEnterprise definition excluded in mode0; existing M155 independently signed build used this compatibility guard",
+    "status": "source-guard-applied-object-and-framework-link-gates-pending"
+  },
+  "payloadType": "json",
+  "receipt": "m156-enterprise-referrer-correction.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "V368",
+  "observedAtUTC": "2026-10-28T04:01:44Z",
+  "status": "PASS_60_OF_60_LIBWEBRTC_NOTICE_FILES_REBOUND_TO_CURRENT_SOURCE_OFFER",
+  "scope": "Bound the complete pinned 60-file WebRTC notice set to the detached V368 source offer and passed the exact package-owned-WebKit source-offer consumer on final V368 manifest bytes. This is source-offer notice identity/completeness only.",
+  "sourceOffer": {
+    "baseManifestSHA256": "98dfd44003d69f089c5cfaab053cb883783441de1da648b4154c8a05a1610f2b",
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v368-libwebrtc-notice-rebind",
+    "manifestSHA256": "739442d5aae1aef1cbbca2c1b9f90a6897c2adf0d012f8d198ed911ad26b0248",
+    "componentCount": 641,
+    "candidateBound": false
+  },
+  "libwebrtcNotices": {
+    "priorV295ReceiptSHA256": "aed46e66e9ba48859277b5e1d6b757a1f477ff7fb7f9e0b722aa0e0320e7b540",
+    "noticeFiles": 60,
+    "matched": 60,
+    "missing": 0,
+    "mismatched": 0,
+    "receiptInOfferPath": "evidence/neantik-v368-libwebrtc-notice-rebind-20261028.json",
+    "receiptInOfferSHA256": "960132acfe2d3afa67d0af2f22383f8b3453b0d4ade3bb975bf33e44efd5bf9d",
+    "docInOfferPath": "overlay/docs/recipient-work/V368-LIBWEBRTC-NOTICE-REBOUND.md",
+    "docInOfferSHA256": "39ca7d977e5931d393e7a3e2fa274745a1bb54f8a1d1cb6c6df3794d451cdb58"
+  },
+  "consumerPreflight": {
+    "script": "scripts/package-owned-webkit-release.py",
+    "scriptSHA256": "69e9f39db424ca1c8f2810d8cd31b620d01d8e6370c2b17b9678c166db22d4cd",
+    "status": "PASS",
+    "components": 641,
+    "overlayManifests": 8,
+    "firstPartyOverlayAssets": 64,
+    "manifestSHA256": "739442d5aae1aef1cbbca2c1b9f90a6897c2adf0d012f8d198ed911ad26b0248"
+  },
+  "limitations": [
+    "Does not determine license applicability or clear third-party patent/conformance obligations.",
+    "Does not prove notice installation in the final signed .74 candidate or recipient rebuild/relink/load."
+  ],
+  "releaseQualified": false,
+  "nextAction": "Bind the exact JSC, WebCore, and WebKit linked-source header manifests and included license texts to the V368 source offer using existing V124/V135 evidence; do not repeat source inventories."
+}

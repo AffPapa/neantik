@@ -1,0 +1,31 @@
+{
+  "buildReceipt": {
+    "allArm64": true,
+    "developerIdSigned": false,
+    "modelOutputsAbsentInBuildTree": true,
+    "ninjaNoWork": true,
+    "outputs": 14,
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v382-filtered-model-assets-draft/evidence/neantik-v382-filtered-model-webkit-build-20261028.json",
+    "sha256": "319afbac5c8a7b55daeb54912b3c7614537a4d26315885127d54694dc3bc7a7f",
+    "status": "PASS_FILTERED_MODEL_WEBKIT_BUILD_14_OF_14_ARM64; NOT_DEVELOPER_ID_SIGNED; DEFAULT_ALL_AUXILIARY_SWIFTBROWSER_FAILED"
+  },
+  "classification": "PASS_V382_EXACT_RUNTIME_BUILD_14_OF_14_AND_SOURCE_OFFER_BINDING; STAGE_OPEN",
+  "createdAt": "2026-10-28T05:52:11Z",
+  "id": "V392",
+  "nextAction": "Stage the exact 14 build outputs into an isolated pre-sign Frameworks directory using stage-webkit-runtime.py; verify the exact four excluded model output paths are absent and retain the stage receipt.",
+  "qualificationLimits": [
+    "The default all-target invocation separately failed in auxiliary upstream SwiftBrowser; exact package runtime targets pass.",
+    "Build outputs are not Developer ID signed.",
+    "The source offer, full recipient rebuild/relink, staged runtime, signing/timestamp, notarization and release remain open."
+  ],
+  "scope": "V382 filtered WebKit source/runtime build and offer-consumer preflight. No candidate staging, runtime launch, signing, notarization or publication.",
+  "sourceOffer": {
+    "componentCount": 657,
+    "crosswalkSHA256": "7a0a90589615ebf7979dfff659e82546dd9770693d8e4ac82f7aa9dafe1f2580",
+    "manifestSHA256": "55d4858987381da122454d4e0869799ae21de9a14bef7ffe81dd6569c7fa28c4",
+    "overlayAssets": 64,
+    "recipeSHA256": "22beeb0fd93cbc9f2cadff5131e0af87bc71c8a6186d4f70b7b60a38f1e7d122",
+    "root": "/private/tmp/neantik-release-v1/dist/private/source-offers/v382-filtered-model-assets-draft"
+  },
+  "verification": "load_build_receipt, verify_filtered_build_receipt_offer_binding, source_crosswalk_binding and full source_offer_replacements passed for the updated manifest. All 14 exact package outputs were ARM64, present, hashed, and Ninja had no remaining work. Four model runtime rows remain UNKNOWN until exact staged Frameworks absence is verified."
+}

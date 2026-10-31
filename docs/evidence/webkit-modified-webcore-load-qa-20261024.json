@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-24T07:13:20Z",
+  "scope": "private Dev QA only; one headed load of the exact modified WebCore image, no network-route test",
+  "candidate": {
+    "version": "0.8.26",
+    "build": "138",
+    "archiveSHA256": "c1f1482793f8ece974f78fbff9bd930dcdabdc06711c726ddeae9626ab93984f",
+    "archiveBytes": 258022769,
+    "path": "/private/tmp/neantik-modified-load-qa-mzkpnmfr/NeAntik-WebKit-modified-image-Dev-QA.zip",
+    "notarization": {
+      "status": "Accepted",
+      "submissionId": "f030e991-484c-4eaf-83b1-682e4cf1bc43"
+    },
+    "stapler": "validate PASS",
+    "gatekeeper": "accepted; Notarized Developer ID",
+    "deepStrictSignature": "PASS",
+    "devProfileSigner": "PASS; existing Developer ID SHA-1 474F7C78F33EE324C24F6F5AE0443EB713E85E60"
+  },
+  "runtimeImage": {
+    "path": "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/Frameworks/WebCore.framework/Versions/A/WebCore",
+    "sha256": "12048c5db16f56fa36a56628f96da2c1cc9d15408da3a629fb5a4bcf9f8ac95e",
+    "bytes": 98330784,
+    "hostPin": "PASS"
+  },
+  "headedLoad": {
+    "status": "PASS",
+    "admission": {
+      "observedAt": "2026-10-24T07:09:24.740762+00:00",
+      "memoryPressure": 1,
+      "thermalState": 0,
+      "eligibleForAttempt": true
+    },
+    "launch": "Launch Services started the exact app.neantik.desktop.dev candidate",
+    "webKitProcesses": "owned Host, Networking, GPU and WebContent processes started",
+    "loadedImageProof": "vmmap on WebContent showed the canonical candidate WebCore path in five mappings; path resolved through the macOS /tmp alias and its on-disk SHA-256 matched the frozen image hash",
+    "fixture": "temporary profile A, start URL about:blank; no network request was issued for this image-load check",
+    "cleanup": "QA manager, host and child processes closed; the isolated temporary profile root was removed after evidence capture"
+  },
+  "limits": [
+    "This is private Dev evidence, not a production qualification or public release.",
+    "It does not qualify Proxy A, Direct B, refusal or recovery; exact v21 already covers those scenarios.",
+    "It does not close the fresh-source extraction build, complete source/build offer, final license applicability, final production package or public delivery gates."
+  ]
+}

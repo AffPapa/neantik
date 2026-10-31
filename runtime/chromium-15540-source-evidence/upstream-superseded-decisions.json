@@ -1,0 +1,115 @@
+{
+  "common:core/ungoogled-chromium/build-with-wasm-rollup.patch": {
+    "originalSHA256": "cfef4a4eeed2272b3101131af6c1bb63c7932a715c36634a1e027f770634e013",
+    "reason": "M155 DevTools removed Rollup entirely: optimize_images.js and bundle template use new build pipeline; build_inspector_overlay.py and rollup_path no longer exist. Preserve native esbuild pipeline with exact toolchain pin; wasm-rollup redirection is obsolete, not a dropped privacy action. GN/build verification remains required.",
+    "postimages": [
+      {
+        "path": "third_party/devtools-frontend/src/front_end/Images/BUILD.gn",
+        "sha256": "686aa649a77cfbfb61bc4f6b60683af0d57576624bf98de1bf7a2983bd7ddf33"
+      },
+      {
+        "path": "third_party/devtools-frontend/src/front_end/models/live-metrics/web-vitals-injected/BUILD.gn",
+        "sha256": "523da623d9388a244ec5905e9d38474b318dfd5a7067fc6e7771601ee4efb512"
+      },
+      {
+        "path": "third_party/devtools-frontend/src/front_end/panels/recorder/injected/BUILD.gn",
+        "sha256": "51135720258fd118e672fb80398cd2444738a92f461207fe8ff02e2a3cceeb96"
+      },
+      {
+        "path": "third_party/devtools-frontend/src/inspector_overlay/BUILD.gn",
+        "sha256": "4b13c74766aba4d79cd53327947f933cfeabfdbcf4a1df13b368bb976df95700"
+      },
+      {
+        "path": "third_party/devtools-frontend/src/scripts/build/build_inspector_overlay.py",
+        "sha256": null
+      },
+      {
+        "path": "third_party/devtools-frontend/src/scripts/build/ninja/bundle.gni",
+        "sha256": "807673e688dc0d325510a86e5fc0f4fc38c071acab00b07c4e9d8f8a4cc19ffc"
+      },
+      {
+        "path": "third_party/devtools-frontend/src/scripts/devtools_paths.py",
+        "sha256": "18b39c2583d7431bf2fc8c826497227ed1cebb09032f40f5df21322e11edf366"
+      }
+    ]
+  },
+  "macos:ungoogled-chromium/macos/fix-build-without-crubit.patch": {
+    "originalSHA256": "9e650d883ef34e1f526476054d5f67472705e5cf8f661ac97aaa59be854348d3",
+    "reason": "M155 pinned upstream Rust toolchain ships functional macOS arm64 cc_bindings_from_rs (help executed). Preserve upstream Rust/Crubit CBOR, signature verifier and newly added IFT font bindings instead of removing unsupported bindings using legacy external-Rust workaround. Build args must explicitly select pinned Chromium toolchain (rust_sysroot_absolute empty, rustc_version empty); GN enable_cpp_api_from_rust=true and exact toolchain hashes are mandatory before build. No runtime/fingerprint policy change.",
+    "postimages": [
+      {
+        "path": "build/config/rust.gni",
+        "sha256": "82157572ea280cc06d693183a8537cba95d525cfd3397065f4ee81faf06d502e"
+      },
+      {
+        "path": "components/cbor/BUILD.gn",
+        "sha256": "4cc274711c3b0a614a5e7385cb065385c31797ab03e337c599ddf9c6b8d66b49"
+      },
+      {
+        "path": "components/web_package/BUILD.gn",
+        "sha256": "9079fc07340f27d68bc009740a1dafb44d38abafbac2b486e653d29721503209"
+      },
+      {
+        "path": "components/web_package/signed_web_bundles/ecdsa_p256_sha256_signature.cc",
+        "sha256": "1a984d2e0b4b7492691fa3ee268c7f7f5ee95ffaf63383546d9e99ba9e603389"
+      },
+      {
+        "path": "components/web_package/signed_web_bundles/ed25519_signature.cc",
+        "sha256": "aeb39f96a22787466decd7fa6e46155a9c1817d8b4fbd4c8b88df716f82130ae"
+      },
+      {
+        "path": "components/web_package/signed_web_bundles/integrity_block_parser.cc",
+        "sha256": "ed043bdee9ce1656528efdfef109067d082791e2d97bc70a0e46d02bfe3f7a7c"
+      },
+      {
+        "path": "components/web_package/signed_web_bundles/integrity_block_parser.h",
+        "sha256": "2067f1a022d92929921eadf288003607eba567be59eaaa4672e03266b1767842"
+      },
+      {
+        "path": "components/web_package/signed_web_bundles/rust/BUILD.gn",
+        "sha256": "b99b36a0ae79a06436d055f2d625750b34386bec713a26bc2fb35b22e0ade846"
+      },
+      {
+        "path": "components/web_package/signed_web_bundles/signed_web_bundle_signature_verifier.cc",
+        "sha256": "cfdd2e192130254c315461c28c62fedbbd770b38db592a3d0d6e7840999df1ae"
+      },
+      {
+        "path": "components/web_package/signed_web_bundles/signed_web_bundle_utils.cc",
+        "sha256": "c8f1a1c40544282921cb7ddb3aeb42608e20af399ce9acd11118e8b35c5712e3"
+      },
+      {
+        "path": "third_party/blink/renderer/platform/BUILD.gn",
+        "sha256": "722427815491ac2075f5b7424f083aa9e8fbe048f01c7ac203fe8b9ed01fb1f1"
+      },
+      {
+        "path": "third_party/blink/renderer/platform/fonts/BUILD.gn",
+        "sha256": "0f2f96d43732dbbdcf6af65cff68c1bb8e2e4efa5b84a21ff8cddd99475e362d"
+      },
+      {
+        "path": "third_party/blink/renderer/platform/fonts/opentype/font_format_check.cc",
+        "sha256": "a574ddabcfbe7699f25b6ef53be871a46e96b674e7ac3546a1c8dbffe5b7a16c"
+      },
+      {
+        "path": "third_party/blink/renderer/platform/fonts/opentype/font_format_check.h",
+        "sha256": "927ce3258ab7a8584aefeefda05a165baa8a2631cf972074ce4cee0391e3cfa3"
+      },
+      {
+        "path": "third_party/blink/renderer/platform/fonts/opentype/format_check.rs",
+        "sha256": "74b11836d4a10377c2cc99d535ff4af0eca5a6e746fc90d430533f5553044d89"
+      },
+      {
+        "path": "third_party/rust-toolchain/VERSION",
+        "sha256": "7c490115e22f85d932336be550fc8e0a9a14e0202a429a588e6b5c0494803fda"
+      },
+      {
+        "path": "third_party/rust-toolchain/bin/cc_bindings_from_rs",
+        "sha256": "81d37f5d504353e8c971afd2df9731263edf4b916c4f50c20214f14a519f2e8b"
+      }
+    ],
+    "requiredGNProof": {
+      "enable_cpp_api_from_rust": true,
+      "rust_sysroot_absolute": "",
+      "rustc_version": ""
+    }
+  }
+}

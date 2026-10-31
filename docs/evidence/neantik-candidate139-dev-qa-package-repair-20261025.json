@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "status": "corrected-local-package-ready; exact-hash Apple authorization required",
+  "observedAt": "2026-10-25T09:14:27Z",
+  "candidate": {
+    "version": "1.0.0",
+    "build": "139",
+    "bundleIdentifier": "app.neantik.desktop.dev"
+  },
+  "priorAppleSubmission": {
+    "status": "Accepted",
+    "submissionId": "5bd9d061-f557-49e3-b4ed-ea19340b064f",
+    "zipSHA256": "6982f7ebace03658ad4fa5321153d2e9f984b474c0c9657c779a9996ce9b40cf",
+    "limitation": "Accepted ZIP omitted the WebKit host and runtime Frameworks; it cannot be used for WebKit smoke. No launch was performed from that archive."
+  },
+  "correctedLocalQAArchive": {
+    "path": "/private/tmp/neantik-c139-assembled-qa-20261025/NeAntik-1.0.0-139-dev-qa-complete.zip",
+    "sha256": "d4f385093cb3a450dd4c253035a45f9d56a54069228041bd662abeb860341e39",
+    "bytes": 247145489,
+    "contains": "NeAntikWebKitHost.app, WebKit.framework, JavaScriptCore.framework and the staged owned WebKit runtime framework tree",
+    "strictSignature": "PASS for outer Dev app and nested WebKit host",
+    "gatekeeper": "PASS; source=Notarized Developer ID",
+    "launchPerformed": false,
+    "submittedToApple": false,
+    "managerHostPin": "PASS: final signed host matches manager-sealed pin",
+    "runtimeNoticeIntegrity": "PASS: packaged owned-WebKit notices match runtime inputs; this does not resolve 82 license-applicability decisions"
+  },
+  "productionCandidateChanged": false,
+  "publicGitHubOrSitesChanged": false,
+  "next": "Obtain exact-hash authorization for this corrected QA ZIP; if approved, submit once to Apple, then perform one headed smoke on a fresh temporary profile only after Apple acceptance and fresh native admission."
+}

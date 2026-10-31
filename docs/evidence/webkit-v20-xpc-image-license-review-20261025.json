@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "status": "bounded-factual-license-notice-review-pass",
+  "observedAt": "2026-10-25",
+  "reviewerRole": "NeAntik maintainer technical review; not legal advice or legal opinion",
+  "candidate": {
+    "architecture": "arm64",
+    "build": "139",
+    "inventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "signerSHA1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "version": "1.0.0"
+  },
+  "upstream": {
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f"
+  },
+  "sharedSource": {
+    "path": "Source/WebKit/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp",
+    "sha256": "5363ad87e3e7049a31497f886ba8e8af496dcee316845997b31592d79ed44755",
+    "noticePath": "docs/evidence/third-party/webkit-process/AuxiliaryProcessMain-BSD-2-Clause.LICENSE",
+    "noticeSHA256": "193fa78ff7879bf105a6a1ad66a50ba0355d5068e67ed911e4bcee7eb19dc9af",
+    "headerTerms": "Apple BSD 2-Clause: source and binary redistribution conditions and warranty disclaimer are stated in the exact source header."
+  },
+  "images": [
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development",
+      "runtimeSHA256": "e6b059a734684764d787e213ba1ef66a95e8e272e77e78a3d3057ac9afd5de02",
+      "sourceObject": "Source/WebKit/CMakeFiles/GPUProcess.dir/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp.o",
+      "sourcePath": "Source/WebKit/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp",
+      "sourceSHA256": "5363ad87e3e7049a31497f886ba8e8af496dcee316845997b31592d79ed44755"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development",
+      "runtimeSHA256": "e31a65d3f4aa7293edddd3f772a2157750425c608d7ce3b36be5044cda9c0c43",
+      "sourceObject": "Source/WebKit/CMakeFiles/NetworkProcess.dir/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp.o",
+      "sourcePath": "Source/WebKit/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp",
+      "sourceSHA256": "5363ad87e3e7049a31497f886ba8e8af496dcee316845997b31592d79ed44755"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development",
+      "runtimeSHA256": "8e16488aee5614bc8337b1be7015910fbe24327b779f587400a5a37e961df26c",
+      "sourceObject": "Source/WebKit/CMakeFiles/WebProcessCaptivePortal.dir/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp.o",
+      "sourcePath": "Source/WebKit/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp",
+      "sourceSHA256": "5363ad87e3e7049a31497f886ba8e8af496dcee316845997b31592d79ed44755"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development",
+      "runtimeSHA256": "1a6cba03ad50b9a2eee996e29513063d486fdca7134174450cb253ee766ab223",
+      "sourceObject": "Source/WebKit/CMakeFiles/WebProcessEnhancedSecurity.dir/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp.o",
+      "sourcePath": "Source/WebKit/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp",
+      "sourceSHA256": "5363ad87e3e7049a31497f886ba8e8af496dcee316845997b31592d79ed44755"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development",
+      "runtimeSHA256": "cadad7128a3602f7202bdb1718985f255da91be1b419e98f210c38ae0d964932",
+      "sourceObject": "Source/WebKit/CMakeFiles/WebProcess.dir/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp.o",
+      "sourcePath": "Source/WebKit/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp",
+      "sourceSHA256": "5363ad87e3e7049a31497f886ba8e8af496dcee316845997b31592d79ed44755"
+    }
+  ],
+  "evidence": {
+    "docs/evidence/webkit-v20-xpc-entrypoint-notice-map-20261025.json": "7b942e2df8cf8799f598ea4615527907360464e21b4889376536f1378843ff4f",
+    "docs/evidence/webkit-v20-xpc-entrypoint-notice-integration-20261025.json": "c01e82d0d421ad950ceb4946d1fa8a65175715907c8179dfeff9d7873a2813ea",
+    "docs/evidence/webkit-v20-runtime-image-source-closure-20261025.json": "6e9a5a634e7e78fcb23d4e2b0d10bbda676bd264cc9b4127f4ce4d833c2e2304",
+    "docs/evidence/webkit-v20-production-link-dependency-closure-20261025.json": "2c56298246c7d044633ec790f2e9e1b39f6f6ac3c1ee65a751bf75d011c841c9",
+    "docs/evidence/webkit-v20-link-source-license-candidates-20261025.json": "70a07ede311458659ba1a9d5b91a90a6bfbd130d809dfe19865bc684cf952f6a"
+  },
+  "decision": {
+    "applicableLicense": "For these five XPC entrypoint images, the exact configured link nodes contain one compiled source object each, no internal static-library dependencies, and no implicit object dependencies; that sole source has the Apple BSD 2-Clause header.",
+    "requiredNotice": "Retain the exact copyright, both redistribution conditions, and disclaimer in distributed materials.",
+    "distributionNoticePath": "Contents/Resources/NeAntikRuntimeLicenses/AuxiliaryProcessMain-BSD-2-Clause.txt, generated from the pinned notice integration for the next package. Candidate 139 remains unchanged.",
+    "reviewerDecision": "PASS_FACTUAL_MAINTAINER_REVIEW limited to these five exact image hashes and their exact one-object link nodes; not a full license review of other runtime images/resources, legal opinion, source-offer completion, or release qualification."
+  }
+}

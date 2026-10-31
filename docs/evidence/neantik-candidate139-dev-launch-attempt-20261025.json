@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "status": "blocked",
+  "observedAt": "2026-10-25T09:00:29Z",
+  "candidate": {
+    "version": "1.0.0",
+    "build": "139",
+    "bundleIdentifier": "app.neantik.desktop.dev",
+    "qaZip": "dist/private/qa/neantik-1.0.0-139-webkit-dev-20261025-r1/NeAntik-1.0.0-139-dev-qa.zip",
+    "qaZipSHA256": "6982f7ebace03658ad4fa5321153d2e9f984b474c0c9657c779a9996ce9b40cf",
+    "managerSHA256": "8682723ef6460ec811493f7db95e4c8c5b394779280a23a84b05778d182fe149",
+    "productionCandidate139InventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "admission": {
+    "eligibleForAttempt": true,
+    "memoryPressure": 1,
+    "thermalState": 0,
+    "observedAt": "2026-10-25T08:58:14.142276Z"
+  },
+  "priorReusableEvidence": {
+    "gatekeeper": "accepted in authorized local context for the exact Dev QA bundle; not repeated",
+    "ownedWebKitRuntime": "14 of 14 runtime files previously byte-matched candidate 139; manager executable differs from production candidate",
+    "appleNotarization": "not submitted in this attempt; earlier exact ZIP submission was rejected before upload"
+  },
+  "attempt": {
+    "method": "NSWorkspace.openApplication via one-use launcher; Launch Services substitution disabled; NEANTIK_DEVELOPMENT_DATA_ROOT points to an owner-only /private/tmp/neantik-* root",
+    "result": "Launch Services threw NSError before returning an application PID",
+    "processObservation": "No app.neantik.desktop.dev process in authorized process listing or CUA app inventory after the error",
+    "syntheticRoot": "/private/tmp/neantik-webkit-1_0-c139-qa-20261025-a",
+    "rootState": "owner-only empty directory; no profiles or browser data were created",
+    "singleStartMarker": "/private/tmp/neantik-webkit-1_0-c139-qa-20261025-a.single-start-consumed",
+    "systemLogReview": {
+      "scope": "Narrow read-only Launch Services/RunningBoard/syspolicyd interval around the failed attempt; sensitive paths omitted.",
+      "finding": "No target-specific policy event identified. Visible Gatekeeper provenance entries named the one-shot launcher (NOT_A_BUNDLE), so they cannot be attributed to the NeAntik app.",
+      "classification": "Launch Services NSError cause remains unresolved; no evidence that NeAntik or WebKit was launched or denied."
+    }
+  },
+  "assessment": "Setup/Launch Services failure before app spawn. This is not evidence of a WebKit engine, profile, proxy, or network failure. No product runtime behavior was observed.",
+  "cleanup": {
+    "productAppChanged": false,
+    "productionProfileOrKeychainTouched": false,
+    "externalNetworkUsed": false,
+    "oneShotMarkerRetained": true
+  },
+  "next": "Do not retry this ZIP or launcher unchanged. Diagnose the Launch Services error boundary without launching the product; only then decide whether a new exact QA candidate is warranted. The frozen production candidate remains unchanged and unqualified."
+}

@@ -1,0 +1,11 @@
+--- a/components/signin/core/browser/signin_metrics_service.cc
++++ b/components/signin/core/browser/signin_metrics_service.cc
+@@ -501,8 +501,6 @@
+ void SigninMetricsService::MaybeRecordMetricsForPromoShowCountAtSignin(
+     const CoreAccountInfo& account_info,
+     signin_metrics::AccessPoint access_point) {
+-  bool is_from_web_signin =
+-      GetTimeOfWebSignin(account_info.account_id).has_value();
+   switch (access_point) {
+     case signin_metrics::AccessPoint::kAddressBubble:
+       break;

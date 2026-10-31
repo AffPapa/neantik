@@ -1,0 +1,386 @@
+{
+  "schemaVersion": 1,
+  "id": "V373",
+  "observedAtUTC": "2026-10-28T04:21:40Z",
+  "status": "PASS_EXACT_19_OPEN_RESOURCE_ROWS_RECONCILED_NO_LICENSE_DECISION_TRANSFER",
+  "scope": "One bounded evidence review of the 19 resource rows left after V370 overlay mapping and V372 exact WebKitLegacy binding. Reused exact-hash source records; no broad worksheet or source inventory, candidate mutation, build, signing, runtime, or publication.",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "build": "139",
+    "worksheetSHA256": "b5d00e7589a67102c62372a6feddc9e7d06a50c6d0c3b6fde047bd42b9954441",
+    "worksheetPath": "/private/tmp/neantik-release-v1/docs/evidence/webkit-runtime-package-notice-worksheet-20261026-v29.json"
+  },
+  "inputs": {
+    "worksheetSHA256": "b5d00e7589a67102c62372a6feddc9e7d06a50c6d0c3b6fde047bd42b9954441",
+    "priorUnassignedBoundarySHA256": "9228c66099c780a48fc3c11cbd7f48eb9af0c255d16241a92196739eb939d862",
+    "priorSourceHeaderReviewSHA256": "c7547eea4e543f246fb52a0a636d05d98ebf8c1d8235c352c200cbd652085e70",
+    "v372ReceiptSHA256": "56783aeae44ff1c6958fab61ba57d55f226740487553c466fa7f3caa5c9215d8",
+    "sourceOfferManifestSHA256": "283dcb3ef84bb6b19a2b67a4e11edd9d75c2555ba2737c26ae230a0ecec87ea4",
+    "upstreamWebKitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f"
+  },
+  "reconciliation": {
+    "worksheetUnknownResourceRows": 77,
+    "overlayMappedRows": 56,
+    "v372BoundRows": 3,
+    "remainingRows": 19,
+    "unassignedPriorReviewRows": 13,
+    "sourceHeaderOnlyPriorReviewRows": 6
+  },
+  "officialPolicy": {
+    "url": "https://docs.webkit.org/Other/Licensing.html",
+    "finding": "WebKit license may differ per file; general project policy does not assign a specific license to these exact resource files."
+  },
+  "rows": [
+    {
+      "category": "prior_exact_unassigned_resource",
+      "runtimePath": "WebGPU.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "d1b62a69cb77ccc8cea6b51760021849ab53f472db0781cb6890a1106a7139a6",
+      "sources": [
+        {
+          "path": "Source/WebGPU/Info.plist",
+          "sha256": "99f7685c28e18f82935817519f9ef6e5ebd63af453c7c3414df591f34078a4af",
+          "bytes": 1633,
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_unassigned_resource",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "8682dbe9e031cd97fa92985dee64f99726e4a544a470bb2f69dc99ab6493e135",
+      "sources": [
+        {
+          "path": "Source/WebKit/Info.plist",
+          "sha256": "2693d09b3ce4fa4d9dc05a4dd99043bd2e07f3cc9c12c7eaba4b19e3f9a61eac",
+          "bytes": 1140,
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_unassigned_resource",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/analytics/coremldata.bin",
+      "runtimeSHA256": "3219af1988907d86a9ca82a697935793d2b479ec9c38201dfd4ad8e79c241864",
+      "sources": [
+        {
+          "path": "Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+          "sha256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f",
+          "bytes": 744397,
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_unassigned_resource",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/coremldata.bin",
+      "runtimeSHA256": "4e604a85568f337e421b5c3f678dc3f17b94c469713017c6659e3cb28b5ab43c",
+      "sources": [
+        {
+          "path": "Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+          "sha256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f",
+          "bytes": 744397,
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_unassigned_resource",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/metadata.json",
+      "runtimeSHA256": "e024dd2713523eeaa0b3aceeaea98199bb9e7b42c2d001c3da49dbb3bd11b12e",
+      "sources": [
+        {
+          "path": "Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+          "sha256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f",
+          "bytes": 744397,
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_unassigned_resource",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/corePrediction_model",
+      "runtimeSHA256": "221555a2cdd2e957f18d478c4b9fd01f308c1613e6e10840cce924e5f543091a",
+      "sources": [
+        {
+          "path": "Source/WebKit/Resources/ResourceLoadStatistics/corePrediction_model",
+          "sha256": "221555a2cdd2e957f18d478c4b9fd01f308c1613e6e10840cce924e5f543091a",
+          "bytes": 17842,
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_unassigned_resource",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/en.lproj/InfoPlist.strings",
+      "runtimeSHA256": "eb830b7d91792444feda119d8eb9b6fa400a05db02e6d9d5cd7b126361d000c2",
+      "sources": [
+        {
+          "path": "Source/WebKit/en.lproj/InfoPlist.strings",
+          "sha256": "eb830b7d91792444feda119d8eb9b6fa400a05db02e6d9d5cd7b126361d000c2",
+          "bytes": 48,
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_unassigned_resource",
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/Info.plist",
+      "runtimeSHA256": "1727040f8d3a09f62bf750648f0388f3f65e6356bc53c3887caef2633609a40d",
+      "sources": [
+        {
+          "path": "Source/WebKit/GPUProcess/EntryPoint/Cocoa/XPCService/GPUService/Info-OSX.plist",
+          "sha256": "7d4ce5ace213693923213b0b8e88a7df4aa9a461f2f9276d47fed7d9959bc0d1",
+          "bytes": 1461,
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_unassigned_resource",
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/Info.plist",
+      "runtimeSHA256": "1733fb8bd8df9a1360d7959150139c69bb14dbdb0bd9f266c742c100e94ebc82",
+      "sources": [
+        {
+          "path": "Source/WebKit/NetworkProcess/EntryPoint/Cocoa/XPCService/NetworkService/Info-OSX.plist",
+          "sha256": "848d7eec33274e1f0054da75853b0cb150b66f075f16100a2b52f9b54eabaf81",
+          "bytes": 1327,
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_unassigned_resource",
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/Info.plist",
+      "runtimeSHA256": "cf2804905b5ab48951d12b4c9ce0f0984c24821c340597e7af828ba49e073651",
+      "sources": [
+        {
+          "path": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+          "sha256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "bytes": 1746,
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_unassigned_resource",
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/Info.plist",
+      "runtimeSHA256": "707d6ca86c4d1b0c51c721c6cb86a64e35810092773eb8e040f93a73fe58c703",
+      "sources": [
+        {
+          "path": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+          "sha256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "bytes": 1746,
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_unassigned_resource",
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Info.plist",
+      "runtimeSHA256": "95eb37b4bd4a698898b2fa3a894c15bc4b9f5dd4323f04cf446f0d841e6616fc",
+      "sources": [
+        {
+          "path": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+          "sha256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "bytes": 1746,
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_unassigned_resource",
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Resources/WebContentProcess.nib",
+      "runtimeSHA256": "90306f1e50ac0139b6057dd411b06fd49089cecfb59f01e144690b9cd86583a7",
+      "sources": [
+        {
+          "path": "Source/WebKit/Resources/WebContentProcess.xib",
+          "sha256": "0583e5f26322ca810b6d84bcab7dfce7aa3c8e8cea9e4ca150fb8a98bf47ef36",
+          "bytes": 582,
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_source_header_only",
+      "runtimePath": "JavaScriptCore.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "76d18453a418d19a7c98dfd2b45b12b1e8cc8469703ab7b8992476efe6355ad6",
+      "sources": [
+        {
+          "path": "Source/JavaScriptCore/Info.plist",
+          "sha256": "07b2d1b5035d5a0dd88c7a958c1538479bbc94c3596256cb81c53648807d272b",
+          "bytes": 1343,
+          "headerSignals": [
+            "copyright-marker"
+          ],
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_source_header_only",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "b38d826b325d9c5cc5fafe47c53988bc908d866578baf529ef9c8f4ae21399e1",
+      "sources": [
+        {
+          "path": "Source/WebCore/Info.plist",
+          "sha256": "c97eaceb531cce1eaefc0860e4277e137527f3b8b8ac27fd8034410889cfce8d",
+          "bytes": 1953,
+          "headerSignals": [
+            "copyright-marker"
+          ],
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_source_header_only",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/audio/Composite.wav",
+      "runtimeSHA256": "a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3",
+      "sources": [
+        {
+          "path": "Source/WebCore/platform/audio/resources/Composite.wav",
+          "sha256": "a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3",
+          "bytes": 245804,
+          "headerSignals": [],
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_source_header_only",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/Localizable.strings",
+      "runtimeSHA256": "7cd6a1cb1803de65529bd903f173557d024bede8a8d3ff3df3c783aec2575f96",
+      "sources": [
+        {
+          "path": "Source/WebCore/en.lproj/Localizable.strings",
+          "sha256": "7cd6a1cb1803de65529bd903f173557d024bede8a8d3ff3df3c783aec2575f96",
+          "bytes": 93705,
+          "headerSignals": [],
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_source_header_only",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/Localizable.stringsdict",
+      "runtimeSHA256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+      "sources": [
+        {
+          "path": "Source/WebCore/en.lproj/Localizable.stringsdict",
+          "sha256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+          "bytes": 2179,
+          "headerSignals": [],
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    },
+    {
+      "category": "prior_exact_source_header_only",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/modern-media-controls-localized-strings.js",
+      "runtimeSHA256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+      "sources": [
+        {
+          "path": "Source/WebCore/en.lproj/modern-media-controls-localized-strings.js",
+          "sha256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+          "bytes": 2001,
+          "headerSignals": [],
+          "presentInPinnedSourceArchive": true
+        }
+      ],
+      "decision": "UNKNOWN",
+      "reason": "Existing evidence maps exact source bytes but does not establish a per-file applicable license and exact shipped notice. The WebKit upstream policy is per-file; no license assignment inferred from component-wide neighboring license texts."
+    }
+  ],
+  "result": "All 19 rows remain UNKNOWN. Exact source paths/hashes are verified against the pinned archive, but source/header and upstream history evidence does not provide a per-file license assignment or exact candidate notice binding. Preserve them as open; next qualified batch must obtain per-file rights/provenance evidence or implement a source-preserving replacement/removal decision for the exact affected runtime resources.",
+  "candidateMutated": false,
+  "sourceOfferMutated": false,
+  "releaseQualified": false,
+  "nextAction": "Do not repeat worksheet/source inventory. Resolve the exact 19 rows in one per-file provenance/notice batch, or implement and runtime-qualify replacements/removals against the final .74 WebKit package; only then bind the three V294 image dispositions to exact .74 image bytes.",
+  "upstreamPathHistory": [
+    {
+      "path": "Source/JavaScriptCore/Info.plist",
+      "latestTouchAtPinnedCommit": "cd1b6f4700c62f9c75cef708877915a775513d0e",
+      "date": "2026-01-27T18:29:17Z",
+      "message": "Update user-visible copyright strings to include 2026.",
+      "interpretation": "Metadata-only copyright-year change; does not designate this file license.",
+      "url": "https://github.com/WebKit/WebKit/commit/cd1b6f4700c62f9c75cef708877915a775513d0e"
+    },
+    {
+      "path": "Source/WebCore/Info.plist",
+      "latestTouchAtPinnedCommit": "f1234a3b17536c6d179e0e84b38ca28ec800c03d",
+      "date": "2026-05-22T02:08:02Z",
+      "message": "Reland [CMake] Fix iOS CMake build for WebCore.",
+      "interpretation": "Build metadata change; does not designate this file license.",
+      "url": "https://github.com/WebKit/WebKit/commit/f1234a3b17536c6d179e0e84b38ca28ec800c03d"
+    },
+    {
+      "path": "Source/WebCore/platform/audio/resources/Composite.wav",
+      "latestTouchAtPinnedCommit": "644c76832a0675410aebf50f9bc33088c40a82b3",
+      "date": "2012-10-31T07:54:36Z",
+      "message": "Spatialized panning renders incorrectly with USE_CONCATENATED_IMPULSE_RESPONSES.",
+      "interpretation": "Binary resource history; available commit metadata does not establish resource license.",
+      "url": "https://github.com/WebKit/WebKit/commit/644c76832a0675410aebf50f9bc33088c40a82b3"
+    },
+    {
+      "path": "Source/WebCore/en.lproj/Localizable.strings",
+      "latestTouchAtPinnedCommit": "341de3a113eea12055e7050cfb6e39d8c80070fd",
+      "date": "2026-10-16T13:30:30Z",
+      "message": "Safari shows no error when declarativeNetRequest rule_resources json is not a list.",
+      "interpretation": "Adds localized strings; does not designate this file license.",
+      "url": "https://github.com/WebKit/WebKit/commit/341de3a113eea12055e7050cfb6e39d8c80070fd"
+    },
+    {
+      "path": "Source/WebCore/en.lproj/Localizable.stringsdict",
+      "latestTouchAtPinnedCommit": "5da10924b3479ad0431fbb18c738930c9c6a13d9",
+      "date": "2018-10-29T21:22:44Z",
+      "message": "Modernize WebKit nibs and lprojs for localization's sake",
+      "interpretation": "Localization file rename; does not designate this file license.",
+      "url": "https://github.com/WebKit/WebKit/commit/5da10924b3479ad0431fbb18c738930c9c6a13d9"
+    },
+    {
+      "path": "Source/WebCore/en.lproj/modern-media-controls-localized-strings.js",
+      "latestTouchAtPinnedCommit": "262583ce3aeb0dc484dbd053929e438817869c59",
+      "date": "2026-03-10T16:38:44Z",
+      "message": "[iOS] Add a fullscreen placard to modern media controls",
+      "interpretation": "Adds one localized string; does not designate this file license.",
+      "url": "https://github.com/WebKit/WebKit/commit/262583ce3aeb0dc484dbd053929e438817869c59"
+    }
+  ]
+}

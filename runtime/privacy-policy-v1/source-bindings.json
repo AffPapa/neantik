@@ -1,0 +1,52 @@
+{
+  "createdAt": "2026-10-31T11:54:22.522610+00:00",
+  "status": "18objects-compiled-link-pending",
+  "source": "/private/tmp/neantik-privacy20-runtime",
+  "preimageOrigin": "V1011 retained recipient source; independent APFS clone",
+  "files": {
+    "third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc": {
+      "beforeSHA256": "12841e22e0c67433b761e06159c5f0705e0a00057e423229b02197f49a9d7ba0",
+      "afterSHA256": "3517fc7c8777280ead4c93e6dbed15d203f240859f7961a0879480dce3bd1f1f"
+    },
+    "components/content_settings/core/browser/host_content_settings_map.cc": {
+      "beforeSHA256": "cf3835835a07b9515dc1037ff97fd0011d4f633100610a00776d58231e47d031",
+      "afterSHA256": "85b98cdebe40e62a8a7a46e7af7349f4bd33d12619682b41ba804820199e217a"
+    },
+    "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc": {
+      "beforeSHA256": "1b52a8cd6f1b632882374e774dadf389d4d3c49426531e677dca477ea6fe9444",
+      "afterSHA256": "1c276f770b906e9df06be2027cf03cc7cb65c8ea5de7a8dec6f6c4a4cd5d4c45"
+    },
+    "chrome/browser/ui/views/frame/contents_container_view.cc": {
+      "beforeSHA256": "22c0ad7c456a6c3552e5b44a2cfe0f9bc901f9f4054e94734592902751bffae0",
+      "afterSHA256": "3fea2e76e61e67a00acd8f63e5721302107e3bf1461d3b9b928583e39d1b6163"
+    },
+    "chrome/browser/chrome_content_browser_client.cc": {
+      "beforeSHA256": "554743a910ba67f47cd6d3dbd1d74bef12f988931bb1ac4fb6a183ab8016d929",
+      "afterSHA256": "e83027b24319950caa695c4c04f2371c7e10fc97ed52b8725433d09e0f849043"
+    },
+    "components/autofill/core/common/autofill_prefs.cc": {
+      "beforeSHA256": "d7a5d2f33a68597561a02701bd3f2f66130359127bbf73d5587838b36d5fb7f1",
+      "afterSHA256": "39de6fb20709149ddf5fa3f537de2387d31c0092cfccaf181105e92f15d2b2b6"
+    },
+    "chrome/browser/password_manager/chrome_password_manager_client.cc": {
+      "beforeSHA256": "7f733ca72014891ee7cb31ec6cd0fba15adaaa67228635e0ba12b11847abe180",
+      "afterSHA256": "d7f9c3ce81ad2d85b6390d9122a2e9dc653ed29324658a8d74fb28cc1aa73b7e"
+    },
+    "chrome/common/chrome_paths_mac.mm": {
+      "beforeSHA256": "d1dfa65cbd46600c6340aa51fa3ebdc5559aa91d20f78a375364a0af6ab3e588",
+      "afterSHA256": "5d9577dbeb0324f29bb02b8c5b157b0201420ac35d3a95c3df1d80d4e6b9e37e"
+    },
+    "services/network/network_service_network_delegate.cc": {
+      "beforeSHA256": "0b3100d35ed99789a3a218d8bec40f72e8726aef3678e826e5eb9255ee87ff72",
+      "afterSHA256": "be8cb8380d4c217821a090685e99da9d19fc790063675648b4f3ed3d1f5f2de0"
+    },
+    "chrome/browser/net/proxy_config_monitor.cc": {
+      "beforeSHA256": "5c97ac5971fd5979073ad39de66388c12d7787fa853442d24f7b5107f84ff260",
+      "afterSHA256": "9756c6798ea65a7ebf50286aa4ec86bf624878366cedfe628bc53ff781c1cbae"
+    }
+  },
+  "nativeProof": false,
+  "managerAdmission": "No legacy runtime capability admitted",
+  "readinessInvalidation": "Keepalive factory does not reuse main URLLoader factory; include same native gate. Recompile only changed readiness object.",
+  "lanPreflightStatus": "compiled-unqualified; URLRequest guard without DNS lookup"
+}

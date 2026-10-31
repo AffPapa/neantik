@@ -1,0 +1,436 @@
+{
+  "schemaVersion": 1,
+  "status": "research candidate; not a complete notice bundle, legal opinion, or redistribution approval",
+  "upstream": {
+    "repository": "WebKit/WebKit",
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+  },
+  "buildScope": "pinned v20 CMake libwebrtc.dylib link/source receipts; includes mapped direct-source and selected static-archive notice candidates plus four current source license/template lineage files",
+  "inputs": [
+    "docs/evidence/webkit-v20-link-source-license-candidates-20261025.json",
+    "docs/evidence/webkit-webrtc-notice-candidate-v20-source-bind-20261025.json",
+    "docs/evidence/third-party/webkit-v20-license-text-corpus/MANIFEST.json",
+    "docs/evidence/third-party/webkit-v16-webrtc-notices-cmake-candidate-v2/MANIFEST.json"
+  ],
+  "noticeCount": 40,
+  "notices": [
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/LICENSE",
+      "sha256": "46e7534f3d02fb7f5587411ef0d48f37915e6141e1ea13e172cd74561d52bb87",
+      "bytes": 25,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "direct objects:1"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/PATENTS",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/PATENTS",
+      "sha256": "7108bd10f5d5c121e7bc8ab40ccae0bf56a3733e95f3d434e33274ed1626896e",
+      "bytes": 25,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "direct objects:1"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/abseil-cpp/AUTHORS",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/abseil-cpp/AUTHORS",
+      "sha256": "1fd39030c119b4c97014f59e0ad0ed65f23475bbdf55a52740f31eb82b34b4ee",
+      "bytes": 295,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "PCH headers:59"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/abseil-cpp/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/abseil-cpp/LICENSE",
+      "sha256": "c79a7fea0e3cac04cd43f20e7b648e5a0ff8fa5344e644b0ee09ca1162b62747",
+      "bytes": 11361,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "PCH headers:59",
+        "direct objects:67"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/AUTHORS",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/AUTHORS",
+      "sha256": "6e5283f25977ae2fbbf5fd8a840b7184b2b48915279c10bf01107263d3f26936",
+      "bytes": 1208,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "PCH headers:79"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/LICENSE",
+      "sha256": "827c8d8fc207c2392794eef9e00fe246f9f61fdcc132556c275be3dd8c3cd97f",
+      "bytes": 13115,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "PCH headers:79",
+        "direct objects:268",
+        "generated perlasm:124"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/third_party/fiat/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/third_party/fiat/LICENSE",
+      "sha256": "9eacbcb81be660840c714a560a9d65ba07913db98dd4baf969f78dd499fdd60f",
+      "bytes": 638,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "direct objects:4"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/crc32c/src/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/crc32c/src/LICENSE",
+      "sha256": "a1f30b77c01e0995fa32a00119e00749e8731ee8a3c4c3549bce74083c72b0b6",
+      "bytes": 1460,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "direct objects:2"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/AUTHORS",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/AUTHORS",
+      "sha256": "c31b80ca48fde06ca03aef2f3dec15413fe0c2661fe6b56e86ccd69dbc6f9a1d",
+      "bytes": 13178,
+      "receipt": "webkit-webrtc-selected-archive-notices-20261020.json",
+      "scope": [
+        "libaom.a"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/LICENSE",
+      "sha256": "4764a286d8b2faeaf42f4418e7d7a28d58fc8fd4d00a3d0a7f44b0a4099de7f2",
+      "bytes": 1316,
+      "receipt": "webkit-webrtc-selected-archive-notices-20261020.json",
+      "scope": [
+        "libaom.a"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/PATENTS",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/PATENTS",
+      "sha256": "661fb8e504744e95587b556b94a58343448300606a41bea8c7a9b97125696e61",
+      "bytes": 5701,
+      "receipt": "webkit-webrtc-selected-archive-notices-20261020.json",
+      "scope": [
+        "libaom.a"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/vector/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/vector/LICENSE",
+      "sha256": "ff6c857ce2708e87701323078aef115c1872a1f80a9649f86dc899b48083bc60",
+      "bytes": 1084,
+      "receipt": "webkit-webrtc-selected-archive-notices-20261020.json",
+      "scope": [
+        "libaom.a"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libsrtp/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/libsrtp/LICENSE",
+      "sha256": "8e19d42a1eec9561f3f347253ddf2e385c55f392f025bb0fd41b88dbf38db5ae",
+      "bytes": 1614,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "direct objects:17"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/AUTHORS",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/AUTHORS",
+      "sha256": "8a98b560e5314713550e6d3ba2d8acf3ef54dfc870fc448bef08a7c57648a0bd",
+      "bytes": 9579,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "PCH headers:3"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/LICENSE",
+      "sha256": "8267348d5af1262c11d1a08de2f5afc77457755f1ac658627dd9acf71011d615",
+      "bytes": 1537,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "PCH headers:3",
+        "direct objects:266"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/PATENTS",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/PATENTS",
+      "sha256": "cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c",
+      "bytes": 1436,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "PCH headers:3",
+        "direct objects:266"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/libyuv/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/libyuv/LICENSE",
+      "sha256": "2b2cc1180c7e6988328ad2033b04b80117419db9c4c584918bbb3cfec7e9364f",
+      "bytes": 1506,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "direct objects:1"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libwebm/LICENSE.TXT",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/libwebm/LICENSE.TXT",
+      "sha256": "5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf",
+      "bytes": 1496,
+      "receipt": "webkit-webrtc-selected-archive-notices-20261020.json",
+      "scope": [
+        "libwebm.a"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libwebm/PATENTS.TXT",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/libwebm/PATENTS.TXT",
+      "sha256": "cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c",
+      "bytes": 1436,
+      "receipt": "webkit-webrtc-libwebm-patent-path-20261021.json",
+      "scope": [
+        "selected archive:libwebm.a"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libyuv/AUTHORS",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/libyuv/AUTHORS",
+      "sha256": "9bb006eaa8cc06d145c5234ae6b12f8fed6109e0b744d2c530f9b774c607e931",
+      "bytes": 212,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "PCH headers:10"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libyuv/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/libyuv/LICENSE",
+      "sha256": "2b2cc1180c7e6988328ad2033b04b80117419db9c4c584918bbb3cfec7e9364f",
+      "bytes": 1506,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "PCH headers:10",
+        "direct objects:37"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libyuv/PATENTS",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/libyuv/PATENTS",
+      "sha256": "4da84211f947c6f9f7dd8fbce513e1522e01833407ae732b8c9a2bbb75fed495",
+      "bytes": 1387,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "PCH headers:10",
+        "direct objects:37"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/opus/src/AUTHORS",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/opus/src/AUTHORS",
+      "sha256": "f9fd849e652219ce98e008303370b352d37663d0ffb27b8dc514ad93c9c7438b",
+      "bytes": 239,
+      "receipt": "webkit-webrtc-selected-archive-notices-20261020.json",
+      "scope": [
+        "libopus.a"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/opus/src/COPYING",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/opus/src/COPYING",
+      "sha256": "01e1167d54a096d123cf6dfbbeb19587278845c6481d2d66d545669846079551",
+      "bytes": 1945,
+      "receipt": "webkit-webrtc-selected-archive-notices-20261020.json",
+      "scope": [
+        "libopus.a"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/pffft/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/pffft/LICENSE",
+      "sha256": "a46200592eb193853527250da098e6bb0c75424e7a2c7db8da526c4f301c3d88",
+      "bytes": 1919,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "direct objects:1"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/rnnoise/COPYING",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/rnnoise/COPYING",
+      "sha256": "e2f59ff41d9d03adc3dcf3deff170f8c8cf4a6eb4a9b174762a7656d23200ffa",
+      "bytes": 1581,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "direct objects:1"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/AUTHORS",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/webrtc/AUTHORS",
+      "sha256": "587363e4b4c1aee3c627bf0829840de00592c293ed35de415792f7264a3a443e",
+      "bytes": 8257,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "PCH headers:101",
+        "PCH headers:96"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/webrtc/LICENSE",
+      "sha256": "ab00a482b6a3902e40211b43c5d0441962ea99b6cc7c25c0f243fa270b78d482",
+      "bytes": 1511,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "PCH headers:101",
+        "PCH headers:96",
+        "direct objects:1188"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/PATENTS",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/webrtc/PATENTS",
+      "sha256": "01462e2068d1a04c2274f3389773014c14ed9bc3446b28303543bd3e3c064145",
+      "bytes": 1388,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "PCH headers:101",
+        "PCH headers:96",
+        "direct objects:1188"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/ooura/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/ooura/LICENSE",
+      "sha256": "25b7731b70c77ecd5f3bb19303fbaa99be18860f81d44f71da670fdcd04829db",
+      "bytes": 272,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "direct objects:3"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/spl_sqrt_floor/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/spl_sqrt_floor/LICENSE",
+      "sha256": "41d791701e3e1c1073470403de7e342442d1e6a2af72681023b13a2f45f2125c",
+      "bytes": 915,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "PCH headers:1",
+        "direct objects:1"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/fft/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/fft/LICENSE",
+      "sha256": "6fdbabd2c95c5efc6f1e46175278239afb9343120a3022ed0e0cb04267a6aeb3",
+      "bytes": 1125,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "direct objects:1"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g711/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g711/LICENSE",
+      "sha256": "b29c8f13f91feb2dab7d6655444369fa9f29c0d7121a52dab90ff97e40343a85",
+      "bytes": 429,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "direct objects:1"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g722/LICENSE",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g722/LICENSE",
+      "sha256": "61862327fd00d6a4deb2c1276577782c2500f4fe103e072018fc369d8e37e876",
+      "bytes": 611,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "direct objects:2"
+      ]
+    },
+    {
+      "sourcePath": "Source/WebCore/LICENSE-APPLE",
+      "outputPath": "files/Source/WebCore/LICENSE-APPLE",
+      "sha256": "0b5d3a7cc325942567373b0ecd757d07c132e0ebd7c97bfc63f7e1a76094edb4",
+      "bytes": 1313,
+      "receipt": "webkit-webrtc-link-closure-notices-v2-20261020.json",
+      "scope": [
+        "project policy notice text for the CMake usage_exit_stub shim; attribution is policy-derived, see webkit-webrtc-usage-exit-stub-license-policy-20261020.json"
+      ]
+    },
+    {
+      "sourcePath": "Source/WebCore/PAL/ThirdParty/dav1d/COPYING",
+      "outputPath": "files/Source/WebCore/PAL/ThirdParty/dav1d/COPYING",
+      "sha256": "dd92c3c2247c5651606fc23a5e2d6a1ebc5ace9a3e49cbde0e12f05ad1cb1ee5",
+      "bytes": 1317,
+      "receipt": "webkit-webrtc-selected-archive-notices-20261020.json",
+      "scope": [
+        "libdav1d.a"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/LICENSE_THIRD_PARTY",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/LICENSE_THIRD_PARTY",
+      "sha256": "ef4f20712a2a769af44d4f9475f9c06552ad9c844190acd9b49984d6d733b135",
+      "bytes": 37,
+      "receipt": "webkit-v20-license-text-corpus/MANIFEST.json",
+      "scope": [
+        "current pinned v20 candidate license/template path; association is not applicability"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/license_template.txt",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/license_template.txt",
+      "sha256": "1f7a086c17fa2bdbe27d3eb6424a64b9bea9d7db89a4e220fef52ca24addb9e9",
+      "bytes": 410,
+      "receipt": "webkit-v20-license-text-corpus/MANIFEST.json",
+      "scope": [
+        "current pinned v20 candidate license/template path; association is not applicability"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/opus/src/LICENSE_PLEASE_READ.txt",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/third_party/opus/src/LICENSE_PLEASE_READ.txt",
+      "sha256": "7efb4989e0cd1b256229bdf2f09300c5d14e35db0e7476bfb87fac243498273d",
+      "bytes": 703,
+      "receipt": "webkit-v20-license-text-corpus/MANIFEST.json",
+      "scope": [
+        "current pinned v20 candidate license/template path; association is not applicability"
+      ]
+    },
+    {
+      "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/license_template.txt",
+      "outputPath": "files/Source/ThirdParty/libwebrtc/Source/webrtc/license_template.txt",
+      "sha256": "1f7a086c17fa2bdbe27d3eb6424a64b9bea9d7db89a4e220fef52ca24addb9e9",
+      "bytes": 410,
+      "receipt": "webkit-v20-license-text-corpus/MANIFEST.json",
+      "scope": [
+        "current pinned v20 candidate license/template path; association is not applicability"
+      ]
+    }
+  ],
+  "limitations": [
+    "research candidate only; no per-file legal applicability decision",
+    "does not close full WebKit corresponding source, third-party notices, LGPL relinking, or redistribution approval",
+    "the four added files are pinned v20 source candidates and include license pointers/templates, not necessarily complete license texts"
+  ]
+}

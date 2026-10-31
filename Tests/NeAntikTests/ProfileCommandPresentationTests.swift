@@ -3,6 +3,47 @@ import Testing
 @testable import NeAntik
 
 struct ProfileCommandPresentationTests {
+    @Test func webKitMenusDoNotOfferChromiumMaintenanceOrActiveMetadataWrites() {
+        let profile = BrowserProfile(name: "WebKit", engine: .webkit)
+        for state in [BrowserProfileProcessState.stopped, .managed] {
+            let action = BrowserLaunchActionPresentation.resolve(processState: state, isArchived: false, runtimeAvailability: .ready)
+            let presentation = ProfileCommandPresentation.resolve(profile: profile, processState: state, launchAction: action)
+            #expect(!presentation.browserDataIsAvailable)
+            #expect(!presentation.extensionsIsEnabled)
+            #expect(presentation.deleteIsEnabled == (state == .stopped))
+            #expect(presentation.pinIsEnabled == (state == .stopped))
+            #expect(presentation.cacheIsEnabled == (state == .stopped))
+            #expect(presentation.cacheHelp.contains("HTTP-кэш") && !presentation.cacheHelp.contains("Code Cache"))
+        }
+        let chromium = BrowserProfile(name: "Chromium")
+        let action = BrowserLaunchActionPresentation.resolve(processState: .managed, isArchived: false, runtimeAvailability: .ready)
+        let presentation = ProfileCommandPresentation.resolve(profile: chromium, processState: .managed, launchAction: action)
+        #expect(presentation.browserDataIsAvailable && presentation.pinIsEnabled)
+    }
+    @Test func extensionsRequireStoppedReadyUnarchivedProfile() {
+        for state in [BrowserProfileProcessState.stopped, .managed, .externalVerified, .checking, .closing, .externalUnverified, .externalManualOnly, .recoveryRequired] {
+            for archived in [false, true] {
+                for ready in [false, true] {
+                    for busy in [false, true] {
+                        let profile = BrowserProfile(name: "Fixture", isArchived: archived)
+                        let action = BrowserLaunchActionPresentation.resolve(processState: state, isArchived: archived,
+                            runtimeAvailability: ready ? .ready : .missing, isProxyTesting: busy)
+                        let projection = ProfileCommandPresentation.resolve(profile: profile, processState: state, launchAction: action)
+                        #expect(projection.extensionsIsEnabled == (state == .stopped && !archived && ready && !busy))
+                    }
+                }
+            }
+        }
+        #expect(!ProfileCommandPresentation.unavailable.extensionsIsEnabled)
+    }
+    @Test func retryRetainsInternalDestinationWithoutChangingProfileURL() {
+        let profile = BrowserProfile(name: "Fixture", startURL: "https://owned.test/start")
+        let failure = LaunchPreparationFailure(profileID: profile.id, message: "Controlled preflight failure", target: .extensions)
+        let retry = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: URL(fileURLWithPath: "/private/tmp/neantik-owned-retry"), startURLOverride: failure.target.startURLOverride)
+        #expect(retry.last == "about:blank")
+        #expect(profile.startURL == "https://owned.test/start")
+        #expect(LaunchPreparationFailure(profileID: profile.id, message: "Ordinary failure").target == .profileStart)
+    }
     @Test
     func unavailableCommandsAreDiscoverableButDisabled() {
         let presentation = ProfileCommandPresentation.unavailable
@@ -10,9 +51,7 @@ struct ProfileCommandPresentationTests {
         #expect(presentation.profileName == nil)
         #expect(presentation.launchTitle == "Запустить")
         #expect(!presentation.launchIsEnabled)
-        #expect(!presentation.focusIsEnabled)
         #expect(!presentation.editIsEnabled)
-        #expect(!presentation.noteIsEnabled)
         #expect(!presentation.archiveIsEnabled)
         #expect(!presentation.deleteIsEnabled)
     }
@@ -38,9 +77,7 @@ struct ProfileCommandPresentationTests {
         #expect(presentation.profileName == "Работа")
         #expect(presentation.launchTitle == "Запустить")
         #expect(presentation.launchIsEnabled)
-        #expect(!presentation.focusIsEnabled)
         #expect(presentation.editIsEnabled)
-        #expect(presentation.noteIsEnabled)
         #expect(presentation.pinTitle == "Открепить")
         #expect(presentation.pinSystemImage == "pin.slash")
         #expect(presentation.archiveTitle == "В архив")
@@ -49,7 +86,7 @@ struct ProfileCommandPresentationTests {
     }
 
     @Test
-    func runningProfileAllowsNextLaunchEditsButProtectsDestructiveActions() {
+    func runningProfileKeepsStopButProtectsMetadataActions() {
         let profile = BrowserProfile(name: "Запущен")
         let launch = BrowserLaunchActionPresentation.resolve(
             processState: .managed,
@@ -65,9 +102,7 @@ struct ProfileCommandPresentationTests {
 
         #expect(presentation.launchTitle == "Остановить")
         #expect(presentation.launchIsEnabled)
-        #expect(presentation.focusIsEnabled)
-        #expect(presentation.editIsEnabled)
-        #expect(presentation.noteIsEnabled)
+        #expect(!presentation.editIsEnabled)
         #expect(!presentation.archiveIsEnabled)
         #expect(!presentation.deleteIsEnabled)
     }
@@ -96,25 +131,6 @@ struct ProfileCommandPresentationTests {
         #expect(presentation.archiveSystemImage == "arrow.uturn.backward")
         #expect(presentation.archiveIsEnabled)
         #expect(presentation.editIsEnabled)
-        #expect(presentation.noteIsEnabled)
-    }
-
-    @Test
-    func noteRemainsAvailableDuringTransientProcessStates() {
-        let profile = BrowserProfile(name: "Проверяется")
-        let launch = BrowserLaunchActionPresentation.resolve(
-            processState: .checking,
-            isArchived: false,
-            runtimeAvailability: .ready
-        )
-        let presentation = ProfileCommandPresentation.resolve(
-            profile: profile,
-            processState: .checking,
-            launchAction: launch
-        )
-
-        #expect(!presentation.editIsEnabled)
-        #expect(presentation.noteIsEnabled)
     }
 
     @Test

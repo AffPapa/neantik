@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "archive": "obj/components/autofill/core/common/libcommon.a",
+  "kind": "thin",
+  "sourceArchiveSHA256": "667f173603c2741acf9b3b95f85e0a38e61a6d442ab8c228f2d76cebf4999351",
+  "members": [
+    "common/autocomplete_parsing_util.o",
+    "common/autofill_clock.o",
+    "common/autofill_constants.o",
+    "common/autofill_data_validation.o",
+    "common/log_message.o",
+    "common/logging_scope.o",
+    "common/autofill_l10n_util.o",
+    "common/autofill_prefs.o",
+    "common/autofill_switches.o",
+    "common/autofill_util.o",
+    "common/field_data_manager.o",
+    "common/form_data.o",
+    "common/form_data_predictions.o",
+    "common/form_field_data.o",
+    "common/form_field_data_predictions.o",
+    "common/html_field_types.o",
+    "common/label_source_util.o",
+    "common/log_buffer.o",
+    "common/password_form_fill_data.o",
+    "common/password_generation_util.o",
+    "common/save_password_progress_logger.o",
+    "common/signatures.o",
+    "common/unique_ids.o"
+  ]
+}

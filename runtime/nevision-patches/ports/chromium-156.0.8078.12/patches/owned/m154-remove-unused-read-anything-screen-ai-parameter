@@ -1,0 +1,50 @@
+diff --git a/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.h b/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.h
+--- a/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.h
++++ b/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.h
+@@ -478,7 +478,6 @@
+ 
+   // The current language being used in the app.
+   std::string current_language_code_ = "en-US";
+-  const bool use_screen_ai_service_;
+ 
+ #if BUILDFLAG(IS_CHROMEOS)
+   // The ChromeOS language pack manager can't handle more than one language
+diff --git a/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.cc b/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.cc
+--- a/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.cc
++++ b/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.cc
+@@ -358,8 +358,7 @@
+     : profile_(Profile::FromWebUI(web_ui)),
+       web_ui_(web_ui),
+       receiver_(this, std::move(receiver)),
+-      page_(std::move(page)),
+-      use_screen_ai_service_(use_screen_ai_service)
++      page_(std::move(page))
+ #if BUILDFLAG(IS_CHROMEOS)
+       ,
+       extension_wrapper_(std::move(extension_wrapper))
+diff --git a/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_ui.cc b/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_ui.cc
+--- a/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_ui.cc
++++ b/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_ui.cc
+@@ -337,8 +337,7 @@
+   DCHECK(page);
+   read_anything_untrusted_page_handler_ =
+       std::make_unique<ReadAnythingUntrustedPageHandler>(
+-          std::move(page), std::move(receiver), web_ui(),
+-          /*use_screen_ai_service=*/true);
++          std::move(page), std::move(receiver), web_ui());
+ }
+ 
+ void ReadAnythingUntrustedUI::ShouldShowUI() {
+diff --git a/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler_browsertest.cc b/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler_browsertest.cc
+--- a/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler_browsertest.cc
++++ b/chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler_browsertest.cc
+@@ -209,8 +209,7 @@
+       content::WebUI* test_web_ui)
+       : ReadAnythingUntrustedPageHandler(std::move(page),
+                                          std::move(receiver),
+-                                         test_web_ui,
+-                                         /*use_screen_ai_service=*/false) {}
++                                         test_web_ui) {}
+ #endif
+   using ReadAnythingUntrustedPageHandler::OnImageDataDownloaded;
+ };

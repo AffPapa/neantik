@@ -1,0 +1,21 @@
+diff --git a/chrome/browser/ui/views/extensions/extensions_toolbar_desktop.cc b/chrome/browser/ui/views/extensions/extensions_toolbar_desktop.cc
+--- a/chrome/browser/ui/views/extensions/extensions_toolbar_desktop.cc
++++ b/chrome/browser/ui/views/extensions/extensions_toolbar_desktop.cc
+@@ -589,15 +589,15 @@
+ 
+   // Fix the position of widgets. Without this fix, extension-installed-bubble
+   // and extension-uninstall-dialog may be out of the window border on Linux.
+   if (base::CommandLine::ForCurrentProcess()->HasSwitch("hide-extensions-menu")) {
+-    views::View* anchor_view =
++    views::View* app_menu_anchor_view =
+         views::ElementTrackerViews::GetInstance()->GetFirstMatchingView(
+             kToolbarAppMenuButtonElementId,
+             views::ElementTrackerViews::GetContextForView(
+                 BrowserView::GetBrowserViewForBrowser(browser_)));
+     widget->widget_delegate()->AsBubbleDialogDelegate()
+-      ->SetAnchorView(anchor_view);
++      ->SetAnchorView(app_menu_anchor_view);
+   }
+ 
+   widget->Show();
+ }

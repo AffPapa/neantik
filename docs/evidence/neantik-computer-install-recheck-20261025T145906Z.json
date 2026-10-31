@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T14:59:06Z",
+  "scope": "NeAntik installed application and installable production candidate recheck; read-only",
+  "commands": [
+    "mdfind kMDItemFSName == \"NeAntik.app\"c (no results returned)",
+    "ls -ld /Applications/NeAntik.app",
+    "PlistBuddy CFBundleIdentifier/CFBundleShortVersionString/CFBundleVersion",
+    "ps -Ao pid=,ppid=,comm= | rg -i neantik|webkit|chromium (denied: operation not permitted)"
+  ],
+  "installedApps": [
+    {
+      "path": "/Applications/NeAntik.app",
+      "bundleID": "app.neantik.desktop",
+      "version": "0.7.18",
+      "build": "81"
+    }
+  ],
+  "additionalSpotlightMatches": 0,
+  "installableProductionCandidate": null,
+  "retiredQAArtifact": {
+    "path": "/private/tmp/neantik-owned-webkit-qa-vw48xl6o/NeAntik-1.0.0-148-dev-owned-webkit-qa.zip",
+    "sha256": "ba20cac53d97656175777373c193770a7527bf1211c9159dfcca22807a4c10ce",
+    "status": "synthetic, fixture-root-bound, not a user install candidate"
+  },
+  "processObservation": "unverified; macOS process inventory denied by sandbox; no assertion that browser is running or stopped",
+  "relatedWebKitEvidence": {
+    "candidate": "build148 synthetic owned-WebKit QA",
+    "result": "HTTPS/DNS proxy path PASS with 3 page responses",
+    "scope": "not the installed 0.7.18 app; does not qualify a production install"
+  },
+  "mutations": {
+    "appRemoved": false,
+    "appInstalled": false,
+    "profileDataChanged": false,
+    "proxyDataChanged": false,
+    "buildOrSigningPerformed": false,
+    "publicationPerformed": false
+  },
+  "disposition": "Keep 0.7.18 and user data until a qualified replacement and rollback are available. No 1.0 production candidate exists; app issue was not reproducible against an installed current WebKit build."
+}

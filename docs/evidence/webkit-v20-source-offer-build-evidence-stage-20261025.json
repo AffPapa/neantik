@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "status": "exact-build-and-notice-review-evidence-staged-in-private-offer; offer-incomplete",
+  "sourceOfferManifestSHA256": "19d2bae01310d05dfb5f7ed20151f6b5edd00e0c64cceebc352d511208b1e1aa",
+  "totalComponents": 66,
+  "newlyStagedComponents": [
+    {
+      "path": "evidence/WEBKIT_configure-command-evidence-V20.json",
+      "bytes": 2239,
+      "sha256": "41451c537edee4e9da9df3040419f77e5468cd21b95c90dc369c3131d4b103b7",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_output-target-inventory-V20.json",
+      "bytes": 7058,
+      "sha256": "a4b1b12b0235fefd896cbc8b7bf9390082b8d81e81972c611aa4a5c37e396409",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_swift-driver-inputs-V20.json",
+      "bytes": 4352,
+      "sha256": "b9af125b8644185cf6a30d823cae1db3817f349644e3ddcb5514960f979075a7",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_compatibility-span-candidate-provenance-V20.json",
+      "bytes": 2695,
+      "sha256": "70ad99fac3c7119e0a81a9f11cff46fca892413a595c84ebf85c06d4679558a9",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_resource-info-plist-copyright-preservation-V20.json",
+      "bytes": 1434,
+      "sha256": "58b3c4e0c31a68db23863a4de91ae5f7357f3e85b204351b5e28bd4f4190dd35",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_resource-license-gap-review-correction-V20.json",
+      "bytes": 1664,
+      "sha256": "28c4a50f66476537f27cb1bc181abe9a4eca9d11ffae6754ccd26478650745ff",
+      "includedInOfferFolder": true
+    }
+  ],
+  "limitations": [
+    "The 94 applicability decisions remain unresolved.",
+    "This does not establish clean recipient build or LGPL relink.",
+    "No production candidate, signature, notarization, publication, or live bytes are qualified."
+  ]
+}

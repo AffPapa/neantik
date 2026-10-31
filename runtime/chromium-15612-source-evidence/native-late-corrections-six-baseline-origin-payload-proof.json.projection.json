@@ -1,0 +1,104 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "0b683345257f43084fad4a06e4d74d3807fba4bb6dbe6e9a3a88db29c4c1f7cc",
+  "payload": {
+    "at": "2026-10-09T04:04:15.114498+00:00",
+    "binaryBindingVerified": false,
+    "observationSHA256": "1920d45b51c815f5fb5478caacea81759fbc748b0d3ddac59ca3a83b388acae8",
+    "officialCommitPayloadSHA256": "d8271e80ac63e5315f623b8717fa155e0880adfa78e8cbfd1cef6fd1e12591a5",
+    "officialCommitSHA1Recomputed": true,
+    "officialCommitTreeMatchesPin": true,
+    "records": [
+      {
+        "bytes": 12697,
+        "frozenBaselineMatched": true,
+        "gitBlobOID": "46d505d49ea4a21921a07848a506d5b50eb538ae",
+        "gitMode": "100644",
+        "officialCommit": "634b046faf2137b83af71c87baf362b533af9104",
+        "officialTree": "64e212cac2a53bcbd28b0530cf6eb092141bddec",
+        "path": "chrome/browser/ui/webui/bookmarks/bookmark_promo_delegate.cc",
+        "preservedPayload": "native-late-corrections-six-official-baseline-payloads/owned-origin-0.txt",
+        "sha256": "9262bc119209754d38803505925e194c7321eab8ba8717277ad781cb0dd74f1d"
+      },
+      {
+        "bytes": 19893,
+        "frozenBaselineMatched": true,
+        "gitBlobOID": "a3397b3f8aecd2fa8e8836fd6f6b3bbdd7dc8ab5",
+        "gitMode": "100644",
+        "officialCommit": "634b046faf2137b83af71c87baf362b533af9104",
+        "officialTree": "64e212cac2a53bcbd28b0530cf6eb092141bddec",
+        "path": "chrome/browser/ui/webui/bookmarks/bookmarks_message_handler.cc",
+        "preservedPayload": "native-late-corrections-six-official-baseline-payloads/owned-origin-1.txt",
+        "sha256": "81340305aa885e995527adb0731aea0dce8e39d1dee70575a0ebc66bffe4e5a7"
+      },
+      {
+        "bytes": 45856,
+        "frozenBaselineMatched": true,
+        "gitBlobOID": "439e795ec5648e759f96b277ef64de1b334d3958",
+        "gitMode": "100644",
+        "officialCommit": "634b046faf2137b83af71c87baf362b533af9104",
+        "officialTree": "64e212cac2a53bcbd28b0530cf6eb092141bddec",
+        "path": "chrome/browser/ui/views/app_menu/action_app_menu_manager.cc",
+        "preservedPayload": "native-late-corrections-six-official-baseline-payloads/owned-origin-2.txt",
+        "sha256": "f77dea2423a0ede29aa08f87760e36cda73067c02b338f50cab0d28a2a813565"
+      },
+      {
+        "bytes": 25115,
+        "frozenBaselineMatched": true,
+        "gitBlobOID": "b754a843cd9045248f38295b5fd15d13a925b797",
+        "gitMode": "100644",
+        "officialCommit": "634b046faf2137b83af71c87baf362b533af9104",
+        "officialTree": "64e212cac2a53bcbd28b0530cf6eb092141bddec",
+        "path": "chrome/browser/devtools/BUILD.gn",
+        "preservedPayload": "native-late-corrections-six-official-baseline-payloads/owned-origin-3.txt",
+        "sha256": "a89ff36525038ac327d7dafe4cec60b1129debcd90bc995ba0fa35e70bd7cf45"
+      },
+      {
+        "bytes": 8256,
+        "frozenBaselineMatched": true,
+        "gitBlobOID": "3df06e414a263106194e4b8ebfb5d663da2cad72",
+        "gitMode": "100644",
+        "officialCommit": "634b046faf2137b83af71c87baf362b533af9104",
+        "officialTree": "64e212cac2a53bcbd28b0530cf6eb092141bddec",
+        "path": "chrome/browser/devtools/protocol/storage_handler.cc",
+        "preservedPayload": "native-late-corrections-six-official-baseline-payloads/owned-origin-4.txt",
+        "sha256": "835052365368fb42badfe5c212fdcf4ac7b3edcd61825b4dc3cf3af9c1ec7004"
+      },
+      {
+        "bytes": 2595,
+        "frozenBaselineMatched": true,
+        "gitBlobOID": "bd71056a076b822212dc5bec3da46c88ef2ea6a4",
+        "gitMode": "100644",
+        "officialCommit": "634b046faf2137b83af71c87baf362b533af9104",
+        "officialTree": "64e212cac2a53bcbd28b0530cf6eb092141bddec",
+        "path": "chrome/browser/devtools/protocol/storage_handler.h",
+        "preservedPayload": "native-late-corrections-six-official-baseline-payloads/owned-origin-5.txt",
+        "sha256": "2c67126332a9c2f65b36a3b5de64ba0a15994f62d1af987bc552496cd3224db2"
+      }
+    ],
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "scope": "Six additional root Chromium source files only; established official revision pin retained; no new fetch",
+    "sourceInputsMutated": false,
+    "status": "six-late-correction-baselines-match-pinned-official-commit-blobs",
+    "wholeSourceOriginVerified": false
+  },
+  "payloadType": "json",
+  "receipt": "native-late-corrections-six-baseline-origin-payload-proof.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

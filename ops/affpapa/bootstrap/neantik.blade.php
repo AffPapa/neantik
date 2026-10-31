@@ -1,7 +1,7 @@
 @extends('affpapa.layout')
 
-@section('title', 'NeAntik — рабочие места в браузере для Mac | AffPapa')
-@section('description', 'У каждого дела — свой интернет. NeAntik сохраняет отдельные браузерные сессии на Mac: свои входы на сайты, cookies и данные. Прокси по необходимости, без регистрации.')
+@section('title', 'NeAntik — антидетект-браузер для Apple Silicon Mac | AffPapa')
+@section('description', 'NeAntik — нативный менеджер браузерных профилей для macOS со встроенным Chromium. Изолированные сессии, прокси и локальное хранение. SwiftUI, без Electron, без облака.')
 @section('canonical', 'https://affpapa.org/neantik')
 
 @php
@@ -15,10 +15,10 @@
         : [];
     $releaseManifest = is_array($releaseManifest) ? $releaseManifest : [];
     $contentManifest = is_array($contentManifest) ? $contentManifest : [];
-    $releaseVersion = (string) ($releaseManifest['version'] ?? '0.3.21');
-    $releaseBuild = (int) ($releaseManifest['build'] ?? 24);
-    $runtimeVersion = (string) ($releaseManifest['runtime']['version'] ?? '152.0.7977.64');
-    $runtimeMajor = explode('.', $runtimeVersion)[0] ?? '152';
+    $releaseVersion = (string) ($releaseManifest['version'] ?? '0.3.19');
+    $releaseBuild = (int) ($releaseManifest['build'] ?? 22);
+    $runtimeVersion = (string) ($releaseManifest['runtime']['version'] ?? '151.0.7922.108');
+    $runtimeMajor = explode('.', $runtimeVersion)[0] ?? '151';
     $artifactByFormat = [];
     foreach (($releaseManifest['artifacts'] ?? []) as $artifact) {
         if (is_array($artifact) && isset($artifact['format'])) {
@@ -41,32 +41,6 @@
     ];
 
     $changelog = [
-        [
-            'ver' => '0.3.21',
-            'build' => 24,
-            'date' => '30 августа 2026',
-            'label' => 'Public Alpha',
-            'items' => [
-                'Диагностика среды ведёт к реальному разделу, а официальная переустановка сохраняет данные профилей',
-                'Заметка видна сразу при создании и всегда отображается в карточке профиля',
-                'Установленное приложение уменьшено примерно на 125 МиБ безопасным удалением локальных символов до Developer ID signing',
-                'Локали, лицензии, notices, SwiftShader, crashpad и security evidence сохранены',
-                'GitHub и AffPapa публикуются двухфазно с повторной загрузкой и проверкой SHA-256; AffPapa автоматически откатывается при ошибке',
-            ],
-        ],
-        [
-            'ver' => '0.3.20',
-            'build' => 23,
-            'date' => '30 августа 2026',
-            'label' => 'Public Alpha',
-            'items' => [
-                'Встроенный Chromium обновлён до 152.0.7977.64 для Apple Silicon, ARM64 и Metal',
-                'Добавлен нативный однооконный workspace с папками, тегами, заметками и безопасным дублированием профилей',
-                'Массовое создание профилей использует локальный предпросмотр прокси без скрытых сетевых запросов',
-                'Persisted-профили и proxy-health history получили общие fail-closed byte-лимиты и атомарную запись',
-                'ZIP и DMG подписаны Developer ID, нотарифицированы Apple, stapled и проверены Gatekeeper',
-            ],
-        ],
         [
             'ver' => '0.3.19',
             'build' => 22,
@@ -471,8 +445,8 @@
         <div class="nk-hero-grid">
             <div>
                 <p class="badge"><span class="badge-dot" aria-hidden="true"></span>Public Alpha · Apple Silicon · Chromium {{ $runtimeMajor }}</p>
-                <h1 class="hero-title">У каждого дела —<br>свой интернет</h1>
-                <p class="hero-lead">Работа, личные дела и&nbsp;проекты — в&nbsp;отдельных браузерных сессиях. У&nbsp;каждой свои входы на&nbsp;сайты, cookies и&nbsp;данные. Прокси — по&nbsp;необходимости. Встроенный Chromium {{ $runtimeMajor }}, без регистрации в&nbsp;NeAntik.</p>
+                <h1 class="hero-title">Отдельный браузер<br>для каждой рабочей сессии</h1>
+                <p class="hero-lead">NeAntik разделяет cookies, сессии, storage и&nbsp;proxy между профилями. Встроенный Chromium {{ $runtimeMajor }} — ничего не&nbsp;нужно устанавливать отдельно. SwiftUI, без Electron, без аккаунта, без телеметрии.</p>
 
                 <div class="nk-platform">
                     <span class="chip">macOS 14+</span>
@@ -509,28 +483,15 @@
         </div>
     </section>
 
-    @if (version_compare($releaseVersion, '0.5.0', '>='))
-    <section class="section nk-reveal" id="neantik-workplaces">
-        <div class="section-head"><h2>Найти. Открыть. Продолжить.</h2></div>
-        <div class="nk-features">
-            <div class="card nk-feat"><h3>Нужное дело рядом</h3><p>Главный экран показывает закреплённые и недавние рабочие места. Поиск находит их по имени, тегам и заметке.</p></div>
-            <div class="card nk-feat"><h3>Вернуться в своё окно</h3><p>«Открыть» запускает браузер, «Продолжить» возвращает в подтверждённое окно. Остановка доступна отдельно в каталоге.</p></div>
-            <div class="card nk-feat"><h3>Переключиться из меню Mac</h3><p>Меню NeAntik в строке меню macOS открывает недавние рабочие места. Имя активного окна показывается после проверки его принадлежности.</p></div>
-            <div class="card nk-feat"><h3>Сложное — по необходимости</h3><p>⌘1 открывает главный экран, ⌘2 — полный каталог с папками, архивом и диагностикой. Данные существующих профилей сохраняются.</p></div>
-        </div>
-        <p class="muted">Браузерные окна остаются отдельными. Общая оболочка вкладок внутри Chromium в версии 0.5.0 не реализована.</p>
-    </section>
-    @endif
-
     {{-- ═══ SCREENSHOTS ═══ --}}
     <section class="section nk-reveal" id="neantik-screenshots">
-        <div class="section-head"><h2>Схемы возможностей NeAntik</h2></div>
+        <div class="section-head"><h2>Как выглядит NeAntik</h2></div>
         <div class="nk-screenshots">
             <div class="nk-screenshot nk-reveal" style="transition-delay:0ms">
                 <img src="/img/neantik/profiles.svg" alt="NeAntik — менеджер профилей" width="1440" height="900" loading="lazy">
                 <div class="nk-screenshot__caption">
                     <h3>Профили и запуск</h3>
-                    <p>Иллюстрация каталога: отдельные профили, состояние подключения и запуск браузера.</p>
+                    <p>Локальные профили, понятный статус proxy и быстрый запуск браузера без тяжёлой shell-платформы.</p>
                 </div>
             </div>
             <div class="nk-screenshot nk-reveal" style="transition-delay:80ms">
@@ -554,9 +515,9 @@
     <section class="section nk-reveal" id="neantik-problem">
         <div class="section-head"><h2>Профили должны разделять контексты, а&nbsp;не&nbsp;усложнять работу</h2></div>
         <div class="nk-problem">
-            <p>Один проект — одни входы на сайты, другой — другие. Создайте для каждого дела своё рабочее место и возвращайтесь в сохранённую сессию.</p>
-            <p>Рабочее место — это отдельный профиль Chromium. Cookies и данные сайтов сохраняются внутри него; при переходе на новую версию существующие профили не нужно создавать заново.</p>
-            <p>Прокси нужен только тогда, когда вашему делу требуется отдельное подключение. Папки, архив и диагностика доступны в полном каталоге.</p>
+            <p>Режим инкогнито не&nbsp;создаёт новое устройство для сайта. Cookies можно очистить, но&nbsp;Canvas, WebGL, Audio, GPU, timezone и&nbsp;другие сигналы остаются связанными с&nbsp;тем&nbsp;же браузером и&nbsp;Mac.</p>
+            <p>Большие антидетект-платформы решают эту задачу вместе с&nbsp;облаком, командами, API, RPA и&nbsp;десятками настроек. Это полезно для масштабных операций, но&nbsp;лишнее, если нужны несколько постоянных локальных контекстов на&nbsp;одном Mac.</p>
+            <p>NeAntik оставляет только основу: профиль, proxy, встроенный Chromium и&nbsp;стабильная identity. Сложная диагностика остаётся внутри release-процесса.</p>
         </div>
     </section>
 
@@ -628,7 +589,7 @@
             <div class="card nk-feat nk-reveal" style="transition-delay:60ms">
                 <div class="nk-feat__icon" aria-hidden="true">⊘</div>
                 <h3>Без облака и аккаунта</h3>
-                <p>Профили хранятся на Mac без облачной синхронизации NeAntik. Регистрация не нужна, продуктовая телеметрия отключена.</p>
+                <p>Профили хранятся на Mac. Нет синхронизации, нет телеметрии, нет сервера. История, cookies, URL — не передаются.</p>
             </div>
             <div class="card nk-feat nk-reveal" style="transition-delay:120ms">
                 <div class="nk-feat__icon" aria-hidden="true">⊞</div>
@@ -645,23 +606,23 @@
 
     {{-- ═══ HOW IT WORKS ═══ --}}
     <section class="section nk-reveal" id="neantik-how">
-        <div class="section-head"><h2>От нового дела к открытой сессии</h2></div>
+        <div class="section-head"><h2>Четыре шага</h2></div>
         <div class="nk-steps">
             <div class="card nk-step nk-reveal" style="transition-delay:0ms">
                 <h3>Скачайте и установите</h3>
                 <p>Откройте DMG и перетащите NeAntik.app в папку «Программы». ZIP доступен как альтернативный формат.</p>
             </div>
             <div class="card nk-step nk-reveal" style="transition-delay:80ms">
-                <h3>Назовите своё дело</h3>
-                <p>Создайте профиль и при желании измените предложенное имя. Цвет и стартовый адрес не нужно настраивать для начала работы.</p>
+                <h3>Создайте профиль</h3>
+                <p>Откройте NeAntik. Имя, цвет, стартовая страница — приложение создаст изолированное хранилище.</p>
             </div>
             <div class="card nk-step nk-reveal" style="transition-delay:160ms">
-                <h3>Прокси — если нужен</h3>
-                <p>Вставьте прокси одной строкой или оставьте прямое подключение. NeAntik выполнит подготовку перед запуском; ручная проверка не является обязательным шагом.</p>
+                <h3>Подключите proxy</h3>
+                <p>Direct, HTTP/HTTPS или SOCKS5. Проверьте exit IP, страну и timezone одной кнопкой.</p>
             </div>
             <div class="card nk-step nk-reveal" style="transition-delay:240ms">
                 <h3>Запустите браузер</h3>
-                <p>Нажмите «Создать и открыть». Встроенный Chromium начнёт с пустой страницы; входы на сайты сохранятся в этом рабочем месте.</p>
+                <p>Нажмите «Запустить» — откроется встроенный Chromium с данными, сетью и identity выбранного профиля.</p>
             </div>
         </div>
     </section>
@@ -683,19 +644,17 @@
             </div>
             <div class="card nk-privacy-card nk-reveal" style="transition-delay:60ms">
                 <span class="nk-privacy-card__icon nk-privacy-card__icon--muted" aria-hidden="true">NOT SENT</span>
-                <h3>Без облачного профиля NeAntik</h3>
+                <h3>Не передаётся никуда</h3>
                 <ul>
                     <li>Телеметрия отключена</li>
                     <li>Нет облачной синхронизации</li>
                     <li>Нет аналитики использования</li>
                     <li>Нет аккаунта и регистрации</li>
-                    <li>Данные профилей не синхронизируются с NeAntik</li>
+                    <li>Нет серверов NeAntik</li>
                 </ul>
             </div>
         </div>
     </section>
-
-    <p class="muted">При посещении сайтов браузер передаёт им обычные сетевые запросы. Проверка подключения обращается к внешним диагностическим сервисам. Локальное хранение профиля не означает отсутствие сетевого обмена.</p>
 
     {{-- ═══ PROOF ═══ --}}
     <section class="section nk-reveal" id="neantik-proof">

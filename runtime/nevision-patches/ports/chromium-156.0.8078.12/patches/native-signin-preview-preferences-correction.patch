@@ -1,0 +1,49 @@
+--- a/components/signin/core/browser/account_preview_data_service.cc
++++ b/components/signin/core/browser/account_preview_data_service.cc
+@@ -5,7 +5,6 @@
+ #include "components/signin/core/browser/account_preview_data_service.h"
+ 
+ #include "components/prefs/pref_registry_simple.h"
+-#include "components/signin/public/base/signin_pref_names.h"
+ 
+ namespace signin {
+ 
+@@ -23,8 +22,6 @@
+ // static
+ void AccountPreviewDataService::RegisterProfilePrefs(
+     PrefRegistrySimple* registry) {
+-  registry->RegisterTimePref(
+-      prefs::kAccountPreviewSwitchingHeuristicLastRecordedPref, base::Time());
+ }
+ 
+ }  // namespace signin
+--- a/components/signin/core/browser/account_preview_metrics_recorder.cc
++++ b/components/signin/core/browser/account_preview_metrics_recorder.cc
+@@ -18,7 +18,6 @@
+ #include "components/signin/core/browser/account_metrics_id_allocator.h"
+ #include "components/signin/core/browser/account_preview_data.h"
+ #include "components/signin/core/browser/account_preview_heuristic.h"
+-#include "components/signin/public/base/signin_pref_names.h"
+ #include "components/signin/public/base/signin_prefs.h"
+ #include "components/signin/public/identity_manager/identity_manager.h"
+ #include "components/sync/base/data_type.h"
+@@ -152,19 +151,6 @@
+ 
+ void AccountPreviewMetricsRecorder::RecordSwitchingHeuristicResult(
+     const AccountSwitchingSelectionResult& switching_result) {
+-  base::Time last_recorded = pref_service_->GetTime(
+-      prefs::kAccountPreviewSwitchingHeuristicLastRecordedPref);
+-  base::Time now = base::Time::Now();
+-  if (!last_recorded.is_null() && now >= last_recorded &&
+-      (now - last_recorded) < base::Days(1)) {
+-    return;
+-  }
+-
+-  profile_metrics_service_->UmaHistogramEnumeration(
+-      "Signin.SwitchingHeuristic.WouldShowPromo", switching_result.outcome);
+-
+-  pref_service_->SetTime(
+-      prefs::kAccountPreviewSwitchingHeuristicLastRecordedPref, now);
+ }
+ 
+ }  // namespace signin

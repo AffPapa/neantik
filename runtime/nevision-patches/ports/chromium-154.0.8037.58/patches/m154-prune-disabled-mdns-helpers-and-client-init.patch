@@ -1,0 +1,41 @@
+--- a/chrome/browser/media/router/discovery/mdns/dns_sd_device_lister.cc
++++ b/chrome/browser/media/router/discovery/mdns/dns_sd_device_lister.cc
+@@ -11,17 +11,6 @@
+ namespace media_router {
+ 
+ namespace {
+-
+-void FillServiceInfo(const ServiceDescription& service_description,
+-                     DnsSdService* service) {
+-  service->service_name = service_description.service_name;
+-  service->service_host_port = service_description.address;
+-  if (service_description.ip_address.IsValid()) {
+-    service->ip_address = service_description.ip_address.ToString();
+-  }
+-  service->service_data = service_description.metadata;
+-}
+-
+ }  // namespace
+ 
+ DnsSdDeviceLister::DnsSdDeviceLister(
+--- a/chrome/browser/media/router/discovery/mdns/dns_sd_registry.cc
++++ b/chrome/browser/media/router/discovery/mdns/dns_sd_registry.cc
+@@ -11,7 +11,6 @@
+ #include "base/check.h"
+ #include "base/memory/singleton.h"
+ #include "base/observer_list.h"
+-#include "chrome/browser/local_discovery/service_discovery_shared_client.h"  // nogncheck
+ #include "chrome/browser/media/router/discovery/mdns/dns_sd_device_lister.h"
+ #include "chrome/common/buildflags.h"
+ 
+@@ -91,10 +90,6 @@
+ }
+ 
+ DnsSdRegistry::DnsSdRegistry() {
+-#if BUILDFLAG(ENABLE_SERVICE_DISCOVERY)
+-  service_discovery_client_ =
+-      local_discovery::ServiceDiscoverySharedClient::GetInstance();
+-#endif
+ }
+ 
+ DnsSdRegistry::~DnsSdRegistry() {

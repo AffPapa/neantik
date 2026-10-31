@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v283-swift-dependency-scan-cache-diagnostic-20261028",
+  "observedAtUTC": "2026-10-27T17:33:00Z",
+  "status": "INCONCLUSIVE_SWIFT_SCAN; NO_DEPENDENCY_CLOSURE_CLAIM; DO_NOT_REPEAT_TRANSFORMED_SCAN",
+  "scope": "One read-only Swift dependency scan of the exact PAL Swift module command from the retained V20 Ninja graph, using a COW clone of the existing SwiftModuleCache. No WebKit source/build output, app candidate, signature, or release artifact was changed.",
+  "inputs": {
+    "buildNinjaSHA256": "691f704d4a75b80b5f4e8652a1d758b78e135f83b089b61a378df3c20bffc570",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "mainPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "environment": "Xcode 27.0 build 27A5228h; Swift 6.4; macOS SDK 27.0"
+  },
+  "method": "Derived compiler arguments from the exact PAL Ninja command using the checked-in swiftc wrapper dry-run. Preserved compile flags and response-file inputs, removed object/module output flags, redirected Swift module cache to an APFS COW clone, and ran swiftc -scan-dependencies. This differs from the earlier empty-cache pilot by seeding the cache.",
+  "result": {
+    "compilerExitCode": 1,
+    "jsonOutputBytes": 0,
+    "stderrSHA256": "fda5c0e29978425ebae59201ce7c66569f29867aa5cb32609771eb2f44a3228c",
+    "failure": "Clang dependency scan reports Darwin and _Builtin_float modules defined in both the COW clone and original build-tree cache; no module graph was emitted."
+  },
+  "interpretation": "Scanner/cache path incompatibility. This is not a WebKit compile or runtime failure and does not alter the already passing declared Ninja Swift-input receipt. Do not repeat transformed PAL scans or scan the remaining modules with this method.",
+  "reusedCleanBuild": {
+    "receipt": "dist/private/source-offers/v282-composite-source-offer-draft/evidence/neantik-v135-clean-relocated-v132-webkit-relink-20261026.json",
+    "receiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "result": "Fresh extraction/configure; 10,902 Ninja actions; 14/14 ARM64 runtime outputs; exact WebKit archive, main patch, and V36 patch matched. Same-Mac build evidence only, not signed-load, runtime, or release qualification."
+  },
+  "nextAction": "Reuse the completed clean source build and declared Ninja dependency receipts; do not repeat V135, standalone generator replay, or the transformed Swift scan. Advance to binding refreshed notices/source evidence to a fresh production candidate, then qualify its nested timestamps, signed owned-WebKit proxy/runtime behavior, exact ZIP/DMG and delivery gates.",
+  "releaseQualified": false
+}

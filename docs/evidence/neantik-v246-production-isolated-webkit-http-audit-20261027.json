@@ -1,0 +1,19 @@
+{
+  "candidate": "b96006a994664a80bf89cd757f932eff",
+  "sourceCommit": "adc79f068cbf6974e21bd23e6abfb28ebc857911",
+  "fixtureSHA256": "be52f23710471bf473694487da56da19d27f5735c55048eadb5f7acaa1bb0750",
+  "httpAudit": {
+    "proxiedLoopback": "no upstream or origin event",
+    "proxiedReservedDomain": "no upstream or origin event",
+    "directControl": "local page title observed and origin event",
+    "interpretation": "HTTP route unresolved; ATS is a hypothesis, not a confirmed cause",
+    "cleanup": "both fixtures exited 0 and listeners drained"
+  },
+  "httpsAudit": {
+    "sandboxed": "manager exited 65; no profile run; fixture drained",
+    "unsandboxed": "manager spawned but UI selected existing user instance; no profile clicked; interrupted and fixture cleanup invoked",
+    "result": "not qualified"
+  },
+  "obsoleteAuthorityRetirement": "two attempts failed before deletion; preserve pending diagnosis",
+  "release": "bundle signed, not notarized or published; source/relink and release gates remain"
+}

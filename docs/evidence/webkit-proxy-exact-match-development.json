@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "status": "exact-match-does-not-prevent-local-address-Direct-bypass;shipping-disabled",
+  "observedAt": "2026-10-16T12:05:14.348136+00:00",
+  "environment": {
+    "macOS": "27.0",
+    "architecture": "arm64",
+    "systemWebKitVersion": "22625.1.29.11.24"
+  },
+  "host": "Swift test host;one visible NSWindow;two nonpersistent stores;not signed product qualification",
+  "sourceHEAD": "01b49389e669477d5615a62d30f0d4bf7434f0f8",
+  "sourceFiles": {
+    "Tests/NeAntikTests/WebKitProxyTransportTests.swift": "737febbcffd31291402db8a47a808c550f7376e7c88faca069ae45feb753d49f",
+    "Sources/NeAntik/WebKitProxySession.swift": "a6f83ff54b2db71a68d0b1c5dac41484f4aa0fdf32047e63a4b4dc360f9fe667",
+    "Sources/NeAntik/WebKitProxyConnectCodec.swift": "7fa6c03c644f9573ff0739ec283de0ce3bd18987a573e29267bbba3baf0df007"
+  },
+  "testBinarySHA256": "8b6b4a203494dd89eacac36eb0a3d4e1654f85824dc1b173b156c99dc16aa656",
+  "sourceInputSHA256": "706c099c04a891d4efab4fbcd1982eab4769de72c66a27b52a0fdef8fc00a6d6",
+  "result": "FAIL",
+  "testExitCode": 1,
+  "seconds": 2.3428919579600915,
+  "assertionIssues": 5,
+  "sourceUnchangedDuringNativeRun": true,
+  "policy": {
+    "matchDomains": "two exact own endpoints;no wildcard",
+    "nativeMatchCount": 2,
+    "nativeExceptionCount": 0,
+    "nativeFailoverAllowed": false
+  },
+  "admission": {
+    "memoryPressure": 2,
+    "thermalState": 0,
+    "warningExceptionUsed": true
+  },
+  "staging": {
+    "testHostAttempts": 2,
+    "windowRuns": 1,
+    "firstAttempt": "setup guard failure before window;no route result",
+    "setupDiagnosis": "Swift excludedDomains readback count2 versus public C enumerator0 on same configured object;in-memory reference confirmed;guard now reads public C API",
+    "originalFailuresRetained": true,
+    "noFurtherRetry": true
+  },
+  "sourceControls": {
+    "pureModelTests": 4,
+    "nativeExcludedDomainNegative": true,
+    "nativeFailoverNegative": true,
+    "wrongMatchListNegative": true,
+    "sameLengthWrongMatchListNegative": true,
+    "ciOptInControl": true,
+    "inventoryControl": true
+  },
+  "phases": {
+    "named": {
+      "accepted": 2,
+      "malformed": 0,
+      "authRefused": 1,
+      "established": 1,
+      "upstreamAuth": 1,
+      "upstreamResponses": 1,
+      "directConnections": 0,
+      "directResponses": 0
+    },
+    "direct-before": {
+      "accepted": 2,
+      "malformed": 0,
+      "authRefused": 1,
+      "established": 1,
+      "upstreamAuth": 1,
+      "upstreamResponses": 1,
+      "directConnections": 1,
+      "directResponses": 1
+    },
+    "bare-tcp-control": {
+      "accepted": 2,
+      "malformed": 0,
+      "authRefused": 1,
+      "established": 1,
+      "upstreamAuth": 1,
+      "upstreamResponses": 1,
+      "directConnections": 2,
+      "directResponses": 1
+    },
+    "protected": {
+      "accepted": 2,
+      "malformed": 0,
+      "authRefused": 1,
+      "established": 1,
+      "upstreamAuth": 1,
+      "upstreamResponses": 1,
+      "directConnections": 3,
+      "directResponses": 2
+    },
+    "revoked": {
+      "accepted": 2,
+      "malformed": 0,
+      "authRefused": 1,
+      "established": 1,
+      "upstreamAuth": 1,
+      "upstreamResponses": 1,
+      "directConnections": 4,
+      "directResponses": 3
+    },
+    "direct-after": {
+      "accepted": 2,
+      "malformed": 0,
+      "authRefused": 1,
+      "established": 1,
+      "upstreamAuth": 1,
+      "upstreamResponses": 1,
+      "directConnections": 5,
+      "directResponses": 4
+    }
+  },
+  "interpretation": {
+    "named": "challenge and authenticated CONNECT followed by expected upstream response;no Direct arrival",
+    "directBefore": "independent B proves own origin reachable",
+    "bareTCP": "arrival increments connections but not HTTP response count",
+    "protected": "A reaches own local origin without new relay/upstream response",
+    "revoked": "A again reaches own origin after relay revoked",
+    "directAfter": "B remains independently reachable;its own baseline passes"
+  },
+  "cleanup": {
+    "windowClosed": true,
+    "relayActiveConnectionsZero": true,
+    "fixtureTasksStoppedAndAwaited": true,
+    "testHostExited": true,
+    "separateWebKitProcessCustodyClaim": false
+  },
+  "notQualified": [
+    "WebKit production proxy",
+    "General DNS/UDP/WebRTC confinement",
+    "Persistent stores and production manager lifecycle",
+    "Other macOS/hardware",
+    "Signed app or 1.0 qualification"
+  ],
+  "decision": "Reject exact-match as fix for observed local-IP bypass;do not repeat defaults/exact unchanged;keep shipping proxy:false. A different supported frontend needs separate design and controls.",
+  "privacy": "Own synthetic credentials/endpoints only;no raw addresses,names,nonce,headers,Keychain or user fingerprint in this public report.",
+  "unchangedRelease": {
+    "version": "0.8.23",
+    "build": 135,
+    "archivesReplaced": false
+  }
+}

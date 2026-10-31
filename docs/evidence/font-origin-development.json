@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-native-primitive; Chromium objects compiled separately; browser gate open",
+  "actualBrowser": false,
+  "applicationChanged": false,
+  "runtimeChanged": false,
+  "capturedAt": "2026-10-15T18:33:28.536798+00:00",
+  "environment": {
+    "os": "27.0",
+    "architecture": "arm64",
+    "SDK": "macOS27.0",
+    "target": "macOS14+"
+  },
+  "sourceSHA256": {
+    "runtime/font-policy-v1/system_font_source.h": "7d297bc1064a50fbcf1191502c1b5fc6de9cb5dfeed4127a29b3ebf18dbc4da5",
+    "runtime/font-policy-v1/system_font_source.cc": "4983e3753f65c27860673c9a7beb496dd633a2b32a0c9435f8da875ba6e8ec24",
+    "scripts/runtime-platform/probe-font-origin.mm": "972a4eb3f053fc75e555843bda780ac787da8484867abda480cdd797294c09c8",
+    "scripts/runtime-platform/make-font-policy-canary.py": "967c5d581004949f93ba16ea0eec9ecd751ef68673ad8672da13afbbfc67e033",
+    "scripts/runtime-platform/run-font-origin-probe.py": "37e2a6908e0eb419901275494f933b153fbd2f02bf8b6b0995b633578f138b3b",
+    "scripts/runtime-platform/requirements-font-qa.txt": "c9bca9c378222331cd764c0cb6a27e953751cef7d71ff0acd9751067816018ec",
+    "scripts/native-qa-readiness.py": "6fa865a4f924573608d494bbe3ac4b3600ba3b1698f02419a29831b850fe2a0b"
+  },
+  "binarySHA256": "36b276125730018fc62c261f7605dcd82c02dba28d48004d0ceaae983cd675ae",
+  "observationsSHA256": "c2912cd8843a3652c5f2cdd12bd902db4a3ea647225f451caa2893e27f81b105",
+  "verificationSHA256": "d6774969214e085915308dc29dae4a2c0d49ac5397e1bf836b626ab3a977b462",
+  "controls": {
+    "canaryAbsentBeforeRegistration": true,
+    "canaryDrawn": true,
+    "canaryRejectedByHostPolicy": true,
+    "nativeFamilyLookupSelectedOwnCollision": true,
+    "actualFamilyCollisionControlRejected": true,
+    "protectedFamilyCounterpartFound": true,
+    "actualLastResortControlRejected": true,
+    "spoofUsesOwnCanaryGlyphs": true,
+    "spoofRejected": true,
+    "explicitResourceDataDrawn": true,
+    "cacheWithinBound": true,
+    "ownRegistrationsRemoved": true,
+    "protectedDescriptorCopyConsistent": true,
+    "coverageAcceptsProtectedGlyph": true,
+    "nativeFamilyFallbackRecovered": true,
+    "coverageRejectsOwnAndLastResort": true
+  },
+  "restrictedSamples": [
+    {
+      "sample": "Latin",
+      "shapingCompleted": true,
+      "actualBitmapDrawn": true,
+      "missingGlyph": false,
+      "lastResortUsed": false,
+      "strictPolicyRejectedRuns": 0
+    },
+    {
+      "sample": "Cyrillic",
+      "shapingCompleted": true,
+      "actualBitmapDrawn": true,
+      "missingGlyph": false,
+      "lastResortUsed": false,
+      "strictPolicyRejectedRuns": 0
+    },
+    {
+      "sample": "CJK",
+      "shapingCompleted": true,
+      "actualBitmapDrawn": true,
+      "missingGlyph": false,
+      "lastResortUsed": false,
+      "strictPolicyRejectedRuns": 0
+    },
+    {
+      "sample": "Arabic",
+      "shapingCompleted": true,
+      "actualBitmapDrawn": true,
+      "missingGlyph": false,
+      "lastResortUsed": false,
+      "strictPolicyRejectedRuns": 0
+    },
+    {
+      "sample": "Combining",
+      "shapingCompleted": true,
+      "actualBitmapDrawn": true,
+      "missingGlyph": false,
+      "lastResortUsed": false,
+      "strictPolicyRejectedRuns": 0
+    },
+    {
+      "sample": "ColourEmoji",
+      "shapingCompleted": true,
+      "actualBitmapDrawn": true,
+      "missingGlyph": false,
+      "lastResortUsed": false,
+      "strictPolicyRejectedRuns": 0
+    },
+    {
+      "sample": "VariationSelector",
+      "shapingCompleted": true,
+      "actualBitmapDrawn": true,
+      "missingGlyph": false,
+      "lastResortUsed": false,
+      "strictPolicyRejectedRuns": 0
+    }
+  ],
+  "cache": {
+    "maximumEntries": 32,
+    "actualReads": 10000,
+    "observedReadMicroseconds": 200,
+    "performanceBenchmark": false
+  },
+  "localAnalyzerTests": 4,
+  "limitations": [
+    "Chromium source patch compiles; full runtime not linked or browser-qualified; no shipped font hiding claim",
+    "Process-scoped original TTFs only; no user/session font installation",
+    "Family collision is observed; full PostScript collision remains open",
+    "Style, variable font, renderer sandbox and headed child controls remain open",
+    "System-only fallback tested on one Mac, seven fixed texts; no universal language or macOS coverage claim",
+    "Old profiles and immutable release129 binaries unchanged"
+  ],
+  "developmentFailuresRetained": [
+    "Initial table-tag decoding crash: CFArray entries are unboxed CTFontTableTag integers; corrected using the SDK contract",
+    "Initial native samples measured shaping width only; actual bitmap/missing glyph/LastResort controls added",
+    "Sandbox memory-pressure observation unavailable: no native launch; corrected execution observed normal admission",
+    "First new-API native attempt stopped before compilation under memory pressure warning; after GN work a normal observation admitted the actual passing attempt"
+  ],
+  "chromiumSourcePatched": true,
+  "runtimeLinked": false
+}

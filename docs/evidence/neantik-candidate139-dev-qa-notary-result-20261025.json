@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T09:36:00Z",
+  "status": "Accepted",
+  "candidate": {
+    "version": "1.0.0",
+    "build": "139",
+    "bundleIdentifier": "app.neantik.desktop.dev",
+    "archive": "/private/tmp/neantik-c139-assembled-qa-20261025/NeAntik-1.0.0-139-dev-qa-complete.zip",
+    "sha256": "d4f385093cb3a450dd4c253035a45f9d56a54069228041bd662abeb860341e39",
+    "bytes": 247145489
+  },
+  "submission": {
+    "id": "51cba938-27a9-4727-b6c9-64b84fbe5ce8",
+    "result": "Accepted",
+    "method": "existing local Keychain profile",
+    "duplicateSubmission": false
+  },
+  "nativeAdmission": {
+    "eligibleForAttempt": true,
+    "memoryPressure": 1,
+    "thermalState": 0,
+    "observedAt": "2026-10-25T09:36:10.191446+00:00",
+    "scope": "read-only resource observation; does not establish runtime qualification"
+  },
+  "launchPreflight": {
+    "status": "refused-before-launch",
+    "finding": "The exact signed Dev bundle lacks NeAntikDevelopmentFixtureRoot, required by the one-use QA launcher to bind the app to an owner-only synthetic data root.",
+    "archiveChanged": false,
+    "appLaunched": false,
+    "productionOrPublicStateChanged": false
+  },
+  "scope": {
+    "ownedWebKitStartup": "unqualified by this attempt",
+    "proxy": "not tested; remains disabled",
+    "productionCandidateChanged": false,
+    "githubChanged": false,
+    "browserFreeChanged": false
+  },
+  "next": "Do not bypass the launcher or resubmit these bytes. A future QA archive must be fixture-bound and pass launcher preflight before approval/submission. Advance source/notice closure and build one corrected production source after the manager cancellation fix."
+}

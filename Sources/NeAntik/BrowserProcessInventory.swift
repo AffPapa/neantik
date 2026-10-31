@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import Security
 
 struct BrowserProcessArguments: Equatable, Sendable {
     let executablePath: String
@@ -9,16 +10,24 @@ struct BrowserProcessArguments: Equatable, Sendable {
 fileprivate struct BrowserProcessInventoryEntry: Sendable {
     let executablePath: String
     let browserDataPaths: Set<String>
+    let relayOwnerIntent: Bool
+    #if DEBUG
+    let qualificationHasUnsafeDataPath: Bool
+    #endif
+
+    init(executablePath: String, browserDataPaths: Set<String>, relayOwnerIntent: Bool, unsafeDataPath: Bool) {
+        self.executablePath = executablePath
+        self.browserDataPaths = browserDataPaths
+        self.relayOwnerIntent = relayOwnerIntent
+        #if DEBUG
+        qualificationHasUnsafeDataPath = unsafeDataPath
+        #endif
+    }
 
     var retainedByteCount: Int {
         executablePath.utf8.count +
             browserDataPaths.reduce(0) { $0 + $1.utf8.count }
     }
-}
-
-struct BrowserProcessKernelIdentity: Equatable, Sendable {
-    let startSeconds: Int64
-    let startMicroseconds: Int32
 }
 
 enum BrowserProcessArgumentParser {
@@ -110,6 +119,7 @@ struct BrowserProcessInventory: Sendable {
         @Sendable (pid_t) -> BrowserProcessKernelIdentity?
     private let unreadableLiveProcessExists: Bool
     private let available: Bool
+    private let relayOwnerCodeValidator: @Sendable (pid_t, String, BrowserProcessKernelIdentity) -> Bool
     private let riskSources: [String]
 
     var diagnostics: (
@@ -134,7 +144,8 @@ struct BrowserProcessInventory: Sendable {
             @escaping @Sendable
                 (pid_t) -> BrowserProcessKernelIdentity? = { _ in nil },
         unreadableLiveProcessExists: Bool = false,
-        available: Bool = true
+        available: Bool = true,
+        relayOwnerCodeValidator: @escaping @Sendable (pid_t, String, BrowserProcessKernelIdentity) -> Bool = { _, _, _ in false }
     ) {
         var reduced: [pid_t: BrowserProcessInventoryEntry] = [:]
         var unsafePathExists = false
@@ -146,7 +157,8 @@ struct BrowserProcessInventory: Sendable {
                 executablePath: URL(
                     fileURLWithPath: process.executablePath
                 ).standardizedFileURL.path,
-                browserDataPaths: extraction.paths
+                browserDataPaths: extraction.paths,
+                relayOwnerIntent: Self.isRelayOwnerIntent(process), unsafeDataPath: extraction.unsafePathExists
             )
             unsafePathExists =
                 unsafePathExists || extraction.unsafePathExists
@@ -157,6 +169,7 @@ struct BrowserProcessInventory: Sendable {
         self.unreadableLiveProcessExists =
             unreadableLiveProcessExists || unsafePathExists
         self.available = available
+        self.relayOwnerCodeValidator = relayOwnerCodeValidator
         riskSources = self.unreadableLiveProcessExists
             ? ["synthetic-unreadable-process"]
             : []
@@ -171,13 +184,15 @@ struct BrowserProcessInventory: Sendable {
                 (pid_t) -> BrowserProcessKernelIdentity?,
         unreadableLiveProcessExists: Bool,
         available: Bool,
-        riskSources: [String] = []
+        riskSources: [String] = [],
+        relayOwnerCodeValidator: @escaping @Sendable (pid_t, String, BrowserProcessKernelIdentity) -> Bool = { _, _, _ in false }
     ) {
         processes = reducedProcesses
         self.kernelIdentities = kernelIdentities
         self.kernelIdentityRevalidator = kernelIdentityRevalidator
         self.unreadableLiveProcessExists = unreadableLiveProcessExists
         self.available = available
+        self.relayOwnerCodeValidator = relayOwnerCodeValidator
         self.riskSources = riskSources
     }
 
@@ -239,6 +254,54 @@ struct BrowserProcessInventory: Sendable {
         return unreadableLiveProcessExists ? .unknown : .absent
     }
 
+    #if DEBUG
+    /// Only the isolated qualification quit uses this stricter argv binding.
+    /// Multiple data directories are never authority to close a QA process.
+    func inspectExactQualificationProcess(_ lock: BrowserProcessLock) -> BrowserProcessIdentityInspection {
+        guard inspectProcess(lock) == .expected else { return .unknown }
+        let expected = URL(fileURLWithPath: lock.browserDataPath).standardizedFileURL.path
+        guard let process = processes[lock.pid], !process.qualificationHasUnsafeDataPath,
+              process.browserDataPaths == Set([expected]) else { return .unrelated }
+        return .expected
+    }
+    #endif
+
+    /// An unclassifiable lease may have lost its relay PID. A complete fresh
+    /// inventory must prove absence of every possible owner before cleanup.
+    /// This is deliberately conservative and does not exempt signed owners.
+    func inspectPotentialRelayOwnerProcesses() -> BrowserDataProcessInspection {
+        guard available else { return .unknown }
+        if processes.values.contains(where: \.relayOwnerIntent) { return .found }
+        return unreadableLiveProcessExists ? .unknown : .absent
+    }
+
+    /// Covers GUI and headless MCP managers. Another window in this PID is
+    /// allowed; another same-user manager must be closed before data restore.
+    /// Unknown kernel identity is never treated as proof of absence.
+    func inspectOtherManagerProcesses(currentPID: pid_t = getpid()) -> BrowserDataProcessInspection {
+        guard available else { return .unknown }
+        for (pid, process) in processes where pid != currentPID && Self.isManagerExecutable(process.executablePath) {
+            guard let identity = kernelIdentities[pid], kernelIdentityRevalidator(pid) == identity else { return .unknown }
+            if process.relayOwnerIntent,
+               relayOwnerCodeValidator(pid, process.executablePath, identity),
+               kernelIdentityRevalidator(pid) == identity { continue }
+            return .found
+        }
+        return unreadableLiveProcessExists ? .unknown : .absent
+    }
+
+    private static func isRelayOwnerIntent(_ process: BrowserProcessArguments) -> Bool {
+        process.arguments.count == 2 && process.arguments.first == process.executablePath &&
+            NeAntikLaunchIntent.parse(arguments: process.arguments).mode == .proxyRelayOwner
+    }
+
+    static func isManagerExecutable(_ path: String) -> Bool {
+        // Compare canonical executable keys, including the historical manager.
+        // This is a conservative data-restore guard, never a displayed label.
+        // Case variants on a case-insensitive macOS volume must also block restore.
+        ["neantik", "nevision"].contains(URL(fileURLWithPath: path).lastPathComponent.lowercased())
+    }
+
     fileprivate static func reducedEntry(
         from process: BrowserProcessArguments
     ) -> (
@@ -251,7 +314,8 @@ struct BrowserProcessInventory: Sendable {
                 executablePath: URL(
                     fileURLWithPath: process.executablePath
                 ).standardizedFileURL.path,
-                browserDataPaths: extraction.paths
+                browserDataPaths: extraction.paths,
+                relayOwnerIntent: isRelayOwnerIntent(process), unsafeDataPath: extraction.unsafePathExists
             ),
             extraction.unsafePathExists
         )
@@ -401,8 +465,23 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
             },
             unreadableLiveProcessExists: unreadableLiveProcessExists,
             available: true,
-            riskSources: riskSources
+            riskSources: riskSources,
+            relayOwnerCodeValidator: { pid, path, generation in Self.isCurrentSignedRelayOwner(pid, path, generation) }
         )
+    }
+
+    /// Role text alone is never a restore exemption. Old/unsigned images
+    /// remain conservative blockers; parent may legitimately be launchd.
+    private static func isCurrentSignedRelayOwner(_ pid: pid_t, _ path: String, _ generation: BrowserProcessKernelIdentity) -> Bool {
+        guard let ownExecutable = Bundle.main.executableURL, let identifier = Bundle.main.bundleIdentifier,
+              ownExecutable.standardizedFileURL.path == path,
+              let identity = ProxyRelaySocketOwnerInspector.processIdentity(pid),
+              identity.generation == generation, identity.userID == geteuid(),
+              let team = try? ProxyRelayExpectedCode.teamIdentifier(at: ownExecutable, expectedIdentifier: identifier),
+              let pin = try? ProxyRelayExpectedCode.qualifiedPin(at: ownExecutable, expectedIdentifier: identifier, expectedTeamIdentifier: team)
+        else { return false }
+        return ProxyRelayLiveCodeVerifier.matches(processID: pid, expectedProcess: identity, expectedCode: pin) &&
+            Self.currentProcessIdentity(pid) == generation
     }
 
     static func isProcessAlive(_ pid: pid_t) -> Bool {
@@ -465,11 +544,63 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
         pid: pid_t
     ) -> Bool {
         guard let executablePath = executablePath(pid: pid) else {
-            // If even the executable identity is unavailable, keep the old
-            // fail-closed behavior.
-            return true
+            // Some hardened applications deny proc_pidpath. A valid live
+            // kernel guest can still identify an unrelated signed executable.
+            // Never trust app display names, argv[0], or filesystem code alone.
+            guard let generation = currentProcessIdentity(pid),
+                  let evidence = verifiedLiveExecutable(pid: pid, generation: generation)
+            else { return true }
+            return executableCanUseNeAntikProfile(evidence.path)
+                || BrowserProcessInventory.isManagerExecutable(evidence.path)
+                || evidence.identifier.hasPrefix("app.neantik.")
+                || evidence.identifier.hasPrefix("app.nevision.")
         }
-        return executableCanUseNeAntikProfile(executablePath)
+        return executableCanUseNeAntikProfile(executablePath) || BrowserProcessInventory.isManagerExecutable(executablePath)
+    }
+
+    struct LiveExecutableEvidence: Equatable {
+        let path: String
+        let identifier: String
+        let cdHash: Data
+    }
+
+    /// A filesystem link alone is not a secure live identity (SecCode.h).
+    /// Validate the kernel guest around each signing-info read, then repeat
+    /// with a fresh guest. Missing, changed, or invalid evidence stays unknown.
+    static func verifiedLiveExecutable(pid: pid_t, generation: BrowserProcessKernelIdentity) -> LiveExecutableEvidence? {
+        guard pid > 0, currentProcessIdentity(pid) == generation else { return nil }
+        var result: LiveExecutableEvidence?
+        for _ in 0..<2 {
+            var guest: SecCode?
+            let attributes = [kSecGuestAttributePid as String: NSNumber(value: pid)] as CFDictionary
+            guard SecCodeCopyGuestWithAttributes(nil, attributes, SecCSFlags(), &guest) == errSecSuccess,
+                  let guest, SecCodeCheckValidity(guest, SecCSFlags(), nil) == errSecSuccess
+            else { return nil }
+            var staticCode: SecStaticCode?
+            guard SecCodeCopyStaticCode(guest, SecCSFlags(), &staticCode) == errSecSuccess,
+                  let staticCode else { return nil }
+            var information: CFDictionary?
+            guard SecCodeCopySigningInformation(staticCode, SecCSFlags(rawValue: kSecCSSigningInformation), &information) == errSecSuccess,
+                  let fields = information as? [String: Any],
+                  let identifier = fields[kSecCodeInfoIdentifier as String] as? String, !identifier.isEmpty,
+                  let hash = fields[kSecCodeInfoUnique as String] as? Data, hash.count == 20,
+                  let url = fields[kSecCodeInfoMainExecutable as String] as? URL,
+                  url.isFileURL, url.path.hasPrefix("/"), url.path.utf8.count <= 4096,
+                  SecCodeCheckValidity(guest, SecCSFlags(), nil) == errSecSuccess,
+                  currentProcessIdentity(pid) == generation
+            else { return nil }
+            // Swift requires an explicit static-code translation. Bind its
+            // reported CodeDirectory hash back to the live kernel guest.
+            let hashText = hash.map { String(format: "%02x", $0) }.joined()
+            var requirement: SecRequirement?
+            guard SecRequirementCreateWithString("cdhash H\"\(hashText)\"" as CFString, SecCSFlags(), &requirement) == errSecSuccess,
+                  let requirement, SecCodeCheckValidity(guest, SecCSFlags(), requirement) == errSecSuccess,
+                  currentProcessIdentity(pid) == generation else { return nil }
+            let evidence = LiveExecutableEvidence(path: url.standardizedFileURL.path, identifier: identifier, cdHash: hash)
+            guard result == nil || result == evidence else { return nil }
+            result = evidence
+        }
+        return result
     }
 
     private static func executablePath(pid: pid_t) -> String? {

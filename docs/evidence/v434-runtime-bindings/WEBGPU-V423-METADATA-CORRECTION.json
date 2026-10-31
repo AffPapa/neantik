@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "V434-portable",
+  "subject": "WebGPU.framework/Versions/A/WebGPU",
+  "originalReceiptSHA256": "4b73031e706c2d8beedfc0c902470ae15d76b6af0055076576464a88fcafecd7",
+  "outputSHA256": "d1c3b7c455a39dd6decac116b87616bd8e392407cb45b542a45b69c109577c84",
+  "originalReportedBytes": 4007776,
+  "observedBytes": 4031032,
+  "signature": "linker-signed ad-hoc; no Developer ID signature",
+  "scope": "Corrects size/signature metadata only; original V423 receipt remains unchanged. Final source-offer verifier binding and recipient relink remain open."
+}

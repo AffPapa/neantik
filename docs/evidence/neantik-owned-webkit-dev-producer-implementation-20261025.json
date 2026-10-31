@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T12:20:25.237666+00:00",
+  "status": "producer-implemented-contract-tested;no-new-zip-or-signature",
+  "files": {
+    "scripts/prepare-owned-webkit-dev-qa.py": "0e0a56f761c56d841e904e11a0a41d650cc00dd79cacd99ae583b116eab1a093",
+    "scripts/tests/test_prepare_owned_webkit_dev_qa.py": "a33930e8e4fed2e3622fef79a397b9d1b48d96bb751553ba1ddd0ed6d5620630",
+    "runtime/neantik-dev-qa-entitlements.plist": "ef3cda48431843049bd0a7c8bed2d39b8f4a6edbb737fc8ff59b1508a71cf923"
+  },
+  "validation": {
+    "unitTests": "3/3 PASS",
+    "retiredCandidate139": "refused before signing due build <=139",
+    "retiredEmbeddedProfile": "refused dev-profile-claims-mismatch in authorized read-only CMS context",
+    "localXcodeProfiles": "3 checked; 0 matched exact Dev app ID, group, existing signer and expiry",
+    "entitlements": "new fixed Dev plist matched exact entitlement set in retired signed Dev app",
+    "syntaxAndDiff": "PASS",
+    "hostPin": "read-only final signed-app host/runtime/Networking pin verification now required before ZIP"
+  },
+  "producerScope": "Input must be a newly assembled signed Dev app with current owned-WebKit notices and an existing exact Dev provisioning profile; copies to owner-only stage, embeds fixture root before re-sign, writes ZIP and receipts, passes static verifier and Swift launcher check-only; no app launch or Apple submission.",
+  "stillRequired": [
+    "obtain or locate valid exact Dev provisioning profile without issuing/exporting a new signing key",
+    "assemble current owned-WebKit Dev app with matching notices and build >139",
+    "run producer in authorized local signing context",
+    "notarize exact ZIP only after byte preflight and then perform headed changed-runtime QA"
+  ],
+  "releaseQualified": false
+}

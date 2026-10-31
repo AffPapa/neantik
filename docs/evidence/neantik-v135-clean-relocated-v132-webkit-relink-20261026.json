@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v135-clean-relocated-v132-webkit-relink-20261026",
+  "observedAtUTC": "2026-10-26T13:13:36Z",
+  "status": "PASS_CLEAN_RELOCATED_V132_WEBKIT_BUILD_14_OF_14_ARM64; NOT_SIGNED_OR_RUNTIME_QUALIFIED",
+  "scope": "Fresh extraction of the exact V132 pinned WebKit archive, main source patch and V36 resource-exclusion patch; clean CMake configure and requested 14 runtime targets. Same Mac/toolchain, not an independent machine, production app, signed replacement/load, browser runtime, notarization or release.",
+  "invalidatedPriorEvidence": "The earlier clean relocated V20 relink did not include the V36 source/resource exclusion patch. V122 fresh build receipt does include its exact hash; this run binds both patches to a fresh source extraction and clean build.",
+  "inputs": {
+    "v132ManifestSHA256": "51363c5319b7b639e5f35c0c68c667eada730d0f0871da61aca472b08c3e54be",
+    "webkitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "mainSourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "patchOrder": [
+      "webkit-v20-source-modifications.patch",
+      "patches/webkit-empty-webkit-infoplist-strings-exclusion-v36.patch"
+    ]
+  },
+  "environment": {
+    "hostArchitecture": "arm64",
+    "xcode": "27.0 (27A5228h)",
+    "developerDirectory": "/Applications/Xcode-beta.app/Contents/Developer",
+    "macOSSDK": "27.0",
+    "swift": "6.4",
+    "cmake": "4.4.3",
+    "ninja": "1.13.2",
+    "deploymentTarget": "15.4",
+    "parallelJobs": 2
+  },
+  "configure": {
+    "command": "xcrun --sdk macosx27.0 cmake -S <fresh-source-root> -B <fresh-build-root> -DPORT=Cocoa -DCMAKE_OSX_SYSROOT=macosx27.0 -DCMAKE_BUILD_TYPE=Release -G Ninja -DCMAKE_MAKE_PROGRAM=<source>/Source/cmake/ninja-wrapper -DSHOW_BINDINGS_GENERATION_PROGRESS=1 -DDEVELOPER_MODE=ON -DENABLE_GPU_PROCESS=ON -DENABLE_WEBXR=OFF -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=15.4 -DUSE_SYSTEM_MALLOC=OFF -DENABLE_WRITING_TOOLS=OFF -DCMAKE_Swift_FLAGS=-module-cache-path\\ <build>/SwiftModuleCache",
+    "cmakeCacheSHA256": "245c791f4088fbd079a1dc5c7161116dff09c3e45de9bf757c1ea397710c92f5",
+    "buildNinjaSHA256": "2a28e27f417390a2f24e8dfe28b5e094e30eee2b22aae165cfbeba308dd38836"
+  },
+  "build": {
+    "requestedActions": 10902,
+    "observedFinalAction": "[10902/10902] Linking Swift shared library libWebKitSwift.dylib; Code signing WebKitSwift",
+    "finalDependencySettlement": "ninja -j2 exit 0; dependency triggers propagated; subsequent -n dry-run reported no work",
+    "warningBoundary": "Non-fatal CoreSimulatorService messages from ibtool and existing Swift warning-group messages; the complete 14-target output set is present, ARM64, and up to date."
+  },
+  "checks": {
+    "outputCount": 14,
+    "allPresent": true,
+    "allArm64": true,
+    "ninjaDryRunNoWork": true,
+    "jscMachHandlerSymbol": "handleSignalsWithMach present as a non-external/local text symbol in nm -m output",
+    "ownedNetworkingServiceName": "app.neantik.desktop.webkit.Networking present in WebKit strings"
+  },
+  "outputs": [
+    {
+      "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "bytes": 40095120,
+      "sha256": "8e6d73e593ee32196767b35a236cffc1f172bd12f23073cdc35ef290f506ef63",
+      "architecture": "arm64"
+    },
+    {
+      "path": "WebGPU.framework/Versions/A/WebGPU",
+      "bytes": 4007776,
+      "sha256": "42e1a8d4205948576032c04a428788cd737d06512aac044cc04acb1608b0dc23",
+      "architecture": "arm64"
+    },
+    {
+      "path": "libANGLE-shared.dylib",
+      "bytes": 5743216,
+      "sha256": "6ee135a4eb93cfc21ab272147427e5bbf8f63e4345dbd7793d987b8b0baa1570",
+      "architecture": "arm64"
+    },
+    {
+      "path": "libwebrtc.dylib",
+      "bytes": 14531568,
+      "sha256": "dbed8455ea0c93bdd7c20c5ce79723a545a23d12dd22e9da92277d13a4b6efae",
+      "architecture": "arm64"
+    },
+    {
+      "path": "WebCore.framework/Versions/A/WebCore",
+      "bytes": 98312576,
+      "sha256": "2dfb23280d68b0b89bf493a16de3696a326ccf8cdb88722593998bb00bbdd6a8",
+      "architecture": "arm64"
+    },
+    {
+      "path": "WebKitLegacy.framework/Versions/A/WebKitLegacy",
+      "bytes": 4695792,
+      "sha256": "9555d1441c44a767e5636e57483f763d6d13464620c6be57dfd24811827b72e1",
+      "architecture": "arm64"
+    },
+    {
+      "path": "WebInspectorUI.framework/Versions/A/WebInspectorUI",
+      "bytes": 16832,
+      "sha256": "aa5f2f762b8f02f4679f488b32836e6d8fc099ed9fb0ce0802900bcf5ad47c35",
+      "architecture": "arm64"
+    },
+    {
+      "path": "WebKit.framework/Versions/A/WebKit",
+      "bytes": 56505464,
+      "sha256": "9d22770904538771607524af37bba48f45959d3aadc41b96ba8bf40f02018ab6",
+      "architecture": "arm64"
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development",
+      "bytes": 34000,
+      "sha256": "3ecf2f2b7650e65257e561ccd93187f58b7ed9559356ad412baf03bea8f736a0",
+      "architecture": "arm64"
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development",
+      "bytes": 34096,
+      "sha256": "b031d2c898581f1b83e744eaad83316621fe4e7eaef91c1b242a7b4fe11d7d8a",
+      "architecture": "arm64"
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development",
+      "bytes": 34000,
+      "sha256": "4ff32a6b2068f4383fc9ca0d09a27f1f161374a919e2fb416a34491af1314f9e",
+      "architecture": "arm64"
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development",
+      "bytes": 34016,
+      "sha256": "95e5eb9fd76d4525ed22b0ecec74ab531fd3abcb067886a5469f682021586e75",
+      "architecture": "arm64"
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development",
+      "bytes": 34016,
+      "sha256": "1c3ff4505f7bfb597fb042f4ba2b8b277377bc87671da11d3dc9902b3eb0f0bb",
+      "architecture": "arm64"
+    },
+    {
+      "path": "libWebKitSwift.dylib",
+      "bytes": 160832,
+      "sha256": "a30fe4e2947b08ea17c784218a2c833426be9040f52d136f29a9abd070044b41",
+      "architecture": "arm64"
+    }
+  ],
+  "candidateChanged": false,
+  "signed": false,
+  "notarized": false,
+  "published": false
+}

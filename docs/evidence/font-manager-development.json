@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "status": "ordinary-manager-regression-passed;runtime-qualification-pending",
+  "productionSourceCommit": "6206e3264cc77cc87da0ea0f8b01b97a4abf3d5d",
+  "compiledInputSHA256": "ebf48d760011e827cd66daa636054cbe71b8d918de7ecfab841bb1d361eae3fb",
+  "ordinarySwiftSuites": 173,
+  "summaryTestsIncludingDisabled": 1609,
+  "disabledTestLogLines": 46,
+  "reuse": {
+    "matchingPriorExecutions": 150,
+    "newAndPreviouslyUnrunSuites": 23,
+    "basis": "Only suite-local isolation fixture changed; production and shared test inputs unchanged. Original failures retained."
+  },
+  "python": {
+    "priorProductionContractTests": 1501,
+    "priorSkipped": 19,
+    "newWorkflowControls": 30
+  },
+  "corrections": [
+    "reconstruct only exact observed SwiftPM backend warning in merged summary; nonzero/empty/skipped-only still fail",
+    "inject deterministic resource state only into owned shell-stub fixture; explicit pressure negative control",
+    "exclude entirely opt-in WebKitDeletionLiveTests from ordinary CI; headed gate remains separate"
+  ],
+  "remoteCI": "dispatch403; no remote run and no remote PASS",
+  "nativeBrowser": false,
+  "shippedRuntimeChanged": false,
+  "releaseQualified": false,
+  "remaining": [
+    "renderer witness and linked runtime",
+    "headed exact-runtime policy controls",
+    "qualified manager activation and signed release gates"
+  ],
+  "capturedAt": "2026-10-15T19:25:56.985451+00:00"
+}

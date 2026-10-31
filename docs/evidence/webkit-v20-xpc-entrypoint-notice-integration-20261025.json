@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "status": "verified",
+  "scope": "Exact BSD-2-Clause source-header notice for one shared WebKit XPC entrypoint source input mapped to five pinned WebKit XPC runtime images; not a full image/dependency license decision or release approval.",
+  "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+  "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+  "sourcePath": "Source/WebKit/Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp",
+  "sourceSHA256": "5363ad87e3e7049a31497f886ba8e8af496dcee316845997b31592d79ed44755",
+  "runtimeMap": "docs/evidence/webkit-v20-xpc-entrypoint-notice-map-20261025.json",
+  "runtimeMapSHA256": "7b942e2df8cf8799f598ea4615527907360464e21b4889376536f1378843ff4f",
+  "notice": "docs/evidence/third-party/webkit-process/AuxiliaryProcessMain-BSD-2-Clause.LICENSE",
+  "noticeSHA256": "193fa78ff7879bf105a6a1ad66a50ba0355d5068e67ed911e4bcee7eb19dc9af",
+  "mappedRuntimeImageCount": 5,
+  "generator": "scripts/webkit_runtime_notices.py",
+  "checks": {
+    "pinnedMapAndNoticeHashes": true,
+    "noticeIncludedInMarkdownAndHtml": true,
+    "packagedNoticeBytesVerified": true,
+    "unitCommand": "python3 -m unittest scripts.tests.test_webkit_runtime_notices",
+    "unitResult": "32 tests passed",
+    "diffCheck": "PASS"
+  },
+  "limitations": [
+    "Source mapping is technical provenance and does not establish complete image/dependency terms.",
+    "The notice is integrated into the generator for the next package; signed candidate 139 is unchanged.",
+    "No build, signing, notarization, native QA, publication, or live-site change occurred."
+  ]
+}

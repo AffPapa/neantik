@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-25",
+  "status": "implemented; focused tests pass; headed behavior unverified",
+  "scope": "manager launch admission for isolated WebKit and asynchronous proxy preparation",
+  "finding": "Isolated WebKit launch ran as an untracked Task. Busy errors offered Retry and a dismiss-only Cancel, while the admission slot could not cancel the active asynchronous preparation. Repeated attempts therefore could leave the user with the same busy message and no visible recovery action.",
+  "change": {
+    "files": [
+      "Sources/NeAntik/ContentView.swift",
+      "Sources/NeAntik/ManagerLaunchAdmission.swift",
+      "Tests/NeAntikTests/ManagerLaunchAdmissionTests.swift"
+    ],
+    "behavior": [
+      "Track isolated WebKit startup in the same cancellable task registry as proxy preparation.",
+      "Expose cancellation for the exact active asynchronous admission, including across manager windows.",
+      "Keep the admission slot until the cancelled operation unwinds; do not release it early.",
+      "Stop a browser process if cancellation races with successful asynchronous startup."
+    ]
+  },
+  "verification": {
+    "command": "SWIFTPM_MODULECACHE_OVERRIDE=/private/tmp/neantik-swift-modulecache CLANG_MODULE_CACHE_PATH=/private/tmp/neantik-swift-modulecache swift test --disable-sandbox --jobs 2 --scratch-path /private/tmp/neantik-swiftpm-scratch --filter ManagerLaunchAdmissionTests",
+    "result": "PASS: 5 tests in 1 suite",
+    "invalidated": "SwiftPM performed a fresh package compile because the scratch path was new; no Chromium or owned WebKit runtime rebuild occurred."
+  },
+  "releaseImpact": {
+    "candidate139BytesChanged": false,
+    "candidate139IncludesFix": false,
+    "releaseCandidateNeedsManagerRebuild": true,
+    "publicReleaseChanged": false,
+    "nativeWindowQA": "not run"
+  },
+  "limitations": [
+    "This source fix is not yet in a signed or notarized package.",
+    "No claim is made that every reported WebKit startup failure has this cause; the change adds recoverable cancellation and prevents this class of stuck admission."
+  ]
+}

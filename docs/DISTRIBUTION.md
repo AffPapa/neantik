@@ -40,16 +40,15 @@ A public release must:
 2. build the manager in Release mode for ARM64;
 3. embed the source-pinned Chromium runtime;
 4. preserve all third-party notices;
-5. pass the Swift, privacy, localization, runtime, and A → B → A gates;
+5. pass the Swift, full-app public-artifact privacy, localization, runtime,
+   and A → B → A gates;
 6. sign every nested Mach-O with Developer ID Application;
-7. embed an Apple-signed Developer ID distribution provisioning profile that
-   authorizes the exact `app.neantik.desktop` Keychain access group;
-8. use Hardened Runtime and a trusted timestamp;
-9. be accepted by Apple notarization;
-10. staple the ticket to `NeAntik.app`;
-11. pass `codesign`, `stapler`, and Gatekeeper after a fresh extraction;
-12. publish a SHA-256 sidecar and release metadata;
-13. be downloaded again from GitHub and independently reverified before the
+7. use Hardened Runtime and a trusted timestamp;
+8. be accepted by Apple notarization;
+9. staple the ticket to `NeAntik.app`;
+10. pass `codesign`, `stapler`, and Gatekeeper after a fresh extraction;
+11. publish a SHA-256 sidecar and release metadata;
+12. be downloaded again from GitHub and independently reverified before the
     release is marked public.
 
 The release is deliberately two-phase. First,
@@ -62,11 +61,16 @@ signed-in user's Terminal, then writes the compact schema-3
 validated public binding. Every attempt uses a new private `0700` state
 directory; its binding and log are never public artifacts. A fresh GUI
 A → B → A audit must be run by that exact candidate with explicit canonical
-manifest/output paths. The app keeps raw schema-7 observations in memory and
-writes one authenticated schema-8 privacy aggregate; release tooling rejects
-raw diagnostic reports.
+manifest/output paths. Current development source uses audit schema 8,
+payload schema 2, binding schema 2 and an authenticated schema-9 aggregate.
+The binding pins the exact semantic policy and schema tuple. Release tooling
+rejects raw diagnostic reports. Historical schema-8 artifacts keep their
+original policy and remain verifiable through closed version dispatch; they
+cannot substitute for schema-9 evidence. See
+[FINGERPRINT_EVIDENCE_POLICY.md](FINGERPRINT_EVIDENCE_POLICY.md). This source
+update has not qualified or published the final major candidate.
 `release-direct.sh` only verifies and notarizes it; it never rebuilds or
-re-signs after the GUI run. Notarization pins the manifest, schema-8 evidence,
+re-signs after the GUI run. Notarization pins the manifest, versioned authenticated evidence,
 attestation and Info.plist to a private owner-only transaction. The live app is
 packaged exactly once. Apple receives that sealed private ZIP; after the same
 submission ID is independently confirmed `Accepted`, only a fresh app
@@ -120,6 +124,14 @@ is counted but not enumerated, never blocks a release, and is never treated as
 permission for automatic deletion. The report contains only bounded counts
 and stage/status enums—no paths, per-entry identifiers, UUIDs, archive names,
 hashes or Apple identifiers.
+
+An owner-reviewed retired transaction that reached Apple `accepted` but failed
+before public publication may carry a canonical
+`notary-reconciliation.json` marker with result `accepted-not-published`.
+The marker is valid only for that exact transaction's known Accepted state;
+the accepted archive remains retained privately and is not treated as a public
+release. This is distinct from `submission-absent`, which is reserved for a
+pre-effect submit intent proven absent from Apple's history.
 
 ```bash
 python3 scripts/notary_transaction_inspector.py \
@@ -190,16 +202,6 @@ compatibility flag; that flag is forbidden for new releases.
 Developer ID certificates, private keys, Apple credentials, and notary
 profiles remain in the release owner's Keychain. They are not committed,
 printed, uploaded as GitHub Actions secrets, or requested in issues.
-The Developer ID distribution provisioning profile is also external release
-input and must be supplied through `NEANTIK_PROVISIONING_PROFILE`. Source gates
-reject both `.provisionprofile` and `.mobileprovision` files in the public
-repository. The profile must be Apple-signed, unexpired, distribution-wide,
-and authorize the exact NeAntik Team ID, application identifier, and Keychain
-access group. Its `DeveloperCertificates` must also contain the exact
-Developer ID certificate selected by `NEANTIK_SIGNING_IDENTITY`; the release
-gate checks this before the expensive build and checks the final app
-certificate again before Secure Enclave enrollment. Development, ad hoc,
-debug and App Store sandbox profiles fail closed.
 
 The initial GitHub workflow builds and tests unsigned source only. Signed
 release artifacts are produced on the trusted local Apple Silicon builder and

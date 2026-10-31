@@ -1,0 +1,36 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "7ac0f0db2eeb93afff9f351188716fcfbc9d6b4bb40a8ee4a7afca1410fb9663",
+  "payload": {
+    "label": "native-bidi-dependency-license-boundary",
+    "patchSHA256": "1ad33c59b84b3738de0c6f4ed963ca6705c46401408bbe7fc31b34b1e51aa33c",
+    "postimages": {
+      "third_party/chromium-bidi/rollup.config.mjs": "4fea8261887611741680bf8254288a387588caa059a4ebb633dd986322977845",
+      "third_party/chromium-bidi/src/BUILD.gn": "8eb3f498be16ae3bdfc91b2ac4afc04149eb210f0c8aa2f603d572d933f2e0d6"
+    },
+    "preimages": {
+      "third_party/chromium-bidi/rollup.config.mjs": "e3e5755f2814757d03691a63ca21b9c0fbcca8d16c1ef5bbd53225f273b79fa3",
+      "third_party/chromium-bidi/src/BUILD.gn": "b661c4762644a17309561c845b241a691808a55402bcbfd031ea8649d0b8af43"
+    },
+    "releaseReady": false,
+    "review": "Old BiDi guard exact dry-run failed because nativeM156 now depends on checked typed targets; independently preserve all six nativecheckeddeps and add metadata boundary. Preserve unresolved import fail; resolve only pinnedmodules.",
+    "schemaVersion": 1,
+    "status": "source-applied-graph-and-bundle-tests-pending"
+  },
+  "payloadType": "json",
+  "receipt": "m156-bidi-correction.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

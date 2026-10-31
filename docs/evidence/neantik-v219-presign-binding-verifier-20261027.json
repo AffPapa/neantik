@@ -1,0 +1,16 @@
+{
+  "status": "FOCUSED_TESTS_AND_REAL_DRAFT_PASS_FULL_REGRESSION_RUNNING",
+  "checker": "/private/tmp/neantik-release-v1/scripts/verify-webkit-presign-binding.py",
+  "checkerSHA256": "0b1ba23bbaf1ab06acba7cd983f3106db631c05cfb9526db00996b0d5aef062a",
+  "tests": "/private/tmp/neantik-release-v1/scripts/tests/test_verify_webkit_presign_binding.py",
+  "testsSHA256": "5d1b3dd5b894590646cb3a7f83403dda98b4a1e91ee42d6b81318a107c36bff9",
+  "targetedTests": "6/6 PASS including changed source, changed image, symlink, invalid evidence and mismatched mapping",
+  "realDraft": "PASS exact pinned input/source archives and patches, 14 rebuilt outputs, 16 staged images, nine evidence files, eight partial notice groups",
+  "fullSwift": {
+    "status": "RUNNING",
+    "sessionId": 70596
+  },
+  "fullPython": "pending after Swift completes",
+  "scope": "private presign static check only; neither complete notice applicability nor signed/runtime/release qualification",
+  "releaseQualified": false
+}

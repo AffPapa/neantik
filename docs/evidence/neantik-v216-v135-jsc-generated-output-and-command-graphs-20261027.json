@@ -1,0 +1,62 @@
+{
+  "status": "JSC_SIX_REVIEWED_LINKED_GENERATED_OUTPUTS_AND_HEADER_BUNDLE_MATCH_V135",
+  "imageSHA256": "8e6d73e593ee32196767b35a236cffc1f172bd12f23073cdc35ef290f506ef63",
+  "historicalNoticeManifestSHA256": "0d31b87bbe5a87a4718c89f4775ebff04cd4fab1945db55c47a0b5cd884c7946",
+  "headerBundleSHA256": "eba2a7319405fa1ac2eacd09c4146aab12afac07578a617d0528d8d869d7119a",
+  "reviewedGeneratedOutputs": 6,
+  "exactGeneratedOutputHashesMatch": 6,
+  "linkedObjectDependencyRecordsMatch": 6,
+  "exactHeaderBytesMatchNoticeBundle": 6,
+  "normalizedCommandGraphComparisons": [
+    {
+      "target": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "commands": [
+        2622,
+        2622
+      ],
+      "orderedCommandsEqual": true,
+      "commandMultisetsEqual": true,
+      "onlyV122": 0,
+      "onlyV135": 0
+    },
+    {
+      "target": "WebCore.framework/Versions/A/WebCore",
+      "commands": [
+        9712,
+        9712
+      ],
+      "orderedCommandsEqual": false,
+      "commandMultisetsEqual": true,
+      "onlyV122": 0,
+      "onlyV135": 0
+    },
+    {
+      "target": "WebKit.framework/Versions/A/WebKit",
+      "commands": [
+        10883,
+        10883
+      ],
+      "orderedCommandsEqual": false,
+      "commandMultisetsEqual": true,
+      "onlyV122": 0,
+      "onlyV135": 0
+    },
+    {
+      "target": "libwebrtc.dylib",
+      "commands": [
+        2650,
+        2650
+      ],
+      "orderedCommandsEqual": true,
+      "commandMultisetsEqual": true,
+      "onlyV122": 0,
+      "onlyV135": 0
+    }
+  ],
+  "limits": [
+    "source output/notice scope is six named generated files only",
+    "command multisets do not prove graph order, execution or complete transitive inputs",
+    "no final image notice coverage, signature or runtime qualification"
+  ],
+  "releaseQualified": false
+}

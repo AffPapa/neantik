@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "status": "exact-v20-production-build-tree-recovered-and-config-hash-matched;source-offer-still-incomplete",
+  "observedAt": "2026-10-25T00:27:40Z",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "upstream": {
+    "repository": "https://github.com/WebKit/WebKit",
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "tree": "86b6ee8faf130e81a149280914e4ea5718f60129",
+    "archiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "patchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735"
+  },
+  "recoveredBuildTree": {
+    "retained": true,
+    "localStorage": "private temporary production build workspace",
+    "cmakeCache": {
+      "sha256": "bf38a4db6cf695dbc6b88d878c379521a97b87d7ea93c1ef493c0f9b929ea17c",
+      "bytes": 69068
+    },
+    "buildNinja": {
+      "sha256": "691f704d4a75b80b5f4e8652a1d758b78e135f83b089b61a378df3c20bffc570",
+      "bytes": 60390478
+    }
+  },
+  "configuration": {
+    "buildType": "Release",
+    "generator": "Ninja",
+    "architecture": "arm64",
+    "deploymentTarget": "15.4",
+    "sdk": "macosx27.0",
+    "cmakeVersion": "4.4.3",
+    "xcodeVersion": "27.0",
+    "xcodeBuild": "27A5228h",
+    "ninjaVersion": "1.13.2",
+    "featureOptionCount": 146,
+    "targetListSHA256": "9c32432e717a5c3d8661d30027ff0d31c0c9930cc8ceef98b60638378c56925e",
+    "configuredJobs": 4,
+    "configuredBuildExitCode": 0
+  },
+  "matchingEvidence": {
+    "sourceOfferInputs": {
+      "path": "docs/evidence/webkit-v20-source-offer-inputs-20261025.json",
+      "sha256": "6d95f94f7e1c33557f8d3d1a7d989a7d77a8b681de29c153afbd9af5895762bd"
+    },
+    "linkTargetLineage": {
+      "path": "docs/evidence/webkit-v20-link-target-input-lineage-addendum-20261025.json",
+      "sha256": "17cefa1d78f880a43322d7a2acde5010f366b7aebabe7c4adfcd59ce57aa5de2",
+      "targetMappedImages": 5,
+      "sourceInputRecords": 2397,
+      "missingSourceInputs": 0
+    }
+  },
+  "actionsThisTurn": {
+    "engineBuildRepeated": false,
+    "cmakeReconfigureRepeated": false,
+    "buildTreeHashesComparedOnly": true,
+    "duplicateSourceExtractionRemovedAfterInspection": true
+  },
+  "scopeLimit": "This proves that the retained local production build tree has CMakeCache and build.ninja bytes matching the exact previously pinned v20 configuration. It does not prove the complete transitive dependency offer, legal notice applicability, reproducibility by a recipient, production signing, native qualification, or release readiness.",
+  "cleanup": {
+    "temporaryDuplicateSourceExtractionRemoved": true,
+    "preserved": [
+      "pinned WebKit source archive and patch",
+      "exact-match private production build tree with CMakeCache.txt and build.ninja",
+      "signed candidate and all release receipts"
+    ],
+    "filesystemSpaceFreed": "not asserted; APFS allocation and clone sharing were not measured"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "V380",
+  "observedAtUTC": "2026-10-28T05:00:44Z",
+  "status": "PASS_MACOS_154_CONFIGURE_WITH_TEXT_EXTRACTION_MODEL_SOURCE_OMITTED; OTHER_MODEL_RIGHTS_OPEN",
+  "scope": "On a fresh detached copy of the V135 WebKit source tree with the V378 patch applied, removed only the exact TextExtractionFilter.mlmodel source asset and configured a clean arm64/macOS 15.4 CMake/Ninja tree. Configure passed and the generated graph contains no TextExtractionFilter model target/output paths. This proves configure does not require that asset for this deployment target; it is not a full build, runtime, package, license conclusion, or recipient relink.",
+  "inputs": {
+    "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "upstreamArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "sourceAssetOmitted": {
+      "path": "Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+      "sha256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f"
+    },
+    "v378PatchSHA256": "a3a8e43188e6f0fcd3a603e0f3e6a814283da6f56a268f206b10f7fc97416ee2"
+  },
+  "environment": {
+    "cmake": "4.4.3",
+    "sdk": "macosx27.0",
+    "deploymentTarget": "15.4",
+    "architecture": "arm64"
+  },
+  "result": {
+    "sourceAssetPresent": false,
+    "configureExitCode": 0,
+    "cmakeCacheSHA256": "3d79a5e13126d1adc9f1c47b06ce34ce853411e86a7391ed7df8426d36d91418",
+    "buildNinjaSHA256": "36fc796a9b46a2002ae4777fd180ce2161ea8a506b78ebe9af3eacb3f3edaf7c",
+    "TextExtractionModelTargetPresent": false,
+    "TextExtractionModelOutputReferencesPresent": false,
+    "fullBuildExecuted": false,
+    "stageExecuted": false
+  },
+  "otherModelDisposition": {
+    "path": "Source/WebKit/Resources/ResourceLoadStatistics/corePrediction_model",
+    "sha256": "221555a2cdd2e957f18d478c4b9fd01f308c1613e6e10840cce924e5f543091a",
+    "runtimePath": "WebKit.framework/Versions/A/Resources/corePrediction_model",
+    "status": "UNKNOWN; separate model, active ResourceLoadStatistics consumer, not affected by this change"
+  },
+  "worksheetRowsStillUnknown": [
+    "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/analytics/coremldata.bin",
+    "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/coremldata.bin",
+    "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/metadata.json",
+    "WebKit.framework/Versions/A/Resources/corePrediction_model"
+  ],
+  "limitations": [
+    "The V372/V378 distributed source archive still contains both model source assets; no archive filtering or source-offer consumer update occurred.",
+    "The TextExtractionFilter runtime rows remain UNKNOWN until exact stage/candidate binding.",
+    "No full WebKit build, stage, candidate, signing, notarization, publication, or downloaded-byte verification occurred."
+  ]
+}

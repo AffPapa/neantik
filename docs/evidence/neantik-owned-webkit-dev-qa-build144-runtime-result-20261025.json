@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T13:05:36.484558+00:00",
+  "status": "build144-exact-Dev-QA-runtime-FAIL-navigation-other-before-broker;cause-unresolved",
+  "archiveSHA256": "3c1e01e3bec037654963dddfd705b01b09c4a2b5df7adb601c0fb172214a33dc",
+  "apple": {
+    "submissionID": "57b2f36e-817e-4e5e-8fc5-0c6c8fadc00c",
+    "status": "Accepted",
+    "gatekeeper": "accepted; source=Notarized Developer ID"
+  },
+  "launch": {
+    "exactLauncher": "PASS; one-use marker consumed",
+    "resourceAdmission": "eligible true, memory pressure 1, thermal 0",
+    "managerPID": 44451,
+    "profiles": "2 synthetic profiles loaded; A startPage selected"
+  },
+  "ownedA": {
+    "managerState": "running then stopped once",
+    "localFixtureEvents": 0,
+    "brokerCountersOnFirstClose": "inbound=0 loopback=0 connectMethods=0 httpMethods=0 otherMethods=0 parsed=0 authorized=0 bound=0",
+    "navigationStageOnFirstClose": "stage=qa-nav-failed-other",
+    "tlsStageOnFirstClose": "stage=unknown",
+    "status": "FAIL; navigation failed in other NSError domain before local broker inbound, no direct fixture event"
+  },
+  "diagnosticBoundary": "Current qualification host provides fixed-vocabulary nav stage. Existing callback forwards only numeric codes for NSURLErrorDomain, leaving other-domain failure reason unknown. Do not infer proxy codec failure.",
+  "cleanup": "A stopped; Dev manager quit; fixture interrupted; pgrep found no Dev QA or fixture process",
+  "productionQualified": false,
+  "releaseQualified": false,
+  "nextAction": "Add bounded numeric code and fixed known NSError-domain category to QA navigation markers, test parser, build changed host+manager without rebuilding WebKit engine, then one exact candidate native diagnosis."
+}

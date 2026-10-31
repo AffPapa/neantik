@@ -1,0 +1,19 @@
+diff --git a/chrome/browser/signin/account_consistency_mode_manager.cc b/chrome/browser/signin/account_consistency_mode_manager.cc
+index e146d41..f937e51 100644
+--- a/chrome/browser/signin/account_consistency_mode_manager.cc
++++ b/chrome/browser/signin/account_consistency_mode_manager.cc
+@@ -108,14 +108,7 @@ AccountConsistencyModeManager::AccountConsistencyModeManager(Profile* profile)
+     : profile_(profile) {
+   DCHECK(profile_);
+   DCHECK(ShouldBuildServiceForProfile(profile));
+-#if BUILDFLAG(ENABLE_DICE_SUPPORT)
+-  auto* entry = g_browser_process->profile_manager()
+-                    ? g_browser_process->profile_manager()
+-                          ->GetProfileAttributesStorage()
+-                          .GetProfileAttributesWithPath(profile_->GetPath())
+-                    : nullptr;
+-#endif
+
+   account_consistency_ = ComputeAccountConsistencyMethod(profile_);
+   DCHECK_EQ(account_consistency_, ComputeAccountConsistencyMethod(profile_));
+   account_consistency_initialized_ = true;

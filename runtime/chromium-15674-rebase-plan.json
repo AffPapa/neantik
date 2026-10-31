@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "status": "reviewed-source-inputs-build-complete",
+  "chromiumVersion": "156.0.8078.74",
+  "officialChromiumBase": {
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "156.0.8078.74",
+    "commit": "d331de35ca8ab1358c7a17e4bd41627d55eaef51",
+    "tree": "ffe41d3ec78c520fbe20a43802869358d3e18961"
+  },
+  "targetArchitecture": "arm64",
+  "sourcePatch": {
+    "changedPaths": 746,
+    "addedSourceFiles": 21,
+    "path": "runtime/chromium-15674-neantik.patch",
+    "sha256": "2f48cb944f6e51439322776e3ec0519bd0567e300049253791c60faca46481ea",
+    "bytes": 1295951
+  },
+  "dependencyLock": {
+    "checkoutCount": 150,
+    "path": "runtime/chromium-15674-deps-lock.json",
+    "sha256": "13947f0d4f8655664bdffd2a3541f3bf7ac418b88f6874b628f117286c7f6dcf"
+  },
+  "buildArgs": {
+    "path": "runtime/chromium-15674-args.gn",
+    "sha256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+    "targetArchitecture": "arm64"
+  },
+  "compatibilityPatches": {
+    "devtools": {
+      "status": "source-fix-required-by-TypeScript-6-isolated-declarations",
+      "path": "runtime/chromium-15674-devtools-typescript6.patch",
+      "sha256": "9eed3c3f43f96a00595163971b120c50accbeefeb07b552939b0ba9ad6ae7bfb",
+      "bytes": 1401,
+      "changedPaths": 2,
+      "dependencyCheckout": "src/third_party/devtools-frontend/src",
+      "dependencyCommit": "8c62f844ad8e0664ff41a633bfc17c472f1c5fd6",
+      "reason": "The pinned DevTools checkout requires the recorded two-file TypeScript compatibility patch for this production configuration."
+    },
+    "v8": {
+      "status": "source-fix-required-by-new-pure-virtual-scope-iterator-method",
+      "path": "runtime/chromium-15674-v8-scope-iterator-compat.patch",
+      "sha256": "d06dd32200393a0eacf5dafcf83f6c5dafafc508b97af58013e52cd135d58388",
+      "bytes": 511,
+      "changedPaths": 1,
+      "dependencyCheckout": "src/v8",
+      "dependencyCommit": "235050a0df6db2c9d92a419af2b72fbf3b2dd73b",
+      "reason": "The pinned V8 checkout requires the recorded ScopeIterator compatibility patch for this build."
+    }
+  },
+  "upstreamOverlapCommits": [
+    {
+      "commit": "15da27e569d0aff5a7b3db5f634d461685f8a9bc",
+      "patchSHA256": "549f3b193fd16b9809da20156a57a7122b8594b05041f5ccf9ce4c5933208b7e"
+    },
+    {
+      "commit": "313815df55072e8a0726831b8c5b1f0129f33e9c",
+      "patchSHA256": "4337d64af1f8781035fb4408edf2785635efe18a177841006aeead9885cc377a"
+    }
+  ],
+  "license": {
+    "path": "runtime/licenses/Chromium-LICENSE",
+    "sha256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b"
+  },
+  "securityBaseline": {
+    "path": "runtime/security-baseline.json",
+    "sha256": "7f056eb8f0ec05f9baf8397854cdda36193fba787835563631341a1c45a4dfce"
+  },
+  "buildEvidence": {
+    "path": "runtime/chromium-15674-build-evidence.json",
+    "sha256": "949eb774c329290d091d07baeca62a85b0a221c5e3a5093489ce846f259102f9"
+  },
+  "releaseReady": false,
+  "buildOutputDirectory": "out/NeAntikStable156_48",
+  "sourceAdoptionManifest": {
+    "path": "runtime/chromium-15674-source-adoption-v1.json",
+    "sha256": "b156785787d6c512e9e33126ba0a560d9c59b2cf3fb3404733d9d3771a0a8dfb"
+  }
+}

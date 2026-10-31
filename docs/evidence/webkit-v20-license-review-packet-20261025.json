@@ -1,0 +1,2011 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25",
+  "status": "review-packet-prepared-no-legal-decisions",
+  "purpose": "One exact, candidate-bound packet for qualified open-source licensing review; it does not replace reviewer decisions.",
+  "candidate": {
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "sourceCommit": "955bc0808a1e1a49d3a9f74f2b02e05af9fee3e2",
+    "version": "1.0.0"
+  },
+  "upstream": {
+    "repository": "WebKit/WebKit",
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c"
+  },
+  "inputs": {
+    "worksheet": {
+      "path": "docs/evidence/webkit-runtime-package-notice-worksheet-20261025.json",
+      "sha256": "430a6e166105d46dd2e7f8699db21e96a8c72b76f8fd664a2fd1f6019ceea6e9"
+    },
+    "resourceEvidence": {
+      "path": "docs/evidence/webkit-v20-runtime-resource-license-candidates-20261025.json",
+      "sha256": "f9038f07aaac9bcd244f8d08ef6d3f68d370d5bbc91610cdb242e78a8e3a7b45"
+    },
+    "imageEvidence": {
+      "path": "docs/evidence/webkit-v20-runtime-image-license-evidence-join-20261025.json",
+      "sha256": "38e9f939aef2a9369822761b70e683c926572021e4a16743ab6e14d754863463"
+    },
+    "privateSourceOfferManifest": {
+      "path": "dist/private/source-offers/1.0.0-manager-955/manifest.json",
+      "sha256": "c45c9851a174c81b79664ab89a27f8fcf8638fae874a47c3f5b327019b7dde00",
+      "components": 132
+    },
+    "linkSourceLicenseCandidates": {
+      "path": "docs/evidence/webkit-v20-link-source-license-candidates-20261025.json",
+      "sha256": "70a07ede311458659ba1a9d5b91a90a6bfbd130d809dfe19865bc684cf952f6a"
+    },
+    "libwebrtcUpstreamLicenseMetadata": {
+      "path": "docs/evidence/webkit-v20-libwebrtc-upstream-license-metadata-20261025.json",
+      "sha256": "58728eace4ccaa0ab0c22b6322025f7fc36094466cf7328829ad8b08720bfa96"
+    }
+  },
+  "counts": {
+    "unresolved": 82,
+    "images": 4,
+    "resources": 78
+  },
+  "reviewInstructions": "For every row determine applicable license, notice location/content, corresponding-source/relink duties, and required public distribution text. UNKNOWN values remain blockers until a qualified decision is recorded. Candidate license texts and source/header signals are leads, not legal conclusions.",
+  "scopeLimit": "Factual evidence package only; no legal advice, no license applicability decisions, no release authorization.",
+  "rows": [
+    {
+      "kind": "image",
+      "runtimePath": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "runtimeSHA256": "b18e6c8575354ec022779494daaa0afc48f5e75d412ed96cadef0edba41f6a56",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "candidateLicenseTextPaths": [
+        "Source/JavaScriptCore/COPYING.LIB",
+        "Source/JavaScriptCore/disassembler/ARM64/LICENSE-binja.txt"
+      ],
+      "headerSignalKinds": [
+        "BSD-text-marker",
+        "MPL-text-marker"
+      ],
+      "sourceCount": 35,
+      "sourceRowsMatchingPriorCrosswalkPathAndHash": 10,
+      "evidenceReferences": [
+        "docs/evidence/webkit-jsc-base64-lgpl2-20261020.json",
+        "docs/evidence/webkit-v16-direct-link-object-source-map-20261020.json",
+        "docs/evidence/webkit-v20-link-source-license-candidates-20261025.json"
+      ],
+      "currentSourceEvidenceSummary": {
+        "sourceCount": 35,
+        "exactCompileInputMatches": 35,
+        "notInCompileInputMap": 0,
+        "headerSignalCounts": {
+          "Apple BSD-form": 11,
+          "MPL": 1
+        },
+        "nearestCandidateLicenseTexts": [
+          {
+            "sourcePath": "Source/JavaScriptCore/COPYING.LIB",
+            "sourceCount": 9
+          },
+          {
+            "sourcePath": "Source/JavaScriptCore/disassembler/ARM64/LICENSE-binja.txt",
+            "sourceCount": 1
+          }
+        ],
+        "decisionBoundary": "UNKNOWN; this evidence does not determine applicability or required notice"
+      }
+    },
+    {
+      "kind": "image",
+      "runtimePath": "WebCore.framework/Versions/A/WebCore",
+      "runtimeSHA256": "d23bba6a1e368635e781d3f6c795a355ee0e1a43263651f5c86a6fd0ac46aa80",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "candidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "headerSignalKinds": [
+        "BSD-text-marker"
+      ],
+      "sourceCount": 142,
+      "sourceRowsMatchingPriorCrosswalkPathAndHash": 24,
+      "evidenceReferences": [
+        "docs/evidence/webkit-webcore-selected-unity-source-map-20261020.json",
+        "docs/evidence/webkit-webcore-lgpl-selected-source-slice-20261020.json",
+        "docs/evidence/webkit-v20-link-source-license-candidates-20261025.json"
+      ],
+      "currentSourceEvidenceSummary": {
+        "sourceCount": 142,
+        "exactCompileInputMatches": 142,
+        "notInCompileInputMap": 0,
+        "headerSignalCounts": {
+          "Apple BSD-form": 86,
+          "GNU Lesser GPL": 3
+        },
+        "nearestCandidateLicenseTexts": [
+          {
+            "sourcePath": "Source/WebCore/LICENSE-APPLE",
+            "sourceCount": 25
+          },
+          {
+            "sourcePath": "Source/WebCore/LICENSE-LGPL-2",
+            "sourceCount": 25
+          },
+          {
+            "sourcePath": "Source/WebCore/LICENSE-LGPL-2.1",
+            "sourceCount": 25
+          },
+          {
+            "sourcePath": "Source/WebCore/PAL/ThirdParty/dav1d/COPYING",
+            "sourceCount": 58
+          }
+        ],
+        "decisionBoundary": "UNKNOWN; this evidence does not determine applicability or required notice"
+      }
+    },
+    {
+      "kind": "image",
+      "runtimePath": "WebKit.framework/Versions/A/WebKit",
+      "runtimeSHA256": "876cb2176bc9c722e64b8bbc31f29b1539f435994fda1d4a037c572984943276",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "candidateLicenseTextPaths": [],
+      "headerSignalKinds": [
+        "BSD-text-marker"
+      ],
+      "sourceCount": 29,
+      "sourceRowsMatchingPriorCrosswalkPathAndHash": 9,
+      "evidenceReferences": [
+        "docs/evidence/webkit-v16-direct-link-object-source-map-20261020.json",
+        "docs/evidence/webkit-v20-link-source-license-candidates-20261025.json"
+      ],
+      "currentSourceEvidenceSummary": {
+        "sourceCount": 29,
+        "exactCompileInputMatches": 29,
+        "notInCompileInputMap": 0,
+        "headerSignalCounts": {
+          "Apple BSD-form": 11
+        },
+        "nearestCandidateLicenseTexts": [],
+        "decisionBoundary": "UNKNOWN; this evidence does not determine applicability or required notice"
+      }
+    },
+    {
+      "kind": "image",
+      "runtimePath": "libwebrtc.dylib",
+      "runtimeSHA256": "ce802e6ea83ba3e5faecc7e6b77f156821c74f30ca47fc6cf310caf19d4ffd6f",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "candidateLicenseTextPaths": [],
+      "headerSignalKinds": [],
+      "sourceCount": 2505,
+      "sourceRowsMatchingPriorCrosswalkPathAndHash": 0,
+      "evidenceReferences": [
+        "docs/evidence/webkit-webrtc-notice-reconciliation-20261021.json",
+        "docs/evidence/webkit-v20-link-source-license-candidates-20261025.json",
+        "docs/evidence/webkit-v20-libwebrtc-upstream-license-metadata-20261025.json"
+      ],
+      "currentSourceEvidenceSummary": {
+        "sourceCount": 2505,
+        "exactCompileInputMatches": 2505,
+        "notInCompileInputMap": 0,
+        "headerSignalCounts": {
+          "Apache": 343,
+          "Apple BSD-form": 247,
+          "MIT-like permission": 1,
+          "SPDX:MPL-2.0": 1
+        },
+        "nearestCandidateLicenseTexts": [
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/LICENSE",
+            "sourceCount": 2
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/LICENSE_THIRD_PARTY",
+            "sourceCount": 2
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/PATENTS",
+            "sourceCount": 2
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/license_template.txt",
+            "sourceCount": 2
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/abseil-cpp/LICENSE",
+            "sourceCount": 67
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/LICENSE",
+            "sourceCount": 268
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/boringssl/src/third_party/fiat/LICENSE",
+            "sourceCount": 4
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/crc32c/src/LICENSE",
+            "sourceCount": 2
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/LICENSE",
+            "sourceCount": 217
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/PATENTS",
+            "sourceCount": 217
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libaom/source/libaom/third_party/vector/LICENSE",
+            "sourceCount": 1
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libsrtp/LICENSE",
+            "sourceCount": 17
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/LICENSE",
+            "sourceCount": 266
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/PATENTS",
+            "sourceCount": 266
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libvpx/source/libvpx/third_party/libyuv/LICENSE",
+            "sourceCount": 25
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libwebm/LICENSE.TXT",
+            "sourceCount": 48
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libwebm/PATENTS.TXT",
+            "sourceCount": 48
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libyuv/LICENSE",
+            "sourceCount": 37
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/libyuv/PATENTS",
+            "sourceCount": 37
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/opus/src/COPYING",
+            "sourceCount": 168
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/opus/src/LICENSE_PLEASE_READ.txt",
+            "sourceCount": 168
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/pffft/LICENSE",
+            "sourceCount": 1
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/third_party/rnnoise/COPYING",
+            "sourceCount": 1
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/LICENSE",
+            "sourceCount": 1188
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/PATENTS",
+            "sourceCount": 1188
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/ooura/LICENSE",
+            "sourceCount": 3
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/common_audio/third_party/spl_sqrt_floor/LICENSE",
+            "sourceCount": 1
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/license_template.txt",
+            "sourceCount": 1188
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/fft/LICENSE",
+            "sourceCount": 1
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g711/LICENSE",
+            "sourceCount": 1
+          },
+          {
+            "sourcePath": "Source/ThirdParty/libwebrtc/Source/webrtc/modules/third_party/g722/LICENSE",
+            "sourceCount": 2
+          },
+          {
+            "sourcePath": "Source/WebCore/PAL/ThirdParty/dav1d/COPYING",
+            "sourceCount": 58
+          }
+        ],
+        "decisionBoundary": "UNKNOWN; this evidence does not determine applicability or required notice"
+      },
+      "currentUpstreamNoticeMetadataSummary": {
+        "readmeChromiumRecords": 17,
+        "licenseAndPatentFiles": 8,
+        "scopeLimit": "README.chromium license fields and exact license/patent file hashes are upstream factual declarations. This inventory does not prove that every listed object is linked into this dylib, does not decide license applicability or patent obligations, and does not establish complete binary notices or relink rights. Keep the worksheet UNKNOWN until exact image/source scope and applicable obligations are reviewed."
+      }
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "JavaScriptCore.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "76d18453a418d19a7c98dfd2b45b12b1e8cc8469703ab7b8992476efe6355ad6",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/JavaScriptCore/Info.plist"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/JavaScriptCore/COPYING.LIB"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/ContentFilterBlockedPage.html",
+      "runtimeSHA256": "7d03a657d8d42a281fcd4b86cdfef5fa5557022c1c4f9eac626fe9add922ee01",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/ContentFilterBlockedPage.html"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "b38d826b325d9c5cc5fafe47c53988bc908d866578baf529ef9c8f4ae21399e1",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Info.plist"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/ListButtonArrow.png",
+      "runtimeSHA256": "355c81f5ee8cd663384ccc1a1b1f591a9461db8f28c60566f25d5dc95bc004d4",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/ListButtonArrow.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/ListButtonArrow@2x.png",
+      "runtimeSHA256": "6563d8f14e71a416f65195fd9c8d6aca10f5ce268d19e66d8abac8deccceaeac",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/ListButtonArrow@2x.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/audio/Composite.wav",
+      "runtimeSHA256": "a25fc99a6e875f659aaa9d107c791aeff250030e0d7f16458baf3a00943394e3",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/platform/audio/resources/Composite.wav"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/copyCursor.png",
+      "runtimeSHA256": "6abba47e485d5681de3df619965afe1c30948b574f30f152a3d0c078f062196e",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/copyCursor.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/deleteButtonPressed.tiff",
+      "runtimeSHA256": "41714bf43d3e9dcba593101efa54a0e163b87db4914c6fb7449ee2579fed1fe7",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/deleteButtonPressed.tiff"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/Localizable.strings",
+      "runtimeSHA256": "7cd6a1cb1803de65529bd903f173557d024bede8a8d3ff3df3c783aec2575f96",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/en.lproj/Localizable.strings"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/Localizable.stringsdict",
+      "runtimeSHA256": "1572749aaa7b34c60190be32f41f8657964c70ea253d2edd23691098d58c5f25",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/en.lproj/Localizable.stringsdict"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/en.lproj/modern-media-controls-localized-strings.js",
+      "runtimeSHA256": "5b3e7c236e23b831f8f7a7cc3f639326863d1895fb8109434c1a64fea780aa62",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/en.lproj/modern-media-controls-localized-strings.js"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/linearSRGB.icc",
+      "runtimeSHA256": "25e3578d2f8834f261f450fd18f5399fc822ccca9af583a5fa73d20241b2b7e6",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/linearSRGB.icc"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/missingImage.png",
+      "runtimeSHA256": "c13b9dcf2f6a41033e540d85de3d1e30054bd3b54c0b35229b5a77bd403a7229",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/missingImage.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/missingImage@2x.png",
+      "runtimeSHA256": "40b23dc2728d8499608654a4b89cfd5ad4bd04a09b5b27e4927004e167d41bf7",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/missingImage@2x.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/missingImage@3x.png",
+      "runtimeSHA256": "99e0c1a9d026c61ea3ed12a7ad14087b0ceeac04b08caba7ab648c0ae8be5ed4",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/missingImage@3x.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modelDefaultDiffuseData",
+      "runtimeSHA256": "29a81b4539dccf31a32618e7b7164a61677ed73abb16a1fbbe17c4c314c9632a",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/modelDefaultDiffuseData"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modelDefaultSpecularData",
+      "runtimeSHA256": "64fee6af9089b94448cbb0049763f6f8e7f62cd95042e8d44a6ee6514210458a",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/modelDefaultSpecularData"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Airplay-fullscreen.svg",
+      "runtimeSHA256": "a205eeab51428db7ebd02bcca10371d81d118e0f6b5d53476f034bc0f5ab32ee",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Airplay-fullscreen.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Airplay.svg",
+      "runtimeSHA256": "01a3e76dd4c7ef1cf3670df846c56e9f95a3e3daf860af3df4bf5f5d10701a40",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Airplay.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Ellipsis.svg",
+      "runtimeSHA256": "994400892d32ce6f86c1c5907d680c3f552c3e0a76e7715a5d1cee97efee23f4",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Ellipsis.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/EnterFullscreen.svg",
+      "runtimeSHA256": "585fbe6f89a5d7e3a83c9dc6b0cf2d96fcdb71dec4fb4844088452d0e2eba327",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/EnterFullscreen.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/ExitFullscreen.svg",
+      "runtimeSHA256": "389cf6968410375531876045d87f6d01554ce7bb100854eff3b85b428194e19e",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/ExitFullscreen.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Forward.svg",
+      "runtimeSHA256": "e7796fe2caf6a95c24938e77b1a7bc8e0511841566bad00852fef9d6caa364f2",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Forward.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/MediaSelector-fullscreen.svg",
+      "runtimeSHA256": "8ce86ddc35d989ee22ea8fa5b06d6543c34fd6e4c4ad8ad38f8162e1bf38c426",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/MediaSelector-fullscreen.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/MediaSelector.svg",
+      "runtimeSHA256": "52eae82ea5ba789c9cacebe4a859900a7603dc244227c69c37a2bd0959d451a6",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/MediaSelector.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Overflow.svg",
+      "runtimeSHA256": "1e224e0e0c03a7ead095b3bbbff1fcda2d48fc84905db3ceab35ae2be5e2a4cb",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Overflow.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Pause.svg",
+      "runtimeSHA256": "b84c8b189b9c215873c3047f521f41d7f39a4dc2d80b5c314448b5aec3d5bbca",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Pause.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/PipIn-fullscreen.svg",
+      "runtimeSHA256": "92d244cf4e1b6944935495824546fe312fcbcd6f64f2fc5a40f6de79cdb21f8c",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/PipIn-fullscreen.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/PipIn.svg",
+      "runtimeSHA256": "177e90824b6d206dd713c3d864ffa5c02a9d4aa8513eefe78c7e0a5a90c6d9bc",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/PipIn.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Play.svg",
+      "runtimeSHA256": "0c3f0910bde6fa119539e587e2d6dd44e6e4f62cc1267b5348f4ccaa2a70d755",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Play.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Rewind.svg",
+      "runtimeSHA256": "5e3c4d342b9adffcf22718cd7aedc6b05d6ee12f0d1a571026f66eb35e9f092a",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Rewind.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipBack10.svg",
+      "runtimeSHA256": "48237b2391c45965c8d3470a759b35cd5d1822c68c08c52ea4304d39dea99ebd",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipBack10.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipBack15.svg",
+      "runtimeSHA256": "3cc8c5dafe25acc9b63350f4f379ff57e0bf6983f37e05eaecc9bb7e70099a69",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipBack15.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipForward10.svg",
+      "runtimeSHA256": "d098c6c9cacecc609bc7abead553cdb7e7ccadfdd15ff8a0f804f3f4dc1dbedc",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipForward10.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/SkipForward15.svg",
+      "runtimeSHA256": "38304441d6a259c755e2a40110dd9fdd82ab9381d108df5f8b7b311268c130f3",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/SkipForward15.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume0-RTL.svg",
+      "runtimeSHA256": "12fc441e9a16a6255f8fbad191782f258a81c0c8c58f19bd081f4ab18683ac24",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume0-RTL.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume0.svg",
+      "runtimeSHA256": "fef1af73785a6209cd112e012bdc21390bbb24ab315c26716d8b8b7bc3e497e3",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume0.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume1-RTL.svg",
+      "runtimeSHA256": "985be2fd9f1d308310dfc14e54ccb6b0a088dbabb2372cd3a9bddfd4a9e28000",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume1-RTL.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume1.svg",
+      "runtimeSHA256": "04086b14f4b5a9fd2bb25a2d7198bf372887e8d134ec6d3bf03043a1bf101bcc",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume1.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume2-RTL.svg",
+      "runtimeSHA256": "8a13ad7dfea2226665a1ba20e7e1a3f8a10152f3723533544532066f176eab40",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume2-RTL.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume2.svg",
+      "runtimeSHA256": "67b934fa97245e3a72d44ad8fd1faa5333f5cbdb345b1924a19c069df01348eb",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume2.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume3-RTL.svg",
+      "runtimeSHA256": "c793810d2462566c8ba0aed3aa458ba4525b75264a95fe9fbee81bae897f270c",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume3-RTL.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/Volume3.svg",
+      "runtimeSHA256": "7eb427a1ff559df9053482e721c2af6af6a1c5b24de4658ca4b2ed37c07e0519",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/Volume3.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/VolumeMuted-RTL.svg",
+      "runtimeSHA256": "820a216222f8cab50166815392a372ccae4950624da5fddb3d63f0da0747dc25",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/VolumeMuted-RTL.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/VolumeMuted.svg",
+      "runtimeSHA256": "51d4758d87c22dfac3f2f9e6785131d7d31b75355fff33c90dab512dc0578431",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/VolumeMuted.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/X.svg",
+      "runtimeSHA256": "cf45cbee32f642c830729dd3bb2b182ceef89c8eb33e7e90ccec446dda67e007",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/X.svg"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/airplay-placard@1x.png",
+      "runtimeSHA256": "66f9a92669b95249589b3c0f41ffaf0dd6a0f2b94f39977a09fbe4c168062acc",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/airplay-placard@1x.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/airplay-placard@2x.png",
+      "runtimeSHA256": "027c770c430b673f300b38f11fd6fee49066b8f260b08910344b285a72c4c4e8",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/airplay-placard@2x.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/invalid-placard@1x.png",
+      "runtimeSHA256": "38c8818439eea65a351b0173a3bd9680b9222575b69db8e31badf5869bf3ac58",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/invalid-placard@1x.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/invalid-placard@2x.png",
+      "runtimeSHA256": "5350e4005d0a71c7fa875084050bef398f44c3f44df9ae724b4b44dfe1341be7",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/invalid-placard@2x.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/pip-placard@1x.png",
+      "runtimeSHA256": "7c1767b84a7c2931be8c902ec07c7d27614a0a2bc30de47a238fda02abbaff1a",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/pip-placard@1x.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/modern-media-controls/images/pip-placard@2x.png",
+      "runtimeSHA256": "c98db6839c47362eb45bcea0a516566169b7c2d3e2b4429a2f803b663ae8761d",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Modules/modern-media-controls/images/macOS/pip-placard@2x.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/moveCursor.png",
+      "runtimeSHA256": "1f0018318f073a57aa89ae175bec415a2aef08404c72e535b8fefeb428590329",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/moveCursor.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/northEastSouthWestResizeCursor.png",
+      "runtimeSHA256": "4046f55f3bf75fe95e97e89accf66abd3dbb1b3a3efcc11634d5a0445e41b567",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/northEastSouthWestResizeCursor.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/northSouthResizeCursor.png",
+      "runtimeSHA256": "981f06426340c8f89d4a11ac74ed19761349f51971f5b008fbff89e7801a6e70",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/northSouthResizeCursor.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/northWestSouthEastResizeCursor.png",
+      "runtimeSHA256": "22955be467d52156c11592f7f2d21682286f062177b0d9a832fd0b8ee5060e5d",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/northWestSouthEastResizeCursor.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/nullPlugin.png",
+      "runtimeSHA256": "a843b525433e2af0368b1b71440e7d68d4bd186cbb1cb40167075e3e5b1b9e76",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/nullPlugin.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/nullPlugin@2x.png",
+      "runtimeSHA256": "e42fe90f106796f57df13cf075684cced58b4a7be566af603a4b31f7577bcc5a",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/nullPlugin@2x.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/panIcon.png",
+      "runtimeSHA256": "1f0018318f073a57aa89ae175bec415a2aef08404c72e535b8fefeb428590329",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/panIcon.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/textAreaResizeCorner.png",
+      "runtimeSHA256": "16d9c626d3faf3907a10819493d53d43ab4a09a0eeafec92e1492afbb03c4c8b",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/textAreaResizeCorner.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebCore.framework/Versions/A/Resources/textAreaResizeCorner@2x.png",
+      "runtimeSHA256": "4557192b829da5e271abf02024cc0a7e1ae2153b79b98682a330bfa48c1e57bf",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebCore/Resources/textAreaResizeCorner@2x.png"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebCore/LICENSE-APPLE",
+        "Source/WebCore/LICENSE-LGPL-2",
+        "Source/WebCore/LICENSE-LGPL-2.1"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebGPU.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "d1b62a69cb77ccc8cea6b51760021849ab53f472db0781cb6890a1106a7139a6",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebGPU/Info.plist"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/Assets.car",
+      "runtimeSHA256": "554a204a45e7204fcf20f2aa2cf719ea4c7284a8f769289fc5ada9c4e0ab2a98",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKit/HTTPSBrowsingWarning.xcassets/Contents.json",
+        "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningBackground.colorset/Contents.json",
+        "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningBoxBackground.colorset/Contents.json",
+        "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningText.colorset/Contents.json",
+        "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningTitle.colorset/Contents.json",
+        "Source/WebKit/Resources/SafeBrowsing.xcassets/Contents.json",
+        "Source/WebKit/Resources/SafeBrowsing.xcassets/WKSafeBrowsingWarningBackground.colorset/Contents.json",
+        "Source/WebKit/Resources/SafeBrowsing.xcassets/WKSafeBrowsingWarningText.colorset/Contents.json",
+        "Source/WebKit/Resources/SafeBrowsing.xcassets/WKSafeBrowsingWarningTitle.colorset/Contents.json"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "8682dbe9e031cd97fa92985dee64f99726e4a544a470bb2f69dc99ab6493e135",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKit/Info.plist"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/analytics/coremldata.bin",
+      "runtimeSHA256": "3219af1988907d86a9ca82a697935793d2b479ec9c38201dfd4ad8e79c241864",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKit/Resources/TextExtractionFilter.mlmodel"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/coremldata.bin",
+      "runtimeSHA256": "4e604a85568f337e421b5c3f678dc3f17b94c469713017c6659e3cb28b5ab43c",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKit/Resources/TextExtractionFilter.mlmodel"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/metadata.json",
+      "runtimeSHA256": "e024dd2713523eeaa0b3aceeaea98199bb9e7b42c2d001c3da49dbb3bd11b12e",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKit/Resources/TextExtractionFilter.mlmodel"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/corePrediction_model",
+      "runtimeSHA256": "221555a2cdd2e957f18d478c4b9fd01f308c1613e6e10840cce924e5f543091a",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKit/Resources/ResourceLoadStatistics/corePrediction_model"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/en.lproj/InfoPlist.strings",
+      "runtimeSHA256": "eb830b7d91792444feda119d8eb9b6fa400a05db02e6d9d5cd7b126361d000c2",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKit/en.lproj/InfoPlist.strings"
+      ],
+      "exactSourceRuntimeHashMatch": true,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/Info.plist",
+      "runtimeSHA256": "1727040f8d3a09f62bf750648f0388f3f65e6356bc53c3887caef2633609a40d",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKit/GPUProcess/EntryPoint/Cocoa/XPCService/GPUService/Info-OSX.plist"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/Info.plist",
+      "runtimeSHA256": "1733fb8bd8df9a1360d7959150139c69bb14dbdb0bd9f266c742c100e94ebc82",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKit/NetworkProcess/EntryPoint/Cocoa/XPCService/NetworkService/Info-OSX.plist"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/Info.plist",
+      "runtimeSHA256": "cf2804905b5ab48951d12b4c9ce0f0984c24821c340597e7af828ba49e073651",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/Info.plist",
+      "runtimeSHA256": "707d6ca86c4d1b0c51c721c6cb86a64e35810092773eb8e040f93a73fe58c703",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Info.plist",
+      "runtimeSHA256": "95eb37b4bd4a698898b2fa3a894c15bc4b9f5dd4323f04cf446f0d841e6616fc",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Resources/WebContentProcess.nib",
+      "runtimeSHA256": "90306f1e50ac0139b6057dd411b06fd49089cecfb59f01e144690b9cd86583a7",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKit/Resources/WebContentProcess.xib"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKitLegacy.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "51c5deed98d97748855c83af6f860cb40beaf7878b8c039ef47324b81362798f",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKitLegacy/mac/Info.plist"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebKitLegacy/LICENSE"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKitLegacy.framework/Versions/A/Resources/en.lproj/WebAuthenticationPanel.nib",
+      "runtimeSHA256": "a09b229c2bd3b90427f7dc189cd8c8ae1e156cc15b297a7a50829b6b0eb364db",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKitLegacy/mac/Panels/en.lproj/WebAuthenticationPanel.xib"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebKitLegacy/LICENSE"
+      ],
+      "sourceHeaderSignals": []
+    },
+    {
+      "kind": "resource",
+      "runtimePath": "WebKitLegacy.framework/Versions/A/Resources/en.lproj/WebJavaScriptTextInputPanel.nib",
+      "runtimeSHA256": "743bb0395249fea422d4efe7737b9296f022c8442a20aaf76a291270b784dc4f",
+      "existingDecision": {
+        "applicableLicense": "UNKNOWN",
+        "noticeLocation": "UNKNOWN",
+        "requiredNotice": "UNKNOWN",
+        "reviewerDecision": "UNKNOWN"
+      },
+      "originStatus": "mapped_source_input",
+      "mappedSourcePaths": [
+        "Source/WebKitLegacy/en.lproj/WebJavaScriptTextInputPanel.xib"
+      ],
+      "exactSourceRuntimeHashMatch": false,
+      "nearestCandidateLicenseTextPaths": [
+        "Source/WebKitLegacy/LICENSE"
+      ],
+      "sourceHeaderSignals": []
+    }
+  ]
+}

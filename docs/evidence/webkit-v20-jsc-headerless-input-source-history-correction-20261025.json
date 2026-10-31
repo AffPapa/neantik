@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T15:49:22Z",
+  "status": "CORRECTION_SOURCE_HISTORY_DEEPENED;BSD2_TERM_CLASSIFICATION_RETAINED;COPYRIGHT_ATTRIBUTION_OPEN",
+  "scope": "Correction/supplement to the 32-input JSC term review. Followed the Web Inspector protocol JSON move ancestry beyond the 2013 split boundary; no source/notice/worksheet mutation, build, test or publication.",
+  "sourceBinding": {
+    "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "patchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "priorTermsReceipt": "/private/tmp/neantik-release-v1/docs/evidence/webkit-v20-jsc-headerless-input-lineage-terms-review-20261025.json",
+    "priorTermsReceiptSHA256": "24868b58cb3276c8402168193d6e235ea6687751518155d751a0b852f0573c07",
+    "all32PinnedInputHashesMatch": true
+  },
+  "lineageCorrection": {
+    "splitCommit": "https://github.com/WebKit/WebKit/commit/9fe392ea07f66466335cecd51d8599bade9f50b7",
+    "splitCommitFirstParent": "922e6f7fdc095a41a94d1104c975e95fe3dc5ef5",
+    "ancestorFile": "Source/WebCore/inspector/Inspector.json",
+    "ancestorFileBytes": 218686,
+    "ancestorFileSHA256": "293065b7c4ad0672958e4dee44e07f777074d956d30ba29407c2b61f18f4b2ff",
+    "ancestorBlameRangeCount": 1525,
+    "ancestorBlameLines": 3742,
+    "ancestorBlamePaths": {
+      "Source/WebCore/inspector/Inspector.json": 1525
+    },
+    "oldestVisibleCommits": [
+      {
+        "oid": "6c1e1eb3c7a0a03cabc0cf0d39d7b2c9c7bea85f",
+        "date": "2011-03-18T16:42:55.000Z",
+        "committer": "Pavel Feldman",
+        "email": "pfeldman@chromium.org",
+        "message": "2011-03-18 Pavel Feldman <pfeldman@chromium.org> Reviewed by Yury Semikhatsky. Web Inspector: migrate from Inspector.idl to InspectorAPI.json for protocol schema definition meta bug. https://bugs.webkit.org/show_bug.cgi?"
+      },
+      {
+        "oid": "644603bf4ef872704635d003ceac68536237d1c3",
+        "date": "2011-03-21T07:54:32.000Z",
+        "committer": "Pavel Feldman",
+        "email": "pfeldman@chromium.org",
+        "message": "2011-03-21 Pavel Feldman <pfeldman@chromium.org> Reviewed by Yury Semikhatsky. Web Inspector: migrate Inspector.json to valid JSON types. https://bugs.webkit.org/show_bug.cgi?id=56651 This change migrates inspector from "
+      },
+      {
+        "oid": "0f063090b40baf85ce1ba4177d0a0ffc553aed8b",
+        "date": "2011-03-22T09:21:58.000Z",
+        "committer": "Ilya Tikhonovsky",
+        "email": "loislo@chromium.org",
+        "message": "2011-03-22 Ilya Tikhonovsky <loislo@chromium.org> Reviewed by Yury Semikhatsky. Web Inspector: protocol cleanup. ConsoleAgent. https://bugs.webkit.org/show_bug.cgi?id=56806 renamed method: void setConsoleMessagesEnabled("
+      },
+      {
+        "oid": "e9f220b6dff738cbc1e608ed03ab71784f112dc6",
+        "date": "2011-03-22T13:50:39.000Z",
+        "committer": "Pavel Feldman",
+        "email": "pfeldman@chromium.org",
+        "message": "2011-03-22 Pavel Feldman <pfeldman@chromium.org> Reviewed by Yury Semikhatsky. Web Inspector: document DOM domain types and protocol methods. https://bugs.webkit.org/show_bug.cgi?id=56807 * inspector/InjectedScript.cpp: "
+      },
+      {
+        "oid": "22d1c259b77e871520d5f657fe8d2e8a592c328a",
+        "date": "2011-03-22T16:25:15.000Z",
+        "committer": "Pavel Podivilov",
+        "email": "podivilov@chromium.org",
+        "message": "2011-03-21 Pavel Podivilov <podivilov@chromium.org> Reviewed by Yury Semikhatsky. Web Inspector: [REGRESSION] scripts panel is broken when frontend is reopened. https://bugs.webkit.org/show_bug.cgi?id=56747 Debugger shou"
+      },
+      {
+        "oid": "a9003dadb87d2853783c3fcd13f5a2222de309fc",
+        "date": "2011-03-22T16:59:31.000Z",
+        "committer": "Pavel Feldman",
+        "email": "pfeldman@chromium.org",
+        "message": "2011-03-22 Pavel Feldman <pfeldman@chromium.org> Not reviewed. Rolling out 81657, 81654, 81651 for breaking tests on chromium. * inspector/Inspector.json: * inspector/InspectorDatabaseResource.cpp: (WebCore::InspectorDat"
+      },
+      {
+        "oid": "79fa58db7b656cccf65ca732c3fbe932a32cc457",
+        "date": "2011-03-23T12:35:04.000Z",
+        "committer": "Pavel Feldman",
+        "email": "pfeldman@chromium.org",
+        "message": "2011-03-23 Pavel Feldman <pfeldman@chromium.org> Reviewed by Yury Semikhatsky. Web Inspector: define array types properly in the Inspector.json https://bugs.webkit.org/show_bug.cgi?id=56915 * inspector/Inspector.json: * "
+      },
+      {
+        "oid": "b983bb2681abaa11bfcc7528f99b615b45929e16",
+        "date": "2011-03-23T13:22:56.000Z",
+        "committer": "Ilya Tikhonovsky",
+        "email": "loislo@chromium.org",
+        "message": "2011-03-23 Ilya Tikhonovsky <loislo@chromium.org> Reviewed by Yury Semikhatsky. Web Inspector: move node searching and node highlight related methods from InspectorAgent to InspectorDOMAgent. https://bugs.webkit.org/show"
+      },
+      {
+        "oid": "258649bd9d089b01398f7c0dbc23ec51561dd253",
+        "date": "2011-03-24T13:27:57.000Z",
+        "committer": "Pavel Feldman",
+        "email": "pfeldman@chromium.org",
+        "message": "2011-03-24 Pavel Feldman <pfeldman@chromium.org> Reviewed by Yury Semikhatsky. Web Inspector: brush up Network agent API. https://bugs.webkit.org/show_bug.cgi?id=57001 * http/tests/inspector/network/network-redirect-expe"
+      },
+      {
+        "oid": "40dfd5a0de080bb25aefddfc7b9564fe4dca4a34",
+        "date": "2011-03-28T12:18:02.000Z",
+        "committer": "Pavel Feldman",
+        "email": "pfeldman@chromium.org",
+        "message": "2011-03-27 Pavel Feldman <pfeldman@chromium.org> Reviewed by Yury Semikhatsky. Web Inspector: refactor ResourceTreeModel to remove poor dependencies. https://bugs.webkit.org/show_bug.cgi?id=57186 * http/tests/inspector/c"
+      },
+      {
+        "oid": "12e70a085eda50878b85dac199763556d1a7cfff",
+        "date": "2011-03-28T13:44:10.000Z",
+        "committer": "Pavel Feldman",
+        "email": "pfeldman@chromium.org",
+        "message": "2011-03-28 Pavel Feldman <pfeldman@chromium.org> Reviewed by Yury Semikhatsky. Web Inspector: rename network domain events from didHappenSomething to somethingHappened. https://bugs.webkit.org/show_bug.cgi?id=57226 * ins"
+      },
+      {
+        "oid": "20a23d3a25e1c97143f81c7e5ab6b25b94e76c87",
+        "date": "2011-03-28T17:16:52.000Z",
+        "committer": "Pavel Feldman",
+        "email": "pfeldman@chromium.org",
+        "message": "2011-03-28 Pavel Feldman <pfeldman@chromium.org> Reviewed by Yury Semikhatsky. Web Inspector: brush up and rename debugger domain functions. https://bugs.webkit.org/show_bug.cgi?id=57240 * inspector/Inspector.json: * ins"
+      }
+    ],
+    "finding": "The 2013 split is not earliest authorship: several current protocol JSONs pass through WebCore/inspector/protocol/*.json to this WebCore/inspector/Inspector.json ancestor. Its line history reaches 2011 commits, including Chromium-address contributors. The preserved source path is within the WebKit repository; no external repository path was observed in the captured blame chain."
+  },
+  "correction": "The linked terms receipt called the earliest visible current-file commits 2013 or later; that phrasing overstated the ancestry. The 2013 split is a move boundary. The underlying file has 2011 WebKit history and Chromium-domain contributor identities. Keep the maintainer BSD-2 classification only as WebKit contributions under the official WebKit policy; do not infer individual copyright owners from committer email or claim an independent Chromium grant.",
+  "policy": {
+    "url": "https://docs.webkit.org/Other/Licensing.html",
+    "finding": "WebKit says new code contributed to WebKit uses BSD-2-Clause and moved code retains its original license/copyright. This supports a WebKit-tree maintainer term classification, while contributor attribution still requires exact notice evidence."
+  },
+  "inputSet": {
+    "count": 32,
+    "paths": [
+      "WebKit/Source/JavaScriptCore/Scripts/wkbuiltins/wkbuiltins.py",
+      "WebKit/Source/JavaScriptCore/generator/Wasm.rb",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Animation.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Audit.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Browser.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/CPUProfiler.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/CSS.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Canvas.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Console.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/DOM.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/DOMDebugger.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/DOMStorage.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Debugger.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/GenericTypes.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Heap.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/IndexedDB.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Inspector.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/LayerTree.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Memory.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Network.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Page.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Recording.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Runtime.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/ScriptProfiler.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Security.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/ServiceWorker.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Storage.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Target.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Timeline.json",
+      "WebKit/Source/JavaScriptCore/inspector/protocol/Worker.json",
+      "WebKit/Source/JavaScriptCore/inspector/scripts/codegen/__init__.py",
+      "WebKit/Source/JavaScriptCore/wasm/wasm.json"
+    ],
+    "terms": "BSD-2-Clause maintainer classification retained for these exact 32 hashes, subject to source offer notice integration and reevaluation if a different external origin is established."
+  },
+  "limitations": [
+    "Blame and repository path establish contribution history but not copyright ownership alone.",
+    "The 32 source files are headerless; per-file copyright attribution and final binary notice mapping remain open.",
+    "The JavaScriptCore runtime image remains UNKNOWN until aggregate notice and recipient replacement/re-sign/load gates are satisfied.",
+    "The 82 existing image/resource worksheet UNKNOWNs are unchanged."
+  ]
+}

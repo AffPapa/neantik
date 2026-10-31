@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "version": "0.8.13",
+  "build": 125,
+  "channel": "public-alpha",
+  "sourceCommit": "04403c42ffc9e8131614ec0b3b8995c46a75940d",
+  "tag": "v0.8.13",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.8.13",
+  "siteUrl": "https://browser.free/",
+  "rollbackRelease": "v0.8.12",
+  "architecture": "arm64",
+  "minimumOS": "14.0",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "rebuilt": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815",
+    "safeBrowsingEnabled": false
+  },
+  "managerSHA256": "8f165243c45b603d8ddcd4064841096e98eab1434963fb1e36513900e7d751ff",
+  "candidateManifestSHA256": "41c9cfe1afd3ec06c60a7c3cf7ae84c30a61c15714c32a273c5327458cc18605",
+  "candidateSourceBindingSHA256": "38e826f2d088563f24096afbfc998325660ec7775c4b3b47aa240bdfcb86fbe7",
+  "artifacts": [
+    {
+      "name": "NeAntik-0.8.13-arm64-notarized.zip",
+      "sha256": "d2e80d7f6d68c4c73b903d08d29da836e5ae79ba485f6a3df139b8e459da2840",
+      "sizeBytes": 190397446,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.13/NeAntik-0.8.13-arm64-notarized.zip"
+    },
+    {
+      "name": "NeAntik-0.8.13-arm64-notarized.dmg",
+      "sha256": "40f8f075e1c54fd57a7722d39ad10bcdac6988a16af0f68acd2a8a9c21826cc8",
+      "sizeBytes": 215051962,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.13/NeAntik-0.8.13-arm64-notarized.dmg"
+    }
+  ],
+  "signing": {
+    "teamID": "H6VGU2M6JD",
+    "certificateSHA1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "zipSubmissionID": "e1542a87-3ca1-4b41-be52-3a5dd7a22fda",
+    "dmgSubmissionID": "30af60a6-b1c3-46f4-b998-848162de5bcb",
+    "notarization": "Accepted",
+    "stapling": "pass",
+    "gatekeeper": "accepted"
+  },
+  "checks": {
+    "swiftIntegration": "1546 reported /179 suites; opt-in native skips explicit; prior unchanged manager inputs reused",
+    "pythonIntegration": "1420 original /19 skips/3 heading-contract errors; heading corrected; affected5PASS; staged-preparation26PASS",
+    "exactSignedHeaded": "authenticated schema8 PASS, synthetic profiles only",
+    "mcp": "18 management /7 read, capabilities, host:port, persistence and negative controls PASS",
+    "updater": "primary files exactly previous v2; unchanged v2 code-directory hashes; new signature timestamps only; prior install/rollback evidence reused",
+    "sourcePrivacy": "recognized patterns scan PASS; history5729blobs/9836objects PASS",
+    "site": "build PASS; original37 had one notes-heading failure, corrected/affected12PASS; version150 deployed; anonymous home/API/dual feeds/MCP guide PASS",
+    "hostedZIP": "byte-identical, exact candidate/evidence binding, privacy, notarization and Gatekeeper PASS",
+    "hostedDMG": "byte-identical, image integrity, signing, notarization and Gatekeeper PASS",
+    "hostedManager": "isolated stdio launch and persistence across restart PASS; no second full headed audit"
+  },
+  "securityObservation": {
+    "checkedAt": "2026-10-15",
+    "minimumVersion": "155.0.8059.80",
+    "officialReference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_01668083673.html",
+    "historicalSourceBaselineUnchanged": true,
+    "method": "Separately sealed release-day snapshot, semantic fields equal original baseline except checkedAt; existing verifiers supported --baseline and --html-file inputs; stock remaining notary commands and original source binding unchanged"
+  },
+  "limitations": [
+    "Public alpha; full production hardware-cohort / major1.0 qualification remains open",
+    "WebKit uses system macOS identity; no full fingerprint replacement, proxy, extensions, MCP launch or full BrowserData backup",
+    "OS-trusted authenticated HTTPS upstream positive deferred by user",
+    "No physical VoiceOver or separate macOS14 hardware run claimed",
+    "No crossMac portability of OS-encrypted secrets claimed",
+    "No new124-to125 GUI install/rollback; updater code unchanged, signed continuity checked",
+    "Safe Browsing disabled; no anonymity, CAPTCHA or site-policy bypass guarantee"
+  ],
+  "publicationState": "published: GitHub latest and browser.free150; anonymous hosted ZIP/DMG and isolated downloaded manager stdio smoke passed",
+  "checksumFiles": [
+    {
+      "name": "NeAntik-0.8.13-arm64-notarized.zip.sha256",
+      "sha256": "81995323680e5bc6638f198428a9793c4c94ead00b26d0091199ce68713c1865",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.13/NeAntik-0.8.13-arm64-notarized.zip.sha256"
+    },
+    {
+      "name": "NeAntik-0.8.13-arm64-notarized.dmg.sha256",
+      "sha256": "08a0710631616649aa43706b43d395b51adf85d9e8bb4663e843c11b90f57fc7",
+      "sizeBytes": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v0.8.13/NeAntik-0.8.13-arm64-notarized.dmg.sha256"
+    }
+  ],
+  "site": {
+    "status": "pass",
+    "siteURL": "https://browser.free/",
+    "savedVersion": 150,
+    "deploymentID": "appgdep_6ad07a0aabb08191b841c372a90dcc6a",
+    "sourceCommit": "6fbf1de43913644fe33b088a19de218bab6097f1",
+    "routes": [
+      {
+        "route": "/",
+        "response": "200 text/html; charset=utf-8"
+      },
+      {
+        "route": "/api/release",
+        "response": "200 application/json"
+      },
+      {
+        "route": "/api/update-v2.json",
+        "response": "200 application/json"
+      },
+      {
+        "route": "/api/update.json",
+        "response": "200 application/json"
+      },
+      {
+        "route": "/guides/mcp",
+        "response": "200 text/html; charset=utf-8"
+      }
+    ],
+    "releaseVersion": "0.8.13",
+    "build": "125",
+    "canDownload": true,
+    "zipAndDmgLinksMatch": true,
+    "signedV2EnvelopeMatches": true,
+    "legacyCompatibilityFeedPreserved": "0.8.10"
+  },
+  "profileData": "No profile schema/identity migration introduced by125; existing synthetic migration regression reused; tests never used real profiles",
+  "resourceException": "One bounded isolated exact signed headed qualification explicitly authorized during kernel warning; acceptance unchanged; subsequent hosted manager smoke was metadata-only stdio, no browser"
+}

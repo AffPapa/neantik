@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "version": "0.9.0",
+  "tag": "v0.9.0",
+  "build": 140,
+  "publishedAt": "2026-10-25T11:21:00Z",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.9.0",
+  "assets": [
+    {
+      "name": "NeAntik-0.9.0-arm64-notarized.zip",
+      "bytes": 180670887,
+      "sha256": "87337e18d7d0e93f14c5ca3d30dfe07b42edb929aa6510c5c015275b50f40b47"
+    },
+    {
+      "name": "NeAntik-0.9.0-arm64-notarized.dmg",
+      "bytes": 202287237,
+      "sha256": "a277cb44b7ce354b6b8fdd1072cd63cef3f9813c1ac58029c62f7f4a55523497"
+    }
+  ],
+  "source": "Read-only GitHub Releases API response and current project publicBaseline observed 2026-10-26; immutable public baseline record, not a 1.0 artifact.",
+  "sourceCommit": "27c569d2799407f1733ee8e30bf269d52f797376",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.48",
+    "webkit": "system preview only; owned WebKit and its proxy are not qualified"
+  },
+  "verificationScope": "GitHub release metadata and published asset digests; no new binary download or signature/native verification in the 2026-10-26 reconciliation."
+}

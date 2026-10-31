@@ -19,20 +19,43 @@ jobs:
   swift:
     name: Swift
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 65
     permissions:
       contents: read
       security-events: write
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Resolve compatible Xcode before instrumentation
+        timeout-minutes: 3
+        env:
+          NEANTIK_DEVELOPER_DIR_DIAGNOSTICS: "1"
+        run: |
+          set -euo pipefail
+          echo "phase: resolve compatible toolchain before instrumentation"
+          selected_developer_dir="$(./scripts/resolve-compatible-developer-dir.sh)"
+          printf 'DEVELOPER_DIR=%s\n' "$selected_developer_dir" >> "$GITHUB_ENV"
+          echo "phase: compatible toolchain selected"
       - name: Initialize CodeQL
+        timeout-minutes: 5
         uses: github/codeql-action/init@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
         with:
           languages: swift
           build-mode: manual
-      - name: Build full Apple Silicon source graph for analysis
-        run: swift build --disable-sandbox --arch arm64
+      - name: Build production Apple Silicon source graph for analysis
+        timeout-minutes: 45
+        run: |
+          set -euo pipefail
+          echo "phase: instrumented native release build starts"
+          codeql_build_root="$(mktemp -d "$RUNNER_TEMP/neantik-codeql.XXXXXX")"
+          export SWIFTPM_HOME="$codeql_build_root/swiftpm-home"
+          export CLANG_MODULE_CACHE_PATH="$codeql_build_root/module-cache"
+          mkdir -p "$SWIFTPM_HOME" "$CLANG_MODULE_CACHE_PATH"
+          # Retain this job-owned tree until analysis completes; it contains
+          # the exact modules and paths observed during instrumented building.
+          swift build --build-system native --jobs 2 -c release --arch arm64 --disable-sandbox --scratch-path "$codeql_build_root/build"
+          echo "phase: instrumented native release build complete"
       - name: Analyze Swift
+        timeout-minutes: 10
         uses: github/codeql-action/analyze@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
 
   python:

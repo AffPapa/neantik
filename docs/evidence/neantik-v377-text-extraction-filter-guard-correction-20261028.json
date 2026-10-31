@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "id": "V377",
+  "observedAtUTC": "2026-10-28T04:44:49Z",
+  "status": "PASS_TEXT_EXTRACTION_FILTER_CALLS_ARE_FEATURE_GUARDED; CMAKE_DEPLOYMENT_GATE_PATCH_DRAFTED; BUILD_BINDING_OPEN",
+  "scope": "Correct V375 static analysis and prepare a source-offer supplement to omit the macOS TextExtractionFilter CoreML outputs when the minimum deployment target is below macOS 26.0. No pinned source, source archive, V135 build, recipient stage, production candidate, package, signature, or runtime was changed.",
+  "candidate139Rows": {
+    "runtimeRows": [
+      "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/analytics/coremldata.bin",
+      "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/coremldata.bin",
+      "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/metadata.json"
+    ],
+    "sourceSHA256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f",
+    "allThreeRemainOpenUntilNewCandidateBinding": true
+  },
+  "sourceInputs": {
+    "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "v135BuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "v135DeploymentTarget": "15.4",
+    "v135SDK": "27.0",
+    "files": [
+      {
+        "path": "Source/WTF/wtf/PlatformEnableCocoa.h",
+        "sha256": "b943f9580e5fabc93655318de5a7d93f92f6c04799ff68951f1c43d28ebc8c42",
+        "lines": "1148-1153",
+        "finding": "On macOS the upstream feature macro is enabled only when the minimum deployment target is at least 26.0."
+      },
+      {
+        "path": "Source/WTF/Scripts/Preferences/UnifiedWebPreferences.yaml",
+        "sha256": "ecd6c47f814c8444cee6c2b55acb201eeb3c59eee61a6b458ac87d01ba6978f0",
+        "lines": "6289-6297",
+        "finding": "TextExtractionFilterEnabled defaults to the compile-time feature value; otherwise false."
+      },
+      {
+        "path": "Source/WebKit/UIProcess/API/Cocoa/WKWebView+TextExtraction.mm",
+        "sha256": "cc05d22b5214d51f4185520fa19bf69fe0b017568c4a719123ce2d4565db68fb",
+        "guardedCallSites": [
+          329,
+          386,
+          733,
+          1128,
+          1270
+        ]
+      },
+      {
+        "path": "Source/WebKit/UIProcess/API/Cocoa/WKWebView.mm",
+        "sha256": "35f9175605486c7e018b7a1fdc0b24cde2505acfe40465c52f4d9da975b7aad2",
+        "guardedCallSites": [
+          7430
+        ]
+      },
+      {
+        "path": "Source/WebKit/PlatformCocoa.cmake",
+        "sha256": "7750656cd935f54e5d36a980d2f07b4666700e86326d21864b3bde89a5cfe5b7",
+        "lines": "2590-2605",
+        "finding": "The model compile target is unconditional in the current macOS resource function."
+      }
+    ]
+  },
+  "correctionToV375": {
+    "receipt": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v375-text-extraction-model-removal-boundary-20261028.json",
+    "receiptSHA256": "22a39ae73091f7d89ca10b6052351e47074afe7fd0b77da8675b8919473b074d",
+    "incorrectClaim": "WKWebView TextExtractionFilter call sites are unguarded.",
+    "correction": "All five call sites in WKWebView+TextExtraction.mm and the WKWebView.mm call site are inside #if ENABLE(TEXT_EXTRACTION_FILTER) blocks. V375 searched for the underlying ENABLE_TEXT_EXTRACTION_FILTER token and missed the ENABLE(feature) form."
+  },
+  "patchSupplement": {
+    "manifestPath": "dist/private/source-offer-supplements/v377-text-extraction-filter-deployment-gate/supplement-manifest.json",
+    "manifestSHA256": "a8b386c410aca1ea0a9d2fbf79cf913e0a2fe4694367b68571aaa9418004dfe3",
+    "patchPath": "dist/private/source-offer-supplements/v377-text-extraction-filter-deployment-gate/patches/webkit-text-extraction-filter-macos-deployment-gate-v377.patch",
+    "patchSHA256": "a3a8e43188e6f0fcd3a603e0f3e6a814283da6f56a268f206b10f7fc97416ee2",
+    "baseV372ManifestSHA256": "283dcb3ef84bb6b19a2b67a4e11edd9d75c2555ba2737c26ae230a0ecec87ea4",
+    "patchDryRun": "PASS against the exact V135 source extraction; no source file was changed",
+    "cmakeVersionCondition": {
+      "15.4": "model target OFF",
+      "26.0": "model target ON"
+    },
+    "supplementConsumer": "PASS integrity for 2 supplement files and exact V372 base manifest/source archive; completeSourceOffer=false"
+  },
+  "decision": "A CMake deployment-target gate is supported for the macOS 15.4 build: source feature flag, preference default, and every inspected caller share the 26.0 feature boundary. V375 is corrected. The patch is only a draft supplement; the three runtime rows remain UNKNOWN until a new exact build/stage/package proves absence. The V372 upstream source archive still contains the model source; its source-offer distribution scope remains open.",
+  "limitations": [
+    "No WebKit build, source-offer integration, candidate mutation, notice change, runtime test, signing, or publication.",
+    "The patch applies only to macOS WebKit resource target; source-offer recipe remains draft and must state supported deployment scope.",
+    "No file-specific license was established for the upstream model source."
+  ],
+  "productionCandidateChanged": false,
+  "sourceArchiveChanged": false,
+  "releaseQualified": false
+}

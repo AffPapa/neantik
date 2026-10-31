@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v173-webkit-proxy-empty-match-semantics-review-20261027",
+  "observedAtUTC": "2026-10-27",
+  "status": "EMPTY_MATCH_LIST_RUNTIME_SEMANTICS_UNPROVEN; SOURCE_COMMENT_CORRECTED; NO_RUNTIME_OR_RELEASE_QUALIFICATION",
+  "scope": "Read-only primary-source review plus comment clarification in the existing V171 source change. No manager/engine build, app launch, profile mutation, signature, notarization, or publication.",
+  "priorSourceChange": "V171 removed nw_proxy_config_add_match_domain(result, \"\") and changed the configuration contract test to expect an empty native list. That test proves API object contents only.",
+  "currentSourceAndGeneratedCopySHA256": "488bcf7cb402bb6a7d260a4f49086dcdd452b453e71365e741e2314002de98ff",
+  "finding": "Apple documents per-connection proxy configurations and the matchDomains API surface. WebKit public source stores/serializes each supplied NW proxy configuration for its WebsiteDataStore. The reviewed sources do not specify that an empty match-domain list matches every WebKit request. Therefore V171 does not prove an all-host route and cannot be called a proxy fix without runtime evidence.",
+  "officialEvidence": [
+    {
+      "url": "https://developer.apple.com/documentation/network/proxyconfiguration",
+      "supports": "ProxyConfiguration APIs and matchDomains property exist; reviewed page does not state empty-list matching semantics."
+    },
+    {
+      "url": "https://developer.apple.com/documentation/network/nw_proxy_config_add_match_domain%28_%3A_%3A%29?language=objc",
+      "supports": "Public C API for adding a match domain; no empty-list wildcard semantics stated in the rendered documentation."
+    },
+    {
+      "url": "https://developer.apple.com/documentation/foundation/urlsessionconfiguration/proxyconfigurations",
+      "supports": "Proxy configurations apply to connections in the session; the empty array means default system settings. This is distinct from an empty matchDomains list inside a configured proxy."
+    },
+    {
+      "url": "https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/API/Cocoa/WKWebsiteDataStore.mm",
+      "supports": "WebKit copies the supplied proxy configurations and serializes each config into WebsiteDataStore state; this code does not define empty match-domain selection."
+    }
+  ],
+  "change": "Reworded the factory comment to state the uncertainty and require signed-host request-selection qualification. Configuration behavior is unchanged. Regenerated standalone-host source; source and generated copy are byte-identical.",
+  "nonInvalidatedEvidence": "V171 full Swift and focused Python tests ran before this comment-only clarification against functionally identical executable code. No product code or tests changed in V173.",
+  "runtimeGate": "A changed private candidate with Developer ID secure timestamp must show synthetic HTTPS page delivery through the profile broker, controlled refusal with zero direct fallback, and recovery. The previous build-200 attempt remains inconclusive.",
+  "releaseQualified": false,
+  "nextAction": "Keep Direct Google/Booking PASS separate. Do not claim owned proxy works. Resume runtime qualification only after a secure-timestamp-signed changed candidate can be produced; keep the full 1.0 objective active."
+}

@@ -1,0 +1,44 @@
+{
+  "buildArgs": {
+    "path": "runtime/chromium-15648-args.gn",
+    "sha256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+    "targetArchitecture": "arm64"
+  },
+  "chromiumVersion": "156.0.8078.48",
+  "dependencyLock": {
+    "checkoutCount": 150,
+    "path": "runtime/chromium-15648-deps-lock.json",
+    "sha256": "31e0017e19a60a9d44540152266e2e3abfdd0c30ecf49124ee539428cc1c69e2"
+  },
+  "devtoolsCompatibilityPatch": {
+    "changedPaths": 2,
+    "dependencyCommit": "bf69d041b0ad1f74730204a73bff29f3ef1d4ead",
+    "path": "runtime/chromium-15648-devtools-typescript6.patch",
+    "sha256": "39272ebfee0371ba7afe048d24f634730cfb86d10b7ccd095dd3f7bcfa9519b9"
+  },
+  "license": {
+    "path": "runtime/licenses/Chromium-LICENSE",
+    "sha256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b"
+  },
+  "officialChromiumBase": {
+    "commit": "d0c02bfad08ec92a6ffcf989e53cd995e6381a4c",
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "156.0.8078.48",
+    "tree": "7f8057b292482977d1eb92dfab20d3b129af4134"
+  },
+  "optionalUIChangesOmitted": [
+    "add-flag-for-close-confirmation",
+    "add-flag-for-custom-ntp",
+    "add-flag-for-tab-hover-cards",
+    "add-flag-to-hide-tab-close-buttons"
+  ],
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "securityBaselineSHA256": "42ff2372587184ca5de290382cb078d3fc2c2979fd5a2a39fd0c60f05d3e97c0",
+  "sourcePatch": {
+    "changedPaths": 746,
+    "path": "runtime/chromium-15648-neantik-v3.patch",
+    "sha256": "0befae3e9af29233e9af3b36260d924ee63840d91960701d1d5a8be6541612c6"
+  },
+  "status": "reviewed-source-inputs-build-complete"
+}

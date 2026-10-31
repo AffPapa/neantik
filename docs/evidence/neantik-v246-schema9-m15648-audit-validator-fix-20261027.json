@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "status": "SCHEMA9_M15648_MANIFEST_VALIDATOR_FIXED_FOCUSED_TESTS_PASS",
+  "candidateManifestSHA256": "b1b5814404a1df5b2460fa949ab017299f54aa37fdd9c3c3ff47f2b3063379d1",
+  "initialResult": "FingerprintEvidenceVerificationError: Candidate manifest sourceContract bundlePath is invalid",
+  "redTest": "exact 15648 contract rejected by schema9 before change",
+  "fix": "allow only the exact chromium-15648-source-contract.json path; retain suffix and unknown-path rejection",
+  "focusedValidation": {
+    "schema8And9TestsPassed": 26,
+    "actualProductionManifestStructuralValidation": "PASS",
+    "signatureOrRuntimeQualification": false
+  },
+  "swiftRegression": {
+    "tests": 1842,
+    "suites": 222,
+    "skipped": 82,
+    "inputSHA256": "540aeaca3048a8874eb406daf4a0b83a906f59c9dcf558f609f2e21610e47197",
+    "inputUnchangedByPythonChanges": true
+  },
+  "fullPython": "running",
+  "releaseQualified": false
+}

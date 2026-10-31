@@ -1,0 +1,40 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "5c375ccd77845c41471aca14068434b924e9983dda5bd906ea7e9b90997a6c75",
+  "payload": {
+    "argsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+    "correctionReceiptSHA256": "80cc98dc6c41604aee6ba33d4c5aed94469bc275e4d6dd2245f7d7acf5e3845d",
+    "exitCode": 0,
+    "finishedAt": "2026-10-09T02:11:03.836995+00:00",
+    "jobs": 2,
+    "lintRuleWeakened": false,
+    "logSHA256": "7a3161a9669bec1ed2fde2c275f43e261d8b226ae32d80fbe278a041b38f4398",
+    "logSizeBytes": 528,
+    "nativeNinjaSHA256": "6c03e94e3ee141301a7e5151227508ac8cec05c12d79ed9240062a86a0e2d14f",
+    "noClean": true,
+    "outputsPreserved": true,
+    "releaseReady": false,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "startedAt": "2026-10-09T02:10:53.785359+00:00",
+    "status": "exact-native-eslint-target-passed",
+    "target": "gen/chrome/browser/resources/settings/eslint.config.mjs"
+  },
+  "payloadType": "json",
+  "receipt": "native-payments-eslint-target.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

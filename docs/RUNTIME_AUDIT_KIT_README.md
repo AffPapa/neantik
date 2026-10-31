@@ -1,5 +1,12 @@
 # NeAntik source-branded runtime audit kit
 
+> **Historical artifact notice.** This document describes the preserved
+> Chromium 144.x source-branded audit kit and its archive names. It is not the
+> current NeAntik runtime candidate, does not satisfy the Chromium 153 security
+> baseline, and must not be used as Direct-release evidence. Use the current
+> runtime source lock, security baseline, and
+> `docs/NEANTIK_AUDIT_HANDOFF_2026-09-19.md` for present-state decisions.
+
 This package performs the remaining interactive fingerprint gate for the
 source-built `NeAntik Browser 144.0.7559.132`.
 

@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "status": "source-port-patch-frozen-build-complete",
+  "chromiumVersion": "156.0.8078.80",
+  "officialRepository": "https://chromium.googlesource.com/chromium/src.git",
+  "officialCommit": "fb096c0011f9d50f0a264a9376420cdea9c421e3",
+  "officialTree": "9daca4c0f1670a0ead9a94888c1bfe4ace733f4d",
+  "targetArchitecture": "arm64",
+  "patchFile": "runtime/chromium-15680-neantik.patch",
+  "patchSHA256": "2f48cb944f6e51439322776e3ec0519bd0567e300049253791c60faca46481ea",
+  "patchBytes": 1295951,
+  "sourceChangeCount": 746,
+  "addedSourceFileCount": 21,
+  "validation": {
+    "v900SourcePatchApplicability": "PASS; receipt-bound",
+    "v904ActualDependencyCheckoutLock": "PASS; 150 HEAD/tree rows",
+    "v907SourceOfferIntegrity": "PASS; 894/894 components",
+    "gnGeneration": "PASS; V921 accepted exact args",
+    "arm64ChromeBuild": "PASS; this exact Ninja invocation; unqualified"
+  },
+  "releaseReady": false,
+  "dependencyLock": "runtime/chromium-15680-deps-lock.json",
+  "dependencyLockSHA256": "34ad8b0055c563997a26b1e1e2ee763bcac1ec56635da2d41527f621b7791e65",
+  "dependencyGitCheckoutCount": 150,
+  "nonGitInputCount": 89,
+  "gclientConfigFile": "runtime/chromium-15680-gclient",
+  "gclientConfigSHA256": "d7b653802f655ed185c922874fb46b9e46f9a3a9951356a28f864bbffd67c74e",
+  "gclientEntriesFile": "runtime/chromium-15680-gclient_entries",
+  "gclientEntriesSHA256": "4673c17615effc9d67e0b4939fc52e7a13043dad0a2c476953efec67dad03108",
+  "gcsEntriesFile": "runtime/chromium-15680-gcs_entries",
+  "gcsEntriesSHA256": "e11982ac9535a4d0f2f5155bed98b3b2c481ac3e1624dede93710a61a2bffd89",
+  "buildArgsFile": "runtime/chromium-15680-args.gn",
+  "buildArgsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+  "buildArgsBytes": 1134,
+  "buildEvidenceFile": "runtime/chromium-15680-build-evidence.json",
+  "buildEvidenceSHA256": "583823db2b2c34cfa92649b97206de3ffbd88c2d5e7b4769e17036d09024a913",
+  "devtoolsCompatibilityPatch": {
+    "status": "source-fix-required-by-TypeScript-6-isolated-declarations",
+    "path": "runtime/chromium-15680-devtools-typescript6.patch",
+    "sha256": "9eed3c3f43f96a00595163971b120c50accbeefeb07b552939b0ba9ad6ae7bfb",
+    "bytes": 1401,
+    "changedPaths": 2,
+    "dependencyCheckout": "src/third_party/devtools-frontend/src",
+    "dependencyCommit": "8c62f844ad8e0664ff41a633bfc17c472f1c5fd6",
+    "reason": "V900/V904 compatibility patch applies to the pinned .80 DevTools checkout."
+  },
+  "v8CompatibilityPatch": {
+    "status": "source-fix-required-by-new-pure-virtual-scope-iterator-method",
+    "path": "runtime/chromium-15680-v8-scope-iterator-compat.patch",
+    "sha256": "d06dd32200393a0eacf5dafcf83f6c5dafafc508b97af58013e52cd135d58388",
+    "bytes": 511,
+    "changedPaths": 1,
+    "dependencyCheckout": "src/v8",
+    "dependencyCommit": "c9b3cfcab30ace06c21f9b48a0f0a34805e81e9d",
+    "reason": "V900/V904 compatibility patch applies to the pinned .80 V8 checkout."
+  },
+  "sourceOffer": {
+    "manifestSHA256": "8e3b1f53ebd6b041195c216a01d4a8a5a1bf2d5fae1b3108f253e5bce9689951",
+    "routeSHA256": "4a27d42f92fe4f5d5300fda01c6dd39bdc1fe5892522d99098d1814ef9c27410",
+    "componentCount": 894
+  },
+  "upstreamReceipts": {
+    "v900SHA256": "aba9d8114cfcafd2164c76b3eb21b220f9698d8ff308fac0bc2a59cdf80bbe75",
+    "v904SHA256": "9a66170b38e403fc0b325226ecb7eacfc477b1a62ab565906bf77d15bcf5f6ae",
+    "v907ManifestSHA256": "8e3b1f53ebd6b041195c216a01d4a8a5a1bf2d5fae1b3108f253e5bce9689951",
+    "v921SHA256": "64249eb8d2a7987fa1b5007934692afba7f89fc878624babda5541482f0171a3",
+    "v922SHA256": "a46c0f054b855a7b368b2a32c1d24f88352d57b5e3148123b5aaf6f2f4701d6a",
+    "v923SHA256": "bf5d51453400fcfd9bc79ee0ae81b1558b81aea53747a1ffa384b112954c06a7"
+  },
+  "buildOutputDirectory": "out/NeAntikStable156_48",
+  "chromeVersionFileSHA256": "c1ed3a86621eebc6b12ed9d09732789175e39744add072ff1bd6f9aece3e40aa",
+  "depsFileSHA256": "c4d60cae7b46d4ae476e3409226d89bf72c1fd61e1d97d64027ebae4356f23ae"
+}

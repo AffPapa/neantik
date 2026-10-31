@@ -1,0 +1,249 @@
+{
+  "schemaVersion": 1,
+  "scope": "Declared public release records, not an independent runtime audit",
+  "before": {
+    "version": "0.8.24",
+    "build": 136,
+    "sourceCommit": "1da05e8929dcafaaae85d49b2a1229f430af322e",
+    "managerBuildSourceCommit": "1da05e8929dcafaaae85d49b2a1229f430af322e",
+    "managerSHA256": "e4640e423a2582af96fdeaf3bd575e02d9610bcff384491c34378bcdbbe4561f",
+    "runtime": {
+      "chromiumVersion": "156.0.8078.12",
+      "architecture": "arm64",
+      "executableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+      "frameworkSHA256": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7"
+    }
+  },
+  "after": {
+    "version": "0.8.25",
+    "build": 137,
+    "sourceCommit": "796b44f80f814b294a972fe5ff1b5e3d6063e3f9",
+    "managerBuildSourceCommit": "796b44f80f814b294a972fe5ff1b5e3d6063e3f9",
+    "managerSHA256": "6a0f8b953a3e387f8acea62ab0ec6fc2a4bf50be1c2fcb88c269d7e663042ec1",
+    "runtime": {
+      "chromiumVersion": "156.0.8078.12",
+      "architecture": "arm64",
+      "executableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+      "frameworkSHA256": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7"
+    }
+  },
+  "identityComparison": {
+    "managerExecutableChanged": true,
+    "runtimeExecutableDigestsEqual": true,
+    "fullRuntimeInventoryCompared": false
+  },
+  "measurementComparability": {
+    "declaredContextsMatch": false,
+    "reason": "missing_context",
+    "differingFields": [],
+    "before": null,
+    "after": null,
+    "independentlyVerified": false
+  },
+  "behaviorRegressionVerdict": "not_established",
+  "performanceComparison": "not_measured",
+  "verification": [
+    {
+      "key": "notarization",
+      "label": "Нотарификация",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "Apple Accepted for ZIP and DMG"
+      },
+      "after": {
+        "state": "declaration_only",
+        "declaration": "Apple Accepted for ZIP and DMG"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "stapling",
+      "label": "Stapling",
+      "before": {
+        "state": "reported_pass",
+        "declaration": "PASS canonical Direct transactions"
+      },
+      "after": {
+        "state": "reported_pass",
+        "declaration": "PASS canonical Direct transactions"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "Gatekeeper",
+      "label": "Gatekeeper",
+      "before": {
+        "state": "reported_pass",
+        "declaration": "PASS canonical Direct transactions"
+      },
+      "after": {
+        "state": "reported_pass",
+        "declaration": "PASS canonical Direct transactions"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "DirectDoctor",
+      "label": "Direct doctor",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "13/13 ready"
+      },
+      "after": {
+        "state": "declaration_only",
+        "declaration": "13/13 ready"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "nativeUpdater",
+      "label": "Установка обновления",
+      "before": {
+        "state": "unknown"
+      },
+      "after": {
+        "state": "unknown"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "nativeRollback",
+      "label": "Откат",
+      "before": {
+        "state": "unknown"
+      },
+      "after": {
+        "state": "unknown"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "GUIFingerprint",
+      "label": "Запуск локальной подписанной сборки",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "Exact signed136 headed A/B/A baseline PASS;missing/unstable required keys empty;normal process drain"
+      },
+      "after": {
+        "state": "declaration_only",
+        "declaration": "Exact signed137 headed baseline PASS; own process drain"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "downloadedHeaded",
+      "label": "Запуск скачанной копии",
+      "before": {
+        "state": "unknown"
+      },
+      "after": {
+        "state": "unknown"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "MCPExactSigned",
+      "label": "MCP подписанного кандидата",
+      "before": {
+        "state": "unknown"
+      },
+      "after": {
+        "state": "unknown"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "downloadedMCP",
+      "label": "MCP скачанной копии",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "Downloaded136 signed manager:18management/7read, closing schemas, requested fontPolicy create/edit/persist and normal restart PASS; own temporary metadata; no real profiles or headed replay"
+      },
+      "after": {
+        "state": "declaration_only",
+        "declaration": "Downloaded137 isolated manager startup:18management/7read tools,closing schemas,requested fontPolicy create/edit/persistence/restart PASS;no real profiles;no headed replay"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "hostedZIP",
+      "label": "Публичный ZIP",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "Anonymous exact bytes/size, candidate/evidence, privacy, signatures, notarization and Gatekeeper PASS; exact headed evidence reused for matching critical bytes"
+      },
+      "after": {
+        "state": "declaration_only",
+        "declaration": "Anonymous bytes/size,exact candidate/evidence,privacy/signature/notarization/Gatekeeper PASS;headed evidence reused for matching critical bytes"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "hostedDMG",
+      "label": "Публичный DMG",
+      "before": {
+        "state": "reported_pass",
+        "declaration": "Anonymous exact bytes/size, image/signature/notarization/Gatekeeper PASS"
+      },
+      "after": {
+        "state": "reported_pass",
+        "declaration": "Anonymous bytes/size,image/signature/notarization/Gatekeeper PASS"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "site",
+      "label": "Сайт",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "Anonymous API 2026-10-19T11:02:58.268951+00:00:0.8.16/build128;Sites153 remains separately blocked;no credential transport retry or workaround"
+      },
+      "after": {
+        "state": "declaration_only",
+        "declaration": "Anonymous API 2026-10-19T12:06:50.345149+00:00:0.8.16/build128;Sites delivery separately blocked"
+      },
+      "reportedStateChanged": false
+    }
+  ],
+  "testDeclarations": {
+    "before": {
+      "Swift": "Full integration1689reported206suites77explicit skips PASS;compiled input digest unchanged by checker/date-only policy changes",
+      "Python": "1734unique cases:1715pass19skip;initial interruption and resume import setup failure retained;one affected import case passed after canonical runner path correction;33date-policy/reference controls passed"
+    },
+    "after": {
+      "Swift": "1706reported/207suites/77explicit skips full run retained with37 sandbox socket/process issues; only9failed suites rerun with unchanged source:51reported/4skip PASS. Native opt-in skips remain unqualified.",
+      "Python": "Prior unchanged full1734/19skip and35changed readers retained;16version/document readers PASS."
+    }
+  },
+  "qualificationDeclaration": {
+    "before": true,
+    "after": true
+  },
+  "reportedChanges": [],
+  "reportedLimitations": [
+    "Public alpha;mandatory1.0 plan open.",
+    "WebKit preview:production proxy refused;full BrowserData backup unsupported.",
+    "No Safari.app equivalence or complete fingerprint substitution claim.",
+    "Qualified on one ARM64 macOS environment;other hardware/OS not proven.",
+    "No globally atomic cross-process metadata/Keychain snapshot or continuous proxy freshness guarantee.",
+    "Custom diagnostic is curl preflight,not Chromium route evidence.",
+    "Old crash135 partial result and unknown October18 enrollment cleanup remain unresolved.",
+    "Chromium156.0.8078.12 with reviewed security backports is not latestEarlyStable;SafeBrowsingdisabled.",
+    "GitHub published bytes and downloaded MCP qualified;browser.free remains separate blocked lane."
+  ],
+  "noBrowserLaunched": true,
+  "localizedChanges": [
+    "Проверка по своему HTTPS-адресу больше не должна показывать успешный результат для уже изменённых настроек профиля, пароля или адреса диагностики. Перед показом результата приложение повторно сверяет настройки.",
+    "При ошибке подготовки тестовой подписи причина сбоя и результат очистки сохраняются отдельно. Неопределённый результат не запускает повторное создание или удаление ключа автоматически."
+  ],
+  "localizedLimitations": [
+    "WebKit остаётся preview. Прокси в production WebKit пока заблокирован: надёжная сетевая изоляция ещё не подтверждена. Полный backup WebKit также не заявлен. Проверка своего адреса использует curl и не доказывает маршрут открытого браузера.",
+    "Chromium 156.0.8078.12 сохранён без пересборки. Версия 1.0 пока не готова. Квалификация выполнена на одном Mac ARM64; проверка всех сочетаний устройств и macOS не заявлена.",
+    "Схема профилей не менялась. Предыдущая 0.8.24 сохранена для отката. Обновление browser.free выполняется отдельно; актуальные файлы этой версии находятся в assets данного релиза."
+  ],
+  "sourceRecordSHA256": {
+    "before": "14296830162320bd8a6adc65b8ed46546c88dd5428a6447e4da7faf1208f1d6a",
+    "after": "3f5c2526da03d8c22b4046ee514e4b8cf1dc0be87d9ea00989e3af8f88766b21"
+  },
+  "sourceNotesSHA256": "94b50e92c1e103b4898fe132a3f7b71b7423cd7e9eee43f44a2c43602068cfbd"
+}

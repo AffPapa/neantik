@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25",
+  "status": "WebRTC-draft-notice-candidate-staged;release-gates-open",
+  "priorManifestSHA256": "da68047dac4349de56ea29ddb2d8f7a68ef405a41f5cd512816c71b3b1625f79",
+  "sourceOfferManifestSHA256": "f0a2b403cb3c0197cf82d34da487bea8aaea7a144282b7fec783c51ad95710b4",
+  "addedComponents": [
+    {
+      "path": "evidence/WEBKIT_WebRTC_notices-candidate-v3_20261021.md",
+      "bytes": 65181,
+      "sha256": "e45da3d1ce766d3b6bd00e96dd72a7276d1188a0f8d9b0172a36c1ef8d8e1df6",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_WebRTC_notice-candidate-v3-metadata_20261021.json",
+      "bytes": 1740,
+      "sha256": "0ce4ddfe1f91583dd091d3e68bfd27401e7fdc8475dc8655ae5e41e16d37861a",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_WebRTC_notice-candidate-v20-source-bind_20261025.json",
+      "bytes": 7461,
+      "sha256": "d0a7722b709115f069de013be1643d7624b2e7596094e75166f114086d5e0d39",
+      "includedInOfferFolder": true
+    }
+  ],
+  "totalComponents": 81,
+  "physicallyIncludedComponents": 80,
+  "currentUnknownApplicabilityDecisions": 83,
+  "verification": "All added source-offer components are content-hash pinned; source bind receipt records 24/24 exact draft notice/current-source matches.",
+  "scopeLimit": "Research packet only; not approved notice bundle, legal opinion, completed offer, or release qualification."
+}

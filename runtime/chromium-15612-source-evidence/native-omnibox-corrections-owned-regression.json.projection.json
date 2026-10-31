@@ -1,0 +1,43 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "5ef36c22ae725bc22954bd3b9d7b2a302872f9f49f5a413ca251acf630fa5fa6",
+  "payload": {
+    "actualNativeEnumBitValuesMatched": true,
+    "applyExactPostimage": true,
+    "at": "2026-10-09T03:36:39.665047+00:00",
+    "brokenDeletedLineRefused": true,
+    "maskValues": {
+      "search": 56,
+      "search-bookmarks": 57,
+      "search-bookmarks-chrome": 59,
+      "search-chrome": 58
+    },
+    "maskValuesScope": "Source arithmetic only; browser suggestion behavior not run",
+    "negativeControls": 2,
+    "patchSHA256": "0b1a570fedb062d1290503e6622c321d57a5410c6556962224749429b355e0ff",
+    "positiveControls": 2,
+    "releaseReady": false,
+    "reverseExactPreimage": true,
+    "runtimeQualified": false,
+    "schemaVersion": 1,
+    "stalePostimageRefused": true,
+    "status": "exact-owned-patch-apply-and-source-bits-verified"
+  },
+  "payloadType": "json",
+  "receipt": "native-omnibox-corrections-owned-regression.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

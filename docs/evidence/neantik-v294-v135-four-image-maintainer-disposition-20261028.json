@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v294-v135-four-image-maintainer-disposition-20261028",
+  "observedAtUTC": "2026-10-27T18:36:09Z",
+  "status": "FOUR_V135_IMAGE_HASHES_BOUND_TO_EXISTING_SOURCE_MAINTAINER_DISPOSITIONS; PACKAGE_AND_RECIPIENT_GATES_OPEN",
+  "scope": "Private source/license evidence reconciliation. No build, package mutation, signing, runtime, notarization, publication, or legal opinion.",
+  "authority": "NeAntik maintainer distribution decision for an open-source product: preserve exact upstream mixed per-file terms and all identified notices/source/relink materials. No legal opinion, rights grant, or blanket patent clearance.",
+  "inputIdentity": {
+    "webkitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "mainSourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "v122BuildReceiptSHA256": "804a60911bf67912d8f17665958f88051b3085a175f145db0fd76fa7ea23bd9c",
+    "v129MaintainerDispositionSHA256": "b2249501dd8bfbe308456d94484625f876e7cda90f0057f9ecc7193e7afc04d5",
+    "v135BuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "v135RuntimeOutputBindingSHA256": "b200740d32f5456cde00737bd1ecaa9ea82b22cfcfa0eb42d2f58125341479d4"
+  },
+  "images": [
+    {
+      "runtimePath": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "runtimeSHA256": "8e6d73e593ee32196767b35a236cffc1f172bd12f23073cdc35ef290f506ef63",
+      "sourceBuildIdentity": {
+        "upstreamWebKitArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+        "mainSourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+        "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+        "v135BuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4"
+      },
+      "maintainerDisposition": "Distribute only under its exact upstream mixed terms; keep file/header and generated-input attribution, BSD/LGPL texts where applicable, full corresponding source, generator inputs and scripts, plus usable relink materials.",
+      "scopeAndLimit": "V122 output is pinned; V124 maps linked header/source rows and the 32 headerless generator-input rows plus 6 generated outputs. Upstream WebKit guidance preserves original per-file licenses and copyright when code moves. This disposition is rebound to the exact V135 runtime hash through the identical source archive and patch identity; no blanket image license or legal opinion is asserted.",
+      "requiredReleaseEvidence": [
+        "Candidate-package exact notice-byte verification",
+        "Full portable recipient rebuild/relink from the exact offer",
+        "Any source row without evidenced owner/notice remains specifically unresolved; do not infer ownership from the engine name."
+      ]
+    },
+    {
+      "runtimePath": "WebCore.framework/Versions/A/WebCore",
+      "runtimeSHA256": "2dfb23280d68b0b89bf493a16de3696a326ccf8cdb88722593998bb00bbdd6a8",
+      "sourceBuildIdentity": {
+        "upstreamWebKitArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+        "mainSourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+        "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+        "v135BuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4"
+      },
+      "maintainerDisposition": "Distribute under exact upstream mixed terms, preserving BSD, LGPL and nested project/data notices per source lineage; provide full corresponding source and scripts plus LGPL-compatible replacement/relink materials for any applicable linked portions.",
+      "scopeAndLimit": "V122 output is pinned; V124 binds 3,127 linked-source header rows, scoped generated inputs and targeted LGPL/generated-input reviews. Upstream WebKit documentation identifies inherited LGPL code and newer BSD code; terms remain file-specific. This disposition is rebound to the exact V135 runtime hash through the identical source archive and patch identity; no blanket image license or legal opinion is asserted.",
+      "requiredReleaseEvidence": [
+        "Candidate-package exact notice-byte verification",
+        "Full portable recipient rebuild/relink from the exact offer",
+        "Unmapped copyright attribution must remain explicit and must not be replaced with a guessed owner."
+      ]
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/WebKit",
+      "runtimeSHA256": "9d22770904538771607524af37bba48f45959d3aadc41b96ba8bf40f02018ab6",
+      "sourceBuildIdentity": {
+        "upstreamWebKitArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+        "mainSourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+        "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+        "v135BuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4"
+      },
+      "maintainerDisposition": "Distribute under exact upstream per-file terms; retain all linked-source notices, full corresponding source, build inputs and relink materials. Do not describe the whole image as BSD-only.",
+      "scopeAndLimit": "V122 output is pinned and V124 source-notice rebinding covers the linked image source-header set; upstream WebKit uses BSD-style and LGPL terms and requires original notices to travel with moved code. This disposition is rebound to the exact V135 runtime hash through the identical source archive and patch identity; no blanket image license or legal opinion is asserted.",
+      "requiredReleaseEvidence": [
+        "Candidate-package exact notice-byte verification",
+        "Full portable recipient rebuild/relink from the exact offer."
+      ]
+    },
+    {
+      "runtimePath": "libwebrtc.dylib",
+      "runtimeSHA256": "dbed8455ea0c93bdd7c20c5ce79723a545a23d12dd22e9da92277d13a4b6efae",
+      "sourceBuildIdentity": {
+        "upstreamWebKitArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+        "mainSourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+        "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+        "v135BuildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4"
+      },
+      "maintainerDisposition": "Distribute the pinned WebRTC component only with its upstream license, all pinned nested third-party notices and applicable patent/disclosure files, complete corresponding source/build inputs, and no additional restrictions. Make no blanket patent-clearance claim.",
+      "scopeAndLimit": "The exact V122 image is pinned; the project policy selects the complete pinned WebRTC third-party notice set and source offer. Upstream patent grants are limited by their own text and do not establish clearance for unrelated or third-party claims. This disposition is rebound to the exact V135 runtime hash through the identical source archive and patch identity; no blanket image license or legal opinion is asserted.",
+      "requiredReleaseEvidence": [
+        "Bind the complete matching WebRTC notice set into the exact release package",
+        "Full portable recipient rebuild/relink from the exact offer",
+        "No conclusion that every codec or use is patent-free; conformance/IPR questions remain outside this disposition."
+      ]
+    }
+  ],
+  "noticeEvidence": {
+    "noticeConsumer": "scripts/webkit_runtime_notices.py exact V135 image pins; V289 exact package consumer check-only PASS; no physical signed-candidate verification.",
+    "libwebrtc": "V218 compares 60 candidate notice files against their pinned manifest; completeness of the full applicable third-party notice and patent/disclosure set remains open.",
+    "recipientSourceOffer": "V288 has 612 hash-verified components and 28 exact host overlay inputs; offer remains draft and is not bound to a qualified signed candidate.",
+    "unattributedRightsHolders": "Do not guess; preserve explicit unresolved attributions in the notices."
+  },
+  "remainingGates": [
+    "Bind and physically verify the complete applicable notices in the exact frozen release candidate after signing succeeds.",
+    "Complete portable full-framework recipient rebuild/relink/replacement/load from the exact V288 source offer; V290 proves only the host rebuild byte match.",
+    "Resolve any remaining per-file owner/notice rows from source evidence; do not infer an engine-wide license.",
+    "Finish exact-candidate runtime/proxy/privacy qualification, signed ZIP and DMG, notarization/stapling/Gatekeeper, publication, and downloaded-byte verification."
+  ],
+  "releaseQualified": false
+}

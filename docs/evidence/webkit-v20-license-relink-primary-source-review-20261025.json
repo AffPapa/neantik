@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T13:54:53+00:00",
+  "status": "PRIMARY-SOURCE RULES AND RECIPIENT REPLACEMENT PATH REVIEWED; no legal/applicability decision; release remains blocked",
+  "officialSources": [
+    {
+      "title": "WebKit Licensing documentation",
+      "url": "https://docs.webkit.org/Other/Licensing.html",
+      "finding": "WebKit says inherited KHTML code may be LGPL, new contributions use BSD-2-Clause, and moved files keep their original copyright/license."
+    },
+    {
+      "title": "GNU LGPL FAQ",
+      "url": "https://www.gnu.org/licenses/gpl-faq.en.html",
+      "finding": "Duties depend on the exact LGPL version and link/distribution mode; conveying an LGPL library with an application involves source obligations, while static linking raises relinkable object-code concerns."
+    },
+    {
+      "title": "GNU LGPL 2.1 text",
+      "url": "https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html",
+      "finding": "Exact source-bundle and replacement/relink duties must be derived from the actual covered files and mode; including a license text alone is not the entire compliance proof."
+    },
+    {
+      "title": "MPL 2.0 text",
+      "url": "https://www.mozilla.org/en-US/MPL/2.0/",
+      "finding": "Executable distribution requires corresponding source and recipient notice of how to obtain it under section 3.2; preserve source notices."
+    }
+  ],
+  "projectEvidence": {
+    "runtimeAttestation": {
+      "path": "/private/tmp/neantik-release-v1/Sources/NeAntik/WebKitRuntimeImageAttestation.swift",
+      "sha256": "513456f6fcf4fb4022fead9740f866748784ffa0a7ee56197c9ab32c5c6cfbba"
+    },
+    "hostCodeIdentity": {
+      "path": "/private/tmp/neantik-release-v1/Sources/NeAntik/WebKitHostCodeIdentity.swift",
+      "sha256": "13357133a56fa9e4e18a66c7b193a0fac24472b3adadfb4500e5f5dfebc877e9"
+    },
+    "resignHelper": {
+      "path": "/private/tmp/neantik-release-v1/scripts/resign-webkit-recipient-runtime.py",
+      "sha256": "cfe25677c7beccff005ba2a00500b703a01d9d037eb0ab8ab0ee2ef791a46692"
+    },
+    "hostPackager": {
+      "path": "/private/tmp/neantik-release-v1/scripts/package-webkit-host.py",
+      "sha256": "01e5e72a9e82587e582032244525b35009e99a3b0d0a685972709bd0e1890381"
+    },
+    "recipientRoute": {
+      "path": "/private/tmp/neantik-release-v1/docs/evidence/webkit-v20-recipient-relink-route-20261025.md",
+      "sha256": "dcb5ea1e5465429332ae9a54627bf26835e48c745b991c076733f5bb517ed020"
+    },
+    "draftRecipe": {
+      "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/1.0.0-manager-955/WEBKIT_BUILD_RECIPE_V20_DRAFT.md",
+      "sha256": "14a9cad53f341b675a5fb11137fc15868adbf6c2f417e8353422d32576d3d692"
+    },
+    "worksheet": {
+      "path": "/private/tmp/neantik-release-v1/docs/evidence/webkit-runtime-package-notice-worksheet-20261025.json",
+      "sha256": "430a6e166105d46dd2e7f8699db21e96a8c72b76f8fd664a2fd1f6019ceea6e9"
+    }
+  },
+  "findings": {
+    "perFileTerms": "Consistent with upstream WebKit guidance: no image-wide BSD/LGPL inference; existing per-file and generated-source maps are the correct decision unit.",
+    "runtimePin": "Host attestation verifies the exact owned WebKit binary SHA-256 from its signed helper pin and refuses a different loaded WebKit image.",
+    "recipientSigner": "Host code identity derives expected Team ID from the signed manager; source comment explicitly says consistently re-signed recipient relink copies are intended to work. The recipient re-sign tool signs the complete copied Frameworks tree; the host packager has a separate --recipient-relink route.",
+    "existingEvidence": "A clean relocated build/relink exists on this Mac but output binaries differ from the shipped candidate; no end-to-end recipient-signed replacement launch has been evidenced. The draft offer itself says it is partial and not a complete corresponding-source/relink offer.",
+    "worksheet": "No worksheet field is changed; all 82 UNKNOWN decisions remain."
+  },
+  "decision": "Continue only after a complete exact per-file/license and notice mapping is bound to a future app, and the existing recipient route is verified end-to-end with a separately signed copy. Do not classify text inclusion or the re-sign code path alone as LGPL/MPL replacement compliance.",
+  "limitations": [
+    "This is technical release review, not a legal opinion.",
+    "The exact LGPL alternatives/versions and Apache NOTICE obligations must be resolved per linked source/third-party record.",
+    "Current recipe still lacks proof of complete transitive/toolchain inputs and independent recipient replacement.",
+    "No build, code change, package, or publication occurred."
+  ]
+}

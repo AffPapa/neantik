@@ -97,47 +97,20 @@ apply_public_runtime_icon() {
   fi
 }
 
-remove_attached_signatures() {
+# Privacy derivations bind the exact nested bytes consumed by the signer.
+# A loose output next to the app is not the signing input.
+verify_framework_preimage() {
   local app_path="$1"
-
-  find "$app_path" -type d \
-    \( -name '*.app' -o -name '*.framework' \) -print0 |
-  while IFS= read -r -d '' bundle; do
-    codesign --remove-signature "$bundle" 2>/dev/null || true
-  done
-  find "$app_path/Contents" -type f -print0 |
-  while IFS= read -r -d '' candidate; do
-    file_description="$(file -b "$candidate")"
-    if [[ "$file_description" == *Mach-O* ]]; then
-      codesign --remove-signature "$candidate" 2>/dev/null || true
-    fi
-  done
-  while IFS= read -r signature_dir; do
-    [[ "$signature_dir" == "$app_path"/*/_CodeSignature ]]
-    find "$signature_dir" -depth -delete
-  done < <(find "$app_path" -type d -name _CodeSignature -print)
-
-  if codesign -dv "$app_path" >/dev/null 2>&1 ||
-      find "$app_path" -type d -name _CodeSignature -print -quit |
-        grep -q .; then
-    echo "Temporary Chromium input still contains an attached signature." >&2
+  local expected="${NEANTIK_RUNTIME_SIGNING_FRAMEWORK_SHA256:-}"
+  [[ -z "$expected" ]] && return
+  local image="$app_path/Contents/Frameworks/NeAntik Browser Framework.framework/Versions/$RUNTIME_VERSION/NeAntik Browser Framework"
+  if [[ ! "$expected" =~ ^[0-9a-f]{64}$ || ! -f "$image" || -L "$image" ||
+        "$(/usr/bin/shasum -a 256 "$image" | /usr/bin/awk '{print $1}')" != "$expected" ]]; then
+    echo "Nested runtime signing input differs from the selected derived framework." >&2
     exit 65
   fi
 }
-
-optimize_runtime_size() {
-  local app_path="$1"
-  local developer_dir=""
-  local strip_tool=""
-
-  developer_dir="${DEVELOPER_DIR:-$(
-    "$PROJECT_DIR/scripts/resolve-compatible-developer-dir.sh"
-  )}"
-  strip_tool="$(DEVELOPER_DIR="$developer_dir" xcrun --find strip)"
-  python3 "$PROJECT_DIR/scripts/optimize-runtime-size.py" \
-    "$app_path" \
-    --strip-tool "$strip_tool"
-}
+verify_framework_preimage "$INPUT_APP"
 
 manual_public_alpha_sign() {
   local entitlements_root="${NEANTIK_CHROMIUM_SOURCE_ROOT:-}"
@@ -209,18 +182,17 @@ manual_public_alpha_sign() {
   fi
 
   ditto "$INPUT_APP" "$OUTPUT_APP"
+  verify_framework_preimage "$OUTPUT_APP"
+  # Finder metadata is not runtime content and would make the Direct ZIP
+  # fail its deterministic archive gate. Remove it before any CodeResources
+  # seal is created; the source runtime remains untouched.
+  find "$OUTPUT_APP" -type f \
+    \( -name '.DS_Store' -o -name '._*' \) -delete
   apply_public_runtime_icon "$OUTPUT_APP"
-  remove_attached_signatures "$OUTPUT_APP"
-  optimize_runtime_size "$OUTPUT_APP"
 
   find "$OUTPUT_APP/Contents" -type f -print0 |
   while IFS= read -r -d '' candidate; do
     if file -b "$candidate" | grep -q 'Mach-O'; then
-      case "$candidate" in
-        */Contents/MacOS/*|*/"NeAntik Browser Framework")
-          continue
-          ;;
-      esac
       sign_code "$candidate"
     fi
   done
@@ -302,14 +274,36 @@ cleanup() {
 trap cleanup EXIT
 
 ditto "$INPUT_APP" "$STAGING/NeAntik Browser.app"
+verify_framework_preimage "$STAGING/NeAntik Browser.app"
 ditto "$PACKAGING_DIR" "$STAGING/NeAntik Browser Packaging"
 STAGED_APP="$STAGING/NeAntik Browser.app"
 apply_public_runtime_icon "$STAGED_APP"
 
 # Chromium's release signer refuses an already attached signature. Work only
 # on the temporary copy and preserve the verified build artifact unchanged.
-remove_attached_signatures "$STAGED_APP"
-optimize_runtime_size "$STAGED_APP"
+find "$STAGED_APP" -type d \
+  \( -name '*.app' -o -name '*.framework' \) -print0 |
+while IFS= read -r -d '' bundle; do
+  codesign --remove-signature "$bundle" 2>/dev/null || true
+done
+find "$STAGED_APP/Contents" -type f -print0 |
+while IFS= read -r -d '' candidate; do
+  file_description="$(file -b "$candidate")"
+  if [[ "$file_description" == *Mach-O* ]]; then
+    codesign --remove-signature "$candidate" 2>/dev/null || true
+  fi
+done
+while IFS= read -r signature_dir; do
+  [[ "$signature_dir" == "$STAGED_APP"/*/_CodeSignature ]]
+  find "$signature_dir" -depth -delete
+done < <(find "$STAGED_APP" -type d -name _CodeSignature -print)
+
+if codesign -dv "$STAGED_APP" >/dev/null 2>&1 ||
+    find "$STAGED_APP" -type d -name _CodeSignature -print -quit |
+      grep -q .; then
+  echo "Temporary Chromium input still contains an attached signature." >&2
+  exit 65
+fi
 
 SIGN_ARGUMENTS=(
   --input "$STAGING"

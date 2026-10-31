@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v264-recipient-production-recipe-contract-review-20261027",
+  "observedAtUTC": "2026-10-27T14:54:17Z",
+  "status": "RECIPIENT_PRODUCTION_RECIPE_STATIC_CONTRACTS_PASS; SOURCE_OFFER_INTEGRATION_AND_END_TO_END_RECIPIENT_BUILD_OPEN",
+  "scope": "Docs-only recipe draft checked against exact current source script contracts. No candidate/source-offer manifest mutation, no build, signing, launch, profile access, notarization or publication.",
+  "draftPath": "/private/tmp/neantik-release-v1/docs/recipient-work/V264-RECIPIENT-PRODUCTION-RECIPE-DRAFT.md",
+  "draftSHA256": "d787c167934ead6bf9b734f21111d0b096f9b396133ee72a4356e052c831a950",
+  "codeInputSHA256": {
+    "Package.swift": "fc9c7ed44cf51de32cb17379ac3294f89a1e1d1ad7b7d9050905182bbda2a169",
+    "scripts/resolve-webkit-proxy-build-mode.sh": "bfbb674fedb70cbed78fde0049064dfbc0091d3f37f2af4d82f7f0befb96b8b5",
+    "scripts/package-integrated-app.sh": "49122b057d71481f121048dc190c56a3af55d0b384d80398a13089b496db1697",
+    "scripts/prepare-direct-manager-update.sh": "5c0269ded613af8337551a6965b54b59bcde2969693c695f993a5f9e1918f1b3",
+    "scripts/prepare-direct-runtime-candidate.sh": "4d9d7b146fcbc5f1ad34ae019aa5f8ad90c899f5c49074a00e711f516c761335",
+    "scripts/package-owned-webkit-release.py": "776ef7bcfca4f7eef495d748170cc4e0c009a09821e7b1517ab2a7f46e7c79e6"
+  },
+  "contractChecks": {
+    "integratedAppFourInputs": "PASS",
+    "sourceProvenanceAndLock": "PASS",
+    "productionBuildModeResolver": "PASS",
+    "managerHostBuildInputs": "PASS",
+    "signedSourceAppPreflight": "PASS",
+    "frozenSourceOfferManifestCheck": "PASS",
+    "legacyRuntimeInjectionRefused": "PASS",
+    "draftScopeDisclosure": "PASS",
+    "requiredRecipientVariables": "PASS"
+  },
+  "sourceOfferStatus": "Not included in frozen V246 offer bound by b960; Chromium source/build acquisition and full recipient run are still open.",
+  "knownDocumentationCorrections": [
+    "Production release resolver sets NEANTIK_WEBKIT_PROXY_BUILD_MODE=production; plain SwiftPM release defaults disabled.",
+    "package-integrated-app.sh consumes four matching Chromium inputs: built runtime app, args.gn, Chromium source root and emitted candidate lock; provenance is required beside source root.",
+    "prepare-direct-manager-update.sh requires a signed integrated source app, production host flag, pinned WebKit build/source/receipt/offer and manifest hash.",
+    "prepare-direct-runtime-candidate.sh explicitly refuses owned-WebKit injection; it is not the production path."
+  ],
+  "nextAction": "Integrate the static-verified recipe into a new immutable source-offer draft, close the Chromium source/build artifact route and final notice inventory there, then run the exact offer check-only before preparing a new candidate from current source. Preserve b960 and V246.",
+  "releaseQualified": false
+}

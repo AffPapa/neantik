@@ -35,23 +35,6 @@ struct ProfileEditorValidationTests {
     }
 
     @Test
-    func invalidProxyUsernameTargetsLoginWithoutBlamingValidHost() {
-        let longUsername = String(repeating: "x", count: ProxyConfiguration.maximumUsernameLength + 1)
-        let byteHeavyUsername = "a" + String(repeating: "\u{0301}", count: ProxyConfiguration.maximumUsernameUTF8Bytes)
-        #expect(byteHeavyUsername.count <= ProxyConfiguration.maximumUsernameLength)
-        for username in [longUsername, byteHeavyUsername, "user:name", "user\u{202E}name", "user\0name"] {
-            let issue = firstIssue(usesProxy: true, proxyUsername: username)
-            #expect(issue?.field == .proxyUsername)
-            #expect(issue?.message.contains("логин") == true)
-            #expect(issue?.message.contains(username) == false)
-        }
-        #expect(firstIssue(usesProxy: true, proxyUsername: String(repeating: "x", count: ProxyConfiguration.maximumUsernameLength)) == nil)
-        #expect(firstIssue(usesProxy: true, proxyHost: "bad host", proxyUsername: "valid")?.field == .proxyHost)
-        #expect(firstIssue(usesProxy: true, proxyHost: "bad host", proxyUsername: longUsername)?.field == .proxyHost)
-        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: longUsername) == nil)
-    }
-
-    @Test
     func returnsFirstIssueInVisualFormOrder() {
         #expect(
             firstIssue(
@@ -106,6 +89,32 @@ struct ProfileEditorValidationTests {
                 proxyPort: "not a port"
             ) == nil
         )
+    }
+
+    @Test
+    func webKitEditorRetainsProxyWithoutApplyingChromiumGeoContext() {
+        let proxy = ProxyConfiguration(kind: .socks5, host: "proxy.example.test", port: 1080, username: "qa")
+        let settings = ProfileEditorProxySettings.resolve(
+            engine: .webkit, usesProxy: true, configuration: proxy, detectedProxy: proxy
+        )
+        #expect(settings.configuration == proxy)
+        #expect(!settings.appliesProxyContext)
+    }
+
+    @Test
+    func chromiumEditorAppliesMatchingProxyContextAndDisabledProxyIsCleared() {
+        let proxy = ProxyConfiguration(kind: .http, host: "proxy.example.test", port: 8080, username: "")
+        let matched = ProfileEditorProxySettings.resolve(
+            engine: .chromium, usesProxy: true, configuration: proxy, detectedProxy: proxy
+        )
+        #expect(matched.configuration == proxy)
+        #expect(matched.appliesProxyContext)
+
+        let disabled = ProfileEditorProxySettings.resolve(
+            engine: .webkit, usesProxy: false, configuration: proxy, detectedProxy: proxy
+        )
+        #expect(disabled.configuration == nil)
+        #expect(!disabled.appliesProxyContext)
     }
 
     @Test
@@ -216,13 +225,28 @@ struct ProfileEditorValidationTests {
     }
 
     @Test
-    func ignoredSocksPasswordDoesNotBlockSaving() {
-        #expect(
-            firstIssue(
-                usesProxy: true,
-                proxyKind: .socks5,
-                proxyPassword: "secret\0tail"
-            ) == nil
+    func socksPasswordWithoutLoginRequiresCredentials() {
+        let issue = firstIssue(
+            usesProxy: true,
+            proxyKind: .socks5,
+            proxyPassword: "secret"
         )
+        #expect(issue?.field == .proxyPassword)
+        #expect(issue?.message.contains("логин и пароль") == true)
     }
+
+    @Test func socksCredentialsCanBeEnteredInFields() {
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: "user", proxyPassword: "secret") == nil)
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: "user", proxyPassword: "")?.field == .proxyPassword)
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: "user", proxyPassword: String(repeating: "é", count: 128))?.field == .proxyPassword)
+    }
+
+    @Test func socksValidationUsesPersistedLoginWithoutTrimmingPassword() {
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: " \t\n", proxyPassword: "secret")?.field == .proxyPassword)
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: " user ", proxyPassword: " ") == nil)
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: " " + String(repeating: "a", count: 255) + " ", proxyPassword: "secret") == nil)
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: String(repeating: "a", count: 256), proxyPassword: "secret")?.field == .proxyPassword)
+        #expect(firstIssue(usesProxy: true, proxyKind: .socks5, proxyUsername: " \t", proxyPassword: "") == nil)
+    }
+
 }

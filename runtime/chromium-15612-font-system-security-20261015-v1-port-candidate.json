@@ -1,0 +1,23 @@
+{
+  "binaryBinding": {
+    "architecture": "arm64",
+    "argsGNSHA256": "428054a30abeb212aa3784f524bb27ef4bc0068ab7ebef149866b2b8bff30a3c",
+    "candidateExecutableSHA256": "ba55caca9436c6f16fd6f3e4f7578d87515f161e51c2d0f8f138729086d761f0",
+    "candidateFrameworkSHA256": "517b449aceece7242fff9ff61ff6a60dcb6b8e3486268807bf9203223567e64e",
+    "candidateInfoPlistSHA256": "de8aa8559bfb4ab271ab6d8cadb8cfc22f883e4bf1c22355cf82ee504d39c52c",
+    "executableBytes": 52096,
+    "frameworkBytes": 274603040,
+    "sourceVersion": "156.0.8078.12",
+    "status": "bound-to-built-candidate",
+    "targetArchitecture": "arm64"
+  },
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "sourceContractSHA256": "5da10213b79c97a4bc3b13a0fd6af5e26d6034179bcdbe160bd244463a06f903",
+  "sourceInputManifestSHA256": "da7e2a7c3d4e65252dc037bb9892a08bdaa64c32a1858bb85319cc7d56b03075",
+  "sourceSnapshotSHA256": "b2922280ad1114c3180780b7d563c2aaaaa0e267f7c53c7d3b6c1afe479128c7",
+  "sourceVariant": "font-system-security-20261015-v1",
+  "status": "candidate-bound",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "156.0.8078.12"
+}

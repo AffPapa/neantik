@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-18",
+  "status": "implemented-and-verified-locally;exact-signed-candidate-pending",
+  "scope": "Direct WebKit backup export/restore rejects unsupported engine and stale revision before runtime/scope/archive work",
+  "proof": {
+    "priorOrderingReproduced": true,
+    "priorWebKitCases": 4,
+    "priorIssues": 12,
+    "priorExportScopeInsertions": 1,
+    "priorExportScopeReads": 2,
+    "priorRuntimeInspections": 1,
+    "priorReceiptInputSHA256": "13b6027306fe530629dd78ed61f6eeac8726843e10e55a13aa78b8c12487befe",
+    "correctedReceiptInputSHA256": "8f3f260ad05493f3d21e7bb0253879bf4626739e18938304692f85ac51cbdcd2",
+    "correctedSwiftTests": 50,
+    "correctedSwiftSuites": 5,
+    "correctedSwiftSkips": 0,
+    "correctedSwiftSeconds": 25.472,
+    "pythonContracts": 35,
+    "readOnlyIndependentReview": "no blocking findings"
+  },
+  "corrected": {
+    "authoritativeMetadataRevisionCheckedFirst": true,
+    "engineCheckedBeforeRuntime": true,
+    "scopeReads": 0,
+    "scopeInsertions": 0,
+    "runtimeInspections": 0,
+    "archiveOrStageCreated": false,
+    "archiveInputChanged": false,
+    "pendingTransactionCreated": false,
+    "metadataChanged": false,
+    "identityChanged": false,
+    "savedTabsChanged": false,
+    "siblingChanged": false,
+    "existingAdmissionGuardsRetained": true,
+    "finalContextGuardRetained": true,
+    "ChromiumExportRestoreControlPass": true
+  },
+  "sourceSHA256": {
+    "Sources/NeAntik/ProfileBrowserDataBackupService.swift": "edcb634597f3be5a872f832498d32a6c3effe8ac7490333b72fd45b6af04bb0b",
+    "Tests/NeAntikTests/ProfileBrowserDataBackupServiceTests.swift": "19db58313aaa8a1cfa06b4deb2a2c46151e979125fbeb1d2285b5b6d1b227622"
+  },
+  "realKeychainUsed": false,
+  "realWebKitStoreUsed": false,
+  "archiveFormatChanged": false,
+  "profileSchemaChanged": false,
+  "runtimeChanged": false,
+  "newRights": false,
+  "fullWebKitBackupImplemented": false,
+  "exactSignedCandidateQualified": false,
+  "releaseGate": false,
+  "publishedAppContainsFix": false,
+  "limits": [
+    "Service tests use own temporary files and counting memory backend.",
+    "Existing update/process/metadata guard acquisition remains;this does not claim zero filesystem activity.",
+    "Full WebKit website-data backup/restore and exact new signed app qualification remain open."
+  ]
+}

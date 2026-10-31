@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-08",
+  "publishedAt": "2026-10-06",
+  "maximumAgeDays": 0,
+  "minimumPublicChromiumVersion": "155.0.8059.40",
+  "alsoObservedPublicChromiumVersions": [
+    "155.0.8059.39"
+  ],
+  "channel": "Desktop Stable",
+  "platforms": [
+    "macOS"
+  ],
+  "securityFixCount": 247,
+  "reference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_086471744.html",
+  "referenceTitle": "Stable Channel Update for Desktop",
+  "sourceLabel": "Chrome Releases",
+  "releaseBoundary": "This is a manually pinned primary-source security baseline. It is not a live updater. Refresh checkedAt, versions, securityFixCount and reference on the day of every public Direct release. A zero securityFixCount means the official Stable post did not enumerate security fixes; it never means that the version is exempt from the minimum-version gate.",
+  "policy": "New public NeAntik Direct builds must meet the latest widely deployed macOS Desktop Stable security baseline. The official October 6 update lists 155.0.8059.39/.40 and 247 security fixes. The October 7 M156 Early Stable announcement concerns a limited rollout and is tracked separately; refresh this baseline on the day of publication. Historical source provenance binds archived baseline bytes independently of this current publication gate."
+}

@@ -35,13 +35,10 @@ enum BrowserRuntimePreflightValidator {
         case .some(false):
             errors.append("Подпись браузера некорректна.")
         case .none:
-            if runtime.supportsFingerprintIdentity {
-                errors.append(
-                    "Подпись браузера с разделением отпечатков не удалось проверить."
-                )
-            } else {
-                warnings.append("Подпись браузера не удалось проверить.")
-            }
+            // A runtime whose signature cannot be inspected must never become
+            // launch-ready. Treating this as a warning would allow an
+            // unverified executable to cross the normal launch boundary.
+            errors.append("Подпись браузера не удалось проверить.")
         case .some(true):
             break
         }

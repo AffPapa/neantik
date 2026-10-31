@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T14:51:30Z",
+  "status": "PASS_SOURCE_ONLY_JSC_UNICODE_NOTICE_AND_SOURCE_OFFER_REPLAY;JAVASCRIPTCORE_IMAGE_REMAINS_UNKNOWN",
+  "sourceBinding": {
+    "webkitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "webkitPatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "generatorCMakePath": "Source/JavaScriptCore/CMakeLists.txt",
+    "generatorCMakeSHA256": "2fb739be4112fbf0319628c0b76a2e0d88af57f93d85314b776577b41135307d",
+    "generatorRule": "1687-1692: generateYarrCanonicalizeUnicode consumes ucd/CaseFolding.txt"
+  },
+  "unicodeDataInput": {
+    "path": "Source/JavaScriptCore/ucd/CaseFolding.txt",
+    "version": "17.0.0",
+    "copyright": "Unicode, Inc. 2025",
+    "sha256": "ff8d8fefbf123574205085d6714c36149eb946d717a0c585c27f0f4ef58c4183"
+  },
+  "generatedOutput": {
+    "path": "JavaScriptCore/DerivedSources/yarr/YarrCanonicalizeUnicode.cpp",
+    "sha256": "f014f6e3a42b46da22d17832d688f39d07999bf0295bbee472fc039fcf66af22"
+  },
+  "officialLicense": {
+    "title": "Unicode License v3",
+    "url": "https://www.unicode.org/license.txt",
+    "path": "docs/evidence/third-party/official-license-texts-20261025/Unicode-License-V3.txt",
+    "bytes": 1995,
+    "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+    "manifestSHA256": "0780a4419f8989c2217821581d91947e66a52157570f3bb59d9072dce7e9e2b5",
+    "packagedNoticePath": "Contents/Resources/NeAntikRuntimeLicenses/JavaScriptCore/Unicode-License-V3.txt"
+  },
+  "lineageReceipt": {
+    "path": "docs/evidence/webkit-v20-jsc-generated-input-lineage-20261025.json",
+    "sha256": "d50c37630550bd85d2685e9ef3046b19ecac83baca18a9503dde142c25e7a9cf",
+    "packagedNoticePath": "Contents/Resources/NeAntikRuntimeLicenses/JavaScriptCore/GeneratedInputLineage.json"
+  },
+  "installer": {
+    "path": "scripts/webkit_runtime_notices.py",
+    "sha256": "2ff08e2896163e047a6b6e390751a5b7455df29c7dc6bcbbbcb1b809d5ac5d67",
+    "testsPath": "scripts/tests/test_webkit_runtime_notices.py",
+    "testsSHA256": "be4757ddc0056b30e69eba624fcf9361030120b11d177e68cb19be49fdaf3d66",
+    "focused": "46/46 PASS"
+  },
+  "sourceOfferReplay": {
+    "managerArchiveSHA256": "b880531a56aced46dbf8cda817b3c1c52a8294dc1c38a4b13a2c2177cb556197",
+    "overlayPatch": "patches/notice-installer-overlay-v21-20261025.patch",
+    "overlaySHA256": "52a99be9a258b422c40f28cc7f381b0b51207f2ebb7f8973a3fcdbee1a7d6d50",
+    "inputArchive": "notice-source-inputs-v21.tar",
+    "inputArchiveSHA256": "82d673252cd18269ccbfb4a5a737ae8c8993012784884408f5f78966aa870f5c",
+    "inputManifest": "evidence/NOTICE_SOURCE_INPUTS_MANIFEST_V21.json",
+    "inputManifestSHA256": "7bd3dba552fc5e6aba210616337329d034e71ba49781cb382218dc67d69ef25c",
+    "inputFiles": 88,
+    "noticeInstallerAndPackageHostTests": "89/89 PASS"
+  },
+  "negativeControls": [
+    "tampered Unicode license rejected before writes",
+    "tampered lineage receipt rejected before writes",
+    "tampered packaged lineage receipt rejected"
+  ],
+  "runtimeEffect": "No build, app mutation, runtime binary modification, install, signing, notarization or publication. Existing WebKit image and license applicability remain UNKNOWN.",
+  "decisionBoundary": "Unicode License v3 and generated-input notice coverage are staged and hash-verified. This does not elect JavaScriptCore image terms, close corresponding source/relink obligations, or qualify runtime behavior."
+}

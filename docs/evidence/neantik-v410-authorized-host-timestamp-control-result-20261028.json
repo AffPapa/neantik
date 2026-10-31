@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v410-authorized-host-timestamp-control-result-20261028",
+  "observedAtUTC": "2026-10-28T07:58:39Z",
+  "status": "PASS_STANDARD_DEVELOPER_ID_SECURE_TIMESTAMP_IN_AUTHORIZED_UNSANDBOXED_HOST_CONTEXT",
+  "scope": "One disposable copy of /usr/bin/true only. This proves the standard TSA path works in the approved unsandboxed host context; it does not sign or qualify a NeAntik candidate.",
+  "preflightReceipt": "/private/tmp/neantik-release-v1/docs/evidence/neantik-v410-authorized-host-timestamp-control-preflight-20261028.json",
+  "preflightReceiptSHA256": "c31122d39346388ea215d9996e36d1f25b6c87b159b2d4c1156a5b94c28b3d32",
+  "input": {
+    "source": "/usr/bin/true",
+    "unsignedCopySHA256": "3479b76af6a8597f3ea629bd941590d1aec4df85ff7733a3b53b6a736a12dd51",
+    "bytes": 84128
+  },
+  "signing": {
+    "identitySHA1": "474F7C78F33EE324C24F6F5AE0443EB713E85E60",
+    "teamIdentifier": "H6VGU2M6JD",
+    "context": "approved unsandboxed tool invocation",
+    "command": "codesign --force --timestamp --sign <pinned Developer ID SHA-1> <disposable copy>",
+    "result": "PASS",
+    "secureTimestampLocal": "2026-10-28 14:58:10 +07:00",
+    "secureTimestampUTC": "2026-10-28T07:58:10Z",
+    "codesignVerifyStrict": "PASS",
+    "signedCopySHA256": "df5f2da6fafdcec9bba7a66c4dbaeed0fa2ab9bb88296b87cd0fa686eb0a2e3d"
+  },
+  "sideEffects": {
+    "onlyDisposableCopyChanged": true,
+    "candidateChanged": false,
+    "releaseArtifactsChanged": false,
+    "publication": false
+  },
+  "releaseQualified": false,
+  "nextAction": "Use the known successful authorized host context for the one exact Chromium .74 candidate preparation already scoped by V341; do not repeat this control."
+}

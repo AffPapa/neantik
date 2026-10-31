@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T14:12:00Z",
+  "status": "PASS_SOURCE_ONLY_NOTICE_INSTALLER_INTEGRATION; JAVASCRIPTCORE_IMAGE_REMAINS_UNKNOWN",
+  "sourceBinding": {
+    "runtimeImage": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+    "runtimeImageSHA256": "b18e6c8575354ec022779494daaa0afc48f5e75d412ed96cadef0edba41f6a56",
+    "sourcePath": "Source/JavaScriptCore/runtime/JSDateMath.cpp",
+    "sourceSHA256": "4f2ed772401ad09a51707bce46a718f1ec2750a67c3e9a8c566a68a9f30585d4",
+    "sourceHeaderSHA256": "aba1fb2ba4bf032235666abfa9f2a0c7c3bc20fc3350eac20e0fdd396373836f",
+    "sourceHeaderBytes": 3816,
+    "linkedHeaderManifestSHA256": "599b1677b25c00a2f14ed4101061c302d75148af27146e6b1894c7f0ebcd9604",
+    "linkedHeaderBundleSHA256": "d3060d740022138adadfe3f95a9001e90e1c5772e9c03a74af115ef98d0bcf66"
+  },
+  "licenseTextSources": [
+    {
+      "path": "docs/evidence/third-party/official-license-texts-20261025/MPL-1.1.txt",
+      "sha256": "f849fc26a7a99981611a3a370e83078deb617d12a45776d6c4cada4d338be469",
+      "bytes": 25755,
+      "officialURL": "https://www.mozilla.org/media/MPL/1.1/index.0c5913925d40.txt"
+    },
+    {
+      "path": "docs/evidence/third-party/official-license-texts-20261025/GPL-2.0.txt",
+      "sha256": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6",
+      "bytes": 17984,
+      "officialURL": "https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt"
+    },
+    {
+      "path": "docs/evidence/third-party/official-license-texts-20261025/MANIFEST.json",
+      "sha256": "d2c93f73fcfe5847a40803b3616b59ce47a21b1cd068970e0fdca33d9c2f2a76"
+    }
+  ],
+  "installer": {
+    "path": "scripts/webkit_runtime_notices.py",
+    "sha256": "38d0409572a99a0d5f7bb3c10c1d4f6988c3c94a5b9f400e92924d4060e42fa9",
+    "testsPath": "scripts/tests/test_webkit_runtime_notices.py",
+    "testsSHA256": "94921662c2713d2c791977271cc6df729949436674e4e3414796d913b8be11c5",
+    "testCommand": "PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest scripts/tests/test_webkit_runtime_notices.py",
+    "result": "43 tests PASS; source and packaged text tamper checks included"
+  },
+  "sourceOfferOverlay": {
+    "patch": "dist/private/source-offers/1.0.0-manager-955/patches/notice-installer-overlay-20261025.patch",
+    "patchSHA256": "058af63b6a155fd8a84f2c8c47118105803fcfbf6b72ca20b307b6021a00a809",
+    "managerArchiveSHA256": "b880531a56aced46dbf8cda817b3c1c52a8294dc1c38a4b13a2c2177cb556197",
+    "verification": "patch --dry-run -p1 against scripts/webkit_runtime_notices.py and test file extracted from the exact manager source archive passed",
+    "noticeInputsArchiveSHA256": "826a1a04a536e5cdc332bea9d1738c95af38727500ecca96e58d203fc16a8bf7",
+    "noticeInputsManifestSHA256": "255657278534bff40e9129951aa1b96b3faea26b9773922c001306cf7db60dfb",
+    "sourceArchiveReplayTestCommand": "PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest scripts/tests/test_webkit_runtime_notices.py",
+    "sourceArchiveReplayResult": "PASS 43/43 after extracting frozen manager source archive, applying notice-installer overlay, extracting 85-file notice input bundle, and adding official MPL-1.1/GPL-2.0 text files"
+  },
+  "interpretation": "The exact compiled input header states LGPL-2.1-or-later or MPL-1.1/GPL-2.0 alternatives and also preserves a V8 BSD-style paragraph. The installer now supplies the named alternative texts in app Markdown/HTML notices and verifies source/package bytes. This is source-header and notice evidence only; it does not elect distribution terms, settle other JSC components or copyrights, prove LGPL relinking, or qualify a signed product."
+}

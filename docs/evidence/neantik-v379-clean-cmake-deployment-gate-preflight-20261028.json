@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "V379",
+  "observedAtUTC": "2026-10-28T04:55:19Z",
+  "status": "PASS_CLEAN_CMAKE_CONFIGURE; TEXT_EXTRACTION_MODEL_TARGET_ABSENT; FULL_BUILD_NOT_RUN",
+  "scope": "Applied the V378 patch to a detached V135 source copy and configured a fresh isolated CMake/Ninja build tree for arm64 macOS 15.4. Configure completed. The generated graph contains no WebKitTextExtractionFilterModel target and no TextExtractionFilter.mlmodelc outputs. No full WebKit build, stage, candidate, package, signing, runtime, or publication occurred.",
+  "inputs": {
+    "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "basePlatformCocoaSHA256": "7750656cd935f54e5d36a980d2f07b4666700e86326d21864b3bde89a5cfe5b7",
+    "v378PatchSHA256": "a3a8e43188e6f0fcd3a603e0f3e6a814283da6f56a268f206b10f7fc97416ee2",
+    "sourceOfferManifestSHA256": "7c65b9b4f1382ac986d25964a92fd937e2c5db8bfc97e0d168040dd1749d5f88"
+  },
+  "environment": {
+    "cmake": "4.4.3",
+    "sdk": "macosx27.0",
+    "deploymentTarget": "15.4",
+    "architecture": "arm64"
+  },
+  "attempts": [
+    {
+      "classification": "SETUP_FAILURE_CMAKE_CACHE_ABSOLUTE_PATH_MISMATCH",
+      "detail": "A COW clone of the V367 build graph retained CMakeCache paths to V132 source/build roots; CMake rejected relocation before configure. No original tree changed. That clone is not reused."
+    },
+    {
+      "classification": "PASS_CLEAN_CONFIGURE",
+      "buildRoot": "/private/tmp/neantik-v378-unsigned-build-20261028/clean-build",
+      "cmakeCacheSHA256": "a9ba5021a1d51c2bdf81f66a646960d2f2b6c781baaafa8c9917063df4758653",
+      "buildNinjaSHA256": "4184af4b7c5a55fff82b473784d8d544623d6e30e7aaa30649ca16085c97b8fd",
+      "targetGraph": "WebKitTextExtractionFilterModel absent; no TextExtractionFilter.mlmodelc paths in generated graph"
+    }
+  ],
+  "costEvidence": {
+    "requestedWebKitOutputs": 14,
+    "ninjaDryRunActionsFromFreshBuildTree": 9497,
+    "fullBuildExecuted": false
+  },
+  "limitations": [
+    "This is configure/graph evidence only, not built/staged runtime proof; the three package rows remain UNKNOWN.",
+    "TextExtractionFilter.mlmodel source remains in the pinned source archive; its file-specific rights remain unresolved.",
+    "Full source/relink, recipient load, package signing, secure timestamp, notarization and release gates remain open."
+  ],
+  "nextAction": "Defer the 9,497-action full WebKit build until the final Chromium 156.0.8078.74 candidate inputs and complete source-offer are frozen; then perform it once. Continue resolving model source/archive disposition independently. Apple secure timestamp remains a separate signing gate; do not retry without a changed environment."
+}

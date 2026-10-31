@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "observedAtUTC": "2026-10-25T16:21:29Z",
+  "status": "TERMS_CLASSIFIED_ATTRIBUTION_MAINTAINER_DECISION_RUNTIME_NOTICE_BINDING_OPEN",
+  "scope": "Exact source and upstream history review for the headerless generated WebCore input Source/WebCore/css/popover.css. Rebound to V122 after mapped source hashes matched the pinned source tree; prior UNKNOWN/attribution limits are unchanged.",
+  "sourceBinding": {
+    "upstreamCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "patchedSourceSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "sourcePath": "Source/WebCore/css/popover.css",
+    "sourceSHA256": "0c46fec1026f3c6b9b2fa90724cf12c39b3a8628857a30675f39e4f14f6a62a6",
+    "bytes": 662,
+    "runtimeImageSHA256": "2dfb23280d68b0b89bf493a16de3696a326ccf8cdb88722593998bb00bbdd6a8",
+    "runtimeImageSHA256V122": "6c894ce051a20dee391a1bfd99648546b3797b51dc46999ba2b83a4644833174"
+  },
+  "upstreamIntroduction": {
+    "commit": "d4485d2afa7b018f2b75f15c2050e3b94971881d",
+    "apiURL": "https://api.github.com/repos/WebKit/WebKit/commits/d4485d2afa7b018f2b75f15c2050e3b94971881d",
+    "commitResponseSHA256": "ccbdf5440272408f9c898609b23713adc5ffcab284f1aa8aa09f7e435d00f8f9",
+    "commitPatchSHA256": "5e09800050adb4a072657b9d969f50eefb526d9f372e4f66f2c2a186cb1db9fe",
+    "author": "Tim Nguyen",
+    "date": "2023-02-11T22:32:33Z",
+    "change": "GitHub records this exact path as newly added with 28 lines; no prior file lineage was indicated.",
+    "patchExcerpt": "The 28-line initial file contains UA CSS for HTML popover display, position, backdrop, and colors."
+  },
+  "policy": {
+    "url": "https://docs.webkit.org/Other/Licensing.html",
+    "finding": "WebKit policy states new code contributed to WebKit uses the two-clause BSD license; moving existing code requires retaining original copyright and license.",
+    "classification": "Maintainer classifies this exact new WebKit contribution as BSD-2-Clause based on exact pinned source hash, new-file commit, and official policy. This is not a legal opinion."
+  },
+  "attribution": {
+    "exactSourceHeaderPresent": false,
+    "upstreamAuthor": "Tim Nguyen",
+    "copyrightNotice": "Copyright (C) 2023 Tim Nguyen.",
+    "basis": "Exact first-introducing upstream commit identifies Tim Nguyen as author/committer. WebKit contributing guidance says a new-file author should use the WebCore LICENSE-APPLE template with their own copyright information. Maintainer adopts the individual-author attribution for this notice; this is not a legal opinion or independent confirmation of employment/IP assignment."
+  },
+  "noticeStatus": {
+    "bsd2TermsTextInUpstreamArchive": true,
+    "runtimeLicenseTextSource": "docs/evidence/third-party/webcore/WEBCORE-POPOVER-BSD-2-Clause.txt",
+    "runtimeLicenseTextSHA256": "3c9203d778d97eda6e0433a557232f5303476b77e88fdfd0719b39c26ec9581b",
+    "runtimeNoticeBoundToThisFile": true,
+    "completeWebCoreImageTerms": false
+  },
+  "limitations": [
+    "This is a row-specific maintainer decision for one new WebCore stylesheet, not a legal opinion.",
+    "WebCore image remains UNKNOWN because other linked inputs and resources are unresolved.",
+    "No source file/runtime image bytes changed; only a source notice artifact is derived from the exact pinned BSD-2 template.",
+    "No build, app installation, signing or publication occurred."
+  ],
+  "next": "Resolve remaining WebCore/JSC per-file and generated input attribution, bind all notices to exact runtime images, and close corresponding-source/relink proof.",
+  "v122BuildBinding": {
+    "buildReceiptSHA256": "804a60911bf67912d8f17665958f88051b3085a175f145db0fd76fa7ea23bd9c",
+    "buildID": "neantik-v122-fresh-owned-webkit-build-and-staging-20261026",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "sourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "overlayApplicationLogSHA256": "1492e55293943dc85c3f624742daeae30f727796e90f673cebc46ae0e12b19de",
+    "cmakeCacheSHA256": "d79a82d81ca422e1f75cd5a3175065c6992d25ab89c33cea6cbf25660ef68d42",
+    "buildNinjaSHA256": "99284c39a6e3f96eca852c293d7d3f877568d460fb2e31e01f9fd6428a60da34",
+    "buildLogSHA256": "08c476869d46850f8efe6f74794a12943a9ca5ea2d6bfab1f4d299bcb30e988e"
+  },
+  "v135Binding": {
+    "buildReceiptPath": "docs/evidence/neantik-v135-clean-relocated-v132-webkit-relink-20261026.json",
+    "buildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "webkitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "mainSourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "scope": "Exact runtime output identity only; preserves referenced historical source/license reviews without expanding their legal scope."
+  }
+}

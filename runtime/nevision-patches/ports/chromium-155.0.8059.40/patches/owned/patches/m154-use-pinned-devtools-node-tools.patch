@@ -1,0 +1,42 @@
+--- a/third_party/devtools-frontend/src/scripts/build/typescript/typescript_vars.gni
++++ b/third_party/devtools-frontend/src/scripts/build/typescript/typescript_vars.gni
+@@ -10,7 +10,7 @@
+ } else if (host_os == "win") {
+   tsc_binary = "//third_party/typescript/windows-amd64/src/lib/tsc.exe"
+ } else if (host_os == "mac") {
+-  tsc_binary = "/opt/homebrew/bin/tsc"
++  tsc_binary = "//third_party/devtools-frontend/src/node_modules/typescript/bin/tsc"
+ }
+ 
+ # Standard TypeScript library definitions needed for remote execution (RBE /
+--- a/third_party/devtools-frontend/src/third_party/typescript/typescript.py
++++ b/third_party/devtools-frontend/src/third_party/typescript/typescript.py
+@@ -10,7 +10,10 @@
+ 
+ 
+ def GetBinaryPath():
+-    return "/opt/homebrew/bin/tsc"
++    if platform.system() == 'Darwin':
++        return os_path.abspath(os_path.join(
++            os_path.dirname(__file__), '..', '..', 'node_modules',
++            'typescript', 'bin', 'tsc'))
+     if platform.machine() == 'arm64':
+         darwin_path = 'mac-arm64'
+     else:
+@@ -33,7 +36,15 @@
+ 
+ 
+ def RunTypeScriptRaw(cmd_parts, stdout=None):
+-    cmd = [GetBinaryPath()] + cmd_parts
++    if platform.system() == 'Darwin':
++        chromium_root = os_path.abspath(os_path.join(
++            os_path.dirname(__file__), '..', '..', '..', '..', '..'))
++        node_binary = os_path.join(
++            chromium_root, 'third_party', 'node', 'mac_arm64',
++            'node-darwin-arm64', 'bin', 'node')
++        cmd = [node_binary, GetBinaryPath()] + cmd_parts
++    else:
++        cmd = [GetBinaryPath()] + cmd_parts
+     process = subprocess.Popen(cmd,
+                                cwd=os.getcwd(),
+                                stdout=subprocess.PIPE,

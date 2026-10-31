@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "evidenceType": "owned-webkit-http-research",
+  "observedAtUTC": "2026-10-19T17:14:19.208987+00:00",
+  "status": "research-controls-passed;not-shipping-qualified",
+  "productionWebKitProxyEnabled": false,
+  "appReleaseUnchanged": "0.8.25(137)",
+  "source": {
+    "protectedHarnessCommit": "1955cd2b923e5dfc0211904069b274b19c0f5c51",
+    "protectedHarnessSHA256": "97ebd6e714a34355e16fdd521b1a351c25c11da1b0f6d96ee44ba00d0f74e6d6",
+    "negativeHarnessSHA256": "da499a1387025a2de89cf165105f04107d7cec1ca28b97093701803e89c4dcae",
+    "hostSourceSHA256": "34aec0b78c473b40232039344a0ca3fbe36bc94189acf4c1f2cf0ecd650322e1"
+  },
+  "platform": {
+    "os": "macOS27.0",
+    "build": "26A5416b",
+    "architecture": "arm64"
+  },
+  "runtime": {
+    "upstream": "https://webkit.org/build-archives/",
+    "archiveRevision": "324120@main",
+    "archiveSHA256": "16a396caaa98c9562b22b7de09ca6a9df3ed410de4828976b0711e3ea4bf9728",
+    "version": "627.1.5+",
+    "minimumMacOS": "26.5",
+    "measuredOwnedFiles": {
+      "WebKit.framework/Versions/A/WebKit": "862dc0029b8fc0485f2e2d3f8c2507bdc2294002ef07893d813eeb78db335b6e",
+      "WebKit.framework/Resources/com.apple.WebKit.NetworkProcess.sb": "0f1babf4302b5979f25c94e827572d509349d1499be3c877c5625a811fe937de",
+      "WebCore.framework/Versions/A/WebCore": "f02b5bc7daf700c9e752cdf910455840b4cf867a423d7333eafa8b1fab016cf6",
+      "JavaScriptCore.framework/Versions/A/JavaScriptCore": "7edf83767c9b5540f49681289fede08051a19150150d6f96f9836dc7f517db14"
+    },
+    "signedHostExecutableSHA256": {
+      "A": "2a32167ac0632720e10d552915dac383f11075b2b98e8faa5a651a5dff0636f3",
+      "B": "39e4ca14a16a2966beef6616ff202a6e33a1e8ff58ee2a6c73cfea3b1601f2cd"
+    }
+  },
+  "protectedHTTP": {
+    "controls": [
+      {
+        "case": "independent-direct-ready",
+        "success": true,
+        "code": 0,
+        "directResponses": 1,
+        "relayResponses": 0,
+        "passed": true
+      },
+      {
+        "case": "named-relay-ready",
+        "success": true,
+        "code": 0,
+        "directResponses": 0,
+        "relayResponses": 1,
+        "passed": true
+      },
+      {
+        "case": "private-direct-denied",
+        "success": false,
+        "code": -1,
+        "directResponses": 0,
+        "relayResponses": 0,
+        "passed": true
+      },
+      {
+        "case": "named-relay-refused",
+        "success": false,
+        "code": -1000,
+        "directResponses": 0,
+        "relayResponses": 0,
+        "passed": true
+      },
+      {
+        "case": "private-while-refused",
+        "success": false,
+        "code": -1,
+        "directResponses": 0,
+        "relayResponses": 0,
+        "passed": true
+      },
+      {
+        "case": "independent-direct-during-refusal",
+        "success": true,
+        "code": 0,
+        "directResponses": 1,
+        "relayResponses": 0,
+        "passed": true
+      },
+      {
+        "case": "named-relay-recovered",
+        "success": true,
+        "code": 0,
+        "directResponses": 0,
+        "relayResponses": 1,
+        "passed": true
+      }
+    ],
+    "cleanup": {
+      "hostsNormalExit": [
+        true,
+        true
+      ],
+      "proxyDrained": true,
+      "originDrained": true,
+      "ownedHelpersAbsent": true
+    }
+  },
+  "intentionalUnconfinedControl": {
+    "configuredProxy": true,
+    "controls": [
+      {
+        "case": "named-authenticated-positive",
+        "success": true,
+        "directResponses": 0,
+        "relayResponses": 1
+      },
+      {
+        "case": "private-direct-bypass-negative",
+        "success": true,
+        "directResponses": 1,
+        "relayResponses": 0
+      }
+    ],
+    "status": "PASS-control-catches-bypass",
+    "normalHostExit": true,
+    "serversDrained": true,
+    "ownRuntimeUnmappedAfterExit": true
+  },
+  "signing": {
+    "hostSignature": "existing Developer ID;exact certificate and own identifiers verified",
+    "frameworkStrictBundleVerificationPassed": false,
+    "frameworkLimitation": "Development framework keeps XPC services outside framework via symlinks;strict bundle verification refuses this layout",
+    "notarization": "not performed for research assembly",
+    "releaseGatekeeperQualification": false,
+    "gatekeeperDisabled": false
+  },
+  "limitations": [
+    "Research host and nonpersistent stores;shipping manager/runtime not changed",
+    "HTTP fixture serves owned marker;not real external upstream/DNS/TLS verification",
+    "DNS/delegation/UDP/WebRTC/IPv6/HTTPS/WS/other-helper paths not covered",
+    "Runtime requires macOS26.5;only macOS27 ARM64 observed",
+    "QA policy uses generated port and re-signing;shipping needs immutable assembly and stable scoped broker",
+    "Profile lifecycle/storage/MCP integration and complete Direct release gates remain open"
+  ]
+}

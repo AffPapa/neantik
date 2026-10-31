@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-24T07:44:48Z",
+  "scope": "production-channel to owned-WebKit manager compile-mode propagation",
+  "status": "pass_focused_workflow_regression",
+  "source": {
+    "scripts/package-app.sh": "5d10c9fe698702fccf58eb53785f3ea5e39a3f9e6b56d14095fce782df3de239",
+    "scripts/prepare-direct-manager-update.sh": "aa244fce42183d6f216f83cb74859531157236ae15ed08cd66ebfe8b8c3c6ea9",
+    "scripts/resolve-webkit-proxy-build-mode.sh": "bfbb674fedb70cbed78fde0049064dfbc0091d3f37f2af4d82f7f0befb96b8b5",
+    "scripts/tests/test_release_direct_script.py": "c9a815aff4e575c1e14ffe411b9e7d04262d786722f1c158ffe6d5d5943b3c8e"
+  },
+  "change": "A shared resolver is sourced by both manager SwiftPM release build entrypoints. It selects production mode for the production channel, rejects conflicting mode/channel pairs, and leaves default-disabled behavior intact.",
+  "checks": {
+    "focusedTests": {
+      "command": "python3 -B -m unittest scripts.tests.test_release_direct_script",
+      "result": "19 tests passed; production mode resolver covers production selection, both mismatch refusals, and public-alpha default."
+    },
+    "shellSyntax": {
+      "command": "zsh -n scripts/package-app.sh scripts/prepare-direct-manager-update.sh scripts/resolve-webkit-proxy-build-mode.sh",
+      "result": "pass"
+    },
+    "diffCheck": {
+      "command": "git diff --check",
+      "result": "pass"
+    },
+    "productionCompileReuse": "No Swift source, Package.swift, or build-mode code changed in this slice; the optimized production manager/host compile receipt remains reusable."
+  },
+  "limits": [
+    "No runtime was staged or signed.",
+    "No application was launched, notarized, or published.",
+    "Owned-WebKit packaging remains fail-closed pending source/build offer, factual notices, and exact production qualification."
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS for copyright-string preservation; license applicability remains UNKNOWN",
+  "candidate": {
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "resource": {
+    "runtimePath": "WebGPU.framework/Versions/A/Resources/Info.plist",
+    "runtimeSHA256": "d1b62a69cb77ccc8cea6b51760021849ab53f472db0781cb6890a1106a7139a6",
+    "sourcePath": "Source/WebGPU/Info.plist",
+    "sourceSHA256": "99f7685c28e18f82935817519f9ef6e5ebd63af453c7c3414df591f34078a4af"
+  },
+  "fieldComparison": {
+    "field": "CFBundleGetInfoString",
+    "sourceVersionToken": "${BUNDLE_VERSION}",
+    "runtimeVersion": "627.1.5+",
+    "copyrightSuffixUTF8BytesEqual": true,
+    "copyrightSuffixSHA256": "b853d155ea649ec95ae91be0024875750bdb270b18bd8f317036a5e0ed43d4be",
+    "copyrightSuffixCharacters": 778
+  },
+  "interpretation": "The build substituted the bundle version while preserving the source copyright string byte-for-byte after the version field. The string identifies multiple historic copyright holders, including KDE and Expat, so the row must remain open until corresponding per-file terms and required distribution notices are established.",
+  "scopeLimit": "Copyright-string preservation is not a license determination and does not reduce the package worksheet's UNKNOWN count."
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS for isolated copy integration; production candidate unchanged",
+  "input": {
+    "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "method": {
+    "copy": "APFS clone of candidate app to /private/tmp/neantik-webinspector-notice-integration-20261025/NeAntik.app",
+    "install": "scripts/webkit_runtime_notices.py --install against copied app and copied host Frameworks",
+    "verify": "scripts/webkit_runtime_notices.py --verify against the same copied app and Frameworks",
+    "results": ["install PASS", "verify PASS", "scripts.tests.test_webkit_runtime_notices: 28 passed"]
+  },
+  "generatedOutputs": {
+    "markdownSHA256": "44552ae266c6f8c656287cc57732bf839d573afabc17b19290178726d04a76b4",
+    "htmlSHA256": "316795901f6d7b875254bece010bbcbc5a03dd910709871642ca6e5b1742ce8c",
+    "webInspectorBSD2TextSHA256": "c1493fcceabb2c162ca8a603fd4505c51a24024d8f9aa35ae75aa72df412fc00"
+  },
+  "scopeAndLimits": [
+    "Only an isolated copy was modified; the signed candidate path was not passed to the installer.",
+    "This does not repair or re-sign candidate 139.",
+    "This does not close the remaining image/resource applicability decisions or qualify the production package."
+  ]
+}

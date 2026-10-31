@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-research-headed-page-worker;not-release-qualified",
+  "capturedAt": "2026-10-15T20:40:31.530Z",
+  "runtime": {
+    "version": "156.0.8078.12",
+    "executableSHA256": "34d6c4fff38015c91ad8052d0452b4309bb191f64ff825518cbddc8fb59c456a",
+    "frameworkSHA256": "fdbceb62fe9abcc0f2adab08e37c4f9d712943387c4867d0f615e1966a4af932",
+    "closureSHA256": "45aab353afa841ee6dd00e68e2e77cad0218b47b0268c367f08b020067e27468"
+  },
+  "observationsSHA256": "67a6339b71e61575410f66fbdced495d268c760ecf01ee8f3ab54406e7e93607",
+  "actualBrowser": true,
+  "headed": true,
+  "modes": [
+    "native",
+    "seeded-native",
+    "policy-a",
+    "policy-b",
+    "policy-a-repeat"
+  ],
+  "measurementsPerRealmPerMode": 42,
+  "typographyVariants": [
+    "default retained",
+    "explicit no-kerning controlled equality"
+  ],
+  "toleranceCSSPixels": 0.08,
+  "sessionBehaviorChecks": 2050,
+  "abaChecks": 168,
+  "nativeRegistrationACKs": [
+    5,
+    5,
+    5,
+    5,
+    5
+  ],
+  "normalResourceAdmissionAllModes": true,
+  "warningExceptionUsed": false,
+  "controls": [
+    "native and seed-without-policy draw own registered canary",
+    "policy refuses own local FontFace explicitly and actually uses fallback",
+    "injected Helvetica family collision refused in both typography variants",
+    "downloaded original TTF and WOFF2 retain known advances",
+    "page and DedicatedWorker repeated widths and drawn ink agree",
+    "same A root reopened after B retains both typography measurements",
+    "complete browser and every live renderer native ACK",
+    "graceful exit0, no owned processes/roots, full signed runtime inputs unchanged"
+  ],
+  "defaultMultiwordDifferences": [
+    7,
+    7,
+    12,
+    12,
+    12
+  ],
+  "harnessCorrections": [
+    "worker FontFaceSet load lifecycle before ready",
+    "default DOM and Canvas word-boundary shaping retained as distinct observations",
+    "exact CSS serialization equivalents accepted without enlarging tolerance",
+    "negative family-collision refusal asserted separately for both typography variants"
+  ],
+  "offlineControls": {
+    "parserAndSemantics": 9,
+    "loopbackHTTP": 6,
+    "actualBrowserEvidence": false
+  },
+  "cleanup": {
+    "fixtureClosed": true,
+    "ownedProcessesRemaining": 0,
+    "ownedRootsRemaining": 0
+  },
+  "inputsRechecked": true,
+  "managerActivation": false,
+  "shippedRuntimeChanged": false,
+  "releaseQualified": false,
+  "remaining": [
+    "actual malformed-root/FIFO/missing-pipe/policy-redirect controls",
+    "font behavior in remaining contexts and Font Access permission boundaries",
+    "restricted collection/variation and broader style coverage",
+    "ordinary Chrome comparison with safe clone-helper isolation",
+    "qualified manager opt-in and exact signed candidate/hosted-byte gates"
+  ]
+}

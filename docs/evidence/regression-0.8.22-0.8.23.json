@@ -1,0 +1,254 @@
+{
+  "schemaVersion": 1,
+  "scope": "Declared public release records, not an independent runtime audit",
+  "before": {
+    "version": "0.8.22",
+    "build": 134,
+    "sourceCommit": "9c6c204e6e6d37c585eafbf7c085f21cd845ef05",
+    "managerBuildSourceCommit": "9c6c204e6e6d37c585eafbf7c085f21cd845ef05",
+    "managerSHA256": "7617ad18d886c33f3be54d63acd9aee82c6b330b08aa8d0bb2045521c7aa6021",
+    "runtime": {
+      "chromiumVersion": "156.0.8078.12",
+      "architecture": "arm64",
+      "executableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+      "frameworkSHA256": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7"
+    }
+  },
+  "after": {
+    "version": "0.8.23",
+    "build": 135,
+    "sourceCommit": "33cdd33556b56e3f6f364f9d1e721447c352e595",
+    "managerBuildSourceCommit": "33cdd33556b56e3f6f364f9d1e721447c352e595",
+    "managerSHA256": "b8092ce4db11c0053bdac9b72384464733056a8b0c90d4b5c77e63d588750c21",
+    "runtime": {
+      "chromiumVersion": "156.0.8078.12",
+      "architecture": "arm64",
+      "executableSHA256": "fe42421d3f3e04acd70a331fc676ff5e8bae6d5214a0c59f5d3a95dbafd3b1fc",
+      "frameworkSHA256": "74aa486a76aaabe233e480034712e67ce75c712775256fbfe5753301ec8aabb7"
+    }
+  },
+  "identityComparison": {
+    "managerExecutableChanged": true,
+    "runtimeExecutableDigestsEqual": true,
+    "fullRuntimeInventoryCompared": false
+  },
+  "measurementComparability": {
+    "declaredContextsMatch": false,
+    "reason": "missing_context",
+    "differingFields": [],
+    "before": null,
+    "after": null,
+    "independentlyVerified": false
+  },
+  "behaviorRegressionVerdict": "not_established",
+  "performanceComparison": "not_measured",
+  "verification": [
+    {
+      "key": "notarization",
+      "label": "Нотарификация",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "Accepted"
+      },
+      "after": {
+        "state": "declaration_only",
+        "declaration": "Apple Accepted for ZIP and DMG"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "stapling",
+      "label": "Stapling",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "pass"
+      },
+      "after": {
+        "state": "reported_pass",
+        "declaration": "PASS unified Direct gates"
+      },
+      "reportedStateChanged": true
+    },
+    {
+      "key": "Gatekeeper",
+      "label": "Gatekeeper",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "accepted"
+      },
+      "after": {
+        "state": "reported_pass",
+        "declaration": "PASS unified Direct gates"
+      },
+      "reportedStateChanged": true
+    },
+    {
+      "key": "DirectDoctor",
+      "label": "Direct doctor",
+      "before": {
+        "state": "reported_pass",
+        "declaration": "13/13PASS"
+      },
+      "after": {
+        "state": "declaration_only",
+        "declaration": "13/13 ready"
+      },
+      "reportedStateChanged": true
+    },
+    {
+      "key": "nativeUpdater",
+      "label": "Установка обновления",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "Updater implementation unchanged; previous133 signed QA commit/preACK rollback evidence retained. No new installed133->134 shipping feed-hop claim; Site feed remains blocked."
+      },
+      "after": {
+        "state": "declaration_only",
+        "declaration": "Implementation unchanged; prior bounded commit/rollback evidence retained. No installed134→135 shipping feed-hop claim."
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "nativeRollback",
+      "label": "Откат",
+      "before": {
+        "state": "unknown"
+      },
+      "after": {
+        "state": "unknown"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "GUIFingerprint",
+      "label": "Запуск локальной подписанной сборки",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "New134 exact candidate qualification passed; unchanged133 runtime matrices retained separately"
+      },
+      "after": {
+        "state": "open",
+        "declaration": "Exact signed135 headed baseline PASS; unavailable/unstable required keys empty; previous runtime matrices retained separately"
+      },
+      "reportedStateChanged": true
+    },
+    {
+      "key": "downloadedHeaded",
+      "label": "Запуск скачанной копии",
+      "before": {
+        "state": "unknown"
+      },
+      "after": {
+        "state": "unknown"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "MCPExactSigned",
+      "label": "MCP подписанного кандидата",
+      "before": {
+        "state": "unknown"
+      },
+      "after": {
+        "state": "unknown"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "downloadedMCP",
+      "label": "MCP скачанной копии",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "Exact downloaded134 signed manager stdio: 18 management/7 read; closing schemas, requested fontPolicy create/edit/persist across restart PASS; no headed repeat"
+      },
+      "after": {
+        "state": "declaration_only",
+        "declaration": "Downloaded135 signed manager:18management/7read, closing schemas, requested fontPolicy create/edit/persist and normal restart PASS; own temp metadata, no headed replay; warning-only resource admission under bounded user approval; critical/unknown/overheat refused"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "hostedZIP",
+      "label": "Публичный ZIP",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "Anonymous SHA256/size equal; candidate/evidence binding, privacy, signature, notarization and Gatekeeper PASS. Two pre-download input errors retained and corrected without changing release bytes."
+      },
+      "after": {
+        "state": "declaration_only",
+        "declaration": "Anonymous exact bytes/size, candidate/evidence, privacy, signature, notarization, Gatekeeper PASS; exact headed evidence reused for matching critical bytes"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "hostedDMG",
+      "label": "Публичный DMG",
+      "before": {
+        "state": "reported_pass",
+        "declaration": "Anonymous SHA256/size equal; image/signature/notarization/Gatekeeper PASS"
+      },
+      "after": {
+        "state": "reported_pass",
+        "declaration": "Anonymous exact bytes/size and image/signature/notarization/Gatekeeper PASS"
+      },
+      "reportedStateChanged": false
+    },
+    {
+      "key": "site",
+      "label": "Сайт",
+      "before": {
+        "state": "declaration_only",
+        "declaration": "Anonymous metadata checked 2026-10-16T07:51:28Z still0.8.16/build128. Automatic approval review rejected credential transport; Site not updated."
+      },
+      "after": {
+        "state": "declaration_only",
+        "declaration": "Anonymous system-TLS public API at 2026-10-16T11:02:29.897739+00:00: 0.8.16/build128; Sites publication separately blocked by automatic approval review; no credential transport retry"
+      },
+      "reportedStateChanged": false
+    }
+  ],
+  "testDeclarations": {
+    "before": {
+      "Swift": "Full1651/194 included71 skips and one obsolete acceptedQuit state expectation; corrected only expected closing,119/7 affected PASS; original FAIL retained, no full repeat.",
+      "Python": "Full1648/19skip had3 missing-development-changelog errors; honest draft entry added and5/5 related documentation controls PASS; original FAIL retained, no full repeat."
+    },
+    "after": {
+      "Swift": "Full1673/200 and focused82/6 each failed only unchanged aggregate import budget7.5658/7.4065; original exact method isolated PASS1.5781s with same5s criterion. New detector/editor passed; diagnostics2.0349/1.6051. Aggregate failures retained, precise preceding-test influence unresolved.",
+      "Python": "Full run stopped after11min in unchanged provenance family,NOT PASS. Reviewed closed reader union:85related Python+30planner+2Python/17JSspeech+11inventory controls PASS; unknown fallback and release gates preserved."
+    }
+  },
+  "qualificationDeclaration": {
+    "before": true,
+    "after": true
+  },
+  "reportedChanges": [],
+  "reportedLimitations": [
+    "Public alpha; mandatory1.0 remains open.",
+    "HTTPS/ambiguous no-authHTTP selected manually; discovery is not auth/internet/route proof.",
+    "WebKit remains preview with production proxy disabled; not Safari fingerprint substitution.",
+    "Aggregate import benchmark failures retained despite fresh exact-method PASS; cumulative-suite cause open.",
+    "Qualified environment is macOS27 ARM64 only; other hardware/OS not proven.",
+    "Runtime backport scope retained; Safe Browsing disabled; no universal undetectability.",
+    "Site/feed update remains separately blocked."
+  ],
+  "noBrowserLaunched": true,
+  "localizedChanges": [
+    "Если известны адрес и порт прокси, нажмите **«Определить тип без пароля»** в редакторе профиля. NeAntik попробует HTTP и SOCKS5, не передавая логин и пароль.",
+    "Найденный тип применяется отдельной кнопкой. Вставка строки сама по себе не отправляет запросов и не сохраняет профиль.",
+    "Исправлена подсказка, которая после выбора SOCKS5 могла продолжать показывать HTTP. Изменение адреса и отмена убирают старый результат проверки."
+  ],
+  "localizedLimitations": [
+    "Public alpha; mandatory1.0 remains open.",
+    "HTTPS/ambiguous no-authHTTP selected manually; discovery is not auth/internet/route proof.",
+    "WebKit remains preview with production proxy disabled; not Safari fingerprint substitution.",
+    "Aggregate import benchmark failures retained despite fresh exact-method PASS; cumulative-suite cause open.",
+    "Qualified environment is macOS27 ARM64 only; other hardware/OS not proven.",
+    "Runtime backport scope retained; Safe Browsing disabled; no universal undetectability.",
+    "Site/feed update remains separately blocked."
+  ],
+  "sourceRecordSHA256": {
+    "before": "f5346b24d972680cc5f73a31a30ab19c21054cbabdfc276e809425ae98b85c8e",
+    "after": "6c4ddf3880240910fc661003f4130f2b81bf5a0546f3d93552976cf7d731daf0"
+  },
+  "sourceNotesSHA256": "c85eaddd7b9969277deaeb8c5398387228a06072d98676fd2d2d94d05988f7ce"
+}

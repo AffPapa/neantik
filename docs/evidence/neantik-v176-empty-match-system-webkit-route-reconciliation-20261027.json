@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v176-empty-match-system-webkit-route-reconciliation-20261027",
+  "observedAtUTC": "2026-10-26T22:05:07Z",
+  "status": "EMPTY_MATCH_LIST_ROUTES_ONE_SYNTHETIC_NAMED_ORIGIN_IN_SYSTEM_WEBKIT; NOT_OWNED_RUNTIME_OR_ALL_HOST_PROOF",
+  "scope": "Read-only reuse and source-to-source comparison of the 2026-10-16 headed API experiment, V171 shipping factory, and V168/V169 production failures. No test rerun, build, app launch, profile change, signature, or publication.",
+  "reusedRuntimeEvidence": {
+    "receipt": "docs/evidence/webkit-proxy-nonloopback-development.json",
+    "receiptSHA256": "af78421c0fff8d75a70b171e96b7025c27083956b14f6dcf4f8146afa90bee5b",
+    "testedSourceSHA256": "cc64be6397fe7af49130902d9ea3d10e1f78a0d5aa73b7c897a50117b232b3bf",
+    "testedBinarySHA256": "14d827245f815dedcd213cd15a1967c3b9e021f5d0d12b4b40a50ebdf0183fbc",
+    "environment": "macOS 27.0, arm64, system WKWebView in a Swift test process; two fresh nonpersistent stores; one visible window.",
+    "observation": "The random .invalid named page loaded the fixture proxy response with 2 accepted connections, 1 authenticated upstream and zero direct-origin arrivals. The fixture used an empty matchDomains list, failover disabled, no excluded domains, HTTP CONNECT and test credentials.",
+    "separateNegative": "A later local RFC1918 target was reached directly before and after proxy revocation. This remains a concrete Direct-bypass FAIL for that local-address scope."
+  },
+  "configurationComparison": {
+    "testPath": "Network.ProxyConfiguration(httpCONNECTProxy:); allowFailover=false; matchDomains=[]; excludedDomains=[]; applyCredential(...).",
+    "shippingFactory": "nw_proxy_config_create_http_connect; nw_proxy_config_set_failover_allowed(false); clear_match_domains; clear_excluded_domains; set username/password.",
+    "matchSelector": "Same empty selector state at the NWProxyConfig/API-object level.",
+    "endpointDifference": "The experiment proxy listener was bound to the Mac private interface address. The shipping broker endpoint is 127.0.0.1; the prior PASS does not qualify loopback-endpoint selection.",
+    "sourceVersionDifference": "The historical test source hash differs from the current source. The result is reused only as a bounded same-OS API behavior observation, not byte-bound product evidence."
+  },
+  "updatedInterpretation": "The earlier statement that empty-list proxy selection has no runtime evidence was too broad: one named .invalid request passed through an empty-match system-WebKit configuration. Apple documentation still does not establish all-host semantics, and this test does not qualify the owned WebKit host, production factory endpoint, persistent profile lifecycle, or a general no-direct-fallback guarantee. The build-200 no-window/no-CONNECT result therefore cannot be attributed to the empty selector alone.",
+  "limitations": [
+    "No owned WebKit runtime or exact build-200 package was tested.",
+    "The proxy endpoint differed from the shipping loopback broker.",
+    "Only one named HTTP synthetic origin passed; HTTPS, DNS and external sites were not covered.",
+    "The same historical run detected Direct bypass for a local RFC1918 destination.",
+    "No release or anonymity claim follows."
+  ],
+  "releaseQualified": false,
+  "nextAction": "Do not repeat the historical Direct WebKit or build-200 attempt. When a changed candidate can be secure-timestamp signed, use one run with child-startup, visible-window, navigation, loopback-broker and direct-origin counters so the current no-CONNECT boundary is observable."
+}

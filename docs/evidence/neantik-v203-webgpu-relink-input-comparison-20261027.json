@@ -1,0 +1,38 @@
+{
+  "status": "BOUNDED_INPUT_COMPARISON_PASS_WITH_MISSING_DEPENDENCY_RECORDS",
+  "targets": {
+    "WebGPU.framework/Versions/A/WebGPU": {
+      "directLinkPaths": 29,
+      "pathsIdentical": true
+    },
+    "libWGSLCore.a": {
+      "directLinkPaths": 8,
+      "pathsIdentical": true
+    }
+  },
+  "linkedObjectCount": 16,
+  "objectsWithDependencyRecordsInBoth": 11,
+  "dependencyPathSetsMatched": 11,
+  "distinctRecordedDependencies": {
+    "source": 232,
+    "generatedBuild": 245,
+    "external": 1899
+  },
+  "sourceAndExternalFilesByteIdentical": 2131,
+  "generatedFilesByteIdentical": 243,
+  "generatedFilesEquivalentAfterBuildRootNormalization": 2,
+  "differentGeneratedFiles": [
+    "Source/WebGPU/WGSL/CMakeFiles/WGSLCore.dir/cmake_pch.hxx",
+    "Source/WebGPU/WebGPU/CMakeFiles/WebGPU.dir/cmake_pch.objcxx.hxx"
+  ],
+  "swiftExplicitInputs": {
+    "count": 5,
+    "byteIdentical": 5
+  },
+  "limitations": [
+    "5 linked objects lack ninja dependency records in both builds",
+    "does not prove compiler flags, all transitive inputs, binary equivalence, legal applicability, signing or runtime",
+    "V122 notice binding does not authorize V135 image"
+  ],
+  "releaseQualified": false
+}

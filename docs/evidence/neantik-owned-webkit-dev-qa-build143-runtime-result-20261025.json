@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T12:59:41.426264+00:00",
+  "status": "build143-exact-Dev-QA-runtime-FAIL-no-A-navigation-evidence;cause-unresolved",
+  "archiveSHA256": "ded0f676c7f44e952cbb591b6438a20cde783eceff9c19e5e4014b60d0c7c61b",
+  "apple": {
+    "submissionID": "608cc733-bc5f-4514-b051-81443480025a",
+    "status": "Accepted",
+    "gatekeeper": "accepted; source=Notarized Developer ID"
+  },
+  "launch": {
+    "exactLauncher": "PASS; one-use marker consumed",
+    "resourceAdmission": "eligible true, memory pressure 1, thermal state 0",
+    "managerPID": 43678,
+    "profiles": "2 synthetic model-encoded profiles loaded; A startPage selected"
+  },
+  "ownedA": {
+    "managerState": "running then stopped once",
+    "localFixtureEvents": 0,
+    "brokerCountersOnFirstClose": "inbound=0 loopback=0 connectMethods=0 httpMethods=0 otherMethods=0 parsed=0 authorized=0 bound=0",
+    "navigationStageOnFirstClose": "stage=unknown",
+    "tlsStageOnFirstClose": "stage=unknown",
+    "status": "FAIL; no demonstrated HTTP proxy request, no method category observed"
+  },
+  "diagnosticBoundary": "The reused signed owned host/runtime was taken from earlier candidate139 and its QA phase instrumentation is absent in its production-mode host build. Manager-only qualification counters therefore cannot distinguish a missing initial navigation from network setup before the broker. Need changed qualification host and exact candidate before further native diagnosis. This does not establish root cause.",
+  "cleanup": "A stopped in app; Dev manager quit; fixture interrupted; read-only pgrep found no Dev QA or fixture process",
+  "productionQualified": false,
+  "releaseQualified": false,
+  "nextAction": "Build one changed qualification host from current source without WebKit engine rebuild, retain exact runtime bytes, package/notarize fresh Dev candidate and obtain fixed-vocabulary nav stage plus broker counters. Diagnose before changing proxy transport."
+}

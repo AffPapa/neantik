@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.29",
+  "version": "0.7.29",
+  "build": 92,
+  "releasedAt": "2026-10-11",
+  "channel": "public-alpha",
+  "sourceCommit": "eefd283b0ff59dd1df32c3bc68a50a6af0687e48",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "archive": {
+    "name": "NeAntik-0.7.29-arm64-notarized.zip",
+    "sizeBytes": 188206286,
+    "sha256": "2085796970bdef926beb7a3ff46090f5b1f7eb3dcf29f8b95bda1091a63b3bef"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.29-arm64-notarized.dmg",
+    "sizeBytes": 212468252,
+    "sha256": "291aa0edaee1dde804249ea36919279674dd52c51cacb070a0144f9ed04c613b"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "Accepted ZIP and DMG",
+    "zipNotarySubmissionId": "10585007-ade3-4571-83ce-b2aa6473dbaf",
+    "dmgNotarySubmissionId": "7690b3e7-2572-4c4d-a01e-b358eb5d1e00",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "hostedDownload": "fresh ZIP/DMG hash, size, signing/notary/Gatekeeper; ZIP candidate and authenticated evidence binding passed",
+    "fingerprint": "fresh authenticated headed run of downloaded app with new one-time enrollment; all criticalFiles equal to qualified candidate; owned processes drained",
+    "first15Platform": {
+      "cases": 18,
+      "status": "prior v0.7.26 headed qualification of identical runtime, not rerun for this manager slice"
+    },
+    "swiftTests": {
+      "reportedTests": 1089,
+      "suites": 127,
+      "optionalFixturesSkipped": 30,
+      "seconds": 50.49,
+      "status": "passed",
+      "execution": "explicit no-parallel, jobs2, permitted context"
+    },
+    "siteTests": {
+      "tests": 32,
+      "status": "passed",
+      "execution": "official Sites helper build followed by all4test files, exact pushed source"
+    },
+    "privacy": "Recognized-format source/reachable Git history scan at release source PASS (4650 unique blobs/7818 objects), finalZIP604entries/488206312bytesPASS; not proof for every possible unknown secret format",
+    "exactCandidateMCP": "Publicly downloaded signed executable hash54f0ce64... metadata-only18management/7readtools: create/update/folder, stale revision refusal, reconnect persistence, readonly denial andEOF cleanup PASS; no browser/proxy/Keychain operations",
+    "physicalKeyboard": "Isolated headed Dev, CmdN/Tab/Return creation, extension-center search/Escape; macOS27beta ARM64 only. No physical VoiceOver qualification.",
+    "authenticatedRelay": "separately signed QA manager + exact unchanged runtime: HTTP/SOCKS, two sessions, streaming and17s idle across manager EOF, remote DNS, upstream failure, signed foreign peer refusal, Task cancellation and lease/restart controls passed. Not exact final manager relay qualification.",
+    "backup": "Unified export/restore composition delivered but production new operations disabled. Approved provisioned backup-qa DPgroup persisted across process restart; actualGUI export/mutate/wrongpassword/restore andmissing-scope refusal PASS; owned keys cleaned. Production signing/DPgroup,tabs andOS-encrypted auth portability not qualified.",
+    "extensions": "Read-only closed-profile center delivered. Actual own unpacked extension install/popup/disable/enable/remove, cold restarts and concurrentA/B isolation PASS on headedDev with same source/runtime. Not exact downloaded GUI-center qualification; complete CRX installation/provenance not integrated.",
+    "managerSHA256": "54f0ce643d5031a756e0e023ae4883b95974c2b3a53f2833fce1fe10c762a276",
+    "targetedExtensionTests": {
+      "tests": 123,
+      "suites": 5,
+      "status": "passed"
+    },
+    "releaseBaselineRegressionTests": {
+      "tests": 36,
+      "status": "passed"
+    }
+  },
+  "siteVersion": 131,
+  "siteSourceCommit": "7d35b63f6db1967d5bfff92498fdf2069a017862",
+  "siteDeploymentId": "appgdep_6acb3b07ea788191b40e7e7cbe857499",
+  "siteDeploymentStatus": "succeeded",
+  "siteUrl": "https://browser.free",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.29",
+  "affpapa": "unchanged: restricted doctor deploy credential unavailable; no alternative transport",
+  "rollbackRelease": "v0.7.28",
+  "candidateManifestSHA256": "a4ba98bf65b9e0671b171127e2206504fd9cac238f52aca49ab32b0bd7b78507",
+  "candidateSourceBindingSHA256": "712987e435ffb9c146fa134aaf9b913cf217e625108f3e20f684552ca384ecee",
+  "limitations": [
+    "Public alpha; major1.0/full production hardware-cohort qualification remain open.",
+    "macOS27beta ARM64 QA; not every Mac/OS combination, second display or actual network/power transition.",
+    "Safe Browsing disabled; no anonymity/CAPTCHA/site-rule bypass guarantee.",
+    "Detailed relay controls use separate signedQA binding; final release route observation remains notObserved.",
+    "HTTPS proxy retains native auth path; TLS upstream relay not enabled.",
+    "Encrypted BrowserData backup new operations disabled pending production profile/signing/DPKeychain qualification. IsolatedQA passes do not prove production access, tab restoration or auth portability.",
+    "Extension lifecycle/isolation/center GUI proof is headedDev, not exact downloaded app GUI. Requested permissions are not grants or a safety verdict; unknown saved states remain unknown. Complete CRX installer not delivered.",
+    "One post-stop stale lifecycle-snapshot refusal occurred inDev; fresh reopen succeeded, cause not independently isolated.",
+    "Atomic updater disabled; offline verified primitives and Sparkle research are not an installer.",
+    "Recognized-format secret scanning cannot prove absence of every unknown secret format."
+  ],
+  "changes": [
+    "Closed-profile bounded extension inventory/search/status/source/requested permissions",
+    "Native extension management instructions, copied address, corrected about:blank launch preserving startURL",
+    "Unified gated backup application composition and isolated provisioned QA evidence",
+    "Fresh release security observation separate from preserved immutable historical runtime report",
+    "Current FAQ, download links and release evidence; existing runtime retained without rebuild"
+  ]
+}

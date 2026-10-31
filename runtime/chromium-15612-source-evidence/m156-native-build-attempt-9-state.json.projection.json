@@ -1,0 +1,42 @@
+{
+  "normalizationPolicy": "explicit-root-aliases-v1; every field and record retained",
+  "originalReceiptSHA256": "e6cde90908b67bf65fbc51fabb5d89a3b00fa2dcfec490774888d859e8603516",
+  "payload": {
+    "argsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
+    "contractSHA256": "f383ceb9c74c5a8c5d0d79d0fb1002ac74de0144a8bbe21f813e94ca86ceeb9e",
+    "exitCode": 0,
+    "finishedAt": "2026-10-09T06:16:01.014460+00:00",
+    "jobs": 2,
+    "lastResourceSampleAt": "2026-10-09T06:15:51.982821+00:00",
+    "logBytes": 216162,
+    "logSHA256": "c5eba611554381f1b48401e6a64d5d2e31966d9cec707b8fdb6b16e48b1b5b29",
+    "ninjaPID": 19351,
+    "ownerPID": 19347,
+    "releaseReady": false,
+    "schemaVersion": 1,
+    "sourceInputsFrozen": true,
+    "startedAt": "2026-10-09T05:38:12.975765+00:00",
+    "status": "native-build-completed-needs-binary-and-runtime-qualification",
+    "targets": [
+      "chrome",
+      "chromedriver"
+    ]
+  },
+  "payloadType": "json",
+  "receipt": "m156-native-build-attempt-9-state.json",
+  "releaseReady": false,
+  "reviewedLogicalReceiptSHA256": null,
+  "rootAliases": [
+    "acquisition",
+    "apple-tools",
+    "developer",
+    "developer-app",
+    "evidence",
+    "manager",
+    "research",
+    "source",
+    "system-tool"
+  ],
+  "schemaVersion": 1,
+  "status": "source-projection-prepared-unqualified"
+}

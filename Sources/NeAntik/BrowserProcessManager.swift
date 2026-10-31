@@ -3,6 +3,285 @@ import Combine
 import Darwin
 import Foundation
 
+/// Private QA only: retain the child's closed-vocabulary image count after a
+/// failed launch. The normal alert stays human-readable and never exposes
+/// paths, profile data, or arbitrary stderr.
+enum WebKitQAImageFailureReceipt {
+    static func matchesFixtureRoot(_ root: URL, fixture: String) -> Bool {
+        let expected = URL(fileURLWithPath: fixture, isDirectory: true)
+        return root.standardizedFileURL.path == expected.standardizedFileURL.path &&
+            root.resolvingSymlinksInPath().standardizedFileURL.path ==
+                expected.resolvingSymlinksInPath().standardizedFileURL.path
+    }
+
+    static func code(from error: Error) -> String? {
+        guard let failure = error as? WebKitHostClient.Failure,
+              case let .childRefusedStartup(code, _) = failure,
+              code.range(of: "^runtime-ambiguousImages-owned[0-9]-system[0-9]-other[0-9](-entry[0-9]-appkit[0-9])?$",
+                         options: .regularExpression) != nil else { return nil }
+        return code
+    }
+
+    static func record(_ error: Error, root: URL, bundle: Bundle = .main) {
+        guard let code = code(from: error) else { return }
+        write(code + "\n", name: "webkit-image-failure-qa.txt", root: root, bundle: bundle)
+    }
+
+    /// Dev-only failure and last stage. Both tokens come from the parent's
+    /// closed vocabulary; no child stderr, profile paths, or URLs are saved.
+    static func recordStartup(_ error: Error, root: URL, bundle: Bundle = .main) {
+        guard let failure = error as? WebKitHostClient.Failure,
+              case let .childRefusedStartup(code, stage) = failure,
+              WebKitStartupDiagnosticCapture.Tokens.isSafeFailureCode(code) else { return }
+        let safeStage = stage.flatMap {
+            WebKitStartupDiagnosticCapture.Tokens.stages.contains($0) ? $0 : nil
+        } ?? "unknown"
+        write("failure=\(code) stage=\(safeStage)\n",
+              name: "webkit-startup-failure-qa.txt", root: root, bundle: bundle)
+    }
+
+    static func recordCloseStage(_ stage: String?, root: URL, bundle: Bundle = .main) {
+        let safe = stage.flatMap {
+            WebKitStartupDiagnosticCapture.Tokens.stages.contains($0) ? $0 : nil
+        } ?? "unknown"
+        write("stage=\(safe)\n", name: "webkit-close-failure-qa.txt",
+              root: root, bundle: bundle)
+    }
+
+    static func recordNavigationStage(_ stage: String?, profileID: UUID,
+                                      root: URL, bundle: Bundle = .main) {
+        let safe = stage.flatMap {
+            WebKitStartupDiagnosticCapture.Tokens.isSafeQANavigationStage($0) ? $0 : nil
+        } ?? "unknown"
+        write("stage=\(safe)\n", name: "webkit-nav-stage-\(profileID.uuidString)-qa.txt",
+              root: root, bundle: bundle)
+    }
+
+    static func recordWindowStage(_ stage: String?, profileID: UUID,
+                                  root: URL, bundle: Bundle = .main) {
+        let safe = stage.flatMap {
+            WebKitStartupDiagnosticCapture.Tokens.isSafeQAWindowStage($0) ? $0 : nil
+        } ?? "unknown"
+        write("stage=\(safe)\n", name: "webkit-window-stage-\(profileID.uuidString)-qa.txt",
+              root: root, bundle: bundle)
+    }
+
+    static func recordTLSStage(_ stage: String?, profileID: UUID,
+                               root: URL, bundle: Bundle = .main) {
+        let safe = stage.flatMap {
+            WebKitStartupDiagnosticCapture.Tokens.isSafeQATLSStage($0) ? $0 : nil
+        } ?? "unknown"
+        write("stage=\(safe)\n", name: "webkit-tls-stage-\(profileID.uuidString)-qa.txt",
+              root: root, bundle: bundle)
+    }
+
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_DIAGNOSTIC
+    static func recordBrokerCounters(_ counters: WebKitLoopbackBroker.QACounters,
+                                     profileID: UUID, root: URL,
+                                     bundle: Bundle = .main) {
+        let values = [counters.inbound, counters.loopback, counters.connectMethods,
+                      counters.httpMethods, counters.otherMethods, counters.parsed,
+                      counters.parseMalformed, counters.parseLimit, counters.parseIncomplete,
+                      counters.parseRejectHeaderEncoding, counters.parseRejectRequestLine,
+                      counters.parseRejectRequestTargetSeparator, counters.parseRejectRequestTargetPort,
+                      counters.parseRejectRequestTargetHost, counters.parseRejectHeaderSyntax,
+                      counters.parseRejectHeaderPolicy, counters.parseRejectHostAuthority,
+                      counters.authorized, counters.bound]
+        guard values.allSatisfy({ (0...999_999).contains($0) }) else { return }
+        let line = "inbound=\(counters.inbound) loopback=\(counters.loopback) " +
+            "connectMethods=\(counters.connectMethods) httpMethods=\(counters.httpMethods) " +
+            "otherMethods=\(counters.otherMethods) " +
+            "parsed=\(counters.parsed) parseMalformed=\(counters.parseMalformed) " +
+            "parseLimit=\(counters.parseLimit) parseIncomplete=\(counters.parseIncomplete) " +
+            "parseRejectHeaderEncoding=\(counters.parseRejectHeaderEncoding) " +
+            "parseRejectRequestLine=\(counters.parseRejectRequestLine) " +
+            "parseRejectRequestTargetSeparator=\(counters.parseRejectRequestTargetSeparator) " +
+            "parseRejectRequestTargetPort=\(counters.parseRejectRequestTargetPort) " +
+            "parseRejectRequestTargetHost=\(counters.parseRejectRequestTargetHost) " +
+            "parseRejectHeaderSyntax=\(counters.parseRejectHeaderSyntax) " +
+            "parseRejectHeaderPolicy=\(counters.parseRejectHeaderPolicy) " +
+            "parseRejectHostAuthority=\(counters.parseRejectHostAuthority) " +
+            "authorized=\(counters.authorized) bound=\(counters.bound)\n"
+        write(line, name: "webkit-broker-counts-\(profileID.uuidString)-qa.txt",
+              root: root, bundle: bundle)
+    }
+    #endif
+
+    private static func write(_ value: String, name: String,
+                              root: URL, bundle: Bundle) {
+        let fixture: String
+        #if NEANTIK_WEBKIT_PROXY_DIAGNOSTIC
+        if bundle.bundleIdentifier == "app.neantik.desktop" {
+            fixture = root.path
+            guard NeAntikApplicationEnvironment.isValidProductionDiagnosticRoot(fixture) else { return }
+        } else {
+            guard bundle.bundleIdentifier == "app.neantik.desktop.dev",
+                  let configured = bundle.object(forInfoDictionaryKey: "NeAntikDevelopmentFixtureRoot") as? String,
+                  matchesFixtureRoot(root, fixture: configured) else { return }
+            fixture = configured
+        }
+        #else
+        guard bundle.bundleIdentifier == "app.neantik.desktop.dev",
+              let configured = bundle.object(forInfoDictionaryKey: "NeAntikDevelopmentFixtureRoot") as? String,
+              matchesFixtureRoot(root, fixture: configured) else { return }
+        fixture = configured
+        #endif
+        var entry = stat()
+        guard lstat(fixture, &entry) == 0,
+              entry.st_mode & mode_t(S_IFMT) == mode_t(S_IFDIR),
+              entry.st_mode & 0o777 == 0o700,
+              entry.st_uid == geteuid() else { return }
+        let file = root.appendingPathComponent(name)
+        let fd = open(file.path, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0o600)
+        guard fd >= 0 else { return }
+        defer { Darwin.close(fd) }
+        let bytes = Array(value.utf8)
+        let written = bytes.withUnsafeBytes { Darwin.write(fd, $0.baseAddress, $0.count) }
+        if written != bytes.count || fsync(fd) != 0 { _ = unlink(file.path) }
+    }
+}
+
+enum BrowserProcessLockPhase: String, Codable, Equatable, Sendable {
+    case starting
+    case running
+}
+
+struct BrowserProcessLock: Codable, Equatable, Sendable {
+    static let currentSchemaVersion = 3
+
+    let schemaVersion: Int
+    let ownerToken: UUID?
+    let managerPID: pid_t?
+    let phase: BrowserProcessLockPhase
+    let pid: pid_t
+    let executablePath: String
+    let browserDataPath: String
+    let createdAt: Date
+    let relay: ProxyRelayLeaseReceipt?
+    let pendingRelayOwner: ProxyRelayPendingOwnerFence?
+
+    init(
+        pid: pid_t,
+        executablePath: String,
+        browserDataPath: String,
+        createdAt: Date,
+        schemaVersion: Int = 1,
+        ownerToken: UUID? = nil,
+        managerPID: pid_t? = nil,
+        phase: BrowserProcessLockPhase = .running,
+        relay: ProxyRelayLeaseReceipt? = nil,
+        pendingRelayOwner: ProxyRelayPendingOwnerFence? = nil
+    ) {
+        self.schemaVersion = schemaVersion
+        self.ownerToken = ownerToken
+        self.managerPID = managerPID
+        self.phase = phase
+        self.pid = pid
+        self.executablePath = executablePath
+        self.browserDataPath = browserDataPath
+        self.createdAt = createdAt
+        self.relay = relay
+        self.pendingRelayOwner = pendingRelayOwner
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion
+        case ownerToken
+        case managerPID
+        case phase
+        case pid
+        case executablePath
+        case browserDataPath
+        case createdAt
+        case relay
+        case pendingRelayOwner
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion =
+            try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+        ownerToken = try container.decodeIfPresent(
+            UUID.self,
+            forKey: .ownerToken
+        )
+        managerPID = try container.decodeIfPresent(
+            pid_t.self,
+            forKey: .managerPID
+        )
+        phase =
+            try container.decodeIfPresent(
+                BrowserProcessLockPhase.self,
+                forKey: .phase
+            ) ?? .running
+        pid = try container.decode(pid_t.self, forKey: .pid)
+        executablePath = try container.decode(
+            String.self,
+            forKey: .executablePath
+        )
+        browserDataPath = try container.decode(
+            String.self,
+            forKey: .browserDataPath
+        )
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        relay = try container.decodeIfPresent(ProxyRelayLeaseReceipt.self, forKey: .relay)
+        pendingRelayOwner = try container.decodeIfPresent(ProxyRelayPendingOwnerFence.self, forKey: .pendingRelayOwner)
+        if let pendingRelayOwner {
+            guard schemaVersion == 3, phase == .starting, pid == 0, relay == nil else { throw ProfileProcessBusyError() }
+            try pendingRelayOwner.validate(ownerToken: ownerToken)
+        }
+        if let relay {
+            guard schemaVersion == 3 else { throw ProfileProcessBusyError() }
+            try relay.validate(ownerToken: ownerToken)
+        }
+    }
+}
+
+enum BrowserProcessIdentityInspection: Equatable, Sendable {
+    case expected
+    case unrelated
+    case unknown
+}
+
+enum BrowserDataProcessInspection: Equatable, Sendable {
+    case found
+    case absent
+    case unknown
+}
+
+enum BrowserProfileDeletionBlockReason: Equatable, Sendable {
+    case managedProcess
+    case leasePresent
+    case unsafeLease
+    case browserDataInUse
+    case inspectionUnavailable
+}
+
+struct BrowserProfileDeletionBlockedError: LocalizedError, Equatable {
+    let reason: BrowserProfileDeletionBlockReason
+
+    var errorDescription: String? {
+        switch reason {
+        case .managedProcess:
+            "Нельзя удалить профиль, пока его браузер запущен."
+        case .leasePresent:
+            "Профиль используется другим экземпляром NeAntik. Закрой браузер и повтори удаление."
+        case .unsafeLease:
+            "Файл состояния запуска не прошёл проверку безопасности. Данные профиля не изменены."
+        case .browserDataInUse:
+            "Данные профиля сейчас используются браузером. Закрой его окно и повтори удаление."
+        case .inspectionUnavailable:
+            "NeAntik не смог доказать, что данные профиля свободны. Удаление безопасно отменено."
+        }
+    }
+}
+
+struct BrowserProfileDeletedError: LocalizedError, Equatable {
+    var errorDescription: String? {
+        "Этот профиль уже удалён другим экземпляром NeAntik. Обнови список профилей."
+    }
+}
+
 private struct BrowserProfileLeaseUnavailableError: LocalizedError {
     let inspection: BrowserDataProcessInspection
 
@@ -16,6 +295,74 @@ private struct BrowserProfileLeaseUnavailableError: LocalizedError {
             nil
         }
     }
+}
+
+enum BrowserProfileProcessState: Equatable, Sendable {
+    case stopped
+    case checking
+    case closing
+    case managed
+    case externalVerified
+    case externalManualOnly
+    case externalUnverified
+    case recoveryRequired
+
+    var isRunning: Bool {
+        self != .stopped
+    }
+
+    var canRequestStop: Bool {
+        self != .checking &&
+            self != .closing &&
+            self != .externalManualOnly &&
+            self != .externalUnverified &&
+            self != .recoveryRequired
+    }
+
+    var title: String {
+        switch self {
+        case .stopped:
+            "Остановлен"
+        case .checking:
+            "Подготовка…"
+        case .closing:
+            "Закрывается…"
+        case .managed:
+            "Запущен"
+        case .externalVerified:
+            "Запущен другим NeAntik"
+        case .externalManualOnly:
+            "Запущен другим NeAntik"
+        case .externalUnverified:
+            "Требуется закрыть вручную"
+        case .recoveryRequired:
+            "Профиль заблокирован для защиты данных"
+        }
+    }
+
+    var guidance: String? {
+        switch self {
+        case .stopped, .managed:
+            nil
+        case .checking:
+            "NeAntik подготавливает данные профиля. Это займёт несколько секунд."
+        case .closing:
+            "NeAntik завершает браузер и прокси. Повторный запуск станет доступен после проверки."
+        case .externalVerified:
+            "Профиль запущен другим экземпляром NeAntik. Его можно безопасно остановить здесь."
+        case .externalManualOnly:
+            "Профиль запущен другим экземпляром NeAntik. Закрой окно браузера вручную; профиль разблокируется автоматически."
+        case .externalUnverified:
+            "NeAntik видит работающий процесс, но не может безопасно подтвердить его. Закрой окно браузера вручную; профиль разблокируется автоматически."
+        case .recoveryRequired:
+            "NeAntik проверяет, завершены ли все процессы браузера. Профиль разблокируется после безопасной проверки. Если окно осталось открытым, закрой его вручную."
+        }
+    }
+}
+
+enum BrowserLaunchPurpose: Equatable, Sendable {
+    case normal
+    case fingerprintAudit(httpLoopbackPort: UInt16)
 }
 
 /// Opaque, single-use reservation for the diagnostic browser path. It binds
@@ -58,6 +405,8 @@ enum BrowserLaunchBuilder {
 
     private static let protectedAdditionalArgumentPrefixes = [
         "--user-data-dir",
+        "--restore-last-session",
+        "--new-window",
         "--proxy-server",
         "--no-proxy-server",
         "--proxy-auto-detect",
@@ -77,7 +426,9 @@ enum BrowserLaunchBuilder {
         "--timezone",
         "--lang",
         "--accept-lang",
-        "--disable-features"
+        "--disable-features", "--enable-features", "--enable-blink-features", "--disable-blink-features",
+        "--force-fieldtrials", "--force-fieldtrial-params", "--enable-quic",
+        "--load-extension", "--disable-extensions", "--disable-extensions-except"
     ]
 
     static func arguments(
@@ -86,6 +437,8 @@ enum BrowserLaunchBuilder {
         runtimeCapabilities: BrowserRuntimeCapabilities = [],
         additionalArguments: [String] = [],
         startURLOverride: URL? = nil,
+        proxyTransportOverride: UInt16? = nil,
+        siteProtectionDirectory: URL? = nil,
         now: Date = Date(),
         purpose: BrowserLaunchPurpose = .normal
     ) -> [String] {
@@ -94,39 +447,32 @@ enum BrowserLaunchBuilder {
             runtimeCapabilities: runtimeCapabilities,
             now: now
         )
-        // A returning workplace resumes its own saved tabs. Explicit start
-        // pages and reserved audit URLs retain their deterministic launch.
-        let startupTabURLs = purpose == .normal && startURLOverride == nil
-            ? profile.startupTabs.validURLs.map(\.absoluteString)
-            : []
-        let usesStartupTabs = !startupTabURLs.isEmpty
-        let restoresWorkplace = purpose == .normal && startURLOverride == nil &&
-            !usesStartupTabs &&
-            profile.lastLaunchedAt != nil &&
-            profile.startURL.trimmingCharacters(in: .whitespacesAndNewlines) == BrowserProfile.defaultStartURL
+        // Never mix restoration with an explicit URL: Chromium adds that URL
+        // again on every launch. Audit/management targets remain fresh windows.
+        let restoresSession = purpose == .normal && startURLOverride == nil &&
+            profile.privacyPolicy.retention != .ephemeral &&
+            profile.startupMode == .restoreSession && profile.lastLaunchedAt != nil
         var arguments = [
             "--user-data-dir=\(browserDataDirectory.path)",
             "--no-first-run",
             "--no-default-browser-check",
-            restoresWorkplace ? "--restore-last-session" : "--new-window"
+            restoresSession ? "--restore-last-session" : "--new-window"
         ]
         let disabledFeatures = policy.disabledFeatures
 
-        if policy.fingerprintNoiseArgumentsEnabled {
-            arguments.append("--fingerprinting-client-rects-noise")
-            arguments.append("--fingerprinting-canvas-measuretext-noise")
-            arguments.append("--fingerprinting-canvas-image-data-noise")
-            // The runtime normalizes WebGL but not the WebGPU adapter surface.
-            // Keep WebGPU unavailable until it is part of the same reviewed
-            // Apple device tuple.
-        }
+        // Native Canvas, layout and text operations preserve their mathematical
+        // semantics. Profile identity and storage isolation are separate from
+        // perturbing pixels, CSS coordinates or shaped text metrics.
         if let locale = policy.appliedLocaleIdentifier {
             arguments.append("--lang=\(locale)")
             arguments.append("--accept-lang=\(locale)")
         }
 
         if let proxy = profile.proxy {
-            arguments.append("--proxy-server=\(proxy.chromiumServer)")
+            let transportHost = proxyTransportOverride == nil ? proxy.host : "127.0.0.1"
+            let transportServer = proxyTransportOverride.map { "socks5://127.0.0.1:\($0)" } ?? proxy.chromiumServer
+            precondition(proxyTransportOverride != 0)
+            arguments.append("--proxy-server=\(transportServer)")
             arguments.append(
                 "--webrtc-ip-handling-policy=disable_non_proxied_udp"
             )
@@ -136,11 +482,11 @@ enum BrowserLaunchBuilder {
             // defense in depth so a future resolver path cannot silently
             // bypass them.
             arguments.append(
-                "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE \(proxy.host)"
+                "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE \(transportHost)"
             )
             let bypass: String
             switch purpose {
-            case .normal, .clean:
+            case .normal:
                 bypass = "<-loopback>"
             case let .fingerprintAudit(httpLoopbackPort):
                 precondition(httpLoopbackPort != 0)
@@ -166,18 +512,33 @@ enum BrowserLaunchBuilder {
             )
         }
 
+        let privacy = runtimeCapabilities.contains(.profilePrivacyV1) && profile.privacyPolicy != .legacy
+        var enabledPrivacyFeatures: [String] = []
+        if privacy && profile.privacyPolicy.localNetwork == .deny {
+            enabledPrivacyFeatures += ["LocalNetworkAccessChecks", "LocalNetworkAccessChecksWebRTC", "LocalNetworkAccessChecksWebSockets", "LocalNetworkAccessChecksWebTransport"]
+        }
+        if privacy && profile.privacyPolicy.trackingParameterCleanup { enabledPrivacyFeatures.append("DIPS") }
+        if !enabledPrivacyFeatures.isEmpty { arguments.append("--enable-features=" + enabledPrivacyFeatures.sorted().joined(separator: ",")) }
+        if privacy && profile.privacyPolicy.disableSyncAndAutofill { arguments.append("--disable-sync") }
+        if purpose != .normal {
+            arguments.append("--disable-extensions")
+        } else if runtimeCapabilities.contains(.profilePrivacyV1), let directory = siteProtectionDirectory {
+            // Only a verified manager-owned path may reach this argument. The
+            // launch boundary provisions it after the exclusive profile lease.
+            precondition(directory.isFileURL && !directory.path.contains(","))
+            arguments.append("--load-extension=" + directory.path)
+            if profile.proxy != nil || profile.privacyPolicy.presetName == "strict" { arguments.append("--disable-extensions-except=" + directory.path) }
+        } else if profile.proxy != nil {
+            // Extension-controlled proxy prefs outrank command-line prefs.
+            // Exclude both active and persisted third-party overrides.
+            arguments.append("--disable-extensions")
+        }
         arguments.append(
             contentsOf: sanitizedAdditionalArguments(additionalArguments)
         )
-        if !restoresWorkplace {
-            if !startupTabURLs.isEmpty {
-                arguments.append(contentsOf: startupTabURLs)
-            } else {
-                let startURL =
-                    startURLOverride ?? normalizedStartURL(profile.startURL)
-                arguments.append(startURL.absoluteString)
-            }
-        }
+        let startURL =
+            startURLOverride ?? normalizedStartURL(profile.startURL)
+        if !restoresSession { arguments.append(startURL.absoluteString) }
         return arguments
     }
 
@@ -185,7 +546,8 @@ enum BrowserLaunchBuilder {
         profile: BrowserProfile,
         runtimeCapabilities: BrowserRuntimeCapabilities = [],
         inherited: [String: String] = ProcessInfo.processInfo.environment,
-        now: Date = Date()
+        now: Date = Date(),
+        purpose: BrowserLaunchPurpose = .normal
     ) -> [String: String] {
         let policy = BrowserLaunchPolicy.resolve(
             profile: profile,
@@ -196,11 +558,36 @@ enum BrowserLaunchBuilder {
             allowedInheritedEnvironmentKeys.contains($0.key)
         }
 
+        if runtimeCapabilities.contains(.profilePrivacyV1), profile.proxy != nil, purpose == .normal {
+            environment["NEANTIK_PROFILE_PROXY_REQUIRED"] = "1"
+        }
+        if runtimeCapabilities.contains(.profilePrivacyV1), profile.privacyPolicy != .legacy {
+            let privacy = profile.privacyPolicy
+            if privacy.rtc == .off || (privacy.rtc == .proxyOnly && profile.proxy == nil) {
+                environment["NEANTIK_PROFILE_RTC"] = "off"
+            }
+            if privacy.localNetwork == .deny { environment["NEANTIK_PROFILE_LAN"] = "deny" }
+            if privacy.media == .deny { environment["NEANTIK_PROFILE_MEDIA"] = "deny" }
+            environment["NEANTIK_PROFILE_GRAPHICS"] = "minimal"
+            if privacy.viewport == .standard { environment["NEANTIK_PROFILE_VIEWPORT"] = "standard" }
+            if privacy.disableSyncAndAutofill { environment["NEANTIK_PROFILE_AUTOFILL"] = "off" }
+            if privacy.retention == .ephemeral { environment["NEANTIK_PROFILE_EPHEMERAL"] = "1" }
+            if privacy.siteProtection {
+                environment["NEANTIK_PROFILE_PRIVACY_EXTENSION_ID"] = SiteProtectionBundle.extensionID
+                environment["NEANTIK_PROFILE_PRIVACY_BASELINE_RULES"] = String(SiteProtectionBundle.baselineRuleCount)
+                if privacy.trackingParameterCleanup { environment["NEANTIK_PROFILE_QUERY_CLEANUP"] = "1" }
+            }
+        }
         guard policy.fingerprintSeedConfigured else {
             return environment
         }
         environment["NEANTIK_PROFILE_SEED"] =
             String(profile.identity.runtimeSeed)
+        if profile.engine == .chromium, profile.fontPolicy == .systemV1,
+           runtimeCapabilities.contains(.fingerprintIdentity),
+           runtimeCapabilities.contains(.systemFontPolicy) {
+            environment["NEANTIK_FONT_POLICY"] = "system-v1"
+        }
 
         if let timezone = policy.appliedTimezoneIdentifier {
             environment["NEANTIK_PROFILE_TIMEZONE"] = timezone
@@ -226,37 +613,31 @@ enum BrowserLaunchBuilder {
 
     static func normalizedStartURL(_ value: String) -> URL {
         validatedStartURL(value) ??
-            URL(string: BrowserProfile.defaultStartURL)!
+            URL(string: "about:blank")!
     }
 
     static func validatedStartURL(_ value: String) -> URL? {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed == "about:blank" {
-            return URL(string: trimmed)
-        }
-        if let url = URL(string: trimmed),
-           let scheme = url.scheme?.lowercased(),
-           scheme == "http" || scheme == "https",
-           let host = url.host,
-           !host.isEmpty,
-           url.user == nil,
-           url.password == nil
-        {
-            return url
-        }
-        if URL(string: trimmed)?.scheme != nil {
-            return nil
-        }
-        if let url = URL(string: "https://\(trimmed)"),
-           let host = url.host,
-           !host.isEmpty,
-           url.user == nil,
-           url.password == nil
-        {
-            return url
-        }
-        return nil
+        BrowserStartURL.validate(value)
     }
+
+}
+
+private enum BrowserLeaseCleanupAuthority: Equatable, Sendable {
+    case managedOwner(UUID)
+    case external(BrowserProcessLock)
+
+    func matches(_ lock: BrowserProcessLock) -> Bool {
+        switch self {
+        case let .managedOwner(owner): return lock.ownerToken == owner
+        case let .external(expected): return lock == expected
+        }
+    }
+}
+
+private enum BrowserLeaseCleanupOutcome {
+    case removedOrMissing
+    case replacementPresent
+    case retryRequired
 }
 
 private struct BrowserProcessRecoveryRecord: Equatable, Sendable {
@@ -267,6 +648,18 @@ private struct BrowserProcessRecoveryRecord: Equatable, Sendable {
     let startingCreatedAt: Date?
     let message: String
     let entryIdentity: PrivateFileEntryIdentity?
+    let cleanupAuthority: BrowserLeaseCleanupAuthority?
+}
+
+/// Presentation only. Cleanup authority remains with the existing lease and
+/// process inventory checks; a requested Stop never proves that data is free.
+private struct ManagedBrowserClosingIntent: Equatable {
+    let process: ObjectIdentifier
+    let owner: UUID
+    let browserDataDirectory: URL
+    let lease: Data
+    let entryIdentity: PrivateFileEntryIdentity
+    let requestedAt: Date
 }
 
 private enum BrowserLeaseEntrySnapshot: Sendable {
@@ -293,6 +686,7 @@ private enum BrowserLeaseEntryInventoryAnchor: Equatable, Sendable {
     case missing
     case present(PrivateFileEntryIdentity)
     case unavailable
+    case busy
 }
 
 private enum BrowserStartingOwnerInventoryAnchor:
@@ -312,6 +706,10 @@ private struct BrowserLeaseInventoryAnchor: Equatable, Sendable {
         entry: .unavailable,
         startingOwner: .unavailable
     )
+    static let busy = BrowserLeaseInventoryAnchor(
+        entry: .busy,
+        startingOwner: .unavailable
+    )
 }
 
 private struct BrowserProcessReconcileEvidence: Sendable {
@@ -323,10 +721,11 @@ private struct BrowserLeaseAnchorValidation {
     var matchingProfileIDs = Set<UUID>()
     var changedProfileIDs = Set<UUID>()
     var unavailableProfileIDs = Set<UUID>()
+    var busyProfileIDs = Set<UUID>()
 
     var isClean: Bool {
         changedProfileIDs.isEmpty &&
-            unavailableProfileIDs.isEmpty
+            unavailableProfileIDs.isEmpty && busyProfileIDs.isEmpty
     }
 }
 
@@ -337,25 +736,42 @@ private struct QueuedBrowserReconcile {
 
 @MainActor
 final class BrowserProcessManager: ObservableObject {
-    static let maximumConcurrentProfiles = 12
-    nonisolated private static let maximumProcessLockBytes = 64 * 1_024
-
     @Published private(set) var runningProfileIDs = Set<UUID>()
-    /// Monotonic UI invalidation token for process states that can change
-    /// without changing `runningProfileIDs` (for example, managed to
-    /// recovery-required while the profile remains locked).
-    @Published private(set) var processStateRevision: UInt64 = 0
     @Published var lastError: String?
-    @Published private(set) var stopPhases: [UUID: BrowserStopPhase] = [:]
-    @Published private(set) var recoveredInterruptedManagerSession = false
-    @Published private(set) var lastBrowserExit: BrowserExitEvent?
-    /// Ephemeral row feedback, never serialized into lifecycle diagnostics.
-    @Published private(set) var workplaceExitNotices: [UUID: WorkplaceExitNotice] = [:]
-    /// Profiles paused by the local memory saver. This state is deliberately
-    /// ephemeral: a relaunch always starts a profile in the normal state.
-    @Published private(set) var memorySavingSuspendedProfileIDs = Set<UUID>()
 
+    private var webKitBrowsers: [UUID: WebKitProfileBrowser] = [:]
+    private var webKitHostClients: [UUID: WebKitHostClient] = [:]
+    private var webKitHostBrokers: [UUID: WebKitLoopbackBroker] = [:]
+    private let webKitLoopbackBrokerPool = WebKitLoopbackBrokerPool()
+    private var webKitHostStartingProfileIDs = Set<UUID>()
+    private var webKitHostGenerations: [UUID: UUID] = [:]
+    private var webKitHostUnexpectedExitGenerations: [UUID: UUID] = [:]
+    private var webKitHostStopTasks: [UUID: Task<Void, Never>] = [:]
+    private var webKitHostSaveFailureProfileIDs = Set<UUID>()
+    /// GUI lifecycle only. Emitted after session writes and downloads settle.
+    var webKitDidClose: ((UUID, UUID) -> Void)?
+    func webKitGeneration(profileID: UUID) -> UUID? {
+        webKitBrowsers[profileID]?.sessionGeneration ?? webKitHostClients[profileID]?.session.generation ?? webKitHostGenerations[profileID]
+    }
+    func webKitSaveFailed(profileID: UUID) -> Bool {
+        webKitBrowsers[profileID]?.sessionWriteFailed == true || webKitHostSaveFailureProfileIDs.contains(profileID)
+    }
+    private var webKitQuitPending = false
+    @Published private(set) var webKitMaintenanceProfileIDs = Set<UUID>()
+    var hasPendingWebKitWork: Bool { hasOpenWebKitProfiles || !webKitMaintenanceProfileIDs.isEmpty || !webKitHostStopTasks.isEmpty }
+    var hasActiveWebKitDownloads: Bool { webKitBrowsers.values.contains { $0.downloads.activeCount > 0 } }
+    var hasOpenWebKitProfiles: Bool { !webKitBrowsers.isEmpty || !webKitHostClients.isEmpty || !webKitHostStartingProfileIDs.isEmpty }
+    var hasFailedWebKitSessionSave: Bool { webKitBrowsers.values.contains { $0.sessionWriteFailed } || !webKitHostSaveFailureProfileIDs.isEmpty }
+    #if DEBUG
+    /// In-process owned-fixture observation only; absent from release builds
+    /// and never exposed by MCP, environment variables or a debug socket.
+    func webKitBrowserForTesting(profileID: UUID) -> WebKitProfileBrowser? { webKitBrowsers[profileID] }
+    #endif
+    private static let webKitSessionSaveFailureMessage = "Не удалось сохранить список вкладок. Профиль остаётся занят: проверь свободное место и доступ к папке данных, затем нажми «Остановить» ещё раз. Прежний список не заменён незавершённым файлом."
+    private var webKitTerminationObservation: AnyCancellable?
     private let paths: AppPaths
+    private var releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation?
+    private let validatesPersistedProfiles: Bool
     private let processIdentityInspector:
         (BrowserProcessLock) -> BrowserProcessIdentityInspection
     private let processLivenessValidator: (pid_t) -> Bool
@@ -363,50 +779,95 @@ final class BrowserProcessManager: ObservableObject {
         (URL) -> BrowserDataProcessInspection
     private let processInventoryProvider:
         (@Sendable () -> BrowserProcessInventory)?
+    private let potentialRelayOwnerInspector: () -> BrowserDataProcessInspection
     private let processSignaler: (pid_t, Int32) -> Int32
-    private let managedProcessTerminator: (Process) -> Void
-    private let managedStopGracePeriodNanoseconds: UInt64
+    private let managedProcessTerminator: (Process) -> Bool
     private let allowsExternalProcessSignaling: Bool
+    private let launchAdmission: ManagerLaunchAdmission
     private let observationIntervalNanoseconds: UInt64
     private let startingLeaseTimeout: TimeInterval
     private let now: () -> Date
-    private var managed: [UUID: ManagedBrowserProcess] = [:] {
-        didSet { processStateRevision &+= 1 }
+    private var processes: [UUID: Process] = [:]
+    private var managedLeaseOwners: [UUID: UUID] = [:]
+    private var managedBrowserDataDirectories: [UUID: URL] = [:]
+    private var managedSessionReceipts: [UUID: ManagedBrowserSessionReceipt] = [:]
+    private struct PreparedRelayLaunch {
+        let profile: BrowserProfile
+        let executableURL: URL
+        let lock: BrowserProcessLock
+        let port: UInt16
+        var routePolicySHA256: String? = nil
     }
-    private var stopCompletionTasks: [UUID: Task<Void, Never>] = [:]
+    private var preparedRelayLaunches: [UUID: PreparedRelayLaunch] = [:]
+    private var pendingRelayLaunchTokens: [UUID: UUID] = [:]
+    // A failed durable write must not make an unconfirmed child disappear
+    // from this manager's cleanup authority. Cleared only on proven absence.
+    private var unconfirmedRelayOwnerFences: [UUID: ProxyRelayPendingOwnerFence] = [:]
+    private var activeRelayOwners: [UUID: ProxyRelayOwnerClient] = [:]
     private var transientEmptyProfileDirectoryIDs = Set<UUID>()
-    private var transientBrowserDataDirectories: [UUID: URL] = [:]
-    private var externalLocks: [UUID: BrowserProcessLock] = [:] {
-        didSet { processStateRevision &+= 1 }
-    }
-    private var externalUnverifiedProfileIDs = Set<UUID>() {
-        didSet { processStateRevision &+= 1 }
-    }
-    private var recoveryProfileIDs = Set<UUID>() {
-        didSet { processStateRevision &+= 1 }
-    }
+    private var externalLocks: [UUID: BrowserProcessLock] = [:]
+    private var externalUnverifiedProfileIDs = Set<UUID>()
+    private var recoveryProfileIDs = Set<UUID>()
     private var recoveryRecords: [UUID: BrowserProcessRecoveryRecord] = [:]
+    @Published private(set) var ephemeralCleanupFailures = Set<UUID>()
+    @Published private(set) var ephemeralCleanupPending = Set<UUID>()
+    private var ephemeralCleanupTasks: [UUID: Task<Void, Never>] = [:]
+    private var ephemeralStartupInspected = Set<UUID>()
+    private var ephemeralQuitPending = false
+    private var managedEphemeralProfiles: [UUID: BrowserProfile] = [:]
+    private var managedStopRequests: [UUID: ObjectIdentifier] = [:]
+    @Published private var managedClosingIntents: [UUID: ManagedBrowserClosingIntent] = [:]
+    private var managedStopWarnings: [UUID: Task<Void, Never>] = [:]
     private var externalStopTasks: [UUID: Task<Void, Never>] = [:]
-    private let observations = BrowserProcessObservations()
+    private var externalObservationTasks: [UUID: Task<Void, Never>] = [:]
+    private var recoveryObservationTasks: [UUID: Task<Void, Never>] = [:]
+    private var tombstoneObservationTasks: [UUID: Task<Void, Never>] = [:]
     private var tombstoneRecoveryMessages: [UUID: String] = [:]
     private var passiveObservationsEnabled = true
     private var reconcileTask: Task<Void, Never>?
+    private let keychain: KeychainStore
     private var reconcileGeneration: UInt64 = 0
     private var queuedReconcile: QueuedBrowserReconcile?
     private var lastReconciledProfiles: [BrowserProfile] = []
-    private var pendingReconciliationProfileIDs = Set<UUID>() {
-        didSet { processStateRevision &+= 1 }
-    }
+    private var pendingReconciliationProfileIDs = Set<UUID>()
     private var passiveInventoryObservationTask: Task<Void, Never>?
     private var fingerprintAuditReservations:
         [UUID: FingerprintAuditLaunchReservation] = [:]
+    private var fingerprintAuditDirectoryCustody: [UUID: FingerprintAuditDirectoryCustody] = [:]
+    private struct FingerprintAuditSettlementPermit {
+        let reservation: FingerprintAuditLaunchReservation
+        let profileID: UUID
+        let ownerToken: UUID
+        let custody: FingerprintAuditDirectoryCustody
+    }
+    // Launch admission remains single-use; this separate permit only authorizes
+    // completion of the exact process/lease created by that successful launch.
+    private var fingerprintAuditSettlementPermits: [UUID: FingerprintAuditSettlementPermit] = [:]
     private var consumedProxyPreparationKeys =
         Set<BrowserLaunchPreparationConsumptionKey>()
-    private var managerSessionStore: ManagerSessionEvidenceStore?
-    private var managerSessionToken: UUID?
 
-    init(paths: AppPaths) {
+    /// Local busy evidence is only an initial refusal. The owner still checks
+    /// a fresh full-UID kernel inventory before launch and after manager exit.
+    var hasWorkPreventingUpdate: Bool {
+        !ephemeralCleanupPending.isEmpty || !ephemeralCleanupFailures.isEmpty ||
+        !webKitMaintenanceProfileIDs.isEmpty || !runningProfileIDs.isEmpty || !processes.isEmpty ||
+        !webKitHostClients.isEmpty || !webKitHostStartingProfileIDs.isEmpty || !webKitHostStopTasks.isEmpty ||
+        !preparedRelayLaunches.isEmpty || !pendingRelayLaunchTokens.isEmpty ||
+        !unconfirmedRelayOwnerFences.isEmpty || !activeRelayOwners.isEmpty ||
+        !externalLocks.isEmpty || !externalUnverifiedProfileIDs.isEmpty ||
+        !recoveryProfileIDs.isEmpty || !recoveryRecords.isEmpty ||
+        !managedStopRequests.isEmpty || !managedClosingIntents.isEmpty || !externalStopTasks.isEmpty ||
+        !tombstoneRecoveryMessages.isEmpty || !fingerprintAuditReservations.isEmpty || !fingerprintAuditSettlementPermits.isEmpty ||
+        !pendingReconciliationProfileIDs.isEmpty || reconcileTask != nil || queuedReconcile != nil
+    }
+
+    init(paths: AppPaths, releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation? = nil,
+         keychain: KeychainStore = KeychainStore()) {
         self.paths = paths
+        self.keychain = keychain
+        self.launchAdmission = .shared
+        self.releaseAuditBrowserIsolation = releaseAuditBrowserIsolation
+        self.validatesPersistedProfiles = true
         self.processIdentityInspector = {
             BrowserProcessManager.inspectProcess($0)
         }
@@ -423,60 +884,56 @@ final class BrowserProcessManager: ObservableObject {
         self.processInventoryProvider = {
             coordinator.capture()
         }
+        self.potentialRelayOwnerInspector = { .unknown }
         self.processSignaler = { Darwin.kill($0, $1) }
-        self.managedProcessTerminator = { $0.terminate() }
-        self.managedStopGracePeriodNanoseconds = 3_000_000_000
+        self.managedProcessTerminator = Self.requestGracefulQuit
         self.allowsExternalProcessSignaling = false
         self.observationIntervalNanoseconds = 1_000_000_000
         self.startingLeaseTimeout = 30
         self.now = Date.init
-        let sessionStore = ManagerSessionEvidenceStore(
-            paths: paths,
-            processIsAlive: { pid in
-                BrowserProcessManager.isProcessAlive(pid)
-            }
-        )
-        if let evidence = try? sessionStore.begin() {
-            self.managerSessionStore = sessionStore
-            self.managerSessionToken = evidence.token
-            self.recoveredInterruptedManagerSession =
-                evidence.interruptedSessionCount > 0
-        }
     }
 
     init(
+        launchAdmission: ManagerLaunchAdmission? = nil,
         paths: AppPaths,
         processIdentityValidator: @escaping (BrowserProcessLock) -> Bool,
+        releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation? = nil,
         processLivenessValidator: @escaping (pid_t) -> Bool = {
             BrowserProcessManager.isProcessAlive($0)
         },
         processSignaler: @escaping (pid_t, Int32) -> Int32 = {
             Darwin.kill($0, $1)
         },
-        managedProcessTerminator: @escaping (Process) -> Void = {
+        managedProcessTerminator: @escaping (Process) -> Bool = {
             $0.terminate()
+            return true
         },
-        managedStopGracePeriodNanoseconds: UInt64 = 3_000_000_000,
         observationIntervalNanoseconds: UInt64 = 1_000_000_000,
         browserDataProcessInspector: @escaping
             (URL) -> BrowserDataProcessInspection = {
                 BrowserProcessManager.inspectBrowserDataProcess($0)
             },
+        potentialRelayOwnerInspector: @escaping () -> BrowserDataProcessInspection = { .unknown },
         allowsExternalProcessSignaling: Bool = true,
         startingLeaseTimeout: TimeInterval = 30,
-        now: @escaping () -> Date = Date.init
+        validatesPersistedProfiles: Bool = false,
+        now: @escaping () -> Date = Date.init,
+        keychain: KeychainStore = KeychainStore()
     ) {
         self.paths = paths
+        self.keychain = keychain
+        self.launchAdmission = launchAdmission ?? .shared
+        self.releaseAuditBrowserIsolation = releaseAuditBrowserIsolation
+        self.validatesPersistedProfiles = validatesPersistedProfiles
         self.processIdentityInspector = {
             processIdentityValidator($0) ? .expected : .unrelated
         }
         self.processLivenessValidator = processLivenessValidator
         self.browserDataProcessInspector = browserDataProcessInspector
         self.processInventoryProvider = nil
+        self.potentialRelayOwnerInspector = potentialRelayOwnerInspector
         self.processSignaler = processSignaler
         self.managedProcessTerminator = managedProcessTerminator
-        self.managedStopGracePeriodNanoseconds =
-            managedStopGracePeriodNanoseconds
         self.allowsExternalProcessSignaling =
             allowsExternalProcessSignaling
         self.observationIntervalNanoseconds =
@@ -486,6 +943,7 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     init(
+        launchAdmission: ManagerLaunchAdmission? = nil,
         paths: AppPaths,
         processIdentityInspector: @escaping
             (BrowserProcessLock) -> BrowserProcessIdentityInspection,
@@ -493,10 +951,10 @@ final class BrowserProcessManager: ObservableObject {
         processSignaler: @escaping (pid_t, Int32) -> Int32 = {
             Darwin.kill($0, $1)
         },
-        managedProcessTerminator: @escaping (Process) -> Void = {
+        managedProcessTerminator: @escaping (Process) -> Bool = {
             $0.terminate()
+            return true
         },
-        managedStopGracePeriodNanoseconds: UInt64 = 3_000_000_000,
         observationIntervalNanoseconds: UInt64 = 1_000_000_000,
         browserDataProcessInspector: @escaping
             (URL) -> BrowserDataProcessInspection = {
@@ -504,11 +962,17 @@ final class BrowserProcessManager: ObservableObject {
             },
         processInventoryProvider:
             (@Sendable () -> BrowserProcessInventory)? = nil,
+        potentialRelayOwnerInspector: @escaping () -> BrowserDataProcessInspection = { .unknown },
         allowsExternalProcessSignaling: Bool = true,
         startingLeaseTimeout: TimeInterval = 30,
-        now: @escaping () -> Date = Date.init
+        validatesPersistedProfiles: Bool = false,
+        now: @escaping () -> Date = Date.init,
+        keychain: KeychainStore = KeychainStore()
     ) {
         self.paths = paths
+        self.keychain = keychain
+        self.launchAdmission = launchAdmission ?? .shared
+        self.validatesPersistedProfiles = validatesPersistedProfiles
         self.processIdentityInspector = processIdentityInspector
         self.processLivenessValidator = processLivenessValidator
         self.browserDataProcessInspector = browserDataProcessInspector
@@ -523,10 +987,9 @@ final class BrowserProcessManager: ObservableObject {
         } else {
             self.processInventoryProvider = nil
         }
+        self.potentialRelayOwnerInspector = potentialRelayOwnerInspector
         self.processSignaler = processSignaler
         self.managedProcessTerminator = managedProcessTerminator
-        self.managedStopGracePeriodNanoseconds =
-            managedStopGracePeriodNanoseconds
         self.allowsExternalProcessSignaling =
             allowsExternalProcessSignaling
         self.observationIntervalNanoseconds =
@@ -535,8 +998,22 @@ final class BrowserProcessManager: ObservableObject {
         self.now = now
     }
 
-    func reconcile(profiles: [BrowserProfile]) {
+    /// A supported external launch changes metadata. Observe that change without
+    /// briefly presenting every unrelated stopped profile as checking/running.
+    /// Unchanged payloads (including folder-only changes) need no process scan.
+    func refreshAfterExternalMetadataChange(profiles: [BrowserProfile]) {
+        guard passiveObservationsEnabled, profiles != lastReconciledProfiles else { return }
+        reconcile(profiles: profiles, preservesKnownStates: true)
+    }
+
+    func reconcile(profiles: [BrowserProfile], preservesKnownStates: Bool = false) {
+        guard !ApplicationUpdateAdmission.shared.isUpdating else { return }
         lastReconciledProfiles = profiles
+        for profile in profiles where profile.privacyPolicy.retention == .ephemeral {
+            if ephemeralStartupInspected.insert(profile.id).inserted {
+                beginEphemeralCleanupIfNeeded(profile: profile, onlyIfPending: true)
+            }
+        }
         if profiles.isEmpty {
             reconcileGeneration &+= 1
             reconcileTask?.cancel()
@@ -545,6 +1022,7 @@ final class BrowserProcessManager: ObservableObject {
                 profiles: [],
                 processIdentityInspector: { _ in .unknown },
                 browserDataProcessInspector: { _ in .unknown },
+                relayOwnerInspection: potentialRelayOwnerInspector(),
                 expectedLeaseAnchors: [:]
             )
             return
@@ -554,6 +1032,7 @@ final class BrowserProcessManager: ObservableObject {
                 profiles: profiles,
                 processIdentityInspector: processIdentityInspector,
                 browserDataProcessInspector: browserDataProcessInspector,
+                relayOwnerInspection: potentialRelayOwnerInspector(),
                 expectedLeaseAnchors: [:]
             )
             return
@@ -563,8 +1042,10 @@ final class BrowserProcessManager: ObservableObject {
         passiveObservationsEnabled = true
         cancelPassiveObservationTasks()
         let profileIDs = Set(profiles.map(\.id))
-        pendingReconciliationProfileIDs.formUnion(profileIDs)
-        runningProfileIDs.formUnion(profileIDs)
+        if !preservesKnownStates {
+            pendingReconciliationProfileIDs.formUnion(profileIDs)
+            runningProfileIDs.formUnion(profileIDs)
+        }
         if reconcileTask != nil {
             queuedReconcile = QueuedBrowserReconcile(
                 profiles: profiles,
@@ -578,70 +1059,6 @@ final class BrowserProcessManager: ObservableObject {
             retryCount: 0,
             processInventoryProvider: processInventoryProvider
         )
-    }
-
-    func markManagerShutdownClean() {
-        guard let managerSessionStore,
-              let managerSessionToken
-        else { return }
-        do {
-            try managerSessionStore.finish(token: managerSessionToken)
-            self.managerSessionToken = nil
-        } catch {
-            lastError =
-                "Не удалось сохранить отметку штатного завершения менеджера. Данные профилей не изменены."
-        }
-    }
-
-    func managerTerminationSnapshot() ->
-        BrowserManagerTerminationSnapshot
-    {
-        let managedProfileIDs = managed.compactMap { profileID, process in
-            process.process?.isRunning == true ? profileID : nil
-        }.sorted { $0.uuidString < $1.uuidString }
-        let ordinaryStopProfileIDs = managedProfileIDs.filter {
-            stopPhase(for: $0) == .idle
-        }
-        return BrowserManagerTerminationSnapshot(
-            managedProfileIDs: managedProfileIDs,
-            ordinaryStopProfileIDs: ordinaryStopProfileIDs
-        )
-    }
-
-    @discardableResult
-    func requestOrdinaryStopsForManagerTermination() ->
-        BrowserManagerTerminationSnapshot
-    {
-        let snapshot = managerTerminationSnapshot()
-        for profileID in snapshot.ordinaryStopProfileIDs {
-            stop(profileID: profileID)
-        }
-        return managerTerminationSnapshot()
-    }
-
-    func waitForManagedBrowsersToExit(
-        timeoutNanoseconds: UInt64,
-        pollIntervalNanoseconds: UInt64 = 100_000_000
-    ) async -> Bool {
-        guard managerTerminationSnapshot().requiresDecision else {
-            return true
-        }
-        let interval = max(1, pollIntervalNanoseconds)
-        var waited: UInt64 = 0
-        while waited < timeoutNanoseconds {
-            let remaining = timeoutNanoseconds - waited
-            let sleepDuration = min(interval, remaining)
-            do {
-                try await Task.sleep(nanoseconds: sleepDuration)
-            } catch {
-                return false
-            }
-            if !managerTerminationSnapshot().requiresDecision {
-                return true
-            }
-            waited += sleepDuration
-        }
-        return !managerTerminationSnapshot().requiresDecision
     }
 
     func reserveFingerprintAuditLaunch(
@@ -659,7 +1076,7 @@ final class BrowserProcessManager: ObservableObject {
                 "Проверка может открывать только свой локальный адрес."
             )
         }
-        let root = FileManager.default.temporaryDirectory
+        let root = try releaseAuditBrowserIsolation?.reservationRoot(paths: paths) ?? FileManager.default.temporaryDirectory
             .appendingPathComponent(
                 "app.neantik.fingerprint-audit",
                 isDirectory: true
@@ -671,13 +1088,22 @@ final class BrowserProcessManager: ObservableObject {
             )
             do {
                 try paths.createPrivateDirectoryExclusively(directory)
+                let custody: FingerprintAuditDirectoryCustody
+                do {
+                    custody = try FingerprintAuditDirectoryCustody(directory)
+                    try custody.validate()
+                } catch {
+                    _ = rmdir(directory.path)
+                    throw error
+                }
                 let reservation = FingerprintAuditLaunchReservation(
                     id: UUID(),
-                    dataDirectory: directory.standardizedFileURL,
+                    dataDirectory: releaseAuditBrowserIsolation == nil ? directory.standardizedFileURL : directory,
                     startURL: startURL,
                     httpLoopbackPort: httpLoopbackPort
                 )
                 fingerprintAuditReservations[reservation.id] = reservation
+                fingerprintAuditDirectoryCustody[reservation.id] = custody
                 return reservation
             } catch let error as POSIXError
                 where error.code == .EEXIST
@@ -690,6 +1116,60 @@ final class BrowserProcessManager: ObservableObject {
         )
     }
 
+    func retainFingerprintAuditDirectory(_ reservation: FingerprintAuditLaunchReservation) throws -> FingerprintAuditDirectoryCustody {
+        guard fingerprintAuditReservations[reservation.id] == reservation,
+              let custody = fingerprintAuditDirectoryCustody[reservation.id] else {
+            throw NeAntikError.fingerprintAuditFailed("Резерв временных данных проверки недоступен.")
+        }
+        return custody
+    }
+
+    /// Active audit completion is independent of foreground-only passive UI
+    /// polling. A retained reservation authorizes observation of its own fresh
+    /// directory; only the existing exact lease/custody checks may retire it.
+    func settleFingerprintAuditTermination(profileID: UUID, reservation: FingerprintAuditLaunchReservation) async -> Bool {
+        guard !Task.isCancelled,
+              let permit = fingerprintAuditSettlementPermits[reservation.id],
+              permit.reservation == reservation, permit.profileID == profileID,
+              (try? permit.custody.validate()) != nil,
+              processes[profileID]?.isRunning != true else { return false }
+        guard let record = recoveryRecords[profileID] else {
+            return processState(for: profileID) == .stopped
+        }
+        guard record.expectedBrowserDataDirectory == reservation.dataDirectory,
+              record.cleanupAuthority == .managedOwner(permit.ownerToken) else { return false }
+        let inventory: BrowserProcessInventory?
+        if let provider = processInventoryProvider {
+            inventory = await Task.detached(priority: .utility) { provider() }.value
+        } else { inventory = nil }
+        guard !Task.isCancelled,
+              let currentPermit = fingerprintAuditSettlementPermits[reservation.id],
+              currentPermit.reservation == reservation, currentPermit.profileID == profileID,
+              currentPermit.ownerToken == permit.ownerToken, currentPermit.custody === permit.custody,
+              (try? permit.custody.validate()) != nil,
+              recoveryRecords[profileID] == record,
+              processes[profileID]?.isRunning != true else { return false }
+        switch recoveryEntryChange(profileID: profileID, record: record) {
+        case .unchanged, .missing: break
+        case .changed, .unsafe, .unavailable: return false
+        }
+        _ = resolveRecoveryIfSafe(profileID: profileID, record: record,
+            browserDataProcessInspector: inventory.map { value in { value.inspectBrowserDataProcess($0) } } ?? browserDataProcessInspector,
+            relayOwnerInspection: inventory?.inspectPotentialRelayOwnerProcesses() ?? potentialRelayOwnerInspector())
+        return processState(for: profileID) == .stopped
+    }
+
+    /// Releasing admission is independent of filesystem cleanup and idempotent.
+    func releaseFingerprintAuditReservation(_ reservation: FingerprintAuditLaunchReservation) {
+        if fingerprintAuditSettlementPermits[reservation.id]?.reservation == reservation {
+            fingerprintAuditSettlementPermits[reservation.id] = nil
+        }
+        if fingerprintAuditReservations[reservation.id] == reservation {
+            fingerprintAuditReservations[reservation.id] = nil
+            fingerprintAuditDirectoryCustody[reservation.id] = nil
+        }
+    }
+
     private func startInventoryReconcile(
         profiles: [BrowserProfile],
         generation: UInt64,
@@ -697,9 +1177,14 @@ final class BrowserProcessManager: ObservableObject {
         processInventoryProvider:
             @escaping @Sendable () -> BrowserProcessInventory
     ) {
+        guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         let paths = paths
-        let profileIDs = profiles.map(\.id)
+        let profileIDs = profiles.map(\.id).filter {
+            webKitBrowsers[$0] == nil && webKitHostClients[$0] == nil &&
+                !webKitHostStartingProfileIDs.contains($0)
+        }
         reconcileTask = Task { [weak self] in
+            defer { ApplicationUpdateAdmission.shared.finishActivity(updateActivity) }
             let evidence = await Task.detached(priority: .utility) {
                 Self.captureReconcileEvidence(
                     paths: paths,
@@ -711,7 +1196,6 @@ final class BrowserProcessManager: ObservableObject {
             guard let self else {
                 return
             }
-            reconcileTask = nil
             let anchorValidation =
                 leaseAnchorValidation(evidence.leaseAnchors)
             if !Task.isCancelled,
@@ -724,19 +1208,32 @@ final class BrowserProcessManager: ObservableObject {
                         evidence.inventory.inspectProcess,
                     browserDataProcessInspector:
                         evidence.inventory.inspectBrowserDataProcess,
+                    relayOwnerInspection: evidence.inventory.inspectPotentialRelayOwnerProcesses(),
                     expectedLeaseAnchors: evidence.leaseAnchors
                 )
             } else if passiveObservationsEnabled,
                       generation == reconcileGeneration {
                 if anchorValidation.unavailableProfileIDs.isEmpty,
-                   !anchorValidation.changedProfileIDs.isEmpty,
+                   (!anchorValidation.changedProfileIDs.isEmpty ||
+                    !anchorValidation.busyProfileIDs.isEmpty),
                    retryCount < 2
                 {
-                    reconcileGeneration &+= 1
-                    queuedReconcile = QueuedBrowserReconcile(
-                        profiles: profiles,
-                        retryCount: retryCount + 1
-                    )
+                    // A busy lease is temporary evidence unavailability, not
+                    // an absent process. Yield before recapturing both the
+                    // lease anchors and process inventory; never park the UI.
+                    if !anchorValidation.busyProfileIDs.isEmpty {
+                        try? await Task.sleep(nanoseconds:
+                            retryCount == 0 ? 100_000_000 : 250_000_000)
+                    }
+                    if !Task.isCancelled,
+                       generation == reconcileGeneration,
+                       passiveObservationsEnabled {
+                        reconcileGeneration &+= 1
+                        queuedReconcile = QueuedBrowserReconcile(
+                            profiles: profiles,
+                            retryCount: retryCount + 1
+                        )
+                    }
                 } else if !anchorValidation.isClean {
                     let stableProfiles = profiles.filter {
                         anchorValidation.matchingProfileIDs
@@ -749,6 +1246,7 @@ final class BrowserProcessManager: ObservableObject {
                         browserDataProcessInspector:
                             evidence.inventory
                                 .inspectBrowserDataProcess,
+                        relayOwnerInspection: evidence.inventory.inspectPotentialRelayOwnerProcesses(),
                         expectedLeaseAnchors:
                             evidence.leaseAnchors.filter {
                                 anchorValidation
@@ -760,14 +1258,19 @@ final class BrowserProcessManager: ObservableObject {
                         anchorValidation.changedProfileIDs.union(
                             anchorValidation
                                 .unavailableProfileIDs
-                        )
+                        ).union(anchorValidation.busyProfileIDs)
                     markReconciliationUnavailable(
                         profiles: profiles.filter {
                             blockedProfileIDs.contains($0.id)
                         }
                     )
+                    if anchorValidation.unavailableProfileIDs.isEmpty,
+                       !anchorValidation.busyProfileIDs.isEmpty {
+                        lastError = "Другое действие с профилем ещё выполняется. Дождись его завершения и повтори проверку."
+                    }
                 }
             }
+            reconcileTask = nil
             startQueuedInventoryReconcileIfNeeded(
                 processInventoryProvider: processInventoryProvider
             )
@@ -799,6 +1302,7 @@ final class BrowserProcessManager: ObservableObject {
             (BrowserProcessLock) -> BrowserProcessIdentityInspection,
         browserDataProcessInspector: @escaping
             (URL) -> BrowserDataProcessInspection,
+        relayOwnerInspection: BrowserDataProcessInspection,
         expectedLeaseAnchors:
             [UUID: BrowserLeaseInventoryAnchor]
     ) {
@@ -818,10 +1322,11 @@ final class BrowserProcessManager: ObservableObject {
         recoveryRecords.removeAll()
         pendingReconciliationProfileIDs.removeAll()
         runningProfileIDs = Set(
-            managed.compactMap { key, process in
-                process.process?.isRunning == true ? key : nil
+            processes.compactMap { key, process in
+                process.isRunning ? key : nil
             }
-        )
+        ).union(webKitBrowsers.keys).union(webKitHostClients.keys)
+            .union(webKitHostStartingProfileIDs)
 
         for profile in profiles {
             reconcileProfile(
@@ -829,6 +1334,7 @@ final class BrowserProcessManager: ObservableObject {
                 processIdentityInspector: processIdentityInspector,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 expectedLeaseAnchor:
                     expectedLeaseAnchors[profile.id]
             )
@@ -844,7 +1350,12 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     private func cancelPassiveObservationTasks() {
-        observations.cancelAll()
+        externalObservationTasks.values.forEach { $0.cancel() }
+        externalObservationTasks.removeAll()
+        recoveryObservationTasks.values.forEach { $0.cancel() }
+        recoveryObservationTasks.removeAll()
+        tombstoneObservationTasks.values.forEach { $0.cancel() }
+        tombstoneObservationTasks.removeAll()
         passiveInventoryObservationTask?.cancel()
         passiveInventoryObservationTask = nil
     }
@@ -874,6 +1385,10 @@ final class BrowserProcessManager: ObservableObject {
     ) -> BrowserLeaseAnchorValidation {
         var validation = BrowserLeaseAnchorValidation()
         for (profileID, anchor) in expected {
+            if anchor == .busy {
+                validation.busyProfileIDs.insert(profileID)
+                continue
+            }
             guard anchor != BrowserLeaseInventoryAnchor.unavailable else {
                 validation.unavailableProfileIDs.insert(profileID)
                 continue
@@ -882,6 +1397,10 @@ final class BrowserProcessManager: ObservableObject {
                 paths: paths,
                 profileID: profileID
             )
+            if current == .busy {
+                validation.busyProfileIDs.insert(profileID)
+                continue
+            }
             guard current != BrowserLeaseInventoryAnchor.unavailable else {
                 validation.unavailableProfileIDs.insert(profileID)
                 continue
@@ -920,10 +1439,7 @@ final class BrowserProcessManager: ObservableObject {
                     identity.map { .present($0) } ?? .missing
                 guard identity != nil,
                       try paths.privateFileEntryKind(lockURL) == .regular,
-                      let data = try? paths.readPrivateFile(
-                        lockURL,
-                        maximumBytes: maximumProcessLockBytes
-                      ),
+                      let data = try? Data(contentsOf: lockURL),
                       let lock = try? decodeLock(data),
                       lock.phase == .starting,
                       let managerPID = lock.managerPID,
@@ -942,24 +1458,25 @@ final class BrowserProcessManager: ObservableObject {
                             : .dead(managerPID)
                 )
             }
+        } catch is ProfileProcessBusyError {
+            return .busy
         } catch {
             return .unavailable
         }
     }
 
     func processState(for profileID: UUID) -> BrowserProfileProcessState {
-        if managed[profileID]?.process?.isRunning == true {
-            switch stopPhase(for: profileID) {
-            case .closing:
-                return .closing
-            case .forceStopAvailable:
-                return .forceStopAvailable
-            case .idle, .completed:
-                break
-            }
+        if ephemeralCleanupPending.contains(profileID) { return .closing }
+        if webKitMaintenanceProfileIDs.contains(profileID) { return .checking }
+        if webKitHostStartingProfileIDs.contains(profileID) { return .checking }
+        if webKitBrowsers[profileID] != nil || webKitHostClients[profileID] != nil { return .managed }
+        if let intent = managedClosingIntents[profileID], closingDeadlineIsCurrent(intent) {
+            return .closing
+        }
+        if processes[profileID]?.isRunning == true {
             return .managed
         }
-        if recoveryProfileIDs.contains(profileID) {
+        if ephemeralCleanupFailures.contains(profileID) || recoveryProfileIDs.contains(profileID) {
             return .recoveryRequired
         }
         if externalUnverifiedProfileIDs.contains(profileID) {
@@ -979,72 +1496,18 @@ final class BrowserProcessManager: ObservableObject {
         return runningProfileIDs.contains(profileID) ? .managed : .stopped
     }
 
-    func stopPhase(for profileID: UUID) -> BrowserStopPhase {
-        stopPhases[profileID] ?? .idle
+    /// Configuration changes and deletion share the same stopped-process authority.
+    func withVerifiedProfileDeletion<T>(profileID: UUID, _ operation: () throws -> T) throws -> T {
+        try withVerifiedStoppedProfileOperation(profileID: profileID, operation)
     }
 
-    func startedAt(for profileID: UUID) -> Date? {
-        managed[profileID]?.startedAt ?? externalLocks[profileID]?.createdAt
-    }
-
-    @discardableResult
-    func focus(
-        profileID: UUID,
-        using activator: (pid_t, String) -> Bool = { pid, executablePath in
-            guard let app = NSRunningApplication(processIdentifier: pid),
-                  !app.isTerminated,
-                  app.executableURL?.standardizedFileURL.path == executablePath
-            else { return false }
-            return app.activate(options: [.activateAllWindows])
-        }
-    ) -> Bool {
-        guard let lock = verifiedWindowLease(profileID: profileID) else {
-            lastError = "Не удалось подтвердить окно этого рабочего места. " +
-                "Открой его через Dock. Повторный браузер не запускался."
-            return false
-        }
-        let activated = activator(lock.pid, lock.executablePath)
-        if !activated { lastError = "Не удалось перейти в окно этого рабочего места. Открой его через Dock." }
-        return activated
-    }
-
-    func verifiedProfileID(forProcessID pid: pid_t) -> UUID? {
-        guard pid > 0 else { return nil }
-        let candidates = Set(managed.compactMap { id, record in
-            record.process?.processIdentifier == pid ? id : nil
-        } + externalLocks.compactMap { id, lock in lock.pid == pid ? id : nil })
-        guard candidates.count == 1, let id = candidates.first,
-              verifiedWindowLease(profileID: id)?.pid == pid else { return nil }
-        return id
-    }
-
-    private func verifiedWindowLease(profileID: UUID) -> BrowserProcessLock? {
-        let state = processState(for: profileID)
-        guard state == .managed || state == .externalVerified || state == .externalManualOnly,
-              let snapshot = currentLeaseSnapshot(
-                profileID: profileID, managedOwner: managed[profileID]?.ownerToken,
-                externalLock: externalLocks[profileID]
-              ),
-              let lock = try? Self.decodeLock(snapshot),
-              lock.phase == .running, lock.pid > 0,
-              lock.browserDataPath == paths.browserDataDirectory(for: profileID).path,
-              processIdentityInspector(lock) == .expected,
-              currentLeaseSnapshot(
-                profileID: profileID, managedOwner: managed[profileID]?.ownerToken,
-                externalLock: externalLocks[profileID]
-              ) == snapshot
-        else { return nil }
-        if let process = managed[profileID]?.process {
-            guard process.isRunning, process.processIdentifier == lock.pid else { return nil }
-        }
-        return lock
-    }
-
-    func withVerifiedProfileDeletion<T>(
+    func withVerifiedStoppedProfileOperation<T>(
         profileID: UUID,
         _ destructiveOperation: () throws -> T
     ) throws -> T {
-        if managed[profileID]?.process?.isRunning == true {
+        if ephemeralCleanupPending.contains(profileID) || ephemeralCleanupFailures.contains(profileID) ||
+            webKitBrowsers[profileID] != nil || webKitHostClients[profileID] != nil ||
+            webKitHostStartingProfileIDs.contains(profileID) || processes[profileID]?.isRunning == true {
             throw BrowserProfileDeletionBlockedError(
                 reason: .managedProcess
             )
@@ -1096,6 +1559,8 @@ final class BrowserProcessManager: ObservableObject {
             throw error
         } catch let error as BrowserProfileDeletedError {
             throw error
+        } catch let error as ProfileProcessBusyError {
+            throw error
         } catch {
             if destructiveOperationStarted {
                 throw error
@@ -1106,11 +1571,276 @@ final class BrowserProcessManager: ObservableObject {
         }
     }
 
+    /// System WebKit maintenance has UUID-store authority, not Chromium path
+    /// inventory. Both cooperating-manager fences live through the native
+    /// callback. Cancellation is effective only before dispatch.
+    func clearWebKitCache(
+        profile: BrowserProfile,
+        operation: @escaping @MainActor (UUID) async -> Void = WebKitCacheMaintenance.clear
+    ) async throws {
+        guard profile.engine == .webkit else { throw WebKitCacheMaintenanceError.wrongEngine }
+        guard !webKitQuitPending, processState(for: profile.id) == .stopped else {
+            throw BrowserProfileDeletionBlockedError(reason: .managedProcess)
+        }
+        let activity = try ApplicationUpdateAdmission.shared.beginActivity()
+        defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
+        webKitMaintenanceProfileIDs.insert(profile.id)
+        defer { webKitMaintenanceProfileIDs.remove(profile.id) }
+        let savedPaths = paths
+        let acquire = Task.detached(priority: .utility) {
+            let process = try savedPaths.acquireProcessMaintenanceGuard(for: profile.id)
+            do {
+                try Task.checkCancellation()
+                return (process, try savedPaths.acquireWebKitMetadataGuard(for: profile.id))
+            } catch { process.release(); throw error }
+        }
+        let (process, metadata) = try await withTaskCancellationHandler {
+            try await acquire.value
+        } onCancel: { acquire.cancel() }
+        defer { metadata.release(); process.release() }
+        try Task.checkCancellation()
+        guard webKitBrowsers[profile.id] == nil, webKitHostClients[profile.id] == nil,
+              !webKitHostStartingProfileIDs.contains(profile.id), processes[profile.id]?.isRunning != true else {
+            throw BrowserProfileDeletionBlockedError(reason: .managedProcess)
+        }
+        // No await between the final revision/authority check and dispatch.
+        try ProfileStore.withValidatedLaunchSnapshot(profile, paths: paths) {
+            try process.validateHeldFile(at: paths.lockGuardFile(for: profile.id))
+            try metadata.validateHeldFile(at: paths.lockGuardFile(for: profile.id).appendingPathExtension("webkit"))
+            switch try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: profile.id)) {
+            case .missing: break
+            case .regular, .unsafe: throw BrowserProfileDeletedError()
+            }
+            switch try paths.privateFileEntryKind(paths.lockFile(for: profile.id)) {
+            case .missing: break
+            case .regular: throw BrowserProfileDeletionBlockedError(reason: .leasePresent)
+            case .unsafe: throw BrowserProfileDeletionBlockedError(reason: .unsafeLease)
+            }
+        }
+        try Task.checkCancellation()
+        await operation(profile.id)
+        // Never throw CancellationError here: the native API may have removed
+        // caches already. It must finish before either fence can be released.
+        do {
+            try process.validateHeldFile(at: paths.lockGuardFile(for: profile.id))
+            try metadata.validateHeldFile(at: paths.lockGuardFile(for: profile.id).appendingPathExtension("webkit"))
+        } catch { throw WebKitCacheMaintenanceError.authorityChangedAfterCompletion }
+    }
+
+    /// UUID-store authority is distinct from Chromium BrowserData inventory.
+    /// Cancellation can stop admission; after intent/native dispatch, retain
+    /// both fences through the real callback and resumable finalization.
+    func deleteClosedWebKitProfile(
+        profileID: UUID, expected: BrowserProfile?, store: ProfileStore,
+        operation: @escaping @MainActor (UUID) async throws -> Void = WebKitDataStoreRemoval.remove,
+        afterNative: () throws -> Void = {},
+        afterCommit: (UUID) throws -> Void
+    ) async throws {
+        guard expected == nil || expected?.engine == .webkit else { throw WebKitProfileDeletionError.wrongEngine }
+        guard store.paths.rootDirectory.resolvingSymlinksInPath() == paths.rootDirectory.resolvingSymlinksInPath(),
+              !webKitQuitPending, webKitBrowsers[profileID] == nil, webKitHostClients[profileID] == nil,
+              !webKitHostStartingProfileIDs.contains(profileID), processes[profileID]?.isRunning != true,
+              !webKitMaintenanceProfileIDs.contains(profileID) else { throw BrowserProfileDeletionBlockedError(reason: .managedProcess) }
+        let activity = try ApplicationUpdateAdmission.shared.beginActivity()
+        defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
+        webKitMaintenanceProfileIDs.insert(profileID)
+        defer { webKitMaintenanceProfileIDs.remove(profileID) }
+        let savedPaths = paths
+        let acquire = Task.detached(priority: .utility) {
+            let process = try savedPaths.acquireProcessMaintenanceGuard(for: profileID)
+            do {
+                try Task.checkCancellation()
+                return (process, try savedPaths.acquireWebKitMetadataGuard(for: profileID))
+            } catch { process.release(); throw error }
+        }
+        let (process, metadata) = try await withTaskCancellationHandler { try await acquire.value } onCancel: { acquire.cancel() }
+        defer { metadata.release(); process.release() }
+        try Task.checkCancellation()
+        func validateAuthority() throws {
+            try process.validateHeldFile(at: paths.lockGuardFile(for: profileID))
+            try metadata.validateHeldFile(at: paths.lockGuardFile(for: profileID).appendingPathExtension("webkit"))
+            guard webKitBrowsers[profileID] == nil, webKitHostClients[profileID] == nil,
+                  !webKitHostStartingProfileIDs.contains(profileID), processes[profileID]?.isRunning != true else {
+                throw BrowserProfileDeletionBlockedError(reason: .managedProcess)
+            }
+            switch try paths.privateFileEntryKind(paths.lockFile(for: profileID)) {
+            case .missing: break
+            case .regular: throw BrowserProfileDeletionBlockedError(reason: .leasePresent)
+            case .unsafe: throw BrowserProfileDeletionBlockedError(reason: .unsafeLease)
+            }
+        }
+        try validateAuthority()
+        var record = try store.prepareWebKitDeletion(profileID: profileID, expected: expected)
+        let journal = WebKitProfileDeletionJournal(paths: paths)
+        if record.stage == .prepared {
+            // No await after the durable intent and before native dispatch.
+            // A cancellation arriving now does not erase the irreversible fence.
+            try validateAuthority()
+            try journal.validateProfileDirectory(record)
+            do { try await operation(profileID) }
+            catch let error as WebKitProfileDeletionError { throw error }
+            catch { throw WebKitProfileDeletionError.nativeFailed }
+            do {
+                try validateAuthority()
+                record = try journal.advance(record, to: .dataRemoved)
+            } catch { throw WebKitProfileDeletionError.changed }
+            do { try afterNative() } catch { throw WebKitProfileDeletionError.interrupted }
+        }
+        try validateAuthority()
+        do { try store.finalizeWebKitDeletion(record) }
+        catch { throw WebKitProfileDeletionError.interrupted }
+        do {
+            try afterCommit(profileID)
+            try paths.removeCredentialCleanupMarker(for: profileID)
+        } catch { throw ProfileCredentialCleanupPendingError(cleanupError: error) }
+    }
+
+    /// Disk maintenance keeps process authority across awaits. Production
+    /// inventory and the worker run off-main; unknown process evidence refuses
+    /// admission. A UI snapshot is checked again before the worker starts.
+    func withVerifiedStoppedProfileMaintenance<Result: Sendable>(
+        profile: BrowserProfile,
+        operation: @escaping @Sendable (StoppedProfileMaintenanceAuthority) throws -> Result
+    ) async throws -> Result {
+        let activity = try ApplicationUpdateAdmission.shared.beginActivity()
+        defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
+        guard processes[profile.id]?.isRunning != true else {
+            throw BrowserProfileDeletionBlockedError(reason: .managedProcess)
+        }
+        let savedPaths = paths
+        let acquire = Task.detached(priority: .utility) {
+            try savedPaths.acquireProcessMaintenanceGuard(for: profile.id)
+        }
+        let lease = try await withTaskCancellationHandler { try await acquire.value } onCancel: { acquire.cancel() }
+        defer { lease.release() }
+        try Task.checkCancellation()
+        guard processes[profile.id]?.isRunning != true else {
+            throw BrowserProfileDeletionBlockedError(reason: .managedProcess)
+        }
+        let inspection: BrowserDataProcessInspection
+        if let provider = processInventoryProvider {
+            inspection = await Task.detached(priority: .utility) {
+                provider().inspectBrowserDataProcess(savedPaths.browserDataDirectory(for: profile.id))
+            }.value
+        } else {
+            // Only injected test managers omit the production inventory.
+            inspection = browserDataProcessInspector(paths.browserDataDirectory(for: profile.id))
+        }
+        switch inspection {
+        case .found: throw BrowserProfileDeletionBlockedError(reason: .browserDataInUse)
+        case .unknown: throw BrowserProfileDeletionBlockedError(reason: .inspectionUnavailable)
+        case .absent: break
+        }
+        let check = Task.detached(priority: .utility) {
+            switch try savedPaths.privateFileEntryKind(savedPaths.profileDeletionTombstone(for: profile.id)) {
+            case .missing: break
+            case .regular, .unsafe: throw BrowserProfileDeletedError()
+            }
+            switch try savedPaths.privateFileEntryKind(savedPaths.lockFile(for: profile.id)) {
+            case .missing: break
+            case .regular: throw BrowserProfileDeletionBlockedError(reason: .leasePresent)
+            case .unsafe: throw BrowserProfileDeletionBlockedError(reason: .unsafeLease)
+            }
+        }
+        try await check.value
+        try Task.checkCancellation()
+        if validatesPersistedProfiles {
+            try ProfileStore.withValidatedLaunchSnapshot(profile, paths: paths) {}
+        }
+        let provider = processInventoryProvider
+        let authority = StoppedProfileMaintenanceAuthority(browserData: savedPaths.browserDataDirectory(for: profile.id)) {
+            try lease.validateHeldFile(at: savedPaths.lockGuardFile(for: profile.id))
+            if let provider {
+                switch provider().inspectBrowserDataProcess(savedPaths.browserDataDirectory(for: profile.id)) {
+                case .found: throw BrowserProfileDeletionBlockedError(reason: .browserDataInUse)
+                case .unknown: throw BrowserProfileDeletionBlockedError(reason: .inspectionUnavailable)
+                case .absent: break
+                }
+            }
+            switch try savedPaths.privateFileEntryKind(savedPaths.profileDeletionTombstone(for: profile.id)) {
+            case .missing: break
+            case .regular, .unsafe: throw BrowserProfileDeletedError()
+            }
+            switch try savedPaths.privateFileEntryKind(savedPaths.lockFile(for: profile.id)) {
+            case .missing: break
+            case .regular: throw BrowserProfileDeletionBlockedError(reason: .leasePresent)
+            case .unsafe: throw BrowserProfileDeletionBlockedError(reason: .unsafeLease)
+            }
+        }
+        defer { authority.invalidate() }
+        let worker = Task.detached(priority: .utility) {
+            try authority.validate(browserData: savedPaths.browserDataDirectory(for: profile.id))
+            return try operation(authority)
+        }
+        return try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
+    }
+
+    /// Recovery deliberately does not decode pending metadata. It acquires
+    /// process authority first and checks both journal-bound directory names.
+    /// The transaction then revalidates its immutable intent under metadata
+    /// guard. A found or unknown process, tombstone or lease refuses admission.
+    func withVerifiedStoppedProfileRestore<Result: Sendable>(
+        profileID: UUID, retainedTree: URL,
+        operation: @escaping @Sendable (StoppedProfileRestoreAuthority) throws -> Result
+    ) async throws -> Result {
+        let activity = try ApplicationUpdateAdmission.shared.beginActivity()
+        defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
+        let savedPaths = paths
+        let parent = savedPaths.profileDirectory(for: profileID)
+        guard retainedTree.deletingLastPathComponent() == parent,
+              retainedTree.lastPathComponent.hasPrefix(".neantik-backup-restore-"),
+              !retainedTree.lastPathComponent.contains("/") else { throw BrowserDataRestoreError.authorityRequired }
+        guard processes[profileID]?.isRunning != true else { throw BrowserProfileDeletionBlockedError(reason: .managedProcess) }
+        let acquire = Task.detached(priority: .utility) { try savedPaths.acquireProcessMaintenanceGuard(for: profileID) }
+        let lease = try await withTaskCancellationHandler { try await acquire.value } onCancel: { acquire.cancel() }
+        var transferred = false
+        defer { if !transferred { lease.release() } }
+        try Task.checkCancellation()
+        guard processes[profileID]?.isRunning != true else { throw BrowserProfileDeletionBlockedError(reason: .managedProcess) }
+        guard let provider = processInventoryProvider else { throw BrowserProfileDeletionBlockedError(reason: .inspectionUnavailable) }
+        let inspect: @Sendable () throws -> Void = {
+            try lease.validateHeldFile(at: savedPaths.lockGuardFile(for: profileID))
+            let inventory = provider()
+            switch inventory.inspectOtherManagerProcesses() {
+            case .found: throw BrowserDataRestoreError.authorityRequired
+            case .unknown: throw BrowserProfileDeletionBlockedError(reason: .inspectionUnavailable)
+            case .absent: break
+            }
+            for root in [savedPaths.browserDataDirectory(for: profileID), retainedTree] {
+                let state = inventory.inspectBrowserDataProcess(root)
+                switch state {
+                case .found: throw BrowserProfileDeletionBlockedError(reason: .browserDataInUse)
+                case .unknown: throw BrowserProfileDeletionBlockedError(reason: .inspectionUnavailable)
+                case .absent: break
+                }
+            }
+            switch try savedPaths.privateFileEntryKind(savedPaths.profileDeletionTombstone(for: profileID)) {
+            case .missing: break
+            case .regular, .unsafe: throw BrowserProfileDeletedError()
+            }
+            switch try savedPaths.privateFileEntryKind(savedPaths.lockFile(for: profileID)) {
+            case .missing: break
+            case .regular: throw BrowserProfileDeletionBlockedError(reason: .leasePresent)
+            case .unsafe: throw BrowserProfileDeletionBlockedError(reason: .unsafeLease)
+            }
+        }
+        let authority = StoppedProfileRestoreAuthority(profileID: profileID, retainedTree: retainedTree, paths: savedPaths, lease: lease, inspection: inspect)
+        transferred = true
+        defer { authority.invalidate() }
+        let worker = Task.detached(priority: .utility) {
+            try Task.checkCancellation()
+            try authority.validate(paths: savedPaths)
+            return try operation(authority)
+        }
+        return try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
+    }
+
     private func reconcileProfile(profileID: UUID) {
         reconcileProfile(
             profileID: profileID,
             processIdentityInspector: processIdentityInspector,
             browserDataProcessInspector: browserDataProcessInspector,
+            relayOwnerInspection: potentialRelayOwnerInspector(),
             expectedLeaseAnchor: nil
         )
     }
@@ -1121,9 +1851,35 @@ final class BrowserProcessManager: ObservableObject {
             (BrowserProcessLock) -> BrowserProcessIdentityInspection,
         browserDataProcessInspector: @escaping
             (URL) -> BrowserDataProcessInspection,
+        relayOwnerInspection: BrowserDataProcessInspection,
         expectedLeaseAnchor: BrowserLeaseInventoryAnchor?
     ) {
-        observations.cancel(.tombstone(profileID))
+        defer { refreshManagedClosingIntent(profileID: profileID) }
+        if webKitHostClients[profileID] != nil || webKitHostStartingProfileIDs.contains(profileID) {
+            pendingReconciliationProfileIDs.remove(profileID)
+            runningProfileIDs.insert(profileID)
+            return
+        }
+        if webKitBrowsers[profileID] != nil {
+            pendingReconciliationProfileIDs.remove(profileID)
+            runningProfileIDs.insert(profileID)
+            return
+        }
+        // An async relay preparation owns a durable starting lease before
+        // creating Process. Passive reconciliation must not adopt it as an
+        // external recovery session while its own task is still responsible.
+        if let token = pendingRelayLaunchTokens[profileID],
+           managedLeaseOwners[profileID] == token, processes[profileID] == nil { return }
+        if !unconfirmedRelayOwnersAreAbsent(profileID: profileID) {
+            registerRecovery(profileID: profileID, lockURL: paths.lockFile(for: profileID),
+                expectedBrowserDataDirectory: paths.browserDataDirectory(for: profileID),
+                removableSnapshot: try? Data(contentsOf: paths.lockFile(for: profileID)),
+                blockingManagerPID: nil, deferInitialResolution: true,
+                message: "Не удалось подтвердить остановку прокси. Повторный запуск заблокирован до безопасной проверки.")
+            return
+        }
+        tombstoneObservationTasks[profileID]?.cancel()
+        tombstoneObservationTasks.removeValue(forKey: profileID)
         if let message = tombstoneRecoveryMessages.removeValue(
             forKey: profileID
         ), lastError == message {
@@ -1131,13 +1887,15 @@ final class BrowserProcessManager: ObservableObject {
         }
         externalStopTasks[profileID]?.cancel()
         externalStopTasks.removeValue(forKey: profileID)
-        observations.cancel(.external(profileID))
-        observations.cancel(.recovery(profileID))
+        externalObservationTasks[profileID]?.cancel()
+        externalObservationTasks.removeValue(forKey: profileID)
+        recoveryObservationTasks[profileID]?.cancel()
+        recoveryObservationTasks.removeValue(forKey: profileID)
         externalLocks.removeValue(forKey: profileID)
         externalUnverifiedProfileIDs.remove(profileID)
         recoveryProfileIDs.remove(profileID)
         recoveryRecords.removeValue(forKey: profileID)
-        if managed[profileID]?.process?.isRunning != true {
+        if processes[profileID]?.isRunning != true {
             runningProfileIDs.remove(profileID)
         }
 
@@ -1153,8 +1911,10 @@ final class BrowserProcessManager: ObservableObject {
                 )
             }
             if tombstoneKind != .missing {
-                let message =
-                    "Удаление этого профиля не было завершено безопасно. Запуск заблокирован; проверь Корзину macOS или обратись в поддержку."
+                let webKitDeletion = (try? WebKitProfileDeletionJournal(paths: paths).load(for: profileID)) != nil
+                let message = webKitDeletion
+                    ? "Удаление WebKit ещё не завершено. Запуск заблокирован; открой восстановление удаления в менеджере. Данные сайтов уже могли быть удалены."
+                    : "Удаление этого профиля не было завершено безопасно. Запуск заблокирован; проверь Корзину macOS или обратись в поддержку."
                 recoveryProfileIDs.insert(profileID)
                 runningProfileIDs.insert(profileID)
                 tombstoneRecoveryMessages[profileID] = message
@@ -1187,6 +1947,7 @@ final class BrowserProcessManager: ObservableObject {
                 blockingManagerPID: nil,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Папка данных профиля не прошла проверку безопасности. Профиль заблокирован, чтобы не повредить данные браузера."
             )
@@ -1208,6 +1969,7 @@ final class BrowserProcessManager: ObservableObject {
                 blockingManagerPID: nil,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Файл состояния запуска недоступен. Профиль заблокирован до безопасной проверки."
             )
@@ -1239,6 +2001,7 @@ final class BrowserProcessManager: ObservableObject {
                 blockingManagerPID: nil,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Файл состояния запуска имеет небезопасный тип. NeAntik не будет запускать этот профиль повторно."
             )
@@ -1252,6 +2015,7 @@ final class BrowserProcessManager: ObservableObject {
                 blockingManagerPID: nil,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Файл состояния запуска нельзя прочитать. Профиль заблокирован до безопасной проверки."
             )
@@ -1272,6 +2036,7 @@ final class BrowserProcessManager: ObservableObject {
                 blockingManagerPID: nil,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Файл состояния запуска повреждён. NeAntik проверяет, закрыт ли браузер, прежде чем разблокировать профиль."
             )
@@ -1282,6 +2047,8 @@ final class BrowserProcessManager: ObservableObject {
             browserDataDirectory.standardizedFileURL.path
         guard lock.schemaVersion >= 1,
               lock.schemaVersion <= BrowserProcessLock.currentSchemaVersion,
+              lock.relay == nil || lock.relay?.profileID == profileID,
+              lock.pendingRelayOwner == nil || lock.pendingRelayOwner?.profileID == profileID,
               URL(fileURLWithPath: lock.browserDataPath)
                 .standardizedFileURL.path == expectedPath
         else {
@@ -1293,6 +2060,7 @@ final class BrowserProcessManager: ObservableObject {
                 blockingManagerPID: nil,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Файл состояния запуска не соответствует этому профилю. Профиль остаётся заблокированным для защиты данных."
             )
@@ -1311,6 +2079,7 @@ final class BrowserProcessManager: ObservableObject {
                     startingCreatedAt: lock.createdAt,
                     browserDataProcessInspector:
                         browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                     deferInitialResolution: true,
                     message:
                         "Другой экземпляр NeAntik ещё запускает этот профиль. Повторный запуск заблокирован."
@@ -1334,6 +2103,7 @@ final class BrowserProcessManager: ObservableObject {
                 startingCreatedAt: lock.createdAt,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Другой экземпляр NeAntik ещё запускает этот профиль. Повторный запуск заблокирован."
             )
@@ -1349,6 +2119,7 @@ final class BrowserProcessManager: ObservableObject {
                 blockingManagerPID: nil,
                 browserDataProcessInspector:
                     browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                 message:
                     "Файл состояния запуска содержит неверный процесс. Профиль остаётся заблокированным до безопасной проверки."
             )
@@ -1390,6 +2161,7 @@ final class BrowserProcessManager: ObservableObject {
                         blockingManagerPID: nil,
                         browserDataProcessInspector:
                             browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                         message:
                             "Файл состояния запуска изменился во время проверки. Профиль остаётся заблокированным."
                     )
@@ -1403,12 +2175,225 @@ final class BrowserProcessManager: ObservableObject {
                     blockingManagerPID: nil,
                     browserDataProcessInspector:
                         browserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection,
                     message:
                         "NeAntik не может доказать, что данные профиля свободны. Повторный запуск заблокирован."
                 )
             }
         }
     }
+
+    /// UI and MCP share one authenticated relay path for all proxy protocols.
+    /// HTTPS upstream uses macOS default TLS trust before any credentials are
+    /// enqueued; a trust/auth failure never retries as plaintext or Direct.
+    func launchUserProfile(profile: BrowserProfile, runtime: BrowserRuntime,
+                           preparationReceipt: BrowserLaunchPreparationReceipt?, keychain: KeychainStore,
+                           target: BrowserUserLaunchTarget = .profileStart) async throws {
+        if let plan = target.routeProbePlan {
+            try plan.validate()
+            guard let proxy = profile.proxy, !proxy.username.isEmpty else {
+                throw NeAntikError.runtimeValidationFailed("Проверка маршрута пока доступна только для прокси с авторизацией через локальный relay.")
+            }
+        }
+        if let proxy = profile.proxy, !proxy.username.isEmpty {
+            guard let preparationReceipt else { throw NeAntikError.proxyPreparationRequired }
+            try await launchWithAuthenticatedRelay(profile: profile, runtime: runtime,
+                                                   preparationReceipt: preparationReceipt, keychain: keychain, target: target)
+        } else {
+            try launch(profile: profile, runtime: runtime, preparationReceipt: preparationReceipt, startURLOverride: target.startURLOverride)
+        }
+    }
+
+    /// Starting ownership is
+    /// acquired before either Keychain/IPC await. Browser sockets remain held
+    /// until the running lease is durable and the parent commits activation.
+    func launchWithAuthenticatedRelay(
+        profile: BrowserProfile, runtime: BrowserRuntime,
+        preparationReceipt: BrowserLaunchPreparationReceipt,
+        keychain: KeychainStore, target: BrowserUserLaunchTarget = .profileStart
+    ) async throws {
+        try BrowserLaunchPolicy.validatePrivacyPolicy(profile, runtime: runtime)
+        try BrowserLaunchPolicy.validateFontPolicy(profile, runtime: runtime)
+        try target.routeProbePlan?.validate()
+        try launchAdmission.requireSafePressure()
+        guard let proxy = profile.proxy, proxy.isValid, !proxy.username.isEmpty,
+              !profile.isArchived, !runningProfileIDs.contains(profile.id),
+              preparedRelayLaunches[profile.id] == nil,
+              preparationReceipt.authorizes(profile), let managerExecutable = Bundle.main.executableURL
+        else { throw NeAntikError.invalidProxy }
+        let inspectionTask = Task.detached(priority: .utility) {
+            BrowserRuntimeInspector.inspect(executableURL: runtime.executableURL)
+        }
+        let inspection = await withTaskCancellationHandler(operation: { await inspectionTask.value }, onCancel: { inspectionTask.cancel() })
+        try Task.checkCancellation()
+        guard inspection.codeSignatureValid == true, inspection.supportsAppleSilicon,
+              inspection.version == runtime.inspection.version, let version = inspection.version,
+              let executableHash = inspection.executableSHA256, let frameworkHash = inspection.frameworkSHA256
+        else { throw NeAntikError.runtimeValidationFailed("Не удалось подтвердить движок для прокси.") }
+        let dataDirectory = paths.browserDataDirectory(for: profile.id), token = UUID()
+        let provisional = BrowserProcessLock(pid: 0, executablePath: runtime.executableURL.standardizedFileURL.path,
+            browserDataPath: dataDirectory.standardizedFileURL.path, createdAt: Date(),
+            schemaVersion: BrowserProcessLock.currentSchemaVersion, ownerToken: token, managerPID: getpid(), phase: .starting)
+        do {
+            try acquireLease(provisional, profileID: profile.id, at: paths.lockFile(for: profile.id),
+                browserDataDirectory: dataDirectory, expectedProfile: validatesPersistedProfiles ? profile : nil)
+        } catch where Self.isExistingPathError(error) {
+            reconcileProfile(profileID: profile.id)
+            guard !runningProfileIDs.contains(profile.id) else { throw NeAntikError.profileAlreadyRunning }
+            try acquireLease(provisional, profileID: profile.id, at: paths.lockFile(for: profile.id),
+                browserDataDirectory: dataDirectory, expectedProfile: validatesPersistedProfiles ? profile : nil)
+        }
+        managedLeaseOwners[profile.id] = token; managedBrowserDataDirectories[profile.id] = dataDirectory
+        pendingRelayLaunchTokens[profile.id] = token
+        var owner: ProxyRelayOwnerClient?
+        defer {
+            if pendingRelayLaunchTokens[profile.id] == token { pendingRelayLaunchTokens[profile.id] = nil }
+            if preparedRelayLaunches[profile.id]?.lock.ownerToken == token { preparedRelayLaunches[profile.id] = nil }
+        }
+        do {
+            let passwordTask = Task.detached(priority: .utility) { try keychain.proxyPassword(profileID: profile.id) }
+            let savedPassword = try await withTaskCancellationHandler(operation: { try await passwordTask.value }, onCancel: { passwordTask.cancel() })
+            try Task.checkCancellation()
+            guard let password = savedPassword else { throw NeAntikError.invalidProxy }
+            var bootstrap = ProxyRelayOwnerProtocol.Bootstrap(schemaVersion: 1, nonce: UUID(), profileID: profile.id,
+                sessionGeneration: token, profileRevision: profile.revision, kind: proxy.kind, host: proxy.host, port: proxy.port,
+                username: proxy.username, password: password, runtimeVersion: version,
+                runtimeExecutableSHA256: executableHash, runtimeFrameworkSHA256: frameworkHash,
+                configurationSHA256: ProxyRelayOwnerProtocol.Bootstrap.configurationDigest(profileID: profile.id,
+                    revision: profile.revision, kind: proxy.kind, host: proxy.host, port: proxy.port, username: proxy.username))
+            bootstrap.routeProbe = target.routeProbePlan
+            #if DEBUG
+            if let anchor = relayQualificationAnchorDER {
+                guard Bundle.main.bundleIdentifier == "app.neantik.desktop.relay-qualification",
+                      proxy.kind == .https, proxy.host == "localhost"
+                else { throw ProxyRelayOwnerProtocol.Failure.invalidBootstrap }
+                bootstrap.qualificationAnchorDER = anchor
+            }
+            #endif
+            let relayPaths = paths
+            let prepared = try await ProxyRelayOwnerClient.prepare(executable: managerExecutable, bootstrap: bootstrap,
+                registerChild: { fence in try fence.persist(paths: relayPaths, expected: provisional) })
+            owner = prepared; try Task.checkCancellation()
+            let relayReceipt = ProxyRelayLeaseReceipt(profileID: profile.id, sessionGeneration: token, ownerPID: prepared.processID,
+                ownerStartSeconds: prepared.processIdentity.generation.startSeconds,
+                ownerStartMicroseconds: prepared.processIdentity.generation.startMicroseconds, ownerUID: prepared.processIdentity.userID,
+                loopbackPort: prepared.port, runtimeExecutableSHA256: executableHash,
+                runtimeFrameworkSHA256: frameworkHash, configurationSHA256: bootstrap.configurationSHA256)
+            try relayReceipt.validate(ownerToken: token)
+            let ownedStarting = BrowserProcessLock(pid: 0, executablePath: provisional.executablePath,
+                browserDataPath: provisional.browserDataPath, createdAt: provisional.createdAt,
+                schemaVersion: 3, ownerToken: token, managerPID: getpid(), phase: .starting, relay: relayReceipt)
+            try writeOwnedLease(ownedStarting, profileID: profile.id, ownerToken: token, at: paths.lockFile(for: profile.id))
+            preparedRelayLaunches[profile.id] = PreparedRelayLaunch(profile: profile, executableURL: runtime.executableURL,
+                lock: try Self.decodeLock(Self.encodeLock(ownedStarting)), port: prepared.port,
+                routePolicySHA256: target.routeProbePlan?.policySHA256)
+            #if DEBUG
+            let fixtureArguments = ProxyRelayOwnerQualification.browserArguments(paths: paths)
+            #else
+            let fixtureArguments: [String] = []
+            #endif
+            try launch(profile: profile, runtime: runtime, preparationReceipt: preparationReceipt, additionalArguments: fixtureArguments, startURLOverride: try target.startURLOverride(relayPort: prepared.port))
+            guard let process = processes[profile.id], process.isRunning else { throw NeAntikError.processLaunchFailed("") }
+            try await prepared.bind(browserPID: process.processIdentifier)
+            try Task.checkCancellation()
+            // launch() has already committed its running lease. Recheck that
+            // no termination/reconcile replaced it across the binding await.
+            guard let receipt = managedSessionReceipts[profile.id], receipt.generation == token,
+                  receipt.matches(try ManagedSessionLeaseReader.read(paths: paths, profileID: profile.id)), process.isRunning
+            else { throw NeAntikError.processLaunchFailed("") }
+            #if DEBUG
+            try await ProxyRelayOwnerQualification.pauseBeforeActivationIfRequested(process: process, owner: prepared, runtime: inspection, paths: paths)
+            try ProxyRelayOwnerQualification.mutateBeforeActivationIfRequested(profile: profile, paths: paths)
+            #endif
+            guard preparationReceipt.authorizes(profile) else { throw NeAntikError.invalidProxy }
+            try await prepared.activate(profile: validatesPersistedProfiles ? profile : nil,
+                                        paths: validatesPersistedProfiles ? paths : nil,
+                                        expectedLease: validatesPersistedProfiles ? receipt.lock : nil)
+            try Task.checkCancellation()
+            #if DEBUG
+            try await ProxyRelayOwnerQualification.terminateAfterActivationIfRequested(process: process, paths: paths)
+            #endif
+            // The activation await can resume after stop/termination consumed
+            // this session. Never publish success or retain a stale owner then.
+            guard process.isRunning, processes[profile.id] === process,
+                  managedLeaseOwners[profile.id] == token,
+                  let currentReceipt = managedSessionReceipts[profile.id], currentReceipt.generation == token,
+                  currentReceipt.lock == receipt.lock else { throw NeAntikError.processLaunchFailed("") }
+            try paths.withProcessLockGuard(for: profile.id) {
+                guard currentReceipt.matches(try ManagedSessionLeaseReader.read(paths: paths, profileID: profile.id))
+                else { throw NeAntikError.processLaunchFailed("") }
+            }
+            activeRelayOwners[profile.id] = prepared
+        } catch {
+            let cleanupConfirmed: Bool
+            if let owner { cleanupConfirmed = await owner.abandon() }
+            else { cleanupConfirmed = (error as? ProxyRelayOwnerClient.Failure)?.requiresCleanupRecovery != true }
+            if !cleanupConfirmed, let owner { activeRelayOwners[profile.id] = owner }
+            if managedLeaseOwners[profile.id] == token {
+                if processes[profile.id]?.isRunning == true { stop(profileID: profile.id) }
+                else if cleanupConfirmed {
+                    removeLockIfOwned(profileID: profile.id, ownerToken: token)
+                    managedLeaseOwners[profile.id] = nil; managedBrowserDataDirectories[profile.id] = nil
+                }
+            }
+            guard cleanupConfirmed else {
+                if let fence = (error as? ProxyRelayOwnerClient.Failure)?.pendingFence {
+                    await retainUnconfirmedRelayStartup(fence, expectedLease: provisional)
+                }
+                let message = "Не удалось подтвердить остановку прокси. Профиль заблокирован; закрой его браузер и перезапусти NeAntik."
+                registerRecovery(profileID: profile.id, lockURL: paths.lockFile(for: profile.id),
+                    expectedBrowserDataDirectory: dataDirectory,
+                    removableSnapshot: currentLeaseSnapshot(profileID: profile.id, managedOwner: token, externalLock: nil),
+                    blockingManagerPID: nil, cleanupAuthority: .managedOwner(token),
+                    deferInitialResolution: true, message: message)
+                throw ProxyRelayOwnerClient.Failure.cleanupUnconfirmed((error as? ProxyRelayOwnerClient.Failure)?.pendingFence)
+            }
+            if error is CancellationError { throw CancellationError() }
+            throw NeAntikError.processLaunchFailed("")
+        }
+    }
+
+    private func unconfirmedRelayOwnersAreAbsent(profileID: UUID) -> Bool {
+        let owned = unconfirmedRelayOwnerFences.filter { $0.value.profileID == profileID }
+        guard owned.values.allSatisfy({ $0.ownerIsAbsent(inspect: ProxyRelaySocketOwnerInspector.processIdentity,
+                                                      isAlive: processLivenessValidator) }) else { return false }
+        for token in owned.keys { unconfirmedRelayOwnerFences[token] = nil }
+        return true
+    }
+
+    /// Preserve cleanup ownership even when the pre-secret durable write
+    /// fails. A transient failure is retried; recovery never assumes absence.
+    func retainUnconfirmedRelayStartup(_ fence: ProxyRelayPendingOwnerFence, expectedLease: BrowserProcessLock) async {
+        guard expectedLease.phase == .starting, expectedLease.pid == 0,
+              expectedLease.ownerToken == fence.sessionGeneration,
+              expectedLease.browserDataPath == paths.browserDataDirectory(for: fence.profileID).standardizedFileURL.path,
+              (try? fence.validate(ownerToken: expectedLease.ownerToken)) != nil else { return }
+        unconfirmedRelayOwnerFences[fence.sessionGeneration] = fence
+        let relayPaths = paths
+        _ = try? await Task.detached { try fence.persist(paths: relayPaths, expected: expectedLease) }.value
+    }
+
+    #if DEBUG
+    private var relayQualificationAnchorDER: Data?
+    func relayQualificationSetTLS(anchorDER: Data) throws {
+        guard Bundle.main.bundleIdentifier == "app.neantik.desktop.relay-qualification",
+              CommandLine.arguments.count == 2, CommandLine.arguments[1] == ProxyRelayOwnerQualification.argument,
+              paths.rootDirectory.lastPathComponent.hasPrefix("neantik-relay-owner-qualification-")
+        else { throw ProxyRelayOwnerProtocol.Failure.invalidBootstrap }
+        _ = try ProxyRelayTLSQualification.Configuration(anchorDER: anchorDER)
+        relayQualificationAnchorDER = anchorDER
+    }
+    func relayQualificationHasAdopted(profileID: UUID) -> Bool {
+        Bundle.main.bundleIdentifier == "app.neantik.desktop.relay-qualification" && reconcileTask == nil &&
+            externalLocks[profileID] != nil && !externalUnverifiedProfileIDs.contains(profileID) && runningProfileIDs.contains(profileID)
+    }
+    func relayQualificationReceipt(profileID: UUID) -> (browserPID: pid_t, ownerPID: pid_t, port: UInt16)? {
+        guard Bundle.main.bundleIdentifier == "app.neantik.desktop.relay-qualification",
+              let browser = processes[profileID], browser.isRunning, let owner = activeRelayOwners[profileID]
+        else { return nil }
+        return (browser.processIdentifier, owner.processID, owner.port)
+    }
+    #endif
 
     func launch(
         profile: BrowserProfile,
@@ -1421,24 +2406,27 @@ final class BrowserProcessManager: ObservableObject {
             FingerprintAuditLaunchReservation? = nil,
         purpose: BrowserLaunchPurpose = .normal
     ) throws {
-        let concurrentProfileCount = Self.confirmedConcurrentProfileCount(
-            runningProfileIDs.map { processState(for: $0) }
-        )
-        guard concurrentProfileCount < Self.maximumConcurrentProfiles else {
-            throw NeAntikError.concurrentLaunchLimitReached(
-                Self.maximumConcurrentProfiles
-            )
-        }
-        guard !runningProfileIDs.contains(profile.id) else {
+        guard !ephemeralQuitPending else { throw NeAntikError.processLaunchFailed("") }
+        guard profile.engine == .chromium else { throw NeAntikError.invalidProfile }
+        try BrowserLaunchPolicy.validatePrivacyPolicy(profile, runtime: runtime)
+        try BrowserLaunchPolicy.validateFontPolicy(profile, runtime: runtime)
+        try launchAdmission.requireSafePressure()
+        guard !runningProfileIDs.contains(profile.id),
+              !ephemeralCleanupPending.contains(profile.id),
+              !ephemeralCleanupFailures.contains(profile.id) else {
             throw NeAntikError.profileAlreadyRunning
         }
         guard profile.proxy?.isValid != false else {
             throw NeAntikError.invalidProxy
         }
+        // Chromium's native SOCKS transport cannot authenticate. Only the
+        // prepared, owned relay path may launch this configuration.
+        if profile.proxy?.kind == .socks5, profile.proxy?.username.isEmpty == false,
+           preparedRelayLaunches[profile.id] == nil { throw NeAntikError.invalidProxy }
         guard !profile.isArchived else {
             throw NeAntikError.profileArchived
         }
-        if profile.proxy != nil, purpose == .normal || purpose == .clean {
+        if profile.proxy != nil, purpose == .normal {
             guard let preparationReceipt,
                   preparationReceipt.authorizes(profile),
                   consumedProxyPreparationKeys.insert(
@@ -1448,34 +2436,31 @@ final class BrowserProcessManager: ObservableObject {
                 throw NeAntikError.proxyPreparationRequired
             }
         }
-        let cleanDirectory: URL? = purpose == .clean && browserDataDirectoryOverride == nil
-            ? FileManager.default.temporaryDirectory
-                .appendingPathComponent(
-                    "NeAntik-clean-\(profile.id.uuidString)-\(UUID().uuidString)",
-                    isDirectory: true
-                )
-            : nil
         let browserDataDirectory =
-            browserDataDirectoryOverride ?? cleanDirectory ??
+            browserDataDirectoryOverride ??
             paths.browserDataDirectory(for: profile.id)
         let ownsFreshFingerprintAuditDirectory: Bool
+        let fingerprintDirectoryCustody: FingerprintAuditDirectoryCustody?
         switch purpose {
-        case .normal, .clean:
+        case .normal:
             guard fingerprintAuditReservation == nil else {
                 throw NeAntikError.fingerprintAuditFailed(
                     "Резерв проверки нельзя использовать для обычного запуска."
                 )
             }
-            ownsFreshFingerprintAuditDirectory = purpose == .clean
+            ownsFreshFingerprintAuditDirectory = false
+            fingerprintDirectoryCustody = nil
         case let .fingerprintAudit(httpLoopbackPort):
             guard let reservation = fingerprintAuditReservation,
                   let browserDataDirectoryOverride,
                   let startURLOverride,
                   reservation.httpLoopbackPort == httpLoopbackPort,
-                  reservation.dataDirectory ==
-                    browserDataDirectoryOverride.standardizedFileURL,
+                  (reservation.dataDirectory == browserDataDirectoryOverride.standardizedFileURL ||
+                    (releaseAuditBrowserIsolation != nil && reservation.dataDirectory.standardizedFileURL ==
+                        browserDataDirectoryOverride.standardizedFileURL)),
                   reservation.startURL == startURLOverride,
                   fingerprintAuditReservations[reservation.id] == reservation,
+                  let custody = fingerprintAuditDirectoryCustody[reservation.id],
                   Self.fingerprintAuditArgumentsAreSafe(
                       additionalArguments
                   )
@@ -1484,7 +2469,11 @@ final class BrowserProcessManager: ObservableObject {
                     "Локальный запуск проверки не соответствует своему резерву."
                 )
             }
+            do { try custody.validate() }
+            catch { throw NeAntikError.fingerprintAuditFailed("Временный каталог проверки изменился. Повторите проверку.") }
+            fingerprintDirectoryCustody = custody
             fingerprintAuditReservations[reservation.id] = nil
+            fingerprintAuditDirectoryCustody[reservation.id] = nil
             ownsFreshFingerprintAuditDirectory = true
         }
         let profileDirectoryExistedBeforeLaunch =
@@ -1497,19 +2486,24 @@ final class BrowserProcessManager: ObservableObject {
         let process = Process()
         let launchNow = Date()
         process.executableURL = runtime.executableURL
+        let auditStorageArguments = try releaseAuditBrowserIsolation?.arguments(paths: paths, browserDataDirectory: browserDataDirectory)
+        let storageArguments = auditStorageArguments ?? KeychainStore.disposableBrowserArguments(
+            environment: NeAntikApplicationEnvironment.resolve(bundleIdentifier: Bundle.main.bundleIdentifier,
+                environment: ProcessInfo.processInfo.environment), paths: paths)
         process.arguments = BrowserLaunchBuilder.arguments(
             profile: profile,
             browserDataDirectory: browserDataDirectory,
             runtimeCapabilities: runtime.capabilities,
             additionalArguments: additionalArguments,
             startURLOverride: startURLOverride,
+            proxyTransportOverride: preparedRelayLaunches[profile.id]?.port,
             now: launchNow,
             purpose: purpose
-        )
+        ) + storageArguments
         process.environment = BrowserLaunchBuilder.environment(
             profile: profile,
             runtimeCapabilities: runtime.capabilities,
-            now: launchNow
+            now: launchNow, purpose: purpose
         )
         process.currentDirectoryURL =
             browserDataDirectoryOverride == nil
@@ -1520,13 +2514,18 @@ final class BrowserProcessManager: ObservableObject {
         process.standardError = FileHandle.nullDevice
         process.terminationHandler = { [weak self] process in
             Task { @MainActor in
+                try? self?.appendDiagnostic(
+                    "browser_exit reason=\(process.terminationReason.rawValue) status=\(process.terminationStatus)",
+                    to: logURL
+                )
                 self?.handleTermination(profileID: profile.id, process: process)
             }
         }
 
-        let ownerToken = UUID()
+        let preparedRelay = preparedRelayLaunches[profile.id]
+        let ownerToken = preparedRelay?.lock.ownerToken ?? UUID()
         let lockURL = paths.lockFile(for: profile.id)
-        let createdAt = Date()
+        let createdAt = preparedRelay?.lock.createdAt ?? Date()
         let provisionalLock = BrowserProcessLock(
             pid: 0,
             executablePath: runtime.executableURL.standardizedFileURL.path,
@@ -1535,17 +2534,31 @@ final class BrowserProcessManager: ObservableObject {
             schemaVersion: BrowserProcessLock.currentSchemaVersion,
             ownerToken: ownerToken,
             managerPID: getpid(),
-            phase: .starting
+            phase: .starting,
+            relay: preparedRelay?.lock.relay
         )
         do {
+            if let preparedRelay {
+                guard purpose == .normal, browserDataDirectoryOverride == nil,
+                      preparedRelay.profile == profile,
+                      preparedRelay.executableURL == runtime.executableURL,
+                      managedLeaseOwners[profile.id] == ownerToken,
+                      try ManagedSessionLeaseReader.read(paths: paths, profileID: profile.id) == preparedRelay.lock
+                else { throw NeAntikError.processLaunchFailed("") }
+                if validatesPersistedProfiles {
+                    try ProfileStore.withValidatedLaunchSnapshot(profile, paths: paths, operation: {})
+                }
+            } else {
             try acquireLease(
                 provisionalLock,
                 profileID: profile.id,
                 at: lockURL,
                 browserDataDirectory: browserDataDirectory,
+                expectedProfile: purpose == .normal && validatesPersistedProfiles ? profile : nil,
                 allowsUnknownBrowserDataInspection:
                     ownsFreshFingerprintAuditDirectory
             )
+            }
         } catch where Self.isExistingPathError(error) {
             reconcileProfile(profileID: profile.id)
             guard !runningProfileIDs.contains(profile.id) else {
@@ -1557,39 +2570,63 @@ final class BrowserProcessManager: ObservableObject {
                     profileID: profile.id,
                     at: lockURL,
                     browserDataDirectory: browserDataDirectory,
+                    expectedProfile: purpose == .normal && validatesPersistedProfiles ? profile : nil,
                     allowsUnknownBrowserDataInspection:
                         ownsFreshFingerprintAuditDirectory
                 )
             } catch where Self.isExistingPathError(error) {
                 reconcileProfile(profileID: profile.id)
                 throw NeAntikError.profileAlreadyRunning
+            } catch let error as ProfileProcessBusyError {
+                throw error
             } catch {
-                throw NeAntikError.processLaunchFailed(
-                    error.localizedDescription
-                )
+                // File-system errors can contain absolute paths or other
+                // implementation details. Keep them out of the user-facing
+                // error channel; the private diagnostic log records only the
+                // bounded event below.
+                throw NeAntikError.processLaunchFailed("")
             }
         } catch let error as NeAntikError {
             throw error
+        } catch let error as ProfileProcessBusyError {
+            throw error
         } catch {
-            throw NeAntikError.processLaunchFailed(error.localizedDescription)
+            throw NeAntikError.processLaunchFailed("")
         }
-        managed[profile.id] = ManagedBrowserProcess(
-            ownerToken: ownerToken, browserDataDirectory: browserDataDirectory
-        )
-        if let cleanDirectory {
-            transientBrowserDataDirectories[profile.id] = cleanDirectory
-        }
-        if browserDataDirectoryOverride != nil && cleanDirectory == nil &&
+        managedLeaseOwners[profile.id] = ownerToken
+        managedBrowserDataDirectories[profile.id] = browserDataDirectory
+        if browserDataDirectoryOverride != nil &&
             !profileDirectoryExistedBeforeLaunch {
             transientEmptyProfileDirectoryIDs.insert(profile.id)
         }
 
         do {
             try prepareDiagnosticLog(logURL)
+            try fingerprintDirectoryCustody?.validate()
+            let auditDirectoryCustody = try releaseAuditBrowserIsolation?.validateBeforeExec(paths: paths, browserDataDirectory: browserDataDirectory)
+            try BrowserLaunchPolicy.validatePrivacyPolicy(profile, runtime: runtime)
+            try BrowserLaunchPolicy.validateFontPolicy(profile, runtime: runtime)
+            if profile.privacyPolicy.retention == .ephemeral {
+                guard purpose == .normal, browserDataDirectoryOverride == nil else {
+                    throw EphemeralProfileStorageError()
+                }
+                managedEphemeralProfiles[profile.id] = profile
+                try EphemeralProfileStorage.prepareLaunch(paths: paths, profile: profile)
+            }
+            if runtime.supportsProfilePrivacy && purpose == .normal {
+                guard let resources = Bundle.main.resourceURL else { throw SiteProtectionPreparationError() }
+                let protection = try SiteProtectionBundle.prepare(
+                    resources: resources.appendingPathComponent("SiteProtection", isDirectory: true),
+                    browserData: browserDataDirectory, profile: profile)
+                process.arguments = BrowserLaunchBuilder.arguments(profile: profile,
+                    browserDataDirectory: browserDataDirectory, runtimeCapabilities: runtime.capabilities,
+                    additionalArguments: additionalArguments, startURLOverride: startURLOverride,
+                    proxyTransportOverride: preparedRelayLaunches[profile.id]?.port,
+                    siteProtectionDirectory: protection.directory, now: launchNow, purpose: purpose) + storageArguments
+            }
             try process.run()
-            managed[profile.id]?.process = process
-            managed[profile.id]?.startedAt = createdAt
-            setStopPhase(.idle, profileID: profile.id)
+            withExtendedLifetime((auditDirectoryCustody, fingerprintDirectoryCustody)) {}
+            processes[profile.id] = process
             runningProfileIDs.insert(profile.id)
             try? appendDiagnostic(
                 "browser_launch version=\(runtime.inspection.version ?? "unknown")",
@@ -1603,7 +2640,8 @@ final class BrowserProcessManager: ObservableObject {
                 schemaVersion: BrowserProcessLock.currentSchemaVersion,
                 ownerToken: ownerToken,
                 managerPID: getpid(),
-                phase: .running
+                phase: .running,
+                relay: preparedRelay?.lock.relay
             )
             try writeOwnedLease(
                 lock,
@@ -1611,41 +2649,55 @@ final class BrowserProcessManager: ObservableObject {
                 ownerToken: ownerToken,
                 at: lockURL
             )
-            workplaceExitNotices.removeValue(forKey: profile.id)
+            if let reservation = fingerprintAuditReservation, let custody = fingerprintDirectoryCustody {
+                fingerprintAuditSettlementPermits[reservation.id] = .init(reservation: reservation,
+                    profileID: profile.id, ownerToken: ownerToken, custody: custody)
+            }
+            let route: BrowserSessionObservation.Route
+            switch profile.proxy?.kind {
+            case nil: route = .direct
+            case .some(.http): route = .httpProxy
+            case .some(.https): route = .httpsProxy
+            case .some(.socks5): route = .socks5Proxy
+            }
+            managedSessionReceipts[profile.id] = ManagedBrowserSessionReceipt(
+                // Lease JSON uses ISO8601 seconds. Bind to the actual encoded
+                // representation, not an in-memory Date with fractional time.
+                generation: ownerToken, lock: try Self.decodeLock(Self.encodeLock(lock)),
+                runtimeVersion: ManagedBrowserSessionReceipt.safeRuntimeVersion(runtime.inspection.version),
+                configuredRoute: route, profileRevision: profile.revision,
+                browserIdentity: ProxyRelaySocketOwnerInspector.processIdentity(process.processIdentifier),
+                routePolicySHA256: preparedRelay?.routePolicySHA256
+            )
         } catch {
             if process.isRunning {
-                managed[profile.id]?.startupFailed = true
-                managedProcessTerminator(process)
+                _ = managedProcessTerminator(process)
             }
             if process.isRunning {
-                managed[profile.id]?.process = process
+                processes[profile.id] = process
                 runningProfileIDs.insert(profile.id)
-                throw NeAntikError.processLaunchFailed(
-                    error.localizedDescription
-                )
+                throw NeAntikError.processLaunchFailed("")
             }
-            removeManagedProcess(profileID: profile.id)
+            processes.removeValue(forKey: profile.id)
             runningProfileIDs.remove(profile.id)
-            removeLockIfOwned(
+            managedLeaseOwners.removeValue(forKey: profile.id)
+            managedBrowserDataDirectories.removeValue(forKey: profile.id)
+            managedSessionReceipts.removeValue(forKey: profile.id)
+            let leaseCleanup = removeLockIfOwned(
                 profileID: profile.id,
                 ownerToken: ownerToken
             )
+            if leaseCleanup == .removedOrMissing {
+                beginEphemeralCleanupIfNeeded(profile: profile, onlyIfPending: true)
+            }
             cleanupTransientProfileDirectoryIfSafe(profileID: profile.id)
-            cleanupTransientBrowserDataDirectoryIfSafe(profileID: profile.id)
-            recordBrowserExit(.startupFailure, at: now())
             try? appendDiagnostic(
-                "browser_exit classification=" +
-                    BrowserExitClassification.startupFailure.rawValue,
+                "browser_launch_failed reason=process-launch-error",
                 to: logURL
             )
-            throw NeAntikError.processLaunchFailed(error.localizedDescription)
+            if error is UnsupportedBrowserFontPolicyError { throw error }
+            throw NeAntikError.processLaunchFailed("")
         }
-    }
-
-    static func confirmedConcurrentProfileCount(
-        _ states: [BrowserProfileProcessState]
-    ) -> Int {
-        states.count(where: \.isConfirmedRunning)
     }
 
     private static func fingerprintAuditArgumentsAreSafe(
@@ -1659,34 +2711,624 @@ final class BrowserProcessManager: ObservableObject {
             "--disable-background-networking",
             "--disable-component-update",
             "--disable-sync",
-            "--window-size=1200,800"
+            "--window-size=1200,800",
+            "--single-process",
+            "--no-sandbox"
         ]
         return arguments.count == Set(arguments).count &&
             arguments.allSatisfy(allowed.contains)
     }
 
-    func stop(profileID: UUID) {
-        if let process = managed[profileID]?.process {
-            if process.isRunning {
-                // SIGSTOP pauses a process. Resume it before asking Chromium
-                // to terminate so the normal graceful shutdown path remains
-                // available and the profile lock can be released safely.
-                if memorySavingSuspendedProfileIDs.contains(profileID) {
-                    _ = process.resume()
-                    memorySavingSuspendedProfileIDs.remove(profileID)
+    private static func requestGracefulQuit(_ process: Process) -> Bool {
+        guard process.isRunning,
+              let application = NSRunningApplication(processIdentifier: process.processIdentifier),
+              let executable = application.executableURL,
+              executable.resolvingSymlinksInPath() == process.executableURL?.resolvingSymlinksInPath()
+        else { return false }
+        // SIGTERM can discard Chromium's pending cookie/localStorage writes.
+        // A refused quit must keep the profile locked, never force termination.
+        return application.terminate()
+    }
+
+    /// A spawned process can be alive before Launch Services can accept quit.
+    /// Do not expose a PID or treat launch registration as ownership evidence.
+    func managedBrowserReadyForQuit(profileID: UUID) -> Bool {
+        guard let process = processes[profileID], process.isRunning,
+              let application = NSRunningApplication(processIdentifier: process.processIdentifier),
+              application.isFinishedLaunching,
+              application.executableURL?.resolvingSymlinksInPath() == process.executableURL?.resolvingSymlinksInPath()
+        else { return false }
+        return true
+    }
+
+    /// Launch bookkeeping, not page/network measurement. Adopted processes
+    /// have no such evidence, and later editor revisions invalidate it.
+    func privacyParametersWereSent(profile: BrowserProfile, runtime: BrowserRuntime?) -> Bool {
+        guard profile.privacyPolicy != .legacy, runtime?.supportsProfilePrivacy == true,
+              let process = processes[profile.id], process.isRunning,
+              let receipt = managedSessionReceipts[profile.id], receipt.matchesProfileRevision(profile.revision),
+              receipt.lock.executablePath == runtime?.executableURL.standardizedFileURL.path,
+              let identity = receipt.browserIdentity,
+              ProxyRelaySocketOwnerInspector.processIdentity(process.processIdentifier) == identity else { return false }
+        return true
+    }
+
+    /// Observe only a session this manager launched. Disk reads and process
+    /// inventory run off MainActor; a changed generation never returns old data.
+    func observeManagedBrowserSession(profileID: UUID, expectedRevision: UInt64? = nil) async throws -> BrowserSessionObservation {
+        guard let process = processes[profileID], process.isRunning,
+              let receipt = managedSessionReceipts[profileID]
+        else { return .unavailable(.notOwned) }
+        let paths = paths
+        let task = Task.detached(priority: .utility) {
+            try Task.checkCancellation()
+            let verified = try paths.withProcessLockGuard(for: profileID) {
+                let current = try ManagedSessionLeaseReader.read(paths: paths, profileID: profileID)
+                guard receipt.matches(current) else { return false }
+                return Self.inspectProcess(current) == .expected
+            }
+            guard verified else { return (false, Optional<ProxyRelayObservationProtocol.Observation>.none) }
+            var transport: ProxyRelayObservationProtocol.Observation?
+            do {
+                if let binding = try receipt.relayBinding(profileID: profileID, expectedRevision: expectedRevision),
+                   let executable = Bundle.main.executableURL, let identifier = Bundle.main.bundleIdentifier {
+                    let team = try ProxyRelayExpectedCode.teamIdentifier(at: executable, expectedIdentifier: identifier)
+                    let code = try ProxyRelayExpectedCode.qualifiedPin(at: executable, expectedIdentifier: identifier, expectedTeamIdentifier: team)
+                    // Never hold the filesystem guard while waiting for IPC or
+                    // Security. An observation failure does not stop a browser.
+                    transport = try ProxyRelayObservationSocket.queryObservation(binding: binding, expectedOwnerCode: code,
+                        expectedPolicySHA256: receipt.routePolicySHA256)
                 }
-                guard stopPhase(for: profileID) == .idle else {
+            } catch is CancellationError { throw CancellationError() }
+            catch { transport = nil }
+            try Task.checkCancellation()
+            let unchanged = try paths.withProcessLockGuard(for: profileID) {
+                let current = try ManagedSessionLeaseReader.read(paths: paths, profileID: profileID)
+                guard receipt.matches(current), Self.inspectProcess(current) == .expected else { return false }
+                if let expected = receipt.browserIdentity {
+                    return ProxyRelayObservationProtocol.ProcessBinding(pid: current.pid, identity: expected)
+                        .matches(ProxyRelaySocketOwnerInspector.processIdentity(current.pid))
+                }
+                return true
+            }
+            return (unchanged, unchanged ? transport : nil)
+        }
+        let result: (Bool, ProxyRelayObservationProtocol.Observation?)
+        do {
+            result = try await withTaskCancellationHandler {
+                try await task.value
+            } onCancel: { task.cancel() }
+        } catch is CancellationError { throw CancellationError() }
+        catch { return .unavailable(.unverified) }
+        try Task.checkCancellation()
+        guard result.0, processes[profileID] === process, process.isRunning,
+              managedSessionReceipts[profileID] == receipt,
+              managedLeaseOwners[profileID] == receipt.lock.ownerToken
+        else { return .unavailable(.unverified) }
+        return BrowserSessionObservation(
+            state: .observed, ownership: .thisSession,
+            readyForGracefulQuit: managedBrowserReadyForQuit(profileID: profileID),
+            runtimeVersion: receipt.runtimeVersion,
+            configuredRoute: receipt.configuredRoute,
+            sessionGeneration: receipt.generation, relayTransport: result.1?.activity,
+            sampledRouteProbe: result.1?.routeProbe?.current(), launchContext: receipt
+        )
+    }
+
+    func sessionObservationIsCurrent(_ observation: BrowserSessionObservation, profileID: UUID) -> Bool {
+        guard observation.state == .observed, let generation = observation.sessionGeneration,
+              let process = processes[profileID], process.isRunning,
+              managedSessionReceipts[profileID]?.generation == generation,
+              observation.launchContext == managedSessionReceipts[profileID],
+              managedLeaseOwners[profileID] == generation
+        else { return false }
+        return true
+    }
+
+    func recordManagedLaunchMetadata(from original: BrowserProfile, to recorded: BrowserProfile) {
+        guard original.id == recorded.id, let process = processes[original.id], process.isRunning,
+              var receipt = managedSessionReceipts[original.id],
+              managedLeaseOwners[original.id] == receipt.generation,
+              (try? receipt.recordLaunchMetadata(from: original, to: recorded)) == true else { return }
+        managedSessionReceipts[original.id] = receipt
+    }
+
+    /// Revalidate after an independent metadata/network await. A snapshot is
+    /// sampled evidence, never a perpetual green status for a dead/reused owner.
+    func revalidateManagedBrowserObservation(_ observation: BrowserSessionObservation, profileID: UUID,
+                                             expectedProfile: BrowserProfile) async throws -> Bool {
+        guard expectedProfile.id == profileID else { return false }
+        guard sessionObservationIsCurrent(observation, profileID: profileID), let receipt = observation.launchContext else { return false }
+        guard receipt.matchesProfileRevision(expectedProfile.revision) else { return false }
+        let paths = paths
+        let task = Task.detached(priority: .utility) {
+            let leaseMatches = try paths.withProcessLockGuard(for: profileID) {
+                let current = try ManagedSessionLeaseReader.read(paths: paths, profileID: profileID)
+                return receipt.matches(current) && Self.inspectProcess(current) == .expected
+            }
+            guard leaseMatches else { return false }
+            if observation.relayTransport != nil {
+                guard let binding = try receipt.relayBinding(profileID: profileID, expectedRevision: expectedProfile.revision), binding.processesAreCurrent,
+                      let executable = Bundle.main.executableURL, let identifier = Bundle.main.bundleIdentifier,
+                      let owner = ProxyRelaySocketOwnerInspector.processIdentity(binding.owner.pid) else { return false }
+                let team = try ProxyRelayExpectedCode.teamIdentifier(at: executable, expectedIdentifier: identifier)
+                let code = try ProxyRelayExpectedCode.qualifiedPin(at: executable, expectedIdentifier: identifier, expectedTeamIdentifier: team)
+                guard ProxyRelayLiveCodeVerifier.matches(processID: binding.owner.pid, expectedProcess: owner, expectedCode: code), binding.processesAreCurrent else { return false }
+            }
+            try Task.checkCancellation()
+            // The independent metadata refresh preceded this asynchronous
+            // check. Re-read persisted configuration with process -> metadata
+            // guards after Security; no IPC/network wait holds either guard.
+            return try ManagedSessionLeaseReader.matchesPersistedContext(paths: paths, profile: expectedProfile, receipt: receipt)
+        }
+        let valid: Bool
+        do { valid = try await withTaskCancellationHandler(operation: { try await task.value }, onCancel: { task.cancel() }) }
+        catch is CancellationError { throw CancellationError() }
+        catch { return false }
+        try Task.checkCancellation()
+        return valid && sessionObservationIsCurrent(observation, profileID: profileID)
+    }
+
+    @discardableResult func launchWebKitProfile(_ profile: BrowserProfile) throws -> UUID {
+        guard BrowserEngine.webkit.isAvailableInBuild else {
+            throw WebKitProfileError.unsupported("WebKit выключен в этой версии NeAntik. Профиль и его данные сохранены; запускайте его в сборке с поддержкой WebKit.")
+        }
+        observeWebKitTerminationIfNeeded()
+        try WebKitProfilePolicy.validate(profile)
+        try launchAdmission.requireSafePressure()
+        guard !webKitQuitPending, webKitBrowsers[profile.id] == nil,
+              processState(for: profile.id) == .stopped else { throw NeAntikError.profileAlreadyRunning }
+        let lease = try paths.acquireWebKitSessionGuard(for: profile.id)
+        do {
+            let metadataLease = try paths.acquireWebKitMetadataGuard(for: profile.id)
+            let sessionStore = WebKitSessionStore(paths: paths)
+            let generation = UUID()
+            let makeBrowser = { [weak self] in
+                // Reconciliation can lag after a crash. The held process and
+                // metadata guards must check the fence before any WKWebView.
+                guard try sessionStore.paths.privateFileEntryKind(sessionStore.paths.profileDeletionTombstone(for: profile.id)) == .missing else { throw BrowserProfileDeletedError() }
+                var restored: WebKitSessionSnapshot?, warning: String?
+                if profile.startupMode == .restoreSession {
+                    do { restored = try sessionStore.load(for: profile.id) }
+                    catch { warning = "Сохранённые вкладки недоступны. Открыта стартовая страница; другие профили не изменены." }
+                }
+                return try WebKitProfileBrowser(profile: profile, lease: lease, metadataLease: metadataLease,
+                    sessionGeneration: generation, sessionStore: sessionStore, restoredSession: restored, sessionWarning: warning,
+                    onSessionSaveError: { [weak self] in self?.lastError = Self.webKitSessionSaveFailureMessage }) { [weak self] in
+                guard let self, self.webKitBrowsers[profile.id]?.sessionGeneration == generation else { return }
+                self.webKitBrowsers.removeValue(forKey: profile.id)
+                self.runningProfileIDs.remove(profile.id)
+                if !self.hasFailedWebKitSessionSave, self.lastError == Self.webKitSessionSaveFailureMessage { self.lastError = nil }
+                self.webKitDidClose?(profile.id, generation)
+                }
+            }
+            let browser = try validatesPersistedProfiles
+                ? ProfileStore.withValidatedLaunchSnapshot(profile, paths: paths, operation: makeBrowser)
+                : makeBrowser()
+            webKitBrowsers[profile.id] = browser
+            runningProfileIDs.insert(profile.id)
+            browser.show()
+            return generation
+        } catch { lease.release(); throw error }
+    }
+
+    /// System WebKit remains in-process. The isolated generation uses the
+    /// signed nested host and a profile-scoped broker; proxy profiles remain
+    /// refused while the runtime qualification switch is off.
+    @discardableResult
+    func launchWebKitProfileAsync(_ profile: BrowserProfile) async throws -> UUID {
+        guard profile.webKitRuntimeGeneration == .isolatedV1 else {
+            return try launchWebKitProfile(profile)
+        }
+        return try await launchIsolatedWebKitProfile(profile)
+    }
+
+    @discardableResult
+    private func launchIsolatedWebKitProfile(_ profile: BrowserProfile) async throws -> UUID {
+        guard BrowserEngine.webkit.isAvailableInBuild else {
+            throw WebKitProfileError.unsupported("WebKit выключен в этой версии NeAntik. Профиль и его данные сохранены; запускайте его в сборке с поддержкой WebKit.")
+        }
+        try WebKitProfilePolicy.validateConfiguration(profile)
+        guard profile.webKitRuntimeGeneration == .isolatedV1 else { throw NeAntikError.invalidProfile }
+        if profile.proxy != nil, !WebKitProxyFeature.launchEnabled {
+            throw WebKitProfileError.unsupported("Прокси WebKit пока отключён: маршрут ещё не прошёл квалификацию. Настройки сохранены, прямое подключение вместо прокси не выполняется.")
+        }
+        try launchAdmission.requireSafePressure()
+        guard !webKitQuitPending, webKitHostClients[profile.id] == nil,
+              !webKitHostStartingProfileIDs.contains(profile.id),
+              webKitBrowsers[profile.id] == nil,
+              processState(for: profile.id) == .stopped else {
+            throw NeAntikError.profileAlreadyRunning
+        }
+
+        // Reserve the profile before the first suspension so a concurrent
+        // launch cannot stage the same identity twice while the shared
+        // listener is starting.
+        webKitHostStartingProfileIDs.insert(profile.id)
+        var preserveRunningChild = false
+        defer {
+            if !preserveRunningChild {
+                webKitHostStartingProfileIDs.remove(profile.id)
+                webKitHostGenerations.removeValue(forKey: profile.id)
+                webKitHostUnexpectedExitGenerations.removeValue(forKey: profile.id)
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    await self.webKitLoopbackBrokerPool.stopIfIdle(
+                        self.webKitHostClients.isEmpty && self.webKitHostStartingProfileIDs.isEmpty)
+                }
+            }
+        }
+
+        let sessionGuard = try paths.acquireWebKitSessionGuard(for: profile.id)
+        let metadataGuard: PrivateFileGuardLease
+        do { metadataGuard = try paths.acquireWebKitMetadataGuard(for: profile.id) }
+        catch { sessionGuard.release(); throw error }
+        defer { metadataGuard.release(); sessionGuard.release() }
+
+        try ProfileStore.withValidatedLaunchSnapshot(profile, paths: paths) {}
+        guard try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: profile.id)) == .missing else {
+            throw BrowserProfileDeletedError()
+        }
+        let managerBundle = Bundle.main.bundleURL
+        let runtimePin = try WebKitHostCodeIdentity.pinnedRuntime(in: managerBundle)
+        guard runtimePin.supports(ProcessInfo.processInfo.operatingSystemVersion) else {
+            throw WebKitProfileError.unsupported(
+                "Этот отдельный WebKit runtime требует macOS \(runtimePin.minimumOSVersion). Chromium и системный WebKit доступны отдельно; профиль не запускался и данные не менялись.")
+        }
+        let runtimeSHA256 = runtimePin.webKitSHA256
+        let generation = UUID()
+        let session = WebKitHostIPC.Session(profileID: profile.id,
+            revision: profile.revision, generation: generation,
+            dataRoot: paths.rootDirectory.standardizedFileURL.path,
+            runtimeSHA256: runtimeSHA256)
+        try WebKitProfilePolicy.validateOwnedRuntime(profile, session: session)
+
+        let scope = WebKitRelayAuthority.Scope(profileID: profile.id,
+            storeID: profile.id, sessionID: generation, revision: profile.revision)
+        let route = try webKitRelayRoute(for: profile)
+        let handoff = WebKitHostLeaseHandoff(paths: paths, session: session,
+            sessionGuard: sessionGuard, metadataGuard: metadataGuard)
+        let broker = try await webKitLoopbackBrokerPool.acquire()
+        var client: WebKitHostClient?
+        webKitHostGenerations[profile.id] = generation
+
+        do {
+            guard !webKitQuitPending else { throw CancellationError() }
+            let capability = try broker.prepare(scope: scope, route: route)
+            let host = try await WebKitHostClient.launch(session: session,
+                registerChild: { pid, path in
+                    try handoff.register(childPID: pid, childExecutablePath: path)
+                },
+                forgetChild: { pid, childIsGone in
+                    try handoff.remove(childPID: pid, childIsGone: childIsGone)
+                },
+                onUnexpectedTermination: { [weak self] exitedSession, status in
+                    Task { @MainActor [weak self] in
+                        self?.webKitHostDidTerminate(exitedSession, status: status)
+                    }
+                })
+            client = host
+            guard !webKitQuitPending else {
+                guard await host.abort() else { throw WebKitHostClient.Failure.cleanupUnconfirmed }
+                client = nil
+                throw CancellationError()
+            }
+            let lease = try await host.configureRoute(capability, scope: scope, broker: broker)
+            try await host.activate(scope: scope, broker: broker, lease: lease)
+            let hostIsRunning = await host.isRunning
+            if webKitHostUnexpectedExitGenerations[profile.id] == generation || !hostIsRunning {
+                webKitHostUnexpectedExitGenerations.removeValue(forKey: profile.id)
+                await broker.revoke(scope)
+                guard await host.abort() else { throw WebKitHostClient.Failure.cleanupUnconfirmed }
+                client = nil
+                throw WebKitHostClient.Failure.childExited
+            }
+            guard !webKitQuitPending else {
+                try await host.close()
+                client = nil
+                throw CancellationError()
+            }
+            webKitHostClients[profile.id] = host
+            webKitHostBrokers[profile.id] = broker
+            webKitHostUnexpectedExitGenerations.removeValue(forKey: profile.id)
+            runningProfileIDs.insert(profile.id)
+            webKitHostStartingProfileIDs.remove(profile.id)
+            webKitHostGenerations.removeValue(forKey: profile.id)
+            preserveRunningChild = true
+            observeWebKitTerminationIfNeeded()
+            return generation
+        } catch {
+            WebKitQAImageFailureReceipt.recordStartup(error, root: paths.rootDirectory)
+            WebKitQAImageFailureReceipt.record(error, root: paths.rootDirectory)
+            handoff.releaseIfUnregistered()
+            await broker.revoke(scope)
+            if let client {
+                if await client.abort() {
+                    // Only this profile's route is revoked. Other sessions
+                    // keep using the shared listener.
+                } else {
+                    webKitHostClients[profile.id] = client
+                    webKitHostBrokers[profile.id] = broker
+                    runningProfileIDs.insert(profile.id)
+                    webKitHostStartingProfileIDs.remove(profile.id)
+                    webKitHostGenerations.removeValue(forKey: profile.id)
+                    preserveRunningChild = true
+                    lastError = "Изолированный WebKit-процесс не подтвердил остановку. Профиль остаётся занят, прямой маршрут не включается."
+                }
+            }
+            throw error
+        }
+    }
+
+    private func webKitRelayRoute(for profile: BrowserProfile) throws -> WebKitRelayAuthority.Route {
+        guard let proxy = profile.proxy else { return .direct }
+        let destination = try ProxyRelayDestination(host: proxy.host, port: proxy.port)
+        guard !proxy.username.isEmpty else {
+            return .proxy(kind: proxy.kind, upstream: destination, credentials: nil)
+        }
+        guard let password = try keychain.proxyPassword(profileID: profile.id), !password.isEmpty else {
+            throw NeAntikError.invalidProxy
+        }
+        let credentials = try ProxyRelayCredentials(username: proxy.username, password: password)
+        return .proxy(kind: proxy.kind, upstream: destination, credentials: credentials)
+    }
+
+    private static func webKitRelayScope(for session: WebKitHostIPC.Session)
+        -> WebKitRelayAuthority.Scope {
+        WebKitRelayAuthority.Scope(profileID: session.profileID,
+            storeID: session.profileID, sessionID: session.generation,
+            revision: session.revision)
+    }
+
+    private func observeWebKitTerminationIfNeeded() {
+        guard webKitTerminationObservation == nil else { return }
+        webKitTerminationObservation = NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)
+            .sink { [weak self] _ in
+                // AppKit sends this notification synchronously on main.
+                // A queued Task could run after application termination.
+                MainActor.assumeIsolated { self?.closeWebKitWindows() }
+            }
+    }
+
+    private func requestCloseWebKitHost(profileID: UUID, generation: UUID) {
+        guard let client = webKitHostClients[profileID],
+              client.session.generation == generation,
+              webKitHostStopTasks[profileID] == nil else { return }
+        let broker = webKitHostBrokers[profileID]
+        let fixtureRoot = paths.rootDirectory
+        webKitHostStopTasks[profileID] = Task { @MainActor [weak self] in
+            defer { self?.webKitHostStopTasks.removeValue(forKey: profileID) }
+            do {
+                try await client.close()
+                WebKitQAImageFailureReceipt.recordNavigationStage(
+                    await client.qaNavigationStage(), profileID: profileID,
+                    root: fixtureRoot)
+                WebKitQAImageFailureReceipt.recordWindowStage(
+                    await client.qaWindowStage(), profileID: profileID,
+                    root: fixtureRoot)
+                WebKitQAImageFailureReceipt.recordTLSStage(
+                    await client.qaTLSStage(), profileID: profileID,
+                    root: fixtureRoot)
+                #if NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_DIAGNOSTIC
+                if let broker {
+                    WebKitQAImageFailureReceipt.recordBrokerCounters(
+                        broker.qaCounters(), profileID: profileID,
+                        root: fixtureRoot)
+                }
+                #endif
+                guard let self,
+                      self.webKitHostClients[profileID]?.session.generation == generation else { return }
+                self.webKitHostClients.removeValue(forKey: profileID)
+                self.webKitHostBrokers.removeValue(forKey: profileID)
+                self.webKitHostSaveFailureProfileIDs.remove(profileID)
+                self.runningProfileIDs.remove(profileID)
+                if !self.hasFailedWebKitSessionSave,
+                   self.lastError == Self.webKitSessionSaveFailureMessage {
+                    self.lastError = nil
+                }
+                self.webKitDidClose?(profileID, generation)
+                await self.webKitLoopbackBrokerPool.stopIfIdle(
+                    self.webKitHostClients.isEmpty && self.webKitHostStartingProfileIDs.isEmpty)
+            } catch {
+                WebKitQAImageFailureReceipt.recordNavigationStage(
+                    await client.qaNavigationStage(), profileID: profileID,
+                    root: fixtureRoot)
+                WebKitQAImageFailureReceipt.recordWindowStage(
+                    await client.qaWindowStage(), profileID: profileID,
+                    root: fixtureRoot)
+                WebKitQAImageFailureReceipt.recordTLSStage(
+                    await client.qaTLSStage(), profileID: profileID,
+                    root: fixtureRoot)
+                #if NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_DIAGNOSTIC
+                if let broker {
+                    WebKitQAImageFailureReceipt.recordBrokerCounters(
+                        broker.qaCounters(), profileID: profileID,
+                        root: fixtureRoot)
+                }
+                #endif
+                WebKitQAImageFailureReceipt.recordCloseStage(
+                    await client.qaCloseStage(), root: fixtureRoot)
+                // A failed save/close is a stop-network event. Never leave the
+                // profile's route open while the child is unconfirmed.
+                await broker?.revoke(Self.webKitRelayScope(for: client.session))
+                if !(await client.isRunning), await client.abort(), let self,
+                   self.webKitHostClients[profileID]?.session.generation == generation {
+                    self.webKitHostClients.removeValue(forKey: profileID)
+                    self.webKitHostBrokers.removeValue(forKey: profileID)
+                    self.webKitHostSaveFailureProfileIDs.remove(profileID)
+                    self.runningProfileIDs.remove(profileID)
+                    self.lastError = "Окно WebKit завершилось без подтверждения сохранения. Данные профиля оставлены на месте; проверьте профиль перед повторным запуском."
+                    self.webKitDidClose?(profileID, generation)
+                    await self.webKitLoopbackBrokerPool.stopIfIdle(
+                        self.webKitHostClients.isEmpty && self.webKitHostStartingProfileIDs.isEmpty)
                     return
                 }
-                setStopPhase(
-                    .closing(requestedAt: now()),
-                    profileID: profileID
-                )
-                managedProcessTerminator(process)
-                scheduleManagedStopEscalation(
-                    profileID: profileID,
-                    process: process
-                )
+                self?.webKitHostSaveFailureProfileIDs.insert(profileID)
+                self?.lastError = Self.webKitSessionSaveFailureMessage
+            }
+        }
+    }
+
+    private func webKitHostDidTerminate(_ session: WebKitHostIPC.Session, status: Int32) {
+        let profileID = session.profileID
+        let currentGeneration = webKitHostClients[profileID]?.session.generation
+            ?? webKitHostGenerations[profileID]
+        switch WebKitHostTerminationPolicy.action(
+            exitedGeneration: session.generation,
+            currentGeneration: currentGeneration,
+            launchInProgress: webKitHostStartingProfileIDs.contains(profileID),
+            closeInProgress: webKitHostStopTasks[profileID] != nil) {
+        case .ignore:
+            return
+        case .deferUntilLaunchSettles:
+            webKitHostUnexpectedExitGenerations[profileID] = session.generation
+        case .reconcileUnexpectedExit:
+            guard let client = webKitHostClients[profileID],
+                  client.session.generation == session.generation,
+                  webKitHostStopTasks[profileID] == nil else { return }
+            let broker = webKitHostBrokers[profileID]
+            webKitHostStopTasks[profileID] = Task { @MainActor [weak self] in
+                defer { self?.webKitHostStopTasks.removeValue(forKey: profileID) }
+                // Revoke network access first. abort() then confirms the exact
+                // owned child is gone before the session fence is released.
+                await broker?.revoke(Self.webKitRelayScope(for: session))
+                guard await client.abort(), let self,
+                      self.webKitHostClients[profileID]?.session.generation == session.generation else {
+                    self?.webKitHostSaveFailureProfileIDs.insert(profileID)
+                    self?.lastError = Self.webKitSessionSaveFailureMessage
+                    return
+                }
+                self.webKitHostClients.removeValue(forKey: profileID)
+                self.webKitHostBrokers.removeValue(forKey: profileID)
+                self.webKitHostSaveFailureProfileIDs.remove(profileID)
+                self.runningProfileIDs.remove(profileID)
+                self.lastError = status == 0
+                    ? "Окно WebKit неожиданно закрылось. Данные профиля оставлены на месте; проверьте профиль перед повторным запуском."
+                    : "Окно WebKit аварийно завершилось (код \(status)). Данные профиля не удалялись; проверьте профиль перед повторным запуском."
+                self.webKitDidClose?(profileID, session.generation)
+                await self.webKitLoopbackBrokerPool.stopIfIdle(
+                    self.webKitHostClients.isEmpty && self.webKitHostStartingProfileIDs.isEmpty)
+            }
+        }
+    }
+
+    /// System WebKit pages are hosted by this manager; close them before quit.
+    /// Chromium processes retain their existing independent lifetime contract.
+    func closeWebKitWindows() {
+        for browser in Array(webKitBrowsers.values) { browser.close() }
+        for (profileID, client) in webKitHostClients {
+            requestCloseWebKitHost(profileID: profileID, generation: client.session.generation)
+        }
+    }
+
+    /// Application termination must not end the process before WKDownload
+    /// cancellation completes. Refuse quit on timeout; never claim settlement.
+    func drainWebKitForQuit() async -> Bool {
+        guard !webKitQuitPending else { return false }
+        webKitQuitPending = true
+        defer { webKitQuitPending = false }
+        closeWebKitWindows()
+        let deadline = ContinuousClock.now.advanced(by: .seconds(10))
+        while hasPendingWebKitWork, ContinuousClock.now < deadline {
+            if hasFailedWebKitSessionSave { return false }
+            do { try await Task.sleep(for: .milliseconds(50)) } catch { return false }
+        }
+        return !hasPendingWebKitWork
+    }
+
+    private func closingDeadlineIsCurrent(_ intent: ManagedBrowserClosingIntent) -> Bool {
+        let age = now().timeIntervalSince(intent.requestedAt)
+        return age >= 0 && age < 8
+    }
+
+    private func captureManagedClosingIntent(profileID: UUID, process: Process) -> ManagedBrowserClosingIntent? {
+        guard let owner = managedLeaseOwners[profileID],
+              let directory = managedBrowserDataDirectories[profileID],
+              !unconfirmedRelayOwnerFences.values.contains(where: { $0.profileID == profileID }),
+              let read = try? readLeaseEntry(profileID: profileID, lockURL: paths.lockFile(for: profileID)),
+              case let .data(data) = read.entry, let entryIdentity = read.identity,
+              let lock = try? Self.decodeLock(data), lock.phase == .running,
+              lock.ownerToken == owner, lock.pid == process.processIdentifier,
+              lock.managerPID == getpid(), lock.pendingRelayOwner == nil,
+              lock.browserDataPath == directory.standardizedFileURL.path else { return nil }
+        return ManagedBrowserClosingIntent(process: ObjectIdentifier(process), owner: owner,
+            browserDataDirectory: directory, lease: data, entryIdentity: entryIdentity, requestedAt: now())
+    }
+
+    private func clearManagedClosingIntent(profileID: UUID) {
+        managedClosingIntents.removeValue(forKey: profileID)
+        if managedStopRequests[profileID] == nil {
+            managedStopWarnings.removeValue(forKey: profileID)?.cancel()
+        }
+    }
+
+    /// Revalidate only during lifecycle/reconcile work, never during every row
+    /// render. An identical token alone cannot carry Stop across a replaced file.
+    private func refreshManagedClosingIntent(profileID: UUID) {
+        guard let intent = managedClosingIntents[profileID] else { return }
+        guard !unconfirmedRelayOwnerFences.values.contains(where: { $0.profileID == profileID }),
+              tombstoneRecoveryMessages[profileID] == nil,
+              let read = try? readLeaseEntry(profileID: profileID, lockURL: paths.lockFile(for: profileID)),
+              case let .data(data) = read.entry, data == intent.lease,
+              read.identity == intent.entryIdentity else {
+            clearManagedClosingIntent(profileID: profileID); return
+        }
+        if let process = processes[profileID], process.isRunning {
+            guard ObjectIdentifier(process) == intent.process,
+                  managedLeaseOwners[profileID] == intent.owner else {
+                clearManagedClosingIntent(profileID: profileID); return
+            }
+        } else {
+            guard let record = recoveryRecords[profileID], record.blockingManagerPID == nil,
+                  record.expectedBrowserDataDirectory == intent.browserDataDirectory,
+                  record.removableSnapshot == intent.lease, record.entryIdentity == intent.entryIdentity,
+                  record.cleanupAuthority == nil || record.cleanupAuthority == .managedOwner(intent.owner),
+                  externalLocks[profileID] == nil else {
+                clearManagedClosingIntent(profileID: profileID); return
+            }
+        }
+        if !closingDeadlineIsCurrent(intent) {
+            managedClosingIntents.removeValue(forKey: profileID)
+            if managedStopRequests[profileID] == intent.process { managedStopRequests.removeValue(forKey: profileID) }
+            managedStopWarnings.removeValue(forKey: profileID)?.cancel()
+            lastError = "Закрытие профиля занимает больше времени. NeAntik продолжает проверять браузер и прокси; повторный запуск заблокирован для защиты данных."
+        }
+    }
+
+    func stop(profileID: UUID) {
+        if let client = webKitHostClients[profileID] {
+            requestCloseWebKitHost(profileID: profileID, generation: client.session.generation)
+            return
+        }
+        if let browser = webKitBrowsers[profileID] { browser.close(); return }
+        if processState(for: profileID) == .closing { return }
+
+        if let process = processes[profileID] {
+            if process.isRunning {
+                let identity = ObjectIdentifier(process)
+                guard managedStopRequests[profileID] != identity else { return }
+                managedStopRequests[profileID] = identity
+                let closing = captureManagedClosingIntent(profileID: profileID, process: process)
+                managedClosingIntents[profileID] = closing
+                guard managedProcessTerminator(process) else {
+                    managedStopRequests.removeValue(forKey: profileID)
+                    managedClosingIntents.removeValue(forKey: profileID)
+                    lastError = "Не удалось запросить безопасное завершение браузера. Закрой его через меню «Выйти»; профиль останется заблокированным до завершения процессов."
+                    return
+                }
+                managedStopWarnings[profileID] = Task { @MainActor [weak self, weak process] in
+                    do { try await Task.sleep(for: .seconds(8)) } catch { return }
+                    guard let self else { return }
+                    let sameProcess = process.map { self.processes[profileID] === $0 && $0.isRunning } ?? false
+                    let sameClosing = closing.map { self.managedClosingIntents[profileID] == $0 } ?? false
+                    guard (sameProcess && self.managedStopRequests[profileID] == identity) || sameClosing else { return }
+                    self.managedStopRequests.removeValue(forKey: profileID)
+                    self.managedClosingIntents.removeValue(forKey: profileID)
+                    self.managedStopWarnings.removeValue(forKey: profileID)
+                    self.lastError = sameProcess
+                        ? "Браузер ожидает завершения. Повтори остановку или закрой его через меню «Выйти». Принудительная остановка не выполняется, чтобы сохранить данные."
+                        : "Закрытие профиля занимает больше времени. NeAntik продолжает проверять браузер и прокси; повторный запуск заблокирован для защиты данных."
+                }
             } else {
                 handleTermination(
                     profileID: profileID,
@@ -1720,12 +3362,7 @@ final class BrowserProcessManager: ObservableObject {
             guard externalStopTasks[profileID] == nil else {
                 return
             }
-            setStopPhase(
-                .closing(requestedAt: now()),
-                profileID: profileID
-            )
             if processSignaler(lock.pid, SIGTERM) != 0 {
-                setStopPhase(.idle, profileID: profileID)
                 if errno == ESRCH {
                     handleTermination(profileID: profileID, process: nil)
                     return
@@ -1763,255 +3400,101 @@ final class BrowserProcessManager: ObservableObject {
         handleTermination(profileID: profileID, process: nil)
     }
 
-    /// Pause one manager-owned Chromium process to reduce background CPU and
-    /// memory pressure. External or unverified processes are never signalled.
-    /// The operation is intentionally explicit; policy decisions are made by
-    /// `AutomaticMemorySavingPolicy` and applied by the manager only after the
-    /// caller has a current, verified snapshot.
-    @discardableResult
-    func suspendForMemorySaving(profileID: UUID) -> Bool {
-        guard let process = managed[profileID]?.process,
-              process.isRunning,
-              stopPhase(for: profileID) == .idle
-        else { return false }
-        guard process.suspend() else {
-            lastError = "Не удалось временно приостановить рабочее место."
-            return false
-        }
-        memorySavingSuspendedProfileIDs.insert(profileID)
-        return true
-    }
-
-    /// Resume a process paused by `suspendForMemorySaving`. A profile that was
-    /// not paused by this manager is left untouched.
-    @discardableResult
-    func resumeFromMemorySaving(profileID: UUID) -> Bool {
-        guard memorySavingSuspendedProfileIDs.contains(profileID),
-              let process = managed[profileID]?.process,
-              process.isRunning
-        else { return false }
-        guard process.resume() else {
-            lastError = "Не удалось возобновить рабочее место."
-            return false
-        }
-        memorySavingSuspendedProfileIDs.remove(profileID)
-        return true
-    }
-
-    /// Apply already-evaluated policy decisions. Snapshots remain caller-owned
-    /// so this method never guesses memory usage or silently changes profiles.
-    func applyMemorySavingDecisions(_ decisions: [MemorySavingDecision]) {
-        for decision in decisions {
-            switch decision.action {
-            case .suspend:
-                _ = suspendForMemorySaving(profileID: decision.profileID)
-            case .resume:
-                _ = resumeFromMemorySaving(profileID: decision.profileID)
-            case .keepRunning:
-                break
-            }
-        }
-    }
-
-    private func scheduleManagedStopEscalation(
-        profileID: UUID,
-        process: Process
-    ) {
-        guard managed[profileID]?.stopTask == nil else {
-            return
-        }
-        managed[profileID]?.stopTask = Task { @MainActor [weak self, weak process] in
-            guard let self else { return }
-            defer {
-                if self.managed[profileID]?.process === process {
-                    self.managed[profileID]?.stopTask = nil
-                }
-            }
-            do {
-                try await Task.sleep(
-                    nanoseconds: managedStopGracePeriodNanoseconds
-                )
-            } catch {
-                return
-            }
-            guard let process,
-                  managed[profileID]?.process === process,
-                  process.isRunning
-            else {
-                return
-            }
-            guard case let .closing(requestedAt) =
-                stopPhase(for: profileID)
-            else { return }
-            setStopPhase(
-                .forceStopAvailable(requestedAt: requestedAt),
-                profileID: profileID
-            )
-        }
-    }
-
-    @discardableResult
-    func forceStop(profileID: UUID) -> Bool {
-        guard case .forceStopAvailable = stopPhase(for: profileID),
-              let process = managed[profileID]?.process,
-              process.isRunning
-        else {
-            return false
-        }
-        managed[profileID]?.wasForced = true
-        if processSignaler(process.processIdentifier, SIGKILL) != 0,
-           errno != ESRCH
-        {
-            managed[profileID]?.wasForced = false
-            lastError =
-                "Не удалось принудительно остановить браузер. Закрой его окно вручную; профиль останется заблокированным."
-            return false
-        }
-        return true
-    }
-
-    @discardableResult
-    private func removeManagedProcess(profileID: UUID) -> ManagedBrowserProcess? {
-        let entry = managed.removeValue(forKey: profileID)
-        entry?.stopTask?.cancel()
-        return entry
-    }
-
     private func handleTermination(profileID: UUID, process: Process?) {
         if let process {
-            guard let current = managed[profileID]?.process,
+            guard let current = processes[profileID],
                   current === process
             else {
                 return
             }
         }
-        let priorStopPhase = stopPhase(for: profileID)
-        let entry = removeManagedProcess(profileID: profileID)
-        memorySavingSuspendedProfileIDs.remove(profileID)
-        let wasForced = entry?.wasForced ?? false
-        let startupFailed = entry?.startupFailed ?? false
-        if let process {
-            let classification = BrowserExitClassifier.classify(
-                startupFailed: startupFailed,
-                ordinaryStopRequested: priorStopPhase != .idle,
-                wasForceStopped: wasForced,
-                terminationReason: process.terminationReason,
-                terminationStatus: process.terminationStatus
-            )
-            recordBrowserExit(classification, at: now())
-            workplaceExitNotices[profileID] = WorkplaceExitNotice.resolve(
-                classification: classification,
-                wasForceStopped: wasForced
-            )
-            try? appendDiagnostic(
-                "browser_exit classification=\(classification.rawValue)",
-                to: paths.logFile(for: profileID)
-            )
+        defer { refreshManagedClosingIntent(profileID: profileID) }
+        managedStopRequests.removeValue(forKey: profileID)
+        managedSessionReceipts.removeValue(forKey: profileID)
+        activeRelayOwners.removeValue(forKey: profileID)
+        if managedClosingIntents[profileID] == nil {
+            managedStopWarnings.removeValue(forKey: profileID)?.cancel()
         }
-        let managedOwner = entry?.ownerToken
+        let managedOwner = managedLeaseOwners.removeValue(
+            forKey: profileID
+        )
         let externalLock = externalLocks[profileID]
         let lockURL = paths.lockFile(for: profileID)
         let browserDataDirectory =
-            entry?.browserDataDirectory ??
+            managedBrowserDataDirectories.removeValue(forKey: profileID) ??
             paths.browserDataDirectory(for: profileID)
         let removableSnapshot = currentLeaseSnapshot(
             profileID: profileID,
             managedOwner: managedOwner,
             externalLock: externalLock
         )
+        processes.removeValue(forKey: profileID)
         externalStopTasks[profileID]?.cancel()
         externalStopTasks.removeValue(forKey: profileID)
-        observations.cancel(.external(profileID))
-        observations.cancel(.recovery(profileID))
+        externalObservationTasks[profileID]?.cancel()
+        externalObservationTasks.removeValue(forKey: profileID)
+        recoveryObservationTasks[profileID]?.cancel()
+        recoveryObservationTasks.removeValue(forKey: profileID)
         externalLocks.removeValue(forKey: profileID)
         externalUnverifiedProfileIDs.remove(profileID)
         recoveryProfileIDs.remove(profileID)
         recoveryRecords.removeValue(forKey: profileID)
-        runningProfileIDs.remove(profileID)
 
         switch browserDataProcessInspector(browserDataDirectory) {
         case .absent:
+            let authority: BrowserLeaseCleanupAuthority?
+            let outcome: BrowserLeaseCleanupOutcome
             if let managedOwner {
-                removeLockIfOwned(
+                authority = .managedOwner(managedOwner)
+                outcome = removeLockIfOwned(
                     profileID: profileID,
                     ownerToken: managedOwner
                 )
-                cleanupTransientProfileDirectoryIfSafe(profileID: profileID)
-                cleanupTransientBrowserDataDirectoryIfSafe(profileID: profileID)
             } else if let externalLock {
-                removeLockIfMatches(
+                authority = .external(externalLock)
+                outcome = removeLockIfMatches(
                     externalLock,
                     profileID: profileID,
                     at: lockURL
                 )
-            }
-            if priorStopPhase != .idle,
-               !FileManager.default.fileExists(atPath: lockURL.path)
-            {
-                setStopPhase(
-                    .completed(
-                        completedAt: now(),
-                        wasForced: wasForced
-                    ),
-                    profileID: profileID
-                )
-                scheduleStopCompletionRemoval(profileID: profileID)
             } else {
-                setStopPhase(.idle, profileID: profileID)
+                authority = nil
+                outcome = .removedOrMissing
+            }
+            switch outcome {
+            case .removedOrMissing:
+                runningProfileIDs.remove(profileID)
+                beginEphemeralCleanupIfNeeded(profileID: profileID)
+                cleanupTransientProfileDirectoryIfSafe(profileID: profileID)
+            case .replacementPresent:
+                if processInventoryProvider != nil,
+                   lastReconciledProfiles.contains(where: { $0.id == profileID }) {
+                    reconcile(profiles: lastReconciledProfiles)
+                } else {
+                    reconcileProfile(profileID: profileID)
+                }
+            case .retryRequired:
+                registerRecovery(
+                    profileID: profileID, lockURL: lockURL,
+                    expectedBrowserDataDirectory: browserDataDirectory,
+                    removableSnapshot: removableSnapshot,
+                    blockingManagerPID: nil, cleanupAuthority: authority,
+                    deferInitialResolution: true, surfaceMessage: false,
+                    message: "Браузер завершён. NeAntik ожидает освобождения файла запуска и повторно проверит его владельца."
+                )
             }
         case .found, .unknown:
-            setStopPhase(.idle, profileID: profileID)
             registerRecovery(
                 profileID: profileID,
                 lockURL: lockURL,
                 expectedBrowserDataDirectory: browserDataDirectory,
                 removableSnapshot: removableSnapshot,
                 blockingManagerPID: nil,
+                cleanupAuthority: managedOwner.map { .managedOwner($0) },
                 surfaceMessage: false,
                 message:
                     "Основной процесс браузера завершён, но его вспомогательные процессы ещё используют данные профиля. Профиль разблокируется автоматически после их завершения."
             )
-        }
-    }
-
-    private func recordBrowserExit(
-        _ classification: BrowserExitClassification,
-        at date: Date
-    ) {
-        lastBrowserExit = BrowserExitEvent(
-            classification: classification,
-            occurredAt: date
-        )
-    }
-
-    private func setStopPhase(
-        _ phase: BrowserStopPhase,
-        profileID: UUID
-    ) {
-        stopCompletionTasks[profileID]?.cancel()
-        stopCompletionTasks.removeValue(forKey: profileID)
-        if phase == .idle {
-            stopPhases.removeValue(forKey: profileID)
-        } else {
-            stopPhases[profileID] = phase
-        }
-        processStateRevision &+= 1
-    }
-
-    private func scheduleStopCompletionRemoval(profileID: UUID) {
-        stopCompletionTasks[profileID] = Task { @MainActor [weak self] in
-            guard let self else { return }
-            do {
-                try await Task.sleep(nanoseconds: 5_000_000_000)
-            } catch {
-                return
-            }
-            guard case .completed = stopPhase(for: profileID) else {
-                return
-            }
-            stopPhases.removeValue(forKey: profileID)
-            stopCompletionTasks.removeValue(forKey: profileID)
-            processStateRevision &+= 1
         }
     }
 
@@ -2023,10 +3506,7 @@ final class BrowserProcessManager: ObservableObject {
         let lockURL = paths.lockFile(for: profileID)
         return try? paths.withProcessLockGuard(for: profileID) {
             guard try paths.privateFileEntryKind(lockURL) == .regular,
-                  let data = try? paths.readPrivateFile(
-                    lockURL,
-                    maximumBytes: Self.maximumProcessLockBytes
-                  ),
+                  let data = try? Data(contentsOf: lockURL),
                   let current = try? Self.decodeLock(data)
             else {
                 return nil
@@ -2049,19 +3529,33 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         lock: BrowserProcessLock
     ) {
-        observations.replace(
-            .external(profileID),
-            enabled: passiveObservationsEnabled,
-            interval: observationIntervalNanoseconds
-        ) { [weak self] in
-            guard let self, externalLocks[profileID] == lock else {
-                return false
+        externalObservationTasks[profileID]?.cancel()
+        guard passiveObservationsEnabled else {
+            externalObservationTasks.removeValue(forKey: profileID)
+            return
+        }
+        externalObservationTasks[profileID] = Task {
+            [weak self] in
+            guard let self else { return }
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(
+                        nanoseconds: observationIntervalNanoseconds
+                    )
+                } catch {
+                    return
+                }
+                guard externalLocks[profileID] == lock else {
+                    return
+                }
+                if !processLivenessValidator(lock.pid) {
+                    handleTermination(
+                        profileID: profileID,
+                        process: nil
+                    )
+                    return
+                }
             }
-            guard processLivenessValidator(lock.pid) else {
-                handleTermination(profileID: profileID, process: nil)
-                return false
-            }
-            return true
         }
     }
 
@@ -2072,8 +3566,10 @@ final class BrowserProcessManager: ObservableObject {
         removableSnapshot: Data?,
         blockingManagerPID: pid_t?,
         startingCreatedAt: Date? = nil,
+        cleanupAuthority: BrowserLeaseCleanupAuthority? = nil,
         browserDataProcessInspector:
             ((URL) -> BrowserDataProcessInspection)? = nil,
+        relayOwnerInspection: BrowserDataProcessInspection? = nil,
         deferInitialResolution: Bool = false,
         surfaceMessage: Bool = true,
         message: String
@@ -2094,7 +3590,8 @@ final class BrowserProcessManager: ObservableObject {
             blockingManagerPID: blockingManagerPID,
             startingCreatedAt: startingCreatedAt,
             message: message,
-            entryIdentity: entryIdentity ?? nil
+            entryIdentity: entryIdentity ?? nil,
+            cleanupAuthority: cleanupAuthority
         )
         recoveryRecords[profileID] = record
         if surfaceMessage {
@@ -2108,7 +3605,8 @@ final class BrowserProcessManager: ObservableObject {
                 profileID: profileID,
                 record: record,
                 browserDataProcessInspector:
-                    effectiveBrowserDataProcessInspector
+                    effectiveBrowserDataProcessInspector,
+                relayOwnerInspection: relayOwnerInspection
             ) {
                 return
             }
@@ -2121,19 +3619,36 @@ final class BrowserProcessManager: ObservableObject {
         record: BrowserProcessRecoveryRecord
     ) {
         if processInventoryProvider != nil {
-            observations.cancel(.recovery(profileID))
+            recoveryObservationTasks[profileID]?.cancel()
+            recoveryObservationTasks.removeValue(forKey: profileID)
             ensurePassiveInventoryObservation()
             return
         }
-        observations.replace(
-            .recovery(profileID),
-            enabled: passiveObservationsEnabled,
-            interval: observationIntervalNanoseconds
-        ) { [weak self] in
-            guard let self, recoveryRecords[profileID] == record else {
-                return false
+        recoveryObservationTasks[profileID]?.cancel()
+        guard passiveObservationsEnabled else {
+            recoveryObservationTasks.removeValue(forKey: profileID)
+            return
+        }
+        recoveryObservationTasks[profileID] = Task { [weak self] in
+            guard let self else { return }
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(
+                        nanoseconds: observationIntervalNanoseconds
+                    )
+                } catch {
+                    return
+                }
+                guard recoveryRecords[profileID] == record else {
+                    return
+                }
+                if resolveRecoveryIfSafe(
+                    profileID: profileID,
+                    record: record
+                ) {
+                    return
+                }
             }
-            return !resolveRecoveryIfSafe(profileID: profileID, record: record)
         }
     }
 
@@ -2162,6 +3677,8 @@ final class BrowserProcessManager: ObservableObject {
                     return
                 }
                 guard let self else { return }
+                guard let updateActivity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
+                defer { ApplicationUpdateAdmission.shared.finishActivity(updateActivity) }
                 let recordsBeforeCapture = Array(recoveryRecords)
                 let ownerWasAlive = Dictionary(
                     uniqueKeysWithValues:
@@ -2203,7 +3720,8 @@ final class BrowserProcessManager: ObservableObject {
                         profileID: profileID,
                         record: record,
                         browserDataProcessInspector:
-                            inventory.inspectBrowserDataProcess
+                            inventory.inspectBrowserDataProcess,
+                        relayOwnerInspection: inventory.inspectPotentialRelayOwnerProcesses()
                     )
                 }
             }
@@ -2211,20 +3729,36 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     private func observeDeletionTombstone(profileID: UUID) {
-        observations.replace(
-            .tombstone(profileID),
-            enabled: passiveObservationsEnabled,
-            interval: observationIntervalNanoseconds
-        ) { [weak self] in
-            guard let self else { return false }
-            let kind = try? paths.withProcessLockGuard(for: profileID) {
-                try self.paths.privateFileEntryKind(
-                    self.paths.profileDeletionTombstone(for: profileID)
-                )
+        tombstoneObservationTasks[profileID]?.cancel()
+        guard passiveObservationsEnabled else {
+            tombstoneObservationTasks.removeValue(forKey: profileID)
+            return
+        }
+        tombstoneObservationTasks[profileID] = Task { [weak self] in
+            guard let self else { return }
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(
+                        nanoseconds: observationIntervalNanoseconds
+                    )
+                } catch {
+                    return
+                }
+                let kind = try? self.paths.withProcessLockGuard(
+                    for: profileID
+                ) {
+                    try self.paths.privateFileEntryKind(
+                        self.paths.profileDeletionTombstone(
+                            for: profileID
+                        )
+                    )
+                }
+                guard kind == .missing else {
+                    continue
+                }
+                reconcileProfile(profileID: profileID)
+                return
             }
-            guard kind == .missing else { return true }
-            reconcileProfile(profileID: profileID)
-            return false
         }
     }
 
@@ -2232,18 +3766,22 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         record: BrowserProcessRecoveryRecord,
         browserDataProcessInspector:
-            ((URL) -> BrowserDataProcessInspection)? = nil
+            ((URL) -> BrowserDataProcessInspection)? = nil,
+        relayOwnerInspection: BrowserDataProcessInspection? = nil
     ) -> Bool {
+        defer { refreshManagedClosingIntent(profileID: profileID) }
         let effectiveBrowserDataProcessInspector =
             browserDataProcessInspector ??
             self.browserDataProcessInspector
+        guard unconfirmedRelayOwnersAreAbsent(profileID: profileID) else { return false }
         switch recoveryEntryChange(
             profileID: profileID,
             record: record
         ) {
         case .changed:
             clearRecoveryState(profileID: profileID, record: record)
-            if processInventoryProvider != nil {
+            if processInventoryProvider != nil,
+               lastReconciledProfiles.contains(where: { $0.id == profileID }) {
                 reconcile(profiles: lastReconciledProfiles)
             } else {
                 reconcileProfile(profileID: profileID)
@@ -2286,7 +3824,9 @@ final class BrowserProcessManager: ObservableObject {
         }
         guard removeRecoveryEntryIfSafe(
             profileID: profileID,
-            record: record
+            record: record,
+            browserDataProcessInspector: effectiveBrowserDataProcessInspector,
+            relayOwnerInspection: relayOwnerInspection ?? potentialRelayOwnerInspector()
         ) else {
             return false
         }
@@ -2298,10 +3838,15 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         record: BrowserProcessRecoveryRecord
     ) {
-        observations.cancel(.recovery(profileID))
+        if let intent = managedClosingIntents[profileID], intent.lease == record.removableSnapshot,
+           intent.browserDataDirectory == record.expectedBrowserDataDirectory {
+            clearManagedClosingIntent(profileID: profileID)
+        }
+        recoveryObservationTasks[profileID]?.cancel()
+        recoveryObservationTasks.removeValue(forKey: profileID)
         recoveryRecords.removeValue(forKey: profileID)
         recoveryProfileIDs.remove(profileID)
-        if managed[profileID]?.process?.isRunning != true,
+        if processes[profileID]?.isRunning != true,
            externalLocks[profileID] == nil
         {
             runningProfileIDs.remove(profileID)
@@ -2313,19 +3858,99 @@ final class BrowserProcessManager: ObservableObject {
             passiveInventoryObservationTask?.cancel()
             passiveInventoryObservationTask = nil
         }
+        beginEphemeralCleanupIfNeeded(profileID: profileID)
         cleanupTransientProfileDirectoryIfSafe(profileID: profileID)
-        cleanupTransientBrowserDataDirectoryIfSafe(profileID: profileID)
     }
 
-    private func cleanupTransientBrowserDataDirectoryIfSafe(profileID: UUID) {
-        guard let directory = transientBrowserDataDirectories[profileID],
-              browserDataProcessInspector(directory) == .absent
-        else { return }
-        do {
-            try FileManager.default.removeItem(at: directory)
-            transientBrowserDataDirectories.removeValue(forKey: profileID)
-        } catch {
-            // Retry after a later reconciliation if the filesystem is busy.
+    var hasPendingEphemeralWork: Bool {
+        !ephemeralCleanupTasks.isEmpty || !ephemeralCleanupFailures.isEmpty ||
+        lastReconciledProfiles.contains { $0.privacyPolicy.retention == .ephemeral && runningProfileIDs.contains($0.id) } ||
+        managedEphemeralProfiles.keys.contains { runningProfileIDs.contains($0) }
+    }
+
+    /// Quit waits only for disposable sessions. Persistent Chromium sessions keep
+    /// their existing manager-exit behavior. Never force-kill a stalled process.
+    func drainEphemeralForQuit() async -> Bool {
+        ephemeralQuitPending = true
+        defer { ephemeralQuitPending = false }
+        var profiles = managedEphemeralProfiles
+        for profile in lastReconciledProfiles where profile.privacyPolicy.retention == .ephemeral { profiles[profile.id] = profile }
+        for profile in profiles.values {
+            if processState(for: profile.id).canRequestStop && runningProfileIDs.contains(profile.id) {
+                stop(profileID: profile.id)
+            } else if ephemeralCleanupFailures.contains(profile.id) {
+                retryEphemeralCleanup(profile: profile)
+            }
+        }
+        let deadline = ContinuousClock.now.advanced(by: .seconds(30))
+        while hasPendingEphemeralWork && ContinuousClock.now < deadline {
+            do { try await Task.sleep(for: .milliseconds(100)) }
+            catch { return false }
+        }
+        return !hasPendingEphemeralWork
+    }
+
+    /// An explicit retry never relaxes process, metadata or directory custody.
+    func retryEphemeralCleanup(profile: BrowserProfile) {
+        guard ephemeralCleanupFailures.contains(profile.id) else { return }
+        beginEphemeralCleanupIfNeeded(profile: profile, onlyIfPending: false)
+    }
+
+    private func beginEphemeralCleanupIfNeeded(profileID: UUID) {
+        guard let profile = lastReconciledProfiles.first(where: { $0.id == profileID }) ?? managedEphemeralProfiles[profileID] else { return }
+        beginEphemeralCleanupIfNeeded(profile: profile, onlyIfPending: true)
+    }
+
+    private func beginEphemeralCleanupIfNeeded(profile: BrowserProfile, onlyIfPending: Bool) {
+        guard profile.privacyPolicy.retention == .ephemeral,
+              ephemeralCleanupTasks[profile.id] == nil else { return }
+        let savedPaths = paths
+        let provider = processInventoryProvider
+        ephemeralCleanupPending.insert(profile.id)
+        ephemeralCleanupFailures.remove(profile.id)
+        ephemeralCleanupTasks[profile.id] = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let pending = try await Task.detached(priority: .utility) {
+                    try EphemeralProfileStorage.pending(paths: savedPaths, profile: profile)
+                }.value
+                if pending || !onlyIfPending {
+                    guard let provider else { throw EphemeralProfileStorageError() }
+                    let inspection = await Task.detached(priority: .utility) {
+                        provider().inspectBrowserDataProcess(savedPaths.browserDataDirectory(for: profile.id))
+                    }.value
+                    if case .found = inspection {
+                        // Startup can discover an ordinary still-running session.
+                        // Its termination callback will request cleanup later.
+                        self.ephemeralCleanupPending.remove(profile.id)
+                        self.ephemeralCleanupTasks.removeValue(forKey: profile.id)
+                        return
+                    }
+                    try await self.withVerifiedStoppedProfileMaintenance(profile: profile) { authority in
+                        // Keep metadata unchanged throughout detach and deletion. The
+                        // authority itself also rechecks lease and live processes.
+                        try ProfileStore.withPersistedLaunchSnapshot(profile, paths: savedPaths) {
+                            try EphemeralProfileStorage.clear(paths: savedPaths, profile: profile,
+                                validateAuthority: {
+                                    try authority.validate(browserData: savedPaths.browserDataDirectory(for: profile.id))
+                                }, requireAbsent: { url in
+                                    switch provider().inspectBrowserDataProcess(url) {
+                                    case .absent: break
+                                    case .found, .unknown: throw EphemeralProfileStorageError()
+                                    }
+                                })
+                        }
+                    }
+                }
+                self.ephemeralCleanupFailures.remove(profile.id)
+                self.managedEphemeralProfiles.removeValue(forKey: profile.id)
+                if self.lastError == EphemeralProfileStorageError().localizedDescription { self.lastError = nil }
+            } catch {
+                self.ephemeralCleanupFailures.insert(profile.id)
+                self.lastError = EphemeralProfileStorageError().localizedDescription
+            }
+            self.ephemeralCleanupPending.remove(profile.id)
+            self.ephemeralCleanupTasks.removeValue(forKey: profile.id)
         }
     }
 
@@ -2369,6 +3994,25 @@ final class BrowserProcessManager: ObservableObject {
         } catch {
             return .unavailable
         }
+        // A contended termination can have no initial snapshot. Its original
+        // owner token is still authority; a replacement never acquires that
+        // authority merely because it occupies the same path.
+        if let authority = record.cleanupAuthority {
+            switch readResult.entry {
+            case .missing: return .missing
+            case .unsafe: return .unsafe
+            case .unreadable: return .unavailable
+            case let .data(data):
+                guard let current = try? Self.decodeLock(data),
+                      authority.matches(current),
+                      current.browserDataPath == record.expectedBrowserDataDirectory.standardizedFileURL.path
+                else { return .changed }
+                if let snapshot = record.removableSnapshot {
+                    return data == snapshot && readResult.identity == record.entryIdentity ? .unchanged : .changed
+                }
+                return .unchanged
+            }
+        }
         if readResult.identity != record.entryIdentity {
             return .changed
         }
@@ -2389,7 +4033,9 @@ final class BrowserProcessManager: ObservableObject {
 
     private func removeRecoveryEntryIfSafe(
         profileID: UUID,
-        record: BrowserProcessRecoveryRecord
+        record: BrowserProcessRecoveryRecord,
+        browserDataProcessInspector: (URL) -> BrowserDataProcessInspection,
+        relayOwnerInspection: BrowserDataProcessInspection
     ) -> Bool {
         do {
             return try paths.withProcessLockGuard(for: profileID) {
@@ -2400,12 +4046,26 @@ final class BrowserProcessManager: ObservableObject {
                 case .unsafe:
                     return false
                 case .regular:
+                    if let authority = record.cleanupAuthority {
+                        guard browserDataProcessInspector(record.expectedBrowserDataDirectory) == .absent,
+                              let data = try? Data(contentsOf: record.lockURL),
+                              let current = try? Self.decodeLock(data),
+                              authority.matches(current),
+                              current.browserDataPath == record.expectedBrowserDataDirectory.standardizedFileURL.path
+                        else { return false }
+                        if let snapshot = record.removableSnapshot {
+                            guard data == snapshot,
+                                  try paths.privateFileEntryIdentity(record.lockURL) == record.entryIdentity
+                            else { return false }
+                        }
+                        return removeLockIfSnapshotMatchesWhileGuardHeld(profileID: profileID, lockURL: record.lockURL, snapshot: data, relayOwnerInspection: relayOwnerInspection)
+                    }
                     guard let snapshot = record.removableSnapshot else {
                         return false
                     }
                     return removeLockIfSnapshotMatchesWhileGuardHeld(
-                        lockURL: record.lockURL,
-                        snapshot: snapshot
+                        profileID: profileID, lockURL: record.lockURL,
+                        snapshot: snapshot, relayOwnerInspection: relayOwnerInspection
                     )
                 }
             }
@@ -2419,9 +4079,12 @@ final class BrowserProcessManager: ObservableObject {
         profileID: UUID,
         at lockURL: URL,
         browserDataDirectory: URL,
+        expectedProfile: BrowserProfile? = nil,
         allowsUnknownBrowserDataInspection: Bool = false
     ) throws {
         try paths.withProcessLockGuard(for: profileID) {
+            guard unconfirmedRelayOwnersAreAbsent(profileID: profileID) else { throw ProfileProcessBusyError() }
+            let reserve = { [self] in
             switch try paths.privateFileEntryKind(
                 paths.profileDeletionTombstone(for: profileID)
             ) {
@@ -2469,6 +4132,10 @@ final class BrowserProcessManager: ObservableObject {
                 Self.encodeLock(lock),
                 at: lockURL
             )
+            }
+            if let expectedProfile {
+                try ProfileStore.withValidatedLaunchSnapshot(expectedProfile, paths: paths, operation: reserve)
+            } else { try reserve() }
         }
     }
 
@@ -2479,10 +4146,7 @@ final class BrowserProcessManager: ObservableObject {
         at lockURL: URL
     ) throws {
         try paths.withProcessLockGuard(for: profileID) {
-            let currentData = try paths.readPrivateFile(
-                lockURL,
-                maximumBytes: Self.maximumProcessLockBytes
-            )
+            let currentData = try Data(contentsOf: lockURL)
             let current = try Self.decodeLock(currentData)
             guard current.ownerToken == ownerToken else {
                 throw POSIXError(.EBUSY)
@@ -2491,55 +4155,53 @@ final class BrowserProcessManager: ObservableObject {
         }
     }
 
+    @discardableResult
     private func removeLockIfOwned(
         profileID: UUID,
         ownerToken: UUID
-    ) {
+    ) -> BrowserLeaseCleanupOutcome {
         let lockURL = paths.lockFile(for: profileID)
         do {
-            try paths.withProcessLockGuard(for: profileID) {
-                guard let data = try? paths.readPrivateFile(
-                    lockURL,
-                    maximumBytes: Self.maximumProcessLockBytes
-                ),
-                      let lock = try? Self.decodeLock(data),
-                      lock.ownerToken == ownerToken
-                else {
-                    return
-                }
-                _ = removeLockIfSnapshotMatchesWhileGuardHeld(
-                    lockURL: lockURL,
+            return try paths.withProcessLockGuard(for: profileID) {
+                switch try readLeaseEntryWhileGuardHeld(lockURL: lockURL) {
+                case .missing: return .removedOrMissing
+                case .unsafe, .unreadable: return .retryRequired
+                case let .data(data):
+                    guard let lock = try? Self.decodeLock(data) else { return .retryRequired }
+                    guard lock.ownerToken == ownerToken else { return .replacementPresent }
+                    return removeLockIfSnapshotMatchesWhileGuardHeld(
+                    profileID: profileID, lockURL: lockURL,
                     snapshot: data
-                )
+                    ) ? .removedOrMissing : .retryRequired
+                }
             }
         } catch {
-            return
+            return .retryRequired
         }
     }
 
+    @discardableResult
     private func removeLockIfMatches(
         _ expected: BrowserProcessLock,
         profileID: UUID,
         at lockURL: URL
-    ) {
+    ) -> BrowserLeaseCleanupOutcome {
         do {
-            try paths.withProcessLockGuard(for: profileID) {
-                guard let data = try? paths.readPrivateFile(
-                    lockURL,
-                    maximumBytes: Self.maximumProcessLockBytes
-                ),
-                      let current = try? Self.decodeLock(data),
-                      current == expected
-                else {
-                    return
-                }
-                _ = removeLockIfSnapshotMatchesWhileGuardHeld(
-                    lockURL: lockURL,
+            return try paths.withProcessLockGuard(for: profileID) {
+                switch try readLeaseEntryWhileGuardHeld(lockURL: lockURL) {
+                case .missing: return .removedOrMissing
+                case .unsafe, .unreadable: return .retryRequired
+                case let .data(data):
+                    guard let current = try? Self.decodeLock(data) else { return .retryRequired }
+                    guard current == expected else { return .replacementPresent }
+                    return removeLockIfSnapshotMatchesWhileGuardHeld(
+                    profileID: profileID, lockURL: lockURL,
                     snapshot: data
-                )
+                    ) ? .removedOrMissing : .retryRequired
+                }
             }
         } catch {
-            return
+            return .retryRequired
         }
     }
 
@@ -2558,7 +4220,7 @@ final class BrowserProcessManager: ObservableObject {
                     return false
                 }
                 return removeLockIfSnapshotMatchesWhileGuardHeld(
-                    lockURL: lockURL,
+                    profileID: profileID, lockURL: lockURL,
                     snapshot: snapshot
                 )
             }
@@ -2568,17 +4230,33 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     private func removeLockIfSnapshotMatchesWhileGuardHeld(
+        profileID: UUID,
         lockURL: URL,
-        snapshot: Data
+        snapshot: Data,
+        relayOwnerInspection: BrowserDataProcessInspection = .unknown
     ) -> Bool {
-        guard (try? paths.privateFileEntryKind(lockURL)) == .regular,
-              let current = try? paths.readPrivateFile(
-                lockURL,
-                maximumBytes: Self.maximumProcessLockBytes
-              ),
+        guard unconfirmedRelayOwnersAreAbsent(profileID: profileID),
+              (try? paths.privateFileEntryKind(lockURL)) == .regular,
+              let current = try? Data(contentsOf: lockURL),
               current == snapshot
         else {
             return false
+        }
+        // A browser can exit just before its independent owner drains. Keep
+        // the durable fence until that exact owner generation is absent too.
+        if let lock = try? Self.decodeLock(current) {
+            if let relay = lock.relay {
+                guard relay.ownerIsAbsent(inspect: ProxyRelaySocketOwnerInspector.processIdentity,
+                                          isAlive: processLivenessValidator) else { return false }
+            }
+            if let pending = lock.pendingRelayOwner {
+                guard pending.ownerIsAbsent(inspect: ProxyRelaySocketOwnerInspector.processIdentity,
+                                            isAlive: processLivenessValidator) else { return false }
+            }
+        } else {
+            // Truncation may hide schema3 fields. BrowserData absence alone
+            // cannot prove that an independent relay has drained.
+            guard relayOwnerInspection == .absent else { return false }
         }
         do {
             try FileManager.default.removeItem(at: lockURL)
@@ -2612,12 +4290,7 @@ final class BrowserProcessManager: ObservableObject {
             return .unsafe
         case .regular:
             do {
-                return .data(
-                    try paths.readPrivateFile(
-                        lockURL,
-                        maximumBytes: Self.maximumProcessLockBytes
-                    )
-                )
+                return .data(try Data(contentsOf: lockURL))
             } catch {
                 return .unreadable
             }
@@ -2731,4 +4404,57 @@ final class BrowserProcessManager: ObservableObject {
         return false
     }
 
+}
+/// Borrowed authority exists only while its manager retains the process lease.
+/// It cannot be constructed by a UI/MCP draft, persisted, or used after the
+/// worker returns. The production inventory also refuses another historical
+/// GUI/stdio manager or unknown inspection before each durable mutation.
+/// Borrowed authority remains valid only during the owning maintenance worker.
+/// The process guard blocks cooperating launches; fresh inventory catches a
+/// browser started outside the manager. This is not an atomic OS-wide lock.
+final class StoppedProfileMaintenanceAuthority: @unchecked Sendable {
+    private let browserData: URL
+    private let inspect: @Sendable () throws -> Void
+    private let stateLock = NSLock()
+    private var active = true
+    fileprivate init(browserData: URL, inspect: @escaping @Sendable () throws -> Void) {
+        self.browserData = browserData; self.inspect = inspect
+    }
+    func validate(browserData: URL) throws {
+        stateLock.lock(); defer { stateLock.unlock() }
+        guard active, browserData == self.browserData else { throw ProfileProcessBusyError() }
+        try inspect()
+    }
+    fileprivate func invalidate() { stateLock.lock(); active = false; stateLock.unlock() }
+}
+
+final class StoppedProfileRestoreAuthority: @unchecked Sendable {
+    let profileID: UUID
+    private let paths: AppPaths
+    private let retainedTree: URL
+    private let lease: PrivateFileGuardLease
+    private let inspection: @Sendable () throws -> Void
+    private let stateLock = NSLock()
+    private var active = true
+
+    fileprivate init(profileID: UUID, retainedTree: URL, paths: AppPaths, lease: PrivateFileGuardLease, inspection: @escaping @Sendable () throws -> Void) {
+        self.profileID = profileID; self.retainedTree = retainedTree; self.paths = paths; self.lease = lease; self.inspection = inspection
+    }
+    func validate(paths: AppPaths) throws {
+        stateLock.lock(); defer { stateLock.unlock() }
+        guard active, paths.rootDirectory == self.paths.rootDirectory else { throw BrowserDataRestoreError.authorityRequired }
+        try inspection()
+    }
+    func validate(paths: AppPaths, profileID: UUID, retainedTree: URL) throws {
+        guard profileID == self.profileID, retainedTree.path == self.retainedTree.path else {
+            throw BrowserDataRestoreError.authorityRequired
+        }
+        try validate(paths: paths)
+    }
+
+    fileprivate func invalidate() {
+        stateLock.lock(); defer { stateLock.unlock() }
+        active = false; lease.release()
+    }
+    deinit { invalidate() }
 }

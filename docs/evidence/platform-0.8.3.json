@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 1,
+  "appVersion": "0.8.3",
+  "build": 114,
+  "appSourceCommit": "571a6a5243ed9486a82852ea68eb4b6e6b2b2c4e",
+  "runtimeVersion": "156.0.8078.12",
+  "checkedAt": "2026-10-13T18:30:08.358797+00:00",
+  "status": "passed-scoped-headed-runtime",
+  "fullMajor1_0Qualified": false,
+  "scope": "signed runtime inside exact released app; synthetic configuration from compiled manager launch policy; manager GUI lifecycle/network proof is separate",
+  "managerSHA256": "4c93b4a0665b35ad0715a180fd9a2f6c8c3d1f24f721da9fa2b60ccc1a2a2d16",
+  "runtimeSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+  "runtimeFrameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815",
+  "qualificationSummarySHA256": "34de3f79c2040cf1c6cbf6fde3f5c7ae1529bb032c428a083a81a76f6870e3f6",
+  "analysisQualifierSHA256": "e86c90e4eceac0f0a7bcead7f80f492866131809e97737815259ef06012c2fcc",
+  "ordinaryChromeReferenceVersion": "155.0.8059.40",
+  "passedCases": 18,
+  "cases": [
+    {
+      "case": "collector",
+      "rows": [
+        1,
+        9
+      ],
+      "passed": true,
+      "observationSHA256": "2282c397fe32f22c77a2c3a85114c848cdd210607c60e42f0dbaf33a30bdb4e6",
+      "verdictSHA256": "da0ffc8fe738247eaf0dc27f567c5079fc35422b5c58f2ee48b48dc19918dd89",
+      "status": "verified",
+      "checks": 6,
+      "negativeCaptureControls": 6
+    },
+    {
+      "case": "font-load",
+      "rows": [
+        1
+      ],
+      "passed": true,
+      "observationSHA256": "023bbd592680e66f1ce81e7b6dbcaeffafa6a58e943f3dde2aa5510cb407b230",
+      "verdictSHA256": "884ac8c2c851bfae3cc089a6e10f52253c406e23432507cad831f7270827f470",
+      "status": "verified",
+      "checks": 36,
+      "negativeCaptureControls": 5,
+      "scope": "Identical SHA-bound loaded Ahem font operations in Window Canvas/main Offscreen/DedicatedWorker Offscreen; extended TextMetrics unverified."
+    },
+    {
+      "case": "realms",
+      "rows": [
+        2
+      ],
+      "passed": true,
+      "observationSHA256": "6eaff7674ef21bac0de578ebae01af6f1bf2a7957faeee665cfa92e09eb11d23",
+      "verdictSHA256": "afb9fe4289ed5724eb7d723ee95fbf63778b9819967127580145b1d91b2015fa",
+      "status": "verified",
+      "checks": 538,
+      "negativeCaptureControls": 13,
+      "scope": "nine independently bound/terminated realms; actual Canvas PNG/WebGL draw/Window+worklet Audio/realm HTTP; not exhaustive per-realm API paths"
+    },
+    {
+      "case": "drawing",
+      "rows": [
+        3,
+        4,
+        6
+      ],
+      "passed": true,
+      "observationSHA256": "8df608076d85279057c37dac1e84d78d7839b39fc47cae52c82d277349dbc971",
+      "verdictSHA256": "75f3678ea4cd23044e4a30426615f06ad71191ce97163fd6965afadf32dfb547",
+      "status": "verified",
+      "checks": 103,
+      "negativeCaptureControls": 0,
+      "independentControls": {
+        "behaviorNegativeControlsRejected": 6,
+        "pngFilterColorPositiveControls": 10,
+        "pngNegativeControlsRejected": 4,
+        "positiveFixturePassed": true
+      }
+    },
+    {
+      "case": "webgl-read",
+      "rows": [
+        5
+      ],
+      "passed": true,
+      "observationSHA256": "0833bb0be0f32d4016ac012a4bc29ecb798b647ff22e6bb8f90b7f279ea0cef9",
+      "verdictSHA256": "30299a72b1d3f363e39b9086c1dd4bf76ea40f9ab852a13b7f1fadb242476ab8",
+      "status": "verified",
+      "checks": 65,
+      "negativeCaptureControls": 6,
+      "scope": "readPixels/pack/PBO/framebuffer/shader semantics; full capability compatibility remains open"
+    },
+    {
+      "case": "webgl-behavior",
+      "rows": [
+        5
+      ],
+      "passed": true,
+      "observationSHA256": "b6c071740ce21422f845c263c546b17b66cb911ff34e59720e2f94fb40601dfe",
+      "verdictSHA256": "e8a978f6ce921403d03b36fb80b34cdf7290aa87f1e5251d692ee62d3063c2a4",
+      "status": "verified",
+      "checks": 29,
+      "negativeCaptureControls": 7,
+      "scope": "WebGL capability queries, extension enablement, invalid shaders/link/FBO, integer/float/MSAA operations and actual loss/restore; GPU-name vs hardware compatibility remains separate"
+    },
+    {
+      "case": "audio-worklet",
+      "rows": [
+        6
+      ],
+      "passed": true,
+      "observationSHA256": "b079a61115732e269064eeb1a74a6c138bfca31edd5bbe52b1d45cc595e680f7",
+      "verdictSHA256": "dd7adce9277e51d142ffdf8cb58f8c2f11905ed2ad5d06373d96e5d642b8791d",
+      "status": "verified",
+      "checks": 45,
+      "negativeCaptureControls": 7,
+      "scope": "Completed native OfflineAudio, float/byte analyser, real FFT, AudioWorklet output and invalid APIs; real hardware/audio permissions remain separate"
+    },
+    {
+      "case": "audio-events",
+      "rows": [
+        6
+      ],
+      "passed": true,
+      "observationSHA256": "c0c078d167c48ee8b1e7b93b42acf0b1a1f841e971ce622dc9ebc9ad19fdb32b",
+      "verdictSHA256": "9d2b4fc82b810c903596e8a06d262b7f69182e1313844799ee7a459b9a576745",
+      "status": "verified",
+      "checks": 48,
+      "negativeCaptureControls": 7,
+      "scope": "AudioWorklet constructor/process/missing-process native ErrorEvent, attribute replacement/null/independent removal and silence; MessagePort unhandled exception remains separate"
+    },
+    {
+      "case": "audio-lifetime",
+      "rows": [
+        6
+      ],
+      "passed": true,
+      "observationSHA256": "efec37cfd9aae5ae99546b70b4e6484a6a7812b56fce18a25d5c4522d1b9a9c8",
+      "verdictSHA256": "34535da6aba43c7dca477814718f39eae620c8ce155af755f0e57439b7387919",
+      "status": "verified",
+      "checks": 25,
+      "negativeCaptureControls": 5,
+      "scope": "Finite zero-input worklet generator, repeat, deliberate processorerror and output silence; physical worklet-thread destruction not inferred"
+    },
+    {
+      "case": "identity",
+      "rows": [
+        7,
+        13
+      ],
+      "passed": true,
+      "observationSHA256": "e867c1a12cb3387f461885cadebe5c12a786e06cfe8457d7a102e2767ec98b63",
+      "verdictSHA256": "18de27645bc46d685fc340af825642b6f966ed46cb2c1ac19b9185c7f4b5058e",
+      "status": "verified",
+      "checks": 33,
+      "negativeCaptureControls": 11
+    },
+    {
+      "case": "service-worker",
+      "rows": [
+        7
+      ],
+      "passed": true,
+      "observationSHA256": "755b9979eeb4bd783f5365669312f5729cd91b1ed68d4db38c02bb2851f08f7f",
+      "verdictSHA256": "2c8e62d7be9c898ba493d833785f594b9212b25e57e209ec6c10ce26300c008e",
+      "status": "verified",
+      "checks": 45,
+      "negativeCaptureControls": 10,
+      "scope": "Owned HTTP loopback page fetch pass-through actual ServiceWorker; TLS and final manager remain separate."
+    },
+    {
+      "case": "geometry",
+      "rows": [
+        8,
+        9
+      ],
+      "passed": true,
+      "observationSHA256": "222452316512726c19edbea0d3a2e8edfdbc15e9da91c9c564077d89bd09e036",
+      "verdictSHA256": "f96ce68ac3e2b7d3ede323dc2457bf4d6de9a8f931ed7c5acf0f98a0682990b6",
+      "status": "verified",
+      "checks": 1614,
+      "negativeCaptureControls": 12,
+      "scope": "Actual headed native window resize, fullscreen entry/exit, native page zoom, CSS/DOMRect/Range/scroll/transform/repeated text; no second display or final manager qualification."
+    },
+    {
+      "case": "geometry-zoom",
+      "rows": [
+        8,
+        9
+      ],
+      "passed": true,
+      "observationSHA256": "e4039f4fdf628edab8b3d42518d3b1bc7e282ad7585f6f1ca89ec732912a538b",
+      "verdictSHA256": "f293d544e5b79ea4302e04c268d7f36540c983f93252fd7ad90f2c3681f4fefb",
+      "status": "verified",
+      "checks": 1614,
+      "negativeCaptureControls": 12,
+      "scope": "Actual headed native window resize, fullscreen entry/exit, native page zoom, CSS/DOMRect/Range/scroll/transform/repeated text; no second display or final manager qualification."
+    },
+    {
+      "case": "webgpu-policy",
+      "rows": [
+        10
+      ],
+      "passed": true,
+      "observationSHA256": "d377e8a9e45c510f7cbdf6bbbfe354538a5a25d2b523f8411442f872ed6ded29",
+      "verdictSHA256": "e10585ce59575e20c9e2d9d67c078eb2152b47cc07f22d64ec20d26103cc303e",
+      "status": "verified-observation",
+      "checks": null,
+      "negativeCaptureControls": 0,
+      "scope": "disabled configured WebGPU policy"
+    },
+    {
+      "case": "webgpu-native",
+      "rows": [
+        10
+      ],
+      "passed": true,
+      "observationSHA256": "3d051915c8fdcd49ab297293d863f4a9e91f630a52b4de115146f7f45163b9af",
+      "verdictSHA256": "3f20b0148d7de40937186771ebe52725e0517e33014c9a1b6835165f3b5c00d0",
+      "status": "verified-scoped-native-baseline",
+      "checks": null,
+      "negativeCaptureControls": 0,
+      "independentControls": {
+        "actualBrowser": false,
+        "negativeControls": 11,
+        "positiveControls": 1
+      }
+    },
+    {
+      "case": "platform-state",
+      "rows": [
+        11,
+        12,
+        13
+      ],
+      "passed": true,
+      "observationSHA256": "ebb66015d61b09640977b7c41840d6fab9d535504f0465cf40b6d36bc198a0ab",
+      "verdictSHA256": "aadec50b96b0c6187ae1ebc79d92572dc14ac38f68c71025dab59df14713188d",
+      "status": "verified-scoped-platform-operations",
+      "checks": null,
+      "negativeCaptureControls": 0,
+      "independentControls": {
+        "actualBrowser": false,
+        "negativeControls": 20,
+        "positiveControls": 2
+      }
+    },
+    {
+      "case": "voices",
+      "rows": [
+        14
+      ],
+      "passed": true,
+      "observationSHA256": "418a9cdb1c2b44e7f53d6f730b613aef7d26fe8cac8a576a75ef57c8429aa444",
+      "verdictSHA256": "7debebe5c06ec72203277a4cf33f2b4ed3fcbf5eb296fe058c867b3375c0665d",
+      "status": "verified-observation",
+      "checks": null,
+      "negativeCaptureControls": 0,
+      "scope": "bounded native voices; no names or IDs; timeout does not qualify voices"
+    },
+    {
+      "case": "media",
+      "rows": [
+        15
+      ],
+      "passed": true,
+      "observationSHA256": "b7472f156a41e6f7520e93e044901c70bfeeb9134704b42423cecbd56e96d488",
+      "verdictSHA256": "c57d5678d6243e4b4056dc5c58217f087b7b4479f7864e3ef175b084654819cd",
+      "status": "verified",
+      "checks": null,
+      "negativeCaptureControls": 5
+    }
+  ],
+  "reuse": "two unchanged font captures reused; sixteen remaining candidate captures plus ordinary Chrome reference collected; stricter oracles reanalysed retained captures without repeating native launches",
+  "limitations": [
+    "No second physical display",
+    "No physical power or network change events",
+    "HTTP loopback identity; external HTTPS route is a separate gate",
+    "Not complete production/1.0 qualification",
+    "No universal anonymity or fraud/CAPTCHA bypass claim",
+    "Synthetic camera and microphone sources; physical capture hardware not qualified",
+    "Per-realm operation coverage is explicitly bounded, not every API in every realm",
+    "Initial pre-readiness OOPIF fixture failures retained; assertions were strengthened, not weakened"
+  ]
+}

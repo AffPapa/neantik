@@ -4,22 +4,28 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-EXPECTED_VERSION="$(
-  plutil -extract fingerprintChromium.chromiumVersion raw -o - \
-    "$PROJECT_DIR/runtime/fingerprint-chromium.lock.json"
-)"
 
 usage() {
-  echo "Usage: $0 /absolute/path/to/Chromium.app /absolute/path/to/NeAntik\\ Browser.app" >&2
+  echo "Usage: $0 /absolute/path/to/Chromium.app /absolute/path/to/NeAntik\\ Browser.app [/absolute/path/to/runtime-candidate-lock.json]" >&2
 }
 
-if [[ $# -ne 2 ]]; then
+if [[ $# -lt 2 || $# -gt 3 ]]; then
   usage
   exit 64
 fi
 
 SOURCE_APP="$1"
 OUTPUT_APP="$2"
+RUNTIME_LOCK="${3:-$PROJECT_DIR/runtime/fingerprint-chromium.lock.json}"
+
+if [[ "$RUNTIME_LOCK" != /* || ! -f "$RUNTIME_LOCK" || -L "$RUNTIME_LOCK" ]]; then
+  echo "Runtime candidate lock must be an absolute regular file." >&2
+  exit 66
+fi
+EXPECTED_VERSION="$(
+  plutil -extract fingerprintChromium.chromiumVersion raw -o - \
+    "$RUNTIME_LOCK"
+)"
 
 if [[ "$SOURCE_APP" != /* || ! -d "$SOURCE_APP" ]]; then
   echo "Source Chromium.app must be an existing absolute path." >&2

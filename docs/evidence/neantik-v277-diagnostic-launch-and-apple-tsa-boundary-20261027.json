@@ -1,0 +1,51 @@
+{
+  "changedSources": {
+    "scripts/package-webkit-host.py": "7b92b8172270a9069565b952760e0c55c86f405d597a1001db37ef6377bd731c",
+    "scripts/runtime-network/prepare-webkit-ab-isolation-qa.py": "6ba40a1365b9d459bf4aa14f95976ced126966c4a19b3cda3ec680b2d1617429",
+    "scripts/tests/test_package_webkit_host.py": "25667997225de12834427012530c152c2b2e83b5b4d20071c2a7cfb924ca63ed",
+    "scripts/tests/test_prepare_webkit_ab_isolation_qa.py": "10d02d14ac124ac823cdfd3d8170776a1d885f5c3a9a5b770432b26d8cd57652"
+  },
+  "evidence": {
+    "TSA": {
+      "codesign": "timestamped private copy signing refused: timestamp expected but missing",
+      "identity": "pinned Developer ID present; six valid identities",
+      "localClock": "2026-10-27T16:05:30Z",
+      "network": "https://timestamp.apple.com:443 TCP connection failed; HTTP 000"
+    },
+    "diagnosticNoTimestamp": {
+      "policy": "release host still uses --timestamp; production package rejects diagnostic metadata",
+      "scope": "private app copy and explicitly diagnostic nested host only",
+      "verification": "codesign --verify --deep --strict PASS on private app before launch"
+    },
+    "directLaunch": {
+      "finding": "ApplicationEnvironment production diagnostic root guard fired",
+      "pid": 14172,
+      "privateLog": "/private/tmp/neantik-v276-manager-launch.log",
+      "repeat": "diagnose environment/root predicate before another launch",
+      "result": "exited -5",
+      "root": "/private/tmp/neantik-production-diagnostic-bootstrap-v276",
+      "rootOwnerMode": "current uid, directory mode 0700; root namespace shape valid"
+    },
+    "fullPython": "2013 tests/55 skipped; one sandbox /bin/ps setup error; exact affected process-drain test passed under authorized host process-inspection",
+    "fullSwift": "PASS: diagnostic mode, 1844 tests/222 suites/82 skipped; receipt /private/tmp/neantik-release-v1/.build/neantik-local/test-receipts/20261027T155305Z-10482.json",
+    "launchServices": {
+      "error": "kLSNoExecutableErr on app copy although CFBundleExecutable file exists, arm64 Mach-O and signature verification pass",
+      "repeat": "do not repeat unchanged Launch Services call",
+      "result": "failed"
+    },
+    "nativeAdmission": "eligibleForAttempt=true in authorized host read-only readiness check",
+    "targetedContracts": "PASS: 62 package host, release refusal, and diagnostic A/B fixture tests"
+  },
+  "id": "neantik-v277-diagnostic-launch-and-apple-tsa-boundary-20261027",
+  "nextAction": "Diagnose why the private production-ID app fails its owner-only root predicate and why Launch Services reports no executable; correct the exact private diagnostic launcher/app assembly, then use the existing single A-B-A HTTPS fixture. Do not repeat native launch before both setup failures are explained. TSA and notarization remain external release gates.",
+  "observedAtUTC": "2026-10-27T16:08:27Z",
+  "preserved": {
+    "V246": "unchanged",
+    "activePrivateStage": "/private/tmp/neantik-v276-production-diagnostic-stage",
+    "b960": "unchanged; source was copied to /private/tmp/neantik-v276-production-diagnostic-stage/NeAntik.app",
+    "bootstrapRoot": "/private/tmp/neantik-production-diagnostic-bootstrap-v276"
+  },
+  "schemaVersion": 1,
+  "scope": "One isolated copied b960 app under /private/tmp; no changes to b960/V246, user profiles, release ZIP/DMG, public channel, notarization, or external browser sites.",
+  "status": "PRIVATE_DIAGNOSTIC_BUILD_READY; APP_LAUNCH_SETUP_FAILED; APPLE_TSA_UNREACHABLE"
+}

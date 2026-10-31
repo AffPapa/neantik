@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v299-local-provisioning-profile-scan-20261028",
+  "observedAtUTC": "2026-10-27T18:46:45Z",
+  "scope": "Read-only scan of standard local macOS/Xcode provisioning-profile directories for a profile accepted by the existing Direct contract. Profile names, payloads and personal identifiers were not emitted.",
+  "result": {
+    "profileFilesChecked": 3,
+    "validForPinnedDirectContract": 0,
+    "cmsDecodeFailures": 3,
+    "otherContractOrReadFailures": 0,
+    "scanLimitReached": false
+  },
+  "contract": "app.neantik.desktop, exact pinned Developer ID certificate, required Keychain group and existing backup capability",
+  "candidateParentUntouched": true,
+  "noSigningOrBuildPerformed": true,
+  "notarized": false,
+  "published": false,
+  "releaseQualified": false,
+  "next": "No matching local profile is available in standard provisioning directories. Keep the goal active. Before another package attempt, obtain a valid Developer ID profile for the existing capability or make an explicit product decision to remove that optional capability and rebuild/requalify from source; never fake a profile or weaken signer checks."
+}

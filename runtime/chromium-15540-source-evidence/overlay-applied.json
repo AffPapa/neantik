@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "targetVersion": "155.0.8059.40",
+  "releaseReady": false,
+  "status": "reviewed-source-overlay-applied",
+  "overlayLockSHA256": "006ccc15cd346a3b429b9f1d6e712ed203cac08cb39293acf83406d0a4533226",
+  "files": [
+    {
+      "path": "build/toolchain/toolchain.gni",
+      "preimageSHA256": "5e7fa35f9614d480af8bd13927e20947c5aa85caa04be58bcbe29928f3b83aa0",
+      "postimageSHA256": "924cfc2b735e8cfa96c71b213a87e130ec675997ca6ca968b4769cfd855a16fe"
+    },
+    {
+      "path": "components/embedder_support/BUILD.gn",
+      "preimageSHA256": "355120ca227322e7c2c4a2691c8573c2e7b56a0d4c8f8c34b93286a373e4ee38",
+      "postimageSHA256": "1c37df24e83fae9ae7a04c6e12ce830d54d01f5a2cdc045a960aaf3f7418ddac"
+    },
+    {
+      "path": "components/embedder_support/user_agent_utils.cc",
+      "preimageSHA256": "167e2d4232ee20102c3cd2141563e1a9df3cb04963bacea96d81305e72e3f703",
+      "postimageSHA256": "6849c382d3bf1ca5d8fa2320d945547d429c45a5c7e8638428cd2e9856e3a996"
+    },
+    {
+      "path": "components/safe_browsing/core/common/BUILD.gn",
+      "preimageSHA256": "4d3763d10428e05d33047724b2c207dd70fa224a04f2f71769c0057d3cccf9c2",
+      "postimageSHA256": "134d187208411786a2e41e3e7bb928aff7fe9f138c3e359fa20ca807cfdd0f2f"
+    },
+    {
+      "path": "components/safe_browsing/core/common/safe_browsing_prefs.cc",
+      "preimageSHA256": "c2be8d1d71e51804c47ca8848ba87cafd061d96bcad0a27653d11324c3561403",
+      "postimageSHA256": "e4bc21abdb54fd3b120c2b0beaca6ca82bdfe3e783f4cdab9d9e344fffb95ffb"
+    },
+    {
+      "path": "components/ungoogled/neantik_apple_device_tuples.h",
+      "preimageSHA256": null,
+      "postimageSHA256": "3ef1b5bf96166edcde85177ba4ba14fac9aabf724cb8cb0e14c1076b0648214b"
+    },
+    {
+      "path": "content/browser/client_hints/client_hints.cc",
+      "preimageSHA256": "ee65d42978be144d8e5ee27d072601645921e3cd5fe327c20883c52fb95e0f09",
+      "postimageSHA256": "66cc7a405c7271461e90c9608b7a83c06bef86fa364591f05e05c3021f289b8b"
+    },
+    {
+      "path": "third_party/blink/renderer/core/css/media_values.cc",
+      "preimageSHA256": "92f60cddfa313d0d334ddc8add812489c26d11d77cd496cb925fb60849c1634a",
+      "postimageSHA256": "e98ca2df38a06f2c7e4c5cfc987f58c29e9e3cf52e9cf73996a6e768be4df629"
+    },
+    {
+      "path": "third_party/blink/renderer/core/frame/local_dom_window.cc",
+      "preimageSHA256": "79d98f1926af1ebef84138bb2bbfc602e5fcc92ba2db4ad0163ba21bffbed615",
+      "postimageSHA256": "0143653f7f96ccd3cd3decd55178756920dca6c93ac7afb128ca30d0975991b5"
+    },
+    {
+      "path": "third_party/blink/renderer/core/frame/navigator_concurrent_hardware.cc",
+      "preimageSHA256": "0c71caabd085e8ec7d976790284a4b8f144ea8fce6fb17996018a1490264468a",
+      "postimageSHA256": "ebc2b259e2fc467733904e2eac27621a2e2cd0a415934f94ab1739ee27f0d5aa"
+    },
+    {
+      "path": "third_party/blink/renderer/core/frame/navigator_device_memory.cc",
+      "preimageSHA256": "53a00115a73944d7dec9d4ef9c52ad422c508843e43fa5fbcf2db037bb10d63f",
+      "postimageSHA256": "c627f44995fb92e3db4ba43eb75bd91fd53defa8f59f8a18a0b9ce8153d38a8a"
+    },
+    {
+      "path": "third_party/blink/renderer/core/frame/screen.cc",
+      "preimageSHA256": "98b03954aeecf4373e0920999651e85c763a6b160d3eaf43b3cb1a1e08bad921",
+      "postimageSHA256": "82efdc31e4bae7a895e53bc54f33dc1797fdd05361136430e0655c06fc7f8d48"
+    },
+    {
+      "path": "third_party/blink/renderer/core/loader/frame_fetch_context.cc",
+      "preimageSHA256": "c06e26367ea60d49001384ea71de202f9bbe8ff513f025379ae8090a7b42f1b0",
+      "postimageSHA256": "a5f947773c91771b488bf7102454e20f74a2367575b4a5ed683ba1df7c4612c7"
+    },
+    {
+      "path": "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc",
+      "preimageSHA256": "d5a9cbfea09b1df327c18356267103239b08886049b2f480541b2d8edfb5a0ab",
+      "postimageSHA256": "6cb3bc149f419aaecc97118d7d427d98b8c401eac65430f4416051da8eef360a"
+    }
+  ]
+}

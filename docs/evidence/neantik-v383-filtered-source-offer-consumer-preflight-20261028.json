@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "V383",
+  "observedAtUTC": "2026-10-28T05:20:06Z",
+  "status": "PASS_V382_SOURCE_OFFER_COMPONENT_OVERLAY_AND_CROSSWALK_BINDING_PREFLIGHT; PACKAGE_CONSUMER_INTEGRATION_OPEN",
+  "scope": "A detached V382 source-offer derivative was created from the unchanged V381 offer. It replaces the upstream source archive component with the V382 filtered archive, adds the deployment-scope patch and provenance, updates the recipe, and includes a derived technical crosswalk. The existing source-offer component/overlay consumer validated every component and all overlay assets. The production package/notices code still uses the legacy crosswalk and pinned V122/V135 archive/build receipts; those consumers are not yet switched to V382.",
+  "sourceOffer": {
+    "path": "/private/tmp/neantik-release-v1/dist/private/source-offers/v382-filtered-model-assets-draft",
+    "manifestSHA256": "a99763e994344c3e819fbf9ccbd3cd9dc611d0b0795e7b92c0ec1179d07ea95e",
+    "componentCount": 656,
+    "overlayAssets": 64,
+    "archiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+    "scopePatchSHA256": "5889129ffef355e29e4db9ca5d5ca47f2865e030523c6f4de9fdc5ef869cfdf6",
+    "provenanceSHA256": "96e5f101626d694b791f7c36ad6051bd1280faf19dfeabc1bc639182e96f1e51",
+    "recipeSHA256": "f781a1ba37993f1e15a23f78570d6834eaed083293999dc013a261358daac316",
+    "crosswalkSHA256": "7a0a90589615ebf7979dfff659e82546dd9770693d8e4ac82f7aa9dafe1f2580",
+    "crosswalkPath": "/private/tmp/neantik-release-v1/docs/evidence/webkit-v20-source-license-crosswalk-v382-filtered-model-assets-20261028.json",
+    "runtimeRowsKept": 80,
+    "excludedRuntimeRowsUNKNOWN": 4,
+    "candidateBound": false
+  },
+  "consumerPreflight": {
+    "function": "scripts/package-owned-webkit-release.py::source_offer_replacements",
+    "result": "PASS_SOURCE_OFFER_COMPONENT_AND_OVERLAY_CONSUMER_PREFLIGHT",
+    "componentsValidated": 656,
+    "overlayAssetsValidated": 64,
+    "manifestHashVerified": true
+  },
+  "limitations": [
+    "The package validator still pins the original crosswalk and only accepts the historical V122/V135 build receipts.",
+    "The notice installer does not yet select the V382 crosswalk based on the exact offer/build binding.",
+    "The four excluded runtime rows remain UNKNOWN until a full build and exact staged candidate prove the outputs absent.",
+    "No full build, stage, candidate, signature, notarization, publication or downloaded-byte verification.",
+    "No rights clearance is inferred from model source omission."
+  ],
+  "actions": {
+    "sourceOfferChanged": true,
+    "candidateChanged": false,
+    "build": false,
+    "stage": false,
+    "signOrNotarize": false,
+    "publish": false
+  },
+  "nextAction": "Add backward-compatible, exact-offer-bound selection of the V382 source crosswalk and derived archive provenance to the package and notice consumers; preserve legacy V122/V135 validation paths. Add focused tests for source archive/crosswalk selection and explicit absence of all four model runtime paths. Then freeze Chromium .74 inputs before the one full WebKit build."
+}

@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v199-source-regression-and-public-tree-repair-20261027",
+  "observedAtUTC": "2026-10-27T07:54:09Z",
+  "status": "FOUR_V193_PYTHON_FAILURES_FIXED_IN_CLEAN_SOURCE; TARGETED_TESTS_AND_OPEN_SOURCE_TREE_PASS; FULL_REGRESSION_PENDING",
+  "source": {
+    "path": "/private/tmp/neantik-v193-touch-qualified",
+    "branch": "codex/neantik-v198-regression-fixes",
+    "commit": "536c45b92f451448ebc4711e3490cec6c94ddd34",
+    "parent": "50fd09c7407f38f41f18ed7563d08837603458f4",
+    "changedPaths": [
+      "AGENTS.md",
+      "docs/RUNTIME_INTEGRATION_NOTICES_15648.md",
+      "docs/evidence/neantik-manager-source-component-20261025.json",
+      "docs/evidence/neantik-v198-public-source-path-redaction-20261027.json",
+      "docs/evidence/webkit-runtime-license-evidence-index-20261025.json",
+      "docs/evidence/webkit-webinspector-candidate-notice-files-20261025.json",
+      "releases/NeAntik-0.9.0-arm64-notarized.dmg.sha256",
+      "releases/NeAntik-0.9.0-arm64-notarized.zip.sha256",
+      "runtime/fingerprint-chromium.lock.json",
+      "runtime/source-provenance.json",
+      "scripts/tests/test_generate_runtime_integration_notices.py",
+      "scripts/tests/test_package_webkit_host.py",
+      "scripts/tests/test_verify_open_source_tree.py",
+      "scripts/tests/test_verify_runtime_security_baseline.py",
+      "scripts/verify-open-source-tree.py",
+      "scripts/verify-runtime-security-baseline.py"
+    ],
+    "clean": true,
+    "priorV193Offer": "historical parent source; contains personal paths and must not be published"
+  },
+  "fixes": [
+    {
+      "area": "Chromium source provenance",
+      "result": "source-provenance.json and source lock match exact signed build-200 candidate and verify against V193 source contract; generated 156.48 notice document checked"
+    },
+    {
+      "area": "legacy source-candidate test",
+      "result": "fixture now uses a reviewed legacy lock with required schema; target behavior remains fail-closed"
+    },
+    {
+      "area": "WebKit host fixture",
+      "result": "synthetic WebGPU fixture and mock return/signature align with real notice preflight; runtime checks not disabled"
+    },
+    {
+      "area": "local audit classification",
+      "result": "source-qualified missing tuple verification remains release-blocking and now uses the expected blocker prefix"
+    },
+    {
+      "area": "open source privacy",
+      "result": "two historical local paths redacted in public copies; original bytes retained privately; linked receipt hash updated"
+    },
+    {
+      "area": "public release checksums",
+      "result": "verifier accepts actual assets schema while checking exact ZIP/DMG names, hashes and sidecars; sidecar bytes match published GitHub asset digests"
+    }
+  ],
+  "verification": {
+    "targetedTests": "8 runtime notice, 43 host packager, 24 baseline, 5 local audit and 11 open-source verifier tests passed",
+    "openSourceTree": "PASS 2728 files; no recognized private paths or secret patterns",
+    "sourceNoticeGenerator": "PASS --check for 156.48",
+    "tupleSecurityGate": "still blocks release with missing verification",
+    "swiftFullRegression": "required for new runtime/source metadata; pending",
+    "pythonFullRegression": "required after corrections; pending"
+  },
+  "limitations": [
+    "Gitleaks previous source archive has one unresolved release-metadata finding; V199 archive needs its own scan.",
+    "Current V193 source offer binds previous commit and is not the final source offer.",
+    "Recipient signed replacement/load, owned-WebKit proxy runtime, timestamp signing, notarization and publication remain open."
+  ],
+  "nextAction": "Run full Swift and Python regressions for the clean V199 source commit. Then prepare and verify a privacy-safe source offer bound to this commit and continue remaining recipient/proxy/release gates."
+}

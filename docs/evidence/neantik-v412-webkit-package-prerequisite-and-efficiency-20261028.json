@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v412-webkit-package-prerequisite-and-efficiency-20261028",
+  "status": "BLOCKED_WRONG_BASE_MANAGER_INPUT; EARLY_PREFLIGHT_ADDED",
+  "timestampUTC": "2026-10-28T08:27:27Z",
+  "scope": "Private candidate packaging prerequisite diagnosis; no build, app launch, notarization, upload or publication.",
+  "candidateApp": "/private/tmp/neantik-v411-webkit-candidate/NeAntik.app",
+  "chromiumCandidate": "Chromium 156.0.8078.74 V411 signed runtime component; not integrated into this manager bundle.",
+  "observedFailure": "WebKit notice installation requires the exact integrated Chromium compliance baseline. The attempted build-201 manager-only app lacked current runtime lock and compliance artifacts. The existing integrated app uses Chromium 156.0.8078.48 and is not a valid substitute.",
+  "classification": "Candidate setup / packaging-order failure, not a WebKit network or runtime defect.",
+  "codeChange": {
+    "file": "scripts/package-owned-webkit-release.py",
+    "change": "Require embedded exact current Chromium source lock and verify its runtime compliance artifacts before profile signing, WebKit staging, or host compilation."
+  },
+  "verification": {
+    "focusedTests": "20 passed",
+    "gitDiffCheck": "passed",
+    "exactWebKitCheckOnly": "PASS_OWNED_WEBKIT_EXACT_BUILD_SOURCE_AND_OVERLAY_CHECK_ONLY; build receipt 319afbac5c8a7b55daeb54912b3c7614537a4d26315885127d54694dc3bc7a7f; source offer manifest a81640f1e15c4addf804a0e36aed343cc8e67bf91c504f1e78e32108cfb58291",
+    "earlyPreflight": "Correctly refused wrong base manager before profile signing/runtime staging/host build."
+  },
+  "speedFinding": "Two package attempts exposed missing fast prerequisites only after staging/signing; the new Chromium integration/compliance preflight moves this cheap check before those costs. Reusing the manager-only candidate is invalid; no repeat package attempt.",
+  "releaseQualified": false,
+  "nextAction": "Build or recover the exact Chromium .74 integrated app with generated compliance artifacts, then create the production manager candidate from that integrated source app and run the single WebKit packaging pass. Continue legal/relink and runtime qualification gates; no public release.",
+  "documentationReconciliation": {
+    "status": "STALE_STATUS_AND_MISSING_SEQUENCE_DETAIL_CORRECTED",
+    "files": [
+      "docs/RUNTIME_INTEGRATION_BUILD.md",
+      "docs/NEXT_1_0_SLICES.md"
+    ],
+    "findings": [
+      "RUNTIME_INTEGRATION_BUILD.md named Chromium .48 as current despite CURRENT.json/V411 establishing a signed .74 component; it now labels .74 as unintegrated and points to CURRENT.json.",
+      "NEXT_1_0_SLICES.md described the production WebKit packager but omitted its exact integrated-Chromium lock and compliance prerequisite; that input contract is now explicit."
+    ]
+  }
+}

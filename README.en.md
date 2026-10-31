@@ -1,5 +1,6 @@
 # NeAntik
 
+
 NeAntik is an open-source, local-first browser profile manager for Apple
 Silicon Macs. The manager is native SwiftUI and launches an embedded,
 source-pinned Chromium runtime. It does not require Electron, an account, a
@@ -7,58 +8,51 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
+**0.9.2 (202), public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.9.2); the public ZIP/DMG sizes and SHA-256 digests are recorded in the [machine-readable release report](releases/v0.9.2.json). Chromium is 156.0.8078.80; WebKit is deferred and existing WebKit profile data is retained. The 1.0 program remains open.
+
+## Security advisory
+
+**Security update, October 16:** the runtime shipped in 0.8.18 lacked upstream fixes. **0.8.20** includes the backports; install the signed DMG/ZIP manually. Candidate 0.8.19 (131) was not published. [History, evidence and scope](docs/security/runtime-security-2026-10-16.md).
+
 ## Download
 
 Download the signed and notarized application from
-[the latest GitHub Release](https://github.com/AffPapa/neantik/releases/latest).
+[GitHub Releases](https://github.com/AffPapa/neantik/releases).
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-The application is distributed through GitHub Releases:
+Latest published release: [NeAntik 0.9.2 (202), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.9.2). Published ZIP/DMG sizes and SHA-256 digests are recorded in the [machine-readable report](releases/v0.9.2.json); this summary does not imply a new downloaded-byte check.
+
+**The 0.8.25 update was manual via DMG/ZIP.** Quit before replacing the app; keep profile folders. An installed-updater transition is not qualified by that release.
 
 - macOS 14 or newer, Apple Silicon only;
-- embedded Chromium, ARM64, Metal;
-- notarized ZIP and DMG files with a version number in their names;
-- SHA-256 sidecars are published with both GitHub Release assets.
+- Chromium `156.0.8078.80`, ARM64, Metal;
+- signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-As of October 2, 2026, the latest verified Direct release is
-[NeAntik 0.7.12 (build 75)](https://github.com/AffPapa/neantik/releases/tag/v0.7.12)
-with bundled Chromium 154.0.8037.93. The release has its own exact source and
-artifacts; the default `main` branch may differ from the published binary.
+Direct downloads: [GitHub — 0.9.2](https://github.com/AffPapa/neantik/releases/tag/v0.9.2). [browser.free](https://browser.free) is updated separately.
 
-GitHub Releases is the source of current version, downloads and checksums.
-The [official product site](https://browser.free/)
-provides product, installation and changelog information. The
-[AffPapa page](https://affpapa.org/neantik) is maintained separately by the owner
-and is not a prerequisite for a release.
-
-## Workplaces
-
-Each part of your day gets its own internet. A workplace is an existing isolated
-profile with a name, persistent browser session, and optional proxy. Existing
-cookies, site data and identity are preserved.
-
-NeAntik runs only on Apple Silicon Macs with macOS 14 or newer. There is no
-Android or iPhone edition. Separate profiles can organize accounts you own or
-are authorized to manage; they do not bypass third-party platform rules.
-
-The app includes a home for pinned/recent workplaces, local name/tag/note
-search, Open/Continue actions and a separate full catalog. Command-1 opens home;
-Command-2 opens the catalog. The native macOS menu offers recent workplaces and
-displays the name of the verified active browser process.
-
-First-run creation uses the same home without mandatory configuration. A compact
-row menu provides pin, edit, details and stop. Reopening a workplace with the
-default blank startup restores its previous tabs; configured startup URLs retain
-priority. See the [latest GitHub Release](https://github.com/AffPapa/neantik/releases/latest)
-for verification results and downloadable files.
+The description below reflects the manager contract and this source branch;
+the exact public binary contents are defined by its release notes and assets.
 
 ## Quick start
 
-1. Create a workplace; rename the suggestion for the task at hand.
-2. Paste a proxy if needed.
-3. Click **Create and open**. Connection preparation runs before launch.
-4. Return through **Continue**; stopping remains a separate action in the row menu or catalog.
+1. Create a profile and give it a clear name.
+2. Paste a proxy if needed; NeAntik parses it locally.
+3. Click **Launch**. Cookies and site data stay inside that profile.
+
+## Privacy in release0.9.2
+
+This release adds coherent presets, required proxy routing, site protection,
+ephemeral profiles and a protection passport. See [privacy modes](docs/PRIVACY_MODES.md)
+for scope and limits. Source availability is separate from binary publication.
+
+## WebKit in the current release
+
+The published 0.9.2 (202) public alpha release creates and launches Chromium profiles only.
+Previously created WebKit profiles and their data are retained, but cannot be
+launched or duplicated in this release. Published version 0.9.0 included an
+experimental system WebKit mode; its behavior and limits are described in the
+[guide](docs/WEBKIT_PROFILES.md).
 
 ## What it does
 
@@ -68,8 +62,8 @@ for verification results and downloadable files.
   inactive profiles without deleting data, and duplicates settings into a
   profile with a new UUID, fingerprint seed, and BrowserData; the proxy
   configuration is copied too;
-- supports direct connections, authenticated HTTP/HTTPS through Chromium's
-  native prompt, and SOCKS5 without credentials;
+- supports direct connections and authenticated HTTP/HTTPS/SOCKS5 through a separate
+  local relay per profile, including HTTPS with certificate verification before credentials;
 - locally parses a proxy list and creates up to 100 separate profiles without
   automatic network requests; a failed import does not save profiles, and any
   unfinished password cleanup is marked for retry on the next launch;
@@ -83,45 +77,7 @@ for verification results and downloadable files.
   profiles are never rotated automatically;
 - includes a protected release-only A → B → A audit for stability and
   separation without exposing it in the normal user flow;
-- contains no product telemetry client or telemetry configuration.
-
-## New in published 0.3.23 (26)
-
-- The exact signed and notarized release adds a dedicated note editor, honest
-  notice states, clearer secondary list actions, safe Quick Create, a command
-  to reveal an already running window, local row density, and one fixed native
-  shortcut reference.
-- Direct no longer contains the dormant telemetry, update-manifest, or
-  external Chrome/Cloak selection prototypes; it launches only the declared
-  embedded runtime.
-- `ContentView` request and cache state now has a narrower owner, while CI
-  separately scans the current tree and every reachable Git object for known
-  secret formats without printing matched values.
-
-## New in published 0.3.22 (25)
-
-- The profile list is the primary workspace, with adaptive rows, an optional
-  inspector, explicit multi-selection and conflict-safe batch undo.
-- Search supports `tag:`, `folder:`, `proxy:`, and `status:` tokens. Bulk
-  import accepts bounded local TXT/CSV files without following symlinks.
-- Launch preflight has explicit runtime, storage, proxy, consistency, and
-  process stages. Running, closing, unresponsive, and completed profiles have
-  distinct presentation and Force Stop remains separately confirmed.
-- The Readiness Center, on-demand profile storage measurement and deterministic
-  source/startup/resource/installed-size budgets keep the app auditable.
-
-See the current [project map](docs/PROJECT_MAP.md) and the dated
-[20-product UX research](docs/COMPETITOR_UX_RESEARCH_2026-09-01.md).
-
-## New in published 0.3.21 (24)
-
-- The optional profile note is expanded during creation, and an empty profile
-  detail always offers **Add note…**.
-- A launch failure without system detail points to safe environment
-  diagnostics and official-DMG reinstall without deleting profile data.
-- Chromium local symbols are removed only from the temporary unsigned copy by
-  the compatible Xcode Apple `strip` before Developer ID signing. Locales,
-  licenses, notices, SwiftShader, crashpad, and security evidence remain.
+- keeps Direct telemetry disabled.
 
 For authenticated HTTP/HTTPS proxies, separate buttons copy the username and
 password into Chromium's native prompt. The password remains in macOS
@@ -129,15 +85,26 @@ Keychain and never enters the browser command line. Copied values carry the
 transient/concealed pasteboard hints and an unchanged clipboard is cleared
 after 60 seconds; another app can still read it during that interval.
 
+## In-app help and local MCP
+
+Searchable in-app help covers profiles, proxies, organization, storage and MCP.
+**Help → Connect MCP to AI…** copies workspace-specific JSON/TOML settings.
+Read access is the default; management enables 18 tools for profile creation,
+editing, duplication, proxy settings, project folders, tags, pins, archive and
+normal launch/stop. Profile and folder revisions prevent stale writes; passwords
+are write-only. Stop is graceful and owned by the live MCP session; reconnect
+requires manual browser close. No arbitrary JS, cookie/BrowserData access or
+cloud bridge is exposed. See [setup, examples and FAQ](docs/MCP_GUIDE.md).
+
 ## Security and scope
 
 NeAntik is intended for privacy, separated work sessions, development, and QA.
 It does not claim complete anonymity or undetectability. It is not designed to
 bypass CAPTCHAs, bans, anti-fraud systems, or third-party platform rules.
 
-The public-alpha channel is intended for profile isolation. Strict
-production fingerprint coherence across every browser and network surface
-remains incomplete and is tracked as a limitation.
+Releases qualify defined isolation and coherence scenarios on the exact runtime.
+This does not guarantee all external checker results or every host configuration.
+See release notes for measured evidence and limitations.
 
 The bundled privacy-oriented Chromium is built without Google Safe Browsing.
 NeAntik does not send browsing history to Google, but it is not a replacement
@@ -164,6 +131,9 @@ identical across different users.
 The full Chromium checkout and build output are intentionally not committed.
 The runtime is reconstructed from the pinned upstream Chromium source plus the
 checked-in patchset. See [Building from source](docs/BUILDING.md).
+
+For profile data boundaries, snapshots, recovery and configuration transfer,
+see [Profiles, privacy, and recovery](docs/PROFILE_PRIVACY_AND_RECOVERY.md).
 
 ## Build the manager
 
@@ -205,3 +175,5 @@ configuration, or real audit reports.
 NeAntik-owned source files are licensed under MPL-2.0. Chromium-derived files
 retain their upstream licenses and notices. The NeAntik name and logo are
 subject to [TRADEMARKS.md](TRADEMARKS.md).
+
+MCP supports modern 2026-07-28 plus legacy handshake, project/tag queries, 18 tools in management mode; read-only mode exposes 7 of these, 3 static prompts and 7 client formats: [cookbook](docs/MCP_GUIDE.md). Official configuration compatibility is distinct from end-to-end qualification of each AI client.

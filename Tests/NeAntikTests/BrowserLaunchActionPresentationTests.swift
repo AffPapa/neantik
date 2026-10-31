@@ -3,6 +3,19 @@ import Testing
 
 struct BrowserLaunchActionPresentationTests {
     @Test
+    func closingKeepsEveryPrimaryActionPendingAndDisabled() {
+        for archived in [false, true] {
+            let presentation = BrowserLaunchActionPresentation.resolve(processState: .closing, isArchived: archived,
+                runtimeAvailability: .missing, isProxyTesting: true, isLaunchPreparation: true)
+            #expect(presentation.title == "Закрывается…")
+            #expect(!presentation.isEnabled)
+            #expect(presentation.help.contains("браузер и прокси"))
+        }
+        #expect(BrowserProfileProcessState.closing.isRunning)
+        #expect(!BrowserProfileProcessState.closing.canRequestStop)
+        #expect(BrowserProfileProcessState.closing.statusTone == .activity)
+    }
+    @Test
     func processStatusToneDoesNotMarkManualOrRecoveryStatesHealthy() {
         #expect(BrowserProfileProcessState.stopped.statusTone == .neutral)
         #expect(BrowserProfileProcessState.checking.statusTone == .activity)
@@ -25,19 +38,6 @@ struct BrowserLaunchActionPresentationTests {
     }
 
     @Test
-    func onlyPositivelyIdentifiedProcessesCountAsRunningInTheUI() {
-        #expect(!BrowserProfileProcessState.stopped.isConfirmedRunning)
-        #expect(!BrowserProfileProcessState.checking.isConfirmedRunning)
-        #expect(BrowserProfileProcessState.managed.isConfirmedRunning)
-        #expect(BrowserProfileProcessState.externalVerified.isConfirmedRunning)
-        #expect(
-            BrowserProfileProcessState.externalManualOnly.isConfirmedRunning
-        )
-        #expect(!BrowserProfileProcessState.externalUnverified.isConfirmedRunning)
-        #expect(!BrowserProfileProcessState.recoveryRequired.isConfirmedRunning)
-    }
-
-    @Test
     func stoppedProfileCanLaunchAfterRuntimeResolution() {
         let presentation = BrowserLaunchActionPresentation.resolve(
             processState: .stopped,
@@ -49,6 +49,34 @@ struct BrowserLaunchActionPresentationTests {
         #expect(presentation.systemImage == "play.fill")
         #expect(presentation.isEnabled)
         #expect(presentation.help == "Запустить профиль")
+    }
+
+    @Test
+    func stoppedProfileCannotStartAgainWhileAnotherLaunchIsPreparing() {
+        let presentation = BrowserLaunchActionPresentation.resolve(
+            processState: .stopped,
+            isArchived: false,
+            runtimeAvailability: .ready,
+            isManagerPreparing: true
+        )
+
+        #expect(presentation.title == "Подготовка запуска…")
+        #expect(presentation.systemImage == "hourglass")
+        #expect(!presentation.isEnabled)
+        #expect(presentation.help.contains("повторно нажимать не нужно"))
+    }
+
+    @Test
+    func activeProfileKeepsItsStopActionWhileAnotherLaunchIsPreparing() {
+        let presentation = BrowserLaunchActionPresentation.resolve(
+            processState: .managed,
+            isArchived: false,
+            runtimeAvailability: .ready,
+            isManagerPreparing: true
+        )
+
+        #expect(presentation.title == "Остановить")
+        #expect(presentation.isEnabled)
     }
 
     @Test

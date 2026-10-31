@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "status": "EXACT_SOURCE_CONTRACT_PATH_ALLOWLISTS_MATCH",
+  "swiftPathCount": 14,
+  "schema9PathCount": 14,
+  "swiftOnly": [],
+  "schema9Only": [],
+  "currentChromium15648Accepted": true,
+  "limits": [
+    "static allowlist parity only; not a signed candidate or full audit verification",
+    "source edits are uncommitted pending running regression"
+  ],
+  "releaseQualified": false
+}

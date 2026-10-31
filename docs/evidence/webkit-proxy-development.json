@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "status": "development-native-gate-failed;shipping-disabled",
+  "observedAt": "2026-10-16T09:02:09Z",
+  "sourceBase": "657c425c074ccc96a56cdb00b15c01f568114cf8",
+  "sourceSHA256": {
+    "Sources/NeAntik/WebKitProxySession.swift": "a6f83ff54b2db71a68d0b1c5dac41484f4aa0fdf32047e63a4b4dc360f9fe667",
+    "Sources/NeAntik/WebKitProxyConnectCodec.swift": "7fa6c03c644f9573ff0739ec283de0ce3bd18987a573e29267bbba3baf0df007",
+    "Tests/NeAntikTests/WebKitProxySessionTests.swift": "7ddf68412d3cc7ba04a67e3cb63303de1b5fcb0004d6028538169e834c13f8c7",
+    "Tests/NeAntikTests/WebKitProxyTransportTests.swift": "b8a7f316089510bf73d6b86d001620a3e38c12796a0435d684ad55f5980b2f58"
+  },
+  "sourceControls": {
+    "receipt": "20261016T085923Z-45747",
+    "testsIncludingSkips": 14,
+    "actuallyPassedOperations": 12,
+    "explicitNativeSkips": 2,
+    "scope": "CONNECT grammar,scope,issuance,revocation,foreign auth;not full route qualification"
+  },
+  "native": {
+    "receipt": "20261016T090209Z-46416",
+    "environment": {
+      "macOS": "27.0",
+      "architecture": "arm64",
+      "systemWebKitVersion": "22625.1.29.11.24"
+    },
+    "testHost": "Swift test process;not shipping NeAntik manager",
+    "headedWindowRequested": true,
+    "stores": "two fresh nonpersistent stores;no real profiles",
+    "admission": {
+      "memory": 1,
+      "thermal": 1,
+      "warningExceptionUsed": false
+    },
+    "sourceInputSHA256": "6a91350fb2570770bf2286323e01d22fec56f404b078a5a4f8627591ee68624c",
+    "result": "FAIL:loopback Direct arrival before relay",
+    "relayAccepted": 0,
+    "relayMalformed": 0,
+    "relayAuthenticationRefused": 0,
+    "relayEstablished": 0,
+    "upstreamConnections": 0,
+    "directOriginConnections": 1,
+    "protectedNavigationFailed": false,
+    "laterAssertionsNotReached": [
+      "independent store B",
+      "revoke no-Direct",
+      "HTTP/HTTPS/DNS/UDP matrix"
+    ],
+    "cleanup": "source-defined awaited stop for relay/upstreams and deferred view close;no separate process-custody claim"
+  },
+  "retainedEarlierFailures": [
+    "wrong 407 enum expectation corrected;not product failure",
+    "raw NWConnection/PrivacyContext EINVAL22 with .invalid destination;cause unresolved",
+    "URLSession same .invalid failure;cause unresolved",
+    "URLSession reachable loopback Direct arrival despite configured no-failover"
+  ],
+  "notQualified": [
+    "persistent UUID store binding",
+    "real manager",
+    "correct bearer interoperability",
+    "cross-session bearer replay",
+    "HTTPS targets/upstream",
+    "DNS/UDP/WebRTC",
+    "other macOS",
+    "1.0 release"
+  ],
+  "next": "Diagnose match/loopback semantics and supported containment before another native attempt;do not enable shipping proxy",
+  "unchanged": [
+    "Chromium peer/session authority",
+    "production WebKit refusal",
+    "MCP proxy:false",
+    "published0.8.22 archives"
+  ],
+  "secretHandling": "own ephemeral/dummy credentials;no real Keychain;no credential/peer addresses in this report"
+}

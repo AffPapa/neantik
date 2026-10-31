@@ -1,0 +1,32 @@
+{
+  "retrievedAt": "2026-10-15T15:06:19.275046+00:00",
+  "repository": "WebKit/WebKit",
+  "commit": "19ede6f35b64a7cd7ec397b64561ac09876156b4",
+  "commitDate": "2026-10-15T15:01:05Z",
+  "path": "Source/WebKit/UIProcess/API/Cocoa/WKWebsiteDataStore.mm",
+  "blobSHA1": "93e1f285d7656ef8f46071d1517a2dce7f49d8e1",
+  "sourceSHA256": "6a7a32bed29972c1bb9c6c53b4a8e76fb23d1a6dc7494dd28decef6a0a04b3d2",
+  "sourceBytes": 71490,
+  "sourceLines": 1740,
+  "sourceURL": "https://github.com/WebKit/WebKit/blob/19ede6f35b64a7cd7ec397b64561ac09876156b4/Source/WebKit/UIProcess/API/Cocoa/WKWebsiteDataStore.mm",
+  "range": {
+    "start": 601,
+    "end": 724
+  },
+  "sdkSHA256": "416940fc49e703de57c6da8ef372f98493503fb9d6cffe9d2b3479c6c62f4b9a",
+  "binaryReproduction": false,
+  "result": "source-confirmed-partial-public-api;full-backup-open",
+  "publicAPIAvailableSince": "macOS26",
+  "supportedInPinnedSource": [
+    "LocalStorage"
+  ],
+  "notSupportedByThisExport": [
+    "cookies",
+    "IndexedDB",
+    "ServiceWorker",
+    "CacheStorage",
+    "OPFS"
+  ],
+  "decision": "Do not remove Chromium-only full-backup guard or copy private WebKit directories. A separately named partial export would not close row30.",
+  "returnGate": "Supported coherent export/restore of all claimed types plus integrity, crash recovery and atomic publication/rollback; real native A/B proof required"
+}

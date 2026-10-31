@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "scope": "pinned WebKit source inputs for six bundled sandbox resources; source copy and notice evidence only",
+  "pinnedWebKitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+  "patchedSources": [
+    {
+      "sourcePath": "Source/WebKit/WebProcess/com.apple.WebProcess.sb.in",
+      "patchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735"
+    }
+  ],
+  "rows": [
+    {
+      "sourcePath": "Source/JavaScriptCore/framework.sb",
+      "copiedPath": "JavaScriptCore-framework.sb",
+      "runtimePath": "JavaScriptCore.framework/Versions/A/Resources/framework.sb",
+      "sha256": "dfe69686cb56ae2b98fe70af882fb66ea770c636f169fe417dc55cf1309a61a9",
+      "bytes": 1386
+    },
+    {
+      "sourcePath": "Source/WebKit/GPUProcess/mac/com.apple.WebKit.GPUProcess.sb.in",
+      "copiedPath": "WebKit-GPUProcess.sb.in",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebKit.GPUProcess.sb",
+      "sha256": "a8e1f3d73eb240ceb51eca60feed7f6ae3121feeb5dec6c5c63586939ba440f9",
+      "bytes": 55980
+    },
+    {
+      "sourcePath": "Source/WebKit/NetworkProcess/mac/com.apple.WebKit.NetworkProcess.sb.in",
+      "copiedPath": "WebKit-NetworkProcess.sb.in",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebKit.NetworkProcess.sb",
+      "sha256": "f0b254eb98476ab6211667852eb59a0e15ae310e7369040d52e40f675ae33410",
+      "bytes": 29590
+    },
+    {
+      "sourcePath": "Source/WebKit/webpushd/mac/com.apple.WebKit.webpushd.mac.sb.in",
+      "copiedPath": "WebKit-webpushd.mac.sb.in",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebKit.webpushd.mac.sb",
+      "sha256": "efb6ff4f9cbdf976c2872e29e66bb593fd266f7ecbc9c955d499456ee214547c",
+      "bytes": 11010
+    },
+    {
+      "sourcePath": "Source/WebKit/WebProcess/com.apple.WebProcess.sb.in",
+      "copiedPath": "WebKit-WebProcess.sb.in",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebProcess.sb",
+      "sha256": "19afbed37437e34a121c56ff588b1e418f6d97083a98bcc8c6851424ef842628",
+      "bytes": 59879
+    },
+    {
+      "sourcePath": "Source/WebKit/WebProcess/com.apple.WebProcess.x86.sb.in",
+      "copiedPath": "WebKit-WebProcess.x86.sb.in",
+      "runtimePath": "WebKit.framework/Versions/A/Resources/com.apple.WebProcess.x86.sb",
+      "sha256": "b3b636902f94db8ec556f1151cc2ad5062a3685b93172eb8daabd3d2d7ad1c76",
+      "bytes": 56796
+    }
+  ]
+}

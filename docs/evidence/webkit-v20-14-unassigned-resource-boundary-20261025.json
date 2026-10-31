@@ -1,0 +1,326 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T12:15:37.853398+00:00",
+  "status": "exact-candidate-and-source-hashes-verified;license-applicability-open",
+  "candidateID": "f3488c08f0b3493dbcee8db94473bacf",
+  "resourceEvidenceSHA256": "f9038f07aaac9bcd244f8d08ef6d3f68d370d5bbc91610cdb242e78a8e3a7b45",
+  "sourceRootObserved": "/private/tmp/neantik-v20-production-rebuild/WebKit",
+  "candidateRootObserved": "/private/tmp/neantik-release-v1/dist/private/candidates/f3488c08f0b3493dbcee8db94473bacf/NeAntik.app",
+  "rowCount": 14,
+  "groups": {
+    "metadata-plist": 7,
+    "compiled-asset-catalog": 1,
+    "compiled-ml-model": 3,
+    "source-svm-model": 1,
+    "localized-strings": 1,
+    "compiled-nib": 1
+  },
+  "rows": [
+    {
+      "runtimePath": "WebGPU.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "d1b62a69cb77ccc8cea6b51760021849ab53f472db0781cb6890a1106a7139a6",
+      "kind": "metadata-plist",
+      "exactSourceRuntimeHashMatch": false,
+      "sources": [
+        {
+          "path": "Source/WebGPU/Info.plist",
+          "sha256": "99f7685c28e18f82935817519f9ef6e5ebd63af453c7c3414df591f34078a4af",
+          "bytes": 1633,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": true
+        }
+      ],
+      "candidateLicenseTextPaths": [],
+      "decision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/Assets.car",
+      "runtimeSHA256": "554a204a45e7204fcf20f2aa2cf719ea4c7284a8f769289fc5ada9c4e0ab2a98",
+      "kind": "compiled-asset-catalog",
+      "exactSourceRuntimeHashMatch": false,
+      "sources": [
+        {
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/Contents.json",
+          "sha256": "0fd49ba3c3585c709678e0046a821c3c60685ec7063720d30d3a3448be3a208b",
+          "bytes": 63,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        },
+        {
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningBackground.colorset/Contents.json",
+          "sha256": "4b841cbb48667da6797cbf3d3601e6791073ff68eb36d9b17dc15ec011238d63",
+          "bytes": 707,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        },
+        {
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningBoxBackground.colorset/Contents.json",
+          "sha256": "1a59d991a040f8eb48f77bec02ae3e736418fcc8a9c74e1975f74dc7d340f88e",
+          "bytes": 701,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        },
+        {
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningText.colorset/Contents.json",
+          "sha256": "ae08ab241bec196b9aa27cab789dd141cc539f4daa691a619cfdb817e5dc2609",
+          "bytes": 701,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        },
+        {
+          "path": "Source/WebKit/HTTPSBrowsingWarning.xcassets/WKHTTPSWarningTitle.colorset/Contents.json",
+          "sha256": "f9cdeb5f30d8a38a961d5b89cfa006748034abc1a0b8878bf569c1f26c386abf",
+          "bytes": 701,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        },
+        {
+          "path": "Source/WebKit/Resources/SafeBrowsing.xcassets/Contents.json",
+          "sha256": "972ec1fd42325872438eb085ac29e94f51c10788ec18ec5549439950866c541d",
+          "bytes": 62,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        },
+        {
+          "path": "Source/WebKit/Resources/SafeBrowsing.xcassets/WKSafeBrowsingWarningBackground.colorset/Contents.json",
+          "sha256": "36f3bcaec896d41f46ef00c68ea3717f1f90ba7b94dd8291cf33f419abc4cfc9",
+          "bytes": 328,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        },
+        {
+          "path": "Source/WebKit/Resources/SafeBrowsing.xcassets/WKSafeBrowsingWarningText.colorset/Contents.json",
+          "sha256": "21d402a6b70cf83ad5c66ae38d19772a0a18496742cbf5751805cb9a57bba003",
+          "bytes": 694,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        },
+        {
+          "path": "Source/WebKit/Resources/SafeBrowsing.xcassets/WKSafeBrowsingWarningTitle.colorset/Contents.json",
+          "sha256": "555f2d5c30df9768567c622d50efdd7835c9bf9b287a325e3bc3cd57f4ac5935",
+          "bytes": 694,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        }
+      ],
+      "candidateLicenseTextPaths": [],
+      "decision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/Info.plist",
+      "runtimeSHA256": "8682dbe9e031cd97fa92985dee64f99726e4a544a470bb2f69dc99ab6493e135",
+      "kind": "metadata-plist",
+      "exactSourceRuntimeHashMatch": false,
+      "sources": [
+        {
+          "path": "Source/WebKit/Info.plist",
+          "sha256": "2693d09b3ce4fa4d9dc05a4dd99043bd2e07f3cc9c12c7eaba4b19e3f9a61eac",
+          "bytes": 1140,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": true
+        }
+      ],
+      "candidateLicenseTextPaths": [],
+      "decision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/analytics/coremldata.bin",
+      "runtimeSHA256": "3219af1988907d86a9ca82a697935793d2b479ec9c38201dfd4ad8e79c241864",
+      "kind": "compiled-ml-model",
+      "exactSourceRuntimeHashMatch": false,
+      "sources": [
+        {
+          "path": "Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+          "sha256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f",
+          "bytes": 744397,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        }
+      ],
+      "candidateLicenseTextPaths": [],
+      "decision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/coremldata.bin",
+      "runtimeSHA256": "4e604a85568f337e421b5c3f678dc3f17b94c469713017c6659e3cb28b5ab43c",
+      "kind": "compiled-ml-model",
+      "exactSourceRuntimeHashMatch": false,
+      "sources": [
+        {
+          "path": "Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+          "sha256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f",
+          "bytes": 744397,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        }
+      ],
+      "candidateLicenseTextPaths": [],
+      "decision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/TextExtractionFilter.mlmodelc/metadata.json",
+      "runtimeSHA256": "e024dd2713523eeaa0b3aceeaea98199bb9e7b42c2d001c3da49dbb3bd11b12e",
+      "kind": "compiled-ml-model",
+      "exactSourceRuntimeHashMatch": false,
+      "sources": [
+        {
+          "path": "Source/WebKit/Resources/TextExtractionFilter.mlmodel",
+          "sha256": "87a4e82b476fb7e61482c243230fffa319b5108319167f340db5ff8e9d48693f",
+          "bytes": 744397,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        }
+      ],
+      "candidateLicenseTextPaths": [],
+      "decision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/corePrediction_model",
+      "runtimeSHA256": "221555a2cdd2e957f18d478c4b9fd01f308c1613e6e10840cce924e5f543091a",
+      "kind": "source-svm-model",
+      "exactSourceRuntimeHashMatch": true,
+      "sources": [
+        {
+          "path": "Source/WebKit/Resources/ResourceLoadStatistics/corePrediction_model",
+          "sha256": "221555a2cdd2e957f18d478c4b9fd01f308c1613e6e10840cce924e5f543091a",
+          "bytes": 17842,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        }
+      ],
+      "candidateLicenseTextPaths": [],
+      "decision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/Resources/en.lproj/InfoPlist.strings",
+      "runtimeSHA256": "eb830b7d91792444feda119d8eb9b6fa400a05db02e6d9d5cd7b126361d000c2",
+      "kind": "localized-strings",
+      "exactSourceRuntimeHashMatch": true,
+      "sources": [
+        {
+          "path": "Source/WebKit/en.lproj/InfoPlist.strings",
+          "sha256": "eb830b7d91792444feda119d8eb9b6fa400a05db02e6d9d5cd7b126361d000c2",
+          "bytes": 48,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        }
+      ],
+      "candidateLicenseTextPaths": [],
+      "decision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/Info.plist",
+      "runtimeSHA256": "1727040f8d3a09f62bf750648f0388f3f65e6356bc53c3887caef2633609a40d",
+      "kind": "metadata-plist",
+      "exactSourceRuntimeHashMatch": false,
+      "sources": [
+        {
+          "path": "Source/WebKit/GPUProcess/EntryPoint/Cocoa/XPCService/GPUService/Info-OSX.plist",
+          "sha256": "7d4ce5ace213693923213b0b8e88a7df4aa9a461f2f9276d47fed7d9959bc0d1",
+          "bytes": 1461,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": true
+        }
+      ],
+      "candidateLicenseTextPaths": [],
+      "decision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/Info.plist",
+      "runtimeSHA256": "1733fb8bd8df9a1360d7959150139c69bb14dbdb0bd9f266c742c100e94ebc82",
+      "kind": "metadata-plist",
+      "exactSourceRuntimeHashMatch": false,
+      "sources": [
+        {
+          "path": "Source/WebKit/NetworkProcess/EntryPoint/Cocoa/XPCService/NetworkService/Info-OSX.plist",
+          "sha256": "848d7eec33274e1f0054da75853b0cb150b66f075f16100a2b52f9b54eabaf81",
+          "bytes": 1327,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": true
+        }
+      ],
+      "candidateLicenseTextPaths": [],
+      "decision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/Info.plist",
+      "runtimeSHA256": "cf2804905b5ab48951d12b4c9ce0f0984c24821c340597e7af828ba49e073651",
+      "kind": "metadata-plist",
+      "exactSourceRuntimeHashMatch": false,
+      "sources": [
+        {
+          "path": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+          "sha256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "bytes": 1746,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": true
+        }
+      ],
+      "candidateLicenseTextPaths": [],
+      "decision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/Info.plist",
+      "runtimeSHA256": "707d6ca86c4d1b0c51c721c6cb86a64e35810092773eb8e040f93a73fe58c703",
+      "kind": "metadata-plist",
+      "exactSourceRuntimeHashMatch": false,
+      "sources": [
+        {
+          "path": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+          "sha256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "bytes": 1746,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": true
+        }
+      ],
+      "candidateLicenseTextPaths": [],
+      "decision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Info.plist",
+      "runtimeSHA256": "95eb37b4bd4a698898b2fa3a894c15bc4b9f5dd4323f04cf446f0d841e6616fc",
+      "kind": "metadata-plist",
+      "exactSourceRuntimeHashMatch": false,
+      "sources": [
+        {
+          "path": "Source/WebKit/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService/Info-OSX.plist",
+          "sha256": "1223d475209b7397bd5fdcdf3756f89c9ba3a0f20c351cbb27c1265b89eb5e58",
+          "bytes": 1746,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": true
+        }
+      ],
+      "candidateLicenseTextPaths": [],
+      "decision": "UNKNOWN"
+    },
+    {
+      "runtimePath": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/Resources/WebContentProcess.nib",
+      "runtimeSHA256": "90306f1e50ac0139b6057dd411b06fd49089cecfb59f01e144690b9cd86583a7",
+      "kind": "compiled-nib",
+      "exactSourceRuntimeHashMatch": false,
+      "sources": [
+        {
+          "path": "Source/WebKit/Resources/WebContentProcess.xib",
+          "sha256": "0583e5f26322ca810b6d84bcab7dfce7aa3c8e8cea9e4ca150fb8a98bf47ef36",
+          "bytes": 582,
+          "hasExplicitLicenseSignal": false,
+          "hasCopyrightSignal": false
+        }
+      ],
+      "candidateLicenseTextPaths": [],
+      "decision": "UNKNOWN"
+    }
+  ],
+  "officialGuidance": [
+    {
+      "url": "https://docs.webkit.org/Other/Licensing.html",
+      "scope": "WebKit describes BSD and LGPL per-file licensing for code; not a blanket assignment for these resource bytes"
+    },
+    {
+      "url": "https://webkit.org/terms-of-use/",
+      "scope": "Rights in source projects depend on accompanying or otherwise applicable licenses; hosting does not itself assign one license to all resources"
+    }
+  ],
+  "nextProof": "per-resource license/provenance or lawful removal/replacement in a new candidate; then package notice and source binding",
+  "releaseQualified": false
+}

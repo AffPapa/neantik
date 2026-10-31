@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "targetVersion": "155.0.8059.40",
+  "releaseReady": false,
+  "commands": [
+    [
+      "python3",
+      "build/util/lastchange.py",
+      "-o",
+      "build/util/LASTCHANGE"
+    ],
+    [
+      "python3",
+      "build/util/lastchange.py",
+      "-m",
+      "GPU_LISTS_VERSION",
+      "--revision-id-only",
+      "--header",
+      "gpu/config/gpu_lists_version.h"
+    ],
+    [
+      "python3",
+      "build/util/lastchange.py",
+      "-m",
+      "SKIA_COMMIT_HASH",
+      "-s",
+      "third_party/skia",
+      "--header",
+      "skia/ext/skia_commit_hash.h"
+    ],
+    [
+      "python3",
+      "build/util/lastchange.py",
+      "-m",
+      "DAWN_COMMIT_HASH",
+      "-s",
+      "third_party/dawn",
+      "--revision",
+      "gpu/webgpu/DAWN_VERSION",
+      "--header",
+      "gpu/webgpu/dawn_commit_hash.h"
+    ]
+  ],
+  "files": [
+    {
+      "path": "build/util/LASTCHANGE",
+      "sha256": "94ea5783cc19608ce1efda73f50b0e328310d0097f97eb99c51befb2ffc9e542"
+    },
+    {
+      "path": "build/util/LASTCHANGE.committime",
+      "sha256": "83702ae8d68efb8c8301060c86dee382173a90f2891ce173144a8d77356604bd"
+    },
+    {
+      "path": "gpu/config/gpu_lists_version.h",
+      "sha256": "8621a9a421257954894cb42fbe0536343aa4f17750ff2ead1782e5810093029b"
+    },
+    {
+      "path": "skia/ext/skia_commit_hash.h",
+      "sha256": "5b8957f2db7e8ae487165a02d2e78af1b1786cfdfb8709ed86c1c419e3ebf98f"
+    },
+    {
+      "path": "gpu/webgpu/DAWN_VERSION",
+      "sha256": "136bb080fa33cd885636b42d670028fe1f2ce151109a7cf3961e0e455395d6cc"
+    },
+    {
+      "path": "gpu/webgpu/dawn_commit_hash.h",
+      "sha256": "6f7c3622c8668a334c5a9ec79d43ca186f1fb42518efa75a9e4bb4ad05a9ac4c"
+    }
+  ]
+}

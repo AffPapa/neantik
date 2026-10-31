@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "V394",
+  "createdAt": "2026-10-28T06:35:24Z",
+  "classification": "PARTIAL_V382_NOTICE_RECEIPT_BINDING_FIXED; PACKAGE_OVERLAY_APPLICATION_GAP_FOUND; NOTICE_INSTALL_BLOCKED",
+  "scope": "Continue from V393 without rebuilding, signing, launching or publishing. Rebind current pre-sign WebKit runtime notices to the V382 source-offer-bound build receipt and diagnose the exact stage-to-notice integration boundary.",
+  "sourceOffer": {
+    "root": "/private/tmp/neantik-release-v1/dist/private/source-offers/v382-filtered-model-assets-draft",
+    "manifestSHA256": "55d4858987381da122454d4e0869799ae21de9a14bef7ffe81dd6569c7fa28c4",
+    "buildReceiptSHA256": "319afbac5c8a7b55daeb54912b3c7614537a4d26315885127d54694dc3bc7a7f",
+    "stageReceiptSHA256": "085eb6e50dc5a878e50d821a812ae374fafbb249817f757cfabea86c0d1271a4"
+  },
+  "implementation": {
+    "noticeConsumer": {
+      "path": "/private/tmp/neantik-release-v1/scripts/webkit_runtime_notices.py",
+      "sha256": "9dc55dc6cc39db2b0c50ec8b1dfc2095f6238a49d0130d9a7068cd9e089849d2",
+      "change": "Validate the fixed V382 manifest and its component-bound 14-output receipt; scope runtime hashes through ContextVar; render current receipt hashes while retaining V135 review inputs as historical evidence."
+    },
+    "test": {
+      "path": "/private/tmp/neantik-release-v1/scripts/tests/test_webkit_runtime_notices.py",
+      "sha256": "324225f9ec60d23c60eee45520aac076fd69d39e0446b36e5c02e36cfe3252f4",
+      "result": "PASS, 67 tests in 23.958 seconds"
+    }
+  },
+  "verification": {
+    "receiptOutputs": "All 14 exact V382 ARM64 output hashes matched the V393 staged Frameworks tree.",
+    "modelAbsence": "The four excluded runtime model paths remained absent.",
+    "noticeInstallVerify": "Blocked before writing notices on WebCore media-controls SVG mismatch: the V382 offer expects first-party replacement bytes while the V393 stage contains upstream bytes.",
+    "isolatedOverlayDiagnostic": "In a separate disposable Frameworks copy, 55 direct resource overlay files applied after exact preimage checks; 35 media-controls resources and 18 WebCore first-party resources then matched. Compiled WebKit Assets.car still failed the exact first-party warning-color source comparison, so the overlay path is not package-complete.",
+    "sideEffects": "No retained candidate, canonical V393 stage, source archive, signing identity, user profile or public artifact changed. No build, signature, app launch, notarization or publication."
+  },
+  "documentationCodeMismatch": "V264/V265 recipient recipes describe stage-webkit-runtime.py and later package/sign steps but omit the required application of source-offer runtime overlays before signing; current package/notice code requires those bytes, and the stage command only copies runtime payloads.",
+  "nextAction": "Implement one source-offer-bound overlay preparation step before recipient signing: apply 55 hash-pinned static resources to a disposable stage, then resolve/rebuild the compiled Assets.car warning-color catalog from the exact asset-catalog build rule. Bind all post-overlay resource hashes and receipts, update V382 build/package evidence as needed, then run notice install/verify once. Do not sign or launch until this gate passes.",
+  "releaseQualified": false
+}

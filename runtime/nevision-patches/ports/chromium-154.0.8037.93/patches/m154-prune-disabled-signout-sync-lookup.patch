@@ -1,0 +1,14 @@
+diff --git a/chrome/browser/ui/signin/signin_view_controller.cc b/chrome/browser/ui/signin/signin_view_controller.cc
+--- a/chrome/browser/ui/signin/signin_view_controller.cc
++++ b/chrome/browser/ui/signin/signin_view_controller.cc
+@@ -435,10 +435,8 @@
+     signin_metrics::AccessPoint reauth_access_point,
+     signin_metrics::ProfileSignout profile_signout_source,
+     signin_metrics::SourceForRefreshTokenOperation token_signout_source) {
+   CHECK(profile_->IsRegularProfile());
+-  syncer::SyncService* sync_service =
+-      SyncServiceFactory::GetForProfile(GetProfile());
+   base::OnceCallback<void(absl::flat_hash_map<syncer::DataType, size_t>)>
+       signout_prompt_with_datatypes = base::BindOnce(
+           &SigninViewController::SignoutOrReauthWithPromptWithUnsyncedDataTypes,
+           weak_ptr_factory_.GetWeakPtr(), reauth_access_point,

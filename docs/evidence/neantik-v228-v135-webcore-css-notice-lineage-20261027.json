@@ -1,0 +1,35 @@
+{
+  "status": "V135_WEBCORE_FOUR_CSS_INPUTS_AND_GENERATION_LINKAGE_MATCH",
+  "stagedWebCoreSHA256": "2dfb23280d68b0b89bf493a16de3696a326ccf8cdb88722593998bb00bbdd6a8",
+  "reviewSHA256": {
+    "popover": "d7b70de36a7b264a855fb68d8fafc7acf02e4a6c055b37e597a48d8212be8d36",
+    "cssInputs": "b1ee3b5ed6a58d0ce9e3aad1f4b32a2e72280f4f8b1c42e68787c7104958af1d"
+  },
+  "reviewedInputs": [
+    {
+      "path": "Source/WebCore/css/CSSProperties.json",
+      "sha256": "f56793c6ac7a23a32ce70620febbfcee54f0fc8ae0e3c7fb18f42a68ca043343"
+    },
+    {
+      "path": "Source/WebCore/css/CSSValueKeywords.in",
+      "sha256": "fa5b9337b00c1acadacfd9ce5da60b234ee1a0a74e5be6fcebe93ce266f9621d"
+    },
+    {
+      "path": "Source/WebCore/css/SVGCSSValueKeywords.in",
+      "sha256": "bf79271aa57cb8f68425b767ea9c3be8ef00bf8f7ef6a29add484d04bdd38ef4"
+    },
+    {
+      "path": "Source/WebCore/css/popover.css",
+      "sha256": "0c46fec1026f3c6b9b2fa90724cf12c39b3a8628857a30675f39e4f14f6a62a6"
+    }
+  ],
+  "generatorInputsInNinjaQueries": 4,
+  "generatedOutputsWithLinkedObjectDependency": 3,
+  "reviewedNoticeFilesHashMatch": 3,
+  "limits": [
+    "historical CSS review leaves individual attribution and runtime binding open",
+    "V135 exact package notices not installed or signed",
+    "no complete WebCore license or runtime qualification"
+  ],
+  "releaseQualified": false
+}

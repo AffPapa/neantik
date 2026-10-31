@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v274-runtime-notice-refresh-copy-pass-20261027",
+  "observedAtUTC": "2026-10-27T15:42:00Z",
+  "status": "B960_NOTICE_VERIFIER_FOUND_STALE_JSC_WEBCORE_PAYLOADS; REFRESHED_COPY_VERIFY_PASS",
+  "scope": "Read-only verifier on immutable b960 followed by --install/verify on an isolated APFS clone; original signed candidate untouched.",
+  "candidate": {
+    "id": "b96006a994664a80bf89cd757f932eff",
+    "manifestSHA256": "4d10449a7674c908c333f31d81f2b1ce3a5ce0178716ecda0b8daddd6c6924c8",
+    "originalStrictSignature": "untouched"
+  },
+  "initialCheck": {
+    "command": "webkit_runtime_notices.py --verify",
+    "result": "FAIL",
+    "reason": "packaged JavaScriptCore headerless-input review differs from pinned evidence"
+  },
+  "refreshedCopy": {
+    "command": "webkit_runtime_notices.py --install then internal verify",
+    "result": "PASS",
+    "noticeFiles": 153,
+    "changedFiles": [
+      {
+        "path": "JavaScriptCore/HeaderlessInputsBSD2Review.json",
+        "oldSHA256": "5a55d0681fe874111c92c4882994b8aa549bc4e5e12f64356cd009b6f732d671",
+        "newSHA256": "b002ed496daf9d0727ba2f527869ba4efced620e10660c53c401b593ac0d533f",
+        "interpretation": "Candidate retained a stale source path in the pinned review evidence."
+      },
+      {
+        "path": "WebCoreGeneratedInputHeaders.txt",
+        "oldSHA256": "93d9ce3e3f3b35465749b4494e55633000e703551115363129fc2afd65ab6aa8",
+        "newSHA256": "94c29d9a04ff8d1a3090d5bd63a2b6990189f1695ec7ba302b8130e920aa9468",
+        "interpretation": "Candidate carried a stale 77-line generated-touch notice appendix."
+      }
+    ]
+  },
+  "cleanup": "Removed only the isolated notice clone after recording hashes; original b960 and V246 were not modified.",
+  "limitation": "This closes the current runtime notice verifier for a refreshed copy only. It does not legal-clear component applicability/patents, bind refreshed notices to a newly signed final candidate, prove recipient relink/signed-load, or qualify release.",
+  "nextAction": "Apply these two refreshed notice payloads in the next diagnostic/release candidate build and rerun exact package/source-offer verification; then close remaining four-image terms/source and signed-load evidence. Do not reuse b960 notice PASS as release evidence.",
+  "releaseQualified": false
+}

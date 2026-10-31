@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "kind": "chromium-semantic-corrections",
+  "semanticCorrectionSet": "canvas-audio-webgl-native-v2",
+  "targetChromiumVersion": "155.0.8059.40",
+  "baseSourceContractSHA256": "5c1f8789fe9f586a075b98d29a969c62aa86cc8562b0c6a489fa9fc66a865716",
+  "baseSourceSnapshotSHA256": "61636de70b6e5d11305d93fbc715e7a8c05901952b23255cce70be8c15edc977",
+  "baseOrderedReplaySHA256": "c936de57c8cf27ee00e3220a2c5a8bb69d3c6194a93c1405d53f921fb79b69a0",
+  "patches": [
+    {
+      "vector": "canvas",
+      "path": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-canvas-native-readback-semantics.patch",
+      "sha256": "116b00e14257746036ece3551314b4849c988b1a0817b6dba8ff165eb80b1d8c",
+      "files": [
+        {
+          "path": "third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc",
+          "preimageSHA256": "881f63d3830c62e5610e8d9dcc54253b1d327f17570520ee35bbc1acad503cc6",
+          "postimageSHA256": "372ef4435eef656e2d3d7bf50b42e21abfc4d59a00005c2ed3702057074ca36c"
+        },
+        {
+          "path": "third_party/blink/renderer/platform/image-encoders/image_encoder.cc",
+          "preimageSHA256": "1888580090b0be069df29720e1cb63d432ae7f40e1062c7088845661830c9201",
+          "postimageSHA256": "8e862362decf65f2bd6ec26caaa33e62df62cec99c1c30253e70d04b5e1f887c"
+        },
+        {
+          "path": "third_party/blink/renderer/platform/graphics/static_bitmap_image.cc",
+          "preimageSHA256": "0984256eecb97a07a6c317a93380f968f80b73f46249bd532b1d5728de756cfd",
+          "postimageSHA256": "6eac7379a2fc4c5922ea9d08a9b3afb73845b7522b100a051ab9edec9fca01e0"
+        },
+        {
+          "path": "third_party/blink/renderer/platform/graphics/static_bitmap_image.h",
+          "preimageSHA256": "886ab6fe6169243488e1499c3b40ce05ca923963d4146351d1bd6738c561c63b",
+          "postimageSHA256": "719fc38fc2735147c447fd336b9030347736053a4aff6250b8c045e5536c9ba9"
+        }
+      ]
+    },
+    {
+      "vector": "audio",
+      "path": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-audio-native-output-semantics.patch",
+      "sha256": "21417db075ec6f2246aa2dde80463abbfb8fb39b8fde1b4e0bb160239879e8a9",
+      "files": [
+        {
+          "path": "third_party/blink/renderer/modules/webaudio/offline_audio_context.cc",
+          "preimageSHA256": "bef1bd4a9bcf926246b59939a723987aacb6d93371986aed9d41d715c6b2ec2f",
+          "postimageSHA256": "8fbd86ea2e90317092e0dc6833d88f0f49948adf9a6c1b50299f89029cd82811"
+        }
+      ]
+    },
+    {
+      "vector": "webgl",
+      "path": "runtime/nevision-patches/ports/chromium-155.0.8059.40/patches/m155-webgl-native-readback-semantics.patch",
+      "sha256": "f66cd62c0724fd1a6b016d02b1cedc9c2ec61c2f0d1730564f121f17bfcaaac6",
+      "files": [
+        {
+          "path": "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc",
+          "preimageSHA256": "6cb3bc149f419aaecc97118d7d427d98b8c401eac65430f4416051da8eef360a",
+          "postimageSHA256": "9bd9d2abea3823b67942ed47d33b19b627838b40d5bb76b466a66c28fc350c74"
+        }
+      ]
+    }
+  ],
+  "releaseReady": false
+}

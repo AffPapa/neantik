@@ -1,0 +1,22 @@
+{
+  "status": "HOST_PROXY_DISABLED_TIMESTAMP_LOG_DIAGNOSIS_INCONCLUSIVE",
+  "scope": "read-only host proxy enable flags, environment variable presence, and categorized codesign/securityd/trustd timestamp messages; no proxy values, credentials, raw logs or network traces",
+  "systemProxy": {
+    "HTTP": false,
+    "HTTPS": false,
+    "SOCKS": false,
+    "PAC": false,
+    "autodiscovery": false
+  },
+  "processProxyEnvironmentVariablesPresent": false,
+  "timestampLogEntriesPastTwoHours": {
+    "codesign": 0,
+    "securitydOrTrustd": 0
+  },
+  "limitations": [
+    "absence of matching log messages does not prove signing would succeed",
+    "no identification of the failure cause or network change",
+    "no signature attempt, package, runtime or release qualification"
+  ],
+  "releaseQualified": false
+}

@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v407-v405-recipient-known-input-preflight-20261028",
+  "observedAtUTC": "2026-10-28T07:45:00Z",
+  "status": "PASS_KNOWN_RECIPIENT_INPUT_PINS_AND_TOOLCHAIN; FULL_DEPENDENCY_CLOSURE_AND_RELINK_OPEN",
+  "scope": "Read-only recipient prerequisites preflight against the exact V405 combined source offer. No build, sign, launch, candidate creation or publication.",
+  "inputs": {
+    "sourceOfferRoot": "/private/tmp/neantik-release-v1/dist/private/source-offers/v405-v382-v399-combined-draft",
+    "sourceOfferManifestSHA256": "5c03656e822ef3bb69ab4bf14c0c2d2efa118b85bbbd3e3be4661391ae2c37ca",
+    "inputManifest": "/private/tmp/neantik-v407-v405-recipient-inputs.json",
+    "inputManifestSHA256": "0fe3073f96994eb4306e28d832dc3b2ed85f17113f20f01dfb655b0fd0f1185d",
+    "checker": "/private/tmp/neantik-release-v1/scripts/check-webkit-recipient-prereqs.py",
+    "checkerSHA256": "5c87a0dc91efb2b2ef5f58e2e259ece7428536ad2479d233e7b4e12fa4cc0f84",
+    "knownPins": {
+      "webkitArchiveSHA256": "35e88c74041d81d75e54aa6f914c94029b5a0c74ceac5a9162cf009460b790cd",
+      "neantikArchiveSHA256": "047ad8b493ff2710a277ac4526ee899aa9165e1ab18f7ca6deab63a6e0523958",
+      "patchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+      "buildConfigSHA256": "87fa45899da4edc66eefd6b48fabae83331a0d52fc22f178d991789204f0837e"
+    },
+    "sourceTree": "/private/tmp/neantik-v382-filtered-webkit-source-20261028/WebKit",
+    "builtFrameworks": "/private/tmp/neantik-v395-package-stage/Frameworks",
+    "managerApp": "Not supplied: no exact signed production manager app exists; retained .48 candidate is ineligible and .74 runtime app is Chromium-only.",
+    "identity": "Not queried in this preflight; identity evidence remains separate."
+  },
+  "checks": {
+    "webkitArchive": "PASS",
+    "neantikArchive": "PASS",
+    "patch": "PASS",
+    "buildConfig": "PASS",
+    "sourceTree": "PASS",
+    "toolchain": "PASS; all tools present, observed Xcode 27.0 and SDK 27.0",
+    "builtFrameworks": "PASS layout only; images and signatures unverified",
+    "knownPinnedInputsPresent": true,
+    "packagingInputsPresent": false,
+    "completeDependencyInputs": "UNRESOLVED",
+    "recipientRelinkProved": false,
+    "licenseOrSourceOfferQualified": false
+  },
+  "limitations": [
+    "The checker proves the listed pins and host toolchain only; it explicitly does not establish complete transitive dependency inputs or the full portable build recipe.",
+    "No exact signed production manager app or recipient modified-image rebuild/re-sign/load is available.",
+    "Not release-qualified."
+  ],
+  "sideEffects": {
+    "build": false,
+    "runtimeLaunch": false,
+    "signing": false,
+    "candidateChanged": false,
+    "publication": false
+  },
+  "releaseQualified": false,
+  "nextAction": "After observable secure timestamp recovery, produce the exact signed Chromium .74 Metal runtime report and promote its source lock; then run the integrated production package once using the exact V405 combined manifest."
+}

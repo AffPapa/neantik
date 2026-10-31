@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "status": "bounded-angle-image-review-and-exact-license-texts-staged-in-private-offer;offer-incomplete",
+  "observedAt": "2026-10-25",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "sourceOfferFolder": "dist/private/source-offers/1.0.0-manager-955",
+  "sourceOfferManifestSHA256": "a4d868eb8e6d21394f8d07e7672a180d2ab59b387b2a70a76c092ae5fa27c2b6",
+  "totalManifestComponents": 70,
+  "physicallyIncludedComponents": 69,
+  "newlyStagedComponents": [
+    {
+      "path": "notices/angle/ANGLE-LICENSE-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+      "bytes": 1643,
+      "sha256": "bf4da21bd20bcfb5b60b7ecc67fa864a79be049e21d6178076887f178dd6c71a",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/angle/xxhash-LICENSE-e4c5da7234eca7baad9a46f0b144e49ccad2e500",
+      "bytes": 1389,
+      "sha256": "6ffedbc0f7878612d2b23589f1ff2ab15633e1df7963a5d9fc750ec5500c7e7a",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "notices/chromium/Chromium-ANGLE-DEPS-LICENSE.txt",
+      "bytes": 1536,
+      "sha256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
+      "includedInOfferFolder": true
+    },
+    {
+      "path": "evidence/WEBKIT_angle-image-license-review-V20.json",
+      "bytes": 6599,
+      "sha256": "7855e94e5bd65f54ae0a0be3283f9e9966880d2bc68566183b3e63f7ede6e1bc",
+      "includedInOfferFolder": true
+    }
+  ],
+  "newlyStagedBytes": 11167,
+  "worksheet": {
+    "path": "docs/evidence/webkit-runtime-package-notice-worksheet-20261025.json",
+    "sha256": "2d2a5f8c07b446724af5895e7ccdd358cfdc793a338fe7128172ff03d20acb9e",
+    "unknownApplicabilityRows": 93
+  },
+  "reviewReceipt": {
+    "path": "docs/evidence/webkit-v20-angle-image-license-review-20261025.json",
+    "sha256": "7855e94e5bd65f54ae0a0be3283f9e9966880d2bc68566183b3e63f7ede6e1bc"
+  },
+  "limitations": [
+    "93 applicability rows remain UNKNOWN.",
+    "Recipient toolchain/relink reproduction remains open.",
+    "Candidate signature remains failed; no publication or qualification."
+  ]
+}

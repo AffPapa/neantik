@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v175-chromium-stable-floor-recheck-20261027",
+  "observedAtUTC": "2026-10-26T22:01:43Z",
+  "status": "CURRENT_MAC_STABLE_FLOOR_STILL_156_0_8078_48; NO_SOURCE_LOCK_CHANGE",
+  "scope": "Official Google Chrome release status only. No source download, Git fetch, lock mutation, Chromium build, package, launch, signature, or publication.",
+  "currentLock": {
+    "receipt": "docs/evidence/chromium-stable-port-156-8078-48-20261024.json",
+    "targetChromiumVersion": "156.0.8078.48",
+    "upstreamCommit": "d0c02bfad08ec92a6ffcf989e53cd995e6381a4c"
+  },
+  "officialEvidence": [
+    {
+      "url": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_02018666648.html",
+      "published": "2026-10-20",
+      "finding": "Desktop Stable promoted Chrome 156; Windows 156.0.8078.47 and Mac 156.0.8078.48; 353 security fixes."
+    },
+    {
+      "url": "https://chromereleases.googleblog.com/2026/10/",
+      "published": "last observed desktop-related entries through 2026-10-23",
+      "finding": "The 2026-10-22 157.0.8103.15/.16 post identifies Early Stable for Windows and says Mac will follow; no later Mac stable promotion was found in the official October index at check time."
+    },
+    {
+      "url": "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json",
+      "observedTimestamp": "2026-10-26T20:20:58.029Z",
+      "finding": "Stable reports 156.0.8078.47 (revision 1706539); Beta reports 157.0.8103.15. Consistent with the Desktop stable blog, where Mac build is .48."
+    }
+  ],
+  "conclusion": "No newer Mac Desktop Stable release was observed. Keep the existing 156.0.8078.48 lock and do not rebase/build Chromium. This is a source/version-floor recheck, not candidate/runtime or release qualification.",
+  "sideEffects": {
+    "sourceLockChanged": false,
+    "sourceFetched": false,
+    "compiled": false,
+    "candidateChanged": false,
+    "published": false
+  },
+  "nextAction": "Reuse the completed Chromium 156.0.8078.48 source port. Recheck only if the official Mac Stable channel advances before final source freeze."
+}

@@ -1,0 +1,21 @@
+{
+  "status": "FULL_PYTHON_AND_SWIFT_PASS_VERIFIER_COMMITTED",
+  "sourceCommit": "3d999c55efee7b51d6e809debd3e1f51c0d40898",
+  "python": {
+    "tests": 2008,
+    "skipped": 55,
+    "status": "PASS",
+    "sourceUnchangedDuringRun": true,
+    "logSHA256": "df287817f25aafaa0c871475097686aaf56bd767339678dfb829efeeb1a0c97a",
+    "privateLog": "/private/tmp/neantik-v221-python-_6j_nvug/unittest.log"
+  },
+  "swift": {
+    "tests": 1841,
+    "suites": 222,
+    "skipped": 82,
+    "status": "PASS",
+    "compiledInputSHA256": "0e47751ba095a6b577ec565205f2e6d7688bafb6dfac57a70123c7dc63d51225"
+  },
+  "sourceArchive": "V206 is predecessor; refresh for new commit before candidate binding",
+  "releaseQualified": false
+}

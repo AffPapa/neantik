@@ -1,0 +1,78 @@
+{
+  "binaryBinding": {
+    "angleEnableMetal": true,
+    "architecture": "arm64",
+    "argsGNSHA256": "89d09cc5e0958c7cdf0219935520c9aad48145c3fabc711a8be28cad85e54b85",
+    "candidateExecutableSHA256": "9365e2015f9d0f604d6b5268647540319cb0d5a870586df44f7c862021bc899b",
+    "candidateExecutableSize": 59088,
+    "candidateVersionOutput": "NeAntik Browser 153.0.8010.52",
+    "policy": "Local unsigned build-candidate binding only. This does not attest signing, notarization, Gatekeeper, runtime behavior, publication, or release readiness.",
+    "sourceVersion": "153.0.8010.52",
+    "status": "bound-to-built-candidate"
+  },
+  "commonUngoogledInput": {
+    "commit": "a638756eb14c8b6ce64b4b2a067afea5d4207bf4",
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium.git",
+    "tag": "153.0.8010.52-1",
+    "tree": "ed1c3ce62d975b83c3354e0e6915818860d71836"
+  },
+  "macPackagingInput": {
+    "latestPublicReviewedCommit": "038db2b41f7aeb00bbceb2f5a56912b26eb5b284",
+    "latestPublicReviewedReleaseLine": "152.0.7977.82-1.1",
+    "relationship": "reference-packaging-input-only; 153 NeAntik port is maintained separately",
+    "repository": "https://github.com/ungoogled-software/ungoogled-chromium-macos.git"
+  },
+  "officialChromiumBase": {
+    "commit": "78e5e45d4bb41035e17ea4da2cc257f496416ac9",
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "153.0.8010.52",
+    "tree": "b314413854fdaa31aac4ad3daa225a6bf41cff0d"
+  },
+  "packagingDecision": {
+    "doNotClaim": [
+      "official ungoogled macOS Chromium 153 packaging",
+      "reproducible release build",
+      "signed or notarized artifact",
+      "runtime or anti-fraud qualification"
+    ],
+    "mode": "owned-macos-packaging-port",
+    "publicMacPackagingCeilingObserved": "152.0.7977.82-1.1",
+    "reason": "The public ungoogled macOS packaging line has no reviewed 153 release; NeAntik uses an explicitly reviewed port from the official Chromium source and the public ungoogled input layer."
+  },
+  "policy": "Path-free local candidate evidence only. Signing, notarization, Gatekeeper, runtime behavior, publication, and release readiness remain unproven.",
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "signatureStatus": "ad-hoc-or-unqualified",
+  "sourceEvidence": {
+    "binaryBinding": {
+      "angleEnableMetal": true,
+      "architecture": "arm64",
+      "argsGNSHA256": "89d09cc5e0958c7cdf0219935520c9aad48145c3fabc711a8be28cad85e54b85",
+      "candidateExecutableSHA256": "9365e2015f9d0f604d6b5268647540319cb0d5a870586df44f7c862021bc899b",
+      "candidateExecutableSize": 59088,
+      "candidateVersionOutput": "NeAntik Browser 153.0.8010.52",
+      "policy": "Local unsigned build-candidate binding only. This does not attest signing, notarization, Gatekeeper, runtime behavior, publication, or release readiness.",
+      "sourceVersion": "153.0.8010.52",
+      "status": "bound-to-built-candidate"
+    },
+    "excludedPrefixes": [
+      "build",
+      "out",
+      "tools/gn"
+    ],
+    "git": {
+      "commit": "78e5e45d4bb41035e17ea4da2cc257f496416ac9",
+      "trackedDiffBytes": 1764599,
+      "trackedDiffSHA256": "91ab61b3949477bdd475c64a152523276ca72d7e9cfaf674f37d74692f2f18ea",
+      "tree": "b314413854fdaa31aac4ad3daa225a6bf41cff0d"
+    },
+    "schemaVersion": 1,
+    "sourceMode": "owned-macos-packaging-port",
+    "untrackedFileCount": 26,
+    "untrackedInventorySHA256": "74554692a27105c0f7c95c9b7491b34fe33e27f475fffda440a66ae56236d090"
+  },
+  "sourceEvidenceSHA256": "89c35c27651587f0c87ed043df66fdd86be74b0da565cea4eb8add80ee61cf47",
+  "status": "candidate-bound",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "153.0.8010.52"
+}

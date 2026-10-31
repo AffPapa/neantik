@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v281-ab-phase-capture-boundary-fix-20261028",
+  "observedAtUTC": "2026-10-27T17:20:23Z",
+  "status": "PASS_PHASE_CAPTURE_BARRIER_TARGETED_TESTS; NOT_PRODUCT_OR_RELEASE_QUALIFICATION",
+  "scope": "QA fixture/control workflow only. No NeAntik Swift/product binary, browser profile, candidate, source offer, signature, public release, or network state changed.",
+  "source": {
+    "branch": "codex/neantik-1-0-prep-20261025",
+    "head": "63c3bc620163ae6354f3dc359b47b9fd72e921d0",
+    "worktree": "/private/tmp/neantik-release-v1",
+    "preexistingDirtyState": "preserved"
+  },
+  "changes": {
+    "fixture": "A phase command waits up to 60 seconds for the expected one-page/one-state response; A1/A2 require proxy A, B1 requires proxy B. A clean unexpected route or state is recorded as a runtime FAIL; no response is a timeout; extra page/state responses are phase-contaminated and are not consumed or written into phase-results.json.",
+    "runPlan": "Explains that each profile remains running until its matching phase command returns phase-recorded.",
+    "regression": "Four focused tests cover late mixed B1/A2 contamination, delayed expected response, wrong-proxy page load, and A2 proxy-A/restored-state requirements."
+  },
+  "verification": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s scripts/tests -p test_prepare_webkit_ab_isolation_qa.py -v",
+    "result": "PASS; 7 tests in 1.509s",
+    "testRunPlan": "scripts/plan-manager-checks.py --path on these two files classified workflow/python-test; no Swift source changed. Focused suite chosen because the change is isolated to this untracked QA fixture, not product runtime or shared manager inputs.",
+    "fixtureSourceSHA256": "cb28527b86851b9f4f4195f99deb589d9a2acfd09a27154baa8b9638c83b9bb2",
+    "testSourceSHA256": "320ba791d8da4b3dff47a3dbbfc35d18d59cfdd626aabd0e43afd8495d37545e"
+  },
+  "relationshipToV280": "V280 raw A1/B1/A2 evidence and its late phase-recorder failure remain immutable. This patch prevents the same timing shape from being recorded as a misleading phase FAIL on a future authorized run; it does not convert V280 into a harness PASS.",
+  "nextAction": "Use existing V272/V274/V135/V248 evidence and close candidate-bound source/dependency/notices gates, then prepare a new production-mode candidate containing the accepted WebKit fixes. Do not rerun V280 absent a separately identified release-candidate invalidation.",
+  "releaseQualified": false
+}

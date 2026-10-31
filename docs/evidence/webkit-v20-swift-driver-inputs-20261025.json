@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-exact-declared-swift-driver-flags-and-import-name-candidates;implicit-module-resolution-open",
+  "observedAt": "2026-10-25T01:30:23Z",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": 139
+  },
+  "upstream": {
+    "repository": "https://github.com/WebKit/WebKit",
+    "commit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "patchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735"
+  },
+  "buildGraph": {
+    "buildNinjaSHA256": "691f704d4a75b80b5f4e8652a1d758b78e135f83b089b61a378df3c20bffc570",
+    "swiftClosureReceiptSHA256": "230c55852f86c2d5fda6fd6112901f596588af84f77c3d969c30935c4052db34",
+    "queriedDeclaredTargets": 110,
+    "swiftWrapperCommands": 6
+  },
+  "observedDriverInputs": {
+    "swiftLanguageVersions": [
+      "6"
+    ],
+    "deploymentTargets": [
+      "arm64-apple-macosx15.4"
+    ],
+    "sdkPaths": [
+      "/Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk"
+    ],
+    "moduleCachePaths": [
+      "/private/tmp/neantik-v20-production-rebuild/WebKit/WebKitBuild/neantik-v20-production-arm64/SwiftModuleCache"
+    ],
+    "moduleNames": [
+      "SwiftPrewarmMac",
+      "WebCore",
+      "WebGPU",
+      "WebKit",
+      "WebKitSwift",
+      "pal"
+    ],
+    "frameworkSearchPaths": [
+      "/Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk/System/Library/Frameworks",
+      "/Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk/System/Library/Frameworks/AVFoundation.framework/Versions/A/Frameworks",
+      "/Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk/System/Library/PrivateFrameworks",
+      "/private/tmp/neantik-v20-production-rebuild/WebKit/WebKitBuild/neantik-v20-production-arm64"
+    ],
+    "uniqueIncludeSearchPathCount": 686
+  },
+  "explicitSwiftImports": {
+    "sourceFileCount": 106,
+    "uniqueModuleNames": 55,
+    "importModuleToSourceFileCount": {
+      "AVFoundation": 2,
+      "AVKit_Private": 1,
+      "AppKit": 13,
+      "AppKit_Private": 1,
+      "AudioToolbox": 1,
+      "Carbon": 1,
+      "Combine": 3,
+      "CoreAudio": 1,
+      "CoreGraphics": 1,
+      "CoreMIDI": 1,
+      "CoreMedia": 1,
+      "DirectResource": 4,
+      "Foundation": 46,
+      "FoundationEssentials": 1,
+      "GroupActivities": 1,
+      "GroupActivities_SPI": 1,
+      "IdentityDocumentServices": 4,
+      "IdentityDocumentServicesUI": 3,
+      "ImageCaptureCore": 1,
+      "JavaScriptCore": 1,
+      "JavaScriptCore_Private": 2,
+      "MarketplaceKit": 1,
+      "Metal": 6,
+      "NaturalLanguage": 1,
+      "Network": 1,
+      "OSLog": 5,
+      "Observation": 1,
+      "PDFKit": 1,
+      "Quartz": 1,
+      "QuartzCore": 1,
+      "QuickLook": 1,
+      "QuickLookUI": 1,
+      "QuickLook_SPI_Temp": 1,
+      "RealityKit": 7,
+      "Security": 1,
+      "Spatial": 1,
+      "Swift": 1,
+      "SwiftUI": 1,
+      "SwiftUI_SPI": 2,
+      "UIKit": 3,
+      "UIKit_SPI": 1,
+      "USDKit": 6,
+      "UniformTypeIdentifiers": 2,
+      "WebCore_Private": 6,
+      "WebGPU_Internal": 4,
+      "WebGPU_Private": 4,
+      "WebKit": 6,
+      "WebKit_Internal": 32,
+      "WebKit_Private": 9,
+      "_Concurrency_SPI": 1,
+      "bmalloc": 1,
+      "os": 7,
+      "pal": 1,
+      "simd": 5,
+      "wtf": 7
+    }
+  },
+  "method": "Read-only ninja -t commands query for the exact 105 Swift link object targets and the Swift module nodes in the existing frozen Ninja graph; scan only the 106 explicit Swift source files already enumerated in the frozen declared-input receipt. No compiler was run and no build outputs were changed.",
+  "scopeLimit": "This adds the exact driver SDK/target/language/module-cache/framework/include settings and literal import-name candidates. It does not run Swift dependency scanning, resolve conditional or implicit imports, hash Xcode tool binaries/SDK modules, enumerate plugin execution, or prove clean recipient build/relink/license applicability. The configured Xcode 27.0/macOS SDK 27.0 remains an external system toolchain prerequisite, not a bundled source component."
+}

@@ -1,10 +1,14 @@
 import importlib.util
+import hashlib
 import json
 import shutil
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
+
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,8 +24,69 @@ SPEC.loader.exec_module(MODULE)
 
 
 class RuntimeIntegrationNoticesTests(unittest.TestCase):
+    def test_chromium_15680_uses_its_dedicated_source_qualified_notice_route(self):
+        text = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('if version == "156.0.8078.80":', text)
+        self.assertIn("from chromium_15680_release_evidence import verify_lock", text)
+        self.assertIn('"156.0.8078.80"}', text)
+
+    def test_m155_default_check_uses_new_major_and_preserves_m154_notices(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "runtime").mkdir()
+            (root / "docs").mkdir()
+            (root / "runtime/fingerprint-chromium.lock.json").write_text(json.dumps({
+                "fingerprintChromium": {"chromiumVersion": "155.0.8059.40"}}))
+            old = root / "docs/RUNTIME_INTEGRATION_NOTICES_154.md"
+            old.write_text("immutable old notices")
+            (root / "docs/RUNTIME_INTEGRATION_NOTICES_155.md").write_text("new notices")
+            with patch.object(sys, "argv", [str(SCRIPT), "--project-root", str(root), "--check"]), \
+                 patch.object(MODULE, "render_notices", return_value="new notices"):
+                self.assertEqual(MODULE.main(), 0)
+            self.assertEqual(old.read_text(), "immutable old notices")
+
+    def test_m154_candidate_has_own_source_and_preserves_public_notices(self) -> None:
+        published = ROOT / "docs/RUNTIME_INTEGRATION_NOTICES.md"
+        before = published.read_bytes()
+        rendered = MODULE.render_m154_notices(
+            project_root=ROOT, runtime_lock=ROOT / "runtime/fingerprint-chromium-154.lock.json")
+        self.assertIn("Chromium: `154.0.8037.93`", rendered)
+        self.assertNotIn("series.json", rendered)
+        self.assertIn("separate release gates", rendered)
+        self.assertEqual(before, published.read_bytes())
+
+    def test_m154_rejects_contract_substitution(self) -> None:
+        lock = MODULE.load_json(ROOT / "runtime/fingerprint-chromium-154.lock.json")
+        lock["sourceContractSHA256"] = "0" * 64
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "candidate.json"
+            path.write_text(json.dumps(lock))
+            with self.assertRaisesRegex(MODULE.RuntimeNoticesError, "SHA-256 mismatch"):
+                MODULE.render_m154_notices(project_root=ROOT, runtime_lock=path)
+
     def test_checked_in_notices_equal_fresh_public_metadata_render(self) -> None:
         rendered = MODULE.render_notices(project_root=ROOT)
+        runtime_lock = MODULE.load_json(ROOT / "runtime/fingerprint-chromium.lock.json")
+        if runtime_lock["fingerprintChromium"]["chromiumVersion"] == "156.0.8078.74":
+            # The checked-in M156 document describes the historic .12 build;
+            # the .74 candidate has its own pinned source provenance.
+            self.assertEqual(rendered, MODULE.render_m154_notices(
+                project_root=ROOT, runtime_lock=ROOT / "runtime/fingerprint-chromium.lock.json"))
+            self.assertIn("Chromium: `156.0.8078.74`", rendered)
+            self.assertIn("156.0.8078.12", (ROOT / "docs/RUNTIME_INTEGRATION_NOTICES_156.md").read_text())
+            return
+        if runtime_lock["fingerprintChromium"]["chromiumVersion"] in {"154.0.8037.93", "154.0.8037.98", "155.0.8059.40", "156.0.8078.12"}:
+            self.assertEqual(rendered, (ROOT / ("docs/RUNTIME_INTEGRATION_NOTICES_"+runtime_lock["fingerprintChromium"]["chromiumVersion"].split(".")[0]+".md")).read_text())
+            self.assertEqual(rendered, MODULE.render_m154_notices(
+                project_root=ROOT, runtime_lock=ROOT / "runtime/fingerprint-chromium.lock.json"))
+            self.assertIn(f"Chromium: `{runtime_lock['fingerprintChromium']['chromiumVersion']}`", rendered)
+            return
+        if runtime_lock.get("variant") == "recipient-privacy-policy-v1":
+            self.assertEqual(rendered, (ROOT / "docs/RUNTIME_INTEGRATION_NOTICES_PRIVACY_V1.md").read_text())
+            self.assertIn("MPL-2.0", rendered)
+            self.assertIn("GPL-3.0", rendered)
+            self.assertIn("RELINK_PRIVACY_V1.md", rendered)
+            return
         checked_in = (
             ROOT / "docs" / "RUNTIME_INTEGRATION_NOTICES.md"
         ).read_text(encoding="utf-8")
@@ -52,14 +117,15 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
         self.assertNotIn("25 July 2026", rendered)
 
     def test_schema_four_nested_packaging_license_is_runtime_bound(self) -> None:
-        rendered = MODULE.render_notices(project_root=ROOT)
-
-        expected = (
-            ROOT
-            / "runtime"
-            / "fingerprint-chromium.lock.json"
-        )
+        expected = ROOT / "runtime/fingerprint-chromium-153.lock.json"
         runtime_lock = MODULE.load_json(expected)
+        license_sha256 = hashlib.sha256((ROOT / "runtime/licenses/ungoogled-chromium-macos-LICENSE").read_bytes()).hexdigest()
+        runtime_lock["macPackaging"]["criticalFiles"] = {"LICENSE": license_sha256}
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = Path(temporary)
+            shutil.copytree(ROOT / "runtime", fixture / "runtime")
+            (fixture / "runtime/fingerprint-chromium.lock.json").write_text(json.dumps(runtime_lock))
+            rendered = MODULE.render_notices(project_root=fixture)
         packaging = runtime_lock["macPackaging"]
         license_sha256 = packaging["criticalFiles"]["LICENSE"]
         self.assertIn(f"License SHA-256: `{license_sha256}`", rendered)
@@ -75,6 +141,10 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
             runtime_lock["fingerprintChromium"]["chromiumVersion"] = (
                 "151.0.7922.108"
             )
+            # Current locks use the M156 schema. This negative test exercises
+            # the legacy source-candidate branch, so supply its required shape.
+            runtime_lock["macPackaging"] = {}
+            runtime_lock["commonChromium"] = {}
             runtime_lock_path.write_text(
                 json.dumps(runtime_lock),
                 encoding="utf-8",
@@ -99,6 +169,13 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = Path(temporary)
             shutil.copytree(ROOT / "runtime", fixture / "runtime")
+            # M154 binds its license in the lock. M156 instead verifies the
+            # bundled license against the preserved built-source proof during
+            # packaging; it does not declare a license hash in this lock.
+            shutil.copyfile(
+                fixture / "runtime/fingerprint-chromium-154.lock.json",
+                fixture / "runtime/fingerprint-chromium.lock.json",
+            )
             chromium_license = fixture / "runtime" / "licenses" / "Chromium-LICENSE"
             chromium_license.write_text(
                 chromium_license.read_text(encoding="utf-8") + "\ndrift\n",

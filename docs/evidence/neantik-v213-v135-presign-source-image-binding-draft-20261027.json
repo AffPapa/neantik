@@ -1,0 +1,20 @@
+{
+  "status": "PRIVATE_PRESIGN_SOURCE_IMAGE_BINDING_DRAFT_CREATED",
+  "draft": "/private/tmp/neantik-release-v1/dist/private/neantik-v213-v135-presign-source-image-binding-draft.json",
+  "draftSHA256": "fbe4fb7961797406973f512caab42f66bd3528f30a1ec1b0c81bfc06bd4407f3",
+  "buildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+  "stagingReceiptSHA256": "1a2a890f459e1f771fd69ea9629e0a171964d8d9272fded535aaf2933f76e007",
+  "sourceOfferManifestSHA256": "e5bfa9c617bed41545541cf442554346c05b71bb59d20fd16fb1a25210d8ee95",
+  "exactBuildOutputsRechecked": 14,
+  "exactStagedImagesRechecked": 16,
+  "partialNoticeEvidenceGroups": 4,
+  "limits": [
+    "source/notice mapping per exact images",
+    "Swift module binary differences",
+    "recipient signing receipt and timestamp",
+    "runtime/load/proxy test",
+    "license/source/legal final qualification"
+  ],
+  "scope": "hashes bind this private pre-sign staging and listed source evidence; they do not bind signed output or establish complete applicable notices",
+  "releaseQualified": false
+}

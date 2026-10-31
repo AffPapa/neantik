@@ -1,7 +1,6 @@
 import importlib.util
 import json
 import plistlib
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -46,6 +45,19 @@ class DirectVersionBumpTests(unittest.TestCase):
             archive.write_bytes(b"existing")
             with self.assertRaisesRegex(MODULE.VersionBumpError, "will not be overwritten"):
                 MODULE.verify(root)
+
+    def test_floor_only_allows_existing_archive_for_later_release_phase(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_project(root, candidate=("0.3.12", "15"), published=("0.3.11", "14"))
+            archive = root / "dist" / "NeAntik-0.3.12-arm64-notarized.zip"
+            archive.parent.mkdir()
+            archive.write_bytes(b"already sealed")
+
+            result = MODULE.verify_public_version_floor(root)
+
+            self.assertEqual(result["candidateVersion"], "0.3.12")
+            self.assertEqual(result["publishedVersion"], "0.3.11")
 
     def test_rejects_missing_release_contracts(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -130,31 +142,33 @@ class DirectVersionBumpTests(unittest.TestCase):
             self.assertEqual(result["publishedVersion"], "0.3.12")
             self.assertEqual(result["publishedBuild"], 16)
 
-    def test_git_repo_ignores_untracked_release_contracts(self) -> None:
+    def test_markdown_only_public_release_forms_version_floor(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            write_candidate(root, ("0.3.12", "16"))
-            write_release(root, ("0.3.10", "14"))
-            subprocess.run(
-                ["git", "init", "-q", str(root)],
-                check=True,
+            write_candidate(root, ("0.8.0", "67"))
+            write_release(root, ("0.3.19", "22"))
+            (root / "releases" / "v0.7.3.md").write_text(
+                "# NeAntik 0.7.3 (66)\n\nPublic immutable release.\n",
+                encoding="utf-8",
             )
-            subprocess.run(
-                [
-                    "git",
-                    "-C",
-                    str(root),
-                    "add",
-                    "releases/v0.3.10.json",
-                ],
-                check=True,
-            )
-            write_release(root, ("0.3.11", "15"))
 
             result = MODULE.verify(root)
 
-            self.assertEqual(result["publishedVersion"], "0.3.10")
-            self.assertEqual(result["publishedBuild"], 14)
+            self.assertEqual(result["publishedVersion"], "0.7.3")
+            self.assertEqual(result["publishedBuild"], 66)
+
+    def test_rejects_candidate_below_markdown_only_public_release(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_candidate(root, ("0.3.20", "23"))
+            write_release(root, ("0.3.19", "22"))
+            (root / "releases" / "v0.7.3.md").write_text(
+                "# NeAntik 0.7.3 (66)\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(MODULE.VersionBumpError, "must be newer"):
+                MODULE.verify(root)
 
 
 def write_project(

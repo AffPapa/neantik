@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-research-headed-nine-font-contexts;not-release-qualified",
+  "capturedAt": "2026-10-15T21:18:19.286Z",
+  "runtime": {
+    "version": "156.0.8078.12",
+    "executableSHA256": "5c4d8407418d915f69523806975084c8ef0e1074cc85bd5cd5067e7ce0ca6a0c",
+    "frameworkSHA256": "99ce5f3bbc787f494e86f23cf320f32bd83dec86fa7b3d654146f0c3d6de9c9e",
+    "closureSHA256": "574c2ed6eab61d1f128dbf2583f8a6e99be267e24f7e694523c883b7ee483ed0"
+  },
+  "sourceContracts": {
+    "chromium-host-font-policy.json": "cc20f159fd9463722ef5dfbf1ff679f88c020f7e5cf44e1ec7e20bc665c35d62",
+    "chromium-font-witness.json": "9645de1b7dac136df452abe2a3e039a12beef1689c58686536b9281b5e7b55b7",
+    "chromium-font-cleanup.json": "5c5f93163671cbc87f98dbbb97ce25c8ef3876435d8a940f68328e6814ae4d0e",
+    "chromium-font-cleanup-cstring.json": "80803d1a9a2256fa052cc8962da1e226f134e162ddabaa241d923d3229f4aeb4",
+    "chromium-font-generic-defaults.json": "cf77818e5d3f92dd89d630ed201a28ce1fece773222231e7f8ac8390302442bd"
+  },
+  "observationsSHA256": "9da64b3ab9c39b65ab3c3a92b3afb58647843ef6db47652b86c4aec456c07957",
+  "actualBrowser": true,
+  "headed": true,
+  "environment": {
+    "macOS": "27.0",
+    "osBuild": "26A5416b",
+    "architecture": "arm64"
+  },
+  "modes": [
+    "native",
+    "policy-a",
+    "policy-b",
+    "policy-a-repeat"
+  ],
+  "contexts": [
+    "page",
+    "DedicatedWorker",
+    "SharedWorker",
+    "ServiceWorker",
+    "AudioWorklet",
+    "same-origin iframe",
+    "about:blank iframe",
+    "srcdoc iframe",
+    "cross-origin OOPIF"
+  ],
+  "drawableContextsPerMode": 8,
+  "fontRowsPerDrawableContext": 42,
+  "genericRowsPerDrawableContext": 42,
+  "genericFamilies": [
+    "standard fallback",
+    "serif",
+    "monospace",
+    "sans-serif",
+    "cursive",
+    "fantasy",
+    "math"
+  ],
+  "configuredModePairAssertions": [
+    2954,
+    2954,
+    2954
+  ],
+  "configuredGenericCrossRealmRows": [
+    294,
+    294,
+    294
+  ],
+  "abaAssertions": 1512,
+  "nativeControl": {
+    "status": "observed-upstream-native-gap;not-coherence-PASS",
+    "affectedContexts": [
+      "SharedWorker",
+      "ServiceWorker"
+    ],
+    "strictMissingFamilyMonospaceVariantsPerAffectedContext": 12,
+    "genericMatrixDifferencesPerAffectedContext": 30,
+    "unaffectedDrawableContextsStrictlyCompared": true,
+    "cause": "upstream standalone WorkerSettings uses empty GenericFontFamilySettings; Dedicated inherits settings"
+  },
+  "correction": {
+    "sourceFiles": 4,
+    "defaults": 7,
+    "scope": "fill empty COMMON defaults only for explicit system-v1 with valid seed; preserve existing and per-script maps",
+    "compiledObjects": 2,
+    "buildSeconds": 187.91,
+    "sourcePreparationStatusIsFrozen": true,
+    "notClaimed": "full localized/custom browser preference plumbing or named-family resolution proof"
+  },
+  "lifecycle": {
+    "allNineCreatedAndIndependentlyConfirmed": true,
+    "allNineDestructionObservedEachMode": true,
+    "actualStillLiveNegativeRejectedEachMode": true,
+    "oopif": "own remote frame tree and default context linked to actual target, both parent links and exact own URL",
+    "aboutBlank": "actual about:blank preserved without document.open/write",
+    "worklet": "creator-document target/parent, own module custody/body SHA and nonce, real128 quarter samples; font APIs lawfully absent",
+    "physicalSharedBackingThreadTerminationClaimed": false
+  },
+  "nativeACKCounts": [
+    6,
+    6,
+    6,
+    6
+  ],
+  "normalResourceAdmissionAllModes": true,
+  "warningExceptionUsed": false,
+  "browserExits": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "stderrFullyDrained": true,
+  "cleanup": {
+    "ownedProcessesRemaining": 0,
+    "ownedRootsRemaining": 0
+  },
+  "inputsRechecked": true,
+  "harnessCorrections": [
+    "explicit equivalent Canvas font shorthand serialization with raw readback retained",
+    "RemoteFrame intentionally absent from parent local frame tree; inspect owned OOPIF tree",
+    "document.open/write changes about:blank URL; fixed-script DOM insertion preserves actual realm",
+    "AudioWorklet target URL is creator document, not addModule URL",
+    "bounded natural exit for owned detached code-clone cleanup helper; never signal another group"
+  ],
+  "offlineControls": {
+    "latestSemantics": 5,
+    "pipeIncludingScopedRemoteFrame": 5,
+    "httpAndSourceBuilders": 4,
+    "fiveSourceContractLineage": 1,
+    "sourceInputVerifier": 2,
+    "actualBrowserEvidence": false
+  },
+  "signing": "existing approved Developer ID;all16MachO and948bundle entries independently checked;research copy not notarized or shipped",
+  "managerActivation": false,
+  "shippedRuntimeChanged": false,
+  "releaseQualified": false,
+  "remaining": [
+    "Font Access own-name permission changes and retained blob semantics",
+    "restricted style/collection/variation and broader OS coverage",
+    "seed-only policy-off check on successor candidate",
+    "ordinary Chrome comparison with safe clone-helper isolation",
+    "qualified manager opt-in, exact signed candidate, notarization and hosted bytes",
+    "COMMON default mapping does not implement localized/custom user preference propagation"
+  ]
+}

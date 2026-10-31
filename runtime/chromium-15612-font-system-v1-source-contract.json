@@ -1,0 +1,28 @@
+{
+  "appleDeviceTuplesSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+  "baseFullFDObservationSHA256": "d6836d97a7a24d370663976063516306bfc646c826149f579a319fdb5578722c",
+  "baseSourceContractSHA256": "f8ee0079edb447343edb136b52ccba4aa00a91b77b61b0b8d88a62963d818757",
+  "baseSourceSnapshotSHA256": "caf2b8a77198a8657ddf4f28a792ea16fd2b2bc47a966e03e95e8485c277ed14",
+  "buildArgsSHA256": "428054a30abeb212aa3784f524bb27ef4bc0068ab7ebef149866b2b8bff30a3c",
+  "enterpriseCloudContentAnalysis": true,
+  "officialChromiumBase": {
+    "commit": "634b046faf2137b83af71c87baf362b533af9104",
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "156.0.8078.12",
+    "tree": "64e212cac2a53bcbd28b0530cf6eb092141bddec"
+  },
+  "rebasePlanSHA256": "fbfb37bfecbf2537ad930b5e1dcebb2a90786dd9db0d8198c295973435f32abe",
+  "releaseReady": false,
+  "safeBrowsingMode": 0,
+  "schemaVersion": 3,
+  "securityBaselineSHA256": "dd9bb55d39b249754489a9c31aea70c6805273a7481b33ce27a5d830122e9447",
+  "sourceDeltaProofSHA256": "8a86c02e8727790658626c501219a3c2f5b384372eee7e1e1d3c524a462844dc",
+  "sourceInputManifestSHA256": "5a091945d6b08412f1464f7e4287a3e35d117f6e96bf5a5099b1b63fef04cbcb",
+  "sourceMode": "official-chromium-owned-macos-port",
+  "sourceSnapshotSHA256": "489a80d9646f6280329bff4444cf493934b760140b01551f27162cc329e9eb9e",
+  "sourceVariant": "font-system-v1",
+  "status": "source-qualified",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "156.0.8078.12",
+  "toolchainLockSHA256": "b7cf82bbad8113e7848df5f885c74be45fca01387d732318576a2f8b949a8371"
+}

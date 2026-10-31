@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "status": "SIGNED_PRIVATE_PRODUCTION_BUNDLE_PREPARED_NOT_RELEASE_QUALIFIED",
+  "sourceCommit": "8e04d5d90e34244a1f3890eb28777c2191d348c2",
+  "sourceArchiveSHA256": "7033a74db4161ddbfa43b774e13f9fbb7a000a7240115d3a093b002935c7ba2c",
+  "sourceOfferManifestSHA256": "821828b9261d9678ef196a9dc14d006d002fd89a9fb926e80c51d7b69a3b21a0",
+  "candidateRoot": "/private/tmp/neantik-v193-touch-qualified/dist/private/candidates/66f4338eb3374569817d1964d57cfedb",
+  "inventorySHA256": "c4081c051286df3bdbbcd8de3f907298234e2ee0af99a78ae703211bd728787b",
+  "managerSHA256": "0c16cb848a34914d0931590ed8e92b1e55f37899926bb1fb80a1ca890b5271ea",
+  "webkitHostSHA256": "ba34ae0aab60e389ee006132b4c596a0a335300732e699c185082cc3bb89789e",
+  "build": "1.0.0 (200)",
+  "chromiumVersion": "156.0.8078.48",
+  "checks": [
+    "full Swift 1842 tests, 82 skipped",
+    "full Python 2011 tests, 55 skipped",
+    "source offer 543 components and 64 overlay assets",
+    "V122 exact source and build preflight",
+    "strict deep code signature",
+    "packaged Chromium runtime report and compliance",
+    "integrated release and Chromium notices",
+    "prepared bundle inventory"
+  ],
+  "earlierAttempts": [
+    "source receipt refused ignored Python bytecode; generated caches removed before retry",
+    "updater packaging refused missing prior app; signed legacy helpers verified and supplied to new candidate"
+  ],
+  "limits": [
+    "bundle only; not release-qualified, notarized, archived or published",
+    "production WebKit proxy runtime, DNS, fail-closed and real page qualification remain open",
+    "complete source/notices and recipient relink assessment remain open"
+  ],
+  "releaseQualified": false
+}

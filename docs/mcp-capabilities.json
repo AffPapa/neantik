@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "toolCount": 18,
+  "readToolCount": 7,
+  "tools": [
+    "folder_create",
+    "folder_list",
+    "folder_remove",
+    "folder_rename",
+    "profile_check_proxy",
+    "profile_create",
+    "profile_duplicate",
+    "profile_get",
+    "profile_move",
+    "profile_set_proxy",
+    "profile_start",
+    "profile_status",
+    "profile_stop",
+    "profile_update",
+    "template_list",
+    "workspace_list_profiles",
+    "workspace_list_profiles_page",
+    "workspace_query_profiles"
+  ]
+}

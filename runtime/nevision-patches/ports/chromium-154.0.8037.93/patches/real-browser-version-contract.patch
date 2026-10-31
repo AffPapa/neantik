@@ -1,0 +1,16 @@
+diff --git a/components/version_info/version_info_with_user_agent.h b/components/version_info/version_info_with_user_agent.h
+index beb5a2c97a..801fa367ee 100644
+--- a/components/version_info/version_info_with_user_agent.h
++++ b/components/version_info/version_info_with_user_agent.h
+@@ -12,6 +12,11 @@
+ 
+ namespace version_info {
+ 
++// NeAntik keeps UA version coupled to the compiled Chromium PRODUCT_VERSION.
++// Profile fingerprint seeds must not randomize or downgrade browser version.
++static_assert(sizeof(PRODUCT_VERSION) > 1,
++              "Chromium PRODUCT_VERSION must be compiled into User-Agent");
++
+ // Returns the product name and reduced version information for the User-Agent
+ // header, in the format: Chrome/<major_version>.0.0.0
+ std::string GetProductNameAndVersionForReducedUserAgent();

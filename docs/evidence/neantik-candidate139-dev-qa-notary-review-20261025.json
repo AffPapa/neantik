@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "status": "rejected-before-command-execution; no upload",
+  "observedAt": "2026-10-25T09:18:56Z",
+  "candidate": {
+    "version": "1.0.0",
+    "build": "139",
+    "bundleIdentifier": "app.neantik.desktop.dev"
+  },
+  "archive": {
+    "path": "/private/tmp/neantik-c139-assembled-qa-20261025/NeAntik-1.0.0-139-dev-qa-complete.zip",
+    "sha256": "d4f385093cb3a450dd4c253035a45f9d56a54069228041bd662abeb860341e39",
+    "bytes": 247145489
+  },
+  "action": "Apple Notary submission through existing Keychain profile neantik-notary",
+  "review": {
+    "decision": "rejected by automatic review before process execution",
+    "reason": "Exact user authorization for the corrected ZIP SHA was not recorded; earlier authorizations were for different archives.",
+    "bytesTransferred": false,
+    "credentialsAccessed": false
+  },
+  "publicChannelsChanged": false,
+  "productionCandidateChanged": false,
+  "next": "Await exact authorization for this ZIP. Do not retry or route around the rejection. After approval, submit once; after Apple Accepted and a fresh eligible native admission, perform one headed smoke on a temporary QA profile."
+}

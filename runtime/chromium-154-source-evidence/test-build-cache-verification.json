@@ -1,0 +1,176 @@
+{
+  "passed": true,
+  "verifiedCacheCount": 24,
+  "items": [
+    {
+      "path": "third_party/perfetto/python/generators/trace_processor_table/__pycache__/public.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/python/generators/trace_processor_table/public.py",
+      "sourceSHA256": "4383410a04e2f6abf55806ae262db62fca01d599e22f104d972781d5eac81741",
+      "pycSHA256": "98af843857db4f2fb6f53a7b64de2066e61a4eb051ef2ee716f8c53db7934444",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/python/generators/trace_processor_table/__pycache__/serialize.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/python/generators/trace_processor_table/serialize.py",
+      "sourceSHA256": "fe4438ef0bf799152451896cf5b06789eeb7320e6e5a7fa10580dba3e73f2949",
+      "pycSHA256": "9abb58808319637687f304e7805006ed74ff698e78bcfd60a501f8943245604f",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/python/generators/trace_processor_table/__pycache__/util.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/python/generators/trace_processor_table/util.py",
+      "sourceSHA256": "357e0047447e9e865d971df72177036e311ec0a5bad92c5473899e9573effa54",
+      "pycSHA256": "5603fcb3f991ebb67d4918dc52845a4b91bb2ec348db8ee27105033fa3c52059",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/python/tools/__pycache__/cpp_blob_emitter.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/python/tools/cpp_blob_emitter.py",
+      "sourceSHA256": "f9e67f33b8aab5b4ef68f664892cfb8ad72ddb5576fa7fb186495a195963eb34",
+      "pycSHA256": "e6bd66772c75ae35b7654e1b01c013c53d8929a4a4a0b20811eafc3812dc08b8",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/ancestor/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/ancestor/tables.py",
+      "sourceSHA256": "9fe2903cb1d17407aa4eaf7efb8988aadb4dab80ab1fdf92b46964642b2e2b77",
+      "pycSHA256": "f396bcaf11d657ab778105f42e4ab665c795e01e7369662badc86a66a10ef742",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/android_framework_track_event/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/android_framework_track_event/tables.py",
+      "sourceSHA256": "443249ac014c98f2d7eff78c7722b3b6f52cdf284d8518a61b0c73c230d6e151",
+      "pycSHA256": "cce65e53bb0550a5c845a4ed32b6308cead1ff5386748986434759e2ed7eacee",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/connected_flow/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/connected_flow/tables.py",
+      "sourceSHA256": "7aca3f450cd38d55e0f10566380b6fa4dfd9f228dda7c5c4d82956240f7fe21e",
+      "pycSHA256": "9243d2883093eb6adf98631be2b1431e5ede625fb13fb74d5bcfbfb49b211a48",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/critical_path/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/critical_path/tables.py",
+      "sourceSHA256": "0ec5ec1845c566d643728de812d181df3232e73f74bf4f6fbc5ea2f4d5f5c552",
+      "pycSHA256": "28dd0d04e74095ba9b1da6b164d78ecd9dbab2c0c9306700b39479ed74eb7e25",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/developer_functions/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/developer_functions/tables.py",
+      "sourceSHA256": "02a1e4b7c8a680bf5547ab89ab9a09eec9409accdf43fa2d2618fc19b228db95",
+      "pycSHA256": "a064510c4babbfb0f639f07164545524323f5e70bd364d134b6876c0a1e2d881",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/dfs_weight_bounded/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/dfs_weight_bounded/tables.py",
+      "sourceSHA256": "fe88a58b3cf225d3d484d2c027e6633560535d0077af1a93053b4e92ecda8245",
+      "pycSHA256": "37237444d0d73d22e96326c1c6e530a7968935ed353d61f69ea15151f2cad813",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/dominator_tree/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/dominator_tree/tables.py",
+      "sourceSHA256": "9932492e4e50e541d0aade314449df8774a77c66a0c43a784aa5b5e792dcc022",
+      "pycSHA256": "b0b434db972e336cd3878da4b930346d69b80d6f794cd5624853a77d7d3629ff",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/experimental_annotated_stack/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/experimental_annotated_stack/tables.py",
+      "sourceSHA256": "6c2c2d1a3872471f8a7ed07c60d81693250f9902401e0d00555dd35896ec3a35",
+      "pycSHA256": "a47409fd52923c418f58774a42f03cc8aaa4944bbce3ec085a878f524c054a48",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/experimental_flat_slice/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/experimental_flat_slice/tables.py",
+      "sourceSHA256": "c8d4e591b0c3d140402414e9407bfc31f795502ab1f8cad11e3ef118389bc7cd",
+      "pycSHA256": "91faf542179336f3534df535afa9b5e16332ab562c03125fab89a2451b019e94",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/experimental_slice_layout/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/experimental_slice_layout/tables.py",
+      "sourceSHA256": "3d396bf139bf9ec337ed23c15c3f77b521966bed5405062d6300b4b4e982a307",
+      "pycSHA256": "98c39e1269fae228e27d9a01b765364d317d0e9a7043aeff2e61261ea32731cf",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/graph_traversal/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/graph_traversal/tables.py",
+      "sourceSHA256": "016dcbb684d8a6933c575b14c2dfa04e837b3f41ef090b441f790cb79e7f4dc1",
+      "pycSHA256": "2bf9cc8ff268e46afca102a102beae920e7edabe170824f7afe435a835778f09",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/stdlib_docs/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/stdlib_docs/tables.py",
+      "sourceSHA256": "b0bf778ef8ad109e52f5ac97e530de20b3690be320d7ab586f916b6101ae206c",
+      "pycSHA256": "6b5fcdbee52fdfb537ccca9441eaf553a5674b2b0f76461bbeeeb5793dcac726",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/structural_tree_partition/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/structural_tree_partition/tables.py",
+      "sourceSHA256": "373ff05fd2d37980243134741ebb3c6cfb2fa6d9505b759e04bc9345fb4b7e51",
+      "pycSHA256": "6018291e0b226a866a44fe616409bf4d086417e28d36ca9914a8ba4511ae03c1",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/table_info/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/table_info/tables.py",
+      "sourceSHA256": "ccde42973b83b1b3e4b35d159fed7f9019aac4733e16b737b7a5d1a030f71cdd",
+      "pycSHA256": "11bad391085535d9570d18f456bc33e08ccc63fa04f9f261b9cb32a15e9aece5",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/plugins/video_frame_importer/__pycache__/tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/plugins/video_frame_importer/tables.py",
+      "sourceSHA256": "57d3288ae0a6684cd9afdf89980fcc3758b3bbf60a8a84e87660566dec40b9dc",
+      "pycSHA256": "07646cbf8b34fdf9de777bf06721ae7b22712ac1817901b45f4ac509f5469180",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/counter_tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/tables/counter_tables.py",
+      "sourceSHA256": "da91d952749135cea9afbe3e1d04574ba1c6e10d70b6e04620dffac85d0b3c13",
+      "pycSHA256": "957818eb4d5960a31a49eab59d82edea84b0b592e39a8c79b5b92ee145bacc0b",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/metadata_tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/tables/metadata_tables.py",
+      "sourceSHA256": "c3ba62cf95e3c6990ec955d8af4cb219d8f17372ebbcb389c8384c9125f5b97f",
+      "pycSHA256": "95375d4f705658da89e6df3a9535429e20df0cfa6b3f9388f0e713733cfe959c",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/profiler_tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/tables/profiler_tables.py",
+      "sourceSHA256": "6908dd72017af05a0ee95e20f652e3b318b17c59f96b7b473f82642f197c4f9a",
+      "pycSHA256": "e8fe58c141d7a846524918aa060b312d8fdb9923a8c6ca504be0df611fa15b68",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/slice_tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/tables/slice_tables.py",
+      "sourceSHA256": "eeed165c0d0d777db6419d3cb2559dadde01c7bd63926ac06ff86a7ee49cebf5",
+      "pycSHA256": "616d28614aee2207da0b0835381364b52d390316a0451ae6bab24bc20d85870d",
+      "timestampAndCodeMatch": true
+    },
+    {
+      "path": "third_party/perfetto/src/trace_processor/tables/__pycache__/track_tables.cpython-311.pyc",
+      "sourcePath": "third_party/perfetto/src/trace_processor/tables/track_tables.py",
+      "sourceSHA256": "10f38f0d8600d05a26cb76123f1fbfc36f76a7794d8e6dcdf52da61bee52e37d",
+      "pycSHA256": "e5c03ac1e4cdcaaa31f55a4da095b58a29601a5150434b14b4d16d01179a6525",
+      "timestampAndCodeMatch": true
+    }
+  ],
+  "scope": "Observed test-generation cache additions only; final source freeze remains pending",
+  "releaseReady": false
+}

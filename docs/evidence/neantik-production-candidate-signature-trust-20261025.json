@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T07:18:10Z",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "bundleIdentifier": "app.neantik.desktop",
+    "teamIdentifier": "H6VGU2M6JD"
+  },
+  "context": "authorized local macOS security context; one read-only invocation after sandbox-scoped results contradicted preserved identity evidence",
+  "checks": {
+    "pinnedDeveloperIDIdentityPresent": true,
+    "validCodesigningIdentitiesCount": 6,
+    "strictCodesignVerify": "PASS: valid on disk; satisfies Designated Requirement",
+    "strictCodesignExitCode": 0,
+    "gatekeeper": "PASS: accepted; source=Developer ID",
+    "gatekeeperExitCode": 0,
+    "candidateBytesChanged": false,
+    "rebuildOrResign": false
+  },
+  "diagnosis": "Prior sandbox-scoped zero-identity and generic signature failures were environment visibility failures. Exact frozen candidate 139 passes strict signature verification and Gatekeeper in the authorized local context. This check does not qualify WebKit routing, source/license obligations, notarization, or publication."
+}

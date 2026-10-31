@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-25T02:46:45Z",
+  "status": "exact-pinned-webkit-source-archive-included-in-private-offer;recipient-build-and-license-gates-open",
+  "candidate": {
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51",
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0"
+  },
+  "sourceOfferFolder": "dist/private/source-offers/1.0.0-manager-955",
+  "previousManifestSHA256": "30bd86f2e03e4e9054dd75bae714c3dd59a5e7cfe3a21f075ffac933f123370f",
+  "previousManifestBackup": "docs/evidence/webkit-v20-source-offer-manifest-before-upstream-archive-stage-20261025.json",
+  "sourceOfferManifestSHA256": "85f0e0c7aa69f3f986b7a5be81d666e22c11537f6b695723fa4371b41b5024da",
+  "archive": {
+    "path": "upstream/WebKit-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c.tar.zst",
+    "bytes": 1748508866,
+    "sha256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "copiedFrom": "artifacts/neantik/webkit-v20-source-20261025/WebKit-43d5b8d85e2e5eed41d7ff8a79da831bf405be6c.tar.zst",
+    "byteHashVerified": true
+  },
+  "componentCounts": {
+    "total": 129,
+    "included": 129,
+    "external": 0
+  },
+  "limitation": "Complete source archive presence does not close compiler/toolchain dependency closure, 83 applicability decisions, clean recipient build/load, LGPL relink requirements, or release qualification."
+}

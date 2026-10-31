@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "status": "partial-exact-candidate-runtime-observation",
+  "observedAt": "2026-10-25T07:26:30Z",
+  "candidate": {
+    "id": "f3488c08f0b3493dbcee8db94473bacf",
+    "version": "1.0.0",
+    "build": "139",
+    "bundleInventorySHA256": "026d6b343ef5c595aa943a2fafadc72ca55ab6f3597f10fbff7d4e85a3858c51"
+  },
+  "chromiumRuntime": {
+    "version": "156.0.8078.48",
+    "executableSHA256": "2fca4f8c3b7bd452e65d9fdf527a9ebcfd39d7e7de2cb3975add2d61db627b6b",
+    "frameworkSHA256": "2b0209cdaa85a455df8bc012659718242905a78f20fdd9bd9b163f383743842c",
+    "packageRuntimeReport": "PASS: exact packaged report matches runtime"
+  },
+  "managerLaunchPolicy": {
+    "sourceSHA256": "815fa8e1fe2c2105d395aa256ac5fdd2b529ac99f773c1b8b16609b1a06eee09",
+    "matchesCandidateSourceCommit": true,
+    "focusedTest": "PlatformCohortLaunchReceiptTests: PASS (11 source-bound receipts generated; seed 21 used)"
+  },
+  "headlessScope": {
+    "headed": true,
+    "profile": "temporary synthetic profile; --use-mock-keychain",
+    "network": "owned 127.0.0.1 fixture only",
+    "cleanupVerified": true,
+    "processResiduals": 0
+  },
+  "observations": {
+    "mode": "neantik-configured",
+    "syntheticSeed": 21,
+    "probe": "HTTP/JS identity on page, redirect, and worker",
+    "checks": {
+      "page-ua": true,
+      "page-language": true,
+      "page-device-memory": true,
+      "redirect-ua": true,
+      "redirect-language": true,
+      "redirect-device-memory": true,
+      "worker-ua": true,
+      "worker-language": true,
+      "worker-js-identity-equals-page": true,
+      "worker-device-memory-hints-absent": true,
+      "headed-and-cleaned": true
+    },
+    "result": "all 11 corrected checks pass"
+  },
+  "harnessNote": "An initial ad hoc validator incorrectly required Device-Memory request headers in the worker; the existing M156 contract expects those headers absent. Corrected validation confirms absence and matching worker JS identity. This was a checker expectation error, not a browser failure.",
+  "limitations": [
+    "Not the full 11-tuple release qualification.",
+    "No independent ordinary-Chrome reference or A-B-A profile comparison was performed.",
+    "Does not qualify owned-WebKit proxy, source/license obligations, notarization, or publication."
+  ],
+  "rawEvidencePrivatePath": "/private/tmp/neantik-m15648-one-shot-25635xbf/runtime-platform/fixtures/vector-semantics/candidate139-m15648-configured-observations.json",
+  "rawEvidenceSHA256": "689e4639a0e01da3d8483260b7a2b1745e1ba869024a380da74bb2a1a222503c",
+  "bindingSHA256": "9ed3172ba5aeced3c7153d8b6034486fdc3d1283913d4a051d4cfa11f72ef8d0",
+  "launchReceiptSHA256": "770ebdaec8dd42e6b79b1fceda4bf29c2ac467ffac0e8921764dd0b11dc7d1fd",
+  "runnerSHA256": "a98a2b381cd287bb4a8ba517d082f7d972f5c3194eeb1e47541998bacb67995f",
+  "probeSHA256": "e441f69465c38f3a1b3de997e2427793ca80e6907c01687c7e59401fa4e0fc6e"
+}

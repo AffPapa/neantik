@@ -1,0 +1,136 @@
+"""Resolve a build's recorded args without assuming M154 uses out/Default."""
+import argparse
+import hashlib
+import json
+from pathlib import Path, PurePosixPath
+
+
+def verify_build_args(source_root, args_gn, lock, project_root):
+    source_root, args_gn, project_root = map(Path, (source_root, args_gn, project_root))
+    fingerprint = lock.get('fingerprintChromium')
+    version = fingerprint.get('chromiumVersion') if isinstance(fingerprint, dict) else None
+    if (not isinstance(version, str) or len(version) > 40
+            or len(version.split('.')) != 4
+            or any(not part or not part.isascii() or not part.isdecimal()
+                   for part in version.split('.'))):
+        raise ValueError('Invalid Chromium build path version')
+    if lock.get('variant') == 'recipient-privacy-policy-v1':
+        from chromium_15680_privacy_derivation import verify_lock_binding, BASE, OUT, checked_file
+        verify_lock_binding(lock, project_root)
+        contract = json.loads((project_root / BASE['sourceContract']['file']).read_text())
+        if args_gn != source_root / OUT / 'args.gn':
+            raise ValueError('Expected exact recipient privacy build args path')
+        checked_file(source_root, OUT + '/args.gn', contract['buildArgsSHA256'])
+        return args_gn.resolve()
+    relative = 'out/Default/args.gn'
+    digest = None
+    m154_evidence = {
+        '154.0.8037.93': 'chromium-154',
+        '154.0.8037.98': 'chromium-15498',
+        '155.0.8059.40': 'chromium-15540',
+        '156.0.8078.12': 'chromium-15612',
+        '156.0.8078.48': 'chromium-15648',
+        '156.0.8078.74': 'chromium-15674',
+        '156.0.8078.80': 'chromium-15680',
+    }
+    # Every newer port needs its own reviewed source/args binding. Never let
+    # an unknown major silently use the historical out/Default convention.
+    if int(version.split('.')[0]) >= 154 and version not in m154_evidence:
+        raise ValueError('Unsupported Chromium build path version')
+    if version in m154_evidence:
+        runtime = project_root / 'runtime'
+        evidence_prefix = m154_evidence[version]
+        if version == '156.0.8078.48':
+            from chromium_15648_release_evidence import verify_contract
+            contract = verify_contract(project_root)
+            expected_m15648 = source_root / 'out' / 'NeAntikStable156_48' / 'args.gn'
+            if args_gn != expected_m15648 or args_gn.is_symlink():
+                raise ValueError('Expected exact M156.48 build args path')
+            if hashlib.sha256(args_gn.read_bytes()).hexdigest() != contract.get('buildArgsSHA256'):
+                raise ValueError('M156.48 build args digest mismatch')
+            return expected_m15648.resolve()
+        if version == '156.0.8078.74':
+            from chromium_15674_release_evidence import verify_contract
+            contract = verify_contract(project_root)
+            adoption_path = runtime / 'chromium-15674-source-adoption-v1.json'
+            adoption = json.loads(adoption_path.read_text())
+            output_directory = adoption.get('buildOutputDirectory')
+            parts = PurePosixPath(output_directory).parts if isinstance(output_directory, str) else ()
+            if (len(parts) != 2 or parts[0] != 'out' or
+                    any(part in {'', '.', '..'} for part in parts)):
+                raise ValueError('M156.74 build output directory is invalid')
+            expected_m15674 = source_root / output_directory / 'args.gn'
+            if args_gn != expected_m15674 or args_gn.is_symlink():
+                raise ValueError('Expected exact M156.74 build args path')
+            if hashlib.sha256(args_gn.read_bytes()).hexdigest() != contract.get('buildArgsSHA256'):
+                raise ValueError('M156.74 build args digest mismatch')
+            return expected_m15674.resolve()
+        if version == '156.0.8078.80':
+            from chromium_15680_release_evidence import verify_contract
+            contract = verify_contract(project_root)
+            adoption_path = runtime / 'chromium-15680-source-adoption-v1.json'
+            adoption = json.loads(adoption_path.read_text())
+            output_directory = adoption.get('buildOutputDirectory')
+            if 'portableCRC' in contract:
+                from chromium_15680_portable_crc import verify as verify_portable_crc
+                portable = verify_portable_crc(project_root, contract)
+                output_directory = portable['candidateOutputDirectory']
+            parts = PurePosixPath(output_directory).parts if isinstance(output_directory, str) else ()
+            if (len(parts) != 2 or parts[0] != 'out' or
+                    any(part in {'', '.', '..'} for part in parts)):
+                raise ValueError('M156.80 build output directory is invalid')
+            expected_m15680 = source_root / output_directory / 'args.gn'
+            if args_gn != expected_m15680 or args_gn.is_symlink():
+                raise ValueError('Expected exact M156.80 build args path')
+            if hashlib.sha256(args_gn.read_bytes()).hexdigest() != contract.get('buildArgsSHA256'):
+                raise ValueError('M156.80 build args digest mismatch')
+            return expected_m15680.resolve()
+        if version == '156.0.8078.12':
+            from chromium_15612_variant import prefix_for, reviewed_lock_prefix, verify_candidate_lock, descriptor_for
+            evidence_prefix = prefix_for(lock)
+            output = descriptor_for(lock).output
+            expected_m156 = source_root / 'out' / output / 'args.gn'
+            if args_gn != expected_m156 or args_gn.is_symlink():
+                raise ValueError('Expected exact M156 qualified build args path')
+            reviewed_lock_prefix(lock)
+            provenance=json.loads((runtime/(evidence_prefix+'-port-candidate.json')).read_text())
+            verify_candidate_lock(lock,provenance=provenance,project_root=project_root)
+        if version == '155.0.8059.40':
+            from chromium_15540_variant import prefix_for,verify_candidate_lock
+            evidence_prefix=prefix_for(lock)
+            expected_contract='runtime/'+evidence_prefix+'-source-contract.json'
+            if lock.get('sourceContract')!=expected_contract:raise ValueError('M155 build path lock/variant mismatch')
+            if evidence_prefix!='chromium-15540':
+                provenance=json.loads((runtime/(evidence_prefix+'-port-candidate.json')).read_text())
+                verify_candidate_lock(lock,provenance=provenance,project_root=project_root)
+        snapshot_path = runtime / f'{evidence_prefix}-source-snapshot.json'
+        contract = json.loads((runtime / f'{evidence_prefix}-source-contract.json').read_text())
+        if snapshot_path.is_symlink() or hashlib.sha256(snapshot_path.read_bytes()).hexdigest() != contract.get('sourceSnapshotSHA256'):
+            raise ValueError('M154 build path snapshot binding mismatch')
+        snapshot = json.loads(snapshot_path.read_text())
+        relative = snapshot.get('argsGN', {}).get('relativePath', '')
+        parts = PurePosixPath(relative).parts
+        if len(parts) != 3 or parts[0] != 'out' or parts[1] in {'.', '..'} or parts[2] != 'args.gn' or relative != '/'.join(parts):
+            raise ValueError('M154 recorded build path is invalid')
+        digest = snapshot['argsGN'].get('sha256')
+    expected = source_root / relative
+    if (args_gn.is_symlink() or not args_gn.is_file()
+            or args_gn.resolve() != expected.resolve()
+            or not expected.resolve().is_relative_to(source_root.resolve() / 'out')):
+        raise ValueError('Expected canonical build-root args.gn')
+    if digest is not None and hashlib.sha256(args_gn.read_bytes()).hexdigest() != digest:
+        raise ValueError('M154 build args digest mismatch')
+    return expected.resolve()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('source_root', type=Path)
+    parser.add_argument('args_gn', type=Path)
+    parser.add_argument('lock', type=Path)
+    args = parser.parse_args()
+    try:
+        path = verify_build_args(args.source_root, args.args_gn, json.loads(args.lock.read_text()), Path(__file__).resolve().parents[1])
+    except (OSError, ValueError, KeyError) as error:
+        parser.exit(1, f'Build path verification failed: {error}\n')
+    print(path)

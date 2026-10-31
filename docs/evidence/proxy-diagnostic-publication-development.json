@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-19",
+  "planItems": [
+    26,
+    27
+  ],
+  "status": "source development checked; GUI and signed candidate qualification pending",
+  "sourceBase": "2020d6a15ec404a885260b0c6a5c7dca042ba073",
+  "change": "Prevent stale custom proxy diagnostic success across asynchronous preference/profile/password validation. Preserve captured preference revision with final bounded synchronous read and no later await.",
+  "negativeControl": {
+    "reportedTests": 13,
+    "failedCases": 3,
+    "inputSHA256": "1a49e5e65f3412017b0678e4a36d8c9150b1d43b5162c865127bddf85e6973e1",
+    "scope": "Final preference await extracted from sheet without changing ordering. Profile and password mutation reproduce original gap. Request-token control strengthens request API; original sheet already had final token guard."
+  },
+  "intermediateRevision": {
+    "tests": 46,
+    "status": "tests passed; review identified missing late-policy scenario; not accepted as final correction"
+  },
+  "finalSwift": {
+    "tests": 49,
+    "suites": 2,
+    "skipped": 0,
+    "status": "pass",
+    "inputSHA256": "ca34c21d09a91ed47154c7c283ce28f68b4188c8404a199306cd399e046ab8f2",
+    "seconds": 12.428
+  },
+  "pythonReaders": {
+    "tests": 35,
+    "status": "pass",
+    "modules": [
+      "test_responsive_ui_contract",
+      "test_verify_native_swift_tests_script"
+    ]
+  },
+  "controls": [
+    "Unchanged request produces one observation and one probe",
+    "Profile or password change during preference load refuses result",
+    "Request replacement and cancellation refuse result",
+    "Preference conflict or unreadable policy refuses result",
+    "Preference edit during final password or snapshot read refuses result",
+    "Actual temporary preference creation/replacement/removal/corruption/symlink refusal; sibling bytes preserved"
+  ],
+  "sourcePins": {
+    "Sources/NeAntik/ProxyDiagnosticEndpoint.swift": "c04d7f1b2c203c4cdb5baf82a6d44e439acc8c298eb20369c7654db218c9c538",
+    "Sources/NeAntik/ProxyDiagnosticSheet.swift": "49fbf2d0cd0e896e49f27e64b8002fb692e4fef12f5ccd4f6ab62f01c3414092",
+    "Tests/NeAntikTests/ProxyDiagnosticTests.swift": "0f20168494509245a41dd10c327a90038ac618d4318e0dcea2738c3312c85110"
+  },
+  "scopeReview": "Only custom diagnostic request and view changed. Relay, browser route, launch policy, runtime and automatic health records are unchanged. Generic network planner selection narrowed to actual consumers; no full/native rerun.",
+  "nativeQA": false,
+  "realKeychainUsed": false,
+  "realProxyUsed": false,
+  "runtimeChanged": false,
+  "newAppRelease": false,
+  "limitations": [
+    "Final file read is bounded to4096bytes and does not wait for advisory lock; regular filesystem calls can still block on storage IO.",
+    "These controls do not establish globally atomic metadata/Keychain/policy access across processes or continuous result freshness.",
+    "GUI publication and exact signed candidate remain separate next-release gates.",
+    "Published 0.8.24 bytes remain unchanged; curl diagnostic is not Chromium route evidence."
+  ]
+}

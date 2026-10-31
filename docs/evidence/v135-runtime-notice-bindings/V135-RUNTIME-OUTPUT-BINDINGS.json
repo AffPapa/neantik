@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS_V135_BUILD_OUTPUT_IDENTITY_REBIND; SOURCE_TERMS_REVIEWS_RETAINED_AT_BOUNDED_SCOPE",
+  "binding": {
+    "buildReceiptPath": "docs/evidence/neantik-v135-clean-relocated-v132-webkit-relink-20261026.json",
+    "buildReceiptSHA256": "a491a638ee081d08e330a7a100fb4c738361b066be5bcdb7226b1bc19132ecb4",
+    "webkitCommit": "43d5b8d85e2e5eed41d7ff8a79da831bf405be6c",
+    "sourceArchiveSHA256": "658ca48ecfdaa341991bc9cd773a0aa394dabe90ccd1851021433fbd9e72df9f",
+    "mainSourcePatchSHA256": "b33b9320bd8f3bae56eadebc738fe91d40f0cf77e89fd2885bf28679d2af0735",
+    "v36PatchSHA256": "0ade0fcd5dd315677d182a86c3d37ea7582dc63457e5c6870df2040f7f182b06",
+    "scope": "Exact runtime output identity only; historical source/license reviews remain bounded and unchanged in meaning."
+  },
+  "outputs": [
+    {
+      "path": "JavaScriptCore.framework/Versions/A/JavaScriptCore",
+      "sha256": "8e6d73e593ee32196767b35a236cffc1f172bd12f23073cdc35ef290f506ef63",
+      "architecture": "arm64",
+      "bytes": 40095120
+    },
+    {
+      "path": "WebGPU.framework/Versions/A/WebGPU",
+      "sha256": "42e1a8d4205948576032c04a428788cd737d06512aac044cc04acb1608b0dc23",
+      "architecture": "arm64",
+      "bytes": 4007776
+    },
+    {
+      "path": "libANGLE-shared.dylib",
+      "sha256": "6ee135a4eb93cfc21ab272147427e5bbf8f63e4345dbd7793d987b8b0baa1570",
+      "architecture": "arm64",
+      "bytes": 5743216
+    },
+    {
+      "path": "libwebrtc.dylib",
+      "sha256": "dbed8455ea0c93bdd7c20c5ce79723a545a23d12dd22e9da92277d13a4b6efae",
+      "architecture": "arm64",
+      "bytes": 14531568
+    },
+    {
+      "path": "WebCore.framework/Versions/A/WebCore",
+      "sha256": "2dfb23280d68b0b89bf493a16de3696a326ccf8cdb88722593998bb00bbdd6a8",
+      "architecture": "arm64",
+      "bytes": 98312576
+    },
+    {
+      "path": "WebKitLegacy.framework/Versions/A/WebKitLegacy",
+      "sha256": "9555d1441c44a767e5636e57483f763d6d13464620c6be57dfd24811827b72e1",
+      "architecture": "arm64",
+      "bytes": 4695792
+    },
+    {
+      "path": "WebInspectorUI.framework/Versions/A/WebInspectorUI",
+      "sha256": "aa5f2f762b8f02f4679f488b32836e6d8fc099ed9fb0ce0802900bcf5ad47c35",
+      "architecture": "arm64",
+      "bytes": 16832
+    },
+    {
+      "path": "WebKit.framework/Versions/A/WebKit",
+      "sha256": "9d22770904538771607524af37bba48f45959d3aadc41b96ba8bf40f02018ab6",
+      "architecture": "arm64",
+      "bytes": 56505464
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.GPU.xpc/Contents/MacOS/app.neantik.desktop.webkit.GPU.Development",
+      "sha256": "3ecf2f2b7650e65257e561ccd93187f58b7ed9559356ad412baf03bea8f736a0",
+      "architecture": "arm64",
+      "bytes": 34000
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.Development",
+      "sha256": "b031d2c898581f1b83e744eaad83316621fe4e7eaef91c1b242a7b4fe11d7d8a",
+      "architecture": "arm64",
+      "bytes": 34096
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.Networking.xpc/Contents/MacOS/app.neantik.desktop.webkit.Networking.Development",
+      "sha256": "4ff32a6b2068f4383fc9ca0d09a27f1f161374a919e2fb416a34491af1314f9e",
+      "architecture": "arm64",
+      "bytes": 34000
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.CaptivePortal.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.CaptivePortal.Development",
+      "sha256": "95e5eb9fd76d4525ed22b0ecec74ab531fd3abcb067886a5469f682021586e75",
+      "architecture": "arm64",
+      "bytes": 34016
+    },
+    {
+      "path": "WebKit.framework/Versions/A/XPCServices/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.xpc/Contents/MacOS/app.neantik.desktop.webkit.WebContent.EnhancedSecurity.Development",
+      "sha256": "1c3ff4505f7bfb597fb042f4ba2b8b277377bc87671da11d3dc9902b3eb0f0bb",
+      "architecture": "arm64",
+      "bytes": 34016
+    },
+    {
+      "path": "libWebKitSwift.dylib",
+      "sha256": "a30fe4e2947b08ea17c784218a2c833426be9040f52d136f29a9abd070044b41",
+      "architecture": "arm64",
+      "bytes": 160832
+    }
+  ],
+  "limitations": [
+    "Does not establish complete license applicability, per-file attribution, patent clearance, corresponding-source sufficiency, signing, recipient load, runtime, notarization, or release."
+  ]
+}

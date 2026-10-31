@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v270-production-diagnostic-harness-setup-failure-20261027",
+  "observedAtUTC": "2026-10-27T15:32:00Z",
+  "status": "SETUP_FAILURE_NO_WEBKIT_RUNTIME_RESULT; DO_NOT_REUSE_AS_ROUTE_EVIDENCE",
+  "scope": "One fixture attempt against exact b960 candidate under prior authorized synthetic-QA scope. No WebKit navigation or route conclusion.",
+  "candidate": {
+    "id": "b96006a994664a80bf89cd757f932eff",
+    "manifestSHA256": "4d10449a7674c908c333f31d81f2b1ce3a5ce0178716ecda0b8daddd6c6924c8"
+  },
+  "fixture": {
+    "scriptSHA256": "59e617f3d79551846a42583576885d919d88a809b2d90632bba3804144c84749",
+    "managerSHA256": "17c767f961de21a14d9720acb01b61cc54a6ccca44e22166ff15a6e28fde964c",
+    "managerExitCode": 65,
+    "events": 0,
+    "runtimeCleanup": "process-custody-check-unavailable"
+  },
+  "observations": [
+    "The shipping fixture seeded two synthetic records in a private temporary data root, then its production update-audit manager exited 65 before a headed WebKit session or route event.",
+    "CUA app-path discovery started a separate normal b960 process (PID 7109) with default launch arguments and displayed existing profiles. No profile was selected, launched, or edited. That exact process was terminated with SIGTERM and confirmed exited.",
+    "The fixture manager process (PID 7098) was stopped by fixture cleanup. Temporary fixture root was removed by fixture cleanup; private state and empty fixture ledger remain mode 0600 under the V270 output directory."
+  ],
+  "classification": "Harness/setup failure. The app-discovery action did not attach to the fixture-owned update-audit PID. The empty ledger is not evidence of a route failure or pass.",
+  "decision": "Do not rerun the shipping fixture or call CUA getApp with the production bundle path. Follow CURRENT V257 diagnostic boundary: prepare and launch an exact private production-ID diagnostic app with NEANTIK_PRODUCTION_DIAGNOSTIC_DATA_ROOT bound to an owner-only /private/tmp/neantik-production-diagnostic-* root; bind PID, profile lock, WebKit host, window and counters before interaction.",
+  "noSourceMutation": true,
+  "noReleaseMutation": true,
+  "releaseQualified": false
+}

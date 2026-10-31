@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "status": "pass-preflight-contract-only;source-offer-not-qualified",
+  "observedAt": "2026-10-25",
+  "finding": {
+    "oldBehavior": [
+      "implicit v16 hashes were selected when no manifest was passed",
+      "a separate signing team was mandatory even though project release policy does not require an external recipient",
+      "exit code remained 2 while completeBuildInputsEstablished was hard-coded false, even when named input checks passed"
+    ],
+    "classification": "workflow contract defect and stale fixture/setup; not an engine or candidate failure"
+  },
+  "newBehavior": {
+    "inputManifest": "required and explicit; no historical pin fallback",
+    "signingTeam": "optional expected team; same-team evidence is accepted and independent-team assurance is reported separately",
+    "exitCode": "0 means the named pinned file/source-marker/toolchain preflight passed only; source completeness, relink, notices, runtime qualification and release remain separate false/open gates"
+  },
+  "checks": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest scripts.tests.test_check_webkit_recipient_prereqs",
+    "testsPassed": 8,
+    "testsFailed": 0,
+    "diffCheck": "PASS"
+  },
+  "inputs": {
+    "scriptSHA256": "5c87a0dc91efb2b2ef5f58e2e259ece7428536ad2479d233e7b4e12fa4cc0f84",
+    "testSHA256": "d0ee199b7e515a6b3248f8fabedbc93c4004d86cac6fd1febcff014edc5e0f81"
+  },
+  "notPerformed": [
+    "engine rebuild",
+    "runtime launch",
+    "signing or notarization",
+    "GitHub or browser.free publication"
+  ],
+  "releaseBoundary": {
+    "completeBuildInputsEstablished": false,
+    "recipientRelinkProved": false,
+    "licenseOrSourceOfferQualified": false,
+    "releaseQualified": false
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "neantik-v266-source-offer-supplement-integrity-20261027",
+  "status": "V266_SUPPLEMENT_COMPONENT_HASHES_AND_FROZEN_V246_BASE_PASS; COMPLETE_SOURCE_OFFER_AND_RECIPIENT_PREFLIGHT_OPEN",
+  "supplementManifestPath": "/private/tmp/neantik-release-v1/dist/private/source-offers/v266-chromium-recipient-build-supplement-draft/supplement-manifest.json",
+  "supplementManifestSHA256": "c8560eab153293bea1dceb286ef287f84e5832797ea22bad14631e3fa88dd177",
+  "baseManifestSHA256": "6240d928c933b9b44d6d5376cadc66fee0a1107cd9e1528281a016363ad7c59c",
+  "baseSourceArchiveSHA256": "047ad8b493ff2710a277ac4526ee899aa9165e1ab18f7ca6deab63a6e0523958",
+  "componentCount": 19,
+  "componentBytes": 1431175,
+  "checks": {
+    "allSupplementFileHashes": "PASS",
+    "baseManifestAndArchiveHashes": "PASS",
+    "actualLocalAbsolutePathsInManifestOrFiles": false,
+    "V246Unmodified": true
+  },
+  "notIncluded": [
+    "internal receipts containing local source paths; retained outside the offer supplement"
+  ],
+  "releaseQualified": false
+}

@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "tag": "v0.7.30",
+  "version": "0.7.30",
+  "build": 93,
+  "releasedAt": "2026-10-11",
+  "channel": "public-alpha",
+  "sourceCommit": "1f108aadfa907e919f6a3b470b3d8a1f6fd53301",
+  "runtime": {
+    "chromiumVersion": "156.0.8078.12",
+    "architecture": "arm64",
+    "rebuilt": false,
+    "safeBrowsingEnabled": false,
+    "executableSHA256": "1b1e460981efe56aa8f4825b7f4f7c6f2e8cc51e244d718ba300db78ac872ff0",
+    "frameworkSHA256": "87374f1072a83850ea20da83897eac86de6d1357abcff0f0fad87dabd836e815"
+  },
+  "archive": {
+    "name": "NeAntik-0.7.30-arm64-notarized.zip",
+    "sizeBytes": 188231927,
+    "sha256": "1a445b68a22634ab249573cf4712d9f47552daa9e3d403df0cf0adc360cbc7df"
+  },
+  "dmg": {
+    "name": "NeAntik-0.7.30-arm64-notarized.dmg",
+    "sizeBytes": 212687711,
+    "sha256": "4fe1e5b793acaffafc8f0438f88712f2b2fc65c7d22bd9b117b430868b7d47ff"
+  },
+  "verification": {
+    "developerId": "passed",
+    "notarization": "Accepted ZIP and DMG",
+    "zipNotarySubmissionId": "cbb0b346-d3b3-4866-9596-112af8cc5407",
+    "dmgNotarySubmissionId": "9a991dc4-123c-4d63-bb25-ba759faa89cb",
+    "stapling": "passed",
+    "gatekeeper": "passed",
+    "hostedDownload": "fresh ZIP/DMG hash, size, signing/notary/Gatekeeper; ZIP candidate and authenticated evidence binding passed",
+    "fingerprint": "fresh authenticated headed run of downloaded app with new one-time enrollment; all criticalFiles equal to qualified candidate; owned processes drained",
+    "first15Platform": {
+      "cases": 18,
+      "status": "prior v0.7.26 headed qualification of identical runtime, not rerun for this manager slice"
+    },
+    "swiftTests": {
+      "reportedTests": 1140,
+      "suites": 132,
+      "seconds": 48.7,
+      "status": "passed",
+      "execution": "explicit no-parallel, jobs2, permitted context; opt-in fixtures separately qualified"
+    },
+    "siteTests": {
+      "status": "local final build/tests running; publication pending"
+    },
+    "privacy": "Recognized-format source scan1418files at binary source PASS; reachable-history after tooling fix4736unique blobs/7982objectsPASS; finalZIP605entries/488309904bytesPASS. Not proof for every unknown secret format.",
+    "exactCandidateMCP": "Downloaded signed executable:18management/7read tools, folder/create/update/startupMode, invalid enum and stale revision refusal, readonly denial, reconnect persistence, EOF cleanup PASS. Metadata only; no production Keychain/browser/proxy operation.",
+    "physicalKeyboard": "Separate isolated signed QA: CmdN/Tab/ShiftTab/Space/Escape, startup selection,persist/reopen and backup filename PASS; picker Return selection and physical VoiceOver unqualified. macOS27beta ARM64 only.",
+    "authenticatedRelay": "separately signed QA manager + exact unchanged runtime: HTTP/SOCKS, two sessions, streaming and17s idle across manager EOF, remote DNS, upstream failure, signed foreign peer refusal, Task cancellation and lease/restart controls passed. Not exact final manager relay qualification.",
+    "backup": "Enabled by exact authenticated macOS Direct profile and signed capability; existing pinned Developer ID certificate, exactly3scoped claims, no startup key creation. Matching signed QA actual isolated DP/classic Keychain lifecycle, wrong password/tamper, interruption recovery and four headed launches recovering cookies/LS/IDB/all saved live tab documents with repeat launch PASS. Production Keychain not tested; exact final packaging/launch passed separately; no cross-Mac portability claim.",
+    "extensions": "Read-only closed-profile center delivered. Actual own unpacked extension install/popup/disable/enable/remove, cold restarts and concurrentA/B isolation PASS on headedDev with same source/runtime. Not exact downloaded GUI-center qualification; complete CRX installation/provenance not integrated.",
+    "managerSHA256": "8f0e29b3080b1fdb25d4362b9e76597fcf36d0056bd6b82627a17a653be0b099",
+    "releaseOwnedTempRegressionTests": {
+      "tests": 23,
+      "status": "passed",
+      "negative": "external symlink input still refused; only verifier-created root canonicalized"
+    }
+  },
+  "siteUrl": "https://browser.free",
+  "releaseUrl": "https://github.com/AffPapa/neantik/releases/tag/v0.7.30",
+  "affpapa": "unchanged: restricted doctor deploy credential unavailable; no alternative transport",
+  "rollbackRelease": "v0.7.29",
+  "candidateManifestSHA256": "f2dcb0aadbeb88283046f753dedf6adb357dd4beffb1226baa3ed27491923d13",
+  "candidateSourceBindingSHA256": "0b14de8ce99a54a893d11421fa4dd6203aa430056ecbfc87d0ff4c85086087f3",
+  "limitations": [
+    "Public alpha; major1.0/full hardware-cohort qualification remain open.",
+    "macOS27beta ARM64 QA; not every Mac/OS, second display or actual network/power transition.",
+    "Safe Browsing disabled; no anonymity/CAPTCHA/site-rule bypass guarantee.",
+    "Detailed relay controls separately signed QA; continuous final-session browser route observation remains notObserved.",
+    "HTTPS retains native Chromium auth path; OS-default trusted HTTPS upstream relay not production-enabled.",
+    "Backup contains BrowserData only; settings/proxy/organization remain unchanged. Requires original profile/Mac/Keychain and exact runtime. No cross-Mac OS-encrypted-secret portability or MCP backup. Finalized private recovery material retained; automatic cleanup/user rollback not delivered.",
+    "Backup data operations qualified under matching isolated signed QA; production Keychain not used for tests. Renaming installed app and every historical manager coexistence are not claimed qualified.",
+    "Extension lifecycle/GUI evidence is headedDev, not exact downloaded GUI center; complete CRX installer/provenance not delivered.",
+    "Atomic updater disabled; legacy signature primitive currently refuses newly provisioned .30 pending native CMS/profile trust integration, then runtime/notary/install/journal/hosting gates.",
+    "Recognized-format secret scanning cannot prove absence of all unknown secret formats.",
+    "AffPapa unchanged because restricted doctor deploy credential unavailable. browser.free update pending explicit auto-review credential-transfer approval."
+  ],
+  "changes": [
+    "Encrypted BrowserData-only backup/restore with stopped-profile lease and original scope/runtime binding",
+    "Explicit startPage/restoreSession with first-launch startURL and no repeated restore URL; editor/MCP/templates/copies/config transfer",
+    "Single .nabackup filename extension and existing-certificate exact Direct provisioning contract",
+    "Verified immutable GitHub assets, downloaded headed app and metadata MCP; previous release retained"
+  ],
+  "releaseToolingCommit": "82c5495",
+  "sitePublication": "pending: auto-review rejected official hidden-stdin credential transfer; exact approval requested",
+  "previousSiteVersion": 131,
+  "siteDeploymentStatus": "pending-credential-transfer-approval",
+  "previousSiteSourceCommit": "7d35b63f6db1967d5bfff92498fdf2069a017862",
+  "previousSiteDeploymentId": "appgdep_6acb3b07ea788191b40e7e7cbe857499",
+  "previousSiteDeploymentStatus": "succeeded"
+}

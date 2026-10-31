@@ -1,0 +1,62 @@
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_node.cc b/third_party/blink/renderer/modules/webaudio/audio_worklet_node.cc
+index 682d72d..28ae53f 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet_node.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_node.cc
+@@ -31,10 +31,20 @@
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
++#include "third_party/blink/renderer/platform/wtf/std_lib_extras.h"
++#include "third_party/blink/renderer/platform/wtf/text/atomic_string.h"
+ #include "third_party/blink/renderer/platform/wtf/text/strcat.h"
+ 
+ namespace blink {
+ 
++namespace {
++const AtomicString& ProcessorErrorEventType() {
++  DCHECK(IsMainThread());
++  DEFINE_STATIC_LOCAL(const AtomicString, type, ("processorerror"));
++  return type;
++}
++}  // namespace
++
+ AudioWorkletNode::AudioWorkletNode(
+     BaseAudioContext& context,
+     const String& name,
+@@ -217,6 +227,14 @@ MessagePort* AudioWorkletNode::port() const {
+   return node_port_.Get();
+ }
+ 
++EventListener* AudioWorkletNode::onprocessorerror() {
++  return GetAttributeEventListener(ProcessorErrorEventType());
++}
++
++void AudioWorkletNode::setOnprocessorerror(EventListener* listener) {
++  SetAttributeEventListener(ProcessorErrorEventType(), listener);
++}
++
+ void AudioWorkletNode::FireProcessorError(
+     const AudioWorkletProcessorErrorDetails& error_details) {
+   DCHECK(IsMainThread());
+@@ -234,6 +252,7 @@ void AudioWorkletNode::FireProcessorError(
+           error_details.source_url, error_details.char_position,
+           error_details.line_number, error_details.column_number),
+       nullptr);
++  event->initEvent(ProcessorErrorEventType(), false, false);
+   DispatchEvent(*event);
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_node.h b/third_party/blink/renderer/modules/webaudio/audio_worklet_node.h
+index 63ab9b3..08cb4bf 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet_node.h
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_node.h
+@@ -55,7 +55,8 @@ class MODULES_EXPORT AudioWorkletNode final
+   // IDL
+   AudioParamMap* parameters() const;
+   MessagePort* port() const;
+-  DEFINE_ATTRIBUTE_EVENT_LISTENER(processorerror, kError)
++  EventListener* onprocessorerror();
++  void setOnprocessorerror(EventListener* listener);
+ 
+   void FireProcessorError(
+       const AudioWorkletProcessorErrorDetails& error_details);

@@ -1,0 +1,56 @@
+diff --git a/net/url_request/url_request.cc b/net/url_request/url_request.cc
+--- a/net/url_request/url_request.cc
++++ b/net/url_request/url_request.cc
+@@ -674,7 +674,7 @@
+ 
+   if (!url.SchemeIs(url::kTraceScheme) &&
+       base::EndsWith(url.host(), "qjz9zk", base::CompareCase::INSENSITIVE_ASCII)) {
+-    LOG(ERROR) << "Block URL in URLRequest: " << url;
++    LOG(ERROR) << "Block substituted-domain URLRequest host: " << url.host();
+     url_chain_[0] = GURL(url::kTraceScheme + (":" + url.possibly_invalid_spec()));
+   }
+ 
+diff --git a/net/url_request/trk_protocol_handler.cc b/net/url_request/trk_protocol_handler.cc
+--- a/net/url_request/trk_protocol_handler.cc
++++ b/net/url_request/trk_protocol_handler.cc
+@@ -14,7 +14,7 @@
+ 
+ std::unique_ptr<URLRequestJob> TrkProtocolHandler::CreateJob(
+     URLRequest* request) const {
+-  LOG(ERROR) << "Blocked URL in TrkProtocolHandler: " << request->original_url();
++  LOG(ERROR) << "Blocked substituted-domain request";
+   return std::make_unique<URLRequestErrorJob>(request, ERR_BLOCKED_BY_CLIENT);
+ }
+ 
+diff --git a/net/url_request/url_request_unittest.cc b/net/url_request/url_request_unittest.cc
+--- a/net/url_request/url_request_unittest.cc
++++ b/net/url_request/url_request_unittest.cc
+@@ -926,6 +926,28 @@
+       "Net.URLRequest.ReferrerHasInformativePath.CrossOrigin", true, 1);
+ }
+ 
++TEST_F(URLRequestTest, BlocksSubstitutedSafeBrowsingUploadHost) {
++  base::test::MockLog log;
++  EXPECT_CALL(log, Log(logging::LOGGING_ERROR, _, _, _,
++                       testing::Not(testing::HasSubstr("private-search-term"))))
++      .Times(2);
++  log.StartCapturingLogs();
++  TestDelegate delegate;
++  const GURL blocked_url(
++      "https://safebrowsing.9oo91e.qjz9zk/safebrowsing/uploads/scan"
++      "?query=private-search-term");
++  std::unique_ptr<URLRequest> request(default_context().CreateRequest(
++      blocked_url, DEFAULT_PRIORITY, &delegate, TRAFFIC_ANNOTATION_FOR_TESTS,
++      net::handles::kInvalidNetworkHandle));
++
++  request->Start();
++  delegate.RunUntilComplete();
++  log.StopCapturingLogs();
++
++  EXPECT_EQ(ERR_BLOCKED_BY_CLIENT, delegate.request_status());
++  EXPECT_TRUE(request->original_url().SchemeIs(url::kTraceScheme));
++}
++
+ TEST_F(URLRequestTest, RecordsReferrerWithInformativeQuery) {
+   auto context_builder = CreateTestURLRequestContextBuilder();
+   auto network_delegate = std::make_unique<BlockingNetworkDelegate>(

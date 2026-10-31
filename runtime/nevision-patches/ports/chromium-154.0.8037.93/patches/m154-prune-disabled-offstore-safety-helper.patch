@@ -1,0 +1,53 @@
+--- a/chrome/browser/extensions/extension_safety_check_utils.cc
++++ b/chrome/browser/extensions/extension_safety_check_utils.cc
+@@ -105,50 +105,6 @@
+   bool has_no_privacy_practice_info =
+       valid_cws_info && cws_info->no_privacy_practice;
+   return no_privacy_practice_enabled && has_no_privacy_practice_info;
+-}
+-
+-// Returns true if the Safety Check should display a no off-store extension
+-// warning.
+-bool SafetyCheckShouldShowOffstoreExtension(
+-    const Extension& extension,
+-    Profile* profile,
+-    const std::optional<CWSInfoService::CWSInfo>& cws_info) {
+-  if (!base::FeatureList::IsEnabled(
+-          features::kSafetyHubExtensionsOffStoreTrigger)) {
+-    return false;
+-  }
+-  // Leave command-line extensions out for now since removing them is only
+-  // effective till the next browser session.
+-  if (extension.location() == mojom::ManifestLocation::kCommandLine) {
+-    return false;
+-  }
+-  // Calculate if the extension triggers an off-store extension warning such as
+-  // extensions that are no longer on the Chrome Web Store.
+-  if (Manifest::IsUnpackedLocation(extension.location())) {
+-    // Extensions that are unpacked will only trigger a review if dev
+-    // mode is not enabled.
+-    bool dev_mode =
+-        profile->GetPrefs()->GetBoolean(prefs::kExtensionsUIDeveloperMode);
+-    return !dev_mode;
+-  } else {
+-    ExtensionManagement* extension_management =
+-        ExtensionManagementFactory::GetForBrowserContext(profile);
+-    bool updates_from_webstore =
+-        extension_management->UpdatesFromWebstore(extension);
+-    if (updates_from_webstore) {
+-      if (cws_info.has_value() && !cws_info->is_present) {
+-        // If the extension has a webstore update URL but is not present
+-        // in the webstore itself, then we will not consider it from
+-        // the webstore.
+-        return true;
+-      }
+-    } else {
+-      // Extension does not update from the webstore.
+-      return true;
+-    }
+-  }
+-
+-  return false;
+ }
+ 
+ // Return the `PrefAcknowledgeSafetyCheckWarningReason` pref as an enum.
