@@ -1,6 +1,6 @@
 # Profile privacy policy v1 — development only
 
-Four native consumer changes compiled in an isolated APFS clone of the V1011
+Eight native consumer changes compiled in an isolated APFS clone of the V1011
 recipient source. No relink, native runtime qualification or new release yet.
 Do not mutate the published source/output or treat compilation as capability
 admission. Source preimages are retained under the delta root identified in
@@ -19,3 +19,11 @@ extension identity; generated temporary private material was not retained.
 The startup native-matcher gate remains open and must be qualified before
 claiming first-navigation protection. Static/DNR activation is not proven by
 these JavaScript unit tests.
+
+The derived layer now carries all eight exact pre/postimages and relative compile
+recipes in derivation.json. Its current status is compiled-link-pending. The
+validator checks actual source/object bytes in the disposable recipient; default
+verification refuses it until a successful bounded link receipt is bound. Five
+objects are members of pinned thin archives and three are direct RSP inputs.
+Manager lifecycle source tests cover interrupted-session cleanup and refusal on
+unknown process inventory; these do not establish native cache erasure.

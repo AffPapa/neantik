@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "status": "compiled-link-pending",
+  "chromiumVersion": "156.0.8078.80",
+  "architecture": "arm64",
+  "base": {
+    "sourceContract": {
+      "file": "runtime/chromium-15680-source-contract.json",
+      "sha256": "47535a1d5a121e71a3bb77b5528d8e2ef6173863ff75b07657104324709be92f"
+    },
+    "portableCRC": {
+      "file": "runtime/chromium-15680-portable-crc.json",
+      "sha256": "81b2ab0cd60f08b59310f624eda403af0a23636c66bfaac097832a2a15e1cdf0"
+    },
+    "sourceOfferManifestSHA256": "1a28ebe4729b0cde8f3770315a15237f4a025aec9b6fd0fcd9edfc278fcdff5a"
+  },
+  "patch": {
+    "file": "runtime/privacy-policy-v1/privacy-policy-v1.patch",
+    "sha256": "0e03f7c1c7272bccc46690a19b29a4473e0b07b2b0eeb37ed5648986569c9d69"
+  },
+  "files": [
+    {
+      "source": "third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc",
+        "sha256": "12841e22e0c67433b761e06159c5f0705e0a00057e423229b02197f49a9d7ba0"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc",
+        "sha256": "3517fc7c8777280ead4c93e6dbed15d203f240859f7961a0879480dce3bd1f1f"
+      },
+      "object": "obj/third_party/blink/renderer/modules/peerconnection/peerconnection/rtc_peer_connection.o",
+      "objectSHA256": "e6bdee5473ab52be3a4e679cb411661bcb90432ea820b30c79ab92c31b5c678a",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/third_party__blink__renderer__modules__peerconnection__rtc_peer_connection.cc.json",
+        "sha256": "858a51cb7bed3136cde807b13f73e3feaef375bc2680a62d3b911994fbcef9a7"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "components/content_settings/core/browser/host_content_settings_map.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/components/content_settings/core/browser/host_content_settings_map.cc",
+        "sha256": "cf3835835a07b9515dc1037ff97fd0011d4f633100610a00776d58231e47d031"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/components/content_settings/core/browser/host_content_settings_map.cc",
+        "sha256": "85b98cdebe40e62a8a7a46e7af7349f4bd33d12619682b41ba804820199e217a"
+      },
+      "object": "obj/components/content_settings/core/browser/browser/host_content_settings_map.o",
+      "objectSHA256": "515e8341e1e94dd0a0ed9676b110a0ef29db169cb683195f4cadfb7223428aa3",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/components__content_settings__core__browser__host_content_settings_map.cc.json",
+        "sha256": "424d42fda0f95a9c9fbf3511e72fcff3962549e1aeaedcad7295a62e15cd5eed"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc",
+        "sha256": "1b52a8cd6f1b632882374e774dadf389d4d3c49426531e677dca477ea6fe9444"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc",
+        "sha256": "1c276f770b906e9df06be2027cf03cc7cb65c8ea5de7a8dec6f6c4a4cd5d4c45"
+      },
+      "object": "obj/third_party/blink/renderer/modules/webgl/webgl/webgl_rendering_context_base.o",
+      "objectSHA256": "9746fbb2484d4dc79bc3a16c1396615603fa9ba58445bfc5b7501c53aaff98e2",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/third_party__blink__renderer__modules__webgl__webgl_rendering_context_base.cc.json",
+        "sha256": "f874112ce19d007977706ae212d24b8946e75d12892905504cebf39ded4b09ff"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "chrome/browser/ui/views/frame/contents_container_view.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/chrome/browser/ui/views/frame/contents_container_view.cc",
+        "sha256": "22c0ad7c456a6c3552e5b44a2cfe0f9bc901f9f4054e94734592902751bffae0"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/chrome/browser/ui/views/frame/contents_container_view.cc",
+        "sha256": "3fea2e76e61e67a00acd8f63e5721302107e3bf1461d3b9b928583e39d1b6163"
+      },
+      "object": "obj/chrome/browser/ui/views/frame/contents_container_view_impl/contents_container_view.o",
+      "objectSHA256": "f2a22d7c6d7a1aa61b12c508ed90af7596a724cf785b5222c2bc510af870ea82",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/chrome__browser__ui__views__frame__contents_container_view.cc.json",
+        "sha256": "f97bd6fb3e16515f26a283db6143f09fa716cb9f5339f5c76ee457b9b1fbe7a9"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "chrome/browser/chrome_content_browser_client.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/chrome/browser/chrome_content_browser_client.cc",
+        "sha256": "554743a910ba67f47cd6d3dbd1d74bef12f988931bb1ac4fb6a183ab8016d929"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/chrome/browser/chrome_content_browser_client.cc",
+        "sha256": "e83027b24319950caa695c4c04f2371c7e10fc97ed52b8725433d09e0f849043"
+      },
+      "object": "obj/chrome/browser/core/chrome_content_browser_client.o",
+      "objectSHA256": "c8756acb1923770cc1ed63665c770c952507c9134efce9df60ef1b6167df5ca0",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/chrome__browser__chrome_content_browser_client.cc.json",
+        "sha256": "af431e5356fcb64a650cce2f68c066e68a7f341f5e364f9a477cf27dfa3dcc51"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "components/autofill/core/common/autofill_prefs.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/components/autofill/core/common/autofill_prefs.cc",
+        "sha256": "d7a5d2f33a68597561a02701bd3f2f66130359127bbf73d5587838b36d5fb7f1"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/components/autofill/core/common/autofill_prefs.cc",
+        "sha256": "39de6fb20709149ddf5fa3f537de2387d31c0092cfccaf181105e92f15d2b2b6"
+      },
+      "object": "obj/components/autofill/core/common/common/autofill_prefs.o",
+      "objectSHA256": "34a9338dd37c51d7e1f3405a854f0234ed4457d0c62d254f6941ed64f400d151",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/components__autofill__core__common__autofill_prefs.cc.json",
+        "sha256": "33d256a09e1b0ef6b2e3fe632a1e9ac13c7746dd9214a9131a7d266f526727ad"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "chrome/browser/password_manager/chrome_password_manager_client.cc",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/chrome/browser/password_manager/chrome_password_manager_client.cc",
+        "sha256": "7f733ca72014891ee7cb31ec6cd0fba15adaaa67228635e0ba12b11847abe180"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/chrome/browser/password_manager/chrome_password_manager_client.cc",
+        "sha256": "d7f9c3ce81ad2d85b6390d9122a2e9dc653ed29324658a8d74fb28cc1aa73b7e"
+      },
+      "object": "obj/chrome/browser/password_manager/impl/chrome_password_manager_client.o",
+      "objectSHA256": "1dee796e34f083a9cb8d53315d127a04a2fa6da8243b28160ddacdb9fc8d6d59",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/chrome__browser__password_manager__chrome_password_manager_client.cc.json",
+        "sha256": "98c0b031d069ac2126e3aa856b1b96a364d35c98c1f5eb37a6f8110ab187e3e6"
+      },
+      "compileExitCode": 0
+    },
+    {
+      "source": "chrome/common/chrome_paths_mac.mm",
+      "preimage": {
+        "file": "runtime/privacy-policy-v1/preimages/chrome/common/chrome_paths_mac.mm",
+        "sha256": "d1dfa65cbd46600c6340aa51fa3ebdc5559aa91d20f78a375364a0af6ab3e588"
+      },
+      "postimage": {
+        "file": "runtime/privacy-policy-v1/postimages/chrome/common/chrome_paths_mac.mm",
+        "sha256": "5d9577dbeb0324f29bb02b8c5b157b0201420ac35d3a95c3df1d80d4e6b9e37e"
+      },
+      "object": "obj/chrome/common/constants/chrome_paths_mac.o",
+      "objectSHA256": "752bf1ff857bfc7186446167e8af251aba4a8a959e1a2dee341e22648576cdb8",
+      "recipe": {
+        "file": "runtime/privacy-policy-v1/recipes/chrome__common__chrome_paths_mac.mm.json",
+        "sha256": "0f9d917d810259357f5128467c52a8d20778de835779445ccde27b2a827b9177"
+      },
+      "compileExitCode": 0
+    }
+  ],
+  "link": null,
+  "releaseReady": false
+}

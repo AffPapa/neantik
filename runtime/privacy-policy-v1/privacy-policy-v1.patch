@@ -163,3 +163,271 @@
    const auto& contents_rect = GetMirroredRect(contents_view_bounds);
    layouts.child_layouts.emplace_back(
        contents_view_.get(), contents_view_->GetVisible(), contents_rect);
+--- a/chrome/browser/chrome_content_browser_client.cc
++++ b/chrome/browser/chrome_content_browser_client.cc
+@@ -818,6 +818,19 @@
+ 
+ #include "base/win/windows_h_disallowed.h"
+ 
++#include "base/environment.h"
++#include "base/strings/string_number_conversions.h"
++#include "base/timer/timer.h"
++#include "net/base/net_errors.h"
++#include "net/url_request/redirect_info.h"
++#if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
++#include "extensions/browser/api/declarative_net_request/composite_matcher.h"
++#include "extensions/browser/api/declarative_net_request/rule_counts.h"
++#include "extensions/browser/api/declarative_net_request/rules_monitor_service.h"
++#include "extensions/browser/api/declarative_net_request/ruleset_manager.h"
++#include "extensions/common/api/declarative_net_request/dnr_manifest_data.h"
++#endif
++
+ using blink::mojom::EffectiveConnectionType;
+ using blink::web_pref::WebPreferences;
+ using content::BrowserThread;
+@@ -848,7 +861,109 @@
+ using web_app::ChromeContentBrowserClientIsolatedWebAppsPart;
+ #endif
+ 
++
+ namespace {
++
++#if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
++bool NeAntikProtectionRequired() {
++  return base::Environment::Create()
++      ->GetVar("NEANTIK_PROFILE_PRIVACY_EXTENSION_ID")
++      .has_value();
++}
++
++bool NeAntikProtectionReady(content::BrowserContext* context) {
++  auto environment = base::Environment::Create();
++  const auto id = environment->GetVar("NEANTIK_PROFILE_PRIVACY_EXTENSION_ID");
++  if (!id) {
++    return true;
++  }
++  unsigned baseline_count = 0;
++  const auto count = environment->GetVar("NEANTIK_PROFILE_PRIVACY_BASELINE_RULES");
++  if (!context || context->IsOffTheRecord() || id->size() != 32 ||
++      id->find_first_not_of("abcdefghijklmnop") != std::string::npos || !count ||
++      !base::StringToUint(*count, &baseline_count) || baseline_count == 0 ||
++      baseline_count > 600) {
++    return false;
++  }
++  auto* registry = extensions::ExtensionRegistry::Get(context);
++  const auto* extension = registry ? registry->enabled_extensions().GetByID(*id) : nullptr;
++  if (!extension) {
++    return false;
++  }
++  namespace dnr = extensions::declarative_net_request;
++  auto* service = dnr::RulesMonitorService::Get(context);
++  auto* matcher = service ? service->ruleset_manager()->GetMatcherForExtension(*id) : nullptr;
++  if (!matcher) {
++    return false;
++  }
++  const auto& declared =
++      dnr::DNRManifestData::GetManifestIDToRulesetMap(*extension);
++  auto has_static = [&](const char* name, size_t expected_count) {
++    auto item = declared.find(name);
++    return item != declared.end() && matcher->GetMatcherWithID(item->second->id) &&
++           service->GetRuleCounts(*id, item->second->id).rule_count == expected_count;
++  };
++  // Dynamic rules are reserved exclusively for complete validated threat-list
++  // replacements (minimum1000domains/500-domain chunks), never tracker allows.
++  const bool dynamic_threats = matcher->GetMatcherWithID(dnr::kDynamicRulesetID) &&
++      service->GetRuleCounts(*id, dnr::kDynamicRulesetID).rule_count >= 2;
++  if (!has_static("cert_baseline", baseline_count) && !dynamic_threats) {
++    return false;
++  }
++  if (!has_static("trackers", 1)) {
++    return false;
++  }
++  const auto cleanup = environment->GetVar("NEANTIK_PROFILE_QUERY_CLEANUP");
++  return !cleanup || *cleanup != "1" || has_static("query_cleanup", 1);
++}
++
++// Native pre-network gate. Extension enabled/ready alone does not establish
++// DNR indexing completion. This finite wait never blocks the UI/file sequence.
++class NeAntikProtectionThrottle final : public blink::URLLoaderThrottle {
++ public:
++  explicit NeAntikProtectionThrottle(content::BrowserContext* context)
++      : context_(context->GetWeakPtr()) {}
++
++  void WillStartRequest(network::ResourceRequest* request, bool* defer) override {
++    Check(request->url, defer);
++  }
++  void WillRedirectRequest(
++      net::RedirectInfo* redirect_info,
++      const network::mojom::URLResponseHead& response_head,
++      bool* defer,
++      network::HttpRequestHeadersUpdateParams* headers_update_params) override {
++    Check(redirect_info->new_url, defer);
++  }
++
++ private:
++  void Check(const GURL& url, bool* defer) {
++    if (!url.SchemeIsHTTPOrHTTPS() || NeAntikProtectionReady(context_.get())) {
++      return;
++    }
++    *defer = true;
++    deadline_ = base::TimeTicks::Now() + base::Seconds(5);
++    timer_.Start(FROM_HERE, base::Milliseconds(20),
++                 base::BindRepeating(&NeAntikProtectionThrottle::Poll,
++                                     weak_factory_.GetWeakPtr()));
++  }
++  void Poll() {
++    if (context_ && NeAntikProtectionReady(context_.get())) {
++      timer_.Stop();
++      delegate_->Resume();
++      return;
++    }
++    if (!context_ || base::TimeTicks::Now() >= deadline_) {
++      timer_.Stop();
++      delegate_->CancelWithError(net::ERR_BLOCKED_BY_CLIENT,
++                                "NeAntik protection is not ready");
++    }
++  }
++  base::WeakPtr<content::BrowserContext> context_;
++  base::TimeTicks deadline_;
++  base::RepeatingTimer timer_;
++  base::WeakPtrFactory<NeAntikProtectionThrottle> weak_factory_{this};
++};
++#endif
+ 
+ const char kAIManagerUserDataKey[] = "ai_manager";
+ 
+@@ -6110,6 +6225,11 @@
+   DCHECK(browser_context);
+   Profile* profile = Profile::FromBrowserContext(browser_context);
+   DCHECK(profile);
++#if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
++  if (NeAntikProtectionRequired()) {
++    result.push_back(std::make_unique<NeAntikProtectionThrottle>(browser_context));
++  }
++#endif
+ 
+   ChromeNavigationUIData* chrome_navigation_ui_data =
+       static_cast<ChromeNavigationUIData*>(navigation_ui_data);
+@@ -6221,6 +6341,11 @@
+   DCHECK(browser_context);
+   Profile* profile = Profile::FromBrowserContext(browser_context);
+   DCHECK(profile);
++#if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
++  if (NeAntikProtectionRequired()) {
++    result.push_back(std::make_unique<NeAntikProtectionThrottle>(browser_context));
++  }
++#endif
+ 
+ #if BUILDFLAG(IS_ANDROID)
+   auto [client_data_header, unused_is_custom_tab] =
+@@ -6937,6 +7062,11 @@
+ bool ChromeContentBrowserClient::WillInterceptWebSocket(
+     content::RenderFrameHost* frame) {
+ #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
++  if (NeAntikProtectionRequired()) {
++    // Worker sockets have no frame in this upstream interface. They remain
++    // explicitly refused under this policy rather than bypass protection.
++    return true;
++  }
+   if (!frame) {
+     return false;
+   }
+@@ -6986,11 +7116,17 @@
+   if (!frame) {
+     return;
+   }
++  if (NeAntikProtectionRequired() &&
++      !NeAntikProtectionReady(frame->GetBrowserContext())) {
++    return;
++  }
+   auto* web_request_api =
+       extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
+           frame->GetBrowserContext());
+ 
+-  DCHECK(web_request_api);
++  if (!web_request_api) {
++    return;
++  }
+   web_request_api->ProxyWebSocket(
+       frame, std::move(factory), url, site_for_cookies, user_agent,
+       std::move(handshake_client), std::move(options.header_client));
+--- a/components/autofill/core/common/autofill_prefs.cc
++++ b/components/autofill/core/common/autofill_prefs.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "components/autofill/core/common/autofill_prefs.h"
+ 
++#include "base/environment.h"
+ #include "base/feature_list.h"
+ #include "base/json/values_util.h"
+ #include "base/metrics/histogram_functions.h"
+@@ -247,6 +248,11 @@
+ }
+ 
+ bool IsAutofillPaymentMethodsEnabled(const PrefService* prefs) {
++  const auto policy = base::Environment::Create()->GetVar("NEANTIK_PROFILE_AUTOFILL");
++  if (policy && *policy == "off") {
++    return false;
++  }
++
+   return prefs->GetBoolean(kAutofillCreditCardEnabled);
+ }
+ 
+@@ -273,6 +279,11 @@
+ }
+ 
+ bool IsAutofillProfileEnabled(const PrefService* prefs) {
++  const auto policy = base::Environment::Create()->GetVar("NEANTIK_PROFILE_AUTOFILL");
++  if (policy && *policy == "off") {
++    return false;
++  }
++
+   return prefs->GetBoolean(kAutofillProfileEnabled);
+ }
+ 
+--- a/chrome/browser/password_manager/chrome_password_manager_client.cc
++++ b/chrome/browser/password_manager/chrome_password_manager_client.cc
+@@ -14,6 +14,7 @@
+ #include "base/containers/map_util.h"
+ #include "base/containers/span.h"
+ #include "base/containers/to_vector.h"
++#include "base/environment.h"
+ #include "base/feature_list.h"
+ #include "base/functional/bind.h"
+ #include "base/json/json_writer.h"
+@@ -319,6 +320,11 @@
+ bool ChromePasswordManagerClient::IsFillingEnabled(
+     const url::Origin& origin,
+     base::optional_ref<const GURL> url) const {
++  const auto policy = base::Environment::Create()->GetVar("NEANTIK_PROFILE_AUTOFILL");
++  if (policy && *policy == "off") {
++    return false;
++  }
++
+   if (origin.opaque() &&
+       base::FeatureList::IsEnabled(
+           password_manager::features::kPasswordBlockOpaqueOrigins)) {
+--- a/chrome/common/chrome_paths_mac.mm
++++ b/chrome/common/chrome_paths_mac.mm
+@@ -4,6 +4,8 @@
+ 
+ #import <Foundation/Foundation.h>
+ #include <string.h>
++
++#include "base/environment.h"
+ 
+ #include <memory>
+ #include <string>
+@@ -102,6 +104,13 @@
+   // Default value in cases where any of the following fails.
+   *result = profile_dir;
+ 
++  // Ephemeral sessions keep every GetUserCacheDirectory consumer inside the
++  // owned BrowserData tree; --disk-cache-dir alone misses image/profile caches.
++  const auto retention = base::Environment::Create()->GetVar("NEANTIK_PROFILE_EPHEMERAL");
++  if (retention && *retention == "1") {
++    return;
++  }
++
+   base::FilePath app_data_dir;
+   if (!base::PathService::Get(base::DIR_APP_DATA, &app_data_dir))
+     return;
