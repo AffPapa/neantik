@@ -1,6 +1,6 @@
 # Privacy20 re-audit — 2026-11-01
 
-Published NeAntik0.9.2(202), Chromium156.0.8078.80, product source a90a934. The signed app, ZIP/DMG, runtime and website were not changed. This audit corrects the earlier overly broad interpretation of “19implemented”: **9 requirements are fulfilled within their stated bounded scope, one is research-complete, ten remain partial**. One P1 custom-policy passport defect was found; no confirmed production P0 bypass was found in the reviewed scope. This is not a claim that the product has no bugs or guarantees anonymity.
+Published NeAntik0.9.2(202), Chromium156.0.8078.80, product source a90a934. The signed app, ZIP/DMG, runtime and website were not changed. This audit corrects the earlier overly broad interpretation of “19implemented”: **9 requirements are fulfilled within their stated bounded scope, one is research-complete, ten remain partial**. Two P1 defects were found: custom-policy passport wording and framework signature admission in the updater; no confirmed production P0 bypass was found in the reviewed scope. This is not a claim that the product has no bugs or guarantees anonymity.
 
 ## Corrected qualification
 
@@ -16,7 +16,7 @@ All new cases passed against the same pinned signed executable/framework. Succes
 |---|---|---|---|
 | 1 | partial | Required proxy fixed in profile/system contexts; worker HTTP, keepalive, page WSS, downloads and failure/recovery. | Packet-wide DNS/UDP/IPv6 and ordinary background traffic remain unqualified; fixture disables background networking. |
 | 2 | partial | RTC-off and corrected single-variable STUN comparison: control UDP1, proxy policy UDP0. | Successful proxied TURN/media and route qualification are not measured. |
-| 3 | partial | Signed bounded downloader, reviewed runtime pins and migration/rollback boundaries. | No measured security-update delivery SLA or automated end-to-end qualification of future Chromium versions. |
+| 3 | partial | Signed bounded downloader, reviewed runtime pins and migration/rollback boundaries. | Published202 updater refuses the normal flags0 Chromium framework at signature.policy; manual update required. No measured delivery SLA or future-version qualification. |
 | 4 | partial | CERT/HaGeZi domain protection and threat-priority controls. | Google Safe Browsing and downloaded-file malware scanning remain disabled/absent. |
 | 5 | fulfilled-bounded | New profiles start at local about:blank; saved URLs preserved. | This does not disable all browser background traffic. |
 | 6 | fulfilled-bounded | Cookies/localStorage/IndexedDB/CacheStorage plus new service-worker registration/state and dedicated-worker IndexedDB A/B/A. | Bounded owned-origin/profile tests; no universal assertion for every storage API. |
@@ -63,3 +63,11 @@ P1/P2: browser-origin font canary/glyph fallback; real OAuth/payment-preservatio
 The additional SHA256 updater certificate pin remains an **unreleased source change**, not a fix already present in0.9.2. No new manager/helper binary release is claimed by this audit.
 
 Chromium156.0.8078.80 corresponds to the [official2026-10-29 Stable/ExtendedStable announcement](https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_02107719452.html). This does not prove a future update SLA or qualify a new Chromium tuple automatically.
+
+## Concrete updater defect found during candidate qualification
+
+The authentic public202 updater rejects the prepared signed candidate at signature.policy before installation: it incorrectly applies the executable CS_RUNTIME flag requirement to the Chromium framework dylib, whose normal signature uses flags0. Independent Security.framework observations verify valid deep/strict signatures and certified timestamps for all three roles; manager/runtime retain their expected executable hardening. Chromium installer signing/parts.py explicitly treats dylib option flags as meaningless. Re-signing the framework is not a compatible bridge because public202 also pins its exact original runtime closure.
+
+The new role-specific policy permits framework flags0 or CS_RUNTIME, still requires empty framework entitlements, fixed Developer ID/team/identifier, timestamps, strict nested signatures and exact runtime provenance. Its hardenedRuntimeVerified observation now reports the actual bit. Manager/runtime missing that bit and framework ad-hoc/extra flags are negative controls. Targeted scalar tests and native Security.framework inspection of all three actual signed roles passed; this does not yet qualify a newly built shipping helper. Public202 requires manual ZIP/DMG installation of the future qualified release.
+
+The opt-in signature test also hardcoded the historical runtime. It now accepts an explicit expected runtime version, without treating a version mismatch as signature success. The earlier candidate is retained as unqualified; no public archive was replaced.

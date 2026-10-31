@@ -68,6 +68,7 @@ package enum DirectUpdateCodeRole: CaseIterable, Sendable {
 package struct DirectUpdateCodeSignatureFields: Sendable, Equatable {
     package let identifier: String, version: String, build: String, cdHash: Data
     package let certifiedTimestamp: Date
+    package let hardenedRuntimeVerified: Bool
 }
 
 package struct DirectUpdateCodeSignatureObservation: Sendable, Equatable {
@@ -116,7 +117,7 @@ package struct DirectUpdateCodeSignatureObservation: Sendable, Equatable {
     package var certifiedTimestamp: Date { fields.certifiedTimestamp }
     package var developerIDVerified: Bool { true }
     package var nestedAndAllArchitecturesVerified: Bool { true }
-    package var hardenedRuntimeVerified: Bool { true }
+    package var hardenedRuntimeVerified: Bool { fields.hardenedRuntimeVerified }
 }
 
 /// Genuine signature observations bound to one sealed stage's lifetime. The
@@ -247,8 +248,13 @@ package enum DirectUpdateCodeSignature {
         // Timestamp is TSA-certified; signer-supplied kSecCodeInfoTime is not
         // an acceptable substitute. No Keychain credential access occurs here.
         guard let flags = info[kSecCodeInfoFlags as String] as? NSNumber,
+              CFGetTypeID(flags) != CFBooleanGetTypeID(),
+              // Hardened Runtime applies to executables. Chromium signs its
+              // framework dylib with options=0; its integrity, Developer ID,
+              // timestamp, empty entitlements and frozen payload remain checked.
               // CSCommon.h kSecCodeSignatureRuntime is not imported by Swift.
-              flags.uint32Value & 0x10000 != 0,
+              role == .framework ? [UInt32(0), UInt32(0x10000)].contains(flags.uint32Value)
+                  : flags.uint32Value & 0x10000 != 0,
               let timestamp = info[kSecCodeInfoTimestamp as String] as? Date,
               timestamp.timeIntervalSince1970.isFinite,
               let plist = info[kSecCodeInfoPList as String] as? [String: Any],
@@ -291,7 +297,7 @@ package enum DirectUpdateCodeSignature {
                   plist["NeAntikRuntimeBuildMode"] as? String == "source-build" else { throw DirectUpdateCodeSignatureError.metadata }
         }
         return .init(identifier: role.identifier, version: version, build: build, cdHash: cdHash,
-                     certifiedTimestamp: timestamp)
+                     certifiedTimestamp: timestamp, hardenedRuntimeVerified: flags.uint32Value & 0x10000 != 0)
     }
 
     /// Not a trusted-update constructor: runtime payload provenance and actual
