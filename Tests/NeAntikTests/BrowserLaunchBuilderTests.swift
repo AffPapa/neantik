@@ -25,6 +25,28 @@ private final class RuntimeInspectionRecorder: @unchecked Sendable {
 }
 
 struct BrowserLaunchBuilderTests {
+    @Test func linkCleanupCanBeDisabledWithoutTurningOffSiteProtection() throws {
+        var profile = BrowserProfile(name: "Signed link fixture", privacyPolicy: .balanced)
+        let original = profile.privacyPolicy
+        let protectedArguments = BrowserLaunchBuilder.arguments(profile: profile,
+            browserDataDirectory: URL(fileURLWithPath: "/tmp/neantik-link-fixture"), runtimeCapabilities: [.profilePrivacyV1])
+        #expect(protectedArguments.contains { $0.hasPrefix("--enable-features=") && $0.contains("DIPS") })
+        profile.privacyPolicy.trackingParameterCleanup = false
+        let restored = try JSONDecoder().decode(BrowserProfile.self, from: JSONEncoder().encode(profile))
+        #expect(!restored.privacyPolicy.trackingParameterCleanup)
+        #expect(restored.privacyPolicy.siteProtection == original.siteProtection)
+        #expect(restored.privacyPolicy.localNetwork == original.localNetwork)
+        #expect(restored.privacyPolicy.rtc == original.rtc)
+        #expect(restored.privacyPolicy.presetName == "custom")
+        #expect(restored.privacyPolicy.draftToken != original.draftToken)
+        let environment = BrowserLaunchBuilder.environment(profile: restored, runtimeCapabilities: [.profilePrivacyV1], inherited: [:])
+        #expect(environment["NEANTIK_PROFILE_QUERY_CLEANUP"] == nil)
+        #expect(environment["NEANTIK_PROFILE_PRIVACY_EXTENSION_ID"] == SiteProtectionBundle.extensionID)
+        let arguments = BrowserLaunchBuilder.arguments(profile: restored,
+            browserDataDirectory: URL(fileURLWithPath: "/tmp/neantik-link-fixture"), runtimeCapabilities: [.profilePrivacyV1])
+        #expect(!arguments.contains { $0.hasPrefix("--enable-features=") && $0.contains("DIPS") })
+    }
+
     @Test func mandatoryProxyOwnershipIsExplicitAndCannotBeInherited() {
         var profile = BrowserProfile(name: "Own route", proxy: .init(kind: .http, host: "owned.test", port: 1234, username: ""))
         let ambient = ["NEANTIK_PROFILE_PROXY_REQUIRED": "attacker"]

@@ -365,6 +365,13 @@ struct ProfileEditorView: View {
         Text("Режим «Ограничить прямой UDP» без прокси выключает WebRTC. С прокси он ограничивает прямой UDP; работа звонков через TURN зависит от сайта и не подтверждена проверкой маршрута.")
           .font(.caption).foregroundStyle(.secondary)
       }
+      if privacyPolicy.siteProtection {
+        DisclosureGroup("Совместимость ссылок") {
+          Toggle("Очищать известные метки в адресах", isOn: $privacyPolicy.trackingParameterCleanup)
+          Text("Некоторые подписанные ссылки могут перестать работать после очистки. Отключение также может ослабить защиту от отслеживания через перенаправления.")
+            .font(.caption).foregroundStyle(.secondary)
+        }
+      }
       if original == nil {
         Toggle("Очищать данные сайтов после закрытия", isOn: Binding(
           get: { privacyPolicy.retention == .ephemeral },
