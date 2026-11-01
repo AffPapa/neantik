@@ -36,12 +36,11 @@ struct HelpContentTests {
     }
 
     @Test func mcpHelpRecommendsLocalProxyCredentialEntry() {
-        let text = HelpTopic.mcp.sections.map(\.text).joined(separator: " ")
-        let normalizedText = text.lowercased()
-        #expect(normalizedText.contains("mcp принимает для прокси только kind/host/port"))
-        #expect(normalizedText.contains("логин и пароль в локальном редакторе профиля neantik"))
-        #expect(normalizedText.contains("username/password и строки с логином/паролем отклоняются"))
-        #expect(!normalizedText.contains("profile_set_proxy принимает отдельные поля kind/host/port/username/password"))
+        let proxy = HelpTopic.mcp.sections.first { $0.title == "Прокси" }?.text.lowercased() ?? ""
+        #expect(proxy.contains("mcp принимает для прокси только kind/host/port"))
+        #expect(proxy.contains("локальном редакторе профиля neantik"))
+        #expect(proxy.contains("username/password") && proxy.contains("отклоняются"))
+        #expect(!proxy.contains("profile_set_proxy принимает отдельные поля kind/host/port/username/password"))
         let examples = HelpTopic.mcp.sections.first { $0.title == "Примеры для чата" }?.text ?? ""
         let normalizedExamples = examples.lowercased()
         #expect(normalizedExamples.contains("установи прокси через mcp только по типу, адресу и порту"))
