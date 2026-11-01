@@ -111,7 +111,7 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
         let unwrapped = value.hasPrefix("[") && value.hasSuffix("]")
             ? String(value.dropFirst().dropLast())
             : value
-        if Self.isIPAddressLiteral(unwrapped) {
+        if Self.isIPAddressLiteral(value) {
             return true
         }
 

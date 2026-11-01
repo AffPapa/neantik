@@ -881,6 +881,24 @@ struct BrowserLaunchBuilderTests {
             port: 1080,
             username: ""
         )
+        let bracketedIPv6 = ProxyConfiguration(
+            kind: .http,
+            host: "[2001:db8::8]",
+            port: 8080,
+            username: ""
+        )
+        let doubleBracketedIPv6 = ProxyConfiguration(
+            kind: .http,
+            host: "[[::1]]",
+            port: 8080,
+            username: ""
+        )
+        let doubleBracketedIPv4 = ProxyConfiguration(
+            kind: .http,
+            host: "[[192.0.2.8]]",
+            port: 8080,
+            username: ""
+        )
         let invalid = ProxyConfiguration(
             kind: .http,
             host: "proxy@example",
@@ -891,6 +909,10 @@ struct BrowserLaunchBuilderTests {
         #expect(domain.isValid)
         #expect(ipv6.isValid)
         #expect(ipv6.chromiumServer == "socks5://[::1]:1080")
+        #expect(bracketedIPv6.isValid)
+        #expect(bracketedIPv6.chromiumServer == "http://[2001:db8::8]:8080")
+        #expect(!doubleBracketedIPv6.isValid)
+        #expect(!doubleBracketedIPv4.isValid)
         #expect(!invalid.isValid)
 
         let authenticatedSOCKS = ProxyConfiguration(
