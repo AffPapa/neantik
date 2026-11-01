@@ -60,6 +60,13 @@ struct ProxyRelayPendingOwnerFence: Codable, Equatable, Sendable {
               seconds > 0, (0..<1_000_000).contains(micros) else { throw ProfileProcessBusyError() }
     }
 
+    /// An uninspectable initial generation remains a recovery fence, never
+    /// authority to send credentials to a later process with the same PID.
+    func matchesVerifiedOwner(pid: pid_t, identity: ProxyRelayOwnerProcessIdentity) -> Bool {
+        ownerPID == pid && ownerStartSeconds == identity.generation.startSeconds &&
+        ownerStartMicroseconds == identity.generation.startMicroseconds && ownerUID == identity.userID
+    }
+
     func ownerIsAbsent(inspect: (pid_t) -> ProxyRelayOwnerProcessIdentity?, isAlive: (pid_t) -> Bool) -> Bool {
         guard isAlive(ownerPID) else { return true }
         guard let seconds = ownerStartSeconds, let micros = ownerStartMicroseconds, let uid = ownerUID,

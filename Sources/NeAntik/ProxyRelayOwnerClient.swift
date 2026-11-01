@@ -79,13 +79,15 @@ actor ProxyRelayOwnerClient {
             process.environment = ["PATH": "/usr/bin:/bin:/usr/sbin:/sbin"]
             let input = request.fileHandleForWriting, output = reply.fileHandleForReading
             var spawnedFence: ProxyRelayPendingOwnerFence?
+            var spawnedIdentity: ProxyRelayOwnerProcessIdentity?
             do {
                 auditStartupPhase(.spawn)
                 try process.run()
                 // Before any pipe setup, code validation or secret transmission:
                 // persist even an uninspectable child as a conservative fence.
+                spawnedIdentity = ProxyRelaySocketOwnerInspector.processIdentity(process.processIdentifier)
                 let fence = ProxyRelayPendingOwnerFence(profileID: bootstrap.profileID, sessionGeneration: bootstrap.sessionGeneration,
-                    ownerPID: process.processIdentifier, identity: ProxyRelaySocketOwnerInspector.processIdentity(process.processIdentifier))
+                    ownerPID: process.processIdentifier, identity: spawnedIdentity)
                 spawnedFence = fence
                 auditStartupPhase(.fence)
                 try registerChild(fence)
@@ -95,7 +97,9 @@ actor ProxyRelayOwnerClient {
                 try ProxyRelayPrivatePipe.prepare(output.fileDescriptor, writable: false)
                 auditStartupPhase(.childLiveCode)
                 guard let child = ProxyRelaySocketOwnerInspector.processIdentity(process.processIdentifier),
+                      process.isRunning, spawnedIdentity == child,
                       child.userID == geteuid(), child.parentProcessID == getpid(),
+                      fence.matchesVerifiedOwner(pid: process.processIdentifier, identity: child),
                       ProxyRelayLiveCodeVerifier.matches(processID: process.processIdentifier, expectedProcess: child, expectedCode: expectedCode)
                 else { throw Failure.invalidReply }
                 auditStartupPhase(.bootstrapWrite)
@@ -118,7 +122,12 @@ actor ProxyRelayOwnerClient {
                 try? input.close(); try? output.close()
                 // The owner has not been acknowledged as bound: no stream
                 // can survive cancellation. Signal only this child generation.
-                guard terminateBounded(process) else { throw Failure.cleanupUnconfirmed(spawnedFence) }
+                if process.isRunning {
+                    guard let spawnedIdentity, spawnedIdentity.userID == geteuid(), spawnedIdentity.parentProcessID == getpid(),
+                          terminateBounded(process, expectedIdentity: spawnedIdentity) else {
+                        throw Failure.cleanupUnconfirmed(spawnedFence)
+                    }
+                }
                 throw error
             }
         }
@@ -191,10 +200,10 @@ actor ProxyRelayOwnerClient {
         return Self.terminateBounded(process, expectedIdentity: processIdentity)
     }
 
-    private static func terminateBounded(_ process: Process, expectedIdentity: ProxyRelayOwnerProcessIdentity? = nil) -> Bool {
+    private static func terminateBounded(_ process: Process, expectedIdentity: ProxyRelayOwnerProcessIdentity) -> Bool {
         guard process.isRunning else { return true }
         guard let identity = ProxyRelaySocketOwnerInspector.processIdentity(process.processIdentifier),
-              expectedIdentity == nil || identity == expectedIdentity
+              identity == expectedIdentity
         else { return !process.isRunning }
         process.terminate()
         func waitForExit() -> Bool {
