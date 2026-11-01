@@ -64,6 +64,9 @@ experimental system WebKit mode; its behavior and limits are described in the
   configuration is copied too;
 - supports direct connections and authenticated HTTP/HTTPS/SOCKS5 through a separate
   local relay per profile, including HTTPS with certificate verification before credentials;
+- before each proxied launch, checks the proxy and refreshes timezone/locale
+  context through it. This preflight does not measure the Chromium window's
+  effective HTTP/DNS route; a failed check does not fall back to Direct;
 - locally parses a proxy list and creates up to 100 separate profiles without
   automatic network requests; a failed import does not save profiles, and any
   unfinished password cleanup is marked for retry on the next launch;
@@ -84,6 +87,10 @@ password into Chromium's native prompt. The password remains in macOS
 Keychain and never enters the browser command line. Copied values carry the
 transient/concealed pasteboard hints and an unchanged clipboard is cleared
 after 60 seconds; another app can still read it during that interval.
+
+When a proxy is configured by hostname, the system resolver may resolve the
+proxy's own address. The actual DNS route is not measured; the protection
+passport reports configured policy, not observed network traffic.
 
 ## In-app help and local MCP
 

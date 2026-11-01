@@ -155,7 +155,9 @@ controls:
 ```
 
 The resolver rule permits DNS resolution of the proxy itself while preventing
-other browser components from resolving target hosts directly. Async DNS and
+other browser components from resolving target hosts directly. If the proxy is
+configured by hostname, the system resolver may be used to resolve that proxy
+host; the actual route for that DNS lookup has not been measured. Async DNS and
 automatic DoH upgrade are disabled in proxy mode as defense in depth. Direct profiles explicitly
 pass `--no-proxy-server`, so they do not inherit a macOS HTTP proxy, PAC file,
 or proxy auto-detection setting. That switch does not bypass a VPN, Network

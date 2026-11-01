@@ -589,11 +589,17 @@ class ResponsiveUIContractTests(unittest.TestCase):
 
     def test_runtime_and_proxy_launch_docs_match_direct_behavior(self) -> None:
         readme = README.read_text(encoding="utf-8")
+        readme_en = (ROOT / "README.en.md").read_text(encoding="utf-8")
         product = PRODUCT.read_text(encoding="utf-8")
         roadmap = ROADMAP.read_text(encoding="utf-8")
 
         self.assertIn("перед каждой сессией прокси-профиля", readme)
         self.assertIn("Ручная проверка остаётся", readme)
+        self.assertNotIn("проверяет текущий маршрут", readme)
+        self.assertIn("не измеряет фактический HTTP/DNS-маршрут", readme)
+        self.assertIn("системный DNS может разрешить адрес самого", readme)
+        self.assertIn("does not measure the Chromium window's", readme_en)
+        self.assertIn("system resolver may resolve the", readme_en)
         self.assertIn("before every proxy-bound browser", product)
         self.assertIn("Bundled compatible ARM64 NeAntik Browser", product)
         self.assertNotIn("Installed or manually selected Chromium", product)
