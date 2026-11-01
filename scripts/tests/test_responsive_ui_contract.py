@@ -33,11 +33,19 @@ BULK_PROXY_ACTION = (
     ROOT / "Sources" / "NeAntik" / "BulkProxyActionProjection.swift"
 )
 README = ROOT / "README.md"
+PRIVACY_POLICY = ROOT / "docs" / "PRIVACY_POLICY.md"
 PRODUCT = ROOT / "docs" / "PRODUCT.md"
 ROADMAP = ROOT / "docs" / "ROADMAP.md"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
+    def test_privacy_policy_matches_default_profile_start_page(self) -> None:
+        policy = PRIVACY_POLICY.read_text(encoding="utf-8")
+
+        self.assertIn("Новые профили по умолчанию открывают `about:blank`", policy)
+        self.assertIn("NeAntik не открывает внешний fingerprint-checker", policy)
+        self.assertNotIn("Новые профили по умолчанию открывают внешний инструмент", policy)
+
     def test_app_does_not_issue_custom_voiceover_announcements(self) -> None:
         sources = ROOT / "Sources" / "NeAntik"
         forbidden = ("NSAccessibility.post", ".announcementRequested")
