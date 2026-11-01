@@ -311,6 +311,17 @@ struct MCPProfileManagementTests {
         #expect(proxy.contains("does not prove the browser route"))
     }
 
+    @Test func proxyToolDescriptionsRecommendEnteringCredentialsLocally() throws {
+        let tools = MCPProfileManagement.definitions(allowsManagement: true)
+        for name in ["profile_create", "profile_set_proxy"] {
+            let description = try #require(
+                tools.first { $0["name"] as? String == name }?["description"] as? String
+            )
+            #expect(description.contains("enter username/password in NeAntik's local profile editor"))
+            #expect(description.contains("may enter AI history"))
+        }
+    }
+
     @Test func engineCapabilitiesDoNotAdvertiseUnavailableEngines() {
         for engine in [BrowserEngine.chromium, .webkit] {
             let capabilities = engine.managementCapabilities
