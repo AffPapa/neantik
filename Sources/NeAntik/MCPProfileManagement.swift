@@ -185,7 +185,7 @@ final class MCPProfileManagement {
             if folder != nil && expected == nil { throw Failure.invalid }
             let saved = try store.upsert(profile, toFolderID: folder, expectedOrganizationRevision: expected,
                 afterPersist: { committed in
-                    if let proxyDraft {
+                    if let proxyDraft, !proxyDraft.password.isEmpty {
                         try self.keychain.updateProxyPasswordForProfileEdit(proxyDraft.password, profileID: committed.id)
                     }
                 })
@@ -323,7 +323,8 @@ final class MCPProfileManagement {
                 }
                 try validate(profile, password: draft?.password ?? "")
                 profile = try store.upsert(profile, afterPersist: { saved in
-                    try self.keychain.updateProxyPasswordForProfileEdit(draft?.password, profileID: saved.id)
+                    let password = draft?.password.flatMap { $0.isEmpty ? nil : $0 }
+                    try self.keychain.updateProxyPasswordForProfileEdit(password, profileID: saved.id)
                 })
             case "profile_duplicate":
                 let password = try keychain.configuredProxyPassword(for: profile)

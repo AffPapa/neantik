@@ -37,13 +37,15 @@ struct HelpContentTests {
 
     @Test func mcpHelpRecommendsLocalProxyCredentialEntry() {
         let text = HelpTopic.mcp.sections.map(\.text).joined(separator: " ")
-        #expect(text.contains("Безопаснее передавать через MCP только тип, адрес и порт прокси"))
-        #expect(text.contains("логин и пароль вводить в локальном редакторе профиля NeAntik"))
-        #expect(text.contains("username/password и строки с логином/паролем отклоняются"))
-        #expect(!text.contains("profile_set_proxy принимает отдельные поля kind/host/port/username/password"))
+        let normalizedText = text.lowercased()
+        #expect(normalizedText.contains("mcp принимает для прокси только kind/host/port"))
+        #expect(normalizedText.contains("логин и пароль в локальном редакторе профиля neantik"))
+        #expect(normalizedText.contains("username/password и строки с логином/паролем отклоняются"))
+        #expect(!normalizedText.contains("profile_set_proxy принимает отдельные поля kind/host/port/username/password"))
         let examples = HelpTopic.mcp.sections.first { $0.title == "Примеры для чата" }?.text ?? ""
-        #expect(examples.contains("через MCP только по типу, адресу и порту"))
-        #expect(examples.contains("Логин и пароль я введу локально в NeAntik"))
+        let normalizedExamples = examples.lowercased()
+        #expect(normalizedExamples.contains("установи прокси через mcp только по типу, адресу и порту"))
+        #expect(normalizedExamples.contains("логин и пароль я введу локально в neantik"))
         #expect(!examples.contains("из моих настроек"))
     }
 

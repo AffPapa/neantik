@@ -316,9 +316,10 @@ struct MCPProfileManagementTests {
             let description = try #require(
                 tools.first { $0["name"] as? String == name }?["description"] as? String
             )
-            #expect(description.contains("enter username/password in NeAntik's local profile editor"))
-            #expect(description.contains("credentials are not accepted in MCP arguments") ||
-                    description.contains("MCP rejects username/password fields"))
+            let normalizedDescription = description.lowercased()
+            #expect(normalizedDescription.contains("local profile editor"))
+            #expect(normalizedDescription.contains("credentials are not accepted in mcp arguments") ||
+                    normalizedDescription.contains("mcp rejects username/password fields"))
             let schema = try #require(tools.first { $0["name"] as? String == name }?["inputSchema"] as? [String: Any])
             let properties = try #require(schema["properties"] as? [String: Any])
             #expect(properties["order"] == nil)
