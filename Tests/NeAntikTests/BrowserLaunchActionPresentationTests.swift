@@ -257,7 +257,6 @@ struct BrowserLaunchActionPresentationTests {
         let states: [BrowserProfileProcessState] = [
             .externalManualOnly,
             .externalUnverified,
-            .recoveryRequired,
         ]
 
         for state in states {
@@ -272,6 +271,20 @@ struct BrowserLaunchActionPresentationTests {
             #expect(!presentation.isEnabled)
             #expect(presentation.help == state.guidance)
         }
+    }
+
+    @Test
+    func recoveryStateDoesNotAssumeAnOpenWindowOrPromiseAutomaticRecovery() {
+        let presentation = BrowserLaunchActionPresentation.resolve(
+            processState: .recoveryRequired, isArchived: false, runtimeAvailability: .missing)
+        #expect(presentation.title == "Требуется проверка")
+        #expect(presentation.systemImage == "exclamationmark.triangle.fill")
+        #expect(!presentation.isEnabled)
+        #expect(presentation.help == BrowserProfileProcessState.recoveryRequired.guidance)
+        #expect(presentation.help.contains("Если окно браузера открыто"))
+        #expect(presentation.help.contains("состояние профиля"))
+        #expect(!presentation.help.contains("разблокируется"))
+        #expect(!presentation.help.contains("Данные профиля сохранены"))
     }
 
     @Test

@@ -11,9 +11,11 @@ final class MCPProfileManagement {
     let health: ProxyHealthCoordinator
     let allowsManagement: Bool
     private let gui: MCPGUIControlClient
+    private let readOnlyInventory: @Sendable () -> BrowserProcessInventory
 
     init(root: URL, allowsManagement: Bool, keychain: KeychainStore? = nil,
-         processes: BrowserProcessManager? = nil, guiClient: MCPGUIControlClient? = nil) {
+         processes: BrowserProcessManager? = nil, guiClient: MCPGUIControlClient? = nil,
+         readOnlyInventory: @escaping @Sendable () -> BrowserProcessInventory = { DarwinBrowserProcessInventoryProvider().capture() }) {
         let paths = AppPaths(rootDirectory: root)
         let environment = NeAntikApplicationEnvironment.resolve(
             bundleIdentifier: Bundle.main.bundleIdentifier,
@@ -23,6 +25,7 @@ final class MCPProfileManagement {
         self.processes = processes ?? BrowserProcessManager(paths: paths)
         health = ProxyHealthCoordinator(fileURL: paths.proxyHealthFile)
         self.allowsManagement = allowsManagement
+        self.readOnlyInventory = readOnlyInventory
         gui = guiClient ?? MCPGUIControlClient(root: root)
     }
 
@@ -40,7 +43,7 @@ final class MCPProfileManagement {
         let revision: [String: Any] = ["type": "string", "pattern": "^(0|[1-9][0-9]*)$"]
         let optionalUUID: [String: Any] = ["type": ["string", "null"]]
         let changes: [String: Any] = ["type": "object", "additionalProperties": false, "properties": WebKitMediaFeature.visibleFields([
-            "privacyPreset": ["type": "string", "enum": ["legacy", "balanced", "strict"]], "name": text, "startURL": text, "startupMode": ["type": "string", "enum": BrowserStartupMode.allCases.map(\.rawValue)], "fontPolicy": ["type": "string", "enum": ["native", "system-v1"]], "webKitMediaPolicy": ["type": "string", "enum": WebKitMediaPolicy.allCases.map(\.rawValue)], "tags": ["type": "array", "maxItems": 8, "items": text],
+            "privacyPreset": ["type": "string", "enum": ["legacy", "balanced", "strict"], "description": "Changes privacy policy only. Omitted fontPolicy is preserved on update; specify system-v1 explicitly to match the GUI's balanced/strict font selection."], "name": text, "startURL": text, "startupMode": ["type": "string", "enum": BrowserStartupMode.allCases.map(\.rawValue)], "fontPolicy": ["type": "string", "enum": ["native", "system-v1"]], "webKitMediaPolicy": ["type": "string", "enum": WebKitMediaPolicy.allCases.map(\.rawValue)], "tags": ["type": "array", "maxItems": 8, "items": text],
             "note": text, "isPinned": ["type": "boolean"], "isArchived": ["type": "boolean"], "colorHex": text, "symbolName": text], enabled: mediaPolicyEnabled)]
         let proxyFields: [String: Any] = ["type": "object", "additionalProperties": false, "required": ["kind", "host", "port"], "properties": [
             "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "host": text,
@@ -56,7 +59,7 @@ final class MCPProfileManagement {
             ("profile_get", "Read profile revision, start page, organization and requested fontPolicy (not applied-state proof). system-v1 is Chromium-only and needs the exact qualified runtime at launch. Proxy endpoint, credentials and note excluded.", ["profileID": uuid], ["profileID"]),
             ("folder_list", "Read up to100 project folders and organizationRevision. Pass nextCursor unchanged; restart on organization change.", ["limit": ["type": "integer", "minimum": 1, "maximum": 100], "cursor": text], []),
             ("workspace_query_profiles", "Find profiles by name, tags and project without reading private notes. Tags use AND; omitted archived means active only. folderID:null means unfiled, omission means any. Cursor is tied to filters and snapshot. Process state remains unverified.", MCPWorkspaceQuery.properties, []),
-            ("profile_status", "Reconcile profile ownership. External sessions require manual close. Optional includeObservation:true requires expectedRevision and observes only this session's verified owned browser, launch configuration and readiness for graceful close. Never returns page content, credentials, PID, paths or proof of Chromium network route.", ["profileID": uuid, "includeObservation": ["type": "boolean"], "expectedRevision": revision], ["profileID"]),
+            ("profile_status", "Management mode reconciles profile ownership; external sessions require manual close. Read-only mode does not reconcile or clear data: externalUnverified indicates a process referencing the profile data was seen, unverified means the state is unknown; neither establishes that the profile is stopped or authorizes a launch. Optional includeObservation:true requires expectedRevision and observes only this session's verified owned browser. Never returns page content, credentials, PID, paths or proof of Chromium network route.", ["profileID": uuid, "includeObservation": ["type": "boolean"], "expectedRevision": revision], ["profileID"]),
             ("profile_create", profileCreateDescription, ["name": text, "engine": ["type": "string", "enum": BrowserEngine.allCases.map(\.rawValue)], "changes": changes, "templateID": uuid, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "order": ["type": "string", "enum": ["automatic", "credentialsFirst", "endpointFirst"]]], ["name"]),
             ("profile_update", "Patch an existing stopped profile; omitted fields stay unchanged. fontPolicy:native|system-v1 explicitly selects Chromium font handling; system-v1 needs the qualified runtime at launch, not just a profile seed. Read its revision first.", ["profileID": uuid, "expectedRevision": revision, "changes": changes], ["profileID", "expectedRevision", "changes"]),
             ("profile_set_proxy", BrowserEngine.webkit.isAvailableInBuild ? "Configure/disable proxy settings on a stopped profile. Use proxy:null, proxy fields, or proxyLine with kind/order. Password is write-only and may enter AI history. Chromium authentication uses its per-profile local relay. A WebKit proxy requires the owned runtime; switching an existing WebKit profile between Direct and proxy is refused because those runtimes have separate site data. Create a new profile for that change. When the WebKit route is disabled, settings may be saved but launch fails closed without Direct fallback. HTTPS proxy certificates are verified before authentication when the supported route is enabled. A saved proxy and preflight result do not prove the browser route." : "Configure or disable proxy settings on a stopped Chromium profile. Use proxy:null, proxy fields, or proxyLine with kind/order. Password is write-only and may enter AI history. Chromium authentication uses its per-profile local relay. HTTPS proxy certificates are verified before authentication. A saved proxy or preflight result does not prove the browser route.", ["profileID": uuid, "expectedRevision": revision, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "order": ["type": "string", "enum": ["automatic", "credentialsFirst", "endpointFirst"]]], ["profileID", "expectedRevision"]),
@@ -115,9 +118,9 @@ final class MCPProfileManagement {
         if name == "workspace_query_profiles" {
             let query = try MCPWorkspaceQuery(arguments: args)
             let profiles = store.profiles, organization = store.organization
-            return try await Task.detached(priority: .userInitiated) {
+            return try await MCPWorkspaceQuery.executeCancellable {
                 try query.page(profiles: profiles, organization: organization)
-            }.value
+            }
         }
         if name == "folder_list" { return try folderPage(args) }
         if name.hasPrefix("folder_") {
@@ -201,6 +204,26 @@ final class MCPProfileManagement {
             if !includeObservation && args["expectedRevision"] != nil { throw Failure.invalid }
             let expected: UInt64? = includeObservation ? try revision(args) : nil
             if let expected, profile.revision != expected { throw Failure.conflict }
+            // Reconciliation can retire leases and clear pending ephemeral data.
+            // A read-only MCP session has no authority for either side effect.
+            // A process snapshot can provide positive evidence only. Absence is
+            // not a stopped claim: another manager may launch concurrently.
+            if !allowsManagement {
+                let inventory = readOnlyInventory
+                let dataPath = store.paths.browserDataDirectory(for: profileID)
+                let worker = Task.detached(priority: .utility) { inventory().inspectBrowserDataProcess(dataPath) == .found }
+                let found = await withTaskCancellationHandler { await worker.value } onCancel: { worker.cancel() }
+                try Task.checkCancellation()
+                try await store.refreshExternalMetadata(force: true)
+                try Task.checkCancellation()
+                guard store.hasTrustedMetadata, let current = store.profile(withID: profileID), current.revision == profile.revision else { throw Failure.conflict }
+                var result: [String: Any] = ["profileID": profileID.uuidString, "processState": found ? "externalUnverified" : "unverified"]
+                if includeObservation {
+                    result["revision"] = String(current.revision)
+                    result["observation"] = BrowserSessionObservation.unavailable(.unverified).mcpValue
+                }
+                return result
+            }
             if profile.engine == .webkit, gui.ownedProfiles.contains(profileID) {
                 let reply = try await gui.lifecycle(.status, profileID: profileID)
                 var result: [String: Any] = ["profileID": profileID.uuidString, "processState": Self.guiProcessState(reply), "webKitState": reply.state!.rawValue]

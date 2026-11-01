@@ -464,11 +464,13 @@ struct AppPaths: Sendable {
     }
 
     func withProfilesMetadataGuard<T>(
+        existingOnly: Bool = false,
         _ operation: () throws -> T
     ) throws -> T {
         try withPrivateFileGuard(
             at: profilesMetadataGuardFile,
-            nonBlocking: true
+            nonBlocking: true,
+            existingOnly: existingOnly
         ) {
             #if NEANTIK_WEBKIT_STANDALONE_HOST
             try WebKitHostProfileReader.requireNoPending(rootURL: rootDirectory)
@@ -515,12 +517,14 @@ struct AppPaths: Sendable {
     private func withPrivateFileGuard<T>(
         at guardURL: URL,
         nonBlocking: Bool = false,
+        existingOnly: Bool = false,
         busyError: any Error = ProfileMetadataBusyError(),
         _ operation: () throws -> T
     ) throws -> T {
         let lease = try acquirePrivateFileGuard(
             at: guardURL,
             waitPolicy: nonBlocking ? .boundedCommand : .cancellableOperation,
+            existingOnly: existingOnly,
             busyError: busyError
         )
         defer { lease.release() }
@@ -540,16 +544,30 @@ struct AppPaths: Sendable {
     private func acquirePrivateFileGuard(
         at guardURL: URL,
         waitPolicy: PrivateGuardWaitPolicy,
+        existingOnly: Bool = false,
         busyError: any Error = ProfileMetadataBusyError()
     ) throws -> PrivateFileGuardLease {
-        try createPrivateDirectory(guardURL.deletingLastPathComponent())
-        let descriptor = guardURL.path.withCString {
-            Darwin.open(
-                $0,
-                O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK,
-                mode_t(S_IRUSR | S_IWUSR)
-            )
+        let parentURL = guardURL.deletingLastPathComponent()
+        if !existingOnly { try createPrivateDirectory(parentURL) }
+        var parentDescriptor: Int32 = -1
+        if existingOnly {
+            parentDescriptor = Darwin.open(parentURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+            guard parentDescriptor >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
         }
+        defer { if parentDescriptor >= 0 { _ = Darwin.close(parentDescriptor) } }
+        func validateExistingParent() throws {
+            guard existingOnly else { return }
+            var opened = stat(), named = stat()
+            guard fstat(parentDescriptor, &opened) == 0, lstat(parentURL.path, &named) == 0,
+                  opened.st_mode & mode_t(S_IFMT) == mode_t(S_IFDIR),
+                  named.st_mode & mode_t(S_IFMT) == mode_t(S_IFDIR),
+                  opened.st_dev == named.st_dev, opened.st_ino == named.st_ino,
+                  opened.st_uid == geteuid(), opened.st_mode & 0o077 == 0 else { throw POSIXError(.EACCES) }
+        }
+        try validateExistingParent()
+        let descriptor = existingOnly
+            ? Darwin.openat(parentDescriptor, guardURL.lastPathComponent, O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK)
+            : Darwin.open(guardURL.path, O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK, mode_t(S_IRUSR | S_IWUSR))
         guard descriptor >= 0 else {
             throw POSIXError(
                 POSIXErrorCode(rawValue: errno) ?? .EIO
@@ -567,6 +585,11 @@ struct AppPaths: Sendable {
         // chmod a guard that aliases another file. Check again after flock,
         // because a waiting descriptor can outlive a replaced pathname.
         try validatePrivateGuard(descriptor, at: guardURL)
+        try validateExistingParent()
+        if existingOnly {
+            var status = stat()
+            guard fstat(descriptor, &status) == 0, status.st_mode & 0o077 == 0 else { throw POSIXError(.EACCES) }
+        }
 
         let lockDeadline = DispatchTime.now().uptimeNanoseconds + 50_000_000
         var contentionObserved = false
@@ -605,10 +628,15 @@ struct AppPaths: Sendable {
             }
         }
         try validatePrivateGuard(descriptor, at: guardURL)
+        try validateExistingParent()
+        if existingOnly {
+            var status = stat()
+            guard fstat(descriptor, &status) == 0, status.st_mode & 0o077 == 0 else { throw POSIXError(.EACCES) }
+        }
         if waitPolicy == .cancellableOperation {
             try Task.checkCancellation()
         }
-        guard Darwin.fchmod(
+        guard existingOnly || Darwin.fchmod(
             descriptor,
             mode_t(S_IRUSR | S_IWUSR)
         ) == 0 else {

@@ -3,6 +3,36 @@ import Testing
 @testable import NeAntik
 
 struct MCPStdioServerTests {
+    @Test func baselineReadRefusesMissingGuardWithoutCreatingIt() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-missing-guard-\(UUID())")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let bytes = try JSONEncoder().encode([BrowserProfile(name: "Synthetic profile")])
+        try bytes.write(to: paths.profilesFile)
+        let response = call("tools/call", params: ["name": "workspace_list_profiles"], root: root)
+        let result = try #require(response["result"] as? [String: Any])
+        #expect(result["isError"] as? Bool == true)
+        #expect(!FileManager.default.fileExists(atPath: paths.profilesMetadataGuardFile.path))
+        #expect(try Data(contentsOf: paths.profilesFile) == bytes)
+    }
+    @Test func cancellationReachesBaselineDetachedWorker() async throws {
+        let started = DispatchSemaphore(value: 0), proceed = DispatchSemaphore(value: 0), observed = DispatchSemaphore(value: 0)
+        let request = Task.detached {
+            await MCPStdioServer.executeCancellable {
+                started.signal()
+                guard proceed.wait(timeout: .now() + 3) == .success else { return nil }
+                if Task.isCancelled { observed.signal() }
+                return Data("should not be returned".utf8)
+            }
+        }
+        defer { request.cancel(); proceed.signal() }
+        #expect(await Task.detached { started.wait(timeout: .now() + 3) }.value == .success)
+        request.cancel(); proceed.signal()
+        #expect(await request.value == nil)
+        #expect(await Task.detached { observed.wait(timeout: .now() + 3) }.value == .success)
+    }
+
     @Test func reusedToolResultPreservesEncodingOnBothSidesOfSizeLimit() throws {
         let limit = MCPStdioServer.maximumToolPayloadBytes
         for length in [32, limit / 2 - 500, limit / 2 + 500] {
@@ -39,6 +69,7 @@ struct MCPStdioServerTests {
     @Test func toolSchemasAndStructuredContentAgreeAndCombinedPayloadIsBounded() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try AppPaths(rootDirectory: root).withProfilesMetadataGuard {}
         defer { try? FileManager.default.removeItem(at: root) }
         let profiles = (0..<100).map { BrowserProfile(name: "Synthetic \($0)", tags: ["qa"], note: "PRIVATE_NOTE") }
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
@@ -70,6 +101,7 @@ struct MCPStdioServerTests {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try AppPaths(rootDirectory: root).withProfilesMetadataGuard {}
         // This fixture bypasses ProfileStore allocation. Give its valid page
         // deterministic unique seeds; random collisions require recovery and
         // belong in the refusal control below, not a probabilistic success case.
@@ -110,6 +142,7 @@ struct MCPStdioServerTests {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try AppPaths(rootDirectory: root).withProfilesMetadataGuard {}
         let profiles = [
             BrowserProfile(name: "Synthetic A", identity: BrowserIdentity(seed: 41)),
             BrowserProfile(name: "Synthetic B", identity: BrowserIdentity(seed: 41))
@@ -128,6 +161,7 @@ struct MCPStdioServerTests {
     @Test func largeUnicodePagesShrinkWithoutLosingRecordsOrExceedingCombinedLimit() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try AppPaths(rootDirectory: root).withProfilesMetadataGuard {}
         defer { try? FileManager.default.removeItem(at: root) }
         let tags = (0..<8).map { String(repeating: "👩‍💻", count: 23) + "\($0)" }
         let profiles = (0..<100).map { BrowserProfile(name: String(repeating: "👩‍💻", count: 118) + "\($0)", tags: tags) }
@@ -154,6 +188,7 @@ struct MCPStdioServerTests {
     @Test func listsOnlyAllowlistedMetadataAndNeverClaimsRunningState() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try AppPaths(rootDirectory: root).withProfilesMetadataGuard {}
         defer { try? FileManager.default.removeItem(at: root) }
         let profile = BrowserProfile(name: "Test profile", tags: ["work"], note: "PRIVATE_NOTE")
         // The fixture includes private input fields, which must never appear on stdout.
@@ -172,6 +207,7 @@ struct MCPStdioServerTests {
     @Test func refusesSymlinkAndOversizedMetadataWithoutLeakingPath() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try AppPaths(rootDirectory: root).withProfilesMetadataGuard {}
         defer { try? FileManager.default.removeItem(at: root) }
         let file = root.appendingPathComponent("profiles.json")
         try FileManager.default.createSymbolicLink(at: file, withDestinationURL: URL(fileURLWithPath: "/etc/passwd"))
@@ -225,6 +261,7 @@ struct MCPStdioServerTests {
     @Test func missingMetadataDoesNotMasqueradeAsAnEmptyWorkspace() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("neantik-mcp-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try AppPaths(rootDirectory: root).withProfilesMetadataGuard {}
         defer { try? FileManager.default.removeItem(at: root) }
         let response = call("tools/call", params: ["name": "workspace_list_profiles"], root: root)
         let result = try #require(response["result"] as? [String: Any])

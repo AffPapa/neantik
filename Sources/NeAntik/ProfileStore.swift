@@ -35,6 +35,7 @@ final class ProfileStore: ObservableObject {
 
     let paths: AppPaths
     private var storageIsAvailable = true
+    private let requiresExistingProfileMetadata: Bool
     private var organizationStorageIsAvailable = true
     private let trashDirectory: (URL) throws -> URL
     private let restoreTrashedDirectory: (URL, URL) throws -> Void
@@ -58,6 +59,7 @@ final class ProfileStore: ObservableObject {
             @escaping @Sendable () throws -> Void = {}
     ) {
         self.paths = paths
+        self.requiresExistingProfileMetadata = readOnlyMetadata
         self.updateAdmission = updateAdmission ?? .shared
         self.trashDirectory =
             trashDirectory ?? Self.moveDirectoryToTrash
@@ -71,7 +73,7 @@ final class ProfileStore: ObservableObject {
         if readOnlyMetadata {
             do {
                 try paths.validatePrivateDirectory(paths.rootDirectory)
-                try paths.withProfilesMetadataGuard {
+                try paths.withProfilesMetadataGuard(existingOnly: true) {
                     guard let bytes = try Self.boundedMetadata(paths.profilesFile) else { throw POSIXError(.ENOENT) }
                     let decoded = try Self.decodeProfiles(bytes)
                     let checked = try Self.normalizedForIsolation(decoded)
@@ -205,18 +207,21 @@ final class ProfileStore: ObservableObject {
             metadataRefreshFailureWarning = lastError
             throw error
         }
-        guard force || stamp != externalMetadataStamp else { return }
+        // Read-only consumers must revalidate the existing lock on each call:
+        // its removal or replacement need not change either metadata stamp.
+        guard force || requiresExistingProfileMetadata || stamp != externalMetadataStamp else { return }
         guard !Self.importingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path), !Self.refreshingRoots.contains(rootKey) else { return }
         let hadProfiles = !profiles.isEmpty
+        let requiresExistingProfileMetadata = self.requiresExistingProfileMetadata
         let hadOrganization = organization != .empty
         Self.refreshingRoots.insert(rootKey)
         defer { Self.refreshingRoots.remove(rootKey) }
         let snapshot: ([BrowserProfile], Result<ProfileOrganizationState, Error>)
         do {
             snapshot = try await Task.detached {
-                try paths.withProfilesMetadataGuard {
+                try paths.withProfilesMetadataGuard(existingOnly: requiresExistingProfileMetadata) {
                     let profileData = try Self.boundedMetadata(paths.profilesFile)
-                    guard profileData != nil || !hadProfiles else { throw POSIXError(.ENOENT) }
+                    guard profileData != nil || (!hadProfiles && !requiresExistingProfileMetadata) else { throw POSIXError(.ENOENT) }
                     let decoded = try profileData.map(Self.decodeProfiles) ?? []
                     let normalized = try Self.normalizedForIsolation(decoded)
                     guard !normalized.changed else { throw POSIXError(.EINVAL) }

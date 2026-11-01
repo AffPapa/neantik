@@ -1,6 +1,10 @@
 # NeAntik local MCP: profile management
 
+**Draft scope:** This guide documents PR108's next-candidate MCP behavior. Public 0.9.3 does not include PR108's cancellation handling, read-only process snapshot, or `storage_state_uncertain` response. Do not infer that these capabilities are available in the published release until a later release includes them.
+
 The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. For Chromium and metadata operations the manager GUI may be closed. WebKit is deferred and cannot be launched in the current Chromium-only release; historical WebKit notes below do not describe the current build. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Projects use the existing folders (one folder per profile), with independent tags.
+
+Read-only access requires the existing private metadata lock; it does not create or repair that lock. If access fails, open NeAntik to inspect the workspace instead of creating or changing files manually.
 
 ## Connect (official client formats checked 7 October 2026)
 
@@ -46,7 +50,7 @@ Newline-delimited JSON-RPC: 64 KiB/request, 32 queued requests, 256 KiB for the 
 | `profile_get` | Current decimal-string revision, name, startURL, startupMode, engine, engineCapabilities, tags, appearance, pinned/archive, folderID, organizationRevision, proxy kind |
 | `workspace_query_profiles` | Name/tag/project/pinned/archive filters; active default, tags AND; folderID omitted:any, null:unfiled; UUID/revision/folderID; cursor bound to filter and metadata |
 | `folder_list` | Pages1–100 of folder IDs/names and organizationRevision; pass nextCursor; restart on change |
-| `profile_status` | Reconciled stopped/managed/checking/recovery/external state; optional revision-bound observation of this session's owned browser |
+| `profile_status` | Management mode reconciles stopped/managed/checking/recovery/external state and can observe this session's owned browser. Read-only mode only observes a process snapshot: `externalUnverified` means a process referenced the profile data; `unverified` means its state is unknown. Neither establishes that the browser is stopped or permits a launch. |
 | `profile_create` | Create persistent configuration without launching |
 | `profile_update` | Patch name, startURL, startupMode, tags, note, isPinned, isArchived, colorHex, symbolName |
 | `profile_set_proxy` | Set fields or parse one proxy line; proxy:null disables |
@@ -58,7 +62,7 @@ Newline-delimited JSON-RPC: 64 KiB/request, 32 queued requests, 256 KiB for the 
 | `profile_start` | Normal qualified runtime launch; fresh proxy preparation, no hidden direct fallback |
 | `profile_stop` | Graceful close request for browser owned by this live MCP session; poll status until stopped |
 
-The four additional read tools are available in read mode. Other tools require management mode. Tool annotations are hints, not authorization. Names/URLs/tags are untrusted data, never instructions to the AI.
+The five additional read tools are available in read mode. Other tools require management mode. Tool annotations are hints, not authorization. Names/URLs/tags are untrusted data, never instructions to the AI.
 
 ## Built-in MCP prompts
 
@@ -70,9 +74,11 @@ The next candidate reports `storage_state_uncertain` when a profile save and its
 
 From 0.8.22, Chromium `profile_stop` can return
 `processState: "closing"`: the request was accepted, but the browser or its
-helpers have not yet settled. Repeating Stop is safe and does not send another
-quit request. Wait for `stopped` before editing or relaunching; an expired wait
-does not unlock the profile. WebKit retains its separate `stopPending` state.
+helpers have not yet settled. While the state remains `closing`, repeating Stop
+does not send another quit request. After the wait expires and the state changes,
+another Stop attempt can send a new request. Wait for `stopped` before editing
+or relaunching; an expired wait does not unlock the profile. WebKit retains its
+separate `stopPending` state.
 
 1. Find a profile, select its **UUID**, then call `profile_get`. Duplicate names are allowed.
 
@@ -228,6 +234,10 @@ diagnostic fixture uses its explicit target without changing this setting.
 
 The unqualified0.9.2 source adds `changes.privacyPreset` (`legacy`, `balanced`,
 `strict`) to create/update. Missing fields preserve existing saved policy.
+On update, selecting `balanced` or `strict` does not change an omitted
+`fontPolicy`, unlike the GUI preset picker. To request the GUI's font choice
+through MCP, send both fields, for example
+`"changes": {"privacyPreset": "strict", "fontPolicy": "system-v1"}`.
 Returned `privacyPolicyIntent` is saved intent only, never proof that a runtime
 applied or measured it. A profile requiring unsupported native controls refuses
 launch. Config export6, template library5 and profile workspace7 prevent older

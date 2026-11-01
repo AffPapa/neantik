@@ -4,6 +4,148 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func readOnlyStatusRejectsRevisionChangedDuringInventory() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let profile = try writer.store.upsert(BrowserProfile(name: "Synthetic revision race"))
+        let entered = DispatchSemaphore(value: 0), resume = DispatchSemaphore(value: 0)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil), readOnlyInventory: {
+                entered.signal()
+                _ = resume.wait(timeout: .now() + 3)
+                return .unavailable
+            })
+        let request = Task { try await reader.call("profile_status", ["profileID": profile.id.uuidString,
+            "includeObservation": true, "expectedRevision": String(profile.revision)]) }
+        defer { request.cancel(); resume.signal() }
+        #expect(await Task.detached { entered.wait(timeout: .now() + 3) }.value == .success)
+        var changed = profile
+        changed.name = "Synthetic changed revision"
+        let updated = try writer.store.upsert(changed)
+        #expect(updated.revision != profile.revision)
+        resume.signal()
+        await #expect(throws: MCPProfileManagement.Failure.self) { try await request.value }
+    }
+
+    @Test func readOnlyStatusCancelsInventoryWorker() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let profile = try writer.store.upsert(BrowserProfile(name: "Synthetic cancellation"))
+        let entered = DispatchSemaphore(value: 0), cancelled = DispatchSemaphore(value: 0)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil), readOnlyInventory: {
+                entered.signal()
+                while !Task.isCancelled { Thread.sleep(forTimeInterval: 0.001) }
+                cancelled.signal()
+                return .unavailable
+            })
+        let request = Task { try await reader.call("profile_status", ["profileID": profile.id.uuidString]) }
+        defer { request.cancel() }
+        #expect(await Task.detached { entered.wait(timeout: .now() + 3) }.value == .success)
+        request.cancel()
+        #expect(await Task.detached { cancelled.wait(timeout: .now() + 3) }.value == .success)
+        await #expect(throws: CancellationError.self) { try await request.value }
+    }
+
+    @Test func readOnlyGuardRefusesSymlinkParentAndOpenPermissions() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        _ = try writer.store.upsert(BrowserProfile(name: "Synthetic guard safety"))
+        let paths = AppPaths(rootDirectory: root)
+        let original = paths.processLocksDirectory
+        let moved = root.appendingPathComponent("SyntheticLocks")
+        try FileManager.default.moveItem(at: original, to: moved)
+        try FileManager.default.createSymbolicLink(at: original, withDestinationURL: moved)
+        let keychain = KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil)
+        let symlinkReader = MCPProfileManagement(root: root, allowsManagement: false, keychain: keychain)
+        #expect(!symlinkReader.store.hasTrustedMetadata)
+        try FileManager.default.removeItem(at: original)
+        try FileManager.default.moveItem(at: moved, to: original)
+        try FileManager.default.setAttributes([.posixPermissions: 0o666], ofItemAtPath: paths.profilesMetadataGuardFile.path)
+        let openReader = MCPProfileManagement(root: root, allowsManagement: false, keychain: keychain)
+        #expect(!openReader.store.hasTrustedMetadata)
+        let attrs = try FileManager.default.attributesOfItem(atPath: paths.profilesMetadataGuardFile.path)
+        #expect((attrs[.posixPermissions] as? NSNumber)?.intValue == 0o666)
+    }
+
+    @Test func readOnlyMetadataDoesNotCreateOrRepairMissingGuard() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        _ = try writer.store.upsert(BrowserProfile(name: "Synthetic guarded profile"))
+        let paths = AppPaths(rootDirectory: root)
+        let metadata = try Data(contentsOf: paths.profilesFile)
+        try FileManager.default.removeItem(at: paths.profilesMetadataGuardFile)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil))
+        #expect(!reader.store.hasTrustedMetadata)
+        await #expect(throws: (any Error).self) { try await reader.call("profile_get", ["profileID": UUID().uuidString]) }
+        #expect(!FileManager.default.fileExists(atPath: paths.profilesMetadataGuardFile.path))
+        #expect(try Data(contentsOf: paths.profilesFile) == metadata)
+    }
+
+    @Test func readOnlyRefreshRefusesRemovedGuardWithoutRecreatingIt() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let profile = try writer.store.upsert(BrowserProfile(name: "Synthetic guard removal"))
+        let paths = AppPaths(rootDirectory: root)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil))
+        _ = try await reader.call("profile_get", ["profileID": profile.id.uuidString])
+        try FileManager.default.removeItem(at: paths.profilesMetadataGuardFile)
+        await #expect(throws: (any Error).self) { try await reader.call("profile_get", ["profileID": profile.id.uuidString]) }
+        #expect(!reader.store.hasTrustedMetadata)
+        #expect(!FileManager.default.fileExists(atPath: paths.profilesMetadataGuardFile.path))
+    }
+
+    @Test func readOnlyStatusDoesNotReconcileOrClearOtherProfiles() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let requested = try writer.store.upsert(BrowserProfile(name: "Requested synthetic profile"))
+        var policy = BrowserPrivacyPolicy.strict; policy.retention = .ephemeral
+        let other = try writer.store.upsert(BrowserProfile(name: "Other synthetic profile", privacyPolicy: policy))
+        let paths = AppPaths(rootDirectory: root)
+        try EphemeralProfileStorage.prepareLaunch(paths: paths, profile: other)
+        let state = paths.browserDataDirectory(for: other.id).appendingPathComponent("synthetic-state")
+        let original = Data("retain this synthetic data".utf8)
+        try original.write(to: state)
+        let lease = paths.lockFile(for: requested.id)
+        let leaseBytes = Data("synthetic stale lease".utf8)
+        try leaseBytes.write(to: lease)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil),
+            readOnlyInventory: { .unavailable })
+        let result = try await reader.call("profile_status", ["profileID": requested.id.uuidString])
+        #expect(result["processState"] as? String == "unverified")
+        let observed = try await reader.call("profile_status", ["profileID": requested.id.uuidString,
+            "includeObservation": true, "expectedRevision": String(requested.revision)])
+        #expect(observed["processState"] as? String == "unverified")
+        let dataPath = paths.browserDataDirectory(for: requested.id).path
+        let inventory = BrowserProcessInventory(processes: [123: BrowserProcessArguments(executablePath: "/synthetic/browser", arguments: ["--user-data-dir=\(dataPath)"])])
+        let foundReader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil), readOnlyInventory: { inventory })
+        let found = try await foundReader.call("profile_status", ["profileID": requested.id.uuidString])
+        #expect(found["processState"] as? String == "externalUnverified")
+        #expect(try EphemeralProfileStorage.pending(paths: paths, profile: other))
+        #expect(try Data(contentsOf: state) == original)
+        #expect(try Data(contentsOf: lease) == leaseBytes)
+    }
+
+    @Test func presetUpdateDisclosesAndPreservesOmittedFontPolicy() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let original = try engine.store.upsert(BrowserProfile(name: "Synthetic native fonts", fontPolicy: .native, privacyPolicy: .legacy))
+        let updated = try await engine.call("profile_update", ["profileID": original.id.uuidString,
+            "expectedRevision": String(original.revision), "changes": ["privacyPreset": "strict"]])
+        #expect(updated["fontPolicy"] as? String == "native")
+        #expect(engine.store.profile(withID: original.id)?.fontPolicy == .native)
+        let definition = try #require(MCPProfileManagement.definitions(allowsManagement: true).first { $0["name"] as? String == "profile_update" })
+        let input = try #require(definition["inputSchema"] as? [String: Any])
+        let properties = try #require(input["properties"] as? [String: Any])
+        let changes = try #require(properties["changes"] as? [String: Any])
+        let changeProperties = try #require(changes["properties"] as? [String: Any])
+        let preset = try #require(changeProperties["privacyPreset"] as? [String: Any])
+        #expect((preset["description"] as? String)?.contains("Omitted fontPolicy is preserved") == true)
+    }
+
     @Test func protectedDefaultsAndPresetChangesPreserveDisposableRetention() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let fresh = try await engine.call("profile_create", ["name": "Own safe default"])
@@ -548,6 +690,24 @@ struct MCPProfileManagementTests {
         let missingReader = MCPProfileManagement(root: root, allowsManagement: false)
         await #expect(throws: MCPProfileManagement.Failure.self) { try await missingReader.call("folder_list", [:]) }
         #expect(!FileManager.default.fileExists(atPath: paths.profilesFile.path))
+    }
+
+    @Test func readOnlyEmptyWorkspaceRefusesMissingMetadataAndNewSessionRecovers() async throws {
+        let (root, _, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root), empty = Data("[]".utf8)
+        try paths.writePrivateFile(empty, to: paths.profilesFile)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false)
+        #expect(reader.store.hasTrustedMetadata)
+        _ = try await reader.call("folder_list", [:])
+        try FileManager.default.removeItem(at: paths.profilesFile)
+        await #expect(throws: (any Error).self) { try await reader.call("folder_list", [:]) }
+        #expect(!reader.store.hasTrustedMetadata)
+        #expect(!FileManager.default.fileExists(atPath: paths.profilesFile.path))
+        try paths.writePrivateFile(empty, to: paths.profilesFile)
+        let reopened = MCPProfileManagement(root: root, allowsManagement: false)
+        _ = try await reopened.call("folder_list", [:])
+        #expect(reopened.store.hasTrustedMetadata)
+        #expect(try Data(contentsOf: paths.profilesFile) == empty)
     }
 
     @Test func managementConfigurationIncludesOnlySelectedServerPermissions() throws {

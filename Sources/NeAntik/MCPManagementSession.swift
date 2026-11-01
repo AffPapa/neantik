@@ -198,7 +198,7 @@ final class MCPManagementSession {
         guard method == "tools/call", let name = params["name"] as? String,
               MCPProfileManagement.readTools.contains(name) || MCPProfileManagement.writeTools.contains(name) else {
             let root = root
-            return await Task.detached { MCPStdioServer.handle(line, dataRoot: root) }.value
+            return await MCPStdioServer.executeCancellable { MCPStdioServer.handle(line, dataRoot: root) }
         }
         guard params["arguments"] == nil || params["arguments"] is [String: Any] else { return MCPStdioServer.response(id: id, error: (-32602, "Invalid arguments")) }
         if !allowsManagement && MCPProfileManagement.writeTools.contains(name) { return toolFailure(id: id, code: "management_disabled", message: "Management disabled. Choose Manage profiles in NeAntik MCP help and reconnect with the copied configuration.") }

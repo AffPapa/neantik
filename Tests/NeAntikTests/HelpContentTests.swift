@@ -3,6 +3,14 @@ import Testing
 @testable import NeAntik
 
 struct HelpContentTests {
+    @Test func profileHelpExplainsDisposableDataRetention() {
+        #expect(!HelpTopic.profiles.introduction.contains("постоянная сессия"))
+        let section = HelpTopic.profiles.sections.first { $0.title == "Одноразовый сеанс" }
+        #expect(section?.text.contains("удаляет данные сайтов") == true)
+        #expect(section?.text.contains("скачанные файлы и экспорт сохраняются") == true)
+        #expect(section?.text.contains("повторный запуск блокируется") == true)
+        #expect(HelpTopic.matching("Одноразовый сеанс").contains(.profiles))
+    }
     @Test func searchFindsTasksInsideArticles() {
         #expect(HelpTopic.matching("429").contains(.proxy))
         #expect(HelpTopic.matching("СНИМОК").contains(.storage))
