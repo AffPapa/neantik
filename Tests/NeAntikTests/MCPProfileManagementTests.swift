@@ -560,6 +560,9 @@ struct MCPProfileManagementTests {
     }
     func create(_ engine: MCPProfileManagement) async throws -> [String: Any] { try await engine.call("profile_create", ["name": "Synthetic", "changes": ["startURL": "https://example.com", "tags": ["qa"]]]) }
     func request(_ dto: [String: Any]) -> [String: Any] { ["profileID": dto["id"]!, "expectedRevision": dto["revision"]!] }
+    func request(_ profile: BrowserProfile) -> [String: Any] {
+        ["profileID": profile.id.uuidString, "expectedRevision": String(profile.revision)]
+    }
 
     @Test func metadataEditKeepsAuthenticatedSOCKSProxyAndWriteOnlyPassword() async throws {
         let (root, engine, backend) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }

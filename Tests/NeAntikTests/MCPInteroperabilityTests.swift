@@ -13,7 +13,7 @@ struct MCPInteroperabilityTests {
         let engine = MCPProfileManagement(root: root, allowsManagement: true,
             keychain: KeychainStore(backend: backend, service: "synthetic-mcp-boundary", legacyService: nil),
             processes: BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false },
-                browserDataProcessInspector: { .absent }, allowsExternalProcessSignaling: false))
+                browserDataProcessInspector: { _ in .absent }, allowsExternalProcessSignaling: false))
         let session = MCPManagementSession(root: root, allowsManagement: true, testingEngine: engine)
 
         let listed = try await request(session, "tools/list", modern: true)
@@ -24,7 +24,8 @@ struct MCPInteroperabilityTests {
         #expect(properties["order"] == nil)
         let proxyInput = try #require(properties["proxy"] as? [String: Any])
         let choices = try #require(proxyInput["anyOf"] as? [[String: Any]])
-        let proxyFields = try #require(choices.first { $0["type"] as? String == "object" }?["properties"] as? [String: Any])
+        let objectChoice = try #require(choices.first(where: { $0["type"] as? String == "object" }))
+        let proxyFields = try #require(objectChoice["properties"] as? [String: Any])
         #expect(Set(proxyFields.keys) == ["kind", "host", "port"])
 
         let createRejected = try await request(session, "tools/call", ["name": "profile_create", "arguments": [
