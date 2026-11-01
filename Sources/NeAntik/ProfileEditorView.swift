@@ -574,6 +574,10 @@ struct ProfileEditorView: View {
               .font(.caption).foregroundStyle(.secondary)
             Text("Прокси разрешает адреса сайтов и может иметь доступ к своей локальной сети. Выбирайте доверенного провайдера.")
               .font(.caption).foregroundStyle(.secondary)
+            if engine == .chromium {
+              Text("Если хост прокси задан доменным именем, системный DNS может разрешать адрес самого прокси. Это описание настройки, а не измерение DNS-маршрута.")
+                .font(.caption).foregroundStyle(.secondary)
+            }
             Picker("Ввод прокси", selection: $proxyEntryMode) {
               ForEach(ProxyEntryMode.allCases, id: \.self) { mode in
                 Text(mode.rawValue).tag(mode)
