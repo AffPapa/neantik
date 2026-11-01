@@ -35,6 +35,12 @@ struct HelpContentTests {
         #expect(!proxyHelp.contains("настройки применяются к отдельному хранилищу сайтов"))
     }
 
+    @Test func mcpHelpRecommendsLocalProxyCredentialEntry() {
+        let text = HelpTopic.mcp.sections.map(\.text).joined(separator: " ")
+        #expect(text.contains("Безопаснее передавать через MCP только тип, адрес и порт прокси"))
+        #expect(text.contains("логин и пароль вводить в локальном редакторе профиля NeAntik"))
+    }
+
     @Test func chromiumOnlyHelpDoesNotOfferWebKitLaunch() {
         guard !BrowserEngine.webkit.isAvailableInBuild else { return }
         let profiles = HelpTopic.profiles.sections
