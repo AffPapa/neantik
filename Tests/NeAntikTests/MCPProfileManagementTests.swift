@@ -566,6 +566,24 @@ struct MCPProfileManagementTests {
         #expect(!FileManager.default.fileExists(atPath: paths.profilesFile.path))
     }
 
+    @Test func readOnlyEmptyWorkspaceRefusesMissingMetadataAndNewSessionRecovers() async throws {
+        let (root, _, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root), empty = Data("[]".utf8)
+        try paths.writePrivateFile(empty, to: paths.profilesFile)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false)
+        #expect(reader.store.hasTrustedMetadata)
+        _ = try await reader.call("folder_list", [:])
+        try FileManager.default.removeItem(at: paths.profilesFile)
+        await #expect(throws: (any Error).self) { try await reader.call("folder_list", [:]) }
+        #expect(!reader.store.hasTrustedMetadata)
+        #expect(!FileManager.default.fileExists(atPath: paths.profilesFile.path))
+        try paths.writePrivateFile(empty, to: paths.profilesFile)
+        let reopened = MCPProfileManagement(root: root, allowsManagement: false)
+        _ = try await reopened.call("folder_list", [:])
+        #expect(reopened.store.hasTrustedMetadata)
+        #expect(try Data(contentsOf: paths.profilesFile) == empty)
+    }
+
     @Test func managementConfigurationIncludesOnlySelectedServerPermissions() throws {
         var config = MCPConnectionConfiguration(executable: URL(fileURLWithPath: "/private/tmp/QA.app/Contents/MacOS/NeAntik"), dataRoot: URL(fileURLWithPath: "/private/tmp/synthetic-mcp", isDirectory: true))
         #expect(config.arguments.contains(NeAntikLaunchIntent.mcpManagementArgument))

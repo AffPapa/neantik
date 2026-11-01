@@ -35,6 +35,7 @@ final class ProfileStore: ObservableObject {
 
     let paths: AppPaths
     private var storageIsAvailable = true
+    private let requiresExistingProfileMetadata: Bool
     private var organizationStorageIsAvailable = true
     private let trashDirectory: (URL) throws -> URL
     private let restoreTrashedDirectory: (URL, URL) throws -> Void
@@ -58,6 +59,7 @@ final class ProfileStore: ObservableObject {
             @escaping @Sendable () throws -> Void = {}
     ) {
         self.paths = paths
+        self.requiresExistingProfileMetadata = readOnlyMetadata
         self.updateAdmission = updateAdmission ?? .shared
         self.trashDirectory =
             trashDirectory ?? Self.moveDirectoryToTrash
@@ -208,6 +210,7 @@ final class ProfileStore: ObservableObject {
         guard force || stamp != externalMetadataStamp else { return }
         guard !Self.importingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path), !Self.refreshingRoots.contains(rootKey) else { return }
         let hadProfiles = !profiles.isEmpty
+        let requiresExistingProfileMetadata = self.requiresExistingProfileMetadata
         let hadOrganization = organization != .empty
         Self.refreshingRoots.insert(rootKey)
         defer { Self.refreshingRoots.remove(rootKey) }
@@ -216,7 +219,7 @@ final class ProfileStore: ObservableObject {
             snapshot = try await Task.detached {
                 try paths.withProfilesMetadataGuard {
                     let profileData = try Self.boundedMetadata(paths.profilesFile)
-                    guard profileData != nil || !hadProfiles else { throw POSIXError(.ENOENT) }
+                    guard profileData != nil || (!hadProfiles && !requiresExistingProfileMetadata) else { throw POSIXError(.ENOENT) }
                     let decoded = try profileData.map(Self.decodeProfiles) ?? []
                     let normalized = try Self.normalizedForIsolation(decoded)
                     guard !normalized.changed else { throw POSIXError(.EINVAL) }
