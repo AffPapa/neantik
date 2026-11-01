@@ -4,6 +4,32 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func readOnlyStatusDoesNotReconcileOrClearOtherProfiles() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let requested = try writer.store.upsert(BrowserProfile(name: "Requested synthetic profile"))
+        var policy = BrowserPrivacyPolicy.strict; policy.retention = .ephemeral
+        let other = try writer.store.upsert(BrowserProfile(name: "Other synthetic profile", privacyPolicy: policy))
+        let paths = AppPaths(rootDirectory: root)
+        try EphemeralProfileStorage.prepareLaunch(paths: paths, profile: other)
+        let state = paths.browserDataDirectory(for: other.id).appendingPathComponent("synthetic-state")
+        let original = Data("retain this synthetic data".utf8)
+        try original.write(to: state)
+        let lease = paths.lockFile(for: requested.id)
+        let leaseBytes = Data("synthetic stale lease".utf8)
+        try leaseBytes.write(to: lease)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil))
+        let result = try await reader.call("profile_status", ["profileID": requested.id.uuidString])
+        #expect(result["processState"] as? String == "externalUnverified")
+        let observed = try await reader.call("profile_status", ["profileID": requested.id.uuidString,
+            "includeObservation": true, "expectedRevision": String(requested.revision)])
+        #expect(observed["processState"] as? String == "externalUnverified")
+        #expect(try EphemeralProfileStorage.pending(paths: paths, profile: other))
+        #expect(try Data(contentsOf: state) == original)
+        #expect(try Data(contentsOf: lease) == leaseBytes)
+    }
+
     @Test func presetUpdateDisclosesAndPreservesOmittedFontPolicy() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let original = try engine.store.upsert(BrowserProfile(name: "Synthetic native fonts", fontPolicy: .native, privacyPolicy: .legacy))
