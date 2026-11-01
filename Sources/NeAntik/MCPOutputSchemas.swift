@@ -71,7 +71,7 @@ enum MCPOutputSchemas {
                        "networkPolicyIntent": object([
                            "configuredRoute": ["type": "string", "enum": ["direct", "proxyConfigured"]],
                            "siteDNSPolicy": ["type": "string", "enum": ["ordinaryChromiumResolution", "configuredToBlockDirectDestinationResolution", "unsupportedInCurrentRelease"]],
-                           "proxyHostnameDNS": ["type": "string", "enum": ["notApplicable", "systemResolverMayResolveProxyHostname", "unsupportedInCurrentRelease"]],
+                           "proxyHostnameDNS": ["type": "string", "enum": ["notApplicable", "notNeededForIPAddress", "systemResolverMayResolveProxyHostname", "unsupportedInCurrentRelease"]],
                            "runtimeRoute": ["type": "string", "const": "unverified"],
                            "evidence": ["type": "string", "const": "saved-configuration-only; runtime route unverified"]
                        ]),

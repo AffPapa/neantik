@@ -70,6 +70,12 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
         "\(kind.curlScheme)://\(urlHost):\(port)"
     }
 
+    /// True for IPv4 and IPv6 literals without exposing the address to a
+    /// caller that only needs to decide whether DNS resolution applies.
+    var isIPAddressLiteral: Bool {
+        Self.isIPAddressLiteral(host)
+    }
+
     var displayName: String {
         "\(kind.title) · \(displayEndpoint)"
     }
@@ -105,12 +111,7 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
         let unwrapped = value.hasPrefix("[") && value.hasSuffix("]")
             ? String(value.dropFirst().dropLast())
             : value
-        var storage = sockaddr_storage()
-        if unwrapped.withCString({
-            inet_pton(AF_INET, $0, &storage)
-        }) == 1 || unwrapped.withCString({
-            inet_pton(AF_INET6, $0, &storage)
-        }) == 1 {
+        if Self.isIPAddressLiteral(unwrapped) {
             return true
         }
 
@@ -131,6 +132,15 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
                 $0.first != "-" &&
                 $0.last != "-"
         }
+    }
+
+    private static func isIPAddressLiteral(_ value: String) -> Bool {
+        let unwrapped = value.hasPrefix("[") && value.hasSuffix("]")
+            ? String(value.dropFirst().dropLast())
+            : value
+        var storage = sockaddr_storage()
+        return unwrapped.withCString { inet_pton(AF_INET, $0, &storage) } == 1 ||
+            unwrapped.withCString { inet_pton(AF_INET6, $0, &storage) } == 1
     }
 }
 

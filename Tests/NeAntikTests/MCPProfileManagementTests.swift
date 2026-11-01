@@ -196,8 +196,22 @@ struct MCPProfileManagementTests {
         #expect(!serialized.contains("proxy.synthetic.example"))
         #expect(!serialized.contains("fixture-secret"))
 
+        args = request(proxied)
+        args["proxy"] = ["kind": "http", "host": "192.0.2.8", "port": 8080]
+        let ipv4 = try await engine.call("profile_set_proxy", args)
+        #expect(((ipv4["networkPolicyIntent"] as? [String: Any])?["proxyHostnameDNS"] as? String) == "notNeededForIPAddress")
+        #expect(!String(describing: ipv4).contains("192.0.2.8"))
+        args = request(ipv4)
+        args["proxy"] = ["kind": "http", "host": "2001:db8::8", "port": 8080]
+        let ipv6 = try await engine.call("profile_set_proxy", args)
+        #expect(((ipv6["networkPolicyIntent"] as? [String: Any])?["proxyHostnameDNS"] as? String) == "notNeededForIPAddress")
+        #expect(!String(describing: ipv6).contains("2001:db8::8"))
+
         let properties = try #require(MCPOutputSchemas.schema(for: "profile_get")["properties"] as? [String: Any])
-        #expect(properties["networkPolicyIntent"] != nil)
+        let networkPolicy = try #require(properties["networkPolicyIntent"] as? [String: Any])
+        let networkFields = try #require(networkPolicy["properties"] as? [String: Any])
+        let proxyHostnameDNS = try #require(networkFields["proxyHostnameDNS"] as? [String: Any])
+        #expect((proxyHostnameDNS["enum"] as? [String])?.contains("notNeededForIPAddress") == true)
         let definition = try #require(MCPProfileManagement.definitions(allowsManagement: false).first { $0["name"] as? String == "profile_get" })
         #expect((definition["description"] as? String)?.contains("runtimeRoute is always unverified") == true)
     }

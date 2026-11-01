@@ -56,7 +56,7 @@ final class MCPProfileManagement {
         #endif
         let specs: [(String, String, [String: Any], [String])] = [
             ("template_list", "Read saved user templates (maximum50), safe start pages and tags. No credentials, notes, identity or BrowserData. Missing project folders resolve to unfiled. Use templateID plus this organizationRevision with profile_create; creation never starts a browser.", [:], []),
-            ("profile_get", "Read profile revision, start page, organization and requested fontPolicy (not applied-state proof). networkPolicyIntent reports saved route/DNS policy only; runtimeRoute is always unverified. system-v1 is Chromium-only and needs the exact qualified runtime at launch. Proxy endpoint, credentials and note excluded.", ["profileID": uuid], ["profileID"]),
+            ("profile_get", "Read profile revision, start page, organization and requested fontPolicy (not applied-state proof). networkPolicyIntent reports saved route/DNS policy only; hostname DNS may use the system resolver, IP-literal proxy endpoints need no DNS, and runtimeRoute is always unverified. system-v1 is Chromium-only and needs the exact qualified runtime at launch. Proxy endpoint, credentials and note excluded.", ["profileID": uuid], ["profileID"]),
             ("folder_list", "Read up to100 project folders and organizationRevision. Pass nextCursor unchanged; restart on organization change.", ["limit": ["type": "integer", "minimum": 1, "maximum": 100], "cursor": text], []),
             ("workspace_query_profiles", "Find profiles by name, tags and project without reading private notes. Tags use AND; omitted archived means active only. folderID:null means unfiled, omission means any. Cursor is tied to filters and snapshot. Process state remains unverified.", MCPWorkspaceQuery.properties, []),
             ("profile_status", "Management mode reconciles profile ownership; external sessions require manual close. Read-only mode does not reconcile or clear data: externalUnverified indicates a process referencing the profile data was seen, unverified means the state is unknown; neither establishes that the profile is stopped or authorizes a launch. Optional includeObservation:true requires expectedRevision and observes only this session's verified owned browser. Never returns page content, credentials, PID, paths or proof of Chromium network route.", ["profileID": uuid, "includeObservation": ["type": "boolean"], "expectedRevision": revision], ["profileID"]),
@@ -473,7 +473,9 @@ final class MCPProfileManagement {
             proxyHostDNS = "unsupportedInCurrentRelease"
         } else if hasProxy {
             siteDNSPolicy = "configuredToBlockDirectDestinationResolution"
-            proxyHostDNS = "systemResolverMayResolveProxyHostname"
+            proxyHostDNS = profile.proxy?.isIPAddressLiteral == true
+                ? "notNeededForIPAddress"
+                : "systemResolverMayResolveProxyHostname"
         } else {
             siteDNSPolicy = "ordinaryChromiumResolution"
             proxyHostDNS = "notApplicable"
