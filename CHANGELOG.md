@@ -11,8 +11,9 @@
 
 - Fix protection-passport wording for custom policies that do not disable Sync/autofill. Standard Balanced/Strict settings remain unchanged.
 - Consume the reviewed SHA-256 Developer ID certificate pin from the previously unreleased source hardening; preserve Apple/team/role, payload and signed-manifest checks.
-- Correct updater signature policy for Chromium framework dylibs: allow the normal framework flags0 while preserving executable Hardened Runtime, Developer ID, timestamp, empty framework entitlements and exact runtime pins. Public0.9.2 cannot consume this fix through its immutable updater; install the notarized ZIP/DMG manually.
-- Reused the exact signed Chromium privacy18 runtime. Signed manager/helper installation and controlled rollback were qualified with a synthetic 202 carrier on one Mac; Apple and public artifact checks passed. The synthetic carrier is not a successful public 0.9.2 updater transition. See [release evidence](releases/v0.9.3.json).
+- Correct the updater's Chromium framework signature policy while preserving Hardened Runtime checks for executables, Developer ID, timestamps, empty framework entitlements and exact runtime pins. The immutable 0.9.2 updater cannot consume this fix, so install the notarized ZIP/DMG manually.
+- Reused the exact signed Chromium runtime; Chromium was not rebuilt. The exact manager and shipping-helper checks, notarized ZIP/DMG, stapling and Gatekeeper results are recorded in the [published release](https://github.com/AffPapa/neantik/releases/tag/v0.9.3) and [release metadata](releases/v0.9.3.json).
+- Updating from 0.9.2 requires replacing the app with the notarized ZIP/DMG; the old updater cannot install the Chromium framework signature fix. Existing profile data is retained.
 
 ## Direct 0.9.2 (202) — published public alpha
 

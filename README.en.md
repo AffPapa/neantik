@@ -40,10 +40,11 @@ the exact public binary contents are defined by its release notes and assets.
 2. Paste a proxy if needed; NeAntik parses it locally.
 3. Click **Launch**. Cookies and site data stay inside that profile.
 
-## Privacy in release0.9.3
+## Privacy features retained in release 0.9.3
 
-This release adds coherent presets, required proxy routing, site protection,
-ephemeral profiles and a protection passport. See [privacy modes](docs/PRIVACY_MODES.md)
+This release retains coherent presets, Chromium proxy configuration, site protection,
+ephemeral profiles and a protection passport. Proxy preflight does not measure the
+browser's request route. See [privacy modes](docs/PRIVACY_MODES.md)
 for scope and limits. Source availability is separate from binary publication.
 
 ## WebKit in the current release
