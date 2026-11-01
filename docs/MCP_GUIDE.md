@@ -1,5 +1,7 @@
 # NeAntik local MCP: profile management
 
+**Draft scope:** This guide documents PR108's next-candidate MCP behavior. Public 0.9.3 does not include PR108's cancellation handling, read-only process snapshot, or `storage_state_uncertain` response. Do not infer that these capabilities are available in the published release until a later release includes them.
+
 The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. For Chromium and metadata operations the manager GUI may be closed. WebKit is deferred and cannot be launched in the current Chromium-only release; historical WebKit notes below do not describe the current build. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Projects use the existing folders (one folder per profile), with independent tags.
 
 Read-only access requires the existing private metadata lock; it does not create or repair that lock. If access fails, open NeAntik to inspect the workspace instead of creating or changing files manually.
