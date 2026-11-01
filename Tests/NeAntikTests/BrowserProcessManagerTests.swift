@@ -2300,7 +2300,7 @@ struct BrowserProcessManagerTests {
 
         #expect(manager.processState(for: profile.id) == .recoveryRequired)
         let guidance = try #require(manager.processState(for: profile.id).guidance)
-        #expect(guidance.contains("завершены ли все процессы"))
+        #expect(guidance.contains("состояние профиля"))
         #expect(!guidance.contains("повреждён"))
         #expect(
             FileManager.default.fileExists(

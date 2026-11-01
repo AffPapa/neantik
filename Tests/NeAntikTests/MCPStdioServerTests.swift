@@ -3,6 +3,23 @@ import Testing
 @testable import NeAntik
 
 struct MCPStdioServerTests {
+    @Test func cancellationReachesBaselineDetachedWorker() async throws {
+        let started = DispatchSemaphore(value: 0), proceed = DispatchSemaphore(value: 0), observed = DispatchSemaphore(value: 0)
+        let request = Task.detached {
+            await MCPStdioServer.executeCancellable {
+                started.signal()
+                guard proceed.wait(timeout: .now() + 3) == .success else { return nil }
+                if Task.isCancelled { observed.signal() }
+                return Data("should not be returned".utf8)
+            }
+        }
+        defer { request.cancel(); proceed.signal() }
+        #expect(await Task.detached { started.wait(timeout: .now() + 3) }.value == .success)
+        request.cancel(); proceed.signal()
+        #expect(await request.value == nil)
+        #expect(await Task.detached { observed.wait(timeout: .now() + 3) }.value == .success)
+    }
+
     @Test func reusedToolResultPreservesEncodingOnBothSidesOfSizeLimit() throws {
         let limit = MCPStdioServer.maximumToolPayloadBytes
         for length in [32, limit / 2 - 500, limit / 2 + 500] {
