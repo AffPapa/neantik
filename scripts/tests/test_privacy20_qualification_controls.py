@@ -5,6 +5,30 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 
 class Privacy20QualificationControlsTests(unittest.TestCase):
+    def test_local_egress_profile_allows_only_exact_loopback_fixture_ports(self):
+        subprocess.run(["node", "--input-type=module", "-e", """
+import assert from 'node:assert/strict';
+import {localFixtureEgressProfile,resolverEnabledBoundaryArguments} from './scripts/privacy20/qa-egress-sandbox.mjs';
+const profile=localFixtureEgressProfile([43123,43124,43123]);
+assert(profile.includes('(deny network-outbound)'));
+assert(profile.includes('(deny network-outbound (literal \"/private/var/run/mDNSResponder\"))'));
+assert(profile.includes('(deny mach-lookup (global-name \"com.apple.mDNSResponder\"))'));
+assert(profile.includes('(allow network-outbound (remote ip \"localhost:43123\"))'));
+assert(profile.includes('(allow network-outbound (remote ip \"localhost:43124\"))'));
+assert.equal(profile.split('localhost:43123').length-1,1);
+assert(!profile.includes('localhost:*') && !profile.includes('0.0.0.0') && !profile.includes('::'));
+assert.throws(()=>localFixtureEgressProfile([]));
+assert.throws(()=>localFixtureEgressProfile([0]));
+assert.throws(()=>localFixtureEgressProfile([65536]));
+const enabled=resolverEnabledBoundaryArguments(['--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1','--disable-features=AsyncDns,DirectSockets,DnsOverHttpsUpgrade,WebGPUService','--proxy-server=http://127.0.0.1:43123']);
+assert(!enabled.some(value=>value.startsWith('--host-resolver-rules=')));
+assert(!enabled.some(value=>value==='--disable-async-dns'));
+assert(!enabled.some(value=>value.startsWith('--disable-features=') && /(^|,)(AsyncDns|DnsOverHttpsUpgrade)(,|$)/.test(value.split('=',2)[1])));
+assert(enabled.includes('--disable-features=DirectSockets,WebGPUService'));
+assert(enabled.includes('--proxy-server=http://127.0.0.1:43123'));
+assert.throws(()=>resolverEnabledBoundaryArguments('not-an-array'));
+"""], cwd=ROOT, check=True, capture_output=True, text=True)
+
     def test_rtc_pair_differs_only_in_the_intended_policy(self):
         subprocess.run(["node", "--input-type=module", "-e", """
 import assert from 'node:assert/strict';
