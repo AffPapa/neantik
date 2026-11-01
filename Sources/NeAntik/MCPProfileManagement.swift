@@ -323,7 +323,9 @@ final class MCPProfileManagement {
                 }
                 try validate(profile, password: draft?.password ?? "")
                 profile = try store.upsert(profile, afterPersist: { saved in
-                    let password = draft?.password.flatMap { $0.isEmpty ? nil : $0 }
+                    let password: String?
+                    if let draft, !draft.password.isEmpty { password = draft.password }
+                    else { password = nil }
                     try self.keychain.updateProxyPasswordForProfileEdit(password, profileID: saved.id)
                 })
             case "profile_duplicate":
