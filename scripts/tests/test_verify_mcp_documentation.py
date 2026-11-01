@@ -61,7 +61,11 @@ class MCPDocumentationTests(unittest.TestCase):
             roadmap=root/'docs/ROADMAP.md';original=roadmap.read_text()
             latest_path=max((root/'releases').glob('v*.json'),key=lambda p:tuple(map(int,p.stem[1:].split('.'))))
             latest=json.loads(latest_path.read_text())
-            roadmap.write_text(original.replace(f"{latest['version']} ({latest['build']})", '0.8.24 (136)', 1))
+            marker='## Исторический срез\n\n'
+            before, separator, history=original.partition(marker)
+            self.assertTrue(separator)
+            roadmap.write_text(before + separator + history.replace(
+                f"{latest['version']} ({latest['build']})", '0.8.24 (136)', 1))
             with self.assertRaisesRegex(ValueError, 'docs/ROADMAP.md'): MODULE.verify_current_product_claims(root)
             roadmap.write_text(original)
             for filename in ('NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'NEANTIK_IMPROVEMENT_ROADMAP.md'):

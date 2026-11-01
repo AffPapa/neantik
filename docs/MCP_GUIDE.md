@@ -93,7 +93,7 @@ Manager metadata refresh preserves open editor drafts. Saving an outdated draft 
 
 ### Observe a browser owned by this session
 
-In the development major candidate, `profile_status` accepts an explicit observation request:
+Published 0.9.3 `profile_status` accepts an explicit observation request:
 
 ```json
 {
@@ -103,11 +103,11 @@ In the development major candidate, `profile_status` accepts an explicit observa
 }
 ```
 
-Read the current revision after `profile_start`: starting a profile advances its metadata revision. Observation can report the launched runtime version, configured route and whether the owned macOS application is ready for graceful close. It does not return PIDs, local paths, proxy endpoints, credentials, page content, or extension contents.
+Read the current revision after `profile_start`: starting a profile advances its metadata revision. Observation can report the launched runtime version, configured route and whether the owned macOS application is ready for graceful close. It does not return PIDs, local paths, proxy endpoints, credentials, page content, or extension contents. The reported route is configured intent and does not prove that a website request used the proxy.
 
 `state: observed` requires this live manager session's matching launch lease and process identity. A stopped browser or a browser belonging to another session reports unavailable; it is not adopted. A revision conflict requires rereading the profile. A launch receipt saying `httpProxy` is configuration evidence: `chromiumRoute` stays `notObserved`. Page automation is `notSupported`; extension state is `notObserved`.
 
-Example AI request: “Check whether this session's profile is ready for graceful close, and show the runtime version it launched. Do not infer its network route.” Calling `profile_status` without observation retains the original compact response. This development capability still requires exact candidate stdio and headed acceptance before publication.
+Example AI request: “Check whether this session's profile is ready for graceful close, and show the runtime version it launched. Do not infer its network route.” Calling `profile_status` without observation retains the original compact response. Observation does not prove the route used by a website request.
 
 The development manager also includes `relayTransport`. For an authenticated relay session this contains bounded connection/tunnel counters and the most recent transport failure. The private exchange checks the running owner's exact signed code, process generation, launch configuration, runtime hashes and current profile metadata. A legitimate launch bookkeeping revision is recorded separately from the immutable relay launch revision. A stale or unverified exchange returns `state: notObserved`, including Direct/native-proxy sessions without this relay. Counters do not prove page loading, HTTPS validation or DNS routing; `chromiumRoute` remains `notObserved`. No destination, PID, credential, page content or private session ID is returned.
 
@@ -135,7 +135,7 @@ For `proxyLine`, also supply `kind` (`http`, `https`, `socks5`). Supported forma
 
 For Chromium, authenticated HTTP, HTTPS and SOCKS5 use a separate local relay per profile. It reads the saved proxy password from Keychain and supplies it to the configured upstream; credentials do not enter Chromium arguments. SOCKS5 resolves destination names upstream. HTTPS upstream certificates are verified by macOS before authentication; failed trust never retries as plaintext HTTP. With a configured Chromium proxy, `profile_get.networkPolicyIntent` says direct destination DNS is blocked by the configured Chromium policy; a hostname for the upstream proxy may use the system resolver, while an IP-literal proxy needs no DNS lookup. This is saved configuration only: `runtimeRoute` remains `unverified`; it does not measure actual DNS or browser traffic. The response omits proxy host, port, username and password. WebKit is deferred in the current release. Configuring a proxy is not proof of connectivity; `profile_check_proxy` is preflight only and availability is not proof of the browser route.
 
-Passwords are accepted as write-only input and stored in Keychain. The selected AI client may send your input to its model or retain chat history: enter secrets only in a trusted client. Responses omit passwords, proxy usernames/endpoints, notes and private filesystem paths. Configured start URLs are returned and may contain private query values; avoid secrets in start URLs.
+Passwords are accepted as write-only input and stored in Keychain, but the selected AI client may send tool arguments to its model or retain chat history. Safer setup: use MCP to save the proxy host, port and type without credentials, then enter the username and password in NeAntik's local profile editor. If you send credentials through MCP, do so only when you trust that client's handling of tool inputs. Responses omit passwords, proxy usernames/endpoints, notes and private filesystem paths. Configured start URLs are returned and may contain private query values; avoid secrets in start URLs.
 
 ## Chat examples
 
@@ -232,13 +232,13 @@ diagnostic fixture uses its explicit target without changing this setting.
 
 ## Development privacy-policy contract
 
-The unqualified0.9.2 source adds `changes.privacyPreset` (`legacy`, `balanced`,
-`strict`) to create/update. Missing fields preserve existing saved policy.
+Published 0.9.3 supports `changes.privacyPreset` (`legacy`, `balanced`,
+`strict`) in profile creation and update. Missing fields preserve existing saved policy.
 On update, selecting `balanced` or `strict` does not change an omitted
 `fontPolicy`, unlike the GUI preset picker. To request the GUI's font choice
 through MCP, send both fields, for example
 `"changes": {"privacyPreset": "strict", "fontPolicy": "system-v1"}`.
 Returned `privacyPolicyIntent` is saved intent only, never proof that a runtime
 applied or measured it. A profile requiring unsupported native controls refuses
-launch. Config export6, template library5 and profile workspace7 prevent older
+launch. Configuration exports, templates and profile workspaces prevent older
 managers from ignoring these policies; old documents remain legacy.
