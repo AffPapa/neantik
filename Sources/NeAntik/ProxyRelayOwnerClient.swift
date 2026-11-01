@@ -40,13 +40,13 @@ actor ProxyRelayOwnerClient {
     private init(process: Process, input: FileHandle, output: FileHandle,
                  bootstrap: ProxyRelayOwnerProtocol.Bootstrap,
                  ready: ProxyRelayOwnerProtocol.Ready,
-                 identity: ProxyRelayOwnerProcessIdentity, expectedCode: ProxyRelayExpectedCode) {
+                 identity: ProxyRelayOwnerProcessIdentity, expectedCode: ProxyRelayExpectedCode,
+                 initialFence: ProxyRelayPendingOwnerFence) {
         self.process = process; self.input = input; self.output = output
         nonce = bootstrap.nonce; port = ready.port
         processID = process.processIdentifier; processIdentity = identity
         self.expectedCode = expectedCode
-        pendingFence = .init(profileID: bootstrap.profileID, sessionGeneration: bootstrap.sessionGeneration,
-                             ownerPID: process.processIdentifier, identity: identity)
+        pendingFence = initialFence
     }
 
     /// The caller must first acquire its profile's starting lease and freeze
@@ -117,7 +117,8 @@ actor ProxyRelayOwnerClient {
                 try Task.checkCancellation()
                 auditStartupPhase(.prepared)
                 return ProxyRelayOwnerClient(process: process, input: input, output: output,
-                                             bootstrap: bootstrap, ready: ready, identity: identity, expectedCode: expectedCode)
+                                             bootstrap: bootstrap, ready: ready, identity: identity, expectedCode: expectedCode,
+                                             initialFence: fence)
             } catch {
                 try? input.close(); try? output.close()
                 // The owner has not been acknowledged as bound: no stream
