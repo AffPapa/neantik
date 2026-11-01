@@ -230,6 +230,10 @@ diagnostic fixture uses its explicit target without changing this setting.
 
 The unqualified0.9.2 source adds `changes.privacyPreset` (`legacy`, `balanced`,
 `strict`) to create/update. Missing fields preserve existing saved policy.
+On update, selecting `balanced` or `strict` does not change an omitted
+`fontPolicy`, unlike the GUI preset picker. To request the GUI's font choice
+through MCP, send both fields, for example
+`"changes": {"privacyPreset": "strict", "fontPolicy": "system-v1"}`.
 Returned `privacyPolicyIntent` is saved intent only, never proof that a runtime
 applied or measured it. A profile requiring unsupported native controls refuses
 launch. Config export6, template library5 and profile workspace7 prevent older

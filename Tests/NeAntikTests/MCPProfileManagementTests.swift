@@ -4,6 +4,22 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func presetUpdateDisclosesAndPreservesOmittedFontPolicy() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let original = try engine.store.upsert(BrowserProfile(name: "Synthetic native fonts", fontPolicy: .native, privacyPolicy: .legacy))
+        let updated = try await engine.call("profile_update", ["profileID": original.id.uuidString,
+            "expectedRevision": String(original.revision), "changes": ["privacyPreset": "strict"]])
+        #expect(updated["fontPolicy"] as? String == "native")
+        #expect(engine.store.profile(withID: original.id)?.fontPolicy == .native)
+        let definition = try #require(MCPProfileManagement.definitions(allowsManagement: true).first { $0["name"] as? String == "profile_update" })
+        let input = try #require(definition["inputSchema"] as? [String: Any])
+        let properties = try #require(input["properties"] as? [String: Any])
+        let changes = try #require(properties["changes"] as? [String: Any])
+        let changeProperties = try #require(changes["properties"] as? [String: Any])
+        let preset = try #require(changeProperties["privacyPreset"] as? [String: Any])
+        #expect((preset["description"] as? String)?.contains("Omitted fontPolicy is preserved") == true)
+    }
+
     @Test func protectedDefaultsAndPresetChangesPreserveDisposableRetention() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let fresh = try await engine.call("profile_create", ["name": "Own safe default"])

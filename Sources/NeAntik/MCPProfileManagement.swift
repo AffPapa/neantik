@@ -40,7 +40,7 @@ final class MCPProfileManagement {
         let revision: [String: Any] = ["type": "string", "pattern": "^(0|[1-9][0-9]*)$"]
         let optionalUUID: [String: Any] = ["type": ["string", "null"]]
         let changes: [String: Any] = ["type": "object", "additionalProperties": false, "properties": WebKitMediaFeature.visibleFields([
-            "privacyPreset": ["type": "string", "enum": ["legacy", "balanced", "strict"]], "name": text, "startURL": text, "startupMode": ["type": "string", "enum": BrowserStartupMode.allCases.map(\.rawValue)], "fontPolicy": ["type": "string", "enum": ["native", "system-v1"]], "webKitMediaPolicy": ["type": "string", "enum": WebKitMediaPolicy.allCases.map(\.rawValue)], "tags": ["type": "array", "maxItems": 8, "items": text],
+            "privacyPreset": ["type": "string", "enum": ["legacy", "balanced", "strict"], "description": "Changes privacy policy only. Omitted fontPolicy is preserved on update; specify system-v1 explicitly to match the GUI's balanced/strict font selection."], "name": text, "startURL": text, "startupMode": ["type": "string", "enum": BrowserStartupMode.allCases.map(\.rawValue)], "fontPolicy": ["type": "string", "enum": ["native", "system-v1"]], "webKitMediaPolicy": ["type": "string", "enum": WebKitMediaPolicy.allCases.map(\.rawValue)], "tags": ["type": "array", "maxItems": 8, "items": text],
             "note": text, "isPinned": ["type": "boolean"], "isArchived": ["type": "boolean"], "colorHex": text, "symbolName": text], enabled: mediaPolicyEnabled)]
         let proxyFields: [String: Any] = ["type": "object", "additionalProperties": false, "required": ["kind", "host", "port"], "properties": [
             "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "host": text,
