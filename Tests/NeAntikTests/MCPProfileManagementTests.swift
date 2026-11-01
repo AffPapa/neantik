@@ -4,6 +4,29 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func readOnlyStatusRejectsRevisionChangedDuringInventory() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let profile = try writer.store.upsert(BrowserProfile(name: "Synthetic revision race"))
+        let entered = DispatchSemaphore(value: 0), resume = DispatchSemaphore(value: 0)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil), readOnlyInventory: {
+                entered.signal()
+                _ = resume.wait(timeout: .now() + 3)
+                return .unavailable
+            })
+        let request = Task { try await reader.call("profile_status", ["profileID": profile.id.uuidString,
+            "includeObservation": true, "expectedRevision": String(profile.revision)]) }
+        defer { request.cancel(); resume.signal() }
+        #expect(await Task.detached { entered.wait(timeout: .now() + 3) }.value == .success)
+        var changed = profile
+        changed.name = "Synthetic changed revision"
+        let updated = try writer.store.upsert(changed)
+        #expect(updated.revision != profile.revision)
+        resume.signal()
+        await #expect(throws: MCPProfileManagement.Failure.self) { try await request.value }
+    }
+
     @Test func readOnlyStatusCancelsInventoryWorker() async throws {
         let (root, writer, backend) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
