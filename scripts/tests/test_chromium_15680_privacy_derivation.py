@@ -29,6 +29,8 @@ class PrivacyDerivationTests(unittest.TestCase):
             'runtime/chromium-15680-gclient_entries', 'runtime/chromium-15680-gcs_entries',
             'runtime/licenses/Chromium-LICENSE', 'runtime/security-baseline.json',
             'runtime/nevision-patches/series.json', 'runtime/apple-device-tuples.json'})
+        base_contract = json.loads((PROJECT / privacy.BASE['sourceContract']['file']).read_text())
+        files.add(f"runtime/security-baselines/{base_contract['securityBaselineSHA256']}.json")
         if self.manifest['link'] is not None:
             files.update(self.manifest['link'][key]['file'] for key in ('recipe', 'responseFile'))
             files.update(x['members']['file'] for x in self.manifest['link']['thinArchives'].values())
@@ -54,6 +56,22 @@ class PrivacyDerivationTests(unittest.TestCase):
         self.manifest['status'] = 'compiled-link-pending'; self.manifest['link'] = None
         with self.assertRaisesRegex(ValueError, 'link not complete'):
             privacy.verify(self.root, self.binding())
+
+    def test_historical_baseline_remains_bound_after_release_refresh(self):
+        base = json.loads((self.root / privacy.BASE['sourceContract']['file']).read_text())
+        digest = base['securityBaselineSHA256']
+        archive = self.root / 'runtime/security-baselines' / f'{digest}.json'
+        self.assertNotEqual(hashlib.sha256((self.root / 'runtime/security-baseline.json').read_bytes()).hexdigest(), digest)
+        privacy.verify_contract(self.root)
+        original = archive.read_bytes()
+        for scenario in ('missing', 'modified', 'symlink'):
+            with self.subTest(scenario=scenario):
+                archive.unlink()
+                if scenario == 'modified': archive.write_bytes(original + b' ')
+                if scenario == 'symlink': archive.symlink_to(self.root / 'runtime/security-baseline.json')
+                with self.assertRaises(ValueError): privacy.verify_contract(self.root)
+                if archive.exists() or archive.is_symlink(): archive.unlink()
+                archive.write_bytes(original)
 
     def test_full_recorded_derivation_and_lock_bind_new_framework(self):
         contract, layer = privacy.verify_contract(self.root)
