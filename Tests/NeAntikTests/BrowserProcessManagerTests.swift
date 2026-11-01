@@ -144,6 +144,42 @@ struct BrowserProcessManagerTests {
         #expect(manager.runningProfileIDs.isEmpty)
         #expect(!FileManager.default.fileExists(atPath: AppPaths(rootDirectory: root).lockFile(for: profile.id).path))
     }
+    @Test(arguments: [ProxyKind.http, .https])
+    func authenticatedHTTPLoopbackAuditStillRequiresAuditReservation(kind: ProxyKind) throws {
+        let root = URL(fileURLWithPath: "/private/tmp/neantik-audit-proxy-" + UUID().uuidString)
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission, paths: AppPaths(rootDirectory: root),
+            processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent })
+        defer { manager.suspendPassiveObservations(); try? FileManager.default.removeItem(at: root) }
+        let profile = BrowserProfile(name: "Synthetic", proxy: .init(kind: kind, host: "example.invalid", port: 8080, username: "synthetic"))
+        let runtime = BrowserRuntime(name: "Never launched", executableURL: root.appendingPathComponent("missing"), source: "Synthetic")
+        do {
+            try manager.launch(profile: profile, runtime: runtime, purpose: .fingerprintAudit(httpLoopbackPort: 12345))
+            Issue.record("Audit without reservation was accepted")
+        } catch let error as NeAntikError {
+            guard case .fingerprintAuditFailed = error else { Issue.record("Audit refused at wrong boundary"); return }
+        }
+        #expect(manager.runningProfileIDs.isEmpty)
+    }
+
+    @Test(arguments: [ProxyKind.http, .https, .socks5])
+    func lowerLevelLaunchRejectsAuthenticatedProxyWithoutPreparedRelay(kind: ProxyKind) throws {
+        let root = URL(fileURLWithPath: "/private/tmp/neantik-relay-required-" + UUID().uuidString)
+        let paths = AppPaths(rootDirectory: root)
+        let manager = BrowserProcessManager(launchAdmission: nominalAdmission, paths: paths,
+            processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent })
+        defer { manager.suspendPassiveObservations(); try? FileManager.default.removeItem(at: root) }
+        let profile = BrowserProfile(name: "Synthetic", proxy: .init(kind: kind, host: "example.invalid", port: 8080, username: "synthetic"))
+        let runtime = BrowserRuntime(name: "Never launched", executableURL: root.appendingPathComponent("missing"), source: "Synthetic")
+        do {
+            try manager.launch(profile: profile, runtime: runtime)
+            Issue.record("Authenticated proxy launched without relay")
+        } catch let error as NeAntikError {
+            guard case .invalidProxy = error else { Issue.record("Unexpected refusal"); return }
+        }
+        #expect(!FileManager.default.fileExists(atPath: paths.lockFile(for: profile.id).path))
+        #expect(manager.runningProfileIDs.isEmpty)
+    }
+
     @Test(arguments: [ProxyKind.http, .https, .socks5])
     func everyAuthenticatedProtocolRequiresRelayPreparationBeforeLaunch(kind: ProxyKind) async throws {
         let root = URL(fileURLWithPath: "/private/tmp/neantik-relay-selector-" + UUID().uuidString)

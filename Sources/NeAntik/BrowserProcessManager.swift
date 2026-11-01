@@ -2423,9 +2423,10 @@ final class BrowserProcessManager: ObservableObject {
         guard profile.proxy?.isValid != false else {
             throw NeAntikError.invalidProxy
         }
-        // Chromium's native SOCKS transport cannot authenticate. Only the
-        // prepared, owned relay path may launch this configuration.
-        if profile.proxy?.kind == .socks5, profile.proxy?.username.isEmpty == false,
+        // Normal authenticated routes require the prepared owned relay.
+        // Preserve the existing bounded loopback-target HTTP(S) audit path.
+        if profile.proxy?.username.isEmpty == false,
+           (purpose == .normal || profile.proxy?.kind == .socks5),
            preparedRelayLaunches[profile.id] == nil { throw NeAntikError.invalidProxy }
         guard !profile.isArchived else {
             throw NeAntikError.profileArchived
