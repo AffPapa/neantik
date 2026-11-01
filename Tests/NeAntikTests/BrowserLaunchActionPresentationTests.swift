@@ -282,7 +282,7 @@ struct BrowserLaunchActionPresentationTests {
         #expect(!presentation.isEnabled)
         #expect(presentation.help == BrowserProfileProcessState.recoveryRequired.guidance)
         #expect(presentation.help.contains("Если окно браузера открыто"))
-        #expect(presentation.help.contains("завершены ли все процессы"))
+        #expect(presentation.help.contains("состояние профиля"))
         #expect(!presentation.help.contains("разблокируется"))
         #expect(!presentation.help.contains("Данные профиля сохранены"))
     }
