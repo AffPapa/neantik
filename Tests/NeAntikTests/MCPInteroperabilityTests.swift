@@ -5,6 +5,53 @@ import Testing
 @Suite(.serialized) @MainActor
 struct MCPInteroperabilityTests {
     #if DEBUG
+    @Test func stdioProxyToolsRejectCredentialInputBeforeProfileOrKeychainWrite() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("mcp-proxy-credential-boundary-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let backend = MCPProfileManagementTests.Backend()
+        let engine = MCPProfileManagement(root: root, allowsManagement: true,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp-boundary", legacyService: nil),
+            processes: BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false },
+                browserDataProcessInspector: { .absent }, allowsExternalProcessSignaling: false))
+        let session = MCPManagementSession(root: root, allowsManagement: true, testingEngine: engine)
+
+        let listed = try await request(session, "tools/list", modern: true)
+        let tools = try #require((listed["result"] as? [String: Any])?["tools"] as? [[String: Any]])
+        let setProxy = try #require(tools.first { $0["name"] as? String == "profile_set_proxy" })
+        let schema = try #require(setProxy["inputSchema"] as? [String: Any])
+        let properties = try #require(schema["properties"] as? [String: Any])
+        #expect(properties["order"] == nil)
+        let proxyInput = try #require(properties["proxy"] as? [String: Any])
+        let choices = try #require(proxyInput["anyOf"] as? [[String: Any]])
+        let proxyFields = try #require(choices.first { $0["type"] as? String == "object" }?["properties"] as? [String: Any])
+        #expect(Set(proxyFields.keys) == ["kind", "host", "port"])
+
+        let createRejected = try await request(session, "tools/call", ["name": "profile_create", "arguments": [
+            "name": "Rejected proxy", "proxy": ["kind": "http", "host": "127.0.0.1", "port": 8080,
+                "username": "synthetic-user", "password": "synthetic-secret"]]], modern: true)
+        let createError = try #require(createRejected["result"] as? [String: Any])
+        #expect(createError["isError"] as? Bool == true)
+        #expect((createError["_meta"] as? [String: Any])?["app.neantik/errorCode"] as? String == "invalid_fields")
+        #expect(engine.store.profiles.isEmpty && backend.values.isEmpty)
+        #expect(!String(decoding: try JSONSerialization.data(withJSONObject: createRejected), as: UTF8.self).contains("synthetic-secret"))
+
+        let created = try await request(session, "tools/call", ["name": "profile_create", "arguments": [
+            "name": "Endpoint only", "proxy": ["kind": "http", "host": "proxy.synthetic.example", "port": 8080]]], modern: true)
+        let createdResult = try #require((created["result"] as? [String: Any])?["structuredContent"] as? [String: Any])
+        let profileID = try #require(UUID(uuidString: createdResult["id"] as! String))
+        let before = try Data(contentsOf: paths.profilesFile)
+        let setRejected = try await request(session, "tools/call", ["name": "profile_set_proxy", "arguments": [
+            "profileID": profileID.uuidString, "expectedRevision": createdResult["revision"]!,
+            "proxy": ["kind": "http", "host": "127.0.0.2", "port": 8081,
+                "username": "synthetic-user", "password": "synthetic-secret"]]], modern: true)
+        let setError = try #require(setRejected["result"] as? [String: Any])
+        #expect(setError["isError"] as? Bool == true)
+        #expect((setError["_meta"] as? [String: Any])?["app.neantik/errorCode"] as? String == "invalid_fields")
+        #expect(try Data(contentsOf: paths.profilesFile) == before && backend.values.isEmpty)
+        #expect(!String(decoding: try JSONSerialization.data(withJSONObject: setRejected), as: UTF8.self).contains("synthetic-secret"))
+    }
+
     @Test func readOnlyMCPProfileGetExposesDNSPolicyWithExplicitUnverifiedRoute() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("mcp-network-policy-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }

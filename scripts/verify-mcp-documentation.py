@@ -36,6 +36,7 @@ def verify(root: Path = ROOT) -> dict:
             or "the app applies Apple's proxy configuration" in guide):
         raise ValueError('MCP guide WebKit availability claim differs from the Chromium-only release')
     verify_proxy_credential_guidance(guide)
+    verify_mcp_help_credential_boundary((root / 'Sources/NeAntik/HelpContent.swift').read_text())
     webkit_guide = (root / 'docs/WEBKIT_PROFILES.md').read_text()
     if ('профиль с прокси не запускается' not in webkit_guide
             or 'для работы через прокси' not in webkit_guide
@@ -52,22 +53,34 @@ def verify(root: Path = ROOT) -> dict:
 
 
 def verify_proxy_credential_guidance(guide: str) -> None:
-    """Keep the copyable MCP proxy example free of authentication secrets."""
-    example_section = guide.partition(
-        'Choose **either** separate fields **or** a line; never both.'
-    )[2].partition('For `proxyLine`')[0]
-    start = example_section.find('{')
-    end = example_section.rfind('}') + 1
+    section = guide.partition('## Proxy input')[2].partition('## Chat examples')[0]
+    if not section or 'MCP accepts only proxy type, host and port; use `proxy:null` to disable it.' not in section:
+        raise ValueError('MCP guide does not state the endpoint-only credential boundary')
+    if ('MCP rejects `username`/`password` fields' not in section
+            or 'any `proxyLine` containing credentials' not in section
+            or 'enter credentials in NeAntik\'s local profile editor' not in section):
+        raise ValueError('MCP guide omits the local credential workflow or rejection behavior')
+    if '`order` can be' in section:
+        raise ValueError('MCP guide still advertises an unused proxy-line order setting')
+    if 'Passwords are accepted as write-only input' in section:
+        raise ValueError('MCP guide still advertises credential-bearing MCP input')
+    marker = '```json'
+    start = section.find(marker)
+    end = section.find('```', start + len(marker)) if start >= 0 else -1
     try:
-        payload = json.loads(example_section[start:end]) if start >= 0 and end > start else {}
+        payload = json.loads(section[start + len(marker):end].strip()) if end > start else {}
     except json.JSONDecodeError as error:
         raise ValueError('MCP proxy example is not valid JSON') from error
     proxy = payload.get('proxy') if isinstance(payload, dict) else None
-    if not isinstance(proxy, dict) or any(key in proxy for key in ('username', 'password')):
-        raise ValueError('MCP proxy example must omit authentication credentials')
-    if ('use MCP to save only the type, host and port' not in guide
-            or "enter the username and password in NeAntik's local profile editor" not in guide):
-        raise ValueError('MCP guide omits the safer local proxy credential workflow')
+    if not isinstance(proxy, dict) or set(proxy) != {'kind', 'host', 'port'}:
+        raise ValueError('MCP proxy example must contain only type, host and port')
+
+
+def verify_mcp_help_credential_boundary(help_text: str) -> None:
+    if ('MCP принимает для прокси только kind/host/port' not in help_text
+            or 'username/password и строки с логином/паролем отклоняются' not in help_text
+            or 'profile_set_proxy принимает отдельные поля kind/host/port/username/password' in help_text):
+        raise ValueError('In-app MCP help differs from the endpoint-only credential boundary')
 
 
 def verify_current_product_claims(root: Path) -> None:

@@ -129,13 +129,13 @@ Choose **either** separate fields **or** a line; never both. For an unauthentica
 }
 ```
 
-For an authenticated proxy, use MCP to save only the type, host and port, then enter the username and password in NeAntik's local profile editor. Avoid putting proxy credentials in this example or other MCP tool arguments.
+MCP accepts only proxy type, host and port; use `proxy:null` to disable it. MCP rejects `username`/`password` fields and any `proxyLine` containing credentials. For an authenticated proxy, save the endpoint through MCP, then enter credentials in NeAntik's local profile editor.
 
-For `proxyLine`, also supply `kind` (`http`, `https`, `socks5`). Supported formats match the editor: `login:password@host:port`, `host:port:login:password`, `login:password:host:port`, protocol URLs and host:port. `order` can be `automatic`, `credentialsFirst` or `endpointFirst`; explicit order resolves ambiguity. Protocol and port must match the provider: HTTPS **proxy** is TLS to the proxy, not simply an HTTP proxy used to open HTTPS sites.
+For `proxyLine`, also supply `kind` (`http`, `https`, `socks5`). MCP accepts unauthenticated `host:port` and protocol URLs without user information; credential-bearing formats supported by the local editor are rejected by MCP. Protocol and port must match the provider: HTTPS **proxy** is TLS to the proxy, not simply an HTTP proxy used to open HTTPS sites.
 
 For Chromium, authenticated HTTP, HTTPS and SOCKS5 use a separate local relay per profile. It reads the saved proxy password from Keychain and supplies it to the configured upstream; credentials do not enter Chromium arguments. SOCKS5 resolves destination names upstream. HTTPS upstream certificates are verified by macOS before authentication; failed trust never retries as plaintext HTTP. With a configured Chromium proxy, `profile_get.networkPolicyIntent` says direct destination DNS is blocked by the configured Chromium policy; a hostname for the upstream proxy may use the system resolver, while an IP-literal proxy needs no DNS lookup. This is saved configuration only: `runtimeRoute` remains `unverified`; it does not measure actual DNS or browser traffic. The response omits proxy host, port, username and password. WebKit is deferred in the current release. Configuring a proxy is not proof of connectivity; `profile_check_proxy` is preflight only and availability is not proof of the browser route.
 
-Passwords are accepted as write-only input and stored in Keychain, but the selected AI client may send tool arguments to its model or retain chat history. Safer setup: use MCP to save the proxy host, port and type without credentials, then enter the username and password in NeAntik's local profile editor. If you send credentials through MCP, do so only when you trust that client's handling of tool inputs. Responses omit passwords, proxy usernames/endpoints, notes and private filesystem paths. Configured start URLs are returned and may contain private query values; avoid secrets in start URLs.
+Proxy credentials are entered only in NeAntik's local profile editor and stored in Keychain; MCP does not accept them. Responses omit passwords, proxy usernames/endpoints, notes and private filesystem paths. Configured start URLs are returned and may contain private query values; avoid secrets in start URLs.
 
 ## Chat examples
 
