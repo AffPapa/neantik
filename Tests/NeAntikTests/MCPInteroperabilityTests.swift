@@ -5,6 +5,40 @@ import Testing
 @Suite(.serialized) @MainActor
 struct MCPInteroperabilityTests {
     #if DEBUG
+    @Test func readOnlyMCPProfileGetExposesDNSPolicyWithExplicitUnverifiedRoute() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("mcp-network-policy-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let writer = MCPProfileManagement(root: root, allowsManagement: true)
+        let profile = try writer.store.upsert(BrowserProfile(
+            name: "Synthetic proxy profile",
+            proxy: ProxyConfiguration(kind: .http, host: "proxy.synthetic.example", port: 8080, username: "fixture-user")
+        ))
+        let reader = MCPProfileManagement(root: root, allowsManagement: false)
+        let session = MCPManagementSession(root: root, allowsManagement: false, testingEngine: reader)
+
+        let listed = try await request(session, "tools/list", modern: true)
+        let tools = try #require((listed["result"] as? [String: Any])?["tools"] as? [[String: Any]])
+        let profileGet = try #require(tools.first { $0["name"] as? String == "profile_get" })
+        #expect((profileGet["annotations"] as? [String: Any])?["readOnlyHint"] as? Bool == true)
+        let outputSchema = try #require(profileGet["outputSchema"] as? [String: Any])
+        #expect(((outputSchema["properties"] as? [String: Any])?["networkPolicyIntent"] as? [String: Any]) != nil)
+
+        let reply = try await request(session, "tools/call", ["name": "profile_get", "arguments": ["profileID": profile.id.uuidString]], modern: true)
+        let result = try #require(reply["result"] as? [String: Any])
+        let value = try #require(result["structuredContent"] as? [String: Any])
+        let policy = try #require(value["networkPolicyIntent"] as? [String: Any])
+        #expect(policy["proxyHostnameDNS"] as? String == "systemResolverMayResolveProxyHostname")
+        #expect(policy["runtimeRoute"] as? String == "unverified")
+        let encoded = String(decoding: try JSONSerialization.data(withJSONObject: result), as: UTF8.self)
+        #expect(!encoded.contains("proxy.synthetic.example") && !encoded.contains("fixture-user"))
+
+        let denied = try await request(session, "tools/call", ["name": "profile_set_proxy", "arguments": ["profileID": profile.id.uuidString]], modern: true)
+        let deniedResult = try #require(denied["result"] as? [String: Any])
+        #expect(deniedResult["isError"] as? Bool == true)
+        #expect((deniedResult["_meta"] as? [String: Any])?["app.neantik/errorCode"] as? String == "management_disabled")
+        #expect(reader.store.profile(withID: profile.id)?.revision == profile.revision)
+    }
+
     @Test func failedCommitAndRollbackReportsUncertainStateWithoutSecrets() async throws {
         struct SyntheticError: LocalizedError {
             var errorDescription: String? { "secret-token /private/synthetic/profile" }

@@ -68,6 +68,13 @@ enum MCPOutputSchemas {
                            "evidence": ["type": "string", "const": "saved-intent; not native qualification"]
                        ]),
                        "engineCapabilities": object(["persistentSiteData": boolean, "fingerprintConfiguration": boolean, "proxy": boolean, "mcpLaunch": boolean, "extensions": boolean, "browserDataBackup": boolean]),
+                       "networkPolicyIntent": object([
+                           "configuredRoute": ["type": "string", "enum": ["direct", "proxyConfigured"]],
+                           "siteDNSPolicy": ["type": "string", "enum": ["ordinaryChromiumResolution", "configuredToBlockDirectDestinationResolution", "unsupportedInCurrentRelease"]],
+                           "proxyHostnameDNS": ["type": "string", "enum": ["notApplicable", "systemResolverMayResolveProxyHostname", "unsupportedInCurrentRelease"]],
+                           "runtimeRoute": ["type": "string", "const": "unverified"],
+                           "evidence": ["type": "string", "const": "saved-configuration-only; runtime route unverified"]
+                       ]),
                        "colorHex": text, "symbolName": text, "folderID": nullable, "organizationRevision": nullable,
                        "proxyKind": ["type": ["string", "null"], "enum": ["http", "https", "socks5", NSNull()]], "warning": text], optional: ["warning"])
     }

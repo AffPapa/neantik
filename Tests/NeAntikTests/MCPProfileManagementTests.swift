@@ -173,6 +173,35 @@ struct MCPProfileManagementTests {
         }
     }
 
+    @Test func profileNetworkPolicyDisclosesProxyDNSCaveatWithoutClaimingRuntimeRoute() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let direct = try await create(engine)
+        let directPolicy = try #require(direct["networkPolicyIntent"] as? [String: Any])
+        #expect(directPolicy["configuredRoute"] as? String == "direct")
+        #expect(directPolicy["siteDNSPolicy"] as? String == "ordinaryChromiumResolution")
+        #expect(directPolicy["proxyHostnameDNS"] as? String == "notApplicable")
+        #expect(directPolicy["runtimeRoute"] as? String == "unverified")
+
+        var args = request(direct)
+        args["proxy"] = ["kind": "http", "host": "proxy.synthetic.example", "port": 8080,
+                          "username": "fixture-user", "password": "fixture-secret"]
+        let proxied = try await engine.call("profile_set_proxy", args)
+        let policy = try #require(proxied["networkPolicyIntent"] as? [String: Any])
+        #expect(policy["configuredRoute"] as? String == "proxyConfigured")
+        #expect(policy["siteDNSPolicy"] as? String == "configuredToBlockDirectDestinationResolution")
+        #expect(policy["proxyHostnameDNS"] as? String == "systemResolverMayResolveProxyHostname")
+        #expect(policy["runtimeRoute"] as? String == "unverified")
+        #expect(policy["evidence"] as? String == "saved-configuration-only; runtime route unverified")
+        let serialized = String(decoding: try JSONSerialization.data(withJSONObject: proxied), as: UTF8.self)
+        #expect(!serialized.contains("proxy.synthetic.example"))
+        #expect(!serialized.contains("fixture-secret"))
+
+        let properties = try #require(MCPOutputSchemas.schema(for: "profile_get")["properties"] as? [String: Any])
+        #expect(properties["networkPolicyIntent"] != nil)
+        let definition = try #require(MCPProfileManagement.definitions(allowsManagement: false).first { $0["name"] as? String == "profile_get" })
+        #expect((definition["description"] as? String)?.contains("runtimeRoute is always unverified") == true)
+    }
+
     @Test func closingIsExplicitInStatusSchemaAndRepeatedStopDoesNotSignalAgain() async throws {
         let fixture = try ManagedClosingFixture(); defer { fixture.cleanup() }
         let engine = MCPProfileManagement(root: fixture.paths.rootDirectory, allowsManagement: true,
