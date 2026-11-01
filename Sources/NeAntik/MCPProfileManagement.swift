@@ -56,7 +56,7 @@ final class MCPProfileManagement {
         #endif
         let specs: [(String, String, [String: Any], [String])] = [
             ("template_list", "Read saved user templates (maximum50), safe start pages and tags. No credentials, notes, identity or BrowserData. Missing project folders resolve to unfiled. Use templateID plus this organizationRevision with profile_create; creation never starts a browser.", [:], []),
-            ("profile_get", "Read profile revision, start page, organization and requested fontPolicy (not applied-state proof). system-v1 is Chromium-only and needs the exact qualified runtime at launch. Proxy endpoint, credentials and note excluded.", ["profileID": uuid], ["profileID"]),
+            ("profile_get", "Read profile revision, start page, organization and requested fontPolicy (not applied-state proof). networkPolicyIntent reports saved route/DNS policy only; hostname DNS may use the system resolver, IP-literal proxy endpoints need no DNS, and runtimeRoute is always unverified. system-v1 is Chromium-only and needs the exact qualified runtime at launch. Proxy endpoint, credentials and note excluded.", ["profileID": uuid], ["profileID"]),
             ("folder_list", "Read up to100 project folders and organizationRevision. Pass nextCursor unchanged; restart on organization change.", ["limit": ["type": "integer", "minimum": 1, "maximum": 100], "cursor": text], []),
             ("workspace_query_profiles", "Find profiles by name, tags and project without reading private notes. Tags use AND; omitted archived means active only. folderID:null means unfiled, omission means any. Cursor is tied to filters and snapshot. Process state remains unverified.", MCPWorkspaceQuery.properties, []),
             ("profile_status", "Management mode reconciles profile ownership; external sessions require manual close. Read-only mode does not reconcile or clear data: externalUnverified indicates a process referencing the profile data was seen, unverified means the state is unknown; neither establishes that the profile is stopped or authorizes a launch. Optional includeObservation:true requires expectedRevision and observes only this session's verified owned browser. Never returns page content, credentials, PID, paths or proof of Chromium network route.", ["profileID": uuid, "includeObservation": ["type": "boolean"], "expectedRevision": revision], ["profileID"]),
@@ -455,9 +455,38 @@ final class MCPProfileManagement {
         WebKitMediaFeature.visibleFields(["id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name, "startURL": profile.startURL, "startupMode": profile.startupMode.rawValue, "fontPolicy": profile.engine == .chromium ? profile.fontPolicy.rawValue as Any : NSNull(), "engine": profile.engine.rawValue, "webKitMediaPolicy": profile.engine == .webkit ? profile.webKitMediaPolicy.rawValue as Any : NSNull(),
          "engineCapabilities": profile.engine.managementCapabilities,
          "privacyPolicyIntent": profile.privacyPolicy.safeIntent,
+         "networkPolicyIntent": networkPolicyIntent(profile),
          "tags": profile.tags, "isPinned": profile.isPinned, "isArchived": profile.isArchived,
          "colorHex": profile.colorHex, "symbolName": profile.symbolName, "folderID": store.folderID(forProfileID: profile.id)?.uuidString as Any? ?? NSNull(),
          "organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(), "proxyKind": profile.proxy?.kind.rawValue as Any? ?? NSNull()])
+    }
+
+    /// Configuration disclosure only: it never claims that the launched
+    /// browser used this route or that the DNS behavior was observed.
+    private func networkPolicyIntent(_ profile: BrowserProfile) -> [String: Any] {
+        let hasProxy = profile.proxy != nil
+        let supported = profile.engine == .chromium
+        let siteDNSPolicy: String
+        let proxyHostDNS: String
+        if !supported {
+            siteDNSPolicy = "unsupportedInCurrentRelease"
+            proxyHostDNS = "unsupportedInCurrentRelease"
+        } else if hasProxy {
+            siteDNSPolicy = "configuredToBlockDirectDestinationResolution"
+            proxyHostDNS = profile.proxy?.isIPAddressLiteral == true
+                ? "notNeededForIPAddress"
+                : "systemResolverMayResolveProxyHostname"
+        } else {
+            siteDNSPolicy = "ordinaryChromiumResolution"
+            proxyHostDNS = "notApplicable"
+        }
+        return [
+            "configuredRoute": hasProxy ? "proxyConfigured" : "direct",
+            "siteDNSPolicy": siteDNSPolicy,
+            "proxyHostnameDNS": proxyHostDNS,
+            "runtimeRoute": "unverified",
+            "evidence": "saved-configuration-only; runtime route unverified"
+        ]
     }
     private func folderPage(_ args: [String: Any]) throws -> [String: Any] {
         let query = try MCPWorkspaceQuery(arguments: args)

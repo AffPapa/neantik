@@ -26,6 +26,7 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
     let webRTC: BrowserWebRTCPolicy
     let quic: BrowserQUICPolicy
     let dns: BrowserDNSPolicy
+    let proxyHostRequiresDNSResolution: Bool?
     let fingerprintSeedConfigured: Bool
     let fingerprintIdentityConfigured: Bool
     let fingerprintNoiseArgumentsEnabled: Bool
@@ -80,6 +81,7 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
         var webRTC: BrowserWebRTCPolicy
         let quic: BrowserQUICPolicy
         let dns: BrowserDNSPolicy
+        let proxyHostRequiresDNSResolution = profile.proxy.map { !$0.isIPAddressLiteral }
         if let proxy = profile.proxy {
             route = .proxied(kind: proxy.kind)
             webRTC = .disableNonProxiedUDP
@@ -102,6 +104,7 @@ struct BrowserLaunchPolicy: Equatable, Sendable {
             webRTC: webRTC,
             quic: quic,
             dns: dns,
+            proxyHostRequiresDNSResolution: proxyHostRequiresDNSResolution,
             fingerprintSeedConfigured: fingerprintSeedConfigured,
             fingerprintIdentityConfigured: fingerprintIdentityConfigured,
             fingerprintNoiseArgumentsEnabled: false,

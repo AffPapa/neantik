@@ -76,6 +76,57 @@ struct EnvironmentDiagnosticAssessmentTests {
     }
 
     @Test
+    func proxyDNSPolicyDisclosesProxyBootstrapResolutionLimit() throws {
+        let profile = BrowserProfile(
+            name: "Proxy DNS disclosure",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "proxy.example",
+                port: 443,
+                username: ""
+            )
+        )
+        let snapshot = ProfileEnvironmentInspector.snapshot(
+            profile: profile,
+            runtime: runtime(signature: true),
+            proxyHealth: nil
+        )
+        let policy = try field("transport.dns-policy", in: snapshot)
+        let observed = try field("transport.dns-observed", in: snapshot)
+
+        #expect(policy.value == "Прямое разрешение сайтов ограничено")
+        #expect(policy.detail?.contains("proxy с именем хоста") == true)
+        #expect(policy.detail?.contains("системное DNS-разрешение") == true)
+        #expect(policy.detail?.contains("не измерялся") == true)
+        #expect(observed.state == .unverified)
+    }
+
+    @Test
+    func proxyDNSPolicyDoesNotClaimBootstrapDNSForIPAddressLiteral() throws {
+        let profile = BrowserProfile(
+            name: "Proxy IP DNS disclosure",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "192.0.2.8",
+                port: 443,
+                username: ""
+            )
+        )
+        let snapshot = ProfileEnvironmentInspector.snapshot(
+            profile: profile,
+            runtime: runtime(signature: true),
+            proxyHealth: nil
+        )
+        let policy = try field("transport.dns-policy", in: snapshot)
+        let observed = try field("transport.dns-observed", in: snapshot)
+
+        #expect(policy.value == "Прямое разрешение сайтов ограничено")
+        #expect(policy.detail?.contains("DNS для адреса proxy не требуется") == true)
+        #expect(policy.detail?.contains("не измерялся") == true)
+        #expect(observed.state == .unverified)
+    }
+
+    @Test
     func neverCheckedProxyIsNeutralAndFixesOnNextLaunch() throws {
         let profile = BrowserProfile(
             name: "Fresh proxy",
