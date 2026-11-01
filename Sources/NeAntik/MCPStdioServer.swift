@@ -236,7 +236,7 @@ enum MCPStdioServer {
     private static func readProfiles(dataRoot: URL) throws -> (profiles: [BrowserProfile], revision: String) {
         let paths = AppPaths(rootDirectory: dataRoot)
         try paths.validatePrivateDirectory(dataRoot)
-        return try paths.withProfilesMetadataGuard {
+        return try paths.withProfilesMetadataGuard(existingOnly: true) {
             try readProfilesWhileMetadataGuardHeld(paths: paths)
         }
     }

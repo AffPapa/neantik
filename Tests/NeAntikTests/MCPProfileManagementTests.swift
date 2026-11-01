@@ -4,6 +4,56 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func readOnlyGuardRefusesSymlinkParentAndOpenPermissions() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        _ = try writer.store.upsert(BrowserProfile(name: "Synthetic guard safety"))
+        let paths = AppPaths(rootDirectory: root)
+        let original = paths.processLocksDirectory
+        let moved = root.appendingPathComponent("SyntheticLocks")
+        try FileManager.default.moveItem(at: original, to: moved)
+        try FileManager.default.createSymbolicLink(at: original, withDestinationURL: moved)
+        let keychain = KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil)
+        let symlinkReader = MCPProfileManagement(root: root, allowsManagement: false, keychain: keychain)
+        #expect(!symlinkReader.store.hasTrustedMetadata)
+        try FileManager.default.removeItem(at: original)
+        try FileManager.default.moveItem(at: moved, to: original)
+        try FileManager.default.setAttributes([.posixPermissions: 0o666], ofItemAtPath: paths.profilesMetadataGuardFile.path)
+        let openReader = MCPProfileManagement(root: root, allowsManagement: false, keychain: keychain)
+        #expect(!openReader.store.hasTrustedMetadata)
+        let attrs = try FileManager.default.attributesOfItem(atPath: paths.profilesMetadataGuardFile.path)
+        #expect((attrs[.posixPermissions] as? NSNumber)?.intValue == 0o666)
+    }
+
+    @Test func readOnlyMetadataDoesNotCreateOrRepairMissingGuard() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        _ = try writer.store.upsert(BrowserProfile(name: "Synthetic guarded profile"))
+        let paths = AppPaths(rootDirectory: root)
+        let metadata = try Data(contentsOf: paths.profilesFile)
+        try FileManager.default.removeItem(at: paths.profilesMetadataGuardFile)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil))
+        #expect(!reader.store.hasTrustedMetadata)
+        await #expect(throws: (any Error).self) { try await reader.call("profile_get", ["profileID": UUID().uuidString]) }
+        #expect(!FileManager.default.fileExists(atPath: paths.profilesMetadataGuardFile.path))
+        #expect(try Data(contentsOf: paths.profilesFile) == metadata)
+    }
+
+    @Test func readOnlyRefreshRefusesRemovedGuardWithoutRecreatingIt() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let profile = try writer.store.upsert(BrowserProfile(name: "Synthetic guard removal"))
+        let paths = AppPaths(rootDirectory: root)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil))
+        _ = try await reader.call("profile_get", ["profileID": profile.id.uuidString])
+        try FileManager.default.removeItem(at: paths.profilesMetadataGuardFile)
+        await #expect(throws: (any Error).self) { try await reader.call("profile_get", ["profileID": profile.id.uuidString]) }
+        #expect(!reader.store.hasTrustedMetadata)
+        #expect(!FileManager.default.fileExists(atPath: paths.profilesMetadataGuardFile.path))
+    }
+
     @Test func readOnlyStatusDoesNotReconcileOrClearOtherProfiles() async throws {
         let (root, writer, backend) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }

@@ -73,7 +73,7 @@ final class ProfileStore: ObservableObject {
         if readOnlyMetadata {
             do {
                 try paths.validatePrivateDirectory(paths.rootDirectory)
-                try paths.withProfilesMetadataGuard {
+                try paths.withProfilesMetadataGuard(existingOnly: true) {
                     guard let bytes = try Self.boundedMetadata(paths.profilesFile) else { throw POSIXError(.ENOENT) }
                     let decoded = try Self.decodeProfiles(bytes)
                     let checked = try Self.normalizedForIsolation(decoded)
@@ -207,7 +207,9 @@ final class ProfileStore: ObservableObject {
             metadataRefreshFailureWarning = lastError
             throw error
         }
-        guard force || stamp != externalMetadataStamp else { return }
+        // Read-only consumers must revalidate the existing lock on each call:
+        // its removal or replacement need not change either metadata stamp.
+        guard force || requiresExistingProfileMetadata || stamp != externalMetadataStamp else { return }
         guard !Self.importingRoots.contains(paths.rootDirectory.resolvingSymlinksInPath().path), !Self.refreshingRoots.contains(rootKey) else { return }
         let hadProfiles = !profiles.isEmpty
         let requiresExistingProfileMetadata = self.requiresExistingProfileMetadata
@@ -217,7 +219,7 @@ final class ProfileStore: ObservableObject {
         let snapshot: ([BrowserProfile], Result<ProfileOrganizationState, Error>)
         do {
             snapshot = try await Task.detached {
-                try paths.withProfilesMetadataGuard {
+                try paths.withProfilesMetadataGuard(existingOnly: requiresExistingProfileMetadata) {
                     let profileData = try Self.boundedMetadata(paths.profilesFile)
                     guard profileData != nil || (!hadProfiles && !requiresExistingProfileMetadata) else { throw POSIXError(.ENOENT) }
                     let decoded = try profileData.map(Self.decodeProfiles) ?? []

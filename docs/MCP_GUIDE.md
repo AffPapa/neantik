@@ -2,6 +2,8 @@
 
 The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. For Chromium and metadata operations the manager GUI may be closed. WebKit is deferred and cannot be launched in the current Chromium-only release; historical WebKit notes below do not describe the current build. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Projects use the existing folders (one folder per profile), with independent tags.
 
+Read-only access requires the existing private metadata lock; it does not create or repair that lock. If access fails, open NeAntik to inspect the workspace instead of creating or changing files manually.
+
 ## Connect (official client formats checked 7 October 2026)
 
 Open **Справка → Подключить MCP к AI…**, select the actual client and copy the full-management setting. To restrict access, expand **Дополнительная настройка доступа** and enable **Только просмотр — без изменений и запуска**. Copy the generated configuration containing this installed app and workspace. Merge it with existing servers, preserve other settings, then restart the client. No Node/npm or network listener is required. Configuration format compatibility is verified; third-party AI clients/models have not all been run end-to-end.
