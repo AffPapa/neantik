@@ -48,7 +48,7 @@ Newline-delimited JSON-RPC: 64 KiB/request, 32 queued requests, 256 KiB for the 
 | `profile_get` | Current decimal-string revision, name, startURL, startupMode, engine, engineCapabilities, tags, appearance, pinned/archive, folderID, organizationRevision, proxy kind |
 | `workspace_query_profiles` | Name/tag/project/pinned/archive filters; active default, tags AND; folderID omitted:any, null:unfiled; UUID/revision/folderID; cursor bound to filter and metadata |
 | `folder_list` | Pages1–100 of folder IDs/names and organizationRevision; pass nextCursor; restart on change |
-| `profile_status` | Management mode reconciles stopped/managed/checking/recovery/external state and can observe this session's owned browser. Read-only mode returns `externalUnverified` without reconciling or clearing data; it does not establish whether the browser is stopped. |
+| `profile_status` | Management mode reconciles stopped/managed/checking/recovery/external state and can observe this session's owned browser. Read-only mode only observes a process snapshot: `externalUnverified` means a process referenced the profile data; `unverified` means its state is unknown. Neither establishes that the browser is stopped or permits a launch. |
 | `profile_create` | Create persistent configuration without launching |
 | `profile_update` | Patch name, startURL, startupMode, tags, note, isPinned, isArchived, colorHex, symbolName |
 | `profile_set_proxy` | Set fields or parse one proxy line; proxy:null disables |

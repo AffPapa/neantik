@@ -4,6 +4,26 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func readOnlyStatusCancelsInventoryWorker() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let profile = try writer.store.upsert(BrowserProfile(name: "Synthetic cancellation"))
+        let entered = DispatchSemaphore(value: 0), cancelled = DispatchSemaphore(value: 0)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil), readOnlyInventory: {
+                entered.signal()
+                while !Task.isCancelled { Thread.sleep(forTimeInterval: 0.001) }
+                cancelled.signal()
+                return .unavailable
+            })
+        let request = Task { try await reader.call("profile_status", ["profileID": profile.id.uuidString]) }
+        defer { request.cancel() }
+        #expect(await Task.detached { entered.wait(timeout: .now() + 3) }.value == .success)
+        request.cancel()
+        #expect(await Task.detached { cancelled.wait(timeout: .now() + 3) }.value == .success)
+        await #expect(throws: CancellationError.self) { try await request.value }
+    }
+
     @Test func readOnlyGuardRefusesSymlinkParentAndOpenPermissions() async throws {
         let (root, writer, backend) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -69,12 +89,19 @@ struct MCPProfileManagementTests {
         let leaseBytes = Data("synthetic stale lease".utf8)
         try leaseBytes.write(to: lease)
         let reader = MCPProfileManagement(root: root, allowsManagement: false,
-            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil))
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil),
+            readOnlyInventory: { .unavailable })
         let result = try await reader.call("profile_status", ["profileID": requested.id.uuidString])
-        #expect(result["processState"] as? String == "externalUnverified")
+        #expect(result["processState"] as? String == "unverified")
         let observed = try await reader.call("profile_status", ["profileID": requested.id.uuidString,
             "includeObservation": true, "expectedRevision": String(requested.revision)])
-        #expect(observed["processState"] as? String == "externalUnverified")
+        #expect(observed["processState"] as? String == "unverified")
+        let dataPath = paths.browserDataDirectory(for: requested.id).path
+        let inventory = BrowserProcessInventory(processes: [123: BrowserProcessArguments(executablePath: "/synthetic/browser", arguments: ["--user-data-dir=\(dataPath)"])])
+        let foundReader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil), readOnlyInventory: { inventory })
+        let found = try await foundReader.call("profile_status", ["profileID": requested.id.uuidString])
+        #expect(found["processState"] as? String == "externalUnverified")
         #expect(try EphemeralProfileStorage.pending(paths: paths, profile: other))
         #expect(try Data(contentsOf: state) == original)
         #expect(try Data(contentsOf: lease) == leaseBytes)

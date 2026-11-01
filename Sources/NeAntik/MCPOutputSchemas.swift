@@ -10,7 +10,7 @@ enum MCPOutputSchemas {
         let boolean: [String: Any] = ["type": "boolean"]
         let webKitState: [String: Any] = ["type": "string", "enum": ["managed", "stopPending", "stopped", "saveFailed", "notOwned", "ownershipLost"]]
         let count: [String: Any] = ["type": "integer", "minimum": 0]
-        let state: [String: Any] = ["type": "string", "enum": ["managed", "stopped", "checking", "closing", "externalManualOnly", "externalUnverified", "recoveryRequired"]]
+        let state: [String: Any] = ["type": "string", "enum": ["managed", "stopped", "checking", "closing", "externalManualOnly", "externalUnverified", "recoveryRequired", "unverified"]]
         let folder = object(["id": uuid, "name": text])
         let folders: [String: Any] = ["type": "array", "items": folder, "maxItems": 100]
         if name == "template_list" {
