@@ -230,8 +230,13 @@ struct BrowserProcessManagerTests {
         #expect(arguments.last == "about:blank")
         #expect(arguments.contains("--user-data-dir=" + paths.browserDataDirectory(for: profile.id).path))
         #expect(profile.startURL == "https://owned.test/start")
-        try await Task.sleep(for: .milliseconds(250))
+        // The stub publishes arguments before sleeping; allow its termination
+        // callback and reconciliation a bounded scheduling window under CI load.
         manager.reconcile(profiles: [profile])
+        for _ in 0..<600 {
+            if !manager.runningProfileIDs.contains(profile.id) { break }
+            try await Task.sleep(for: .milliseconds(5))
+        }
         #expect(!manager.runningProfileIDs.contains(profile.id))
     }
     @Test
