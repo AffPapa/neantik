@@ -731,11 +731,15 @@ enum ProfileEnvironmentInspector {
         case .notDisabledByNeAntik:
             "NeAntik не отключает QUIC"
         }
-        let dnsValue = switch policy.dns {
+        let dnsValue: String
+        let dnsDetail: String
+        switch policy.dns {
         case .ordinaryChromium:
-            "Обычная политика Chromium и macOS"
+            dnsValue = "Обычная политика Chromium и macOS"
+            dnsDetail = "Имена сайтов разрешаются по обычной политике Chromium и macOS."
         case .proxyResolverFailClosed:
-            "Прямое разрешение сайтов ограничено"
+            dnsValue = "Прямое разрешение сайтов ограничено"
+            dnsDetail = "Chromium ограничивает прямое DNS-разрешение сайтов. Для подключения к proxy может потребоваться системное DNS-разрешение имени самого proxy; фактический DNS-маршрут не измерялся."
         }
         return EnvironmentDiagnosticSection(
             id: "transport",
@@ -757,7 +761,8 @@ enum ProfileEnvironmentInspector {
                         : .configured,
                     severity: policy.dns == .ordinaryChromium
                         ? .neutral
-                        : .success
+                        : .success,
+                    detail: dnsDetail
                 ),
                 EnvironmentDiagnosticField(
                     id: "transport.quic-observed",
