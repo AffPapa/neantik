@@ -28,6 +28,7 @@ struct BrowserLaunchPolicyTests {
         #expect(policy.webRTC == .disableNonProxiedUDP)
         #expect(policy.quic == .disabledByNeAntik)
         #expect(policy.dns == .proxyResolverFailClosed)
+        #expect(policy.proxyHostRequiresDNSResolution == true)
         #expect(policy.webGPUDisabled)
         #expect(
             policy.disabledFeatures == [
@@ -64,6 +65,7 @@ struct BrowserLaunchPolicyTests {
         #expect(policy.webRTC == .publicInterfaceOnly)
         #expect(policy.quic == .notDisabledByNeAntik)
         #expect(policy.dns == .ordinaryChromium)
+        #expect(policy.proxyHostRequiresDNSResolution == nil)
         #expect(policy.disabledFeatures.isEmpty)
         #expect(arguments.contains("--no-proxy-server"))
         #expect(!arguments.contains("--disable-quic"))

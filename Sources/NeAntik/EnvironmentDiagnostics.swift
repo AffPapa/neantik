@@ -739,7 +739,11 @@ enum ProfileEnvironmentInspector {
             dnsDetail = "Имена сайтов разрешаются по обычной политике Chromium и macOS."
         case .proxyResolverFailClosed:
             dnsValue = "Прямое разрешение сайтов ограничено"
-            dnsDetail = "Chromium ограничивает прямое DNS-разрешение сайтов. Для подключения к proxy может потребоваться системное DNS-разрешение имени самого proxy; фактический DNS-маршрут не измерялся."
+            if policy.proxyHostRequiresDNSResolution == false {
+                dnsDetail = "Chromium ограничивает прямое DNS-разрешение сайтов. Адрес proxy задан как IP, DNS для адреса proxy не требуется; фактический DNS-маршрут не измерялся."
+            } else {
+                dnsDetail = "Chromium ограничивает прямое DNS-разрешение сайтов. Для подключения к proxy с именем хоста может потребоваться системное DNS-разрешение; фактический DNS-маршрут не измерялся."
+            }
         }
         return EnvironmentDiagnosticSection(
             id: "transport",
