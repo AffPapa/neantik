@@ -115,7 +115,7 @@ Signed DEBUG headed HTTP/reconnect acceptance has passed for the socket exchange
 
 ## Proxy input
 
-Choose **either** separate fields **or** a line; never both. Separate fields:
+Choose **either** separate fields **or** a line; never both. For an unauthenticated proxy, use separate fields:
 
 ```json
 {
@@ -124,12 +124,12 @@ Choose **either** separate fields **or** a line; never both. Separate fields:
   "proxy": {
     "kind": "http",
     "host": "127.0.0.1",
-    "port": 8080,
-    "username": "<provider login>",
-    "password": "<provider password>"
+    "port": 8080
   }
 }
 ```
+
+For an authenticated proxy, use MCP to save only the type, host and port, then enter the username and password in NeAntik's local profile editor. Avoid putting proxy credentials in this example or other MCP tool arguments.
 
 For `proxyLine`, also supply `kind` (`http`, `https`, `socks5`). Supported formats match the editor: `login:password@host:port`, `host:port:login:password`, `login:password:host:port`, protocol URLs and host:port. `order` can be `automatic`, `credentialsFirst` or `endpointFirst`; explicit order resolves ambiguity. Protocol and port must match the provider: HTTPS **proxy** is TLS to the proxy, not simply an HTTP proxy used to open HTTPS sites.
 

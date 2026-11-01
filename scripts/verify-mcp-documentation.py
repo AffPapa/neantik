@@ -35,6 +35,7 @@ def verify(root: Path = ROOT) -> dict:
             or 'WebKit is **not available in the current Chromium-only release**' not in guide
             or "the app applies Apple's proxy configuration" in guide):
         raise ValueError('MCP guide WebKit availability claim differs from the Chromium-only release')
+    verify_proxy_credential_guidance(guide)
     webkit_guide = (root / 'docs/WEBKIT_PROFILES.md').read_text()
     if ('профиль с прокси не запускается' not in webkit_guide
             or 'для работы через прокси' not in webkit_guide
@@ -48,6 +49,25 @@ def verify(root: Path = ROOT) -> dict:
         raise ValueError('Product still excludes supported MCP management')
     verify_current_product_claims(root)
     return expected
+
+
+def verify_proxy_credential_guidance(guide: str) -> None:
+    """Keep the copyable MCP proxy example free of authentication secrets."""
+    example_section = guide.partition(
+        'Choose **either** separate fields **or** a line; never both.'
+    )[2].partition('For `proxyLine`')[0]
+    start = example_section.find('{')
+    end = example_section.rfind('}') + 1
+    try:
+        payload = json.loads(example_section[start:end]) if start >= 0 and end > start else {}
+    except json.JSONDecodeError as error:
+        raise ValueError('MCP proxy example is not valid JSON') from error
+    proxy = payload.get('proxy') if isinstance(payload, dict) else None
+    if not isinstance(proxy, dict) or any(key in proxy for key in ('username', 'password')):
+        raise ValueError('MCP proxy example must omit authentication credentials')
+    if ('use MCP to save only the type, host and port' not in guide
+            or "enter the username and password in NeAntik's local profile editor" not in guide):
+        raise ValueError('MCP guide omits the safer local proxy credential workflow')
 
 
 def verify_current_product_claims(root: Path) -> None:
@@ -128,6 +148,21 @@ def verify_roadmap_release_claim(root: Path, latest: dict) -> None:
             or (site_version and f"{site_version} ({site_build})" not in historical)
             or (site.get('updated') is False and 'не опубликовано' not in historical)):
         raise ValueError('Historical roadmap release claim differs from evidence: docs/ROADMAP.md')
+    history = text.partition('\n## Исторический срез\n\n')[2]
+    snapshots = re.findall(
+        r'\[(\d+\.\d+\.\d+) \((\d+)\)\]\(https://github\.com/AffPapa/neantik/releases/tag/(v\d+\.\d+\.\d+)\)',
+        history,
+    )
+    tags = [tag for _, _, tag in snapshots]
+    if len(tags) != len(set(tags)):
+        raise ValueError('Historical roadmap repeats a release snapshot: docs/ROADMAP.md')
+    for version, build, tag in snapshots:
+        record_path = root / 'releases' / f'{tag}.json'
+        if not record_path.is_file():
+            raise ValueError('Historical roadmap release record is missing: ' + str(record_path.relative_to(root)))
+        record = json.loads(record_path.read_text())
+        if (record.get('version'), str(record.get('build')), record.get('tag')) != (version, build, tag):
+            raise ValueError('Historical roadmap snapshot differs from its release record: docs/ROADMAP.md')
 
 
 if __name__ == '__main__':
