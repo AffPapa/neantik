@@ -115,9 +115,9 @@ final class MCPProfileManagement {
         if name == "workspace_query_profiles" {
             let query = try MCPWorkspaceQuery(arguments: args)
             let profiles = store.profiles, organization = store.organization
-            return try await Task.detached(priority: .userInitiated) {
+            return try await MCPWorkspaceQuery.executeCancellable {
                 try query.page(profiles: profiles, organization: organization)
-            }.value
+            }
         }
         if name == "folder_list" { return try folderPage(args) }
         if name.hasPrefix("folder_") {

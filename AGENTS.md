@@ -4,9 +4,10 @@
 - Resource admission uses exported sysctl flags, not the internal XNU enum;
   follow `docs/NEANTIK_RESOURCE_ADMISSION.md` before changing pressure gates.
 
-- First-release execution: ship the qualified Chromium-only variant. Defer
-  WebKit until its production runtime and source gates pass. Record unsupported
-  timezone, locale and WebRTC per exact runtime evidence; never imply absolute anonymity.
+- Product target: Chromium and WebKit with supported per-profile proxy and
+  privacy controls. Qualify each engine's exact production runtime, source
+  and legal gates before claiming or shipping it. Record unsupported timezone,
+  locale and WebRTC accurately; never imply absolute anonymity.
 - Freeze one candidate per product change. Do not create a replacement for
   receipt, documentation or source-offer edits alone; finish its scoped runtime
   check, diagnose failures, and batch source/license and release closure once.
