@@ -6,7 +6,7 @@ The private maintainer checkpoint tracks live 1.0 qualification and is intention
 
 ## Release 1.0 acceptance
 
-Перед запуском Chromium проверяется доступность настроенного прокси. Эта предварительная проверка не измеряет маршрут HTTP/DNS-запросов браузера: `runtimeRoute` остаётся `unverified`. Для WebKit маршрут также не подтверждён.
+Свежая автоматическая подготовка выполняется перед каждой прокси-сессией Chromium: она заново проверяет прокси, получает через него данные для часового пояса и языка и не переиспользует ручную проверку из редактора. Эта предварительная проверка не измеряет маршрут HTTP/DNS-запросов окна Chromium: `runtimeRoute` остаётся `unverified`. Для WebKit маршрут также не подтверждён.
 
 - Qualify bundled Chromium and owned WebKit in one Direct Distribution app.
 - Verify per-profile proxy routing, refusal without direct fallback, and recovery on the exact candidate.
