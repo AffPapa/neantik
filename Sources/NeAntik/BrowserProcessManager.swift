@@ -282,6 +282,40 @@ struct BrowserProfileDeletedError: LocalizedError, Equatable {
     }
 }
 
+struct BrowserStartLeaseSupersededError: LocalizedError, Equatable {
+    enum Reason: String, Equatable {
+        case invalidStartingLease = "invalid-starting-lease"
+        case missingLease = "starting-lease-missing"
+        case changedOwner = "starting-lease-owner-changed"
+        case changedPhase = "starting-lease-phase-changed"
+        case changedPID = "starting-lease-pid-changed"
+        case changedManager = "starting-lease-manager-changed"
+        case changedExecutablePath = "starting-lease-executable-changed"
+        case changedBrowserDataPath = "starting-lease-data-path-changed"
+        case changedSchema = "starting-lease-schema-changed"
+        case changedRelay = "starting-lease-relay-changed"
+        case changedPendingRelayOwner = "starting-lease-relay-owner-changed"
+        case changedCreatedAt = "starting-lease-created-at-changed"
+        case changedEncoding = "starting-lease-encoding-changed"
+        case unsafeLease = "starting-lease-unsafe"
+        case unreadableLease = "starting-lease-unreadable"
+        case childExited = "child-exited-before-lease-commit"
+    }
+
+    let reason: Reason
+
+    init(reason: Reason = .changedEncoding) {
+        self.reason = reason
+    }
+
+    var errorDescription: String? {
+        if reason == .childExited {
+            return "Chromium завершился сразу после запуска. Проверь состояние браузера и повтори запуск профиля."
+        }
+        return "Пока браузер готовился, состояние профиля изменилось. Дождись завершения проверки профиля и нажми «Запустить» ещё раз."
+    }
+}
+
 private struct BrowserProfileLeaseUnavailableError: LocalizedError {
     let inspection: BrowserDataProcessInspection
 
@@ -2086,7 +2120,7 @@ final class BrowserProcessManager: ObservableObject {
                 relayOwnerInspection: relayOwnerInspection,
                     deferInitialResolution: true,
                     message:
-                        "Другой экземпляр NeAntik ещё запускает этот профиль. Повторный запуск заблокирован."
+                        "Другой экземпляр NeAntik начал запуск этого профиля. NeAntik проверяет браузер и прокси; профиль разблокируется автоматически после проверки."
                 )
                 return
             }
@@ -2109,7 +2143,7 @@ final class BrowserProcessManager: ObservableObject {
                     browserDataProcessInspector,
                 relayOwnerInspection: relayOwnerInspection,
                 message:
-                    "Другой экземпляр NeAntik ещё запускает этот профиль. Повторный запуск заблокирован."
+                    "Другой экземпляр NeAntik начал запуск этого профиля. NeAntik проверяет браузер и прокси; профиль разблокируется автоматически после проверки."
             )
             return
         }
@@ -2353,6 +2387,7 @@ final class BrowserProcessManager: ObservableObject {
                 throw ProxyRelayOwnerClient.Failure.cleanupUnconfirmed((error as? ProxyRelayOwnerClient.Failure)?.pendingFence)
             }
             if error is CancellationError { throw CancellationError() }
+            if error is BrowserStartLeaseSupersededError { throw error }
             throw NeAntikError.processLaunchFailed("")
         }
     }
@@ -2629,30 +2664,26 @@ final class BrowserProcessManager: ObservableObject {
                     proxyTransportOverride: preparedRelayLaunches[profile.id]?.port,
                     siteProtectionDirectory: protection.directory, now: launchNow, purpose: purpose) + storageArguments
             }
-            try process.run()
+            let lock = try commitOwnedProcessStart(
+                profileID: profile.id,
+                startingLease: provisionalLock,
+                browserDataDirectory: browserDataDirectory,
+                allowsUnknownBrowserDataInspection:
+                    ownsFreshFingerprintAuditDirectory,
+                at: lockURL
+            ) {
+                try process.run()
+                guard process.isRunning, process.processIdentifier > 0 else {
+                    throw BrowserStartLeaseSupersededError(reason: .childExited)
+                }
+                return process.processIdentifier
+            }
             withExtendedLifetime((auditDirectoryCustody, fingerprintDirectoryCustody)) {}
             processes[profile.id] = process
             runningProfileIDs.insert(profile.id)
             try? appendDiagnostic(
                 "browser_launch version=\(runtime.inspection.version ?? "unknown")",
                 to: logURL
-            )
-            let lock = BrowserProcessLock(
-                pid: process.processIdentifier,
-                executablePath: runtime.executableURL.standardizedFileURL.path,
-                browserDataPath: browserDataDirectory.standardizedFileURL.path,
-                createdAt: createdAt,
-                schemaVersion: BrowserProcessLock.currentSchemaVersion,
-                ownerToken: ownerToken,
-                managerPID: getpid(),
-                phase: .running,
-                relay: preparedRelay?.lock.relay
-            )
-            try writeOwnedLease(
-                lock,
-                profileID: profile.id,
-                ownerToken: ownerToken,
-                at: lockURL
             )
             if let reservation = fingerprintAuditReservation, let custody = fingerprintDirectoryCustody {
                 fingerprintAuditSettlementPermits[reservation.id] = .init(reservation: reservation,
@@ -2696,6 +2727,16 @@ final class BrowserProcessManager: ObservableObject {
                 beginEphemeralCleanupIfNeeded(profile: profile, onlyIfPending: true)
             }
             cleanupTransientProfileDirectoryIfSafe(profileID: profile.id)
+            if let error = error as? BrowserStartLeaseSupersededError {
+                try? appendDiagnostic(
+                    "browser_launch_failed reason=launch-fence-\(error.reason.rawValue)",
+                    to: logURL
+                )
+                if error.reason == .childExited {
+                    throw NeAntikError.processLaunchFailed("")
+                }
+                throw NeAntikError.profileAlreadyRunning
+            }
             try? appendDiagnostic(
                 "browser_launch_failed reason=process-launch-error",
                 to: logURL
@@ -2703,6 +2744,88 @@ final class BrowserProcessManager: ObservableObject {
             if error is UnsupportedBrowserFontPolicyError { throw error }
             throw NeAntikError.processLaunchFailed("")
         }
+    }
+
+    /// Starting Chromium and publishing its running lease share one
+    /// cross-process guard. Recovery may retire an expired starting lease,
+    /// but a delayed owner cannot spawn a child after that fence changed.
+    func commitOwnedProcessStart(
+        profileID: UUID,
+        startingLease: BrowserProcessLock,
+        browserDataDirectory: URL,
+        allowsUnknownBrowserDataInspection: Bool = false,
+        at lockURL: URL,
+        startProcess: () throws -> pid_t
+    ) throws -> BrowserProcessLock {
+        try paths.withProcessLockGuard(for: profileID) {
+            let expectedData = try Self.encodeLock(startingLease)
+            guard startingLease.phase == .starting,
+                  startingLease.pid == 0,
+                  startingLease.ownerToken != nil,
+                  startingLease.managerPID == getpid(),
+                  startingLease.pendingRelayOwner == nil
+            else {
+                throw BrowserStartLeaseSupersededError(reason: .invalidStartingLease)
+            }
+            switch try readLeaseEntryWhileGuardHeld(lockURL: lockURL) {
+            case .missing:
+                throw BrowserStartLeaseSupersededError(reason: .missingLease)
+            case .unsafe:
+                throw BrowserStartLeaseSupersededError(reason: .unsafeLease)
+            case .unreadable:
+                throw BrowserStartLeaseSupersededError(reason: .unreadableLease)
+            case let .data(data):
+                let expected = try Self.decodeLock(expectedData)
+                guard let actual = try? Self.decodeLock(data) else {
+                    throw BrowserStartLeaseSupersededError(reason: .changedEncoding)
+                }
+                guard actual == expected else {
+                    throw BrowserStartLeaseSupersededError(
+                        reason: Self.startLeaseMismatchReason(expected: expected, actual: actual)
+                    )
+                }
+            }
+            let inspection = browserDataProcessInspector(browserDataDirectory)
+            guard inspection == .absent ||
+                    (inspection == .unknown && allowsUnknownBrowserDataInspection)
+            else {
+                throw BrowserProfileLeaseUnavailableError(inspection: inspection)
+            }
+            let pid = try startProcess()
+            guard pid > 0 else {
+                throw BrowserStartLeaseSupersededError(reason: .childExited)
+            }
+            let runningLease = BrowserProcessLock(
+                pid: pid,
+                executablePath: startingLease.executablePath,
+                browserDataPath: startingLease.browserDataPath,
+                createdAt: startingLease.createdAt,
+                schemaVersion: startingLease.schemaVersion,
+                ownerToken: startingLease.ownerToken,
+                managerPID: startingLease.managerPID,
+                phase: .running,
+                relay: startingLease.relay
+            )
+            try paths.writePrivateFile(Self.encodeLock(runningLease), to: lockURL)
+            return runningLease
+        }
+    }
+
+    private static func startLeaseMismatchReason(
+        expected: BrowserProcessLock,
+        actual: BrowserProcessLock
+    ) -> BrowserStartLeaseSupersededError.Reason {
+        if actual.ownerToken != expected.ownerToken { return .changedOwner }
+        if actual.phase != expected.phase { return .changedPhase }
+        if actual.pid != expected.pid { return .changedPID }
+        if actual.managerPID != expected.managerPID { return .changedManager }
+        if actual.executablePath != expected.executablePath { return .changedExecutablePath }
+        if actual.browserDataPath != expected.browserDataPath { return .changedBrowserDataPath }
+        if actual.schemaVersion != expected.schemaVersion { return .changedSchema }
+        if actual.relay != expected.relay { return .changedRelay }
+        if actual.pendingRelayOwner != expected.pendingRelayOwner { return .changedPendingRelayOwner }
+        if actual.createdAt != expected.createdAt { return .changedCreatedAt }
+        return .changedEncoding
     }
 
     private static func fingerprintAuditArgumentsAreSafe(
@@ -3715,8 +3838,22 @@ final class BrowserProcessManager: ObservableObject {
                         continue
                     }
                     if let managerPID = record.blockingManagerPID {
-                        guard ownerWasAlive[profileID] == false,
-                              !processLivenessValidator(managerPID)
+                        let ownerWasConfirmedDead =
+                            ownerWasAlive[profileID] == false &&
+                            !processLivenessValidator(managerPID)
+                        let startingAge = record.startingCreatedAt.map {
+                            self.now().timeIntervalSince($0)
+                        }
+                        let expiredStartingAttempt = startingAge.map {
+                            $0 >= self.startingLeaseTimeout
+                        } ?? false
+                        // A manager process can remain alive after its launch
+                        // task has failed or stalled. Age alone is insufficient:
+                        // resolveRecoveryIfSafe still proves BrowserData and
+                        // relay-owner absence, then removes only the same lock
+                        // snapshot. The launch path fences Process.run against
+                        // that same lock under the profile guard.
+                        guard ownerWasConfirmedDead || expiredStartingAttempt
                         else {
                             continue
                         }

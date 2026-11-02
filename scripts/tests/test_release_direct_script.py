@@ -355,7 +355,7 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn("/usr/bin/mktemp -d", text)
         self.assertIn("fingerprint-enrollment.XXXXXX", text)
         self.assertIn(
-            "LOCAL QA ONLY: schema-3 release enrollment was intentionally skipped.",
+            "LOCAL QA ONLY: release-channel and integrated-publication gates are intentionally not claimed.",
             text,
         )
 

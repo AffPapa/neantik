@@ -1200,7 +1200,7 @@ enum NeAntikError: LocalizedError {
         case .browserNotFound:
             "Встроенный браузер NeAntik отсутствует или повреждён. Переустанови приложение из официального DMG или ZIP."
         case .profileAlreadyRunning:
-            "Этот профиль уже запущен."
+            "Профиль уже запускается или используется другим окном NeAntik. Дождись завершения проверки и повтори запуск."
         case .invalidProfile:
             "Укажи название до 120 символов без переносов строк и корректную стартовую страницу."
         case .profileLimitReached:
