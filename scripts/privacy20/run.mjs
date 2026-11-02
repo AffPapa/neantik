@@ -18,10 +18,20 @@ const framework=path.join(runtime,'Contents/Frameworks/NeAntik Browser Framework
 const expectedFramework='03852e945564d2e00db3849e9a26c560a0e0ad22836e8a8e83afbe50ce2e8047';assert.equal(sha(fs.readFileSync(framework)),expectedFramework);
 assert.equal(spawnSync('/usr/bin/codesign',['--verify','--deep','--strict',runtime],{stdio:'ignore'}).status,0);
 const root=fs.mkdtempSync('/private/tmp/neantik-privacy20-qa.');fs.chmodSync(root,0o700);
-const report={schemaVersion:1,status:'not-run',runtimeExecutableSHA256:expected,runtimeFrameworkSHA256:expectedFramework,releaseQualified:false,rows:[],sources:{}};
-for(const name of ['run.mjs','probe.mjs','qa-controls.mjs'])report.sources[name]=sha(fs.readFileSync(path.join(project,'scripts/privacy20',name)));
+const harnessInputs=[
+ 'scripts/privacy20/run.mjs',
+ 'scripts/privacy20/probe.mjs',
+ 'scripts/privacy20/qa-controls.mjs',
+ 'scripts/privacy20/qa-egress-sandbox.mjs',
+ 'scripts/runtime-platform/fixtures/qa-browser-environment.mjs'
+];
+const report={schemaVersion:1,status:'not-run',runtimeExecutableSHA256:expected,runtimeFrameworkSHA256:expectedFramework,releaseQualified:false,rows:[],sources:{},runtimeEnvironment:{node:process.version,platform:process.platform,arch:process.arch}};
 const evidenceInputs=path.join(output,'source-inputs');fs.mkdirSync(evidenceInputs,{mode:0o700});
-for(const name of ['run.mjs','probe.mjs','qa-controls.mjs'])fs.copyFileSync(path.join(project,'scripts/privacy20',name),path.join(evidenceInputs,name));
+for(const name of harnessInputs){
+ const source=path.join(project,name);
+ report.sources[name]=sha(fs.readFileSync(source));
+ fs.copyFileSync(source,path.join(evidenceInputs,path.basename(name)));
+}
 const resources=path.join(project,'Resources/SiteProtection');report.protectionResources=Object.fromEntries(fs.readdirSync(resources).sort().map(name=>[name,sha(fs.readFileSync(path.join(resources,name)))]));
 fs.cpSync(resources,path.join(evidenceInputs,'SiteProtection'),{recursive:true});
 

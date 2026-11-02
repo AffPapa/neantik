@@ -5,6 +5,19 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 
 class Privacy20QualificationControlsTests(unittest.TestCase):
+    def test_background_probe_evidence_binds_every_harness_policy_input(self):
+        source = (ROOT / "scripts/privacy20/run.mjs").read_text()
+        for name in (
+            "scripts/privacy20/run.mjs",
+            "scripts/privacy20/probe.mjs",
+            "scripts/privacy20/qa-controls.mjs",
+            "scripts/privacy20/qa-egress-sandbox.mjs",
+            "scripts/runtime-platform/fixtures/qa-browser-environment.mjs",
+        ):
+            self.assertIn(name, source)
+        self.assertIn("report.sources[name]=sha(fs.readFileSync(source))", source)
+        self.assertIn("runtimeEnvironment:{node:process.version,platform:process.platform,arch:process.arch}", source)
+
     def test_local_egress_profile_allows_only_exact_loopback_fixture_ports(self):
         subprocess.run(["node", "--input-type=module", "-e", """
 import assert from 'node:assert/strict';
