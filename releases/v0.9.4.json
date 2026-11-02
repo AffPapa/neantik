@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "version": "0.9.4",
+  "build": 204,
+  "tag": "v0.9.4",
+  "channel": "public-alpha",
+  "releaseQualified": true,
+  "releaseQualificationScope": "Qualified for the published Chromium-only public-alpha scope; effective proxy route remains unverified and no universal anonymity is claimed.",
+  "releaseURL": "https://github.com/AffPapa/neantik/releases/tag/v0.9.4",
+  "publishedAt": "2026-11-02T11:35:04Z",
+  "sourceCommit": "898f4fcca3f8b9b445d260a4e6e72321a3ba5eaa",
+  "mergedSourceCommit": "23e5ccafad4d524b67ef0a8cb71c7cdd5d1f2116",
+  "mergedSourceTree": "982786d97f20ffce5e3f3b1aee781e3502068096",
+  "mergedSourceTreeMatches": true,
+  "runtime": {
+    "chromiumVersion": "156.0.8078.80",
+    "architecture": "arm64",
+    "minimumOSDeclared": "14.0",
+    "webkit": "deferred",
+    "signedFrameworkSHA256": "03852e945564d2e00db3849e9a26c560a0e0ad22836e8a8e83afbe50ce2e8047",
+    "chromiumRebuild": false
+  },
+  "payloadAssets": [
+    {
+      "name": "NeAntik-0.9.4-arm64-notarized.dmg",
+      "bytes": 207719270,
+      "sha256": "bcaa84352381978cc478501c74c6578b7282d97756169babfb63beaba6eac0c9"
+    },
+    {
+      "name": "NeAntik-0.9.4-arm64-notarized.dmg.sha256",
+      "bytes": 100,
+      "sha256": "09f1a2242de28984905091568a2f367ef9806eea39c57186cbbf31f681f446ba"
+    },
+    {
+      "name": "NeAntik-0.9.4-arm64-notarized.zip",
+      "bytes": 183413284,
+      "sha256": "4bd64445fa3c6df85c7812d370098b1fa55817d8619132d5e65d3f8599eb8bf6"
+    },
+    {
+      "name": "NeAntik-0.9.4-arm64-notarized.zip.sha256",
+      "bytes": 100,
+      "sha256": "864e8622044e91b9bb4e278c25b1dc66641bf48f5a55a97566b680717ada30f7"
+    },
+    {
+      "name": "NeAntik-0.9.4-fingerprint-attestation.json",
+      "bytes": 1372,
+      "sha256": "230d2829c9139760ff996170d307ac602b30a0ad82483d36b475bd7ef2ac499e"
+    },
+    {
+      "name": "NeAntik-0.9.4-privacy-qualification.md",
+      "bytes": 2332,
+      "sha256": "9e36ff029d41c5d04b28f850bf2134a4889fb536ae05c3206a4e794417a400f2"
+    },
+    {
+      "name": "NeAntik-0.9.4-source-offer.json",
+      "bytes": 2877,
+      "sha256": "d28878575272b1bb3d28d6308ed1208860eb52406cd63821ac646a1ae13eb170"
+    },
+    {
+      "name": "NeAntik-0.9.4-source.zip",
+      "bytes": 37593298,
+      "sha256": "b4482f7843612ebf362ea34a86048dcc5aaa3a6d950013376003140b6550467c"
+    },
+    {
+      "name": "NeAntik-0.9.4-source.zip.sha256",
+      "bytes": 91,
+      "sha256": "824506cfe82b501e21297c9fb5180235c09aeccaf478e4fae6d62dea681ec7cf"
+    }
+  ],
+  "qualification": {
+    "fingerprintAba": "PASS exact candidate; attestation is public asset",
+    "effectiveProxyRoute": "UNVERIFIED; DNS/UDP/IPv6/background/WebSocket/download and proxied TURN/media are not fully qualified",
+    "notarizationAndStapling": "PASS ZIP and DMG",
+    "gatekeeperAndLocalConsumers": "PASS ZIP and DMG",
+    "hostedConsumers": "PASS exact public ZIP and DMG bytes; all 9 public assets anonymously retrievable and hashes match",
+    "ci": "PASS exact source head; run 41403959473",
+    "codeql": "PASS exact source head; run 41403959466",
+    "scope": "Single Mac qualification. This does not establish universal anonymity, recipient-machine equivalence, or complete network-route isolation."
+  },
+  "Apple": {
+    "ZIPSubmissionID": "d19b4585-2b98-40c0-b9c8-6dcdbcde36ad",
+    "DMGSubmissionID": "fc74fcdb-2d80-43c7-8b51-18b531a01406",
+    "ZIPAcceptedStapledAppGatekeeper": true,
+    "DMGAcceptedStapledContainerAndAppGatekeeper": true
+  },
+  "publicConsumers": {
+    "ZIPExactAnonymousGETAndFullConsumerGate": "PASS",
+    "DMGExactAnonymousGETAndFullConsumerGate": "PASS",
+    "all9AssetsAnonymousGETAndGitHubDigestMatch": true
+  },
+  "site": {
+    "url": "https://browser.free",
+    "projectID": "appgprj_6a643e28baa08191bf23bf4803345907",
+    "version": 173,
+    "savedVersionID": "appgprj_6a643e28baa08191bf23bf4803345907~appgver_768c4b360dc4819182304d44db8419a0",
+    "sourceCommit": "7ed424c2ae4551e1dec097c7a07a6e371ac2ff39",
+    "deploymentID": "appgdep_6ae877535da881919ded20ab01813fe2",
+    "archive": "browserfree-site-v173-094-20261102.tar.gz",
+    "archiveSHA256": "95aa2914c4dec468cbd78cdf5a5026cfacf6927d81525cbec565f510e4832ee7",
+    "localBuildTests": "42 PASS",
+    "liveReleaseAndSignedFeed": "PASS",
+    "feedSHA256": "054aa7a22cbde28ada666e41568ed4ee885ca0e7ef96d23d4efc953c4d319f62",
+    "feedExpiresAt": "2026-11-15T11:42:05Z"
+  },
+  "sourceOffer": {
+    "url": "https://github.com/AffPapa/neantik/releases/download/v0.9.4/NeAntik-0.9.4-source-offer.json",
+    "sourceArchiveSHA256": "b4482f7843612ebf362ea34a86048dcc5aaa3a6d950013376003140b6550467c",
+    "sourceArchiveBytes": 37593298,
+    "base": "Immutable v0.9.1 five-part source/relink kit retained",
+    "boundary": "Same-Mac recipient compile/relink/load; no full-clean Chromium rebuild or independent hardware/historical SDK equivalence"
+  },
+  "snapshotNote": "The immutable source commit changelog labels 0.9.4 as a candidate because it was accurate at source commit time; current publication state is represented by this record, GitHub release and browser.free. Do not rewrite published source/tag/archive.",
+  "assets": [
+    {
+      "name": "NeAntik-0.9.4-arm64-notarized.dmg",
+      "bytes": 207719270,
+      "sha256": "bcaa84352381978cc478501c74c6578b7282d97756169babfb63beaba6eac0c9"
+    },
+    {
+      "name": "NeAntik-0.9.4-arm64-notarized.dmg.sha256",
+      "bytes": 100,
+      "sha256": "09f1a2242de28984905091568a2f367ef9806eea39c57186cbbf31f681f446ba"
+    },
+    {
+      "name": "NeAntik-0.9.4-arm64-notarized.zip",
+      "bytes": 183413284,
+      "sha256": "4bd64445fa3c6df85c7812d370098b1fa55817d8619132d5e65d3f8599eb8bf6"
+    },
+    {
+      "name": "NeAntik-0.9.4-arm64-notarized.zip.sha256",
+      "bytes": 100,
+      "sha256": "864e8622044e91b9bb4e278c25b1dc66641bf48f5a55a97566b680717ada30f7"
+    },
+    {
+      "name": "NeAntik-0.9.4-fingerprint-attestation.json",
+      "bytes": 1372,
+      "sha256": "230d2829c9139760ff996170d307ac602b30a0ad82483d36b475bd7ef2ac499e"
+    },
+    {
+      "name": "NeAntik-0.9.4-privacy-qualification.md",
+      "bytes": 2332,
+      "sha256": "9e36ff029d41c5d04b28f850bf2134a4889fb536ae05c3206a4e794417a400f2"
+    },
+    {
+      "name": "NeAntik-0.9.4-source-offer.json",
+      "bytes": 2877,
+      "sha256": "d28878575272b1bb3d28d6308ed1208860eb52406cd63821ac646a1ae13eb170"
+    },
+    {
+      "name": "NeAntik-0.9.4-source.zip",
+      "bytes": 37593298,
+      "sha256": "b4482f7843612ebf362ea34a86048dcc5aaa3a6d950013376003140b6550467c"
+    },
+    {
+      "name": "NeAntik-0.9.4-source.zip.sha256",
+      "bytes": 91,
+      "sha256": "824506cfe82b501e21297c9fb5180235c09aeccaf478e4fae6d62dea681ec7cf"
+    }
+  ],
+  "artifacts": [
+    {
+      "name": "NeAntik-0.9.4-arm64-notarized.zip",
+      "bytes": 183413284,
+      "sha256": "4bd64445fa3c6df85c7812d370098b1fa55817d8619132d5e65d3f8599eb8bf6"
+    },
+    {
+      "name": "NeAntik-0.9.4-arm64-notarized.dmg",
+      "bytes": 207719270,
+      "sha256": "bcaa84352381978cc478501c74c6578b7282d97756169babfb63beaba6eac0c9"
+    }
+  ]
+}

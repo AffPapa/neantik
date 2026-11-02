@@ -1,6 +1,6 @@
 # NeAntik local MCP: profile management
 
-**Draft scope:** This guide documents PR108's next-candidate MCP behavior. Public 0.9.3 does not include PR108's cancellation handling, read-only process snapshot, or `storage_state_uncertain` response. Do not infer that these capabilities are available in the published release until a later release includes them.
+**Current public scope:** Public 0.9.4 includes the MCP cancellation handling, read-only process observation and `storage_state_uncertain` response described below. The private 0.9.5 hotfix candidate is not published; candidate-only behavior must not be presented as public until a release includes it.
 
 The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. For Chromium and metadata operations the manager GUI may be closed. WebKit is deferred and cannot be launched in the current Chromium-only release; historical WebKit notes below do not describe the current build. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Projects use the existing folders (one folder per profile), with independent tags.
 
@@ -68,7 +68,7 @@ The five additional read tools are available in read mode. Other tools require m
 
 `prompts/list` offers organize_project, review_workspace and prepare_profile. `prompts/get` returns static user-selected guidance with no arguments, workspace interpolation or tool execution. Read mode guidance never asks for writes. Tool outputSchema declares public success DTOs. Tool failures use isError with namespaced `_meta` app.neantik/errorCode, app.neantik/nextAction and automaticRetry:false; names/values are untrusted data.
 
-The next candidate reports `storage_state_uncertain` when a profile save and its rollback both fail. Do not retry automatically: inspect the current profile and folder state first. This response contains no underlying paths or error details. Public 0.9.3 does not yet include this change.
+The next candidate reports `storage_state_uncertain` when a profile save and its rollback both fail. Do not retry automatically: inspect the current profile and folder state first. This response contains no underlying paths or error details. This response is included in the public 0.9.4 release.
 
 ## Safe workflow
 
@@ -93,7 +93,7 @@ Manager metadata refresh preserves open editor drafts. Saving an outdated draft 
 
 ### Observe a browser owned by this session
 
-Published 0.9.3 `profile_status` accepts an explicit observation request:
+Published 0.9.4 `profile_status` accepts an explicit observation request:
 
 ```json
 {
@@ -232,7 +232,7 @@ diagnostic fixture uses its explicit target without changing this setting.
 
 ## Development privacy-policy contract
 
-Published 0.9.3 supports `changes.privacyPreset` (`legacy`, `balanced`,
+Published 0.9.4 supports `changes.privacyPreset` (`legacy`, `balanced`,
 `strict`) in profile creation and update. Missing fields preserve existing saved policy.
 On update, selecting `balanced` or `strict` does not change an omitted
 `fontPolicy`, unlike the GUI preset picker. To request the GUI's font choice
