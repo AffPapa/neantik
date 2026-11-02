@@ -772,6 +772,13 @@ private struct QueuedBrowserReconcile {
     let retryCount: Int
 }
 
+private enum BrowserLaunchDiagnosticStage: String {
+    case preparation = "launch-preparation"
+    case siteProtection = "site-protection-preparation"
+    case processStart = "chromium-start"
+    case sessionRegistration = "session-registration"
+}
+
 @MainActor
 final class BrowserProcessManager: ObservableObject {
     @Published private(set) var runningProfileIDs = Set<UUID>()
@@ -2640,6 +2647,7 @@ final class BrowserProcessManager: ObservableObject {
             transientEmptyProfileDirectoryIDs.insert(profile.id)
         }
 
+        var diagnosticStage = BrowserLaunchDiagnosticStage.preparation
         do {
             try prepareDiagnosticLog(logURL)
             try fingerprintDirectoryCustody?.validate()
@@ -2654,6 +2662,7 @@ final class BrowserProcessManager: ObservableObject {
                 try EphemeralProfileStorage.prepareLaunch(paths: paths, profile: profile)
             }
             if runtime.supportsProfilePrivacy && purpose == .normal {
+                diagnosticStage = .siteProtection
                 guard let resources = Bundle.main.resourceURL else { throw SiteProtectionPreparationError() }
                 let protection = try SiteProtectionBundle.prepare(
                     resources: resources.appendingPathComponent("SiteProtection", isDirectory: true),
@@ -2672,12 +2681,14 @@ final class BrowserProcessManager: ObservableObject {
                     ownsFreshFingerprintAuditDirectory,
                 at: lockURL
             ) {
+                diagnosticStage = .processStart
                 try process.run()
                 guard process.isRunning, process.processIdentifier > 0 else {
                     throw BrowserStartLeaseSupersededError(reason: .childExited)
                 }
                 return process.processIdentifier
             }
+            diagnosticStage = .sessionRegistration
             withExtendedLifetime((auditDirectoryCustody, fingerprintDirectoryCustody)) {}
             processes[profile.id] = process
             runningProfileIDs.insert(profile.id)
@@ -2738,7 +2749,7 @@ final class BrowserProcessManager: ObservableObject {
                 throw NeAntikError.profileAlreadyRunning
             }
             try? appendDiagnostic(
-                "browser_launch_failed reason=process-launch-error",
+                "browser_launch_failed stage=\(diagnosticStage.rawValue) reason=process-launch-error",
                 to: logURL
             )
             if error is UnsupportedBrowserFontPolicyError { throw error }

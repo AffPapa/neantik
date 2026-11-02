@@ -144,6 +144,43 @@ struct BrowserProcessManagerTests {
         #expect(manager.runningProfileIDs.isEmpty)
         #expect(!FileManager.default.fileExists(atPath: AppPaths(rootDirectory: root).lockFile(for: profile.id).path))
     }
+
+    @Test
+    func failedChromiumStartLogsClosedStageWithoutSystemErrorDetails() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("synthetic-launch-diagnostic-\(UUID())", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let manager = BrowserProcessManager(
+            launchAdmission: nominalAdmission,
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        defer { manager.suspendPassiveObservations() }
+        let profile = BrowserProfile(name: "Synthetic launch diagnostic")
+        let runtime = BrowserRuntime(
+            name: "Missing synthetic executable",
+            executableURL: root.appendingPathComponent("private-missing-executable"),
+            source: "Synthetic"
+        )
+
+        do {
+            try manager.launch(profile: profile, runtime: runtime)
+            Issue.record("Missing synthetic executable unexpectedly launched")
+        } catch let error as NeAntikError {
+            guard case .processLaunchFailed = error else {
+                Issue.record("Unexpected launch error category")
+                return
+            }
+        }
+
+        let log = try String(contentsOf: paths.logFile(for: profile.id), encoding: .utf8)
+        #expect(log.contains("browser_launch_failed stage=chromium-start reason=process-launch-error"))
+        #expect(!log.contains(root.path))
+        #expect(!log.localizedCaseInsensitiveContains("no such file"))
+    }
+
     @Test(arguments: [ProxyKind.http, .https])
     func authenticatedHTTPLoopbackAuditStillRequiresAuditReservation(kind: ProxyKind) throws {
         let root = URL(fileURLWithPath: "/private/tmp/neantik-audit-proxy-" + UUID().uuidString)
