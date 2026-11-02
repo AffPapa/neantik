@@ -13,6 +13,9 @@
   check, diagnose failures, and batch source/license and release closure once.
 - Reuse matching prior evidence; do not turn inventory, audit or checkpoint
   updates into new gates. Record only the next decision-changing action.
+- Before a retry, identify the changed candidate bytes, harness or environment;
+  distinguish preparation, launcher, browser process and measured route.
+  An unchanged failure after two attempts requires boundary diagnosis first.
 - Direct Distribution only: GitHub `AffPapa/neantik` and browser.free via the
   existing Sites project. Preserve Developer ID, notarization, stapling,
   Gatekeeper, immutable assets and rollback. Never use App Store Connect.
