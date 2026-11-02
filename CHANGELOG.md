@@ -4,6 +4,7 @@
 
 - Fix manager-only packaging so Chromium's sealed SiteProtection resources are refreshed and checked against the manager pin before signing. This addresses a startup failure in 0.9.4; Chromium 156.0.8078.80 is unchanged.
 - Recover expired profile-start leases only after checking browser-data and proxy-relay ownership; fence process launch and the running lease under the same profile guard so a delayed retry cannot create a second browser.
+- Align the MCP `prepare_profile` guidance with its credential boundary: proxy usernames and passwords must be entered in the local NeAntik UI, not sent through MCP.
 - The candidate still requires exact proxy-route QA and Direct Distribution qualification. No anonymity or anti-fraud detector-avoidance claim is made.
 
 ## Direct 0.9.4 (204) — published Chromium-only public alpha
