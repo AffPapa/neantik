@@ -51,7 +51,11 @@ export function queryCleanupRules(enabled) {
   // filter is not a general redirect/bounce-tracking remover.
   // Factor one repeated key/value token to stay within Chromium's2KiB RE2 budget.
   const key = '(?:utm_(?:source|medium|campaign|term|content|id)|gclid|fbclid|dclid|msclkid|mc_(?:cid|eid))';
-  const regex = `^https?://[^?#]+\\?(?:${key}=[^&#]*(?:&|$))+$`;
+  // Long opaque path segments commonly carry signatures or one-time tokens.
+  // Keep the whole URL intact when one is present; query-only signatures are
+  // already preserved by requiring every query key to be in the allowlist.
+  const path = '(?:/[^/?#]{1,31})*/?';
+  const regex = `^https?://[^/?#]+${path}\\?(?:${key}=[^&#]*(?:&|$))+$`;
   return [{id: 2000, priority: 50, action: {type: 'redirect', redirect: {transform: {queryTransform: {removeParams: [...TRACKING_PARAMETERS]}}}}, condition: {regexFilter: regex, isUrlFilterCaseSensitive: true, resourceTypes: ['main_frame'], requestMethods: ['get']}}];
 }
 

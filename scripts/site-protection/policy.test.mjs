@@ -28,15 +28,15 @@ test('query cleanup preserves unknown OAuth payment signatures and mixed queries
   assert.deepEqual(rule.condition.requestMethods, ['get']);
 });
 
-test('signature outside the query can be invalidated by cleanup', () => {
+test('cleanup preserves signed and opaque-token paths', () => {
   const sign = query => createHmac('sha256', 'synthetic-test-key').update('/document?' + query).digest('hex');
   const query = 'utm_source=synthetic';
   const url = new URL(`https://owned.invalid/signed/${sign(query)}?${query}`);
   const [rule] = queryCleanupRules(true);
-  assert.ok(new RegExp(rule.condition.regexFilter).test(url.href));
-  assert.equal(url.pathname.split('/').at(-1), sign(url.search.slice(1)));
-  for (const key of rule.action.redirect.transform.queryTransform.removeParams) url.searchParams.delete(key);
-  assert.notEqual(url.pathname.split('/').at(-1), sign(url.search.slice(1)));
+  const matches = new RegExp(rule.condition.regexFilter);
+  assert.ok(!matches.test(url.href));
+  assert.ok(!matches.test('https://owned.invalid/callback/eyJhbGciOiJIUzI1NiJ9abcDEF012345678901234567890123456789?utm_source=synthetic'));
+  assert.ok(matches.test('https://owned.invalid/articles/normal-path?utm_source=synthetic'));
 });
 
 test('tracker exception does not become a threat allow rule', () => {
