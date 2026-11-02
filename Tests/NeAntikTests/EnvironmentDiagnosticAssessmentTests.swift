@@ -4,6 +4,32 @@ import Testing
 
 struct EnvironmentDiagnosticAssessmentTests {
     @Test
+    func chromiumSiteThreatProtectionIsExplicitlyUnavailable() throws {
+        let snapshot = makeSnapshot()
+        let threat = try field("site-protection.phishing-malware", in: snapshot)
+
+        #expect(threat.value == "Не включена")
+        #expect(threat.state == .unavailable)
+        #expect(threat.severity == .attention)
+        #expect(threat.detail?.contains("не проверяет адреса") == true)
+    }
+
+    @Test
+    func systemWebKitThreatProtectionRemainsUnverified() throws {
+        let profile = BrowserProfile(name: "System WebKit", engine: .webkit)
+        let snapshot = ProfileEnvironmentInspector.snapshot(
+            profile: profile,
+            runtime: nil,
+            proxyHealth: nil
+        )
+        let threat = try field("site-protection.phishing-malware", in: snapshot)
+
+        #expect(threat.value == "Не проверено NeAntik")
+        #expect(threat.state == .unverified)
+        #expect(threat.detail?.contains("Возможности macOS не квалифицированы") == true)
+    }
+
+    @Test
     func badRuntimeSignatureIsAnObservedFailure() throws {
         let snapshot = makeSnapshot(runtimeSignature: false)
         let signature = try field(

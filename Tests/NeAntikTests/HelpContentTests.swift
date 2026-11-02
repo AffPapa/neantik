@@ -3,6 +3,12 @@ import Testing
 @testable import NeAntik
 
 struct HelpContentTests {
+    @Test func environmentHelpDisclosesThreatProtectionLimits() {
+        let text = HelpTopic.environment.sections.map(\.text).joined(separator: " ")
+        #expect(text.contains("Встроенная защита NeAntik от известных фишинговых сайтов и вредоносных загрузок не включена"))
+        #expect(text.contains("возможности macOS для системного WebKit не квалифицированы"))
+    }
+
     @Test func profileHelpExplainsDisposableDataRetention() {
         #expect(!HelpTopic.profiles.introduction.contains("постоянная сессия"))
         let section = HelpTopic.profiles.sections.first { $0.title == "Одноразовый сеанс" }

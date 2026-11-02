@@ -239,6 +239,7 @@ enum ProfileEnvironmentInspector {
             generatedAt: now,
             sections: [
                 protectionSection(profile: profile, runtime: runtime, parametersSent: privacyParametersSent),
+                siteProtectionSection(profile: profile),
                 routeSection(
                     policy: policy,
                     proxyHealth: proxyHealth,
@@ -359,6 +360,31 @@ enum ProfileEnvironmentInspector {
                     value: "Полная несопоставимость не подтверждена",
                     state: .unverified,
                     detail: "Общий внешний IP, одинаковые аккаунты, файлы и поведение могут связывать посещения даже при разных настройках среды."
+                )
+            ]
+        )
+    }
+
+    private static func siteProtectionSection(
+        profile: BrowserProfile
+    ) -> EnvironmentDiagnosticSection {
+        let isChromium = profile.engine == .chromium
+        return EnvironmentDiagnosticSection(
+            id: "site-protection",
+            title: "Защита сайтов",
+            fields: [
+                EnvironmentDiagnosticField(
+                    id: "site-protection.phishing-malware",
+                    title: "Фишинг и вредоносные загрузки",
+                    value: isChromium
+                        ? "Не включена"
+                        : "Не проверено NeAntik",
+                    state: isChromium ? .unavailable : .unverified,
+                    severity: .attention,
+                    detail: isChromium
+                        ? "Текущий Chromium runtime не проверяет адреса по списку угроз и не показывает предупреждения о таких сайтах. Не считай этот профиль защищённым от фишинга или вредоносных загрузок."
+                        : "NeAntik не проверяет защиту системного WebKit от таких сайтов. " +
+                            "Возможности macOS не квалифицированы; не считай их подтверждёнными NeAntik."
                 )
             ]
         )
