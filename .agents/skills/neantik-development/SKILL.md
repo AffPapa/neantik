@@ -215,7 +215,11 @@ environment. Release gates remain separate from this lifecycle check.
   A build is not native behavior. Bind GUI checks to its actual app/PID/root;
   after quit verify exit rather than rediscovering/relaunching the app. A CUA
   `getAXState()` on a bound app after ⌘Q may reopen that app; verify the exact
-  process path with a read-only process check instead.
+  process path with a read-only process check instead. If a later gate is
+  deferred or becomes ineligible, quit the exact candidate manager too and
+  verify its PID/path has exited; a stopped profile/runtime child does not
+  mean the manager exited. Do not leave a QA manager open while waiting for
+  admission or another gate.
   For owned WebKit qualification, inspect the persisted test profile before
   launch and require `engine=webkit` plus
   `webKitRuntimeGeneration=isolatedV1`; profile creation defaults to `.system`.
