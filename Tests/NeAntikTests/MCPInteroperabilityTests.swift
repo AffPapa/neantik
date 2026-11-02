@@ -238,6 +238,11 @@ struct MCPInteroperabilityTests {
         let prompt = try await request(session, "prompts/get", ["name": "organize_project"], modern: true)
         let bytes = try JSONSerialization.data(withJSONObject: prompt)
         #expect(String(decoding: bytes, as: UTF8.self).contains("Read mode"))
+        let prepare = try await request(session, "prompts/get", ["name": "prepare_profile"], modern: true)
+        let prepareText = String(decoding: try JSONSerialization.data(withJSONObject: prepare), as: UTF8.self)
+        #expect(prepareText.contains("Do not request or accept proxy usernames or passwords through MCP"))
+        #expect(prepareText.contains("enter proxy credentials directly in the NeAntik UI"))
+        #expect(!prepareText.contains("write-only proxy fields"))
         #expect(try await request(session, "prompts/get", ["name": "unknown"], modern: true)["error"] != nil)
         let denied = try await request(session, "tools/call", ["name": "profile_create", "arguments": ["name": "Denied"]], modern: true)["result"] as! [String: Any]
         #expect((denied["_meta"] as? [String: Any])?["app.neantik/errorCode"] as? String == "management_disabled")
