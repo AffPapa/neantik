@@ -24,7 +24,7 @@ enum ProfileConfigurationEncryptionError: LocalizedError, Equatable, Sendable {
     var errorDescription: String? {
         switch self {
         case .weakPassphrase:
-            "Пароль должен содержать минимум 12 байт UTF-8 без управляющих знаков."
+            "Пароль должен содержать 12–512 байт UTF-8, не состоять только из пробелов и не содержать управляющих знаков."
         case .invalidEnvelope:
             "Зашифрованный файл конфигурации повреждён."
         case .unsupportedEnvelope:

@@ -105,11 +105,19 @@ struct ProfileConfigurationTransferTests {
         let document = try ProfileConfigurationTransferDocument(
             profiles: [BrowserProfile(name: "Профиль")]
         )
+        #expect(ProfileConfigurationEncryptionError.weakPassphrase.errorDescription?
+            .contains("12–512 байт UTF-8") == true)
 
         #expect(throws: ProfileConfigurationEncryptionError.weakPassphrase) {
             try ProfileConfigurationEncryption.seal(
                 document: document,
                 passphrase: "short"
+            )
+        }
+        #expect(throws: ProfileConfigurationEncryptionError.weakPassphrase) {
+            try ProfileConfigurationEncryption.seal(
+                document: document,
+                passphrase: String(repeating: "a", count: 513)
             )
         }
 
