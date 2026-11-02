@@ -286,8 +286,13 @@ fi
 echo
 echo "PASS: NeAntik Dev.app готов за ${BUILD_SECONDS} с."
 echo "Приложение: $DEVELOPMENT_APP"
-echo "Данные: ~/Library/Application Support/NeAntik Development"
-echo "Связка ключей: app.neantik.dev.proxy"
+if (( USE_FRESH_FIXTURE == 1 )); then
+  echo "Данные: $DEVELOPMENT_FIXTURE_ROOT (временный стенд)"
+  echo "Пароли: изолированное тестовое хранилище"
+else
+  echo "Данные: ~/Library/Application Support/NeAntik Development"
+  echo "Связка ключей: app.neantik.dev.proxy"
+fi
 
 if (( SHOULD_OPEN == 1 )); then
   /usr/bin/osascript \

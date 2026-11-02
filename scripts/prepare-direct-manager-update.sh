@@ -26,6 +26,10 @@ CANDIDATE_RUNTIME="$CANDIDATE_APP/Contents/Resources/NeAntik Browser.app"
 BUILD_SUPPORT_DIR="${NEANTIK_BUILD_SUPPORT_DIR:-/private/tmp/neantik-direct-manager-update}"
 SECURITY_BASELINE_ARGS=()
 PREPARATION_MODE="${NEANTIK_MANAGER_PREPARATION_MODE:-complete}"
+case "${NEANTIK_CHROMIUM_ONLY:-0}" in
+  0|1) ;;
+  *) echo "NEANTIK_CHROMIUM_ONLY must be 0 or 1." >&2; exit 64 ;;
+esac
 case "$PREPARATION_MODE" in
   complete) ;;
   bundle-only)
@@ -131,6 +135,22 @@ verify_reviewed_runtime_evidence() {
       ;;
     156.0.8078.74)
       source_contract="$PROJECT_DIR/runtime/chromium-15674-source-contract.json"
+      ;;
+    156.0.8078.80)
+      local m15680_variant
+      m15680_variant="$(plutil -extract variant raw -o - "$evidence/fingerprint-chromium.lock.json" 2>/dev/null || true)"
+      case "$m15680_variant" in
+        recipient-privacy-policy-v1)
+          source_contract="$PROJECT_DIR/runtime/chromium-15680-privacy-v1-source-contract.json"
+          ;;
+        "")
+          source_contract="$PROJECT_DIR/runtime/chromium-15680-source-contract.json"
+          ;;
+        *)
+          echo "Unsupported Chromium 156.80 runtime variant for manager-only update." >&2
+          exit 65
+          ;;
+      esac
       ;;
     *)
       echo "Unsupported Chromium runtime version for manager-only update: $runtime_version" >&2
@@ -277,6 +297,10 @@ case "$WEBKIT_HOST_ENABLED" in
   0|1) ;;
   *) echo "NEANTIK_WEBKIT_HOST_ENABLED must be 0 or 1." >&2; exit 64 ;;
 esac
+if [[ "${NEANTIK_CHROMIUM_ONLY:-0}" == "1" && "$WEBKIT_HOST_ENABLED" == "1" ]]; then
+  echo "Chromium-only manager cannot include the owned WebKit host." >&2
+  exit 78
+fi
 if [[ "${NEANTIK_RELEASE_CHANNEL:-}" == "production" ]]; then
   if [[ "$WEBKIT_HOST_ENABLED" != "1" ]]; then
     echo "Production release requires the owned WebKit host; refusing a proxy-enabled manager-only candidate." >&2
@@ -403,6 +427,11 @@ python3 "$PROJECT_DIR/scripts/sanitize-manager-rpaths.py" "$CANDIDATE_APP/Conten
 xcrun strip -S "$CANDIDATE_APP/Contents/MacOS/NeAntik"
 cp "$PROJECT_DIR/Resources/Info.plist" \
   "$CANDIDATE_APP/Contents/Info.plist"
+if [[ "${NEANTIK_CHROMIUM_ONLY:-0}" == "1" ]]; then
+  /usr/libexec/PlistBuddy \
+    -c 'Add :NeAntikEngineScope string chromium-only' \
+    "$CANDIDATE_APP/Contents/Info.plist"
+fi
 if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
   python3 "$PROJECT_DIR/scripts/package-update-helpers.py" "$CANDIDATE_APP" "$BIN_PATH" -
 else

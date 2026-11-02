@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createHash, createHmac} from 'node:crypto';
+import {readFileSync} from 'node:fs';
 import {canonicalDomain, parseDomains, threatRules, trackerRules, queryCleanupRules, replaceThreatRules, limitedText, RESOURCE_TYPES} from '../../Resources/SiteProtection/policy.mjs';
 
 test('domain normalization is bounded and never broadens to parent hosts', () => {
@@ -25,6 +27,33 @@ test('query cleanup preserves unknown OAuth payment signatures and mixed queries
   for (const url of ['https://example.com/?code=x&utm_source=y', 'https://example.com/?signature=x&utm_source=y', 'https://example.com/?X-Amz-Signature=x&utm_source=y','https://example.com/?order=1&utm_source=x','https://example.com/?utm_source=x&value=y','https://example.com/?url=https%3A%2F%2Fother.invalid']) assert.ok(!re.test(url), url);
   assert.deepEqual(queryCleanupRules(false), []);
   assert.deepEqual(rule.condition.requestMethods, ['get']);
+});
+
+test('cleanup preserves signed and opaque-token paths', () => {
+  const sign = query => createHmac('sha256', 'synthetic-test-key').update('/document?' + query).digest('hex');
+  const query = 'utm_source=synthetic';
+  const url = new URL(`https://owned.invalid/signed/${sign(query)}?${query}`);
+  const [rule] = queryCleanupRules(true);
+  const matches = new RegExp(rule.condition.regexFilter);
+  assert.ok(!matches.test(url.href));
+  assert.ok(!matches.test('https://owned.invalid/callback/eyJhbGciOiJIUzI1NiJ9abcDEF012345678901234567890123456789?utm_source=synthetic'));
+  assert.ok(matches.test('https://owned.invalid/articles/normal-path?utm_source=synthetic'));
+});
+
+test('packaged DNR rule matches policy and every sealed resource hash', () => {
+  const resources = new URL('../../Resources/SiteProtection/', import.meta.url);
+  const packaged = JSON.parse(readFileSync(new URL('query-rules.json', resources), 'utf8'));
+  assert.deepEqual(packaged, queryCleanupRules(true));
+
+  const sealBytes = readFileSync(new URL('seal.json', resources));
+  const seal = JSON.parse(sealBytes);
+  for (const [name, expected] of Object.entries(seal.files)) {
+    const actual = createHash('sha256').update(readFileSync(new URL(name, resources))).digest('hex');
+    assert.equal(actual, expected, `sealed resource changed: ${name}`);
+  }
+  const source = readFileSync(new URL('../../Sources/NeAntik/SiteProtectionBundle.swift', import.meta.url), 'utf8');
+  const pinned = source.match(/static let sealSHA256 = "([0-9a-f]{64})"/)?.[1];
+  assert.equal(createHash('sha256').update(sealBytes).digest('hex'), pinned);
 });
 
 test('tracker exception does not become a threat allow rule', () => {

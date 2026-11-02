@@ -3,6 +3,43 @@ import Testing
 @testable import NeAntik
 
 struct ProfileEnvironmentInspectorTests {
+    @Test func startPagePassportMatchesNormalLaunchForFirstRestoreAndEphemeralSessions() throws {
+        for start in ["about:blank", "https://owned.invalid/"] {
+            for launched in [false, true] {
+                for ephemeral in [false, true] {
+                    var profile = BrowserProfile(name: "Synthetic start", startURL: start, privacyPolicy: .balanced)
+                    profile.startupMode = .restoreSession
+                    profile.lastLaunchedAt = launched ? Date(timeIntervalSince1970: 100) : nil
+                    profile.privacyPolicy.retention = ephemeral ? .ephemeral : .persistent
+                    let snapshot = ProfileEnvironmentInspector.snapshot(profile: profile, runtime: nil, proxyHealth: nil)
+                    let entry = try field("protection.start-page", in: snapshot)
+                    let restoring = launched && !ephemeral
+                    #expect(entry.value == (restoring ? "Сохранённые вкладки" : (start == "about:blank" ? "Локальная пустая страница" : "Выбранная веб-страница")))
+                    let args = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: URL(fileURLWithPath: "/private/tmp/neantik-start-fixture"))
+                    #expect(args.contains(restoring ? "--restore-last-session" : "--new-window"))
+                    #expect(restoring ? !args.contains(start) : args.last == start)
+                }
+            }
+        }
+    }
+    @Test func extensionPassportMatchesProxyAndPrivacyMode() throws {
+        var custom = BrowserPrivacyPolicy.strict
+        custom.trackingParameterCleanup = false
+        var disposableBalanced = BrowserPrivacyPolicy.balanced
+        disposableBalanced.retention = .ephemeral
+        for (policy, proxied, disabled) in [(BrowserPrivacyPolicy.balanced, false, false), (.balanced, true, true), (.strict, false, true), (custom, false, true), (disposableBalanced, false, false)] {
+            var profile = BrowserProfile(name: "Protection fixture")
+            profile.privacyPolicy = policy
+            if proxied { profile.proxy = ProxyConfiguration(kind: .http, host: "127.0.0.1", port: 8080, username: "") }
+            let snapshot = ProfileEnvironmentInspector.snapshot(profile: profile, runtime: nil, proxyHealth: nil)
+            let entry = try field("protection.extensions", in: snapshot)
+            let detail = try #require(entry.detail)
+            #expect(detail.contains(disabled ? "При запуске совместимого движка передаётся ограничение обычных расширений." : "Отдельные расширения профиля разрешены."))
+            #expect(detail.contains("обязательный прокси закреплён") == proxied)
+            #expect(entry.state == .configured)
+        }
+    }
+
     @Test(arguments: [false, true])
     func passportUsesRequestedSyncAutofillRestriction(restricted: Bool) throws {
         var profile = BrowserProfile(name: "Owned custom privacy fixture")

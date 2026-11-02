@@ -4,6 +4,114 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPInteroperabilityTests {
+    #if DEBUG
+    @Test func stdioProxyToolsRejectCredentialInputBeforeProfileOrKeychainWrite() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("mcp-proxy-credential-boundary-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let backend = MCPProfileManagementTests.Backend()
+        let engine = MCPProfileManagement(root: root, allowsManagement: true,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp-boundary", legacyService: nil),
+            processes: BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false },
+                browserDataProcessInspector: { _ in .absent }, allowsExternalProcessSignaling: false))
+        let session = MCPManagementSession(root: root, allowsManagement: true, testingEngine: engine)
+
+        let listed = try await request(session, "tools/list", modern: true)
+        let tools = try #require((listed["result"] as? [String: Any])?["tools"] as? [[String: Any]])
+        let setProxy = try #require(tools.first { $0["name"] as? String == "profile_set_proxy" })
+        let schema = try #require(setProxy["inputSchema"] as? [String: Any])
+        let properties = try #require(schema["properties"] as? [String: Any])
+        #expect(properties["order"] == nil)
+        let proxyInput = try #require(properties["proxy"] as? [String: Any])
+        let choices = try #require(proxyInput["anyOf"] as? [[String: Any]])
+        let objectChoice = try #require(choices.first(where: { $0["type"] as? String == "object" }))
+        let proxyFields = try #require(objectChoice["properties"] as? [String: Any])
+        #expect(Set(proxyFields.keys) == ["kind", "host", "port"])
+
+        let createRejected = try await request(session, "tools/call", ["name": "profile_create", "arguments": [
+            "name": "Rejected proxy", "proxy": ["kind": "http", "host": "127.0.0.1", "port": 8080,
+                "username": "synthetic-user", "password": "synthetic-secret"]]], modern: true)
+        let createError = try #require(createRejected["result"] as? [String: Any])
+        #expect(createError["isError"] as? Bool == true)
+        #expect((createError["_meta"] as? [String: Any])?["app.neantik/errorCode"] as? String == "invalid_fields")
+        #expect(engine.store.profiles.isEmpty && backend.values.isEmpty)
+        #expect(!String(decoding: try JSONSerialization.data(withJSONObject: createRejected), as: UTF8.self).contains("synthetic-secret"))
+
+        let created = try await request(session, "tools/call", ["name": "profile_create", "arguments": [
+            "name": "Endpoint only", "proxy": ["kind": "http", "host": "proxy.synthetic.example", "port": 8080]]], modern: true)
+        let createdResult = try #require((created["result"] as? [String: Any])?["structuredContent"] as? [String: Any])
+        let profileID = try #require(UUID(uuidString: createdResult["id"] as! String))
+        let before = try Data(contentsOf: paths.profilesFile)
+        let setRejected = try await request(session, "tools/call", ["name": "profile_set_proxy", "arguments": [
+            "profileID": profileID.uuidString, "expectedRevision": createdResult["revision"]!,
+            "proxy": ["kind": "http", "host": "127.0.0.2", "port": 8081,
+                "username": "synthetic-user", "password": "synthetic-secret"]]], modern: true)
+        let setError = try #require(setRejected["result"] as? [String: Any])
+        #expect(setError["isError"] as? Bool == true)
+        #expect((setError["_meta"] as? [String: Any])?["app.neantik/errorCode"] as? String == "invalid_fields")
+        #expect(try Data(contentsOf: paths.profilesFile) == before && backend.values.isEmpty)
+        #expect(!String(decoding: try JSONSerialization.data(withJSONObject: setRejected), as: UTF8.self).contains("synthetic-secret"))
+    }
+
+    @Test func readOnlyMCPProfileGetExposesDNSPolicyWithExplicitUnverifiedRoute() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("mcp-network-policy-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let writer = MCPProfileManagement(root: root, allowsManagement: true)
+        let profile = try writer.store.upsert(BrowserProfile(
+            name: "Synthetic proxy profile",
+            proxy: ProxyConfiguration(kind: .http, host: "proxy.synthetic.example", port: 8080, username: "fixture-user")
+        ))
+        let reader = MCPProfileManagement(root: root, allowsManagement: false)
+        let session = MCPManagementSession(root: root, allowsManagement: false, testingEngine: reader)
+
+        let listed = try await request(session, "tools/list", modern: true)
+        let tools = try #require((listed["result"] as? [String: Any])?["tools"] as? [[String: Any]])
+        let profileGet = try #require(tools.first { $0["name"] as? String == "profile_get" })
+        #expect((profileGet["annotations"] as? [String: Any])?["readOnlyHint"] as? Bool == true)
+        let outputSchema = try #require(profileGet["outputSchema"] as? [String: Any])
+        #expect(((outputSchema["properties"] as? [String: Any])?["networkPolicyIntent"] as? [String: Any]) != nil)
+
+        let reply = try await request(session, "tools/call", ["name": "profile_get", "arguments": ["profileID": profile.id.uuidString]], modern: true)
+        let result = try #require(reply["result"] as? [String: Any])
+        let value = try #require(result["structuredContent"] as? [String: Any])
+        let policy = try #require(value["networkPolicyIntent"] as? [String: Any])
+        #expect(policy["proxyHostnameDNS"] as? String == "systemResolverMayResolveProxyHostname")
+        #expect(policy["runtimeRoute"] as? String == "unverified")
+        let encoded = String(decoding: try JSONSerialization.data(withJSONObject: result), as: UTF8.self)
+        #expect(!encoded.contains("proxy.synthetic.example") && !encoded.contains("fixture-user"))
+
+        let denied = try await request(session, "tools/call", ["name": "profile_set_proxy", "arguments": ["profileID": profile.id.uuidString]], modern: true)
+        let deniedResult = try #require(denied["result"] as? [String: Any])
+        #expect(deniedResult["isError"] as? Bool == true)
+        #expect((deniedResult["_meta"] as? [String: Any])?["app.neantik/errorCode"] as? String == "management_disabled")
+        #expect(reader.store.profile(withID: profile.id)?.revision == profile.revision)
+    }
+
+    @Test func failedCommitAndRollbackReportsUncertainStateWithoutSecrets() async throws {
+        struct SyntheticError: LocalizedError {
+            var errorDescription: String? { "secret-token /private/synthetic/profile" }
+        }
+        let failure = ProfileSaveRollbackError(operationError: SyntheticError(), rollbackError: SyntheticError())
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("mcp-rollback-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let session = MCPManagementSession(root: root, testingToolFailure: failure)
+        let response = try await request(session, "tools/call", ["name": "profile_create", "arguments": ["name": "Synthetic"]], modern: true, id: 42)
+        let result = try #require(response["result"] as? [String: Any])
+        let meta = try #require(result["_meta"] as? [String: Any])
+        #expect(result["isError"] as? Bool == true)
+        #expect(meta["app.neantik/errorCode"] as? String == "storage_state_uncertain")
+        #expect(meta["app.neantik/automaticRetry"] as? Bool == false)
+        let wire = try #require(String(data: JSONSerialization.data(withJSONObject: response), encoding: .utf8))
+        #expect(wire.contains("rollback could not be confirmed"))
+        #expect(!wire.contains("Existing data retained"))
+        #expect(!wire.contains("secret-token") && !wire.contains("/private/synthetic/profile"))
+        let fallback = MCPManagementSession(root: root, testingToolFailure: SyntheticError())
+        let generic = try await request(fallback, "tools/call", ["name": "profile_create", "arguments": ["name": "Synthetic"]], modern: true)
+        let genericWire = try #require(String(data: JSONSerialization.data(withJSONObject: generic), encoding: .utf8))
+        #expect(genericWire.contains("operation_unavailable"))
+        #expect(!genericWire.contains("Existing data retained") && !genericWire.contains("secret-token"))
+    }
+    #endif
     func request(_ session: MCPManagementSession, _ method: String, _ params: [String: Any] = [:], modern: Bool = false, id: Int = 1) async throws -> [String: Any] {
         var params = params
         if modern { params["_meta"] = ["io.modelcontextprotocol/protocolVersion": "2026-07-28", "io.modelcontextprotocol/clientCapabilities": [:]] }

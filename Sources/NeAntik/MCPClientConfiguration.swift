@@ -6,7 +6,7 @@ enum MCPClient: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .claudeDesktop: "Claude Desktop"
-        case .chatGPTCodex: "ChatGPT Desktop / Codex"
+        case .chatGPTCodex: "Codex CLI / IDE"
         case .claudeCode: "Claude Code"
         case .grokCLI: "Grok CLI"
         case .cursor: "Cursor"
@@ -17,7 +17,7 @@ enum MCPClient: String, CaseIterable, Identifiable {
     var steps: String {
         switch self {
         case .claudeDesktop: "Settings → Developer → Edit Config. Добавь JSON к остальным mcpServers, сохрани и полностью перезапусти Claude."
-        case .chatGPTCodex: "ChatGPT Desktop: Settings → MCP servers → Add server → STDIO. Либо добавь TOML к ~/.codex/config.toml. Перезапусти клиент; проверь codex mcp list. Web-чат не читает этот файл."
+        case .chatGPTCodex: "Добавь TOML к ~/.codex/config.toml. Перезапусти Codex; проверь codex mcp list. Web-чат не читает этот файл."
         case .claudeCode: "Выполни команду добавления в Terminal на этом Mac. Затем claude mcp list; внутри чата — /mcp."
         case .grokCLI: "Выполни команду добавления в Terminal на этом Mac. Затем grok mcp doctor neantik; внутри чата — /mcps. Grok web требует другого транспорта."
         case .cursor: "Добавь JSON в ~/.cursor/mcp.json или .cursor/mcp.json проекта. Открой настройки MCP, включи NeAntik и выбери его инструменты в агентном чате."
@@ -29,7 +29,7 @@ enum MCPClient: String, CaseIterable, Identifiable {
         let value: String
         switch self {
         case .claudeDesktop: value = "https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop"
-        case .chatGPTCodex: value = "https://learn.chatgpt.com/docs/extend/mcp?surface=cli"
+        case .chatGPTCodex: value = "https://developers.openai.com/codex/mcp/"
         case .claudeCode: value = "https://code.claude.com/docs/en/mcp"
         case .grokCLI: value = "https://docs.x.ai/build/features/mcp-servers"
         case .cursor: value = "https://cursor.com/docs/mcp"

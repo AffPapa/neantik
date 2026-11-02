@@ -355,7 +355,7 @@ enum BrowserProfileProcessState: Equatable, Sendable {
         case .externalUnverified:
             "NeAntik видит работающий процесс, но не может безопасно подтвердить его. Закрой окно браузера вручную; профиль разблокируется автоматически."
         case .recoveryRequired:
-            "NeAntik проверяет, завершены ли все процессы браузера. Профиль разблокируется после безопасной проверки. Если окно осталось открытым, закрой его вручную."
+            "NeAntik не может подтвердить состояние профиля. Если окно браузера открыто, закрой его вручную. Не удаляй файлы профиля вручную."
         }
     }
 }
@@ -388,6 +388,12 @@ struct FingerprintAuditLaunchReservation: Equatable, Sendable {
 }
 
 enum BrowserLaunchBuilder {
+    static func restoresSession(profile: BrowserProfile, startURLOverride: URL? = nil,
+                                purpose: BrowserLaunchPurpose = .normal) -> Bool {
+        purpose == .normal && startURLOverride == nil &&
+            profile.privacyPolicy.retention != .ephemeral &&
+            profile.startupMode == .restoreSession && profile.lastLaunchedAt != nil
+    }
     private static let allowedInheritedEnvironmentKeys: Set<String> = [
         "HOME",
         "LANG",
@@ -449,9 +455,7 @@ enum BrowserLaunchBuilder {
         )
         // Never mix restoration with an explicit URL: Chromium adds that URL
         // again on every launch. Audit/management targets remain fresh windows.
-        let restoresSession = purpose == .normal && startURLOverride == nil &&
-            profile.privacyPolicy.retention != .ephemeral &&
-            profile.startupMode == .restoreSession && profile.lastLaunchedAt != nil
+        let restoresSession = Self.restoresSession(profile: profile, startURLOverride: startURLOverride, purpose: purpose)
         var arguments = [
             "--user-data-dir=\(browserDataDirectory.path)",
             "--no-first-run",
@@ -527,7 +531,7 @@ enum BrowserLaunchBuilder {
             // launch boundary provisions it after the exclusive profile lease.
             precondition(directory.isFileURL && !directory.path.contains(","))
             arguments.append("--load-extension=" + directory.path)
-            if profile.proxy != nil || profile.privacyPolicy.presetName == "strict" { arguments.append("--disable-extensions-except=" + directory.path) }
+            if profile.proxy != nil || profile.privacyPolicy.restrictsUserExtensions { arguments.append("--disable-extensions-except=" + directory.path) }
         } else if profile.proxy != nil {
             // Extension-controlled proxy prefs outrank command-line prefs.
             // Exclude both active and persisted third-party overrides.
@@ -2419,9 +2423,10 @@ final class BrowserProcessManager: ObservableObject {
         guard profile.proxy?.isValid != false else {
             throw NeAntikError.invalidProxy
         }
-        // Chromium's native SOCKS transport cannot authenticate. Only the
-        // prepared, owned relay path may launch this configuration.
-        if profile.proxy?.kind == .socks5, profile.proxy?.username.isEmpty == false,
+        // Normal authenticated routes require the prepared owned relay.
+        // Preserve the existing bounded loopback-target HTTP(S) audit path.
+        if profile.proxy?.username.isEmpty == false,
+           (purpose == .normal || profile.proxy?.kind == .socks5),
            preparedRelayLaunches[profile.id] == nil { throw NeAntikError.invalidProxy }
         guard !profile.isArchived else {
             throw NeAntikError.profileArchived

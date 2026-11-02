@@ -4,6 +4,29 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPWorkspaceQueryTests {
+    @Test func cancelledRequestCancelsDetachedQueryWorker() async throws {
+        let started = DispatchSemaphore(value: 0), proceed = DispatchSemaphore(value: 0), workerCancelled = DispatchSemaphore(value: 0)
+        let request = Task.detached {
+            try await MCPWorkspaceQuery.executeCancellable {
+                started.signal()
+                guard proceed.wait(timeout: .now() + 3) == .success else { throw CancellationError() }
+                if Task.isCancelled { workerCancelled.signal() }
+                try Task.checkCancellation()
+                return ["result": "unexpected"]
+            }
+        }
+        defer { request.cancel(); proceed.signal() }
+        let startedWait = Task.detached { started.wait(timeout: .now() + 3) }
+        #expect(await startedWait.value == .success)
+        request.cancel()
+        proceed.signal()
+        do {
+            _ = try await request.value
+            Issue.record("Cancelled MCP query returned a result")
+        } catch is CancellationError { }
+        let observed = Task.detached { workerCancelled.wait(timeout: .now() + 3) }
+        #expect(await observed.value == .success)
+    }
     @Test func filtersUseOnlyPublicMetadataAndCursorBindsBothSnapshotAndFilter() throws {
         let folder = ProfileFolder(name: "Café Project")
         var a = BrowserProfile(name: "Same"); a.tags = ["QA", "ready"]; a.isPinned = true

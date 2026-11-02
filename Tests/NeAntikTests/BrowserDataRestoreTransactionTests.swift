@@ -292,6 +292,9 @@ struct BrowserDataRestoreTransactionTests {
 
     @Test func readOnlyAndCachedStoresRefusePendingBeforeStampFastPath() async throws {
         let f = try fixture(); defer { try? fs.removeItem(at: f.paths.rootDirectory) }
+        // A real writable manager creates the metadata guard before a
+        // read-only client attaches; read-only access must not create it.
+        try f.paths.withProfilesMetadataGuard {}
         let cached = await ProfileStore(paths: f.paths, readOnlyMetadata: true)
         try await cached.refreshExternalMetadata(force: true)
         #expect(throws: Interrupted.simulatedCrash) { try commit(f) { if $0 == .intent { throw Interrupted.simulatedCrash } } }

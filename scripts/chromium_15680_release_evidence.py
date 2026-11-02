@@ -16,6 +16,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from runtime_historical_baseline import bound_baseline_path
+
 VERSION = "156.0.8078.80"
 PREFIX = "chromium-15680"
 CONTRACT = PREFIX + "-source-contract.json"
@@ -114,11 +116,14 @@ def verify_contract(project_root: Path) -> dict[str, Any]:
             ("chromium-15680-gclient", contract.get("gclientConfigSHA256")),
             ("chromium-15680-gclient_entries", contract.get("gclientEntriesSHA256")),
             ("chromium-15680-gcs_entries", contract.get("gcsEntriesSHA256")),
-            ("licenses/Chromium-LICENSE", contract.get("chromiumLicenseSHA256")),
-            ("security-baseline.json", contract.get("securityBaselineSHA256"))):
+            ("licenses/Chromium-LICENSE", contract.get("chromiumLicenseSHA256"))):
         path = runtime / rel
         if not isinstance(expected, str) or not HEX.fullmatch(expected) or path.is_symlink() or not path.is_file() or _sha(path) != expected:
             raise M15680EvidenceError(f"Chromium 156.80 pinned file mismatch: {rel}")
+    try:
+        bound_baseline_path(runtime, contract.get("securityBaselineSHA256"))
+    except ValueError as error:
+        raise M15680EvidenceError("Chromium 156.80 pinned file mismatch: security-baseline.json") from error
     if contract.get("sourceAdoptionManifestSHA256") != _sha(ap):
         raise M15680EvidenceError("Chromium 156.80 source-adoption manifest hash is stale")
     if (contract.get("sourcePatchSHA256") != adoption.get("patchSHA256") or

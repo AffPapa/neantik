@@ -88,7 +88,15 @@ struct BrowserLaunchActionPresentation: Equatable, Sendable {
                     "NeAntik подготавливает данные профиля"
             )
 
-        case .externalManualOnly, .externalUnverified, .recoveryRequired:
+        case .recoveryRequired:
+            return Self(
+                title: "Требуется проверка",
+                systemImage: "exclamationmark.triangle.fill",
+                isEnabled: false,
+                help: processState.guidance ?? "Профиль временно заблокирован для защиты данных"
+            )
+
+        case .externalManualOnly, .externalUnverified:
             return Self(
                 title: "Закрыть вручную",
                 systemImage: "hand.raised.fill",

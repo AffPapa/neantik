@@ -107,11 +107,24 @@ private final class AssessmentParentBundle {}
         if mode == "descendant" {
             let data = withUnsafeBytes(of: &result.output) { Data($0.prefix(Int(result.output_bytes))) }
             let pid = try #require(Int32(String(decoding: data, as: UTF8.self)))
-            // Reparented descendant can briefly be an init-owned zombie; require
-            // that it is no longer running, not that this parent may reap it.
-            var info = proc_bsdinfo()
-            let count = withUnsafeMutableBytes(of: &info) { proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, $0.baseAddress, Int32($0.count)) }
-            #expect(count == 0 || info.pbi_status == SZOMB)
+            // Group SIGKILL delivery is asynchronous. A reparented descendant
+            // can briefly remain runnable after the owned leader is reaped;
+            // allow a bounded interval, but never accept a still-running child.
+            let deadline = DispatchTime.now().uptimeNanoseconds + 500_000_000
+            var stopped = false
+            repeat {
+                var info = proc_bsdinfo()
+                let count = withUnsafeMutableBytes(of: &info) {
+                    proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, $0.baseAddress, Int32($0.count))
+                }
+                if count == 0 || info.pbi_status == SZOMB {
+                    stopped = true
+                    break
+                }
+                if DispatchTime.now().uptimeNanoseconds >= deadline { break }
+                usleep(10_000)
+            } while true
+            #expect(stopped)
         }
     }
     @Test(arguments: ["autoreap-ignore", "autoreap-no-wait"])

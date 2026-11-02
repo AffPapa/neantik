@@ -359,6 +359,28 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             text,
         )
 
+    @unittest.skipUnless(Path('/usr/bin/plutil').is_file(), 'macOS plutil required')
+    def test_manager_contract_selection_accepts_only_reviewed_15680_variants(self) -> None:
+        text = PREPARE_MANAGER.read_text(encoding='utf-8')
+        start = text.index('  case "$runtime_version" in')
+        end = text.index('  local packaged_contract_name=', start)
+        dispatch = text[start:end]
+        with tempfile.TemporaryDirectory(prefix='neantik-contract-dispatch-') as temporary:
+            root = Path(temporary)
+            lock = root / 'fingerprint-chromium.lock.json'
+            for variant, expected in [(None, 'chromium-15680-source-contract.json'),
+                                      ('recipient-privacy-policy-v1', 'chromium-15680-privacy-v1-source-contract.json'),
+                                      ('unreviewed', None)]:
+                with self.subTest(variant=variant):
+                    lock.write_bytes(plistlib.dumps({} if variant is None else {'variant': variant}))
+                    command = 'runtime_version="$1"; evidence="$2"; PROJECT_DIR="$3"\n' + dispatch + '\nprint -r -- "$source_contract"'
+                    result = subprocess.run(['/bin/zsh', '-c', command, 'test', '156.0.8078.80', str(root), str(SCRIPTS.parent)], capture_output=True, text=True)
+                    if expected is None:
+                        self.assertEqual(result.returncode, 65)
+                    else:
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        self.assertEqual(Path(result.stdout.strip()).name, expected)
+
     def test_manager_only_update_preserves_verified_runtime_evidence(self) -> None:
         text = PREPARE_MANAGER.read_text(encoding="utf-8")
 

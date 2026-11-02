@@ -46,20 +46,31 @@ def supervise(command, *, env, pass_fds=(), stdout=None, stderr=None, cwd=None, 
     if timeout is not None and (isinstance(timeout, bool) or not isinstance(timeout, (int, float))
                                 or not math.isfinite(timeout) or timeout <= 0):
         raise ValueError("Timeout must be positive and finite")
-    process = subprocess.Popen(command, env=env, pass_fds=pass_fds, stdout=stdout, stderr=stderr,
-                               cwd=cwd, start_new_session=True)
     cancelled = []
+    process = None
     deadline = time.monotonic() + timeout if timeout is not None else None
     timed_out = False
 
     def forward(signum, _frame):
         if not cancelled:
             cancelled.append((signum, time.monotonic()))
-        try: os.killpg(process.pid, signum)
-        except ProcessLookupError: pass
+        if process is not None:
+            try: os.killpg(process.pid, signum)
+            except ProcessLookupError: pass
 
     previous = {sig: signal.signal(sig, forward) for sig in (signal.SIGTERM, signal.SIGINT)}
     try:
+        # Install cancellation before Popen: the new child can run immediately
+        # and publish readiness before its parent has installed handlers.
+        if cancelled:
+            signum, _ = cancelled[0]
+            return 128 + signum
+        process = subprocess.Popen(command, env=env, pass_fds=pass_fds, stdout=stdout, stderr=stderr,
+                                   cwd=cwd, start_new_session=True)
+        # If cancellation arrived while Popen was returning, forward it now;
+        # the handler could not signal the child before process was assigned.
+        if cancelled:
+            forward(cancelled[0][0], None)
         while True:
             if cancelled:
                 signum, started = cancelled[0]

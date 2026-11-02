@@ -14,10 +14,26 @@ class MCPDocumentationTests(unittest.TestCase):
         result = MODULE.verify()
         self.assertIn('template_list', result['tools'])
         self.assertEqual(result['toolCount'], len(result['tools']))
+    def test_proxy_example_keeps_credentials_out_of_mcp_arguments(self):
+        guide = (ROOT/'docs/MCP_GUIDE.md').read_text()
+        MODULE.verify_proxy_credential_guidance(guide)
+        unsafe = guide.replace('"port": 8080', '"port": 8080,\n    "password": "example"', 1)
+        with self.assertRaisesRegex(ValueError, 'only type, host and port'):
+            MODULE.verify_proxy_credential_guidance(unsafe)
+        unsafe = guide.replace('MCP rejects `username`/`password` fields', 'MCP accepts `username`/`password` fields')
+        with self.assertRaisesRegex(ValueError, 'local credential workflow'):
+            MODULE.verify_proxy_credential_guidance(unsafe)
+    def test_in_app_help_cannot_reintroduce_credential_fields(self):
+        help_text = (ROOT/'Sources/NeAntik/HelpContent.swift').read_text()
+        MODULE.verify_mcp_help_credential_boundary(help_text)
+        stale = help_text.replace('MCP принимает для прокси только kind/host/port',
+                                  'profile_set_proxy принимает отдельные поля kind/host/port/username/password', 1)
+        with self.assertRaisesRegex(ValueError, 'endpoint-only credential boundary'):
+            MODULE.verify_mcp_help_credential_boundary(stale)
     def test_corrupt_claim_and_omitted_tool_are_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/WEBKIT_PROFILES.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/ROADMAP.md','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
+            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/WEBKIT_PROFILES.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/ROADMAP.md','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/v0.9.0.json','releases/v0.9.2.json','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
                 (root/name).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ROOT/name,root/name)
             manifest = root/'docs/mcp-capabilities.json'
@@ -30,15 +46,16 @@ class MCPDocumentationTests(unittest.TestCase):
     def test_webkit_proxy_guide_cannot_claim_a_route_that_is_disabled(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
-            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/WEBKIT_PROFILES.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/ROADMAP.md','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
+            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/WEBKIT_PROFILES.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/ROADMAP.md','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/v0.9.0.json','releases/v0.9.2.json','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
                 (root/name).parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,root/name)
             MODULE.verify(root)
             for name, before, after, error in [
-                ('docs/MCP_GUIDE.md','no WebKit request uses the saved setting','WebKit requests use the saved setting','MCP guide WebKit proxy claim'),
+                ('docs/MCP_GUIDE.md','WebKit is deferred and cannot be launched in the current Chromium-only release','WebKit can be launched in the current release','MCP guide WebKit availability claim'),
                 ('docs/WEBKIT_PROFILES.md','профиль с прокси не запускается','профиль запускается с прокси','WebKit profile guide proxy claim'),
                 ('Sources/NeAntik/HelpContent.swift','WebKit-профиль с прокси не запускается','WebKit-профиль с прокси запускается','In-app help WebKit proxy claim'),
             ]:
                 guide=root/name;original=guide.read_text()
+                self.assertIn(before, original)
                 guide.write_text(original.replace(before, after, 1))
                 with self.assertRaisesRegex(ValueError,error):
                     MODULE.verify(root)
@@ -46,7 +63,7 @@ class MCPDocumentationTests(unittest.TestCase):
     def test_stale_read_only_product_claim_is_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
-            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/WEBKIT_PROFILES.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/ROADMAP.md','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
+            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/WEBKIT_PROFILES.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/ROADMAP.md','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/v0.9.0.json','releases/v0.9.2.json','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
                 (root/name).parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,root/name)
             p=root/'docs/PRODUCT.md';p.write_text(p.read_text().replace('18 management tools','17 management tools'))
             with self.assertRaisesRegex(ValueError,'permission counts'): MODULE.verify(root)
@@ -54,14 +71,25 @@ class MCPDocumentationTests(unittest.TestCase):
     def test_stale_roadmap_and_template_claims_are_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
-            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/HelpContent.swift', 'docs/ROADMAP.md', 'docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md', 'releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
+            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/HelpContent.swift', 'docs/ROADMAP.md', 'docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md', 'releases/v0.9.0.json','releases/v0.9.2.json', 'releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
                 (root/name).parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,root/name)
             MODULE.verify_current_product_claims(root)
             roadmap=root/'docs/ROADMAP.md';original=roadmap.read_text()
             latest_path=max((root/'releases').glob('v*.json'),key=lambda p:tuple(map(int,p.stem[1:].split('.'))))
             latest=json.loads(latest_path.read_text())
-            roadmap.write_text(original.replace(f"{latest['version']} ({latest['build']})", '0.8.24 (136)', 1))
+            marker='## Исторический срез\n\n'
+            before, separator, history=original.partition(marker)
+            self.assertTrue(separator)
+            roadmap.write_text(before + separator + history.replace(
+                f"{latest['version']} ({latest['build']})", '0.8.24 (136)', 1))
             with self.assertRaisesRegex(ValueError, 'docs/ROADMAP.md'): MODULE.verify_current_product_claims(root)
+            roadmap.write_text(original)
+            marker='## Исторический срез\n\n'
+            history=original.partition(marker)[2]
+            first_snapshot=history.split('\n\n',1)[0]
+            roadmap.write_text(original + '\n\n' + first_snapshot)
+            with self.assertRaisesRegex(ValueError, 'repeats a release snapshot'):
+                MODULE.verify_current_product_claims(root)
             roadmap.write_text(original)
             for filename in ('NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'NEANTIK_IMPROVEMENT_ROADMAP.md'):
                 p=root/'docs'/filename;original=p.read_text()
@@ -82,7 +110,7 @@ class MCPDocumentationTests(unittest.TestCase):
             latest = json.loads(latest_path.read_text())
             for name in ['README.md', 'README.en.md', 'Resources/Info.plist', 'CHANGELOG.md', 'docs/ROADMAP.md',
                          'Sources/NeAntik/HelpContent.swift', 'docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md',
-                         'docs/NEANTIK_IMPROVEMENT_ROADMAP.md', 'docs/SOURCE_TO_SITE_HANDOFF.md', 'releases/' + latest_path.name]:
+                         'docs/NEANTIK_IMPROVEMENT_ROADMAP.md', 'docs/SOURCE_TO_SITE_HANDOFF.md', 'releases/v0.9.0.json', 'releases/v0.9.2.json', 'releases/' + latest_path.name]:
                 (root / name).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ROOT / name, root / name)
             MODULE.verify_current_product_claims(root)

@@ -132,6 +132,11 @@ enum BrowserEngine: String, Codable, CaseIterable, Identifiable, Sendable {
     /// Static engine support, not evidence that a particular session or route
     /// was measured. Never include profile identity, visits or credentials.
     var managementCapabilities: [String: Bool] {
+        guard isAvailableInBuild else {
+            return ["persistentSiteData": false, "fingerprintConfiguration": false,
+                    "proxy": false, "mcpLaunch": false, "extensions": false,
+                    "browserDataBackup": false]
+        }
         let configuredEngine = self == .chromium
         let proxy = configuredEngine || (self == .webkit && WebKitProxyFeature.launchEnabled)
         return ["persistentSiteData": true,

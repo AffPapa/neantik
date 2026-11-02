@@ -10,7 +10,7 @@ enum MCPOutputSchemas {
         let boolean: [String: Any] = ["type": "boolean"]
         let webKitState: [String: Any] = ["type": "string", "enum": ["managed", "stopPending", "stopped", "saveFailed", "notOwned", "ownershipLost"]]
         let count: [String: Any] = ["type": "integer", "minimum": 0]
-        let state: [String: Any] = ["type": "string", "enum": ["managed", "stopped", "checking", "closing", "externalManualOnly", "externalUnverified", "recoveryRequired"]]
+        let state: [String: Any] = ["type": "string", "enum": ["managed", "stopped", "checking", "closing", "externalManualOnly", "externalUnverified", "recoveryRequired", "unverified"]]
         let folder = object(["id": uuid, "name": text])
         let folders: [String: Any] = ["type": "array", "items": folder, "maxItems": 100]
         if name == "template_list" {
@@ -64,10 +64,19 @@ enum MCPOutputSchemas {
                            "retention": ["type": "string", "enum": BrowserPrivacyPolicy.Retention.allCases.map(\.rawValue)],
                            "viewport": ["type": "string", "enum": BrowserPrivacyPolicy.Viewport.allCases.map(\.rawValue)],
                            "siteProtection": boolean, "trackingParameterCleanup": boolean,
+                           "siteProtectionScope": ["type": "string", "const": "NeAntik known-domain and tracker filters only; not Google Safe Browsing or unsafe-download scanning",
+                               "description": "Clarifies the scope of siteProtection. This is saved intent, not proof that filters are applied."],
                            "disableSyncAndAutofill": boolean,
                            "evidence": ["type": "string", "const": "saved-intent; not native qualification"]
                        ]),
                        "engineCapabilities": object(["persistentSiteData": boolean, "fingerprintConfiguration": boolean, "proxy": boolean, "mcpLaunch": boolean, "extensions": boolean, "browserDataBackup": boolean]),
+                       "networkPolicyIntent": object([
+                           "configuredRoute": ["type": "string", "enum": ["direct", "proxyConfigured"]],
+                           "siteDNSPolicy": ["type": "string", "enum": ["ordinaryChromiumResolution", "configuredToBlockDirectDestinationResolution", "unsupportedInCurrentRelease"]],
+                           "proxyHostnameDNS": ["type": "string", "enum": ["notApplicable", "notNeededForIPAddress", "systemResolverMayResolveProxyHostname", "unsupportedInCurrentRelease"]],
+                           "runtimeRoute": ["type": "string", "const": "unverified"],
+                           "evidence": ["type": "string", "const": "saved-configuration-only; runtime route unverified"]
+                       ]),
                        "colorHex": text, "symbolName": text, "folderID": nullable, "organizationRevision": nullable,
                        "proxyKind": ["type": ["string", "null"], "enum": ["http", "https", "socks5", NSNull()]], "warning": text], optional: ["warning"])
     }

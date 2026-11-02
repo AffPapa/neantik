@@ -269,9 +269,10 @@ class Endpoint:
             except OSError:
                 pass
             connection.close()
-        self.thread.join(2)
+        deadline = time.monotonic() + 5
+        self.thread.join(max(0, deadline - time.monotonic()))
         for worker in self.workers:
-            worker.join(2)
+            worker.join(max(0, deadline - time.monotonic()))
         self.last_stop_state = {'acceptAlive': self.thread.is_alive(),
                                 'workerAlive': sum(w.is_alive() for w in self.workers)}
         return not self.last_stop_state['acceptAlive'] and self.last_stop_state['workerAlive'] == 0

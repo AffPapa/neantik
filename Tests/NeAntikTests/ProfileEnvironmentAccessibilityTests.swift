@@ -89,6 +89,7 @@ struct ProfileEnvironmentAccessibilityTests {
         #expect(
             snapshot.sections.map(\.id) == [
                 "protection",
+                "site-protection",
                 "route",
                 "fingerprint",
                 "webrtc",

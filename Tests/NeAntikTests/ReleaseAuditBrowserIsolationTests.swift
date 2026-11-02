@@ -94,7 +94,9 @@ import Testing
     @Test(arguments: ["ordinary", "bound-normal", "bound-fingerprint"])
     func actualLaunchAddsMockFlagOnlyWithCapability(kind: String) async throws {
         let audit = kind != "ordinary"
-        let (parent, paths, isolation) = try fixture(); defer { try? FileManager.default.removeItem(at: parent) }
+        let (parent, paths, isolation) = try fixture()
+        var safeToRemoveFixture = true
+        defer { if safeToRemoveFixture { try? FileManager.default.removeItem(at: parent) } }
         try paths.prepareBaseDirectories()
         let fake = parent.appendingPathComponent("owned-browser")
         try Data("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$0.args.tmp\"\n/bin/mv \"$0.args.tmp\" \"$0.args\"\nsleep 0.15\n".utf8).write(to: fake)
@@ -104,6 +106,7 @@ import Testing
         defer { manager.suspendPassiveObservations() }
         let profile = BrowserProfile(name: "Synthetic storage isolation")
         let runtime = BrowserRuntime(name: "Synthetic", executableURL: fake, source: "Fixture")
+        safeToRemoveFixture = false // Retain the owned fixture if process shutdown cannot be established.
         if kind == "bound-fingerprint" {
             let url = URL(string: "http://127.0.0.1:8000/fixture")!
             let reservation = try manager.reserveFingerprintAuditLaunch(startURL: url, httpLoopbackPort: 8000)
@@ -127,9 +130,16 @@ import Testing
         if kind == "bound-fingerprint" {
             #expect(args.contains { $0.hasPrefix("--user-data-dir=" + paths.rootDirectory.path + "/FingerprintAuditSessions/") })
         } else { #expect(args.contains("--user-data-dir=" + paths.browserDataDirectory(for: profile.id).path)) }
-        try await Task.sleep(for: .milliseconds(250))
-        manager.reconcile(profiles: [profile])
-        #expect(!manager.runningProfileIDs.contains(profile.id))
+        let deadline = ContinuousClock.now + .seconds(5)
+        repeat {
+            manager.reconcile(profiles: [profile])
+            if manager.processState(for: profile.id) == .stopped && !manager.runningProfileIDs.contains(profile.id) {
+                safeToRemoveFixture = true
+                break
+            }
+            try await Task.sleep(for: .milliseconds(25))
+        } while ContinuousClock.now < deadline
+        #expect(safeToRemoveFixture, "Owned fixture process did not reach stopped state before the deadline")
     }
     @Test func pressureRefusesOwnedExecutableBeforeCreatingLease() throws {
         let (parent, paths, isolation) = try fixture()

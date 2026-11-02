@@ -3,6 +3,14 @@ import Testing
 @testable import NeAntik
 
 struct ProfileEditorPresentationTests {
+    @Test func engineSelectionReflectsAvailableAndSavedEngines() {
+        let single = ProfileEditorEnginePresentation.resolve(engine: .chromium, available: [.chromium])
+        #expect(single.isAvailable && !single.showsPicker)
+        let retained = ProfileEditorEnginePresentation.resolve(engine: .webkit, available: [.chromium])
+        #expect(!retained.isAvailable && !retained.showsPicker)
+        let both = ProfileEditorEnginePresentation.resolve(engine: .chromium, available: [.chromium, .webkit])
+        #expect(both.isAvailable && both.showsPicker)
+    }
     @Test func incompleteProxyContextExplainsNextActionWithoutReadinessClaim() {
         let message = ProfileProxyTestPresentation.successMessage(location: "", hasCompleteRouteContext: false)
         #expect(message.contains("Прокси отвечает"))

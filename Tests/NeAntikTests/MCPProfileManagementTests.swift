@@ -4,6 +4,148 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct MCPProfileManagementTests {
+    @Test func readOnlyStatusRejectsRevisionChangedDuringInventory() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let profile = try writer.store.upsert(BrowserProfile(name: "Synthetic revision race"))
+        let entered = DispatchSemaphore(value: 0), resume = DispatchSemaphore(value: 0)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil), readOnlyInventory: {
+                entered.signal()
+                _ = resume.wait(timeout: .now() + 3)
+                return .unavailable
+            })
+        let request = Task { try await reader.call("profile_status", ["profileID": profile.id.uuidString,
+            "includeObservation": true, "expectedRevision": String(profile.revision)]) }
+        defer { request.cancel(); resume.signal() }
+        #expect(await Task.detached { entered.wait(timeout: .now() + 3) }.value == .success)
+        var changed = profile
+        changed.name = "Synthetic changed revision"
+        let updated = try writer.store.upsert(changed)
+        #expect(updated.revision != profile.revision)
+        resume.signal()
+        await #expect(throws: MCPProfileManagement.Failure.self) { try await request.value }
+    }
+
+    @Test func readOnlyStatusCancelsInventoryWorker() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let profile = try writer.store.upsert(BrowserProfile(name: "Synthetic cancellation"))
+        let entered = DispatchSemaphore(value: 0), cancelled = DispatchSemaphore(value: 0)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil), readOnlyInventory: {
+                entered.signal()
+                while !Task.isCancelled { Thread.sleep(forTimeInterval: 0.001) }
+                cancelled.signal()
+                return .unavailable
+            })
+        let request = Task { try await reader.call("profile_status", ["profileID": profile.id.uuidString]) }
+        defer { request.cancel() }
+        #expect(await Task.detached { entered.wait(timeout: .now() + 3) }.value == .success)
+        request.cancel()
+        #expect(await Task.detached { cancelled.wait(timeout: .now() + 3) }.value == .success)
+        await #expect(throws: CancellationError.self) { try await request.value }
+    }
+
+    @Test func readOnlyGuardRefusesSymlinkParentAndOpenPermissions() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        _ = try writer.store.upsert(BrowserProfile(name: "Synthetic guard safety"))
+        let paths = AppPaths(rootDirectory: root)
+        let original = paths.processLocksDirectory
+        let moved = root.appendingPathComponent("SyntheticLocks")
+        try FileManager.default.moveItem(at: original, to: moved)
+        try FileManager.default.createSymbolicLink(at: original, withDestinationURL: moved)
+        let keychain = KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil)
+        let symlinkReader = MCPProfileManagement(root: root, allowsManagement: false, keychain: keychain)
+        #expect(!symlinkReader.store.hasTrustedMetadata)
+        try FileManager.default.removeItem(at: original)
+        try FileManager.default.moveItem(at: moved, to: original)
+        try FileManager.default.setAttributes([.posixPermissions: 0o666], ofItemAtPath: paths.profilesMetadataGuardFile.path)
+        let openReader = MCPProfileManagement(root: root, allowsManagement: false, keychain: keychain)
+        #expect(!openReader.store.hasTrustedMetadata)
+        let attrs = try FileManager.default.attributesOfItem(atPath: paths.profilesMetadataGuardFile.path)
+        #expect((attrs[.posixPermissions] as? NSNumber)?.intValue == 0o666)
+    }
+
+    @Test func readOnlyMetadataDoesNotCreateOrRepairMissingGuard() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        _ = try writer.store.upsert(BrowserProfile(name: "Synthetic guarded profile"))
+        let paths = AppPaths(rootDirectory: root)
+        let metadata = try Data(contentsOf: paths.profilesFile)
+        try FileManager.default.removeItem(at: paths.profilesMetadataGuardFile)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil))
+        #expect(!reader.store.hasTrustedMetadata)
+        await #expect(throws: (any Error).self) { try await reader.call("profile_get", ["profileID": UUID().uuidString]) }
+        #expect(!FileManager.default.fileExists(atPath: paths.profilesMetadataGuardFile.path))
+        #expect(try Data(contentsOf: paths.profilesFile) == metadata)
+    }
+
+    @Test func readOnlyRefreshRefusesRemovedGuardWithoutRecreatingIt() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let profile = try writer.store.upsert(BrowserProfile(name: "Synthetic guard removal"))
+        let paths = AppPaths(rootDirectory: root)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil))
+        _ = try await reader.call("profile_get", ["profileID": profile.id.uuidString])
+        try FileManager.default.removeItem(at: paths.profilesMetadataGuardFile)
+        await #expect(throws: (any Error).self) { try await reader.call("profile_get", ["profileID": profile.id.uuidString]) }
+        #expect(!reader.store.hasTrustedMetadata)
+        #expect(!FileManager.default.fileExists(atPath: paths.profilesMetadataGuardFile.path))
+    }
+
+    @Test func readOnlyStatusDoesNotReconcileOrClearOtherProfiles() async throws {
+        let (root, writer, backend) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let requested = try writer.store.upsert(BrowserProfile(name: "Requested synthetic profile"))
+        var policy = BrowserPrivacyPolicy.strict; policy.retention = .ephemeral
+        let other = try writer.store.upsert(BrowserProfile(name: "Other synthetic profile", privacyPolicy: policy))
+        let paths = AppPaths(rootDirectory: root)
+        try EphemeralProfileStorage.prepareLaunch(paths: paths, profile: other)
+        let state = paths.browserDataDirectory(for: other.id).appendingPathComponent("synthetic-state")
+        let original = Data("retain this synthetic data".utf8)
+        try original.write(to: state)
+        let lease = paths.lockFile(for: requested.id)
+        let leaseBytes = Data("synthetic stale lease".utf8)
+        try leaseBytes.write(to: lease)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil),
+            readOnlyInventory: { .unavailable })
+        let result = try await reader.call("profile_status", ["profileID": requested.id.uuidString])
+        #expect(result["processState"] as? String == "unverified")
+        let observed = try await reader.call("profile_status", ["profileID": requested.id.uuidString,
+            "includeObservation": true, "expectedRevision": String(requested.revision)])
+        #expect(observed["processState"] as? String == "unverified")
+        let dataPath = paths.browserDataDirectory(for: requested.id).path
+        let inventory = BrowserProcessInventory(processes: [123: BrowserProcessArguments(executablePath: "/synthetic/browser", arguments: ["--user-data-dir=\(dataPath)"])])
+        let foundReader = MCPProfileManagement(root: root, allowsManagement: false,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp", legacyService: nil), readOnlyInventory: { inventory })
+        let found = try await foundReader.call("profile_status", ["profileID": requested.id.uuidString])
+        #expect(found["processState"] as? String == "externalUnverified")
+        #expect(try EphemeralProfileStorage.pending(paths: paths, profile: other))
+        #expect(try Data(contentsOf: state) == original)
+        #expect(try Data(contentsOf: lease) == leaseBytes)
+    }
+
+    @Test func presetUpdateDisclosesAndPreservesOmittedFontPolicy() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let original = try engine.store.upsert(BrowserProfile(name: "Synthetic native fonts", fontPolicy: .native, privacyPolicy: .legacy))
+        let updated = try await engine.call("profile_update", ["profileID": original.id.uuidString,
+            "expectedRevision": String(original.revision), "changes": ["privacyPreset": "strict"]])
+        #expect(updated["fontPolicy"] as? String == "native")
+        #expect(engine.store.profile(withID: original.id)?.fontPolicy == .native)
+        let definition = try #require(MCPProfileManagement.definitions(allowsManagement: true).first { $0["name"] as? String == "profile_update" })
+        let input = try #require(definition["inputSchema"] as? [String: Any])
+        let properties = try #require(input["properties"] as? [String: Any])
+        let changes = try #require(properties["changes"] as? [String: Any])
+        let changeProperties = try #require(changes["properties"] as? [String: Any])
+        let preset = try #require(changeProperties["privacyPreset"] as? [String: Any])
+        #expect((preset["description"] as? String)?.contains("Omitted fontPolicy is preserved") == true)
+    }
+
     @Test func protectedDefaultsAndPresetChangesPreserveDisposableRetention() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let fresh = try await engine.call("profile_create", ["name": "Own safe default"])
@@ -22,13 +164,60 @@ struct MCPProfileManagementTests {
         let intent = try #require(created["privacyPolicyIntent"] as? [String: Any])
         #expect(intent["preset"] as? String == "strict")
         #expect(intent["evidence"] as? String == "saved-intent; not native qualification")
+        #expect(intent["siteProtectionScope"] as? String == "NeAntik known-domain and tracker filters only; not Google Safe Browsing or unsafe-download scanning")
         let properties = try #require(MCPOutputSchemas.schema(for: "profile_get")["properties"] as? [String: Any])
-        #expect(properties["privacyPolicyIntent"] != nil)
+        let intentSchema = try #require(properties["privacyPolicyIntent"] as? [String: Any])
+        let intentProperties = try #require(intentSchema["properties"] as? [String: Any])
+        let siteProtectionScope = try #require(intentProperties["siteProtectionScope"] as? [String: Any])
+        #expect(siteProtectionScope["const"] as? String == intent["siteProtectionScope"] as? String)
+        #expect((siteProtectionScope["description"] as? String)?.contains("not proof") == true)
         let id = try #require(UUID(uuidString: created["id"] as! String))
         #expect(engine.store.profile(withID: id)?.privacyPolicy == .strict)
         #expect(throws: (any Error).self) {
             try BrowserLaunchPolicy.validatePrivacyPolicy(try #require(engine.store.profile(withID: id)))
         }
+    }
+
+    @Test func profileNetworkPolicyDisclosesProxyDNSCaveatWithoutClaimingRuntimeRoute() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let direct = try await create(engine)
+        let directPolicy = try #require(direct["networkPolicyIntent"] as? [String: Any])
+        #expect(directPolicy["configuredRoute"] as? String == "direct")
+        #expect(directPolicy["siteDNSPolicy"] as? String == "ordinaryChromiumResolution")
+        #expect(directPolicy["proxyHostnameDNS"] as? String == "notApplicable")
+        #expect(directPolicy["runtimeRoute"] as? String == "unverified")
+
+        var args = request(direct)
+        args["proxy"] = ["kind": "http", "host": "proxy.synthetic.example", "port": 8080]
+        let proxied = try await engine.call("profile_set_proxy", args)
+        let policy = try #require(proxied["networkPolicyIntent"] as? [String: Any])
+        #expect(policy["configuredRoute"] as? String == "proxyConfigured")
+        #expect(policy["siteDNSPolicy"] as? String == "configuredToBlockDirectDestinationResolution")
+        #expect(policy["proxyHostnameDNS"] as? String == "systemResolverMayResolveProxyHostname")
+        #expect(policy["runtimeRoute"] as? String == "unverified")
+        #expect(policy["evidence"] as? String == "saved-configuration-only; runtime route unverified")
+        let serialized = String(decoding: try JSONSerialization.data(withJSONObject: proxied), as: UTF8.self)
+        #expect(!serialized.contains("proxy.synthetic.example"))
+        #expect(!serialized.contains("fixture-secret"))
+
+        args = request(proxied)
+        args["proxy"] = ["kind": "http", "host": "192.0.2.8", "port": 8080]
+        let ipv4 = try await engine.call("profile_set_proxy", args)
+        #expect(((ipv4["networkPolicyIntent"] as? [String: Any])?["proxyHostnameDNS"] as? String) == "notNeededForIPAddress")
+        #expect(!String(describing: ipv4).contains("192.0.2.8"))
+        args = request(ipv4)
+        args["proxy"] = ["kind": "http", "host": "2001:db8::8", "port": 8080]
+        let ipv6 = try await engine.call("profile_set_proxy", args)
+        #expect(((ipv6["networkPolicyIntent"] as? [String: Any])?["proxyHostnameDNS"] as? String) == "notNeededForIPAddress")
+        #expect(!String(describing: ipv6).contains("2001:db8::8"))
+
+        let properties = try #require(MCPOutputSchemas.schema(for: "profile_get")["properties"] as? [String: Any])
+        let networkPolicy = try #require(properties["networkPolicyIntent"] as? [String: Any])
+        let networkFields = try #require(networkPolicy["properties"] as? [String: Any])
+        let proxyHostnameDNS = try #require(networkFields["proxyHostnameDNS"] as? [String: Any])
+        #expect((proxyHostnameDNS["enum"] as? [String])?.contains("notNeededForIPAddress") == true)
+        let definition = try #require(MCPProfileManagement.definitions(allowsManagement: false).first { $0["name"] as? String == "profile_get" })
+        #expect((definition["description"] as? String)?.contains("runtimeRoute is always unverified") == true)
     }
 
     @Test func closingIsExplicitInStatusSchemaAndRepeatedStopDoesNotSignalAgain() async throws {
@@ -126,6 +315,39 @@ struct MCPProfileManagementTests {
         #expect(proxy.contains("does not prove the browser route"))
     }
 
+    @Test func proxyToolContractKeepsCredentialsOutOfMCP() throws {
+        let tools = MCPProfileManagement.definitions(allowsManagement: true)
+        for name in ["profile_create", "profile_set_proxy"] {
+            let description = try #require(
+                tools.first { $0["name"] as? String == name }?["description"] as? String
+            )
+            let normalizedDescription = description.lowercased()
+            #expect(normalizedDescription.contains("local profile editor"))
+            #expect(normalizedDescription.contains("credentials are not accepted in mcp arguments") ||
+                    normalizedDescription.contains("mcp rejects username/password fields"))
+            let schema = try #require(tools.first { $0["name"] as? String == name }?["inputSchema"] as? [String: Any])
+            let properties = try #require(schema["properties"] as? [String: Any])
+            #expect(properties["order"] == nil)
+            if let proxySchema = properties["proxy"] as? [String: Any],
+               let choices = proxySchema["anyOf"] as? [[String: Any]],
+               let fields = choices.first(where: { $0["type"] as? String == "object" })?["properties"] as? [String: Any] {
+                #expect(Set(fields.keys) == ["kind", "host", "port"])
+            }
+        }
+    }
+
+    @Test func engineCapabilitiesDoNotAdvertiseUnavailableEngines() {
+        for engine in [BrowserEngine.chromium, .webkit] {
+            let capabilities = engine.managementCapabilities
+            #expect(capabilities.count == 6)
+            if !engine.isAvailableInBuild {
+                #expect(capabilities.values.allSatisfy { !$0 })
+            } else {
+                #expect(capabilities["mcpLaunch"] == true)
+            }
+        }
+    }
+
     @Test func webKitCreationMetadataAndProxyCredentialManagementStayProfileScoped() async throws {
         guard BrowserEngine.webkit.isAvailableInBuild else { return }
         let (root, engine, backend) = try fixture()
@@ -149,15 +371,13 @@ struct MCPProfileManagementTests {
         args = request(edited); args["changes"] = ["startupMode": "restoreSession"]
         edited = try await engine.call("profile_update", args)
         #expect(edited["startupMode"] as? String == "restoreSession")
-        // Management stores proxy configuration and its write-only password;
+        // MCP can store the endpoint. Credentials remain a local editor operation;
         // capability flags describe launch support for this build, not storage.
-        args = request(edited); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080,
-            "username": "webkit-qa-user", "password": "webkit-qa-secret"]
+        args = request(edited); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080]
         edited = try await engine.call("profile_set_proxy", args)
         let webkitID = try #require(UUID(uuidString: edited["id"] as! String))
         #expect(edited["proxyKind"] as? String == "socks5")
-        #expect(backend.values[webkitID] == Data("webkit-qa-secret".utf8))
-        #expect(!String(decoding: try JSONSerialization.data(withJSONObject: edited), as: UTF8.self).contains("webkit-qa-secret"))
+        #expect(backend.values[webkitID] == nil)
         args = request(edited); args["name"] = "WebKit copy"
         let duplicate = try await engine.call("profile_duplicate", args)
         #expect(duplicate["engine"] as? String == "webkit" && duplicate["id"] as? String != edited["id"] as? String)
@@ -166,7 +386,7 @@ struct MCPProfileManagementTests {
         #expect(engine.processes.processState(for: id) == .stopped)
     }
 
-    @Test func webKitProxyCanBeCreatedAtomicallyWithoutExposingCredential() async throws {
+    @Test func webKitProxyCanBeCreatedAtomicallyWithoutMCPCredentialInput() async throws {
         guard BrowserEngine.webkit.isAvailableInBuild else { return }
         let (root, engine, backend) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -174,20 +394,25 @@ struct MCPProfileManagementTests {
             .first(where: { $0["name"] as? String == "profile_create" }))
         let properties = try #require((creation["inputSchema"] as? [String: Any])?["properties"] as? [String: Any])
         #expect(properties["proxy"] != nil)
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_create", [
+                "name": "Rejected credential proxy", "engine": "webkit",
+                "proxy": ["kind": "http", "host": "127.0.0.1", "port": 45101,
+                          "username": "qa-user", "password": "qa-only-password"]
+            ])
+        }
+        #expect(engine.store.profiles.isEmpty && backend.values.isEmpty)
         let created = try await engine.call("profile_create", [
             "name": "WebKit proxy at creation", "engine": "webkit",
             "changes": ["startURL": "about:blank"],
-            "proxy": ["kind": "http", "host": "127.0.0.1", "port": 45101,
-                      "username": "qa-user", "password": "qa-only-password"]
+            "proxy": ["kind": "http", "host": "127.0.0.1", "port": 45101]
         ])
         let id = try #require(UUID(uuidString: created["id"] as! String))
         let saved = try #require(engine.store.profile(withID: id))
         #expect(saved.proxy?.host == "127.0.0.1")
         #expect(saved.webKitRuntimeGeneration ==
             (WebKitProxyFeature.launchEnabled ? .isolatedV1 : .system))
-        #expect(backend.values[id] == Data("qa-only-password".utf8))
-        #expect(!String(decoding: try JSONSerialization.data(withJSONObject: created), as: UTF8.self)
-            .contains("qa-only-password"))
+        #expect(backend.values[id] == nil)
     }
 
     @Test func webKitSessionAddressesStayOutOfMCPAndConfigurationExport() async throws {
@@ -280,6 +505,22 @@ struct MCPProfileManagementTests {
         #expect(engine.processes.processState(for: a.id) == .stopped)
     }
 
+    @Test func savedTemplateWithInitialNullOrganizationRevisionMatchesSchema() async throws {
+        let (root, engine, _) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let template = try UserProfileTemplate(name: "Fixture", profile: BrowserProfile(name: "Original"), folderID: nil)
+        _ = try await ManagerLibraryRepository(paths: engine.store.paths).update { $0.templates.append(template) }
+        let definition = try #require(MCPProfileManagement.definitions(allowsManagement: true).first { $0["name"] as? String == "profile_create" })
+        let properties = try #require((definition["inputSchema"] as? [String: Any])?["properties"] as? [String: Any])
+        let revision = try #require(properties["expectedOrganizationRevision"] as? [String: Any])
+        #expect(Set(try #require(revision["type"] as? [String])) == ["string", "null"])
+        let list = try await engine.call("template_list", [:])
+        #expect(list["organizationRevision"] is NSNull)
+        let result = try await engine.call("profile_create", ["name": "Created", "templateID": template.id.uuidString,
+            "expectedOrganizationRevision": list["organizationRevision"]!])
+        #expect(result["name"] as? String == "Created")
+    }
+
     @Test func savedTemplateRejectsMissingCorruptAndStaleInputsWithoutPartialWrites() async throws {
         let (root, engine, _) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -325,27 +566,27 @@ struct MCPProfileManagementTests {
     }
     func create(_ engine: MCPProfileManagement) async throws -> [String: Any] { try await engine.call("profile_create", ["name": "Synthetic", "changes": ["startURL": "https://example.com", "tags": ["qa"]]]) }
     func request(_ dto: [String: Any]) -> [String: Any] { ["profileID": dto["id"]!, "expectedRevision": dto["revision"]!] }
+    func request(_ profile: BrowserProfile) -> [String: Any] {
+        ["profileID": profile.id.uuidString, "expectedRevision": String(profile.revision)]
+    }
 
     @Test func metadataEditKeepsAuthenticatedSOCKSProxyAndWriteOnlyPassword() async throws {
         let (root, engine, backend) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let created = try await create(engine)
-        var args = request(created)
-        args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080,
-                         "username": "qualification-user", "password": "qualification-password"]
-        let configured = try await engine.call("profile_set_proxy", args)
-        let id = try #require(UUID(uuidString: configured["id"] as! String))
-        let original = try #require(engine.store.profile(withID: id)), secrets = backend.values
-        args = request(configured); args["changes"] = ["name": "Renamed", "tags": ["ready"], "startURL": "https://example.com/changed"]
+        let id = try #require(UUID(uuidString: created["id"] as! String))
+        var original = try #require(engine.store.profile(withID: id))
+        original.proxy = ProxyConfiguration(kind: .socks5, host: "127.0.0.1", port: 1080,
+                                            username: "qualification-user")
+        let configured = try engine.store.upsert(original)
+        backend.values[id] = Data("qualification-password".utf8)
+        let secrets = backend.values
+        var args = request(configured); args["changes"] = ["name": "Renamed", "tags": ["ready"], "startURL": "https://example.com/changed"]
         let edited = try await engine.call("profile_update", args)
         let actual = try #require(engine.store.profile(withID: id))
         #expect(actual.name == "Renamed" && actual.tags == ["ready"])
         #expect(actual.proxy == original.proxy && actual.identity == original.identity && backend.values == secrets)
         let encoded = String(decoding: try JSONSerialization.data(withJSONObject: edited), as: UTF8.self)
         #expect(!encoded.contains("qualification-password") && !encoded.contains("qualification-user"))
-        let persisted = try Data(contentsOf: engine.store.paths.profilesFile)
-        args = request(edited); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080, "username": "qualification-user", "password": ""]
-        await #expect(throws: MCPProfileManagement.Failure.self) { try await engine.call("profile_set_proxy", args) }
-        #expect(try Data(contentsOf: engine.store.paths.profilesFile) == persisted)
         #expect(engine.store.profile(withID: id)?.proxy == actual.proxy && backend.values == secrets)
     }
 
@@ -407,32 +648,50 @@ struct MCPProfileManagementTests {
         #expect(try await engine.call("profile_get", ["profileID": profile["id"]!])["folderID"] is NSNull)
         #expect(engine.store.profiles.count == 1)
     }
-    @Test func proxyFormatsCredentialsAndRollback() async throws {
+    @Test func proxyCredentialsAreRejectedAndEndpointOnlyConfigurationWorks() async throws {
         let (root, engine, backend) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
-        var profile = try await create(engine)
-        for line in ["synthetic:secret@127.0.0.1:8080", "127.0.0.1:8080:synthetic:secret", "synthetic:secret:127.0.0.1:8080"] {
-            var args = request(profile); args["proxyLine"] = line; args["kind"] = "http"
-            profile = try await engine.call("profile_set_proxy", args)
-            let json = String(decoding: try JSONSerialization.data(withJSONObject: profile), as: UTF8.self)
-            #expect(!json.contains("secret")); #expect(!json.contains("127.0.0.1")); #expect(!json.contains("synthetic:"))
-        }
+        let profile = try await create(engine)
         let before = try Data(contentsOf: AppPaths(rootDirectory: root).profilesFile)
-        backend.fail = true
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_create", ["name": "Credential-bearing proxy", "proxy": [
+                "kind": "http", "host": "127.0.0.1", "port": 8080,
+                "username": "synthetic", "password": "new-secret"]])
+        }
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_create", ["name": "Top-level secret", "username": "synthetic", "password": "new-secret"])
+        }
+        var topLevelProxySecret = request(profile)
+        topLevelProxySecret["username"] = "synthetic"
+        topLevelProxySecret["password"] = "new-secret"
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_set_proxy", topLevelProxySecret)
+        }
+        #expect(engine.store.profiles.count == 1 && backend.values.isEmpty)
+        for line in ["synthetic:secret@127.0.0.1:8080", "http://synthetic:secret@127.0.0.1:8080", "127.0.0.1:8080:synthetic:secret", "synthetic:secret:127.0.0.1:8080"] {
+            var args = request(profile); args["proxyLine"] = line; args["kind"] = "http"
+            await #expect(throws: MCPProfileManagement.Failure.self) { try await engine.call("profile_set_proxy", args) }
+        }
         var args = request(profile); args["proxy"] = ["kind": "http", "host": "127.0.0.2", "port": 8081, "username": "synthetic", "password": "new-secret"]
         await #expect(throws: (any Error).self) { try await engine.call("profile_set_proxy", args) }
         #expect(try Data(contentsOf: AppPaths(rootDirectory: root).profilesFile) == before)
-        backend.fail = false
+        #expect(backend.values.isEmpty)
         args = request(profile); args["proxy"] = NSNull()
-        profile = try await engine.call("profile_set_proxy", args)
-        #expect(profile["proxyKind"] is NSNull); #expect(backend.values.isEmpty)
+        let cleared = try await engine.call("profile_set_proxy", args)
+        #expect(cleared["proxyKind"] is NSNull); #expect(backend.values.isEmpty)
+        args = request(cleared); args["proxy"] = ["kind": "http", "host": "proxy.synthetic.example", "port": 8080]
+        let endpoint = try await engine.call("profile_set_proxy", args)
+        #expect(endpoint["proxyKind"] as? String == "http")
+        #expect(backend.values.isEmpty)
     }
-    @Test func socksAuthenticationPersistsWithoutExposingSecretAndInvalidURLNeverPersists() async throws {
+    @Test func socksProxyRejectsCredentialsAndInvalidURLNeverPersists() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let profile = try await create(engine); let before = try Data(contentsOf: AppPaths(rootDirectory: root).profilesFile)
         var args = request(profile); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080, "username": "synthetic", "password": "secret"]
+        await #expect(throws: MCPProfileManagement.Failure.self) { try await engine.call("profile_set_proxy", args) }
+        #expect(try Data(contentsOf: AppPaths(rootDirectory: root).profilesFile) == before)
+        args = request(profile); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080]
         let saved = try await engine.call("profile_set_proxy", args)
         #expect(saved["proxyKind"] as? String == "socks5")
-        #expect(!String(describing: saved).contains("secret"))
         let after = try Data(contentsOf: AppPaths(rootDirectory: root).profilesFile)
         #expect(after != before)
         args = request(saved); args["changes"] = ["startURL": "file:///etc/passwd"]
@@ -452,7 +711,7 @@ struct MCPProfileManagementTests {
         defer { try? FileManager.default.removeItem(at: root) }
         // A backend that refuses every read detects accidental Keychain access.
         backend.failRead = true
-        for kind in ["chromium", "webkit"] {
+        for kind in BrowserEngine.allCases.map(\.rawValue) {
             let original = try await engine.call("profile_create", ["name": "Direct", "engine": kind])
             var args = request(original); args["name"] = "Direct copy"
             let copied = try await engine.call("profile_duplicate", args)
@@ -520,6 +779,24 @@ struct MCPProfileManagementTests {
         let missingReader = MCPProfileManagement(root: root, allowsManagement: false)
         await #expect(throws: MCPProfileManagement.Failure.self) { try await missingReader.call("folder_list", [:]) }
         #expect(!FileManager.default.fileExists(atPath: paths.profilesFile.path))
+    }
+
+    @Test func readOnlyEmptyWorkspaceRefusesMissingMetadataAndNewSessionRecovers() async throws {
+        let (root, _, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root), empty = Data("[]".utf8)
+        try paths.writePrivateFile(empty, to: paths.profilesFile)
+        let reader = MCPProfileManagement(root: root, allowsManagement: false)
+        #expect(reader.store.hasTrustedMetadata)
+        _ = try await reader.call("folder_list", [:])
+        try FileManager.default.removeItem(at: paths.profilesFile)
+        await #expect(throws: (any Error).self) { try await reader.call("folder_list", [:]) }
+        #expect(!reader.store.hasTrustedMetadata)
+        #expect(!FileManager.default.fileExists(atPath: paths.profilesFile.path))
+        try paths.writePrivateFile(empty, to: paths.profilesFile)
+        let reopened = MCPProfileManagement(root: root, allowsManagement: false)
+        _ = try await reopened.call("folder_list", [:])
+        #expect(reopened.store.hasTrustedMetadata)
+        #expect(try Data(contentsOf: paths.profilesFile) == empty)
     }
 
     @Test func managementConfigurationIncludesOnlySelectedServerPermissions() throws {
