@@ -7,6 +7,8 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import release_candidate_location as location
@@ -27,6 +29,17 @@ class CandidateLocationTests(unittest.TestCase):
         manifest = self.root / "direct-candidate-manifest.json"
         self.assertEqual(location.validate_inputs(self.project, app, {manifest.name:manifest}), self.root)
         self.assertEqual(location.validate_inputs(self.project, self.project / "dist/NeAntik.app", {}), self.project / "dist")
+
+    def test_access_time_change_during_read_is_not_registration_mutation(self):
+        status = (self.root / "location.json").stat()
+        fields = ("st_dev", "st_ino", "st_mode", "st_uid", "st_gid", "st_nlink",
+                  "st_size", "st_mtime_ns", "st_ctime_ns")
+        before = SimpleNamespace(**{field: getattr(status, field) for field in fields},
+                                 st_atime_ns=status.st_atime_ns)
+        after = SimpleNamespace(**{field: getattr(status, field) for field in fields},
+                                st_atime_ns=status.st_atime_ns + 1)
+        with patch.object(location.os, "fstat", side_effect=[before, after]):
+            self.assertEqual(location.validate(self.project, self.root), self.root)
 
     def test_registration_cannot_be_copied_to_another_inode(self):
         other = location.create(self.project)

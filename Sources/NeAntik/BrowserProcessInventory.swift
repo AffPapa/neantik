@@ -383,6 +383,7 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
     func capture() -> BrowserProcessInventory {
         captureLock.lock()
         defer { captureLock.unlock() }
+        guard !Task.isCancelled else { return .unavailable }
         guard let processIdentities = sameUserProcessIdentities() else {
             return .unavailable
         }
@@ -405,6 +406,7 @@ final class DarwinBrowserProcessInventoryProvider: @unchecked Sendable {
         for (pid, capturedIdentity) in processIdentities
             where pid != getpid()
         {
+            guard !Task.isCancelled else { return .unavailable }
             guard let process = processArguments(
                 pid: pid,
                 reusing: &buffer

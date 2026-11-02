@@ -6,6 +6,11 @@ import CryptoKit
 /// Local, opt-in MCP transport. No socket, listener or mandatory account.
 /// The client explicitly selects a metadata root; output is an allowlist only.
 enum MCPStdioServer {
+    static func executeCancellable(_ operation: @escaping @Sendable () -> Data?) async -> Data? {
+        let worker = Task.detached(priority: .userInitiated, operation: operation)
+        let result = await withTaskCancellationHandler { await worker.value } onCancel: { worker.cancel() }
+        return Task.isCancelled ? nil : result
+    }
     static let maximumRequestBytes = 64 * 1_024
     static let maximumProfilesFileBytes = 64 * 1_024 * 1_024
     static let maximumToolPayloadBytes = 256 * 1_024
@@ -48,6 +53,7 @@ enum MCPStdioServer {
     }
 
     static func handle(_ line: Data, dataRoot: URL) -> Data? {
+        guard !Task.isCancelled else { return nil }
         guard line.count <= maximumRequestBytes,
               let object = try? JSONSerialization.jsonObject(with: line)
         else { return response(id: NSNull(), error: (-32700, "Parse error")) }
@@ -127,6 +133,7 @@ enum MCPStdioServer {
                 return response(id: id, error: (-32602, "Invalid arguments"))
             }
             do {
+                try Task.checkCancellation()
                 let snapshot = try readProfiles(dataRoot: dataRoot)
                 var offset = 0
                 if let cursor = arguments["cursor"] as? String {
@@ -139,8 +146,10 @@ enum MCPStdioServer {
                 }
                 var end = paginated ? min(offset + limit, snapshot.profiles.count) : snapshot.profiles.count
                 while true {
-                    let safeProfiles: [[String: Any]] = snapshot.profiles[offset..<end].map { profile in
-                        ["id": profile.id.uuidString, "name": profile.name, "tags": profile.tags,
+                    try Task.checkCancellation()
+                    let safeProfiles: [[String: Any]] = try snapshot.profiles[offset..<end].map { profile in
+                        try Task.checkCancellation()
+                        return ["id": profile.id.uuidString, "name": profile.name, "tags": profile.tags,
                          "isPinned": profile.isPinned, "isArchived": profile.isArchived,
                          "processState": "unverified"]
                     }
@@ -150,6 +159,7 @@ enum MCPStdioServer {
                         payload["nextCursor"] = end < snapshot.profiles.count ? "\(snapshot.revision):\(end)" : NSNull()
                     }
                     let data = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
+                    try Task.checkCancellation()
                     let result: [String: Any] = ["content": [["type": "text", "text": String(decoding: data, as: UTF8.self)]], "structuredContent": payload]
                     // Bound both representations together, not just the text.
                     if try JSONSerialization.data(withJSONObject: result).count <= maximumToolPayloadBytes {
@@ -161,6 +171,8 @@ enum MCPStdioServer {
                     // Return an explicitly smaller page, never silently truncate.
                     end = offset + (end - offset) / 2
                 }
+            } catch is CancellationError {
+                return nil
             } catch {
                 return toolError(id: id, message: "Workspace metadata unavailable or requires recovery in NeAntik.")
             }
@@ -209,7 +221,10 @@ enum MCPStdioServer {
                 "content": [["type": "text", "text": String(decoding: bytes, as: UTF8.self)]]]
     }
     static func toolResult(_ payload: [String: Any]) throws -> Data {
-        var result = try toolResultObject(payload)
+        try encodedToolResult(toolResultObject(payload))
+    }
+    static func encodedToolResult(_ object: [String: Any]) throws -> Data {
+        var result = object
         result["resultType"] = "complete" // Include the larger modern representation in the cap.
         return try JSONSerialization.data(withJSONObject: result, options: [.sortedKeys])
     }
@@ -221,12 +236,13 @@ enum MCPStdioServer {
     private static func readProfiles(dataRoot: URL) throws -> (profiles: [BrowserProfile], revision: String) {
         let paths = AppPaths(rootDirectory: dataRoot)
         try paths.validatePrivateDirectory(dataRoot)
-        return try paths.withProfilesMetadataGuard {
+        return try paths.withProfilesMetadataGuard(existingOnly: true) {
             try readProfilesWhileMetadataGuardHeld(paths: paths)
         }
     }
 
     private static func readProfilesWhileMetadataGuardHeld(paths: AppPaths) throws -> (profiles: [BrowserProfile], revision: String) {
+        try Task.checkCancellation()
         let file = paths.profilesFile
         let descriptor = file.path.withCString { Darwin.open($0, O_RDONLY | O_NOFOLLOW | O_CLOEXEC) }
         if descriptor < 0 {
@@ -241,9 +257,12 @@ enum MCPStdioServer {
         else { throw POSIXError(.EFTYPE) }
         let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: false)
         let data = try handle.read(upToCount: maximumProfilesFileBytes + 1) ?? Data()
+        try Task.checkCancellation()
         guard data.count <= maximumProfilesFileBytes else { throw POSIXError(.EFBIG) }
         let profiles = try ProfileStore.decodeProfiles(data)
+        try Task.checkCancellation()
         let normalized = try ProfileStore.normalizedForIsolation(profiles)
+        try Task.checkCancellation()
         guard !normalized.changed else { throw POSIXError(.EINVAL) }
         let revision = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
         return (profiles, revision)

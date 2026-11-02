@@ -68,9 +68,13 @@ enum ProfileMetadataImportTransaction {
     ) throws -> ProfileMetadataImportResult {
         guard !requestedProfiles.isEmpty,
               requestedProfiles.count == folderNames.count,
-              // Portable imports mint new identities and cannot opt them into
-              // a runtime policy. Full BrowserData restore is a separate path.
-              requestedProfiles.allSatisfy({ $0.fontPolicy == .native })
+              // Portable Chromium imports can derive the system font policy
+              // from a non-legacy privacy policy. Launch still validates it.
+              requestedProfiles.allSatisfy({ profile in
+                  profile.fontPolicy == .native ||
+                  (profile.fontPolicy == .systemV1 &&
+                   profile.engine == .chromium && profile.privacyPolicy != .legacy)
+              })
         else {
             throw NeAntikError.invalidProfile
         }

@@ -5,6 +5,17 @@ import CryptoKit
 /// A metadata-only query. Private notes and proxy endpoints are not searchable:
 /// even a match/no-match response must not reveal excluded fields.
 struct MCPWorkspaceQuery: Sendable {
+    /// Detached work does not inherit later cancellation from an MCP request.
+    static func executeCancellable(_ operation: @escaping @Sendable () throws -> [String: Any]) async throws -> [String: Any] {
+        let worker = Task.detached(priority: .userInitiated, operation: operation)
+        let result = try await withTaskCancellationHandler {
+            try await worker.value
+        } onCancel: {
+            worker.cancel()
+        }
+        try Task.checkCancellation()
+        return result
+    }
     static var properties: [String: Any] { [
         "text": ["type": "string", "maxLength": 256],
         "tags": ["type": "array", "maxItems": 8, "items": ["type": "string", "maxLength": 64]],
@@ -68,8 +79,10 @@ struct MCPWorkspaceQuery: Sendable {
         // Include both metadata revisions: moving/renaming a project invalidates
         // pagination just as a profile edit does. Hashes never expose private values.
         let snapshot = Self.hash(try encoder.encode(profiles) + encoder.encode(ProfileOrganizationDocument(state: organization)))
+        try Task.checkCancellation()
         let folderNames = Dictionary(uniqueKeysWithValues: organization.folders.map { ($0.id, ProfileTagID(rawValue: $0.name).rawValue) })
-        let matches = profiles.filter { profile in
+        let matches = try profiles.filter { profile in
+            try Task.checkCancellation()
             guard profile.isArchived == archived, pinned == nil || profile.isPinned == pinned else { return false }
             let id = organization.folderID(forProfileID: profile.id)
             if let folder, folder != id { return false }

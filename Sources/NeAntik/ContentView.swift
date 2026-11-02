@@ -4331,7 +4331,7 @@ struct ProfileDetailView: View {
                     if ephemeralCleanupInProgress {
                         ProgressView("Ожидаем безопасного завершения очистки…")
                     } else {
-                        Text("Очистка не завершена. Данные сохранены; новый запуск заблокирован до безопасного завершения.")
+                        Text("Очистка не завершена. Новый запуск заблокирован до безопасного завершения.")
                         Button("Повторить очистку", action: onRetryEphemeralCleanup)
                     }
                 }

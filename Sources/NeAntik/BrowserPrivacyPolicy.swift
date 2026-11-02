@@ -51,6 +51,12 @@ struct BrowserPrivacyPolicy: Codable, Equatable, Hashable, Sendable {
         return "custom"
     }
 
+    /// Customized policies must not silently lose the strict preset's
+    /// extension isolation when an unrelated control is changed.
+    var restrictsUserExtensions: Bool {
+        presetName == "strict" || presetName == "custom"
+    }
+
     static func preset(named name: String) -> Self? {
         switch name {
         case "legacy": .legacy
@@ -80,6 +86,7 @@ struct BrowserPrivacyPolicy: Codable, Equatable, Hashable, Sendable {
          "retention": retention.rawValue, "viewport": viewport.rawValue,
          "siteProtection": siteProtection, "trackingParameterCleanup": trackingParameterCleanup,
          "disableSyncAndAutofill": disableSyncAndAutofill,
+         "siteProtectionScope": "NeAntik known-domain and tracker filters only; not Google Safe Browsing or unsafe-download scanning",
          "evidence": "saved-intent; not native qualification"]
     }
 

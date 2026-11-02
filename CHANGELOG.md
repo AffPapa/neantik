@@ -1,17 +1,19 @@
 # NeAntik changelog
 
-## Unreleased — certificate pin hardening
+## Direct 0.9.4 (204) — candidate, not released
 
-- Source-only: the protection passport now derives its Sync/autofill statement from the actual custom policy flag. The old unconditional disabled claim was wrong when that flag was false. Standard Balanced/Strict presets are unchanged; this correction is not yet in published0.9.2 binaries.
+- Clarify direct IP exposure, configured WebRTC limits and extension policies; fix MCP nullable organization revision and unavailable engine capabilities.
+- Add a compatibility control for tracking-query cleanup, preserve extension restrictions for custom policies, and fix privacy-profile configuration imports.
+- Report uncertain MCP rollback accurately and avoid duplicate response serialization. These changes are not in published 0.9.3 binaries.
+- Chromium-only packaging, exact signed-app qualification, notarization and distribution remain in progress; no absolute anonymity is claimed.
 
-- Source-only: the updater now compares the existing public Developer ID certificate using its reviewed SHA-256 digest. Apple chain/team/role, helper payload, timestamp and signed manifest checks remain. This patch is not present in published 0.9.2 binaries; incorporating it requires a separately qualified future manager/helper release, without rebuilding Chromium. No replacement key or certificate was created.
-
-## Direct 0.9.3 (203) — development patch candidate, not yet qualified
+## Direct 0.9.3 (203) — published public alpha
 
 - Fix protection-passport wording for custom policies that do not disable Sync/autofill. Standard Balanced/Strict settings remain unchanged.
 - Consume the reviewed SHA-256 Developer ID certificate pin from the previously unreleased source hardening; preserve Apple/team/role, payload and signed-manifest checks.
-- Correct updater signature policy for Chromium framework dylibs: allow the normal framework flags0 while preserving executable Hardened Runtime, Developer ID, timestamp, empty framework entitlements and exact runtime pins. Public0.9.2 cannot consume this fix through its immutable updater; install the notarized ZIP/DMG manually.
-- Reuse the exact signed Chromium privacy18 runtime. New manager/helper signatures, native component install/rollback, fingerprint and Apple/public gates remain required. Synthetic202 carrier qualification is not a successful public202 updater transition. No public0.9.3 is claimed yet.
+- Correct the updater's Chromium framework signature policy while preserving Hardened Runtime checks for executables, Developer ID, timestamps, empty framework entitlements and exact runtime pins. The immutable 0.9.2 updater cannot consume this fix, so install the notarized ZIP/DMG manually.
+- Reused the exact signed Chromium runtime; Chromium was not rebuilt. The exact manager and shipping-helper checks, notarized ZIP/DMG, stapling and Gatekeeper results are recorded in the [published release](https://github.com/AffPapa/neantik/releases/tag/v0.9.3) and [release metadata](releases/v0.9.3.json).
+- Updating from 0.9.2 requires replacing the app with the notarized ZIP/DMG; the old updater cannot install the Chromium framework signature fix. Existing profile data is retained.
 
 ## Direct 0.9.2 (202) — published public alpha
 

@@ -33,11 +33,19 @@ BULK_PROXY_ACTION = (
     ROOT / "Sources" / "NeAntik" / "BulkProxyActionProjection.swift"
 )
 README = ROOT / "README.md"
+PRIVACY_POLICY = ROOT / "docs" / "PRIVACY_POLICY.md"
 PRODUCT = ROOT / "docs" / "PRODUCT.md"
 ROADMAP = ROOT / "docs" / "ROADMAP.md"
 
 
 class ResponsiveUIContractTests(unittest.TestCase):
+    def test_privacy_policy_matches_default_profile_start_page(self) -> None:
+        policy = PRIVACY_POLICY.read_text(encoding="utf-8")
+
+        self.assertIn("Новые профили по умолчанию открывают `about:blank`", policy)
+        self.assertIn("NeAntik не открывает внешний fingerprint-checker", policy)
+        self.assertNotIn("Новые профили по умолчанию открывают внешний инструмент", policy)
+
     def test_app_does_not_issue_custom_voiceover_announcements(self) -> None:
         sources = ROOT / "Sources" / "NeAntik"
         forbidden = ("NSAccessibility.post", ".announcementRequested")
@@ -589,11 +597,17 @@ class ResponsiveUIContractTests(unittest.TestCase):
 
     def test_runtime_and_proxy_launch_docs_match_direct_behavior(self) -> None:
         readme = README.read_text(encoding="utf-8")
+        readme_en = (ROOT / "README.en.md").read_text(encoding="utf-8")
         product = PRODUCT.read_text(encoding="utf-8")
         roadmap = ROADMAP.read_text(encoding="utf-8")
 
         self.assertIn("перед каждой сессией прокси-профиля", readme)
         self.assertIn("Ручная проверка остаётся", readme)
+        self.assertNotIn("проверяет текущий маршрут", readme)
+        self.assertIn("не измеряет фактический HTTP/DNS-маршрут", readme)
+        self.assertIn("системный DNS может разрешить адрес самого", readme)
+        self.assertIn("does not measure the Chromium window's", readme_en)
+        self.assertIn("system resolver may resolve the", readme_en)
         self.assertIn("before every proxy-bound browser", product)
         self.assertIn("Bundled compatible ARM64 NeAntik Browser", product)
         self.assertNotIn("Installed or manually selected Chromium", product)

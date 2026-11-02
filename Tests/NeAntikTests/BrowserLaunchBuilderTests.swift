@@ -25,6 +25,48 @@ private final class RuntimeInspectionRecorder: @unchecked Sendable {
 }
 
 struct BrowserLaunchBuilderTests {
+    @Test func customizedProtectionNeverDropsExtensionRestriction() {
+        let data = URL(fileURLWithPath: "/private/tmp/neantik-extension-policy-data")
+        let extensionDirectory = URL(fileURLWithPath: "/private/tmp/neantik-owned-protection")
+        var customStrict = BrowserPrivacyPolicy.strict
+        customStrict.trackingParameterCleanup = false
+        var customBalanced = BrowserPrivacyPolicy.balanced
+        customBalanced.rtc = .off
+        for policy in [BrowserPrivacyPolicy.strict, customStrict, customBalanced] {
+            let profile = BrowserProfile(name: "Synthetic protection", privacyPolicy: policy)
+            let args = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: data,
+                runtimeCapabilities: [.profilePrivacyV1], siteProtectionDirectory: extensionDirectory)
+            #expect(args.contains("--disable-extensions-except=" + extensionDirectory.path))
+        }
+        for policy in [BrowserPrivacyPolicy.legacy, .balanced] {
+            let profile = BrowserProfile(name: "Synthetic direct", privacyPolicy: policy)
+            let args = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: data,
+                runtimeCapabilities: [.profilePrivacyV1], siteProtectionDirectory: extensionDirectory)
+            #expect(!args.contains { $0.hasPrefix("--disable-extensions-except=") })
+        }
+    }
+    @Test func linkCleanupCanBeDisabledWithoutTurningOffSiteProtection() throws {
+        var profile = BrowserProfile(name: "Signed link fixture", privacyPolicy: .balanced)
+        let original = profile.privacyPolicy
+        let protectedArguments = BrowserLaunchBuilder.arguments(profile: profile,
+            browserDataDirectory: URL(fileURLWithPath: "/tmp/neantik-link-fixture"), runtimeCapabilities: [.profilePrivacyV1])
+        #expect(protectedArguments.contains { $0.hasPrefix("--enable-features=") && $0.contains("DIPS") })
+        profile.privacyPolicy.trackingParameterCleanup = false
+        let restored = try JSONDecoder().decode(BrowserProfile.self, from: JSONEncoder().encode(profile))
+        #expect(!restored.privacyPolicy.trackingParameterCleanup)
+        #expect(restored.privacyPolicy.siteProtection == original.siteProtection)
+        #expect(restored.privacyPolicy.localNetwork == original.localNetwork)
+        #expect(restored.privacyPolicy.rtc == original.rtc)
+        #expect(restored.privacyPolicy.presetName == "custom")
+        #expect(restored.privacyPolicy.draftToken != original.draftToken)
+        let environment = BrowserLaunchBuilder.environment(profile: restored, runtimeCapabilities: [.profilePrivacyV1], inherited: [:])
+        #expect(environment["NEANTIK_PROFILE_QUERY_CLEANUP"] == nil)
+        #expect(environment["NEANTIK_PROFILE_PRIVACY_EXTENSION_ID"] == SiteProtectionBundle.extensionID)
+        let arguments = BrowserLaunchBuilder.arguments(profile: restored,
+            browserDataDirectory: URL(fileURLWithPath: "/tmp/neantik-link-fixture"), runtimeCapabilities: [.profilePrivacyV1])
+        #expect(!arguments.contains { $0.hasPrefix("--enable-features=") && $0.contains("DIPS") })
+    }
+
     @Test func mandatoryProxyOwnershipIsExplicitAndCannotBeInherited() {
         var profile = BrowserProfile(name: "Own route", proxy: .init(kind: .http, host: "owned.test", port: 1234, username: ""))
         let ambient = ["NEANTIK_PROFILE_PROXY_REQUIRED": "attacker"]
@@ -839,6 +881,24 @@ struct BrowserLaunchBuilderTests {
             port: 1080,
             username: ""
         )
+        let bracketedIPv6 = ProxyConfiguration(
+            kind: .http,
+            host: "[2001:db8::8]",
+            port: 8080,
+            username: ""
+        )
+        let doubleBracketedIPv6 = ProxyConfiguration(
+            kind: .http,
+            host: "[[::1]]",
+            port: 8080,
+            username: ""
+        )
+        let doubleBracketedIPv4 = ProxyConfiguration(
+            kind: .http,
+            host: "[[192.0.2.8]]",
+            port: 8080,
+            username: ""
+        )
         let invalid = ProxyConfiguration(
             kind: .http,
             host: "proxy@example",
@@ -849,6 +909,10 @@ struct BrowserLaunchBuilderTests {
         #expect(domain.isValid)
         #expect(ipv6.isValid)
         #expect(ipv6.chromiumServer == "socks5://[::1]:1080")
+        #expect(bracketedIPv6.isValid)
+        #expect(bracketedIPv6.chromiumServer == "http://[2001:db8::8]:8080")
+        #expect(!doubleBracketedIPv6.isValid)
+        #expect(!doubleBracketedIPv4.isValid)
         #expect(!invalid.isValid)
 
         let authenticatedSOCKS = ProxyConfiguration(

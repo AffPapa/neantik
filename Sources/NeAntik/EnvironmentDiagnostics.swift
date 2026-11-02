@@ -239,6 +239,7 @@ enum ProfileEnvironmentInspector {
             generatedAt: now,
             sections: [
                 protectionSection(profile: profile, runtime: runtime, parametersSent: privacyParametersSent),
+                siteProtectionSection(profile: profile),
                 routeSection(
                     policy: policy,
                     proxyHealth: proxyHealth,
@@ -281,7 +282,7 @@ enum ProfileEnvironmentInspector {
     ) -> EnvironmentDiagnosticSection {
         let compatible = runtime?.supportsProfilePrivacy == true
         let localStart = BrowserStartURL.validate(profile.startURL)?.absoluteString == "about:blank"
-        let restoresSession = profile.startupMode == .restoreSession && profile.privacyPolicy.retention != .ephemeral
+        let restoresSession = BrowserLaunchBuilder.restoresSession(profile: profile)
         return EnvironmentDiagnosticSection(
             id: "protection",
             title: "Паспорт защиты",
@@ -310,13 +311,18 @@ enum ProfileEnvironmentInspector {
                     id: "protection.controls", title: "Ограничения",
                     value: "RTC: \(profile.privacyPolicy.rtc.rawValue) · LAN: \(profile.privacyPolicy.localNetwork.rawValue) · разрешения: \(profile.privacyPolicy.media.rawValue)",
                     state: .configured,
-                    detail: "При RTC proxyOnly без прокси WebRTC выключен. С прокси запрещён UDP вне прокси; совместимый TCP TURN зависит от сайта. Строгий режим полностью запрещает создание RTCPeerConnection."
+                    detail: "При RTC proxyOnly без прокси WebRTC выключен. С прокси политика ограничивает прямой UDP; работа TURN зависит от сайта и не подтверждена проверкой маршрута. Строгий режим запрещает создание RTCPeerConnection."
                 ),
                 EnvironmentDiagnosticField(
                     id: "protection.extensions", title: "Расширения, Sync и autofill",
-                    value: profile.proxy != nil || profile.privacyPolicy.presetName == "strict" ? "Обычные расширения профиля отключены" : "Разрешены отдельные расширения профиля",
+                    value: profile.proxy != nil || profile.privacyPolicy.restrictsUserExtensions ? "Настроено отключение обычных расширений" : "Допускаются отдельные расширения профиля",
                     state: .configured,
-                    detail: "Обычные расширения профиля ограничены; компоненты браузера и системные интеграции могут сохраняться. В совместимом движке обязательный прокси закреплён независимо от их настроек. Данные расширений не удаляются. " +
+                    detail: (profile.proxy != nil || profile.privacyPolicy.restrictsUserExtensions
+                        ? "При запуске совместимого движка передаётся ограничение обычных расширений. "
+                        : "Отдельные расширения профиля разрешены. ") +
+                        "Компоненты браузера и системные интеграции могут сохраняться. " +
+                        (profile.proxy != nil ? "В совместимом движке обязательный прокси закреплён независимо от их настроек. " : "") +
+                        "Данные расширений не удаляются. " +
                         (profile.privacyPolicy.disableSyncAndAutofill
                             ? "Политика запрещает Sync, autofill и сохранение паролей."
                             : "Политика не запрещает Sync, autofill и сохранение паролей.")
@@ -354,6 +360,31 @@ enum ProfileEnvironmentInspector {
                     value: "Полная несопоставимость не подтверждена",
                     state: .unverified,
                     detail: "Общий внешний IP, одинаковые аккаунты, файлы и поведение могут связывать посещения даже при разных настройках среды."
+                )
+            ]
+        )
+    }
+
+    private static func siteProtectionSection(
+        profile: BrowserProfile
+    ) -> EnvironmentDiagnosticSection {
+        let isChromium = profile.engine == .chromium
+        return EnvironmentDiagnosticSection(
+            id: "site-protection",
+            title: "Защита сайтов",
+            fields: [
+                EnvironmentDiagnosticField(
+                    id: "site-protection.phishing-malware",
+                    title: "Фишинг и вредоносные загрузки",
+                    value: isChromium
+                        ? "Не включена"
+                        : "Не проверено NeAntik",
+                    state: isChromium ? .unavailable : .unverified,
+                    severity: .attention,
+                    detail: isChromium
+                        ? "Текущий Chromium runtime не проверяет адреса по списку угроз и не показывает предупреждения о таких сайтах. Не считай этот профиль защищённым от фишинга или вредоносных загрузок."
+                        : "NeAntik не проверяет защиту системного WebKit от таких сайтов. " +
+                            "Возможности macOS не квалифицированы; не считай их подтверждёнными NeAntik."
                 )
             ]
         )
@@ -635,7 +666,7 @@ enum ProfileEnvironmentInspector {
         case .publicInterfaceOnly:
             "Только публичный интерфейс"
         case .disableNonProxiedUDP:
-            "Запрещён UDP вне прокси"
+            "Ограничен прямой UDP для WebRTC"
         }
         var fields = [
             EnvironmentDiagnosticField(
@@ -726,11 +757,19 @@ enum ProfileEnvironmentInspector {
         case .notDisabledByNeAntik:
             "NeAntik не отключает QUIC"
         }
-        let dnsValue = switch policy.dns {
+        let dnsValue: String
+        let dnsDetail: String
+        switch policy.dns {
         case .ordinaryChromium:
-            "Обычная политика Chromium и macOS"
+            dnsValue = "Обычная политика Chromium и macOS"
+            dnsDetail = "Имена сайтов разрешаются по обычной политике Chromium и macOS."
         case .proxyResolverFailClosed:
-            "Прямое разрешение сайтов ограничено"
+            dnsValue = "Прямое разрешение сайтов ограничено"
+            if policy.proxyHostRequiresDNSResolution == false {
+                dnsDetail = "Chromium ограничивает прямое DNS-разрешение сайтов. Адрес proxy задан как IP, DNS для адреса proxy не требуется; фактический DNS-маршрут не измерялся."
+            } else {
+                dnsDetail = "Chromium ограничивает прямое DNS-разрешение сайтов. Для подключения к proxy с именем хоста может потребоваться системное DNS-разрешение; фактический DNS-маршрут не измерялся."
+            }
         }
         return EnvironmentDiagnosticSection(
             id: "transport",
@@ -752,7 +791,8 @@ enum ProfileEnvironmentInspector {
                         : .configured,
                     severity: policy.dns == .ordinaryChromium
                         ? .neutral
-                        : .success
+                        : .success,
+                    detail: dnsDetail
                 ),
                 EnvironmentDiagnosticField(
                     id: "transport.quic-observed",

@@ -4,6 +4,32 @@ import Testing
 
 struct EnvironmentDiagnosticAssessmentTests {
     @Test
+    func chromiumSiteThreatProtectionIsExplicitlyUnavailable() throws {
+        let snapshot = makeSnapshot()
+        let threat = try field("site-protection.phishing-malware", in: snapshot)
+
+        #expect(threat.value == "Не включена")
+        #expect(threat.state == .unavailable)
+        #expect(threat.severity == .attention)
+        #expect(threat.detail?.contains("не проверяет адреса") == true)
+    }
+
+    @Test
+    func systemWebKitThreatProtectionRemainsUnverified() throws {
+        let profile = BrowserProfile(name: "System WebKit", engine: .webkit)
+        let snapshot = ProfileEnvironmentInspector.snapshot(
+            profile: profile,
+            runtime: nil,
+            proxyHealth: nil
+        )
+        let threat = try field("site-protection.phishing-malware", in: snapshot)
+
+        #expect(threat.value == "Не проверено NeAntik")
+        #expect(threat.state == .unverified)
+        #expect(threat.detail?.contains("Возможности macOS не квалифицированы") == true)
+    }
+
+    @Test
     func badRuntimeSignatureIsAnObservedFailure() throws {
         let snapshot = makeSnapshot(runtimeSignature: false)
         let signature = try field(
@@ -73,6 +99,57 @@ struct EnvironmentDiagnosticAssessmentTests {
         for id in expectedNeutralIDs {
             #expect(try field(id, in: snapshot).severity == .neutral)
         }
+    }
+
+    @Test
+    func proxyDNSPolicyDisclosesProxyBootstrapResolutionLimit() throws {
+        let profile = BrowserProfile(
+            name: "Proxy DNS disclosure",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "proxy.example",
+                port: 443,
+                username: ""
+            )
+        )
+        let snapshot = ProfileEnvironmentInspector.snapshot(
+            profile: profile,
+            runtime: runtime(signature: true),
+            proxyHealth: nil
+        )
+        let policy = try field("transport.dns-policy", in: snapshot)
+        let observed = try field("transport.dns-observed", in: snapshot)
+
+        #expect(policy.value == "Прямое разрешение сайтов ограничено")
+        #expect(policy.detail?.contains("proxy с именем хоста") == true)
+        #expect(policy.detail?.contains("системное DNS-разрешение") == true)
+        #expect(policy.detail?.contains("не измерялся") == true)
+        #expect(observed.state == .unverified)
+    }
+
+    @Test
+    func proxyDNSPolicyDoesNotClaimBootstrapDNSForIPAddressLiteral() throws {
+        let profile = BrowserProfile(
+            name: "Proxy IP DNS disclosure",
+            proxy: ProxyConfiguration(
+                kind: .https,
+                host: "192.0.2.8",
+                port: 443,
+                username: ""
+            )
+        )
+        let snapshot = ProfileEnvironmentInspector.snapshot(
+            profile: profile,
+            runtime: runtime(signature: true),
+            proxyHealth: nil
+        )
+        let policy = try field("transport.dns-policy", in: snapshot)
+        let observed = try field("transport.dns-observed", in: snapshot)
+
+        #expect(policy.value == "Прямое разрешение сайтов ограничено")
+        #expect(policy.detail?.contains("DNS для адреса proxy не требуется") == true)
+        #expect(policy.detail?.contains("не измерялся") == true)
+        #expect(observed.state == .unverified)
     }
 
     @Test

@@ -3,6 +3,20 @@ import Testing
 @testable import NeAntik
 
 struct HelpContentTests {
+    @Test func environmentHelpDisclosesThreatProtectionLimits() {
+        let text = HelpTopic.environment.sections.map(\.text).joined(separator: " ")
+        #expect(text.contains("Встроенная защита NeAntik от известных фишинговых сайтов и вредоносных загрузок не включена"))
+        #expect(text.contains("возможности macOS для системного WebKit не квалифицированы"))
+    }
+
+    @Test func profileHelpExplainsDisposableDataRetention() {
+        #expect(!HelpTopic.profiles.introduction.contains("постоянная сессия"))
+        let section = HelpTopic.profiles.sections.first { $0.title == "Одноразовый сеанс" }
+        #expect(section?.text.contains("удаляет данные сайтов") == true)
+        #expect(section?.text.contains("скачанные файлы и экспорт сохраняются") == true)
+        #expect(section?.text.contains("повторный запуск блокируется") == true)
+        #expect(HelpTopic.matching("Одноразовый сеанс").contains(.profiles))
+    }
     @Test func searchFindsTasksInsideArticles() {
         #expect(HelpTopic.matching("429").contains(.proxy))
         #expect(HelpTopic.matching("СНИМОК").contains(.storage))
@@ -25,6 +39,20 @@ struct HelpContentTests {
             #expect(proxyHelp.contains("прямое подключение вместо прокси не используется"))
         }
         #expect(!proxyHelp.contains("настройки применяются к отдельному хранилищу сайтов"))
+    }
+
+    @Test func mcpHelpRecommendsLocalProxyCredentialEntry() {
+        let proxy = HelpTopic.mcp.sections.first { $0.title == "Прокси" }?.text.lowercased() ?? ""
+        #expect(proxy.contains("profile_set_proxy принимает proxy:null"))
+        #expect(proxy.contains("endpoint с kind/host/port"))
+        #expect(proxy.contains("локальном редакторе профиля"))
+        #expect(proxy.contains("username/password") && proxy.contains("отклоняются"))
+        #expect(!proxy.contains("profile_set_proxy принимает отдельные поля kind/host/port/username/password"))
+        let examples = HelpTopic.mcp.sections.first { $0.title == "Примеры для чата" }?.text ?? ""
+        let normalizedExamples = examples.lowercased()
+        #expect(normalizedExamples.contains("установи прокси через mcp только по типу, адресу и порту"))
+        #expect(normalizedExamples.contains("логин и пароль я введу локально в neantik"))
+        #expect(!examples.contains("из моих настроек"))
     }
 
     @Test func chromiumOnlyHelpDoesNotOfferWebKitLaunch() {
