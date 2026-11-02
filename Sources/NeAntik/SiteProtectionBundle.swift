@@ -20,7 +20,7 @@ struct PreparedSiteProtection: Sendable {
 enum SiteProtectionBundle {
     static let extensionID = "amkgfbjfocbfnpeamfekgijcnfnegndh"
     static let baselineRuleCount = 253
-    static let sealSHA256 = "96b1c18a5f6a84f28e3d1f36b6c9a1f04fd204cc0e048cfbe0aafd0fae3e8ee2"
+    static let sealSHA256 = "28168fe8a06154c2f93b5812ede0860d0ae575ffd3ad4e31d1d089c20fb119bc"
     private static let cacheName = ".neantik-site-protection-v1"
     private static let ownerName = ".neantik-owner-v1.json"
     private static let payloadNames: Set<String> = [
