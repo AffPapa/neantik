@@ -48,7 +48,11 @@ def validate(project: Path, root: Path) -> Path:
         after = os.fstat(descriptor)
     finally:
         os.close(descriptor)
-    if before != after or len(raw) != before.st_size:
+    # Reading may update st_atime. Compare the inode and write-sensitive
+    # metadata only, so an ordinary access-time update is not a mutation race.
+    stable_fields = ("st_dev", "st_ino", "st_mode", "st_uid", "st_gid",
+                     "st_nlink", "st_size", "st_mtime_ns", "st_ctime_ns")
+    if any(getattr(before, field) != getattr(after, field) for field in stable_fields) or len(raw) != before.st_size:
         raise CandidateLocationError("Candidate registration changed during reading")
     def unique(pairs):
         result = {}

@@ -47,12 +47,12 @@ final class MCPProfileManagement {
             "note": text, "isPinned": ["type": "boolean"], "isArchived": ["type": "boolean"], "colorHex": text, "symbolName": text], enabled: mediaPolicyEnabled)]
         let proxyFields: [String: Any] = ["type": "object", "additionalProperties": false, "required": ["kind", "host", "port"], "properties": [
             "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "host": text,
-            "port": ["type": "integer", "minimum": 1, "maximum": 65535], "username": text, "password": text]]
+            "port": ["type": "integer", "minimum": 1, "maximum": 65535]]]
         let profileCreateDescription: String
         #if NEANTIK_CHROMIUM_ONLY
-        profileCreateDescription = "Create a Chromium profile without starting it. Optional templateID uses saved Chromium template metadata with fresh identity; requires expectedOrganizationRevision from template_list. For safer setup, send only proxy kind, host and port through MCP, then enter username/password in NeAntik's local profile editor. Proxy credentials sent in tool input may enter AI history."
+        profileCreateDescription = "Create a Chromium profile without starting it. Optional templateID uses saved Chromium template metadata with fresh identity; requires expectedOrganizationRevision from template_list. MCP accepts proxy kind, host and port only; credentials are not accepted in MCP arguments. Enter them in NeAntik's local profile editor."
         #else
-        profileCreateDescription = "Create a persistent profile without starting it. Optional templateID uses saved safe metadata with fresh identity; requires expectedOrganizationRevision from template_list. Explicit changes/folder override template values. For safer setup, send only proxy kind, host and port through MCP, then enter username/password in NeAntik's local profile editor. Proxy credentials sent in tool input may enter AI history. A new WebKit proxy profile selects the owned runtime only when that route is enabled; a Direct WebKit profile selects system WebKit. No automatic retry: a repeat creates another profile."
+        profileCreateDescription = "Create a persistent profile without starting it. Optional templateID uses saved safe metadata with fresh identity; requires expectedOrganizationRevision from template_list. Explicit changes/folder override template values. MCP accepts proxy kind, host and port only; credentials are not accepted in MCP arguments. Enter them in NeAntik's local profile editor. A new WebKit proxy profile selects the owned runtime only when that route is enabled; a Direct WebKit profile selects system WebKit. No automatic retry: a repeat creates another profile."
         #endif
         let specs: [(String, String, [String: Any], [String])] = [
             ("template_list", "Read saved user templates (maximum50), safe start pages and tags. No credentials, notes, identity or BrowserData. Missing project folders resolve to unfiled. Use templateID plus this organizationRevision with profile_create; creation never starts a browser.", [:], []),
@@ -60,9 +60,9 @@ final class MCPProfileManagement {
             ("folder_list", "Read up to100 project folders and organizationRevision. Pass nextCursor unchanged; restart on organization change.", ["limit": ["type": "integer", "minimum": 1, "maximum": 100], "cursor": text], []),
             ("workspace_query_profiles", "Find profiles by name, tags and project without reading private notes. Tags use AND; omitted archived means active only. folderID:null means unfiled, omission means any. Cursor is tied to filters and snapshot. Process state remains unverified.", MCPWorkspaceQuery.properties, []),
             ("profile_status", "Management mode reconciles profile ownership; external sessions require manual close. Read-only mode does not reconcile or clear data: externalUnverified indicates a process referencing the profile data was seen, unverified means the state is unknown; neither establishes that the profile is stopped or authorizes a launch. Optional includeObservation:true requires expectedRevision and observes only this session's verified owned browser. Never returns page content, credentials, PID, paths or proof of Chromium network route.", ["profileID": uuid, "includeObservation": ["type": "boolean"], "expectedRevision": revision], ["profileID"]),
-            ("profile_create", profileCreateDescription, ["name": text, "engine": ["type": "string", "enum": BrowserEngine.allCases.map(\.rawValue)], "changes": changes, "templateID": uuid, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "order": ["type": "string", "enum": ["automatic", "credentialsFirst", "endpointFirst"]]], ["name"]),
+            ("profile_create", profileCreateDescription, ["name": text, "engine": ["type": "string", "enum": BrowserEngine.allCases.map(\.rawValue)], "changes": changes, "templateID": uuid, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]]], ["name"]),
             ("profile_update", "Patch an existing stopped profile; omitted fields stay unchanged. fontPolicy:native|system-v1 explicitly selects Chromium font handling; system-v1 needs the qualified runtime at launch, not just a profile seed. Read its revision first.", ["profileID": uuid, "expectedRevision": revision, "changes": changes], ["profileID", "expectedRevision", "changes"]),
-            ("profile_set_proxy", BrowserEngine.webkit.isAvailableInBuild ? "Configure/disable proxy settings on a stopped profile. Use proxy:null, proxy fields, or proxyLine with kind/order. For safer setup, send only proxy kind, host and port through MCP, then enter username/password in NeAntik's local profile editor; credentials sent in tool input may enter AI history. Chromium authentication uses its per-profile local relay. A WebKit proxy requires the owned runtime; switching an existing WebKit profile between Direct and proxy is refused because those runtimes have separate site data. Create a new profile for that change. When the WebKit route is disabled, settings may be saved but launch fails closed without Direct fallback. HTTPS proxy certificates are verified before authentication when the supported route is enabled. A saved proxy and preflight result do not prove the browser route." : "Configure or disable proxy settings on a stopped Chromium profile. Use proxy:null, proxy fields, or proxyLine with kind/order. For safer setup, send only proxy kind, host and port through MCP, then enter username/password in NeAntik's local profile editor; credentials sent in tool input may enter AI history. Chromium authentication uses its per-profile local relay. HTTPS proxy certificates are verified before authentication. A saved proxy or preflight result does not prove the browser route.", ["profileID": uuid, "expectedRevision": revision, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]], "order": ["type": "string", "enum": ["automatic", "credentialsFirst", "endpointFirst"]]], ["profileID", "expectedRevision"]),
+            ("profile_set_proxy", BrowserEngine.webkit.isAvailableInBuild ? "Configure/disable proxy settings on a stopped profile. Use proxy:null, proxy with kind/host/port, or an unauthenticated proxyLine with kind. MCP rejects username/password fields and credential-bearing proxy lines; enter credentials in NeAntik's local profile editor. Chromium authentication uses its per-profile local relay. A WebKit proxy requires the owned runtime; switching an existing WebKit profile between Direct and proxy is refused because those runtimes have separate site data. Create a new profile for that change. When the WebKit route is disabled, settings may be saved but launch fails closed without Direct fallback. HTTPS proxy certificates are verified before authentication when the supported route is enabled. A saved proxy and preflight result do not prove the browser route." : "Configure or disable proxy settings on a stopped Chromium profile. Use proxy:null, proxy with kind/host/port, or an unauthenticated proxyLine with kind. MCP rejects username/password fields and credential-bearing proxy lines; enter credentials in NeAntik's local profile editor. Chromium authentication uses its per-profile local relay. HTTPS proxy certificates are verified before authentication. A saved proxy or preflight result does not prove the browser route.", ["profileID": uuid, "expectedRevision": revision, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]]], ["profileID", "expectedRevision"]),
             ("profile_move", "Move stopped profile to folder/project or null (unfiled). Both revisions protect concurrent changes.", ["profileID": uuid, "expectedRevision": revision, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["profileID", "expectedRevision", "folderID", "expectedOrganizationRevision"]),
             ("profile_duplicate", "Copy configuration into a fresh identity; never copy cookies, notes or BrowserData. Copies proxy password via local Keychain without returning it.", ["profileID": uuid, "expectedRevision": revision, "name": text], ["profileID", "expectedRevision", "name"]),
             ("folder_create", "Create a project folder.", ["name": text, "expectedOrganizationRevision": optionalUUID], ["name", "expectedOrganizationRevision"]),
@@ -169,7 +169,7 @@ final class MCPProfileManagement {
             guard profile.engine.isAvailableInBuild else { throw Failure.invalid }
             profile.name = requestedName
             try apply(args["changes"] as? [String: Any] ?? [:], to: &profile)
-            let hasProxyArgument = args["proxy"] != nil || args["proxyLine"] != nil || args["kind"] != nil || args["order"] != nil
+            let hasProxyArgument = args["proxy"] != nil || args["proxyLine"] != nil || args["kind"] != nil
             let proxyDraft = hasProxyArgument ? try parseProxy(args) : nil
             profile.proxy = proxyDraft?.configuration
             profile.webKitRuntimeGeneration = WebKitProfilePolicy.runtimeGenerationForSave(
@@ -185,7 +185,7 @@ final class MCPProfileManagement {
             if folder != nil && expected == nil { throw Failure.invalid }
             let saved = try store.upsert(profile, toFolderID: folder, expectedOrganizationRevision: expected,
                 afterPersist: { committed in
-                    if let proxyDraft {
+                    if let proxyDraft, !proxyDraft.password.isEmpty {
                         try self.keychain.updateProxyPasswordForProfileEdit(proxyDraft.password, profileID: committed.id)
                     }
                 })
@@ -323,7 +323,10 @@ final class MCPProfileManagement {
                 }
                 try validate(profile, password: draft?.password ?? "")
                 profile = try store.upsert(profile, afterPersist: { saved in
-                    try self.keychain.updateProxyPasswordForProfileEdit(draft?.password, profileID: saved.id)
+                    let password: String?
+                    if let draft, !draft.password.isEmpty { password = draft.password }
+                    else { password = nil }
+                    try self.keychain.updateProxyPasswordForProfileEdit(password, profileID: saved.id)
                 })
             case "profile_duplicate":
                 let password = try keychain.configuredProxyPassword(for: profile)
@@ -420,7 +423,7 @@ final class MCPProfileManagement {
     }
 
     /// Metadata edits retain the existing proxy and never read its write-only
-    /// password. Credential admission belongs to set-proxy/duplicate/launch.
+    /// password. New credential entry is a local editor operation, not MCP.
     private func validateMetadata(_ profile: BrowserProfile) throws {
         if profile.engine == .webkit { try WebKitProfilePolicy.validateConfiguration(profile) }
         guard profile.normalizedForPersistence() != nil,
@@ -439,17 +442,16 @@ final class MCPProfileManagement {
     private func parseProxy(_ args: [String: Any]) throws -> ProxyImportDraft? {
         if let line = args["proxyLine"] {
             guard args["proxy"] == nil, let line = line as? String, let kind = ProxyKind(rawValue: try string(args, "kind")) else { throw Failure.invalid }
-            guard args["order"] == nil || args["order"] is String else { throw Failure.invalid }
-            let order = ProxyImportOrder(rawValue: args["order"] as? String ?? "automatic")
-            guard let order else { throw Failure.invalid }
-            return try ProxyImportParser.parse(line, kind: kind, order: order)
+            guard args["order"] == nil else { throw Failure.invalid }
+            let draft = try ProxyImportParser.parse(line, kind: kind, order: .automatic)
+            guard draft.configuration.username.isEmpty, draft.password.isEmpty else { throw Failure.invalid }
+            return ProxyImportDraft(configuration: draft.configuration, password: "")
         }
         guard args["kind"] == nil, args["order"] == nil, let value = args["proxy"] else { throw Failure.invalid }
         if value is NSNull { return nil }
-        guard let fields = value as? [String: Any], Set(fields.keys).isSubset(of: ["kind", "host", "port", "username", "password"]), let kind = ProxyKind(rawValue: try string(fields, "kind")), let number = fields["port"] as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID(), number.doubleValue == Double(number.intValue), (1...65535).contains(number.intValue) else { throw Failure.invalid }
-        let configuration = ProxyConfiguration(kind: kind, host: try string(fields, "host"), port: number.intValue, username: fields["username"] == nil ? "" : try string(fields, "username"))
-        let password = fields["password"] == nil ? "" : try string(fields, "password")
-        return ProxyImportDraft(configuration: configuration, password: password)
+        guard let fields = value as? [String: Any], Set(fields.keys).isSubset(of: ["kind", "host", "port"]), let kind = ProxyKind(rawValue: try string(fields, "kind")), let number = fields["port"] as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID(), number.doubleValue == Double(number.intValue), (1...65535).contains(number.intValue) else { throw Failure.invalid }
+        let configuration = ProxyConfiguration(kind: kind, host: try string(fields, "host"), port: number.intValue, username: "")
+        return ProxyImportDraft(configuration: configuration, password: "")
     }
     private func dto(_ profile: BrowserProfile) -> [String: Any] {
         WebKitMediaFeature.visibleFields(["id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name, "startURL": profile.startURL, "startupMode": profile.startupMode.rawValue, "fontPolicy": profile.engine == .chromium ? profile.fontPolicy.rawValue as Any : NSNull(), "engine": profile.engine.rawValue, "webKitMediaPolicy": profile.engine == .webkit ? profile.webKitMediaPolicy.rawValue as Any : NSNull(),

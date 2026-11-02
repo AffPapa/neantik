@@ -183,8 +183,7 @@ struct MCPProfileManagementTests {
         #expect(directPolicy["runtimeRoute"] as? String == "unverified")
 
         var args = request(direct)
-        args["proxy"] = ["kind": "http", "host": "proxy.synthetic.example", "port": 8080,
-                          "username": "fixture-user", "password": "fixture-secret"]
+        args["proxy"] = ["kind": "http", "host": "proxy.synthetic.example", "port": 8080]
         let proxied = try await engine.call("profile_set_proxy", args)
         let policy = try #require(proxied["networkPolicyIntent"] as? [String: Any])
         #expect(policy["configuredRoute"] as? String == "proxyConfigured")
@@ -311,14 +310,24 @@ struct MCPProfileManagementTests {
         #expect(proxy.contains("does not prove the browser route"))
     }
 
-    @Test func proxyToolDescriptionsRecommendEnteringCredentialsLocally() throws {
+    @Test func proxyToolContractKeepsCredentialsOutOfMCP() throws {
         let tools = MCPProfileManagement.definitions(allowsManagement: true)
         for name in ["profile_create", "profile_set_proxy"] {
             let description = try #require(
                 tools.first { $0["name"] as? String == name }?["description"] as? String
             )
-            #expect(description.contains("enter username/password in NeAntik's local profile editor"))
-            #expect(description.contains("may enter AI history"))
+            let normalizedDescription = description.lowercased()
+            #expect(normalizedDescription.contains("local profile editor"))
+            #expect(normalizedDescription.contains("credentials are not accepted in mcp arguments") ||
+                    normalizedDescription.contains("mcp rejects username/password fields"))
+            let schema = try #require(tools.first { $0["name"] as? String == name }?["inputSchema"] as? [String: Any])
+            let properties = try #require(schema["properties"] as? [String: Any])
+            #expect(properties["order"] == nil)
+            if let proxySchema = properties["proxy"] as? [String: Any],
+               let choices = proxySchema["anyOf"] as? [[String: Any]],
+               let fields = choices.first(where: { $0["type"] as? String == "object" })?["properties"] as? [String: Any] {
+                #expect(Set(fields.keys) == ["kind", "host", "port"])
+            }
         }
     }
 
@@ -357,15 +366,13 @@ struct MCPProfileManagementTests {
         args = request(edited); args["changes"] = ["startupMode": "restoreSession"]
         edited = try await engine.call("profile_update", args)
         #expect(edited["startupMode"] as? String == "restoreSession")
-        // Management stores proxy configuration and its write-only password;
+        // MCP can store the endpoint. Credentials remain a local editor operation;
         // capability flags describe launch support for this build, not storage.
-        args = request(edited); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080,
-            "username": "webkit-qa-user", "password": "webkit-qa-secret"]
+        args = request(edited); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080]
         edited = try await engine.call("profile_set_proxy", args)
         let webkitID = try #require(UUID(uuidString: edited["id"] as! String))
         #expect(edited["proxyKind"] as? String == "socks5")
-        #expect(backend.values[webkitID] == Data("webkit-qa-secret".utf8))
-        #expect(!String(decoding: try JSONSerialization.data(withJSONObject: edited), as: UTF8.self).contains("webkit-qa-secret"))
+        #expect(backend.values[webkitID] == nil)
         args = request(edited); args["name"] = "WebKit copy"
         let duplicate = try await engine.call("profile_duplicate", args)
         #expect(duplicate["engine"] as? String == "webkit" && duplicate["id"] as? String != edited["id"] as? String)
@@ -374,7 +381,7 @@ struct MCPProfileManagementTests {
         #expect(engine.processes.processState(for: id) == .stopped)
     }
 
-    @Test func webKitProxyCanBeCreatedAtomicallyWithoutExposingCredential() async throws {
+    @Test func webKitProxyCanBeCreatedAtomicallyWithoutMCPCredentialInput() async throws {
         guard BrowserEngine.webkit.isAvailableInBuild else { return }
         let (root, engine, backend) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -382,20 +389,25 @@ struct MCPProfileManagementTests {
             .first(where: { $0["name"] as? String == "profile_create" }))
         let properties = try #require((creation["inputSchema"] as? [String: Any])?["properties"] as? [String: Any])
         #expect(properties["proxy"] != nil)
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_create", [
+                "name": "Rejected credential proxy", "engine": "webkit",
+                "proxy": ["kind": "http", "host": "127.0.0.1", "port": 45101,
+                          "username": "qa-user", "password": "qa-only-password"]
+            ])
+        }
+        #expect(engine.store.profiles.isEmpty && backend.values.isEmpty)
         let created = try await engine.call("profile_create", [
             "name": "WebKit proxy at creation", "engine": "webkit",
             "changes": ["startURL": "about:blank"],
-            "proxy": ["kind": "http", "host": "127.0.0.1", "port": 45101,
-                      "username": "qa-user", "password": "qa-only-password"]
+            "proxy": ["kind": "http", "host": "127.0.0.1", "port": 45101]
         ])
         let id = try #require(UUID(uuidString: created["id"] as! String))
         let saved = try #require(engine.store.profile(withID: id))
         #expect(saved.proxy?.host == "127.0.0.1")
         #expect(saved.webKitRuntimeGeneration ==
             (WebKitProxyFeature.launchEnabled ? .isolatedV1 : .system))
-        #expect(backend.values[id] == Data("qa-only-password".utf8))
-        #expect(!String(decoding: try JSONSerialization.data(withJSONObject: created), as: UTF8.self)
-            .contains("qa-only-password"))
+        #expect(backend.values[id] == nil)
     }
 
     @Test func webKitSessionAddressesStayOutOfMCPAndConfigurationExport() async throws {
@@ -549,27 +561,27 @@ struct MCPProfileManagementTests {
     }
     func create(_ engine: MCPProfileManagement) async throws -> [String: Any] { try await engine.call("profile_create", ["name": "Synthetic", "changes": ["startURL": "https://example.com", "tags": ["qa"]]]) }
     func request(_ dto: [String: Any]) -> [String: Any] { ["profileID": dto["id"]!, "expectedRevision": dto["revision"]!] }
+    func request(_ profile: BrowserProfile) -> [String: Any] {
+        ["profileID": profile.id.uuidString, "expectedRevision": String(profile.revision)]
+    }
 
     @Test func metadataEditKeepsAuthenticatedSOCKSProxyAndWriteOnlyPassword() async throws {
         let (root, engine, backend) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let created = try await create(engine)
-        var args = request(created)
-        args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080,
-                         "username": "qualification-user", "password": "qualification-password"]
-        let configured = try await engine.call("profile_set_proxy", args)
-        let id = try #require(UUID(uuidString: configured["id"] as! String))
-        let original = try #require(engine.store.profile(withID: id)), secrets = backend.values
-        args = request(configured); args["changes"] = ["name": "Renamed", "tags": ["ready"], "startURL": "https://example.com/changed"]
+        let id = try #require(UUID(uuidString: created["id"] as! String))
+        var original = try #require(engine.store.profile(withID: id))
+        original.proxy = ProxyConfiguration(kind: .socks5, host: "127.0.0.1", port: 1080,
+                                            username: "qualification-user")
+        let configured = try engine.store.upsert(original)
+        backend.values[id] = Data("qualification-password".utf8)
+        let secrets = backend.values
+        var args = request(configured); args["changes"] = ["name": "Renamed", "tags": ["ready"], "startURL": "https://example.com/changed"]
         let edited = try await engine.call("profile_update", args)
         let actual = try #require(engine.store.profile(withID: id))
         #expect(actual.name == "Renamed" && actual.tags == ["ready"])
         #expect(actual.proxy == original.proxy && actual.identity == original.identity && backend.values == secrets)
         let encoded = String(decoding: try JSONSerialization.data(withJSONObject: edited), as: UTF8.self)
         #expect(!encoded.contains("qualification-password") && !encoded.contains("qualification-user"))
-        let persisted = try Data(contentsOf: engine.store.paths.profilesFile)
-        args = request(edited); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080, "username": "qualification-user", "password": ""]
-        await #expect(throws: MCPProfileManagement.Failure.self) { try await engine.call("profile_set_proxy", args) }
-        #expect(try Data(contentsOf: engine.store.paths.profilesFile) == persisted)
         #expect(engine.store.profile(withID: id)?.proxy == actual.proxy && backend.values == secrets)
     }
 
@@ -631,32 +643,50 @@ struct MCPProfileManagementTests {
         #expect(try await engine.call("profile_get", ["profileID": profile["id"]!])["folderID"] is NSNull)
         #expect(engine.store.profiles.count == 1)
     }
-    @Test func proxyFormatsCredentialsAndRollback() async throws {
+    @Test func proxyCredentialsAreRejectedAndEndpointOnlyConfigurationWorks() async throws {
         let (root, engine, backend) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
-        var profile = try await create(engine)
-        for line in ["synthetic:secret@127.0.0.1:8080", "127.0.0.1:8080:synthetic:secret", "synthetic:secret:127.0.0.1:8080"] {
-            var args = request(profile); args["proxyLine"] = line; args["kind"] = "http"
-            profile = try await engine.call("profile_set_proxy", args)
-            let json = String(decoding: try JSONSerialization.data(withJSONObject: profile), as: UTF8.self)
-            #expect(!json.contains("secret")); #expect(!json.contains("127.0.0.1")); #expect(!json.contains("synthetic:"))
-        }
+        let profile = try await create(engine)
         let before = try Data(contentsOf: AppPaths(rootDirectory: root).profilesFile)
-        backend.fail = true
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_create", ["name": "Credential-bearing proxy", "proxy": [
+                "kind": "http", "host": "127.0.0.1", "port": 8080,
+                "username": "synthetic", "password": "new-secret"]])
+        }
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_create", ["name": "Top-level secret", "username": "synthetic", "password": "new-secret"])
+        }
+        var topLevelProxySecret = request(profile)
+        topLevelProxySecret["username"] = "synthetic"
+        topLevelProxySecret["password"] = "new-secret"
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_set_proxy", topLevelProxySecret)
+        }
+        #expect(engine.store.profiles.count == 1 && backend.values.isEmpty)
+        for line in ["synthetic:secret@127.0.0.1:8080", "http://synthetic:secret@127.0.0.1:8080", "127.0.0.1:8080:synthetic:secret", "synthetic:secret:127.0.0.1:8080"] {
+            var args = request(profile); args["proxyLine"] = line; args["kind"] = "http"
+            await #expect(throws: MCPProfileManagement.Failure.self) { try await engine.call("profile_set_proxy", args) }
+        }
         var args = request(profile); args["proxy"] = ["kind": "http", "host": "127.0.0.2", "port": 8081, "username": "synthetic", "password": "new-secret"]
         await #expect(throws: (any Error).self) { try await engine.call("profile_set_proxy", args) }
         #expect(try Data(contentsOf: AppPaths(rootDirectory: root).profilesFile) == before)
-        backend.fail = false
+        #expect(backend.values.isEmpty)
         args = request(profile); args["proxy"] = NSNull()
-        profile = try await engine.call("profile_set_proxy", args)
-        #expect(profile["proxyKind"] is NSNull); #expect(backend.values.isEmpty)
+        let cleared = try await engine.call("profile_set_proxy", args)
+        #expect(cleared["proxyKind"] is NSNull); #expect(backend.values.isEmpty)
+        args = request(cleared); args["proxy"] = ["kind": "http", "host": "proxy.synthetic.example", "port": 8080]
+        let endpoint = try await engine.call("profile_set_proxy", args)
+        #expect(endpoint["proxyKind"] as? String == "http")
+        #expect(backend.values.isEmpty)
     }
-    @Test func socksAuthenticationPersistsWithoutExposingSecretAndInvalidURLNeverPersists() async throws {
+    @Test func socksProxyRejectsCredentialsAndInvalidURLNeverPersists() async throws {
         let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let profile = try await create(engine); let before = try Data(contentsOf: AppPaths(rootDirectory: root).profilesFile)
         var args = request(profile); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080, "username": "synthetic", "password": "secret"]
+        await #expect(throws: MCPProfileManagement.Failure.self) { try await engine.call("profile_set_proxy", args) }
+        #expect(try Data(contentsOf: AppPaths(rootDirectory: root).profilesFile) == before)
+        args = request(profile); args["proxy"] = ["kind": "socks5", "host": "127.0.0.1", "port": 1080]
         let saved = try await engine.call("profile_set_proxy", args)
         #expect(saved["proxyKind"] as? String == "socks5")
-        #expect(!String(describing: saved).contains("secret"))
         let after = try Data(contentsOf: AppPaths(rootDirectory: root).profilesFile)
         #expect(after != before)
         args = request(saved); args["changes"] = ["startURL": "file:///etc/passwd"]

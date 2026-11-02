@@ -18,8 +18,18 @@ class MCPDocumentationTests(unittest.TestCase):
         guide = (ROOT/'docs/MCP_GUIDE.md').read_text()
         MODULE.verify_proxy_credential_guidance(guide)
         unsafe = guide.replace('"port": 8080', '"port": 8080,\n    "password": "example"', 1)
-        with self.assertRaisesRegex(ValueError, 'authentication credentials'):
+        with self.assertRaisesRegex(ValueError, 'only type, host and port'):
             MODULE.verify_proxy_credential_guidance(unsafe)
+        unsafe = guide.replace('MCP rejects `username`/`password` fields', 'MCP accepts `username`/`password` fields')
+        with self.assertRaisesRegex(ValueError, 'local credential workflow'):
+            MODULE.verify_proxy_credential_guidance(unsafe)
+    def test_in_app_help_cannot_reintroduce_credential_fields(self):
+        help_text = (ROOT/'Sources/NeAntik/HelpContent.swift').read_text()
+        MODULE.verify_mcp_help_credential_boundary(help_text)
+        stale = help_text.replace('MCP принимает для прокси только kind/host/port',
+                                  'profile_set_proxy принимает отдельные поля kind/host/port/username/password', 1)
+        with self.assertRaisesRegex(ValueError, 'endpoint-only credential boundary'):
+            MODULE.verify_mcp_help_credential_boundary(stale)
     def test_corrupt_claim_and_omitted_tool_are_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
