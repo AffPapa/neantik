@@ -64,6 +64,8 @@ enum MCPOutputSchemas {
                            "retention": ["type": "string", "enum": BrowserPrivacyPolicy.Retention.allCases.map(\.rawValue)],
                            "viewport": ["type": "string", "enum": BrowserPrivacyPolicy.Viewport.allCases.map(\.rawValue)],
                            "siteProtection": boolean, "trackingParameterCleanup": boolean,
+                           "siteProtectionScope": ["type": "string", "const": "NeAntik known-domain and tracker filters only; not Google Safe Browsing or unsafe-download scanning",
+                               "description": "Clarifies the scope of siteProtection. This is saved intent, not proof that filters are applied."],
                            "disableSyncAndAutofill": boolean,
                            "evidence": ["type": "string", "const": "saved-intent; not native qualification"]
                        ]),

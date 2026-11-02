@@ -86,6 +86,7 @@ struct BrowserPrivacyPolicy: Codable, Equatable, Hashable, Sendable {
          "retention": retention.rawValue, "viewport": viewport.rawValue,
          "siteProtection": siteProtection, "trackingParameterCleanup": trackingParameterCleanup,
          "disableSyncAndAutofill": disableSyncAndAutofill,
+         "siteProtectionScope": "NeAntik known-domain and tracker filters only; not Google Safe Browsing or unsafe-download scanning",
          "evidence": "saved-intent; not native qualification"]
     }
 

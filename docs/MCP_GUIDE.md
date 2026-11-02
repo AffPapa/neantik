@@ -242,3 +242,9 @@ Returned `privacyPolicyIntent` is saved intent only, never proof that a runtime
 applied or measured it. A profile requiring unsupported native controls refuses
 launch. Configuration exports, templates and profile workspaces prevent older
 managers from ignoring these policies; old documents remain legacy.
+
+`privacyPolicyIntent.siteProtection` is an intent for NeAntik's known-domain and
+tracker filters only. It does not mean Google Safe Browsing or unsafe-download
+scanning is enabled. The companion `siteProtectionScope` field repeats this
+limit in the MCP result; the profile passport shows the current engine's threat
+protection status.
