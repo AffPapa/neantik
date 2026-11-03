@@ -21,6 +21,16 @@ RELEASE_ENTRYPOINT = SCRIPTS.parent / "Release-NeAntik.command"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
+    def test_final_candidate_materializes_and_verifies_embedded_runtime(self) -> None:
+        text = PREPARE.read_text(encoding="utf-8")
+        copy = text.index('ditto "$ENGINEERING_APP" "$APP_PATH"')
+        materialize = text.index('scripts/materialize-runtime-files.py', copy)
+        runtime_verify = text.index('codesign --verify --deep --strict \\', materialize)
+        manager_sign = text.index('scripts/direct_backup_signing.py" sign', runtime_verify)
+        self.assertLess(copy, materialize)
+        self.assertLess(materialize, runtime_verify)
+        self.assertLess(runtime_verify, manager_sign)
+
     def test_runtime_preparation_preserves_explicit_backup_selection(self) -> None:
         text = PREPARE.read_text(encoding="utf-8")
         self.assertNotIn('NEANTIK_BROWSER_DATA_BACKUP_ENABLED=0 NEANTIK_DIRECT_PROVISIONING_PROFILE=""', text)

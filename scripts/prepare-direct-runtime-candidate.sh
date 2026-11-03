@@ -246,6 +246,10 @@ fi
 
 rm -rf "$APP_PATH"
 ditto "$ENGINEERING_APP" "$APP_PATH"
+python3 "$PROJECT_DIR/scripts/materialize-runtime-files.py" \
+  "$APP_PATH/Contents/Resources/NeAntik Browser.app"
+codesign --verify --deep --strict \
+  "$APP_PATH/Contents/Resources/NeAntik Browser.app"
 python3 "$PROJECT_DIR/scripts/direct_backup_signing.py" sign "$APP_PATH" "$NEANTIK_SIGNING_IDENTITY"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 "$PROJECT_DIR/scripts/verify-integrated-release.sh" "$APP_PATH"
