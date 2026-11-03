@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 import Testing
 @testable import NeAntik
 
@@ -30,11 +31,37 @@ struct LaunchIntentTests {
         let root = URL(fileURLWithPath: "/private/tmp/neantik-owned-control-test")
         for mode in [NeAntikLaunchIntent.Mode.invalidControlArguments, .proxyRelayOwner, .webKitHostChild,
                      .mcpStdio(dataRoot: root), .mcpManagement(dataRoot: root),
+                     .mcpLoopbackQA(dataRoot: root, proxyPort: 43127),
                      .fingerprintEnrollment(outputURL: root.appendingPathComponent("enrollment.json"))] {
             let intent = NeAntikLaunchIntent(mode: mode)
             #expect(!intent.opensAuditWindow)
             #expect(!intent.opensFingerprintAudit)
         }
+    }
+
+    @Test func loopbackQAModeRequiresFreshOwnerOnlyCanonicalRoot() throws {
+        let executable = "/Applications/NeAntik.app/Contents/MacOS/NeAntik"
+        let root = URL(fileURLWithPath: "/private/tmp/neantik-" + UUID().uuidString.lowercased())
+        #expect(mkdir(root.path, 0o700) == 0)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let args = [executable, NeAntikLaunchIntent.mcpStdioArgument,
+                    NeAntikLaunchIntent.mcpLoopbackQAArgument, root.path, "43127"]
+        if case let .mcpLoopbackQA(dataRoot, proxyPort) = NeAntikLaunchIntent.parse(arguments: args).mode {
+            #expect(dataRoot.path == root.path && proxyPort == 43127)
+        } else {
+            Issue.record("Owner-only QA root was not accepted")
+        }
+        for bad in [args + ["extra"], Array(args.dropLast()), Array(args.dropLast()) + ["0"],
+                    Array(args.dropLast()) + ["043127"], [executable, NeAntikLaunchIntent.mcpLoopbackQAArgument, root.path],
+                    [executable, NeAntikLaunchIntent.mcpStdioArgument, NeAntikLaunchIntent.mcpLoopbackQAArgument, root.path + "/child"]] {
+            #expect(NeAntikLaunchIntent.parse(arguments: bad).mode == .invalidControlArguments)
+        }
+        let occupied = root.appendingPathComponent("existing")
+        try Data().write(to: occupied)
+        #expect(NeAntikLaunchIntent.parse(arguments: args).mode == .invalidControlArguments)
+        try FileManager.default.removeItem(at: occupied)
+        #expect(chmod(root.path, 0o755) == 0)
+        #expect(NeAntikLaunchIntent.parse(arguments: args).mode == .invalidControlArguments)
     }
 
     @Test func webKitHostModeRequiresExactNestedExecutableAndSingleMarker() {

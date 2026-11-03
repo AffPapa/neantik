@@ -104,6 +104,7 @@ def verify_current_product_claims(root: Path) -> None:
             claim_paragraph = text[claim.start():paragraph_end if paragraph_end >= 0 else len(text)]
         if (not intro_claims or any(pair != (latest['version'], str(latest['build'])) for pair in intro_claims)
                 or not intro_links or any(link != release_url for link in intro_links)
+                or f"releases/{latest['tag']}.json" not in intro
                 or not claim or claim.groups() != (latest['version'], str(latest['build']),
                 release_url)
                 or f"releases/{latest['tag']}.json" not in claim_paragraph):

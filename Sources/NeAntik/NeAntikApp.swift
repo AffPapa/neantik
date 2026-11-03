@@ -93,6 +93,9 @@ struct NeAntikApp: App {
             MCPStdioServer.runAndExit(dataRoot: dataRoot)
         case let .mcpManagement(dataRoot):
             MCPStdioServer.runAndExit(dataRoot: dataRoot, allowsManagement: true)
+        case let .mcpLoopbackQA(dataRoot, proxyPort):
+            MCPStdioServer.runAndExit(dataRoot: dataRoot, allowsManagement: true,
+                                      loopbackQAProxyPort: proxyPort)
         case let .fingerprintEnrollment(outputURL):
             Self.runFingerprintEnrollmentAndExit(outputURL: outputURL)
         case let .fingerprintRetirement(request):

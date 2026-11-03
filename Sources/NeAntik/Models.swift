@@ -707,6 +707,10 @@ enum BrowserStartupMode: String, Codable, CaseIterable, Sendable {
 enum BrowserFontPolicy: String, Codable, Sendable {
     case native
     case systemV1 = "system-v1"
+
+    static func defaultForCreation(supportsSystemFontPolicy: Bool) -> Self {
+        supportsSystemFontPolicy ? .systemV1 : .native
+    }
 }
 
 /// A future policy must not be mistaken for corrupted JSON and replaced with
@@ -1200,7 +1204,7 @@ enum NeAntikError: LocalizedError {
         case .browserNotFound:
             "Встроенный браузер NeAntik отсутствует или повреждён. Переустанови приложение из официального DMG или ZIP."
         case .profileAlreadyRunning:
-            "Этот профиль уже запущен."
+            "Профиль уже запускается или используется другим окном NeAntik. Дождись завершения проверки и повтори запуск."
         case .invalidProfile:
             "Укажи название до 120 символов без переносов строк и корректную стартовую страницу."
         case .profileLimitReached:

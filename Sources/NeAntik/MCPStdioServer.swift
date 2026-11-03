@@ -18,9 +18,11 @@ enum MCPStdioServer {
     static let supportedProtocolVersions = ["2025-11-25", "2025-06-18"]
 
     @MainActor
-    static func runAndExit(dataRoot: URL, allowsManagement: Bool = false) -> Never {
+    static func runAndExit(dataRoot: URL, allowsManagement: Bool = false,
+                           loopbackQAProxyPort: UInt16? = nil) -> Never {
         signal(SIGPIPE, SIG_IGN)
-        let session = MCPManagementSession(root: dataRoot, allowsManagement: allowsManagement)
+        let session = MCPManagementSession(root: dataRoot, allowsManagement: allowsManagement,
+                                           loopbackQAProxyPort: loopbackQAProxyPort)
         Thread.detachNewThread {
             var pending = Data()
             var buffer = [UInt8](repeating: 0, count: 4_096)

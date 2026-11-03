@@ -9,6 +9,40 @@ struct ProxyTesterTests {
         func started() { starts += 1 }
     }
 
+    @Test func loopbackQAProbeIsSyntheticBoundedAndCannotSelectAnExternalHost() async throws {
+        let proxy = try ProxyImportParser.parse("127.0.0.1:4321", kind: .http).configuration
+        try await ProxyTester().checkLoopbackQA(configuration: proxy, password: "") { executable, args, _, cap in
+            #expect(executable.path == "/usr/bin/curl")
+            #expect(cap <= ProxyTester.maximumProbeOutputBytes)
+            #expect(args.contains("http://neantik-probe.invalid/health"))
+            #expect(args.contains("--max-redirs") && args.contains("0"))
+            #expect(args.contains("--noproxy") && args.contains(""))
+            #expect(args.contains("--proto") && args.contains("=http"))
+            #expect(args.contains("--proxy") && args.contains("http://127.0.0.1:4321"))
+            #expect(!args.contains(where: { $0.hasPrefix("https://") }))
+            return .init(status: 0,
+                         output: Data("NEANTIK_LOOPBACK_QA_OK\n\nNEANTIK_LOOPBACK_QA_STATUS:200\n".utf8),
+                         outputExceeded: false)
+        }
+        for badProxy in [
+            ProxyConfiguration(kind: .https, host: "127.0.0.1", port: 4321, username: ""),
+            ProxyConfiguration(kind: .http, host: "proxy.example", port: 4321, username: ""),
+            ProxyConfiguration(kind: .http, host: "127.0.0.1", port: 4321, username: "user")
+        ] {
+            await #expect(throws: (any Error).self) {
+                try await ProxyTester().checkLoopbackQA(configuration: badProxy, password: "") { _, _, _, _ in
+                    Issue.record("Rejected QA proxy invoked curl")
+                    return .init(status: 0, output: Data(), outputExceeded: false)
+                }
+            }
+        }
+        await #expect(throws: (any Error).self) {
+            try await ProxyTester().checkLoopbackQA(configuration: proxy, password: "") { _, _, _, _ in
+                .init(status: 0, output: Data("NEANTIK_LOOPBACK_QA_OK\n\nNEANTIK_LOOPBACK_QA_STATUS:302\n".utf8), outputExceeded: false)
+            }
+        }
+    }
+
     @Test
     func wholeProbeDeadlineCancelsSlowServiceAndDoesNotStartFallback() async throws {
         let proxy = try ProxyImportParser.parse("127.0.0.1:8080", kind: .http).configuration

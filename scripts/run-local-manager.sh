@@ -166,6 +166,16 @@ if (( REFRESH_RUNTIME == 1 )) || \
   /bin/cp -cR "$SOURCE_APP" "$DEVELOPMENT_APP"
 fi
 
+# A cached Dev.app may contain SiteProtection resources from an older manager.
+# Refresh only the disposable app copy so the compiled manager and sealed
+# policy payload always come from the same source checkout.
+/bin/rm -rf "$DEVELOPMENT_APP/Contents/Resources/SiteProtection"
+/usr/bin/ditto --norsrc \
+  "$PROJECT_DIR/Resources/SiteProtection" \
+  "$DEVELOPMENT_APP/Contents/Resources/SiteProtection"
+python3 -B "$PROJECT_DIR/scripts/verify_site_protection_package.py" \
+  --project-root "$PROJECT_DIR" --app "$DEVELOPMENT_APP"
+
 INFO_PLIST="$DEVELOPMENT_APP/Contents/Info.plist"
 DEVELOPMENT_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PROJECT_DIR/Resources/Info.plist")"
 DEVELOPMENT_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PROJECT_DIR/Resources/Info.plist")"

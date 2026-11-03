@@ -10,21 +10,24 @@ final class MCPProfileManagement {
     let keychain: KeychainStore
     let health: ProxyHealthCoordinator
     let allowsManagement: Bool
+    private let loopbackQAProxyPort: UInt16?
     private let gui: MCPGUIControlClient
     private let readOnlyInventory: @Sendable () -> BrowserProcessInventory
 
     init(root: URL, allowsManagement: Bool, keychain: KeychainStore? = nil,
          processes: BrowserProcessManager? = nil, guiClient: MCPGUIControlClient? = nil,
-         readOnlyInventory: @escaping @Sendable () -> BrowserProcessInventory = { DarwinBrowserProcessInventoryProvider().capture() }) {
+         readOnlyInventory: @escaping @Sendable () -> BrowserProcessInventory = { DarwinBrowserProcessInventoryProvider().capture() },
+         loopbackQAProxyPort: UInt16? = nil) {
         let paths = AppPaths(rootDirectory: root)
         let environment = NeAntikApplicationEnvironment.resolve(
             bundleIdentifier: Bundle.main.bundleIdentifier,
             environment: ProcessInfo.processInfo.environment)
         self.keychain = keychain ?? KeychainStore.applicationStore(environment: environment, paths: paths)
         store = ProfileStore(paths: paths, readOnlyMetadata: !allowsManagement)
-        self.processes = processes ?? BrowserProcessManager(paths: paths)
+        self.processes = processes ?? BrowserProcessManager(paths: paths, loopbackQALoopbackProxyPort: loopbackQAProxyPort)
         health = ProxyHealthCoordinator(fileURL: paths.proxyHealthFile)
         self.allowsManagement = allowsManagement
+        self.loopbackQAProxyPort = loopbackQAProxyPort
         self.readOnlyInventory = readOnlyInventory
         gui = guiClient ?? MCPGUIControlClient(root: root)
     }
@@ -145,6 +148,7 @@ final class MCPProfileManagement {
                     "folders": affected.map { [["id": $0.id.uuidString, "name": $0.name]] } ?? []]
         }
         if name == "profile_create" {
+            if loopbackQAProxyPort != nil, !store.profiles.isEmpty { throw Failure.denied }
             var template: UserProfileTemplate?
             if args["templateID"] != nil {
                 let templateID = try id(args, "templateID")
@@ -172,6 +176,11 @@ final class MCPProfileManagement {
             let hasProxyArgument = args["proxy"] != nil || args["proxyLine"] != nil || args["kind"] != nil
             let proxyDraft = hasProxyArgument ? try parseProxy(args) : nil
             profile.proxy = proxyDraft?.configuration
+            if loopbackQAProxyPort != nil,
+               (profile.engine != .chromium || profile.startURL != "about:blank" ||
+                (profile.proxy.map { !Self.isLoopbackQAProxy($0, expectedPort: loopbackQAProxyPort) } ?? false)) {
+                throw Failure.denied
+            }
             profile.webKitRuntimeGeneration = WebKitProfilePolicy.runtimeGenerationForSave(
                 engine: profile.engine, proxy: profile.proxy,
                 previous: profile.webKitRuntimeGeneration,
@@ -291,6 +300,13 @@ final class MCPProfileManagement {
             try processes.withVerifiedStoppedProfileOperation(profileID: profileID) {}
             ProxyAuditPhase.mark(.stoppedVerifyDone)
             guard let proxy = profile.proxy else { throw Failure.invalid }
+            if loopbackQAProxyPort != nil {
+                try await ProxyTester().checkLoopbackQA(configuration: proxy, password: "")
+                return ["profileID": profileID.uuidString,
+                        "result": "synthetic-loopback-origin-passed",
+                        "qaOnly": true,
+                        "chromiumRoute": "unverified"]
+            }
             ProxyAuditPhase.mark(.healthRunBegin)
             let state = try await health.run(profile: profile, operationWithCurrentIdentity: { previous in
                 try await ProfileProxyOperations(store: self.store, keychain: self.keychain, invalidateObservation: { _ in })
@@ -307,11 +323,18 @@ final class MCPProfileManagement {
                 guard let changes = args["changes"] as? [String: Any], !changes.isEmpty else { throw Failure.invalid }
                 let original = profile
                 try apply(changes, to: &profile); try validateMetadata(profile)
+                if loopbackQAProxyPort != nil,
+                   (profile.engine != .chromium || profile.startURL != "about:blank" ||
+                    (profile.proxy.map { !Self.isLoopbackQAProxy($0, expectedPort: loopbackQAProxyPort) } ?? false)) {
+                    throw Failure.denied
+                }
                 if original != profile { profile = try store.upsert(profile) }
             case "profile_move":
                 profile = try store.upsert(profile, toFolderID: nullableID(args, "folderID"), expectedOrganizationRevision: .some(organizationRevision(args)))
             case "profile_set_proxy":
                 let draft = try parseProxy(args)
+                if loopbackQAProxyPort != nil, let configuration = draft?.configuration,
+                   !Self.isLoopbackQAProxy(configuration, expectedPort: loopbackQAProxyPort) { throw Failure.denied }
                 profile.proxy = draft?.configuration
                 let desiredWebKitRuntime = WebKitProfilePolicy.runtimeGenerationForSave(
                     engine: profile.engine, proxy: profile.proxy,
@@ -329,6 +352,7 @@ final class MCPProfileManagement {
                     try self.keychain.updateProxyPasswordForProfileEdit(password, profileID: saved.id)
                 })
             case "profile_duplicate":
+                if loopbackQAProxyPort != nil { throw Failure.denied }
                 let password = try keychain.configuredProxyPassword(for: profile)
                 var copy = profile.duplicated(); copy.name = try string(args, "name"); try validate(copy, password: password ?? "")
                 profile = try store.duplicateProfile(profile, name: copy.name, afterPersist: { saved in
@@ -348,6 +372,11 @@ final class MCPProfileManagement {
     }
 
     private func launch(_ initial: BrowserProfile) async throws -> [String: Any] {
+        if loopbackQAProxyPort != nil,
+           (initial.engine != .chromium || initial.startURL != "about:blank" ||
+            (initial.proxy.map { !Self.isLoopbackQAProxy($0, expectedPort: loopbackQAProxyPort) } ?? false)) {
+            throw Failure.denied
+        }
         if initial.engine == .webkit {
             guard initial.engine.isAvailableInBuild else {
                 throw WebKitProfileError.unsupported("WebKit выключен в этой версии NeAntik. Профиль и его данные сохранены; запускайте его в сборке с поддержкой WebKit.")
@@ -376,6 +405,18 @@ final class MCPProfileManagement {
         var launched = false
         defer { ManagerLaunchAdmission.shared.finish(token: token, launched: launched) }
         try store.validateLaunchSnapshot(initial)
+        if let port = loopbackQAProxyPort {
+            guard let proxy = initial.proxy, Self.isLoopbackQAProxy(proxy, expectedPort: port) else { throw Failure.denied }
+            let grant = try processes.issueLoopbackQALaunchGrant(for: initial)
+            try await processes.launchUserProfile(profile: initial, runtime: runtime,
+                preparationReceipt: nil, keychain: keychain,
+                purpose: .loopbackQA(httpProxyPort: port), loopbackQAGrant: grant)
+            launched = true
+            store.managerLibrary.record(.launch, .succeeded)
+            return ["profileID": initial.id.uuidString, "processState": status(initial.id),
+                    "revision": String(initial.revision), "qaOnly": true,
+                    "routeEvidence": "chromium-proxy-request-must-be-confirmed-by-loopback-fixture"]
+        }
         var profile = initial
         var receipt: BrowserLaunchPreparationReceipt?
         if let proxy = initial.proxy {
@@ -397,6 +438,12 @@ final class MCPProfileManagement {
         launched = true
         store.managerLibrary.record(.launch, .succeeded)
         return ["profileID": profile.id.uuidString, "processState": status(profile.id), "revision": String(store.profile(withID: profile.id)?.revision ?? profile.revision)]
+    }
+
+    private static func isLoopbackQAProxy(_ configuration: ProxyConfiguration, expectedPort: UInt16?) -> Bool {
+        expectedPort != nil && UInt16(exactly: configuration.port) == expectedPort &&
+            configuration.kind == .http && configuration.host == "127.0.0.1" &&
+            configuration.username.isEmpty && configuration.isValid
     }
 
     private func apply(_ changes: [String: Any], to profile: inout BrowserProfile) throws {

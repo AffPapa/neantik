@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 struct NeAntikLaunchIntent: Equatable, Sendable {
@@ -12,6 +13,7 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
     static let outputArgument = "--output"
     static let mcpStdioArgument = "--neantik-mcp-stdio"
     static let mcpManagementArgument = "--allow-profile-management"
+    static let mcpLoopbackQAArgument = "--neantik-mcp-loopback-qa-v1"
     static let dataRootArgument = "--data-root"
     static let proxyRelayOwnerArgument = "--neantik-proxy-relay-owner-v1"
     static let webKitHostChildArgument = "--neantik-webkit-host-child-v1"
@@ -25,6 +27,7 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         case fingerprintRetirement(FingerprintEvidenceRetirementRequest)
         case mcpStdio(dataRoot: URL)
         case mcpManagement(dataRoot: URL)
+        case mcpLoopbackQA(dataRoot: URL, proxyPort: UInt16)
         case proxyRelayOwner
         case webKitHostChild
         case invalidControlArguments
@@ -106,6 +109,18 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
            arguments[1] == webKitHostChildArgument {
             return Self(mode: .webKitHostChild)
         }
+        if arguments.count == 5,
+           isCanonicalAbsoluteExecutablePath(arguments[0]),
+           arguments[1] == mcpStdioArgument,
+           arguments[2] == mcpLoopbackQAArgument,
+           isFreshOwnerOnlyLoopbackQARoot(arguments[3]),
+           let proxyPort = UInt16(arguments[4]), proxyPort != 0,
+           String(proxyPort) == arguments[4] {
+            return Self(mode: .mcpLoopbackQA(
+                dataRoot: URL(fileURLWithPath: arguments[3], isDirectory: true),
+                proxyPort: proxyPort
+            ))
+        }
         if arguments.count == 5, arguments[4] == mcpManagementArgument,
            isCanonicalAbsoluteExecutablePath(arguments[0]), arguments[1] == mcpStdioArgument,
            arguments[2] == dataRootArgument, isSafeAbsoluteMCPRoot(arguments[3]) {
@@ -170,7 +185,7 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
             )
         }
         if arguments.contains(where: {
-            $0.hasPrefix("--neantik-qualify-backup-scope") || $0.hasPrefix("--neantik-qualify-relay-owner") || $0.hasPrefix(proxyRelayOwnerArgument) || $0.hasPrefix(webKitHostChildArgument) || $0.hasPrefix(mcpManagementArgument) ||
+            $0.hasPrefix("--neantik-qualify-backup-scope") || $0.hasPrefix("--neantik-qualify-relay-owner") || $0.hasPrefix(proxyRelayOwnerArgument) || $0.hasPrefix(webKitHostChildArgument) || $0.hasPrefix(mcpManagementArgument) || $0.hasPrefix(mcpLoopbackQAArgument) ||
                 $0 == outputArgument ||
                 $0 == dataRootArgument ||
                 $0.hasPrefix(mcpStdioArgument) ||
@@ -211,6 +226,28 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         else { return false }
         return path.split(separator: "/", omittingEmptySubsequences: false)
             .dropFirst().allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." }
+    }
+
+    /// A loopback QA store must be a fresh, owner-only direct child of the
+    /// private temporary directory. Normal MCP roots do not use this mode.
+    private static func isFreshOwnerOnlyLoopbackQARoot(_ path: String) -> Bool {
+        guard path.hasPrefix("/private/tmp/neantik-"),
+              isSafeAbsoluteMCPRoot(path),
+              URL(fileURLWithPath: path).deletingLastPathComponent().path == "/private/tmp"
+        else { return false }
+        let name = URL(fileURLWithPath: path).lastPathComponent
+        let prefix = "neantik-"
+        guard name.hasPrefix(prefix) else { return false }
+        let identifier = String(name.dropFirst(prefix.count))
+        guard UUID(uuidString: identifier)?.uuidString.lowercased() == identifier else { return false }
+        var info = stat()
+        guard lstat(path, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFDIR,
+              info.st_uid == geteuid(),
+              (info.st_mode & 0o777) == 0o700
+        else { return false }
+        guard let entries = try? FileManager.default.contentsOfDirectory(atPath: path) else { return false }
+        return entries.isEmpty
     }
 
     private static func isCanonicalAbsoluteFilePath(

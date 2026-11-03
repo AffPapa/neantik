@@ -26,6 +26,20 @@ can recognize a version-only Info.plist diff from actual before/after values;
 
 ## Execute
 
+For a Chromium launch incident, record the exact symptom and stage, source
+commit, manager/runtime hashes, OS, launch route, fixture root and receipt.
+Inspect candidate resource seals before attributing a preparation failure to
+Chromium. Bind one frozen candidate and one synthetic `2026 QA — <version/hash>`
+profile to an about:blank start, stop, restart and final owned-process exit.
+Record the actual profile root; a synthetic profile name alone does not prove
+an isolated data root. A launcher or
+harness failure is not a browser or proxy result. For permitted proxy QA use
+an owned loopback origin without credentials; a preflight icon is not route
+evidence. Before any repeat identify the changed input; diagnose after two
+identical failures. Reuse PASS only for matching relevant bytes, harness and
+environment. Release gates remain separate from this lifecycle check.
+
+
 - CodeQL alert top-level state may describe main while the current PR instance is open. Check the analysis and instances bound to the exact PR merge parents. Diagnose the source-to-sink path; separate fixed diagnostic labels from matched-data containers and keep synthetic scanner inputs in memory when disk IO is not the subject. Do not dismiss findings or rename sensitive variables to hide them.
 - Treat an Apple SHA-1 identity as a CLI selector only; bind certificate trust with a reviewed SHA-256 pin and preserve exact DER/profile membership checks. Certificate rotation requires reviewing the new public certificate, never exporting its private key.
 - TLS fixtures must declare the supported minimum and issue a standards-compliant strict chain (including SKI/AKI); fix fixture certificates rather than weakening hostname, CA or verification flags.
@@ -201,7 +215,11 @@ can recognize a version-only Info.plist diff from actual before/after values;
   A build is not native behavior. Bind GUI checks to its actual app/PID/root;
   after quit verify exit rather than rediscovering/relaunching the app. A CUA
   `getAXState()` on a bound app after ⌘Q may reopen that app; verify the exact
-  process path with a read-only process check instead.
+  process path with a read-only process check instead. If a later gate is
+  deferred or becomes ineligible, quit the exact candidate manager too and
+  verify its PID/path has exited; a stopped profile/runtime child does not
+  mean the manager exited. Do not leave a QA manager open while waiting for
+  admission or another gate.
   For owned WebKit qualification, inspect the persisted test profile before
   launch and require `engine=webkit` plus
   `webKitRuntimeGeneration=isolatedV1`; profile creation defaults to `.system`.

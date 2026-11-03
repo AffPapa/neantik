@@ -144,6 +144,43 @@ struct BrowserProcessManagerTests {
         #expect(manager.runningProfileIDs.isEmpty)
         #expect(!FileManager.default.fileExists(atPath: AppPaths(rootDirectory: root).lockFile(for: profile.id).path))
     }
+
+    @Test
+    func failedChromiumStartLogsClosedStageWithoutSystemErrorDetails() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("synthetic-launch-diagnostic-\(UUID())", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let manager = BrowserProcessManager(
+            launchAdmission: nominalAdmission,
+            paths: paths,
+            processIdentityValidator: { _ in false },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        defer { manager.suspendPassiveObservations() }
+        let profile = BrowserProfile(name: "Synthetic launch diagnostic")
+        let runtime = BrowserRuntime(
+            name: "Missing synthetic executable",
+            executableURL: root.appendingPathComponent("private-missing-executable"),
+            source: "Synthetic"
+        )
+
+        do {
+            try manager.launch(profile: profile, runtime: runtime)
+            Issue.record("Missing synthetic executable unexpectedly launched")
+        } catch let error as NeAntikError {
+            guard case .processLaunchFailed = error else {
+                Issue.record("Unexpected launch error category")
+                return
+            }
+        }
+
+        let log = try String(contentsOf: paths.logFile(for: profile.id), encoding: .utf8)
+        #expect(log.contains("browser_launch_failed stage=chromium-start reason=process-launch-error"))
+        #expect(!log.contains(root.path))
+        #expect(!log.localizedCaseInsensitiveContains("no such file"))
+    }
+
     @Test(arguments: [ProxyKind.http, .https])
     func authenticatedHTTPLoopbackAuditStillRequiresAuditReservation(kind: ProxyKind) throws {
         let root = URL(fileURLWithPath: "/private/tmp/neantik-audit-proxy-" + UUID().uuidString)
@@ -1956,6 +1993,160 @@ struct BrowserProcessManagerTests {
                 atPath: paths.lockGuardFile(for: profile.id).path
             )
         )
+    }
+
+    @Test
+    func productionInventoryRecoversExpiredStartingLeaseEvenWhenManagerIsAlive() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profile = BrowserProfile(name: "Expired live-manager startup")
+        try paths.prepareProfileDirectories(for: profile.id)
+        let starting = BrowserProcessLock(
+            pid: 0,
+            executablePath: "/Applications/NeAntik Browser",
+            browserDataPath: paths.browserDataDirectory(for: profile.id).path,
+            createdAt: Date(timeIntervalSince1970: 1_000),
+            schemaVersion: BrowserProcessLock.currentSchemaVersion,
+            ownerToken: UUID(),
+            managerPID: getpid(),
+            phase: .starting
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try paths.withProcessLockGuard(for: profile.id) {
+            try paths.writePrivateFile(
+                encoder.encode(starting),
+                to: paths.lockFile(for: profile.id)
+            )
+        }
+        let restored = BrowserProcessManager(
+            launchAdmission: nominalAdmission,
+            paths: paths,
+            processIdentityInspector: { _ in .unknown },
+            processLivenessValidator: { _ in true },
+            observationIntervalNanoseconds: 10_000_000,
+            browserDataProcessInspector: { _ in .absent },
+            processInventoryProvider: { BrowserProcessInventory(processes: [:]) },
+            potentialRelayOwnerInspector: { .absent },
+            startingLeaseTimeout: 30,
+            now: { Date(timeIntervalSince1970: 2_000) }
+        )
+
+        restored.reconcile(profiles: [profile])
+        for _ in 0..<100 {
+            if restored.processState(for: profile.id) == .stopped { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        #expect(restored.processState(for: profile.id) == .stopped)
+        #expect(!FileManager.default.fileExists(atPath: paths.lockFile(for: profile.id).path))
+    }
+
+    @Test
+    func processStartFenceRejectsAReplacedLeaseBeforeLaunching() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profile = BrowserProfile(name: "Replaced start fence")
+        try paths.prepareProfileDirectories(for: profile.id)
+        let starting = BrowserProcessLock(
+            pid: 0,
+            executablePath: "/Applications/NeAntik Browser",
+            browserDataPath: paths.browserDataDirectory(for: profile.id).path,
+            createdAt: Date(),
+            schemaVersion: BrowserProcessLock.currentSchemaVersion,
+            ownerToken: UUID(),
+            managerPID: getpid(),
+            phase: .starting
+        )
+        let replacement = BrowserProcessLock(
+            pid: 0,
+            executablePath: starting.executablePath,
+            browserDataPath: starting.browserDataPath,
+            createdAt: starting.createdAt,
+            schemaVersion: starting.schemaVersion,
+            ownerToken: UUID(),
+            managerPID: getpid(),
+            phase: .starting
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try paths.writePrivateFile(encoder.encode(starting), to: paths.lockFile(for: profile.id))
+        try paths.writePrivateFile(encoder.encode(replacement), to: paths.lockFile(for: profile.id))
+        let manager = BrowserProcessManager(
+            launchAdmission: nominalAdmission,
+            paths: paths,
+            processIdentityValidator: { _ in true },
+            browserDataProcessInspector: { _ in .absent }
+        )
+        var startCalls = 0
+
+        #expect(throws: BrowserStartLeaseSupersededError.self) {
+            try manager.commitOwnedProcessStart(
+                profileID: profile.id,
+                startingLease: starting,
+                browserDataDirectory: paths.browserDataDirectory(for: profile.id),
+                at: paths.lockFile(for: profile.id)
+            ) {
+                startCalls += 1
+                return 42
+            }
+        }
+        #expect(startCalls == 0)
+    }
+
+    @Test
+    func processStartFencePublishesRunningLeaseBeforeReleasingGuard() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let profile = BrowserProfile(name: "Committed start fence")
+        try paths.prepareProfileDirectories(for: profile.id)
+        let starting = BrowserProcessLock(
+            pid: 0,
+            executablePath: "/Applications/NeAntik Browser",
+            browserDataPath: paths.browserDataDirectory(for: profile.id).path,
+            createdAt: Date(),
+            schemaVersion: BrowserProcessLock.currentSchemaVersion,
+            ownerToken: UUID(),
+            managerPID: getpid(),
+            phase: .starting
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try paths.writePrivateFile(encoder.encode(starting), to: paths.lockFile(for: profile.id))
+        let manager = BrowserProcessManager(
+            launchAdmission: nominalAdmission,
+            paths: paths,
+            processIdentityValidator: { _ in true },
+            browserDataProcessInspector: { _ in .absent }
+        )
+
+        let committed = try manager.commitOwnedProcessStart(
+            profileID: profile.id,
+            startingLease: starting,
+            browserDataDirectory: paths.browserDataDirectory(for: profile.id),
+            at: paths.lockFile(for: profile.id)
+        ) { 4242 }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let persisted = try decoder.decode(
+            BrowserProcessLock.self,
+            from: Data(contentsOf: paths.lockFile(for: profile.id))
+        )
+
+        #expect(committed.phase == .running)
+        #expect(committed.pid == 4242)
+        #expect(persisted.phase == committed.phase)
+        #expect(persisted.pid == committed.pid)
+        #expect(persisted.ownerToken == committed.ownerToken)
+        #expect(persisted.managerPID == committed.managerPID)
+        #expect(persisted.browserDataPath == committed.browserDataPath)
+        #expect(abs(persisted.createdAt.timeIntervalSince(committed.createdAt)) < 1)
     }
 
     @Test

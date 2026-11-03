@@ -243,7 +243,11 @@ struct ProfileEditorView: View {
       initialValue: showsAdvancedOptionsInitially
     )
 
-    var profile = original ?? creationTemplate?.makeProfile() ?? BrowserProfile(name: "", fontPolicy: .systemV1, privacyPolicy: .balanced)
+    var profile = original ?? creationTemplate?.makeProfile() ?? BrowserProfile(
+      name: "",
+      fontPolicy: .defaultForCreation(supportsSystemFontPolicy: supportsSystemFontPolicy),
+      privacyPolicy: .balanced
+    )
     #if NEANTIK_CHROMIUM_ONLY
     // A retained WebKit template may still be useful as a source of ordinary
     // profile metadata, but this build creates Chromium profiles only.

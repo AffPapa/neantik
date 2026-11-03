@@ -24,6 +24,17 @@ class PackageAppScriptContractTests(unittest.TestCase):
         self.assertIn(resolve, text)
         self.assertLess(text.index(resolve), text.index(helper))
 
+    def test_runtime_candidate_lock_export_does_not_mutate_signed_source_app(self) -> None:
+        text = (ROOT / "scripts/prepare-direct-manager-update.sh").read_text(encoding="utf-8")
+        start = text.index("resolve_runtime_candidate_lock() {")
+        end = text.index("\n}\n", start) + len("\n}\n")
+        resolver = text[start:end]
+        self.assertIn('local evidence_dir="$BUILD_SUPPORT_DIR/runtime-source-evidence"', resolver)
+        self.assertIn('cp "$source_provenance" "$build_provenance"', resolver)
+        self.assertIn('local default="$evidence_dir/runtime-candidate-lock.json"', resolver)
+        self.assertIn('--output "$default" >&2', resolver)
+        self.assertNotIn('$(dirname "$source_provenance")/runtime-candidate-lock.json', resolver)
+
     def test_manager_update_records_chromium_only_scope_before_signing(self) -> None:
         text = (ROOT / "scripts/prepare-direct-manager-update.sh").read_text(encoding="utf-8")
         self.assertIn('NEANTIK_CHROMIUM_ONLY must be 0 or 1', text)
@@ -34,6 +45,23 @@ class PackageAppScriptContractTests(unittest.TestCase):
         conflict = 'Chromium-only manager cannot include the owned WebKit host.'
         self.assertIn(conflict, text)
         self.assertLess(text.index(conflict), text.index('swift build \\'))
+
+    def test_local_adhoc_candidate_disables_update_channel_before_helper_packaging(self) -> None:
+        text = (ROOT / 'scripts/prepare-direct-manager-update.sh').read_text(encoding='utf-8')
+        local = text.index('if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then', text.index('cp "$PROJECT_DIR/Resources/Info.plist"'))
+        disable = text.index("Set :NeAntikUpdateChannelEnabled false", local)
+        helpers = text.index('package-update-helpers.py" "$CANDIDATE_APP" "$BIN_PATH" -', local)
+        production = text.index('package-update-helpers.py" "$CANDIDATE_APP" "$BIN_PATH" "$NEANTIK_SIGNING_IDENTITY"', helpers)
+        self.assertLess(disable, helpers)
+        self.assertLess(helpers, production)
+
+    def test_local_adhoc_candidate_exits_before_public_release_gate(self) -> None:
+        text = (ROOT / 'scripts/prepare-direct-manager-update.sh').read_text(encoding='utf-8')
+        local = text.index('if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then', text.index('verify-public-artifact-privacy.py'))
+        public_gate = text.index('verify-integrated-release.sh', local)
+        early_exit = text.index('exit 0', local)
+        self.assertLess(early_exit, public_gate)
+        self.assertIn('release-channel and integrated-publication gates are intentionally not claimed', text[local:early_exit])
 
     @unittest.skipUnless(Path('/usr/libexec/PlistBuddy').is_file(), 'macOS PlistBuddy required')
     def test_manager_update_scope_marker_applies_only_to_chromium_builds(self) -> None:
@@ -65,6 +93,31 @@ class PackageAppScriptContractTests(unittest.TestCase):
         text = (ROOT / "scripts/prepare-direct-manager-update.sh").read_text(encoding="utf-8")
         gate = 'if [[ "$PREPARATION_MODE" == "bundle-only" ]]; then\n      SECURITY_BASELINE_ARGS+=(--allow-unqualified-bundle)'
         self.assertIn(gate, text)
+
+    def test_manager_update_refreshes_sealed_site_protection_from_same_source(self) -> None:
+        text = (ROOT / "scripts/prepare-direct-manager-update.sh").read_text(encoding="utf-8")
+        clone = text.index('ditto --norsrc "$SOURCE_APP" "$CANDIDATE_APP"')
+        refresh = text.index('"$PROJECT_DIR/Resources/SiteProtection"', clone)
+        manager = text.index('cp "$MANAGER_BINARY" "$CANDIDATE_APP/Contents/MacOS/NeAntik"', clone)
+        signing = text.index('rm -rf "$CANDIDATE_APP/Contents/_CodeSignature"', clone)
+        self.assertLess(clone, refresh)
+        self.assertLess(refresh, manager)
+        self.assertLess(manager, signing)
+        self.assertIn('rm -rf "$CANDIDATE_APP/Contents/Resources/SiteProtection"', text[clone:refresh])
+
+    def test_local_dev_refreshes_sealed_site_protection_in_disposable_copy(self) -> None:
+        text = (ROOT / "scripts/run-local-manager.sh").read_text(encoding="utf-8")
+        refresh = text.index('"$PROJECT_DIR/Resources/SiteProtection"')
+        verify = text.index('verify_site_protection_package.py', refresh)
+        copy_binary = text.index('/bin/cp "$MANAGER_BINARY"', refresh)
+        self.assertIn('"$DEVELOPMENT_APP/Contents/Resources/SiteProtection"', text[refresh:copy_binary])
+        self.assertLess(verify, copy_binary)
+
+    def test_manager_update_verifies_sealed_site_protection_before_signing(self) -> None:
+        text = (ROOT / "scripts/prepare-direct-manager-update.sh").read_text(encoding="utf-8")
+        verify = text.index('verify_site_protection_package.py')
+        sign = text.index('direct_backup_signing.py" sign "$CANDIDATE_APP"')
+        self.assertLess(verify, sign)
 
     def test_chromium_only_build_omits_owned_webkit_host_product(self) -> None:
         text = (ROOT / "scripts/package-app.sh").read_text(encoding="utf-8")

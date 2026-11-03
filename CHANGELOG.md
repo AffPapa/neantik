@@ -1,11 +1,20 @@
 # NeAntik changelog
 
-## Direct 0.9.4 (204) — candidate, not released
+## Direct 0.9.5 (205) — hotfix candidate, not released
+
+- Fix manager-only packaging so Chromium's sealed SiteProtection resources are refreshed and checked against the manager pin before signing. This addresses a startup failure in 0.9.4; Chromium 156.0.8078.80 is unchanged.
+- Recover expired profile-start leases only after checking browser-data and proxy-relay ownership; fence process launch and the running lease under the same profile guard so a delayed retry cannot create a second browser.
+- Align the MCP `prepare_profile` guidance with its credential boundary: proxy usernames and passwords must be entered in the local NeAntik UI, not sent through MCP.
+- State the encrypted profile-transfer passphrase bounds in the validation message (12–512 UTF-8 bytes) and test the upper bound.
+- Add a separate MCP loopback QA mode for one synthetic profile in a fresh owner-only temporary root. It checks a reserved synthetic origin through an unauthenticated IPv4 loopback HTTP proxy without persisting proxy health or profile context; it does not qualify Chromium traffic through a real proxy.
+- Direct Distribution qualification remains open. No anonymity or anti-fraud detector-avoidance claim is made.
+
+## Direct 0.9.4 (204) — published Chromium-only public alpha
 
 - Clarify direct IP exposure, configured WebRTC limits and extension policies; fix MCP nullable organization revision and unavailable engine capabilities.
 - Add a compatibility control for tracking-query cleanup, preserve extension restrictions for custom policies, and fix privacy-profile configuration imports.
 - Report uncertain MCP rollback accurately and avoid duplicate response serialization. These changes are not in published 0.9.3 binaries.
-- Chromium-only packaging, exact signed-app qualification, notarization and distribution remain in progress; no absolute anonymity is claimed.
+- Published as the Chromium-only public alpha; the effective proxy route remains unverified. No absolute anonymity is claimed. See [release evidence](releases/v0.9.4.json).
 
 ## Direct 0.9.3 (203) — published public alpha
 

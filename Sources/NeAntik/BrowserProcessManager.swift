@@ -282,6 +282,40 @@ struct BrowserProfileDeletedError: LocalizedError, Equatable {
     }
 }
 
+struct BrowserStartLeaseSupersededError: LocalizedError, Equatable {
+    enum Reason: String, Equatable {
+        case invalidStartingLease = "invalid-starting-lease"
+        case missingLease = "starting-lease-missing"
+        case changedOwner = "starting-lease-owner-changed"
+        case changedPhase = "starting-lease-phase-changed"
+        case changedPID = "starting-lease-pid-changed"
+        case changedManager = "starting-lease-manager-changed"
+        case changedExecutablePath = "starting-lease-executable-changed"
+        case changedBrowserDataPath = "starting-lease-data-path-changed"
+        case changedSchema = "starting-lease-schema-changed"
+        case changedRelay = "starting-lease-relay-changed"
+        case changedPendingRelayOwner = "starting-lease-relay-owner-changed"
+        case changedCreatedAt = "starting-lease-created-at-changed"
+        case changedEncoding = "starting-lease-encoding-changed"
+        case unsafeLease = "starting-lease-unsafe"
+        case unreadableLease = "starting-lease-unreadable"
+        case childExited = "child-exited-before-lease-commit"
+    }
+
+    let reason: Reason
+
+    init(reason: Reason = .changedEncoding) {
+        self.reason = reason
+    }
+
+    var errorDescription: String? {
+        if reason == .childExited {
+            return "Chromium завершился сразу после запуска. Проверь состояние браузера и повтори запуск профиля."
+        }
+        return "Пока браузер готовился, состояние профиля изменилось. Дождись завершения проверки профиля и нажми «Запустить» ещё раз."
+    }
+}
+
 private struct BrowserProfileLeaseUnavailableError: LocalizedError {
     let inspection: BrowserDataProcessInspection
 
@@ -363,6 +397,12 @@ enum BrowserProfileProcessState: Equatable, Sendable {
 enum BrowserLaunchPurpose: Equatable, Sendable {
     case normal
     case fingerprintAudit(httpLoopbackPort: UInt16)
+    case loopbackQA(httpProxyPort: UInt16)
+
+    var isLoopbackQA: Bool {
+        if case .loopbackQA = self { return true }
+        return false
+    }
 }
 
 /// Opaque, single-use reservation for the diagnostic browser path. It binds
@@ -462,6 +502,12 @@ enum BrowserLaunchBuilder {
             "--no-default-browser-check",
             restoresSession ? "--restore-last-session" : "--new-window"
         ]
+        if purpose.isLoopbackQA {
+            // The QA harness binds its CDP client to this ephemeral IPv4
+            // loopback port; ordinary/profile starts never expose CDP.
+            arguments += ["--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0",
+                          "--password-store=basic"]
+        }
         let disabledFeatures = policy.disabledFeatures
 
         // Native Canvas, layout and text operations preserve their mathematical
@@ -497,6 +543,8 @@ enum BrowserLaunchBuilder {
                 bypass =
                     "<-loopback>;http://127.0.0.1:" +
                     String(httpLoopbackPort)
+            case .loopbackQA:
+                bypass = "<-loopback>"
             }
             arguments.append("--proxy-bypass-list=\(bypass)")
         } else {
@@ -562,7 +610,8 @@ enum BrowserLaunchBuilder {
             allowedInheritedEnvironmentKeys.contains($0.key)
         }
 
-        if runtimeCapabilities.contains(.profilePrivacyV1), profile.proxy != nil, purpose == .normal {
+        if runtimeCapabilities.contains(.profilePrivacyV1), profile.proxy != nil,
+           (purpose == .normal || purpose.isLoopbackQA) {
             environment["NEANTIK_PROFILE_PROXY_REQUIRED"] = "1"
         }
         if runtimeCapabilities.contains(.profilePrivacyV1), profile.privacyPolicy != .legacy {
@@ -576,7 +625,7 @@ enum BrowserLaunchBuilder {
             if privacy.viewport == .standard { environment["NEANTIK_PROFILE_VIEWPORT"] = "standard" }
             if privacy.disableSyncAndAutofill { environment["NEANTIK_PROFILE_AUTOFILL"] = "off" }
             if privacy.retention == .ephemeral { environment["NEANTIK_PROFILE_EPHEMERAL"] = "1" }
-            if privacy.siteProtection {
+            if privacy.siteProtection && purpose == .normal {
                 environment["NEANTIK_PROFILE_PRIVACY_EXTENSION_ID"] = SiteProtectionBundle.extensionID
                 environment["NEANTIK_PROFILE_PRIVACY_BASELINE_RULES"] = String(SiteProtectionBundle.baselineRuleCount)
                 if privacy.trackingParameterCleanup { environment["NEANTIK_PROFILE_QUERY_CLEANUP"] = "1" }
@@ -666,6 +715,13 @@ private struct ManagedBrowserClosingIntent: Equatable {
     let requestedAt: Date
 }
 
+struct LoopbackQALaunchGrant: Equatable, Sendable {
+    fileprivate let id: UUID
+    fileprivate let profileID: UUID
+    fileprivate let profileRevision: UInt64
+    fileprivate let proxyPort: UInt16
+}
+
 private enum BrowserLeaseEntrySnapshot: Sendable {
     case missing
     case unsafe
@@ -738,6 +794,13 @@ private struct QueuedBrowserReconcile {
     let retryCount: Int
 }
 
+private enum BrowserLaunchDiagnosticStage: String {
+    case preparation = "launch-preparation"
+    case siteProtection = "site-protection-preparation"
+    case processStart = "chromium-start"
+    case sessionRegistration = "session-registration"
+}
+
 @MainActor
 final class BrowserProcessManager: ObservableObject {
     @Published private(set) var runningProfileIDs = Set<UUID>()
@@ -774,6 +837,8 @@ final class BrowserProcessManager: ObservableObject {
     private static let webKitSessionSaveFailureMessage = "Не удалось сохранить список вкладок. Профиль остаётся занят: проверь свободное место и доступ к папке данных, затем нажми «Остановить» ещё раз. Прежний список не заменён незавершённым файлом."
     private var webKitTerminationObservation: AnyCancellable?
     private let paths: AppPaths
+    private let loopbackQALoopbackProxyPort: UInt16?
+    private var loopbackQALaunchGrants: [UUID: LoopbackQALaunchGrant] = [:]
     private var releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation?
     private let validatesPersistedProfiles: Bool
     private let processIdentityInspector:
@@ -830,6 +895,7 @@ final class BrowserProcessManager: ObservableObject {
     private var passiveObservationsEnabled = true
     private var reconcileTask: Task<Void, Never>?
     private let keychain: KeychainStore
+    private let siteProtectionResourceURL: URL?
     private var reconcileGeneration: UInt64 = 0
     private var queuedReconcile: QueuedBrowserReconcile?
     private var lastReconciledProfiles: [BrowserProfile] = []
@@ -866,9 +932,14 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     init(paths: AppPaths, releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation? = nil,
-         keychain: KeychainStore = KeychainStore()) {
+         keychain: KeychainStore = KeychainStore(),
+         siteProtectionResourceURL: URL? = nil,
+         loopbackQALoopbackProxyPort: UInt16? = nil) {
         self.paths = paths
+        self.loopbackQALoopbackProxyPort = loopbackQALoopbackProxyPort
         self.keychain = keychain
+        self.siteProtectionResourceURL = siteProtectionResourceURL ??
+            Bundle.main.resourceURL?.appendingPathComponent("SiteProtection", isDirectory: true)
         self.launchAdmission = .shared
         self.releaseAuditBrowserIsolation = releaseAuditBrowserIsolation
         self.validatesPersistedProfiles = true
@@ -922,10 +993,14 @@ final class BrowserProcessManager: ObservableObject {
         startingLeaseTimeout: TimeInterval = 30,
         validatesPersistedProfiles: Bool = false,
         now: @escaping () -> Date = Date.init,
-        keychain: KeychainStore = KeychainStore()
+        keychain: KeychainStore = KeychainStore(),
+        siteProtectionResourceURL: URL? = nil
     ) {
         self.paths = paths
+        self.loopbackQALoopbackProxyPort = nil
         self.keychain = keychain
+        self.siteProtectionResourceURL = siteProtectionResourceURL ??
+            Bundle.main.resourceURL?.appendingPathComponent("SiteProtection", isDirectory: true)
         self.launchAdmission = launchAdmission ?? .shared
         self.releaseAuditBrowserIsolation = releaseAuditBrowserIsolation
         self.validatesPersistedProfiles = validatesPersistedProfiles
@@ -971,10 +1046,14 @@ final class BrowserProcessManager: ObservableObject {
         startingLeaseTimeout: TimeInterval = 30,
         validatesPersistedProfiles: Bool = false,
         now: @escaping () -> Date = Date.init,
-        keychain: KeychainStore = KeychainStore()
+        keychain: KeychainStore = KeychainStore(),
+        siteProtectionResourceURL: URL? = nil
     ) {
         self.paths = paths
+        self.loopbackQALoopbackProxyPort = nil
         self.keychain = keychain
+        self.siteProtectionResourceURL = siteProtectionResourceURL ??
+            Bundle.main.resourceURL?.appendingPathComponent("SiteProtection", isDirectory: true)
         self.launchAdmission = launchAdmission ?? .shared
         self.validatesPersistedProfiles = validatesPersistedProfiles
         self.processIdentityInspector = processIdentityInspector
@@ -2086,7 +2165,7 @@ final class BrowserProcessManager: ObservableObject {
                 relayOwnerInspection: relayOwnerInspection,
                     deferInitialResolution: true,
                     message:
-                        "Другой экземпляр NeAntik ещё запускает этот профиль. Повторный запуск заблокирован."
+                        "Другой экземпляр NeAntik начал запуск этого профиля. NeAntik проверяет браузер и прокси; профиль разблокируется автоматически после проверки."
                 )
                 return
             }
@@ -2109,7 +2188,7 @@ final class BrowserProcessManager: ObservableObject {
                     browserDataProcessInspector,
                 relayOwnerInspection: relayOwnerInspection,
                 message:
-                    "Другой экземпляр NeAntik ещё запускает этот профиль. Повторный запуск заблокирован."
+                    "Другой экземпляр NeAntik начал запуск этого профиля. NeAntik проверяет браузер и прокси; профиль разблокируется автоматически после проверки."
             )
             return
         }
@@ -2192,7 +2271,27 @@ final class BrowserProcessManager: ObservableObject {
     /// enqueued; a trust/auth failure never retries as plaintext or Direct.
     func launchUserProfile(profile: BrowserProfile, runtime: BrowserRuntime,
                            preparationReceipt: BrowserLaunchPreparationReceipt?, keychain: KeychainStore,
-                           target: BrowserUserLaunchTarget = .profileStart) async throws {
+                           target: BrowserUserLaunchTarget = .profileStart,
+                           purpose: BrowserLaunchPurpose = .normal,
+                           loopbackQAGrant: LoopbackQALaunchGrant? = nil) async throws {
+        if case let .loopbackQA(httpProxyPort) = purpose {
+            guard let loopbackQAGrant,
+                  loopbackQALaunchGrants[loopbackQAGrant.id] == loopbackQAGrant,
+                  loopbackQAGrant.profileID == profile.id,
+                  loopbackQAGrant.profileRevision == profile.revision,
+                  loopbackQAGrant.proxyPort == httpProxyPort,
+                  loopbackQALoopbackProxyPort == httpProxyPort,
+                  httpProxyPort != 0,
+                  let proxy = profile.proxy, proxy.kind == .http,
+                  proxy.host == "127.0.0.1", UInt16(exactly: proxy.port) == httpProxyPort,
+                  proxy.username.isEmpty, profile.engine == .chromium,
+                  profile.startURL == "about:blank", target == .profileStart,
+                  preparationReceipt == nil else { throw NeAntikError.invalidProxy }
+            loopbackQALaunchGrants[loopbackQAGrant.id] = nil
+            try launch(profile: profile, runtime: runtime, startURLOverride: URL(string: "about:blank"), purpose: purpose)
+            return
+        }
+        guard loopbackQAGrant == nil else { throw NeAntikError.invalidProxy }
         if let plan = target.routeProbePlan {
             try plan.validate()
             guard let proxy = profile.proxy, !proxy.username.isEmpty else {
@@ -2206,6 +2305,20 @@ final class BrowserProcessManager: ObservableObject {
         } else {
             try launch(profile: profile, runtime: runtime, preparationReceipt: preparationReceipt, startURLOverride: target.startURLOverride)
         }
+    }
+
+    func issueLoopbackQALaunchGrant(for profile: BrowserProfile) throws -> LoopbackQALaunchGrant {
+        guard let port = loopbackQALoopbackProxyPort,
+              let proxy = profile.proxy, proxy.kind == .http,
+              proxy.host == "127.0.0.1", UInt16(exactly: proxy.port) == port,
+              proxy.username.isEmpty, profile.engine == .chromium,
+              profile.startURL == "about:blank", !profile.isArchived else {
+            throw NeAntikError.invalidProxy
+        }
+        let grant = LoopbackQALaunchGrant(id: UUID(), profileID: profile.id,
+            profileRevision: profile.revision, proxyPort: port)
+        loopbackQALaunchGrants[grant.id] = grant
+        return grant
     }
 
     /// Starting ownership is
@@ -2353,6 +2466,7 @@ final class BrowserProcessManager: ObservableObject {
                 throw ProxyRelayOwnerClient.Failure.cleanupUnconfirmed((error as? ProxyRelayOwnerClient.Failure)?.pendingFence)
             }
             if error is CancellationError { throw CancellationError() }
+            if error is BrowserStartLeaseSupersededError { throw error }
             throw NeAntikError.processLaunchFailed("")
         }
     }
@@ -2441,6 +2555,16 @@ final class BrowserProcessManager: ObservableObject {
                 throw NeAntikError.proxyPreparationRequired
             }
         }
+        if case let .loopbackQA(httpProxyPort) = purpose {
+            guard loopbackQALoopbackProxyPort == httpProxyPort, httpProxyPort != 0,
+                  let proxy = profile.proxy, proxy.kind == .http,
+                  proxy.host == "127.0.0.1", UInt16(exactly: proxy.port) == httpProxyPort,
+                  proxy.username.isEmpty, profile.startURL == "about:blank",
+                  startURLOverride?.absoluteString == "about:blank",
+                  browserDataDirectoryOverride == nil,
+                  fingerprintAuditReservation == nil,
+                  additionalArguments.isEmpty else { throw NeAntikError.invalidProxy }
+        }
         let browserDataDirectory =
             browserDataDirectoryOverride ??
             paths.browserDataDirectory(for: profile.id)
@@ -2453,6 +2577,18 @@ final class BrowserProcessManager: ObservableObject {
                     "Резерв проверки нельзя использовать для обычного запуска."
                 )
             }
+            ownsFreshFingerprintAuditDirectory = false
+            fingerprintDirectoryCustody = nil
+        case let .loopbackQA(httpProxyPort):
+            guard loopbackQALoopbackProxyPort == httpProxyPort, httpProxyPort != 0,
+                  browserDataDirectoryOverride == nil,
+                  fingerprintAuditReservation == nil,
+                  additionalArguments.isEmpty,
+                  startURLOverride?.absoluteString == "about:blank",
+                  let proxy = profile.proxy, proxy.kind == .http,
+                  proxy.host == "127.0.0.1", UInt16(exactly: proxy.port) == httpProxyPort,
+                  proxy.username.isEmpty, profile.engine == .chromium,
+                  profile.startURL == "about:blank" else { throw NeAntikError.invalidProxy }
             ownsFreshFingerprintAuditDirectory = false
             fingerprintDirectoryCustody = nil
         case let .fingerprintAudit(httpLoopbackPort):
@@ -2605,6 +2741,7 @@ final class BrowserProcessManager: ObservableObject {
             transientEmptyProfileDirectoryIDs.insert(profile.id)
         }
 
+        var diagnosticStage = BrowserLaunchDiagnosticStage.preparation
         do {
             try prepareDiagnosticLog(logURL)
             try fingerprintDirectoryCustody?.validate()
@@ -2619,9 +2756,10 @@ final class BrowserProcessManager: ObservableObject {
                 try EphemeralProfileStorage.prepareLaunch(paths: paths, profile: profile)
             }
             if runtime.supportsProfilePrivacy && purpose == .normal {
-                guard let resources = Bundle.main.resourceURL else { throw SiteProtectionPreparationError() }
+                diagnosticStage = .siteProtection
+                guard let resources = siteProtectionResourceURL else { throw SiteProtectionPreparationError() }
                 let protection = try SiteProtectionBundle.prepare(
-                    resources: resources.appendingPathComponent("SiteProtection", isDirectory: true),
+                    resources: resources,
                     browserData: browserDataDirectory, profile: profile)
                 process.arguments = BrowserLaunchBuilder.arguments(profile: profile,
                     browserDataDirectory: browserDataDirectory, runtimeCapabilities: runtime.capabilities,
@@ -2629,30 +2767,28 @@ final class BrowserProcessManager: ObservableObject {
                     proxyTransportOverride: preparedRelayLaunches[profile.id]?.port,
                     siteProtectionDirectory: protection.directory, now: launchNow, purpose: purpose) + storageArguments
             }
-            try process.run()
+            let lock = try commitOwnedProcessStart(
+                profileID: profile.id,
+                startingLease: provisionalLock,
+                browserDataDirectory: browserDataDirectory,
+                allowsUnknownBrowserDataInspection:
+                    ownsFreshFingerprintAuditDirectory,
+                at: lockURL
+            ) {
+                diagnosticStage = .processStart
+                try process.run()
+                guard process.isRunning, process.processIdentifier > 0 else {
+                    throw BrowserStartLeaseSupersededError(reason: .childExited)
+                }
+                return process.processIdentifier
+            }
+            diagnosticStage = .sessionRegistration
             withExtendedLifetime((auditDirectoryCustody, fingerprintDirectoryCustody)) {}
             processes[profile.id] = process
             runningProfileIDs.insert(profile.id)
             try? appendDiagnostic(
                 "browser_launch version=\(runtime.inspection.version ?? "unknown")",
                 to: logURL
-            )
-            let lock = BrowserProcessLock(
-                pid: process.processIdentifier,
-                executablePath: runtime.executableURL.standardizedFileURL.path,
-                browserDataPath: browserDataDirectory.standardizedFileURL.path,
-                createdAt: createdAt,
-                schemaVersion: BrowserProcessLock.currentSchemaVersion,
-                ownerToken: ownerToken,
-                managerPID: getpid(),
-                phase: .running,
-                relay: preparedRelay?.lock.relay
-            )
-            try writeOwnedLease(
-                lock,
-                profileID: profile.id,
-                ownerToken: ownerToken,
-                at: lockURL
             )
             if let reservation = fingerprintAuditReservation, let custody = fingerprintDirectoryCustody {
                 fingerprintAuditSettlementPermits[reservation.id] = .init(reservation: reservation,
@@ -2696,13 +2832,105 @@ final class BrowserProcessManager: ObservableObject {
                 beginEphemeralCleanupIfNeeded(profile: profile, onlyIfPending: true)
             }
             cleanupTransientProfileDirectoryIfSafe(profileID: profile.id)
+            if let error = error as? BrowserStartLeaseSupersededError {
+                try? appendDiagnostic(
+                    "browser_launch_failed reason=launch-fence-\(error.reason.rawValue)",
+                    to: logURL
+                )
+                if error.reason == .childExited {
+                    throw NeAntikError.processLaunchFailed("")
+                }
+                throw NeAntikError.profileAlreadyRunning
+            }
             try? appendDiagnostic(
-                "browser_launch_failed reason=process-launch-error",
+                "browser_launch_failed stage=\(diagnosticStage.rawValue) reason=process-launch-error",
                 to: logURL
             )
             if error is UnsupportedBrowserFontPolicyError { throw error }
             throw NeAntikError.processLaunchFailed("")
         }
+    }
+
+    /// Starting Chromium and publishing its running lease share one
+    /// cross-process guard. Recovery may retire an expired starting lease,
+    /// but a delayed owner cannot spawn a child after that fence changed.
+    func commitOwnedProcessStart(
+        profileID: UUID,
+        startingLease: BrowserProcessLock,
+        browserDataDirectory: URL,
+        allowsUnknownBrowserDataInspection: Bool = false,
+        at lockURL: URL,
+        startProcess: () throws -> pid_t
+    ) throws -> BrowserProcessLock {
+        try paths.withProcessLockGuard(for: profileID) {
+            let expectedData = try Self.encodeLock(startingLease)
+            guard startingLease.phase == .starting,
+                  startingLease.pid == 0,
+                  startingLease.ownerToken != nil,
+                  startingLease.managerPID == getpid(),
+                  startingLease.pendingRelayOwner == nil
+            else {
+                throw BrowserStartLeaseSupersededError(reason: .invalidStartingLease)
+            }
+            switch try readLeaseEntryWhileGuardHeld(lockURL: lockURL) {
+            case .missing:
+                throw BrowserStartLeaseSupersededError(reason: .missingLease)
+            case .unsafe:
+                throw BrowserStartLeaseSupersededError(reason: .unsafeLease)
+            case .unreadable:
+                throw BrowserStartLeaseSupersededError(reason: .unreadableLease)
+            case let .data(data):
+                let expected = try Self.decodeLock(expectedData)
+                guard let actual = try? Self.decodeLock(data) else {
+                    throw BrowserStartLeaseSupersededError(reason: .changedEncoding)
+                }
+                guard actual == expected else {
+                    throw BrowserStartLeaseSupersededError(
+                        reason: Self.startLeaseMismatchReason(expected: expected, actual: actual)
+                    )
+                }
+            }
+            let inspection = browserDataProcessInspector(browserDataDirectory)
+            guard inspection == .absent ||
+                    (inspection == .unknown && allowsUnknownBrowserDataInspection)
+            else {
+                throw BrowserProfileLeaseUnavailableError(inspection: inspection)
+            }
+            let pid = try startProcess()
+            guard pid > 0 else {
+                throw BrowserStartLeaseSupersededError(reason: .childExited)
+            }
+            let runningLease = BrowserProcessLock(
+                pid: pid,
+                executablePath: startingLease.executablePath,
+                browserDataPath: startingLease.browserDataPath,
+                createdAt: startingLease.createdAt,
+                schemaVersion: startingLease.schemaVersion,
+                ownerToken: startingLease.ownerToken,
+                managerPID: startingLease.managerPID,
+                phase: .running,
+                relay: startingLease.relay
+            )
+            try paths.writePrivateFile(Self.encodeLock(runningLease), to: lockURL)
+            return runningLease
+        }
+    }
+
+    private static func startLeaseMismatchReason(
+        expected: BrowserProcessLock,
+        actual: BrowserProcessLock
+    ) -> BrowserStartLeaseSupersededError.Reason {
+        if actual.ownerToken != expected.ownerToken { return .changedOwner }
+        if actual.phase != expected.phase { return .changedPhase }
+        if actual.pid != expected.pid { return .changedPID }
+        if actual.managerPID != expected.managerPID { return .changedManager }
+        if actual.executablePath != expected.executablePath { return .changedExecutablePath }
+        if actual.browserDataPath != expected.browserDataPath { return .changedBrowserDataPath }
+        if actual.schemaVersion != expected.schemaVersion { return .changedSchema }
+        if actual.relay != expected.relay { return .changedRelay }
+        if actual.pendingRelayOwner != expected.pendingRelayOwner { return .changedPendingRelayOwner }
+        if actual.createdAt != expected.createdAt { return .changedCreatedAt }
+        return .changedEncoding
     }
 
     private static func fingerprintAuditArgumentsAreSafe(
@@ -3715,8 +3943,22 @@ final class BrowserProcessManager: ObservableObject {
                         continue
                     }
                     if let managerPID = record.blockingManagerPID {
-                        guard ownerWasAlive[profileID] == false,
-                              !processLivenessValidator(managerPID)
+                        let ownerWasConfirmedDead =
+                            ownerWasAlive[profileID] == false &&
+                            !processLivenessValidator(managerPID)
+                        let startingAge = record.startingCreatedAt.map {
+                            self.now().timeIntervalSince($0)
+                        }
+                        let expiredStartingAttempt = startingAge.map {
+                            $0 >= self.startingLeaseTimeout
+                        } ?? false
+                        // A manager process can remain alive after its launch
+                        // task has failed or stalled. Age alone is insufficient:
+                        // resolveRecoveryIfSafe still proves BrowserData and
+                        // relay-owner absence, then removes only the same lock
+                        // snapshot. The launch path fences Process.run against
+                        // that same lock under the profile guard.
+                        guard ownerWasConfirmedDead || expiredStartingAttempt
                         else {
                             continue
                         }

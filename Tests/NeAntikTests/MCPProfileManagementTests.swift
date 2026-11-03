@@ -564,6 +564,47 @@ struct MCPProfileManagementTests {
             processes: BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent }, allowsExternalProcessSignaling: false))
         return (root, engine, backend)
     }
+
+    @Test func loopbackQAManagementDoesNotPersistSyntheticHealthAndRejectsUnboundManager() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("mcp-loopback-qa-\(UUID())")
+        let paths = AppPaths(rootDirectory: root)
+        let backend = Backend()
+        let engine = MCPProfileManagement(root: root, allowsManagement: true,
+            keychain: KeychainStore(backend: backend, service: "synthetic-mcp-qa", legacyService: nil),
+            processes: BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent }, allowsExternalProcessSignaling: false),
+            loopbackQAProxyPort: 9)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let created = try await engine.call("profile_create", ["name": "2026 QA synthetic"])
+        let profileID = try #require(created["id"] as? String)
+        let revision = try #require(created["revision"] as? String)
+        #expect(created["startURL"] as? String == "about:blank")
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_create", ["name": "Second QA profile"])
+        }
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_update", ["profileID": profileID, "expectedRevision": revision,
+                                                       "changes": ["startURL": "https://example.invalid/"]])
+        }
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_set_proxy", ["profileID": profileID, "expectedRevision": revision,
+                                                         "proxy": ["kind": "http", "host": "proxy.example", "port": 8080]])
+        }
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_set_proxy", ["profileID": profileID, "expectedRevision": revision,
+                                                         "proxy": ["kind": "http", "host": "127.0.0.1", "port": 10]])
+        }
+        let local = try await engine.call("profile_set_proxy", ["profileID": profileID, "expectedRevision": revision,
+                                                                  "proxy": ["kind": "http", "host": "127.0.0.1", "port": 9]])
+        let localRevision = try #require(local["revision"] as? String)
+        await #expect(throws: (any Error).self) {
+            try await engine.call("profile_check_proxy", ["profileID": profileID, "expectedRevision": localRevision])
+        }
+        #expect(engine.health.state(for: engine.store.profile(withID: UUID(uuidString: profileID)!)!) == nil)
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_start", ["profileID": profileID, "expectedRevision": localRevision])
+        }
+    }
+
     func create(_ engine: MCPProfileManagement) async throws -> [String: Any] { try await engine.call("profile_create", ["name": "Synthetic", "changes": ["startURL": "https://example.com", "tags": ["qa"]]]) }
     func request(_ dto: [String: Any]) -> [String: Any] { ["profileID": dto["id"]!, "expectedRevision": dto["revision"]!] }
     func request(_ profile: BrowserProfile) -> [String: Any] {

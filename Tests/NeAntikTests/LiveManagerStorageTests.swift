@@ -17,9 +17,11 @@ struct LiveManagerStorageTests {
         defer { server.stop() }
         let store = ProfileStore(paths: paths)
         let profile = try store.upsert(BrowserProfile(name: "Synthetic storage", startURL: server.url.absoluteString))
+        let siteProtection = URL(fileURLWithPath: app).appendingPathComponent(
+            "Contents/Resources/SiteProtection", isDirectory: true)
         let runtime = BrowserRuntime(name: "NeAntik Browser", executableURL: URL(fileURLWithPath: app).appendingPathComponent("Contents/Resources/NeAntik Browser.app/Contents/MacOS/NeAntik Browser"), source: "Exact runtime storage fixture", flavor: .fingerprintChromium)
         #expect(BrowserRuntimePreflightValidator.validate(runtime).isReady)
-        var manager = BrowserProcessManager(paths: paths)
+        var manager = BrowserProcessManager(paths: paths, siteProtectionResourceURL: siteProtection)
         defer { manager.stop(profileID: profile.id) }
         let portFile = paths.browserDataDirectory(for: profile.id).appendingPathComponent("DevToolsActivePort")
         func start() throws {
@@ -70,7 +72,7 @@ struct LiveManagerStorageTests {
         """, at: page())
         try await verify("initial")
         // A second fresh manager reconciles the still-running synthetic browser.
-        let restarted = BrowserProcessManager(paths: paths)
+        let restarted = BrowserProcessManager(paths: paths, siteProtectionResourceURL: siteProtection)
         restarted.reconcile(profiles: [profile])
         try await Task.sleep(for: .seconds(1))
         #expect(restarted.processState(for: profile.id).isRunning)
@@ -91,7 +93,7 @@ struct LiveManagerStorageTests {
         } else { manager.stop(profileID: profile.id) }
         try await stopped()
         print("STORAGE_FIXTURE stop completed")
-        manager = BrowserProcessManager(paths: paths)
+        manager = BrowserProcessManager(paths: paths, siteProtectionResourceURL: siteProtection)
         try start()
         try await verify("clean-stop-and-relaunch")
         // Crash only the fixture browser via its own CDP endpoint, never PID
@@ -99,7 +101,7 @@ struct LiveManagerStorageTests {
         let crashPage = try await page()
         _ = try? await Self.command("Browser.crash", params: [:], at: crashPage)
         try await stopped()
-        manager = BrowserProcessManager(paths: paths)
+        manager = BrowserProcessManager(paths: paths, siteProtectionResourceURL: siteProtection)
         try start()
         try await verify("controlled-crash-and-relaunch")
         manager.stop(profileID: profile.id)
@@ -120,8 +122,10 @@ struct LiveManagerStorageTests {
             proxy: ProxyConfiguration(kind: .http, host: "127.0.0.1", port: try #require(server.url.port), username: ""))
         draft.identity = draft.identity.replacingProxyContext(timezoneIdentifier: "America/New_York", localeIdentifier: "en-US", evidence: .ipAPI(observedAt: Date()))
         let profile = try store.upsert(draft)
+        let siteProtection = URL(fileURLWithPath: app).appendingPathComponent(
+            "Contents/Resources/SiteProtection", isDirectory: true)
         let runtime = BrowserRuntime(name: "NeAntik Browser", executableURL: URL(fileURLWithPath: app).appendingPathComponent("Contents/Resources/NeAntik Browser.app/Contents/MacOS/NeAntik Browser"), source: "Exact runtime proxy fixture", flavor: .fingerprintChromium)
-        let manager = BrowserProcessManager(paths: paths)
+        let manager = BrowserProcessManager(paths: paths, siteProtectionResourceURL: siteProtection)
         defer { manager.stop(profileID: profile.id) }
         let observedAt = try #require(profile.identity.proxyContextEvidence?.observedAt)
         let health = ProxyHealthUpdatePolicy.success(ProxyTestObservation(observedAt: observedAt, responseTimeMilliseconds: 1,
@@ -167,6 +171,13 @@ struct LiveManagerStorageTests {
         if manager.processState(for: profile.id) != .stopped {
             print("PROXY_FIXTURE stop_failed=\(manager.lastError ?? "none")")
             _ = try? await Self.command("Browser.close", params: [:], at: socket)
+            // Launch Services termination may be refused or take longer for
+            // this headless runtime. CDP close is the fixture's explicit
+            // graceful fallback; wait for the manager to observe process exit.
+            for _ in 0..<150 where manager.processState(for: profile.id) != .stopped {
+                manager.reconcile(profiles: [profile])
+                try await Task.sleep(for: .milliseconds(100))
+            }
         }
         try #require(manager.processState(for: profile.id) == .stopped)
         if manager.processState(for: profile.id) == .stopped { try FileManager.default.removeItem(at: root) }

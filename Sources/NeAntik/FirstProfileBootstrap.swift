@@ -10,7 +10,7 @@ enum FirstProfileBootstrap {
         existingProfiles: [BrowserProfile]
     ) -> BrowserProfile? {
         guard existingProfiles.isEmpty else { return nil }
-        return BrowserProfile(name: defaultName, fontPolicy: .systemV1, privacyPolicy: .balanced)
+        return BrowserProfile(name: defaultName, fontPolicy: .native, privacyPolicy: .balanced)
     }
 }
 

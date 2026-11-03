@@ -87,11 +87,18 @@ resolve_runtime_candidate_lock() {
   fi
   local source_provenance
   source_provenance="$(resolve_source_provenance)"
-  local default="$(dirname "$source_provenance")/runtime-candidate-lock.json"
+  # The exporter requires provenance and lock to be siblings in a build root.
+  # Copy provenance into disposable support storage so deriving the lock never
+  # mutates SOURCE_APP when its evidence came from the signed bundle.
+  local evidence_dir="$BUILD_SUPPORT_DIR/runtime-source-evidence"
+  local build_provenance="$evidence_dir/source-provenance.json"
+  local default="$evidence_dir/runtime-candidate-lock.json"
   if [[ ! -f "$default" ]]; then
+    mkdir -p "$evidence_dir"
+    cp "$source_provenance" "$build_provenance"
     "$PROJECT_DIR/scripts/export-runtime-candidate-lock.py" \
-      "$source_provenance" \
-      --output "$default"
+      "$build_provenance" \
+      --output "$default" >&2
   fi
   echo "$default"
 }
@@ -271,6 +278,10 @@ if [[ "$SOURCE_APP" != /* || ! -d "$SOURCE_APP" ]]; then
   echo "Source integrated app must be an existing absolute path." >&2
   exit 66
 fi
+if [[ "$CANDIDATE_APP" == "$SOURCE_APP" ]]; then
+  echo "Candidate app path must be separate from the immutable source app." >&2
+  exit 65
+fi
 if [[ -e "$CANDIDATE_MANIFEST" || -L "$CANDIDATE_MANIFEST" ]]; then
   echo "Prepared candidate manifest already exists; refusing to replace it." >&2
   echo "Archive or move this generated manifest before preparing a new candidate:" >&2
@@ -420,6 +431,13 @@ if [[ -e "$CANDIDATE_APP" ]]; then
 fi
 rm -rf "$CANDIDATE_APP"
 ditto --norsrc "$SOURCE_APP" "$CANDIDATE_APP"
+# Manager-only updates can change the sealed SiteProtection payload while
+# inheriting the prior app bundle. Keep the executable's pinned seal and its
+# immutable resources from the same source revision; otherwise launch fails
+# closed before Chromium starts.
+rm -rf "$CANDIDATE_APP/Contents/Resources/SiteProtection"
+ditto --norsrc "$PROJECT_DIR/Resources/SiteProtection" \
+  "$CANDIDATE_APP/Contents/Resources/SiteProtection"
 cp "$MANAGER_BINARY" "$CANDIDATE_APP/Contents/MacOS/NeAntik"
 python3 "$PROJECT_DIR/scripts/sanitize-manager-rpaths.py" "$CANDIDATE_APP/Contents/MacOS/NeAntik"
 # SwiftPM can retain DWARF source/object paths even with prefix maps. Match
@@ -433,6 +451,9 @@ if [[ "${NEANTIK_CHROMIUM_ONLY:-0}" == "1" ]]; then
     "$CANDIDATE_APP/Contents/Info.plist"
 fi
 if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
+  /usr/libexec/PlistBuddy \
+    -c 'Set :NeAntikUpdateChannelEnabled false' \
+    "$CANDIDATE_APP/Contents/Info.plist"
   python3 "$PROJECT_DIR/scripts/package-update-helpers.py" "$CANDIDATE_APP" "$BIN_PATH" -
 else
   python3 "$PROJECT_DIR/scripts/package-update-helpers.py" "$CANDIDATE_APP" "$BIN_PATH" "$NEANTIK_SIGNING_IDENTITY"
@@ -455,6 +476,8 @@ python3 "$PROJECT_DIR/scripts/package-manager-release-baseline.py" \
 verify_reviewed_runtime_evidence
 
 verify_runtime_unchanged
+python3 -B "$PROJECT_DIR/scripts/verify_site_protection_package.py" \
+  --project-root "$PROJECT_DIR" --app "$CANDIDATE_APP"
 if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_APP/Contents/Resources/NeAntikRuntimeEvidence/fingerprint-chromium.lock.json")" == "156.0.8078.12" ]]; then
   python3 "$PROJECT_DIR/scripts/verify-direct-update-runtime-pins.py" --reference-app "$CANDIDATE_APP"
 fi
@@ -489,15 +512,19 @@ codesign --verify --deep --strict --verbose=2 "$CANDIDATE_APP"
 verify_runtime_unchanged
 python3 "$PROJECT_DIR/scripts/verify-public-artifact-privacy.py" "$CANDIDATE_APP"
 
+if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
+  "$PROJECT_DIR/scripts/verify-direct-branding-residue.py" \
+    --app "$CANDIDATE_APP" \
+    --allow-legacy-runtime-branding
+  echo "LOCAL QA ONLY: release-channel and integrated-publication gates are intentionally not claimed."
+  echo "$CANDIDATE_APP"
+  exit 0
+fi
+
 "$PROJECT_DIR/scripts/verify-integrated-release.sh" "$CANDIDATE_APP"
 "$PROJECT_DIR/scripts/verify-direct-branding-residue.py" \
   --app "$CANDIDATE_APP" \
   --allow-legacy-runtime-branding
-if [[ "${NEANTIK_LOCAL_ADHOC:-0}" == "1" ]]; then
-  echo "LOCAL QA ONLY: schema-3 release enrollment was intentionally skipped."
-  echo "$CANDIDATE_APP"
-  exit 0
-fi
 PRIVATE_RELEASE_BASE="$PROJECT_DIR/dist/private"
 if [[ "$PREPARATION_MODE" == "bundle-only" ]]; then
   python3 -B "$PROJECT_DIR/scripts/prepared_manager_bundle.py" finish --project-root "$PROJECT_DIR" --root "$CANDIDATE_ROOT"
