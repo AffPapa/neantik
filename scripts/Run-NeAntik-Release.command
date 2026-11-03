@@ -45,6 +45,13 @@ EXPECTED_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PROJECT_
 export NEANTIK_SIGNING_IDENTITY="${NEANTIK_SIGNING_IDENTITY:-474F7C78F33EE324C24F6F5AE0443EB713E85E60}"
 export NEANTIK_NOTARY_PROFILE="${NEANTIK_NOTARY_PROFILE:-neantik-notary}"
 export NEANTIK_RELEASE_CHANNEL="${NEANTIK_RELEASE_CHANNEL:-public-alpha}"
+if [[ "$NEANTIK_RELEASE_CHANNEL" == "public-alpha" ]]; then
+  if [[ "${NEANTIK_CHROMIUM_ONLY:-1}" != "1" ]]; then
+    echo "Public-alpha releases require the Chromium-only manager build." >&2
+    exit 64
+  fi
+  export NEANTIK_CHROMIUM_ONLY=1
+fi
 pause_on_error() {
   local exit_code=$?
   trap - ERR

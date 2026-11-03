@@ -147,6 +147,11 @@
   не заменяет kernel pressure. Не повторять запуск при прежнем условии и не
   отключать защиту; нормальное наблюдение допускает попытку, но не даёт PASS.
 - Сначала один законченный срез, затем один source-bound кандидат.
+- `Release-NeAntik.command` exports `NEANTIK_CHROMIUM_ONLY=1` for every
+  `public-alpha` run and refuses an explicit conflicting value. This matches
+  the published 0.x Chromium-only scope and embeds the engine marker required
+  by the integrated-release verifier. Production/WebKit qualification remains
+  a separate gate; do not infer it from the alpha setting.
 - При смене runtime можно передать `NEANTIK_SOURCE_APP` — канонический путь
   к отдельно аутентифицированному private bundle input. Обязателен
   зарегистрированный `NEANTIK_DIRECT_CANDIDATE_ROOT`; обычные проверки подписи,
@@ -299,6 +304,12 @@ HTTP-анализатор этих условий не проверяет. HTTPS
 Один явно созданный audit authority используется с тем же точным app/manifest
 до потребления или штатного удаления; каждый повтор fixture не создаёт ключ.
 Запуск, подпись ответа, закрытие процессов и удаление authority — разные этапы.
+Для отдельного выпускаемого кандидата запускай HTTPS с одним синтетическим
+профилем: `--qa-profile-name '2026 QA — 0.9.6/<первые 12 hex SHA-256 менеджера>'`.
+Имя сверяется с точными version и manager hash кандидата. Для direct-контроля
+переключай proxy у того же профиля в headed QA и возвращай его после контроля;
+не создавай второй профиль. Остальные режимы fixture сохраняют документированные
+пары профилей и не являются частью этого однопрофильного прогона.
 
 ### Удаление временного audit authority
 

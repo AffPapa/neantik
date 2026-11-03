@@ -438,7 +438,15 @@ def audit_executable_path(executable):
     return alias
 
 
-def seed_profiles(executable, data_root, urls):
+def profile_specs(qa_profile_name=None):
+    if qa_profile_name is None:
+        return [('QA route proxy', 'proxy-success'), ('QA route direct', 'direct-control')]
+    if not re.fullmatch(r'2026 QA — \d+\.\d+\.\d+/[0-9a-f]{12,64}', qa_profile_name):
+        raise ValueError('invalid-single-qa-profile-name')
+    return [(qa_profile_name, 'proxy-success')]
+
+
+def seed_profiles(executable, data_root, urls, qa_profile_name=None):
     """Only profile_create: a separate MCP process has no audit Keychain backend."""
     process = subprocess.Popen([str(executable), '--neantik-mcp-stdio', '--data-root', str(data_root), '--allow-profile-management'],
                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0)
@@ -465,7 +473,7 @@ def seed_profiles(executable, data_root, urls):
         rpc('initialize', dict(protocolVersion='2025-11-25', capabilities={}, clientInfo=dict(name='owned-route-qa', version='1')))
         process.stdin.write(b'{"jsonrpc":"2.0","method":"notifications/initialized"}\n'); process.stdin.flush()
         profiles = []
-        for name, phase in [('QA route proxy', 'proxy-success'), ('QA route direct', 'direct-control')]:
+        for name, phase in profile_specs(qa_profile_name):
             result = rpc('tools/call', dict(name='profile_create', arguments=dict(name=name, changes=dict(startURL=urls[phase], tags=['owned-route-qa']))))
             value = result.get('structuredContent')
             if value is None: value = json.loads(next(x['text'] for x in result['content'] if x.get('type') == 'text'))
@@ -498,6 +506,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True, help='new private output directory')
     parser.add_argument('--duration', type=int, default=900)
     parser.add_argument('--owned-https', action='store_true', help='fixed browser.free signed response; no custom endpoint/trust override')
+    parser.add_argument('--qa-profile-name', help='single owned HTTPS QA profile: 2026 QA — <version>/<manager-sha256>')
     parser.add_argument('--controlled-dns', action='store_true', help='linked upstream UDP DNS; separate manager DNS analysis')
     parser.add_argument('--allow-manager-preflight', action='store_true', help='only with controlled DNS: permit existing exact GeoIP TLS hosts')
     parser.add_argument('--physical-tcp', action='store_true', help='owned upstream TCP listener close/rebind; separate analysis')
@@ -506,6 +515,11 @@ def main():
     parser.add_argument('--manager-durability', action='store_true', help='normal Direct own data page; delayed close/read-only reopen; no abrupt-crash claim')
     parser.add_argument('--manager-crash', action='store_true', help='separate own Direct baseline/strict-IDB/main-crash recovery fixture')
     args = parser.parse_args()
+    if args.qa_profile_name and not args.owned_https:
+        parser.error('--qa-profile-name requires --owned-https')
+    if args.qa_profile_name:
+        try: profile_specs(args.qa_profile_name)
+        except ValueError: parser.error('--qa-profile-name must be 2026 QA — <version>/<12-64 lowercase manager hash>')
     if args.manager_crash and any((args.manager_durability, args.manager_websocket, args.manager_webrtc, args.controlled_dns,
                                   args.owned_https, args.physical_tcp, args.allow_manager_preflight)):
         parser.error('Manager crash recovery is a separate fixture mode')
@@ -574,7 +588,8 @@ def main():
         https_urls = {phase: fixture.https_url(phase) for phase in PHASES} if args.owned_https else None
         if args.owned_https:
             (root / 'https-phase').write_text('proxy-success'); (root / 'https-phase').chmod(0o600)
-        profiles = seed_profiles(executable, data, https_urls if https_urls is not None else urls)
+        profiles = seed_profiles(executable, data, https_urls if https_urls is not None else urls,
+                                 args.qa_profile_name if args.owned_https else None)
         if args.manager_webrtc: fixture.prepare_profiles(data, profiles)
         state = dict(app=str(app), executable=str(executable), root=str(root), data=str(data), manifest=str(copied_manifest),
                      output=str(root / 'update-audit.json'), proxyPort=fixture.proxy.server_address[1], urls=urls, profiles=profiles,
@@ -622,7 +637,8 @@ def main():
                 if args.manager_webrtc:
                     fixture.udp_inspector = lambda peer, port: peer_module.udp_peer(state, root, peer, port)
             private_json(output / 'private-state.json', state)
-            print(json.dumps(dict(stage='manager-process-spawned', ownedPID=manager.pid, syntheticProfiles=2,
+            print(json.dumps(dict(stage='manager-process-spawned', ownedPID=manager.pid, syntheticProfiles=len(profiles),
+                                  singleProfileMode=bool(args.qa_profile_name),
                                   authenticatedGUIVerified=False, authorityEnrollmentPerformedByFixture=False)), flush=True)
             deadline = time.monotonic() + args.duration
             pending_control = bytearray()

@@ -21,6 +21,16 @@ RELEASE_ENTRYPOINT = SCRIPTS.parent / "Release-NeAntik.command"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
+    def test_final_candidate_materializes_and_verifies_embedded_runtime(self) -> None:
+        text = PREPARE.read_text(encoding="utf-8")
+        copy = text.index('ditto "$ENGINEERING_APP" "$APP_PATH"')
+        materialize = text.index('scripts/materialize-runtime-files.py', copy)
+        runtime_verify = text.index('codesign --verify --deep --strict \\', materialize)
+        manager_sign = text.index('scripts/direct_backup_signing.py" sign', runtime_verify)
+        self.assertLess(copy, materialize)
+        self.assertLess(materialize, runtime_verify)
+        self.assertLess(runtime_verify, manager_sign)
+
     def test_runtime_preparation_preserves_explicit_backup_selection(self) -> None:
         text = PREPARE.read_text(encoding="utf-8")
         self.assertNotIn('NEANTIK_BROWSER_DATA_BACKUP_ENABLED=0 NEANTIK_DIRECT_PROVISIONING_PROFILE=""', text)
@@ -177,6 +187,15 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn('if [[ "$VERSION" == "1.0.0" ]]; then', text)
         self.assertIn('"$NEANTIK_RELEASE_CHANNEL" != "production"', text)
         self.assertIn("export NEANTIK_RELEASE_CHANNEL=production", text)
+
+    def test_public_alpha_wrapper_selects_chromium_only_manager(self) -> None:
+        text = RELEASE_COMMAND.read_text(encoding="utf-8")
+        start = text.index('export NEANTIK_RELEASE_CHANNEL="${NEANTIK_RELEASE_CHANNEL:-public-alpha}"')
+        end = text.index("pause_on_error()", start)
+        public_alpha = text[start:end]
+        self.assertIn('if [[ "$NEANTIK_RELEASE_CHANNEL" == "public-alpha" ]]; then', public_alpha)
+        self.assertIn('export NEANTIK_CHROMIUM_ONLY=1', public_alpha)
+        self.assertIn('"${NEANTIK_CHROMIUM_ONLY:-1}" != "1"', public_alpha)
 
     def test_production_channel_selects_production_webkit_build_mode(self) -> None:
         for script in (PACKAGE_APP, PREPARE_MANAGER):
