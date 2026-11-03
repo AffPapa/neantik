@@ -397,6 +397,12 @@ enum BrowserProfileProcessState: Equatable, Sendable {
 enum BrowserLaunchPurpose: Equatable, Sendable {
     case normal
     case fingerprintAudit(httpLoopbackPort: UInt16)
+    case loopbackQA(httpProxyPort: UInt16)
+
+    var isLoopbackQA: Bool {
+        if case .loopbackQA = self { return true }
+        return false
+    }
 }
 
 /// Opaque, single-use reservation for the diagnostic browser path. It binds
@@ -531,6 +537,8 @@ enum BrowserLaunchBuilder {
                 bypass =
                     "<-loopback>;http://127.0.0.1:" +
                     String(httpLoopbackPort)
+            case .loopbackQA:
+                bypass = "<-loopback>"
             }
             arguments.append("--proxy-bypass-list=\(bypass)")
         } else {
@@ -596,7 +604,8 @@ enum BrowserLaunchBuilder {
             allowedInheritedEnvironmentKeys.contains($0.key)
         }
 
-        if runtimeCapabilities.contains(.profilePrivacyV1), profile.proxy != nil, purpose == .normal {
+        if runtimeCapabilities.contains(.profilePrivacyV1), profile.proxy != nil,
+           (purpose == .normal || purpose.isLoopbackQA) {
             environment["NEANTIK_PROFILE_PROXY_REQUIRED"] = "1"
         }
         if runtimeCapabilities.contains(.profilePrivacyV1), profile.privacyPolicy != .legacy {
@@ -698,6 +707,13 @@ private struct ManagedBrowserClosingIntent: Equatable {
     let lease: Data
     let entryIdentity: PrivateFileEntryIdentity
     let requestedAt: Date
+}
+
+struct LoopbackQALaunchGrant: Equatable, Sendable {
+    fileprivate let id: UUID
+    fileprivate let profileID: UUID
+    fileprivate let profileRevision: UInt64
+    fileprivate let proxyPort: UInt16
 }
 
 private enum BrowserLeaseEntrySnapshot: Sendable {
@@ -815,6 +831,8 @@ final class BrowserProcessManager: ObservableObject {
     private static let webKitSessionSaveFailureMessage = "Не удалось сохранить список вкладок. Профиль остаётся занят: проверь свободное место и доступ к папке данных, затем нажми «Остановить» ещё раз. Прежний список не заменён незавершённым файлом."
     private var webKitTerminationObservation: AnyCancellable?
     private let paths: AppPaths
+    private let loopbackQALoopbackProxyPort: UInt16?
+    private var loopbackQALaunchGrants: [UUID: LoopbackQALaunchGrant] = [:]
     private var releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation?
     private let validatesPersistedProfiles: Bool
     private let processIdentityInspector:
@@ -909,8 +927,10 @@ final class BrowserProcessManager: ObservableObject {
 
     init(paths: AppPaths, releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation? = nil,
          keychain: KeychainStore = KeychainStore(),
-         siteProtectionResourceURL: URL? = nil) {
+         siteProtectionResourceURL: URL? = nil,
+         loopbackQALoopbackProxyPort: UInt16? = nil) {
         self.paths = paths
+        self.loopbackQALoopbackProxyPort = loopbackQALoopbackProxyPort
         self.keychain = keychain
         self.siteProtectionResourceURL = siteProtectionResourceURL ??
             Bundle.main.resourceURL?.appendingPathComponent("SiteProtection", isDirectory: true)
@@ -971,6 +991,7 @@ final class BrowserProcessManager: ObservableObject {
         siteProtectionResourceURL: URL? = nil
     ) {
         self.paths = paths
+        self.loopbackQALoopbackProxyPort = nil
         self.keychain = keychain
         self.siteProtectionResourceURL = siteProtectionResourceURL ??
             Bundle.main.resourceURL?.appendingPathComponent("SiteProtection", isDirectory: true)
@@ -1023,6 +1044,7 @@ final class BrowserProcessManager: ObservableObject {
         siteProtectionResourceURL: URL? = nil
     ) {
         self.paths = paths
+        self.loopbackQALoopbackProxyPort = nil
         self.keychain = keychain
         self.siteProtectionResourceURL = siteProtectionResourceURL ??
             Bundle.main.resourceURL?.appendingPathComponent("SiteProtection", isDirectory: true)
@@ -2243,7 +2265,27 @@ final class BrowserProcessManager: ObservableObject {
     /// enqueued; a trust/auth failure never retries as plaintext or Direct.
     func launchUserProfile(profile: BrowserProfile, runtime: BrowserRuntime,
                            preparationReceipt: BrowserLaunchPreparationReceipt?, keychain: KeychainStore,
-                           target: BrowserUserLaunchTarget = .profileStart) async throws {
+                           target: BrowserUserLaunchTarget = .profileStart,
+                           purpose: BrowserLaunchPurpose = .normal,
+                           loopbackQAGrant: LoopbackQALaunchGrant? = nil) async throws {
+        if case let .loopbackQA(httpProxyPort) = purpose {
+            guard let loopbackQAGrant,
+                  loopbackQALaunchGrants[loopbackQAGrant.id] == loopbackQAGrant,
+                  loopbackQAGrant.profileID == profile.id,
+                  loopbackQAGrant.profileRevision == profile.revision,
+                  loopbackQAGrant.proxyPort == httpProxyPort,
+                  loopbackQALoopbackProxyPort == httpProxyPort,
+                  httpProxyPort != 0,
+                  let proxy = profile.proxy, proxy.kind == .http,
+                  proxy.host == "127.0.0.1", UInt16(exactly: proxy.port) == httpProxyPort,
+                  proxy.username.isEmpty, profile.engine == .chromium,
+                  profile.startURL == "about:blank", target == .profileStart,
+                  preparationReceipt == nil else { throw NeAntikError.invalidProxy }
+            loopbackQALaunchGrants[loopbackQAGrant.id] = nil
+            try launch(profile: profile, runtime: runtime, startURLOverride: URL(string: "about:blank"), purpose: purpose)
+            return
+        }
+        guard loopbackQAGrant == nil else { throw NeAntikError.invalidProxy }
         if let plan = target.routeProbePlan {
             try plan.validate()
             guard let proxy = profile.proxy, !proxy.username.isEmpty else {
@@ -2257,6 +2299,20 @@ final class BrowserProcessManager: ObservableObject {
         } else {
             try launch(profile: profile, runtime: runtime, preparationReceipt: preparationReceipt, startURLOverride: target.startURLOverride)
         }
+    }
+
+    func issueLoopbackQALaunchGrant(for profile: BrowserProfile) throws -> LoopbackQALaunchGrant {
+        guard let port = loopbackQALoopbackProxyPort,
+              let proxy = profile.proxy, proxy.kind == .http,
+              proxy.host == "127.0.0.1", UInt16(exactly: proxy.port) == port,
+              proxy.username.isEmpty, profile.engine == .chromium,
+              profile.startURL == "about:blank", !profile.isArchived else {
+            throw NeAntikError.invalidProxy
+        }
+        let grant = LoopbackQALaunchGrant(id: UUID(), profileID: profile.id,
+            profileRevision: profile.revision, proxyPort: port)
+        loopbackQALaunchGrants[grant.id] = grant
+        return grant
     }
 
     /// Starting ownership is
@@ -2493,6 +2549,16 @@ final class BrowserProcessManager: ObservableObject {
                 throw NeAntikError.proxyPreparationRequired
             }
         }
+        if case let .loopbackQA(httpProxyPort) = purpose {
+            guard loopbackQALoopbackProxyPort == httpProxyPort, httpProxyPort != 0,
+                  let proxy = profile.proxy, proxy.kind == .http,
+                  proxy.host == "127.0.0.1", UInt16(exactly: proxy.port) == httpProxyPort,
+                  proxy.username.isEmpty, profile.startURL == "about:blank",
+                  startURLOverride?.absoluteString == "about:blank",
+                  browserDataDirectoryOverride == nil,
+                  fingerprintAuditReservation == nil,
+                  additionalArguments.isEmpty else { throw NeAntikError.invalidProxy }
+        }
         let browserDataDirectory =
             browserDataDirectoryOverride ??
             paths.browserDataDirectory(for: profile.id)
@@ -2505,6 +2571,18 @@ final class BrowserProcessManager: ObservableObject {
                     "Резерв проверки нельзя использовать для обычного запуска."
                 )
             }
+            ownsFreshFingerprintAuditDirectory = false
+            fingerprintDirectoryCustody = nil
+        case let .loopbackQA(httpProxyPort):
+            guard loopbackQALoopbackProxyPort == httpProxyPort, httpProxyPort != 0,
+                  browserDataDirectoryOverride == nil,
+                  fingerprintAuditReservation == nil,
+                  additionalArguments.isEmpty,
+                  startURLOverride?.absoluteString == "about:blank",
+                  let proxy = profile.proxy, proxy.kind == .http,
+                  proxy.host == "127.0.0.1", UInt16(exactly: proxy.port) == httpProxyPort,
+                  proxy.username.isEmpty, profile.engine == .chromium,
+                  profile.startURL == "about:blank" else { throw NeAntikError.invalidProxy }
             ownsFreshFingerprintAuditDirectory = false
             fingerprintDirectoryCustody = nil
         case let .fingerprintAudit(httpLoopbackPort):

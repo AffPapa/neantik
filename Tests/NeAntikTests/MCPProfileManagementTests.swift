@@ -565,14 +565,14 @@ struct MCPProfileManagementTests {
         return (root, engine, backend)
     }
 
-    @Test func loopbackQAManagementNeverPersistsSyntheticProxyHealthOrStartsProxiedBrowser() async throws {
+    @Test func loopbackQAManagementDoesNotPersistSyntheticHealthAndRejectsUnboundManager() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("mcp-loopback-qa-\(UUID())")
         let paths = AppPaths(rootDirectory: root)
         let backend = Backend()
         let engine = MCPProfileManagement(root: root, allowsManagement: true,
             keychain: KeychainStore(backend: backend, service: "synthetic-mcp-qa", legacyService: nil),
             processes: BrowserProcessManager(paths: paths, processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent }, allowsExternalProcessSignaling: false),
-            loopbackQAOnly: true)
+            loopbackQAProxyPort: 9)
         defer { try? FileManager.default.removeItem(at: root) }
         let created = try await engine.call("profile_create", ["name": "2026 QA synthetic"])
         let profileID = try #require(created["id"] as? String)
@@ -588,6 +588,10 @@ struct MCPProfileManagementTests {
         await #expect(throws: MCPProfileManagement.Failure.self) {
             try await engine.call("profile_set_proxy", ["profileID": profileID, "expectedRevision": revision,
                                                          "proxy": ["kind": "http", "host": "proxy.example", "port": 8080]])
+        }
+        await #expect(throws: MCPProfileManagement.Failure.self) {
+            try await engine.call("profile_set_proxy", ["profileID": profileID, "expectedRevision": revision,
+                                                         "proxy": ["kind": "http", "host": "127.0.0.1", "port": 10]])
         }
         let local = try await engine.call("profile_set_proxy", ["profileID": profileID, "expectedRevision": revision,
                                                                   "proxy": ["kind": "http", "host": "127.0.0.1", "port": 9]])

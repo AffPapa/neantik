@@ -19,10 +19,10 @@ enum MCPStdioServer {
 
     @MainActor
     static func runAndExit(dataRoot: URL, allowsManagement: Bool = false,
-                           loopbackQAOnly: Bool = false) -> Never {
+                           loopbackQAProxyPort: UInt16? = nil) -> Never {
         signal(SIGPIPE, SIG_IGN)
         let session = MCPManagementSession(root: dataRoot, allowsManagement: allowsManagement,
-                                           loopbackQAOnly: loopbackQAOnly)
+                                           loopbackQAProxyPort: loopbackQAProxyPort)
         Thread.detachNewThread {
             var pending = Data()
             var buffer = [UInt8](repeating: 0, count: 4_096)

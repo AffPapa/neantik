@@ -27,7 +27,7 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         case fingerprintRetirement(FingerprintEvidenceRetirementRequest)
         case mcpStdio(dataRoot: URL)
         case mcpManagement(dataRoot: URL)
-        case mcpLoopbackQA(dataRoot: URL)
+        case mcpLoopbackQA(dataRoot: URL, proxyPort: UInt16)
         case proxyRelayOwner
         case webKitHostChild
         case invalidControlArguments
@@ -109,13 +109,16 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
            arguments[1] == webKitHostChildArgument {
             return Self(mode: .webKitHostChild)
         }
-        if arguments.count == 4,
+        if arguments.count == 5,
            isCanonicalAbsoluteExecutablePath(arguments[0]),
            arguments[1] == mcpStdioArgument,
            arguments[2] == mcpLoopbackQAArgument,
-           isFreshOwnerOnlyLoopbackQARoot(arguments[3]) {
+           isFreshOwnerOnlyLoopbackQARoot(arguments[3]),
+           let proxyPort = UInt16(arguments[4]), proxyPort != 0,
+           String(proxyPort) == arguments[4] {
             return Self(mode: .mcpLoopbackQA(
-                dataRoot: URL(fileURLWithPath: arguments[3], isDirectory: true)
+                dataRoot: URL(fileURLWithPath: arguments[3], isDirectory: true),
+                proxyPort: proxyPort
             ))
         }
         if arguments.count == 5, arguments[4] == mcpManagementArgument,

@@ -31,7 +31,7 @@ struct LaunchIntentTests {
         let root = URL(fileURLWithPath: "/private/tmp/neantik-owned-control-test")
         for mode in [NeAntikLaunchIntent.Mode.invalidControlArguments, .proxyRelayOwner, .webKitHostChild,
                      .mcpStdio(dataRoot: root), .mcpManagement(dataRoot: root),
-                     .mcpLoopbackQA(dataRoot: root),
+                     .mcpLoopbackQA(dataRoot: root, proxyPort: 43127),
                      .fingerprintEnrollment(outputURL: root.appendingPathComponent("enrollment.json"))] {
             let intent = NeAntikLaunchIntent(mode: mode)
             #expect(!intent.opensAuditWindow)
@@ -45,13 +45,14 @@ struct LaunchIntentTests {
         #expect(mkdir(root.path, 0o700) == 0)
         defer { try? FileManager.default.removeItem(at: root) }
         let args = [executable, NeAntikLaunchIntent.mcpStdioArgument,
-                    NeAntikLaunchIntent.mcpLoopbackQAArgument, root.path]
-        if case let .mcpLoopbackQA(dataRoot) = NeAntikLaunchIntent.parse(arguments: args).mode {
-            #expect(dataRoot.path == root.path)
+                    NeAntikLaunchIntent.mcpLoopbackQAArgument, root.path, "43127"]
+        if case let .mcpLoopbackQA(dataRoot, proxyPort) = NeAntikLaunchIntent.parse(arguments: args).mode {
+            #expect(dataRoot.path == root.path && proxyPort == 43127)
         } else {
             Issue.record("Owner-only QA root was not accepted")
         }
-        for bad in [args + ["extra"], [executable, NeAntikLaunchIntent.mcpLoopbackQAArgument, root.path],
+        for bad in [args + ["extra"], Array(args.dropLast()), Array(args.dropLast()) + ["0"],
+                    Array(args.dropLast()) + ["043127"], [executable, NeAntikLaunchIntent.mcpLoopbackQAArgument, root.path],
                     [executable, NeAntikLaunchIntent.mcpStdioArgument, NeAntikLaunchIntent.mcpLoopbackQAArgument, root.path + "/child"]] {
             #expect(NeAntikLaunchIntent.parse(arguments: bad).mode == .invalidControlArguments)
         }

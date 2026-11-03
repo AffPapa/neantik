@@ -34,7 +34,7 @@ struct BrowserStartupModeTests {
 
     @Test func explicitTargetAuditAndLegacyModeKeepFreshWindows() {
         var profile = BrowserProfile(name: "Synthetic", startupMode: .restoreSession, lastLaunchedAt: Date())
-        for purpose in [BrowserLaunchPurpose.normal, .fingerprintAudit(httpLoopbackPort: 1234)] {
+        for purpose in [BrowserLaunchPurpose.normal, .fingerprintAudit(httpLoopbackPort: 1234), .loopbackQA(httpProxyPort: 1234)] {
             let explicit = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: directory,
                 startURLOverride: URL(string: "about:blank"), purpose: purpose)
             #expect(explicit.contains("--new-window") && explicit.last == "about:blank")
@@ -45,6 +45,23 @@ struct BrowserStartupModeTests {
         profile.startupMode = .startPage
         let legacy = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: directory)
         #expect(legacy.contains("--new-window") && legacy.last == profile.startURL)
+    }
+
+    @Test func loopbackQAUsesCredentialFreeHTTPProxyAndNoExternalFallback() {
+        var profile = BrowserProfile(name: "2026 QA — synthetic", proxy: .init(kind: .http, host: "127.0.0.1", port: 43127, username: ""))
+        profile.startURL = "about:blank"
+        profile.lastLaunchedAt = Date()
+        let arguments = BrowserLaunchBuilder.arguments(profile: profile, browserDataDirectory: directory,
+            startURLOverride: URL(string: "about:blank"), purpose: .loopbackQA(httpProxyPort: 43127))
+        #expect(arguments.contains("--proxy-server=http://127.0.0.1:43127"))
+        #expect(arguments.contains("--proxy-bypass-list=<-loopback>"))
+        #expect(arguments.contains("--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"))
+        #expect(arguments.contains("--disable-quic"))
+        #expect(arguments.contains("about:blank") && !arguments.contains("--restore-last-session"))
+        let environment = BrowserLaunchBuilder.environment(profile: profile,
+            runtimeCapabilities: [.profilePrivacyV1], inherited: ["NEANTIK_PROFILE_PROXY_REQUIRED": "0"],
+            purpose: .loopbackQA(httpProxyPort: 43127))
+        #expect(environment["NEANTIK_PROFILE_PROXY_REQUIRED"] == "1")
     }
 
     @Test func configurationTransferPreservesModeWithFreshLaunchHistory() throws {
