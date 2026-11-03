@@ -132,7 +132,9 @@ struct NeAntikApp: App {
                     switch try FingerprintEvidenceReleaseContext.load(
                             request: request,
                             executableURL: executableURL,
-                            bundle: releaseBundle
+                            bundle: releaseBundle,
+                            recoverExistingEvidence:
+                                launchIntent.recoversExistingFingerprintEvidence
                         ) {
                     case let .audit(context):
                         if launchIntent.requiresUpdateAuditAuthority {
