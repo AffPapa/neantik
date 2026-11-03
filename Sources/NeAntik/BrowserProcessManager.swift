@@ -625,7 +625,7 @@ enum BrowserLaunchBuilder {
             if privacy.viewport == .standard { environment["NEANTIK_PROFILE_VIEWPORT"] = "standard" }
             if privacy.disableSyncAndAutofill { environment["NEANTIK_PROFILE_AUTOFILL"] = "off" }
             if privacy.retention == .ephemeral { environment["NEANTIK_PROFILE_EPHEMERAL"] = "1" }
-            if privacy.siteProtection {
+            if privacy.siteProtection && purpose == .normal {
                 environment["NEANTIK_PROFILE_PRIVACY_EXTENSION_ID"] = SiteProtectionBundle.extensionID
                 environment["NEANTIK_PROFILE_PRIVACY_BASELINE_RULES"] = String(SiteProtectionBundle.baselineRuleCount)
                 if privacy.trackingParameterCleanup { environment["NEANTIK_PROFILE_QUERY_CLEANUP"] = "1" }

@@ -76,6 +76,31 @@ struct BrowserLaunchBuilderTests {
         profile.proxy = nil
         #expect(BrowserLaunchBuilder.environment(profile: profile, runtimeCapabilities: [.profilePrivacyV1], inherited: ambient)["NEANTIK_PROFILE_PROXY_REQUIRED"] == nil)
     }
+
+    @Test func loopbackQARequiresProxyButDoesNotRequireAnUnstagedProtectionExtension() {
+        let profile = BrowserProfile(
+            name: "Synthetic loopback QA",
+            privacyPolicy: .balanced,
+            proxy: .init(kind: .http, host: "127.0.0.1", port: 12345, username: ""),
+        )
+        let normal = BrowserLaunchBuilder.environment(
+            profile: profile, runtimeCapabilities: [.profilePrivacyV1], inherited: [:]
+        )
+        let qa = BrowserLaunchBuilder.environment(
+            profile: profile, runtimeCapabilities: [.profilePrivacyV1], inherited: [:],
+            purpose: .loopbackQA(httpProxyPort: 12345)
+        )
+
+        #expect(normal["NEANTIK_PROFILE_PROXY_REQUIRED"] == "1")
+        #expect(normal["NEANTIK_PROFILE_PRIVACY_EXTENSION_ID"] == SiteProtectionBundle.extensionID)
+        #expect(normal["NEANTIK_PROFILE_PRIVACY_BASELINE_RULES"] == String(SiteProtectionBundle.baselineRuleCount))
+        #expect(qa["NEANTIK_PROFILE_PROXY_REQUIRED"] == "1")
+        #expect(qa["NEANTIK_PROFILE_PRIVACY_EXTENSION_ID"] == nil)
+        #expect(qa["NEANTIK_PROFILE_PRIVACY_BASELINE_RULES"] == nil)
+        #expect(qa["NEANTIK_PROFILE_QUERY_CLEANUP"] == nil)
+        #expect(qa["NEANTIK_PROFILE_LAN"] == "deny")
+    }
+
     @Test
     func newProfilesStartLocallyWithoutChangingStoredExternalChoices() throws {
         let fresh = BrowserProfile(name: "Private default")
