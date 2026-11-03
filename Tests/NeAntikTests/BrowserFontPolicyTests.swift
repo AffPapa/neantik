@@ -5,6 +5,12 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct BrowserFontPolicyTests {
+    @Test(arguments: [false, true])
+    func newProfileFontPolicyMatchesRuntimeQualification(supported: Bool) {
+        #expect(BrowserFontPolicy.defaultForCreation(supportsSystemFontPolicy: supported) ==
+            (supported ? .systemV1 : .native))
+    }
+
     private func encoder() -> JSONEncoder {
         let value = JSONEncoder()
         value.dateEncodingStrategy = .iso8601

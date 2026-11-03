@@ -707,6 +707,10 @@ enum BrowserStartupMode: String, Codable, CaseIterable, Sendable {
 enum BrowserFontPolicy: String, Codable, Sendable {
     case native
     case systemV1 = "system-v1"
+
+    static func defaultForCreation(supportsSystemFontPolicy: Bool) -> Self {
+        supportsSystemFontPolicy ? .systemV1 : .native
+    }
 }
 
 /// A future policy must not be mistaken for corrupted JSON and replaced with
