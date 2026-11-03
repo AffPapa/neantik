@@ -76,6 +76,44 @@ struct ProxyTester: Sendable {
         "https://free.freeipapi.com/api/v1/json"
     ]
 
+    /// A dedicated QA-only check. It makes one bounded HTTP request through
+    /// an IPv4 loopback HTTP proxy to a reserved synthetic origin. It returns
+    /// no IP or profile context and leaves ordinary probes unchanged.
+    func checkLoopbackQA(
+        configuration: ProxyConfiguration,
+        password: String,
+        runProcess: @escaping ProcessRunner = ProxyTester.runCancellableProcess
+    ) async throws {
+        guard configuration.isValid,
+              configuration.kind == .http,
+              configuration.host == "127.0.0.1",
+              configuration.username.isEmpty,
+              password.isEmpty
+        else { throw ProxyProbeError(outcome: .invalidConfiguration) }
+
+        let arguments = [
+            "--disable", "--silent", "--show-error", "--fail",
+            "--max-time", "5", "--connect-timeout", "2",
+            "--max-redirs", "0", "--noproxy", "",
+            "--proto", "=http", "--proxy", configuration.curlServer,
+            "--write-out", "\\nNEANTIK_LOOPBACK_QA_STATUS:%{http_code}\\n",
+            "http://neantik-probe.invalid/health"
+        ]
+        let result: ProxyProcessResult
+        do {
+            result = try await runProcess(
+                URL(fileURLWithPath: "/usr/bin/curl"), arguments,
+                Data(), Self.maximumProbeOutputBytes
+            )
+        } catch is CancellationError { throw CancellationError() }
+        catch { throw ProxyProbeError(outcome: .internalFailure) }
+        try Task.checkCancellation()
+        let expected = Data("NEANTIK_LOOPBACK_QA_OK\n\nNEANTIK_LOOPBACK_QA_STATUS:200\n".utf8)
+        guard !result.outputExceeded, result.status == 0, result.output == expected else {
+            throw ProxyProbeError(outcome: result.status == 0 ? .invalidResponse : Self.outcome(forProcess: result))
+        }
+    }
+
     /// A custom endpoint is an exclusive manual observation. It cannot silently
     /// fall back, supply GeoIP fields, redirect, or qualify Chromium routing.
     func diagnose(

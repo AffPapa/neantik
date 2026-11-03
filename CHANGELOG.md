@@ -6,7 +6,8 @@
 - Recover expired profile-start leases only after checking browser-data and proxy-relay ownership; fence process launch and the running lease under the same profile guard so a delayed retry cannot create a second browser.
 - Align the MCP `prepare_profile` guidance with its credential boundary: proxy usernames and passwords must be entered in the local NeAntik UI, not sent through MCP.
 - State the encrypted profile-transfer passphrase bounds in the validation message (12–512 UTF-8 bytes) and test the upper bound.
-- The candidate still requires exact proxy-route QA and Direct Distribution qualification. No anonymity or anti-fraud detector-avoidance claim is made.
+- Add a separate MCP loopback QA mode for one synthetic profile in a fresh owner-only temporary root. It checks a reserved synthetic origin through an unauthenticated IPv4 loopback HTTP proxy without persisting proxy health or profile context; it does not qualify Chromium traffic through a real proxy.
+- Direct Distribution qualification remains open. No anonymity or anti-fraud detector-avoidance claim is made.
 
 ## Direct 0.9.4 (204) — published Chromium-only public alpha
 

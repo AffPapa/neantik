@@ -871,6 +871,7 @@ final class BrowserProcessManager: ObservableObject {
     private var passiveObservationsEnabled = true
     private var reconcileTask: Task<Void, Never>?
     private let keychain: KeychainStore
+    private let siteProtectionResourceURL: URL?
     private var reconcileGeneration: UInt64 = 0
     private var queuedReconcile: QueuedBrowserReconcile?
     private var lastReconciledProfiles: [BrowserProfile] = []
@@ -907,9 +908,12 @@ final class BrowserProcessManager: ObservableObject {
     }
 
     init(paths: AppPaths, releaseAuditBrowserIsolation: ReleaseAuditBrowserIsolation? = nil,
-         keychain: KeychainStore = KeychainStore()) {
+         keychain: KeychainStore = KeychainStore(),
+         siteProtectionResourceURL: URL? = nil) {
         self.paths = paths
         self.keychain = keychain
+        self.siteProtectionResourceURL = siteProtectionResourceURL ??
+            Bundle.main.resourceURL?.appendingPathComponent("SiteProtection", isDirectory: true)
         self.launchAdmission = .shared
         self.releaseAuditBrowserIsolation = releaseAuditBrowserIsolation
         self.validatesPersistedProfiles = true
@@ -963,10 +967,13 @@ final class BrowserProcessManager: ObservableObject {
         startingLeaseTimeout: TimeInterval = 30,
         validatesPersistedProfiles: Bool = false,
         now: @escaping () -> Date = Date.init,
-        keychain: KeychainStore = KeychainStore()
+        keychain: KeychainStore = KeychainStore(),
+        siteProtectionResourceURL: URL? = nil
     ) {
         self.paths = paths
         self.keychain = keychain
+        self.siteProtectionResourceURL = siteProtectionResourceURL ??
+            Bundle.main.resourceURL?.appendingPathComponent("SiteProtection", isDirectory: true)
         self.launchAdmission = launchAdmission ?? .shared
         self.releaseAuditBrowserIsolation = releaseAuditBrowserIsolation
         self.validatesPersistedProfiles = validatesPersistedProfiles
@@ -1012,10 +1019,13 @@ final class BrowserProcessManager: ObservableObject {
         startingLeaseTimeout: TimeInterval = 30,
         validatesPersistedProfiles: Bool = false,
         now: @escaping () -> Date = Date.init,
-        keychain: KeychainStore = KeychainStore()
+        keychain: KeychainStore = KeychainStore(),
+        siteProtectionResourceURL: URL? = nil
     ) {
         self.paths = paths
         self.keychain = keychain
+        self.siteProtectionResourceURL = siteProtectionResourceURL ??
+            Bundle.main.resourceURL?.appendingPathComponent("SiteProtection", isDirectory: true)
         self.launchAdmission = launchAdmission ?? .shared
         self.validatesPersistedProfiles = validatesPersistedProfiles
         self.processIdentityInspector = processIdentityInspector
@@ -2663,9 +2673,9 @@ final class BrowserProcessManager: ObservableObject {
             }
             if runtime.supportsProfilePrivacy && purpose == .normal {
                 diagnosticStage = .siteProtection
-                guard let resources = Bundle.main.resourceURL else { throw SiteProtectionPreparationError() }
+                guard let resources = siteProtectionResourceURL else { throw SiteProtectionPreparationError() }
                 let protection = try SiteProtectionBundle.prepare(
-                    resources: resources.appendingPathComponent("SiteProtection", isDirectory: true),
+                    resources: resources,
                     browserData: browserDataDirectory, profile: profile)
                 process.arguments = BrowserLaunchBuilder.arguments(profile: profile,
                     browserDataDirectory: browserDataDirectory, runtimeCapabilities: runtime.capabilities,

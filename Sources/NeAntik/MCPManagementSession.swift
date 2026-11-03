@@ -6,6 +6,7 @@ import Foundation
 final class MCPManagementSession {
     private let root: URL
     private let allowsManagement: Bool
+    private let loopbackQAOnly: Bool
     private var engine: MCPProfileManagement?
     private var initialized = false
     private var ready = false
@@ -19,7 +20,10 @@ final class MCPManagementSession {
     private var testingToolFailure: Error?
     #endif
 
-    init(root: URL, allowsManagement: Bool) { self.root = root; self.allowsManagement = allowsManagement }
+    init(root: URL, allowsManagement: Bool, loopbackQAOnly: Bool = false) {
+        self.root = root; self.allowsManagement = allowsManagement
+        self.loopbackQAOnly = loopbackQAOnly
+    }
 
     #if DEBUG
     /// Exercises the serialized protocol with owned metadata and injected
@@ -209,7 +213,7 @@ final class MCPManagementSession {
             if let testingToolFailure { throw testingToolFailure }
             #endif
             if name == "profile_check_proxy" { ProxyAuditPhase.mark(.engineInitBegin) }
-            if engine == nil { engine = MCPProfileManagement(root: root, allowsManagement: allowsManagement) }
+            if engine == nil { engine = MCPProfileManagement(root: root, allowsManagement: allowsManagement, loopbackQAOnly: loopbackQAOnly) }
             if name == "profile_check_proxy" { ProxyAuditPhase.mark(.engineInitDone) }
             let result = try await engine!.call(name, params["arguments"] as? [String: Any] ?? [:])
             if name == "profile_check_proxy" { ProxyAuditPhase.mark(.responseBegin) }
