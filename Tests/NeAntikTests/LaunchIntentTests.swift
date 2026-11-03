@@ -86,6 +86,7 @@ struct LaunchIntentTests {
                      "--candidate-manifest", "/private/tmp/owned-manifest.json", "--output", output]
         let intent = NeAntikLaunchIntent.parse(arguments: valid)
         #expect(intent.requiresUpdateAuditAuthority)
+        #expect(!intent.recoversExistingFingerprintEvidence)
         #expect(intent.releaseFingerprintAuditRequest != nil)
         #expect(!intent.opensFingerprintAudit)
         #expect(intent.opensAuditWindow)
@@ -172,6 +173,7 @@ struct LaunchIntentTests {
         )
 
         #expect(intent.opensFingerprintAudit)
+        #expect(intent.recoversExistingFingerprintEvidence)
         #expect(intent.opensAuditWindow)
         #expect(
             intent.releaseFingerprintAuditRequest ==

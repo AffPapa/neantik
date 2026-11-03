@@ -62,6 +62,12 @@ struct NeAntikLaunchIntent: Equatable, Sendable {
         return false
     }
 
+    /// Update-audit launch must prove the currently enrolled authority and
+    /// must never treat a persisted fingerprint receipt as a successful GUI run.
+    var recoversExistingFingerprintEvidence: Bool {
+        !requiresUpdateAuditAuthority
+    }
+
     static func applicationBundleURL(
         forExecutablePath path: String
     ) -> URL? {
