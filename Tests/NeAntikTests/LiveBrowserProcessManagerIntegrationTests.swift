@@ -57,7 +57,11 @@ struct LiveBrowserProcessManagerIntegrationTests {
         let preflight = BrowserRuntimePreflightValidator.validate(runtime)
         #expect(preflight.isReady)
 
-        let manager = BrowserProcessManager(paths: paths)
+        let manager = BrowserProcessManager(
+            paths: paths,
+            siteProtectionResourceURL: appURL
+                .appendingPathComponent("Contents/Resources/SiteProtection", isDirectory: true)
+        )
         defer {
             manager.stop(profileID: profile.id)
         }
