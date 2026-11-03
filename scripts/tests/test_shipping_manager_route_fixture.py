@@ -130,6 +130,13 @@ class ShippingRouteFixtureTests(unittest.TestCase):
                       row.replace('--user-data-dir=', '--untrusted-root=')]:
             self.assertEqual(MODULE.owned_browser_pids([wrong], browser, data, 501), [])
 
+    def test_single_qa_profile_is_exact_and_default_pair_is_preserved(self):
+        name = '2026 QA — 0.9.6/' + 'a' * 64
+        self.assertEqual(MODULE.profile_specs(name), [(name, 'proxy-success')])
+        self.assertEqual(len(MODULE.profile_specs()), 2)
+        for invalid in ['QA route proxy', '2026 QA — 0.9.6/ABCDEF123456', '2026 QA — 0.9/abcdef123456']:
+            with self.assertRaises(ValueError): MODULE.profile_specs(invalid)
+
     def enable_https(self):
         self.assertTrue(self.fixture.close())
         self.fixture = MODULE.Fixture(Path(self.temp.name), owned_https=True)
