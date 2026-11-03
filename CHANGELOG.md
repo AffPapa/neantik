@@ -1,13 +1,18 @@
 # NeAntik changelog
 
-## Direct 0.9.5 (205) — hotfix candidate, not released
+## Direct 0.9.6 (206) — release candidate; release gates pending
+
+- Prevent update-audit mode from treating a persisted fingerprint evidence envelope as a successful GUI launch. Update-audit now continues through current authority authentication; normal fingerprint audit retains its recovery behavior.
+- Preserve the qualified Chromium runtime and the existing 0.9.5 public-alpha distribution scope. This fix does not qualify an external proxy route, DNS, UDP, IPv6, background traffic, WebSocket, downloads, TURN/media or WebKit; no anonymity or universal fingerprint-resistance claim is made.
+
+## Direct 0.9.5 (205) — published Chromium-only public alpha
 
 - Fix manager-only packaging so Chromium's sealed SiteProtection resources are refreshed and checked against the manager pin before signing. This addresses a startup failure in 0.9.4; Chromium 156.0.8078.80 is unchanged.
 - Recover expired profile-start leases only after checking browser-data and proxy-relay ownership; fence process launch and the running lease under the same profile guard so a delayed retry cannot create a second browser.
 - Align the MCP `prepare_profile` guidance with its credential boundary: proxy usernames and passwords must be entered in the local NeAntik UI, not sent through MCP.
 - State the encrypted profile-transfer passphrase bounds in the validation message (12–512 UTF-8 bytes) and test the upper bound.
 - Add a separate MCP loopback QA mode for one synthetic profile in a fresh owner-only temporary root. It checks a reserved synthetic origin through an unauthenticated IPv4 loopback HTTP proxy without persisting proxy health or profile context; it does not qualify Chromium traffic through a real proxy.
-- Direct Distribution qualification remains open. No anonymity or anti-fraud detector-avoidance claim is made.
+- Published as the Chromium-only public alpha with exact-candidate GUI lifecycle and synthetic loopback QA. The effective external proxy route remains unverified. No anonymity or anti-fraud detector-avoidance claim is made. See [release evidence](releases/v0.9.5.json).
 
 ## Direct 0.9.4 (204) — published Chromium-only public alpha
 

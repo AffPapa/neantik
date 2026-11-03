@@ -1,6 +1,6 @@
 # NeAntik local MCP: profile management
 
-**Current public scope:** Public 0.9.4 includes the MCP cancellation handling, read-only process observation and `storage_state_uncertain` response described below. The private 0.9.5 hotfix candidate is not published; candidate-only behavior must not be presented as public until a release includes it.
+**Current public scope:** Public 0.9.5 is a Chromium-only public alpha. It includes the MCP cancellation handling, read-only process observation and `storage_state_uncertain` response described below. The 0.9.6 candidate is not public; candidate-only behavior must not be presented as public until a release includes it.
 
 The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. For Chromium and metadata operations the manager GUI may be closed. WebKit is deferred and cannot be launched in the current Chromium-only release; historical WebKit notes below do not describe the current build. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Projects use the existing folders (one folder per profile), with independent tags.
 

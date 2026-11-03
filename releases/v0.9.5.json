@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "version": "0.9.5",
+  "build": 205,
+  "tag": "v0.9.5",
+  "channel": "public-alpha",
+  "releaseQualified": true,
+  "releaseQualificationScope": "Qualified for the published Chromium-only public-alpha scope with synthetic loopback QA; effective proxy route remains unverified. No universal anonymity or anti-detection claim.",
+  "releaseURL": "https://github.com/AffPapa/neantik/releases/tag/v0.9.5",
+  "publishedAt": "2026-11-03T14:00:21Z",
+  "sourceCommit": "c80b1b5d575f2cf213cb7fe4a9ddc1cca02a38fb",
+  "mergedSourceCommit": "722744bf31c1bff4a4176492969e19cc2bb25eac",
+  "mergedSourceTree": "214ffb606f5129abc2f287b11409529625379620",
+  "mergedSourceTreeMatches": true,
+  "runtime": {
+    "chromiumVersion": "156.0.8078.80",
+    "architecture": "arm64",
+    "minimumOSDeclared": "14.0",
+    "webkit": "deferred",
+    "managerSHA256": "c5547b313c1e58a6b984e73a0632f12010d34fc491757a58ab2f1a0eaa3631cb",
+    "manifestSHA256": "90a77668d290b8c70e982539219e05cbdb3c00210251236fb91451c1708bc31a",
+    "signedFrameworkSHA256": "03852e945564d2e00db3849e9a26c560a0e0ad22836e8a8e83afbe50ce2e8047",
+    "chromiumRebuild": false
+  },
+  "payloadAssets": [
+    {
+      "name": "NeAntik-0.9.5-arm64-notarized.dmg",
+      "bytes": 207964860,
+      "sha256": "24c30083cfd7a5003b6fd388ada4b9d9a5a0dfbe2ffcfe74371ffe90b3b5c32e"
+    },
+    {
+      "name": "NeAntik-0.9.5-arm64-notarized.dmg.sha256",
+      "bytes": 100,
+      "sha256": "d3da6e4de20bd5f2d211fa5602c5894886dbd71ad19b882772ed64ca232a0d6c"
+    },
+    {
+      "name": "NeAntik-0.9.5-arm64-notarized.zip",
+      "bytes": 183434901,
+      "sha256": "bcda38da372f956567738f1d023b1f298b22967cb9e679675e5480de8a5cae18"
+    },
+    {
+      "name": "NeAntik-0.9.5-arm64-notarized.zip.sha256",
+      "bytes": 100,
+      "sha256": "18e40cae6253000ebe888082ac3818aa18abe2c98225ec6bb373843a28932254"
+    },
+    {
+      "name": "NeAntik-0.9.5-fingerprint-attestation.json",
+      "bytes": 1259,
+      "sha256": "47e0f9d6cca1f4710a6c7244f1e1a3a9ad9e0be7cb13166e1bd1d942a0dc9c8c"
+    },
+    {
+      "name": "NeAntik-0.9.5-privacy-qualification.md",
+      "bytes": 1015,
+      "sha256": "552c33b0d939c183eadd1ff531717c86776849e8d4c732d825e80cea08d0d9d8"
+    },
+    {
+      "name": "NeAntik-0.9.5-source-offer.json",
+      "bytes": 2877,
+      "sha256": "922591c4bb9b80dc0ab5b4f3cde5dabfcdc7873f6ec234207d269a7c62f1e95c"
+    },
+    {
+      "name": "NeAntik-0.9.5-source.zip",
+      "bytes": 37608535,
+      "sha256": "628a0a5ea59465514774037c2cdf9de0b8a4a3890e87d08dbc4daef57cf510c7"
+    },
+    {
+      "name": "NeAntik-0.9.5-source.zip.sha256",
+      "bytes": 91,
+      "sha256": "9eab8f2509ebd6c9e5c75e0ec374c0441c823b723ff00627e348a458f91c93b4"
+    }
+  ],
+  "qualification": {
+    "headedLifecycle": "PASS exact candidate, synthetic isolated profile, about:blank, start-stop-restart and process exit on macOS 27.0",
+    "fingerprint": "PASS scoped candidate GUI audit; no anonymity proof",
+    "effectiveProxyRoute": "PARTIAL; loopback synthetic health only, external route unverified",
+    "notarizationAndStapling": "PASS ZIP and DMG",
+    "gatekeeperAndLocalConsumers": "PASS ZIP and DMG",
+    "hostedConsumers": "PASS all nine exact public asset bytes and GitHub digests",
+    "ci": "PASS exact merged source; run 41642283893",
+    "codeql": "PASS exact merged source; run 41642283630",
+    "sourceOffer": "PASS published source/relink bundle under same-Mac scope; no independent-machine equivalence",
+    "scope": "Single Mac and synthetic QA scope. Does not establish anonymity, complete network-route isolation, or all hardware/OS cohorts."
+  },
+  "Apple": {
+    "ZIPSubmissionID": "159dcfa9-3c78-4e11-87f5-a25f81f6dbc7",
+    "DMGSubmissionID": "8d9fc13b-eea8-42a5-bc5a-ff10b4a08435",
+    "ZIPAcceptedStapledAppGatekeeper": true,
+    "DMGAcceptedStapledContainerAndAppGatekeeper": true
+  },
+  "publicConsumers": {
+    "ZIPExactAnonymousGETAndFullConsumerGate": "PASS",
+    "DMGExactAnonymousGETAndFullConsumerGate": "PASS",
+    "all9AssetsAnonymousGETAndGitHubDigestMatch": true
+  },
+  "site": {
+    "url": "https://browser.free",
+    "nativeURL": "https://neantik-browser.iryadom.chatgpt.site",
+    "projectID": "appgprj_6a643e28baa08191bf23bf4803345907",
+    "version": 174,
+    "savedVersionID": "appgprj_6a643e28baa08191bf23bf4803345907~appgver_fd2cdcee5fdc8191a33d8ede5251a53a",
+    "sourceCommit": "667304551cf85ddd143e47339e5c34fa66fc218b",
+    "deploymentID": "appgdep_6ae9eb67474481919e2ca4704a84e2a9",
+    "deploymentStatus": "succeeded",
+    "archive": "browserfree-v174-neantik-095-20261103.tar.gz",
+    "archiveSHA256": "576f120e06d2b3ba1c7ba09eeb3d2d8464662b680d021f05f62f0fa8ad1b5384",
+    "localBuildTests": "PASS production build and 42/42",
+    "liveReleaseAndSignedFeed": "PASS; exact v0.9.5/build205/ZIP SHA",
+    "feedSHA256": "469574a95cd14874ca147589e3b9d1c77822ef547b884638f0042c1dbdf9f83e",
+    "productionDependencyAudit": "0 advisories; development/build graph has 32 advisories remaining"
+  },
+  "sourceOffer": {
+    "url": "https://github.com/AffPapa/neantik/releases/download/v0.9.5/NeAntik-0.9.5-source-offer.json",
+    "sourceArchiveURL": "https://github.com/AffPapa/neantik/releases/download/v0.9.5/NeAntik-0.9.5-source.zip",
+    "sourceArchiveSHA256": "628a0a5ea59465514774037c2cdf9de0b8a4a3890e87d08dbc4daef57cf510c7",
+    "sourceArchiveBytes": 37608535,
+    "managerSourceCommit": "c80b1b5d575f2cf213cb7fe4a9ddc1cca02a38fb",
+    "base": "Immutable v0.9.1 five-part Chromium source/relink kit retained",
+    "boundary": "Same-Mac recipient compile/relink/load; no full-clean Chromium rebuild or independent hardware/historical SDK equivalence"
+  },
+  "snapshotNote": "The immutable source commit can describe v0.9.5 as a candidate; this record, GitHub release and browser.free establish publication state. Do not rewrite published source/tag/archive.",
+  "artifacts": [
+    {
+      "name": "NeAntik-0.9.5-arm64-notarized.zip",
+      "bytes": 183434901,
+      "sha256": "bcda38da372f956567738f1d023b1f298b22967cb9e679675e5480de8a5cae18"
+    },
+    {
+      "name": "NeAntik-0.9.5-arm64-notarized.dmg",
+      "bytes": 207964860,
+      "sha256": "24c30083cfd7a5003b6fd388ada4b9d9a5a0dfbe2ffcfe74371ffe90b3b5c32e"
+    }
+  ],
+  "receipt": {
+    "path": "artifacts/neantik/looper-goals/20261020-webkit-1_0/evidence/neantik-v095-publication-20261103T1412Z.json",
+    "sha256": "7047869dd8e1071d548ea9f18916c4eb54d592d2e83a6dd0c5bf5a6d67c869e5"
+  },
+  "blockingForNextRelease": [
+    "External proxy route remains unqualified; full DNS/UDP/IPv6/background/WebSocket/download/TURN/media paths are unknown.",
+    "WebKit remains deferred; this release is Chromium-only public alpha.",
+    "32 development/build dependency advisories remain on browser.free toolchain; production runtime dependency audit is clear."
+  ]
+}

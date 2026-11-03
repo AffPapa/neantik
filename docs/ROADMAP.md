@@ -4,7 +4,7 @@ The private maintainer checkpoint tracks live 1.0 qualification and is intention
 
 ## Current status
 
-The public baseline is [0.9.4 (204), Chromium-only public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.9.4), using Chromium 156.0.8078.80. The exact published assets and qualification scope are recorded in [`releases/v0.9.4.json`](../releases/v0.9.4.json). `browser.free` is a separate download channel whose version and file hash should be checked independently; the effective proxy route remains unverified, and WebKit is deferred.
+The public baseline is [0.9.5 (205), Chromium-only public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.9.5), using Chromium 156.0.8078.80. The exact published assets and qualification scope are recorded in [`releases/v0.9.5.json`](../releases/v0.9.5.json). `browser.free` is a separate download channel whose version and file hash should be checked independently; the effective external proxy route remains unverified, and WebKit is deferred.
 
 ## Release 1.0 acceptance
 
@@ -18,7 +18,7 @@ The public baseline is [0.9.4 (204), Chromium-only public alpha](https://github.
 
 ## Исторический срез
 
-Snapshot updated after publication: [0.9.4 (204)](https://github.com/AffPapa/neantik/releases/tag/v0.9.4), Chromium 156.0.8078.80, is the current public-alpha baseline. [`releases/v0.9.4.json`](../releases/v0.9.4.json) records the exact asset hashes and qualification scope. At publication browser.free showed 0.9.4 (204) through Sites 173; WebKit remains deferred. The earlier 0.9.3 snapshot follows.
+Snapshot updated after publication: [0.9.5 (205)](https://github.com/AffPapa/neantik/releases/tag/v0.9.5), Chromium 156.0.8078.80, is the current public-alpha baseline. [`releases/v0.9.5.json`](../releases/v0.9.5.json) records the exact asset hashes and qualification scope. At publication browser.free showed 0.9.5 (205) through Sites 174; the effective external proxy route remains unverified and WebKit remains deferred. The earlier 0.9.4 snapshot follows.
 
 Snapshot updated after publication: [0.9.2 (202)](https://github.com/AffPapa/neantik/releases/tag/v0.9.2), Chromium156.0.8078.80, was published as public alpha. [`releases/v0.9.2.json`](../releases/v0.9.2.json) records its release asset digests and verification scope. At that snapshot, browser.free showed 0.9.2 (202) through Sites162. WebKit remained deferred. This historical snapshot is retained separately from the current 0.9.4 release.
 
