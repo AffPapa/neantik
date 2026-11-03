@@ -178,6 +178,15 @@ class ReleaseDirectScriptTests(unittest.TestCase):
         self.assertIn('"$NEANTIK_RELEASE_CHANNEL" != "production"', text)
         self.assertIn("export NEANTIK_RELEASE_CHANNEL=production", text)
 
+    def test_public_alpha_wrapper_selects_chromium_only_manager(self) -> None:
+        text = RELEASE_COMMAND.read_text(encoding="utf-8")
+        start = text.index('export NEANTIK_RELEASE_CHANNEL="${NEANTIK_RELEASE_CHANNEL:-public-alpha}"')
+        end = text.index("pause_on_error()", start)
+        public_alpha = text[start:end]
+        self.assertIn('if [[ "$NEANTIK_RELEASE_CHANNEL" == "public-alpha" ]]; then', public_alpha)
+        self.assertIn('export NEANTIK_CHROMIUM_ONLY=1', public_alpha)
+        self.assertIn('"${NEANTIK_CHROMIUM_ONLY:-1}" != "1"', public_alpha)
+
     def test_production_channel_selects_production_webkit_build_mode(self) -> None:
         for script in (PACKAGE_APP, PREPARE_MANAGER):
             with self.subTest(script=script.name):
