@@ -505,7 +505,8 @@ enum BrowserLaunchBuilder {
         if purpose.isLoopbackQA {
             // The QA harness binds its CDP client to this ephemeral IPv4
             // loopback port; ordinary/profile starts never expose CDP.
-            arguments += ["--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0"]
+            arguments += ["--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0",
+                          "--password-store=basic"]
         }
         let disabledFeatures = policy.disabledFeatures
 

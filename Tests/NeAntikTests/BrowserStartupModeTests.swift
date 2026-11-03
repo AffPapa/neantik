@@ -59,6 +59,7 @@ struct BrowserStartupModeTests {
         #expect(arguments.contains("--disable-quic"))
         #expect(arguments.contains("--remote-debugging-address=127.0.0.1"))
         #expect(arguments.contains("--remote-debugging-port=0"))
+        #expect(arguments.contains("--password-store=basic"))
         #expect(arguments.contains("about:blank") && !arguments.contains("--restore-last-session"))
         let environment = BrowserLaunchBuilder.environment(profile: profile,
             runtimeCapabilities: [.profilePrivacyV1], inherited: ["NEANTIK_PROFILE_PROXY_REQUIRED": "0"],
