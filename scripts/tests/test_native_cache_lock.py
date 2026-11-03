@@ -70,13 +70,19 @@ class NativeCacheLockTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); ready = root / "ready"; late = root / "should-not-exist"
             child = "import pathlib,time;pathlib.Path(" + repr(str(ready)) + ").write_text('ready');time.sleep(2);pathlib.Path(" + repr(str(late)) + ").write_text('wrong')"
-            process = subprocess.Popen([sys.executable, "-B", str(SCRIPT), "--root", str(root), "--", sys.executable, "-c", child], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            process = subprocess.Popen([sys.executable, "-B", str(SCRIPT), "--root", str(root), "--", sys.executable, "-c", child], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             try:
                 deadline = time.monotonic() + 3
                 while not ready.exists() and process.poll() is None and time.monotonic() < deadline: time.sleep(.02)
                 self.assertTrue(ready.exists())
                 process.send_signal(signal.SIGTERM)
-                self.assertEqual(process.wait(8), 143)
+                returncode = process.wait(8)
+                stdout, stderr = process.communicate()
+                self.assertEqual(
+                    returncode, 143,
+                    "wrapper did not preserve the forwarded SIGTERM exit; "
+                    f"stdout={stdout[:2048]!r}, stderr={stderr[:2048]!r}",
+                )
                 self.assertFalse(late.exists())
                 with MOD.cache_lock(root): pass
             finally:
