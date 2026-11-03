@@ -29,7 +29,9 @@ class PackageAppScriptContractTests(unittest.TestCase):
         start = text.index("resolve_runtime_candidate_lock() {")
         end = text.index("\n}\n", start) + len("\n}\n")
         resolver = text[start:end]
-        self.assertIn('local default="$BUILD_SUPPORT_DIR/runtime-candidate-lock.json"', resolver)
+        self.assertIn('local evidence_dir="$BUILD_SUPPORT_DIR/runtime-source-evidence"', resolver)
+        self.assertIn('cp "$source_provenance" "$build_provenance"', resolver)
+        self.assertIn('local default="$evidence_dir/runtime-candidate-lock.json"', resolver)
         self.assertIn('--output "$default" >&2', resolver)
         self.assertNotIn('$(dirname "$source_provenance")/runtime-candidate-lock.json', resolver)
 
