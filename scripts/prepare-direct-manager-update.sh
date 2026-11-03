@@ -87,11 +87,15 @@ resolve_runtime_candidate_lock() {
   fi
   local source_provenance
   source_provenance="$(resolve_source_provenance)"
-  local default="$(dirname "$source_provenance")/runtime-candidate-lock.json"
+  # Keep derived release evidence outside SOURCE_APP. Exporting beside
+  # source-provenance.json mutates the signed input bundle and makes its seal
+  # fail before the manager-only candidate can be prepared.
+  local default="$BUILD_SUPPORT_DIR/runtime-candidate-lock.json"
   if [[ ! -f "$default" ]]; then
+    mkdir -p "$(dirname "$default")"
     "$PROJECT_DIR/scripts/export-runtime-candidate-lock.py" \
       "$source_provenance" \
-      --output "$default"
+      --output "$default" >&2
   fi
   echo "$default"
 }

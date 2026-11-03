@@ -24,6 +24,15 @@ class PackageAppScriptContractTests(unittest.TestCase):
         self.assertIn(resolve, text)
         self.assertLess(text.index(resolve), text.index(helper))
 
+    def test_runtime_candidate_lock_export_does_not_mutate_signed_source_app(self) -> None:
+        text = (ROOT / "scripts/prepare-direct-manager-update.sh").read_text(encoding="utf-8")
+        start = text.index("resolve_runtime_candidate_lock() {")
+        end = text.index("\n}\n", start) + len("\n}\n")
+        resolver = text[start:end]
+        self.assertIn('local default="$BUILD_SUPPORT_DIR/runtime-candidate-lock.json"', resolver)
+        self.assertIn('--output "$default" >&2', resolver)
+        self.assertNotIn('$(dirname "$source_provenance")/runtime-candidate-lock.json', resolver)
+
     def test_manager_update_records_chromium_only_scope_before_signing(self) -> None:
         text = (ROOT / "scripts/prepare-direct-manager-update.sh").read_text(encoding="utf-8")
         self.assertIn('NEANTIK_CHROMIUM_ONLY must be 0 or 1', text)
