@@ -502,6 +502,11 @@ enum BrowserLaunchBuilder {
             "--no-default-browser-check",
             restoresSession ? "--restore-last-session" : "--new-window"
         ]
+        if purpose.isLoopbackQA {
+            // The QA harness binds its CDP client to this ephemeral IPv4
+            // loopback port; ordinary/profile starts never expose CDP.
+            arguments += ["--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0"]
+        }
         let disabledFeatures = policy.disabledFeatures
 
         // Native Canvas, layout and text operations preserve their mathematical
