@@ -16,6 +16,7 @@ IS_CHROMIUM_15612=0
 IS_CHROMIUM_15648=0
 IS_CHROMIUM_15674=0
 IS_CHROMIUM_15680=0
+IS_CHROMIUM_157=0
 M154_SOURCE_SNAPSHOT_VERIFIED=0
 
 usage() {
@@ -90,6 +91,9 @@ elif [[ "$LOCK_VERSION" == "156.0.8078.80" ]]; then
   if [[ "$(plutil -extract variant raw -o - "$LOCK_VERSION_SOURCE" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ]]; then
     SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-15680-privacy-v1-source-contract.json"
   fi
+elif [[ "$LOCK_VERSION" == "157.0.8103.39" ]]; then
+  IS_CHROMIUM_157=1
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-157-source-contract.json"
 else
   echo "Unsupported Chromium runtime version for release verification: $LOCK_VERSION" >&2
   exit 65
@@ -191,7 +195,8 @@ if [[ -n "$SOURCE_PROVENANCE_PATH" ]]; then
           ( -e "$POSSIBLE_SOURCE_ROOT/.git" ||
             -f "$(dirname "$POSSIBLE_SOURCE_ROOT")/.git" ||
             ( "$IS_CHROMIUM_15680" == 1 &&
-              "$(plutil -extract variant raw -o - "$LOCK_VERSION_SOURCE" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ) ) ]]; then
+              "$(plutil -extract variant raw -o - "$LOCK_VERSION_SOURCE" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ) ||
+            ( "$IS_CHROMIUM_157" == 1 ) ) ]]; then
       PROVENANCE_VERIFY_ARGS+=(--source-root "$POSSIBLE_SOURCE_ROOT")
     fi
   fi
@@ -227,7 +232,7 @@ if [[ -n "$SOURCE_PROVENANCE_PATH" ]]; then
       python3 "$SCRIPT_DIR/chromium_15612_variant.py" "$LOCK_VERSION_SOURCE" --signed-runtime "$APP_PATH" >/dev/null
     fi
     M154_SOURCE_SNAPSHOT_VERIFIED=1
-  elif (( IS_CHROMIUM_15498 == 1 || IS_CHROMIUM_15540 == 1 || IS_CHROMIUM_15648 == 1 || IS_CHROMIUM_15674 == 1 || IS_CHROMIUM_15680 == 1 )); then
+  elif (( IS_CHROMIUM_15498 == 1 || IS_CHROMIUM_15540 == 1 || IS_CHROMIUM_15648 == 1 || IS_CHROMIUM_15674 == 1 || IS_CHROMIUM_15680 == 1 || IS_CHROMIUM_157 == 1 )); then
     if [[ -n "$REPORT_PATH" &&
           ( -z "${PROVENANCE_VERIFY_ARGS[1]:-}" ||
             "${PROVENANCE_VERIFY_ARGS[1]}" != --source-root ) ]]; then
@@ -478,7 +483,7 @@ if [[ -n "$BUILD_ARGS_PATH" ]]; then
     # port. Its candidate evidence binds that source; historical 152 patch
     # postimages are not evidence for this port.
     SOURCE_POSTIMAGES_VERIFIED=1
-  elif (( IS_CHROMIUM_154 == 1 || IS_CHROMIUM_15498 == 1 || IS_CHROMIUM_15540 == 1 || IS_CHROMIUM_15612 == 1 || IS_CHROMIUM_15648 == 1 || IS_CHROMIUM_15674 == 1 || IS_CHROMIUM_15680 == 1 )); then
+  elif (( IS_CHROMIUM_154 == 1 || IS_CHROMIUM_15498 == 1 || IS_CHROMIUM_15540 == 1 || IS_CHROMIUM_15612 == 1 || IS_CHROMIUM_15648 == 1 || IS_CHROMIUM_15674 == 1 || IS_CHROMIUM_15680 == 1 || IS_CHROMIUM_157 == 1 )); then
     if (( M154_SOURCE_SNAPSHOT_VERIFIED != 1 )); then
       echo "Chromium source snapshot verification is required." >&2
       exit 66

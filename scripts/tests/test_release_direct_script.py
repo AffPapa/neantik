@@ -132,6 +132,19 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             self.assertFalse(marker.exists())
             self.assertEqual(retained.read_text(), "keep")
 
+    def test_runtime_preparation_builds_the_complete_chromium_signing_package(self) -> None:
+        text = PREPARE.read_text(encoding="utf-8")
+        target = '"$NINJA_BIN" -C "$CHROMIUM_OUT_DIR" \'chrome/installer/mac:copies\''
+        self.assertIn(target, text)
+        target_position = text.index(target)
+        config_check = text.index('if [[ ! -f "$CHROMIUM_SIGNING_CONFIG"', target_position)
+        helper_check = text.index('if [[ ! -f "$PACKAGING_DIR/sign_chrome.py"', target_position)
+        signing = text.index('scripts/sign-runtime.sh', helper_check)
+        self.assertLess(target_position, config_check)
+        self.assertLess(config_check, helper_check)
+        self.assertLess(helper_check, signing)
+        self.assertIn('|| -L "$PACKAGING_DIR/sign_chrome.py"', text[helper_check:signing])
+
     def test_runtime_preparation_refuses_warning_before_ninja_or_signing(self) -> None:
         with tempfile.TemporaryDirectory(prefix="neantik-admission-fixture-") as temporary:
             root = Path(temporary).resolve()

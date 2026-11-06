@@ -98,7 +98,8 @@ def verified_license(
     return actual
 
 
-def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
+def render_m154_notices(*, project_root: Path, runtime_lock: Path,
+                        source_provenance: Path | None = None) -> str:
     """Render candidate metadata without promoting the published runtime lock."""
     lock = load_json(runtime_lock)
     runtime_lock = runtime_lock.resolve()
@@ -227,6 +228,49 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
             lines.append(f"- `NeAntikRuntimeLicenses/{filename}` — SHA-256 `{digest}`")
         lines.extend(["", "## Qualification boundary", "",
                       "This notice identifies the source and license bytes used for this candidate. It does not itself establish runtime behavior, license applicability decisions, signing, notarization, Gatekeeper acceptance, or publication.", ""])
+        return "\n".join(lines)
+    if version == "157.0.8103.39":
+        from chromium_157_release_evidence import M157EvidenceError, verify_lock
+
+        provenance = source_provenance or runtime_lock.parent / "source-provenance.json"
+        try:
+            verify_lock(lock, provenance, project_root)
+        except M157EvidenceError as error:
+            raise RuntimeNoticesError(
+                f"Chromium 157 source evidence verification failed: {error}"
+            ) from error
+        contract_path = project_root / "runtime/chromium-157-source-contract.json"
+        if lock.get("sourceContractSHA256") != sha256_file(contract_path):
+            raise RuntimeNoticesError("Chromium 157 source contract digest mismatch")
+        contract = load_json(contract_path)
+        chromium_base = required_mapping(
+            contract.get("officialChromiumBase"), "officialChromiumBase"
+        )
+        chromium_license = verified_license(
+            project_root=project_root,
+            relative_path="runtime/licenses/Chromium-LICENSE",
+            expected_sha256=contract.get("chromiumLicenseSHA256"),
+        )
+        fingerprint_license = verified_license(
+            project_root=project_root,
+            relative_path="runtime/licenses/fingerprint-chromium-LICENSE",
+        )
+        lines = [
+            "# NeAntik Chromium runtime notices", "", "## Source references", "",
+            f"- Chromium: `{version}`",
+            f"- Official source: `{chromium_base['repository']}`",
+            f"- Commit: `{chromium_base['commit']}`; tree: `{chromium_base['tree']}`",
+            f"- NeAntik source patch SHA-256: `{contract['portSource']['sourcePatchManifestSHA256']}`",
+            f"- Build configuration SHA-256: `{contract['portSource']['buildArgsSHA256']}`",
+            f"- Candidate lock SHA-256: `{sha256_file(runtime_lock)}`",
+            f"- Source contract SHA-256: `{sha256_file(contract_path)}`",
+            "", "## Bundled licenses", "",
+            "Chromium-generated third-party notices and the SPDX SBOM are packaged separately.",
+            f"- `NeAntikRuntimeLicenses/Chromium-LICENSE` — SHA-256 `{chromium_license}`",
+            f"- `NeAntikRuntimeLicenses/fingerprint-chromium-LICENSE` — SHA-256 `{fingerprint_license}`",
+            "", "## Qualification boundary", "",
+            "These notices identify pinned source and bundled license bytes. They do not establish runtime behavior, security-fix survival, license applicability decisions, signing, notarization, Gatekeeper acceptance, or publication. The candidate remains subject to separate release gates.", "",
+        ]
         return "\n".join(lines)
     contract_names = {
         "154.0.8037.93": "chromium-154-source-contract.json",
@@ -530,6 +574,8 @@ def main() -> int:
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--runtime-lock", type=Path, help="Explicit reviewed candidate lock; does not change published metadata.")
+    parser.add_argument("--source-provenance", type=Path,
+                        help="Exact source provenance for the explicit Chromium 157 candidate lock.")
     args = parser.parse_args()
 
     project_root = args.project_root.resolve()
@@ -546,7 +592,11 @@ def main() -> int:
     if not output.is_absolute():
         output = project_root / output
     try:
-        rendered = (render_m154_notices(project_root=project_root, runtime_lock=args.runtime_lock)
+        rendered = (render_m154_notices(
+                        project_root=project_root,
+                        runtime_lock=args.runtime_lock,
+                        source_provenance=args.source_provenance,
+                    )
                     if args.runtime_lock else render_notices(project_root=project_root))
         if args.stdout:
             print(rendered, end="")
