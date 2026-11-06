@@ -20,6 +20,26 @@ class CacheBusy(RuntimeError):
     pass
 
 
+def process_group_exists(pgid):
+    """Check a child group, falling back when signal 0 is sandbox-denied."""
+    try:
+        os.killpg(pgid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        # Some macOS CI sandboxes deny signal 0 even for a group we just
+        # signalled. `ps` is read-only and lets us distinguish that from an
+        # absent group before releasing the shared-cache lease.
+        result = subprocess.run(
+            ["/bin/ps", "-axo", "pgid="], capture_output=True, text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise OSError("could not inspect child process groups after EPERM")
+        return any(line.strip() == str(pgid) for line in result.stdout.splitlines())
+
+
 def inherited_fd(root):
     try:
         value = json.loads(os.environ.get(ENV, "null"))
@@ -75,8 +95,7 @@ def supervise(command, *, env, pass_fds=(), stdout=None, stderr=None, cwd=None, 
             if cancelled:
                 signum, started = cancelled[0]
                 process.poll()  # Reap the direct child before checking descendants.
-                try: os.killpg(process.pid, 0)
-                except ProcessLookupError:
+                if not process_group_exists(process.pid):
                     process.wait()
                     return 124 if timed_out else 128 + signum
                 if time.monotonic() - started >= 5:

@@ -8,6 +8,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 SCRIPT = Path(__file__).resolve().parents[1] / "native_cache_lock.py"
 SPEC = importlib.util.spec_from_file_location("native_lock", SCRIPT)
@@ -16,6 +17,12 @@ SPEC.loader.exec_module(MOD)
 
 
 class NativeCacheLockTests(unittest.TestCase):
+    def test_process_group_probe_falls_back_when_signal_zero_is_denied(self):
+        with mock.patch.object(MOD.os, "killpg", side_effect=PermissionError), \
+                mock.patch.object(MOD.subprocess, "run", return_value=mock.Mock(
+                    returncode=0, stdout=f"{os.getpgrp()}\n")):
+            self.assertTrue(MOD.process_group_exists(os.getpgrp()))
+
     def test_deadline_cancels_child_and_releases_owned_cache(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); late = root / 'late'
