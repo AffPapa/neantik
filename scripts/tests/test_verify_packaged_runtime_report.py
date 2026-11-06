@@ -22,6 +22,84 @@ SPEC.loader.exec_module(MODULE)
 
 
 class VerifyPackagedRuntimeReportTests(unittest.TestCase):
+    def test_signed_m157_bytes_must_match_fresh_runtime_report_not_unsigned_build_hash(self):
+        import hashlib
+        unsigned = {"executable.sha256": hashlib.sha256(b"unsigned Ninja output").hexdigest(),
+                    "framework.sha256": hashlib.sha256(b"unsigned framework").hexdigest()}
+        signed = {"executable.sha256": hashlib.sha256(b"Developer ID signed executable").hexdigest(),
+                  "framework.sha256": hashlib.sha256(b"Developer ID signed framework").hexdigest()}
+        report = {"executable": {"sha256": unsigned["executable.sha256"]},
+                  "framework": {"sha256": unsigned["framework.sha256"]}}
+        with self.assertRaisesRegex(
+            MODULE.PackagedRuntimeReportError, "executable.sha256, framework.sha256"
+        ):
+            MODULE.verify_report_matches_bundle(report, signed)
+        MODULE.verify_report_matches_bundle(
+            {"executable": {"sha256": signed["executable.sha256"]},
+             "framework": {"sha256": signed["framework.sha256"]}},
+            signed,
+        )
+
+    def test_m157_selects_its_own_packaged_source_paths(self):
+        lock, contract = MODULE.source_evidence_paths(
+            "157.0.8103.39", Path("/evidence"), Path("/project")
+        )
+        self.assertEqual(lock, Path("/evidence/fingerprint-chromium.lock.json"))
+        self.assertEqual(contract, Path("/evidence/chromium-157-source-contract.json"))
+
+    def test_m157_packaged_source_evidence_binds_args_and_source_binary_hashes(self):
+        import hashlib
+        from unittest.mock import patch
+        import chromium_157_release_evidence as m157
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            runtime = root / "runtime"
+            runtime.mkdir()
+            evidence = root / "evidence"
+            evidence.mkdir()
+            source_evidence = evidence / "chromium-157-source-evidence"
+            source_evidence.mkdir()
+            build = root / "build"
+            build.mkdir()
+            executable = build / "browser"
+            framework = build / "framework"
+            executable.write_bytes(b"exact chromium executable")
+            framework.write_bytes(b"exact chromium framework")
+            digest = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+
+            contract = {"portSource": {"buildArgsSHA256": m157.ARGS_SHA256}}
+            (runtime / m157.CONTRACT).write_text(json.dumps(contract))
+            shutil.copy2(runtime / m157.CONTRACT, evidence / m157.CONTRACT)
+            for name in (m157.ADOPTION, m157.PLAN):
+                (runtime / name).write_text("reviewed " + name)
+                shutil.copy2(runtime / name, source_evidence / name)
+            build_evidence = {
+                "browserExecutableSHA256": digest(executable),
+                "frameworkSHA256": digest(framework),
+            }
+            (runtime / m157.BUILD_EVIDENCE).write_text(json.dumps(build_evidence))
+            shutil.copy2(runtime / m157.BUILD_EVIDENCE, source_evidence / m157.BUILD_EVIDENCE)
+            (evidence / "fingerprint-chromium.lock.json").write_text("{}")
+            (evidence / "source-provenance.json").write_text("{}")
+            (evidence / "args.gn").write_bytes(b"exact frozen args")
+            shutil.copy2(evidence / "args.gn", source_evidence / "args.gn")
+            with patch.object(m157, "ARGS_SHA256", digest(evidence / "args.gn")), \
+                 patch.object(m157, "verify_lock") as verify_lock:
+                MODULE.verify_m157_source_evidence(evidence, root, executable, framework)
+                verify_lock.assert_called_once()
+                (source_evidence / "args.gn").write_text("changed args")
+                with self.assertRaisesRegex(
+                    MODULE.PackagedRuntimeReportError, "GN args differ"
+                ):
+                    MODULE.verify_m157_source_evidence(evidence, root, executable, framework)
+                shutil.copy2(evidence / "args.gn", source_evidence / "args.gn")
+                executable.write_bytes(b"substituted executable")
+                framework.write_bytes(b"Developer ID signed framework bytes")
+                # Signed bundle bytes differ from unsigned Ninja output hashes;
+                # verify() binds both exact signed files to the runtime report.
+                MODULE.verify_m157_source_evidence(evidence, root, executable, framework)
+
     def test_m15680_packaged_source_binding_and_tampering(self):
         import chromium_15680_release_evidence as e
         runtime = ROOT / "runtime"
@@ -344,6 +422,15 @@ class VerifyPackagedRuntimeReportTests(unittest.TestCase):
         self.assertIn('NeAntikEngineScope', text)
         self.assertIn('WebKit.framework', text)
         self.assertIn('Chromium-only candidate contains a WebKit host or framework', text)
+
+    def test_integrated_verifier_passes_m157_args_and_provenance_to_runtime_gate(self) -> None:
+        text = (ROOT / "scripts/verify-integrated-release.sh").read_text(encoding="utf-8")
+        condition = text[text.rindex('if [[ "$EXPECTED_RUNTIME_VERSION" == 153.*'):]
+        condition = condition[:condition.index("]; then")]
+        self.assertIn('"$EXPECTED_RUNTIME_VERSION" == "157.0.8103.39"', condition)
+        self.assertIn('"$EVIDENCE/args.gn"', text)
+        self.assertIn('"$EVIDENCE/source-provenance.json"', text)
+        self.assertIn('"$EVIDENCE/fingerprint-chromium.lock.json"', text)
 
 
 if __name__ == "__main__":

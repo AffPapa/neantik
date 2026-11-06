@@ -15,7 +15,7 @@ from runtime_candidate_lock import PROJECT_ROOT, verify_candidate_lock
 from runtime_build_path import verify_build_args
 from runtime_source_provenance import (
     SourceProvenanceError,
-    atomic_write_json,
+    atomic_write_bytes,
     sha256_file,
 )
 
@@ -168,8 +168,9 @@ def promote(
             fresh_report,
             project_root=project_root, source_root=source_root,
         )
+    candidate_bytes = candidate_lock.read_bytes()
     candidate = load_report(candidate_lock)
-    atomic_write_json(published_lock, candidate)
+    atomic_write_bytes(published_lock, candidate_bytes)
     if published_lock.read_bytes() != candidate_lock.read_bytes():
         raise SourceProvenanceError(
             "Promoted lock bytes differ from verified candidate lock"

@@ -30,15 +30,28 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
         with self.assertRaises(MODULE.FingerprintReportError):
             MODULE.source_contract_name("156.0.8078.13")
 
+    def test_m157_uses_only_its_exact_source_contract_and_lock_version(self):
+        lock = json.loads((SCRIPT.parent.parent / "runtime/fingerprint-chromium.lock.json").read_text())
+        self.assertEqual(MODULE.source_contract_name("157.0.8103.39", lock),
+                         "chromium-157-source-contract.json")
+        with self.assertRaisesRegex(MODULE.FingerprintReportError, "lock version mismatch"):
+            MODULE.source_contract_name("157.0.8103.39", {"fingerprintChromium": {"chromiumVersion": "156.0.8078.80"}})
+
     def test_current_stable_15648_uses_its_own_source_contract(self):
         self.assertEqual(MODULE.source_contract_name("156.0.8078.48"), "chromium-15648-source-contract.json")
         self.assertEqual(MODULE.source_contract_name("156.0.8078.48", {"fingerprintChromium": {"chromiumVersion": "156.0.8078.48"}}), "chromium-15648-source-contract.json")
         self.assertEqual(MODULE.source_contract_name("156.0.8078.74"), "chromium-15674-source-contract.json")
         self.assertEqual(MODULE.source_contract_name("156.0.8078.80"), "chromium-15680-source-contract.json")
-        privacy_lock = json.loads((SCRIPT.parent.parent / "runtime/fingerprint-chromium.lock.json").read_text())
-        self.assertEqual(MODULE.source_contract_name("156.0.8078.80", privacy_lock), "chromium-15680-privacy-v1-source-contract.json")
-        changed = {**privacy_lock, "sourceContractSHA256": "0" * 64}
-        with self.assertRaises(MODULE.FingerprintReportError): MODULE.source_contract_name("156.0.8078.80", changed)
+        import hashlib
+        from unittest.mock import patch
+        import chromium_15680_privacy_derivation as privacy
+        contract_path = SCRIPT.parent.parent / "runtime/chromium-15680-privacy-v1-source-contract.json"
+        privacy_lock = {"variant": "recipient-privacy-policy-v1",
+                        "sourceContractSHA256": hashlib.sha256(contract_path.read_bytes()).hexdigest()}
+        with patch.object(privacy, "verify_lock_binding"):
+            self.assertEqual(MODULE.source_contract_name("156.0.8078.80", privacy_lock), "chromium-15680-privacy-v1-source-contract.json")
+        with patch.object(privacy, "verify_lock_binding", side_effect=ValueError("contract mismatch")):
+            with self.assertRaises(MODULE.FingerprintReportError): MODULE.source_contract_name("156.0.8078.80", privacy_lock)
         with self.assertRaises(MODULE.FingerprintReportError):
             MODULE.source_contract_name("156.0.8078.81")
 

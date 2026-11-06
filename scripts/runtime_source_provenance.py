@@ -46,7 +46,9 @@ CHROMIUM_15612_VERSION = "156.0.8078.12"
 CHROMIUM_15648_VERSION = "156.0.8078.48"
 CHROMIUM_15674_VERSION = "156.0.8078.74"
 CHROMIUM_15680_VERSION = "156.0.8078.80"
+CHROMIUM_157_VERSION = "157.0.8103.39"
 CONTRACT_SOURCE_VERSIONS = {
+    CHROMIUM_157_VERSION: ("chromium-157-source-contract.json", "chromium-157-rebase-plan.json"),
     CHROMIUM_15648_VERSION: ("chromium-15648-source-contract.json", "chromium-15648-rebase-plan.json"),
     CHROMIUM_15674_VERSION: ("chromium-15674-source-contract.json", "chromium-15674-rebase-plan.json"),
     CHROMIUM_15680_VERSION: ("chromium-15680-source-contract.json", "chromium-15680-rebase-plan.json"),
@@ -245,6 +247,16 @@ def verify_contract(
             raise SourceProvenanceError("M156.80 requires its canonical source contract and plan")
         try:
             return verify_m15680(project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+
+    if contract.get("targetChromiumVersion") == CHROMIUM_157_VERSION:
+        from chromium_157_release_evidence import verify_contract as verify_m157
+        if (contract_path != project_root / "runtime" / "chromium-157-source-contract.json" or
+                rebase_plan_path != project_root / "runtime" / "chromium-157-rebase-plan.json"):
+            raise SourceProvenanceError("M157 requires its canonical source contract and plan")
+        try:
+            return verify_m157(project_root)
         except (OSError, ValueError) as error:
             raise SourceProvenanceError(str(error)) from error
 
@@ -554,6 +566,12 @@ def build_provenance(
         raise SourceProvenanceError(
             f"Chromium source root does not exist: {source_root}"
         )
+    if chromium_version(source_root) == CHROMIUM_157_VERSION:
+        from chromium_157_release_evidence import build_provenance as build_m157
+        try:
+            return build_m157(source_root, project_root.resolve())
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
     if chromium_version(source_root) == CHROMIUM_15648_VERSION:
         from chromium_15648_release_evidence import build_provenance as build_m15648
         try:
@@ -963,6 +981,13 @@ def verify_document(
         except (OSError, ValueError) as error:
             raise SourceProvenanceError(str(error)) from error
         return
+    if document.get("targetChromiumVersion") == CHROMIUM_157_VERSION:
+        from chromium_157_release_evidence import verify_provenance as verify_m157
+        try:
+            verify_m157(document, project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+        return
     if document.get("targetChromiumVersion") == CHROMIUM_154_VERSION:
         try:
             verify_chromium_154_candidate_document(
@@ -1112,6 +1137,18 @@ def verify_runtime_lock_for_new_candidate(
         except (OSError, ValueError) as error:
             raise SourceProvenanceError(str(error)) from error
         return
+    if version == CHROMIUM_157_VERSION:
+        from chromium_157_release_evidence import verify_contract as verify_m157
+        try:
+            contract = verify_m157(project_root)
+            if lock.get("sourceContractSHA256") != sha256_file(
+                    project_root / "runtime" / "chromium-157-source-contract.json"):
+                raise ValueError("Chromium 157 runtime lock source contract mismatch")
+            if lock.get("sourceAdoptionManifestSHA256") != contract.get("sourceAdoptionManifestSHA256"):
+                raise ValueError("Chromium 157 runtime lock adoption manifest mismatch")
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+        return
     if version == CHROMIUM_15612_VERSION:
         from chromium_15612_variant import reviewed_lock_prefix, verify_candidate_lock as verify_m156
         prefix = reviewed_lock_prefix(lock)
@@ -1231,7 +1268,7 @@ def verify_runtime_lock_for_new_candidate(
         )
 
 
-def atomic_write_json(path: Path, value: dict[str, Any]) -> None:
+def atomic_write_bytes(path: Path, payload: bytes) -> None:
     if not path.is_absolute():
         raise SourceProvenanceError("Source provenance output must be absolute")
     if path.is_symlink():
@@ -1239,9 +1276,6 @@ def atomic_write_json(path: Path, value: dict[str, Any]) -> None:
             "Refusing to replace symlinked source provenance output"
         )
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = (
-        json.dumps(value, indent=2, sort_keys=True, ensure_ascii=True) + "\n"
-    ).encode("utf-8")
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=f".{path.name}.",
         dir=path.parent,
@@ -1261,3 +1295,10 @@ def atomic_write_json(path: Path, value: dict[str, Any]) -> None:
             os.close(directory_fd)
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def atomic_write_json(path: Path, value: dict[str, Any]) -> None:
+    payload = (
+        json.dumps(value, indent=2, sort_keys=True, ensure_ascii=True) + "\n"
+    ).encode("utf-8")
+    atomic_write_bytes(path, payload)

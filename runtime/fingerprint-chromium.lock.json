@@ -1,40 +1,30 @@
 {
-  "binaryBinding": {
-    "policy": "Recipient derivation only; native execution, signed bytes and publication remain separate gates.",
-    "requiredEvidence": "schema-3-runtime-report",
-    "status": "not-attested-by-this-document",
-    "unsignedFrameworkSHA256": "4446581ece6aec5e8baf990b4ef9f987da500c4e24953682d9efcebcb38f7e74"
-  },
-  "fingerprintChromium": {
-    "chromiumVersion": "156.0.8078.80",
-    "commit": "fb096c0011f9d50f0a264a9376420cdea9c421e3",
-    "licenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
-    "repository": "https://chromium.googlesource.com/chromium/src.git",
-    "tag": "156.0.8078.80",
-    "tree": "9daca4c0f1670a0ead9a94888c1bfe4ace733f4d"
-  },
-  "ownedInputs": {
-    "buildArgsSHA256": "b32623308042c6b3b86f14ce9635ccc9abdc290148ce596c1e4f4a43ffde9a01",
-    "dependencyLockSHA256": "34ad8b0055c563997a26b1e1e2ee763bcac1ec56635da2d41527f621b7791e65",
-    "depsFileSHA256": "c4d60cae7b46d4ae476e3409226d89bf72c1fd61e1d97d64027ebae4356f23ae",
-    "devtoolsCompatibilityPatchSHA256": "9eed3c3f43f96a00595163971b120c50accbeefeb07b552939b0ba9ad6ae7bfb",
-    "portableCrcManifestSHA256": "81b2ab0cd60f08b59310f624eda403af0a23636c66bfaac097832a2a15e1cdf0",
-    "privacyDerivationSHA256": "559f03c75d58cb4c33e9c9698040d678df7ebc78dce5e73bf1f61caf52b68a96",
-    "privacyPatchSHA256": "aa86b95be3f77d33bb99cc9e1f5bcd26b4edb4886d977b9f3ec3014757a66d7a",
-    "sourcePatchSHA256": "2f48cb944f6e51439322776e3ec0519bd0567e300049253791c60faca46481ea",
-    "v8CompatibilityPatchSHA256": "d06dd32200393a0eacf5dafcf83f6c5dafafc508b97af58013e52cd135d58388"
-  },
-  "ownedManifests": {
-    "appleDeviceTuplesSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
-    "neantikPatchSeriesSHA256": "c79ee59b55b1ad474229313660c31c19fcc3b67051bca4f1da1e6098b0b69748",
-    "securityBaselineSHA256": "9d8019f9cadcd10417f9104ae9dc065803b726daab4b507fc855bcc6937a82a6"
-  },
   "schemaVersion": 4,
-  "sourceAdoptionManifestSHA256": "64497886808d812f6958dac2860b1263f632ebaf97354a5ce634a68f7725279c",
-  "sourceContract": "runtime/chromium-15680-privacy-v1-source-contract.json",
-  "sourceContractSHA256": "d2990face54ab8e721aa45404cf6de866d348c96dda7161ece04826d84845983",
-  "sourceProvenanceSHA256": "bf94d6c86dba2c04a86ae4b5989616db95265c619e19eb02fcd3364b95576e24",
   "status": "source-qualified",
   "targetArchitecture": "arm64",
-  "variant": "recipient-privacy-policy-v1"
+  "sourceContractSHA256": "33cc9f2bc1a45454d884e53a6466428f5962c332695e284b5d2ca8004498ed00",
+  "sourceProvenanceSHA256": "3bc75236908db9506b9c686e5001509139111b37fdb44ebde3c65af5573ff90b",
+  "sourceAdoptionManifestSHA256": "3c9d4940c3746225135384e55f34b6d1ebe8fc36b30326a0f55845806c6ce79e",
+  "fingerprintChromium": {
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "157.0.8103.39",
+    "commit": "9a31f0acec1854d44e49a73fbf8017598151a583",
+    "tree": "e400810dee21ba266feeeef005ea83ae83fd274e",
+    "chromiumVersion": "157.0.8103.39",
+    "licenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b"
+  },
+  "ownedInputs": {
+    "sourcePatchSHA256": "26a2856cd6cb3acb97283898ef415be3c0afc0d2239028ffaebda0525dd17e43",
+    "buildArgsSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e"
+  },
+  "ownedManifests": {
+    "neantikPatchSeriesSHA256": "c79ee59b55b1ad474229313660c31c19fcc3b67051bca4f1da1e6098b0b69748",
+    "appleDeviceTuplesSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+    "securityBaselineSHA256": "793f6d541b4ab206efe4185b2a6e13b504ae8bf2f15e151144bcfe6494ada3ac"
+  },
+  "binaryBinding": {
+    "status": "not-attested-by-this-document",
+    "requiredEvidence": "schema-3-runtime-report",
+    "policy": "This source-only lock makes no runtime, signing, notarization, publication or release claim."
+  }
 }

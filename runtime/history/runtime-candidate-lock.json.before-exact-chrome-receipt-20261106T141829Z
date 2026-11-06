@@ -1,0 +1,30 @@
+{
+  "binaryBinding": {
+    "policy": "This source-only lock makes no runtime, signing, notarization, publication or release claim.",
+    "requiredEvidence": "schema-3-runtime-report",
+    "status": "not-attested-by-this-document"
+  },
+  "fingerprintChromium": {
+    "chromiumVersion": "157.0.8103.39",
+    "commit": "9a31f0acec1854d44e49a73fbf8017598151a583",
+    "licenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "157.0.8103.39",
+    "tree": "e400810dee21ba266feeeef005ea83ae83fd274e"
+  },
+  "ownedInputs": {
+    "buildArgsSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e",
+    "sourcePatchSHA256": "26a2856cd6cb3acb97283898ef415be3c0afc0d2239028ffaebda0525dd17e43"
+  },
+  "ownedManifests": {
+    "appleDeviceTuplesSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
+    "neantikPatchSeriesSHA256": "c79ee59b55b1ad474229313660c31c19fcc3b67051bca4f1da1e6098b0b69748",
+    "securityBaselineSHA256": "793f6d541b4ab206efe4185b2a6e13b504ae8bf2f15e151144bcfe6494ada3ac"
+  },
+  "schemaVersion": 4,
+  "sourceAdoptionManifestSHA256": "a377c48d67af023e84c0835a524eec5c259e7189ab0409820eb5e7859f2cea32",
+  "sourceContractSHA256": "18122136c645b9fa3a10bdf072b736d9868ccc2d823733289df6b87c30f0baf3",
+  "sourceProvenanceSHA256": "dd8539b0be67887a1c79c41e703e04630e9b168725a7fa667ec9427b311c44c9",
+  "status": "source-qualified",
+  "targetArchitecture": "arm64"
+}

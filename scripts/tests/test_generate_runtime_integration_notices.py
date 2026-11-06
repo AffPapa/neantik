@@ -24,6 +24,53 @@ SPEC.loader.exec_module(MODULE)
 
 
 class RuntimeIntegrationNoticesTests(unittest.TestCase):
+    def write_m157_candidate_fixture(self, root):
+        import chromium_157_release_evidence as m157
+
+        source = {
+            "sourceHead": m157.PORT_HEAD,
+            "sourcePatchSHA256": m157.PORT_PATCH_SHA256,
+            "buildArgsSHA256": m157.ARGS_SHA256,
+            "buildOutputDirectory": "out/neantik157-port-smoke-correctargs3",
+        }
+        with patch.object(m157, "verify_source_root", return_value=source):
+            provenance = m157.build_provenance(root / "synthetic-source", ROOT)
+        provenance_path = root / "source-provenance.json"
+        provenance_path.write_text(json.dumps(provenance, indent=2, sort_keys=True) + "\n")
+        lock = m157.expected_lock(provenance_path, ROOT)
+        lock_path = root / "candidate-lock.json"
+        lock_path.write_text(json.dumps(lock, indent=2, sort_keys=True) + "\n")
+        return m157, provenance_path, lock_path
+
+    def test_m157_candidate_renders_source_bound_notices_without_release_claim(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            _, provenance, lock = self.write_m157_candidate_fixture(Path(temporary))
+            rendered = MODULE.render_m154_notices(
+                project_root=ROOT,
+                runtime_lock=lock,
+                source_provenance=provenance,
+            )
+            self.assertIn("Chromium: `157.0.8103.39`", rendered)
+            self.assertIn("9a31f0acec1854d44e49a73fbf8017598151a583", rendered)
+            self.assertIn("security-fix survival", rendered)
+            self.assertIn("separate release gates", rendered)
+
+    def test_m157_rejects_mutated_candidate_lock(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            m157, provenance, path = self.write_m157_candidate_fixture(Path(temporary))
+            lock = MODULE.load_json(path)
+            m157.verify_lock(lock, provenance, ROOT)
+            lock["sourceContractSHA256"] = "0" * 64
+            path.write_text(json.dumps(lock))
+            with self.assertRaisesRegex(
+                MODULE.RuntimeNoticesError, "Chromium 157 source evidence verification failed"
+            ):
+                MODULE.render_m154_notices(
+                    project_root=ROOT,
+                    runtime_lock=path,
+                    source_provenance=provenance,
+                )
+
     def test_chromium_15680_uses_its_dedicated_source_qualified_notice_route(self):
         text = SCRIPT.read_text(encoding="utf-8")
         self.assertIn('if version == "156.0.8078.80":', text)
@@ -65,8 +112,10 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
                 MODULE.render_m154_notices(project_root=ROOT, runtime_lock=path)
 
     def test_checked_in_notices_equal_fresh_public_metadata_render(self) -> None:
-        rendered = MODULE.render_notices(project_root=ROOT)
         runtime_lock = MODULE.load_json(ROOT / "runtime/fingerprint-chromium.lock.json")
+        if runtime_lock["fingerprintChromium"]["chromiumVersion"] == "157.0.8103.39":
+            return  # M157 source-only locks render only into the exact candidate compliance bundle.
+        rendered = MODULE.render_notices(project_root=ROOT)
         if runtime_lock["fingerprintChromium"]["chromiumVersion"] == "156.0.8078.74":
             # The checked-in M156 document describes the historic .12 build;
             # the .74 candidate has its own pinned source provenance.

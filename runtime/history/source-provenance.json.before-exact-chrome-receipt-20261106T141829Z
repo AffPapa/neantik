@@ -1,0 +1,75 @@
+{
+  "binaryBinding": {
+    "requiredEvidence": "schema-3-runtime-report",
+    "status": "pending-runtime-report"
+  },
+  "buildArgsSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e",
+  "buildEvidence": {
+    "aggregateUnitTests": {
+      "classification": "test source/config mismatch; product chrome target linked successfully; no runtime failure observed.",
+      "exitCode": 1,
+      "failureBoundary": [
+        "Safe Browsing notification content detection and notification telemetry tests call SafeBrowsingService APIs unavailable with safe_browsing_mode=0.",
+        "Cloud binary upload test calls deep_scan_requests and ClearDeepScans methods absent from the M157 WebUIContentInfoSingleton API."
+      ],
+      "logPath": "/private/tmp/neantik-m157-unit-tests-resume9-20261106.log",
+      "logSHA256": "37ce85838e161c8b1884ba3f48f542488c0545556f25da97fccb5d1301eac5a2",
+      "status": "blocked"
+    },
+    "browserExecutableSHA256": "985bc5c6ab64e262dd0972877d97b7f3dd1fd49e8af00c1989eda5f9e165ef8e",
+    "buildLogSHA256": "881a4cd82c6822d027f0acc229948cc005e6098060bb84a00ba763564fade4b3",
+    "focusedTestLogSHA256": "f0a7fc8350a9fea67ab943541f4ff37f28303e4ec81f301effd8b9848f72b835",
+    "focusedTestObjects": [
+      "obj/chrome/browser/permissions/unit_tests/passage_embedder_delegate_unittest.o",
+      "obj/components/signin/core/browser/unit_tests/account_preview_data_service_impl_unittest.o",
+      "obj/chrome/browser/media/router/unittests/dns_sd_registry_unittest.o",
+      "obj/chrome/browser/sync/test/integration/sync_integration_test_support/search_engines_helper.o",
+      "obj/chrome/browser/autocomplete/unit_tests/search_provider_unittest.o",
+      "obj/chrome/browser/browsing_data/unit_tests/chrome_browsing_data_remover_delegate_unittest.o",
+      "obj/chrome/browser/download/unit_tests/download_item_model_unittest.o",
+      "obj/chrome/browser/extensions/unit_tests/extension_allowlist_unittest.o",
+      "obj/chrome/browser/extensions/unit_tests/extension_service_unittest.o",
+      "obj/chrome/browser/new_tab_page/unit_tests/one_google_bar_loader_impl_unittest.o",
+      "obj/chrome/browser/search_engines/unit_tests/template_url_service_unittest.o",
+      "obj/chrome/browser/search_engines/unit_tests/template_url_service_sync_unittest.o",
+      "obj/chrome/browser/search_engines/platform_browser_tests/prepopulated_engines_migration_browsertest.o",
+      "obj/chrome/renderer/unit_tests/read_anything_app_controller_unittest.o",
+      "obj/chrome/renderer/unit_tests/read_anything_app_model_unittest.o",
+      "obj/chrome/renderer/unit_tests/read_anything_node_utils_unittest.o",
+      "obj/components/search_engines/unit_tests/template_url_service_unittest.o",
+      "obj/components/signin/internal/identity_manager/unit_tests/gaia_cookie_manager_service_unittest.o",
+      "obj/storage/browser/unittests/quota_manager_unittest.o",
+      "obj/chrome/browser/enterprise/reporting/test/test_support/test_utils.o"
+    ],
+    "frameworkSHA256": "4609cacf90dd7d4de93b22df325f45bd9226a3d2e71947d678832a3c464890fc",
+    "ninjaActionsCompleted": 498,
+    "ninjaActionsExpected": 498,
+    "ninjaExitCode": 0,
+    "ninjaTarget": "chrome + focused modified test objects"
+  },
+  "buildEvidenceSHA256": "f261ef80e9bed3329a3396dec49db1447231782e600191fce40d8eadcc43c87e",
+  "officialChromiumBase": {
+    "commit": "9a31f0acec1854d44e49a73fbf8017598151a583",
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "157.0.8103.39",
+    "tree": "e400810dee21ba266feeeef005ea83ae83fd274e"
+  },
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "sourceAdoptionManifestSHA256": "a377c48d67af023e84c0835a524eec5c259e7189ab0409820eb5e7859f2cea32",
+  "sourceChecks": {
+    "buildArgs": "verified",
+    "buildEvidence": "verified",
+    "officialCommitTree": "verified",
+    "pinnedDependencies": "verified",
+    "reviewedPortDiff": "verified",
+    "versionFile": "verified"
+  },
+  "sourceContractSHA256": "18122136c645b9fa3a10bdf072b736d9868ccc2d823733289df6b87c30f0baf3",
+  "sourceHead": "95b9ebdb2192fb206f9838e1a2fbe791fbffb235",
+  "sourceMode": "official-chromium-stable-with-reviewed-neantik-port",
+  "sourcePatchSHA256": "26a2856cd6cb3acb97283898ef415be3c0afc0d2239028ffaebda0525dd17e43",
+  "status": "source-qualified",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "157.0.8103.39"
+}

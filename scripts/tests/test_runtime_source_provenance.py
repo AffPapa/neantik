@@ -141,6 +141,32 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
         ):
             MODULE.contract_paths_for_version("156.0.8078.81", project_root=PROJECT_ROOT)
 
+    def test_m157_selects_its_own_contract_and_stays_unqualified_pending_runtime_report(self) -> None:
+        paths = MODULE.contract_paths_for_version(
+            MODULE.CHROMIUM_157_VERSION,
+            project_root=PROJECT_ROOT,
+        )
+        self.assertEqual(paths, (
+            PROJECT_ROOT / "runtime/chromium-157-source-contract.json",
+            PROJECT_ROOT / "runtime/chromium-157-rebase-plan.json",
+        ))
+        contract = MODULE.verify_contract(
+            project_root=PROJECT_ROOT,
+            contract_path=paths[0],
+            rebase_plan_path=paths[1],
+        )
+        self.assertEqual(contract["binaryBindingStatus"], "pending-runtime-report")
+        self.assertEqual(contract["officialChromiumBase"]["commit"],
+                         "9a31f0acec1854d44e49a73fbf8017598151a583")
+        self.assertEqual(contract["portSource"]["buildArgsSHA256"],
+                         "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e")
+        self.assertFalse(contract["releaseReady"])
+        with self.assertRaisesRegex(
+            MODULE.SourceProvenanceError,
+            "Unsupported Chromium source contract version: 157.0.8103.40",
+        ):
+            MODULE.contract_paths_for_version("157.0.8103.40", project_root=PROJECT_ROOT)
+
     def test_m154_provenance_never_falls_back_to_m152_contract(self) -> None:
         document = MODULE.expected_static_document(project_root=PROJECT_ROOT)
         document["targetChromiumVersion"] = MODULE.CHROMIUM_154_VERSION
@@ -397,6 +423,13 @@ class RuntimeSourceProvenanceTests(unittest.TestCase):
                 "symlinked",
             ):
                 MODULE.atomic_write_json(output, {"schemaVersion": 1})
+
+    def test_atomic_byte_writer_preserves_serialized_candidate_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "runtime-lock.json"
+            payload = b'{\n  "schemaVersion": 4,\n  "status": "source-qualified"\n}\n'
+            MODULE.atomic_write_bytes(output, payload)
+            self.assertEqual(output.read_bytes(), payload)
 
 
 if __name__ == "__main__":
