@@ -103,7 +103,8 @@ class ReleaseDirectScriptTests(unittest.TestCase):
 
     def test_missing_build_log_refuses_ninja_and_preserves_output(self) -> None:
         script = PREPARE.read_text(encoding="utf-8")
-        start = script.index('  NINJA_BIN="$SOURCE_ROOT/third_party/ninja/ninja"')
+        first = script.index('  NINJA_BIN="$SOURCE_ROOT/third_party/ninja/ninja"')
+        start = script.index('  NINJA_BIN="$SOURCE_ROOT/third_party/ninja/ninja"', first + 1)
         end = script.index('\nfi\nif [[ "$(plutil', start)
         guard = script[start:end]
         with tempfile.TemporaryDirectory(prefix="neantik-missing-ninja-log-") as temporary:
@@ -131,6 +132,67 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             self.assertIn("build log is unavailable", result.stderr)
             self.assertFalse(marker.exists())
             self.assertEqual(retained.read_text(), "keep")
+
+    def test_m157_missing_log_uses_manual_public_alpha_signer_without_ninja(self) -> None:
+        text = PREPARE.read_text(encoding="utf-8")
+        start = text.index('if [[ "$RUNTIME_VERSION" == "157.0.8103.39" ]]; then')
+        end = text.index('\nelif [[ -f "$CHROMIUM_OUT_DIR/build.ninja"', start)
+        branch = text[start:end]
+        self.assertIn('PACKAGING_DIR="$SIGNED_RUNTIME_ROOT/manual-public-alpha-signing-inputs"', branch)
+        self.assertIn('M157 production signing requires a valid Ninja log', branch)
+        self.assertIn('no Ninja action will run', branch)
+
+        with tempfile.TemporaryDirectory(prefix="neantik-m157-no-log-") as temporary:
+            root = Path(temporary)
+            source = root / "src"
+            output = source / "out"
+            runtime = output / "NeAntik Browser.app"
+            packaging = output / "NeAntik Browser Packaging"
+            ninja = source / "third_party/ninja/ninja"
+            runtime.mkdir(parents=True)
+            packaging.mkdir()
+            ninja.parent.mkdir(parents=True)
+            marker = root / "ninja-was-run"
+            ninja.write_text('#!/bin/sh\ntouch "$MARKER"\n')
+            ninja.chmod(0o755)
+            (output / "build.ninja").write_text("pinned graph")
+            stage = root / "signed-runtime"
+            stage.mkdir()
+            environment = {
+                **os.environ,
+                "RUNTIME_VERSION": "157.0.8103.39",
+                "CHROMIUM_OUT_DIR": str(output),
+                "RUNTIME_APP": str(runtime),
+                "SOURCE_ROOT": str(source),
+                "SIGNED_RUNTIME_ROOT": str(stage),
+                "CHROMIUM_SIGNING_CONFIG": str(packaging / "signing/build_props_config.py"),
+                "PACKAGING_DIR": str(packaging),
+                "NEANTIK_RELEASE_CHANNEL": "public-alpha",
+                "MARKER": str(marker),
+            }
+            command = "set -euo pipefail\n" + branch + "\nfi\necho $PACKAGING_DIR\n"
+            result = subprocess.run(["/bin/zsh", "-f", "-c", command], env=environment,
+                                    capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("no Ninja action will run", result.stdout)
+            self.assertFalse(marker.exists())
+            selected = Path(result.stdout.splitlines()[-1])
+            self.assertEqual(selected, stage / "manual-public-alpha-signing-inputs")
+            self.assertFalse(selected.exists())
+
+            production = dict(environment, NEANTIK_RELEASE_CHANNEL="production")
+            result = subprocess.run(["/bin/zsh", "-f", "-c", command], env=production,
+                                    capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 65, result.stderr)
+            self.assertIn("production signing requires a valid Ninja log", result.stderr)
+            self.assertFalse(marker.exists())
+
+            (output / ".ninja_log").symlink_to(root / "missing-log-target")
+            result = subprocess.run(["/bin/zsh", "-f", "-c", command], env=environment,
+                                    capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 65, result.stderr)
+            self.assertIn("M157 Ninja log is unsafe", result.stderr)
+            self.assertFalse(marker.exists())
 
     def test_runtime_preparation_builds_the_complete_chromium_signing_package(self) -> None:
         text = PREPARE.read_text(encoding="utf-8")
