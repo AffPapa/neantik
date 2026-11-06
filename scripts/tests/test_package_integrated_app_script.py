@@ -88,6 +88,14 @@ class PackageIntegratedAppScriptTests(unittest.TestCase):
         self.assertIn('chromium-15680-source-evidence', text)
         self.assertIn('chromium-15680-build-evidence.json', text)
 
+    def test_m157_packaging_uses_dedicated_contract_and_completed_source_evidence(self) -> None:
+        text = PACKAGER.read_text(encoding="utf-8")
+        self.assertIn('"$RUNTIME_VERSION" == "157.0.8103.39"', text)
+        self.assertIn('chromium-157-source-contract.json', text)
+        self.assertIn('chromium-157-source-adoption-v1.json', text)
+        self.assertIn('chromium-157-build-evidence.json', text)
+        self.assertIn('chromium-157-source-evidence', text)
+
     def test_failing_verifier_restores_exact_engineering_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
