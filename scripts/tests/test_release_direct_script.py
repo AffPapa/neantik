@@ -475,6 +475,21 @@ class ReleaseDirectScriptTests(unittest.TestCase):
                         self.assertEqual(result.returncode, 0, result.stderr)
                         self.assertEqual(Path(result.stdout.strip()).name, expected)
 
+    def test_manager_contract_selection_accepts_m157_source_contract(self) -> None:
+        text = PREPARE_MANAGER.read_text(encoding='utf-8')
+        start = text.index('  case "$runtime_version" in')
+        end = text.index('  local packaged_contract_name=', start)
+        dispatch = text[start:end]
+        command = 'runtime_version="$1"; evidence="$2"; PROJECT_DIR="$3"\n' + dispatch + '\nprint -r -- "$source_contract"'
+        result = subprocess.run(
+            ['/bin/zsh', '-c', command, 'test', '157.0.8103.39', '/tmp', str(SCRIPTS.parent)],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(Path(result.stdout.strip()).name, 'chromium-157-source-contract.json')
+        self.assertIn('local packaged_provenance="$SOURCE_APP/Contents/Resources/NeAntikRuntimeEvidence/source-provenance.json"', text)
+        self.assertIn('chromium-157-source-adoption-v1.json chromium-157-rebase-plan.json chromium-157-build-evidence.json', text)
+
     def test_manager_only_update_preserves_verified_runtime_evidence(self) -> None:
         text = PREPARE_MANAGER.read_text(encoding="utf-8")
 
