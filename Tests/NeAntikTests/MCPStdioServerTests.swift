@@ -17,20 +17,24 @@ struct MCPStdioServerTests {
         #expect(try Data(contentsOf: paths.profilesFile) == bytes)
     }
     @Test func cancellationReachesBaselineDetachedWorker() async throws {
-        let started = DispatchSemaphore(value: 0), proceed = DispatchSemaphore(value: 0), observed = DispatchSemaphore(value: 0)
+        let started = DispatchSemaphore(value: 0), cancellationObserved = DispatchSemaphore(value: 0)
         let request = Task.detached {
             await MCPStdioServer.executeCancellable {
                 started.signal()
-                guard proceed.wait(timeout: .now() + 3) == .success else { return nil }
-                if Task.isCancelled { observed.signal() }
-                return Data("should not be returned".utf8)
+                let deadline = DispatchTime.now() + 3
+                while !Task.isCancelled, DispatchTime.now() < deadline {
+                    Thread.sleep(forTimeInterval: 0.01)
+                }
+                guard Task.isCancelled else { return Data("cancellation was not propagated".utf8) }
+                cancellationObserved.signal()
+                return nil
             }
         }
-        defer { request.cancel(); proceed.signal() }
+        defer { request.cancel() }
         #expect(await Task.detached { started.wait(timeout: .now() + 3) }.value == .success)
-        request.cancel(); proceed.signal()
+        request.cancel()
         #expect(await request.value == nil)
-        #expect(await Task.detached { observed.wait(timeout: .now() + 3) }.value == .success)
+        #expect(await Task.detached { cancellationObserved.wait(timeout: .now() + 3) }.value == .success)
     }
 
     @Test func reusedToolResultPreservesEncodingOnBothSidesOfSizeLimit() throws {
