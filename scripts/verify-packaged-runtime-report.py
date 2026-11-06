@@ -73,6 +73,15 @@ def field(value: dict[str, Any], dotted: str) -> Any:
     return current
 
 
+def verify_report_matches_bundle(report: dict[str, Any], actual: dict[str, Any]) -> None:
+    mismatches = [name for name, value in actual.items() if field(report, name) != value]
+    if mismatches:
+        raise PackagedRuntimeReportError(
+            "Packaged runtime report does not match the distributed bundle: "
+            + ", ".join(mismatches)
+        )
+
+
 def canonical_bundle_file(
     runtime_app: Path,
     recorded: Any,
@@ -292,6 +301,9 @@ def source_evidence_paths(
         name = ("chromium-15680-privacy-v1-source-contract.json"
                 if lock.get("variant") == "recipient-privacy-policy-v1" else "chromium-15680-source-contract.json")
         return (evidence / "fingerprint-chromium.lock.json", evidence / name)
+    if runtime_version == "157.0.8103.39":
+        return (evidence / "fingerprint-chromium.lock.json",
+                evidence / "chromium-157-source-contract.json")
     if runtime_version.startswith("154."):
         raise PackagedRuntimeReportError(
             f"Chromium {runtime_version} release qualification is unavailable; "
@@ -335,6 +347,61 @@ def verify_m15680_source_evidence(evidence: Path, project_root: Path) -> None:
                 or reviewed.is_symlink() or not reviewed.is_file()
                 or packaged.read_bytes() != reviewed.read_bytes()):
             raise PackagedRuntimeReportError("Packaged Chromium 156.80 source evidence differs: " + name)
+
+
+def verify_m157_source_evidence(evidence: Path, project_root: Path,
+                                executable: Path, framework: Path) -> None:
+    """Require frozen M157 source/build evidence to bind packaged bytes."""
+    import chromium_157_release_evidence as m157
+
+    packaged_lock = load_json(evidence / "fingerprint-chromium.lock.json")
+    try:
+        m157.verify_lock(packaged_lock, evidence / "source-provenance.json", project_root)
+    except (OSError, ValueError) as error:
+        raise PackagedRuntimeReportError(
+            f"Chromium 157 source binding failed: {error}"
+        ) from error
+
+    runtime = project_root / "runtime"
+    contract = runtime / m157.CONTRACT
+    packaged_contract = evidence / m157.CONTRACT
+    if (contract.is_symlink() or not contract.is_file()
+            or packaged_contract.is_symlink() or not packaged_contract.is_file()
+            or packaged_contract.read_bytes() != contract.read_bytes()):
+        raise PackagedRuntimeReportError(
+            "Packaged Chromium 157 source contract differs from reviewed evidence"
+        )
+
+    source_evidence = evidence / "chromium-157-source-evidence"
+    for name in (m157.ADOPTION, m157.PLAN, m157.BUILD_EVIDENCE):
+        packaged = source_evidence / name
+        reviewed = runtime / name
+        if (packaged.is_symlink() or not packaged.is_file()
+                or reviewed.is_symlink() or not reviewed.is_file()
+                or packaged.read_bytes() != reviewed.read_bytes()):
+            raise PackagedRuntimeReportError(
+                "Packaged Chromium 157 source evidence differs: " + name
+            )
+
+    args = source_evidence / "args.gn"
+    packaged_args = evidence / "args.gn"
+    if (args.is_symlink() or not args.is_file()
+            or packaged_args.is_symlink() or not packaged_args.is_file()
+            or args.read_bytes() != packaged_args.read_bytes()
+            or sha256(args) != m157.ARGS_SHA256):
+        raise PackagedRuntimeReportError(
+            "Packaged Chromium 157 GN args differ from the reviewed build input"
+        )
+
+    build = load_json(runtime / m157.BUILD_EVIDENCE)
+    if (not re.fullmatch(r"[0-9a-f]{64}", str(build.get("browserExecutableSHA256", "")))
+            or not re.fullmatch(r"[0-9a-f]{64}", str(build.get("frameworkSHA256", "")))):
+        raise PackagedRuntimeReportError(
+            "Chromium 157 source-build evidence lacks exact unsigned binary hashes"
+        )
+    # These are hashes of the unsigned Ninja outputs. Developer ID signing
+    # necessarily changes Mach-O bytes; exact post-sign bytes are checked
+    # against the runtime report in verify() below.
 
 
 def verify(
@@ -517,6 +584,8 @@ def verify(
 
     if runtime_version == "156.0.8078.80":
         verify_m15680_source_evidence(evidence, project_root)
+    elif runtime_version == "157.0.8103.39":
+        verify_m157_source_evidence(evidence, project_root, executable, framework)
 
     if runtime_version == "156.0.8078.12":
         from chromium_15612_variant import reviewed_lock_prefix, SUCCESSOR_PREFIXES
@@ -551,14 +620,7 @@ def verify(
         {name: sha256(path) for name, path in evidence_files.items()}
     )
 
-    mismatches = [
-        name for name, value in actual.items() if field(report, name) != value
-    ]
-    if mismatches:
-        raise PackagedRuntimeReportError(
-            "Packaged runtime report does not match the distributed bundle: "
-            + ", ".join(mismatches)
-        )
+    verify_report_matches_bundle(report, actual)
 
     build_arguments = field(report, "buildArguments")
     if (

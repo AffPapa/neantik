@@ -34,7 +34,7 @@ final class MCPProfileManagement {
 
     func disconnectGUI() { gui.close() }
 
-    enum Failure: Error { case invalid, conflict, unavailable, running, proxyFailed, manualClose, denied, stopRefused, cursor, responseLimit }
+    enum Failure: Error { case invalid, conflict, unavailable, browserRuntimeUnavailable, browserRuntimePreflightFailed, running, proxyFailed, manualClose, denied, stopRefused, cursor, responseLimit }
 
     nonisolated static let readTools = ["profile_get", "folder_list", "profile_status", "workspace_query_profiles", "template_list"]
     nonisolated static let writeTools = ["profile_create", "profile_update", "profile_set_proxy", "profile_move", "profile_duplicate", "folder_create", "folder_rename", "folder_remove", "profile_check_proxy", "profile_start", "profile_stop"]
@@ -388,9 +388,9 @@ final class MCPProfileManagement {
         try await observe(initial.id)
         guard processes.processState(for: initial.id) == .stopped else { throw Failure.running }
         let locator = BrowserRuntimeLocator()
-        guard let runtime = await Task.detached(priority: .userInitiated, operation: { locator.preferredRuntime() }).value else { throw Failure.unavailable }
+        guard let runtime = await Task.detached(priority: .userInitiated, operation: { locator.preferredRuntime() }).value else { throw Failure.browserRuntimeUnavailable }
         let preflight = await Task.detached { BrowserRuntimePreflightValidator.validate(runtime) }.value
-        guard preflight.isReady else { throw Failure.unavailable }
+        guard preflight.isReady else { throw Failure.browserRuntimePreflightFailed }
         try Task.checkCancellation()
         var admissionToken: UUID?
         for attempt in 0...20 {

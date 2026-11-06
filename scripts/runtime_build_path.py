@@ -22,6 +22,16 @@ def verify_build_args(source_root, args_gn, lock, project_root):
             raise ValueError('Expected exact recipient privacy build args path')
         checked_file(source_root, OUT + '/args.gn', contract['buildArgsSHA256'])
         return args_gn.resolve()
+    if version == '157.0.8103.39':
+        from chromium_157_release_evidence import verify_contract, verify_source_root
+        expected_157 = source_root / 'out/neantik157-port-smoke-correctargs3/args.gn'
+        if args_gn != expected_157 or args_gn.is_symlink():
+            raise ValueError('Expected exact M157 build args path')
+        verify_contract(project_root)
+        source = verify_source_root(source_root, project_root)
+        if hashlib.sha256(args_gn.read_bytes()).hexdigest() != source['buildArgsSHA256']:
+            raise ValueError('M157 build args digest mismatch')
+        return expected_157.resolve()
     relative = 'out/Default/args.gn'
     digest = None
     m154_evidence = {
@@ -32,6 +42,7 @@ def verify_build_args(source_root, args_gn, lock, project_root):
         '156.0.8078.48': 'chromium-15648',
         '156.0.8078.74': 'chromium-15674',
         '156.0.8078.80': 'chromium-15680',
+        '157.0.8103.39': 'chromium-157',
     }
     # Every newer port needs its own reviewed source/args binding. Never let
     # an unknown major silently use the historical out/Default convention.

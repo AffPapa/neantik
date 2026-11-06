@@ -112,6 +112,12 @@ def expected_candidate_lock(
             return expected_m15680(provenance_path, project_root)
         except (OSError, ValueError) as error:
             raise SourceProvenanceError(str(error)) from error
+    if version == "157.0.8103.39":
+        from chromium_157_release_evidence import expected_lock as expected_m157
+        try:
+            return expected_m157(provenance_path, project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
     elif version == "154.0.8037.98":
         verify_document(provenance, project_root=project_root)
         return load_object(
@@ -240,6 +246,12 @@ def verify_candidate_lock(
         from chromium_15680_release_evidence import verify_lock as verify_m15680
         try:
             return verify_m15680(actual, provenance_path, project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+    if provenance.get("targetChromiumVersion") == "157.0.8103.39":
+        from chromium_157_release_evidence import verify_lock as verify_m157
+        try:
+            return verify_m157(actual, provenance_path, project_root)
         except (OSError, ValueError) as error:
             raise SourceProvenanceError(str(error)) from error
     if provenance.get("targetChromiumVersion") == "154.0.8037.93":

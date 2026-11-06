@@ -139,7 +139,41 @@ trap 'cleanup $?' EXIT
 
 export NEANTIK_CHROMIUM_SOURCE_ROOT="$SOURCE_ROOT"
 CHROMIUM_SIGNING_CONFIG="$CHROMIUM_OUT_DIR/NeAntik Browser Packaging/signing/build_props_config.py"
-if [[ -f "$CHROMIUM_OUT_DIR/build.ninja" && -d "$(dirname "$RUNTIME_APP")/NeAntik Browser Packaging" ]]; then
+RUNTIME_VERSION="$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")"
+if [[ "$RUNTIME_VERSION" == "157.0.8103.39" ]]; then
+  if [[ ! -f "$CHROMIUM_OUT_DIR/build.ninja" || -L "$CHROMIUM_OUT_DIR/build.ninja" ||
+        "$(cd "$(dirname "$RUNTIME_APP")" && pwd -P)" != "$(cd "$CHROMIUM_OUT_DIR" && pwd -P)" ]]; then
+    echo "M157 runtime, args and generated build graph must share one safe GN output directory." >&2
+    exit 65
+  fi
+  NINJA_BIN="$SOURCE_ROOT/third_party/ninja/ninja"
+  if [[ -L "$CHROMIUM_OUT_DIR/.ninja_log" ||
+        (-e "$CHROMIUM_OUT_DIR/.ninja_log" && ! -f "$CHROMIUM_OUT_DIR/.ninja_log") ]]; then
+    echo "M157 Ninja log is unsafe; preserve the output and diagnose before retrying." >&2
+    exit 65
+  elif [[ ! -e "$CHROMIUM_OUT_DIR/.ninja_log" ]]; then
+    if [[ "${NEANTIK_RELEASE_CHANNEL:-}" != "public-alpha" ]]; then
+      echo "M157 production signing requires a valid Ninja log and pinned packaging outputs." >&2
+      exit 65
+    fi
+    # Do not trust a stale packaging directory or recreate a missing Ninja log.
+    # The existing manual public-alpha signer consumes exact pinned source-tree
+    # entitlements and avoids Chromium's unproven copied packaging helpers.
+    PACKAGING_DIR="$SIGNED_RUNTIME_ROOT/manual-public-alpha-signing-inputs"
+    echo "PASS: M157 missing-log recovery selected source-bound manual public-alpha signing; no Ninja action will run."
+  else
+    if [[ ! -x "$NINJA_BIN" || -L "$NINJA_BIN" ]]; then
+      echo "Pinned Chromium Ninja is unavailable; preserve the output and diagnose before retrying." >&2
+      exit 65
+    fi
+    "$NINJA_BIN" -C "$CHROMIUM_OUT_DIR" 'chrome/installer/mac:copies'
+    if [[ ! -f "$CHROMIUM_SIGNING_CONFIG" || -L "$CHROMIUM_SIGNING_CONFIG" ||
+          ! -f "$PACKAGING_DIR/sign_chrome.py" || -L "$PACKAGING_DIR/sign_chrome.py" ]]; then
+      echo "Chromium GN signing package was not regenerated safely." >&2
+      exit 65
+    fi
+  fi
+elif [[ -f "$CHROMIUM_OUT_DIR/build.ninja" && -d "$(dirname "$RUNTIME_APP")/NeAntik Browser Packaging" ]]; then
   if [[ "$(cd "$(dirname "$RUNTIME_APP")" && pwd -P)" != "$(cd "$CHROMIUM_OUT_DIR" && pwd -P)" ]]; then
     echo "Chromium runtime app and args.gn must share the selected GN output directory." >&2
     exit 65
@@ -160,9 +194,13 @@ if [[ -f "$CHROMIUM_OUT_DIR/build.ninja" && -d "$(dirname "$RUNTIME_APP")/NeAnti
       echo "Pinned Chromium Ninja or build log is unavailable; preserve the output and diagnose before retrying." >&2
       exit 65
     fi
-    "$NINJA_BIN" -C "$CHROMIUM_OUT_DIR" 'NeAntik Browser Packaging/signing/build_props_config.py'
+    "$NINJA_BIN" -C "$CHROMIUM_OUT_DIR" 'chrome/installer/mac:copies'
     if [[ ! -f "$CHROMIUM_SIGNING_CONFIG" || -L "$CHROMIUM_SIGNING_CONFIG" ]]; then
       echo "Chromium GN signing configuration was not regenerated safely." >&2
+      exit 65
+    fi
+    if [[ ! -f "$PACKAGING_DIR/sign_chrome.py" || -L "$PACKAGING_DIR/sign_chrome.py" ]]; then
+      echo "Chromium signing helper was not copied from the pinned source." >&2
       exit 65
     fi
   fi
@@ -187,6 +225,9 @@ elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDID
   if (( PRIVACY_DERIVATION == 1 )); then PRIVACY_VERIFY_ARGS+=(--runtime-lock "$CANDIDATE_LOCK"); fi
   python3 "$PROJECT_DIR/scripts/verify-chromium-15680-unsigned-candidate.py" \
     "$RUNTIME_APP" "$BUILD_ARGS" "$PROJECT_DIR/runtime/chromium-15680-source-adoption-v1.json" "${PRIVACY_VERIFY_ARGS[@]}"
+elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "157.0.8103.39" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-chromium-157-unsigned-candidate.py" \
+    "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_PROVENANCE"
 fi
 if (( PRIVACY_DERIVATION == 1 )); then
   export NEANTIK_RUNTIME_SIGNING_FRAMEWORK_SHA256="$(plutil -extract binaryBinding.unsignedFrameworkSHA256 raw -o - "$CANDIDATE_LOCK")"
@@ -232,6 +273,9 @@ if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDAT
 elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "156.0.8078.80" ]]; then
   # The integrated packager writes notices from this exact .80 lock. Do not
   # render the default notice file from the unrelated published runtime lock.
+  :
+elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "157.0.8103.39" ]]; then
+  # The integrated packager renders notices against this exact M157 lock.
   :
 else
   python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py"

@@ -10,6 +10,13 @@ SCRIPT = PROJECT_ROOT / "scripts" / "verify-built-runtime.sh"
 
 
 class VerifyBuiltRuntimeScriptTests(unittest.TestCase):
+    def test_m157_has_its_own_source_and_live_checkout_route(self) -> None:
+        script = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('[[ "$LOCK_VERSION" == "157.0.8103.39" ]]', script)
+        self.assertIn('IS_CHROMIUM_157=1', script)
+        self.assertIn('chromium-157-source-contract.json', script)
+        self.assertIn('IS_CHROMIUM_157 == 1', script)
+
     def test_current_chromium_15680_has_its_own_source_contract_route(self) -> None:
         script = SCRIPT.read_text(encoding="utf-8")
 

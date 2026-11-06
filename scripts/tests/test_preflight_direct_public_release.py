@@ -35,6 +35,40 @@ VERIFIER_SPEC.loader.exec_module(VERIFIER_FIXTURES)
 
 
 class DirectPublicReleasePreflightTests(unittest.TestCase):
+    def test_m157_preflight_uses_pinned_provenance_and_lock_verifiers(self):
+        import chromium_157_release_evidence
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            contract_path = root / "contract.json"
+            contract_path.write_text('{"binaryBindingStatus":"pending-runtime-report","schemaVersion":1}')
+            args = root / "args.gn"
+            args.write_text("angle_enable_metal=true\n")
+            provenance_path = root / "source-provenance.json"
+            provenance_path.write_text("{}")
+            provenance = {
+                "sourceContractSHA256": MODULE.sha256_file(contract_path),
+                "buildArgsSHA256": MODULE.sha256_file(args),
+            }
+            lock = {"schemaVersion": 4}
+            kwargs = dict(
+                runtime_version="157.0.8103.39",
+                contract={"schemaVersion": 1, "binaryBindingStatus": "pending-runtime-report"},
+                contract_path=contract_path,
+                provenance=provenance,
+                candidate_lock=lock,
+                project_root=root,
+                args_gn=args,
+                provenance_path=provenance_path,
+            )
+            with mock.patch.object(chromium_157_release_evidence, "verify_provenance") as verify_source, \
+                 mock.patch.object(chromium_157_release_evidence, "verify_lock") as verify_lock:
+                MODULE.verify_source_contract_binding(**kwargs)
+                verify_source.assert_called_once_with(provenance, root)
+                verify_lock.assert_called_once_with(lock, provenance_path, root)
+                args.write_text("angle_enable_metal=false\n")
+                with self.assertRaisesRegex(ValueError, "packaged args differ"):
+                    MODULE.verify_source_contract_binding(**kwargs)
+
     def test_m15680_preflight_requires_exact_source_contract_and_args(self):
         import chromium_15680_release_evidence
         with tempfile.TemporaryDirectory() as temporary:
