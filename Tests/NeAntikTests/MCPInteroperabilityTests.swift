@@ -111,6 +111,37 @@ struct MCPInteroperabilityTests {
         #expect(genericWire.contains("operation_unavailable"))
         #expect(!genericWire.contains("Existing data retained") && !genericWire.contains("secret-token"))
     }
+
+    @Test func browserRuntimeLaunchFailuresHaveDistinctSafeCodes() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("mcp-runtime-error-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let unavailable = MCPManagementSession(
+            root: root,
+            testingToolFailure: MCPProfileManagement.Failure.browserRuntimeUnavailable
+        )
+        let unavailableReply = try await request(unavailable, "tools/call", [
+            "name": "profile_start", "arguments": [:]
+        ], modern: true)
+        let unavailableResult = try #require(unavailableReply["result"] as? [String: Any])
+        let unavailableMeta = try #require(unavailableResult["_meta"] as? [String: Any])
+        #expect(unavailableMeta["app.neantik/errorCode"] as? String == "browser_runtime_unavailable")
+        #expect(unavailableMeta["app.neantik/automaticRetry"] as? Bool == false)
+
+        let preflight = MCPManagementSession(
+            root: root,
+            testingToolFailure: MCPProfileManagement.Failure.browserRuntimePreflightFailed
+        )
+        let preflightReply = try await request(preflight, "tools/call", [
+            "name": "profile_start", "arguments": [:]
+        ], modern: true)
+        let preflightResult = try #require(preflightReply["result"] as? [String: Any])
+        let preflightMeta = try #require(preflightResult["_meta"] as? [String: Any])
+        #expect(preflightMeta["app.neantik/errorCode"] as? String == "browser_runtime_preflight_failed")
+        #expect(preflightMeta["app.neantik/automaticRetry"] as? Bool == false)
+        let wire = String(decoding: try JSONSerialization.data(withJSONObject: preflightReply), as: UTF8.self)
+        #expect(!wire.contains("/private/") && !wire.contains("secret"))
+    }
     #endif
     func request(_ session: MCPManagementSession, _ method: String, _ params: [String: Any] = [:], modern: Bool = false, id: Int = 1) async throws -> [String: Any] {
         var params = params
