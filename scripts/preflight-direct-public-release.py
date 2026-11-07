@@ -369,9 +369,19 @@ def verify_direct_public_release_plan(
         runtime_version = str(runtime_plist["CFBundleShortVersionString"])
         if not version_at_least(runtime_version, minimum):
             raise ValueError(f"runtime {runtime_version} is below public baseline {minimum}")
-        reviewed = verify_runtime_security_branch(runtime_version, runtime_lock, baseline)
-        suffix = "; source-bound branch security review verified" if reviewed else ""
-        return f"{runtime_version} >= {minimum}{suffix}"
+        try:
+            return RUNTIME_SECURITY.verify(
+                runtime_lock,
+                project_root / "runtime" / "security-baseline.json",
+                RUNTIME_SECURITY.datetime.now(
+                    RUNTIME_SECURITY.timezone.utc
+                ).date(),
+                allow_public_alpha_tuples=(
+                    effective_release_channel == "public-alpha"
+                ),
+            )
+        except SystemExit as error:
+            raise ValueError(str(error)) from error
 
     def runtime_identity() -> str:
         if not runtime_app.is_dir():
