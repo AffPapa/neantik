@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-11-06",
+  "checkedAt": "2026-11-07",
   "publishedAt": "2026-11-03",
   "maximumAgeDays": 0,
   "minimumPublicChromiumVersion": "157.0.8103.39",
@@ -16,7 +16,7 @@
   "referenceTitle": "Stable Channel Update for Desktop",
   "sourceLabel": "Chrome Releases",
   "releaseBoundary": "This manually pinned primary-source security baseline is not a live updater. Refresh checkedAt, versions, securityFixCount and reference on the day of every public Direct release. The official Chrome post reports 213 security fixes, but that upstream count alone does not verify fix survival in NeAntik's custom port or binary. This baseline is a source-version floor, not a security audit or release qualification.",
-  "policy": "The 2026-11-03 Chrome Stable desktop release lists 157.0.8103.38/.39 for Windows and Mac and reports 213 security fixes: 7 Critical, 77 High, 75 Medium and 54 Low in the pinned advisory inventory. NeAntik targets the official 157.0.8103.39 source commit for macOS arm64. The port review found source indicators for some issues and unresolved mappings for others; exact candidate binary, runtime and issue-specific test evidence remain separate release gates.",
+  "policy": "As rechecked on 2026-11-07, the 2026-11-03 Chrome Stable desktop release lists 157.0.8103.38/.39 for Windows and Mac and reports 213 security fixes: 7 Critical, 77 High, 75 Medium and 54 Low in the pinned advisory inventory. The 2026-11-04 Early Stable post lists 158.0.8127.18/.19 for Windows and says Mac is coming shortly, so 157.0.8103.39 remains the latest observed official macOS Stable version. NeAntik targets the official 157.0.8103.39 source commit for macOS arm64. The port review found source indicators for some issues and unresolved mappings for others; exact candidate binary, runtime and issue-specific test evidence remain separate release gates.",
   "securityFixCountStatus": "count-reported-by-official-post",
   "securityFixSeverityCounts": {
     "Critical": 7,
