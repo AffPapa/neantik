@@ -3,6 +3,8 @@ import Foundation
 /// A small, privacy-safe projection for showing when a proxy check was run.
 /// It deliberately contains no endpoint, address, location, or raw error data.
 struct ProxyCheckSummary: Equatable, Sendable {
+    static let routeScopeNotice = "Проверка доступности прокси не подтверждает маршрут окна Chromium."
+
     enum Status: Equatable, Sendable {
         case neverChecked
         case incompleteContext
@@ -56,13 +58,13 @@ struct ProxyCheckSummary: Equatable, Sendable {
 
     var title: String {
         switch status {
-        case .neverChecked: "Прокси ещё не проверялся"
+        case .neverChecked: "Доступность прокси ещё не проверялась"
         case .incompleteContext: "Прокси отвечает; часовой пояс и язык не определены. Повтори проверку перед запуском."
-        case .currentSuccess: "Проверка прокси прошла"
-        case .staleSuccess: "Проверка прокси устарела"
-        case .latestCheckFailed: "Последняя проверка не прошла"
-        case .clockUncertain: "Время проверки не подтверждено"
-        case .configurationChanged: "Настройки прокси изменились"
+        case .currentSuccess: "Проверка доступности прокси прошла"
+        case .staleSuccess: "Проверка доступности прокси устарела"
+        case .latestCheckFailed: "Последняя проверка доступности прокси не прошла"
+        case .clockUncertain: "Время проверки доступности прокси не подтверждено"
+        case .configurationChanged: "Настройки прокси изменились; результат проверки не актуален"
         }
     }
 }

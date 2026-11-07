@@ -36,6 +36,13 @@ struct ProxyCheckSummaryTests {
     }
 
     @Test
+    func proxyAvailabilityNeverClaimsTheChromiumWindowRoute() {
+        let fresh = summary(record: record(at: now))
+        #expect(fresh.title == "Проверка доступности прокси прошла")
+        #expect(ProxyCheckSummary.routeScopeNotice.contains("не подтверждает маршрут окна Chromium"))
+    }
+
+    @Test
     func advancingOnlyThePresentationClockExpiresTheSameCachedSuccess() {
         let cached = record(at: now)
         let before = ProxyCheckSummary(record: cached, currentIdentity: identity,
