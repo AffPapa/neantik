@@ -1,5 +1,6 @@
 import importlib.util
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -27,6 +28,33 @@ class Chromium157ReleaseEvidenceTests(unittest.TestCase):
         self.assertEqual(contract["portSource"]["buildArgsPath"], MODULE.ARGS_RELATIVE_PATH)
         self.assertEqual(contract["binaryBindingStatus"], "pending-runtime-report")
         self.assertFalse(contract["releaseReady"])
+
+    def test_historical_runtime_baseline_survives_fresh_publication_baseline(self):
+        contract = MODULE.verify_contract(PROJECT_ROOT)
+        historical = PROJECT_ROOT / "runtime" / "security-baselines" / (
+            contract["securityBaselineSHA256"] + ".json"
+        )
+        current = PROJECT_ROOT / "runtime" / "security-baseline.json"
+
+        self.assertTrue(historical.is_file())
+        self.assertEqual(MODULE._sha(historical), contract["securityBaselineSHA256"])
+        self.assertNotEqual(MODULE._sha(current), contract["securityBaselineSHA256"])
+
+    def test_source_lock_keeps_contract_baseline_not_daily_publication_baseline(self):
+        contract = MODULE.verify_contract(PROJECT_ROOT)
+        with tempfile.TemporaryDirectory() as temporary:
+            provenance = Path(temporary) / "source-provenance.json"
+            provenance.write_text('{"schemaVersion":1}\n', encoding="utf-8")
+            with patch.object(MODULE, "verify_provenance"):
+                expected = MODULE.expected_lock(provenance, PROJECT_ROOT)
+        self.assertEqual(
+            expected["ownedManifests"]["securityBaselineSHA256"],
+            contract["securityBaselineSHA256"],
+        )
+        self.assertNotEqual(
+            expected["ownedManifests"]["securityBaselineSHA256"],
+            MODULE._sha(PROJECT_ROOT / "runtime" / "security-baseline.json"),
+        )
 
     def test_provenance_binds_product_build_focused_tests_and_aggregate_blocker(self):
         with patch.object(MODULE, "verify_source_root", return_value={

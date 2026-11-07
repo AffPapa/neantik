@@ -190,8 +190,14 @@ def verify_contract(project_root: Path) -> dict[str, Any]:
     if contract.get("chromiumLicenseSHA256") != _sha(license_path):
         raise M157EvidenceError("Chromium 157 license digest mismatch")
     baseline_path = runtime / "security-baseline.json"
-    if contract.get("securityBaselineSHA256") != _sha(baseline_path):
-        raise M157EvidenceError("Chromium 157 security baseline digest is stale")
+    contract_baseline = contract.get("securityBaselineSHA256")
+    if not isinstance(contract_baseline, str) or not re.fullmatch(r"[0-9a-f]{64}", contract_baseline):
+        raise M157EvidenceError("Chromium 157 source contract baseline digest is invalid")
+    if contract_baseline != _sha(baseline_path):
+        historical_baseline = runtime / "security-baselines" / f"{contract_baseline}.json"
+        if (historical_baseline.parent.is_symlink() or historical_baseline.is_symlink()
+                or not historical_baseline.is_file() or _sha(historical_baseline) != contract_baseline):
+            raise M157EvidenceError("Chromium 157 source contract baseline is neither current nor hash-verified historical evidence")
     if contract.get("buildEvidenceFile") != "runtime/" + BUILD_EVIDENCE:
         raise M157EvidenceError("Chromium 157 build evidence path mismatch")
     if contract.get("binaryBindingStatus") == "pending-build":
@@ -388,7 +394,12 @@ def expected_lock(provenance_path: Path, project_root: Path) -> dict[str, Any]:
         "ownedManifests": {
             "neantikPatchSeriesSHA256": _sha(project_root.resolve() / "runtime/nevision-patches/series.json"),
             "appleDeviceTuplesSHA256": _sha(project_root.resolve() / "runtime/apple-device-tuples.json"),
-            "securityBaselineSHA256": _sha(project_root.resolve() / "runtime/security-baseline.json"),
+            # The runtime lock binds the baseline used by this immutable source
+            # contract. The fresh publication baseline is checked separately
+            # by verify-runtime-security-baseline.py and packaged as
+            # release-security-baseline.json; refreshing it must not invalidate
+            # a built runtime's source provenance.
+            "securityBaselineSHA256": contract["securityBaselineSHA256"],
         },
         "binaryBinding": {"status": "not-attested-by-this-document",
                           "requiredEvidence": "schema-3-runtime-report",
