@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from datetime import timedelta
 from pathlib import Path
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
@@ -102,6 +103,40 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
         # A mismatched lock cannot supply a review for another binary version.
         with self.assertRaisesRegex(ValueError, "does not match"):
             MODULE.verify_runtime_security_branch("156.0.8078.39", lock, baseline)
+
+    def test_runtime_security_gate_rejects_stale_primary_source_baseline(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            integrated, runtime, args_gn, gui_report, runtime_lock = (
+                write_fixture_project(root, security_baseline_age_days=1)
+            )
+            results = MODULE.verify_direct_public_release_plan(
+                project_root=root,
+                integrated_app=integrated,
+                runtime_app=runtime,
+                args_gn=args_gn,
+                gui_fingerprint_report=gui_report,
+                runtime_lock=runtime_lock,
+                download_url=(
+                    "https://downloads.neantik.app/"
+                    "NeAntik-1.2.3-arm64-notarized.zip"
+                ),
+                release_channel="public-alpha",
+                env={
+                    "NEANTIK_SIGNING_IDENTITY": (
+                        "Developer ID Application: Example (TEAMID)"
+                    ),
+                    "NEANTIK_NOTARY_PROFILE": "nevision-notary",
+                },
+            )
+
+        blocked = {
+            result.name: result.details
+            for result in results
+            if not result.passed
+        }
+        self.assertIn("Runtime security baseline", blocked)
+        self.assertIn("stale (1 days old; maximum 0)", blocked["Runtime security baseline"])
 
     def test_doctor_cli_prevents_real_descendant_bytecode_even_without_parent_environment(self):
         with tempfile.TemporaryDirectory(prefix='neantik-own-doctor-child-') as directory:
@@ -558,7 +593,9 @@ def write_plist(path: Path, values: dict) -> None:
         plistlib.dump(values, file)
 
 
-def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
+def write_fixture_project(
+    root: Path, *, security_baseline_age_days: int = 0
+) -> tuple[Path, Path, Path, Path, Path]:
     write_plist(
         root / "Resources" / "Info.plist",
         {
@@ -569,8 +606,30 @@ def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
     )
     baseline = root / "runtime" / "security-baseline.json"
     baseline.parent.mkdir(parents=True)
+    checked = (
+        MODULE.RUNTIME_SECURITY.datetime.now(
+            MODULE.RUNTIME_SECURITY.timezone.utc
+        ).date()
+        - timedelta(days=security_baseline_age_days)
+    )
     baseline.write_text(
-        json.dumps({"minimumPublicChromiumVersion": "150.0.7871.186"}),
+        json.dumps(
+            {
+                "schemaVersion": 1,
+                "checkedAt": checked.isoformat(),
+                "publishedAt": checked.isoformat(),
+                "maximumAgeDays": 0,
+                "minimumPublicChromiumVersion": "150.0.7871.186",
+                "alsoObservedPublicChromiumVersions": [],
+                "channel": "Desktop Stable",
+                "platforms": ["macOS"],
+                "securityFixCount": 0,
+                "reference": "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop.html",
+                "referenceTitle": "Stable Channel Update for Desktop",
+                "sourceLabel": "Chrome Releases",
+                "releaseBoundary": "This is not a live updater. Refresh before every public Direct release.",
+            }
+        ),
         encoding="utf-8",
     )
     releases = root / "releases"
@@ -677,6 +736,9 @@ def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
                 "sourceContractSHA256": MODULE.sha256_file(source_contract),
                 "sourceProvenanceSHA256":
                     MODULE.sha256_file(source_provenance),
+                "verification": {
+                    "coherentAppleDeviceTuples": "verified",
+                },
             }
         ),
         encoding="utf-8",
