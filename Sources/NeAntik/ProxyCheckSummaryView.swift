@@ -7,6 +7,9 @@ struct ProxyCheckSummaryView: View {
         VStack(alignment: .leading, spacing: 3) {
             Text(summary.title)
                 .font(.subheadline)
+            Text(ProxyCheckSummary.routeScopeNotice)
+                .font(.caption)
+                .foregroundStyle(.secondary)
             if let checkedAt = summary.checkedAt {
                 Text("Последняя проверка: \(checkedAt, style: .relative)")
                     .font(.caption)
@@ -25,10 +28,11 @@ struct ProxyCheckSummaryView: View {
     }
 
     private var accessibilitySummary: String {
+        var value = "\(summary.title). \(ProxyCheckSummary.routeScopeNotice)"
         guard let checkedAt = summary.checkedAt else {
-            return summary.title
+            return value
         }
-        var value = "\(summary.title). Последняя проверка: \(checkedAt.formatted(date: .abbreviated, time: .shortened))."
+        value += " Последняя проверка: \(checkedAt.formatted(date: .abbreviated, time: .shortened))."
         if summary.status == .latestCheckFailed,
            let lastSuccessfulCheckAt = summary.lastSuccessfulCheckAt
         {
