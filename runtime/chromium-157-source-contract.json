@@ -159,7 +159,7 @@
     "status": "verified by CURRENT-linked Chromium 157 sync receipt"
   },
   "chromiumLicenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
-  "securityBaselineSHA256": "793f6d541b4ab206efe4185b2a6e13b504ae8bf2f15e151144bcfe6494ada3ac",
+  "securityBaselineSHA256": "1aa692ad87db06a5843fa420b6ebdd22a24aea2a3b93b2b4c6d92cb3f7a85909",
   "buildEvidenceFile": "runtime/chromium-157-build-evidence.json",
   "buildEvidenceSHA256": "480d7e9e1603d750e0a428a01de73e55831864965637b00d36e318e77e2ed928",
   "sourcePatchManifestSHA256": "26a2856cd6cb3acb97283898ef415be3c0afc0d2239028ffaebda0525dd17e43"
