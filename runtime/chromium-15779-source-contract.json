@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "targetChromiumVersion": "157.0.8103.79",
+  "targetArchitecture": "arm64",
+  "releaseReady": false,
+  "sourceMode": "official-chromium-stable-with-reviewed-neantik-port",
+  "status": "source-pins-verified-build-pending",
+  "binaryBindingStatus": "pending-build",
+  "officialChromiumBase": {
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "157.0.8103.79",
+    "commit": "6dc9bc3bdaea5c35ed6d41fceab2f7a3a2227c4f",
+    "tree": "76343b515ca111daccb8748d83742c25265a925d"
+  },
+  "portSource": {
+    "head": "548d081a08839e902272be2caf92b298081cd988",
+    "tree": "852c95983dba3a2f966d58e4ab5c1846b8ce7b5c",
+    "sourcePatchSHA256": "3ca33eeb364c3f555b87544da05bc1e3e18b449b4290bb654ef001da89da6a16",
+    "changedPaths": 740,
+    "depsBlob": "5a1b6829a2cdef9a993cb9cc49a49ebc7ecb300a",
+    "buildArgsPath": "out/NeAntik15779/args.gn",
+    "buildArgsSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e",
+    "buildOutputDirectory": "out/NeAntik15779"
+  },
+  "rebasePlan": "runtime/chromium-15779-rebase-plan.json",
+  "rebasePlanSHA256": "462294dfb7a8ea9e6db54c15ff47817c4833665e13ff3291516b69d2d26a02cd",
+  "chromiumLicenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b"
+}

@@ -47,7 +47,9 @@ CHROMIUM_15648_VERSION = "156.0.8078.48"
 CHROMIUM_15674_VERSION = "156.0.8078.74"
 CHROMIUM_15680_VERSION = "156.0.8078.80"
 CHROMIUM_157_VERSION = "157.0.8103.39"
+CHROMIUM_15779_VERSION = "157.0.8103.79"
 CONTRACT_SOURCE_VERSIONS = {
+    CHROMIUM_15779_VERSION: ("chromium-15779-source-contract.json", "chromium-15779-rebase-plan.json"),
     CHROMIUM_157_VERSION: ("chromium-157-source-contract.json", "chromium-157-rebase-plan.json"),
     CHROMIUM_15648_VERSION: ("chromium-15648-source-contract.json", "chromium-15648-rebase-plan.json"),
     CHROMIUM_15674_VERSION: ("chromium-15674-source-contract.json", "chromium-15674-rebase-plan.json"),
@@ -219,6 +221,16 @@ def verify_contract(
     contract = load_object(contract_path, "Chromium source contract")
     plan = load_object(rebase_plan_path, "Chromium rebase plan")
     ensure_no_stale_markers(contract, "Chromium source contract")
+
+    if contract.get("targetChromiumVersion") == CHROMIUM_15779_VERSION:
+        from chromium_15779_source import verify_contract as verify_m15779
+        expected = contract_paths_for_version(CHROMIUM_15779_VERSION, project_root=project_root)
+        if (contract_path, rebase_plan_path) != expected:
+            raise SourceProvenanceError("Chromium .79 requires its canonical source contract and plan")
+        try:
+            return verify_m15779(project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
 
     if contract.get("targetChromiumVersion") == CHROMIUM_15648_VERSION:
         from chromium_15648_release_evidence import verify_contract as verify_m15648
@@ -566,6 +578,13 @@ def build_provenance(
         raise SourceProvenanceError(
             f"Chromium source root does not exist: {source_root}"
         )
+    if chromium_version(source_root) == CHROMIUM_15779_VERSION:
+        from chromium_15779_source import verify_contract as verify_m15779
+        try:
+            verify_m15779(project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+        raise SourceProvenanceError("Chromium .79 source is pinned and awaits exact completed build evidence")
     if chromium_version(source_root) == CHROMIUM_157_VERSION:
         from chromium_157_release_evidence import build_provenance as build_m157
         try:

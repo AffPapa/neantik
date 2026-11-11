@@ -22,6 +22,13 @@ def verify_build_args(source_root, args_gn, lock, project_root):
             raise ValueError('Expected exact recipient privacy build args path')
         checked_file(source_root, OUT + '/args.gn', contract['buildArgsSHA256'])
         return args_gn.resolve()
+    if version == '157.0.8103.79':
+        from chromium_15779_source import SOURCE, verify_source_root
+        expected = source_root / SOURCE['buildArgsPath']
+        if args_gn != expected or args_gn.is_symlink():
+            raise ValueError('Expected exact Chromium .79 build args path')
+        verify_source_root(source_root, project_root)
+        return expected.resolve()
     if version == '157.0.8103.39':
         from chromium_157_release_evidence import verify_contract, verify_source_root
         expected_157 = source_root / 'out/neantik157-port-smoke-correctargs3/args.gn'
