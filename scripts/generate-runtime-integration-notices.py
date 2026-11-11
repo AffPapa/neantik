@@ -229,17 +229,22 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path,
         lines.extend(["", "## Qualification boundary", "",
                       "This notice identifies the source and license bytes used for this candidate. It does not itself establish runtime behavior, license applicability decisions, signing, notarization, Gatekeeper acceptance, or publication.", ""])
         return "\n".join(lines)
-    if version == "157.0.8103.39":
-        from chromium_157_release_evidence import M157EvidenceError, verify_lock
+    if version in {"157.0.8103.39", "157.0.8103.79"}:
+        if version == "157.0.8103.79":
+            from chromium_15779_source import CONTRACT, verify_lock
+            patch_key = "sourcePatchSHA256"
+        else:
+            from chromium_157_release_evidence import CONTRACT, verify_lock
+            patch_key = "sourcePatchManifestSHA256"
 
         provenance = source_provenance or runtime_lock.parent / "source-provenance.json"
         try:
             verify_lock(lock, provenance, project_root)
-        except M157EvidenceError as error:
+        except (OSError, ValueError) as error:
             raise RuntimeNoticesError(
                 f"Chromium 157 source evidence verification failed: {error}"
             ) from error
-        contract_path = project_root / "runtime/chromium-157-source-contract.json"
+        contract_path = project_root / "runtime" / CONTRACT
         if lock.get("sourceContractSHA256") != sha256_file(contract_path):
             raise RuntimeNoticesError("Chromium 157 source contract digest mismatch")
         contract = load_json(contract_path)
@@ -260,7 +265,7 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path,
             f"- Chromium: `{version}`",
             f"- Official source: `{chromium_base['repository']}`",
             f"- Commit: `{chromium_base['commit']}`; tree: `{chromium_base['tree']}`",
-            f"- NeAntik source patch SHA-256: `{contract['portSource']['sourcePatchManifestSHA256']}`",
+            f"- NeAntik source patch SHA-256: `{contract['portSource'][patch_key]}`",
             f"- Build configuration SHA-256: `{contract['portSource']['buildArgsSHA256']}`",
             f"- Candidate lock SHA-256: `{sha256_file(runtime_lock)}`",
             f"- Source contract SHA-256: `{sha256_file(contract_path)}`",

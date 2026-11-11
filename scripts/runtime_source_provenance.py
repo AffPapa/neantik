@@ -579,12 +579,11 @@ def build_provenance(
             f"Chromium source root does not exist: {source_root}"
         )
     if chromium_version(source_root) == CHROMIUM_15779_VERSION:
-        from chromium_15779_source import verify_contract as verify_m15779
+        from chromium_15779_source import build_provenance as build_m15779
         try:
-            verify_m15779(project_root)
+            return build_m15779(source_root, project_root)
         except (OSError, ValueError) as error:
             raise SourceProvenanceError(str(error)) from error
-        raise SourceProvenanceError("Chromium .79 source is pinned and awaits exact completed build evidence")
     if chromium_version(source_root) == CHROMIUM_157_VERSION:
         from chromium_157_release_evidence import build_provenance as build_m157
         try:
@@ -1000,6 +999,13 @@ def verify_document(
         except (OSError, ValueError) as error:
             raise SourceProvenanceError(str(error)) from error
         return
+    if document.get("targetChromiumVersion") == CHROMIUM_15779_VERSION:
+        from chromium_15779_source import verify_provenance as verify_m15779
+        try:
+            verify_m15779(document, project_root)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+        return
     if document.get("targetChromiumVersion") == CHROMIUM_157_VERSION:
         from chromium_157_release_evidence import verify_provenance as verify_m157
         try:
@@ -1153,6 +1159,13 @@ def verify_runtime_lock_for_new_candidate(
                     project_root / "runtime/chromium-15680-source-contract.json"):
                 raise ValueError("Chromium 156.80 runtime lock source contract mismatch")
             verify_portable_lock(project_root, lock)
+        except (OSError, ValueError) as error:
+            raise SourceProvenanceError(str(error)) from error
+        return
+    if version == CHROMIUM_15779_VERSION:
+        from chromium_15779_source import verify_lock_contract
+        try:
+            verify_lock_contract(lock, project_root)
         except (OSError, ValueError) as error:
             raise SourceProvenanceError(str(error)) from error
         return

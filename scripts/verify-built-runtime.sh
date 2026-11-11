@@ -91,6 +91,9 @@ elif [[ "$LOCK_VERSION" == "156.0.8078.80" ]]; then
   if [[ "$(plutil -extract variant raw -o - "$LOCK_VERSION_SOURCE" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ]]; then
     SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-15680-privacy-v1-source-contract.json"
   fi
+elif [[ "$LOCK_VERSION" == "157.0.8103.79" ]]; then
+  IS_CHROMIUM_157=1
+  SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-15779-source-contract.json"
 elif [[ "$LOCK_VERSION" == "157.0.8103.39" ]]; then
   IS_CHROMIUM_157=1
   SOURCE_CONTRACT_FILE="$SCRIPT_DIR/../runtime/chromium-157-source-contract.json"

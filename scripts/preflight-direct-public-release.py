@@ -181,8 +181,11 @@ def verify_source_contract_binding(
         if provenance.get("buildArgsSHA256") != sha256_file(args_gn):
             raise ValueError("M156.80 packaged args differ from reviewed build inputs")
         return
-    if runtime_version == "157.0.8103.39":
-        from chromium_157_release_evidence import verify_lock, verify_provenance
+    if runtime_version in {"157.0.8103.39", "157.0.8103.79"}:
+        if runtime_version == "157.0.8103.79":
+            from chromium_15779_source import verify_lock, verify_provenance
+        else:
+            from chromium_157_release_evidence import verify_lock, verify_provenance
 
         if (
             contract.get("schemaVersion") != 1

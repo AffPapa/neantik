@@ -301,6 +301,9 @@ def source_evidence_paths(
         name = ("chromium-15680-privacy-v1-source-contract.json"
                 if lock.get("variant") == "recipient-privacy-policy-v1" else "chromium-15680-source-contract.json")
         return (evidence / "fingerprint-chromium.lock.json", evidence / name)
+    if runtime_version == "157.0.8103.79":
+        return (evidence / "fingerprint-chromium.lock.json",
+                evidence / "chromium-15779-source-contract.json")
     if runtime_version == "157.0.8103.39":
         return (evidence / "fingerprint-chromium.lock.json",
                 evidence / "chromium-157-source-contract.json")
@@ -350,9 +353,17 @@ def verify_m15680_source_evidence(evidence: Path, project_root: Path) -> None:
 
 
 def verify_m157_source_evidence(evidence: Path, project_root: Path,
-                                executable: Path, framework: Path) -> None:
+                                executable: Path, framework: Path,
+                                runtime_version: str = "157.0.8103.39") -> None:
     """Require frozen M157 source/build evidence to bind packaged bytes."""
-    import chromium_157_release_evidence as m157
+    if runtime_version == "157.0.8103.79":
+        import chromium_15779_source as m157
+        source_files = (m157.PLAN, m157.BUILD_EVIDENCE)
+        args_sha256 = m157.SOURCE["buildArgsSHA256"]
+    else:
+        import chromium_157_release_evidence as m157
+        source_files = (m157.ADOPTION, m157.PLAN, m157.BUILD_EVIDENCE)
+        args_sha256 = m157.ARGS_SHA256
 
     packaged_lock = load_json(evidence / "fingerprint-chromium.lock.json")
     try:
@@ -372,8 +383,8 @@ def verify_m157_source_evidence(evidence: Path, project_root: Path,
             "Packaged Chromium 157 source contract differs from reviewed evidence"
         )
 
-    source_evidence = evidence / "chromium-157-source-evidence"
-    for name in (m157.ADOPTION, m157.PLAN, m157.BUILD_EVIDENCE):
+    source_evidence = evidence / f"{m157.PREFIX}-source-evidence"
+    for name in source_files:
         packaged = source_evidence / name
         reviewed = runtime / name
         if (packaged.is_symlink() or not packaged.is_file()
@@ -388,7 +399,7 @@ def verify_m157_source_evidence(evidence: Path, project_root: Path,
     if (args.is_symlink() or not args.is_file()
             or packaged_args.is_symlink() or not packaged_args.is_file()
             or args.read_bytes() != packaged_args.read_bytes()
-            or sha256(args) != m157.ARGS_SHA256):
+            or sha256(args) != args_sha256):
         raise PackagedRuntimeReportError(
             "Packaged Chromium 157 GN args differ from the reviewed build input"
         )
@@ -584,8 +595,8 @@ def verify(
 
     if runtime_version == "156.0.8078.80":
         verify_m15680_source_evidence(evidence, project_root)
-    elif runtime_version == "157.0.8103.39":
-        verify_m157_source_evidence(evidence, project_root, executable, framework)
+    elif runtime_version in {"157.0.8103.39", "157.0.8103.79"}:
+        verify_m157_source_evidence(evidence, project_root, executable, framework, runtime_version)
 
     if runtime_version == "156.0.8078.12":
         from chromium_15612_variant import reviewed_lock_prefix, SUCCESSOR_PREFIXES

@@ -61,7 +61,7 @@ resolve_source_provenance() {
   packaged_version="$(plutil -extract fingerprintChromium.chromiumVersion raw -o - \
     "$SOURCE_APP/Contents/Resources/NeAntikRuntimeEvidence/fingerprint-chromium.lock.json" \
     2>/dev/null || true)"
-  if [[ "$packaged_version" == "157.0.8103.39" ]]; then
+  if [[ "$packaged_version" == "157.0.8103.39" || "$packaged_version" == "157.0.8103.79" ]]; then
     local packaged_provenance="$SOURCE_APP/Contents/Resources/NeAntikRuntimeEvidence/source-provenance.json"
     if [[ -f "$packaged_provenance" && ! -L "$packaged_provenance" ]]; then
       echo "$packaged_provenance"
@@ -168,6 +168,9 @@ verify_reviewed_runtime_evidence() {
           ;;
       esac
       ;;
+    157.0.8103.79)
+      source_contract="$PROJECT_DIR/runtime/chromium-15779-source-contract.json"
+      ;;
     157.0.8103.39)
       source_contract="$PROJECT_DIR/runtime/chromium-157-source-contract.json"
       ;;
@@ -224,6 +227,11 @@ verify_reviewed_runtime_evidence() {
     local name
     for name in chromium-15674-source-adoption-v1.json chromium-15674-deps-lock.json chromium-15674-neantik.patch chromium-15674-devtools-typescript6.patch chromium-15674-v8-scope-iterator-compat.patch chromium-15674-rebase-plan.json chromium-15674-build-evidence.json chromium-15674-args.gn; do
       comparisons+=("$PROJECT_DIR/runtime/$name:$evidence/chromium-15674-source-evidence/$name")
+    done
+  elif [[ "$runtime_version" == "157.0.8103.79" ]]; then
+    local name
+    for name in chromium-15779-rebase-plan.json chromium-15779-build-evidence.json; do
+      comparisons+=("$PROJECT_DIR/runtime/$name:$evidence/chromium-15779-source-evidence/$name")
     done
   elif [[ "$runtime_version" == "157.0.8103.39" ]]; then
     local name
