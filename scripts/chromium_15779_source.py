@@ -142,7 +142,8 @@ def _validate_build_evidence(evidence: dict) -> None:
         "ninjaExitCode": 0,
         "releaseReady": False,
     }
-    hashes = ("buildLogSHA256", "ninjaLogSHA256", "browserExecutableSHA256", "frameworkSHA256")
+    hashes = ("buildLogSHA256", "ninjaLogSHA256", "browserExecutableSHA256", "frameworkSHA256",
+              "signingInputsSHA256")
     counts = ("ninjaActionsCompleted", "ninjaActionsExpected")
     if (not isinstance(evidence, dict) or set(evidence) != set(required) | set(hashes) | set(counts)
             or any(type(evidence[key]) is not type(value) or evidence[key] != value for key, value in required.items())
@@ -222,6 +223,7 @@ def build_provenance(source_root: Path, project_root: Path) -> dict:
     if _sha256(_checked_file(out, ".ninja_log")) != evidence["ninjaLogSHA256"]:
         raise ValueError("Chromium .79 Ninja log differs from completed build evidence")
     _verify_app(out / "NeAntik Browser.app", out, evidence)
+    _verify_signing_inputs(out, evidence)
     return _provenance(contract, evidence, project_root)
 
 
@@ -278,7 +280,7 @@ def verify_lock(lock: dict, provenance_path: Path, project_root: Path) -> dict:
     return lock
 
 
-def _verify_app(app: Path, out: Path, evidence: dict) -> None:
+def _app_hashes(app: Path, out: Path) -> dict[str, str]:
     if app != out / "NeAntik Browser.app" or app.resolve() != app:
         raise ValueError("Expected the exact Chromium .79 GN output app")
     plist = _checked_file(app, "Contents/Info.plist")
@@ -291,12 +293,39 @@ def _verify_app(app: Path, out: Path, evidence: dict) -> None:
         (_checked_file(out, framework), "frameworkSHA256"),
         (_checked_file(app, f"Contents/Frameworks/{framework}"), "frameworkSHA256"),
     )
+    hashes = {}
     for path, field in files:
-        if _sha256(path) != evidence[field]:
-            raise ValueError(f"Chromium .79 output differs from evidence: {field}")
         result = subprocess.run(["/usr/bin/lipo", "-verify_arch", "arm64", path], capture_output=True)
         if result.returncode:
             raise ValueError(f"Chromium .79 output is not arm64: {field}")
+        digest = _sha256(path)
+        if field in hashes and hashes[field] != digest:
+            raise ValueError("Chromium .79 staged framework differs from the linked framework")
+        hashes[field] = digest
+    return hashes
+
+
+def _verify_app(app: Path, out: Path, evidence: dict) -> None:
+    if any(evidence.get(key) != value for key, value in _app_hashes(app, out).items()):
+        raise ValueError("Chromium .79 unsigned outputs differ from build evidence")
+
+
+def _signing_inputs(out: Path) -> str:
+    root = out / "NeAntik Browser Packaging"
+    _checked_file(root, "signing/build_props_config.py")
+    _checked_file(root, "sign_chrome.py")
+    inventory = []
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink() or not (path.is_dir() or path.is_file()):
+            raise ValueError("Chromium .79 signing tree contains an unsafe entry")
+        if path.is_file():
+            inventory.append((path.relative_to(root).as_posix(), path.stat().st_mode & 0o777, _sha256(path)))
+    return hashlib.sha256(json.dumps(inventory, separators=(",", ":")).encode()).hexdigest()
+
+
+def _verify_signing_inputs(out: Path, evidence: dict) -> None:
+    if _signing_inputs(out) != evidence["signingInputsSHA256"]:
+        raise ValueError("Chromium .79 signing inputs differ from build evidence")
 
 
 def verify_unsigned_app(app: Path, args: Path, provenance_path: Path, project_root: Path) -> None:
@@ -307,3 +336,55 @@ def verify_unsigned_app(app: Path, args: Path, provenance_path: Path, project_ro
     if _sha256(args) != SOURCE["buildArgsSHA256"]:
         raise ValueError("Chromium .79 GN args digest mismatch")
     _verify_app(app, args.parent, evidence)
+    _verify_signing_inputs(args.parent, evidence)
+
+
+def _terminal_actions(log: bytes) -> int:
+    last = None
+    saw_chrome_verifier = False
+    for line in log.splitlines():
+        if line.startswith((b"FAILED:", b"ninja: build stopped", b"ninja: error:")):
+            raise ValueError("Chromium .79 build log contains a failure")
+        match = re.match(rb"^\[(\d+)/(\d+)\]\s+(.+)$", line)
+        if match:
+            last = match
+            saw_chrome_verifier |= b"//chrome:verify_libraries_chrome_app(" in match[3]
+    if last is None or int(last[1]) < 1 or last[1] != last[2] or not saw_chrome_verifier:
+        raise ValueError("Chromium .79 build log lacks the completed chrome target action")
+    return int(last[1])
+
+
+def capture_build_evidence(source_root: Path, project_root: Path, log: Path, exit_code: int) -> dict:
+    """Capture outputs after the watched Ninja invocation and signing-copy target finish."""
+    if type(exit_code) is not int or exit_code != 0:
+        raise ValueError("Chromium .79 Ninja did not exit successfully")
+    if not log.is_absolute() or log.parent != source_root.parent or log.resolve() != log or not log.is_file():
+        raise ValueError("Use the watched Ninja transcript from the exact build root")
+    transcript = log.read_bytes()
+    actions = _terminal_actions(transcript)
+    verify_source_root(source_root, project_root)
+    out = source_root / SOURCE["buildOutputDirectory"]
+    evidence = {
+        "schemaVersion": 1,
+        "status": "chromium-source-build-succeeded-unqualified",
+        "chromiumVersion": VERSION,
+        "targetArchitecture": "arm64",
+        "officialCommit": UPSTREAM["commit"],
+        "officialTree": UPSTREAM["tree"],
+        "portHead": SOURCE["head"],
+        "portTree": SOURCE["tree"],
+        "sourcePatchSHA256": SOURCE["sourcePatchSHA256"],
+        "buildConfigurationSHA256": SOURCE["buildArgsSHA256"],
+        "buildOutputDirectory": SOURCE["buildOutputDirectory"],
+        "ninjaTarget": "chrome",
+        "ninjaExitCode": exit_code,
+        "ninjaActionsCompleted": actions,
+        "ninjaActionsExpected": actions,
+        "buildLogSHA256": hashlib.sha256(transcript).hexdigest(),
+        "ninjaLogSHA256": _sha256(_checked_file(out, ".ninja_log")),
+        **_app_hashes(out / "NeAntik Browser.app", out),
+        "signingInputsSHA256": _signing_inputs(out),
+        "releaseReady": False,
+    }
+    _validate_build_evidence(evidence)
+    return evidence
