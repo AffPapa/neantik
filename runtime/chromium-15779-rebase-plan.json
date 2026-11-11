@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "targetChromiumVersion": "157.0.8103.79",
+  "targetArchitecture": "arm64",
+  "releaseReady": false,
+  "officialChromiumBase": {
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "157.0.8103.79",
+    "commit": "6dc9bc3bdaea5c35ed6d41fceab2f7a3a2227c4f",
+    "tree": "76343b515ca111daccb8748d83742c25265a925d"
+  },
+  "portSource": {
+    "head": "548d081a08839e902272be2caf92b298081cd988",
+    "tree": "852c95983dba3a2f966d58e4ab5c1846b8ce7b5c",
+    "sourcePatchSHA256": "3ca33eeb364c3f555b87544da05bc1e3e18b449b4290bb654ef001da89da6a16",
+    "changedPaths": 740,
+    "depsBlob": "5a1b6829a2cdef9a993cb9cc49a49ebc7ecb300a",
+    "buildArgsPath": "out/NeAntik15779/args.gn",
+    "buildArgsSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e",
+    "buildOutputDirectory": "out/NeAntik15779"
+  },
+  "changedDependencyPins": {
+    "third_party/angle": "c56e2a4a9b8cb0040920c995a268be559ba53f1c",
+    "third_party/dawn": "106245fa2b9e1cf8b59b1bb8e010af3c7ca8b600",
+    "third_party/devtools-frontend/src": "6f9a57d502c857e2412a57fe03c96286d7877479",
+    "third_party/icu": "c670d124c9b6aa92c0b492cf543808300e0e6103",
+    "third_party/skia": "fef60e46c522b87e5802ddf0a215a763dd5e0483",
+    "v8": "307108153d1e35e6e74528ee55f97b0cd59bf182"
+  },
+  "ninjaTarget": "chrome",
+  "buildJobs": 1,
+  "macThinLTOJobs": 1
+}
