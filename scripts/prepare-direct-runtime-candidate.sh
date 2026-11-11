@@ -140,7 +140,15 @@ trap 'cleanup $?' EXIT
 export NEANTIK_CHROMIUM_SOURCE_ROOT="$SOURCE_ROOT"
 CHROMIUM_SIGNING_CONFIG="$CHROMIUM_OUT_DIR/NeAntik Browser Packaging/signing/build_props_config.py"
 RUNTIME_VERSION="$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")"
-if [[ "$RUNTIME_VERSION" == "157.0.8103.39" ]]; then
+if [[ "$RUNTIME_VERSION" == "157.0.8103.79" ]]; then
+  for input in "$CHROMIUM_OUT_DIR/build.ninja" "$CHROMIUM_OUT_DIR/.ninja_log" \
+      "$CHROMIUM_SIGNING_CONFIG" "$PACKAGING_DIR/sign_chrome.py"; do
+    if [[ ! -f "$input" || -L "$input" ]]; then
+      echo "Chromium .79 requires the exact completed GN and signing inputs: $input" >&2
+      exit 65
+    fi
+  done
+elif [[ "$RUNTIME_VERSION" == "157.0.8103.39" ]]; then
   if [[ ! -f "$CHROMIUM_OUT_DIR/build.ninja" || -L "$CHROMIUM_OUT_DIR/build.ninja" ||
         "$(cd "$(dirname "$RUNTIME_APP")" && pwd -P)" != "$(cd "$CHROMIUM_OUT_DIR" && pwd -P)" ]]; then
     echo "M157 runtime, args and generated build graph must share one safe GN output directory." >&2
@@ -228,6 +236,9 @@ elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDID
 elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "157.0.8103.39" ]]; then
   python3 "$PROJECT_DIR/scripts/verify-chromium-157-unsigned-candidate.py" \
     "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_PROVENANCE"
+elif [[ "$RUNTIME_VERSION" == "157.0.8103.79" ]]; then
+  python3 "$PROJECT_DIR/scripts/verify-chromium-15779-unsigned-candidate.py" \
+    "$RUNTIME_APP" "$BUILD_ARGS" "$SOURCE_PROVENANCE"
 fi
 if (( PRIVACY_DERIVATION == 1 )); then
   export NEANTIK_RUNTIME_SIGNING_FRAMEWORK_SHA256="$(plutil -extract binaryBinding.unsignedFrameworkSHA256 raw -o - "$CANDIDATE_LOCK")"
@@ -274,7 +285,7 @@ elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDID
   # The integrated packager writes notices from this exact .80 lock. Do not
   # render the default notice file from the unrelated published runtime lock.
   :
-elif [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDATE_LOCK")" == "157.0.8103.39" ]]; then
+elif [[ "$RUNTIME_VERSION" == "157.0.8103.39" || "$RUNTIME_VERSION" == "157.0.8103.79" ]]; then
   # The integrated packager renders notices against this exact M157 lock.
   :
 else

@@ -323,11 +323,12 @@ def source_contract_name(runtime_version: str, candidate_lock: dict | None = Non
         if candidate_lock is not None and candidate_lock.get("variant") is not None:
             raise FingerprintReportError("Unsupported Chromium .80 source variant")
         return "chromium-15680-source-contract.json"
-    if runtime_version == "157.0.8103.39":
+    if runtime_version in {"157.0.8103.39", "157.0.8103.79"}:
         if (candidate_lock is not None
                 and candidate_lock.get("fingerprintChromium", {}).get("chromiumVersion") != runtime_version):
             raise FingerprintReportError("M157 candidate lock version mismatch")
-        return "chromium-157-source-contract.json"
+        return ("chromium-15779-source-contract.json" if runtime_version == "157.0.8103.79"
+                else "chromium-157-source-contract.json")
     # A new major cannot borrow a historical diagnostic contract. Explicit
     # source/provenance dispatch must be implemented before qualifying it.
     if int(runtime_version.split(".")[0]) >= 154:
@@ -376,9 +377,13 @@ def expected_runtime_evidence_from_app(integrated_app: Path) -> dict[str, str]:
         str(runtime_info.get("CFBundleShortVersionString", "")),
         candidate_lock,
     )
-    if evidence.get("chromiumVersion") == "157.0.8103.39":
+    runtime_version = evidence.get("chromiumVersion")
+    if runtime_version in {"157.0.8103.39", "157.0.8103.79"}:
         try:
-            from chromium_157_release_evidence import verify_lock
+            if runtime_version == "157.0.8103.79":
+                from chromium_15779_source import verify_lock
+            else:
+                from chromium_157_release_evidence import verify_lock
             verify_lock(candidate_lock, evidence_root / "source-provenance.json",
                         Path(__file__).resolve().parents[1])
         except (ImportError, OSError, ValueError) as error:
