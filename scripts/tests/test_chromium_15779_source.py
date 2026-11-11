@@ -60,6 +60,7 @@ class Chromium15779SourceTests(unittest.TestCase):
             "ninjaLogSHA256": "b" * 64,
             "browserExecutableSHA256": "c" * 64,
             "frameworkSHA256": "d" * 64,
+            "signingInputsSHA256": "e" * 64,
             "releaseReady": False,
         }
         evidence_path = self.runtime / m15779.BUILD_EVIDENCE
@@ -107,6 +108,37 @@ class Chromium15779SourceTests(unittest.TestCase):
         path.write_text(json.dumps(contract))
         with self.assertRaisesRegex(ValueError, "completed build evidence is invalid"):
             m15779.verify_contract(self.root)
+
+    def test_terminal_transcript_requires_completed_target_without_errors(self):
+        verification = b"[2/3] ACTION //chrome:verify_libraries_chrome_app(//build/toolchain/mac:clang_arm64)\n"
+        terminal = b"[3/3] COPY_BUNDLE_DATA product\n"
+        self.assertEqual(m15779._terminal_actions(verification + terminal), 3)
+        with self.assertRaisesRegex(ValueError, "lacks the completed chrome target"):
+            m15779._terminal_actions(verification)
+        with self.assertRaisesRegex(ValueError, "contains a failure"):
+            m15779._terminal_actions(verification + terminal + b"ninja: build stopped: subcommand failed.\n")
+
+    def test_signer_dependency_is_bound_to_the_signing_tree(self):
+        out = self.root / "out"
+        signing = out / "NeAntik Browser Packaging" / "signing"
+        signing.mkdir(parents=True)
+        (signing.parent / "sign_chrome.py").write_text("from signing import config\n")
+        (signing / "build_props_config.py").write_text("version = '157.0.8103.79'\n")
+        dependency = signing / "config.py"
+        dependency.write_text("policy = 'original'\n")
+        signed_inputs = {"signingInputsSHA256": m15779._signing_inputs(out)}
+        m15779._verify_signing_inputs(out, signed_inputs)
+        dependency.write_text("policy = 'changed'\n")
+        with self.assertRaisesRegex(ValueError, "signing inputs differ"):
+            m15779._verify_signing_inputs(out, signed_inputs)
+
+    def test_failed_ninja_invocation_leaves_contract_pending(self):
+        complete = load_script("complete-chromium-15779-build-evidence")
+        before = (self.runtime / m15779.CONTRACT).read_bytes()
+        with self.assertRaisesRegex(ValueError, "Ninja did not exit successfully"):
+            complete.complete(self.root / "src", self.root, self.root / "build.log", 1)
+        self.assertEqual((self.runtime / m15779.CONTRACT).read_bytes(), before)
+        self.assertFalse((self.runtime / m15779.BUILD_EVIDENCE).exists())
 
     def test_packaged_evidence_and_notices_select_exact_79_contract(self):
         evidence = self.complete()
