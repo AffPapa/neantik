@@ -48,3 +48,16 @@ run `python3 -B -m unittest test_tls_fixture` for the wire control. It verifies
 that a STUN Binding exchange reaches the real TURN listener through the
 authorized tunnel. Browser TURN allocation and DataChannel qualification are
 separate observations.
+
+For the private A/B/A browser fixture, run
+`scripts/runtime-network/prepare-webkit-ab-isolation-qa.py` with its blank
+template, `--private-successor-dev --peer-control --peer-stun-port <port>` and
+`--turn-test-binary <physical binary path>`. After recording A1, send
+`{"action":"arm-turn-B1"}` before starting B. The fixture serves the TURN
+probe to B, routes the exact authority only through proxy B, and restores the
+ordinary page before A2. Send the existing stop command after A2 to close the
+listeners and record the server's final allocation count in
+`turn-fixture-results.json`. The fixture requires two CONNECTs, one successful
+nonce report and exactly two allocations. Use the signed launcher and separate
+runtime route evidence to associate these observations with the selected
+candidate and detect direct-network bypass.
