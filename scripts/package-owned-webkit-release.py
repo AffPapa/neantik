@@ -1077,7 +1077,9 @@ def package(app: Path, build_root: Path, source_root: Path, identity: str,
                       str(build_root), str(unsigned_frameworks), "--upstream-source", str(source_root),
                       "--manifest", str(STAGING_MANIFEST)], cwd=ROOT)
         stage_receipt = _last_json(staged.stdout, field="machOSHA256")
-        if stage_receipt.get("networkSandbox", {}).get("policyRevision") != 13:
+        sandbox = stage_receipt.get("networkSandbox", {})
+        sandbox_sha = sandbox.get("patchedSHA256")
+        if sandbox.get("policyRevision") != 13 or not isinstance(sandbox_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", sandbox_sha):
             raise PackageError("runtime staging did not apply the pinned broker-only sandbox policy")
         overlay_receipt = apply_source_offer_runtime_overlays(
             unsigned_frameworks, source_root, source_offer_root,
@@ -1099,6 +1101,7 @@ def package(app: Path, build_root: Path, source_root: Path, identity: str,
         run([sys.executable, str(ROOT / "scripts/package-webkit-host.py"),
              "--app", str(app), "--host-binary", str(host_binary),
              "--runtime-frameworks", str(signed_frameworks), "--identity", identity,
+             "--network-sandbox-sha256", sandbox_sha,
              "--source-offer-root", str(source_offer_root),
              "--source-offer-manifest-sha256", source_offer_manifest_sha256])
 
@@ -1124,6 +1127,7 @@ def package(app: Path, build_root: Path, source_root: Path, identity: str,
         "stagingManifestSHA256": sha256(STAGING_MANIFEST),
         "runtimeImageCount": len(stage_receipt.get("machOSHA256", {})),
         "networkSandboxPolicyRevision": 13,
+        "networkSandboxSHA256": sandbox_sha,
         "sourceOfferOverlayPreparation": overlay_receipt,
         "hostSHA256": host_hash,
         "noticeVerification": notices,

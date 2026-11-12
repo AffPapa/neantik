@@ -96,7 +96,7 @@ enum WebKitHostChildRuntime {
             executablePath: executable, expectedParentPID: getppid())
         recordStartupStage("identity-verified")
         let runtime = try WebKitRuntimeImageAttestation.attestCurrentProcess(
-            startupCheckpoint: startupCheckpoint)
+            startupCheckpoint: startupCheckpoint, requireNetworkSandboxPin: true)
         recordStartupStage("runtime-attested")
 
         try ProxyRelayPrivatePipe.prepare(STDIN_FILENO, writable: false)
@@ -234,6 +234,10 @@ enum WebKitHostChildRuntime {
         let activationFrame = try await readStartupFrame(timeout: 15)
         let permit = try routeGate.acceptRouteActivation(activationFrame)
         recordStartupStage("route-activation-received")
+        try WebKitRuntimeImageAttestation.verifyNetworkSandbox(
+            bundleURL: Bundle.main.bundleURL,
+            signedSHA256: Bundle.main.object(forInfoDictionaryKey: WebKitRuntimeImageAttestation.networkSandboxPinKey),
+            required: true)
         guard browser.activateOwnedRoute(permit) else {
             throw WebKitHostIPC.ProtocolError.invalidTransition
         }

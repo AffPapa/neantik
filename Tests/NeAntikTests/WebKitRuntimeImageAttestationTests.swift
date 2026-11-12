@@ -104,8 +104,8 @@ struct WebKitRuntimeImageAttestationTests {
         }
     }
 
-    private func fixture() throws -> (URL, URL, String) {
-        let root = FileManager.default.temporaryDirectory
+    private func fixture(in directory: URL = FileManager.default.temporaryDirectory) throws -> (URL, URL, String) {
+        let root = directory
             .appendingPathComponent("neantik-webkit-image-" + UUID().uuidString, isDirectory: true)
         let app = root.appendingPathComponent("Host.app", isDirectory: true)
         let image = app.appendingPathComponent(
@@ -191,6 +191,78 @@ struct WebKitRuntimeImageAttestationTests {
                 "schemaVersion": 1, "webKitSHA256": digest,
                 "minimumOSVersion": "15.4"
             ])
+        }
+    }
+
+    @Test func verifiesTheExactNetworkSandboxResourceWhenTheHostRequiresIt() throws {
+        let (root, app, _) = try fixture(in: URL(fileURLWithPath: "/private/tmp", isDirectory: true))
+        defer { try? FileManager.default.removeItem(at: root) }
+        let physicalApp = app
+        let policy = physicalApp.appendingPathComponent(
+            "Contents/Frameworks/WebKit.framework/Versions/A/Resources/com.apple.WebKit.NetworkProcess.sb")
+        try FileManager.default.createDirectory(at: policy.deletingLastPathComponent(),
+                                                withIntermediateDirectories: true)
+        let bytes = Data("(version 1)".utf8)
+        try bytes.write(to: policy)
+        let digest = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
+
+        try WebKitRuntimeImageAttestation.verifyNetworkSandbox(
+            bundleURL: physicalApp, signedSHA256: digest, required: true)
+        let foundationAlias = physicalApp.resolvingSymlinksInPath()
+        try WebKitRuntimeImageAttestation.verifyNetworkSandbox(
+            bundleURL: foundationAlias, signedSHA256: digest, required: true)
+        try WebKitRuntimeImageAttestation.verifyNetworkSandbox(
+            bundleURL: physicalApp, signedSHA256: nil, required: false)
+        #expect(throws: WebKitRuntimeImageAttestation.Failure.missingNetworkSandboxPin) {
+            try WebKitRuntimeImageAttestation.verifyNetworkSandbox(
+                bundleURL: physicalApp, signedSHA256: nil, required: true)
+        }
+        #expect(throws: WebKitRuntimeImageAttestation.Failure.malformedNetworkSandboxPin) {
+            try WebKitRuntimeImageAttestation.verifyNetworkSandbox(
+                bundleURL: physicalApp, signedSHA256: digest + "\n", required: true)
+        }
+
+        try Data("(version 2)".utf8).write(to: policy)
+        #expect(throws: WebKitRuntimeImageAttestation.Failure.networkSandboxHashMismatch) {
+            try WebKitRuntimeImageAttestation.verifyNetworkSandbox(
+                bundleURL: physicalApp, signedSHA256: digest, required: false)
+        }
+    }
+
+    @Test func refusesNetworkSandboxAliasesAndOversizedResources() throws {
+        let (root, app, _) = try fixture(in: URL(fileURLWithPath: "/private/tmp", isDirectory: true))
+        defer { try? FileManager.default.removeItem(at: root) }
+        let physicalRoot = root
+        let physicalApp = app
+        let resources = physicalApp.appendingPathComponent(
+            "Contents/Frameworks/WebKit.framework/Versions/A/Resources")
+        let policy = resources.appendingPathComponent("com.apple.WebKit.NetworkProcess.sb")
+        let external = physicalRoot.appendingPathComponent("External")
+        try FileManager.default.createDirectory(at: external, withIntermediateDirectories: true)
+        let externalPolicy = external.appendingPathComponent(policy.lastPathComponent)
+        let bytes = Data("(version 1)".utf8)
+        try bytes.write(to: externalPolicy)
+        let digest = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
+
+        try FileManager.default.createSymbolicLink(at: resources, withDestinationURL: external)
+        #expect(throws: WebKitRuntimeImageAttestation.Failure.unsafeNetworkSandboxPolicy) {
+            try WebKitRuntimeImageAttestation.verifyNetworkSandbox(
+                bundleURL: physicalApp, signedSHA256: digest, required: true)
+        }
+        try FileManager.default.removeItem(at: resources)
+        try FileManager.default.createDirectory(at: resources, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: policy, withDestinationURL: externalPolicy)
+        #expect(throws: WebKitRuntimeImageAttestation.Failure.unsafeNetworkSandboxPolicy) {
+            try WebKitRuntimeImageAttestation.verifyNetworkSandbox(
+                bundleURL: physicalApp, signedSHA256: digest, required: true)
+        }
+        try FileManager.default.removeItem(at: policy)
+        let oversized = Data(repeating: 0, count: (1 << 20) + 1)
+        try oversized.write(to: policy)
+        let oversizedDigest = SHA256.hash(data: oversized).map { String(format: "%02x", $0) }.joined()
+        #expect(throws: WebKitRuntimeImageAttestation.Failure.unsafeNetworkSandboxPolicy) {
+            try WebKitRuntimeImageAttestation.verifyNetworkSandbox(
+                bundleURL: physicalApp, signedSHA256: oversizedDigest, required: true)
         }
     }
 
