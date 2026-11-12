@@ -16,6 +16,17 @@ def fixture(version):
                  ("manifestBase64", "envelopeBase64", "payloadBase64"))
 
 class SemanticEvidenceTests(unittest.TestCase):
+    def test_candidate_manifest_accepts_only_exact_chromium_15779_contract(self):
+        manifest = json.loads(fixture(9)[0])
+        contract = manifest["criticalFiles"]["sourceContract"]
+        base = "Contents/Resources/NeAntikRuntimeEvidence/"
+        contract["bundlePath"] = base + "chromium-15779-source-contract.json"
+        dispatch._validate_candidate_manifest(manifest)
+        for name in ("chromium-15780-source-contract.json", "chromium-15779-source-contract.json/extra"):
+            contract["bundlePath"] = base + name
+            with self.assertRaises(current.FingerprintEvidenceVerificationError):
+                dispatch._validate_candidate_manifest(manifest)
+
     def test_candidate_manifest_accepts_exact_chromium_15674_contract(self):
         manifest = json.loads(fixture(9)[0])
         contract = manifest["criticalFiles"]["sourceContract"]
