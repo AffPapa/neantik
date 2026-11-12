@@ -67,6 +67,39 @@ struct WebKitProfileTests {
         }
     }
 
+    @Test func ownedHostReadsMixedSchemaSevenWithoutApplyingChromiumPolicyToWebKit() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-mixed-host-schema-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let chromium = BrowserProfile(name: "Chromium QA", privacyPolicy: .balanced)
+        let webKit = BrowserProfile(name: "WebKit QA", engine: .webkit,
+                                    webKitRuntimeGeneration: .isolatedV1, webKitBlockPeerConnections: true)
+        let data = try ProfileStore.encodeProfiles([chromium, webKit], encoder: encoder())
+        var document = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect(document["schemaVersion"] as? Int == 7)
+        try paths.writePrivateFile(data, to: paths.profilesFile)
+        let selected = try WebKitHostProfileReader.profile(id: webKit.id, paths: paths)
+        #expect(selected.id == webKit.id && selected.webKitRuntimeGeneration == .isolatedV1)
+        #expect(selected.webKitBlockPeerConnections && selected.privacyPolicy == .legacy)
+
+        document["schemaVersion"] = 6
+        try paths.writePrivateFile(JSONSerialization.data(withJSONObject: document), to: paths.profilesFile)
+        #expect(throws: WebKitHostProfileReader.Failure.unsupportedSchema) {
+            try WebKitHostProfileReader.profile(id: webKit.id, paths: paths)
+        }
+
+        document["schemaVersion"] = 7
+        var entries = try #require(document["profiles"] as? [[String: Any]])
+        entries[1].removeValue(forKey: "privacyPolicy")
+        document["profiles"] = entries
+        try paths.writePrivateFile(JSONSerialization.data(withJSONObject: document), to: paths.profilesFile)
+        #expect(throws: WebKitHostProfileReader.Failure.unsupportedSchema) {
+            try WebKitHostProfileReader.profile(id: webKit.id, paths: paths)
+        }
+    }
+
     @Test func peerConnectionPolicyRequiresSchemaSixAndSurvivesCopy() throws {
         let profile = BrowserProfile(name: "Protected", engine: .webkit, webKitBlockPeerConnections: true)
         let bytes = try ProfileStore.encodeProfiles([profile], encoder: encoder())
@@ -176,6 +209,63 @@ struct WebKitProfileTests {
         #expect(choose(.webkit, proxy, .system, false) == .system)
         #expect(choose(.webkit, nil, .isolatedV1, true) == .system)
         #expect(choose(.chromium, proxy, .isolatedV1, true) == .system)
+    }
+
+    @Test func launchRouteNeverSendsAConfiguredProxyToSystemWebKit() throws {
+        let proxy = ProxyConfiguration(kind: .http, host: "proxy.invalid", port: 8080, username: "")
+        var profile = BrowserProfile(name: "Route matrix", engine: .webkit)
+        for ownedProxyAvailable in [false, true] {
+            profile.webKitRuntimeGeneration = .system
+            profile.proxy = nil
+            #expect(try WebKitProfilePolicy.launchRoute(profile, ownedProxyAvailable: ownedProxyAvailable) == .systemDirect)
+            profile.proxy = proxy
+            #expect(throws: WebKitProfileError.self) {
+                try WebKitProfilePolicy.launchRoute(profile, ownedProxyAvailable: ownedProxyAvailable)
+            }
+
+            profile.webKitRuntimeGeneration = .isolatedV1
+            if ownedProxyAvailable {
+                #expect(try WebKitProfilePolicy.launchRoute(profile, ownedProxyAvailable: true) == .owned)
+            } else {
+                #expect(throws: WebKitProfileError.self) {
+                    try WebKitProfilePolicy.launchRoute(profile, ownedProxyAvailable: false)
+                }
+            }
+            profile.proxy = nil
+            #expect(try WebKitProfilePolicy.launchRoute(profile, ownedProxyAvailable: ownedProxyAvailable) == .owned)
+            #expect(throws: WebKitProfileError.self) {
+                try WebKitProfilePolicy.launchRoute(profile, ownedProxyAvailable: ownedProxyAvailable, systemOnly: true)
+            }
+        }
+    }
+
+    @Test func asyncManagerRejectsIncompatibleWebKitProfilesBeforeCreatingLaunchGuards() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-webkit-route-preflight-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let manager = BrowserProcessManager(paths: paths)
+        let proxy = ProxyConfiguration(kind: .http, host: "proxy.invalid", port: 8080, username: "")
+        let incompatible = [
+            BrowserProfile(name: "System with proxy", engine: .webkit, proxy: proxy),
+            BrowserProfile(name: "Unsupported owned locale", engine: .webkit,
+                           webKitRuntimeGeneration: .isolatedV1,
+                           identity: BrowserIdentity(localeIdentifier: "en-GB")),
+        ]
+        for profile in incompatible {
+            await #expect(throws: WebKitProfileError.self) {
+                try await manager.launchWebKitProfileAsync(profile)
+            }
+            #expect(!FileManager.default.fileExists(atPath: paths.lockGuardFile(for: profile.id).path))
+            #expect(!FileManager.default.fileExists(atPath: paths.lockGuardFile(for: profile.id).appendingPathExtension("webkit").path))
+            #expect(!manager.runningProfileIDs.contains(profile.id))
+        }
+        let archived = BrowserProfile(name: "Archived owned", isArchived: true, engine: .webkit,
+                                      webKitRuntimeGeneration: .isolatedV1)
+        await #expect(throws: NeAntikError.self) {
+            try await manager.launchWebKitProfileAsync(archived)
+        }
+        #expect(!FileManager.default.fileExists(atPath: paths.lockGuardFile(for: archived.id).path))
     }
 
     @Test func windowCommandsHandleCapsLockAndCyrillicWithoutCapturingPlainInput() {

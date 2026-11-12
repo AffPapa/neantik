@@ -3102,12 +3102,20 @@ final class BrowserProcessManager: ObservableObject {
         return valid && sessionObservationIsCurrent(observation, profileID: profileID)
     }
 
-    @discardableResult func launchWebKitProfile(_ profile: BrowserProfile) throws -> UUID {
+    private func requireWebKitAvailable() throws {
         guard BrowserEngine.webkit.isAvailableInBuild else {
             throw WebKitProfileError.unsupported("WebKit выключен в этой версии NeAntik. Профиль и его данные сохранены; запускайте его в сборке с поддержкой WebKit.")
         }
-        observeWebKitTerminationIfNeeded()
+    }
+
+    @discardableResult func launchWebKitProfile(_ profile: BrowserProfile) throws -> UUID {
+        try requireWebKitAvailable()
         try WebKitProfilePolicy.validate(profile)
+        return try launchSystemWebKitProfile(profile)
+    }
+
+    private func launchSystemWebKitProfile(_ profile: BrowserProfile) throws -> UUID {
+        observeWebKitTerminationIfNeeded()
         try launchAdmission.requireSafePressure()
         guard !webKitQuitPending, webKitBrowsers[profile.id] == nil,
               processState(for: profile.id) == .stopped else { throw NeAntikError.profileAlreadyRunning }
@@ -3150,22 +3158,16 @@ final class BrowserProcessManager: ObservableObject {
     /// refused while the runtime qualification switch is off.
     @discardableResult
     func launchWebKitProfileAsync(_ profile: BrowserProfile) async throws -> UUID {
-        guard profile.webKitRuntimeGeneration == .isolatedV1 else {
-            return try launchWebKitProfile(profile)
+        try requireWebKitAvailable()
+        switch try WebKitProfilePolicy.launchRoute(profile) {
+        case .systemDirect:
+            return try launchSystemWebKitProfile(profile)
+        case .owned:
+            return try await launchIsolatedWebKitProfile(profile)
         }
-        return try await launchIsolatedWebKitProfile(profile)
     }
 
-    @discardableResult
     private func launchIsolatedWebKitProfile(_ profile: BrowserProfile) async throws -> UUID {
-        guard BrowserEngine.webkit.isAvailableInBuild else {
-            throw WebKitProfileError.unsupported("WebKit выключен в этой версии NeAntik. Профиль и его данные сохранены; запускайте его в сборке с поддержкой WebKit.")
-        }
-        try WebKitProfilePolicy.validateConfiguration(profile)
-        guard profile.webKitRuntimeGeneration == .isolatedV1 else { throw NeAntikError.invalidProfile }
-        if profile.proxy != nil, !WebKitProxyFeature.launchEnabled {
-            throw WebKitProfileError.unsupported("Прокси WebKit пока отключён: маршрут ещё не прошёл квалификацию. Настройки сохранены, прямое подключение вместо прокси не выполняется.")
-        }
         try launchAdmission.requireSafePressure()
         guard !webKitQuitPending, webKitHostClients[profile.id] == nil,
               !webKitHostStartingProfileIDs.contains(profile.id),

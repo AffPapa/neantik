@@ -122,6 +122,11 @@ class FastManagerWorkflowTests(unittest.TestCase):
             sources = root / "Sources"; sources.mkdir(); file = sources / "Logic.swift"; file.write_text("let value = 1")
             first = MOD.input_digest(root); self.assertEqual(first, MOD.input_digest(root))
             file.write_text("let value = 2"); self.assertNotEqual(first, MOD.input_digest(root))
+            second = MOD.input_digest(root)
+            derived = root / "DerivedSources" / "NeAntikWebKitHost"
+            derived.mkdir(parents=True)
+            (derived / "Logic.swift").write_text("let value = 2")
+            self.assertNotEqual(second, MOD.input_digest(root))
 
     def test_cached_command_keeps_serial_jobs_and_cannot_skip_execution(self):
         args = MOD.command(Path("/repo"), Path("/repo/.build/neantik-local"), MOD.selection(["ValidTests"], ["ValidTests"]))
