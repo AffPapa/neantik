@@ -265,6 +265,12 @@ final class MCPManagementSession {
             case MCPProfileManagement.Failure.browserRuntimePreflightFailed:
                 code = "browser_runtime_preflight_failed"
                 message = "The bundled browser runtime failed architecture or signature preflight. Inspect the exact candidate's runtime diagnostics before retrying."
+            case is UnsupportedBrowserPrivacyPolicyError:
+                code = "browser_privacy_policy_unavailable"
+                message = "This runtime cannot apply the saved privacy policy. Use a NeAntik release that supports the policy. The profile settings were preserved."
+            case is UnsupportedBrowserFontPolicyError:
+                code = "browser_font_policy_unavailable"
+                message = "This runtime cannot apply the saved font policy. Use a NeAntik release that supports the policy. The profile settings were preserved."
             case MCPGUIControlProtocol.Failure.consentRequired: code = "gui_consent_required"; message = "In NeAntik Help → MCP, approve this connection for selected WebKit profiles; then intentionally retry profile_start with the current revision."
             case MCPGUIControlProtocol.Failure.revisionConflict: code = "revision_conflict"; message = "Profile changed. Read profile_get and intentionally retry with the current revision."
             case MCPGUIControlProtocol.Failure.denied: code = "gui_profile_denied"; message = "This WebKit profile is outside the connection's approved scope. Change permission in NeAntik Help → MCP."

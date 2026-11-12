@@ -3,7 +3,9 @@
 ## Direct 0.9.6 (206) — release candidate; release gates pending
 
 - Prevent update-audit mode from treating a persisted fingerprint evidence envelope as a successful GUI launch. Update-audit now continues through current authority authentication; normal fingerprint audit retains its recovery behavior.
-- Preserve the qualified Chromium runtime and the existing 0.9.5 public-alpha distribution scope. This fix does not qualify an external proxy route, DNS, UDP, IPv6, background traffic, WebSocket, downloads, TURN/media or WebKit; no anonymity or universal fingerprint-resistance claim is made.
+- Update Chromium to 157.0.8103.79 for Apple Silicon. Port the existing profile privacy and system-font policy so Balanced and Strict profiles can keep their settings.
+- Fix Chromium's rejection of the sealed tracking-query rule. Only that exact expression receives the larger regex budget. Its signed-path and mixed-query safeguards stay in place.
+- Report unsupported privacy and font policies as distinct MCP errors. The installed 0.9.5 updater pins M156, so installation of the M157 build uses the signed ZIP or DMG.
 
 ## Direct 0.9.5 (205) — published Chromium-only public alpha
 

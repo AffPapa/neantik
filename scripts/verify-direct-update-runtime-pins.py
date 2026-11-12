@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent reproduction of the fixed, installed M156 closure pins.
+"""Independent reproduction of the fixed, installed runtime closure pins.
 
 Read-only development/CI check, not update admission or installation authority.
 Only an already qualified reference app may supply reference bytes. This script
@@ -130,6 +130,7 @@ def compiled_records(project: Path) -> list[dict]:
         ('font-system-security-20261015-v1', 'Sources/DirectUpdateCore/DirectUpdateSecurityRuntimePins.swift'),
         ('component-completion-v1', 'Sources/DirectUpdateCore/DirectUpdateComponentRuntimePins.swift'),
         ('privacy-policy-v1', 'Sources/DirectUpdateCore/DirectUpdatePrivacyRuntimePins.swift'),
+        ('m157-privacy', 'Sources/DirectUpdateCore/DirectUpdateM157RuntimePins.swift'),
     ):
         path = project / relative
         if path.is_symlink() or path.stat().st_size > 256 * 1024:
@@ -145,7 +146,7 @@ def compiled_records(project: Path) -> list[dict]:
         records.append({'name': name, 'reportDigest': scalar('reportDigest', digest=True),
             **{scope: {'digest': scalar(scope + 'Digest', digest=True),
                        'entries': scalar(scope + 'Entries'), 'bytes': scalar(scope + 'Bytes'),
-                       'machoCount': (scalar('machoCount') if name == 'privacy-policy-v1' else 16) if scope == 'runtime' else 0}
+                       'machoCount': (scalar('machoCount') if name in ('privacy-policy-v1', 'm157-privacy') else 16) if scope == 'runtime' else 0}
                for scope in ('runtime', 'evidence')}})
     return records
 
@@ -182,6 +183,19 @@ def main() -> int:
         if selected == 'privacy-policy-v1':
             from chromium_15680_privacy_derivation import verify_packaged_evidence
             verify_packaged_evidence(PROJECT, evidence)
+        elif selected == 'm157-privacy':
+            from chromium_15779_source import BUILD_EVIDENCE, CONTRACT, PLAN, SOURCE, verify_lock
+            lock = json.loads((evidence / 'fingerprint-chromium.lock.json').read_bytes())
+            verify_lock(lock, evidence / 'source-provenance.json', PROJECT)
+            if (evidence / CONTRACT).read_bytes() != (PROJECT / 'runtime' / CONTRACT).read_bytes():
+                raise ValueError('M157 packaged source contract differs')
+            source = evidence / 'chromium-15779-source-evidence'
+            for name in (PLAN, BUILD_EVIDENCE):
+                if (source / name).read_bytes() != (PROJECT / 'runtime' / name).read_bytes():
+                    raise ValueError('M157 packaged build evidence differs: ' + name)
+            if any(hashlib.sha256(args.read_bytes()).hexdigest() != SOURCE['buildArgsSHA256']
+                   for args in (source / 'args.gn', evidence / 'args.gn')):
+                raise ValueError('M157 packaged GN arguments differ')
         else:
             from chromium_15612_packaged_evidence import process
             process(PROJECT, evidence, json.loads((evidence / 'fingerprint-chromium.lock.json').read_bytes()))

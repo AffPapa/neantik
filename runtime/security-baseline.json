@@ -1,27 +1,21 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-11-09",
-  "publishedAt": "2026-11-03",
+  "checkedAt": "2026-11-12",
+  "publishedAt": "2026-11-11",
   "maximumAgeDays": 0,
-  "minimumPublicChromiumVersion": "157.0.8103.39",
+  "minimumPublicChromiumVersion": "157.0.8103.79",
   "alsoObservedPublicChromiumVersions": [
-    "157.0.8103.38"
+    "157.0.8103.78"
   ],
   "channel": "Desktop Stable",
   "platforms": [
     "macOS"
   ],
-  "securityFixCount": 213,
-  "reference": "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop.html",
+  "securityFixCount": 0,
+  "reference": "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01744469280.html",
   "referenceTitle": "Stable Channel Update for Desktop",
   "sourceLabel": "Chrome Releases",
-  "releaseBoundary": "This manually pinned primary-source security baseline is not a live updater. Refresh checkedAt, versions, securityFixCount and reference on the day of every public Direct release. The official Chrome post reports 213 security fixes, but that upstream count alone does not verify fix survival in NeAntik's custom port or binary. This baseline is a source-version floor, not a security audit or release qualification.",
-  "policy": "As rechecked on 2026-11-09 against the official Chrome Releases feed, macOS Stable remains 157.0.8103.39; the 2026-11-04 Early Stable post lists 158.0.8127.18/.19 for Windows and says Mac is coming shortly. The November 3 desktop stable post reports 213 security fixes. NeAntik targets the official 157.0.8103.39 source commit for macOS arm64. The port review found source indicators for some issues and unresolved mappings for others; exact candidate binary, runtime and issue-specific test evidence remain separate release gates.",
-  "securityFixCountStatus": "count-reported-by-official-post",
-  "securityFixSeverityCounts": {
-    "Critical": 7,
-    "High": 77,
-    "Medium": 75,
-    "Low": 54
-  }
+  "releaseBoundary": "This manually pinned primary-source security baseline is not a live updater. Refresh the observation date, versions and reference on the day of each public Direct release. A source-version floor does not establish fix survival in the custom port, candidate runtime behavior or release qualification.",
+  "policy": "Chrome Releases lists 157.0.8103.78 and 157.0.8103.79 for macOS Stable. Chromium Dash confirmed 157.0.8103.79 on 2026-11-12. The linked post had not enumerated the security changes at verification time. The recorded count is unknown. NeAntik targets the official 157.0.8103.79 source commit for macOS arm64.",
+  "securityFixCountStatus": "not-enumerated-by-official-post"
 }

@@ -9,14 +9,32 @@ import {page,rtcPage,workerIsolationPage,mediaIsolationPage,workerSource,service
 import {applyRTCFixturePolicy,assertDisjointMediaIdentifiers} from './qa-controls.mjs';
 import {localFixtureEgressProfile,resolverEnabledBoundaryArguments} from './qa-egress-sandbox.mjs';
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
-const [runtime,output,mode='isolation']=process.argv.slice(2);assert(['isolation','surface','rtc-proxy','rtc-control','override-locked','override-control','worker-isolation','media-isolation','background-probe'].includes(mode));assert(runtime&&output&&path.isAbsolute(runtime)&&path.isAbsolute(output));
-assert.equal(fs.realpathSync(runtime),runtime);fs.mkdirSync(output,{mode:0o700});
+const [runtime,output,mode='isolation',reportPath]=process.argv.slice(2);assert(['isolation','surface','rtc-proxy','rtc-control','override-locked','override-control','worker-isolation','media-isolation','background-probe'].includes(mode));assert(runtime&&output&&path.isAbsolute(runtime)&&path.isAbsolute(output));
+assert.equal(fs.realpathSync(runtime),runtime);
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
-const exe=path.join(runtime,'Contents/MacOS/NeAntik Browser');
-const expected='be743b4f09d96da901701d3b517e0a64daaac9535150172701c099964902492d';assert.equal(sha(fs.readFileSync(exe)),expected);
-const framework=path.join(runtime,'Contents/Frameworks/NeAntik Browser Framework.framework/Versions/156.0.8078.80/NeAntik Browser Framework');
-const expectedFramework='03852e945564d2e00db3849e9a26c560a0e0ad22836e8a8e83afbe50ce2e8047';assert.equal(sha(fs.readFileSync(framework)),expectedFramework);
+const reportBytes=reportPath ? fs.readFileSync(reportPath) : null;
+const signedReport=reportBytes ? JSON.parse(reportBytes) : null;
+const version=signedReport?.chromiumVersion ?? '156.0.8078.80';
+if(signedReport){
+ assert.equal(version,'157.0.8103.79');
+ assert.equal(signedReport.schemaVersion,3);
+ assert.equal(signedReport.architecture,'arm64');
+ assert.equal(signedReport.codeSignature,'verified');
+ assert.equal(signedReport.codeSignatureKind,'developer-id');
+}
+const executablePath='Contents/MacOS/NeAntik Browser';
+const frameworkPath=`Contents/Frameworks/NeAntik Browser Framework.framework/Versions/${version}/NeAntik Browser Framework`;
+if(signedReport){
+ assert.equal(signedReport.executable.path,executablePath);
+ assert.equal(signedReport.framework.path,frameworkPath);
+}
+const exe=path.join(runtime,executablePath);
+const expected=signedReport?.executable.sha256 ?? 'be743b4f09d96da901701d3b517e0a64daaac9535150172701c099964902492d';
+const expectedFramework=signedReport?.framework.sha256 ?? '03852e945564d2e00db3849e9a26c560a0e0ad22836e8a8e83afbe50ce2e8047';
+assert.equal(sha(fs.readFileSync(exe)),expected);
+assert.equal(sha(fs.readFileSync(path.join(runtime,frameworkPath))),expectedFramework);
 assert.equal(spawnSync('/usr/bin/codesign',['--verify','--deep','--strict',runtime],{stdio:'ignore'}).status,0);
+fs.mkdirSync(output,{mode:0o700});
 const root=fs.mkdtempSync('/private/tmp/neantik-privacy20-qa.');fs.chmodSync(root,0o700);
 const harnessInputs=[
  'scripts/privacy20/run.mjs',
@@ -26,6 +44,7 @@ const harnessInputs=[
  'scripts/runtime-platform/fixtures/qa-browser-environment.mjs'
 ];
 const report={schemaVersion:1,status:'not-run',runtimeExecutableSHA256:expected,runtimeFrameworkSHA256:expectedFramework,releaseQualified:false,rows:[],sources:{},runtimeEnvironment:{node:process.version,platform:process.platform,arch:process.arch}};
+if(reportBytes) report.runtimeVerificationSHA256=sha(reportBytes);
 const evidenceInputs=path.join(output,'source-inputs');fs.mkdirSync(evidenceInputs,{mode:0o700});
 for(const name of harnessInputs){
  const source=path.join(project,name);
@@ -52,6 +71,11 @@ try{
  const certificate=fs.readFileSync(cert),spki=crypto.createHash('sha256').update(new crypto.X509Certificate(certificate).publicKey.export({format:'der',type:'spki'})).digest('base64');
  tlsServer=https.createServer({key:fs.readFileSync(key),cert:certificate,minVersion:'TLSv1.2',maxVersion:'TLSv1.2'},async(req,res)=>{
   try{const u=new URL(req.url,origin);res.setHeader('Cache-Control','no-store');if(!active){res.writeHead(404);res.end();return}
+   if(u.pathname==='/cleanup-check'||u.pathname.startsWith('/cleanup-check/')){
+     active.cleanupQuery=u.search;
+     res.end('Owned query fixture');
+     return;
+   }
    if(u.pathname==='/owned-http-cache'){cacheHits.push({phase:active.phase});res.setHeader('Cache-Control','private,max-age=3600');res.setHeader('Content-Type','text/plain');res.end(active.marker);return}
    if(u.pathname==='/owned-connection'||u.pathname==='/owned-tls-close'){res.setHeader('Content-Type','application/json');if(u.pathname==='/owned-tls-close')res.setHeader('Connection','close');res.end(JSON.stringify({socket:req.socket.ownQAID,reused:req.socket.isSessionReused()}));return}
    if(u.pathname==='/begin-failure'){res.setHeader('Connection','close');res.end('own failure scheduled');setTimeout(()=>{proxyEnabled=false;for(const c of proxyClients)c.destroy();setTimeout(()=>{proxyEnabled=true},1800)},30);return}
@@ -93,7 +117,7 @@ try{
   if(mode==='media-isolation'){delete env.NEANTIK_PROFILE_MEDIA;args.push('--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream');assert(args.includes('--use-mock-keychain'));}
   if(mode==='override-control')delete env.NEANTIK_PROFILE_PROXY_REQUIRED;
   const log=fs.openSync(path.join(output,phase+'-private.log'),'wx',0o600);child=spawn(launchExecutable,launchArguments,{env,stdio:['ignore','ignore',log,'pipe','pipe'],detached:true});await new Promise((resolve,reject)=>{child.once('spawn',resolve);child.once('error',reject)});pipe=new OwnPipe(child.stdio[3],child.stdio[4]);
-  assert.equal((await pipe.command('Browser.getVersion')).product.split('/').at(-1),'156.0.8078.80');if(mode.startsWith('override-'))await delay(1000);await pipe.command('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:active.downloadDirectory});const target=await pipe.command('Target.createTarget',{url:'about:blank'});const {sessionId}=await pipe.command('Target.attachToTarget',{targetId:target.targetId,flatten:true});await pipe.command('Page.enable',{},sessionId);const nav=await pipe.command('Page.navigate',{url:active.url},sessionId);if(mode==='override-control'){
+  assert.equal((await pipe.command('Browser.getVersion')).product.split('/').at(-1),version);if(mode.startsWith('override-'))await delay(1000);await pipe.command('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:active.downloadDirectory});const target=await pipe.command('Target.createTarget',{url:'about:blank'});const {sessionId}=await pipe.command('Target.attachToTarget',{targetId:target.targetId,flatten:true});await pipe.command('Page.enable',{},sessionId);const nav=await pipe.command('Page.navigate',{url:active.url},sessionId);if(mode==='override-control'){
     assert.equal(nav.errorText,'net::ERR_NAME_NOT_RESOLVED');
     assert(await until(()=>fs.readFileSync(path.join(output,phase+'-private.log'),'utf8').includes('OWN_PROXY_OVERRIDE mode=direct control=controlled_by_this_extension'),3000),'proxy override positive control not applied');
     report.rows.push({phase,proxyPreference:'controlled extension direct',navigation:'name-not-resolved after proxy override',actualBrowser:true});
@@ -125,6 +149,23 @@ assert.equal(r.rtc,'NotAllowedError');assert.equal(r.webgl,true);assert.equal(r.
   if(phase==='A2'){assert.equal(r.proxyFailure,'rejected');assert.equal(r.proxyRecovery,true)}
 
   if(phase!=='A2'){assert.equal(r.before.local,null);assert.equal(r.before.idb,null);assert.equal(r.before.cache,null);assert(!r.before.cookie.includes('owned_marker='))}else{assert.equal(r.before.local,markers.A);assert.equal(r.before.idb,markers.A);assert.equal(r.before.cache,markers.A);assert(r.before.cookie.includes(markers.A))}
+  }
+  if(signedReport&&mode==='isolation'&&phase==='A1'){
+    const tracking='?utm_source=fixture&fbclid=fixture';
+    const signed='?signature=fixture&utm_source=fixture';
+    for(const [route,query,expected] of [
+      ['/cleanup-check',tracking,''],
+      ['/cleanup-check',signed,signed],
+      ['/cleanup-check/'+ 'a'.repeat(64),tracking,tracking],
+    ]){
+      active.cleanupQuery=null;
+      active.url=origin+route+query;
+      const navigation=await pipe.command('Page.navigate',{url:active.url},sessionId);
+      assert(!navigation.errorText,navigation.errorText);
+      assert(await until(()=>active.cleanupQuery!==null,5000),'owned query fixture did not receive navigation');
+      assert.equal(active.cleanupQuery,expected,'tracking, signed-query or opaque-path cleanup regression');
+    }
+    report.queryCleanup={trackingOnlyRemoved:true,signedQueryPreserved:true,opaquePathPreserved:true};
   }
   await pipe.command('Browser.close').catch(()=>{});assert(await until(()=>child.exitCode!==null||child.signalCode!==null,10000),'browser did not close');assert.equal(child.exitCode,0);pipe.close();pipe=null;child=null;fs.closeSync(log);
  }

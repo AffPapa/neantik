@@ -41,7 +41,8 @@ identity_line_for() {
 
 identity_prefix_is_installed() {
   local prefix="$1"
-  printf '%s\n' "$IDENTITIES" | grep -Fq "\"$prefix"
+  # Read the full input so grep cannot close the pipe early under pipefail.
+  printf '%s\n' "$IDENTITIES" | grep -F "\"$prefix" >/dev/null
 }
 
 identity_matches_prefix() {

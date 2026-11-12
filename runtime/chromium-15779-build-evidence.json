@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "status": "chromium-source-build-succeeded-unqualified",
+  "chromiumVersion": "157.0.8103.79",
+  "targetArchitecture": "arm64",
+  "officialCommit": "6dc9bc3bdaea5c35ed6d41fceab2f7a3a2227c4f",
+  "officialTree": "76343b515ca111daccb8748d83742c25265a925d",
+  "portHead": "1fd25723d80d6394df3189b87937132335e2d807",
+  "portTree": "aef776c3456fb06cf5590aaab35542230ee590b2",
+  "sourcePatchSHA256": "6f5310590748542c053f86421fcc6ba6a1e3ee98ee822ab78864135ebc87b7dd",
+  "buildConfigurationSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e",
+  "buildOutputDirectory": "out/NeAntik15779",
+  "ninjaTarget": "chrome",
+  "ninjaExitCode": 0,
+  "ninjaActionsCompleted": 3,
+  "ninjaActionsExpected": 3,
+  "buildLogSHA256": "ea6c6f39f03fe6c0f4323c1d9d1b241fb6a0d5085d5079d3e2e4d8c7910d79e8",
+  "ninjaLogSHA256": "bbaa02c6089348ca6159490fb2bad2ae95a063b68c31a1001d45b91955687db0",
+  "browserExecutableSHA256": "946cd077c2b9d52f2b42d23c5de456721d3a6afb5599afe33528954c93864ef5",
+  "frameworkSHA256": "dd6474d1de9c0bb8232c04513b1b0059b3d411eed327033ad9c0e70d5906422a",
+  "signingInputsSHA256": "50b988641b838aaa135c19f550b19e1764d8a407c42cded8eedd971b387faa27",
+  "releaseReady": false
+}

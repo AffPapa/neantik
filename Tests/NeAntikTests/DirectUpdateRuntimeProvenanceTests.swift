@@ -293,6 +293,18 @@ private final class RuntimeClosureFixture: @unchecked Sendable {
         }
     }
 
+    @Test func publicationBaselineRequiresZeroWhenOfficialPostDoesNotEnumerateFixes() throws {
+        var baseline = try #require(JSONSerialization.jsonObject(with: publication()) as? [String: Any])
+        baseline["securityFixCountStatus"] = "not-enumerated-by-official-post"
+        baseline["securityFixCount"] = 0
+        let now = Date(timeIntervalSince1970: 1_791_849_600)
+        try DirectUpdatePublicationBaseline.validate(JSONSerialization.data(withJSONObject: baseline), now: now)
+        baseline["securityFixCount"] = 1
+        #expect(throws: DirectUpdateRuntimeProvenanceError.metadata) {
+            try DirectUpdatePublicationBaseline.validate(JSONSerialization.data(withJSONObject: baseline), now: now)
+        }
+    }
+
     @Test func publicationBaselineRejectsContradictionsAndUnsafeFileKinds() throws {
         let valid = try publication(), now = Date(timeIntervalSince1970: 1_791_849_600)
         let original = try #require(JSONSerialization.jsonObject(with: valid) as? [String: Any])

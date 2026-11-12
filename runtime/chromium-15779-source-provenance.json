@@ -1,0 +1,54 @@
+{
+  "binaryBinding": {
+    "requiredEvidence": "schema-3-runtime-report",
+    "status": "pending-runtime-report"
+  },
+  "buildArgsSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e",
+  "buildEvidence": {
+    "browserExecutableSHA256": "946cd077c2b9d52f2b42d23c5de456721d3a6afb5599afe33528954c93864ef5",
+    "buildConfigurationSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e",
+    "buildLogSHA256": "ea6c6f39f03fe6c0f4323c1d9d1b241fb6a0d5085d5079d3e2e4d8c7910d79e8",
+    "buildOutputDirectory": "out/NeAntik15779",
+    "chromiumVersion": "157.0.8103.79",
+    "frameworkSHA256": "dd6474d1de9c0bb8232c04513b1b0059b3d411eed327033ad9c0e70d5906422a",
+    "ninjaActionsCompleted": 3,
+    "ninjaActionsExpected": 3,
+    "ninjaExitCode": 0,
+    "ninjaLogSHA256": "bbaa02c6089348ca6159490fb2bad2ae95a063b68c31a1001d45b91955687db0",
+    "ninjaTarget": "chrome",
+    "officialCommit": "6dc9bc3bdaea5c35ed6d41fceab2f7a3a2227c4f",
+    "officialTree": "76343b515ca111daccb8748d83742c25265a925d",
+    "portHead": "1fd25723d80d6394df3189b87937132335e2d807",
+    "portTree": "aef776c3456fb06cf5590aaab35542230ee590b2",
+    "releaseReady": false,
+    "schemaVersion": 1,
+    "signingInputsSHA256": "50b988641b838aaa135c19f550b19e1764d8a407c42cded8eedd971b387faa27",
+    "sourcePatchSHA256": "6f5310590748542c053f86421fcc6ba6a1e3ee98ee822ab78864135ebc87b7dd",
+    "status": "chromium-source-build-succeeded-unqualified",
+    "targetArchitecture": "arm64"
+  },
+  "buildEvidenceSHA256": "d4eac1717bf4c3a27bb63e6f4719d083bf5ed05760d7525b31e640efed68115d",
+  "officialChromiumBase": {
+    "commit": "6dc9bc3bdaea5c35ed6d41fceab2f7a3a2227c4f",
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "157.0.8103.79",
+    "tree": "76343b515ca111daccb8748d83742c25265a925d"
+  },
+  "releaseReady": false,
+  "schemaVersion": 1,
+  "sourceChecks": {
+    "buildArgs": "verified",
+    "buildEvidence": "verified",
+    "changedDependencyPins": "verified",
+    "officialCommitTree": "verified",
+    "reviewedPortTree": "verified"
+  },
+  "sourceContractSHA256": "43b347e14937742ea6b44692566bd8ed8057c5371a5fbea36c3a1bf194aef797",
+  "sourceHead": "1fd25723d80d6394df3189b87937132335e2d807",
+  "sourceMode": "official-chromium-stable-with-reviewed-neantik-port",
+  "sourcePatchSHA256": "6f5310590748542c053f86421fcc6ba6a1e3ee98ee822ab78864135ebc87b7dd",
+  "sourceTree": "aef776c3456fb06cf5590aaab35542230ee590b2",
+  "status": "source-qualified",
+  "targetArchitecture": "arm64",
+  "targetChromiumVersion": "157.0.8103.79"
+}

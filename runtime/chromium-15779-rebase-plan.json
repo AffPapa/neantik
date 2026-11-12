@@ -10,10 +10,15 @@
     "tree": "76343b515ca111daccb8748d83742c25265a925d"
   },
   "portSource": {
-    "head": "548d081a08839e902272be2caf92b298081cd988",
-    "tree": "852c95983dba3a2f966d58e4ab5c1846b8ce7b5c",
-    "sourcePatchSHA256": "3ca33eeb364c3f555b87544da05bc1e3e18b449b4290bb654ef001da89da6a16",
-    "changedPaths": 740,
+    "head": "1fd25723d80d6394df3189b87937132335e2d807",
+    "tree": "aef776c3456fb06cf5590aaab35542230ee590b2",
+    "sourcePatchSHA256": "6f5310590748542c053f86421fcc6ba6a1e3ee98ee822ab78864135ebc87b7dd",
+    "changedPaths": 763,
+    "skiaPrivacy": {
+      "base": "fef60e46c522b87e5802ddf0a215a763dd5e0483",
+      "tree": "36114a5bd4ff36ff582f5b5dd81298b3418e2e76",
+      "patchSHA256": "806d24e15c204fe84e9b5d423f64a0f280a8c0b33722dc3a2b847650ecf96513"
+    },
     "depsBlob": "5a1b6829a2cdef9a993cb9cc49a49ebc7ecb300a",
     "buildArgsPath": "out/NeAntik15779/args.gn",
     "buildArgsSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e",
@@ -24,7 +29,7 @@
     "third_party/dawn": "106245fa2b9e1cf8b59b1bb8e010af3c7ca8b600",
     "third_party/devtools-frontend/src": "6f9a57d502c857e2412a57fe03c96286d7877479",
     "third_party/icu": "c670d124c9b6aa92c0b492cf543808300e0e6103",
-    "third_party/skia": "fef60e46c522b87e5802ddf0a215a763dd5e0483",
+    "third_party/skia": "a3057a2925536fdd467e3b1b9f5f9f01b239ec85",
     "v8": "307108153d1e35e6e74528ee55f97b0cd59bf182"
   },
   "ninjaTarget": "chrome",

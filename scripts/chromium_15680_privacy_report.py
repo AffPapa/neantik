@@ -14,6 +14,11 @@ def preserved_report_bytes(observed: dict, project: Path) -> bytes:
     raw = path.read_bytes()
     need(len(raw) <= 131072 and hashlib.sha256(raw).hexdigest() == SHA256,
          'Frozen privacy runtime report changed')
+    return compare_frozen_report(raw, observed)
+
+
+def compare_frozen_report(raw: bytes, observed: dict) -> bytes:
+    need(len(raw) <= 131072, 'Frozen privacy runtime report exceeds size bound')
     saved = json.loads(raw)
     need(set(saved) == set(observed), 'Privacy report fields differ')
     need(all(saved[key] == value for key, value in observed.items() if key != 'createdAt'),

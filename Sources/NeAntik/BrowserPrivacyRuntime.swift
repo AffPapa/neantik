@@ -29,7 +29,13 @@ enum BrowserPrivacyRuntime {
               sourceContractSHA256: DirectUpdatePrivacyRuntimePins.reportHashes["sourceContractSHA256"]!,
               entries: DirectUpdatePrivacyRuntimePins.runtimeEntries,
               regularBytes: DirectUpdatePrivacyRuntimePins.runtimeBytes,
-              machoCount: DirectUpdatePrivacyRuntimePins.machoCount)
+              machoCount: DirectUpdatePrivacyRuntimePins.machoCount),
+        .init(executableSHA256: DirectUpdateM157RuntimePins.executableDigest,
+              runtimeDigest: DirectUpdateM157RuntimePins.runtimeDigest,
+              sourceContractSHA256: DirectUpdateM157RuntimePins.reportHashes["sourceContractSHA256"]!,
+              entries: DirectUpdateM157RuntimePins.runtimeEntries,
+              regularBytes: DirectUpdateM157RuntimePins.runtimeBytes,
+              machoCount: DirectUpdateM157RuntimePins.machoCount)
     ]
 
     static func inspect(executableURL: URL) -> BrowserPrivacyQualification? {
