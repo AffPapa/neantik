@@ -34,8 +34,11 @@ package enum DirectUpdatePublicationBaseline {
         }
         let extendedKeys = keys.union(["earlyStableObservation", "requiredSecurityFixes", "reviewedSecurityBranches"])
         let officialKeys = keys.union(["securityFixCountStatus"])
+        let countStatus = value["securityFixCountStatus"] as? String
+        let validOfficialCount = countStatus == "count-reported-by-official-post"
+            || (countStatus == "not-enumerated-by-official-post" && integer("securityFixCount") == 0)
         guard (Set(value.keys) == keys || Set(value.keys) == extendedKeys ||
-               (Set(value.keys) == officialKeys && value["securityFixCountStatus"] as? String == "count-reported-by-official-post")), integer("schemaVersion") == 1, integer("maximumAgeDays") == 0,
+               (Set(value.keys) == officialKeys && validOfficialCount)), integer("schemaVersion") == 1, integer("maximumAgeDays") == 0,
               let fixes = integer("securityFixCount"), (0...100_000).contains(fixes),
               let checked = day("checkedAt"), let published = day("publishedAt"), published <= checked,
               checked <= now,
@@ -57,13 +60,21 @@ package enum DirectUpdatePublicationBaseline {
     /// Evaluate after closure and report selection: metadata alone cannot enroll a runtime.
     package static func validateSecurityReview(_ bytes: Data, record: DirectUpdateRuntimeRecord) throws {
         try validate(bytes)
-        if record == .privacyPolicyV1 {
+        if record == .privacyPolicyV1 || record == .m157Privacy {
+            let reviewed: (reference: String, publishedAt: String, count: Int, status: String)
+            if record == .m157Privacy {
+                reviewed = (DirectUpdateM157RuntimePins.securityReference, DirectUpdateM157RuntimePins.securityPublishedAt,
+                            0, "not-enumerated-by-official-post")
+            } else {
+                reviewed = (DirectUpdatePrivacyRuntimePins.securityReference, DirectUpdatePrivacyRuntimePins.securityPublishedAt,
+                            DirectUpdatePrivacyRuntimePins.securityFixCount, DirectUpdatePrivacyRuntimePins.securityFixCountStatus)
+            }
             guard let value = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
                   value["minimumPublicChromiumVersion"] as? String == record.chromiumVersion,
-                  value["reference"] as? String == DirectUpdatePrivacyRuntimePins.securityReference,
-                  value["publishedAt"] as? String == DirectUpdatePrivacyRuntimePins.securityPublishedAt,
-                  value["securityFixCount"] as? Int == DirectUpdatePrivacyRuntimePins.securityFixCount,
-                  value["securityFixCountStatus"] as? String == DirectUpdatePrivacyRuntimePins.securityFixCountStatus else {
+                  value["reference"] as? String == reviewed.reference,
+                  value["publishedAt"] as? String == reviewed.publishedAt,
+                  value["securityFixCount"] as? Int == reviewed.count,
+                  value["securityFixCountStatus"] as? String == reviewed.status else {
                 throw DirectUpdateRuntimeProvenanceError.metadata
             }
             return

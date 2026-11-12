@@ -363,9 +363,14 @@ cp "$PROJECT_DIR/runtime/licenses/fingerprint-chromium-LICENSE" \
 cp "$PROJECT_DIR/runtime/licenses/ungoogled-chromium-macos-LICENSE" \
   "$LICENSES/ungoogled-chromium-macos-LICENSE"
 
-if [[ "$SOURCE_CONTRACT_NAME" == "chromium-15680-privacy-v1-source-contract.json" ]]; then
+if [[ "$SOURCE_CONTRACT_NAME" == "chromium-15680-privacy-v1-source-contract.json" ||
+      "$SOURCE_CONTRACT_NAME" == "chromium-15779-source-contract.json" ]]; then
+  PRIVACY_NOTICE="$PROJECT_DIR/runtime/privacy-policy-v1/SOURCE-NOTICE.txt"
+  if [[ "$RUNTIME_VERSION" == "157.0.8103.79" ]]; then
+    PRIVACY_NOTICE="$PROJECT_DIR/runtime/chromium-15779-privacy-source-notice.txt"
+  fi
   cp "$PROJECT_DIR/runtime/privacy-policy-v1/licenses/MPL-2.0.txt" "$LICENSES/Privacy-MPL-2.0.txt"
-  cp "$PROJECT_DIR/runtime/privacy-policy-v1/SOURCE-NOTICE.txt" "$LICENSES/Privacy-SOURCE-NOTICE.txt"
+  cp "$PRIVACY_NOTICE" "$LICENSES/Privacy-SOURCE-NOTICE.txt"
 fi
 
 if [[ "$SIGNING_IDENTITY" == "-" ]]; then

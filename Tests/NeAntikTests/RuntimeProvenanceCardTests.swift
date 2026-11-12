@@ -131,12 +131,12 @@ struct RuntimeProvenanceCardTests {
         #expect(snapshot.publicReleaseStatus.contains("заблокирован"))
     }
 
-    @Test(arguments: ["155.0.8059.40", "155.0.8059.79", "155.0.8059.84", "156.0.8078.48", "156.0.8078.73", "156.0.8078.74", "156.0.8078.79", "157.0.8103.38", "0155.0.8059.80", "155.0.8059.80 ", "155.0.8059"])
+    @Test(arguments: ["155.0.8059.40", "155.0.8059.79", "155.0.8059.84", "156.0.8078.48", "156.0.8078.73", "156.0.8078.74", "156.0.8078.79", "157.0.8103.78", "0155.0.8059.80", "155.0.8059.80 ", "155.0.8059"])
     func staleAndMalformedVersionsDoNotMeetCurrentBaseline(version: String) {
         #expect(!NeAntikRuntimeSecurityBaseline.meetsPublicChromiumVersion(version))
     }
 
-    @Test(arguments: ["157.0.8103.39", "157.0.8103.40"])
+    @Test(arguments: ["157.0.8103.79", "157.0.8103.80"])
     func currentAndNewerCanonicalVersionsMeetBaseline(version: String) {
         #expect(NeAntikRuntimeSecurityBaseline.meetsPublicChromiumVersion(version))
     }

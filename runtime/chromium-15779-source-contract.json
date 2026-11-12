@@ -4,8 +4,8 @@
   "targetArchitecture": "arm64",
   "releaseReady": false,
   "sourceMode": "official-chromium-stable-with-reviewed-neantik-port",
-  "status": "source-pins-verified-build-pending",
-  "binaryBindingStatus": "pending-build",
+  "status": "build-complete-runtime-report-pending",
+  "binaryBindingStatus": "pending-runtime-report",
   "officialChromiumBase": {
     "repository": "https://chromium.googlesource.com/chromium/src.git",
     "tag": "157.0.8103.79",
@@ -13,16 +13,24 @@
     "tree": "76343b515ca111daccb8748d83742c25265a925d"
   },
   "portSource": {
-    "head": "548d081a08839e902272be2caf92b298081cd988",
-    "tree": "852c95983dba3a2f966d58e4ab5c1846b8ce7b5c",
-    "sourcePatchSHA256": "3ca33eeb364c3f555b87544da05bc1e3e18b449b4290bb654ef001da89da6a16",
-    "changedPaths": 740,
+    "head": "1fd25723d80d6394df3189b87937132335e2d807",
+    "tree": "aef776c3456fb06cf5590aaab35542230ee590b2",
+    "sourcePatchSHA256": "6f5310590748542c053f86421fcc6ba6a1e3ee98ee822ab78864135ebc87b7dd",
+    "changedPaths": 763,
+    "skiaPrivacy": {
+      "base": "fef60e46c522b87e5802ddf0a215a763dd5e0483",
+      "tree": "36114a5bd4ff36ff582f5b5dd81298b3418e2e76",
+      "patchSHA256": "806d24e15c204fe84e9b5d423f64a0f280a8c0b33722dc3a2b847650ecf96513"
+    },
     "depsBlob": "5a1b6829a2cdef9a993cb9cc49a49ebc7ecb300a",
     "buildArgsPath": "out/NeAntik15779/args.gn",
     "buildArgsSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e",
     "buildOutputDirectory": "out/NeAntik15779"
   },
   "rebasePlan": "runtime/chromium-15779-rebase-plan.json",
-  "rebasePlanSHA256": "462294dfb7a8ea9e6db54c15ff47817c4833665e13ff3291516b69d2d26a02cd",
-  "chromiumLicenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b"
+  "rebasePlanSHA256": "45a4b343850a60c23840fa822108ad532a215b9af8d114320231ee516b386de8",
+  "chromiumLicenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
+  "buildEvidenceFile": "runtime/chromium-15779-build-evidence.json",
+  "buildEvidenceSHA256": "d4eac1717bf4c3a27bb63e6f4719d083bf5ed05760d7525b31e640efed68115d",
+  "securityBaselineSHA256": "0c5d5472c7f271655951126455ab676620f9095632bfcd110c41d1e65fc43364"
 }

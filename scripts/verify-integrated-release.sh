@@ -303,6 +303,11 @@ elif [[ "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.80" ]]; then
     done
   fi
 elif [[ "$EXPECTED_RUNTIME_VERSION" == "157.0.8103.79" ]]; then
+  if ! cmp -s "$PROJECT_DIR/runtime/privacy-policy-v1/licenses/MPL-2.0.txt" "$LICENSES/Privacy-MPL-2.0.txt" ||
+     ! cmp -s "$PROJECT_DIR/runtime/chromium-15779-privacy-source-notice.txt" "$LICENSES/Privacy-SOURCE-NOTICE.txt"; then
+    echo "Integrated Chromium .79 privacy license or source notice differs" >&2
+    exit 65
+  fi
   for evidence_name in chromium-15779-rebase-plan.json chromium-15779-build-evidence.json args.gn; do
     packaged="$EVIDENCE/chromium-15779-source-evidence/$evidence_name"
     reviewed="$PROJECT_DIR/runtime/$evidence_name"

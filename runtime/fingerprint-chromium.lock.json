@@ -1,30 +1,29 @@
 {
-  "schemaVersion": 4,
-  "status": "source-qualified",
-  "targetArchitecture": "arm64",
-  "sourceContractSHA256": "33cc9f2bc1a45454d884e53a6466428f5962c332695e284b5d2ca8004498ed00",
-  "sourceProvenanceSHA256": "3bc75236908db9506b9c686e5001509139111b37fdb44ebde3c65af5573ff90b",
-  "sourceAdoptionManifestSHA256": "3c9d4940c3746225135384e55f34b6d1ebe8fc36b30326a0f55845806c6ce79e",
+  "binaryBinding": {
+    "policy": "This source-only lock makes no runtime, signing, notarization, publication or release claim.",
+    "requiredEvidence": "schema-3-runtime-report",
+    "status": "not-attested-by-this-document"
+  },
   "fingerprintChromium": {
+    "chromiumVersion": "157.0.8103.79",
+    "commit": "6dc9bc3bdaea5c35ed6d41fceab2f7a3a2227c4f",
+    "licenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
     "repository": "https://chromium.googlesource.com/chromium/src.git",
-    "tag": "157.0.8103.39",
-    "commit": "9a31f0acec1854d44e49a73fbf8017598151a583",
-    "tree": "e400810dee21ba266feeeef005ea83ae83fd274e",
-    "chromiumVersion": "157.0.8103.39",
-    "licenseSHA256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b"
+    "tag": "157.0.8103.79",
+    "tree": "76343b515ca111daccb8748d83742c25265a925d"
   },
   "ownedInputs": {
-    "sourcePatchSHA256": "26a2856cd6cb3acb97283898ef415be3c0afc0d2239028ffaebda0525dd17e43",
-    "buildArgsSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e"
+    "buildArgsSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e",
+    "sourcePatchSHA256": "6f5310590748542c053f86421fcc6ba6a1e3ee98ee822ab78864135ebc87b7dd"
   },
   "ownedManifests": {
-    "neantikPatchSeriesSHA256": "c79ee59b55b1ad474229313660c31c19fcc3b67051bca4f1da1e6098b0b69748",
     "appleDeviceTuplesSHA256": "3c355a6a6708386c410c98cb9310a6f6e62ea5da065eb0faf0290b2a4a4ff6f2",
-    "securityBaselineSHA256": "793f6d541b4ab206efe4185b2a6e13b504ae8bf2f15e151144bcfe6494ada3ac"
+    "neantikPatchSeriesSHA256": "c79ee59b55b1ad474229313660c31c19fcc3b67051bca4f1da1e6098b0b69748",
+    "securityBaselineSHA256": "0c5d5472c7f271655951126455ab676620f9095632bfcd110c41d1e65fc43364"
   },
-  "binaryBinding": {
-    "status": "not-attested-by-this-document",
-    "requiredEvidence": "schema-3-runtime-report",
-    "policy": "This source-only lock makes no runtime, signing, notarization, publication or release claim."
-  }
+  "schemaVersion": 4,
+  "sourceContractSHA256": "43b347e14937742ea6b44692566bd8ed8057c5371a5fbea36c3a1bf194aef797",
+  "sourceProvenanceSHA256": "78f1788d742c1d5b2b576c8d1bbc940c78b4ab3e2d9383213166c479402c9ec1",
+  "status": "source-qualified",
+  "targetArchitecture": "arm64"
 }

@@ -142,6 +142,23 @@ struct MCPInteroperabilityTests {
         let wire = String(decoding: try JSONSerialization.data(withJSONObject: preflightReply), as: UTF8.self)
         #expect(!wire.contains("/private/") && !wire.contains("secret"))
     }
+
+    @Test(arguments: [true, false])
+    func unsupportedProfilePoliciesReturnActionableCodes(privacy: Bool) async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("mcp-policy-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let failure: any Error = privacy ? UnsupportedBrowserPrivacyPolicyError() : UnsupportedBrowserFontPolicyError()
+        let session = MCPManagementSession(root: root, testingToolFailure: failure)
+        let response = try await request(session, "tools/call", [
+            "name": "profile_start", "arguments": [:]
+        ], modern: true)
+        let result = try #require(response["result"] as? [String: Any])
+        let meta = try #require(result["_meta"] as? [String: Any])
+        let expectedCode = privacy ? "browser_privacy_policy_unavailable" : "browser_font_policy_unavailable"
+        #expect(result["isError"] as? Bool == true)
+        #expect(meta["app.neantik/errorCode"] as? String == expectedCode)
+        #expect(meta["app.neantik/automaticRetry"] as? Bool == false)
+    }
     #endif
     func request(_ session: MCPManagementSession, _ method: String, _ params: [String: Any] = [:], modern: Bool = false, id: Int = 1) async throws -> [String: Any] {
         var params = params

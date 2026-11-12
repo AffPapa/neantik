@@ -20,10 +20,15 @@ UPSTREAM = {
     "tree": "76343b515ca111daccb8748d83742c25265a925d",
 }
 SOURCE = {
-    "head": "548d081a08839e902272be2caf92b298081cd988",
-    "tree": "852c95983dba3a2f966d58e4ab5c1846b8ce7b5c",
-    "sourcePatchSHA256": "3ca33eeb364c3f555b87544da05bc1e3e18b449b4290bb654ef001da89da6a16",
-    "changedPaths": 740,
+    "head": "1fd25723d80d6394df3189b87937132335e2d807",
+    "tree": "aef776c3456fb06cf5590aaab35542230ee590b2",
+    "sourcePatchSHA256": "6f5310590748542c053f86421fcc6ba6a1e3ee98ee822ab78864135ebc87b7dd",
+    "changedPaths": 763,
+    "skiaPrivacy": {
+        "base": "fef60e46c522b87e5802ddf0a215a763dd5e0483",
+        "tree": "36114a5bd4ff36ff582f5b5dd81298b3418e2e76",
+        "patchSHA256": "806d24e15c204fe84e9b5d423f64a0f280a8c0b33722dc3a2b847650ecf96513",
+    },
     "depsBlob": "5a1b6829a2cdef9a993cb9cc49a49ebc7ecb300a",
     "buildArgsPath": "out/NeAntik15779/args.gn",
     "buildArgsSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e",
@@ -34,7 +39,7 @@ CHANGED_DEPENDENCIES = {
     "third_party/dawn": "106245fa2b9e1cf8b59b1bb8e010af3c7ca8b600",
     "third_party/devtools-frontend/src": "6f9a57d502c857e2412a57fe03c96286d7877479",
     "third_party/icu": "c670d124c9b6aa92c0b492cf543808300e0e6103",
-    "third_party/skia": "fef60e46c522b87e5802ddf0a215a763dd5e0483",
+    "third_party/skia": "a3057a2925536fdd467e3b1b9f5f9f01b239ec85",
     "v8": "307108153d1e35e6e74528ee55f97b0cd59bf182",
 }
 LICENSE_SHA256 = "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b"
@@ -161,6 +166,7 @@ def verify_source_root(source_root: Path, project_root: Path) -> dict:
         "HEAD": SOURCE["head"],
         "HEAD^{tree}": SOURCE["tree"],
         "HEAD:DEPS": SOURCE["depsBlob"],
+        "HEAD:third_party/skia": CHANGED_DEPENDENCIES["third_party/skia"],
         UPSTREAM["commit"] + "^{tree}": UPSTREAM["tree"],
     }
     for selector, expected in identities.items():
@@ -174,6 +180,20 @@ def verify_source_root(source_root: Path, project_root: Path) -> dict:
                 or _git(checkout, "rev-parse", "HEAD") != expected):
             raise ValueError(f"Chromium .79 dependency differs: {relative}")
         _git(checkout, "diff", "--quiet", "HEAD", "--")
+    skia = source_root / "third_party/skia"
+    skia_port = SOURCE["skiaPrivacy"]
+    if _git(skia, "rev-parse", "HEAD^{tree}") != skia_port["tree"]:
+        raise ValueError("Chromium .79 Skia privacy tree differs")
+    patch = subprocess.run(
+        ["git", "-C", str(skia), "diff", "--binary", "--full-index", skia_port["base"], "HEAD"],
+        capture_output=True,
+    )
+    if patch.returncode or hashlib.sha256(patch.stdout).hexdigest() != skia_port["patchSHA256"]:
+        raise ValueError("Chromium .79 Skia privacy patch differs")
+    dnr = _checked_file(source_root, "extensions/browser/api/declarative_net_request/utils.cc")
+    cleanup = json.loads(_checked_file(project_root.resolve(), "Resources/SiteProtection/query-rules.json").read_text())
+    if len(cleanup) != 1 or f'R"NEANTIK({cleanup[0]["condition"]["regexFilter"]})NEANTIK"' not in dnr.read_text():
+        raise ValueError("Packaged query cleanup does not match the bounded M157 regex")
     if _sha256(_checked_file(source_root, SOURCE["buildArgsPath"])) != SOURCE["buildArgsSHA256"]:
         raise ValueError("Chromium .79 GN args digest mismatch")
     if _sha256(_checked_file(source_root, "LICENSE")) != LICENSE_SHA256:

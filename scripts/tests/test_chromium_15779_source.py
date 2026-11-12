@@ -31,10 +31,17 @@ class Chromium15779SourceTests(unittest.TestCase):
         self.root = Path(self.tmp.name).resolve()
         self.runtime = self.root / "runtime"
         for name in (m15779.CONTRACT, m15779.PLAN, "licenses/Chromium-LICENSE", "licenses/fingerprint-chromium-LICENSE",
-                     "security-baseline.json", "nevision-patches/series.json", "apple-device-tuples.json"):
+                     "security-baseline.json", "nevision-patches/series.json", "apple-device-tuples.json",
+                     "privacy-policy-v1/licenses/MPL-2.0.txt"):
             target = self.runtime / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(SCRIPTS.parent / "runtime" / name, target)
+        contract_path = self.runtime / m15779.CONTRACT
+        contract = json.loads(contract_path.read_text())
+        contract.update(status="source-pins-verified-build-pending", binaryBindingStatus="pending-build")
+        for field in ("buildEvidenceFile", "buildEvidenceSHA256", "securityBaselineSHA256"):
+            contract.pop(field, None)
+        contract_path.write_text(json.dumps(contract))
         self.provenance = self.root / "source-provenance.json"
         self.lock = self.root / "candidate-lock.json"
 
@@ -151,6 +158,7 @@ class Chromium15779SourceTests(unittest.TestCase):
             project_root=self.root, runtime_lock=self.lock, source_provenance=self.provenance)
         self.assertIn(m15779.UPSTREAM["commit"], rendered)
         self.assertIn(m15779.SOURCE["sourcePatchSHA256"], rendered)
+        self.assertIn("Privacy-MPL-2.0.txt", rendered)
         report = load_script("verify-packaged-runtime-report")
         gui = load_script("verify-gui-fingerprint-report")
         packaged = self.root / "NeAntikRuntimeEvidence"

@@ -661,6 +661,16 @@ if json.loads(Path(os.environ['M156_SOURCE_LOCK']).read_text()).get('variant') =
     sys.path.insert(0, str(script_dir))
     from chromium_15680_privacy_report import preserved_report_bytes
     content = preserved_report_bytes(report, script_dir.parent)
+if report["chromiumVersion"] == "157.0.8103.79":
+    import sys
+    script_dir = Path(os.environ["M156_SCRIPT_DIR"]).resolve()
+    frozen = script_dir.parent / "runtime/chromium-15779-runtime-verification.json"
+    if frozen.exists() or frozen.is_symlink():
+        if frozen.is_symlink() or not frozen.is_file() or frozen.stat().st_size > 131072:
+            raise ValueError("Unsafe frozen Chromium .79 verification report")
+        sys.path.insert(0, str(script_dir))
+        from chromium_15680_privacy_report import compare_frozen_report
+        content = compare_frozen_report(frozen.read_bytes(), report)
 Path(os.environ["REPORT_PATH"]).write_bytes(content)
 PY
   chmod 600 "$REPORT_PATH"
