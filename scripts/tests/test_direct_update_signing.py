@@ -32,7 +32,8 @@ class DirectUpdateSigningTests(unittest.TestCase):
                             downloadURL="https://github.com/AffPapa/neantik/releases/download/v0.7.36/" + self.archive.name,
                             sha256=hashlib.sha256(self.archive.read_bytes()).hexdigest(), minimumOS="14.0",
                             architecture="arm64", artifactKind="public-notarized", publicReleaseState="public-ready",
-                            chromiumVersion="157.0.8103.39")
+                            chromiumVersion=json.loads((SCRIPTS.parent / "runtime/security-baseline.json").read_text())[
+                                "minimumPublicChromiumVersion"])
 
     def sign(self):
         return module.sign(self.payload, self.archive, self.key, "qa-owned-v1", openssl=OPENSSL, now=self.now)

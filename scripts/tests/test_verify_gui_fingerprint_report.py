@@ -31,11 +31,15 @@ class VerifyGuiFingerprintReportTests(unittest.TestCase):
             MODULE.source_contract_name("156.0.8078.13")
 
     def test_m157_uses_only_its_exact_source_contract_and_lock_version(self):
-        lock = json.loads((SCRIPT.parent.parent / "runtime/fingerprint-chromium.lock.json").read_text())
-        self.assertEqual(MODULE.source_contract_name("157.0.8103.39", lock),
+        historical = {"fingerprintChromium": {"chromiumVersion": "157.0.8103.39"}}
+        current = {"fingerprintChromium": {"chromiumVersion": "157.0.8103.79"}}
+        self.assertEqual(MODULE.source_contract_name("157.0.8103.39", historical),
                          "chromium-157-source-contract.json")
-        with self.assertRaisesRegex(MODULE.FingerprintReportError, "lock version mismatch"):
-            MODULE.source_contract_name("157.0.8103.39", {"fingerprintChromium": {"chromiumVersion": "156.0.8078.80"}})
+        self.assertEqual(MODULE.source_contract_name("157.0.8103.79", current),
+                         "chromium-15779-source-contract.json")
+        for requested, lock in (("157.0.8103.39", current), ("157.0.8103.79", historical)):
+            with self.assertRaisesRegex(MODULE.FingerprintReportError, "lock version mismatch"):
+                MODULE.source_contract_name(requested, lock)
 
     def test_current_stable_15648_uses_its_own_source_contract(self):
         self.assertEqual(MODULE.source_contract_name("156.0.8078.48"), "chromium-15648-source-contract.json")

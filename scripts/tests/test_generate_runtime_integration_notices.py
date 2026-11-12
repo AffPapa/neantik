@@ -75,7 +75,6 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
         text = SCRIPT.read_text(encoding="utf-8")
         self.assertIn('if version == "156.0.8078.80":', text)
         self.assertIn("from chromium_15680_release_evidence import verify_lock", text)
-        self.assertIn('"156.0.8078.80"}', text)
 
     def test_m155_default_check_uses_new_major_and_preserves_m154_notices(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -116,6 +115,10 @@ class RuntimeIntegrationNoticesTests(unittest.TestCase):
         if runtime_lock["fingerprintChromium"]["chromiumVersion"] == "157.0.8103.39":
             return  # M157 source-only locks render only into the exact candidate compliance bundle.
         rendered = MODULE.render_notices(project_root=ROOT)
+        if runtime_lock["fingerprintChromium"]["chromiumVersion"] == "157.0.8103.79":
+            self.assertEqual(rendered, (ROOT / "docs/RUNTIME_INTEGRATION_NOTICES_157.md").read_text())
+            self.assertIn("Chromium: `157.0.8103.79`", rendered)
+            return
         if runtime_lock["fingerprintChromium"]["chromiumVersion"] == "156.0.8078.74":
             # The checked-in M156 document describes the historic .12 build;
             # the .74 candidate has its own pinned source provenance.
