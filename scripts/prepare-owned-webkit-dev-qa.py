@@ -165,6 +165,8 @@ def install_fixture_tls_scope(app: Path, stage: Path, anchor: bytes, origin: str
     host_input = stage / "NeAntikWebKitHost.source.app"
     require(existing_host.is_dir() and not existing_host.is_symlink(), "source-host-invalid")
     os.replace(existing_host, host_input)
+    with (host_input / "Contents/Info.plist").open("rb") as stream:
+        network_sandbox_sha256 = plistlib.load(stream).get("NeAntikWebKitNetworkSandboxSHA256")
     host_binary = host_input / "Contents/MacOS/NeAntikWebKitHost"
     runtime_frameworks = host_input / "Contents/Frameworks"
     source_offer, source_offer_digest = source_offer_selection()
@@ -182,7 +184,8 @@ def install_fixture_tls_scope(app: Path, stage: Path, anchor: bytes, origin: str
                      qa_tls_anchor_der=anchor, qa_tls_origins=[origin],
                      source_offer_root=source_offer,
                      source_offer_manifest_sha256=source_offer_digest,
-                     private_v508_evidence=evidence)
+                     private_v508_evidence=evidence,
+                     network_sandbox_sha256=network_sandbox_sha256)
     shutil.rmtree(host_input)
 
 

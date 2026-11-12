@@ -92,6 +92,25 @@ class VerifyWebKitHostPinTests(unittest.TestCase):
                 "app.neantik.desktop.dev.webkit-host", cdhash))
             self.assertEqual(result["status"], "PASS")
 
+    def test_required_sandbox_pin_rejects_missing_or_changed_resource(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, exe, _, cdhash = self.make_app(Path(temporary))
+            runner = self.runner_for("app.neantik.desktop.dev.webkit-host", cdhash)
+            with self.assertRaisesRegex(ValueError, "Malformed.*sandbox pin"):
+                MODULE.verify(app, runner, require_network_sandbox_pin=True)
+            contents = exe.parent.parent
+            policy = contents / "Frameworks" / MODULE.sandbox_pin.RELATIVE_PATH
+            policy.parent.mkdir()
+            policy.write_bytes(b"(version 1)\n")
+            info = contents / "Info.plist"
+            metadata = plistlib.loads(info.read_bytes())
+            metadata[MODULE.sandbox_pin.PIN_KEY] = hashlib.sha256(policy.read_bytes()).hexdigest()
+            info.write_bytes(plistlib.dumps(metadata))
+            self.assertEqual(MODULE.verify(app, runner, require_network_sandbox_pin=True)["status"], "PASS")
+            policy.write_bytes(b"(version 2)\n")
+            with self.assertRaisesRegex(ValueError, "sandbox changed"):
+                MODULE.verify(app, runner)
+
     def test_rejects_host_resealed_after_manager_pin(self):
         with tempfile.TemporaryDirectory() as temporary:
             app, executable, _, cdhash = self.make_app(Path(temporary))

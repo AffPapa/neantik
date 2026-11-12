@@ -679,7 +679,7 @@ final class WebKitStartupDiagnosticCapture: @unchecked Sendable {
         static let failures: Set<String> = {
             let groups: [String: [String]] = [
                 "identity": ["malformedPin", "unsafeBundle", "hostHashMismatch", "codeIdentityMismatch", "parentIdentityMismatch"],
-                "runtime": ["malformedPin", "unsafeBundle", "missingRuntimeImage", "ambiguousRuntimeImage", "wrongRuntimeImage", "runtimeHashMismatch", "unsupportedOperatingSystem"],
+                "runtime": ["malformedPin", "unsafeBundle", "missingRuntimeImage", "ambiguousRuntimeImage", "wrongRuntimeImage", "runtimeHashMismatch", "unsupportedOperatingSystem", "missingNetworkSandboxPin", "malformedNetworkSandboxPin", "unsafeNetworkSandboxPolicy", "networkSandboxHashMismatch"],
                 "pipe": ["unsafeDescriptor", "invalidLimit", "timeout", "closed", "malformed"],
                 "protocol": ["malformedFrame", "oversizedFrame", "invalidSession", "invalidCapability", "invalidProcessOwner", "invalidTransition", "prematureEOF"],
                 "profile": ["invalidRoot", "profileUnavailable", "profileMismatch", "runtimeMismatch", "reservationMismatch"],

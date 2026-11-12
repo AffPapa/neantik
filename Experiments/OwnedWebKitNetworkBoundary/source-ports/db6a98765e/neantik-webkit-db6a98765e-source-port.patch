@@ -1,0 +1,801 @@
+diff --git a/Source/JavaScriptCore/PlatformCocoa.cmake b/Source/JavaScriptCore/PlatformCocoa.cmake
+index ecc1b84cf00f03757cb798d1c3736a07f88d21a7..bf0840eb9fc521a7c403a4c4065b214113590ec8 100644
+--- a/Source/JavaScriptCore/PlatformCocoa.cmake
++++ b/Source/JavaScriptCore/PlatformCocoa.cmake
+@@ -186,7 +186,11 @@ endif ()
+ set(BUNDLE_VERSION "${MACOSX_FRAMEWORK_BUNDLE_VERSION}")
+ set(SHORT_VERSION_STRING "${MACOSX_FRAMEWORK_SHORT_VERSION_STRING}")
+ set(PRODUCT_NAME "JavaScriptCore")
+-set(PRODUCT_BUNDLE_IDENTIFIER "com.apple.JavaScriptCore")
++if (WEBKIT_SDK_IS_MACOS)
++    set(PRODUCT_BUNDLE_IDENTIFIER "app.neantik.desktop.webkit.javascriptcore")
++else ()
++    set(PRODUCT_BUNDLE_IDENTIFIER "com.apple.JavaScriptCore")
++endif ()
+ set(PLATFORM_NAME "${WEBKIT_SDK_NAME}")
+ 
+ if (WEBKIT_SDK_IS_MACOS)
+diff --git a/Source/ThirdParty/ANGLE/CMakeLists.txt b/Source/ThirdParty/ANGLE/CMakeLists.txt
+index cf92e4466b2ebb748e50d93a4a6796a515efe6ca..40126d357972c675440c1d902c34c25cc49ce7b2 100644
+--- a/Source/ThirdParty/ANGLE/CMakeLists.txt
++++ b/Source/ThirdParty/ANGLE/CMakeLists.txt
+@@ -281,6 +281,10 @@ if (USE_ANGLE_EGL OR ENABLE_WEBGL)
+             INSTALL_NAME_DIR "${WEBKIT_SDK_SYSTEM_PREFIX}/System/Library/PrivateFrameworks/WebCore.framework/${WEBKIT_FRAMEWORK_VERSION_PATH}Frameworks"
+         )
+ 
++        if (WEBKIT_SDK_IS_MACOS AND NOT USE_APPLE_INTERNAL_SDK)
++            set_target_properties(ANGLE-shared PROPERTIES INSTALL_NAME_DIR "@rpath")
++        endif ()
++
+         set_property(TARGET GLESv2Framework PROPERTY INTERFACE_LINK_LIBRARIES ANGLE-shared)
+         if (USE_ANGLE_EGL)
+             set_property(TARGET EGLFramework PROPERTY INTERFACE_LINK_LIBRARIES ANGLE-shared)
+diff --git a/Source/ThirdParty/libwebrtc/CMakeLists.txt b/Source/ThirdParty/libwebrtc/CMakeLists.txt
+index e7dd3b20c16311b7dd0bfc3201bc92ba1fd6b980..5dcd93cf7319fec23602814f5202075e8b38ecb8 100644
+--- a/Source/ThirdParty/libwebrtc/CMakeLists.txt
++++ b/Source/ThirdParty/libwebrtc/CMakeLists.txt
+@@ -4024,7 +4024,7 @@ if (APPLE)
+     set_target_properties(webrtc PROPERTIES
+         MACOSX_RPATH OFF
+         BUILD_WITH_INSTALL_NAME_DIR ON
+-        INSTALL_NAME_DIR "/System/Library/PrivateFrameworks/WebCore.framework/${WEBKIT_FRAMEWORK_VERSION_PATH}Frameworks"
++        INSTALL_NAME_DIR "@rpath"
+     )
+     set_property(TARGET webrtc APPEND PROPERTY LINK_DEPENDS ${_libwebrtc_exp})
+ 
+diff --git a/Source/ThirdParty/libwebrtc/cmake/usage_exit_stub.c b/Source/ThirdParty/libwebrtc/cmake/usage_exit_stub.c
+index e40994d00defda7a643ecc8aff6c8703ffa80d24..72065e1ad2c8383730c2c4eb5fbca61b893f3999 100644
+--- a/Source/ThirdParty/libwebrtc/cmake/usage_exit_stub.c
++++ b/Source/ThirdParty/libwebrtc/cmake/usage_exit_stub.c
+@@ -1,4 +1,13 @@
+-// Stub for usage_exit() required by tools_common.c when built as a library
+-// rather than as part of a CLI tool (vpxenc/vpxdec).
++/* Copyright (c) 2026 NeAntik contributors */
++/* SPDX-License-Identifier: MPL-2.0 */
++
++/*
++ * NeAntik-owned replacement for WebKit's unannotated libvpx CMake shim.
++ * Keep the library-build behavior: CLI-only usage_exit() must never return.
++ */
+ #include <stdlib.h>
+-void usage_exit(void) { abort(); }
++
++void usage_exit(void)
++{
++    abort();
++}
+diff --git a/Source/WTF/wtf/PlatformCocoa.cmake b/Source/WTF/wtf/PlatformCocoa.cmake
+index 773da122340d4979649bfa375bb025e644d8e352..58933ea306dd505c681d7e42020244df017430d4 100644
+--- a/Source/WTF/wtf/PlatformCocoa.cmake
++++ b/Source/WTF/wtf/PlatformCocoa.cmake
+@@ -128,6 +128,17 @@ list(APPEND WTF_PUBLIC_HEADERS
+ if (CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR USE_APPLE_INTERNAL_SDK)
+     file(COPY mac/MachExceptions.defs DESTINATION ${WTF_DERIVED_SOURCES_DIR})
+ 
++    # macOS SDK 27 moved mach_exc.defs into Kernel.framework. Keep this
++    # include path local to MIG rather than changing all C/C++ searches.
++    set(_webkit_mig_sdk_include)
++    if (NOT EXISTS "${CMAKE_OSX_SYSROOT}/usr/include/mach/mach_exc.defs")
++        set(_webkit_mig_kernel_headers "${CMAKE_OSX_SYSROOT}/System/Library/Frameworks/Kernel.framework/Versions/A/Headers")
++        if (NOT EXISTS "${_webkit_mig_kernel_headers}/mach/mach_exc.defs")
++            message(FATAL_ERROR "mach_exc.defs is missing from the selected macOS SDK")
++        endif ()
++        set(_webkit_mig_sdk_include "-I${_webkit_mig_kernel_headers}")
++    endif ()
++
+     add_custom_command(
+         OUTPUT
+         ${WTF_DERIVED_SOURCES_DIR}/MachExceptionsServer.h
+@@ -138,7 +149,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR USE_APPLE_INTERNAL_SDK)
+         WORKING_DIRECTORY ${WTF_DERIVED_SOURCES_DIR}
+         COMMAND ${Mig_EXECUTABLE} -header mach_exc.h -user mach_excUser.c
+             -sheader MachExceptionsServer.h -server mach_excServer.c
+-            -DMACH_EXC_SERVER_TASKIDTOKEN_STATE -isysroot ${CMAKE_OSX_SYSROOT}
++            -DMACH_EXC_SERVER_TASKIDTOKEN_STATE ${_webkit_mig_sdk_include} -isysroot ${CMAKE_OSX_SYSROOT}
+             MachExceptions.defs
+         VERBATIM)
+     list(APPEND WTF_SOURCES
+diff --git a/Source/WTF/wtf/PlatformHave.h b/Source/WTF/wtf/PlatformHave.h
+index ab5186fbddf0e2d5c169a95252340100dc17932e..2ecb4ca29f0139c394cf79b4c628ddff566e0f93 100644
+--- a/Source/WTF/wtf/PlatformHave.h
++++ b/Source/WTF/wtf/PlatformHave.h
+@@ -224,7 +224,7 @@
+ #define HAVE_SYS_TIMEB_H 1
+ #endif
+ 
+-#if OS(DARWIN) && __has_include(<mach/mach_exc.defs>) && !PLATFORM(GTK)
++#if OS(DARWIN) && (__has_include(<mach/mach_exc.defs>) || __has_include(<Kernel/mach/mach_exc.defs>)) && !PLATFORM(GTK)
+ #define HAVE_MACH_EXCEPTIONS 1
+ #endif
+ 
+diff --git a/Source/WebCore/PlatformCocoa.cmake b/Source/WebCore/PlatformCocoa.cmake
+index d490d2d219ae0f435bf6889d48af608862426ae1..de201ecda45bc6f0ff5188861cd68b36950d6953 100644
+--- a/Source/WebCore/PlatformCocoa.cmake
++++ b/Source/WebCore/PlatformCocoa.cmake
+@@ -1,4 +1,8 @@
+-set(MACOSX_FRAMEWORK_IDENTIFIER com.apple.WebCore)
++if (WEBKIT_SDK_IS_MACOS)
++    set(MACOSX_FRAMEWORK_IDENTIFIER app.neantik.desktop.webkit.webcore)
++else ()
++    set(MACOSX_FRAMEWORK_IDENTIFIER com.apple.WebCore)
++endif ()
+ if (WebCore_INSTALL_NAME_DIR)
+     set_target_properties(WebCore PROPERTIES
+         INSTALL_NAME_DIR "${WebCore_INSTALL_NAME_DIR}"
+@@ -1666,7 +1670,11 @@ list(APPEND WebCore_PRIVATE_FRAMEWORK_HEADERS
+ set(BUNDLE_VERSION "${MACOSX_FRAMEWORK_BUNDLE_VERSION}")
+ set(SHORT_VERSION_STRING "${MACOSX_FRAMEWORK_SHORT_VERSION_STRING}")
+ set(PRODUCT_NAME "WebCore")
+-set(PRODUCT_BUNDLE_IDENTIFIER "com.apple.WebCore")
++if (WEBKIT_SDK_IS_MACOS)
++    set(PRODUCT_BUNDLE_IDENTIFIER "app.neantik.desktop.webkit.webcore")
++else ()
++    set(PRODUCT_BUNDLE_IDENTIFIER "com.apple.WebCore")
++endif ()
+ set(PLATFORM_NAME "${WEBKIT_SDK_NAME}")
+ 
+ if (WEBKIT_SDK_IS_MACOS)
+diff --git a/Source/WebCore/accessibility/mac/WebAccessibilityObjectWrapperMac.mm b/Source/WebCore/accessibility/mac/WebAccessibilityObjectWrapperMac.mm
+index 74410f07862cc7c422781e64758c673301ca1c7c..d5874c176218daecb214b4c8f0b8f6324c5661f5 100644
+--- a/Source/WebCore/accessibility/mac/WebAccessibilityObjectWrapperMac.mm
++++ b/Source/WebCore/accessibility/mac/WebAccessibilityObjectWrapperMac.mm
+@@ -3195,6 +3195,7 @@ - (void)accessibilityPerformAction:(NSString*)action
+         backingObject->performDismissActionIgnoringResult();
+     else if (AXObjectCache::clientIsInTestMode() && [action isEqualToString:@"AXLogTrees"])
+         [self _accessibilityPrintTrees];
++#if ENABLE(WRITING_TOOLS)
+     else if ([action isEqualToString:NSAccessibilityShowWritingToolsAction]) {
+         Accessibility::performFunctionOnMainThread([protectedSelf = retainPtr(self)] {
+             RefPtr<AXCoreObject> backingObject = protectedSelf.get().updateObjectBackingStore;
+@@ -3202,6 +3203,7 @@ - (void)accessibilityPerformAction:(NSString*)action
+                 page->chrome().client().showWritingToolsAffordance();
+         });
+     }
++#endif // ENABLE(WRITING_TOOLS)
+ }
+ ALLOW_DEPRECATED_IMPLEMENTATIONS_END
+ 
+diff --git a/Source/WebCore/loader/ContentFilter.cpp b/Source/WebCore/loader/ContentFilter.cpp
+index 2183b962510ef7310955e9d292b1fb334ee7b943..a98175c3c98bd526de21175cdb5ed4071553de6b 100644
+--- a/Source/WebCore/loader/ContentFilter.cpp
++++ b/Source/WebCore/loader/ContentFilter.cpp
+@@ -398,7 +398,11 @@ URL ContentFilter::url()
+ const URL& ContentFilter::blockedPageURL()
+ {
+     static NeverDestroyed blockedPageURL = [] () -> URL {
++#if PLATFORM(MAC)
++        RetainPtr webCoreBundle = CFBundleGetBundleWithIdentifier(CFSTR("app.neantik.desktop.webkit.webcore"));
++#else
+         RetainPtr webCoreBundle = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.WebCore"));
++#endif
+         return adoptCF(CFBundleCopyResourceURL(webCoreBundle.get(), CFSTR("ContentFilterBlockedPage"), CFSTR("html"), nullptr)).get();
+     }();
+     return blockedPageURL;
+diff --git a/Source/WebCore/platform/LocalizedStrings.cpp b/Source/WebCore/platform/LocalizedStrings.cpp
+index 92e777deef1f39957c5307f93601714077808d88..3c290e2e6953eb8e355680d0662bfff86157e690 100644
+--- a/Source/WebCore/platform/LocalizedStrings.cpp
++++ b/Source/WebCore/platform/LocalizedStrings.cpp
+@@ -95,7 +95,11 @@ String formatLocalizedString(const char* format, ...)
+ #if PLATFORM(COCOA)
+ static CFBundleRef webCoreBundleSingleton()
+ {
++#if PLATFORM(MAC)
++    static NeverDestroyed<RetainPtr<CFBundleRef>> bundle = CFBundleGetBundleWithIdentifier(CFSTR("app.neantik.desktop.webkit.webcore"));
++#else
+     static NeverDestroyed<RetainPtr<CFBundleRef>> bundle = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.WebCore"));
++#endif
+     ASSERT(bundle.get());
+     return bundle.get().get();
+ }
+diff --git a/Source/WebGPU/WebGPU/CMakeLists.txt b/Source/WebGPU/WebGPU/CMakeLists.txt
+index 32ad6a1d50a988c79979f38d9433406db2857846..341260678f62d86f8e7dcd1565ac4dc730d6a55e 100644
+--- a/Source/WebGPU/WebGPU/CMakeLists.txt
++++ b/Source/WebGPU/WebGPU/CMakeLists.txt
+@@ -71,7 +71,11 @@ endif ()
+ set(BUNDLE_VERSION "${MACOSX_FRAMEWORK_BUNDLE_VERSION}")
+ set(SHORT_VERSION_STRING "${MACOSX_FRAMEWORK_SHORT_VERSION_STRING}")
+ set(PRODUCT_NAME "WebGPU")
+-set(PRODUCT_BUNDLE_IDENTIFIER "com.apple.WebGPU")
++if (WEBKIT_SDK_IS_MACOS)
++    set(PRODUCT_BUNDLE_IDENTIFIER "app.neantik.desktop.webkit.webgpu")
++else ()
++    set(PRODUCT_BUNDLE_IDENTIFIER "com.apple.WebGPU")
++endif ()
+ set_target_properties(WebGPU PROPERTIES
+     MACOSX_FRAMEWORK_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/../Info.plist"
+ )
+diff --git a/Source/WebInspectorUI/PlatformCocoa.cmake b/Source/WebInspectorUI/PlatformCocoa.cmake
+index 0e48c7a611b97b64328ad5f0963a8da030dfe3ef..762b371feed2459fb459760aa226ba4384cd1a02 100644
+--- a/Source/WebInspectorUI/PlatformCocoa.cmake
++++ b/Source/WebInspectorUI/PlatformCocoa.cmake
+@@ -5,7 +5,7 @@ set(WebInspectorUI_FRAMEWORK_DIR "${CMAKE_BINARY_DIR}/WebInspectorUI.framework")
+ set(WebInspectorUI_FRAMEWORK_RESOURCES_DIR "${WebInspectorUI_FRAMEWORK_DIR}/Versions/A/Resources")
+ 
+ set(EXECUTABLE_NAME "WebInspectorUI")
+-set(PRODUCT_BUNDLE_IDENTIFIER "com.apple.WebInspectorUI")
++set(PRODUCT_BUNDLE_IDENTIFIER "app.neantik.desktop.webkit.inspectorui")
+ set(PRODUCT_NAME "WebInspectorUI")
+ set(SHORT_VERSION_STRING "${MACOSX_FRAMEWORK_SHORT_VERSION_STRING}")
+ set(BUNDLE_VERSION "${MACOSX_FRAMEWORK_BUNDLE_VERSION}")
+@@ -20,6 +20,9 @@ set_target_properties(WebInspectorUIFramework PROPERTIES
+     MACOSX_RPATH OFF
+     MACOSX_FRAMEWORK_INFO_PLIST ${WEBINSPECTORUI_DIR}/Info.plist
+ )
++if (WEBKIT_SDK_IS_MACOS AND NOT USE_APPLE_INTERNAL_SDK)
++    set_target_properties(WebInspectorUIFramework PROPERTIES INSTALL_NAME_DIR "@rpath")
++endif ()
+ 
+ add_custom_command(
+     OUTPUT ${CMAKE_BINARY_DIR}/inspector-framework-resources.stamp
+diff --git a/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm b/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm
+index 8a5706f77fc61232bf15565ef806c7c63f5a11cc..88c17c2e28f052e1290c88826461ec6cdefe551d 100644
+--- a/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm
++++ b/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm
+@@ -630,6 +630,13 @@ - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didRece
+     NegotiatedLegacyTLS negotiatedLegacyTLS = NegotiatedLegacyTLS::No;
+ 
+     if ([challenge.protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust]) {
++        // Prevent Security from fetching a missing intermediate certificate
++        // outside the NetworkProcess broker-only route. If enforcement cannot
++        // be applied, cancel TLS rather than continue with network fetch enabled.
++        SecTrustRef serverTrust = challenge.protectionSpace.serverTrust;
++        if (!serverTrust || SecTrustSetNetworkFetchAllowed(serverTrust, false) != errSecSuccess)
++            return completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, nil);
++
+         sessionCocoa->setClientAuditToken(challenge);
+ 
+         negotiatedLegacyTLS = checkForLegacyTLS(task._incompleteTaskMetrics.transactionMetrics.lastObject);
+diff --git a/Source/WebKit/NetworkProcess/mac/com.apple.WebKit.NetworkProcess.sb.in b/Source/WebKit/NetworkProcess/mac/com.apple.WebKit.NetworkProcess.sb.in
+index 687197322009b4f07d229923c84025b16596672b..2d802ac711b9c8aee549a7ace4bff6b35e2026f3 100644
+--- a/Source/WebKit/NetworkProcess/mac/com.apple.WebKit.NetworkProcess.sb.in
++++ b/Source/WebKit/NetworkProcess/mac/com.apple.WebKit.NetworkProcess.sb.in
+@@ -332,8 +332,8 @@
+ 
+ (deny mach-lookup (xpc-service-name-prefix ""))
+ 
+-;; Used for parental controls URL filtering. FIXME: Only allow when parental controls is enabled, requires rdar://159207397 to land
+-(allow mach-lookup (xpc-service-name "com.apple.BrowserEngineKit.Intermediary"))
++;; Keep the owned Networking process out of the system parental-controls
++;; intermediary until that delegated service is covered by the network policy.
+ 
+ ;; Remove when <rdar://problem/29646094> is fixed.
+ (define (HEX-pattern-match-generator pattern-descriptor)
+diff --git a/Source/WebKit/Platform/classifier/cocoa/ResourceLoadStatisticsClassifierCocoa.cpp b/Source/WebKit/Platform/classifier/cocoa/ResourceLoadStatisticsClassifierCocoa.cpp
+index 3306c7f85b4470728e6ad21a68fed976931151f3..c0780992342b6393ce3831060a629effebe398da 100644
+--- a/Source/WebKit/Platform/classifier/cocoa/ResourceLoadStatisticsClassifierCocoa.cpp
++++ b/Source/WebKit/Platform/classifier/cocoa/ResourceLoadStatisticsClassifierCocoa.cpp
+@@ -64,7 +64,11 @@ bool ResourceLoadStatisticsClassifierCocoa::classify(unsigned subresourceUnderTo
+ 
+ String ResourceLoadStatisticsClassifierCocoa::storagePath()
+ {
++#if PLATFORM(MAC)
++    RetainPtr<CFBundleRef> webKitBundle = CFBundleGetBundleWithIdentifier(CFSTR("app.neantik.desktop.webkit"));
++#else
+     RetainPtr<CFBundleRef> webKitBundle = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.WebKit"));
++#endif
+     RetainPtr<CFURLRef> resourceURL = adoptCF(CFBundleCopyResourcesDirectoryURL(webKitBundle.get()));
+     resourceURL = adoptCF(CFURLCreateCopyAppendingPathComponent(nullptr, resourceURL.get(), CFSTR("corePrediction_model"), false));
+     CFErrorRef error = nullptr;
+diff --git a/Source/WebKit/PlatformCocoa.cmake b/Source/WebKit/PlatformCocoa.cmake
+index f9827e64dd2ff4a0437d7a23a7eca15340fc64f8..c65f67a99f480279c7baf453b6908d2a939fc916 100644
+--- a/Source/WebKit/PlatformCocoa.cmake
++++ b/Source/WebKit/PlatformCocoa.cmake
+@@ -58,7 +58,11 @@ list(APPEND WebKit_COMPILE_OPTIONS
+     "$<$<COMPILE_LANGUAGE:C,CXX,OBJC,OBJCXX>:-DWEBKIT_BUNDLE_VERSION=\"${WEBKIT_MAC_VERSION}\">"
+ )
+ 
+-set(MACOSX_FRAMEWORK_IDENTIFIER com.apple.WebKit)
++if (WEBKIT_SDK_IS_MACOS)
++    set(MACOSX_FRAMEWORK_IDENTIFIER app.neantik.desktop.webkit)
++else ()
++    set(MACOSX_FRAMEWORK_IDENTIFIER com.apple.WebKit)
++endif ()
+ 
+ # Used to substitute placeholders in Info.plist, which CMake writes into the
+ # bundle. Xcode's $(PLATFORM_NAME) is the lowercase SDK name, and its
+@@ -66,7 +70,12 @@ set(MACOSX_FRAMEWORK_IDENTIFIER com.apple.WebKit)
+ set(BUNDLE_VERSION "${MACOSX_FRAMEWORK_BUNDLE_VERSION}")
+ set(SHORT_VERSION_STRING "${MACOSX_FRAMEWORK_SHORT_VERSION_STRING}")
+ set(PRODUCT_NAME "WebKit")
+-set(PRODUCT_BUNDLE_IDENTIFIER "com.apple.WebKit")
++if (WEBKIT_SDK_IS_MACOS)
++    set(NEANTIK_WEBKIT_BUNDLE_PREFIX "app.neantik.desktop.webkit")
++else ()
++    set(NEANTIK_WEBKIT_BUNDLE_PREFIX "com.apple.WebKit")
++endif ()
++set(PRODUCT_BUNDLE_IDENTIFIER "${NEANTIK_WEBKIT_BUNDLE_PREFIX}")
+ set(PLATFORM_NAME "${WEBKIT_SDK_NAME}")
+ # Xcode only fills this in for iOS (hence the platform-specific variable).
+ if (WEBKIT_SDK_IS_IOS_FAMILY)
+@@ -91,15 +100,15 @@ if (NOT USE_EXTENSIONKIT)
+     webkit_generate_entitlements(WebProcess
+         USING Scripts/process-entitlements.sh
+         DEPENDS ${WebKit_ENTITLEMENTS_DEPENDS}
+-        BUNDLE_IDENTIFIER com.apple.WebKit.WebContent)
++        BUNDLE_IDENTIFIER ${NEANTIK_WEBKIT_BUNDLE_PREFIX}.WebContent)
+     webkit_generate_entitlements(NetworkProcess
+         USING Scripts/process-entitlements.sh
+         DEPENDS ${WebKit_ENTITLEMENTS_DEPENDS}
+-        BUNDLE_IDENTIFIER com.apple.WebKit.Networking)
++        BUNDLE_IDENTIFIER ${NEANTIK_WEBKIT_BUNDLE_PREFIX}.Networking)
+     webkit_generate_entitlements(GPUProcess
+         USING Scripts/process-entitlements.sh
+         DEPENDS ${WebKit_ENTITLEMENTS_DEPENDS}
+-        BUNDLE_IDENTIFIER com.apple.WebKit.GPU)
++        BUNDLE_IDENTIFIER ${NEANTIK_WEBKIT_BUNDLE_PREFIX}.GPU)
+ endif ()
+ 
+ list(APPEND WebKit_UNIFIED_SOURCE_LIST_FILES
+@@ -325,9 +334,15 @@ else ()
+     set(WK_XPC_SERVICE_SUFFIX "")
+ endif ()
+ 
+-set(WebProcess_OUTPUT_NAME com.apple.WebKit.WebContent${WK_XPC_SERVICE_SUFFIX})
+-set(NetworkProcess_OUTPUT_NAME com.apple.WebKit.Networking${WK_XPC_SERVICE_SUFFIX})
+-set(GPUProcess_OUTPUT_NAME com.apple.WebKit.GPU${WK_XPC_SERVICE_SUFFIX})
++if (WEBKIT_SDK_IS_MACOS)
++    set(WebProcess_OUTPUT_NAME app.neantik.desktop.webkit.WebContent${WK_XPC_SERVICE_SUFFIX})
++    set(NetworkProcess_OUTPUT_NAME app.neantik.desktop.webkit.Networking${WK_XPC_SERVICE_SUFFIX})
++    set(GPUProcess_OUTPUT_NAME app.neantik.desktop.webkit.GPU${WK_XPC_SERVICE_SUFFIX})
++else ()
++    set(WebProcess_OUTPUT_NAME com.apple.WebKit.WebContent${WK_XPC_SERVICE_SUFFIX})
++    set(NetworkProcess_OUTPUT_NAME com.apple.WebKit.Networking${WK_XPC_SERVICE_SUFFIX})
++    set(GPUProcess_OUTPUT_NAME com.apple.WebKit.GPU${WK_XPC_SERVICE_SUFFIX})
++endif ()
+ 
+ # Entry point shared by all three auxiliary processes on both SDKs.
+ set(WebProcess_SOURCES Shared/EntryPointUtilities/Cocoa/AuxiliaryProcessMain.cpp)
+@@ -882,7 +897,7 @@ set_target_properties(WebKitSwift PROPERTIES
+     # INSTALL_NAME_DIR of Configurations/WebKitSwift.xcconfig.
+     MACOSX_RPATH OFF
+     BUILD_WITH_INSTALL_NAME_DIR ON
+-    INSTALL_NAME_DIR "${WEBKIT_SDK_SYSTEM_PREFIX}/System/Library/Frameworks/WebKit.framework/${WEBKIT_FRAMEWORK_VERSION_PATH}Frameworks"
++    INSTALL_NAME_DIR "${WebKit_INSTALL_NAME_DIR}/WebKit.framework/${WEBKIT_FRAMEWORK_VERSION_PATH}Frameworks"
+ )
+ 
+ # WebKitAdditions ships these Swift sources with a .swift.in extension so a build
+@@ -1036,13 +1051,17 @@ target_compile_options(WebKitSwift PRIVATE
+     ${WEBKIT_PRIVATE_FRAMEWORKS_COMPILE_FLAG}
+ )
+ 
++# WritingToolsUI reaches the system WebKit through Apple's Generative UI
++# frameworks. Keep it out of the owned runtime when Writing Tools are disabled.
++target_link_libraries(WebKitSwift PRIVATE WebKit)
+ if (NOT WEBKIT_SDK_IS_MACCATALYST)
+-    find_library(WRITINGTOOLSUI_LIBRARY WritingToolsUI HINTS ${CMAKE_OSX_SYSROOT}/System/Library/PrivateFrameworks)
++    if (NOT WEBKIT_SDK_IS_MACOS OR USE_APPLE_INTERNAL_SDK OR ENABLE_WRITING_TOOLS)
++        find_library(WRITINGTOOLSUI_LIBRARY WritingToolsUI HINTS ${CMAKE_OSX_SYSROOT}/System/Library/PrivateFrameworks)
++        if (WRITINGTOOLSUI_LIBRARY)
++            target_link_libraries(WebKitSwift PRIVATE ${WRITINGTOOLSUI_LIBRARY})
++        endif ()
++    endif ()
+ endif ()
+-target_link_libraries(WebKitSwift PRIVATE
+-    WebKit
+-    $<$<BOOL:${WRITINGTOOLSUI_LIBRARY}>:${WRITINGTOOLSUI_LIBRARY}>
+-)
+ add_dependencies(WebKitSwift WebKit)
+ 
+ WEBKIT_LIBRARY(WebKitSwift)
+@@ -1158,8 +1177,8 @@ function(WEBKIT_DEFINE_XPC_SERVICES)
+         if (USE_RESTRICTED_ENTITLEMENTS AND NOT _svc_NO_RESTRICTED_ENTITLEMENTS)
+             set(_info_plist_definitions WK_USE_RESTRICTED_ENTITLEMENTS_VAL)
+         else ()
+-            # As in Xcode, services without restricted entitlements are signed ad hoc.
+-            set_target_properties(${_target} PROPERTIES CODE_SIGN_IDENTITY "-")
++            # External distributions must be able to use their own signing identity.
++            set_target_properties(${_target} PROPERTIES CODE_SIGN_IDENTITY "${WEBKIT_CODE_SIGN_IDENTITY}")
+         endif ()
+         WEBKIT_PROCESS_INFO_PLIST(${_svc_ENTRY_POINT}/Info-${_info_plist_variant}.plist
+             ${_contents_dir}/Info.plist PREPROCESS PREPROCESSOR_DEFINITIONS ${_info_plist_definitions})
+@@ -1214,18 +1233,18 @@ function(WEBKIT_DEFINE_XPC_SERVICES)
+     endfunction()
+ 
+     WEBKIT_XPC_SERVICE(WebProcess
+-        BUNDLE_IDENTIFIER com.apple.WebKit.WebContent
++        BUNDLE_IDENTIFIER ${NEANTIK_WEBKIT_BUNDLE_PREFIX}.WebContent
+         ENTRY_POINT ${WEBKIT_DIR}/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService
+         EXECUTABLE_NAME ${WebProcess_OUTPUT_NAME})
+ 
+     WEBKIT_XPC_SERVICE(NetworkProcess
+-        BUNDLE_IDENTIFIER com.apple.WebKit.Networking
++        BUNDLE_IDENTIFIER ${NEANTIK_WEBKIT_BUNDLE_PREFIX}.Networking
+         ENTRY_POINT ${WEBKIT_DIR}/NetworkProcess/EntryPoint/Cocoa/XPCService/NetworkService
+         EXECUTABLE_NAME ${NetworkProcess_OUTPUT_NAME})
+ 
+     if (ENABLE_GPU_PROCESS)
+         WEBKIT_XPC_SERVICE(GPUProcess
+-            BUNDLE_IDENTIFIER com.apple.WebKit.GPU
++            BUNDLE_IDENTIFIER ${NEANTIK_WEBKIT_BUNDLE_PREFIX}.GPU
+             ENTRY_POINT ${WEBKIT_DIR}/GPUProcess/EntryPoint/Cocoa/XPCService/GPUService
+             EXECUTABLE_NAME ${GPUProcess_OUTPUT_NAME})
+     endif ()
+@@ -1233,7 +1252,11 @@ function(WEBKIT_DEFINE_XPC_SERVICES)
+     # Without these XPC bundles, process swaps fail with "Invalid connection identifier".
+     function(WEBKIT_WEBCONTENT_VARIANT _variant)
+         set(_target WebProcess${_variant})
+-        set(_exec_name com.apple.WebKit.WebContent.${_variant}${WK_XPC_SERVICE_SUFFIX})
++        if (WEBKIT_SDK_IS_MACOS)
++            set(_exec_name app.neantik.desktop.webkit.WebContent.${_variant}${WK_XPC_SERVICE_SUFFIX})
++        else ()
++            set(_exec_name com.apple.WebKit.WebContent.${_variant}${WK_XPC_SERVICE_SUFFIX})
++        endif ()
+         WEBKIT_EXECUTABLE_DECLARE(${_target})
+         set(${_target}_SOURCES ${WebProcess_SOURCES})
+         set(${_target}_INCLUDE_DIRECTORIES ${CMAKE_BINARY_DIR}
+@@ -1245,11 +1268,11 @@ function(WEBKIT_DEFINE_XPC_SERVICES)
+         WEBKIT_GENERATE_ENTITLEMENTS(${_target}
+             USING Scripts/process-entitlements.sh
+             DEPENDS ${WebKit_ENTITLEMENTS_DEPENDS}
+-            BUNDLE_IDENTIFIER com.apple.WebKit.WebContent.${_variant}
++            BUNDLE_IDENTIFIER ${NEANTIK_WEBKIT_BUNDLE_PREFIX}.WebContent.${_variant}
+             VARIANT ${_variant}
+             ${ARGN})
+         WEBKIT_XPC_SERVICE(${_target}
+-            BUNDLE_IDENTIFIER com.apple.WebKit.WebContent.${_variant}
++            BUNDLE_IDENTIFIER ${NEANTIK_WEBKIT_BUNDLE_PREFIX}.WebContent.${_variant}
+             ENTRY_POINT ${WEBKIT_DIR}/WebProcess/EntryPoint/Cocoa/XPCService/WebContentService
+             EXECUTABLE_NAME ${_exec_name}
+             ${ARGN})
+@@ -2631,10 +2654,10 @@ function(WEBKIT_DEFINE_MACOS_RESOURCES)
+     add_custom_target(WebKitSandboxProfiles ALL DEPENDS ${WebKit_SB_FILES})
+     add_dependencies(WebKit WebKitSandboxProfiles)
+ 
+-    add_custom_command(OUTPUT ${WebKit_XPC_SERVICE_DIR}/com.apple.WebKit.WebContent.xpc/Contents/Resources/WebContentProcess.nib COMMAND
+-        ibtool --compile ${WebKit_XPC_SERVICE_DIR}/com.apple.WebKit.WebContent.xpc/Contents/Resources/WebContentProcess.nib ${WEBKIT_DIR}/Resources/WebContentProcess.xib
++    add_custom_command(OUTPUT ${WebKit_XPC_SERVICE_DIR}/${NEANTIK_WEBKIT_BUNDLE_PREFIX}.WebContent.xpc/Contents/Resources/WebContentProcess.nib COMMAND
++        ibtool --compile ${WebKit_XPC_SERVICE_DIR}/${NEANTIK_WEBKIT_BUNDLE_PREFIX}.WebContent.xpc/Contents/Resources/WebContentProcess.nib ${WEBKIT_DIR}/Resources/WebContentProcess.xib
+         VERBATIM)
+-    add_custom_target(WebContentProcessNib ALL DEPENDS ${WebKit_XPC_SERVICE_DIR}/com.apple.WebKit.WebContent.xpc/Contents/Resources/WebContentProcess.nib)
++    add_custom_target(WebContentProcessNib ALL DEPENDS ${WebKit_XPC_SERVICE_DIR}/${NEANTIK_WEBKIT_BUNDLE_PREFIX}.WebContent.xpc/Contents/Resources/WebContentProcess.nib)
+     # Must be in place before WebProcess links and seals the .xpc.
+     add_dependencies(WebProcess WebContentProcessNib)
+ 
+diff --git a/Source/WebKit/Scripts/process-entitlements.sh b/Source/WebKit/Scripts/process-entitlements.sh
+index d3e1d7d09a0fc9087e06450cf3d1baffb80d030f..5755a60bc4b096b76e9514ec9421a16d6109804f 100755
+--- a/Source/WebKit/Scripts/process-entitlements.sh
++++ b/Source/WebKit/Scripts/process-entitlements.sh
+@@ -696,12 +696,12 @@ elif [[ "${WK_PLATFORM_NAME}" == macosx ]]
+ then
+     [[ "${RC_XBS}" != YES ]] && plistbuddy Add :com.apple.security.get-task-allow bool YES
+ 
+-    if [[ "${PRODUCT_NAME}" == com.apple.WebKit.WebContent.Development ]]; then mac_process_webcontent_entitlements
+-    elif [[ "${PRODUCT_NAME}" == com.apple.WebKit.WebContent ]]; then mac_process_webcontent_entitlements
+-    elif [[ "${PRODUCT_NAME}" == com.apple.WebKit.WebContent.CaptivePortal ]]; then mac_process_webcontent_captiveportal_entitlements
+-    elif [[ "${PRODUCT_NAME}" == com.apple.WebKit.WebContent.EnhancedSecurity ]]; then mac_process_webcontent_enhancedsecurity_entitlements
+-    elif [[ "${PRODUCT_NAME}" == com.apple.WebKit.Networking ]]; then mac_process_network_entitlements
+-    elif [[ "${PRODUCT_NAME}" == com.apple.WebKit.GPU ]]; then mac_process_gpu_entitlements
++    if [[ "${PRODUCT_NAME}" == app.neantik.desktop.webkit.WebContent.Development ]]; then mac_process_webcontent_entitlements
++    elif [[ "${PRODUCT_NAME}" == app.neantik.desktop.webkit.WebContent ]]; then mac_process_webcontent_entitlements
++    elif [[ "${PRODUCT_NAME}" == app.neantik.desktop.webkit.WebContent.CaptivePortal ]]; then mac_process_webcontent_captiveportal_entitlements
++    elif [[ "${PRODUCT_NAME}" == app.neantik.desktop.webkit.WebContent.EnhancedSecurity ]]; then mac_process_webcontent_enhancedsecurity_entitlements
++    elif [[ "${PRODUCT_NAME}" == app.neantik.desktop.webkit.Networking ]]; then mac_process_network_entitlements
++    elif [[ "${PRODUCT_NAME}" == app.neantik.desktop.webkit.GPU ]]; then mac_process_gpu_entitlements
+     elif [[ "${PRODUCT_NAME}" == webpushd* ]]; then mac_process_webpushd_entitlements
+     elif [[ "${PRODUCT_NAME}" != adattributiond ]]; then echo "Unsupported/unknown product: ${PRODUCT_NAME}"
+     fi
+diff --git a/Source/WebKit/Shared/Cocoa/DefaultWebBrowserChecks.mm b/Source/WebKit/Shared/Cocoa/DefaultWebBrowserChecks.mm
+index 19bc01d2ae71be4b6eadd92a74ae7b66cb140ad8..6bfa838db41f8d858c3c084f976c912dccf88f65 100644
+--- a/Source/WebKit/Shared/Cocoa/DefaultWebBrowserChecks.mm
++++ b/Source/WebKit/Shared/Cocoa/DefaultWebBrowserChecks.mm
+@@ -80,9 +80,15 @@ static bool isInWebKitChildProcess()
+             return true;
+ #endif // USE(EXTENSIONKIT)
+         NSString *bundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
++#if PLATFORM(MAC)
++        isInSubProcess = [bundleIdentifier hasPrefix:@"app.neantik.desktop.webkit.WebContent"]
++            || [bundleIdentifier hasPrefix:@"app.neantik.desktop.webkit.Networking"]
++            || [bundleIdentifier hasPrefix:@"app.neantik.desktop.webkit.GPU"];
++#else
+         isInSubProcess = [bundleIdentifier hasPrefix:@"com.apple.WebKit.WebContent"]
+             || [bundleIdentifier hasPrefix:@"com.apple.WebKit.Networking"]
+             || [bundleIdentifier hasPrefix:@"com.apple.WebKit.GPU"];
++#endif
+ #if ENABLE(MODEL_PROCESS)
+         isInSubProcess = isInSubProcess || [bundleIdentifier hasPrefix:@"com.apple.WebKit.Model"];
+ #endif // ENABLE(MODEL_PROCESS)
+diff --git a/Source/WebKit/Shared/EntryPointUtilities/Cocoa/XPCService/XPCServiceMain.mm b/Source/WebKit/Shared/EntryPointUtilities/Cocoa/XPCService/XPCServiceMain.mm
+index 1f1ca49746b88d9fe16c904e1f1b94802e291ce9..be872ff9a7c84bcb7d8b9d81efc0e489d889a35a 100644
+--- a/Source/WebKit/Shared/EntryPointUtilities/Cocoa/XPCService/XPCServiceMain.mm
++++ b/Source/WebKit/Shared/EntryPointUtilities/Cocoa/XPCService/XPCServiceMain.mm
+@@ -233,10 +233,12 @@ void XPCServiceEventHandler(xpc_connection_t peer)
+                 return;
+             }
+ 
+-            RetainPtr webKitBundle = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.WebKit"));
++            RetainPtr webKitBundle = CFBundleGetBundleWithIdentifier(CFSTR("app.neantik.desktop.webkit"));
+             if (!webKitBundle) {
++#if !PLATFORM(MAC)
+                 RetainPtr webKitFrameworkURL = adoptCF(CFURLCreateWithFileSystemPath(nullptr, CFSTR("/System/Library/Frameworks/WebKit.framework"), kCFURLPOSIXPathStyle, true));
+                 webKitBundle = adoptCF(CFBundleCreate(nullptr, webKitFrameworkURL.get()));
++#endif
+             }
+             typedef void (*InitializerFunction)(xpc_connection_t, xpc_object_t);
+             InitializerFunction initializerFunctionPtr = reinterpret_cast<InitializerFunction>(CFBundleGetFunctionPointerForName(webKitBundle.get(), entryPointFunctionName));
+diff --git a/Source/WebKit/Shared/WebKitServiceNames.h b/Source/WebKit/Shared/WebKitServiceNames.h
+index 07b1f98dfd3c06538787e1f329f62536b54880bc..d5e51fccb2ed00a46ccd240395d7a354a16d25f6 100644
+--- a/Source/WebKit/Shared/WebKitServiceNames.h
++++ b/Source/WebKit/Shared/WebKitServiceNames.h
+@@ -25,11 +25,20 @@
+ 
+ #pragma once
+ 
++#include <wtf/Platform.h>
++
+ namespace WebKit {
+ 
++#if PLATFORM(MAC)
++constexpr ASCIILiteral webContentServiceName { "app.neantik.desktop.webkit.WebContent"_s };
++constexpr ASCIILiteral networkingServiceName { "app.neantik.desktop.webkit.Networking"_s };
++constexpr ASCIILiteral gpuServiceName { "app.neantik.desktop.webkit.GPU"_s };
++constexpr ASCIILiteral modelServiceName { "app.neantik.desktop.webkit.Model"_s };
++#else
+ constexpr ASCIILiteral webContentServiceName { "com.apple.WebKit.WebContent"_s };
+ constexpr ASCIILiteral networkingServiceName { "com.apple.WebKit.Networking"_s };
+ constexpr ASCIILiteral gpuServiceName { "com.apple.WebKit.GPU"_s };
+ constexpr ASCIILiteral modelServiceName { "com.apple.WebKit.Model"_s };
++#endif
+ 
+ }
+diff --git a/Source/WebKit/Shared/mac/AuxiliaryProcessMac.mm b/Source/WebKit/Shared/mac/AuxiliaryProcessMac.mm
+index b80983dd3baea5361faa223cb872030c731763fc..81e9e2b890f065ddb32544795d0d77408faac019 100644
+--- a/Source/WebKit/Shared/mac/AuxiliaryProcessMac.mm
++++ b/Source/WebKit/Shared/mac/AuxiliaryProcessMac.mm
+@@ -258,10 +258,18 @@ static String sandboxDirectory(WTF::AuxiliaryProcessType processType, const Stri
+     directory.append(parentDirectory);
+     switch (processType) {
+     case WTF::AuxiliaryProcessType::WebContent:
++#if PLATFORM(MAC)
++        directory.append("/app.neantik.desktop.webkit.WebContent.Sandbox"_s);
++#else
+         directory.append("/com.apple.WebKit.WebContent.Sandbox"_s);
++#endif
+         break;
+     case WTF::AuxiliaryProcessType::Network:
++#if PLATFORM(MAC)
++        directory.append("/app.neantik.desktop.webkit.Networking.Sandbox"_s);
++#else
+         directory.append("/com.apple.WebKit.Networking.Sandbox"_s);
++#endif
+         break;
+     case WTF::AuxiliaryProcessType::Plugin:
+         WTFLogAlways("sandboxDirectory: Unexpected Plugin process initialization.");
+@@ -269,7 +277,11 @@ static String sandboxDirectory(WTF::AuxiliaryProcessType processType, const Stri
+         break;
+ #if ENABLE(GPU_PROCESS)
+     case WTF::AuxiliaryProcessType::GPU:
++#if PLATFORM(MAC)
++        directory.append("/app.neantik.desktop.webkit.GPU.Sandbox"_s);
++#else
+         directory.append("/com.apple.WebKit.GPU.Sandbox"_s);
++#endif
+         break;
+ #endif
+     }
+diff --git a/Source/WebKit/UIProcess/Launcher/cocoa/ProcessLauncherCocoa.mm b/Source/WebKit/UIProcess/Launcher/cocoa/ProcessLauncherCocoa.mm
+index 3a807a898d0273392f1e037297e76abe95ef9bca..b36bf405696cf4e06107218ee658254d1ba59631 100644
+--- a/Source/WebKit/UIProcess/Launcher/cocoa/ProcessLauncherCocoa.mm
++++ b/Source/WebKit/UIProcess/Launcher/cocoa/ProcessLauncherCocoa.mm
+@@ -31,6 +31,7 @@
+ #import "MachPort.h"
+ #import "WebPreferencesDefaultValues.h"
+ #import "WebProcessPool.h"
++#import "WebKitServiceNames.h"
+ #import "XPCUtilities.h"
+ #import <crt_externs.h>
+ #import <mach-o/dyld.h>
+@@ -154,11 +155,21 @@ static void launchWithExtensionKit(ProcessLauncher& processLauncher, ProcessLaun
+ #endif // USE(EXTENSIONKIT)
+ 
+ #if !USE(EXTENSIONKIT) || !PLATFORM(IOS)
+-static ASCIILiteral webContentServiceName(const ProcessLauncher::LaunchOptions& launchOptions, ProcessLauncher::Client* client)
++static ASCIILiteral selectedWebContentServiceName(const ProcessLauncher::LaunchOptions& launchOptions, ProcessLauncher::Client* client)
+ {
+     bool useCaptivePortal = client && client->shouldEnableLockdownMode();
+     bool useEnhancedSecurity = client && client->shouldEnableEnhancedSecurity();
+ 
++#if PLATFORM(MAC)
++    UNUSED_PARAM(launchOptions);
++    if (useCaptivePortal)
++        return "app.neantik.desktop.webkit.WebContent.CaptivePortal"_s;
++
++    if (useEnhancedSecurity)
++        return "app.neantik.desktop.webkit.WebContent.EnhancedSecurity"_s;
++
++    return webContentServiceName;
++#else
+     if (useCaptivePortal)
+         return "com.apple.WebKit.WebContent.CaptivePortal"_s;
+ 
+@@ -166,22 +177,23 @@ static ASCIILiteral webContentServiceName(const ProcessLauncher::LaunchOptions&
+         return "com.apple.WebKit.WebContent.EnhancedSecurity"_s;
+ 
+     return launchOptions.nonValidInjectedCodeAllowed ? "com.apple.WebKit.WebContent.Development"_s : "com.apple.WebKit.WebContent"_s;
++#endif
+ }
+ 
+ static ASCIILiteral serviceName(const ProcessLauncher::LaunchOptions& launchOptions, ProcessLauncher::Client* client)
+ {
+     switch (launchOptions.processType) {
+     case ProcessLauncher::ProcessType::Web:
+-        return webContentServiceName(launchOptions, client);
++        return selectedWebContentServiceName(launchOptions, client);
+     case ProcessLauncher::ProcessType::Network:
+-        return "com.apple.WebKit.Networking"_s;
++        return networkingServiceName;
+ #if ENABLE(GPU_PROCESS)
+     case ProcessLauncher::ProcessType::GPU:
+-        return "com.apple.WebKit.GPU"_s;
++        return gpuServiceName;
+ #endif
+ #if ENABLE(MODEL_PROCESS)
+     case ProcessLauncher::ProcessType::Model:
+-        return "com.apple.WebKit.Model"_s;
++        return modelServiceName;
+ #endif
+     }
+ }
+diff --git a/Source/WebKit/UIProcess/Network/NetworkProcessProxy.cpp b/Source/WebKit/UIProcess/Network/NetworkProcessProxy.cpp
+index 0a31e5e889de72d88a009af0a40ee0ae2ab7fdfb..74f8bec3308663d86d1014ebb127d9f0056b5cdd 100644
+--- a/Source/WebKit/UIProcess/Network/NetworkProcessProxy.cpp
++++ b/Source/WebKit/UIProcess/Network/NetworkProcessProxy.cpp
+@@ -233,7 +233,11 @@ void NetworkProcessProxy::sendCreationParametersToNewProcess()
+ #endif
+ 
+ #if PLATFORM(COCOA)
++#if PLATFORM(MAC)
++    parameters.enableModernDownloadProgress = CFPreferencesGetAppBooleanValue(CFSTR("EnableModernDownloadProgress"), CFSTR("app.neantik.desktop.webkit"), nullptr);
++#else
+     parameters.enableModernDownloadProgress = CFPreferencesGetAppBooleanValue(CFSTR("EnableModernDownloadProgress"), CFSTR("com.apple.WebKit"), nullptr);
++#endif
+ #endif
+     for (auto it = m_allowedFilePathsByProcess.begin(); it != m_allowedFilePathsByProcess.end(); ++it)
+         parameters.allowedFilePaths.add(it->key.coreProcessIdentifier(), copyToVector(it->value));
+diff --git a/Source/WebKit/WebKitSwift/RealityKit/WKRKEntity.swift b/Source/WebKit/WebKitSwift/RealityKit/WKRKEntity.swift
+index a66a6619bbaadca1f94cb6065cf1424c027bfb0f..7e9988a6db6a4c69fb7f28ab24d9e07d240c46b8 100644
+--- a/Source/WebKit/WebKitSwift/RealityKit/WKRKEntity.swift
++++ b/Source/WebKit/WebKitSwift/RealityKit/WKRKEntity.swift
+@@ -605,7 +605,7 @@ extension WKRKEntity {
+         guard
+             let defaultEnvironmentResource = try? EnvironmentResource.load(
+                 named: "studio_lighting_objectmode_v3",
+-                in: Bundle(identifier: "com.apple.WebKit")
++                in: Bundle(identifier: "app.neantik.desktop.webkit")
+             )
+         else {
+             fatalError("Could not open studio_lighting_objectmode_v3")
+diff --git a/Source/WebKit/WebKitSwift/WritingTools/PlatformIntelligenceTextEffectView.swift b/Source/WebKit/WebKitSwift/WritingTools/PlatformIntelligenceTextEffectView.swift
+index 812addaf6a139a8bf2f33df5cc54777269967073..6a83840067d9438a951d6f838dec67d28b39e71d 100644
+--- a/Source/WebKit/WebKitSwift/WritingTools/PlatformIntelligenceTextEffectView.swift
++++ b/Source/WebKit/WebKitSwift/WritingTools/PlatformIntelligenceTextEffectView.swift
+@@ -47,11 +47,6 @@ import UIKit_SPI
+ #endif // USE_APPLE_INTERNAL_SDK
+ 
+ #endif // WTF_PLATFORM_MAC
+-
+-// Work around rdar://145157171 by manually importing the cross-import module.
+-#if canImport(_WebKit_SwiftUI)
+-import _WebKit_SwiftUI
+-#endif
+ import SwiftUI
+ 
+ // MARK: Platform abstraction type aliases
+diff --git a/Source/WebKit/WebProcess/cocoa/WebProcessCocoa.mm b/Source/WebKit/WebProcess/cocoa/WebProcessCocoa.mm
+index c976dd468d1198dd95f1801c4986da3fb3779aa3..a7ca09365f28e8b46ec36b1101685e4a0b911222 100644
+--- a/Source/WebKit/WebProcess/cocoa/WebProcessCocoa.mm
++++ b/Source/WebKit/WebProcess/cocoa/WebProcessCocoa.mm
+@@ -1305,7 +1305,11 @@ static float currentBacklightLevel()
+ void WebProcess::accessibilityPreferencesDidChange(const AccessibilityPreferences& preferences)
+ {
+ #if HAVE(PER_APP_ACCESSIBILITY_PREFERENCES)
++#if PLATFORM(MAC)
++    auto appID = CFSTR("app.neantik.desktop.webkit.WebContent");
++#else
+     auto appID = CFSTR("com.apple.WebKit.WebContent");
++#endif
+     auto reduceMotionEnabled = fromWebKitAXValueState(preferences.reduceMotionEnabled);
+     if (_AXSReduceMotionEnabledApp(appID) != reduceMotionEnabled)
+         _AXSSetReduceMotionEnabledApp(reduceMotionEnabled, appID);
+diff --git a/Source/WebKit/WebProcess/com.apple.WebProcess.sb.in b/Source/WebKit/WebProcess/com.apple.WebProcess.sb.in
+index dcda465f135cb9cd7eabb46ba943a2adef480f1a..2a07f57945b3b797cb79d67a31da8cad8bbf07c3 100644
+--- a/Source/WebKit/WebProcess/com.apple.WebProcess.sb.in
++++ b/Source/WebKit/WebProcess/com.apple.WebProcess.sb.in
+@@ -27,10 +27,18 @@
+ 
+ 
+ (define (enhanced-security)
++#if PLATFORM(MAC)
++    (signing-identifier "app.neantik.desktop.webkit.WebContent.EnhancedSecurity"))
++#else
+     (signing-identifier "com.apple.WebKit.WebContent.EnhancedSecurity"))
++#endif
+ 
+ (define (lockdown-mode)
++#if PLATFORM(MAC)
++    (signing-identifier "app.neantik.desktop.webkit.WebContent.CaptivePortal"))
++#else
+     (signing-identifier "com.apple.WebKit.WebContent.CaptivePortal"))
++#endif
+ 
+ (define webcontent_gpu_sandbox_extensions_blocking?
+ #if PLATFORM(MAC) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 140400 && defined(RC_XBS) && RC_XBS == 1
+diff --git a/Source/WebKit/_WebKit_SwiftUI/CMakeLists.txt b/Source/WebKit/_WebKit_SwiftUI/CMakeLists.txt
+index e1035763e29f72850b30ca55f4977192b0c13045..b34346b01e2ae63e4339ade9d1e66561c940584a 100644
+--- a/Source/WebKit/_WebKit_SwiftUI/CMakeLists.txt
++++ b/Source/WebKit/_WebKit_SwiftUI/CMakeLists.txt
+@@ -61,7 +61,7 @@ set(_WebKit_SwiftUI_INTERFACE_DEPENDENCIES _WebKit_SwiftUI_StageSwiftModule)
+ WEBKIT_FRAMEWORK_DECLARE(_WebKit_SwiftUI)
+ set_target_properties(_WebKit_SwiftUI PROPERTIES
+     OUTPUT_NAME _WebKit_SwiftUI
+-    MACOSX_FRAMEWORK_IDENTIFIER com.apple.WebKit.-WebKit-SwiftUI
++    MACOSX_FRAMEWORK_IDENTIFIER app.neantik.desktop.webkit.swiftui
+     Swift_MODULE_NAME _WebKit_SwiftUI
+     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
+ )
+diff --git a/Source/WebKitLegacy/PlatformCocoa.cmake b/Source/WebKitLegacy/PlatformCocoa.cmake
+index 7addd06ac356def228b3f4f7c7fab4eecb4b73b3..cef5c174f98b284741ecfb4796c7a5dc6ba66f5b 100644
+--- a/Source/WebKitLegacy/PlatformCocoa.cmake
++++ b/Source/WebKitLegacy/PlatformCocoa.cmake
+@@ -156,7 +156,11 @@ set(WebKitLegacy_OUTPUT_NAME WebKitLegacy)
+ set(BUNDLE_VERSION "${MACOSX_FRAMEWORK_BUNDLE_VERSION}")
+ set(SHORT_VERSION_STRING "${MACOSX_FRAMEWORK_SHORT_VERSION_STRING}")
+ set(PRODUCT_NAME "WebKitLegacy")
+-set(PRODUCT_BUNDLE_IDENTIFIER "com.apple.WebKitLegacy")
++if (WEBKIT_SDK_IS_MACOS)
++    set(PRODUCT_BUNDLE_IDENTIFIER "app.neantik.desktop.webkit.legacy")
++else ()
++    set(PRODUCT_BUNDLE_IDENTIFIER "com.apple.WebKitLegacy")
++endif ()
+ 
+ # Platform-specific configuration, selected by the target SDK.
+ if (WEBKIT_SDK_IS_IOS_FAMILY)
+diff --git a/Source/cmake/OptionsCocoa.cmake b/Source/cmake/OptionsCocoa.cmake
+index 20f4cd4d4596f3c2e393c08e44e7de8a12e187ec..bf7cad322caabba7a2a0de534864e3c8733b8810 100644
+--- a/Source/cmake/OptionsCocoa.cmake
++++ b/Source/cmake/OptionsCocoa.cmake
+@@ -225,7 +225,7 @@ if (WEBKIT_SDK_IS_MACOS AND USE_APPLE_INTERNAL_SDK)
+     set(WEBKIT_CODE_SIGN_IDENTITY "Safari Engineering")
+     WEBKITADDITIONS_FIND_KEYCHAIN()
+ else ()
+-    set(WEBKIT_CODE_SIGN_IDENTITY "-")
++    set(WEBKIT_CODE_SIGN_IDENTITY "-" CACHE STRING "Code signing identity for externally distributed WebKit builds")
+ endif ()
+ 
+ # Options controlling auxiliary-process entitlement generation. These are read
+@@ -635,17 +635,26 @@ endif ()
+ # cache copy instead of loading alongside it. An SDK variant's system lives
+ # under its own prefix (Mac Catalyst's in /System/iOSSupport).
+ set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
+-set(JavaScriptCore_INSTALL_NAME_DIR "${WEBKIT_SDK_SYSTEM_PREFIX}/System/Library/Frameworks" CACHE STRING "" FORCE)
+-set(WebKit_INSTALL_NAME_DIR "${WEBKIT_SDK_SYSTEM_PREFIX}/System/Library/Frameworks" CACHE STRING "" FORCE)
+-set(WebGPU_INSTALL_NAME_DIR "${WEBKIT_SDK_SYSTEM_PREFIX}/System/Library/PrivateFrameworks" CACHE STRING "" FORCE)
+-set(_WebKit_SwiftUI_INSTALL_NAME_DIR "${WEBKIT_SDK_SYSTEM_PREFIX}/System/Library/Frameworks" CACHE STRING "" FORCE)
+-
+-# WebCore and WebKitLegacy ship nested inside WebKit.framework on macOS; the
+-# iOS family installs them next to the other private frameworks.
+-if (WEBKIT_PLATFORM_MAC)
+-    set(_wk_umbrella_frameworks_dir "/System/Library/Frameworks/WebKit.framework/Versions/A/Frameworks")
++if (WEBKIT_SDK_IS_MACOS AND NOT USE_APPLE_INTERNAL_SDK)
++    # NeAntik must load its embedded framework closure, never the system copy.
++    set(JavaScriptCore_INSTALL_NAME_DIR "@rpath" CACHE STRING "" FORCE)
++    set(WebKit_INSTALL_NAME_DIR "@rpath" CACHE STRING "" FORCE)
++    set(WebGPU_INSTALL_NAME_DIR "@rpath" CACHE STRING "" FORCE)
++    set(_WebKit_SwiftUI_INSTALL_NAME_DIR "@rpath" CACHE STRING "" FORCE)
++    set(_wk_umbrella_frameworks_dir "@rpath")
+ else ()
+-    set(_wk_umbrella_frameworks_dir "${WEBKIT_SDK_SYSTEM_PREFIX}/System/Library/PrivateFrameworks")
++    set(JavaScriptCore_INSTALL_NAME_DIR "${WEBKIT_SDK_SYSTEM_PREFIX}/System/Library/Frameworks" CACHE STRING "" FORCE)
++    set(WebKit_INSTALL_NAME_DIR "${WEBKIT_SDK_SYSTEM_PREFIX}/System/Library/Frameworks" CACHE STRING "" FORCE)
++    set(WebGPU_INSTALL_NAME_DIR "${WEBKIT_SDK_SYSTEM_PREFIX}/System/Library/PrivateFrameworks" CACHE STRING "" FORCE)
++    set(_WebKit_SwiftUI_INSTALL_NAME_DIR "${WEBKIT_SDK_SYSTEM_PREFIX}/System/Library/Frameworks" CACHE STRING "" FORCE)
++
++    # WebCore and WebKitLegacy ship nested inside WebKit.framework on macOS; the
++    # iOS family installs them next to the other private frameworks.
++    if (WEBKIT_PLATFORM_MAC)
++        set(_wk_umbrella_frameworks_dir "/System/Library/Frameworks/WebKit.framework/Versions/A/Frameworks")
++    else ()
++        set(_wk_umbrella_frameworks_dir "${WEBKIT_SDK_SYSTEM_PREFIX}/System/Library/PrivateFrameworks")
++    endif ()
+ endif ()
+ set(WebCore_INSTALL_NAME_DIR "${_wk_umbrella_frameworks_dir}" CACHE STRING "" FORCE)
+ set(WebKitLegacy_INSTALL_NAME_DIR "${_wk_umbrella_frameworks_dir}" CACHE STRING "" FORCE)

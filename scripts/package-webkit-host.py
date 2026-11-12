@@ -24,6 +24,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from webkit_runtime_notices import (install_owned_webkit_notices, preflight_owned_webkit_notices,
                                     private_v446_dev_qa_notices)
 
+import webkit_network_sandbox_pin as sandbox_pin
+
 PRODUCTION_BUNDLE_ID = "app.neantik.desktop"
 DEVELOPMENT_BUNDLE_ID = "app.neantik.desktop.dev"
 V508_SOURCE_OFFER_SHA256 = "988f05c617ac7ddf460c37ac5de3537f2fb7b5bc60cf0dbfa634aed951f63faf"
@@ -764,7 +766,8 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
                            allow_production_diagnostic: bool = False,
                            source_offer_root: Path | None = None,
                            source_offer_manifest_sha256: str | None = None,
-                           private_v508_evidence: PrivateV508Evidence | None = None) -> Path:
+                           private_v508_evidence: PrivateV508Evidence | None = None,
+                           network_sandbox_sha256: str | None = None) -> Path:
     if app.is_symlink() or not app.is_dir():
         raise ContractError("Target NeAntik app must be an existing physical bundle")
     info = read_info(app, allow_development_qa=allow_development_qa)
@@ -782,6 +785,8 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
         verify_development_qa_host_binary(host_binary, production_diagnostic=allow_production_diagnostic)
     verify_runtime_webkit_linkage(host_binary)
     runtime_source = verify_runtime_frameworks(runtime_frameworks, expected_team)
+    if network_sandbox_sha256 is not None:
+        sandbox_pin.verify(runtime_frameworks, network_sandbox_sha256)
     minimum_os_version = runtime_minimum_os_version(runtime_frameworks)
     network_pin = network_process_pin(runtime_frameworks, expected_team)
     verify_release_xpc_entitlements(runtime_frameworks)
@@ -828,6 +833,8 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
         RUNTIME_PIN_KEY: {"schemaVersion": 2, "webKitSHA256": runtime_hash,
                           "minimumOSVersion": minimum_os_version},
     }
+    if network_sandbox_sha256 is not None:
+        host_info[sandbox_pin.PIN_KEY] = sandbox_pin.verify(framework_destination, network_sandbox_sha256)
     host_info.update(host_ats_policy(
         info["CFBundleIdentifier"], allow_development_qa,
         qa_tls_policy.get(QA_TLS_SCOPE_KEY, {}).get("origins", []),
@@ -871,7 +878,8 @@ def package(app: Path, host_binary: Path, runtime_frameworks: Path, identity: st
             allow_production_diagnostic: bool = False,
             source_offer_root: Path | None = None,
             source_offer_manifest_sha256: str | None = None,
-            private_v508_evidence: PrivateV508Evidence | None = None) -> Path:
+            private_v508_evidence: PrivateV508Evidence | None = None,
+                           network_sandbox_sha256: str | None = None) -> Path:
     """Package a pre-linked host, or derive one only from this app's manager."""
     if app.is_symlink() or not app.is_dir():
         raise ContractError("Target NeAntik app must be an existing physical bundle")
@@ -910,7 +918,8 @@ def package(app: Path, host_binary: Path, runtime_frameworks: Path, identity: st
                                       allow_production_diagnostic=allow_production_diagnostic,
                                       source_offer_root=source_offer_root,
                                       source_offer_manifest_sha256=source_offer_manifest_sha256,
-                                      private_v508_evidence=private_v508_evidence)
+                                      private_v508_evidence=private_v508_evidence,
+                                      network_sandbox_sha256=network_sandbox_sha256)
     manager_binary = app / "Contents/MacOS" / manager_name
     try:
         is_manager = (host_binary.resolve(strict=True) == manager_binary.resolve(strict=True)
@@ -926,7 +935,8 @@ def package(app: Path, host_binary: Path, runtime_frameworks: Path, identity: st
                                       allow_production_diagnostic=allow_production_diagnostic,
                                       source_offer_root=source_offer_root,
                                       source_offer_manifest_sha256=source_offer_manifest_sha256,
-                                      private_v508_evidence=private_v508_evidence)
+                                      private_v508_evidence=private_v508_evidence,
+                                      network_sandbox_sha256=network_sandbox_sha256)
 
     with tempfile.TemporaryDirectory(prefix="neantik-webkit-host-rebind-") as temporary:
         derived = Path(temporary) / "NeAntikWebKitHost"
@@ -940,7 +950,8 @@ def package(app: Path, host_binary: Path, runtime_frameworks: Path, identity: st
                                       allow_production_diagnostic=allow_production_diagnostic,
                                       source_offer_root=source_offer_root,
                                       source_offer_manifest_sha256=source_offer_manifest_sha256,
-                                      private_v508_evidence=private_v508_evidence)
+                                      private_v508_evidence=private_v508_evidence,
+                                      network_sandbox_sha256=network_sandbox_sha256)
 
 
 def main() -> int:
@@ -953,6 +964,7 @@ def main() -> int:
     parser.add_argument("--source-offer-root", type=Path,
                         help="validated corresponding-source offer carrying first-party runtime overlays")
     parser.add_argument("--source-offer-manifest-sha256")
+    parser.add_argument("--network-sandbox-sha256", help="Exact patched NetworkProcess sandbox hash from the staging receipt")
     parser.add_argument("--identity", required=True, help="Existing Developer ID identity name or SHA-1")
     parser.add_argument("--development-qa", action="store_true",
                         help="Allow only the app.neantik.desktop.dev bundle for an isolated QA copy")
@@ -979,8 +991,9 @@ def main() -> int:
                        qa_tls_origins=args.qa_tls_origin,
                        allow_production_diagnostic=args.production_diagnostic_qa,
                        source_offer_root=args.source_offer_root,
-                       source_offer_manifest_sha256=args.source_offer_manifest_sha256)
-    except ContractError as error:
+                       source_offer_manifest_sha256=args.source_offer_manifest_sha256,
+                       network_sandbox_sha256=args.network_sandbox_sha256)
+    except (ContractError, ValueError) as error:
         parser.exit(1, f"WebKit host packaging refused: {error}\n")
     except (OSError, subprocess.SubprocessError) as error:
         parser.exit(1, f"WebKit host packaging refused: {type(error).__name__}\n")

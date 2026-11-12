@@ -100,7 +100,7 @@ if [[ -e "$OWNED_WEBKIT_HOST" || -L "$OWNED_WEBKIT_HOST" ]]; then
     fi
     WEBKIT_OFFER_DIGEST_ARGS=(--source-offer-manifest-sha256 "$NEANTIK_WEBKIT_SOURCE_OFFER_MANIFEST_SHA256")
   fi
-  python3 -B "$PROJECT_DIR/scripts/verify-webkit-host-pin.py" "$APP_PATH"
+  python3 -B "$PROJECT_DIR/scripts/verify-webkit-host-pin.py" "$APP_PATH" --require-network-sandbox-pin
   python3 -B "$PROJECT_DIR/scripts/webkit_runtime_notices.py" \
     --verify --app "$APP_PATH" \
     --runtime-frameworks "$OWNED_WEBKIT_HOST/Contents/Frameworks" \
