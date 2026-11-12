@@ -28,6 +28,8 @@ import webkit_network_sandbox_pin as sandbox_pin
 
 PRODUCTION_BUNDLE_ID = "app.neantik.desktop"
 DEVELOPMENT_BUNDLE_ID = "app.neantik.desktop.dev"
+PRIVATE_SUCCESSOR_VARIANT = "OwnedWebKitSuccessorV1"
+PRIVATE_SUCCESSOR_KEY = "NeAntikOwnedWebKitPrivateSuccessorV1"
 V508_SOURCE_OFFER_SHA256 = "988f05c617ac7ddf460c37ac5de3537f2fb7b5bc60cf0dbfa634aed951f63faf"
 V508_BINDING_SHA256 = "c4264d49e80670c09cf769f4031fae9740cbc1accfa5d37372b78d270b0df39a"
 
@@ -767,13 +769,21 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
                            source_offer_root: Path | None = None,
                            source_offer_manifest_sha256: str | None = None,
                            private_v508_evidence: PrivateV508Evidence | None = None,
-                           network_sandbox_sha256: str | None = None) -> Path:
+                           network_sandbox_sha256: str | None = None,
+                           private_successor: tuple[Path, str] | None = None) -> Path:
     if app.is_symlink() or not app.is_dir():
         raise ContractError("Target NeAntik app must be an existing physical bundle")
     info = read_info(app, allow_development_qa=allow_development_qa)
     _validate_private_v508(private_v508_evidence, info, allow_development_qa,
                            allow_production_diagnostic, source_offer_root,
                            source_offer_manifest_sha256)
+    if private_successor is not None and (
+            not allow_development_qa or allow_production_diagnostic
+            or info["CFBundleIdentifier"] != DEVELOPMENT_BUNDLE_ID
+            or private_v508_evidence is not None or source_offer_root is not None
+            or source_offer_manifest_sha256 is not None or network_sandbox_sha256 is not None
+            or "NeAntikPrivateQARuntimeVariant" in info):
+        raise ContractError("private successor requires a fresh Dev QA app and its own evidence pins")
     qa_tls_policy = host_qa_tls_scope(info["CFBundleIdentifier"], allow_development_qa,
                                       qa_tls_anchor_der, qa_tls_origins or [],
                                       allow_production_diagnostic=allow_production_diagnostic)
@@ -794,13 +804,20 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
     host_bundle = app / HOST_BUNDLE_RELATIVE_PATH
     if host_bundle.exists() or host_bundle.is_symlink():
         raise ContractError("Existing WebKit host is preserved; use a fresh app staging directory")
-    if private_v508_evidence is None:
+    successor = None
+    if private_successor is not None:
+        from owned_webkit_successor_evidence import verify
+
+        successor = verify(*private_successor, runtime_frameworks)
+        network_sandbox_sha256 = successor["networkSandboxSHA256"]
+    elif private_v508_evidence is None:
         preflight_owned_webkit_notices(app, runtime_frameworks,
                                        source_offer_root=source_offer_root,
                                        source_offer_manifest_sha256=source_offer_manifest_sha256)
     else:
         _v508_notice_action("preflight", app, runtime_frameworks, source_offer_root, private_v508_evidence)
-    binding_source = runtime_image_binding_source(runtime_frameworks)
+    binding_source = (successor["signedRuntimeImageBinding"] if successor is not None
+                      else runtime_image_binding_source(runtime_frameworks))
     if private_v508_evidence is not None:
         if (binding_source is None or private_v508_evidence.binding.is_symlink()
                 or not private_v508_evidence.binding.is_file()
@@ -817,6 +834,16 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
         evidence_dir = host_bundle / "Contents/Resources/NeAntikRuntimeEvidence"
         evidence_dir.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(binding_source, evidence_dir / "NeAntikRuntimeImageBinding.json")
+    if successor is not None:
+        verify(*private_successor, framework_destination)
+        if digest(evidence_dir / "NeAntikRuntimeImageBinding.json") != successor["signedRuntimeImageBindingSHA256"]:
+            raise ContractError("Copied successor runtime binding differs from the manifest")
+        for relative, source in successor["noticeFiles"].items():
+            target = evidence_dir / "PrivateNotices" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, target)
+            if digest(target) != successor["noticeSHA256"][relative]:
+                raise ContractError(f"Copied successor notice differs from the inventory: {relative}")
     staged_webkit = framework_destination / "WebKit.framework/Versions/A/WebKit"
     runtime_hash = digest(runtime_source)
     if digest(staged_webkit) != runtime_hash:
@@ -835,6 +862,9 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
     }
     if network_sandbox_sha256 is not None:
         host_info[sandbox_pin.PIN_KEY] = sandbox_pin.verify(framework_destination, network_sandbox_sha256)
+    if successor is not None:
+        host_info[PRIVATE_SUCCESSOR_KEY] = {"manifestSHA256": successor["manifestSHA256"],
+                                           "releaseQualified": False}
     host_info.update(host_ats_policy(
         info["CFBundleIdentifier"], allow_development_qa,
         qa_tls_policy.get(QA_TLS_SCOPE_KEY, {}).get("origins", []),
@@ -861,7 +891,11 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
     cdhash = parse_cdhash(detail)
     installed = pinned_info(info, digest(host_executable), cdhash, host_bundle_id)
     installed[NETWORK_PROCESS_PIN_KEY] = network_pin
+    if successor is not None:
+        installed["NeAntikPrivateQARuntimeVariant"] = PRIVATE_SUCCESSOR_VARIANT
     install_info_atomically(app, installed)
+    if successor is not None:
+        return host_bundle
     if private_v508_evidence is None:
         install_owned_webkit_notices(app, framework_destination,
                                      source_offer_root=source_offer_root,
@@ -879,12 +913,25 @@ def package(app: Path, host_binary: Path, runtime_frameworks: Path, identity: st
             source_offer_root: Path | None = None,
             source_offer_manifest_sha256: str | None = None,
             private_v508_evidence: PrivateV508Evidence | None = None,
-                           network_sandbox_sha256: str | None = None) -> Path:
+            network_sandbox_sha256: str | None = None,
+            private_successor: tuple[Path, str] | None = None) -> Path:
     """Package a pre-linked host, or derive one only from this app's manager."""
     if app.is_symlink() or not app.is_dir():
         raise ContractError("Target NeAntik app must be an existing physical bundle")
     # Validate before copying a large runtime tree or changing a signed app.
     manager_info = read_info(app, allow_development_qa=allow_development_qa)
+    if private_successor is not None:
+        if recipient_relink:
+            raise ContractError("private successor QA is separate from recipient relink")
+        return _package_verified_host(
+            app, host_binary, runtime_frameworks, identity,
+            allow_development_qa=allow_development_qa,
+            qa_tls_anchor_der=qa_tls_anchor_der, qa_tls_origins=qa_tls_origins,
+            allow_production_diagnostic=allow_production_diagnostic,
+            source_offer_root=source_offer_root,
+            source_offer_manifest_sha256=source_offer_manifest_sha256,
+            private_v508_evidence=private_v508_evidence,
+            network_sandbox_sha256=network_sandbox_sha256, private_successor=private_successor)
     _validate_private_v508(private_v508_evidence, manager_info, allow_development_qa,
                            allow_production_diagnostic, source_offer_root,
                            source_offer_manifest_sha256)
@@ -965,6 +1012,8 @@ def main() -> int:
                         help="validated corresponding-source offer carrying first-party runtime overlays")
     parser.add_argument("--source-offer-manifest-sha256")
     parser.add_argument("--network-sandbox-sha256", help="Exact patched NetworkProcess sandbox hash from the staging receipt")
+    parser.add_argument("--private-successor-manifest", type=Path, help="Local Dev QA evidence for a new owned WebKit source lineage")
+    parser.add_argument("--private-successor-manifest-sha256")
     parser.add_argument("--identity", required=True, help="Existing Developer ID identity name or SHA-1")
     parser.add_argument("--development-qa", action="store_true",
                         help="Allow only the app.neantik.desktop.dev bundle for an isolated QA copy")
@@ -977,6 +1026,10 @@ def main() -> int:
     parser.add_argument("--qa-tls-origin", action="append", default=[],
                         help="Dev QA only: exact https://host.invalid:port; repeat up to four times")
     args = parser.parse_args()
+    if (args.private_successor_manifest is None) != (args.private_successor_manifest_sha256 is None):
+        parser.error("private successor manifest and SHA-256 must be supplied together")
+    successor = ((args.private_successor_manifest, args.private_successor_manifest_sha256)
+                 if args.private_successor_manifest is not None else None)
     try:
         anchor = None
         if args.qa_tls_anchor_der is not None:
@@ -992,7 +1045,8 @@ def main() -> int:
                        allow_production_diagnostic=args.production_diagnostic_qa,
                        source_offer_root=args.source_offer_root,
                        source_offer_manifest_sha256=args.source_offer_manifest_sha256,
-                       network_sandbox_sha256=args.network_sandbox_sha256)
+                       network_sandbox_sha256=args.network_sandbox_sha256,
+                       private_successor=successor)
     except (ContractError, ValueError) as error:
         parser.exit(1, f"WebKit host packaging refused: {error}\n")
     except (OSError, subprocess.SubprocessError) as error:

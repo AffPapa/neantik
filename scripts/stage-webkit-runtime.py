@@ -370,6 +370,42 @@ def verify_source_item(item: Path, root: Path, excluded: set[str]) -> None:
                 raise ContractError(f"Runtime contains an unsafe or dangling symlink: {relative}") from error
 
 
+WEBKIT_SWIFT_NAME = "libWebKitSwift.dylib"
+WEBKIT_SWIFT_EMBEDDED = Path("WebKit.framework/Versions/A/Frameworks") / WEBKIT_SWIFT_NAME
+
+
+def webkit_swift_source(root: Path) -> tuple[Path, str]:
+    top = root / WEBKIT_SWIFT_NAME
+    nested = root / WEBKIT_SWIFT_EMBEDDED
+    if nested.parent.resolve() != nested.parent:
+        raise ContractError("WebKitSwift framework directory is not physical")
+
+    has_top = top.exists() or top.is_symlink()
+    if has_top:
+        if top.is_symlink() or not top.is_file():
+            raise ContractError("Top-level WebKitSwift image is not a regular file")
+        verify_source_item(top, root, set())
+
+    if nested.is_symlink():
+        # Only the exact historical alias to a verified top-level file is
+        # accepted. The nested-only layout must contain a physical dylib.
+        try:
+            target = nested.resolve(strict=True)
+        except (OSError, RuntimeError) as error:
+            raise ContractError("WebKitSwift framework link is dangling or cyclic") from error
+        if not has_top or Path(os.readlink(nested)).is_absolute() or target != top:
+            raise ContractError("WebKitSwift framework link targets an unexpected image")
+        return top, digest(top)
+
+    if not nested.is_file():
+        raise ContractError("WebKit's required embedded WebKitSwift image is missing")
+    verify_source_item(nested, root, set())
+    nested_digest = digest(nested)
+    if has_top and digest(top) != nested_digest:
+        raise ContractError("Top-level and embedded WebKitSwift images differ")
+    return nested, nested_digest
+
+
 def copy_runtime(source: Path, destination: Path, manifest: dict,
                  upstream_source: Path | None = None) -> dict:
     root = physical_directory(source)
@@ -378,8 +414,15 @@ def copy_runtime(source: Path, destination: Path, manifest: dict,
     create_physical_parents(destination.parent)
     excluded = set(manifest["excludedPathComponents"])
     items = [root / name for name in manifest["runtimeItems"]]
+    swift_top = root / WEBKIT_SWIFT_NAME
+    if swift_top not in items or (root / "WebKit.framework") not in items:
+        raise ContractError("Runtime manifest must stage WebKit and its WebKitSwift dylib")
+    if omitted(WEBKIT_SWIFT_EMBEDDED, excluded):
+        raise ContractError("Runtime manifest excludes WebKit's required WebKitSwift image")
     for item in items:
-        verify_source_item(item, root, excluded)
+        if item != swift_top:
+            verify_source_item(item, root, excluded)
+    swift_source, swift_digest = webkit_swift_source(root)
     validated_licenses = []
     if manifest["schemaVersion"] in (3, 4):
         if "WebInspectorUI.framework" not in manifest["runtimeItems"] or upstream_source is None:
@@ -423,13 +466,14 @@ def copy_runtime(source: Path, destination: Path, manifest: dict,
                 raise ContractError("Pinned CompatibilitySpan library is not Mach-O")
         validated_span = (span, source_file)
     webkit = root / "WebKit.framework/Versions/A/WebKit"
-    swift = root / "libWebKitSwift.dylib"
-    if not webkit.is_file() or not swift.is_file():
-        raise ContractError("Pinned build is missing WebKit or its required WebKitSwift dylib")
+    if not webkit.is_file():
+        raise ContractError("Pinned build is missing WebKit")
 
     destination.mkdir()
     try:
         for item in items:
+            if item == swift_top:
+                continue
             target = destination / item.name
 
             def ignore(directory: str, names: list[str]) -> set[str]:
@@ -440,26 +484,22 @@ def copy_runtime(source: Path, destination: Path, manifest: dict,
             else:
                 shutil.copy2(item, target, follow_symlinks=False)
 
-        # WebKit's upstream framework layout points this dylib symlink outside
-        # the framework to the sibling top-level runtime item. macOS code
-        # signing rejects a framework bundle that contains a symlink escaping
-        # its own bundle, even when the target stays inside the wider payload.
-        # Keep the top-level dylib for other runtime consumers and materialize
-        # a byte-identical copy inside WebKit.framework for a sealable bundle.
-        required_link = destination / "WebKit.framework/Versions/A/Frameworks/libWebKitSwift.dylib"
-        if not required_link.is_symlink():
-            raise ContractError("WebKit's required WebKitSwift framework link is missing")
-        try:
-            resolved_link = required_link.resolve(strict=True)
-            resolved_link.relative_to(destination.resolve())
-        except (OSError, ValueError) as error:
-            raise ContractError("WebKit's required WebKitSwift link escapes staged runtime") from error
-        if resolved_link != (destination / "libWebKitSwift.dylib").resolve():
-            raise ContractError("WebKit's required WebKitSwift framework link targets an unexpected image")
-        required_link.unlink()
-        shutil.copy2(destination / "libWebKitSwift.dylib", required_link)
-        if digest(required_link) != digest(destination / "libWebKitSwift.dylib"):
-            raise ContractError("WebKit's embedded WebKitSwift image differs from the staged top-level image")
+        # Seal both layouts as physical, byte-identical images. Legacy
+        # framework symlinks cannot survive signing. New upstream builds
+        # already embed the image and need a top-level mirror for consumers.
+        staged_swift = destination / WEBKIT_SWIFT_EMBEDDED
+        staged_top = destination / WEBKIT_SWIFT_NAME
+        if staged_swift.is_symlink():
+            if swift_source != swift_top:
+                raise ContractError("Staged WebKitSwift framework link was unexpected")
+            staged_swift.unlink()
+            shutil.copy2(swift_source, staged_swift, follow_symlinks=False)
+        if (staged_swift.is_symlink() or not staged_swift.is_file()
+                or digest(staged_swift) != swift_digest):
+            raise ContractError("Staged WebKitSwift image differs from the validated build output")
+        shutil.copy2(staged_swift, staged_top, follow_symlinks=False)
+        if staged_top.is_symlink() or not staged_top.is_file() or digest(staged_top) != swift_digest:
+            raise ContractError("Staged top-level WebKitSwift mirror differs from the validated build output")
 
         for item, source_file in validated_licenses:
             target = destination / item["destinationPath"]
@@ -495,8 +535,6 @@ def copy_runtime(source: Path, destination: Path, manifest: dict,
                     if stream.read(4) in MACHO_MAGICS:
                         image_hashes[str(entry.relative_to(destination))] = digest(entry)
 
-        if required_link.is_symlink() or not required_link.is_file():
-            raise ContractError("WebKit's embedded WebKitSwift image is not a regular file")
         return {
             "status": "staged-pre-sign-only",
             "upstreamCommit": manifest["upstream"]["commit"],

@@ -24,6 +24,7 @@ import tls_fixture  # noqa: E402
 
 BLANK_PROFILE_NAME = 'NeAntik QA Template'
 PRIVATE_TMP = Path('/private/tmp')
+PRIVATE_SUCCESSOR_DEV_VARIANT = 'OwnedWebKitSuccessorV1'
 TUPLE_COUNT = 11
 M2_RESIDUE = 2
 MAX_SEED = 2_147_483_647
@@ -76,7 +77,8 @@ def read_blank_template(path: Path) -> dict:
     if not isinstance(document, dict):
         raise FixtureError('one_app_produced_webkit_template_required')
     profiles = document.get('profiles')
-    if (document.get('schemaVersion') not in (2, 5)
+    version = document.get('schemaVersion')
+    if (type(version) is not int or version not in (2, 5, 7)
             or not isinstance(profiles, list) or len(profiles) != 1
             or not isinstance(profiles[0], dict)):
         raise FixtureError('one_app_produced_webkit_template_required')
@@ -84,7 +86,9 @@ def read_blank_template(path: Path) -> dict:
     identity = profile.get('identity') if isinstance(profile, dict) else None
     if (profile.get('name') != BLANK_PROFILE_NAME or profile.get('engine') != 'webkit'
             or profile.get('webKitRuntimeGeneration') not in ('system', 'isolatedV1')
-            or (document['schemaVersion'] == 2 and profile.get('webKitRuntimeGeneration') != 'system')
+            or (version == 2 and profile.get('webKitRuntimeGeneration') != 'system')
+            or (version == 7 and (profile.get('privacyPolicy') != 'legacy'
+                                 or profile.get('webKitBlockPeerConnections') is not False))
             or profile.get('startURL') != 'about:blank' or profile.get('proxy') is not None
             or not isinstance(identity, dict) or profile.get('note') or profile.get('tags')
             or any(key in profile for key in ('password', 'proxyPassword', 'auth'))):
@@ -192,14 +196,15 @@ def gpu_probe_fragment(nonce: str) -> str:
 
 
 def prepare(template: Path, *, peer_control: bool = False, peer_stun_port: int | None = None,
-            gpu_probe: bool = False):
+            gpu_probe: bool = False, private_successor_dev: bool = False):
     blank = read_blank_template(template)
     if peer_control != (peer_stun_port is not None):
         raise FixtureError('peer_control_requires_loopback_probe_port')
     stage = Path(tempfile.mkdtemp(prefix='neantik-webkit-ab-stage-', dir=PRIVATE_TMP))
-    # The production-ID diagnostic runtime accepts only this owner-only root
-    # namespace. Keep the QA A/B profile store isolated from user app support.
-    root = Path(tempfile.mkdtemp(prefix='neantik-production-diagnostic-', dir=PRIVATE_TMP))
+    # Match the candidate's data-root contract. The explicit Debug lane uses
+    # the app's disposable fixture namespace for its in-memory Keychain.
+    root_prefix = 'neantik-dev-fixture.' if private_successor_dev else 'neantik-production-diagnostic-'
+    root = Path(tempfile.mkdtemp(prefix=root_prefix, dir=PRIVATE_TMP))
     os.chmod(stage, 0o700)
     os.chmod(root, 0o700)
     dns = origin = validator = None
@@ -260,6 +265,8 @@ def prepare(template: Path, *, peer_control: bool = False, peer_stun_port: int |
             },
             'faultControls': ['proxy-A-refuse', 'proxy-A-recover', 'proxy-B-refuse', 'proxy-B-recover'],
         }
+        if private_successor_dev:
+            plan['qaRuntimeVariant'] = PRIVATE_SUCCESSOR_DEV_VARIANT
         private_file(stage / 'run-plan.json', (json.dumps(plan, sort_keys=True, indent=2) + '\n').encode())
         return plan, dns, origin, tunnels, validator
     except BaseException:
@@ -348,8 +355,13 @@ def public_site_page(nonce: str, target: str) -> str:
 
 
 def serve(template: Path, *, peer_control: bool = False, peer_stun_port: int | None = None,
-          gpu_probe: bool = False, public_site_controls: bool = False) -> int:
-    plan, dns, origin, tunnels, validator = prepare(template, peer_control=peer_control, peer_stun_port=peer_stun_port, gpu_probe=gpu_probe)
+          gpu_probe: bool = False, public_site_controls: bool = False,
+          private_successor_dev: bool = False) -> int:
+    if private_successor_dev and public_site_controls:
+        raise FixtureError('private_successor_dev_requires_loopback_only')
+    plan, dns, origin, tunnels, validator = prepare(
+        template, peer_control=peer_control, peer_stun_port=peer_stun_port,
+        gpu_probe=gpu_probe, private_successor_dev=private_successor_dev)
     root = Path(plan['root'])
     phases = []
     phase_names = ('A1', 'B1', 'A2')
@@ -428,10 +440,13 @@ def main() -> int:
     parser.add_argument('--peer-stun-port', type=int, help='Loopback-only UDP counter port')
     parser.add_argument('--gpu-probe', action='store_true', help='Request a WebGPU adapter on the synthetic page')
     parser.add_argument('--public-site-controls', action='store_true', help='Opt in to fixed Google/Booking redirects on local control commands')
+    parser.add_argument('--private-successor-dev', action='store_true',
+                        help='Prepare an owner-only Debug fixture root for the private successor runtime')
     args = parser.parse_args()
     try:
         return serve(args.template, peer_control=args.peer_control, peer_stun_port=args.peer_stun_port,
-                     gpu_probe=args.gpu_probe, public_site_controls=args.public_site_controls)
+                     gpu_probe=args.gpu_probe, public_site_controls=args.public_site_controls,
+                     private_successor_dev=args.private_successor_dev)
     except (FixtureError, OSError, ValueError, TypeError, json.JSONDecodeError) as error:
         print(json.dumps({'status': 'REFUSED', 'reason': str(error)}, sort_keys=True), file=sys.stderr)
         return 1
