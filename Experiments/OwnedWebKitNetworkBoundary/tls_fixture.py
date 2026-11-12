@@ -10,7 +10,7 @@ import subprocess
 import time
 
 import probe
-from turn_tcp_fixture import TurnTCPFixture
+from turn_tcp_fixture import TURN_BROWSER_STATUSES, TurnTCPFixture, turn_probe_fragment
 
 NAME = 'owned-tls.invalid'
 
@@ -71,6 +71,7 @@ class TLSOrigin(probe.Endpoint):
         if persistence_nonce is not None and not re.fullmatch(r'[0-9a-f]{32}', persistence_nonce):
             raise ValueError('Exact random persistence nonce required')
         self.persistence_nonce = persistence_nonce
+        self.turn_probe_token = None
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         self.context.minimum_version = ssl.TLSVersion.TLSv1_2
         self.context.load_cert_chain(str(certificate_root / 'leaf.pem'), str(certificate_root / 'leaf.key'))
@@ -105,6 +106,16 @@ class TLSOrigin(probe.Endpoint):
                 result['requestTrace'] = [dict(event) for event in self.persistence_request_trace]
             return result
 
+    def arm_turn_probe(self, target, token):
+        if self.persistence_nonce is None:
+            raise ValueError('TURN probe requires the owned HTTPS fixture')
+        fragment = turn_probe_fragment(target, token)
+        with self.lock:
+            if self.turn_probe_token is not None:
+                raise ValueError('TURN probe already armed')
+            self.turn_probe_token = token
+            self.marker += fragment
+
     def serve_persistence(self, client):
         category = 'unread'
         try:
@@ -133,12 +144,18 @@ class TLSOrigin(probe.Endpoint):
                     expected = f'GET /qa-gpu/{self.persistence_nonce}/{result} HTTP/1.1'.encode()
                     if request == expected:
                         gpu = f'gpu-{result}'
-                if request not in (initial, restored) and peer is None and gpu is None:
+                turn = None
+                if self.turn_probe_token is not None:
+                    for result in TURN_BROWSER_STATUSES:
+                        expected = f'GET /qa-turn/{self.turn_probe_token}/{result} HTTP/1.1'.encode()
+                        if request == expected:
+                            turn = f'turn-{result}'
+                if request not in (initial, restored) and peer is None and gpu is None and turn is None:
                     self.record_persistence_request('unrecognized', 'refused')
                     self.increment('refused'); return
-                category = peer or gpu or ('initial' if request == initial else 'restored')
+                category = peer or gpu or turn or ('initial' if request == initial else 'restored')
                 body = b'ack'
-                kind = None if peer or gpu else ('stateInitial' if request == initial else 'stateRestored')
+                kind = None if peer or gpu or turn else ('stateInitial' if request == initial else 'stateRestored')
                 content_type = b'text/plain'
             client.sendall(b'HTTP/1.1 200 OK\r\nContent-Type: ' + content_type
                            + b'\r\nCache-Control: no-store\r\nConnection: close\r\nContent-Length: '

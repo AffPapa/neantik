@@ -8,6 +8,28 @@ import select
 import stat
 import subprocess
 
+TURN_BROWSER_STATUSES = (
+    'fixture-invalid', 'api-unavailable', 'relay-candidate-missing',
+    'nonce-mismatch', 'relay-pair-unverified', 'relay-nonce-delivered',
+    'timeout', 'browser-error',
+)
+
+
+def turn_probe_fragment(target, token):
+    """Render only for the owned synthetic origin and a single armed run."""
+    if not isinstance(target, TurnTCPFixture) or not isinstance(token, str) or not re.fullmatch('[0-9a-f]{32}', token):
+        raise ValueError('Live TURN fixture and exact probe token required')
+    source = (Path(__file__).resolve().parent / 'turn-fixture/browser-probe.js').read_text(encoding='utf-8')
+    config = json.dumps(target.browser_config())
+    return f"""<pre id="turn-probe">pending</pre><script>
+(async () => {{
+  const result = await {source}({config});
+  document.getElementById('turn-probe').textContent = result.status;
+  const response = await fetch('/qa-turn/{token}/' + result.status, {{cache: 'no-store', credentials: 'same-origin'}});
+  if (!response.ok) throw Error('OwnedTURNReceiptRefused');
+}})().catch(() => {{ document.getElementById('turn-probe').textContent = 'receipt-error'; }});
+</script>"""
+
 
 class TurnTCPFixture:
     host = 'turn-neantik.invalid'
