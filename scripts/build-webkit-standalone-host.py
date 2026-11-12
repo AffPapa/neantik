@@ -23,7 +23,7 @@ SOURCES = (
     "WebKitSessionStore.swift", "WebKitSessionCheckpointer.swift",
     "WebKitDownloads.swift", "WebKitMediaPolicy.swift",
     "ProxyRelayPrivatePipe.swift", "WebKitBrokerPort.swift",
-    "AppPaths.swift", "Models.swift", "BrowserStartURL.swift",
+    "AppPaths.swift", "Models.swift", "BrowserPrivacyPolicy.swift", "BrowserStartURL.swift",
     "ManagerLaunchAdmission.swift", "ApplicationUpdateAdmission.swift",
     "ProxyRelaySocketOwnerInspector.swift",
     "DirectUpdateCoreExports.swift",
@@ -57,6 +57,19 @@ def prepare() -> dict[str, str]:
     return hashes
 
 
+def check_generated_sources() -> None:
+    sources = {"HostEntry.swift": ROOT / "Sources/WebKitHostEntry/HostEntry.swift"}
+    sources.update({name: ROOT / "Sources/NeAntik" / name for name in SOURCES})
+    actual = {path.name for path in TARGET.glob("*.swift")}
+    mismatch = sorted(actual.symmetric_difference(sources) | {
+        name for name in actual.intersection(sources)
+        if (TARGET / name).read_bytes() != sources[name].read_bytes()
+    })
+    if mismatch:
+        raise RuntimeError("Standalone WebKit generated source differs: " + ", ".join(mismatch))
+    print(f"PASS: {len(sources)} standalone WebKit sources match their inputs.")
+
+
 def stage_owned_host(binary: Path) -> Path:
     """Rebind only a copy; reject every unapproved system or absolute path."""
     linked = subprocess.check_output(["/usr/bin/otool", "-L", str(binary)], text=True)
@@ -83,7 +96,9 @@ def stage_owned_host(binary: Path) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--prepare-only", action="store_true")
+    source_mode = parser.add_mutually_exclusive_group()
+    source_mode.add_argument("--prepare-only", action="store_true")
+    source_mode.add_argument("--check-generated", action="store_true")
     parser.add_argument("--configuration", choices=("debug", "release"), default="debug")
     parser.add_argument("--qa-proxy", action="store_true",
                         help="compile the private Dev-only WebKit proxy qualification gate")
@@ -96,6 +111,9 @@ def main() -> None:
         parser.error("proxy build modes are mutually exclusive")
     if args.diagnostic_proxy and os.environ.get("NEANTIK_RELEASE_CHANNEL") == "production":
         parser.error("diagnostic proxy images are forbidden on the production release channel")
+    if args.check_generated:
+        check_generated_sources()
+        return
     hashes = prepare()
     print(json.dumps({"target": str(TARGET), "sourceCount": len(hashes), "sourcesSHA256": hashes}, sort_keys=True))
     if args.prepare_only:

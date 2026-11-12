@@ -70,6 +70,12 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
         "\(kind.curlScheme)://\(urlHost):\(port)"
     }
 
+    /// True for IPv4 and IPv6 literals without exposing the address to a
+    /// caller that only needs to decide whether DNS resolution applies.
+    var isIPAddressLiteral: Bool {
+        Self.isIPAddressLiteral(host)
+    }
+
     var displayName: String {
         "\(kind.title) · \(displayEndpoint)"
     }
@@ -105,12 +111,7 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
         let unwrapped = value.hasPrefix("[") && value.hasSuffix("]")
             ? String(value.dropFirst().dropLast())
             : value
-        var storage = sockaddr_storage()
-        if unwrapped.withCString({
-            inet_pton(AF_INET, $0, &storage)
-        }) == 1 || unwrapped.withCString({
-            inet_pton(AF_INET6, $0, &storage)
-        }) == 1 {
+        if Self.isIPAddressLiteral(value) {
             return true
         }
 
@@ -131,6 +132,15 @@ struct ProxyConfiguration: Codable, Equatable, Sendable {
                 $0.first != "-" &&
                 $0.last != "-"
         }
+    }
+
+    private static func isIPAddressLiteral(_ value: String) -> Bool {
+        let unwrapped = value.hasPrefix("[") && value.hasSuffix("]")
+            ? String(value.dropFirst().dropLast())
+            : value
+        var storage = sockaddr_storage()
+        return unwrapped.withCString { inet_pton(AF_INET, $0, &storage) } == 1 ||
+            unwrapped.withCString { inet_pton(AF_INET6, $0, &storage) } == 1
     }
 }
 
@@ -697,6 +707,10 @@ enum BrowserStartupMode: String, Codable, CaseIterable, Sendable {
 enum BrowserFontPolicy: String, Codable, Sendable {
     case native
     case systemV1 = "system-v1"
+
+    static func defaultForCreation(supportsSystemFontPolicy: Bool) -> Self {
+        supportsSystemFontPolicy ? .systemV1 : .native
+    }
 }
 
 /// A future policy must not be mistaken for corrupted JSON and replaced with
@@ -723,7 +737,9 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     static let maximumNoteLength = 1_000
     static let maximumNoteUTF8Bytes = 4_096
     static let maximumStartURLUTF8Bytes = 16 * 1_024
-    static let defaultStartURL = "https://aff.top/tools/fingerprint"
+    // A new profile must not contact an external fingerprint service merely
+    // because it was opened. Existing persisted start URLs remain unchanged.
+    static let defaultStartURL = "about:blank"
 
     var id: UUID
     var name: String
@@ -740,6 +756,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     var webKitMediaPolicy: WebKitMediaPolicy
     var webKitBlockPeerConnections: Bool
     var fontPolicy: BrowserFontPolicy
+    var privacyPolicy: BrowserPrivacyPolicy
     var proxy: ProxyConfiguration?
     var identity: BrowserIdentity
     var createdAt: Date
@@ -763,6 +780,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         webKitMediaPolicy: WebKitMediaPolicy = .ask,
         webKitBlockPeerConnections: Bool = false,
         fontPolicy: BrowserFontPolicy = .native,
+        privacyPolicy: BrowserPrivacyPolicy = .legacy,
         proxy: ProxyConfiguration? = nil,
         identity: BrowserIdentity = BrowserIdentity(),
         createdAt: Date = Date(),
@@ -786,6 +804,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         self.webKitMediaPolicy = webKitMediaPolicy
         self.webKitBlockPeerConnections = webKitBlockPeerConnections
         self.fontPolicy = fontPolicy
+        self.privacyPolicy = privacyPolicy
         self.proxy = proxy
         self.identity = identity
         self.createdAt = createdAt
@@ -853,7 +872,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     }
 
     func normalizedForPersistence() -> BrowserProfile? {
-        if engine != .chromium && fontPolicy != .native { return nil }
+        if engine != .chromium && (fontPolicy != .native || privacyPolicy != .legacy) { return nil }
         if engine != .webkit && webKitRuntimeGeneration != .system { return nil }
         if engine != .webkit && (webKitMediaPolicy != .ask || webKitBlockPeerConnections) { return nil }
         if engine == .webkit { do { try WebKitProfilePolicy.validateConfiguration(self) } catch { return nil } }
@@ -916,8 +935,9 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             webKitRuntimeGeneration: webKitRuntimeGeneration,
             webKitMediaPolicy: webKitMediaPolicy,
             webKitBlockPeerConnections: webKitBlockPeerConnections,
-            // A copy receives a new identity; policy opt-in is not inherited.
-            fontPolicy: .native,
+            // A copy receives a new identity and retains the requested protections.
+            fontPolicy: fontPolicy,
+            privacyPolicy: privacyPolicy,
             proxy: proxy,
             identity: BrowserIdentity(),
             createdAt: date,
@@ -945,6 +965,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         case webKitMediaPolicy
         case webKitBlockPeerConnections
         case fontPolicy
+        case privacyPolicy
         case proxy
         case identity
         case createdAt
@@ -1003,6 +1024,14 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         } else {
             fontPolicy = .native
         }
+        if container.contains(.privacyPolicy) {
+            privacyPolicy = try container.decode(BrowserPrivacyPolicy.self, forKey: .privacyPolicy)
+        } else {
+            privacyPolicy = .legacy
+        }
+        guard engine == .chromium || privacyPolicy == .legacy else {
+            throw UnsupportedBrowserPrivacyPolicyError()
+        }
         guard engine == .chromium || fontPolicy == .native else {
             throw UnsupportedBrowserFontPolicyError()
         }
@@ -1043,6 +1072,7 @@ struct BrowserRuntimeCapabilities: OptionSet, Hashable, Sendable {
     static let platformOverride = BrowserRuntimeCapabilities(rawValue: 1 << 1)
     // BrowserRuntime admits this bit only after exact signed closure inspection.
     static let systemFontPolicy = BrowserRuntimeCapabilities(rawValue: 1 << 2)
+    static let profilePrivacyV1 = BrowserRuntimeCapabilities(rawValue: 1 << 3)
 
     static let fingerprintIdentity: BrowserRuntimeCapabilities = [
         .fingerprintSeed,
@@ -1094,6 +1124,7 @@ struct BrowserRuntime: Identifiable, Hashable, Sendable {
     let capabilities: BrowserRuntimeCapabilities
     let inspection: BrowserRuntimeInspection
     let fontPolicyQualification: BrowserFontPolicyQualification?
+    let privacyQualification: BrowserPrivacyQualification?
 
     init(
         name: String,
@@ -1109,6 +1140,11 @@ struct BrowserRuntime: Identifiable, Hashable, Sendable {
         self.flavor = flavor
         var admitted = capabilities ?? flavor.capabilities
         admitted.remove(.systemFontPolicy)
+        admitted.remove(.profilePrivacyV1)
+        let privacyQualification = admitted.contains(.fingerprintIdentity)
+            ? BrowserPrivacyRuntime.inspect(executableURL: executableURL) : nil
+        self.privacyQualification = privacyQualification
+        if privacyQualification != nil { admitted.insert(.profilePrivacyV1) }
         let fontQualification = admitted.contains(.fingerprintIdentity)
             ? BrowserFontPolicyRuntime.inspect(executableURL: executableURL) : nil
         self.fontPolicyQualification = fontQualification
@@ -1120,6 +1156,10 @@ struct BrowserRuntime: Identifiable, Hashable, Sendable {
 
     var supportsFingerprintIdentity: Bool {
         capabilities.contains(.fingerprintIdentity)
+    }
+
+    var supportsProfilePrivacy: Bool {
+        privacyQualification != nil && capabilities.contains(.profilePrivacyV1)
     }
 
     var supportsSystemFontPolicy: Bool {
@@ -1164,7 +1204,7 @@ enum NeAntikError: LocalizedError {
         case .browserNotFound:
             "Встроенный браузер NeAntik отсутствует или повреждён. Переустанови приложение из официального DMG или ZIP."
         case .profileAlreadyRunning:
-            "Этот профиль уже запущен."
+            "Профиль уже запускается или используется другим окном NeAntik. Дождись завершения проверки и повтори запуск."
         case .invalidProfile:
             "Укажи название до 120 символов без переносов строк и корректную стартовую страницу."
         case .profileLimitReached:

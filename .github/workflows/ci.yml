@@ -66,6 +66,8 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           fetch-depth: 0
+      - name: Standalone WebKit source consistency
+        run: python3 -B scripts/build-webkit-standalone-host.py --check-generated
       - name: Release build
         run: ./scripts/verify-native-swift-release.sh
       - name: Direct privacy contract

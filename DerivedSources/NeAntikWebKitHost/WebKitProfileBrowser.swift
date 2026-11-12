@@ -114,12 +114,29 @@ enum BrowserEngine: String, Codable, CaseIterable, Identifiable, Sendable {
     case chromium
     case webkit
 
+    static var allCases: [BrowserEngine] {
+        #if NEANTIK_CHROMIUM_ONLY
+        [.chromium]
+        #else
+        [.chromium, .webkit]
+        #endif
+    }
+
+    var isAvailableInBuild: Bool {
+        Self.allCases.contains(self)
+    }
+
     var id: String { rawValue }
     var title: String { self == .chromium ? "Chromium" : "WebKit · движок Safari" }
 
     /// Static engine support, not evidence that a particular session or route
     /// was measured. Never include profile identity, visits or credentials.
     var managementCapabilities: [String: Bool] {
+        guard isAvailableInBuild else {
+            return ["persistentSiteData": false, "fingerprintConfiguration": false,
+                    "proxy": false, "mcpLaunch": false, "extensions": false,
+                    "browserDataBackup": false]
+        }
         let configuredEngine = self == .chromium
         let proxy = configuredEngine || (self == .webkit && WebKitProxyFeature.launchEnabled)
         return ["persistentSiteData": true,
@@ -162,6 +179,11 @@ enum WebKitProfileError: LocalizedError {
 /// System WebKit has its own APIs and networking. Refuse unsupported launches
 /// before constructing views rather than falling back to another route.
 enum WebKitProfilePolicy {
+    enum LaunchRoute: Equatable {
+        case systemDirect
+        case owned
+    }
+
     static let maximumTabs = 32
     static func canOpenTab(count: Int) -> Bool { (0..<maximumTabs).contains(count) }
 
@@ -180,16 +202,37 @@ enum WebKitProfilePolicy {
         return ownedProxyAvailable ? .isolatedV1 : previous
     }
 
-    static func validate(_ profile: BrowserProfile) throws {
+    /// Validate the saved route before the manager acquires any leases or
+    /// starts the broker. Proxy qualification never enables a system route.
+    static func launchRoute(
+        _ profile: BrowserProfile,
+        ownedProxyAvailable: Bool = WebKitProxyFeature.launchEnabled,
+        systemOnly: Bool = false
+    ) throws -> LaunchRoute {
         guard !profile.isArchived else { throw NeAntikError.profileArchived }
         try validateConfiguration(profile)
-        guard profile.webKitRuntimeGeneration == .system else {
-            throw WebKitProfileError.unsupported("Для этого профиля нужен отдельный WebKit runtime, который ещё не включён в приложение. Данные не открывались и не изменены.")
-        }
-        guard profile.proxy == nil || WebKitProxyFeature.launchEnabled else {
-            throw WebKitProfileError.unsupported("Прокси WebKit пока отключён: маршрут не прошёл квалификацию. Настройки профиля сохранены; прямое подключение вместо прокси не выполняется.")
+        let route: LaunchRoute
+        switch profile.webKitRuntimeGeneration {
+        case .system:
+            guard profile.proxy == nil else {
+                throw WebKitProfileError.unsupported("Системный WebKit не запускает профиль с прокси. Настройки профиля сохранены; прямое подключение вместо прокси не выполняется.")
+            }
+            route = .systemDirect
+        case .isolatedV1:
+            guard !systemOnly else {
+                throw WebKitProfileError.unsupported("Для этого профиля нужен отдельный WebKit runtime, который ещё не включён в приложение. Данные не открывались и не изменены.")
+            }
+            guard profile.proxy == nil || ownedProxyAvailable else {
+                throw WebKitProfileError.unsupported("Прокси WebKit пока отключён: маршрут ещё не прошёл квалификацию. Настройки сохранены, прямое подключение вместо прокси не выполняется.")
+            }
+            route = .owned
         }
         try validateNativeContext(profile)
+        return route
+    }
+
+    static func validate(_ profile: BrowserProfile) throws {
+        _ = try launchRoute(profile, systemOnly: true)
     }
 
     /// Owned WebKit accepts only the exact immutable isolated-runtime session
