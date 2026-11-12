@@ -21,6 +21,7 @@ sys.path.insert(0, str(REPO / 'scripts'))
 sys.path.insert(0, str(REPO / 'Experiments/OwnedWebKitNetworkBoundary'))
 import dns_tls_fixture  # noqa: E402
 import tls_fixture  # noqa: E402
+from turn_tcp_fixture import TURN_BROWSER_PROBE, TurnTCPFixture  # noqa: E402
 
 BLANK_PROFILE_NAME = 'NeAntik QA Template'
 PRIVATE_TMP = Path('/private/tmp')
@@ -196,7 +197,10 @@ def gpu_probe_fragment(nonce: str) -> str:
 
 
 def prepare(template: Path, *, peer_control: bool = False, peer_stun_port: int | None = None,
-            gpu_probe: bool = False, private_successor_dev: bool = False):
+            gpu_probe: bool = False, private_successor_dev: bool = False,
+            turn_target: TurnTCPFixture | None = None):
+    if turn_target is not None and not (private_successor_dev and peer_control):
+        raise FixtureError('turn_requires_private_successor_peer_control')
     blank = read_blank_template(template)
     if peer_control != (peer_stun_port is not None):
         raise FixtureError('peer_control_requires_loopback_probe_port')
@@ -227,7 +231,7 @@ def prepare(template: Path, *, peer_control: bool = False, peer_stun_port: int |
         authority = f'{host}:{origin.port}'
         tunnels = [
             tls_fixture.Tunnel({authority: origin}, None, dns_validator=validator),
-            tls_fixture.Tunnel({authority: origin}, None, dns_validator=validator),
+            tls_fixture.Tunnel({authority: origin}, None, dns_validator=validator, turn_target=turn_target),
         ]
         url = f'https://{authority}/'
         payload = profile_bytes(blank, origin_url=url,
@@ -267,6 +271,11 @@ def prepare(template: Path, *, peer_control: bool = False, peer_stun_port: int |
         }
         if private_successor_dev:
             plan['qaRuntimeVariant'] = PRIVATE_SUCCESSOR_DEV_VARIANT
+        if turn_target is not None:
+            plan['turnControl'] = {'phase': 'B1', 'authority': turn_target.authority,
+                                   'armAction': 'arm-turn-B1', 'expectedAllocations': 2,
+                                   'fixtureBinarySHA256': digest(turn_target.executable),
+                                   'browserProbeSHA256': digest(TURN_BROWSER_PROBE)}
         private_file(stage / 'run-plan.json', (json.dumps(plan, sort_keys=True, indent=2) + '\n').encode())
         return plan, dns, origin, tunnels, validator
     except BaseException:
@@ -283,7 +292,7 @@ def prepare(template: Path, *, peer_control: bool = False, peer_stun_port: int |
 
 
 def _counts(origin, tunnels, validator):
-    return {
+    counts = {
         'origin': origin.snapshot(),
         'proxyA': tunnels[0].snapshot(),
         'proxyB': tunnels[1].snapshot(),
@@ -291,6 +300,9 @@ def _counts(origin, tunnels, validator):
         'proxyBAuthorizedOrigins': tunnels[1].authenticated_for(origin),
         'dns': validator.snapshot(),
     }
+    if tunnels[1].turn_target is not None:
+        counts['proxyBTurn'] = tunnels[1].authenticated_turn_count()
+    return counts
 
 
 def _phase_observation(name, prior, current):
@@ -315,17 +327,33 @@ def _phase_observation(name, prior, current):
         classification = 'fail'
     else:
         classification = 'pending'
-    return {
+    trace = current_trace[len(prior_trace):]
+    result = {
         'phase': name,
         'classification': classification,
         'expectedState': 'initial' if expected_state[0] else 'restored',
         'stateDelta': origin_delta,
         'proxyAAuthorizedOriginDelta': auth_a,
         'proxyBAuthorizedOriginDelta': auth_b,
-        'originRequestTrace': current_trace[len(prior_trace):],
+        'originRequestTrace': trace,
         'routeBoundary': 'PASS' if route_ok else 'FAIL',
         'storageBoundary': 'PASS' if state_ok else 'FAIL',
     }
+    if 'proxyBTurn' in current:
+        turn_delta = current['proxyBTurn'] - prior['proxyBTurn']
+        acknowledgements = [event['category'] for event in trace
+                            if event['category'].startswith('turn-') and event['result'] == 'responded']
+        expected = name == 'B1'
+        valid = (turn_delta == 2 and acknowledgements == ['turn-relay-nonce-delivered'] if expected
+                 else turn_delta == 0 and not acknowledgements)
+        contaminated = turn_delta > (2 if expected else 0) or len(acknowledgements) > int(expected)
+        if classification != 'contaminated' and contaminated:
+            result['classification'] = 'contaminated'
+        elif classification == 'pass' and not valid:
+            result['classification'] = 'pending' if expected and not acknowledgements else 'fail'
+        result.update(proxyBTurnDelta=turn_delta, turnAcknowledgements=acknowledgements,
+                      turnBoundary='PASS' if valid else 'FAIL')
+    return result
 
 
 def _wait_for_phase(name, prior, read_counts, *, timeout_seconds=PHASE_TIMEOUT_SECONDS,
@@ -356,16 +384,18 @@ def public_site_page(nonce: str, target: str) -> str:
 
 def serve(template: Path, *, peer_control: bool = False, peer_stun_port: int | None = None,
           gpu_probe: bool = False, public_site_controls: bool = False,
-          private_successor_dev: bool = False) -> int:
+          private_successor_dev: bool = False, turn_target: TurnTCPFixture | None = None) -> int:
     if private_successor_dev and public_site_controls:
         raise FixtureError('private_successor_dev_requires_loopback_only')
     plan, dns, origin, tunnels, validator = prepare(
         template, peer_control=peer_control, peer_stun_port=peer_stun_port,
-        gpu_probe=gpu_probe, private_successor_dev=private_successor_dev)
+        gpu_probe=gpu_probe, private_successor_dev=private_successor_dev, turn_target=turn_target)
     root = Path(plan['root'])
     phases = []
     phase_names = ('A1', 'B1', 'A2')
     prior = _counts(origin, tunnels, validator)
+    base_page = origin.marker
+    turn_armed = False
     private_file(root / 'phase-results.json', b'{"phases":[]}\n')
     try:
         print(json.dumps({'status': 'ready', **plan}, sort_keys=True), flush=True)
@@ -381,6 +411,13 @@ def serve(template: Path, *, peer_control: bool = False, peer_stun_port: int | N
             if command == {'action': 'status'}:
                 print(json.dumps({'status': 'snapshot', 'counts': _counts(origin, tunnels, validator)},
                                  sort_keys=True), flush=True)
+                continue
+            if command == {'action': 'arm-turn-B1'} and turn_target is not None:
+                if [row['phase'] for row in phases] != ['A1'] or phases[0]['classification'] != 'pass' or turn_armed:
+                    raise FixtureError('turn_requires_one_completed_A1')
+                origin.arm_turn_probe(turn_target, secrets.token_hex(16))
+                turn_armed = True
+                print(json.dumps({'status': 'turn-armed', 'phase': 'B1'}), flush=True)
                 continue
             if public_site_controls and command in ({'action': 'public-google'}, {'action': 'public-booking'}):
                 target = command['action'].removeprefix('public-')
@@ -400,6 +437,8 @@ def serve(template: Path, *, peer_control: bool = False, peer_stun_port: int | N
             expected_index = len(phases)
             if expected_index >= len(phase_names) or name != phase_names[expected_index]:
                 raise FixtureError('phase_order_must_be_A1_B1_A2')
+            if turn_target is not None and name == 'B1' and not turn_armed:
+                raise FixtureError('turn_probe_must_be_armed_before_B1')
             row, current = _wait_for_phase(name, prior, lambda: _counts(origin, tunnels, validator))
             if row['classification'] == 'timeout':
                 print(json.dumps({'status': 'phase-timeout', **row}, sort_keys=True), flush=True)
@@ -408,9 +447,12 @@ def serve(template: Path, *, peer_control: bool = False, peer_stun_port: int | N
                 print(json.dumps({'status': 'phase-contaminated', **row}, sort_keys=True), flush=True)
                 continue
             phases.append(row)
+            if turn_target is not None and name == 'B1':
+                origin.marker = base_page
             private_file(root / f'phase-{name}.json', (json.dumps(row, sort_keys=True) + '\n').encode())
             results = {'schemaVersion': 1, 'candidateSHA256': None, 'phases': phases,
                        'status': 'partial' if len(phases) < 3 else
+                       'awaiting-turn-allocation-receipt' if turn_target is not None else
                        'PASS' if all(p['routeBoundary'] == p['storageBoundary'] == 'PASS' for p in phases)
                        else 'FAIL'}
             temporary = root / 'phase-results.next.json'
@@ -424,10 +466,21 @@ def serve(template: Path, *, peer_control: bool = False, peer_stun_port: int | N
         tunnel_closed = [t.stop() for t in reversed(tunnels)]
         origin_closed = origin.stop()
         dns_closed = dns.close()
+        final_counts = _counts(origin, tunnels, validator)
+        turn = None
+        if turn_target is not None:
+            turn = turn_target.stop()
+            late = _phase_observation('A2', prior, final_counts)
+            turn['observedPhaseControlsPassed'] = (turn['allocations'] == 2 and len(phases) == 3
+                                                    and all(row['classification'] == 'pass' for row in phases)
+                                                    and late['turnBoundary'] == 'PASS'
+                                                    and all(tunnel_closed) and origin_closed and dns_closed)
+            private_file(root / 'turn-fixture-results.json', (json.dumps(turn, sort_keys=True) + '\n').encode())
         print(json.dumps({'status': 'fixture-stopped',
                           'allChannelsDrained': all(tunnel_closed) and origin_closed and dns_closed,
-                          'finalCounts': _counts(origin, tunnels, validator),
-                          'phaseCount': len(phases)}, sort_keys=True), flush=True)
+                          'finalCounts': final_counts,
+                          'phaseCount': len(phases), **({'turn': turn} if turn is not None else {})},
+                         sort_keys=True), flush=True)
     return 0
 
 
@@ -442,8 +495,20 @@ def main() -> int:
     parser.add_argument('--public-site-controls', action='store_true', help='Opt in to fixed Google/Booking redirects on local control commands')
     parser.add_argument('--private-successor-dev', action='store_true',
                         help='Prepare an owner-only Debug fixture root for the private successor runtime')
+    parser.add_argument('--turn-test-binary', type=Path, help='Use the owned TURN control on profile B only')
     args = parser.parse_args()
     try:
+        if args.turn_test_binary is not None:
+            if not (args.private_successor_dev and args.peer_control and args.peer_stun_port is not None) or args.public_site_controls:
+                raise FixtureError('turn_requires_private_successor_peer_control')
+            with tempfile.TemporaryDirectory(prefix='neantik-owned-turn-', dir=PRIVATE_TMP) as directory:
+                target = TurnTCPFixture(args.turn_test_binary, Path(directory))
+                try:
+                    return serve(args.template, peer_control=True, peer_stun_port=args.peer_stun_port,
+                                 gpu_probe=args.gpu_probe, private_successor_dev=True, turn_target=target)
+                finally:
+                    if target.process.poll() is None:
+                        target.stop()
         return serve(args.template, peer_control=args.peer_control, peer_stun_port=args.peer_stun_port,
                      gpu_probe=args.gpu_probe, public_site_controls=args.public_site_controls,
                      private_successor_dev=args.private_successor_dev)

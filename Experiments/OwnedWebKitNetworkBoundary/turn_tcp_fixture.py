@@ -13,13 +13,14 @@ TURN_BROWSER_STATUSES = (
     'nonce-mismatch', 'relay-pair-unverified', 'relay-nonce-delivered',
     'timeout', 'browser-error',
 )
+TURN_BROWSER_PROBE = Path(__file__).resolve().parent / 'turn-fixture/browser-probe.js'
 
 
 def turn_probe_fragment(target, token):
     """Render only for the owned synthetic origin and a single armed run."""
     if not isinstance(target, TurnTCPFixture) or not isinstance(token, str) or not re.fullmatch('[0-9a-f]{32}', token):
         raise ValueError('Live TURN fixture and exact probe token required')
-    source = (Path(__file__).resolve().parent / 'turn-fixture/browser-probe.js').read_text(encoding='utf-8')
+    source = TURN_BROWSER_PROBE.read_text(encoding='utf-8')
     config = json.dumps(target.browser_config())
     return f"""<pre id="turn-probe">pending</pre><script>
 (async () => {{
@@ -48,6 +49,7 @@ class TurnTCPFixture:
             [str(executable), '-ready-file', str(handoff)], cwd=root,
             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
         )
+        self.executable = executable
         try:
             assert self.process.stdout is not None
             ready, _, _ = select.select([self.process.stdout], [], [], 5)

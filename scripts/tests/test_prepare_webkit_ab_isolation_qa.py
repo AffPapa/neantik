@@ -234,6 +234,23 @@ class WebKitABIsolationFixtureTests(unittest.TestCase):
         self.assertEqual(result['routeBoundary'], 'FAIL')
         self.assertEqual(result['storageBoundary'], 'PASS')
 
+    def test_turn_phase_requires_nonce_receipt_and_two_connections_on_profile_B(self):
+        prior = counters(pages=1, initial=1, proxy_a=2)
+        prior['proxyBTurn'] = 0
+        current = counters(pages=2, initial=2, proxy_a=2, proxy_b=2)
+        current['proxyBTurn'] = 2
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'pending')
+        acknowledgement = {'category': 'turn-relay-nonce-delivered', 'result': 'responded'}
+        current['origin']['requestTrace'] = [acknowledgement]
+        result = QA._phase_observation('B1', prior, current)
+        self.assertEqual((result['classification'], result['turnBoundary']), ('pass', 'PASS'))
+        current['proxyBTurn'] = 0
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'fail')
+        current['proxyBTurn'] = 2
+        self.assertEqual(QA._phase_observation('A2', prior, current)['classification'], 'contaminated')
+        current['origin']['requestTrace'].append(acknowledgement)
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'contaminated')
+
     def test_phase_a2_requires_proxy_a_and_restored_state(self):
         prior = counters(pages=1, initial=1, proxy_a=2, proxy_b=2)
         result = QA._phase_observation(
