@@ -52,12 +52,15 @@ separate observations.
 For the private A/B/A browser fixture, run
 `scripts/runtime-network/prepare-webkit-ab-isolation-qa.py` with its blank
 template, `--private-successor-dev --peer-control --peer-stun-port <port>` and
-`--turn-test-binary <physical binary path>`. After recording A1, send
+`--turn-test-binary <physical binary path>`. After sealing the candidate, send
+`{"action":"bind-candidate","receipt":"<absolute stage.json>","sha256":"<archive SHA-256>"}`.
+The private fixture checks the archive, seed and HTTPS trust scope. Start the
+same archive with the signed Swift launcher before recording A1. After A1 send
 `{"action":"arm-turn-B1"}` before starting B. The fixture serves the TURN
 probe to B, routes the exact authority only through proxy B, and restores the
 ordinary page before A2. Send the existing stop command after A2 to close the
 listeners and record the server's final allocation count in
 `turn-fixture-results.json`. The fixture requires two CONNECTs, one successful
-nonce report and exactly two allocations. Use the signed launcher and separate
-runtime route evidence to associate these observations with the selected
-candidate and detect direct-network bypass.
+nonce report and exactly two allocations. The resulting observations include
+the archive SHA-256. Use the signed launcher and runtime route evidence to
+verify process identity and detect direct-network bypass.
