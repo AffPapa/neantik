@@ -19,6 +19,8 @@ import DirectInstallFilesystem
             path = "runtime/chromium-15612-component-completion-v1-runtime-verification.json"
         case .privacyPolicyV1:
             path = "runtime/chromium-15680-privacy-v1-runtime-verification.json"
+        case .m157Privacy:
+            path = "runtime/chromium-15779-runtime-verification.json"
         }
         let bytes = try Data(contentsOf: root.appendingPathComponent(path))
         #expect(BackupFS.hex(SHA256.hash(data: bytes)) == record.reportDigest)
