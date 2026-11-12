@@ -159,6 +159,48 @@ class WebKitABIsolationFixtureTests(unittest.TestCase):
                 QA.serve(Path('unused'), private_successor_dev=True, public_site_controls=True)
             prepare.assert_not_called()
 
+    def test_successor_observations_bind_exact_archive_seed_origin_and_launch_marker(self):
+        with tempfile.TemporaryDirectory(prefix='neantik-owned-webkit-successor-qa-', dir=QA.PRIVATE_TMP) as staging, \
+             tempfile.TemporaryDirectory(prefix='neantik-dev-fixture.', dir=QA.PRIVATE_TMP) as fixture_root:
+            stage = Path(staging)
+            root = Path(fixture_root)
+            receipt = stage / 'stage.json'
+            archive = stage / 'NeAntik-private-owned-webkit-qa.zip'
+            QA.private_file(archive, b'owned archive')
+            for name in ('profiles.json', 'profiles.previous.json'):
+                QA.private_file(root / name, b'profile seed')
+            sha = QA.digest(archive)
+            seed = QA.digest(root / 'profiles.json')
+            plan = {'root': str(root), 'seedSHA256': seed, 'qaTrustAnchorSHA256': 'a' * 64,
+                    'sameOrigin': 'https://example.invalid:12345/'}
+            candidate = {'stage': str(stage), 'app': str(stage / 'NeAntik.app'),
+                         'archive': str(archive), 'sha256': sha, 'root': str(root),
+                         'profileSeedSHA256': seed, 'qaRuntimeVariant': QA.PRIVATE_SUCCESSOR_DEV_VARIANT,
+                         'qaTrustAnchorSHA256': 'a' * 64, 'qaTrustOrigin': plan['sameOrigin'][:-1],
+                         'managerSignedSHA256': 'b' * 64, 'hostSHA256': 'c' * 64,
+                         'qaRuntimeBindingSHA256': 'd' * 64, 'disposableDebugFixture': True,
+                         'releaseQualified': False}
+            QA.private_file(receipt, json.dumps(candidate).encode())
+            binding = QA.bind_successor_candidate(plan, receipt, sha)
+            self.assertEqual(binding['candidateSHA256'], sha)
+            self.assertEqual(binding['candidateReceiptSHA256'], QA.digest(receipt))
+            self.assertEqual(binding['hostSHA256'], 'c' * 64)
+            self.assertFalse(QA.successor_launch_consumed(root, sha))
+            with self.assertRaisesRegex(QA.FixtureError, 'candidate_fixture_mismatch'):
+                QA.bind_successor_candidate(dict(plan, sameOrigin='https://other.invalid:12345/'), receipt, sha)
+            archive.write_bytes(b'changed')
+            with self.assertRaisesRegex(QA.FixtureError, 'candidate_archive_mismatch'):
+                QA.bind_successor_candidate(plan, receipt, sha)
+            archive.write_bytes(b'owned archive')
+            marker = root / f'qa-{sha[:12]}-single-start-consumed'
+            marker.symlink_to(archive)
+            self.assertFalse(QA.successor_launch_consumed(root, sha))
+            marker.unlink()
+            QA.private_file(marker, b'')
+            self.assertTrue(QA.successor_launch_consumed(root, sha))
+            with self.assertRaisesRegex(QA.FixtureError, 'candidate_already_consumed'):
+                QA.bind_successor_candidate(plan, receipt, sha)
+
     def test_peer_control_fixture_uses_loopback_probe_and_explicit_policies(self):
         with tempfile.TemporaryDirectory(prefix='neantik-webkit-peer-template-') as directory:
             path = Path(directory) / 'profiles.json'

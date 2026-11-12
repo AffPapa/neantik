@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import secrets
 import stat
 import sys
@@ -54,6 +55,62 @@ def private_file(path: Path, data: bytes, mode: int = 0o600) -> None:
     except BaseException:
         path.unlink(missing_ok=True)
         raise
+
+
+def bind_successor_candidate(plan: dict, receipt_path: Path, expected_sha: str) -> dict:
+    """Associate observations with a frozen archive. The Swift launcher checks signatures."""
+    if not isinstance(expected_sha, str) or not re.fullmatch(r'[0-9a-f]{64}', expected_sha):
+        raise FixtureError('invalid_candidate_sha')
+    stage = receipt_path.parent
+    if (receipt_path.name != 'stage.json' or stage.parent != PRIVATE_TMP
+            or not stage.name.startswith('neantik-owned-webkit-successor-qa-')
+            or receipt_path.resolve(strict=True) != receipt_path):
+        raise FixtureError('candidate_receipt_outside_private_stage')
+    entry = receipt_path.lstat()
+    stage_entry = stage.lstat()
+    if (not stat.S_ISREG(entry.st_mode) or stat.S_IMODE(entry.st_mode) != 0o600
+            or not stat.S_ISDIR(stage_entry.st_mode) or stat.S_IMODE(stage_entry.st_mode) != 0o700
+            or entry.st_uid != os.geteuid() or stage_entry.st_uid != os.geteuid() or entry.st_size > 16384):
+        raise FixtureError('candidate_receipt_not_private')
+    raw = receipt_path.read_bytes()
+    candidate = json.loads(raw)
+    expected = {
+        'stage': str(stage), 'app': str(stage / 'NeAntik.app'),
+        'root': plan['root'], 'sha256': expected_sha, 'profileSeedSHA256': plan['seedSHA256'],
+        'qaRuntimeVariant': PRIVATE_SUCCESSOR_DEV_VARIANT,
+        'qaTrustAnchorSHA256': plan['qaTrustAnchorSHA256'],
+        'qaTrustOrigin': plan['sameOrigin'].removesuffix('/'),
+        'disposableDebugFixture': True, 'releaseQualified': False,
+    }
+    if (not isinstance(candidate, dict) or any(candidate.get(key) != value for key, value in expected.items())
+            or candidate.get('disposableDebugFixture') is not True or candidate.get('releaseQualified') is not False):
+        raise FixtureError('candidate_fixture_mismatch')
+    for key in ('managerSignedSHA256', 'hostSHA256', 'qaRuntimeBindingSHA256'):
+        if not isinstance(candidate.get(key), str) or not re.fullmatch(r'[0-9a-f]{64}', candidate[key]):
+            raise FixtureError('invalid_candidate_runtime_hash')
+    archive = stage / 'NeAntik-private-owned-webkit-qa.zip'
+    if (candidate.get('archive') != str(archive) or archive.is_symlink() or not archive.is_file()
+            or digest(archive) != expected_sha):
+        raise FixtureError('candidate_archive_mismatch')
+    root = Path(plan['root'])
+    if any(digest(root / name) != plan['seedSHA256'] for name in ('profiles.json', 'profiles.previous.json')):
+        raise FixtureError('candidate_seed_drift')
+    marker = root / f'qa-{expected_sha[:12]}-single-start-consumed'
+    if os.path.lexists(marker):
+        raise FixtureError('candidate_already_consumed')
+    return {'candidateSHA256': expected_sha, 'candidateReceiptSHA256': hashlib.sha256(raw).hexdigest(),
+            'managerSignedSHA256': candidate['managerSignedSHA256'], 'hostSHA256': candidate['hostSHA256'],
+            'qaRuntimeBindingSHA256': candidate['qaRuntimeBindingSHA256']}
+
+
+def successor_launch_consumed(root: Path, candidate_sha: str) -> bool:
+    marker = root / f'qa-{candidate_sha[:12]}-single-start-consumed'
+    try:
+        entry = marker.lstat()
+    except FileNotFoundError:
+        return False
+    return (stat.S_ISREG(entry.st_mode) and stat.S_IMODE(entry.st_mode) == 0o600
+            and entry.st_uid == os.geteuid() and entry.st_size == 0)
 
 
 def read_blank_template(path: Path) -> dict:
@@ -396,6 +453,7 @@ def serve(template: Path, *, peer_control: bool = False, peer_stun_port: int | N
     prior = _counts(origin, tunnels, validator)
     base_page = origin.marker
     turn_armed = False
+    binding = None
     private_file(root / 'phase-results.json', b'{"phases":[]}\n')
     try:
         print(json.dumps({'status': 'ready', **plan}, sort_keys=True), flush=True)
@@ -411,6 +469,14 @@ def serve(template: Path, *, peer_control: bool = False, peer_stun_port: int | N
             if command == {'action': 'status'}:
                 print(json.dumps({'status': 'snapshot', 'counts': _counts(origin, tunnels, validator)},
                                  sort_keys=True), flush=True)
+                continue
+            if private_successor_dev and command.get('action') == 'bind-candidate':
+                if (set(command) != {'action', 'receipt', 'sha256'} or binding is not None
+                        or not isinstance(command['receipt'], str)):
+                    raise FixtureError('candidate_binding_requires_one_receipt')
+                binding = bind_successor_candidate(plan, Path(command['receipt']), command['sha256'])
+                private_file(root / 'candidate-binding.json', (json.dumps(binding, sort_keys=True) + '\n').encode())
+                print(json.dumps({'status': 'candidate-bound', **binding}), flush=True)
                 continue
             if command == {'action': 'arm-turn-B1'} and turn_target is not None:
                 if [row['phase'] for row in phases] != ['A1'] or phases[0]['classification'] != 'pass' or turn_armed:
@@ -434,6 +500,8 @@ def serve(template: Path, *, peer_control: bool = False, peer_stun_port: int | N
             if set(command) != {'action', 'phase'} or command.get('action') != 'phase':
                 raise FixtureError('unsupported_control_action')
             name = command.get('phase')
+            if private_successor_dev and (binding is None or not successor_launch_consumed(root, binding['candidateSHA256'])):
+                raise FixtureError('exact_successor_launch_required_before_phase')
             expected_index = len(phases)
             if expected_index >= len(phase_names) or name != phase_names[expected_index]:
                 raise FixtureError('phase_order_must_be_A1_B1_A2')
@@ -450,7 +518,7 @@ def serve(template: Path, *, peer_control: bool = False, peer_stun_port: int | N
             if turn_target is not None and name == 'B1':
                 origin.marker = base_page
             private_file(root / f'phase-{name}.json', (json.dumps(row, sort_keys=True) + '\n').encode())
-            results = {'schemaVersion': 1, 'candidateSHA256': None, 'phases': phases,
+            results = {'schemaVersion': 1, 'candidateSHA256': None, **(binding or {}), 'phases': phases,
                        'status': 'partial' if len(phases) < 3 else
                        'awaiting-turn-allocation-receipt' if turn_target is not None else
                        'PASS' if all(p['routeBoundary'] == p['storageBoundary'] == 'PASS' for p in phases)
@@ -470,6 +538,8 @@ def serve(template: Path, *, peer_control: bool = False, peer_stun_port: int | N
         turn = None
         if turn_target is not None:
             turn = turn_target.stop()
+            if binding is not None:
+                turn['candidateSHA256'] = binding['candidateSHA256']
             late = _phase_observation('A2', prior, final_counts)
             turn['observedPhaseControlsPassed'] = (turn['allocations'] == 2 and len(phases) == 3
                                                     and all(row['classification'] == 'pass' for row in phases)
