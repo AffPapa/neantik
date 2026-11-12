@@ -496,7 +496,8 @@ struct ResponsiveLayoutRenderTests {
         }
     }
 
-    @Test func actualContentViewRendersAtMinimumAndWideSizes() throws {
+    @Test(arguments: [false, true])
+    func actualContentViewRendersAtMinimumAndWideSizes(populated: Bool) throws {
         let temporaryRoot = FileManager.default.temporaryDirectory
             .appendingPathComponent(
                 "neantik-content-layout-\(UUID().uuidString)",
@@ -561,49 +562,52 @@ struct ResponsiveLayoutRenderTests {
             ]
         )
 
-        for (name, size) in [
-            (
-                "actual-empty-content-minimum",
-                CGSize(
-                    width: WorkspaceLayout.minimumWindowWidth,
-                    height: WorkspaceLayout.minimumWindowHeight
-                )
-            ),
-            (
-                "actual-empty-content-wide",
-                CGSize(width: 1_600, height: 1_000)
-            ),
-        ] {
-            try render(
-                ContentView(
-                    store: store,
-                    processes: processes,
-                    updateController: ApplicationUpdateController(),
-                    telemetry: telemetry,
-                    fingerprintObservationStore:
-                        FingerprintObservationStore(),
-                    proxyHealthCoordinator: ProxyHealthCoordinator(
-                        fileURL: paths.proxyHealthFile
-                    ),
-                    keychain: keychain,
-                    backupComposition: .unavailable,
-                    credentialCleanup:
-                        DeletedProfileCredentialCleanup(
-                            paths: paths,
-                            keychain: keychain
-                        ),
-                    runtimeLocator: runtimeLocator,
-                    launchIntent: intent,
-                    fingerprintEvidenceReleaseContext: nil
+        if !populated {
+            for (name, size) in [
+                (
+                    "actual-empty-content-minimum",
+                    CGSize(
+                        width: WorkspaceLayout.minimumWindowWidth,
+                        height: WorkspaceLayout.minimumWindowHeight
+                    )
                 ),
-                name: name,
-                size: size,
-                styleMask: [
-                    .titled,
-                    .closable,
-                    .resizable,
-                ]
-            )
+                (
+                    "actual-empty-content-wide",
+                    CGSize(width: 1_600, height: 1_000)
+                ),
+            ] {
+                try render(
+                    ContentView(
+                        store: store,
+                        processes: processes,
+                        updateController: ApplicationUpdateController(),
+                        telemetry: telemetry,
+                        fingerprintObservationStore:
+                            FingerprintObservationStore(),
+                        proxyHealthCoordinator: ProxyHealthCoordinator(
+                            fileURL: paths.proxyHealthFile
+                        ),
+                        keychain: keychain,
+                        backupComposition: .unavailable,
+                        credentialCleanup:
+                            DeletedProfileCredentialCleanup(
+                                paths: paths,
+                                keychain: keychain
+                            ),
+                        runtimeLocator: runtimeLocator,
+                        launchIntent: intent,
+                        fingerprintEvidenceReleaseContext: nil
+                    ),
+                    name: name,
+                    size: size,
+                    styleMask: [
+                        .titled,
+                        .closable,
+                        .resizable,
+                    ]
+                )
+            }
+            return
         }
 
         _ = try store.upsert(
@@ -641,7 +645,7 @@ struct ResponsiveLayoutRenderTests {
                     ContentView(
                         store: store,
                         processes: processes,
-                    updateController: ApplicationUpdateController(),
+                        updateController: ApplicationUpdateController(),
                         telemetry: telemetry,
                         fingerprintObservationStore:
                             FingerprintObservationStore(),
