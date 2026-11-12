@@ -26,7 +26,10 @@ private final class RuntimeClosureFixture: @unchecked Sendable {
 @Suite(.serialized) struct DirectUpdateRuntimeProvenanceTests {
     @Test func officialStablePrivacyReviewIsBoundToOneCompiledRecord() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let bytes = try Data(contentsOf: root.appendingPathComponent("runtime/security-baseline.json"))
+        let fixture = root.appendingPathComponent("Tests/Fixtures/DirectUpdateRuntimeProvenance/security-baseline-privacy-policy-v1.json")
+        let bytes = try Data(contentsOf: fixture)
+        #expect(SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
+                == "63d83216521ff29dcab319bb20db806d33a9919aa8c2221ba46dac8e956f5305")
         try DirectUpdatePublicationBaseline.validateSecurityReview(bytes, record: .privacyPolicyV1)
         let original = try #require(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
         for (key, value) in [("minimumPublicChromiumVersion", "156.0.8078.79"), ("reference", "https://chromereleases.googleblog.com/2026/10/other.html"), ("publishedAt", "2026-10-28"), ("securityFixCountStatus", "unknown")] {
@@ -287,6 +290,18 @@ private final class RuntimeClosureFixture: @unchecked Sendable {
         #expect(throws: (any Error).self) {
             try DirectUpdatePublicationBaseline.validateSecurityReview(
                 JSONSerialization.data(withJSONObject: invalid), record: .componentCompletionV1)
+        }
+    }
+
+    @Test func publicationBaselineRequiresZeroWhenOfficialPostDoesNotEnumerateFixes() throws {
+        var baseline = try #require(JSONSerialization.jsonObject(with: publication()) as? [String: Any])
+        baseline["securityFixCountStatus"] = "not-enumerated-by-official-post"
+        baseline["securityFixCount"] = 0
+        let now = Date(timeIntervalSince1970: 1_791_849_600)
+        try DirectUpdatePublicationBaseline.validate(JSONSerialization.data(withJSONObject: baseline), now: now)
+        baseline["securityFixCount"] = 1
+        #expect(throws: DirectUpdateRuntimeProvenanceError.metadata) {
+            try DirectUpdatePublicationBaseline.validate(JSONSerialization.data(withJSONObject: baseline), now: now)
         }
     }
 

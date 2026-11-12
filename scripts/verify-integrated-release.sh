@@ -58,10 +58,12 @@ RELEASE_CHROMIUM_VERSION="$(
   plutil -extract fingerprintChromium.chromiumVersion raw -o - \
     "$EVIDENCE/fingerprint-chromium.lock.json"
 )"
-if [[ "$RELEASE_CHROMIUM_VERSION" == "156.0.8078.80" ]]; then
+if [[ "$RELEASE_CHROMIUM_VERSION" == "156.0.8078.80" ||
+      "$RELEASE_CHROMIUM_VERSION" == "157.0.8103.39" ||
+      "$RELEASE_CHROMIUM_VERSION" == "157.0.8103.79" ]]; then
   ENGINE_SCOPE="$(plutil -extract NeAntikEngineScope raw -o - "$APP_PATH/Contents/Info.plist" 2>/dev/null || true)"
   if [[ "$ENGINE_SCOPE" != "chromium-only" ]]; then
-    echo "Chromium 156.80 candidate is missing the Chromium-only manager build marker." >&2
+    echo "Chromium $RELEASE_CHROMIUM_VERSION candidate is missing the Chromium-only manager build marker." >&2
     exit 65
   fi
   for forbidden_path in \
@@ -202,6 +204,14 @@ from chromium_15680_privacy_derivation import verify_packaged_evidence
 verify_packaged_evidence(project, evidence)
 PY_PRIVACY_VERIFY
   fi
+elif [[ "$EXPECTED_RUNTIME_VERSION" == "157.0.8103.79" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-15779-source-contract.json"
+  PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-15779-source-contract.json"
+elif [[ "$EXPECTED_RUNTIME_VERSION" == "157.0.8103.39" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-157-source-contract.json"
+  PACKAGED_SOURCE_CONTRACT="$EVIDENCE/chromium-157-source-contract.json"
+  SOURCE_PROVENANCE_FILE="$EVIDENCE/source-provenance.json"
+  CANDIDATE_LOCK_FILE="$EVIDENCE/fingerprint-chromium.lock.json"
 else
   echo "Unsupported Chromium runtime version for integrated release verification: $EXPECTED_RUNTIME_VERSION" >&2
   exit 65
@@ -292,6 +302,36 @@ elif [[ "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.80" ]]; then
       fi
     done
   fi
+elif [[ "$EXPECTED_RUNTIME_VERSION" == "157.0.8103.79" ]]; then
+  if ! cmp -s "$PROJECT_DIR/runtime/privacy-policy-v1/licenses/MPL-2.0.txt" "$LICENSES/Privacy-MPL-2.0.txt" ||
+     ! cmp -s "$PROJECT_DIR/runtime/chromium-15779-privacy-source-notice.txt" "$LICENSES/Privacy-SOURCE-NOTICE.txt"; then
+    echo "Integrated Chromium .79 privacy license or source notice differs" >&2
+    exit 65
+  fi
+  for evidence_name in chromium-15779-rebase-plan.json chromium-15779-build-evidence.json args.gn; do
+    packaged="$EVIDENCE/chromium-15779-source-evidence/$evidence_name"
+    reviewed="$PROJECT_DIR/runtime/$evidence_name"
+    if [[ "$evidence_name" == "args.gn" ]]; then reviewed="$EVIDENCE/args.gn"; fi
+    if [[ ! -f "$packaged" || -L "$packaged" || ! -f "$reviewed" || -L "$reviewed" ]] ||
+       ! cmp -s "$reviewed" "$packaged"; then
+      echo "Integrated Chromium .79 evidence differs: $evidence_name" >&2
+      exit 65
+    fi
+  done
+elif [[ "$EXPECTED_RUNTIME_VERSION" == "157.0.8103.39" ]]; then
+  for evidence_name in chromium-157-source-adoption-v1.json chromium-157-rebase-plan.json chromium-157-build-evidence.json args.gn; do
+    if [[ ! -f "$EVIDENCE/chromium-157-source-evidence/$evidence_name" || -L "$EVIDENCE/chromium-157-source-evidence/$evidence_name" ]]; then
+      echo "Integrated Chromium 157 source evidence is missing or unsafe: $evidence_name" >&2
+      exit 65
+    fi
+  done
+  if ! cmp -s "$PROJECT_DIR/runtime/chromium-157-source-adoption-v1.json" "$EVIDENCE/chromium-157-source-evidence/chromium-157-source-adoption-v1.json" ||
+     ! cmp -s "$PROJECT_DIR/runtime/chromium-157-rebase-plan.json" "$EVIDENCE/chromium-157-source-evidence/chromium-157-rebase-plan.json" ||
+     ! cmp -s "$PROJECT_DIR/runtime/chromium-157-build-evidence.json" "$EVIDENCE/chromium-157-source-evidence/chromium-157-build-evidence.json" ||
+     ! cmp -s "$EVIDENCE/args.gn" "$EVIDENCE/chromium-157-source-evidence/args.gn"; then
+    echo "Integrated Chromium 157 source evidence differs from its frozen source/build inputs." >&2
+    exit 65
+  fi
 fi
 
 if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ]]; then
@@ -312,7 +352,9 @@ elif [[ "$EXPECTED_RUNTIME_VERSION" == 152.* ||
         "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.12" ||
         "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.48" ||
         "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.74" ||
-        "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.80" ]]; then
+        "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.80" ||
+        "$EXPECTED_RUNTIME_VERSION" == "157.0.8103.39" ||
+        "$EXPECTED_RUNTIME_VERSION" == "157.0.8103.79" ]]; then
   "$PROJECT_DIR/scripts/verify-runtime-source-provenance.py" \
     "$EVIDENCE/source-provenance.json"
   "$PROJECT_DIR/scripts/verify-runtime-candidate-lock.py" \
@@ -381,7 +423,9 @@ if [[ "$EXPECTED_RUNTIME_VERSION" == 153.* ||
       "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.12" ||
       "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.48" ||
       "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.74" ||
-      "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.80" ]]; then
+      "$EXPECTED_RUNTIME_VERSION" == "156.0.8078.80" ||
+      "$EXPECTED_RUNTIME_VERSION" == "157.0.8103.39" ||
+      "$EXPECTED_RUNTIME_VERSION" == "157.0.8103.79" ]]; then
   VERIFY_BUILT_RUNTIME_ARGS+=(
     ""
     "$EVIDENCE/args.gn"

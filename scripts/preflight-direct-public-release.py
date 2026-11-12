@@ -92,7 +92,7 @@ def verify_runtime_security_branch(runtime_version: str, runtime_lock: Path, bas
 def verify_source_contract_binding(
     *, runtime_version: str, contract: dict[str, Any], contract_path: Path,
     provenance: dict[str, Any], candidate_lock: dict[str, Any],
-    project_root: Path, args_gn: Path,
+    project_root: Path, args_gn: Path, provenance_path: Path | None = None,
 ) -> None:
     if runtime_version == "154.0.8037.93":
         from chromium_154_release_evidence import verify_candidate_lock
@@ -180,6 +180,28 @@ def verify_source_contract_binding(
             raise ValueError("M156.80 provenance is not bound to embedded source contract")
         if provenance.get("buildArgsSHA256") != sha256_file(args_gn):
             raise ValueError("M156.80 packaged args differ from reviewed build inputs")
+        return
+    if runtime_version in {"157.0.8103.39", "157.0.8103.79"}:
+        if runtime_version == "157.0.8103.79":
+            from chromium_15779_source import verify_lock, verify_provenance
+        else:
+            from chromium_157_release_evidence import verify_lock, verify_provenance
+
+        if (
+            contract.get("schemaVersion") != 1
+            or contract.get("binaryBindingStatus") != "pending-runtime-report"
+        ):
+            raise ValueError("M157 embedded source contract schema/status mismatch")
+        if provenance_path is None:
+            raise ValueError(
+                "M157 provenance path is required for candidate-lock verification"
+            )
+        if provenance.get("sourceContractSHA256") != sha256_file(contract_path):
+            raise ValueError("M157 provenance is not bound to embedded source contract")
+        if provenance.get("buildArgsSHA256") != sha256_file(args_gn):
+            raise ValueError("M157 packaged args differ from pinned build inputs")
+        verify_provenance(provenance, project_root)
+        verify_lock(candidate_lock, provenance_path, project_root)
         return
     if runtime_version.startswith(("154.", "155.", "156.")):
         raise ValueError("unqualified Chromium 154/155 candidate")
@@ -350,9 +372,19 @@ def verify_direct_public_release_plan(
         runtime_version = str(runtime_plist["CFBundleShortVersionString"])
         if not version_at_least(runtime_version, minimum):
             raise ValueError(f"runtime {runtime_version} is below public baseline {minimum}")
-        reviewed = verify_runtime_security_branch(runtime_version, runtime_lock, baseline)
-        suffix = "; source-bound branch security review verified" if reviewed else ""
-        return f"{runtime_version} >= {minimum}{suffix}"
+        try:
+            return RUNTIME_SECURITY.verify(
+                runtime_lock,
+                project_root / "runtime" / "security-baseline.json",
+                RUNTIME_SECURITY.datetime.now(
+                    RUNTIME_SECURITY.timezone.utc
+                ).date(),
+                allow_public_alpha_tuples=(
+                    effective_release_channel == "public-alpha"
+                ),
+            )
+        except SystemExit as error:
+            raise ValueError(str(error)) from error
 
     def runtime_identity() -> str:
         if not runtime_app.is_dir():
@@ -473,6 +505,7 @@ def verify_direct_public_release_plan(
             runtime_version=runtime_version, contract=contract,
             contract_path=embedded_contract_path, provenance=provenance,
             candidate_lock=candidate_lock, project_root=project_root, args_gn=args_gn,
+            provenance_path=provenance_path,
         )
         if candidate_lock.get("sourceContractSHA256") != sha256_file(
             embedded_contract_path

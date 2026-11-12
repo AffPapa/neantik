@@ -210,40 +210,42 @@ def _read_committed_blobs(
         raise ReleaseSourceReceiptError(
             "release source Git blob request is too large"
         )
+    maximum_response_size = total_size + (
+        len(unique_objects) * (identifier_length + 64)
+    )
+    # Git emits blobs before it has read the whole request. Use seekable
+    # files so a full pipe cannot stall both Git and the Python caller.
     try:
-        completed = subprocess.run(
-            [
-                "/usr/bin/git",
-                "--no-replace-objects",
-                "-C",
-                str(project_root),
-                "cat-file",
-                "--batch",
-                "-Z",
-            ],
-            input=request,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=False,
-            timeout=60,
-            env=_git_environment(),
-        )
+        with tempfile.TemporaryFile() as batch_input, tempfile.TemporaryFile() as batch_output:
+            batch_input.write(request)
+            batch_input.seek(0)
+            completed = subprocess.run(
+                [
+                    "/usr/bin/git",
+                    "--no-replace-objects",
+                    "-C",
+                    str(project_root),
+                    "cat-file",
+                    "--batch",
+                    "-Z",
+                ],
+                stdin=batch_input,
+                stdout=batch_output,
+                stderr=subprocess.DEVNULL,
+                check=False,
+                timeout=60,
+                env=_git_environment(),
+            )
+            if completed.returncode != 0:
+                raise ReleaseSourceReceiptError("release source Git blob query failed")
+            if batch_output.tell() > maximum_response_size:
+                raise ReleaseSourceReceiptError("release source Git blob response is invalid")
+            batch_output.seek(0)
+            output = batch_output.read(maximum_response_size + 1)
     except (OSError, subprocess.TimeoutExpired) as error:
         raise ReleaseSourceReceiptError(
             "release source Git blob query failed"
         ) from error
-    if completed.returncode != 0:
-        raise ReleaseSourceReceiptError(
-            "release source Git blob query failed"
-        )
-    output = completed.stdout
-    maximum_response_size = total_size + (
-        len(unique_objects) * (identifier_length + 64)
-    )
-    if len(output) > maximum_response_size:
-        raise ReleaseSourceReceiptError(
-            "release source Git blob response is invalid"
-        )
     cursor = 0
     blobs: dict[str, bytes] = {}
     for expected_identifier, expected_size in unique_objects.items():

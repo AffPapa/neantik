@@ -76,6 +76,12 @@ elif [[ "$RUNTIME_VERSION" == "156.0.8078.80" ]]; then
     SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/$SOURCE_CONTRACT_NAME"
     SOURCE_PROVENANCE="$(dirname "$CANDIDATE_LOCK")/source-provenance.json"
   fi
+elif [[ "$RUNTIME_VERSION" == "157.0.8103.79" ]]; then
+  SOURCE_CONTRACT_NAME="chromium-15779-source-contract.json"
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/$SOURCE_CONTRACT_NAME"
+elif [[ "$RUNTIME_VERSION" == "157.0.8103.39" ]]; then
+  SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-157-source-contract.json"
+  SOURCE_CONTRACT_NAME="chromium-157-source-contract.json"
 elif [[ "$RUNTIME_VERSION" == "152.0.7977.64" ]]; then
   SOURCE_CONTRACT_FILE="$PROJECT_DIR/runtime/chromium-152-source-contract.json"
   SOURCE_CONTRACT_NAME="chromium-152-source-contract.json"
@@ -162,7 +168,9 @@ if [[ "$RUNTIME_VERSION" != "154.0.8037.93" &&
       "$RUNTIME_VERSION" != "156.0.8078.12" &&
       "$RUNTIME_VERSION" != "156.0.8078.48" &&
       "$RUNTIME_VERSION" != "156.0.8078.74" &&
-      "$RUNTIME_VERSION" != "156.0.8078.80" ]]; then
+      "$RUNTIME_VERSION" != "156.0.8078.80" &&
+      "$RUNTIME_VERSION" != "157.0.8103.39" &&
+      "$RUNTIME_VERSION" != "157.0.8103.79" ]]; then
   python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" --check
 fi
 if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ||
@@ -171,7 +179,9 @@ if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ||
       "$RUNTIME_VERSION" == "156.0.8078.12" ||
       "$RUNTIME_VERSION" == "156.0.8078.48" ||
       "$RUNTIME_VERSION" == "156.0.8078.74" ||
-      "$RUNTIME_VERSION" == "156.0.8078.80" ]]; then
+      "$RUNTIME_VERSION" == "156.0.8078.80" ||
+      "$RUNTIME_VERSION" == "157.0.8103.39" ||
+      "$RUNTIME_VERSION" == "157.0.8103.79" ]]; then
   # Generated below in temporary compliance storage from this exact candidate.
   RUNTIME_NOTICES_FILE=""
 elif [[ "$RUNTIME_VERSION" == 153.* ]]; then
@@ -196,10 +206,17 @@ if [[ "$RUNTIME_VERSION" == "154.0.8037.93" ||
       "$RUNTIME_VERSION" == "156.0.8078.12" ||
       "$RUNTIME_VERSION" == "156.0.8078.48" ||
       "$RUNTIME_VERSION" == "156.0.8078.74" ||
-      "$RUNTIME_VERSION" == "156.0.8078.80" ]]; then
+      "$RUNTIME_VERSION" == "156.0.8078.80" ||
+      "$RUNTIME_VERSION" == "157.0.8103.39" ||
+      "$RUNTIME_VERSION" == "157.0.8103.79" ]]; then
   RUNTIME_NOTICES_FILE="$COMPLIANCE_DIR/RUNTIME_INTEGRATION_NOTICES_${RUNTIME_VERSION%%.*}.md"
+  NOTICE_PROVENANCE_ARGS=()
+  if [[ "$RUNTIME_VERSION" == "157.0.8103.39" || "$RUNTIME_VERSION" == "157.0.8103.79" ]]; then
+    NOTICE_PROVENANCE_ARGS+=(--source-provenance "$SOURCE_PROVENANCE")
+  fi
   python3 "$PROJECT_DIR/scripts/generate-runtime-integration-notices.py" \
-    --runtime-lock "$CANDIDATE_LOCK" --output "$RUNTIME_NOTICES_FILE"
+    --runtime-lock "$CANDIDATE_LOCK" "${NOTICE_PROVENANCE_ARGS[@]}" \
+    --output "$RUNTIME_NOTICES_FILE"
 fi
 "$PROJECT_DIR/scripts/verify-built-runtime.sh" \
   "$RUNTIME_APP" \
@@ -291,6 +308,26 @@ elif [[ "$RUNTIME_VERSION" == "156.0.8078.80" ]]; then
     cp "$PROJECT_DIR/runtime/chromium-15680-portable-crc.json" "$PROJECT_DIR/runtime/chromium-15680-portable-crc.patch" "$EVIDENCE/chromium-15680-source-evidence/"
     cp -R "$PROJECT_DIR/runtime/chromium-15680-portable-crc" "$EVIDENCE/chromium-15680-source-evidence/"
   fi
+elif [[ "$RUNTIME_VERSION" == "157.0.8103.79" ]]; then
+  mkdir -p "$EVIDENCE/chromium-15779-source-evidence"
+  for name in chromium-15779-rebase-plan.json chromium-15779-build-evidence.json; do
+    if [[ ! -f "$PROJECT_DIR/runtime/$name" || -L "$PROJECT_DIR/runtime/$name" ]]; then
+      echo "Chromium .79 release evidence is missing or unsafe: $name" >&2
+      exit 66
+    fi
+    cp "$PROJECT_DIR/runtime/$name" "$EVIDENCE/chromium-15779-source-evidence/$name"
+  done
+  cp "$BUILD_ARGS" "$EVIDENCE/chromium-15779-source-evidence/args.gn"
+elif [[ "$RUNTIME_VERSION" == "157.0.8103.39" ]]; then
+  mkdir -p "$EVIDENCE/chromium-157-source-evidence"
+  for name in chromium-157-source-adoption-v1.json chromium-157-rebase-plan.json chromium-157-build-evidence.json; do
+    if [[ ! -f "$PROJECT_DIR/runtime/$name" || -L "$PROJECT_DIR/runtime/$name" ]]; then
+      echo "Chromium 157 release evidence is missing or unsafe: $name" >&2
+      exit 66
+    fi
+    cp "$PROJECT_DIR/runtime/$name" "$EVIDENCE/chromium-157-source-evidence/$name"
+  done
+  cp "$BUILD_ARGS" "$EVIDENCE/chromium-157-source-evidence/args.gn"
 fi
 if [[ "$RUNTIME_VERSION" == "156.0.8078.80" &&
       "$(plutil -extract variant raw -o - "$CANDIDATE_LOCK" 2>/dev/null || true)" == "recipient-privacy-policy-v1" ]]; then
@@ -326,9 +363,14 @@ cp "$PROJECT_DIR/runtime/licenses/fingerprint-chromium-LICENSE" \
 cp "$PROJECT_DIR/runtime/licenses/ungoogled-chromium-macos-LICENSE" \
   "$LICENSES/ungoogled-chromium-macos-LICENSE"
 
-if [[ "$SOURCE_CONTRACT_NAME" == "chromium-15680-privacy-v1-source-contract.json" ]]; then
+if [[ "$SOURCE_CONTRACT_NAME" == "chromium-15680-privacy-v1-source-contract.json" ||
+      "$SOURCE_CONTRACT_NAME" == "chromium-15779-source-contract.json" ]]; then
+  PRIVACY_NOTICE="$PROJECT_DIR/runtime/privacy-policy-v1/SOURCE-NOTICE.txt"
+  if [[ "$RUNTIME_VERSION" == "157.0.8103.79" ]]; then
+    PRIVACY_NOTICE="$PROJECT_DIR/runtime/chromium-15779-privacy-source-notice.txt"
+  fi
   cp "$PROJECT_DIR/runtime/privacy-policy-v1/licenses/MPL-2.0.txt" "$LICENSES/Privacy-MPL-2.0.txt"
-  cp "$PROJECT_DIR/runtime/privacy-policy-v1/SOURCE-NOTICE.txt" "$LICENSES/Privacy-SOURCE-NOTICE.txt"
+  cp "$PRIVACY_NOTICE" "$LICENSES/Privacy-SOURCE-NOTICE.txt"
 fi
 
 if [[ "$SIGNING_IDENTITY" == "-" ]]; then
