@@ -30,3 +30,11 @@ assigned broker with the fixture's allocation count, the browser DataChannel
 nonce and the direct-route canaries. A browser candidate does not prove TURN
 traffic by exposing a relay address. The fixture currently covers TCP to TURN.
 TURN/TLS needs a separate certificate and endpoint trust check.
+
+`browser-probe.js` is a function expression for the owned synthetic HTTPS
+document. Pass its TURN URL and credentials in memory. The probe reports a
+fixed status after a bidirectional DataChannel nonce and selected relay
+candidate pairs on both peers. SDP, ICE addresses and credentials stay out of
+the result. Its status still needs correlation with the server and broker
+counters for the same run. Run `node --test browser-probe.test.mjs` to check
+the probe logic with simulated peer connections.
