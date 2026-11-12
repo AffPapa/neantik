@@ -12,6 +12,7 @@ import {WebRTCBoundaryPipe,DOCUMENT_READY,PREFERENCE_READ,EXTENSION_READ,WEBRTC_
 import {OwnedSTUNFixture} from './webrtc-stun-fixture.mjs';
 import {verifyMachOClosure} from '../runtime-platform/fixtures/font-runtime-closure.mjs';
 import {browserFixtureEnvironment} from '../runtime-platform/fixtures/qa-browser-environment.mjs';
+import {hasNormalWebRTCAdmission} from './webrtc-native-admission.mjs';
 
 const args=process.argv.slice(2),options={};
 while(args.length){const key=args.shift();assert(['--app','--binding','--output','--case','--resume'].includes(key)&&!Object.hasOwn(options,key));options[key]=key==='--resume'?true:args.shift();}
@@ -30,7 +31,8 @@ const sourceFiles=['scripts/runtime-network/run-webrtc-boundaries.mjs','scripts/
   'scripts/runtime-network/webrtc-boundary-semantics.mjs','scripts/runtime-network/webrtc-boundary-probe.js',
   'scripts/runtime-network/webrtc-extension-receipt.js','scripts/runtime-network/webrtc-stun-fixture.mjs',
   'scripts/runtime-platform/fixtures/font-lifecycle-pipe.mjs','scripts/runtime-platform/fixtures/qa-browser-environment.mjs',
-  'scripts/runtime-platform/fixtures/font-runtime-closure.mjs','scripts/native-qa-readiness.py'];
+  'scripts/runtime-platform/fixtures/font-runtime-closure.mjs','scripts/native-qa-readiness.py',
+  'scripts/runtime-network/webrtc-native-admission.mjs'];
 const sourceSHA256=Object.fromEntries(sourceFiles.map(name=>[name,digest(path.join(rootProject,name))]));
 const write=(name,value)=>fs.writeFileSync(path.join(output,name),JSON.stringify(value,null,2)+'\n',{flag:'wx',mode:0o600});
 function inputsUnchanged(){
@@ -66,8 +68,8 @@ async function run(spec){
   try{
     inputsUnchanged();assert.equal(owned().length,0,'Another process uses the selected runtime');
     const readiness=spawnSync('/usr/local/bin/python3',['-B',path.join(rootProject,'scripts/native-qa-readiness.py'),'--check'],{encoding:'utf8'});
-    row.readiness=JSON.parse(readiness.stdout);assert.equal(readiness.status,0,'Native resource admission refused');
-    assert.equal(row.readiness.memoryPressure,0);assert.equal(row.readiness.thermalState,0);
+    row.readiness=JSON.parse(readiness.stdout);
+    assert(hasNormalWebRTCAdmission(readiness.status,row.readiness),'Native resource admission refused');
     profile=fs.mkdtempSync('/private/tmp/neantik-webrtc-boundary-');fs.chmodSync(profile,0o700);profileStat=fs.lstatSync(profile);
     stun=await new OwnedSTUNFixture().start();row.collector=await stun.verifyAndReset();
     originServer=http.createServer((request,response)=>{
