@@ -128,6 +128,31 @@ class TLSFixtureTests(unittest.TestCase):
                 self.assertEqual(struct.unpack('!HHI12s', response)[0::3], (0x0101, transaction))
             self.assertEqual(tunnel.authenticated_turn_count(), 1)
             self.assertEqual(dns_calls, [])
+            nonce = 'c' * 32
+            token = 'd' * 32
+            origin = fixture.TLSOrigin('127.0.0.1', dns_tls_fixture.persistence_page(nonce),
+                                       self.certificates, persistence_nonce=nonce)
+            self.addCleanup(lambda: self.assertTrue(origin.stop()))
+            origin.arm_turn_probe(child, token)
+            with self.assertRaises(ValueError):
+                origin.arm_turn_probe(child, 'e' * 32)
+
+            def get(path):
+                with socket.create_connection(('127.0.0.1', origin.port), timeout=3) as raw:
+                    with self.context().wrap_socket(raw, server_hostname=fixture.NAME) as connection:
+                        connection.sendall(f'GET {path} HTTP/1.1\r\nHost: owned-tls.invalid\r\n\r\n'.encode())
+                        with connection.makefile('rb') as stream:
+                            return stream.read()
+
+            self.assertIn(b'probeOwnedTURN', get('/'))
+            self.assertEqual(get('/qa-turn/' + 'e' * 32 + '/relay-nonce-delivered'), b'')
+            self.assertEqual(get(f'/qa-turn/{token}/arbitrary-status'), b'')
+            self.assertIn(b'ack', get(f'/qa-turn/{token}/relay-nonce-delivered'))
+            trace = origin.snapshot()['requestTrace']
+            self.assertEqual([row['category'] for row in trace],
+                             ['page', 'unrecognized', 'unrecognized', 'turn-relay-nonce-delivered'])
+            self.assertNotIn(token, repr(trace))
+            self.assertNotIn(child.browser_config()['credential'], repr(trace))
             self.assertEqual(child.stop(), {'allocations': 0})
             with self.connect(authority=child.authority, tunnel=tunnel) as raw:
                 self.assertEqual(raw.recv(1024), b'')
