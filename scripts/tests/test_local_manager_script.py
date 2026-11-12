@@ -71,6 +71,19 @@ class LocalManagerScriptTests(unittest.TestCase):
             self.assertNotIn(forbidden, text)
 
     @unittest.skipUnless(pathlib.Path("/usr/libexec/PlistBuddy").is_file(), "macOS plist control")
+    def test_dev_scope_replaces_inherited_release_marker(self) -> None:
+        text = SCRIPT.read_text(encoding="utf-8")
+        start = text.index("# The copied release marker")
+        end = text.index("DEVELOPMENT_VERSION=", start)
+        for chromium_only, expected in (("1", "chromium-only"), ("0", "chromium-system-webkit-dev")):
+            with self.subTest(chromium_only=chromium_only), tempfile.TemporaryDirectory() as root:
+                info = pathlib.Path(root) / "Info.plist"
+                info.write_bytes(plistlib.dumps({"NeAntikEngineScope": "chromium-only", "Unrelated": True}))
+                command = f"set -e; INFO_PLIST={shlex.quote(str(info))}; NEANTIK_CHROMIUM_ONLY={chromium_only}\n"
+                subprocess.run(["/bin/zsh", "-c", command + text[start:end]], check=True, capture_output=True)
+                self.assertEqual(plistlib.loads(info.read_bytes()), {"NeAntikEngineScope": expected, "Unrelated": True})
+
+    @unittest.skipUnless(pathlib.Path("/usr/libexec/PlistBuddy").is_file(), "macOS plist control")
     def test_fixture_feature_key_handles_cached_bundles(self) -> None:
         text = SCRIPT.read_text(encoding="utf-8")
         start = text.index("if (( USE_FRESH_FIXTURE == 1 )); then")
