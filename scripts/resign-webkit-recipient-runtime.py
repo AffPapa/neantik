@@ -159,6 +159,9 @@ def resign_runtime(manager_app: Path, source_frameworks: Path, output_frameworks
     if app == output or app in output.parents or output in app.parents:
         raise ResignError("Output must remain separate from the manager app")
 
+    # Reject system engine loads before any timestamped signing. Relocation
+    # changes search paths, so it cannot repair a forbidden absolute load.
+    PACKAGER.verify_no_system_engine_fallbacks(source)
     expected_team = _manager_team(app, development_qa)
     PACKAGER.verify_signing_identity(identity, expected_team)
 

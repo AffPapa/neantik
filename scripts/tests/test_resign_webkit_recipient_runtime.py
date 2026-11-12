@@ -49,6 +49,10 @@ class RecipientRuntimeResignTests(unittest.TestCase):
         self.source = make_tree(self.root)
         self.output = self.root / "recipient-output/Frameworks"
         self.output.parent.mkdir()
+        # The tiny synthetic Mach-O files need an injected dependency reader.
+        dependency_check = patch.object(RESIGN.PACKAGER, "verify_no_system_engine_fallbacks")
+        self.dependency_check = dependency_check.start()
+        self.addCleanup(dependency_check.stop)
 
     def tearDown(self):
         self.temporary.cleanup()
@@ -102,6 +106,7 @@ class RecipientRuntimeResignTests(unittest.TestCase):
         self.assertEqual(webkit_row["recipientSignedSHA256"],
                          RESIGN._sha256(self.output / webkit_path))
         verify_identity.assert_called_once_with("Developer ID Recipient", "B1C2D3E4F5")
+        self.dependency_check.assert_called_once_with(self.source.resolve())
         verify_frameworks.assert_called_once()
         verify_xpc.assert_called_once()
         self.assertTrue(all(identity == "Developer ID Recipient" for identity, _, _ in calls))
@@ -154,6 +159,18 @@ class RecipientRuntimeResignTests(unittest.TestCase):
             RESIGN.resign_runtime(self.app, self.source, self.output, "Recipient")
         sign.assert_not_called()
         self.assertFalse(self.output.exists())
+
+    def test_system_engine_dependency_refuses_before_signing_or_copy(self):
+        self.dependency_check.side_effect = RESIGN.PACKAGER.ContractError("WritingToolsUI")
+        with patch.object(RESIGN, "_manager_team") as manager_team, \
+             patch.object(RESIGN, "_sign") as sign, \
+             self.assertRaisesRegex(RESIGN.PACKAGER.ContractError, "WritingToolsUI"):
+            RESIGN.resign_runtime(self.app, self.source, self.output, "Recipient")
+        self.dependency_check.assert_called_once_with(self.source.resolve())
+        manager_team.assert_not_called()
+        sign.assert_not_called()
+        self.assertFalse(self.output.exists())
+        self.assertEqual(list(self.output.parent.iterdir()), [])
 
     def test_signing_error_cleans_staging_and_keeps_source(self):
         original = (self.source / "WebKit.framework/Versions/A/WebKit").read_bytes()
