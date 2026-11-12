@@ -10,6 +10,7 @@ import subprocess
 import time
 
 import probe
+from turn_tcp_fixture import TurnTCPFixture
 
 NAME = 'owned-tls.invalid'
 
@@ -190,7 +191,7 @@ class TLSOrigin(probe.Endpoint):
 
 
 class Tunnel(probe.Endpoint):
-    def __init__(self, destinations, authorization, port=0, dns_validator=None):
+    def __init__(self, destinations, authorization, port=0, dns_validator=None, *, turn_target=None):
         if dns_validator is not None and not callable(dns_validator):
             raise ValueError('Owned DNS validator must be callable')
         owned = {}
@@ -209,8 +210,20 @@ class Tunnel(probe.Endpoint):
                                  for authority, origin in destinations.items()
                                  for host, number in (owned[authority],)}
         self.dns_validator = dns_validator
+        if turn_target is not None:
+            if not isinstance(turn_target, TurnTCPFixture):
+                raise ValueError('A live owned TURN fixture is required')
+            destination = turn_target.loopback_destination(turn_target.authority)
+            if turn_target.authority in owned or destination in owned.values():
+                raise ValueError('TURN and TLS fixture destinations must be distinct')
+        self.turn_target = turn_target
         self.target_counts = {}
+        self.turn_count = 0
         super().__init__('127.0.0.1', '', auth=authorization, port=port)
+
+    def authenticated_turn_count(self):
+        with self.lock:
+            return self.turn_count
 
     def authenticated_for(self, origin):
         if not isinstance(origin, TLSOrigin): raise ValueError('Owned origin required')
@@ -225,21 +238,36 @@ class Tunnel(probe.Endpoint):
             client.settimeout(4)
             if self.refusing:
                 self.increment('refused'); return
-            header = probe.read_header(client)
-            request = header.split(b'\r\n', 1)[0].decode('ascii').split(' ')
+            header, _, extra = probe.read_header(client).partition(b'\r\n\r\n')
+            if extra:
+                raise ValueError('CONNECT data before response')
+            first, *lines = header.split(b'\r\n')
+            request = first.decode('ascii').split(' ')
             if len(request) != 3 or request[0] != 'CONNECT' or request[2] != 'HTTP/1.1':
                 self.increment('refused'); return
-            destination = self.destinations.get(request[1])
+            authority = request[1]
+            is_turn = self.turn_target is not None and authority == self.turn_target.authority
+            destination = (self.turn_target.loopback_destination(authority)
+                           if is_turn else self.destinations.get(authority))
             if destination is None:
                 self.increment('refused'); return
-            fields = {line.split(b':', 1)[0].lower(): line.split(b':', 1)[1].strip()
-                      for line in header.split(b'\r\n')[1:] if b':' in line}
+            fields = {}
+            for line in lines:
+                name, separator, value = line.partition(b':')
+                name = name.lower()
+                if not separator or not re.fullmatch(rb"[a-z0-9!#$%&'*+.^_`|~-]+", name) or name in fields:
+                    raise ValueError('Invalid CONNECT header')
+                fields[name] = value.strip()
+            if (fields.get(b'host', authority.encode()) != authority.encode()
+                    or b'transfer-encoding' in fields or fields.get(b'content-length', b'0') != b'0'
+                    or b'authorization' in fields):
+                raise ValueError('Invalid CONNECT framing')
             if fields.get(b'proxy-authorization') != self.auth:
                 client.sendall(b'HTTP/1.1 407 Proxy Authentication Required\r\n'
                                b'Proxy-Authenticate: Basic realm="Owned TLS QA"\r\n'
                                b'Content-Length: 0\r\nConnection: close\r\n\r\n')
                 return
-            if self.dns_validator is not None and not self.dns_validator(request[1], destination):
+            if not is_turn and self.dns_validator is not None and not self.dns_validator(authority, destination):
                 self.increment('refused')
                 client.sendall(b'HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\nConnection: close\r\n\r\n')
                 return
@@ -249,7 +277,10 @@ class Tunnel(probe.Endpoint):
                 self.active.add(upstream)
             self.increment('authenticated')
             with self.lock:
-                self.target_counts[destination] = self.target_counts.get(destination, 0) + 1
+                if is_turn:
+                    self.turn_count += 1
+                else:
+                    self.target_counts[destination] = self.target_counts.get(destination, 0) + 1
             client.sendall(b'HTTP/1.1 200 Connection Established\r\n\r\n')
             count = 0
             while not self.stopping.is_set():

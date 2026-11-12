@@ -1,7 +1,9 @@
 """Real local TLS/CONNECT wire controls; not WebKit evidence."""
 from pathlib import Path
+import os
 import socket
 import ssl
+import struct
 import tempfile
 import time
 import unittest
@@ -9,6 +11,7 @@ import unittest
 import probe
 import tls_fixture as fixture
 import dns_tls_fixture
+from turn_tcp_fixture import TurnTCPFixture
 
 
 class TLSFixtureTests(unittest.TestCase):
@@ -28,8 +31,8 @@ class TLSFixtureTests(unittest.TestCase):
         self.assertTrue(self.tunnel.stop(), getattr(self.tunnel, 'last_stop_state', {}))
         self.assertTrue(self.origin.stop(), getattr(self.origin, 'last_stop_state', {}))
 
-    def connect(self, authority=None, auth=True):
-        client = socket.create_connection(('127.0.0.1', self.tunnel.port), timeout=3)
+    def connect(self, authority=None, auth=True, tunnel=None):
+        client = socket.create_connection(('127.0.0.1', (tunnel or self.tunnel).port), timeout=3)
         self.addCleanup(client.close)
         header = f'CONNECT {authority or fixture.NAME + ":443"} HTTP/1.1\r\n'.encode()
         if auth: header += b'Proxy-Authorization: ' + fixture.authorization('owned', 'fixture') + b'\r\n'
@@ -81,6 +84,16 @@ class TLSFixtureTests(unittest.TestCase):
         self.assertIn(b'407 Proxy Authentication Required', probe.read_header(raw))
         self.assertEqual(self.origin.snapshot()['accepted'], 0)
 
+    def test_ambiguous_connect_headers_do_not_dial(self):
+        for suffix in (b'Proxy-Authorization: duplicate\r\n\r\n',
+                       b'Content-Length: 1\r\n\r\nx',
+                       b'Host: foreign.invalid:443\r\n\r\n'):
+            with socket.create_connection(('127.0.0.1', self.tunnel.port), timeout=3) as raw:
+                raw.sendall(b'CONNECT owned-tls.invalid:443 HTTP/1.1\r\nProxy-Authorization: '
+                            + fixture.authorization('owned', 'fixture') + b'\r\n' + suffix)
+                self.assertEqual(raw.recv(1024), b'')
+        self.assertEqual(self.origin.snapshot()['accepted'], 0)
+
     def test_unregistered_destination_cannot_open_tunnel(self):
         raw = self.connect(authority='foreign.invalid:443')
         self.assertEqual(raw.recv(4096), b'')
@@ -89,6 +102,36 @@ class TLSFixtureTests(unittest.TestCase):
     def test_arbitrary_destination_address_is_not_a_capability(self):
         with self.assertRaises(ValueError):
             fixture.Tunnel({fixture.NAME + ':443': ('127.0.0.1', self.origin.port)}, b'auth')
+        with self.assertRaises(ValueError):
+            fixture.Tunnel({}, b'auth', turn_target=('127.0.0.1', self.origin.port))
+
+    @unittest.skipUnless(os.environ.get('NEANTIK_TURN_TEST_BINARY'), 'explicit Pion fixture executable required')
+    def test_real_turn_control_crosses_only_the_exact_authorized_tunnel(self):
+        with tempfile.TemporaryDirectory(prefix='neantik-turn-wire-') as directory:
+            child = TurnTCPFixture(Path(os.environ['NEANTIK_TURN_TEST_BINARY']), Path(directory).resolve())
+            self.addCleanup(lambda: child.stop() if child.process.poll() is None else None)
+            dns_calls = []
+            tunnel = fixture.Tunnel({}, fixture.authorization('owned', 'fixture'),
+                                    dns_validator=lambda *args: dns_calls.append(args), turn_target=child)
+            self.addCleanup(lambda: self.assertTrue(tunnel.stop()))
+            with self.connect(authority=child.authority, auth=False, tunnel=tunnel) as raw:
+                self.assertIn(b'407 Proxy Authentication Required', probe.read_header(raw))
+            with self.connect(authority=f'foreign.invalid:{child.port}', tunnel=tunnel) as raw:
+                self.assertEqual(raw.recv(1024), b'')
+            self.assertEqual(tunnel.authenticated_turn_count(), 0)
+            with self.connect(authority=child.authority, tunnel=tunnel) as raw:
+                self.assertIn(b'200 Connection Established', probe.read_header(raw))
+                transaction = os.urandom(12)
+                raw.sendall(struct.pack('!HHI12s', 1, 0, 0x2112A442, transaction))
+                with raw.makefile('rb') as stream:
+                    response = stream.read(20)
+                self.assertEqual(struct.unpack('!HHI12s', response)[0::3], (0x0101, transaction))
+            self.assertEqual(tunnel.authenticated_turn_count(), 1)
+            self.assertEqual(dns_calls, [])
+            self.assertEqual(child.stop(), {'allocations': 0})
+            with self.connect(authority=child.authority, tunnel=tunnel) as raw:
+                self.assertEqual(raw.recv(1024), b'')
+            self.assertEqual(tunnel.authenticated_turn_count(), 1)
 
     def test_persistence_ack_is_scoped_to_own_nonce_and_state(self):
         nonce = 'b' * 32

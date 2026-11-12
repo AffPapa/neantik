@@ -38,3 +38,13 @@ candidate pairs on both peers. SDP, ICE addresses and credentials stay out of
 the result. Its status still needs correlation with the server and broker
 counters for the same run. Run `node --test browser-probe.test.mjs` to check
 the probe logic with simulated peer connections.
+
+The existing CONNECT test proxy accepts a `TurnTCPFixture` child for exactly
+`turn-neantik.invalid:<port>`. HTTPS destinations still use the fixture DNS
+validator. The TURN authority maps to the live child's loopback listener and
+has a separate successful CONNECT counter. From the parent directory, set
+`NEANTIK_TURN_TEST_BINARY` to the physical path of the binary built above and
+run `python3 -B -m unittest test_tls_fixture` for the wire control. It verifies
+that a STUN Binding exchange reaches the real TURN listener through the
+authorized tunnel. Browser TURN allocation and DataChannel qualification are
+separate observations.
