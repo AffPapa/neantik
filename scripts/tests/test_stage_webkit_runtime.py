@@ -172,6 +172,67 @@ class StageWebKitRuntimeTests(unittest.TestCase):
         self.assertFalse((destination / "WebKit.framework/Versions/A/_CodeSignature").exists())
         self.assertFalse(result["launchQualified"])
 
+    def test_stages_nested_only_webkit_swift_with_a_physical_top_level_mirror(self):
+        source_top = self.root / stage.WEBKIT_SWIFT_NAME
+        source_nested = self.root / stage.WEBKIT_SWIFT_EMBEDDED
+        source_top.unlink()
+        source_nested.unlink()
+        source_nested.write_bytes(MACHO + b"nested only")
+        destination = Path(self.temp.name) / "Frameworks"
+
+        result = stage.copy_runtime(self.root, destination, self.manifest)
+
+        expected = hashlib.sha256(source_nested.read_bytes()).hexdigest()
+        for relative in (Path(stage.WEBKIT_SWIFT_NAME), stage.WEBKIT_SWIFT_EMBEDDED):
+            staged = destination / relative
+            self.assertTrue(staged.is_file())
+            self.assertFalse(staged.is_symlink())
+            self.assertEqual(staged.read_bytes(), source_nested.read_bytes())
+            self.assertEqual(result["machOSHA256"][str(relative)], expected)
+        self.assertFalse(source_top.exists())
+
+    def test_refuses_mismatched_physical_webkit_swift_outputs(self):
+        source_top = self.root / stage.WEBKIT_SWIFT_NAME
+        source_nested = self.root / stage.WEBKIT_SWIFT_EMBEDDED
+        source_nested.unlink()
+        source_nested.write_bytes(MACHO + b"different build output")
+        destination = Path(self.temp.name) / "Frameworks"
+
+        with self.assertRaisesRegex(stage.ContractError, "Top-level and embedded WebKitSwift images differ"):
+            stage.copy_runtime(self.root, destination, self.manifest)
+
+        self.assertFalse(destination.exists())
+        self.assertEqual(source_top.read_bytes(), MACHO)
+        self.assertEqual(source_nested.read_bytes(), MACHO + b"different build output")
+
+    def test_accepts_matching_physical_webkit_swift_outputs(self):
+        source_nested = self.root / stage.WEBKIT_SWIFT_EMBEDDED
+        source_nested.unlink()
+        source_nested.write_bytes(MACHO)
+        destination = Path(self.temp.name) / "Frameworks"
+
+        stage.copy_runtime(self.root, destination, self.manifest)
+
+        self.assertEqual((destination / stage.WEBKIT_SWIFT_NAME).read_bytes(), MACHO)
+        self.assertEqual((destination / stage.WEBKIT_SWIFT_EMBEDDED).read_bytes(), MACHO)
+
+    def test_refuses_nested_only_webkit_swift_alias_and_non_macho_image(self):
+        (self.root / stage.WEBKIT_SWIFT_NAME).unlink()
+        source_nested = self.root / stage.WEBKIT_SWIFT_EMBEDDED
+        source_nested.unlink()
+        source_nested.symlink_to("../WebKit")
+        destination = Path(self.temp.name) / "Frameworks"
+
+        with self.assertRaisesRegex(stage.ContractError, "framework link targets an unexpected image"):
+            stage.copy_runtime(self.root, destination, self.manifest)
+        self.assertFalse(destination.exists())
+
+        source_nested.unlink()
+        source_nested.write_bytes(b"not a Mach-O")
+        with self.assertRaisesRegex(stage.ContractError, "Runtime dylib is not Mach-O"):
+            stage.copy_runtime(self.root, destination, self.manifest)
+        self.assertFalse(destination.exists())
+
     def test_refuses_external_runtime_symlink(self):
         outside = Path(self.temp.name) / "outside"
         outside.write_text("do not copy")

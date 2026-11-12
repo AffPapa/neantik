@@ -5,6 +5,7 @@ from pathlib import Path
 import socket
 import tempfile
 import unittest
+from unittest.mock import patch
 
 SCRIPT = Path(__file__).resolve().parents[1] / 'runtime-network' / 'prepare-webkit-ab-isolation-qa.py'
 SPEC = importlib.util.spec_from_file_location('webkit_ab_qa', SCRIPT)
@@ -79,6 +80,7 @@ class WebKitABIsolationFixtureTests(unittest.TestCase):
             try:
                 self.assertEqual(plan['status'], 'offline-fixture-ready; browser-not-started')
                 self.assertRegex(plan['root'], r'^/private/tmp/neantik-production-diagnostic-[A-Za-z0-9_]+$')
+                self.assertNotIn('qaRuntimeVariant', plan)
                 self.assertEqual(plan['profileCount'], 2)
                 self.assertNotEqual(plan['proxyA'], plan['proxyB'])
                 self.assertTrue(plan['sameOrigin'].startswith('https://'))
@@ -97,6 +99,65 @@ class WebKitABIsolationFixtureTests(unittest.TestCase):
                 import shutil
                 shutil.rmtree(root)
                 shutil.rmtree(stage)
+
+    def test_private_successor_dev_uses_owner_only_fixture_and_marks_plan(self):
+        with tempfile.TemporaryDirectory(prefix='neantik-webkit-ab-template-') as directory:
+            path = Path(directory) / 'profiles.json'
+            blank = dict(blank_profile(), privacyPolicy='legacy', webKitBlockPeerConnections=False)
+            path.write_text(json.dumps({'schemaVersion': 7, 'profiles': [blank]}))
+            plan, dns, origin, tunnels, validator = QA.prepare(path, private_successor_dev=True)
+            root, stage = Path(plan['root']), Path(plan['stage'])
+            try:
+                self.assertRegex(str(root), r'^/private/tmp/neantik-dev-fixture\.[A-Za-z0-9_]+$')
+                self.assertEqual(root.stat().st_mode & 0o777, 0o700)
+                self.assertEqual(root.stat().st_uid, os.geteuid())
+                self.assertEqual(plan['qaRuntimeVariant'], 'OwnedWebKitSuccessorV1')
+                self.assertEqual(json.loads((stage / 'run-plan.json').read_text()), plan)
+                primary = root / 'profiles.json'
+                previous = root / 'profiles.previous.json'
+                self.assertEqual(primary.stat().st_mode & 0o777, 0o600)
+                self.assertEqual(previous.stat().st_mode & 0o777, 0o600)
+                self.assertEqual(primary.read_bytes(), previous.read_bytes())
+                profiles = json.loads(primary.read_text())['profiles']
+                self.assertEqual([p['privacyPolicy'] for p in profiles], ['legacy', 'legacy'])
+                self.assertEqual(len({p['id'] for p in profiles}), 2)
+                self.assertEqual(len({p['startURL'] for p in profiles}), 1)
+                self.assertEqual({p['proxy']['host'] for p in profiles}, {'127.0.0.1'})
+                self.assertEqual({p['proxy']['port'] for p in profiles}, {t.port for t in tunnels})
+            finally:
+                closed = [tunnel.stop() for tunnel in reversed(tunnels)]
+                origin_closed = origin.stop()
+                dns_closed = dns.close()
+                import shutil
+                shutil.rmtree(root)
+                shutil.rmtree(stage)
+                self.assertTrue(all(closed) and origin_closed and dns_closed)
+
+    def test_schema_seven_refuses_nonblank_and_missing_explicit_policies(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'profiles.json'
+            good = dict(blank_profile(), privacyPolicy='legacy', webKitBlockPeerConnections=False)
+            invalid_profiles = (
+                [good, good],
+                [blank_profile()],
+                [dict(good, webKitBlockPeerConnections=0)],
+                [dict(good, webKitBlockPeerConnections=True)],
+                [dict(good, privacyPolicy='strict')],
+                [dict(good, proxy={'host': 'proxy.invalid'})],
+                [dict(good, startURL='https://example.invalid/')],
+                [dict(good, password='unexpected')],
+            )
+            for profiles in invalid_profiles:
+                with self.subTest(profiles=profiles):
+                    path.write_text(json.dumps({'schemaVersion': 7, 'profiles': profiles}))
+                    with self.assertRaises(QA.FixtureError):
+                        QA.read_blank_template(path)
+
+    def test_private_successor_dev_refuses_public_controls_before_preparing(self):
+        with patch.object(QA, 'prepare') as prepare:
+            with self.assertRaisesRegex(QA.FixtureError, 'private_successor_dev_requires_loopback_only'):
+                QA.serve(Path('unused'), private_successor_dev=True, public_site_controls=True)
+            prepare.assert_not_called()
 
     def test_peer_control_fixture_uses_loopback_probe_and_explicit_policies(self):
         with tempfile.TemporaryDirectory(prefix='neantik-webkit-peer-template-') as directory:
