@@ -38,6 +38,7 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
     private var onFailure: (() -> Void)?
     private var appActivityObservers: [NSObjectProtocol] = []
     private var nextAccessibilityRefresh = ContinuousClock.now
+    private var lastFocusHandoff: UUID?
     private var active = false
 
     init?(profileName: String, generation: UUID, endpoint: WebKitFrameTransport.Endpoint,
@@ -239,6 +240,8 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
     private func didPresent(_ page: WebKitPresenterChannel.State, sequence: UInt64) {
         guard active, sequence > displayedSequence, page.generation == generation else { return }
         displayedSequence = sequence
+        let changedDocument = state?.target.tab != page.target.tab ||
+            state?.target.navigation != page.target.navigation
         let changedTarget = state?.target != page.target
         let changedTabs = state?.tabs != page.tabs
         state = page
@@ -249,7 +252,7 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
         pageStatus = page.status
         refreshStatus()
         view.updateEditor(page.editor)
-        view.updatePageAccessibility(page.accessibility, reset: changedTarget)
+        view.updatePageAccessibility(page.accessibility, reset: changedDocument)
         if changedTabs {
             tabs.removeAllItems()
             for (index, summary) in page.tabs.enumerated() {
@@ -261,6 +264,17 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
         }
         if let index = page.tabs.firstIndex(where: { $0.id == page.target.tab }) { tabs.selectItem(at: index) }
         if changedTarget { sendActivity() }
+        if let handoff = page.focusHandoff, lastFocusHandoff != handoff.id, window.isKeyWindow,
+           window.firstResponder === view {
+            lastFocusHandoff = handoff.id
+            if handoff.backward {
+                window.selectKeyView(preceding: view)
+            } else {
+                window.selectKeyView(following: view)
+            }
+            if window.firstResponder === view, address.isEnabled { window.makeFirstResponder(address) }
+            sendActivity()
+        }
         if NSWorkspace.shared.isVoiceOverEnabled || NSWorkspace.shared.isSwitchControlEnabled {
             requestAccessibility()
         }
@@ -395,21 +409,44 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
         return pageElements.first.map { [$0] } ?? []
     }
 
-    func updatePageAccessibility(_ snapshot: WebKitPresenterChannel.AccessibilitySnapshot?, reset: Bool) {
-        if reset {
-            accessibilitySnapshot = nil
-            pageElements = []
+    nonisolated override func accessibilityHitTest(_ point: NSPoint) -> Any? {
+        guard Thread.isMainThread else { return nil }
+        // AppKit calls AX synchronously here. Keep the return value on the
+        // same thread while entering the main actor to read the view state.
+        var node: WebKitPageAccessibilityElement?
+        MainActor.assumeIsolated {
+            onAccessibilityQuery?()
+            node = pageElements.reversed().first { $0.accessibilityFrame().contains(point) }
         }
-        guard accessibilitySnapshot != snapshot else { return }
-        let reusable = accessibilitySnapshot?.document == snapshot?.document ?
-            Dictionary(uniqueKeysWithValues: pageElements.map { ($0.node, $0) }) : [:]
+        return node as Any? ?? self
+    }
+
+    nonisolated override var accessibilityFocusedUIElement: Any? {
+        guard Thread.isMainThread else { return nil }
+        var node: WebKitPageAccessibilityElement?
+        MainActor.assumeIsolated {
+            onAccessibilityQuery?()
+            node = pageElements.first { $0.isAccessibilityFocused() }
+        }
+        return node as Any? ?? self
+    }
+
+    func updatePageAccessibility(_ snapshot: WebKitPresenterChannel.AccessibilitySnapshot?, reset: Bool) {
+        guard accessibilitySnapshot != snapshot || (reset && !pageElements.isEmpty) else { return }
+        let oldElements = pageElements
+        var reusable: [UInt64: WebKitPageAccessibilityElement] = [:]
+        let sameDocument = !reset && accessibilitySnapshot?.document == snapshot?.document
+        if sameDocument {
+            reusable = Dictionary(uniqueKeysWithValues: oldElements.map { ($0.node, $0) })
+        }
         let previousFocus = pageElements.first(where: { $0.isAccessibilityFocused() })?.node
         accessibilitySnapshot = snapshot
         pageElements = []
         if let snapshot {
             for model in snapshot.nodes {
                 guard let node = model.identifier else { continue }
-                let element = reusable[node] ?? WebKitPageAccessibilityElement(view: self, document: snapshot.document, node: node)
+                let element = reusable.removeValue(forKey: node)
+                    ?? WebKitPageAccessibilityElement(view: self, document: snapshot.document, node: node)
                 element.model = model
                 pageElements.append(element)
             }
@@ -422,6 +459,7 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
                 })
             }
         }
+        for element in sameDocument ? Array(reusable.values) : oldElements { element.invalidate() }
         NSAccessibility.post(element: self, notification: .layoutChanged)
         if let focused = pageElements.first(where: { $0.isAccessibilityFocused() }), previousFocus != focused.node {
             NSAccessibility.post(element: focused, notification: .focusedUIElementChanged)
@@ -440,9 +478,11 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
         guard drawable.drawableSize.width > 0, drawable.drawableSize.height > 0 else { return .zero }
         let xScale = display.width / drawable.drawableSize.width
         let yScale = display.height / drawable.drawableSize.height
-        return NSAccessibility.screenRect(fromView: self, rect: .init(
+        let visible = display.intersection(.init(
             x: display.minX + bounds.minX * xScale, y: display.maxY - bounds.maxY * yScale,
             width: bounds.width * xScale, height: bounds.height * yScale))
+        guard !visible.isNull, !visible.isEmpty else { return .zero }
+        return NSAccessibility.screenRect(fromView: self, rect: visible)
     }
 
     override func becomeFirstResponder() -> Bool {
@@ -531,10 +571,10 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
         updateSecureInput()
         let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
         if event.keyCode == UInt16(kVK_Tab),
-           modifiers == [] || modifiers == .shift,
+           modifiers.isSubset(of: [.shift, .option]),
            NSApp.isActive, window?.isKeyWindow == true, window?.firstResponder === self {
             if editor?.marked != nil { inputContext?.discardMarkedText() }
-            onInput?(.tabKey(backward: modifiers == .shift), nil)
+            onInput?(.tabKey(backward: modifiers.contains(.shift), option: modifiers.contains(.option)), nil)
             return
         }
         guard let editor else {
@@ -617,6 +657,13 @@ private final class WebKitPageAccessibilityElement: NSAccessibilityElement {
         self.node = node
         super.init()
         setAccessibilityElement(true)
+    }
+
+    func invalidate() {
+        model = nil
+        setAccessibilityChildren([])
+        setAccessibilityParent(nil)
+        setAccessibilityElement(false)
     }
 
     nonisolated override func accessibilityRole() -> NSAccessibility.Role? {

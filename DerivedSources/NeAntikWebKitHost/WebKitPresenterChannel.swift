@@ -125,7 +125,7 @@ enum WebKitPresenterChannel {
         case activity(visible: Bool, active: Bool, focused: Bool)
         case click(x: Double, y: Double, screenX: Double, screenY: Double)
         case scroll(x: Double, y: Double, deltaX: Double, deltaY: Double)
-        case tabKey(backward: Bool)
+        case tabKey(backward: Bool, option: Bool)
         case accessibilitySnapshot
         case accessibilityAction(document: UUID, node: UInt64, press: Bool)
         case insert(text: String, replacing: TextRange?)
@@ -213,6 +213,11 @@ enum WebKitPresenterChannel {
     }
 
     struct State: Codable, Equatable, Sendable {
+        struct FocusHandoff: Codable, Equatable, Sendable {
+            let id: UUID
+            let backward: Bool
+        }
+
         struct Tab: Codable, Equatable, Sendable {
             let id: UUID
             let title: String
@@ -228,10 +233,11 @@ enum WebKitPresenterChannel {
         let status: String
         let editor: Editor?
         let accessibility: AccessibilitySnapshot?
+        let focusHandoff: FocusHandoff?
 
         init(generation: UUID, target: Target, tabs: [Tab], address: String,
              canGoBack: Bool, canGoForward: Bool, acceptsPageInput: Bool, status: String,
-             editor: Editor? = nil, accessibility: AccessibilitySnapshot? = nil) {
+             editor: Editor? = nil, accessibility: AccessibilitySnapshot? = nil, focusHandoff: FocusHandoff? = nil) {
             self.generation = generation
             self.target = target
             self.tabs = tabs
@@ -242,6 +248,7 @@ enum WebKitPresenterChannel {
             self.status = status
             self.editor = editor
             self.accessibility = accessibility
+            self.focusHandoff = focusHandoff
         }
 
         var isValid: Bool {
