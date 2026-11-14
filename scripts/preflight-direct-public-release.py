@@ -382,6 +382,8 @@ def verify_direct_public_release_plan(
                 allow_public_alpha_tuples=(
                     effective_release_channel == "public-alpha"
                 ),
+                candidate_evidence=(integrated_app, candidate_manifest, gui_fingerprint_report)
+                if effective_release_channel == "production" else None,
             )
         except SystemExit as error:
             raise ValueError(str(error)) from error
@@ -449,7 +451,7 @@ def verify_direct_public_release_plan(
         runtime_major = parse_version(runtime_version)[0]
         contract_name = ((m155_reviewed_lock_prefix(runtime_candidate)+"-source-contract.json")
                          if runtime_version == "155.0.8059.40"
-                         else GUI_VERIFIER.source_contract_name(runtime_version, runtime_candidate) if runtime_version in {"156.0.8078.12", "156.0.8078.48", "156.0.8078.74", "156.0.8078.80"}
+                         else GUI_VERIFIER.source_contract_name(runtime_version, runtime_candidate) if runtime_version in {"156.0.8078.12", "156.0.8078.48", "156.0.8078.74", "156.0.8078.80", "157.0.8103.79"}
                          else f"chromium-{runtime_major}-source-contract.json")
         embedded_contract_path = evidence_root / contract_name
         project_contract_name = (

@@ -404,7 +404,7 @@ def verify_evidence_follows_manifest_payload(
     manifest_payload: dict[str, Any],
     manifest_raw: bytes,
     evidence: Path,
-) -> None:
+) -> dict[str, Any]:
     try:
         verified = EVIDENCE_SCHEMA.verify_fingerprint_evidence(
             candidate_manifest_raw=manifest_raw,
@@ -435,6 +435,8 @@ def verify_evidence_follows_manifest_payload(
         raise CandidateManifestError(
             "GUI evidence predates the prepared immutable candidate"
         )
+
+    return release_payload
 
 
 def write_manifest(path: Path, payload: dict[str, Any]) -> str:

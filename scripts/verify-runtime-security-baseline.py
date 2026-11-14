@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from importlib import import_module
 import json
 import re
 from datetime import date, datetime, timezone
@@ -100,6 +101,36 @@ def verify_security_branch(lock, fingerprint, baseline, runtime, minimum):
     return True
 
 
+def verify_source_only_tuple_evidence(
+    lock_path: Path,
+    app: Path,
+    manifest: Path,
+    evidence: Path,
+) -> None:
+    """Bind live qualification to the app without changing its source lock."""
+    candidate = import_module("direct-candidate-manifest")
+    gui = candidate.GUI_VERIFIER
+    try:
+        payload, raw = candidate.load_manifest_with_bytes(manifest)
+        candidate.verify_manifest_payload(app, payload, raw, release_channel="production")
+        # This also verifies the deterministic .79 provenance and hashes the
+        # installed runtime, source lock, build inputs and tuple catalog.
+        runtime = gui.expected_runtime_evidence_from_app(app)
+        embedded_lock = app / "Contents/Resources/NeAntikRuntimeEvidence/fingerprint-chromium.lock.json"
+        if (runtime["runtimeVersion"] != "157.0.8103.79"
+                or lock_path.read_bytes() != embedded_lock.read_bytes()):
+            raise ValueError("Runtime lock differs from the signed candidate's .79 source lock.")
+        report = candidate.verify_evidence_follows_manifest_payload(payload, raw, evidence)
+        if (report["runtimeVersion"] != runtime["runtimeVersion"]
+                or report["releaseChannel"] != "production"
+                or report["productionQualified"] is not True
+                or report["deviceTupleConsistent"] is not True):
+            raise ValueError("Authenticated production tuple evidence does not match the signed candidate.")
+    except (OSError, ValueError) as error:
+        fail(f"Public Direct production tuple qualification failed: {error}")
+
+
+
 def verify(
     lock_path: Path,
     baseline_path: Path,
@@ -107,6 +138,7 @@ def verify(
     *,
     allow_public_alpha_tuples: bool = False,
     allow_unqualified_bundle: bool = False,
+    candidate_evidence: tuple[Path, Path, Path] | None = None,
 ) -> str:
     lock = load_object(lock_path, "runtime source lock")
     baseline = load_object(baseline_path, "runtime security baseline")
@@ -201,6 +233,16 @@ def verify(
         security_summary += "; cross-branch source-bound security fix review verified"
 
     verification = lock.get("verification")
+    if (verification is None and lock.get("status") == "source-qualified"
+            and lock.get("schemaVersion") == 4 and runtime_raw == "157.0.8103.79"
+            and candidate_evidence is not None
+            and not (allow_public_alpha_tuples or allow_unqualified_bundle)):
+        verify_source_only_tuple_evidence(lock_path, *candidate_evidence)
+        return (
+            f"Runtime security baseline verified: Chromium {runtime_raw} >= {minimum_raw}; "
+            f"baseline age {age} day(s); source {source_label}; {security_summary}; "
+            "coherent Apple device tuples verified by the authenticated production candidate."
+        )
     if not isinstance(verification, dict):
         if allow_unqualified_bundle and lock.get("status") == "source-qualified":
             return (
@@ -267,7 +309,14 @@ def main() -> None:
             "runtime evidence; this never qualifies a public release."
         ),
     )
+    parser.add_argument("--candidate-app", type=Path)
+    parser.add_argument("--candidate-manifest", type=Path)
+    parser.add_argument("--fingerprint-evidence", type=Path)
     args = parser.parse_args()
+    candidate_evidence = (args.candidate_app, args.candidate_manifest, args.fingerprint_evidence)
+    if any(candidate_evidence) and (not all(candidate_evidence)
+                                    or args.allow_public_alpha_tuples or args.allow_unqualified_bundle):
+        parser.error("All candidate evidence paths are required together for production.")
     print(
         verify(
             args.lock,
@@ -275,6 +324,7 @@ def main() -> None:
             args.today,
             allow_public_alpha_tuples=args.allow_public_alpha_tuples,
             allow_unqualified_bundle=args.allow_unqualified_bundle,
+            candidate_evidence=candidate_evidence if all(candidate_evidence) else None,
         )
     )
 
