@@ -215,6 +215,10 @@ enum WebKitPresenterChannel {
         let generation: UUID
         private var next: UInt64 = 1
 
+        init(generation: UUID) {
+            self.generation = generation
+        }
+
         mutating func consume(_ command: Command) throws {
             guard command.generation == generation, command.sequence == next, next < UInt64.max,
                   command.isValid else { throw Failure.invalidRecord }
