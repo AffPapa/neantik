@@ -1,6 +1,6 @@
 module neantik.local/turnfixture
 
-go 1.24.0
+go 1.25.0
 
 require github.com/pion/turn/v5 v5.1.3
 
@@ -11,6 +11,6 @@ require (
 	github.com/pion/stun/v4 v4.0.1 // indirect
 	github.com/pion/transport/v5 v5.1.1 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
-	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 )
