@@ -1,6 +1,12 @@
 # NeAntik changelog
 
-## Direct 1.0.0 (210) — production candidate, qualification pending
+## Direct 1.0.0 (211) — production candidate
+
+- Coalesce compatible wheel events in the detached WebKit window and preserve gesture boundaries and input order.
+- Report enabled page controls to macOS accessibility and log channel failures without page data.
+- Bundled proxy WebKit requires macOS 15.4 or later. The manager and Chromium require macOS 14 or later.
+
+## Direct 1.0.0 (210) — internal qualification candidate
 
 - Preserve line and trackpad wheel input and forward native Select All and plain-text Paste in the detached page.
 
