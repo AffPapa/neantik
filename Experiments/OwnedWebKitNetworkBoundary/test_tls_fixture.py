@@ -106,6 +106,45 @@ class TLSFixtureTests(unittest.TestCase):
             fixture.Tunnel({}, b'auth', turn_target=('127.0.0.1', self.origin.port))
 
     @unittest.skipUnless(os.environ.get('NEANTIK_TURN_TEST_BINARY'), 'explicit Pion fixture executable required')
+    def test_verified_turn_tls_binding_crosses_authorized_tunnel(self):
+        with tempfile.TemporaryDirectory(prefix='neantik-turn-tls-wire-') as directory:
+            tls_root = fixture.certificates(Path(directory).resolve() / 'turn', '127.0.0.1', TurnTCPFixture.host)
+            certificate, key = tls_root / 'leaf.pem', tls_root / 'leaf.key'
+            certificate.chmod(0o600)
+            child = TurnTCPFixture(Path(os.environ['NEANTIK_TURN_TEST_BINARY']), tls_root,
+                                   tls_files=(certificate, key))
+            self.addCleanup(lambda: child.stop() if child.process.poll() is None else None)
+            tunnel = fixture.Tunnel({}, fixture.authorization('owned', 'fixture'), turn_target=child)
+            self.addCleanup(lambda: self.assertTrue(tunnel.stop()))
+            self.assertEqual(child.browser_config()['url'], f'turns:{child.authority}?transport=tcp')
+            self.assertEqual(child.browser_config(outage=True)['url'], child.browser_config()['url'])
+            for ca, hostname in (('wrong-ca', child.host), ('ca', 'wrong-neantik.invalid')):
+                with self.connect(authority=child.authority, tunnel=tunnel) as raw:
+                    self.assertIn(b'200 Connection Established', probe.read_header(raw))
+                    context = ssl.create_default_context(cafile=str(tls_root / f'{ca}.pem'))
+                    with self.assertRaises(ssl.SSLCertVerificationError):
+                        context.wrap_socket(raw, server_hostname=hostname)
+            with self.connect(authority=child.authority, tunnel=tunnel) as raw:
+                self.assertIn(b'200 Connection Established', probe.read_header(raw))
+                context = ssl.create_default_context(cafile=str(tls_root / 'ca.pem'))
+                with context.wrap_socket(raw, server_hostname=child.host) as secured:
+                    transaction = os.urandom(12)
+                    secured.sendall(struct.pack('!HHI12s', 1, 0, 0x2112A442, transaction))
+                    with secured.makefile('rb') as stream:
+                        response = stream.read(20)
+                    self.assertEqual(struct.unpack('!HHI12s', response)[0::3], (0x0101, transaction))
+            tunnel.set_turn_outage(True)
+            with self.connect(authority=child.authority, tunnel=tunnel) as raw:
+                self.assertIn(b'502 Bad Gateway', probe.read_header(raw))
+            self.assertEqual(tunnel.turn_outage_count(), 1)
+            self.assertEqual(tunnel.authenticated_turn_count(), 3)
+            counts = child.stop()
+            self.assertEqual((counts['allocations'], counts['tcpAccepts']), (0, 3))
+            if 'tlsAccepted' in counts:
+                self.assertEqual(counts['tlsAccepted'], 1)
+                self.assertEqual(counts['tlsCertificateRejected'] + counts['tlsOtherFailure'], 2)
+
+    @unittest.skipUnless(os.environ.get('NEANTIK_TURN_TEST_BINARY'), 'explicit Pion fixture executable required')
     def test_real_turn_control_crosses_only_the_exact_authorized_tunnel(self):
         with tempfile.TemporaryDirectory(prefix='neantik-turn-wire-') as directory:
             child = TurnTCPFixture(Path(os.environ['NEANTIK_TURN_TEST_BINARY']), Path(directory).resolve())
@@ -128,6 +167,21 @@ class TLSFixtureTests(unittest.TestCase):
                 self.assertEqual(struct.unpack('!HHI12s', response)[0::3], (0x0101, transaction))
             self.assertEqual(tunnel.authenticated_turn_count(), 1)
             self.assertEqual(dns_calls, [])
+            tunnel.set_turn_outage(True)
+            with self.connect(authority=child.direct_canary_authority, auth=False, tunnel=tunnel) as raw:
+                self.assertIn(b'407 Proxy Authentication Required', probe.read_header(raw))
+            self.assertEqual(tunnel.turn_outage_count(), 0)
+            with self.connect(authority=child.direct_canary_authority, tunnel=tunnel) as raw:
+                self.assertIn(b'502 Bad Gateway', probe.read_header(raw))
+            self.assertEqual(tunnel.turn_outage_count(), 1)
+            self.assertEqual(tunnel.authenticated_turn_count(), 1)
+            tunnel.set_turn_outage(False)
+            with socket.create_connection(('127.0.0.1', child.port), timeout=3) as direct:
+                transaction = os.urandom(12)
+                direct.sendall(struct.pack('!HHI12s', 1, 0, 0x2112A442, transaction))
+                with direct.makefile('rb') as stream:
+                    response = stream.read(20)
+                self.assertEqual(struct.unpack('!HHI12s', response)[0::3], (0x0101, transaction))
             nonce = 'c' * 32
             token = 'd' * 32
             origin = fixture.TLSOrigin('127.0.0.1', dns_tls_fixture.persistence_page(nonce),
@@ -153,15 +207,48 @@ class TLSFixtureTests(unittest.TestCase):
                              ['page', 'unrecognized', 'unrecognized', 'turn-relay-nonce-delivered'])
             self.assertNotIn(token, repr(trace))
             self.assertNotIn(child.browser_config()['credential'], repr(trace))
-            self.assertEqual(child.stop(), {'allocations': 0})
+            counts = child.stop()
+            self.assertEqual(counts['allocations'], 0)
+            if 'tcpAccepts' in counts:
+                self.assertEqual(counts['tcpAccepts'], 2)
             with self.connect(authority=child.authority, tunnel=tunnel) as raw:
                 self.assertEqual(raw.recv(1024), b'')
             self.assertEqual(tunnel.authenticated_turn_count(), 1)
 
+    def test_origin_distinguishes_proxied_and_direct_https_connections(self):
+        origin = fixture.TLSOrigin('127.0.0.1', 'route-control', self.certificates,
+                                   persistence_nonce='b' * 32, attribute_routes=True)
+        self.addCleanup(lambda: self.assertTrue(origin.stop()))
+        tunnels = []
+        for route in ('A', 'B'):
+            tunnel = fixture.Tunnel({fixture.NAME + ':443': origin},
+                                    fixture.authorization('owned', 'fixture'), route=route)
+            tunnels.append(tunnel)
+            self.addCleanup(lambda tunnel=tunnel: self.assertTrue(tunnel.stop()))
+        for tunnel in (*tunnels, None):
+            if tunnel is None:
+                raw = socket.create_connection(('127.0.0.1', origin.port), timeout=3)
+            else:
+                raw = self.connect(tunnel=tunnel)
+                self.assertIn(b'200 Connection Established', probe.read_header(raw))
+            with self.context().wrap_socket(raw, server_hostname=fixture.NAME) as client:
+                client.sendall(b'GET / HTTP/1.1\r\nHost: owned-tls.invalid\r\n\r\n')
+                with client.makefile('rb') as stream:
+                    self.assertIn(b'route-control', stream.read())
+        self.assertEqual([row['route'] for row in origin.snapshot()['requestTrace']],
+                         ['A', 'B', 'unattributed'])
+        # A client can reach the origin and disconnect without sending HTTP.
+        with socket.create_connection(('127.0.0.1', origin.port), timeout=3) as raw:
+            raw.shutdown(socket.SHUT_WR)
+            self.assertEqual(raw.recv(1024), b'')
+        counts = origin.snapshot()
+        self.assertEqual(counts['unattributedConnections'], 2)
+        self.assertEqual(len(counts['requestTrace']), 3)
+
     def test_persistence_ack_is_scoped_to_own_nonce_and_state(self):
         nonce = 'b' * 32
         origin = fixture.TLSOrigin('127.0.0.1', dns_tls_fixture.persistence_page(nonce),
-                                   self.certificates, persistence_nonce=nonce)
+                                   self.certificates, persistence_nonce=nonce, click_probe=True)
         self.addCleanup(lambda: self.assertTrue(origin.stop()))
 
         def get(path):
@@ -198,6 +285,13 @@ class TLSFixtureTests(unittest.TestCase):
         self.assertEqual(get(f'/qa-gpu/{nonce}/private'), b'')
         self.assertEqual(get('/qa-gpu/' + 'a' * 32 + '/adapter'), b'')
         self.assertEqual(origin.snapshot()['requestTrace'][-3]['category'], 'gpu-adapter')
+
+        self.assertIn(b'ack', get(f'/qa-click/{nonce}/trusted'))
+        self.assertIn(b'ack', get(f'/qa-click/{nonce}/untrusted'))
+        self.assertEqual(get('/qa-click/' + 'a' * 32 + '/trusted'), b'')
+        self.assertEqual(get(f'/qa-click/{nonce}/unknown'), b'')
+        self.assertEqual([entry['category'] for entry in origin.snapshot()['requestTrace'][-4:]],
+                         ['click-trusted', 'click-untrusted', 'unrecognized', 'unrecognized'])
 
     def test_fetch_destination_is_bounded_and_never_returns_raw_headers(self):
         self.assertEqual(fixture.fetch_destination(b'GET / HTTP/1.1\r\nSec-Fetch-Dest: iframe\r\n\r\n'), 'iframe')

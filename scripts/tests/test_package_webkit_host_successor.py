@@ -46,6 +46,38 @@ class PrivateSuccessorHostTests(unittest.TestCase):
                                    allow_development_qa=True, private_successor=self.successor, **options)
                 signing.assert_not_called()
 
+    def test_rtc_relay_requires_private_successor_and_synthetic_tls_before_signing(self):
+        with patch.object(MODULE, "read_info", return_value=self.dev), \
+                patch.object(MODULE, "verify_signing_identity") as signing:
+            with self.assertRaisesRegex(MODULE.ContractError, "private successor evidence"):
+                MODULE.package(self.app, self.host, self.frameworks, "identity",
+                               allow_development_qa=True, qualify_rtc_relay=True)
+            with self.assertRaisesRegex(MODULE.ContractError, "synthetic TLS scope"):
+                MODULE.package(self.app, self.host, self.frameworks, "identity",
+                               allow_development_qa=True, private_successor=self.successor,
+                               qualify_rtc_relay=True)
+            signing.assert_not_called()
+
+    def test_detached_session_requires_private_successor_and_synthetic_tls_before_signing(self):
+        with patch.object(MODULE, "read_info", return_value=self.dev), \
+                patch.object(MODULE, "verify_signing_identity") as signing:
+            with self.assertRaisesRegex(MODULE.ContractError, "private successor evidence"):
+                MODULE.package(self.app, self.host, self.frameworks, "identity",
+                               allow_development_qa=True, detached_session_qa=True)
+            with self.assertRaisesRegex(MODULE.ContractError, "synthetic TLS scope"):
+                MODULE.package(self.app, self.host, self.frameworks, "identity",
+                               allow_development_qa=True, private_successor=self.successor,
+                               detached_session_qa=True)
+            signing.assert_not_called()
+
+    def test_metal_frames_require_private_detached_successor_before_packaging(self):
+        with patch.object(MODULE, "verify_signing_identity") as signing:
+            with self.assertRaisesRegex(MODULE.ContractError, "private detached successor"):
+                MODULE.package(self.app, self.host, self.frameworks, "identity",
+                               allow_development_qa=True, private_successor=self.successor,
+                               metal_frame_qa=True)
+            signing.assert_not_called()
+
     def test_manifest_verification_runs_before_copy_and_keeps_historical_notice_path_separate(self):
         evidence_module = types.ModuleType("owned_webkit_successor_evidence")
         with patch.dict(sys.modules, {evidence_module.__name__: evidence_module}), \

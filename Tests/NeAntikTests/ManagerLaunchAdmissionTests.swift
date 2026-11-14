@@ -66,6 +66,22 @@ struct ManagerLaunchAdmissionTests {
         #expect(!admission.canCancelPreparation)
         #expect(!admission.isPreparing)
     }
+    @Test func pressureAlreadyPresentAtStartupBlocksBeforeTheFirstEvent() throws {
+        var level: Int32? = 2
+        let admission = ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal },
+                                               pressureLevel: { level })
+        #expect(admission.pressured)
+        #expect(throws: ManagerLaunchAdmissionError.self) { try admission.begin(profileID: UUID()) }
+        level = nil
+        #expect(throws: ManagerLaunchAdmissionError.self) { try admission.begin(profileID: UUID()) }
+        level = 1
+        let token = try admission.begin(profileID: UUID())
+        #expect(!admission.pressured)
+        admission.finish(token: token)
+        level = 4
+        #expect(throws: ManagerLaunchAdmissionError.self) { try admission.begin(profileID: UUID()) }
+    }
+
     @Test func pressureAndThermalOnlyBlockNewStarts() throws {
         let admission = ManagerLaunchAdmission(observePressure: false, thermalState: { .nominal })
         let token = try admission.begin(profileID: UUID())

@@ -1,0 +1,141 @@
+diff --git a/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.h b/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.h
+--- a/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.h
++++ b/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.h
+@@ -138,6 +138,7 @@
+     bool isDeclarativeWebPushEnabled { false };
+ #endif
+ #if PLATFORM(COCOA)
++    bool requiresRTCProxy { false };
+     std::optional<Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>> proxyConfigData;
+ #endif
+     ResourceLoadStatisticsParameters resourceLoadStatisticsParameters;
+diff --git a/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.serialization.in b/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.serialization.in
+--- a/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.serialization.in
++++ b/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.serialization.in
+@@ -111,6 +111,7 @@
+     bool isDeclarativeWebPushEnabled;
+ #endif
+ #if PLATFORM(COCOA)
++    bool requiresRTCProxy;
+     std::optional<Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>> proxyConfigData;
+ #endif
+     WebKit::ResourceLoadStatisticsParameters resourceLoadStatisticsParameters;
+diff --git a/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.h b/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.h
+--- a/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.h
++++ b/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.h
+@@ -513,6 +513,8 @@
+ 
+ #if PLATFORM(COCOA)
+     void clearProxyConfigData();
++    bool requiresRTCProxy() const { return m_requiresRTCProxy; }
++    bool setRequiredRTCProxyConfigData(Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>&&);
+     void setProxyConfigData(Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>&&);
+ #endif
+     void setCompletionHandlerForRemovalFromNetworkProcess(CompletionHandler<void(String&&)>&&);
+@@ -729,6 +731,7 @@
+ 
+ #if PLATFORM(COCOA)
+     const RefPtr<EnhancedSecuritySitesHolder> m_enhancedSecuritySites;
++    bool m_requiresRTCProxy { false };
+     std::optional<Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>> m_proxyConfigData;
+ #endif
+     bool m_storageSiteValidationEnabled { true };
+diff --git a/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.cpp b/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.cpp
+--- a/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.cpp
++++ b/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.cpp
+@@ -2480,6 +2480,7 @@
+     networkSessionParameters.isDeclarativeWebPushEnabled = m_configuration->isDeclarativeWebPushEnabled();
+ #endif
+ #if PLATFORM(COCOA)
++    networkSessionParameters.requiresRTCProxy = m_requiresRTCProxy;
+     networkSessionParameters.proxyConfigData = m_proxyConfigData;
+ #endif
+ #if ENABLE(CONTENT_EXTENSIONS)
+@@ -3010,14 +3011,29 @@
+ }
+ 
+ #if PLATFORM(COCOA)
++bool WebsiteDataStore::setRequiredRTCProxyConfigData(Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>&& data)
++{
++    if (m_requiresRTCProxy || networkProcessIfExists() || hasActivePages() || data.size() != 1 || data[0].first.isEmpty())
++        return false;
++
++    // Session creation and process recovery both consume these fields.
++    m_proxyConfigData = WTF::move(data);
++    m_requiresRTCProxy = true;
++    return true;
++}
++
+ void WebsiteDataStore::clearProxyConfigData()
+ {
++    if (m_requiresRTCProxy)
++        return;
+     m_proxyConfigData = std::nullopt;
+     protect(networkProcess())->send(Messages::NetworkProcess::ClearProxyConfigData(m_sessionID), 0);
+ }
+ 
+ void WebsiteDataStore::setProxyConfigData(Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>&& data)
+ {
++    if (m_requiresRTCProxy)
++        return;
+     m_proxyConfigData = std::nullopt;
+     protect(networkProcess())->send(Messages::NetworkProcess::SetProxyConfigData(m_sessionID, data), 0);
+     m_proxyConfigData = WTF::move(data);
+diff --git a/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.h b/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.h
+--- a/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.h
++++ b/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.h
+@@ -186,6 +186,8 @@
+ 
+     void applyProxyConfigurationToNWParametersForWebTransport(nw_parameters_t);
+     bool proxyConfigurationRequiresTCPProtocols() const;
++    bool requiresRTCProxy() const { return m_requiresRTCProxy; }
++    nw_proxy_config_t requiredRTCProxyConfig() const;
+     bool isLegacyTLSAllowed() const { return m_isLegacyTLSAllowed; }
+ 
+ private:
+@@ -238,6 +240,7 @@
+     String m_sourceApplicationBundleIdentifier;
+     String m_sourceApplicationSecondaryIdentifier;
+     const RetainPtr<CFDictionaryRef> m_proxyConfiguration;
++    const bool m_requiresRTCProxy;
+     Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>> m_proxyConfigData;
+     Vector<RetainPtr<nw_proxy_config_t>> m_nwProxyConfigs;
+     Vector<UniqueRef<SessionWrapper>> m_replacedSessionWrappers;
+diff --git a/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm b/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm
+--- a/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm
++++ b/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm
+@@ -1164,6 +1164,7 @@
+     , m_sourceApplicationBundleIdentifier(parameters.sourceApplicationBundleIdentifier)
+     , m_sourceApplicationSecondaryIdentifier(parameters.sourceApplicationSecondaryIdentifier)
+     , m_proxyConfiguration(parameters.proxyConfiguration)
++    , m_requiresRTCProxy(parameters.requiresRTCProxy)
+     , m_shouldLogCookieInformation(parameters.shouldLogCookieInformation)
+     , m_fastServerTrustEvaluationEnabled(parameters.fastServerTrustEvaluationEnabled)
+     , m_dataConnectionServiceType(parameters.dataConnectionServiceType)
+@@ -2080,7 +2081,7 @@
+ void NetworkSessionCocoa::setProxyConfigData(const Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>& proxyConfigurations)
+ {
+     // Replacing the sessions drops all their pooled connections, so only do it when the proxies change.
+-    if (proxyConfigurations == m_proxyConfigData)
++    if ((m_requiresRTCProxy && !m_proxyConfigData.isEmpty()) || proxyConfigurations == m_proxyConfigData)
+         return;
+     m_proxyConfigData = proxyConfigurations;
+ 
+@@ -2165,6 +2166,17 @@
+     return [NSURLSession.class respondsToSelector:sel];
+ }
+ 
++nw_proxy_config_t NetworkSessionCocoa::requiredRTCProxyConfig() const
++{
++    ASSERT(isMainRunLoop());
++    if (!m_requiresRTCProxy || m_nwProxyConfigs.size() != 1)
++        return nullptr;
++    auto proxy = m_nwProxyConfigs[0].get();
++    if (!proxy || !isProxyTypeTCPOnly(proxy) || nw_proxy_config_get_failover_allowed(proxy))
++        return nullptr;
++    return proxy;
++}
++
+ bool NetworkSessionCocoa::proxyConfigurationRequiresTCPProtocols() const
+ {
+     if (m_nwProxyConfigs.isEmpty())

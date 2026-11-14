@@ -99,6 +99,13 @@ enum WebKitNetworkProcessCodeIdentity {
             #endif
         }
 
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+        var qualificationOwner: WebKitHostIPC.NetworkProcessOwner? {
+            guard let attestation else { return nil }
+            return WebKitHostIPC.NetworkProcessOwner(attestation.owner)
+        }
+        #endif
+
         #if DEBUG
         static func fixture(session: WebKitHostIPC.Session,
                             isCurrent: @escaping @Sendable () -> Bool) -> Lease {

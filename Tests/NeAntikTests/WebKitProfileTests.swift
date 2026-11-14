@@ -20,10 +20,15 @@ private final class WebKitPopupCounter: NSObject, WKUIDelegate {
 private final class WebKitPeerPreferenceStub: NSObject {
     var peerEnabled = true
     var ignoreChanges = false
+    var relayOnly = false
     @objc(_setPeerConnectionEnabled:) dynamic func setPeerEnabled(_ value: Bool) {
         if !ignoreChanges { peerEnabled = value }
     }
     @objc(_peerConnectionEnabled) dynamic func readPeerEnabled() -> Bool { peerEnabled }
+    @objc(_neAntikSetPeerConnectionRelayOnly:) dynamic func setRelayOnly(_ value: Bool) {
+        if !ignoreChanges { relayOnly = value }
+    }
+    @objc(_neAntikPeerConnectionRelayOnly) dynamic func readRelayOnly() -> Bool { relayOnly }
 }
 
 @MainActor
@@ -33,17 +38,60 @@ struct WebKitProfileTests {
 
     @Test func peerConnectionPreferenceFailsClosedWhenUnavailableOrIgnored() throws {
         let supported = WebKitPeerPreferenceStub()
-        try WebKitPeerConnectionPolicy.apply(blocked: true, preferences: supported)
+        try WebKitPeerConnectionPolicy.apply(.blocked, preferences: supported)
         #expect(!supported.peerEnabled)
         let ignored = WebKitPeerPreferenceStub()
         ignored.ignoreChanges = true
         #expect(throws: WebKitPeerConnectionPolicy.Failure.self) {
-            try WebKitPeerConnectionPolicy.apply(blocked: true, preferences: ignored)
+            try WebKitPeerConnectionPolicy.apply(.blocked, preferences: ignored)
         }
         #expect(throws: WebKitPeerConnectionPolicy.Failure.self) {
-            try WebKitPeerConnectionPolicy.apply(blocked: true, preferences: NSObject())
+            try WebKitPeerConnectionPolicy.apply(.blocked, preferences: NSObject())
         }
-        try WebKitPeerConnectionPolicy.apply(blocked: false, preferences: NSObject())
+        try WebKitPeerConnectionPolicy.apply(.native, preferences: NSObject())
+    }
+
+    @Test func ownedProxyNeverUsesUnqualifiedNativeWebRTC() throws {
+        typealias Policy = WebKitPeerConnectionPolicy
+        let direct = try Policy.mode(blockRequested: false, usesOwnedProxy: false, signedRelayQualification: false)
+        let ordinaryProxy = try Policy.mode(blockRequested: false, usesOwnedProxy: true, signedRelayQualification: false)
+        let qualifiedProxy = try Policy.mode(blockRequested: false, usesOwnedProxy: true, signedRelayQualification: true)
+        let blocked = try Policy.mode(blockRequested: true, usesOwnedProxy: true, signedRelayQualification: true)
+        #expect(direct == .native)
+        #expect(ordinaryProxy == .blocked)
+        #expect(qualifiedProxy == .relayOnly)
+        #expect(blocked == .blocked)
+        #expect(throws: Policy.Failure.relayUnavailable) {
+            try Policy.mode(blockRequested: false, usesOwnedProxy: false, signedRelayQualification: true)
+        }
+
+        let preferences = WebKitPeerPreferenceStub()
+        try Policy.apply(ordinaryProxy, preferences: preferences)
+        #expect(!preferences.peerEnabled)
+        #expect(!preferences.relayOnly)
+    }
+
+    @Test func relayOnlyMustBeVerifiedForEachPagePreferences() throws {
+        let first = WebKitPeerPreferenceStub()
+        let newTab = WebKitPeerPreferenceStub()
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_PRODUCTION
+        try WebKitPeerConnectionPolicy.apply(.relayOnly, preferences: first)
+        #expect(first.relayOnly)
+        #expect(!newTab.relayOnly)
+        try WebKitPeerConnectionPolicy.apply(.relayOnly, preferences: newTab)
+        #expect(newTab.relayOnly)
+        let ignored = WebKitPeerPreferenceStub()
+        ignored.ignoreChanges = true
+        #expect(throws: WebKitPeerConnectionPolicy.Failure.self) {
+            try WebKitPeerConnectionPolicy.apply(.relayOnly, preferences: ignored)
+        }
+        #else
+        #expect(throws: WebKitPeerConnectionPolicy.Failure.self) {
+            try WebKitPeerConnectionPolicy.apply(.relayOnly, preferences: first)
+        }
+        #expect(!first.relayOnly)
+        #expect(!newTab.relayOnly)
+        #endif
     }
 
     @Test func schemaSixRejectsMissingOrInvalidPeerPolicyInManagerAndHost() throws {
@@ -128,6 +176,64 @@ struct WebKitProfileTests {
         }
     }
 
+    @Test func relayOptInRequiresOwnedProxyAndSignedCapability() throws {
+        #expect(try WebKitPeerConnectionPolicy.mode(blockRequested: false, usesOwnedProxy: true,
+            signedRelayQualification: false) == .blocked)
+        #expect(try WebKitPeerConnectionPolicy.mode(blockRequested: false, usesOwnedProxy: true,
+            signedRelayQualification: false, relayRequested: true, productionRelayAvailable: true) == .relayOnly)
+        for (blocked, owned, capable) in [(true, true, true), (false, false, true), (false, true, false)] {
+            #expect(throws: WebKitPeerConnectionPolicy.Failure.self) {
+                try WebKitPeerConnectionPolicy.mode(blockRequested: blocked, usesOwnedProxy: owned,
+                    signedRelayQualification: false, relayRequested: true, productionRelayAvailable: capable)
+            }
+        }
+    }
+
+    @Test func relayOptInPersistsInManagerHostAndExport() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("neantik-relay-policy-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let proxy = ProxyConfiguration(kind: .http, host: "127.0.0.1", port: 8800, username: "")
+        let legacy = BrowserProfile(name: "Blocked default", engine: .webkit,
+                                    webKitRuntimeGeneration: .isolatedV1, proxy: proxy)
+        let chromium = BrowserProfile(name: "Chromium", privacyPolicy: .balanced, proxy: proxy)
+        var relay = BrowserProfile(name: "Relay", engine: .webkit, webKitRuntimeGeneration: .isolatedV1,
+                                   webKitRelayOnly: true, proxy: proxy)
+        let legacyOnlyData = try ProfileStore.encodeProfiles([legacy, relay], encoder: encoder())
+        let relayOnlyDocument = try #require(JSONSerialization.jsonObject(with: legacyOnlyData) as? [String: Any])
+        #expect(relayOnlyDocument["schemaVersion"] as? Int == 6)
+        #expect(try ProfileStore.decodeProfiles(legacyOnlyData).map(\.webKitRelayOnly) == [false, true])
+        let data = try ProfileStore.encodeProfiles([legacy, relay, chromium], encoder: encoder())
+        var document = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect(document["schemaVersion"] as? Int == 7)
+        try paths.writePrivateFile(data, to: paths.profilesFile)
+        #expect(try ProfileStore.decodeProfiles(data).map(\.webKitRelayOnly) == [false, true, false])
+        #expect(try WebKitHostProfileReader.profile(id: relay.id, paths: paths).webKitRelayOnly)
+        #expect(relay.duplicated().webKitRelayOnly)
+        let transfer = try ProfileConfigurationTransferDocument(profiles: [legacy, relay])
+        #expect(transfer.schemaVersion == 7)
+        #expect(try transfer.makeProfiles().map(\.webKitRelayOnly) == [false, true])
+
+        var entries = try #require(document["profiles"] as? [[String: Any]])
+        for index in entries.indices { entries[index].removeValue(forKey: "webKitRelayOnly") }
+        document["profiles"] = entries
+        let olderManagerRewrite = try JSONSerialization.data(withJSONObject: document)
+        let restored = try ProfileStore.decodeProfiles(olderManagerRewrite)
+        #expect(restored.map(\.id) == [legacy.id, relay.id, chromium.id])
+        #expect(restored.map(\.proxy) == [proxy, proxy, proxy])
+        #expect(restored.map(\.webKitRelayOnly) == [false, false, false])
+        try paths.writePrivateFile(olderManagerRewrite, to: paths.profilesFile)
+        #expect(try !WebKitHostProfileReader.profile(id: relay.id, paths: paths).webKitRelayOnly)
+        document["schemaVersion"] = 5
+        entries[1]["webKitRelayOnly"] = true
+        document["profiles"] = entries
+        #expect(throws: (any Error).self) { try ProfileStore.decodeProfiles(JSONSerialization.data(withJSONObject: document)) }
+        relay.proxy = nil
+        #expect(relay.normalizedForPersistence() == nil)
+    }
+
     #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
     // Public certificates generated solely for this test. The signing keys
     // were discarded; none of these anchors enter a system trust store.
@@ -209,6 +315,22 @@ struct WebKitProfileTests {
         #expect(choose(.webkit, proxy, .system, false) == .system)
         #expect(choose(.webkit, nil, .isolatedV1, true) == .system)
         #expect(choose(.chromium, proxy, .isolatedV1, true) == .system)
+    }
+
+    @Test func editingPreservesExistingWebKitStoreWhenTheRouteKindIsUnchanged() {
+        var profile = BrowserProfile(name: "Existing WebKit", engine: .webkit,
+                                     webKitRuntimeGeneration: .isolatedV1)
+        let proxy = ProxyConfiguration(kind: .http, host: "proxy.invalid", port: 8080, username: "")
+        let edit = WebKitProfilePolicy.runtimeGenerationForEdit
+        #expect(edit(profile, nil, true) == .isolatedV1)
+        profile.proxy = proxy
+        #expect(edit(profile, nil, true) == .system)
+        profile.webKitRuntimeGeneration = .system
+        var replacement = proxy
+        replacement.port = 8081
+        #expect(edit(profile, replacement, true) == .system)
+        profile.proxy = nil
+        #expect(edit(profile, proxy, true) == .isolatedV1)
     }
 
     @Test func launchRouteNeverSendsAConfiguredProxyToSystemWebKit() throws {
@@ -493,6 +615,30 @@ struct WebKitProfileTests {
             #expect(try ProfileStore.decodeProfiles(bytes).first?.identity == identity)
         }
         try WebKitProfilePolicy.validate(BrowserProfile(name: "System settings", startURL: "about:blank", engine: .webkit))
+    }
+
+    @Test func webKitCannotLaunchAnEphemeralProfileInAPersistentStore() throws {
+        var policy = BrowserPrivacyPolicy.balanced
+        policy.retention = .ephemeral
+        var profile = BrowserProfile(name: "Imported WebKit privacy policy", startURL: "about:blank",
+                                     engine: .webkit, privacyPolicy: policy, revision: 1)
+        try WebKitProfilePolicy.validateConfiguration(profile)
+        #expect(throws: WebKitProfileError.self) { try WebKitProfilePolicy.validate(profile) }
+        profile.webKitRuntimeGeneration = .isolatedV1
+        let session = WebKitHostIPC.Session(profileID: profile.id, revision: profile.revision,
+            generation: UUID(), dataRoot: "/private/tmp/neantik-retention-control",
+            runtimeSHA256: String(repeating: "a", count: 64))
+        try #require(session.isValid())
+        #expect(throws: WebKitProfileError.self) { try WebKitProfilePolicy.validateOwnedRuntime(profile, session: session) }
+        #expect(profile.normalizedForPersistence() == nil)
+        let invalidBytes = try ProfileStore.encodeProfiles([profile], encoder: encoder())
+        #expect(throws: UnsupportedBrowserPrivacyPolicyError.self) {
+            try ProfileStore.decodeProfiles(invalidBytes)
+        }
+        profile.privacyPolicy = .strict
+        #expect(throws: UnsupportedBrowserPrivacyPolicyError.self) {
+            try WebKitProfilePolicy.validateOwnedRuntime(profile, session: session)
+        }
     }
 
     @Test func lifetimeGuardBlocksAnotherManagerAndMaintenanceWithoutWaiting() throws {

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-12",
+  "publishedAt": "2026-11-11",
+  "maximumAgeDays": 0,
+  "minimumPublicChromiumVersion": "157.0.8103.79",
+  "alsoObservedPublicChromiumVersions": [
+    "157.0.8103.78"
+  ],
+  "channel": "Desktop Stable",
+  "platforms": [
+    "macOS"
+  ],
+  "securityFixCount": 0,
+  "reference": "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01744469280.html",
+  "referenceTitle": "Stable Channel Update for Desktop",
+  "sourceLabel": "Chrome Releases",
+  "releaseBoundary": "This manually pinned primary-source security baseline is not a live updater. Refresh the observation date, versions and reference on the day of each public Direct release. A source-version floor does not establish fix survival in the custom port, candidate runtime behavior or release qualification.",
+  "policy": "Chrome Releases lists 157.0.8103.78 and 157.0.8103.79 for macOS Stable. Chromium Dash confirmed 157.0.8103.79 on 2026-11-12. The linked post had not enumerated the security changes at verification time. The recorded count is unknown. NeAntik targets the official 157.0.8103.79 source commit for macOS arm64.",
+  "securityFixCountStatus": "not-enumerated-by-official-post"
+}

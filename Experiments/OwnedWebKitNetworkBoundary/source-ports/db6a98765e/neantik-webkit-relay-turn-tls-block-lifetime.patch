@@ -1,0 +1,31 @@
+diff --git a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
+--- a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
++++ b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
+@@ -102,6 +102,7 @@
+ )
+ {
+     RetainPtr host = adoptNS(nw_endpoint_create_host(hostName.utf8(), port.utf8()));
++    BlockPtr<void(nw_protocol_options_t)> retainedTLSConfiguration;
+     nw_parameters_configure_protocol_block_t configureTLS = isTLS ? NW_PARAMETERS_DEFAULT_CONFIGURATION : NW_PARAMETERS_DISABLE_PROTOCOL;
+     if (isTLS && rtcProvider.requiresRTCProxy()) {
+ #if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
+@@ -118,7 +119,7 @@
+             }
+         }
+ #endif
+-        configureTLS = ^(nw_protocol_options_t tlsOptions) {
++        retainedTLSConfiguration = makeBlockPtr(^(nw_protocol_options_t tlsOptions) {
+             RetainPtr securityOptions = adoptNS(nw_tls_copy_sec_protocol_options(tlsOptions));
+             sec_protocol_options_set_peer_authentication_required(securityOptions.get(), true);
+             auto queue = tcpSocketQueueSingleton();
+@@ -149,7 +150,9 @@
+                 if (status != errSecSuccess)
+                     complete(false);
+             }, queue);
+-        };
++        });
++        // Keep captured block state alive until Network copies the configuration block.
++        configureTLS = retainedTLSConfiguration.get();
+     }
+     RetainPtr tcpTLS = adoptNS(nw_parameters_create_secure_tcp(configureTLS, ^(nw_protocol_options_t tcp_options) {
+         nw_tcp_options_set_no_delay(tcp_options, true);

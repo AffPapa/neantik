@@ -193,7 +193,8 @@ def _verify_notices(value: dict, source: dict, stage_digest: str) -> tuple[dict[
     return files, hashes
 
 
-def _verify_binding(value: dict, stage: dict) -> dict[str, str]:
+def verify_signed_image_binding(value: dict, stage: dict) -> dict[str, str]:
+    """Validate the signer’s complete pre-sign to signed image hash map."""
     binding = _fields(value, "schemaVersion status imageCount images", "signed runtime image binding")
     rows = binding["images"]
     _require(type(binding["schemaVersion"]) is int and binding["schemaVersion"] == 1
@@ -212,7 +213,8 @@ def _verify_binding(value: dict, stage: dict) -> dict[str, str]:
     return result
 
 
-def _verify_runtime(runtime: Path, signed: dict[str, str]) -> None:
+def verify_runtime_images(runtime: Path, signed: dict[str, str]) -> None:
+    """Verify exact hashes and completeness of the physical Mach-O inventory."""
     seen = set()
     # os.walk propagates directory read failures through onerror. Path.rglob can
     # silently suppress them, leaving unseen files outside the signed inventory.
@@ -260,9 +262,9 @@ def verify(manifest_path: Path, expected_manifest_sha256: str, runtime_framework
         _, _, inventory = _ref(manifest["qaInventory"])
         notices, notice_hashes = _verify_notices(_json(inventory), source, stage_digest)
         binding_path, binding_digest, binding = _ref(manifest["signedRuntimeImageBinding"])
-        signed = _verify_binding(_json(binding), stage)
+        signed = verify_signed_image_binding(_json(binding), stage)
         sandbox_pin.verify(runtime, sandbox)
-        _verify_runtime(runtime, signed)
+        verify_runtime_images(runtime, signed)
         return {"manifestSHA256": expected_manifest_sha256, "networkSandboxSHA256": sandbox,
                 "signedRuntimeImageBinding": binding_path, "signedRuntimeImageBindingSHA256": binding_digest,
                 "noticeFiles": notices, "noticeSHA256": notice_hashes,

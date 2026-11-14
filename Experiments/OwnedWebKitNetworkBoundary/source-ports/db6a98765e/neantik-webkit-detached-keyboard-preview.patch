@@ -1,0 +1,79 @@
+diff --git a/Source/WebKit/Shared/NativeWebKeyboardEvent.h b/Source/WebKit/Shared/NativeWebKeyboardEvent.h
+--- a/Source/WebKit/Shared/NativeWebKeyboardEvent.h
++++ b/Source/WebKit/Shared/NativeWebKeyboardEvent.h
+@@ -69,6 +69,9 @@
+     WTF_MAKE_TZONE_ALLOCATED(NativeWebKeyboardEvent);
+ public:
+ #if USE(APPKIT)
++#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT)
++    static Ref<NativeWebKeyboardEvent> create(WebKeyboardEventInit&&);
++#endif
+     // FIXME: Share iOS's HandledByInputMethod enum here instead of passing a boolean.
+     static Ref<NativeWebKeyboardEvent> create(NSEvent *, bool handledByInputMethod, bool replacesSoftSpace, const Vector<WebCore::KeypressCommand>&);
+ #elif PLATFORM(GTK)
+diff --git a/Source/WebKit/Shared/mac/NativeWebKeyboardEventMac.mm b/Source/WebKit/Shared/mac/NativeWebKeyboardEventMac.mm
+--- a/Source/WebKit/Shared/mac/NativeWebKeyboardEventMac.mm
++++ b/Source/WebKit/Shared/mac/NativeWebKeyboardEventMac.mm
+@@ -38,6 +38,13 @@
+ 
+ WTF_MAKE_TZONE_ALLOCATED_IMPL(NativeWebKeyboardEvent);
+ 
++#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT)
++Ref<NativeWebKeyboardEvent> NativeWebKeyboardEvent::create(WebKeyboardEventInit&& init)
++{
++    return adoptRef(*new NativeWebKeyboardEvent(WTF::move(init), nil));
++}
++#endif
++
+ Ref<NativeWebKeyboardEvent> NativeWebKeyboardEvent::create(NSEvent *event, bool handledByInputMethod, bool replacesSoftSpace, const Vector<KeypressCommand>& commands)
+ {
+     return adoptRef(*new NativeWebKeyboardEvent(WebEventFactory::createWebKeyboardEvent(event, handledByInputMethod, replacesSoftSpace, commands), event));
+diff --git a/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm b/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
+--- a/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
++++ b/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
+@@ -36,7 +36,10 @@
+ #import "AppKitSPI.h"
+ #import "CompletionHandlerCallChecker.h"
+ #if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT)
++#import "NativeWebKeyboardEvent.h"
+ #import "NativeWebMouseEvent.h"
++#import "WebEventFactory.h"
++#import <WebCore/KeypressCommand.h>
+ #endif
+ #import "PDFPluginIdentifier.h"
+ #import "WKAPICast.h"
+@@ -2314,6 +2317,7 @@
+ 
+ #if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT)
+ @interface WKWebView (NeAntikDetachedInputExperiment)
++- (BOOL)_neantikTestKeyDown:(BOOL)down character:(NSString *)character keyCode:(unsigned short)keyCode;
+ - (BOOL)_neantikTestClickAtPosition:(NSPoint)position globalPosition:(NSPoint)globalPosition completion:(void (^)(void))completion;
+ @end
+ 
+@@ -2344,6 +2348,26 @@
+     return YES;
+ }
+ 
++- (BOOL)_neantikTestKeyDown:(BOOL)down character:(NSString *)character keyCode:(unsigned short)keyCode
++{
++    if (self.window || !_page->hasRunningProcess() || character.length != 1 || keyCode > 127)
++        return NO;
++
++    auto codePoint = [character characterAtIndex:0];
++    if (codePoint < 0x20 || codePoint > 0x7e)
++        return NO;
++
++    RetainPtr event = [NSEvent keyEventWithType:down ? NSEventTypeKeyDown : NSEventTypeKeyUp location:NSZeroPoint modifierFlags:0 timestamp:MonotonicTime::now().secondsSinceEpoch().value() windowNumber:0 context:nil characters:character charactersIgnoringModifiers:character isARepeat:NO keyCode:keyCode];
++    Vector<WebCore::KeypressCommand> commands;
++    if (down) {
++        commands.append(WebCore::KeypressCommand { "insertText:"_s, character });
++        _page->registerKeypressCommandName(commands.first().commandName);
++    }
++    auto input = WebKit::WebEventFactory::createWebKeyboardEvent(event.get(), false, false, commands);
++    _page->handleKeyboardEvent(WebKit::NativeWebKeyboardEvent::create(WTF::move(input)));
++    return YES;
++}
++
+ @end
+ #endif
+ 

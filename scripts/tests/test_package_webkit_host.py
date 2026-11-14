@@ -21,6 +21,57 @@ TEST_IDENTITY_LINE = f'  1) {TEST_IDENTITY} "Developer ID Application: QA ({MODU
 
 
 class PackageWebKitHostTests(unittest.TestCase):
+    def test_detached_presenter_checks_both_binaries_and_runtime_selectors(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            manager, host, runtime = (Path(temporary) / name for name in ("manager", "host", "WebKit"))
+            capability = MODULE.PRODUCTION_PRESENTER_KEY
+            info = {
+                "CFBundleIdentifier": MODULE.PRODUCTION_BUNDLE_ID,
+                "NeAntikEngineScope": "chromium-owned-webkit",
+                capability: True,
+            }
+            for path in (manager, host):
+                path.write_bytes(capability.encode())
+            selectors = b"\x00".join(MODULE.PRODUCTION_PRESENTER_SELECTORS)
+            runtime.write_bytes(selectors)
+            MODULE.verify_production_presenter(info, manager, host, runtime, private_mode=False)
+            with self.assertRaisesRegex(MODULE.ContractError, "requires the production"):
+                MODULE.verify_production_presenter(info, manager, host, runtime, private_mode=True)
+            for path, original in ((manager, capability.encode()), (host, capability.encode()), (runtime, selectors)):
+                path.write_bytes(b"unqualified")
+                with self.assertRaisesRegex(MODULE.ContractError, "lacks the detached presenter"):
+                    MODULE.verify_production_presenter(info, manager, host, runtime, private_mode=False)
+                path.write_bytes(original)
+
+    def test_production_refuses_turns_qa_metadata_and_runtime_selector(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            host = Path(temporary) / "host"
+            runtime = Path(temporary) / "runtime"
+            for candidate in (host, runtime):
+                candidate.write_bytes(b"image")
+            MODULE.verify_no_turns_qa_scope(host, runtime)
+            for candidate, marker in ((host, MODULE.QA_TURNS_SCOPE_KEY.encode()),
+                                      (runtime, MODULE.QA_TURNS_SELECTOR)):
+                candidate.write_bytes(b"image" + marker)
+                with self.assertRaisesRegex(MODULE.ContractError, "private TURN/TLS trust scope"):
+                    MODULE.verify_no_turns_qa_scope(host, runtime)
+                candidate.write_bytes(b"image")
+
+    def test_production_refuses_private_pointer_and_keyboard_selectors(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary) / "WebKit"
+            runtime.write_bytes(b"image containing _neAntikRequireRTCProxy:")
+            MODULE.verify_no_detached_qa_input(runtime)
+            for selector in (
+                b"_neantikTestClickAtPosition:globalPosition:completion:",
+                b"_neantikTestLeftMouseDown:position:globalPosition:",
+                b"_neantikTestKeyDown:character:keyCode:",
+            ):
+                with self.subTest(selector=selector):
+                    runtime.write_bytes(b"image containing " + selector)
+                    with self.assertRaisesRegex(MODULE.ContractError, "cannot contain private QA input"):
+                        MODULE.verify_no_detached_qa_input(runtime)
+
     def test_only_private_production_diagnostic_host_omits_timestamp(self):
         self.assertEqual(MODULE.host_timestamp_args(False), ["--timestamp"])
         self.assertEqual(MODULE.host_timestamp_args(True), ["--timestamp=none"])

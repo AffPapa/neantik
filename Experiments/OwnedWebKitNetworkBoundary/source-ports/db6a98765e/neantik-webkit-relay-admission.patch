@@ -1,0 +1,90 @@
+diff --git a/Source/WebKit/UIProcess/API/Cocoa/WKWebsiteDataStore.mm b/Source/WebKit/UIProcess/API/Cocoa/WKWebsiteDataStore.mm
+--- a/Source/WebKit/UIProcess/API/Cocoa/WKWebsiteDataStore.mm
++++ b/Source/WebKit/UIProcess/API/Cocoa/WKWebsiteDataStore.mm
+@@ -68,6 +68,7 @@
+ #import <wtf/BlockPtr.h>
+ #import <wtf/Borrow.h>
+ #import <wtf/CallbackAggregator.h>
++#import <pal/spi/cf/CFNetworkSPI.h>
+ #import <wtf/TZoneMallocInlines.h>
+ #import <wtf/URL.h>
+ #import <wtf/Vector.h>
+@@ -559,26 +559,43 @@
+     [self _fetchAllIdentifiers:completionHandler];
+ }
+ 
++static Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>> serializedProxyConfigurations(NSArray<nw_proxy_config_t> *configurations)
++{
++    Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>> configDataVector;
++    // FIXME: Remove the suppression once https://github.com/llvm/llvm-project/pull/230818 is deployed (rdar://189710680).
++    for (SUPPRESS_UNRETAINED_LOCAL nw_proxy_config_t proxyConfig in configurations) {
++        RetainPtr<NSData> agentData = adoptNS((NSData *)nw_proxy_config_copy_agent_data(proxyConfig));
++
++        uuid_t proxyIdentifier;
++        nw_proxy_config_get_identifier(proxyConfig, proxyIdentifier);
++
++        configDataVector.append({ makeVector(agentData.get()), WTF::UUID::tryCreate(proxyIdentifier) });
++    }
++
++    return configDataVector;
++}
++
+ - (void)setProxyConfigurations:(NSArray<nw_proxy_config_t> *)proxyConfigurations
+ {
++    if (_websiteDataStore->requiresRTCProxy())
++        return;
+     _proxyConfigurations = adoptNS([proxyConfigurations copy]);
+     if (!_proxyConfigurations || !_proxyConfigurations.get().count) {
+         protect(*_websiteDataStore)->clearProxyConfigData();
+         return;
+     }
+-
+-    Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>> configDataVector;
+-    // FIXME: Remove the suppression once https://github.com/llvm/llvm-project/pull/230818 is deployed (rdar://189710680).
+-    for (SUPPRESS_UNRETAINED_LOCAL nw_proxy_config_t proxyConfig in _proxyConfigurations.get()) {
+-        RetainPtr<NSData> agentData = adoptNS((NSData *)nw_proxy_config_copy_agent_data(proxyConfig));
+-
+-        uuid_t proxyIdentifier;
+-        nw_proxy_config_get_identifier(proxyConfig, proxyIdentifier);
+-
+-        configDataVector.append({ makeVector(agentData.get()), WTF::UUID::tryCreate(proxyIdentifier) });
+-    }
+-
+-    protect(*_websiteDataStore)->setProxyConfigData(WTF::move(configDataVector));
++    protect(*_websiteDataStore)->setProxyConfigData(serializedProxyConfigurations(_proxyConfigurations.get()));
++}
++
++- (BOOL)_neAntikRequireRTCProxy:(nw_proxy_config_t)proxy
++{
++    if (!proxy || nw_proxy_config_get_failover_allowed(proxy) || nw_proxy_config_get_type(proxy) != nw_proxy_type_http_connect)
++        return NO;
++    RetainPtr configurations = @[ proxy ];
++    if (!protect(*_websiteDataStore)->setRequiredRTCProxyConfigData(serializedProxyConfigurations(configurations.get())))
++        return NO;
++    _proxyConfigurations = WTF::move(configurations);
++    return YES;
+ }
+ 
+ - (NSArray<nw_proxy_config_t> *)proxyConfigurations
+diff --git a/Source/WebKit/UIProcess/API/Cocoa/WKPreferences.mm b/Source/WebKit/UIProcess/API/Cocoa/WKPreferences.mm
+--- a/Source/WebKit/UIProcess/API/Cocoa/WKPreferences.mm
++++ b/Source/WebKit/UIProcess/API/Cocoa/WKPreferences.mm
+@@ -687,6 +687,18 @@
+     return protect(*_preferences)->peerConnectionEnabled();
+ }
+ 
++#if ENABLE(WEB_RTC)
++- (void)_neAntikSetPeerConnectionRelayOnly:(BOOL)enabled
++{
++    protect(*_preferences)->setPeerConnectionRelayOnly(enabled);
++}
++
++- (BOOL)_neAntikPeerConnectionRelayOnly
++{
++    return protect(*_preferences)->peerConnectionRelayOnly();
++}
++#endif
++
+ - (void)_setPeerConnectionEnabled:(BOOL)enabled
+ {
+     protect(*_preferences)->setPeerConnectionEnabled(enabled);
