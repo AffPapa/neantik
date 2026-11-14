@@ -31,15 +31,15 @@ def verify(root: Path = ROOT) -> dict:
     guide = (root / 'docs/MCP_GUIDE.md').read_text()
     if any('`' + name + '`' not in guide for name in expected['tools']):
         raise ValueError('MCP guide omits an advertised native tool')
-    if ('WebKit is deferred and cannot be launched in the current Chromium-only release' not in guide
-            or 'WebKit is **not available in the current Chromium-only release**' not in guide
+    if ('WebKit lifecycle commands require an open manager and local consent' not in guide
+            or 'Proxied WebKit profiles block WebRTC by default' not in guide
             or "the app applies Apple's proxy configuration" in guide):
-        raise ValueError('MCP guide WebKit availability claim differs from the Chromium-only release')
+        raise ValueError('MCP guide WebKit availability claim differs from the management and proxy policy')
     verify_proxy_credential_guidance(guide)
     verify_mcp_help_credential_boundary((root / 'Sources/NeAntik/HelpContent.swift').read_text())
     webkit_guide = (root / 'docs/WEBKIT_PROFILES.md').read_text()
-    if ('профиль с прокси не запускается' not in webkit_guide
-            or 'для работы через прокси' not in webkit_guide
+    if ('В прокси-профилях WebRTC по умолчанию заблокирован' not in webkit_guide
+            or 'При отказе прокси профиль не переходит на прямой маршрут' not in webkit_guide
             or 'В Dev профильный прокси назначается' in webkit_guide):
         raise ValueError('WebKit profile guide proxy claim differs from the native fail-closed policy')
     product = (root / 'docs/PRODUCT.md').read_text()

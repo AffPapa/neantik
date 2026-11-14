@@ -3,12 +3,12 @@
 
 NeAntik is an open-source, local-first browser profile manager for Apple
 Silicon Macs. The manager is native SwiftUI and launches an embedded,
-source-pinned Chromium runtime. It does not require Electron, an account, a
+source-pinned Chromium and WebKit runtimes. It does not require Electron, an account, a
 separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-**NeAntik 0.9.5 (205), Chromium-only public alpha** is published on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v0.9.5). ZIP/DMG hashes and qualification scope are recorded in the [release record](releases/v0.9.5.json). It ships Chromium 156.0.8078.80; the effective external proxy route is unverified and WebKit is deferred. The 1.0 program remains open.
+**NeAntik 1.0.0 (211)** is available on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v1.0.0) for Direct Distribution. It includes Chromium 157.0.8103.79 and bundled WebKit. See the [release record](releases/v1.0.0.json) for ZIP/DMG hashes and validation scope.
 
 ## Security advisory
 
@@ -21,15 +21,15 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 0.9.5 (205), public alpha](https://github.com/AffPapa/neantik/releases/tag/v0.9.5). Published ZIP/DMG sizes and SHA-256 digests are recorded in the [release record](releases/v0.9.5.json); this summary does not imply a new downloaded-byte check.
+Latest published release: [NeAntik 1.0.0 (211)](https://github.com/AffPapa/neantik/releases/tag/v1.0.0). Downloaded ZIP/DMG sizes and SHA-256 digests are recorded in the [release record](releases/v1.0.0.json).
 
-**Update manually from 0.9.2 to 0.9.3 using DMG/ZIP:** the older updater cannot apply this update. Quit before replacing the app and keep profile folders.
+**Update to 1.0.0 manually using DMG or ZIP.** Quit before replacing the app and keep profile folders.
 
 - macOS 14 or newer, Apple Silicon only;
-- Chromium `156.0.8078.80`, ARM64, Metal;
+- Chromium `157.0.8103.79`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-Direct downloads: [GitHub — 0.9.5](https://github.com/AffPapa/neantik/releases/tag/v0.9.5). [browser.free](https://browser.free) is updated separately.
+Direct downloads: [GitHub](https://github.com/AffPapa/neantik/releases/tag/v1.0.0) and [browser.free](https://browser.free).
 
 The description below reflects the manager contract and this source branch;
 the exact public binary contents are defined by its release notes and assets.
@@ -40,7 +40,7 @@ the exact public binary contents are defined by its release notes and assets.
 2. Paste a proxy if needed; NeAntik parses it locally.
 3. Click **Launch**. Cookies and site data stay inside that profile.
 
-## Privacy features in the published 0.9.5 release
+## Privacy features in the published 1.0.0 release
 
 This release retains coherent presets, Chromium proxy configuration, site protection,
 ephemeral profiles and a protection passport. Proxy preflight does not measure the
@@ -49,11 +49,7 @@ for scope and limits. Source availability is separate from binary publication.
 
 ## WebKit in the current release
 
-The published 0.9.5 (205) public alpha release creates and launches Chromium profiles only.
-Previously created WebKit profiles and their data are retained, but cannot be
-launched or duplicated in this release. Published version 0.9.0 included an
-experimental system WebKit mode; its behavior and limits are described in the
-[guide](docs/WEBKIT_PROFILES.md).
+Version 1.0.0 includes persistent profiles backed by the bundled WebKit runtime. Proxied WebKit profiles block WebRTC by default. Relay-only TURN/TLS and recovery after terminating the network process were verified through a controlled HTTP proxy. See the [WebKit guide](docs/WEBKIT_PROFILES.md).
 
 ## What it does
 

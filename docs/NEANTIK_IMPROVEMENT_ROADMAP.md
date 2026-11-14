@@ -1,6 +1,6 @@
 # NeAntik improvement roadmap
 
-> Current public release: 0.9.5/build 205 public alpha; Chromium 156.0.8078.80. Source of truth: `releases/v0.9.5.json`. External proxy route remains unverified; WebKit is deferred; major1.0 remains open.
+> Current public release: 1.0.0/build 211 Direct Distribution; Chromium 157.0.8103.79 and bundled WebKit. See `releases/v1.0.0.json` for the assets and verified scope.
 
 ## Release 1.0
 
