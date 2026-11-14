@@ -28,20 +28,24 @@ struct WebKitPresenterChannelTests {
         let generation = UUID()
         let target = WebKitPresenterChannel.Target(tab: UUID(), navigation: UUID(), focus: UUID())
         typealias Action = WebKitPresenterChannel.Action
-        func command(_ action: Action, editor: WebKitPresenterChannel.EditTarget?) -> Bool {
+        func command(_ action: Action, editor: WebKitPresenterChannel.EditTarget?) -> WebKitPresenterChannel.Command {
             WebKitPresenterChannel.Command(generation: generation, sequence: 1, target: target,
-                                             action: action, editor: editor).isValid
+                                             action: action, editor: editor)
         }
+        let secureTarget = WebKitPresenterChannel.EditTarget(editor: editor)
+        let replacementAllowed = command(.insert(text: "synthetic", replacing: selection), editor: secureTarget).isValid
+        let compositionAllowed = command(.mark(text: "字", selected: .init(location: 1, length: 0), replacing: nil),
+                                         editor: secureTarget).isValid
+        let undoAllowed = command(.edit(.undo), editor: secureTarget).isValid
         #expect(editor.isValid)
         #expect(!WebKitPresenterChannel.Editor(token: editor.token, secure: true,
                                                 selected: selection, marked: nil, caret: nil).isValid)
-        #expect(command(.insert(text: "synthetic", replacing: nil), editor: .init(editor: editor)))
-        #expect(!command(.insert(text: "synthetic", replacing: selection), editor: .init(editor: editor)))
-        #expect(!command(.mark(text: "字", selected: .init(location: 1, length: 0), replacing: nil),
-                         editor: .init(editor: editor)))
-        #expect(!command(.edit(.undo), editor: .init(editor: editor)))
-        #expect(command(.edit(.deleteBackward), editor: .init(editor: editor)))
-        #expect(!command(.insert(text: "synthetic", replacing: nil), editor: nil))
+        #expect(command(.insert(text: "synthetic", replacing: nil), editor: secureTarget).isValid)
+        #expect(replacementAllowed == false)
+        #expect(compositionAllowed == false)
+        #expect(undoAllowed == false)
+        #expect(command(.edit(.deleteBackward), editor: secureTarget).isValid)
+        #expect(!command(.insert(text: "synthetic", replacing: nil), editor: nil).isValid)
     }
 
     @Test func validatesUTF16SelectionAndUntrustedCoordinates() {
