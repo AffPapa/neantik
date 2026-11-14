@@ -1,8 +1,8 @@
 # NeAntik local MCP: profile management
 
-**Current public scope:** Public 0.9.5 is a Chromium-only public alpha. It includes the MCP cancellation handling, read-only process observation and `storage_state_uncertain` response described below. The 0.9.6 candidate is not public; candidate-only behavior must not be presented as public until a release includes it.
+**Current public scope:** NeAntik 1.0.0 (211) includes Chromium and bundled WebKit. Management mode can ask an open NeAntik manager to launch WebKit after local consent.
 
-The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. For Chromium and metadata operations the manager GUI may be closed. WebKit is deferred and cannot be launched in the current Chromium-only release; historical WebKit notes below do not describe the current build. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Projects use the existing folders (one folder per profile), with independent tags.
+The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. For Chromium and metadata operations the manager GUI may be closed. WebKit lifecycle commands require an open manager and local consent. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Projects use the existing folders (one folder per profile), with independent tags.
 
 Read-only access requires the existing private metadata lock; it does not create or repair that lock. If access fails, open NeAntik to inspect the workspace instead of creating or changing files manually.
 
@@ -68,7 +68,7 @@ The five additional read tools are available in read mode. Other tools require m
 
 `prompts/list` offers organize_project, review_workspace and prepare_profile. `prompts/get` returns static user-selected guidance with no arguments, workspace interpolation or tool execution. Read mode guidance never asks for writes. Tool outputSchema declares public success DTOs. Tool failures use isError with namespaced `_meta` app.neantik/errorCode, app.neantik/nextAction and automaticRetry:false; names/values are untrusted data.
 
-The next candidate reports `storage_state_uncertain` when a profile save and its rollback both fail. Do not retry automatically: inspect the current profile and folder state first. This response contains no underlying paths or error details. This response is included in the public 0.9.4 release.
+NeAntik reports `storage_state_uncertain` when a profile save and its rollback both fail. Do not retry automatically: inspect the current profile and folder state first. This response contains no underlying paths or error details.
 
 ## Safe workflow
 
@@ -82,7 +82,7 @@ separate `stopPending` state.
 
 1. Find a profile, select its **UUID**, then call `profile_get`. Duplicate names are allowed.
 
-`profile_get`, creation and edit responses include `engineCapabilities`. These flags describe operations supported by the build, not measured state of a browser session. The current release runs Chromium; WebKit profiles from older versions remain stored but cannot be launched. Check capabilities before offering an operation and explain unavailable functionality instead of retrying it.
+`profile_get`, creation and edit responses include `engineCapabilities`. These flags describe operations supported by the build, not measured state of a browser session. Check the selected profile’s capabilities before offering an operation. A supported WebKit launch still requires local consent and an open manager.
 2. Send `expectedRevision` exactly as a decimal **string**, not a floating-point JSON number.
 3. For folders/move, call `folder_list`; send `expectedOrganizationRevision` including explicit initial `null`. Checks happen inside the metadata transaction, preventing stale/ABA writes.
 4. Patches preserve omitted fields. `tags: []` clears tags. `folderID: null` unfiles; `proxy: null` disables.
@@ -133,7 +133,7 @@ MCP accepts only proxy type, host and port; use `proxy:null` to disable it. MCP 
 
 For `proxyLine`, also supply `kind` (`http`, `https`, `socks5`). MCP accepts unauthenticated `host:port` and protocol URLs without user information; credential-bearing formats supported by the local editor are rejected by MCP. Protocol and port must match the provider: HTTPS **proxy** is TLS to the proxy, not simply an HTTP proxy used to open HTTPS sites.
 
-For Chromium, authenticated HTTP, HTTPS and SOCKS5 use a separate local relay per profile. It reads the saved proxy password from Keychain and supplies it to the configured upstream; credentials do not enter Chromium arguments. SOCKS5 resolves destination names upstream. HTTPS upstream certificates are verified by macOS before authentication; failed trust never retries as plaintext HTTP. With a configured Chromium proxy, `profile_get.networkPolicyIntent` says direct destination DNS is blocked by the configured Chromium policy; a hostname for the upstream proxy may use the system resolver, while an IP-literal proxy needs no DNS lookup. This is saved configuration only: `runtimeRoute` remains `unverified`; it does not measure actual DNS or browser traffic. The response omits proxy host, port, username and password. WebKit is deferred in the current release. Configuring a proxy is not proof of connectivity; `profile_check_proxy` is preflight only and availability is not proof of the browser route.
+For Chromium, authenticated HTTP, HTTPS and SOCKS5 use a separate local relay per profile. It reads the saved proxy password from Keychain and supplies it to the configured upstream; credentials do not enter Chromium arguments. SOCKS5 resolves destination names upstream. HTTPS upstream certificates are verified by macOS before authentication; failed trust never retries as plaintext HTTP. With a configured Chromium proxy, `profile_get.networkPolicyIntent` says direct destination DNS is blocked by the configured Chromium policy; a hostname for the upstream proxy may use the system resolver, while an IP-literal proxy needs no DNS lookup. This is saved configuration only: `runtimeRoute` remains `unverified`; it does not measure actual DNS or browser traffic. The response omits proxy host, port, username and password. The bundled WebKit runtime handles its configured profile proxy. Proxied WebKit profiles block WebRTC by default. Configuring a proxy is not proof of connectivity; `profile_check_proxy` is preflight only and availability is not proof of the browser route.
 
 Proxy credentials are entered only in NeAntik's local profile editor and stored in Keychain; MCP does not accept them. Responses omit passwords, proxy usernames/endpoints, notes and private filesystem paths. Configured start URLs are returned and may contain private query values; avoid secrets in start URLs.
 
@@ -149,11 +149,11 @@ Proxy credentials are entered only in NeAntik's local profile editor and stored 
 
 ## WebKit windows through AI — development slice
 
-WebKit is **not available in the current Chromium-only release**. Version 0.8.17 included an experimental GUI-mediated lifecycle; its [historical report](../releases/v0.8.17.json) describes that version only. The section anchor is retained for existing links. Previously saved WebKit profiles remain stored, but cannot be launched in the current build.
+Keep NeAntik open and call `profile_start` in management mode. The manager asks for local consent for the requesting client and profile. After granting consent, retry the start if the first request returned consent required. Close or stop from the owning live session and check `profile_status` before editing.
 
 ## FAQ
 
-**Must the GUI be running?** Chromium and metadata operations use the stdio process without the GUI. WebKit is unavailable in the current release. GUI updates external changes without replacing drafts.
+**Must the GUI be running?** Chromium and metadata operations use the stdio process without the GUI. Keep NeAntik open for WebKit lifecycle commands. GUI updates external changes without replacing drafts.
 
 **Can I stop a browser after reconnecting?** It belongs to the earlier session. Close it manually. NeAntik does not send signals to an unowned/reused PID. A stop response can be pending; only observed `stopped` confirms completion.
 
@@ -227,7 +227,7 @@ diagnostic fixture uses its explicit target without changing this setting.
 
 Это настройка следующего запуска, а не доказательство уже применённого
 отпечатка. Скачиваемые шрифты сайтов продолжают работать. WebKit эту настройку
-не поддерживает; он остаётся системным движком без полного управления fingerprint.
+не поддерживает; настройки шрифтов относятся только к Chromium.
 Первый переход со старой версии на 0.8.18 выполняется вручную через DMG/ZIP.
 
 ## Development privacy-policy contract

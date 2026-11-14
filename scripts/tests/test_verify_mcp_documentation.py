@@ -33,7 +33,7 @@ class MCPDocumentationTests(unittest.TestCase):
     def test_corrupt_claim_and_omitted_tool_are_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/WEBKIT_PROFILES.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/ROADMAP.md','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/v0.9.0.json','releases/v0.9.2.json','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
+            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/WEBKIT_PROFILES.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/ROADMAP.md','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/v0.9.0.json','releases/v0.9.2.json','releases/v0.9.5.json','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
                 (root/name).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ROOT/name,root/name)
             manifest = root/'docs/mcp-capabilities.json'
@@ -43,15 +43,15 @@ class MCPDocumentationTests(unittest.TestCase):
             manifest.write_text(original)
             guide=root/'docs/MCP_GUIDE.md';guide.write_text(guide.read_text().replace('`template_list`','template-list'))
             with self.assertRaisesRegex(ValueError,'guide omits'): MODULE.verify(root)
-    def test_webkit_proxy_guide_cannot_claim_a_route_that_is_disabled(self):
+    def test_webkit_guides_preserve_consent_and_fail_closed_scope(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
-            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/WEBKIT_PROFILES.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/ROADMAP.md','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/v0.9.0.json','releases/v0.9.2.json','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
+            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/WEBKIT_PROFILES.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/ROADMAP.md','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/v0.9.0.json','releases/v0.9.2.json','releases/v0.9.5.json','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
                 (root/name).parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,root/name)
             MODULE.verify(root)
             for name, before, after, error in [
-                ('docs/MCP_GUIDE.md','WebKit is deferred and cannot be launched in the current Chromium-only release','WebKit can be launched in the current release','MCP guide WebKit availability claim'),
-                ('docs/WEBKIT_PROFILES.md','профиль с прокси не запускается','профиль запускается с прокси','WebKit profile guide proxy claim'),
+                ('docs/MCP_GUIDE.md','WebKit lifecycle commands require an open manager and local consent','WebKit can launch with the manager closed','MCP guide WebKit availability claim'),
+                ('docs/WEBKIT_PROFILES.md','При отказе прокси профиль не переходит на прямой маршрут','При отказе прокси профиль переходит на прямой маршрут','WebKit profile guide proxy claim'),
                 ('Sources/NeAntik/HelpContent.swift','WebKit-профиль с прокси не запускается','WebKit-профиль с прокси запускается','In-app help WebKit proxy claim'),
             ]:
                 guide=root/name;original=guide.read_text()
@@ -63,7 +63,7 @@ class MCPDocumentationTests(unittest.TestCase):
     def test_stale_read_only_product_claim_is_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
-            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/WEBKIT_PROFILES.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/ROADMAP.md','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/v0.9.0.json','releases/v0.9.2.json','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
+            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/MCPProfileManagement.swift','docs/mcp-capabilities.json','docs/MCP_GUIDE.md','docs/WEBKIT_PROFILES.md','docs/PRODUCT.md','Sources/NeAntik/HelpContent.swift','docs/ROADMAP.md','docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md','docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md','releases/v0.9.0.json','releases/v0.9.2.json','releases/v0.9.5.json','releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
                 (root/name).parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,root/name)
             p=root/'docs/PRODUCT.md';p.write_text(p.read_text().replace('18 management tools','17 management tools'))
             with self.assertRaisesRegex(ValueError,'permission counts'): MODULE.verify(root)
@@ -71,7 +71,7 @@ class MCPDocumentationTests(unittest.TestCase):
     def test_stale_roadmap_and_template_claims_are_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
-            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/HelpContent.swift', 'docs/ROADMAP.md', 'docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md', 'releases/v0.9.0.json','releases/v0.9.2.json', 'releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
+            for name in ['README.md','README.en.md','Resources/Info.plist','CHANGELOG.md','Sources/NeAntik/HelpContent.swift', 'docs/ROADMAP.md', 'docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md', 'docs/NEANTIK_IMPROVEMENT_ROADMAP.md','docs/SOURCE_TO_SITE_HANDOFF.md', 'releases/v0.9.0.json','releases/v0.9.2.json','releases/v0.9.5.json', 'releases/' + max(ROOT.glob('releases/v*.json'), key=lambda p: tuple(map(int,p.stem[1:].split('.')))).name]:
                 (root/name).parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,root/name)
             MODULE.verify_current_product_claims(root)
             roadmap=root/'docs/ROADMAP.md';original=roadmap.read_text()
@@ -110,7 +110,7 @@ class MCPDocumentationTests(unittest.TestCase):
             latest = json.loads(latest_path.read_text())
             for name in ['README.md', 'README.en.md', 'Resources/Info.plist', 'CHANGELOG.md', 'docs/ROADMAP.md',
                          'Sources/NeAntik/HelpContent.swift', 'docs/NEANTIK_GLOBAL_PRODUCT_PLAN_2026.md',
-                         'docs/NEANTIK_IMPROVEMENT_ROADMAP.md', 'docs/SOURCE_TO_SITE_HANDOFF.md', 'releases/v0.9.0.json', 'releases/v0.9.2.json', 'releases/' + latest_path.name]:
+                         'docs/NEANTIK_IMPROVEMENT_ROADMAP.md', 'docs/SOURCE_TO_SITE_HANDOFF.md', 'releases/v0.9.0.json', 'releases/v0.9.2.json','releases/v0.9.5.json', 'releases/' + latest_path.name]:
                 (root / name).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ROOT / name, root / name)
             MODULE.verify_current_product_claims(root)
@@ -123,7 +123,7 @@ class MCPDocumentationTests(unittest.TestCase):
                 report_start = original.index(report_marker, claim_start)
                 changes = [
                     (latest_label, 'NeAntik 0.0.1 (1)'),
-                    (f"({latest['build']}), public alpha", '(99999), public alpha'),
+                    (f"({latest['build']})](", '(99999)]('),
                     (f"releases/tag/{latest['tag']}", 'releases/tag/v0.0.1'),
                 ]
                 for before, after in changes:

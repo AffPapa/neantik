@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "version": "1.0.0",
+  "build": 211,
+  "tag": "v1.0.0",
+  "channel": "direct",
+  "releaseQualified": true,
+  "releaseURL": "https://github.com/AffPapa/neantik/releases/tag/v1.0.0",
+  "publishedAt": "2026-11-14T17:16:38Z",
+  "sourceCommit": "a127128c95ae379ae293a86e277cec95b75edc79",
+  "runtime": {
+    "chromiumVersion": "157.0.8103.79",
+    "webKitSource": "db6a98765e",
+    "architecture": "arm64",
+    "minimumOS": "14.0"
+  },
+  "assets": {
+    "NeAntik-1.0.0-arm64-notarized.dmg": {
+      "sha256": "6e6183e96480a4eead612ea1e49ba37dc716ea1abc4f0095a4fd52fe9740bf5f",
+      "size": 291051211,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.0.0/NeAntik-1.0.0-arm64-notarized.dmg"
+    },
+    "NeAntik-1.0.0-arm64-notarized.dmg.sha256": {
+      "sha256": "2d6a94a718f94d0fddb43eaf4dfeb107576cebb4f603b77505dd980e9cdaf41e",
+      "size": 100,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.0.0/NeAntik-1.0.0-arm64-notarized.dmg.sha256"
+    },
+    "NeAntik-1.0.0-arm64-notarized.zip": {
+      "sha256": "30ec837aa137bff752df35678bb2d93392755e6e430c2f17fee574df6bb2ef5c",
+      "size": 253865920,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.0.0/NeAntik-1.0.0-arm64-notarized.zip"
+    },
+    "NeAntik-1.0.0-arm64-notarized.zip.sha256": {
+      "sha256": "2c13c1ceb847bda1debe5413521b66012c992c202094edd7d7428fd296811657",
+      "size": 100,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.0.0/NeAntik-1.0.0-arm64-notarized.zip.sha256"
+    },
+    "NeAntik-1.0.0-corresponding-source.zip": {
+      "sha256": "00bf466ca1deb05edc73a2e4b8c260133d9bf0d175b034951f6f47b4b11046e5",
+      "size": 58308830,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.0.0/NeAntik-1.0.0-corresponding-source.zip"
+    },
+    "NeAntik-1.0.0-corresponding-source.zip.sha256": {
+      "sha256": "94acea061eeb3b3dcbbbaf39149695d1ba0b6bb840f01d91150061325173c713",
+      "size": 105,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.0.0/NeAntik-1.0.0-corresponding-source.zip.sha256"
+    },
+    "NeAntik-1.0.0-fingerprint-attestation.json": {
+      "sha256": "3315f2a693ea52e54bd7deb0680bdc0993439e603bdbdde66066090bbcb6976a",
+      "size": 1370,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.0.0/NeAntik-1.0.0-fingerprint-attestation.json"
+    },
+    "NeAntik-1.0.0-source-offer.json": {
+      "sha256": "7e961c8f55958fb1665780d484aa62ad4210547d1e01519c1eedc0c8f8f2da2d",
+      "size": 3462,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.0.0/NeAntik-1.0.0-source-offer.json"
+    },
+    "NeAntik-1.0.0-webkit-source-manifest.json": {
+      "sha256": "d718acdaa03becad7ca4fe4159804a67c9e9236517774641b8c19771f88ead48",
+      "size": 36430,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.0.0/NeAntik-1.0.0-webkit-source-manifest.json"
+    },
+    "NeAntik-WebKit-db6a98765e-build-inputs-revised.tar": {
+      "sha256": "2680cccabeb65c2c7b45ac10fb813cd3d56c955094a5650a114bcca6f4f681ba",
+      "size": 2293760,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.0.0/NeAntik-WebKit-db6a98765e-build-inputs-revised.tar"
+    },
+    "NeAntik-WebKit-db6a98765e-build-inputs-revised.tar.sha256": {
+      "sha256": "c730e874afd07721402cd58fa7137b5a8371483925c37fa64cdf8d52664819d5",
+      "size": 117,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.0.0/NeAntik-WebKit-db6a98765e-build-inputs-revised.tar.sha256"
+    },
+    "WebKit-db6a98765e-upstream.tar.zst": {
+      "sha256": "50b56c9262e59cb14c4617df2d8752c45ffdfea2260a285807403ab35d367ae6",
+      "size": 1815660127,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.0.0/WebKit-db6a98765e-upstream.tar.zst"
+    },
+    "WebKit-db6a98765e-upstream.tar.zst.sha256": {
+      "sha256": "38c481b0ffdd2d9a12d98c400b37a856695f8a2409f1997ec3ac86acff0a3023",
+      "size": 101,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.0.0/WebKit-db6a98765e-upstream.tar.zst.sha256"
+    }
+  },
+  "qualification": {
+    "apple": "Notarized, stapled and Gatekeeper-verified ZIP and DMG",
+    "webKit": "Owned HTTP proxy with TURN/TLS, selected relay transport and recovery after terminating the networking process. Verified with synthetic profiles on one Mac.",
+    "source": "Matching source, notices and recipient instructions published. Clean build and modified WebKit relink verified on one Mac.",
+    "downloads": "All 13 GitHub assets verified anonymously by SHA-256."
+  },
+  "site": {
+    "url": "https://browser.free",
+    "liveVersion": "1.0.0",
+    "liveBuild": 211,
+    "sitesVersion": 178,
+    "updated": true
+  }
+}
