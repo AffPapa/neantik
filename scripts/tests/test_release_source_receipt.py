@@ -300,9 +300,12 @@ class ReleaseSourceReceiptTests(unittest.TestCase):
                 if isinstance(command, list):
                     commands.append(tuple(str(item) for item in command))
                     if "cat-file" in command:
-                        request = kwargs.get("input")
-                        if isinstance(request, bytes):
-                            batch_requests.append(request)
+                        request = kwargs["stdin"]
+                        response = kwargs["stdout"]
+                        self.assertTrue(request.seekable())
+                        self.assertTrue(response.seekable())
+                        batch_requests.append(request.read())
+                        request.seek(0)
                 return original_run(*args, **kwargs)
 
             with mock.patch.object(
@@ -333,15 +336,14 @@ class ReleaseSourceReceiptTests(unittest.TestCase):
             )
 
     def test_malformed_batch_response_fails_closed(self) -> None:
+        def malformed_response(*args, stdout, **kwargs):
+            stdout.write(b"malformed\n")
+            return subprocess.CompletedProcess(args=args, returncode=0)
+
         with mock.patch.object(
             MODULE.subprocess,
             "run",
-            return_value=subprocess.CompletedProcess(
-                args=[],
-                returncode=0,
-                stdout=b"malformed\n",
-                stderr=b"",
-            ),
+            side_effect=malformed_response,
         ):
             with self.assertRaisesRegex(
                 MODULE.ReleaseSourceReceiptError,

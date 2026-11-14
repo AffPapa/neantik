@@ -15,3 +15,6 @@ docs/evidence/third-party/webkit-v20-license-text-corpus/** -text
 runtime/privacy-policy-v1/privacy-policy-v1.patch whitespace=-blank-at-eol
 runtime/privacy-policy-v1/preimages/** whitespace=-blank-at-eol
 runtime/privacy-policy-v1/postimages/** whitespace=-blank-at-eol
+
+# This source patch retains Git context prefixes verbatim.
+Experiments/OwnedWebKitNetworkBoundary/source-ports/db6a98765e/*.patch whitespace=-blank-at-eol

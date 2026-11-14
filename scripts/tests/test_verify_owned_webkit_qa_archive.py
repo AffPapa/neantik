@@ -15,6 +15,21 @@ SPEC.loader.exec_module(MOD)
 
 
 class OwnedWebKitQAArchiveTests(unittest.TestCase):
+    def test_streamed_selector_can_cross_chunk_boundary_and_still_checks_crc(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive = Path(directory) / "runtime.zip"
+            with zipfile.ZipFile(archive, "w") as output:
+                output.writestr("runtime", b"012345selector-padding-CRC-tail")
+            with mock.patch.object(MOD, "ZIP_READ_SIZE", 8):
+                with zipfile.ZipFile(archive) as source:
+                    names = source.namelist()
+                    self.assertTrue(MOD._scan_unique(source, names, "runtime", b"selector"))
+                    self.assertFalse(MOD._scan_unique(source, names, "runtime", b"missing"))
+                archive.write_bytes(archive.read_bytes().replace(b"CRC-tail", b"BAD-tail"))
+                with zipfile.ZipFile(archive) as source:
+                    with self.assertRaises(zipfile.BadZipFile):
+                        MOD._scan_unique(source, source.namelist(), "runtime", b"selector")
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
@@ -124,6 +139,91 @@ class OwnedWebKitQAArchiveTests(unittest.TestCase):
         self.assertEqual(result["status"], "PASS")
         self.assertTrue(result["fixtureRootBound"])
         self.assertTrue(result["managerAndHostBytesMatch"])
+
+    def test_detached_successor_binds_archive_markers_and_runtime_hashes(self):
+        variant = MOD.SUCCESSOR_VARIANT
+        host = "NeAntik.app/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/"
+        sandbox = host + "Frameworks/WebKit.framework/Versions/A/Resources/com.apple.WebKit.NetworkProcess.sb"
+        binding = host + "Resources/NeAntikRuntimeEvidence/NeAntikRuntimeImageBinding.json"
+        self.entries[sandbox] = b"fixture sandbox"
+        self.entries[binding] = b"fixture binding"
+        sandbox_hash = hashlib.sha256(self.entries[sandbox]).hexdigest()
+        manifest = "d" * 64
+        self.app_info["NeAntikPrivateQARuntimeVariant"] = variant
+        self.host_info.update(NeAntikOwnedWebKitPrivateSuccessorV1={
+            "manifestSHA256": manifest, "releaseQualified": False},
+            NeAntikQADetachedSession=True, NeAntikWebKitNetworkSandboxSHA256=sandbox_hash)
+        self.entries["NeAntik.app/Contents/Info.plist"] = plistlib.dumps(self.app_info)
+        self.entries[host + "Info.plist"] = plistlib.dumps(self.host_info)
+        self.candidate.update(qaRuntimeVariant=variant, qaDetachedSession=True,
+                              qaSuccessorManifestSHA256=manifest, qaNetworkSandboxSHA256=sandbox_hash,
+                              qaRuntimeBindingSHA256=hashlib.sha256(self.entries[binding]).hexdigest())
+        self.plan.update(qaRuntimeVariant=variant, qaDetachedSession=True)
+        self.reseal_fixture()
+        self.assertTrue(MOD.inspect(self.candidate, self.plan)["qaDetachedSession"])
+        self.assertFalse(MOD.inspect(self.candidate, self.plan)["qaDetachedSocketTransport"])
+        self.host_info["NeAntikQADetachedSocketTransportV1"] = True
+        self.entries[host + "Info.plist"] = plistlib.dumps(self.host_info)
+        self.candidate["qaDetachedSocketTransport"] = self.plan["qaDetachedSocketTransport"] = True
+        self.reseal_fixture()
+        self.assertTrue(MOD.inspect(self.candidate, self.plan)["qaDetachedSocketTransport"])
+
+        self.candidate["qaMetalFrameTransport"] = True
+        with self.assertRaisesRegex(MOD.PreflightError, "private-metal-frame-plan-mismatch"):
+            MOD.inspect(self.candidate, self.plan)
+        self.plan["qaMetalFrameTransport"] = True
+        with self.assertRaisesRegex(MOD.PreflightError, "private Metal frame marker mismatch"):
+            MOD.inspect(self.candidate, self.plan)
+        self.host_info["NeAntikQAMetalFrameTransportV1"] = True
+        self.entries[host + "Info.plist"] = plistlib.dumps(self.host_info)
+        self.reseal_fixture()
+        self.assertTrue(MOD.inspect(self.candidate, self.plan)["qaMetalFrameTransport"])
+
+
+        scope = {"profileID": "97287f27-78f3-4f81-a431-03c0fe843186",
+                 "port": 45120, "anchorDER": b"fixture TURN/TLS root"}
+        fixture_scope = self.fixture_root / MOD.turns_scope.FILE
+        fixture_scope.write_bytes(plistlib.dumps(scope))
+        fixture_scope.chmod(0o600)
+        expected = MOD.turns_scope.receipt(scope)
+        self.candidate["qaRTCRelayQualification"] = True
+        self.candidate[MOD.turns_scope.RECEIPT_KEY] = expected
+        self.plan[MOD.turns_scope.RECEIPT_KEY] = expected
+        self.host_info[MOD.turns_scope.KEY] = scope
+        self.host_info["NeAntikOwnedWebKitRTCRelayQualification"] = True
+        self.entries[host + "Info.plist"] = plistlib.dumps(self.host_info)
+        runtime = host + "Frameworks/WebKit.framework/Versions/A/WebKit"
+        self.reseal_fixture()
+        with self.assertRaisesRegex(MOD.PreflightError, "qa-turns-runtime-selector-missing"):
+            MOD.inspect(self.candidate, self.plan)
+        self.entries[runtime] += MOD.turns_scope.SELECTOR
+        self.reseal_fixture()
+        self.assertEqual(MOD.inspect(self.candidate, self.plan)[MOD.turns_scope.RECEIPT_KEY], expected)
+        self.plan[MOD.turns_scope.RECEIPT_KEY] = dict(expected, port=45121)
+        with self.assertRaisesRegex(MOD.PreflightError, "qa-turns-fixture-candidate-plan-mismatch"):
+            MOD.inspect(self.candidate, self.plan)
+        self.plan[MOD.turns_scope.RECEIPT_KEY] = expected
+        self.host_info[MOD.turns_scope.KEY] = dict(scope, anchorDER=b"changed anchor")
+        self.entries[host + "Info.plist"] = plistlib.dumps(self.host_info)
+        self.reseal_fixture()
+        with self.assertRaisesRegex(MOD.PreflightError, "qa-turns-signed-host-scope-mismatch"):
+            MOD.inspect(self.candidate, self.plan)
+        self.host_info[MOD.turns_scope.KEY] = scope
+        self.entries[host + "Info.plist"] = plistlib.dumps(self.host_info)
+        self.reseal_fixture()
+
+        self.plan["qaDetachedSocketTransport"] = False
+        with self.assertRaisesRegex(MOD.PreflightError, "detached-socket-plan-mismatch"):
+            MOD.inspect(self.candidate, self.plan)
+        self.plan["qaDetachedSocketTransport"] = True
+        self.plan["qaDetachedSession"] = False
+        with self.assertRaisesRegex(MOD.PreflightError, "detached-session-plan-mismatch"):
+            MOD.inspect(self.candidate, self.plan)
+        self.plan["qaDetachedSession"] = True
+        self.entries[sandbox] = b"changed sandbox"
+        self.reseal_fixture()
+        with self.assertRaisesRegex(MOD.PreflightError, "qa-successor-entry-hash-mismatch"):
+            MOD.inspect(self.candidate, self.plan)
 
     def test_v508_requires_exact_archive_gpu_binding_and_both_plan_hashes(self):
         self.prepare_v508()

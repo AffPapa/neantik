@@ -1,12 +1,17 @@
+from contextlib import redirect_stdout
 import importlib.util
+from io import StringIO
 import json
 import os
 from pathlib import Path
 import socket
+import sys
 import tempfile
 import unittest
+from unittest.mock import Mock, patch
 
 SCRIPT = Path(__file__).resolve().parents[1] / 'runtime-network' / 'prepare-webkit-ab-isolation-qa.py'
+sys.path.insert(0, str(SCRIPT.parent))
 SPEC = importlib.util.spec_from_file_location('webkit_ab_qa', SCRIPT)
 QA = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(QA)
@@ -79,6 +84,7 @@ class WebKitABIsolationFixtureTests(unittest.TestCase):
             try:
                 self.assertEqual(plan['status'], 'offline-fixture-ready; browser-not-started')
                 self.assertRegex(plan['root'], r'^/private/tmp/neantik-production-diagnostic-[A-Za-z0-9_]+$')
+                self.assertNotIn('qaRuntimeVariant', plan)
                 self.assertEqual(plan['profileCount'], 2)
                 self.assertNotEqual(plan['proxyA'], plan['proxyB'])
                 self.assertTrue(plan['sameOrigin'].startswith('https://'))
@@ -97,6 +103,127 @@ class WebKitABIsolationFixtureTests(unittest.TestCase):
                 import shutil
                 shutil.rmtree(root)
                 shutil.rmtree(stage)
+
+    def test_private_successor_dev_uses_owner_only_fixture_and_marks_plan(self):
+        with tempfile.TemporaryDirectory(prefix='neantik-webkit-ab-template-') as directory:
+            path = Path(directory) / 'profiles.json'
+            blank = dict(blank_profile(), privacyPolicy='legacy', webKitBlockPeerConnections=False)
+            path.write_text(json.dumps({'schemaVersion': 7, 'profiles': [blank]}))
+            plan, dns, origin, tunnels, validator = QA.prepare(path, private_successor_dev=True)
+            root, stage = Path(plan['root']), Path(plan['stage'])
+            try:
+                self.assertRegex(str(root), r'^/private/tmp/neantik-dev-fixture\.[A-Za-z0-9_]+$')
+                self.assertEqual(root.stat().st_mode & 0o777, 0o700)
+                self.assertEqual(root.stat().st_uid, os.geteuid())
+                self.assertEqual(plan['qaRuntimeVariant'], 'OwnedWebKitSuccessorV1')
+                self.assertEqual(json.loads((stage / 'run-plan.json').read_text()), plan)
+                primary = root / 'profiles.json'
+                previous = root / 'profiles.previous.json'
+                self.assertEqual(primary.stat().st_mode & 0o777, 0o600)
+                self.assertEqual(previous.stat().st_mode & 0o777, 0o600)
+                self.assertEqual(primary.read_bytes(), previous.read_bytes())
+                profiles = json.loads(primary.read_text())['profiles']
+                self.assertEqual([p['privacyPolicy'] for p in profiles], ['legacy', 'legacy'])
+                self.assertEqual(len({p['id'] for p in profiles}), 2)
+                self.assertEqual(len({p['startURL'] for p in profiles}), 1)
+                self.assertEqual({p['proxy']['host'] for p in profiles}, {'127.0.0.1'})
+                self.assertEqual({p['proxy']['port'] for p in profiles}, {t.port for t in tunnels})
+            finally:
+                closed = [tunnel.stop() for tunnel in reversed(tunnels)]
+                origin_closed = origin.stop()
+                dns_closed = dns.close()
+                import shutil
+                shutil.rmtree(root)
+                shutil.rmtree(stage)
+                self.assertTrue(all(closed) and origin_closed and dns_closed)
+
+    def test_schema_seven_refuses_nonblank_and_missing_explicit_policies(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'profiles.json'
+            good = dict(blank_profile(), privacyPolicy='legacy', webKitBlockPeerConnections=False)
+            invalid_profiles = (
+                [good, good],
+                [blank_profile()],
+                [dict(good, webKitBlockPeerConnections=0)],
+                [dict(good, webKitBlockPeerConnections=True)],
+                [dict(good, privacyPolicy='strict')],
+                [dict(good, proxy={'host': 'proxy.invalid'})],
+                [dict(good, startURL='https://example.invalid/')],
+                [dict(good, password='unexpected')],
+            )
+            for profiles in invalid_profiles:
+                with self.subTest(profiles=profiles):
+                    path.write_text(json.dumps({'schemaVersion': 7, 'profiles': profiles}))
+                    with self.assertRaises(QA.FixtureError):
+                        QA.read_blank_template(path)
+
+    def test_private_successor_dev_refuses_public_controls_before_preparing(self):
+        with patch.object(QA, 'prepare') as prepare:
+            with self.assertRaisesRegex(QA.FixtureError, 'private_successor_dev_requires_loopback_only'):
+                QA.serve(Path('unused'), private_successor_dev=True, public_site_controls=True)
+            prepare.assert_not_called()
+
+    def test_archive_worker_must_report_pass_for_exact_sha(self):
+        candidate = {'sha256': 'a' * 64}
+        for code, report in (
+            (0, {'status': 'PASS', 'archiveSHA256': 'b' * 64}),
+            (1, {'status': 'PASS', 'archiveSHA256': candidate['sha256']}),
+            (0, {'status': 'REFUSED', 'archiveSHA256': candidate['sha256']}),
+        ):
+            with self.subTest(code=code, report=report), patch.object(QA.subprocess, 'run') as run:
+                run.return_value = QA.subprocess.CompletedProcess([], code, json.dumps(report))
+                with self.assertRaisesRegex(QA.FixtureError, 'candidate_archive_preflight_failed'):
+                    QA.verify_bound_archive(candidate, {})
+
+    def test_successor_observations_bind_exact_archive_seed_origin_and_launch_marker(self):
+        with tempfile.TemporaryDirectory(prefix='neantik-owned-webkit-successor-qa-', dir=QA.PRIVATE_TMP) as staging, \
+             tempfile.TemporaryDirectory(prefix='neantik-dev-fixture.', dir=QA.PRIVATE_TMP) as fixture_root:
+            stage = Path(staging)
+            root = Path(fixture_root)
+            receipt = stage / 'stage.json'
+            archive = stage / 'NeAntik-private-owned-webkit-qa.zip'
+            QA.private_file(archive, b'owned archive')
+            for name in ('profiles.json', 'profiles.previous.json'):
+                QA.private_file(root / name, b'profile seed')
+            sha = QA.digest(archive)
+            seed = QA.digest(root / 'profiles.json')
+            plan = {'root': str(root), 'seedSHA256': seed, 'qaTrustAnchorSHA256': 'a' * 64,
+                    'sameOrigin': 'https://example.invalid:12345/'}
+            candidate = {'stage': str(stage), 'app': str(stage / 'NeAntik.app'),
+                         'archive': str(archive), 'sha256': sha, 'root': str(root),
+                         'profileSeedSHA256': seed, 'qaRuntimeVariant': QA.PRIVATE_SUCCESSOR_DEV_VARIANT,
+                         'qaTrustAnchorSHA256': 'a' * 64, 'qaTrustOrigin': plan['sameOrigin'][:-1],
+                         'managerSignedSHA256': 'b' * 64, 'hostSHA256': 'c' * 64,
+                         'qaRuntimeBindingSHA256': 'd' * 64, 'disposableDebugFixture': True,
+                         'releaseQualified': False}
+            QA.private_file(receipt, json.dumps(candidate).encode())
+            binding = QA.bind_successor_candidate(plan, receipt, sha)
+            self.assertEqual(binding['candidateSHA256'], sha)
+            self.assertEqual(binding['candidateReceiptSHA256'], QA.digest(receipt))
+            self.assertEqual(binding['hostSHA256'], 'c' * 64)
+            self.assertFalse(QA.successor_launch_consumed(root, sha))
+            with self.assertRaisesRegex(QA.FixtureError, 'candidate_fixture_mismatch'):
+                QA.bind_successor_candidate(dict(plan, sameOrigin='https://other.invalid:12345/'), receipt, sha)
+            relay_plan = dict(plan, turnControl={'challengeRelayPolicy': True})
+            with self.assertRaisesRegex(QA.FixtureError, 'candidate_rtc_relay_scope_mismatch'):
+                QA.bind_successor_candidate(relay_plan, receipt, sha)
+            receipt.write_text(json.dumps(dict(candidate, qaRTCRelayQualification=True)))
+            self.assertEqual(QA.bind_successor_candidate(relay_plan, receipt, sha)['candidateSHA256'], sha)
+            with self.assertRaisesRegex(QA.FixtureError, 'candidate_rtc_relay_scope_mismatch'):
+                QA.bind_successor_candidate(plan, receipt, sha)
+            receipt.write_text(json.dumps(candidate))
+            archive.write_bytes(b'changed')
+            with self.assertRaisesRegex(QA.FixtureError, 'candidate_archive_mismatch'):
+                QA.bind_successor_candidate(plan, receipt, sha)
+            archive.write_bytes(b'owned archive')
+            marker = root / f'qa-{sha[:12]}-single-start-consumed'
+            marker.symlink_to(archive)
+            self.assertFalse(QA.successor_launch_consumed(root, sha))
+            marker.unlink()
+            QA.private_file(marker, b'')
+            self.assertTrue(QA.successor_launch_consumed(root, sha))
+            with self.assertRaisesRegex(QA.FixtureError, 'candidate_already_consumed'):
+                QA.bind_successor_candidate(plan, receipt, sha)
 
     def test_peer_control_fixture_uses_loopback_probe_and_explicit_policies(self):
         with tempfile.TemporaryDirectory(prefix='neantik-webkit-peer-template-') as directory:
@@ -132,6 +259,59 @@ class WebKitABIsolationFixtureTests(unittest.TestCase):
         self.assertIn('navigator.gpu.requestAdapter()', fragment)
         self.assertIn("resolve('timeout')", fragment)
         self.assertIn('/qa-gpu/' + 'a' * 32, fragment)
+
+    def test_click_probe_requires_private_detached_session_and_observes_trust(self):
+        with self.assertRaisesRegex(QA.FixtureError, 'click_probe_requires_private_detached_session'):
+            QA.prepare(Path('/unused-template'), click_probe=True)
+        fragment = QA.click_probe_fragment('a' * 32)
+        self.assertIn('event.isTrusted', fragment)
+        self.assertIn('Trusted click received', fragment)
+        self.assertIn('background:#ff0000', fragment)
+        self.assertIn("backgroundColor = '#00ff00'", fragment)
+        self.assertIn('/qa-click/' + 'a' * 32, fragment)
+        self.assertNotIn('.click()', fragment)
+
+    def test_metal_click_fixture_requires_detached_successor(self):
+        with self.assertRaisesRegex(QA.FixtureError, 'metal_frames_require_private_detached_session'):
+            QA.prepare(Path('/unused-template'), click_probe=True, metal_frame_qa=True)
+
+    def test_metal_click_receipt_requires_same_generation_and_increasing_frames(self):
+        profile = '97287F27-78F3-4F81-A431-03C0FE843186'
+        generation = '01234567-89AB-CDEF-0123-456789ABCDEF'
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            owner = root / f'webkit-network-owner-{profile}-{generation}-qa.json'
+            pixels = root / f'webkit-metal-click-{profile}-qa.txt'
+            QA.private_file(owner, json.dumps({'generation': generation, 'profileID': profile}).encode())
+            QA.private_file(pixels, f'stage=qa-metal-click-pixels generation={profile} red=2 green=9\n'.encode())
+            self.assertIsNone(QA.metal_click_pixels(root, profile))
+            pixels.write_text(f'stage=qa-metal-click-pixels generation={generation} red=2 green=2\n')
+            self.assertIsNone(QA.metal_click_pixels(root, profile))
+            pixels.write_text(f'stage=qa-metal-click-pixels generation={generation} red=2 green=9\n')
+            self.assertEqual(QA.metal_click_pixels(root, profile), {
+                'generation': generation, 'baselineSequence': 2, 'changedSequence': 9})
+            pixels.chmod(0o644)
+            self.assertIsNone(QA.metal_click_pixels(root, profile))
+
+    def test_click_phase_waits_for_exactly_one_trusted_event(self):
+        before = counters()
+        after = counters(pages=1, initial=1, proxy_a=1)
+        after['clickProbe'] = True
+        self.assertEqual(QA._phase_observation('A1', before, after)['classification'], 'pending')
+        trace = after['origin']['requestTrace']
+        trace.append({'category': 'click-untrusted', 'result': 'responded'})
+        self.assertEqual(QA._phase_observation('A1', before, after)['classification'], 'contaminated')
+        trace[0]['category'] = 'click-trusted'
+        qualified = QA._phase_observation('A1', before, after)
+        self.assertEqual((qualified['classification'], qualified['clickEventBoundary']), ('pass', 'PASS'))
+        after['metalClickPixels'] = None
+        self.assertEqual(QA._phase_observation('A1', before, after)['classification'], 'pending')
+        after['metalClickPixels'] = {'generation': 'fixture', 'baselineSequence': 1, 'changedSequence': 3}
+        qualified = QA._phase_observation('A1', before, after)
+        self.assertEqual((qualified['classification'], qualified['metalClickPixelBoundary']), ('pass', 'PASS'))
+
+        trace.append(trace[0])
+        self.assertEqual(QA._phase_observation('A1', before, after)['classification'], 'contaminated')
 
     def test_public_site_redirect_is_closed_list_and_requires_valid_nonce(self):
         for name, url in [('google', 'https://www.google.com/'), ('booking', 'https://www.booking.com/')]:
@@ -172,6 +352,210 @@ class WebKitABIsolationFixtureTests(unittest.TestCase):
         self.assertEqual(result['classification'], 'fail')
         self.assertEqual(result['routeBoundary'], 'FAIL')
         self.assertEqual(result['storageBoundary'], 'PASS')
+
+    def test_expected_connect_count_cannot_hide_unattributed_https_request(self):
+        prior = counters()
+        current = counters(pages=1, initial=1, proxy_a=2)
+        current['originRouteAttribution'] = True
+        trace = current['origin']['requestTrace']
+        self.assertEqual(QA._phase_observation('A1', prior, current)['classification'], 'pending')
+        trace.extend([{'category': category, 'result': 'responded', 'route': 'A'}
+                      for category in ('page', 'initial')])
+        self.assertEqual(QA._phase_observation('A1', prior, current)['classification'], 'pass')
+        current['origin']['unattributedConnections'] = 1
+        row = QA._phase_observation('A1', prior, current)
+        self.assertEqual((row['classification'], row['routeBoundary']), ('contaminated', 'FAIL'))
+        current['origin']['unattributedConnections'] = 0
+        for wrong in ('B', 'unattributed'):
+            trace[-1]['route'] = wrong
+            row = QA._phase_observation('A1', prior, current)
+            self.assertEqual((row['classification'], row['routeBoundary']), ('contaminated', 'FAIL'))
+
+    def test_fixture_shutdown_rejects_late_origin_or_proxy_activity(self):
+        prior = counters(pages=5, initial=2, restored=3, proxy_a=2, proxy_b=3)
+        self.assertFalse(QA._late_http_activity(prior, QA.copy.deepcopy(prior)))
+        final = QA.copy.deepcopy(prior)
+        final['origin']['requestTrace'].append({'category': 'unknown', 'result': 'refused'})
+        self.assertTrue(QA._late_http_activity(prior, final))
+        self.assertTrue(QA._late_http_activity(
+            prior, counters(pages=5, initial=2, restored=3, proxy_a=2, proxy_b=4)))
+        self.assertTrue(QA._late_http_activity(
+            prior, counters(pages=6, initial=2, restored=3, proxy_a=2, proxy_b=3)))
+
+    def test_fixture_only_persists_pass_after_explicit_clean_shutdown(self):
+        for classification, drained, late, explicit_stop, expected in (
+            ('pass', True, False, True, 'PASS'),
+            ('fail', True, False, True, 'FAIL'),
+            ('pass', False, False, True, 'FAIL'),
+            ('pass', True, True, True, 'FAIL'),
+            ('pass', True, False, False, 'FAIL'),
+        ):
+            with self.subTest(classification=classification, drained=drained, late=late,
+                              explicit_stop=explicit_stop), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                report_path = root / 'phase-results.json'
+                plan = {'root': directory, 'expectedPhases': [{'phase': 'A1'}]}
+                dns, origin, tunnel = Mock(), Mock(), Mock()
+                dns.close.return_value = drained
+                tunnel.stop.return_value = True
+                observed = counters(pages=1, initial=1, proxy_a=2)
+                final = counters(pages=1, initial=1, proxy_a=2 + int(late))
+                row = {'phase': 'A1', 'classification': classification,
+                       'routeBoundary': 'PASS', 'storageBoundary': 'PASS'}
+
+                def stop_origin():
+                    self.assertEqual(json.loads(report_path.read_bytes())['status'],
+                                     'awaiting-fixture-stop')
+                    return True
+
+                origin.stop.side_effect = stop_origin
+                commands = '{"action":"phase","phase":"A1"}\n'
+                if explicit_stop:
+                    commands += '{"action":"stop"}\n'
+                output = StringIO()
+                with patch.object(QA, 'prepare', return_value=(plan, dns, origin, [tunnel], Mock())), \
+                     patch.object(QA, '_counts', side_effect=[counters(), final]), \
+                     patch.object(QA, '_wait_for_phase', return_value=(row, observed)), \
+                     patch.object(QA.sys, 'stdin', StringIO(commands)), redirect_stdout(output):
+                    if explicit_stop:
+                        self.assertEqual(QA.serve(Path('unused')), 0 if expected == 'PASS' else 1)
+                    else:
+                        with self.assertRaisesRegex(QA.FixtureError, 'stdin_closed_before_explicit_stop'):
+                            QA.serve(Path('unused'))
+                report = json.loads(report_path.read_bytes())
+                self.assertEqual(report['status'], expected)
+                self.assertEqual(report['lateHTTPActivity'], late)
+                self.assertEqual(report['allChannelsDrained'], drained)
+                self.assertEqual(report['explicitStop'], explicit_stop)
+                self.assertEqual(json.loads(output.getvalue().splitlines()[-1])['verdict'], expected)
+
+    def test_turn_phase_requires_nonce_receipt_and_two_connections_on_profile_B(self):
+        prior = counters(pages=1, initial=1, proxy_a=2)
+        prior['proxyBTurn'] = 0
+        current = counters(pages=2, initial=2, proxy_a=2, proxy_b=2)
+        current['proxyBTurn'] = 2
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'pending')
+        acknowledgement = {'category': 'turn-relay-nonce-delivered', 'result': 'responded'}
+        current['origin']['requestTrace'] = [acknowledgement]
+        result = QA._phase_observation('B1', prior, current)
+        self.assertEqual((result['classification'], result['turnBoundary']), ('pass', 'PASS'))
+        prior['turnAIARequests'] = 0
+        current['turnAIARequests'] = 1
+        result = QA._phase_observation('B1', prior, current)
+        self.assertEqual((result['classification'], result['turnBoundary'], result['turnAIARequestsDelta']),
+                         ('contaminated', 'FAIL', 1))
+        current['turnAIARequests'] = 0
+        current['proxyBTurn'] = 0
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'fail')
+        current['proxyBTurn'] = 2
+        self.assertEqual(QA._phase_observation('A2', prior, current)['classification'], 'contaminated')
+        current['origin']['requestTrace'].append(acknowledgement)
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'contaminated')
+
+    def test_owned_stun_blocks_pass_without_api_report_and_refuses_direct_packets(self):
+        prior = counters()
+        current = counters(pages=1, initial=1, proxy_a=1)
+        current['ownedPeerSTUN'] = {'browserRequests': 0, 'invalidRequests': 0}
+        self.assertEqual(QA._phase_observation('A1', prior, current)['classification'], 'pending')
+        current['origin']['requestTrace'] = [{'category': 'peer-absent-absent', 'result': 'responded'}]
+        result = QA._phase_observation('A1', prior, current)
+        self.assertEqual((result['classification'], result['peerAPIBoundary'], result['directSTUNBoundary']),
+                         ('pass', 'PASS', 'PASS'))
+        current['ownedPeerSTUN']['browserRequests'] = 1
+        self.assertEqual(QA._phase_observation('A1', prior, current)['directSTUNBoundary'], 'FAIL')
+        self.assertEqual(QA._phase_observation('A1', prior, current)['classification'], 'fail')
+
+    def test_owned_stun_requires_enabled_api_and_zero_direct_packets_in_relay_phase(self):
+        prior = counters(pages=1, initial=1, proxy_a=1)
+        prior['proxyBTurn'] = 0
+        current = counters(pages=2, initial=2, proxy_a=1, proxy_b=1)
+        current.update(proxyBTurn=2, ownedPeerSTUN={'browserRequests': 0, 'invalidRequests': 0})
+        trace = current['origin']['requestTrace']
+        trace.append({'category': 'turn-relay-nonce-delivered', 'result': 'responded'})
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'pending')
+        report = {'category': 'peer-rejected-rejected', 'result': 'responded'}
+        trace.append(report)
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'pass')
+        report['category'] = 'peer-error-rejected'
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'fail')
+        report['category'] = 'peer-rejected-rejected'
+        current['ownedPeerSTUN']['invalidRequests'] = 1
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'fail')
+        trace.append(report)
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'contaminated')
+
+    def test_turns_negative_phase_preserves_route_evidence_without_claiming_tls_rejection(self):
+        prior = counters(pages=1, initial=1, proxy_a=2)
+        prior.update(proxyBTurn=0, turnAIARequests=0)
+        current = counters(pages=2, initial=2, proxy_a=2, proxy_b=2)
+        current.update(proxyBTurn=2, turnAIARequests=0, turnTLSCertificateCase='wrong-host')
+        current['origin']['requestTrace'] = [{'category': 'turn-timeout', 'result': 'responded'}]
+        result = QA._phase_observation('B1', prior, current)
+        self.assertEqual(result['classification'], 'pass')
+        self.assertNotIn('certificateRejectionBoundary', result)
+        current['origin']['requestTrace'][0]['category'] = 'turn-relay-nonce-delivered'
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'fail')
+
+    def test_turn_outage_requires_authenticated_refusal_and_no_nonce(self):
+        prior = counters(pages=2, initial=2, proxy_a=1, proxy_b=1)
+        prior['proxyBTurn'] = 2
+        current = counters(pages=3, initial=2, restored=1, proxy_a=1, proxy_b=2)
+        current['proxyBTurn'] = 2
+        current['origin']['requestTrace'] = [{'category': 'turn-timeout', 'result': 'responded'}]
+        self.assertEqual(QA._phase_observation('B2', prior, current)['classification'], 'fail')
+        current['proxyBTurnOutageRefused'] = 2
+        self.assertEqual(QA._phase_observation('B2', prior, current)['classification'], 'pass')
+        current['origin']['requestTrace'][0]['category'] = 'turn-relay-nonce-delivered'
+        self.assertEqual(QA._phase_observation('B2', prior, current)['classification'], 'fail')
+        current['proxyBTurn'] = 3
+        self.assertEqual(QA._phase_observation('B2', prior, current)['classification'], 'contaminated')
+
+    def test_dual_family_turn_requires_nonce_and_bounds_connections(self):
+        prior = counters(pages=1, initial=1, proxy_a=1)
+        prior['proxyBTurn'] = 0
+        current = counters(pages=2, initial=2, proxy_a=1, proxy_b=1)
+        current.update(proxyBTurn=4, turnPositivePhaseConnectionLimit=4)
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'pending')
+        current['origin']['requestTrace'] = [{'category': 'turn-relay-nonce-delivered', 'result': 'responded'}]
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'pass')
+        current['proxyBTurn'] = 5
+        self.assertEqual(QA._phase_observation('B1', prior, current)['classification'], 'contaminated')
+
+    def test_turn_restart_requires_receipt_for_the_exact_candidate_and_generation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate = 'a' * 64
+            binding = {'candidateSHA256': candidate}
+            previous = {'generation': 'old'}
+            result = root / 'networking-restart-result.json'
+            valid = dict(candidateSHA256=candidate, previousGeneration='old',
+                         signalIssued=True, previousGenerationExited=True)
+            with self.assertRaisesRegex(QA.FixtureError, 'receipt_missing_or_invalid'):
+                QA.require_networking_restart_receipt(root, binding, previous)
+            QA.private_file(result, json.dumps(valid).encode())
+            QA.require_networking_restart_receipt(root, binding, previous)
+            for invalid in (dict(valid, previousGeneration='other'),
+                            dict(valid, candidateSHA256='b' * 64),
+                            dict(valid, previousGenerationExited=False),
+                            dict(valid, signalIssued=1)):
+                result.write_text(json.dumps(invalid))
+                with self.assertRaisesRegex(QA.FixtureError, 'receipt_missing_or_invalid'):
+                    QA.require_networking_restart_receipt(root, binding, previous)
+
+    def test_turn_after_restart_requires_new_owner_and_a_second_nonce(self):
+        old = dict(generation='old', pid=123, startSeconds=456, startMicroseconds=7)
+        with self.assertRaisesRegex(QA.FixtureError, 'networking_process_generation_did_not_change'):
+            QA.verify_networking_replacement(old, dict(old, generation='new'))
+        with self.assertRaisesRegex(QA.FixtureError, 'networking_process_generation_did_not_change'):
+            QA.verify_networking_replacement(old, dict(old, pid=124))
+        QA.verify_networking_replacement(old, dict(old, generation='new', startMicroseconds=8))
+        prior = counters(pages=3, initial=2, restored=1, proxy_a=1, proxy_b=2)
+        prior.update(proxyBTurn=2, proxyBTurnOutageRefused=2)
+        current = counters(pages=4, initial=2, restored=2, proxy_a=1, proxy_b=3)
+        current.update(proxyBTurn=4, proxyBTurnOutageRefused=2)
+        self.assertEqual(QA._phase_observation('B3', prior, current)['classification'], 'pending')
+        current['origin']['requestTrace'] = [{'category': 'turn-relay-nonce-delivered', 'result': 'responded'}]
+        self.assertEqual(QA._phase_observation('B3', prior, current)['classification'], 'pass')
 
     def test_phase_a2_requires_proxy_a_and_restored_state(self):
         prior = counters(pages=1, initial=1, proxy_a=2, proxy_b=2)

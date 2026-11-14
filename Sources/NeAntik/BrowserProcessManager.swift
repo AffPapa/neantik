@@ -2,6 +2,236 @@ import AppKit
 import Combine
 import Darwin
 import Foundation
+#if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+import ImageIO
+import Metal
+import QuartzCore
+
+@MainActor
+class WebKitQAPreviewPointerView: NSView {
+    private var onClick: ((ProxyRelayPrivatePipe.PreviewClick) -> Void)?
+    private var pressed = false
+
+    var clickRect: NSRect { bounds }
+
+    func armClick(_ action: ((ProxyRelayPrivatePipe.PreviewClick) -> Void)?) {
+        onClick = action
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        pressed = onClick != nil && event.clickCount == 1 &&
+            WebKitFrameTransport.PreviewGeometry.normalized(point, in: clickRect) != nil
+    }
+
+    override func mouseDragged(with event: NSEvent) { pressed = false }
+
+    override func mouseUp(with event: NSEvent) {
+        defer { pressed = false }
+        let point = convert(event.locationInWindow, from: nil)
+        guard pressed, let onClick, let window, window.isKeyWindow, window.screen != nil,
+              let primary = NSScreen.screens.first,
+              let normalized = WebKitFrameTransport.PreviewGeometry.normalized(point, in: clickRect) else { return }
+        let global = WebKitFrameTransport.PreviewGeometry.globalTopLeft(
+            window.convertPoint(toScreen: event.locationInWindow), primaryDisplayTop: primary.frame.maxY)
+        let click = ProxyRelayPrivatePipe.PreviewClick(
+            x: normalized.x, y: normalized.y, screenX: global.x, screenY: global.y
+        )
+        guard click.isValid else { return }
+        self.onClick = nil
+        onClick(click)
+    }
+}
+
+@MainActor
+private final class WebKitQAPreviewImage: WebKitQAPreviewPointerView {
+    private var image: NSImage
+
+    init(image: NSImage, onClick: ((ProxyRelayPrivatePipe.PreviewClick) -> Void)?) {
+        self.image = image
+        super.init(frame: .zero)
+        armClick(onClick)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override var clickRect: NSRect {
+        WebKitFrameTransport.PreviewGeometry.fit(image.size, inside: bounds)
+    }
+
+    func updateImage(_ image: NSImage) {
+        self.image = image
+        needsDisplay = true
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        image.draw(in: clickRect, from: .zero, operation: .sourceOver, fraction: 1)
+    }
+
+}
+
+@MainActor
+final class WebKitQAMetalView: WebKitQAPreviewPointerView {
+    private let drawableLayer: CAMetalLayer
+    private let contentSize: CGSize
+
+    init(frame: NSRect, drawableLayer: CAMetalLayer, contentSize: CGSize) {
+        self.drawableLayer = drawableLayer
+        self.contentSize = contentSize
+        super.init(frame: frame)
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.black.cgColor
+        layer?.masksToBounds = true
+        // CARenderer supplies the shared Metal frame with its vertical axis
+        // reversed. Correct it at presentation and keep input in view space.
+        drawableLayer.setAffineTransform(CGAffineTransform(scaleX: 1, y: -1))
+        layer?.addSublayer(drawableLayer)
+        updateDrawableFrame()
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override var clickRect: NSRect {
+        WebKitFrameTransport.PreviewGeometry.fit(contentSize, inside: bounds)
+    }
+
+    override func setFrameSize(_ size: NSSize) {
+        super.setFrameSize(size)
+        updateDrawableFrame()
+    }
+
+    private func updateDrawableFrame() {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        // Keep drawableSize and the shared allocation fixed while the AppKit
+        // presentation changes size. Input uses this same fitted rectangle.
+        let rect = clickRect
+        drawableLayer.bounds = CGRect(origin: .zero, size: rect.size)
+        drawableLayer.position = CGPoint(x: rect.midX, y: rect.midY)
+        CATransaction.commit()
+    }
+}
+
+@MainActor
+private final class WebKitQAMetalSample {
+    private var color: WebKitFrameTransport.ClickPixels.Color?
+    private var sampled = false
+    private var presented = false
+    private var deliver: ((WebKitFrameTransport.ClickPixels.Color?) -> Void)?
+
+    init(deliver: @escaping (WebKitFrameTransport.ClickPixels.Color?) -> Void) {
+        self.deliver = deliver
+    }
+
+    func didSample(_ bgra: UInt32) {
+        color = .init(bgra: bgra)
+        sampled = true
+        finish()
+    }
+
+    func didPresent() {
+        presented = true
+        finish()
+    }
+
+    private func finish() {
+        guard sampled, presented, let deliver else { return }
+        self.deliver = nil
+        deliver(color)
+    }
+}
+
+@MainActor
+private final class WebKitQAPreviewWindow: NSObject, NSWindowDelegate {
+    let generation: UUID
+    private let window: NSWindow
+    private var onClose: (() -> Void)?
+    private var stopFrames: (() -> Void)?
+    var metalClickPixels = WebKitFrameTransport.ClickPixels()
+    var recordedFirstPresentation = false
+
+    init?(png: Data, generation: UUID, onClick: ((ProxyRelayPrivatePipe.PreviewClick) -> Void)?,
+          onClose: @escaping () -> Void) {
+        guard let image = Self.previewImage(png) else { return nil }
+
+        self.generation = generation
+        self.onClose = onClose
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 442),
+                          styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        super.init()
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+        window.title = "WebKit · первый кадр QA"
+        window.contentView = WebKitQAPreviewImage(image: image, onClick: onClick)
+    }
+
+    init(generation: UUID, metalLayer: CAMetalLayer, contentSize: CGSize, stopFrames: @escaping () -> Void,
+         onClose: @escaping () -> Void) {
+        self.generation = generation
+        self.onClose = onClose
+        self.stopFrames = stopFrames
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 442),
+                          styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+        super.init()
+        let view = WebKitQAMetalView(frame: NSRect(origin: .zero, size: window.contentLayoutRect.size),
+                                     drawableLayer: metalLayer, contentSize: contentSize)
+        window.contentMinSize = NSSize(width: 320, height: 220)
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+        window.title = "WebKit · Metal QA"
+        window.contentView = view
+    }
+
+    private static func previewImage(_ png: Data) -> NSImage? {
+        guard png.count <= ProxyRelayPrivatePipe.maximumPreviewBytes,
+              let source = CGImageSourceCreateWithData(png as CFData, nil),
+              CGImageSourceGetType(source) as String? == "public.png",
+              CGImageSourceGetCount(source) == 1,
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any],
+              let width = properties[kCGImagePropertyPixelWidth as String] as? Int, (1...1280).contains(width),
+              let height = properties[kCGImagePropertyPixelHeight as String] as? Int, (1...960).contains(height),
+              let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { return nil }
+        return NSImage(cgImage: image, size: .zero)
+    }
+
+    func armMetalClick(_ action: @escaping (ProxyRelayPrivatePipe.PreviewClick) -> Void) {
+        (window.contentView as? WebKitQAPreviewPointerView)?.armClick(action)
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    func updateImage(_ png: Data) {
+        guard let view = window.contentView as? WebKitQAPreviewImage,
+              let image = Self.previewImage(png) else { return }
+        view.updateImage(image)
+    }
+
+    func show() -> Bool {
+        window.center()
+        window.orderFront(nil)
+        return window.isVisible
+    }
+
+    func dismiss() {
+        guard onClose != nil else { return }
+        onClose = nil
+        stopFrames?()
+        stopFrames = nil
+        window.delegate = nil
+        window.contentView = nil
+        window.close()
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        let close = onClose
+        onClose = nil
+        stopFrames?()
+        stopFrames = nil
+        window.delegate = nil
+        window.contentView = nil
+        close?()
+    }
+}
+#endif
 
 /// Private QA only: retain the child's closed-vocabulary image count after a
 /// failed launch. The normal alert stays human-readable and never exposes
@@ -66,6 +296,36 @@ enum WebKitQAImageFailureReceipt {
               root: root, bundle: bundle)
     }
 
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    static func recordPreviewVisible(profileID: UUID, generation: UUID, root: URL) {
+        write("stage=qa-preview-visible generation=\(generation.uuidString)\n",
+              name: "webkit-preview-\(profileID.uuidString)-qa.txt", root: root, bundle: .main)
+    }
+    enum MetalCheckpoint: String {
+        case inputReady, inputUnavailable, commandCompleted, commandFailed
+        case firstCallbackSkipped, secondCallbackSkipped, firstPresented
+        case inputArmed, clickSent, clickSendFailed
+    }
+
+    static func recordMetalCheckpoint(_ checkpoint: MetalCheckpoint, profileID: UUID,
+                                      generation: UUID, sequence: UInt64, root: URL) {
+        write("stage=\(checkpoint.rawValue) generation=\(generation.uuidString) sequence=\(sequence)\n",
+              name: "webkit-metal-\(checkpoint.rawValue)-\(profileID.uuidString)-\(generation.uuidString)-qa.txt",
+              root: root, bundle: .main)
+    }
+
+    static func recordMetalFramePresented(profileID: UUID, generation: UUID, sequence: UInt64, root: URL) {
+        guard sequence == 1 || sequence == 2 else { return }
+        write("stage=qa-metal-frame-presented generation=\(generation.uuidString) sequence=\(sequence)\n",
+              name: "webkit-metal-frame-\(sequence)-\(profileID.uuidString)-qa.txt", root: root, bundle: .main)
+    }
+    static func recordMetalClickPixels(profileID: UUID, generation: UUID, baseline: UInt64,
+                                       changed: UInt64, root: URL) {
+        write("stage=qa-metal-click-pixels generation=\(generation.uuidString) red=\(baseline) green=\(changed)\n",
+              name: "webkit-metal-click-\(profileID.uuidString)-qa.txt", root: root, bundle: .main)
+    }
+    #endif
+
     static func recordTLSStage(_ stage: String?, profileID: UUID,
                                root: URL, bundle: Bundle = .main) {
         let safe = stage.flatMap {
@@ -104,6 +364,26 @@ enum WebKitQAImageFailureReceipt {
             "authorized=\(counters.authorized) bound=\(counters.bound)\n"
         write(line, name: "webkit-broker-counts-\(profileID.uuidString)-qa.txt",
               root: root, bundle: bundle)
+    }
+    #endif
+
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    static func recordNetworkOwner(_ lease: WebKitNetworkProcessCodeIdentity.Lease,
+                                   root: URL) {
+        guard let owner = lease.qualificationOwner else { return }
+        let session = lease.session
+        let fields: [String: Any] = [
+            "profileID": session.profileID.uuidString,
+            "generation": session.generation.uuidString,
+            "pid": owner.pid,
+            "startSeconds": owner.startedAtSeconds,
+            "startMicroseconds": owner.startedAtMicroseconds
+        ]
+        guard let bytes = try? JSONSerialization.data(withJSONObject: fields, options: [.sortedKeys]),
+              let line = String(data: bytes, encoding: .utf8) else { return }
+        write(line + "\n",
+              name: "webkit-network-owner-\(session.profileID.uuidString)-\(session.generation.uuidString)-qa.json",
+              root: root, bundle: .main)
     }
     #endif
 
@@ -506,7 +786,7 @@ enum BrowserLaunchBuilder {
             // The QA harness binds its CDP client to this ephemeral IPv4
             // loopback port; ordinary/profile starts never expose CDP.
             arguments += ["--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0",
-                          "--password-store=basic"]
+                          "--password-store=basic", "--use-mock-keychain"]
         }
         let disabledFeatures = policy.disabledFeatures
 
@@ -808,12 +1088,18 @@ final class BrowserProcessManager: ObservableObject {
 
     private var webKitBrowsers: [UUID: WebKitProfileBrowser] = [:]
     private var webKitHostClients: [UUID: WebKitHostClient] = [:]
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    private var webKitQAPreviews: [UUID: WebKitQAPreviewWindow] = [:]
+    #endif
+    #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+    private var webKitPresenters: [UUID: WebKitDetachedPresenter] = [:]
+    #endif
     private var webKitHostBrokers: [UUID: WebKitLoopbackBroker] = [:]
     private let webKitLoopbackBrokerPool = WebKitLoopbackBrokerPool()
     private var webKitHostStartingProfileIDs = Set<UUID>()
     private var webKitHostGenerations: [UUID: UUID] = [:]
     private var webKitHostUnexpectedExitGenerations: [UUID: UUID] = [:]
-    private var webKitHostStopTasks: [UUID: Task<Void, Never>] = [:]
+    @Published private var webKitHostStopTasks: [UUID: Task<Void, Never>] = [:]
     private var webKitHostSaveFailureProfileIDs = Set<UUID>()
     /// GUI lifecycle only. Emitted after session writes and downloads settle.
     var webKitDidClose: ((UUID, UUID) -> Void)?
@@ -1552,6 +1838,7 @@ final class BrowserProcessManager: ObservableObject {
         if ephemeralCleanupPending.contains(profileID) { return .closing }
         if webKitMaintenanceProfileIDs.contains(profileID) { return .checking }
         if webKitHostStartingProfileIDs.contains(profileID) { return .checking }
+        if webKitHostStopTasks[profileID] != nil { return .closing }
         if webKitBrowsers[profileID] != nil || webKitHostClients[profileID] != nil { return .managed }
         if let intent = managedClosingIntents[profileID], closingDeadlineIsCurrent(intent) {
             return .closing
@@ -3102,12 +3389,20 @@ final class BrowserProcessManager: ObservableObject {
         return valid && sessionObservationIsCurrent(observation, profileID: profileID)
     }
 
-    @discardableResult func launchWebKitProfile(_ profile: BrowserProfile) throws -> UUID {
+    private func requireWebKitAvailable() throws {
         guard BrowserEngine.webkit.isAvailableInBuild else {
             throw WebKitProfileError.unsupported("WebKit выключен в этой версии NeAntik. Профиль и его данные сохранены; запускайте его в сборке с поддержкой WebKit.")
         }
-        observeWebKitTerminationIfNeeded()
+    }
+
+    @discardableResult func launchWebKitProfile(_ profile: BrowserProfile) throws -> UUID {
+        try requireWebKitAvailable()
         try WebKitProfilePolicy.validate(profile)
+        return try launchSystemWebKitProfile(profile)
+    }
+
+    private func launchSystemWebKitProfile(_ profile: BrowserProfile) throws -> UUID {
+        observeWebKitTerminationIfNeeded()
         try launchAdmission.requireSafePressure()
         guard !webKitQuitPending, webKitBrowsers[profile.id] == nil,
               processState(for: profile.id) == .stopped else { throw NeAntikError.profileAlreadyRunning }
@@ -3150,22 +3445,16 @@ final class BrowserProcessManager: ObservableObject {
     /// refused while the runtime qualification switch is off.
     @discardableResult
     func launchWebKitProfileAsync(_ profile: BrowserProfile) async throws -> UUID {
-        guard profile.webKitRuntimeGeneration == .isolatedV1 else {
-            return try launchWebKitProfile(profile)
+        try requireWebKitAvailable()
+        switch try WebKitProfilePolicy.launchRoute(profile) {
+        case .systemDirect:
+            return try launchSystemWebKitProfile(profile)
+        case .owned:
+            return try await launchIsolatedWebKitProfile(profile)
         }
-        return try await launchIsolatedWebKitProfile(profile)
     }
 
-    @discardableResult
     private func launchIsolatedWebKitProfile(_ profile: BrowserProfile) async throws -> UUID {
-        guard BrowserEngine.webkit.isAvailableInBuild else {
-            throw WebKitProfileError.unsupported("WebKit выключен в этой версии NeAntik. Профиль и его данные сохранены; запускайте его в сборке с поддержкой WebKit.")
-        }
-        try WebKitProfilePolicy.validateConfiguration(profile)
-        guard profile.webKitRuntimeGeneration == .isolatedV1 else { throw NeAntikError.invalidProfile }
-        if profile.proxy != nil, !WebKitProxyFeature.launchEnabled {
-            throw WebKitProfileError.unsupported("Прокси WebKit пока отключён: маршрут ещё не прошёл квалификацию. Настройки сохранены, прямое подключение вместо прокси не выполняется.")
-        }
         try launchAdmission.requireSafePressure()
         guard !webKitQuitPending, webKitHostClients[profile.id] == nil,
               !webKitHostStartingProfileIDs.contains(profile.id),
@@ -3247,7 +3536,29 @@ final class BrowserProcessManager: ObservableObject {
                 throw CancellationError()
             }
             let lease = try await host.configureRoute(capability, scope: scope, broker: broker)
-            try await host.activate(scope: scope, broker: broker, lease: lease)
+            try await host.activate(scope: scope, broker: broker, lease: lease) { [weak self] lostScope in
+                Task { @MainActor [weak self] in
+                    self?.requestCloseWebKitHost(profileID: lostScope.profileID, generation: lostScope.sessionID,
+                                                 routeLost: true)
+                }
+            }
+            #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+            let presenter: WebKitDetachedPresenter?
+            if let (frames, input, downloadIntake) = await host.takePresenterChannels() {
+                guard let window = WebKitDetachedPresenter(
+                    profileName: profile.name, generation: generation, endpoint: frames, input: input,
+                    downloadIntake: downloadIntake,
+                    onClose: { [weak self] in
+                        self?.requestCloseWebKitHost(profileID: profile.id, generation: generation)
+                    }, onFailure: { [weak self] in
+                        self?.lastError = "Окно профиля WebKit потеряло связь с браузером. Профиль закрывается."
+                        self?.requestCloseWebKitHost(profileID: profile.id, generation: generation)
+                    }) else { throw WebKitHostClient.Failure.invalidState }
+                presenter = window
+            } else {
+                presenter = nil
+            }
+            #endif
             let hostIsRunning = await host.isRunning
             if webKitHostUnexpectedExitGenerations[profile.id] == generation || !hostIsRunning {
                 webKitHostUnexpectedExitGenerations.removeValue(forKey: profile.id)
@@ -3261,6 +3572,16 @@ final class BrowserProcessManager: ObservableObject {
                 client = nil
                 throw CancellationError()
             }
+            if !broker.hasActiveRoute(scope) {
+                // The host reached route-ready, so let it save even if the
+                // Networking lease expired before we published the session.
+                try await host.close()
+                client = nil
+                throw WebKitHostClient.Failure.routeLostDuringStartup
+            }
+            #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+            WebKitQAImageFailureReceipt.recordNetworkOwner(lease, root: paths.rootDirectory)
+            #endif
             webKitHostClients[profile.id] = host
             webKitHostBrokers[profile.id] = broker
             webKitHostUnexpectedExitGenerations.removeValue(forKey: profile.id)
@@ -3268,6 +3589,15 @@ final class BrowserProcessManager: ObservableObject {
             webKitHostStartingProfileIDs.remove(profile.id)
             webKitHostGenerations.removeValue(forKey: profile.id)
             preserveRunningChild = true
+            #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+            showWebKitQAPreview(host: host, profileID: profile.id, generation: generation)
+            #endif
+            #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+            if let presenter {
+                webKitPresenters[profile.id] = presenter
+                presenter.start()
+            }
+            #endif
             observeWebKitTerminationIfNeeded()
             return generation
         } catch {
@@ -3323,10 +3653,232 @@ final class BrowserProcessManager: ObservableObject {
             }
     }
 
-    private func requestCloseWebKitHost(profileID: UUID, generation: UUID) {
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    private func showWebKitQAPreview(host: WebKitHostClient, profileID: UUID, generation: UUID) {
+        Task { @MainActor [weak self] in
+            if let endpoint = await host.takeMetalFrameEndpoint() {
+                await self?.showWebKitMetalPreview(endpoint, host: host, profileID: profileID, generation: generation)
+                return
+            }
+            guard host.canReadQAPreview else { return }
+            let frame = await host.readFirstQAPreview()
+            guard await host.isRunning, let self, !self.webKitQuitPending,
+                  self.webKitHostClients[profileID]?.session.generation == generation,
+                  self.webKitHostStopTasks[profileID] == nil else { return }
+            guard let frame else {
+                self.failWebKitQAPresentation(profileID: profileID, generation: generation)
+                return
+            }
+            let onClick: ((ProxyRelayPrivatePipe.PreviewClick) -> Void)? = frame.acceptsClick ? { [weak self] click in
+                Task { @MainActor [weak self] in
+                    guard let png = await host.sendQAPreviewClick(click),
+                          let self, !self.webKitQuitPending,
+                          self.webKitHostStopTasks[profileID] == nil,
+                          let window = self.webKitQAPreviews[profileID],
+                          window.generation == generation else { return }
+                    window.updateImage(png)
+                }
+            } : nil
+            guard let preview = WebKitQAPreviewWindow(png: frame.png, generation: generation, onClick: onClick,
+                onClose: { [weak self] in
+                self?.requestCloseWebKitHost(profileID: profileID, generation: generation)
+            }) else {
+                self.failWebKitQAPresentation(profileID: profileID, generation: generation)
+                return
+            }
+            self.webKitQAPreviews[profileID] = preview
+            guard preview.show() else {
+                self.failWebKitQAPresentation(profileID: profileID, generation: generation)
+                return
+            }
+            WebKitQAImageFailureReceipt.recordPreviewVisible(
+                profileID: profileID, generation: generation, root: self.paths.rootDirectory)
+        }
+    }
+
+    private func failWebKitQAPresentation(profileID: UUID, generation: UUID) {
+        guard webKitHostClients[profileID]?.session.generation == generation,
+              webKitHostStopTasks[profileID] == nil else { return }
+        lastError = "WebKit не смог показать окно профиля. Профиль закрывается."
+        requestCloseWebKitHost(profileID: profileID, generation: generation)
+    }
+
+    private func showWebKitMetalPreview(_ endpoint: WebKitFrameTransport.Endpoint, host: WebKitHostClient,
+                                        profileID: UUID, generation: UUID) async {
+        defer { endpoint.stop() }
+        let initial = await Task.detached {
+            var reader = endpoint
+            return (try? reader.receive(timeout: 10)).map { (reader, $0) }
+        }.value
+        guard webKitHostClients[profileID]?.session.generation == generation,
+              !webKitQuitPending, webKitHostStopTasks[profileID] == nil else { return }
+        guard var (reader, frame) = initial, let device = MTLCreateSystemDefaultDevice(),
+              let queue = device.makeCommandQueue(),
+              let memory = try? WebKitFrameTransport.map(reader.memory, layout: reader.layout,
+                                                        writer: false, device: device) else {
+            failWebKitQAPresentation(profileID: profileID, generation: generation)
+            return
+        }
+
+        let layout = reader.layout
+        let layer = CAMetalLayer()
+        layer.device = device
+        layer.pixelFormat = .bgra8Unorm
+        layer.framebufferOnly = false
+        layer.drawableSize = CGSize(width: layout.width, height: layout.height)
+        let preview = WebKitQAPreviewWindow(generation: generation, metalLayer: layer, contentSize: layer.drawableSize,
+                                            stopFrames: endpoint.stop,
+                                            onClose: { [weak self] in
+            self?.requestCloseWebKitHost(profileID: profileID, generation: generation)
+        })
+        webKitQAPreviews[profileID] = preview
+        guard preview.show() else {
+            failWebKitQAPresentation(profileID: profileID, generation: generation)
+            return
+        }
+
+        let checksClickPixels = frame.acceptsClick == true
+        let fixtureRoot = paths.rootDirectory
+        WebKitQAImageFailureReceipt.recordMetalCheckpoint(
+            checksClickPixels ? .inputReady : .inputUnavailable, profileID: profileID,
+            generation: generation, sequence: frame.sequence, root: fixtureRoot)
+        while webKitQAPreviews[profileID]?.generation == generation {
+            let activeReader = reader
+            let activeFrame = frame
+            let sample = checksClickPixels && !preview.metalClickPixels.complete ? WebKitQAMetalSample { [weak self] color in
+                guard let self, let current = self.webKitQAPreviews[profileID], current.generation == generation else { return }
+                switch current.metalClickPixels.presented(sequence: activeFrame.sequence, color: color) {
+                case .arm:
+                    let sequence = activeFrame.sequence
+                    WebKitQAImageFailureReceipt.recordMetalCheckpoint(.inputArmed, profileID: profileID,
+                        generation: generation, sequence: sequence, root: fixtureRoot)
+                    current.armMetalClick { [weak current] click in
+                        guard current?.metalClickPixels.beginClick() == true else { return }
+                        Task {
+                            let checkpoint: WebKitQAImageFailureReceipt.MetalCheckpoint
+                            do {
+                                try await host.sendQAMetalClick(click)
+                                checkpoint = .clickSent
+                            } catch {
+                                checkpoint = .clickSendFailed
+                            }
+                            WebKitQAImageFailureReceipt.recordMetalCheckpoint(checkpoint, profileID: profileID,
+                                generation: generation, sequence: sequence, root: fixtureRoot)
+                        }
+                    }
+                case .verified(let baseline, let changed):
+                    WebKitQAImageFailureReceipt.recordMetalClickPixels(profileID: profileID,
+                        generation: generation, baseline: baseline, changed: changed, root: self.paths.rootDirectory)
+                case nil: break
+                }
+            } : nil
+            let updated = await Task.detached { [weak self] () -> (WebKitFrameTransport.Endpoint, WebKitFrameTransport.Frame)? in
+                var activeReader = activeReader
+                let command = autoreleasepool { () -> (any MTLCommandBuffer)? in
+                    guard let drawable = layer.nextDrawable(),
+                          drawable.texture.width == layout.width, drawable.texture.height == layout.height,
+                          let command = queue.makeCommandBuffer(), let blit = command.makeBlitCommandEncoder() else {
+                        return nil
+                    }
+                    blit.copy(from: memory, sourceOffset: 0, sourceBytesPerRow: layout.bytesPerRow,
+                              sourceBytesPerImage: layout.bytesPerRow * layout.height,
+                              sourceSize: MTLSize(width: layout.width, height: layout.height, depth: 1),
+                              to: drawable.texture, destinationSlice: 0, destinationLevel: 0, destinationOrigin: MTLOrigin())
+                    blit.endEncoding()
+                    if activeFrame.sequence <= 2 || sample != nil {
+                        drawable.addPresentedHandler { [weak self] displayed in
+                            let presented = displayed.presentedTime > 0
+                            guard presented || activeFrame.sequence <= 2 else { return }
+                            Task { @MainActor [weak self] in
+                                guard let self, let current = self.webKitQAPreviews[profileID],
+                                      current.generation == generation else { return }
+                                if !presented {
+                                    WebKitQAImageFailureReceipt.recordMetalCheckpoint(
+                                        activeFrame.sequence == 1 ? .firstCallbackSkipped : .secondCallbackSkipped,
+                                        profileID: profileID, generation: generation,
+                                        sequence: activeFrame.sequence, root: fixtureRoot)
+                                    return
+                                }
+                                if !current.recordedFirstPresentation {
+                                    current.recordedFirstPresentation = true
+                                    WebKitQAImageFailureReceipt.recordMetalCheckpoint(.firstPresented, profileID: profileID,
+                                        generation: generation, sequence: activeFrame.sequence, root: fixtureRoot)
+                                }
+                                WebKitQAImageFailureReceipt.recordMetalFramePresented(profileID: profileID,
+                                    generation: generation, sequence: activeFrame.sequence, root: self.paths.rootDirectory)
+                                sample?.didPresent()
+                                if activeFrame.sequence == 1 {
+                                    WebKitQAImageFailureReceipt.recordPreviewVisible(profileID: profileID,
+                                        generation: generation, root: self.paths.rootDirectory)
+                                }
+                            }
+                        }
+                    }
+                    command.present(drawable)
+                    command.commit()
+                    return command
+                }
+                guard let command else { return nil }
+                await command.completed()
+                if activeFrame.sequence == 1 {
+                    WebKitQAImageFailureReceipt.recordMetalCheckpoint(
+                        command.status == .completed ? .commandCompleted : .commandFailed,
+                        profileID: profileID, generation: generation, sequence: activeFrame.sequence, root: fixtureRoot)
+                }
+                guard command.status == .completed else { return nil }
+                if let sample {
+                    let pixel = memory.contents().load(
+                        fromByteOffset: WebKitFrameTransport.ClickPixels.sampleOffset(in: layout), as: UInt32.self)
+                    await sample.didSample(pixel)
+                }
+                do {
+                    try activeReader.send(.init(kind: .consumed, generation: generation,
+                                                sequence: activeFrame.sequence), timeout: 2)
+                    while !Task.isCancelled {
+                        do {
+                            let next = try activeReader.receive(timeout: 10)
+                            return (activeReader, next)
+                        } catch ProxyRelayPrivatePipe.Failure.timeout {
+                            // A tab switch or a navigation can temporarily have no layer.
+                            continue
+                        }
+                    }
+                } catch { return nil }
+                return nil
+            }.value
+            guard let updated else {
+                requestCloseWebKitHost(profileID: profileID, generation: generation)
+                return
+            }
+            (reader, frame) = updated
+        }
+    }
+
+    private func dismissWebKitQAPreview(profileID: UUID, generation: UUID) {
+        guard let preview = webKitQAPreviews[profileID], preview.generation == generation else { return }
+        webKitQAPreviews.removeValue(forKey: profileID)
+        preview.dismiss()
+    }
+    #endif
+
+    #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+    private func dismissWebKitPresenter(profileID: UUID, generation: UUID) {
+        guard let presenter = webKitPresenters[profileID], presenter.generation == generation else { return }
+        webKitPresenters.removeValue(forKey: profileID)
+        presenter.dismiss()
+    }
+    #endif
+
+    private func requestCloseWebKitHost(profileID: UUID, generation: UUID, routeLost: Bool = false) {
         guard let client = webKitHostClients[profileID],
               client.session.generation == generation,
               webKitHostStopTasks[profileID] == nil else { return }
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+        dismissWebKitQAPreview(profileID: profileID, generation: generation)
+        #endif
+        #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+        dismissWebKitPresenter(profileID: profileID, generation: generation)
+        #endif
         let broker = webKitHostBrokers[profileID]
         let fixtureRoot = paths.rootDirectory
         webKitHostStopTasks[profileID] = Task { @MainActor [weak self] in
@@ -3355,8 +3907,10 @@ final class BrowserProcessManager: ObservableObject {
                 self.webKitHostBrokers.removeValue(forKey: profileID)
                 self.webKitHostSaveFailureProfileIDs.remove(profileID)
                 self.runningProfileIDs.remove(profileID)
-                if !self.hasFailedWebKitSessionSave,
-                   self.lastError == Self.webKitSessionSaveFailureMessage {
+                if routeLost {
+                    self.lastError = "WebKit потерял сетевой маршрут. Профиль сохранён и закрыт. Откройте его заново для восстановления соединения."
+                } else if !self.hasFailedWebKitSessionSave,
+                          self.lastError == Self.webKitSessionSaveFailureMessage {
                     self.lastError = nil
                 }
                 self.webKitDidClose?(profileID, generation)
@@ -3419,13 +3973,29 @@ final class BrowserProcessManager: ObservableObject {
             guard let client = webKitHostClients[profileID],
                   client.session.generation == session.generation,
                   webKitHostStopTasks[profileID] == nil else { return }
+            #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+            dismissWebKitQAPreview(profileID: profileID, generation: session.generation)
+            #endif
+            #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+            dismissWebKitPresenter(profileID: profileID, generation: session.generation)
+            #endif
             let broker = webKitHostBrokers[profileID]
+            let fixtureRoot = paths.rootDirectory
             webKitHostStopTasks[profileID] = Task { @MainActor [weak self] in
                 defer { self?.webKitHostStopTasks.removeValue(forKey: profileID) }
-                // Revoke network access first. abort() then confirms the exact
-                // owned child is gone before the session fence is released.
+                // Revoke network access first. A host can close itself and
+                // leave its save/close acknowledgements buffered at exit.
                 await broker?.revoke(Self.webKitRelayScope(for: session))
-                guard await client.abort(), let self,
+                let savedAndClosed: Bool
+                if status == EXIT_SUCCESS {
+                    savedAndClosed = (try? await client.close()) != nil
+                } else {
+                    savedAndClosed = false
+                }
+                let cleanedUp = savedAndClosed ? true : await client.abort()
+                WebKitQAImageFailureReceipt.recordNavigationStage(
+                    await client.qaNavigationStage(), profileID: profileID, root: fixtureRoot)
+                guard cleanedUp, let self,
                       self.webKitHostClients[profileID]?.session.generation == session.generation else {
                     self?.webKitHostSaveFailureProfileIDs.insert(profileID)
                     self?.lastError = Self.webKitSessionSaveFailureMessage
@@ -3435,9 +4005,13 @@ final class BrowserProcessManager: ObservableObject {
                 self.webKitHostBrokers.removeValue(forKey: profileID)
                 self.webKitHostSaveFailureProfileIDs.remove(profileID)
                 self.runningProfileIDs.remove(profileID)
-                self.lastError = status == 0
-                    ? "Окно WebKit неожиданно закрылось. Данные профиля оставлены на месте; проверьте профиль перед повторным запуском."
-                    : "Окно WebKit аварийно завершилось (код \(status)). Данные профиля не удалялись; проверьте профиль перед повторным запуском."
+                if savedAndClosed {
+                    self.lastError = "Окно WebKit закрылось. Профиль сохранён, его можно открыть снова."
+                } else {
+                    self.lastError = status == EXIT_SUCCESS
+                        ? "Окно WebKit закрылось без подтверждения сохранения. Проверьте профиль перед повторным запуском."
+                        : "Окно WebKit аварийно завершилось (код \(status)). Данные профиля не удалялись; проверьте профиль перед повторным запуском."
+                }
                 self.webKitDidClose?(profileID, session.generation)
                 await self.webKitLoopbackBrokerPool.stopIfIdle(
                     self.webKitHostClients.isEmpty && self.webKitHostStartingProfileIDs.isEmpty)

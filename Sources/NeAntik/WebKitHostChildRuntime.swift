@@ -6,11 +6,20 @@ import Foundation
 /// runtime before reading profile metadata, then accepts only the parent's
 /// exact session and route activation. No system-WebKit fallback exists.
 enum WebKitHostChildRuntime {
+    private enum StartupFailure: Error {
+        case windowNotVisible
+    }
+
     @MainActor
     private final class Lifetime {
         var bootstrap: WebKitHostChildBootstrap?
         var browser: WebKitProfileBrowser?
-        var finished = false
+        var finishedSession: WebKitHostIPC.Session?
+        var finished: Bool { finishedSession != nil }
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+        let qaClicks = PreviewClickMailbox()
+        var sendClickPreview: ((Data) -> Void)?
+        #endif
     }
 
     /// The pipe reader runs off the main thread. The custom AppKit pump does
@@ -35,23 +44,69 @@ enum WebKitHostChildRuntime {
         }
     }
 
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    private final class PreviewClickMailbox: @unchecked Sendable {
+        private let lock = NSLock()
+        private var pending: ProxyRelayPrivatePipe.PreviewClick?
+
+        func put(_ click: ProxyRelayPrivatePipe.PreviewClick) {
+            lock.lock()
+            defer { lock.unlock() }
+            pending = click
+        }
+
+        func take() -> ProxyRelayPrivatePipe.PreviewClick? {
+            lock.lock()
+            defer { lock.unlock() }
+            let click = pending
+            pending = nil
+            return click
+        }
+    }
+    #endif
+
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    private static func readOneQAClick(generation: UUID, into mailbox: PreviewClickMailbox) {
+        Task.detached {
+            while !Task.isCancelled {
+                do {
+                    // Reverse stdout, independent of lifecycle writes and frame acks.
+                    mailbox.put(try ProxyRelayPrivatePipe.readPreviewClick(STDOUT_FILENO, generation: generation))
+                    return
+                } catch ProxyRelayPrivatePipe.Failure.timeout {
+                    continue
+                } catch { return }
+            }
+        }
+    }
+    #endif
+
     @MainActor
     static func runAndExit() -> Never {
         let systemAtEntry = WebKitRuntimeImageAttestation.systemImageCount()
         recordStartupStage("host-entry")
         let lifetime = Lifetime()
         let closeRequest = CloseRequest()
-        let app = NSApplication.shared
+        let transport: WebKitHostCodeIdentity.QASessionTransport
+        do {
+            guard let helper = Bundle.main.executableURL else { throw WebKitHostCodeIdentity.Failure.unsafeBundle }
+            transport = try WebKitHostCodeIdentity.qaSessionTransport(for: helper)
+        } catch {
+            refuse("NEANTIK_WEBKIT_STARTUP_FAILURE code=identity-unsafeBundle\n", code: EX_UNAVAILABLE)
+        }
+        let detached = transport != .ordinary
+        let app = detached ? nil : NSApplication.shared
         let checkpoint = WebKitRuntimeImageAttestation.StartupCheckpoint(
             systemAtEntry: systemAtEntry,
             systemAfterAppKit: WebKitRuntimeImageAttestation.systemImageCount())
-        recordStartupStage("appkit-created")
-        app.setActivationPolicy(.regular)
+        recordStartupStage(detached ? "qa-detached-entry" : "appkit-created")
+        app?.setActivationPolicy(.regular)
         let startup = Task { @MainActor in
             do {
                 try await prepareAndShow(lifetime: lifetime,
                                          closeRequest: closeRequest,
-                                         startupCheckpoint: checkpoint)
+                                         startupCheckpoint: checkpoint,
+                                         transport: transport)
             } catch {
                 refuse("NEANTIK_WEBKIT_STARTUP_FAILURE code=\(safeFailureCode(error))\n",
                        code: EX_UNAVAILABLE)
@@ -64,20 +119,48 @@ enum WebKitHostChildRuntime {
         recordStartupStage("event-loop-starting")
         while !lifetime.finished {
             autoreleasepool {
-                if let event = app.nextEvent(matching: .any,
-                                             until: Date(timeIntervalSinceNow: 0.05),
-                                             inMode: .default, dequeue: true) {
-                    app.sendEvent(event)
+                let deadline = Date(timeIntervalSinceNow: 0.05)
+                if let app {
+                    if let event = app.nextEvent(matching: .any, until: deadline, inMode: .default, dequeue: true) {
+                        app.sendEvent(event)
+                    }
+                    app.updateWindows()
+                } else {
+                    _ = RunLoop.current.run(mode: .default, before: deadline)
                 }
-                app.updateWindows()
                 if closeRequest.consume() {
                     recordStartupStage("close-main")
                     lifetime.browser?.close()
                 }
+                #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+                if let click = lifetime.qaClicks.take(), !lifetime.finished {
+                    let dispatched: Bool
+                    if let sendFrame = lifetime.sendClickPreview {
+                        dispatched = lifetime.browser?.dispatchQAPreviewClick(click, onFrame: sendFrame) == true
+                    } else {
+                        dispatched = lifetime.browser?.dispatchQAMetalClick(click) == true
+                    }
+                    if dispatched { recordStartupStage("qa-preview-click-dispatched") }
+                }
+                #endif
             }
         }
         startup.cancel()
         lifetime.bootstrap?.releaseAfterClose()
+        guard let session = lifetime.finishedSession else { Darwin.exit(EX_SOFTWARE) }
+        // Metal teardown cancels its rendering task. Write from the event
+        // pump after the save callback, outside any task it may have cancelled.
+        var failureStage = "close-save-send-failed"
+        do {
+            try WebKitHostIPC.write(.saved(session), to: STDOUT_FILENO)
+            recordStartupStage("close-save-sent")
+            failureStage = "close-closed-send-failed"
+            try WebKitHostIPC.write(.closed(session), to: STDOUT_FILENO)
+            recordStartupStage("close-closed-sent")
+        } catch {
+            recordStartupStage(failureStage)
+            Darwin.exit(EX_IOERR)
+        }
         Darwin.exit(EXIT_SUCCESS)
     }
 
@@ -85,7 +168,8 @@ enum WebKitHostChildRuntime {
     private static func prepareAndShow(
         lifetime: Lifetime,
         closeRequest: CloseRequest,
-        startupCheckpoint: WebKitRuntimeImageAttestation.StartupCheckpoint
+        startupCheckpoint: WebKitRuntimeImageAttestation.StartupCheckpoint,
+        transport: WebKitHostCodeIdentity.QASessionTransport
     ) async throws {
         recordStartupStage("child-entry")
         guard WebKitHostCodeIdentity.isSupportedHostIdentifier(Bundle.main.bundleIdentifier) else {
@@ -94,13 +178,21 @@ enum WebKitHostChildRuntime {
         let executable = Bundle.main.executablePath ?? CommandLine.arguments[0]
         try WebKitHostCodeIdentity.verifyCurrentHostAndParent(
             executablePath: executable, expectedParentPID: getppid())
+        guard try WebKitHostCodeIdentity.qaSessionTransport(for: URL(fileURLWithPath: executable)) == transport
+        else { throw WebKitHostCodeIdentity.Failure.unsafeBundle }
         recordStartupStage("identity-verified")
         let runtime = try WebKitRuntimeImageAttestation.attestCurrentProcess(
-            startupCheckpoint: startupCheckpoint)
+            startupCheckpoint: startupCheckpoint, requireNetworkSandboxPin: true)
         recordStartupStage("runtime-attested")
 
-        try ProxyRelayPrivatePipe.prepare(STDIN_FILENO, writable: false)
-        try ProxyRelayPrivatePipe.prepare(STDOUT_FILENO, writable: true)
+        if transport.usesDuplexSocket {
+            try ProxyRelayPrivatePipe.prepareAnonymousSocket(STDIN_FILENO)
+            try ProxyRelayPrivatePipe.prepareAnonymousSocket(STDOUT_FILENO)
+        } else {
+            try ProxyRelayPrivatePipe.prepare(STDIN_FILENO, writable: false)
+            try ProxyRelayPrivatePipe.prepare(STDOUT_FILENO, writable: true)
+        }
+        let detached = transport != .ordinary
         recordStartupStage("pipes-ready")
         let bootstrapFrame = try await readStartupFrame(timeout: 10)
         guard case .bootstrap(let session) = bootstrapFrame,
@@ -115,6 +207,21 @@ enum WebKitHostChildRuntime {
         recordStartupStage("profile-acquired")
         try WebKitHostIPC.write(.bootstrapAccepted(session), to: STDOUT_FILENO)
         recordStartupStage("bootstrap-accepted")
+
+        let metalFrames = try await transport.usesFrames ? Task.detached {
+            try WebKitFrameTransport.accept(generation: session.generation, from: STDIN_FILENO, timeout: 5)
+        }.value : nil
+        if let metalFrames, metalFrames.layout != WebKitFrameTransport.qaLayout {
+            throw WebKitFrameTransport.Failure.descriptor
+        }
+        #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+        let presenter = try await transport == .detachedPresenter ? Task.detached {
+            try WebKitPresenterChannel.accept(from: STDIN_FILENO, timeout: 5)
+        }.value : nil
+        let downloadIntake = try await transport == .detachedPresenter ? Task.detached {
+            try WebKitPresenterChannel.accept(from: STDIN_FILENO, timeout: 5)
+        }.value : nil
+        #endif
 
         let capabilityFrame = try await readStartupFrame(timeout: 10)
         guard case .relayCapability(let capabilitySession, let credential) = capabilityFrame,
@@ -137,6 +244,7 @@ enum WebKitHostChildRuntime {
             sessionStore: sessionStore, restoredSession: restored,
             sessionWarning: sessionWarning,
             runtime: .owned(session: session, relayCredential: credential),
+            detached: detached,
             onSessionSaveError: {
                 try? WebKitHostIPC.write(.saveFailed(session, reason: .writeFailed),
                                          to: STDOUT_FILENO)
@@ -166,11 +274,104 @@ enum WebKitHostChildRuntime {
             },
             onClose: {
                 recordStartupStage("close-callback")
-                try? WebKitHostIPC.write(.saved(session), to: STDOUT_FILENO)
-                try? WebKitHostIPC.write(.closed(session), to: STDOUT_FILENO)
-                lifetime.finished = true
+                lifetime.finishedSession = session
             })
         lifetime.browser = browser
+        #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+        if let metalFrames, let presenter, let downloadIntake {
+            let downloads = WebKitDetachedDownloadHost(intake: downloadIntake, generation: session.generation,
+                onCancel: { [weak browser] id in browser?.downloads?.cancel(id) },
+                onUnavailable: { [weak browser] in browser?.close() })
+            browser.attachDetachedDownloads(downloads.remote)
+            try startDetachedPresenter(frames: metalFrames, channel: presenter, generation: session.generation,
+                                       browser: browser, runtime: runtime, downloads: downloads)
+        }
+        #endif
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+        if let metalFrames {
+            browser.onQAMetalStop = { metalFrames.stop() }
+            browser.onQAMetalLayer = { [weak browser] in
+                guard (try? WebKitRuntimeImageAttestation.attestCurrentProcess(
+                    startupCheckpoint: startupCheckpoint)) != nil,
+                      let renderer = WebKitFrameTransport.Renderer(endpoint: metalFrames) else {
+                    recordStartupStage("qa-preview-image-refused")
+                    browser?.close()
+                    return
+                }
+                let rendering = Task { @MainActor [weak browser] in
+                    var endpoint = metalFrames
+                    var sequence: UInt64 = 1
+                    let clock = ContinuousClock()
+                    while !lifetime.finished && !Task.isCancelled {
+                        let nextFrame = clock.now + .milliseconds(84)
+                        if let layer = browser?.qaMetalCompositingLayer() {
+                            guard let command = renderer.submit(layer: layer) else {
+                                browser?.close()
+                                return
+                            }
+                            await command.completed()
+                            guard !Task.isCancelled, !lifetime.finished, command.status == .completed else {
+                                if !Task.isCancelled, !lifetime.finished { browser?.close() }
+                                return
+                            }
+                            let acceptsClick = sequence == 1 && browser?.armQAMetalClick(for: layer) == true
+                            if acceptsClick { readOneQAClick(generation: session.generation, into: lifetime.qaClicks) }
+                            let ready = WebKitFrameTransport.Frame(kind: .ready,
+                                generation: session.generation, sequence: sequence,
+                                acceptsClick: acceptsClick ? true : nil)
+                            let channel = endpoint
+                            guard let acknowledged = await Task.detached(operation: {
+                                var channel = channel
+                                do {
+                                    try channel.send(ready, timeout: 2)
+                                    _ = try channel.receive(timeout: 4)
+                                    return channel
+                                } catch { return nil as WebKitFrameTransport.Endpoint? }
+                            }).value else {
+                                if !Task.isCancelled, !lifetime.finished { browser?.close() }
+                                return
+                            }
+                            endpoint = acknowledged
+                            sequence += 1
+                        }
+                        try? await clock.sleep(until: nextFrame)
+                    }
+                }
+                browser?.onQAMetalStop = {
+                    rendering.cancel()
+                    metalFrames.stop()
+                }
+            }
+        } else if transport == .detachedSocket {
+            let clicks = lifetime.qaClicks
+            lifetime.sendClickPreview = { [weak browser] png in
+                guard (try? WebKitRuntimeImageAttestation.attestCurrentProcess(
+                    startupCheckpoint: startupCheckpoint)) != nil else {
+                    recordStartupStage("qa-preview-image-refused")
+                    browser?.close()
+                    return
+                }
+                Task.detached {
+                    try? ProxyRelayPrivatePipe.writePreview(STDIN_FILENO, png: png, generation: session.generation)
+                }
+            }
+            browser.onQAPreviewFrame = { [weak browser] png, acceptsClick in
+                guard (try? WebKitRuntimeImageAttestation.attestCurrentProcess(
+                    startupCheckpoint: startupCheckpoint)) != nil else {
+                    recordStartupStage("qa-preview-image-refused")
+                    browser?.close()
+                    return
+                }
+                Task.detached {
+                    // Reverse direction of stdin. Lifecycle messages keep using stdout.
+                    guard (try? ProxyRelayPrivatePipe.writePreview(
+                        STDIN_FILENO, png: png, generation: session.generation, acceptsClick: acceptsClick
+                    )) != nil, acceptsClick else { return }
+                    readOneQAClick(generation: session.generation, into: clicks)
+                }
+            }
+        }
+        #endif
         recordStartupStage("browser-created")
         #if NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_DIAGNOSTIC
         // The public host has no trust override. A private Dev candidate may
@@ -234,22 +435,113 @@ enum WebKitHostChildRuntime {
         let activationFrame = try await readStartupFrame(timeout: 15)
         let permit = try routeGate.acceptRouteActivation(activationFrame)
         recordStartupStage("route-activation-received")
+        try WebKitRuntimeImageAttestation.verifyNetworkSandbox(
+            bundleURL: Bundle.main.bundleURL,
+            signedSHA256: Bundle.main.object(forInfoDictionaryKey: WebKitRuntimeImageAttestation.networkSandboxPinKey),
+            required: true)
         guard browser.activateOwnedRoute(permit) else {
             throw WebKitHostIPC.ProtocolError.invalidTransition
         }
         recordStartupStage("route-activated")
 
-        browser.show()
-        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_DIAGNOSTIC
-        recordStartupStage(browser.qaWindowVisible ? "qa-window-visible" : "qa-window-not-visible")
-        #endif
+        if !detached {
+            browser.show()
+            guard browser.isWindowVisible else {
+                recordStartupStage("qa-window-not-visible")
+                throw StartupFailure.windowNotVisible
+            }
+        }
         _ = try WebKitRuntimeImageAttestation.attestCurrentProcess(
             startupCheckpoint: startupCheckpoint)
-        recordStartupStage("visible-runtime-attested")
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_DIAGNOSTIC
+        if detached {
+            recordStartupStage("qa-window-detached")
+        } else {
+            recordStartupStage("qa-window-visible")
+        }
+        #endif
+        recordStartupStage(detached ? "qa-detached-runtime-attested" : "visible-runtime-attested")
         try WebKitHostIPC.write(try routeGate.readyFrame(), to: STDOUT_FILENO)
         recordStartupStage("ready-sent")
         startCloseListener(session: session, closeRequest: closeRequest)
     }
+
+    #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+    @MainActor
+    private static func startDetachedPresenter(frames: WebKitFrameTransport.Endpoint, channel: FileHandle,
+                                                generation: UUID, browser: WebKitProfileBrowser,
+                                                runtime: WebKitRuntimeImageAttestation.VerifiedImage,
+                                                downloads: WebKitDetachedDownloadHost) throws {
+        guard browser.hasDetachedPresenterBridge, let compositor = WebKitFrameTransport.Renderer(endpoint: frames)
+        else { throw StartupFailure.windowNotVisible }
+        let input = Task.detached {
+            var fence = WebKitPresenterChannel.Fence(generation: generation)
+            while !Task.isCancelled {
+                do {
+                    let command = try WebKitPresenterChannel.read(from: channel, timeout: 2)
+                    try fence.consume(command)
+                    await MainActor.run {
+                        guard WebKitRuntimeImageAttestation.isOnlyLoadedRuntime(runtime) else {
+                            browser.close()
+                            return
+                        }
+                        browser.applyPresenterCommand(command)
+                    }
+                } catch ProxyRelayPrivatePipe.Failure.timeout {
+                    continue
+                } catch {
+                    if !Task.isCancelled { await browser.close() }
+                    return
+                }
+            }
+        }
+        let render = Task { @MainActor in
+            var endpoint = frames
+            var sequence: UInt64 = 1
+            let clock = ContinuousClock()
+            while !Task.isCancelled {
+                let next = clock.now + .milliseconds(84)
+                if let page = browser.presenterState() {
+                    guard WebKitRuntimeImageAttestation.isOnlyLoadedRuntime(runtime),
+                          let gpu = compositor.submit(layer: browser.presenterCompositingLayer())
+                    else { browser.close(); return }
+                    await gpu.completed()
+                    guard !Task.isCancelled else { return }
+                    guard gpu.status == .completed, WebKitRuntimeImageAttestation.isOnlyLoadedRuntime(runtime)
+                    else { browser.close(); return }
+                    guard browser.presenterState()?.target == page.target else {
+                        try? await clock.sleep(until: next)
+                        continue
+                    }
+                    let ready = WebKitFrameTransport.Frame(kind: .ready, generation: generation,
+                                                           sequence: sequence, page: page)
+                    let active = endpoint
+                    guard let acknowledged = await Task.detached(operation: { () -> WebKitFrameTransport.Endpoint? in
+                        var active = active
+                        do {
+                            try active.send(ready, timeout: 2)
+                            _ = try active.receive(timeout: 4)
+                            return active
+                        } catch { return nil }
+                    }).value else {
+                        if !Task.isCancelled { browser.close() }
+                        return
+                    }
+                    endpoint = acknowledged
+                    sequence += 1
+                }
+                try? await clock.sleep(until: next)
+            }
+        }
+        browser.onPresenterStop = {
+            input.cancel()
+            render.cancel()
+            frames.stop()
+            _ = shutdown(channel.fileDescriptor, SHUT_RDWR)
+        }
+        browser.onDetachedDownloadsSettled = { downloads.stop() }
+    }
+    #endif
 
     /// Exactly one startup reader is active at a time. Waiting on the parent
     /// must not prevent WebKit's main-queue XPC launch callbacks from running.
@@ -267,6 +559,9 @@ enum WebKitHostChildRuntime {
     /// Stable diagnostic labels contain only closed error enums or POSIX
     /// numbers; they never include profile paths, URLs, or proxy credentials.
     private static func safeFailureCode(_ error: Error) -> String {
+        if let failure = error as? StartupFailure, failure == .windowNotVisible {
+            return "window-not-visible"
+        }
         #if NEANTIK_WEBKIT_STANDALONE_HOST
         if let value = error as? WebKitHostLeaseReservation.Failure {
             return "lease-\(value.diagnosticCode)"
@@ -289,6 +584,9 @@ enum WebKitHostChildRuntime {
         }
         if let value = error as? WebKitHostChildBootstrap.Failure {
             return "profile-\(value)"
+        }
+        if let value = error as? WebKitPeerConnectionPolicy.Failure {
+            return value == .relayUnavailable ? "webrtc-relay-unavailable" : "webrtc-disable-unavailable"
         }
         if let value = error as? WebKitOwnedNetworkProcessPID.Failure {
             return "network-\(value)"
@@ -314,7 +612,6 @@ enum WebKitHostChildRuntime {
                     }
                     recordStartupStage("close-request-received")
                     closeRequest.request()
-                    return
                 } catch ProxyRelayPrivatePipe.Failure.timeout {
                     continue
                 } catch {

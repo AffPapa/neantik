@@ -98,7 +98,8 @@ def verified_license(
     return actual
 
 
-def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
+def render_m154_notices(*, project_root: Path, runtime_lock: Path,
+                        source_provenance: Path | None = None) -> str:
     """Render candidate metadata without promoting the published runtime lock."""
     lock = load_json(runtime_lock)
     runtime_lock = runtime_lock.resolve()
@@ -228,6 +229,66 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
         lines.extend(["", "## Qualification boundary", "",
                       "This notice identifies the source and license bytes used for this candidate. It does not itself establish runtime behavior, license applicability decisions, signing, notarization, Gatekeeper acceptance, or publication.", ""])
         return "\n".join(lines)
+    if version in {"157.0.8103.39", "157.0.8103.79"}:
+        if version == "157.0.8103.79":
+            from chromium_15779_source import CONTRACT, verify_lock
+            patch_key = "sourcePatchSHA256"
+        else:
+            from chromium_157_release_evidence import CONTRACT, verify_lock
+            patch_key = "sourcePatchManifestSHA256"
+
+        provenance = source_provenance or runtime_lock.parent / "source-provenance.json"
+        if source_provenance is None and version == "157.0.8103.79" and runtime_lock == project_root / "runtime/fingerprint-chromium.lock.json":
+            provenance = project_root / "runtime/chromium-15779-source-provenance.json"
+        try:
+            verify_lock(lock, provenance, project_root)
+        except (OSError, ValueError) as error:
+            raise RuntimeNoticesError(
+                f"Chromium 157 source evidence verification failed: {error}"
+            ) from error
+        contract_path = project_root / "runtime" / CONTRACT
+        if lock.get("sourceContractSHA256") != sha256_file(contract_path):
+            raise RuntimeNoticesError("Chromium 157 source contract digest mismatch")
+        contract = load_json(contract_path)
+        chromium_base = required_mapping(
+            contract.get("officialChromiumBase"), "officialChromiumBase"
+        )
+        chromium_license = verified_license(
+            project_root=project_root,
+            relative_path="runtime/licenses/Chromium-LICENSE",
+            expected_sha256=contract.get("chromiumLicenseSHA256"),
+        )
+        fingerprint_license = verified_license(
+            project_root=project_root,
+            relative_path="runtime/licenses/fingerprint-chromium-LICENSE",
+        )
+        lines = [
+            "# NeAntik Chromium runtime notices", "", "## Source references", "",
+            f"- Chromium: `{version}`",
+            f"- Official source: `{chromium_base['repository']}`",
+            f"- Commit: `{chromium_base['commit']}`; tree: `{chromium_base['tree']}`",
+            f"- NeAntik source patch SHA-256: `{contract['portSource'][patch_key]}`",
+            f"- Build configuration SHA-256: `{contract['portSource']['buildArgsSHA256']}`",
+            f"- Candidate lock SHA-256: `{sha256_file(runtime_lock)}`",
+            f"- Source contract SHA-256: `{sha256_file(contract_path)}`",
+            "", "## Bundled licenses", "",
+            "Chromium-generated third-party notices and the SPDX SBOM are packaged separately.",
+            f"- `NeAntikRuntimeLicenses/Chromium-LICENSE` — SHA-256 `{chromium_license}`",
+            f"- `NeAntikRuntimeLicenses/fingerprint-chromium-LICENSE` — SHA-256 `{fingerprint_license}`",
+        ]
+        if version == "157.0.8103.79":
+            font_license = verified_license(
+                project_root=project_root,
+                relative_path="runtime/privacy-policy-v1/licenses/MPL-2.0.txt",
+            )
+            lines.extend([
+                f"- `NeAntikRuntimeLicenses/Privacy-MPL-2.0.txt` — SHA-256 `{font_license}`",
+                "- `NeAntikRuntimeLicenses/Privacy-SOURCE-NOTICE.txt` retains the font helper attribution.",
+                "- The accompanying source offer contains the Chromium and Skia privacy changes.",
+            ])
+        lines.extend(["", "## Qualification boundary", "",
+                      "These notices identify pinned source and bundled license bytes. They do not establish runtime behavior, security-fix survival, license applicability decisions, signing, notarization, Gatekeeper acceptance, or publication. The candidate remains subject to separate release gates.", ""])
+        return "\n".join(lines)
     contract_names = {
         "154.0.8037.93": "chromium-154-source-contract.json",
         "154.0.8037.98": "chromium-15498-source-contract.json",
@@ -334,7 +395,7 @@ def render_m154_notices(*, project_root: Path, runtime_lock: Path) -> str:
 def render_notices(*, project_root: Path = PROJECT_ROOT) -> str:
     project_root = project_root.resolve()
     lock = load_json(project_root / "runtime" / "fingerprint-chromium.lock.json")
-    if lock.get("fingerprintChromium", {}).get("chromiumVersion") in {"154.0.8037.93", "154.0.8037.98", "155.0.8059.40", "156.0.8078.12", "156.0.8078.48", "156.0.8078.74", "156.0.8078.80"}:
+    if lock.get("fingerprintChromium", {}).get("chromiumVersion") in {"154.0.8037.93", "154.0.8037.98", "155.0.8059.40", "156.0.8078.12", "156.0.8078.48", "156.0.8078.74", "156.0.8078.80", "157.0.8103.79"}:
         return render_m154_notices(
             project_root=project_root,
             runtime_lock=project_root / "runtime/fingerprint-chromium.lock.json",
@@ -530,6 +591,8 @@ def main() -> int:
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--runtime-lock", type=Path, help="Explicit reviewed candidate lock; does not change published metadata.")
+    parser.add_argument("--source-provenance", type=Path,
+                        help="Exact source provenance for the explicit Chromium 157 candidate lock.")
     args = parser.parse_args()
 
     project_root = args.project_root.resolve()
@@ -540,13 +603,17 @@ def main() -> int:
         current_lock = load_json(project_root / "runtime/fingerprint-chromium.lock.json")
         if current_lock.get("variant") == "recipient-privacy-policy-v1":
             output = project_root / "docs/RUNTIME_INTEGRATION_NOTICES_PRIVACY_V1.md"
-        if current_lock.get("fingerprintChromium", {}).get("chromiumVersion") in {"154.0.8037.93", "154.0.8037.98", "155.0.8059.40", "156.0.8078.12"}:
+        if current_lock.get("fingerprintChromium", {}).get("chromiumVersion") in {"154.0.8037.93", "154.0.8037.98", "155.0.8059.40", "156.0.8078.12", "157.0.8103.79"}:
             major = current_lock["fingerprintChromium"]["chromiumVersion"].split(".")[0]
             output = project_root / "docs" / f"RUNTIME_INTEGRATION_NOTICES_{major}.md"
     if not output.is_absolute():
         output = project_root / output
     try:
-        rendered = (render_m154_notices(project_root=project_root, runtime_lock=args.runtime_lock)
+        rendered = (render_m154_notices(
+                        project_root=project_root,
+                        runtime_lock=args.runtime_lock,
+                        source_provenance=args.source_provenance,
+                    )
                     if args.runtime_lock else render_notices(project_root=project_root))
         if args.stdout:
             print(rendered, end="")

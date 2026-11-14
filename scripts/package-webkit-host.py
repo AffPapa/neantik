@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import mmap
 import os
 from pathlib import Path
 import plistlib
@@ -24,8 +25,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from webkit_runtime_notices import (install_owned_webkit_notices, preflight_owned_webkit_notices,
                                     private_v446_dev_qa_notices)
 
+import webkit_network_sandbox_pin as sandbox_pin
+import webkit_turns_qa_scope as turns_scope
+
 PRODUCTION_BUNDLE_ID = "app.neantik.desktop"
 DEVELOPMENT_BUNDLE_ID = "app.neantik.desktop.dev"
+PRIVATE_SUCCESSOR_VARIANT = "OwnedWebKitSuccessorV1"
+PRIVATE_SUCCESSOR_KEY = "NeAntikOwnedWebKitPrivateSuccessorV1"
 V508_SOURCE_OFFER_SHA256 = "988f05c617ac7ddf460c37ac5de3537f2fb7b5bc60cf0dbfa634aed951f63faf"
 V508_BINDING_SHA256 = "c4264d49e80670c09cf769f4031fae9740cbc1accfa5d37372b78d270b0df39a"
 
@@ -103,6 +109,18 @@ QA_HTTP_FIXTURE_ATS = {
     }
 }
 QA_TLS_SCOPE_KEY = "NeAntikQATrustScope"
+QA_TURNS_SCOPE_KEY = turns_scope.KEY
+QA_TURNS_SELECTOR = turns_scope.SELECTOR
+QA_RTC_RELAY_KEY = "NeAntikOwnedWebKitRTCRelayQualification"
+PRODUCTION_RTC_RELAY_KEY = "NeAntikWebKitRelayOnlyEnabled"
+PRODUCTION_PRESENTER_KEY = "NeAntikWebKitDetachedPresenterV1"
+PRODUCTION_PRESENTER_SELECTORS = (
+    b"_neantikApplyDetachedPresenterInput:",
+    b"_neantikReadDetachedEditorState:",
+)
+QA_DETACHED_SESSION_KEY = "NeAntikQADetachedSession"
+QA_DETACHED_SOCKET_KEY = "NeAntikQADetachedSocketTransportV1"
+QA_METAL_FRAME_KEY = "NeAntikQAMetalFrameTransportV1"
 SYSTEM_ENGINE_FRAMEWORKS = (
     "WebKit.framework",
     "WebCore.framework",
@@ -238,6 +256,33 @@ def verify_development_qa_host_binary(path: Path, production_diagnostic: bool = 
             or b"NEANTIK_WEBKIT_STARTUP_STAGE stage=" not in image):
         raise ContractError(
             "Private QA requires a host built with its matching QA-only proxy flag")
+
+
+def verify_no_turns_qa_scope(host: Path, runtime: Path) -> None:
+    for path, markers in ((host, (QA_TURNS_SCOPE_KEY.encode(), QA_TURNS_SELECTOR)),
+                          (runtime, (QA_TURNS_SELECTOR,))):
+        try:
+            with path.open("rb") as stream, mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ) as image:
+                present = any(image.find(marker) >= 0 for marker in markers)
+        except (OSError, ValueError) as error:
+            raise ContractError("Could not inspect WebKit for private TURN/TLS trust scope") from error
+        if present:
+            raise ContractError("Production WebKit cannot contain the private TURN/TLS trust scope")
+
+
+def verify_no_detached_qa_input(runtime: Path) -> None:
+    markers = (
+        b"_neantikTestClickAtPosition:globalPosition:completion:",
+        b"_neantikTestLeftMouseDown:position:globalPosition:",
+        b"_neantikTestKeyDown:character:keyCode:",
+    )
+    try:
+        with runtime.open("rb") as stream, mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ) as image:
+            present = any(image.find(marker) >= 0 for marker in markers)
+    except (OSError, ValueError) as error:
+        raise ContractError("Could not inspect WebKit for private QA input selectors") from error
+    if present:
+        raise ContractError("Production WebKit cannot contain private QA input selectors")
 
 
 def verify_runtime_webkit_linkage(path: Path) -> None:
@@ -756,6 +801,22 @@ def verify_relocatable_runtime_rpaths(path: Path) -> None:
             raise ContractError("Runtime Mach-O rpath must be bundle-relative or the system Swift runtime")
 
 
+def verify_production_presenter(info: dict, manager: Path, host: Path, runtime: Path,
+                                *, private_mode: bool) -> None:
+    if (info.get(PRODUCTION_PRESENTER_KEY) is not True or private_mode
+            or info.get("CFBundleIdentifier") != PRODUCTION_BUNDLE_ID
+            or info.get("NeAntikEngineScope") != "chromium-owned-webkit"):
+        raise ContractError("Detached presenter requires the production owned WebKit manager")
+    capability = PRODUCTION_PRESENTER_KEY.encode()
+    for path, markers in ((manager, (capability,)), (host, (capability,)),
+                          (runtime, PRODUCTION_PRESENTER_SELECTORS)):
+        if path.is_symlink() or not path.is_file() or path.stat().st_size == 0:
+            raise ContractError("Detached presenter input is missing or unsafe")
+        with path.open("rb") as file, mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ) as image:
+            if any(image.find(marker) == -1 for marker in markers):
+                raise ContractError("Production manager, host or runtime lacks the detached presenter bridge")
+
+
 def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Path,
                            identity: str, allow_development_qa: bool = False,
                            expected_team: str = TEAM_ID,
@@ -764,16 +825,35 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
                            allow_production_diagnostic: bool = False,
                            source_offer_root: Path | None = None,
                            source_offer_manifest_sha256: str | None = None,
-                           private_v508_evidence: PrivateV508Evidence | None = None) -> Path:
+                           private_v508_evidence: PrivateV508Evidence | None = None,
+                           network_sandbox_sha256: str | None = None,
+                           private_successor: tuple[Path, str] | None = None,
+                           qualify_rtc_relay: bool = False, detached_session_qa: bool = False,
+            metal_frame_qa: bool = False,
+            qa_turns_scope: dict | None = None,
+            recipient_stage: tuple[Path, str] | None = None) -> Path:
     if app.is_symlink() or not app.is_dir():
         raise ContractError("Target NeAntik app must be an existing physical bundle")
     info = read_info(app, allow_development_qa=allow_development_qa)
     _validate_private_v508(private_v508_evidence, info, allow_development_qa,
                            allow_production_diagnostic, source_offer_root,
                            source_offer_manifest_sha256)
+    if private_successor is not None and (
+            not allow_development_qa or allow_production_diagnostic
+            or info["CFBundleIdentifier"] != DEVELOPMENT_BUNDLE_ID
+            or private_v508_evidence is not None or source_offer_root is not None
+            or source_offer_manifest_sha256 is not None or network_sandbox_sha256 is not None
+            or "NeAntikPrivateQARuntimeVariant" in info):
+        raise ContractError("private successor requires a fresh Dev QA app and its own evidence pins")
     qa_tls_policy = host_qa_tls_scope(info["CFBundleIdentifier"], allow_development_qa,
                                       qa_tls_anchor_der, qa_tls_origins or [],
                                       allow_production_diagnostic=allow_production_diagnostic)
+    if qualify_rtc_relay and (private_successor is None or not qa_tls_policy):
+        raise ContractError("RTC relay qualification requires private successor and synthetic TLS scope")
+    if detached_session_qa and (private_successor is None or not qa_tls_policy):
+        raise ContractError("Detached session QA requires private successor and synthetic TLS scope")
+    if metal_frame_qa and not detached_session_qa:
+        raise ContractError("Metal frame QA requires the private detached socket transport")
     host_bundle_id = info["CFBundleIdentifier"] + ".webkit-host"
     # Verify before creating any staging directories or copying runtime data.
     verify_signing_identity(identity, expected_team)
@@ -781,7 +861,53 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
     if allow_development_qa or allow_production_diagnostic:
         verify_development_qa_host_binary(host_binary, production_diagnostic=allow_production_diagnostic)
     verify_runtime_webkit_linkage(host_binary)
+    if detached_session_qa:
+        manager_binary = app / "Contents/MacOS" / info["CFBundleExecutable"]
+        if any(QA_DETACHED_SOCKET_KEY.encode() not in executable.read_bytes()
+               for executable in (host_binary, manager_binary)):
+            raise ContractError("Manager and host must both support the private detached socket transport")
+    if metal_frame_qa and any(QA_METAL_FRAME_KEY.encode() not in executable.read_bytes()
+                              for executable in (host_binary, manager_binary)):
+        raise ContractError("Manager and host must both support the private Metal frame transport")
     runtime_source = verify_runtime_frameworks(runtime_frameworks, expected_team)
+    if not allow_development_qa or info["CFBundleIdentifier"] != DEVELOPMENT_BUNDLE_ID:
+        verify_no_turns_qa_scope(host_binary, runtime_source)
+    if not (allow_development_qa or allow_production_diagnostic):
+        verify_no_detached_qa_input(runtime_source)
+    product_presenter = info.get(PRODUCTION_PRESENTER_KEY)
+    if PRODUCTION_PRESENTER_KEY in info:
+        manager = app / "Contents/MacOS" / info["CFBundleExecutable"]
+        verify_production_presenter(
+            info, manager, host_binary, runtime_source,
+            private_mode=allow_development_qa or allow_production_diagnostic)
+    product_relay = info.get(PRODUCTION_RTC_RELAY_KEY, False)
+    if type(product_relay) is not bool:
+        raise ContractError("Malformed WebKit relay capability")
+    if product_relay:
+        manager = app / "Contents/MacOS" / info["CFBundleExecutable"]
+        if (allow_development_qa or allow_production_diagnostic
+                or info["CFBundleIdentifier"] != "app.neantik.desktop"
+                or info.get("NeAntikEngineScope") != "chromium-owned-webkit"
+                or any(PRODUCTION_RTC_RELAY_KEY.encode() not in executable.read_bytes()
+                       for executable in (manager, host_binary))):
+            raise ContractError("WebKit relay capability requires production manager and host support")
+    if qualify_rtc_relay or product_relay:
+        runtime_bytes = runtime_source.read_bytes()
+    if qualify_rtc_relay:
+        if QA_RTC_RELAY_KEY.encode() not in host_binary.read_bytes():
+            raise ContractError("Host is missing the private RTC relay qualification bridge")
+        if qa_turns_scope is not None and (
+                QA_TURNS_SCOPE_KEY.encode() not in host_binary.read_bytes()
+                or QA_TURNS_SELECTOR not in runtime_bytes):
+            raise ContractError("Private TURN/TLS requires both the host bridge and runtime selector")
+    if qualify_rtc_relay or product_relay:
+        if any(selector not in runtime_bytes for selector in (
+                b"_neAntikRequireRTCProxy:", b"_neAntikSetPeerConnectionRelayOnly:",
+                b"_neAntikPeerConnectionRelayOnly")):
+            raise ContractError("Runtime is missing the mandatory RTC relay selectors")
+
+    if network_sandbox_sha256 is not None:
+        sandbox_pin.verify(runtime_frameworks, network_sandbox_sha256)
     minimum_os_version = runtime_minimum_os_version(runtime_frameworks)
     network_pin = network_process_pin(runtime_frameworks, expected_team)
     verify_release_xpc_entitlements(runtime_frameworks)
@@ -789,13 +915,21 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
     host_bundle = app / HOST_BUNDLE_RELATIVE_PATH
     if host_bundle.exists() or host_bundle.is_symlink():
         raise ContractError("Existing WebKit host is preserved; use a fresh app staging directory")
-    if private_v508_evidence is None:
+    successor = None
+    if private_successor is not None:
+        from owned_webkit_successor_evidence import verify
+
+        successor = verify(*private_successor, runtime_frameworks)
+        network_sandbox_sha256 = successor["networkSandboxSHA256"]
+    elif private_v508_evidence is None:
         preflight_owned_webkit_notices(app, runtime_frameworks,
                                        source_offer_root=source_offer_root,
-                                       source_offer_manifest_sha256=source_offer_manifest_sha256)
+                                       source_offer_manifest_sha256=source_offer_manifest_sha256,
+                                       recipient_stage=recipient_stage)
     else:
         _v508_notice_action("preflight", app, runtime_frameworks, source_offer_root, private_v508_evidence)
-    binding_source = runtime_image_binding_source(runtime_frameworks)
+    binding_source = (successor["signedRuntimeImageBinding"] if successor is not None
+                      else runtime_image_binding_source(runtime_frameworks))
     if private_v508_evidence is not None:
         if (binding_source is None or private_v508_evidence.binding.is_symlink()
                 or not private_v508_evidence.binding.is_file()
@@ -812,6 +946,16 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
         evidence_dir = host_bundle / "Contents/Resources/NeAntikRuntimeEvidence"
         evidence_dir.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(binding_source, evidence_dir / "NeAntikRuntimeImageBinding.json")
+    if successor is not None:
+        verify(*private_successor, framework_destination)
+        if digest(evidence_dir / "NeAntikRuntimeImageBinding.json") != successor["signedRuntimeImageBindingSHA256"]:
+            raise ContractError("Copied successor runtime binding differs from the manifest")
+        for relative, source in successor["noticeFiles"].items():
+            target = evidence_dir / "PrivateNotices" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, target)
+            if digest(target) != successor["noticeSHA256"][relative]:
+                raise ContractError(f"Copied successor notice differs from the inventory: {relative}")
     staged_webkit = framework_destination / "WebKit.framework/Versions/A/WebKit"
     runtime_hash = digest(runtime_source)
     if digest(staged_webkit) != runtime_hash:
@@ -828,11 +972,29 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
         RUNTIME_PIN_KEY: {"schemaVersion": 2, "webKitSHA256": runtime_hash,
                           "minimumOSVersion": minimum_os_version},
     }
+    if network_sandbox_sha256 is not None:
+        host_info[sandbox_pin.PIN_KEY] = sandbox_pin.verify(framework_destination, network_sandbox_sha256)
+    if successor is not None:
+        host_info[PRIVATE_SUCCESSOR_KEY] = {"manifestSHA256": successor["manifestSHA256"],
+                                           "releaseQualified": False}
     host_info.update(host_ats_policy(
         info["CFBundleIdentifier"], allow_development_qa,
         qa_tls_policy.get(QA_TLS_SCOPE_KEY, {}).get("origins", []),
         allow_production_diagnostic=allow_production_diagnostic))
     host_info.update(qa_tls_policy)
+    if qa_turns_scope is not None:
+        host_info[QA_TURNS_SCOPE_KEY] = qa_turns_scope
+    if qualify_rtc_relay:
+        host_info[QA_RTC_RELAY_KEY] = True
+    if product_relay:
+        host_info[PRODUCTION_RTC_RELAY_KEY] = True
+    if product_presenter is True:
+        host_info[PRODUCTION_PRESENTER_KEY] = True
+    if detached_session_qa:
+        host_info[QA_DETACHED_SESSION_KEY] = True
+        host_info[QA_DETACHED_SOCKET_KEY] = True
+    if metal_frame_qa:
+        host_info[QA_METAL_FRAME_KEY] = True
     (host_bundle / "Contents/Info.plist").write_bytes(
         plistlib.dumps(host_info, fmt=plistlib.FMT_XML, sort_keys=True))
     args = ["/usr/bin/codesign", "--force", "--options", "runtime", "--identifier", host_bundle_id]
@@ -854,11 +1016,16 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
     cdhash = parse_cdhash(detail)
     installed = pinned_info(info, digest(host_executable), cdhash, host_bundle_id)
     installed[NETWORK_PROCESS_PIN_KEY] = network_pin
+    if successor is not None:
+        installed["NeAntikPrivateQARuntimeVariant"] = PRIVATE_SUCCESSOR_VARIANT
     install_info_atomically(app, installed)
+    if successor is not None:
+        return host_bundle
     if private_v508_evidence is None:
         install_owned_webkit_notices(app, framework_destination,
                                      source_offer_root=source_offer_root,
-                                     source_offer_manifest_sha256=source_offer_manifest_sha256)
+                                     source_offer_manifest_sha256=source_offer_manifest_sha256,
+                                     recipient_stage=recipient_stage)
     else:
         _v508_notice_action("install", app, framework_destination, source_offer_root, private_v508_evidence)
     return host_bundle
@@ -871,12 +1038,47 @@ def package(app: Path, host_binary: Path, runtime_frameworks: Path, identity: st
             allow_production_diagnostic: bool = False,
             source_offer_root: Path | None = None,
             source_offer_manifest_sha256: str | None = None,
-            private_v508_evidence: PrivateV508Evidence | None = None) -> Path:
+            private_v508_evidence: PrivateV508Evidence | None = None,
+            network_sandbox_sha256: str | None = None,
+            private_successor: tuple[Path, str] | None = None,
+            qualify_rtc_relay: bool = False, detached_session_qa: bool = False,
+            metal_frame_qa: bool = False,
+            qa_turns_scope: dict | None = None,
+            recipient_stage: tuple[Path, str] | None = None) -> Path:
     """Package a pre-linked host, or derive one only from this app's manager."""
     if app.is_symlink() or not app.is_dir():
         raise ContractError("Target NeAntik app must be an existing physical bundle")
     # Validate before copying a large runtime tree or changing a signed app.
+    if qa_turns_scope is not None:
+        turns_scope.receipt(qa_turns_scope)
+        if private_successor is None or not qualify_rtc_relay or not allow_development_qa:
+            raise ContractError("TURN/TLS trust requires a private Dev RTC relay successor")
+    if qualify_rtc_relay and private_successor is None:
+        raise ContractError("RTC relay qualification requires private successor evidence")
+    if detached_session_qa and private_successor is None:
+        raise ContractError("Detached session QA requires private successor evidence")
+    if metal_frame_qa and (private_successor is None or not detached_session_qa):
+        raise ContractError("Metal frame QA requires a private detached successor")
     manager_info = read_info(app, allow_development_qa=allow_development_qa)
+    if recipient_stage is not None and (
+            not recipient_relink or allow_development_qa or allow_production_diagnostic
+            or private_successor is not None or private_v508_evidence is not None
+            or network_sandbox_sha256 is None):
+        raise ContractError("Recipient stage evidence requires a local production-layout relink and sandbox pin")
+    if private_successor is not None:
+        if recipient_relink:
+            raise ContractError("private successor QA is separate from recipient relink")
+        return _package_verified_host(
+            app, host_binary, runtime_frameworks, identity,
+            allow_development_qa=allow_development_qa,
+            qa_tls_anchor_der=qa_tls_anchor_der, qa_tls_origins=qa_tls_origins,
+            allow_production_diagnostic=allow_production_diagnostic,
+            source_offer_root=source_offer_root,
+            source_offer_manifest_sha256=source_offer_manifest_sha256,
+            private_v508_evidence=private_v508_evidence,
+            network_sandbox_sha256=network_sandbox_sha256, private_successor=private_successor,
+            qualify_rtc_relay=qualify_rtc_relay, detached_session_qa=detached_session_qa,
+            qa_turns_scope=qa_turns_scope, metal_frame_qa=metal_frame_qa)
     _validate_private_v508(private_v508_evidence, manager_info, allow_development_qa,
                            allow_production_diagnostic, source_offer_root,
                            source_offer_manifest_sha256)
@@ -896,6 +1098,8 @@ def package(app: Path, host_binary: Path, runtime_frameworks: Path, identity: st
         # Never inspect/rebind runtime inputs until the selected identity
         # matches the validated recipient manager team.
         verify_signing_identity(identity, expected_team)
+        if recipient_stage is not None and manager_info.get("NeAntikDeveloperTeamIdentifier") != expected_team:
+            raise ContractError("Recipient manager plist does not match its verified signing team")
     else:
         # Preserve the release path's original fail-fast order and fixed team.
         verify_signing_identity(identity)
@@ -910,7 +1114,9 @@ def package(app: Path, host_binary: Path, runtime_frameworks: Path, identity: st
                                       allow_production_diagnostic=allow_production_diagnostic,
                                       source_offer_root=source_offer_root,
                                       source_offer_manifest_sha256=source_offer_manifest_sha256,
-                                      private_v508_evidence=private_v508_evidence)
+                                      private_v508_evidence=private_v508_evidence,
+                                      network_sandbox_sha256=network_sandbox_sha256,
+                                      recipient_stage=recipient_stage)
     manager_binary = app / "Contents/MacOS" / manager_name
     try:
         is_manager = (host_binary.resolve(strict=True) == manager_binary.resolve(strict=True)
@@ -926,7 +1132,9 @@ def package(app: Path, host_binary: Path, runtime_frameworks: Path, identity: st
                                       allow_production_diagnostic=allow_production_diagnostic,
                                       source_offer_root=source_offer_root,
                                       source_offer_manifest_sha256=source_offer_manifest_sha256,
-                                      private_v508_evidence=private_v508_evidence)
+                                      private_v508_evidence=private_v508_evidence,
+                                      network_sandbox_sha256=network_sandbox_sha256,
+                                      recipient_stage=recipient_stage)
 
     with tempfile.TemporaryDirectory(prefix="neantik-webkit-host-rebind-") as temporary:
         derived = Path(temporary) / "NeAntikWebKitHost"
@@ -940,7 +1148,9 @@ def package(app: Path, host_binary: Path, runtime_frameworks: Path, identity: st
                                       allow_production_diagnostic=allow_production_diagnostic,
                                       source_offer_root=source_offer_root,
                                       source_offer_manifest_sha256=source_offer_manifest_sha256,
-                                      private_v508_evidence=private_v508_evidence)
+                                      private_v508_evidence=private_v508_evidence,
+                                      network_sandbox_sha256=network_sandbox_sha256,
+                                      recipient_stage=recipient_stage)
 
 
 def main() -> int:
@@ -953,6 +1163,9 @@ def main() -> int:
     parser.add_argument("--source-offer-root", type=Path,
                         help="validated corresponding-source offer carrying first-party runtime overlays")
     parser.add_argument("--source-offer-manifest-sha256")
+    parser.add_argument("--network-sandbox-sha256", help="Exact patched NetworkProcess sandbox hash from the staging receipt")
+    parser.add_argument("--private-successor-manifest", type=Path, help="Local Dev QA evidence for a new owned WebKit source lineage")
+    parser.add_argument("--private-successor-manifest-sha256")
     parser.add_argument("--identity", required=True, help="Existing Developer ID identity name or SHA-1")
     parser.add_argument("--development-qa", action="store_true",
                         help="Allow only the app.neantik.desktop.dev bundle for an isolated QA copy")
@@ -960,11 +1173,20 @@ def main() -> int:
                         help="Allow synthetic TLS trust only for an explicitly marked private diagnostic production-ID app")
     parser.add_argument("--recipient-relink", action="store_true",
                         help="For local LGPL relinking only: use the signed manager's Developer ID team; public releases stay pinned to NeAntik's team")
+    parser.add_argument("--recipient-stage", type=Path,
+                        help="Local db6 pre-sign staging receipt for a recipient-built runtime")
+    parser.add_argument("--recipient-stage-sha256")
     parser.add_argument("--qa-tls-anchor-der", type=Path,
                         help="Dev QA only: public DER CA certificate for exact synthetic HTTPS origins")
     parser.add_argument("--qa-tls-origin", action="append", default=[],
                         help="Dev QA only: exact https://host.invalid:port; repeat up to four times")
     args = parser.parse_args()
+    if (args.private_successor_manifest is None) != (args.private_successor_manifest_sha256 is None):
+        parser.error("private successor manifest and SHA-256 must be supplied together")
+    if (args.recipient_stage is None) != (args.recipient_stage_sha256 is None):
+        parser.error("recipient stage and SHA-256 must be supplied together")
+    successor = ((args.private_successor_manifest, args.private_successor_manifest_sha256)
+                 if args.private_successor_manifest is not None else None)
     try:
         anchor = None
         if args.qa_tls_anchor_der is not None:
@@ -979,8 +1201,12 @@ def main() -> int:
                        qa_tls_origins=args.qa_tls_origin,
                        allow_production_diagnostic=args.production_diagnostic_qa,
                        source_offer_root=args.source_offer_root,
-                       source_offer_manifest_sha256=args.source_offer_manifest_sha256)
-    except ContractError as error:
+                       source_offer_manifest_sha256=args.source_offer_manifest_sha256,
+                       network_sandbox_sha256=args.network_sandbox_sha256,
+                       private_successor=successor,
+                       recipient_stage=(args.recipient_stage, args.recipient_stage_sha256)
+                       if args.recipient_stage is not None else None)
+    except (ContractError, ValueError) as error:
         parser.exit(1, f"WebKit host packaging refused: {error}\n")
     except (OSError, subprocess.SubprocessError) as error:
         parser.exit(1, f"WebKit host packaging refused: {type(error).__name__}\n")

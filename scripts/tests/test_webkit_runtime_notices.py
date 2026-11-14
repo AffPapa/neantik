@@ -23,6 +23,47 @@ RUNTIME_FIXTURE = Path(os.environ.get(
 ))
 
 
+class DB6RecipientStageTests(unittest.TestCase):
+    def test_stage_is_independently_pinned_and_binds_sandbox(self):
+        import hashlib
+        import webkit_network_sandbox_pin as sandbox_pin
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            runtime = root / "Frameworks"
+            sandbox = runtime / sandbox_pin.RELATIVE_PATH
+            sandbox.parent.mkdir(parents=True)
+            sandbox.write_bytes(b"signed runtime sandbox")
+            images = {"WebKit.framework/Versions/A/WebKit": "6" * 64}
+            stage = root / "stage.json"
+            receipt = {
+                "status": "staged-pre-sign-only",
+                "upstreamCommit": MODULE.DB6_UPSTREAM_COMMIT,
+                "launchQualified": False,
+                "machOCount": len(images),
+                "machOSHA256": images,
+                "networkSandbox": {"policyRevision": 13,
+                                   "path": sandbox_pin.RELATIVE_PATH.as_posix(),
+                                   "patchedSHA256": hashlib.sha256(sandbox.read_bytes()).hexdigest()},
+            }
+            stage.write_text(json.dumps(receipt))
+            pin = hashlib.sha256(stage.read_bytes()).hexdigest()
+            sandbox_digest = receipt["networkSandbox"]["patchedSHA256"]
+            self.assertEqual(MODULE._db6_recipient_images(stage, pin, runtime, set(images), sandbox_digest), images)
+            with self.assertRaisesRegex(MODULE.NoticeError, "differs from its pin"):
+                MODULE._db6_recipient_images(stage, "0" * 64, runtime, set(images), sandbox_digest)
+            with self.assertRaisesRegex(MODULE.NoticeError, "invalid db6 recipient stage"):
+                MODULE._db6_recipient_images(stage, pin, runtime, set(images) | {"extra.dylib"}, sandbox_digest)
+            sandbox.write_bytes(b"changed sandbox")
+            with self.assertRaisesRegex(MODULE.NoticeError, "sandbox verification failed"):
+                MODULE._db6_recipient_images(stage, pin, runtime, set(images), sandbox_digest)
+            receipt["networkSandbox"]["patchedSHA256"] = hashlib.sha256(sandbox.read_bytes()).hexdigest()
+            stage.write_text(json.dumps(receipt))
+            rewritten_pin = hashlib.sha256(stage.read_bytes()).hexdigest()
+            with self.assertRaisesRegex(MODULE.NoticeError, "invalid db6 recipient stage"):
+                MODULE._db6_recipient_images(stage, rewritten_pin, runtime, set(images), sandbox_digest)
+
+
 @unittest.skipUnless(
     os.environ.get('NEANTIK_TEST_RUNTIME_FRAMEWORKS')
     and os.environ.get('NEANTIK_TEST_SOURCE_OFFERS_ROOT'),

@@ -34,7 +34,7 @@ final class MCPProfileManagement {
 
     func disconnectGUI() { gui.close() }
 
-    enum Failure: Error { case invalid, conflict, unavailable, running, proxyFailed, manualClose, denied, stopRefused, cursor, responseLimit }
+    enum Failure: Error { case invalid, conflict, unavailable, browserRuntimeUnavailable, browserRuntimePreflightFailed, running, proxyFailed, manualClose, denied, stopRefused, cursor, responseLimit }
 
     nonisolated static let readTools = ["profile_get", "folder_list", "profile_status", "workspace_query_profiles", "template_list"]
     nonisolated static let writeTools = ["profile_create", "profile_update", "profile_set_proxy", "profile_move", "profile_duplicate", "folder_create", "folder_rename", "folder_remove", "profile_check_proxy", "profile_start", "profile_stop"]
@@ -46,6 +46,8 @@ final class MCPProfileManagement {
         let revision: [String: Any] = ["type": "string", "pattern": "^(0|[1-9][0-9]*)$"]
         let optionalUUID: [String: Any] = ["type": ["string", "null"]]
         let changes: [String: Any] = ["type": "object", "additionalProperties": false, "properties": WebKitMediaFeature.visibleFields([
+            "webKitBlockPeerConnections": ["type": "boolean", "description": "Request native WebRTC peer-connection blocking. Owned proxy profiles block peer connections by default."],
+            "webKitRelayOnly": ["type": "boolean", "description": "Request TURN-only WebRTC for an isolated WebKit proxy profile on a build with signed relay support. Set webKitBlockPeerConnections to false in the same edit if previously enabled."],
             "privacyPreset": ["type": "string", "enum": ["legacy", "balanced", "strict"], "description": "Changes privacy policy only. Omitted fontPolicy is preserved on update; specify system-v1 explicitly to match the GUI's balanced/strict font selection."], "name": text, "startURL": text, "startupMode": ["type": "string", "enum": BrowserStartupMode.allCases.map(\.rawValue)], "fontPolicy": ["type": "string", "enum": ["native", "system-v1"]], "webKitMediaPolicy": ["type": "string", "enum": WebKitMediaPolicy.allCases.map(\.rawValue)], "tags": ["type": "array", "maxItems": 8, "items": text],
             "note": text, "isPinned": ["type": "boolean"], "isArchived": ["type": "boolean"], "colorHex": text, "symbolName": text], enabled: mediaPolicyEnabled)]
         let proxyFields: [String: Any] = ["type": "object", "additionalProperties": false, "required": ["kind", "host", "port"], "properties": [
@@ -169,6 +171,9 @@ final class MCPProfileManagement {
             if profile.engine == .chromium {
                 if template == nil { profile.privacyPolicy = .balanced }
                 if profile.privacyPolicy != .legacy { profile.fontPolicy = .systemV1 }
+            } else {
+                profile.fontPolicy = .native
+                profile.privacyPolicy = .legacy
             }
             guard profile.engine.isAvailableInBuild else { throw Failure.invalid }
             profile.name = requestedName
@@ -300,7 +305,8 @@ final class MCPProfileManagement {
             try processes.withVerifiedStoppedProfileOperation(profileID: profileID) {}
             ProxyAuditPhase.mark(.stoppedVerifyDone)
             guard let proxy = profile.proxy else { throw Failure.invalid }
-            if loopbackQAProxyPort != nil {
+            if let port = loopbackQAProxyPort {
+                guard Self.isLoopbackQAProxy(proxy, expectedPort: port) else { throw Failure.denied }
                 try await ProxyTester().checkLoopbackQA(configuration: proxy, password: "")
                 return ["profileID": profileID.uuidString,
                         "result": "synthetic-loopback-origin-passed",
@@ -335,12 +341,11 @@ final class MCPProfileManagement {
                 let draft = try parseProxy(args)
                 if loopbackQAProxyPort != nil, let configuration = draft?.configuration,
                    !Self.isLoopbackQAProxy(configuration, expectedPort: loopbackQAProxyPort) { throw Failure.denied }
-                profile.proxy = draft?.configuration
-                let desiredWebKitRuntime = WebKitProfilePolicy.runtimeGenerationForSave(
-                    engine: profile.engine, proxy: profile.proxy,
-                    previous: profile.webKitRuntimeGeneration,
+                let desiredWebKitRuntime = WebKitProfilePolicy.runtimeGenerationForEdit(
+                    profile, proxy: draft?.configuration,
                     ownedProxyAvailable: WebKitProxyFeature.launchEnabled)
                 guard profile.webKitRuntimeGeneration == desiredWebKitRuntime else { throw Failure.invalid }
+                profile.proxy = draft?.configuration
                 if profile.engine == .chromium {
                     profile.identity = profile.identity.replacingProxyContext(timezoneIdentifier: nil, localeIdentifier: nil, evidence: nil)
                 }
@@ -388,9 +393,9 @@ final class MCPProfileManagement {
         try await observe(initial.id)
         guard processes.processState(for: initial.id) == .stopped else { throw Failure.running }
         let locator = BrowserRuntimeLocator()
-        guard let runtime = await Task.detached(priority: .userInitiated, operation: { locator.preferredRuntime() }).value else { throw Failure.unavailable }
+        guard let runtime = await Task.detached(priority: .userInitiated, operation: { locator.preferredRuntime() }).value else { throw Failure.browserRuntimeUnavailable }
         let preflight = await Task.detached { BrowserRuntimePreflightValidator.validate(runtime) }.value
-        guard preflight.isReady else { throw Failure.unavailable }
+        guard preflight.isReady else { throw Failure.browserRuntimePreflightFailed }
         try Task.checkCancellation()
         var admissionToken: UUID?
         for attempt in 0...20 {
@@ -447,7 +452,7 @@ final class MCPProfileManagement {
     }
 
     private func apply(_ changes: [String: Any], to profile: inout BrowserProfile) throws {
-        guard Set(changes.keys).isSubset(of: ["name", "startURL", "startupMode", "privacyPreset", "fontPolicy", "webKitMediaPolicy", "tags", "note", "isPinned", "isArchived", "colorHex", "symbolName"]) else { throw Failure.invalid }
+        guard Set(changes.keys).isSubset(of: ["name", "startURL", "startupMode", "privacyPreset", "fontPolicy", "webKitMediaPolicy", "webKitBlockPeerConnections", "webKitRelayOnly", "tags", "note", "isPinned", "isArchived", "colorHex", "symbolName"]) else { throw Failure.invalid }
         for (key, value) in changes {
             switch key {
             case "name": profile.name = try string(changes, key).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -459,6 +464,16 @@ final class MCPProfileManagement {
                 profile.privacyPolicy = policy
             case "fontPolicy": guard profile.engine == .chromium, let policy = BrowserFontPolicy(rawValue: try string(changes, key)) else { throw Failure.invalid }; profile.fontPolicy = policy
             case "webKitMediaPolicy": guard WebKitMediaFeature.isEnabled, profile.engine == .webkit, let policy = WebKitMediaPolicy(rawValue: try string(changes, key)) else { throw Failure.invalid }; profile.webKitMediaPolicy = policy
+            case "webKitBlockPeerConnections":
+                guard profile.engine == .webkit, let number = value as? NSNumber,
+                      CFGetTypeID(number) == CFBooleanGetTypeID() else { throw Failure.invalid }
+                profile.webKitBlockPeerConnections = number.boolValue
+            case "webKitRelayOnly":
+                guard profile.engine == .webkit, let number = value as? NSNumber,
+                      CFGetTypeID(number) == CFBooleanGetTypeID(),
+                      !number.boolValue || profile.webKitRelayOnly || WebKitPeerConnectionPolicy.productionRelayEnabled()
+                else { throw Failure.invalid }
+                profile.webKitRelayOnly = number.boolValue
             case "note": guard let note = BrowserProfile.normalizedNote(try string(changes, key)) else { throw Failure.invalid }; profile.note = note
             case "tags": guard let tags = value as? [String], let normalized = BrowserProfile.normalizedTags(tags) else { throw Failure.invalid }; profile.tags = normalized
             case "isPinned", "isArchived": guard let number = value as? NSNumber, CFGetTypeID(number) == CFBooleanGetTypeID() else { throw Failure.invalid }; if key == "isPinned" { profile.isPinned = number.boolValue } else { profile.isArchived = number.boolValue }
@@ -502,8 +517,10 @@ final class MCPProfileManagement {
     }
     private func dto(_ profile: BrowserProfile) -> [String: Any] {
         WebKitMediaFeature.visibleFields(["id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name, "startURL": profile.startURL, "startupMode": profile.startupMode.rawValue, "fontPolicy": profile.engine == .chromium ? profile.fontPolicy.rawValue as Any : NSNull(), "engine": profile.engine.rawValue, "webKitMediaPolicy": profile.engine == .webkit ? profile.webKitMediaPolicy.rawValue as Any : NSNull(),
+         "webKitBlockPeerConnections": profile.engine == .webkit ? profile.webKitBlockPeerConnections as Any : NSNull(),
+         "webKitRelayOnly": profile.engine == .webkit ? profile.webKitRelayOnly as Any : NSNull(),
          "engineCapabilities": profile.engine.managementCapabilities,
-         "privacyPolicyIntent": profile.privacyPolicy.safeIntent,
+         "privacyPolicyIntent": profile.engine == .chromium ? profile.privacyPolicy.safeIntent as Any : NSNull(),
          "networkPolicyIntent": networkPolicyIntent(profile),
          "tags": profile.tags, "isPinned": profile.isPinned, "isArchived": profile.isArchived,
          "colorHex": profile.colorHex, "symbolName": profile.symbolName, "folderID": store.folderID(forProfileID: profile.id)?.uuidString as Any? ?? NSNull(),

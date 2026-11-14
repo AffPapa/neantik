@@ -63,6 +63,14 @@ class RuntimeBuildPathTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Unsupported Chromium build path version'):
             self.verify()
 
+    def test_m157_does_not_fall_back_to_default_args_path(self):
+        self.lock['fingerprintChromium']['chromiumVersion'] = '157.0.8103.39'
+        default_args = self.src / 'out/Default/args.gn'
+        default_args.parent.mkdir(parents=True, exist_ok=True)
+        default_args.write_bytes(self.args.read_bytes())
+        with self.assertRaisesRegex(ValueError, 'Expected exact M157 build args path'):
+            self.verify(default_args)
+
     def test_future_port_cannot_fall_back_to_legacy_default(self):
         p = self.src / 'out/Default/args.gn'
         p.parent.mkdir()

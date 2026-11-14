@@ -1,0 +1,523 @@
+diff --git a/Source/WebKit/Platform/IPC/HandleMessage.h b/Source/WebKit/Platform/IPC/HandleMessage.h
+index edac734..c8b70ca 100644
+--- a/Source/WebKit/Platform/IPC/HandleMessage.h
++++ b/Source/WebKit/Platform/IPC/HandleMessage.h
+@@ -89,8 +89,9 @@ void logMessageImpl(const C& connection, MessageName messageName, void* object,
+     auto stream = textStreamForLogging(connection, messageName, object, ForReply::No);
+ 
+ #if PLATFORM(MAC)
+-    // Never send editor payloads or focus tokens to the IPC diagnostic log.
+-    if (messageName == MessageName::WebPage_NeAntikDetachedEditorCommand) {
++    // Keep editor payloads, accessibility metadata and document tokens out of the IPC log.
++    if (messageName == MessageName::WebPage_NeAntikDetachedEditorCommand
++        || messageName == MessageName::WebPage_NeAntikDetachedAXAction) {
+         LOG(IPCMessages, "%s", stream.release().utf8());
+         return;
+     }
+@@ -125,7 +126,8 @@ void logReply(const C& connection, MessageName messageName, const T&... args)
+     auto stream = textStreamForLogging(connection, messageName, nullptr, ForReply::Yes);
+ 
+ #if PLATFORM(MAC)
+-    if (messageName == MessageName::WebPage_NeAntikDetachedEditorSnapshotReply) {
++    if (messageName == MessageName::WebPage_NeAntikDetachedEditorSnapshotReply
++        || messageName == MessageName::WebPage_NeAntikDetachedAXSnapshotReply) {
+         LOG(IPCMessages, "%s", stream.release().utf8());
+         return;
+     }
+diff --git a/Source/WebKit/Shared/NativeWebKeyboardEvent.h b/Source/WebKit/Shared/NativeWebKeyboardEvent.h
+index 40707c5..9fd2e3f 100644
+--- a/Source/WebKit/Shared/NativeWebKeyboardEvent.h
++++ b/Source/WebKit/Shared/NativeWebKeyboardEvent.h
+@@ -69,6 +69,9 @@ class NativeWebKeyboardEvent : public WebKeyboardEvent {
+     WTF_MAKE_TZONE_ALLOCATED(NativeWebKeyboardEvent);
+ public:
+ #if USE(APPKIT)
++#if defined(NEANTIK_DETACHED_PRESENTER)
++    static Ref<NativeWebKeyboardEvent> createDetachedTabEvent(WebKeyboardEventInit&&);
++#endif
+     // FIXME: Share iOS's HandledByInputMethod enum here instead of passing a boolean.
+     static Ref<NativeWebKeyboardEvent> create(NSEvent *, bool handledByInputMethod, bool replacesSoftSpace, const Vector<WebCore::KeypressCommand>&);
+ #elif PLATFORM(GTK)
+diff --git a/Source/WebKit/Shared/mac/NativeWebKeyboardEventMac.mm b/Source/WebKit/Shared/mac/NativeWebKeyboardEventMac.mm
+index e0021ad..c5f901d 100644
+--- a/Source/WebKit/Shared/mac/NativeWebKeyboardEventMac.mm
++++ b/Source/WebKit/Shared/mac/NativeWebKeyboardEventMac.mm
+@@ -38,6 +38,14 @@ using namespace WebCore;
+ 
+ WTF_MAKE_TZONE_ALLOCATED_IMPL(NativeWebKeyboardEvent);
+ 
++#if defined(NEANTIK_DETACHED_PRESENTER)
++Ref<NativeWebKeyboardEvent> NativeWebKeyboardEvent::createDetachedTabEvent(WebKeyboardEventInit&& input)
++{
++    // No AppKit window or native event belongs to this detached renderer.
++    return adoptRef(*new NativeWebKeyboardEvent(WTF::move(input), nil));
++}
++#endif
++
+ Ref<NativeWebKeyboardEvent> NativeWebKeyboardEvent::create(NSEvent *event, bool handledByInputMethod, bool replacesSoftSpace, const Vector<KeypressCommand>& commands)
+ {
+     return adoptRef(*new NativeWebKeyboardEvent(WebEventFactory::createWebKeyboardEvent(event, handledByInputMethod, replacesSoftSpace, commands), event));
+diff --git a/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm b/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
+index e32668b..4b58929 100644
+--- a/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
++++ b/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
+@@ -40,11 +40,13 @@
+ #import "EditingRange.h"
+ #import "EditorState.h"
+ #import "InsertTextOptions.h"
++#import "NativeWebKeyboardEvent.h"
+ #import "NativeWebWheelEvent.h"
+ #import "WebWheelEvent.h"
+ #import <WebCore/ActivityState.h>
+ #import <WebCore/CompositionHighlight.h>
+ #import <WebCore/CompositionUnderline.h>
++#import <WebCore/Scrollbar.h>
+ #endif
+ #if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT) || defined(NEANTIK_DETACHED_PRESENTER)
+ #import "NativeWebMouseEvent.h"
+@@ -2362,10 +2364,36 @@ ALLOW_DEPRECATED_DECLARATIONS_END
+ @interface WKWebView (NeAntikDetachedPresenter)
+ - (BOOL)_neantikApplyDetachedPresenterInput:(NSDictionary *)input;
+ - (void)_neantikReadDetachedEditorState:(void (^)(NSDictionary *))reply;
++- (void)_neantikReadDetachedAccessibility:(void (^)(NSString *))reply;
++- (NSInteger)_neantikConsumeDetachedFocusDirection;
+ @end
+ 
+ @implementation WKWebView (NeAntikDetachedPresenter)
+ 
++- (NSInteger)_neantikConsumeDetachedFocusDirection
++{
++    auto key = WebKit::detachedPresenterFocusDirectionKey();
++    const NSInteger direction = [objc_getAssociatedObject(self, key) integerValue];
++    objc_setAssociatedObject(self, key, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
++    return direction;
++}
++
++- (void)_neantikReadDetachedAccessibility:(void (^)(NSString *))reply
++{
++    if (!reply)
++        return;
++    const auto activity = WebKit::detachedPresenterActivity(self);
++    if (self.window || !activity || !activity->active || !_page->hasRunningProcess())
++        return reply(nil);
++    _page->neAntikDetachedAXSnapshot([weakSelf = WeakObjCPtr<WKWebView>(self), reply = makeBlockPtr(reply)] (const String& snapshot) {
++        RetainPtr view = weakSelf.get();
++        auto current = view ? WebKit::detachedPresenterActivity(view.get()) : std::nullopt;
++        if (!current || !current->active || snapshot.isEmpty())
++            return reply(nil);
++        reply(snapshot.createNSString().get());
++    });
++}
++
+ - (void)_neantikReadDetachedEditorState:(void (^)(NSDictionary *))reply
+ {
+     if (!reply)
+@@ -2409,6 +2437,8 @@ ALLOW_DEPRECATED_DECLARATIONS_END
+         if (!previous)
+             _page->setShouldSkipWaitingForPaintAfterNextViewDidMoveToWindow(true);
+         WebKit::setDetachedPresenterActivity(self, activity);
++        if (!focused)
++            objc_setAssociatedObject(self, WebKit::detachedPresenterFocusDirectionKey(), nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+         using State = WebCore::ActivityState;
+         _page->activityStateDidChange({ State::WindowIsActive, State::IsFocused, State::IsVisible,
+             State::IsVisibleOrOccluded, State::IsInWindow, State::IsVisuallyIdle },
+@@ -2418,6 +2448,42 @@ ALLOW_DEPRECATED_DECLARATIONS_END
+     auto activity = WebKit::detachedPresenterActivity(self);
+     if (!activity || !activity->active)
+         return NO;
++    if ([action isEqualToString:@"accessibility"]) {
++        NSString *document = input[@"document"];
++        NSNumber *node = input[@"node"];
++        NSNumber *press = input[@"press"];
++        if (!activity->focused || ![document isKindOfClass:NSString.class] || document.length != 36
++            || ![node isKindOfClass:NSNumber.class] || ![press isKindOfClass:NSNumber.class])
++            return NO;
++        _page->neAntikDetachedAXAction(document, node.unsignedLongLongValue, press.boolValue);
++        return YES;
++    }
++    if ([action isEqualToString:@"tabKey"]) {
++        if (!activity->focused || ![input[@"backward"] isKindOfClass:NSNumber.class]
++            || ![input[@"option"] isKindOfClass:NSNumber.class])
++            return NO;
++        if (objc_getAssociatedObject(self, WebKit::detachedPresenterFocusDirectionKey()))
++            return YES; // Focus is already on its way to the manager.
++        OptionSet<WebKit::WebEventModifier> modifiers;
++        if ([input[@"backward"] boolValue])
++            modifiers.add(WebKit::WebEventModifier::ShiftKey);
++        if ([input[@"option"] boolValue])
++            modifiers.add(WebKit::WebEventModifier::AltKey);
++        for (auto type : { WebKit::WebEventType::KeyDown, WebKit::WebEventType::KeyUp }) {
++            WebKit::WebKeyboardEventData key;
++            key.text = "\t"_s;
++            key.unmodifiedText = "\t"_s;
++            key.key = "Tab"_s;
++            key.code = "Tab"_s;
++            key.keyIdentifier = "U+0009"_s;
++            key.windowsVirtualKeyCode = 9;
++            key.nativeVirtualKeyCode = 48;
++            key.macCharCode = '\t';
++            _page->handleKeyboardEvent(WebKit::NativeWebKeyboardEvent::createDetachedTabEvent(
++                { { type, modifiers, MonotonicTime::now() }, WTF::move(key) }));
++        }
++        return YES;
++    }
+     if ([action isEqualToString:@"click"] || [action isEqualToString:@"scroll"]) {
+         NSPoint position = [input[@"point"] pointValue];
+         if (!NSPointInRect(position, self.bounds))
+@@ -2445,14 +2511,36 @@ ALLOW_DEPRECATED_DECLARATIONS_END
+         float deltaY = [input[@"deltaY"] floatValue];
+         if (!std::isfinite(deltaX) || !std::isfinite(deltaY))
+             return NO;
++        auto phase = [](NSString *value) {
++            using enum WebKit::WebWheelEvent::Phase;
++            if ([value isEqualToString:@"began"]) return Began;
++            if ([value isEqualToString:@"stationary"]) return Stationary;
++            if ([value isEqualToString:@"changed"]) return Changed;
++            if ([value isEqualToString:@"ended"]) return Ended;
++            if ([value isEqualToString:@"cancelled"]) return Cancelled;
++            if ([value isEqualToString:@"mayBegin"]) return MayBegin;
++            return None;
++        };
++        bool precise = [input[@"precise"] boolValue];
++        constexpr float pixelsPerLine = WebCore::Scrollbar::pixelsPerLineStep();
++        WebCore::FloatSize delta { deltaX, deltaY };
++        WebCore::FloatSize ticks = delta;
++        if (precise)
++            ticks.scale(1 / pixelsPerLine);
++        else
++            delta.scale(pixelsPerLine);
+         auto timestamp = MonotonicTime::now();
+         auto event = WebKit::WebWheelEvent::create({ WebKit::WebEventType::Wheel, { }, timestamp }, {
+             .position = { static_cast<int>(position.x), static_cast<int>(position.y) },
+-            .delta = { deltaX, deltaY },
++            .delta = delta,
++            .wheelTicks = ticks,
+             .granularity = WebKit::WebWheelEvent::Granularity::ScrollByPixelWheelEvent,
+-            .hasPreciseScrollingDeltas = true,
++            .directionInvertedFromDevice = [input[@"inverted"] boolValue],
++            .phase = phase(input[@"phase"]),
++            .momentumPhase = phase(input[@"momentum"]),
++            .hasPreciseScrollingDeltas = precise,
+             .scrollCount = 1,
+-            .unacceleratedScrollingDelta = { deltaX, deltaY },
++            .unacceleratedScrollingDelta = delta,
+             .ioHIDEventTimestamp = timestamp,
+         });
+         _page->handleNativeWheelEvent(WebKit::NativeWebWheelEvent::create(event));
+diff --git a/Source/WebKit/UIProcess/WebPageProxy.cpp b/Source/WebKit/UIProcess/WebPageProxy.cpp
+index b1f4572..a490919 100644
+--- a/Source/WebKit/UIProcess/WebPageProxy.cpp
++++ b/Source/WebKit/UIProcess/WebPageProxy.cpp
+@@ -19145,6 +19145,19 @@ void WebPageProxy::neAntikDetachedEditorCommand(const String& token, bool secure
+     if (hasRunningProcess())
+         sendToFocusedOrMainFrameProcess(Messages::WebPage::NeAntikDetachedEditorCommand(token, secure, action, text, selected, replacement, expectedSelection));
+ }
++
++void WebPageProxy::neAntikDetachedAXSnapshot(CompletionHandler<void(const String&)>&& reply)
++{
++    if (!hasRunningProcess() || !m_mainFrame)
++        return reply({ });
++    sendWithAsyncReplyToProcessContainingFrame(m_mainFrame->frameID(), Messages::WebPage::NeAntikDetachedAXSnapshot(), WTF::move(reply));
++}
++
++void WebPageProxy::neAntikDetachedAXAction(const String& document, uint64_t node, bool press)
++{
++    if (hasRunningProcess() && m_mainFrame)
++        sendToProcessContainingFrame(m_mainFrame->frameID(), Messages::WebPage::NeAntikDetachedAXAction(document, node, press));
++}
+ #endif
+ 
+ void WebPageProxy::characterIndexForPointAsync(const WebCore::IntPoint& point, CompletionHandler<void(uint64_t)>&& callbackFunction)
+diff --git a/Source/WebKit/UIProcess/WebPageProxy.h b/Source/WebKit/UIProcess/WebPageProxy.h
+index 90540ba..3f13fde 100644
+--- a/Source/WebKit/UIProcess/WebPageProxy.h
++++ b/Source/WebKit/UIProcess/WebPageProxy.h
+@@ -1521,6 +1521,8 @@ public:
+ #if PLATFORM(MAC)
+     void neAntikDetachedEditorSnapshot(CompletionHandler<void(const String&, bool, const EditingRange&, const EditingRange&, const WebCore::IntRect&)>&&);
+     void neAntikDetachedEditorCommand(const String&, bool secure, const String& action, const String& text, const EditingRange& selected, const EditingRange& replacement, const EditingRange& expectedSelection);
++    void neAntikDetachedAXSnapshot(CompletionHandler<void(const String&)>&&);
++    void neAntikDetachedAXAction(const String&, uint64_t, bool press);
+ #endif
+     void characterIndexForPointAsync(const WebCore::IntPoint&, CompletionHandler<void(uint64_t)>&&);
+     void firstRectForCharacterRangeAsync(const EditingRange&, CompletionHandler<void(const WebCore::IntRect&, const EditingRange&)>&&);
+diff --git a/Source/WebKit/UIProcess/mac/DetachedPresenterActivity.h b/Source/WebKit/UIProcess/mac/DetachedPresenterActivity.h
+index 9259dc1..47ea395 100644
+--- a/Source/WebKit/UIProcess/mac/DetachedPresenterActivity.h
++++ b/Source/WebKit/UIProcess/mac/DetachedPresenterActivity.h
+@@ -35,4 +35,9 @@ inline void setDetachedPresenterActivity(NSView *view, DetachedPresenterActivity
+     objc_setAssociatedObject(view, detachedPresenterActivityKey(), @(bits), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+ }
+ 
++inline const void *detachedPresenterFocusDirectionKey()
++{
++    return sel_registerName("_neantikDetachedPresenterFocusDirection");
++}
++
+ } // namespace WebKit
+diff --git a/Source/WebKit/UIProcess/mac/PageClientImplMac.mm b/Source/WebKit/UIProcess/mac/PageClientImplMac.mm
+index 9b1bf66..c3dcff4 100644
+--- a/Source/WebKit/UIProcess/mac/PageClientImplMac.mm
++++ b/Source/WebKit/UIProcess/mac/PageClientImplMac.mm
+@@ -67,6 +67,7 @@
+ #import "WebViewImpl.h"
+ #if defined(NEANTIK_DETACHED_PRESENTER)
+ #import "DetachedPresenterActivity.h"
++#import <WebCore/FocusDirection.h>
+ #endif
+ #import "WindowServerConnection.h"
+ #import "_WKDownloadInternal.h"
+@@ -1239,6 +1240,17 @@ bool PageClientImpl::useFormSemanticContext() const
+ 
+ void PageClientImpl::takeFocus(WebCore::FocusDirection direction)
+ {
++#if defined(NEANTIK_DETACHED_PRESENTER)
++    if (RetainPtr view = m_view.get()) {
++        if (auto activity = detachedPresenterActivity(view.get())) {
++            if (activity->focused && (direction == WebCore::FocusDirection::Forward || direction == WebCore::FocusDirection::Backward)) {
++                objc_setAssociatedObject(view.get(), detachedPresenterFocusDirectionKey(),
++                    direction == WebCore::FocusDirection::Forward ? @1 : @-1, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
++            }
++            return;
++        }
++    }
++#endif
+     protect(m_impl)->takeFocus(direction);
+ }
+ 
+diff --git a/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm b/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm
+index cb32a6f..ec54a4b 100644
+--- a/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm
++++ b/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm
+@@ -108,6 +108,7 @@
+ #import <WebCore/HTMLImageElement.h>
+ #import <WebCore/HTMLLabelElement.h>
+ #import <WebCore/HTMLMediaElement.h>
++#import <WebCore/HTMLNames.h>
+ #import <WebCore/HTMLOListElement.h>
+ #import <WebCore/HTMLPlugInElement.h>
+ #import <WebCore/HTMLSelectElement.h>
+@@ -131,6 +132,7 @@
+ #import <WebCore/NodeDocument.h>
+ #import <WebCore/NodeHTMLConverter.h>
+ #import <WebCore/NodeList.h>
++#import <WebCore/NodeInlines.h>
+ #import <WebCore/NodeRenderStyle.h>
+ #import <WebCore/NotImplemented.h>
+ #import <WebCore/NowPlayingInfo.h>
+@@ -154,6 +156,7 @@
+ #import <WebCore/Settings.h>
+ #import <WebCore/StylePropertiesInlines.h>
+ #import <WebCore/TextIterator.h>
++#import <WebCore/Text.h>
+ #import <WebCore/TextPlaceholderElement.h>
+ #import <WebCore/UTIRegistry.h>
+ #import <WebCore/UTIUtilities.h>
+@@ -167,9 +170,11 @@
+ #import <pal/spi/cocoa/QuartzCoreSPI.h>
+ #import <wtf/Borrow.h>
+ #import <wtf/CoroutineUtilities.h>
++#import <wtf/JSONValues.h>
+ #import <wtf/MemoryPressureHandler.h>
+ #import <wtf/MonotonicTime.h>
+ #import <wtf/TZoneMallocInlines.h>
++#import <wtf/text/StringBuilder.h>
+ #import <wtf/cf/VectorCF.h>
+ #import <wtf/cocoa/SpanCocoa.h>
+ #import <wtf/cocoa/TypeCastsCocoa.h>
+@@ -2271,6 +2276,160 @@ void WebPage::getSelectedRangeAsync(CompletionHandler<void(const EditingRange& s
+ }
+ 
+ #if PLATFORM(MAC)
++static String detachedAccessibilityRole(const AXCoreObject& node)
++{
++    switch (node.role()) {
++    case AccessibilityRole::WebArea: return "AXWebArea"_s;
++    case AccessibilityRole::Heading: return "AXHeading"_s;
++    case AccessibilityRole::StaticText: return "AXStaticText"_s;
++    case AccessibilityRole::Button:
++    case AccessibilityRole::ToggleButton: return "AXButton"_s;
++    case AccessibilityRole::Link: return "AXLink"_s;
++    case AccessibilityRole::Checkbox: return "AXCheckBox"_s;
++    case AccessibilityRole::RadioButton: return "AXRadioButton"_s;
++    case AccessibilityRole::Image: return "AXImage"_s;
++    case AccessibilityRole::TextArea: return "AXTextArea"_s;
++    case AccessibilityRole::TextField: return "AXTextField"_s;
++    default: return "AXGroup"_s;
++    }
++}
++
++static bool detachedAccessibilityCanPress(const AXCoreObject& node)
++{
++    switch (node.role()) {
++    case AccessibilityRole::Button:
++    case AccessibilityRole::ToggleButton:
++    case AccessibilityRole::Link:
++    case AccessibilityRole::Checkbox:
++    case AccessibilityRole::RadioButton:
++        return node.isEnabled();
++    default:
++        return false;
++    }
++}
++
++static String detachedAccessibilityLabel(const AXCoreObject& node)
++{
++    RefPtr source = node.node();
++    if (!source || source->isInUserAgentShadowTree())
++        return { };
++
++    // Accessible name computation can incorporate live values from other
++    // controls through references. Only read literal names and static text.
++    constexpr unsigned labelLimit = 48;
++    if (RefPtr element = dynamicDowncast<Element>(source)) {
++        for (const auto* attribute : { &HTMLNames::aria_labelAttr.get(), &HTMLNames::altAttr.get(), &HTMLNames::titleAttr.get() }) {
++            const auto& value = element->attributeWithoutSynchronization(*attribute);
++            if (!value.isEmpty())
++                return value.string().left(labelLimit);
++        }
++    }
++    if (node.role() != AccessibilityRole::StaticText && node.role() != AccessibilityRole::Heading
++        && !detachedAccessibilityCanPress(node))
++        return { };
++
++    unsigned visited = 0;
++    StringBuilder label;
++    auto collect = [&](auto&& collect, Node& candidate, unsigned depth) -> void {
++        if (++visited > 32 || depth > 6 || label.length() >= labelLimit
++            || candidate.isInUserAgentShadowTree() || candidate.isContentEditable())
++            return;
++        if (RefPtr element = dynamicDowncast<Element>(candidate)) {
++            const auto& name = element->localName();
++            if (element->hasTagName(HTMLNames::inputTag) || element->hasTagName(HTMLNames::textareaTag)
++                || element->hasTagName(HTMLNames::selectTag) || name == "script"_s || name == "style"_s)
++                return;
++        }
++        if (RefPtr value = dynamicDowncast<Text>(candidate)) {
++            label.append(StringView(value->data()).left(labelLimit - label.length()));
++            return;
++        }
++        for (RefPtr child = candidate.firstChild(); child && visited < 32 && label.length() < labelLimit; child = child->nextSibling())
++            collect(collect, *child, depth + 1);
++    };
++    collect(collect, *source, 0);
++    return label.toString();
++}
++
++void WebPage::neAntikDetachedAXSnapshot(CompletionHandler<void(const String&)>&& reply)
++{
++    RefPtr frame = dynamicDowncast<LocalFrame>(corePage()->mainFrame());
++    RefPtr document = frame ? frame->document() : nullptr;
++    RefPtr view = frame ? frame->view() : nullptr;
++    if (!document || !view)
++        return reply({ });
++    std::ignore = AXObjectCache::attemptMainThreadModeTransition();
++    CheckedPtr cache = document->axObjectCache();
++    RefPtr root = cache ? cache->rootObjectForFrame(*frame) : nullptr;
++    if (!root)
++        return reply({ });
++    if (m_neAntikAXDocument.get() != document.get()) {
++        m_neAntikAXDocument = WeakPtr { *document };
++        m_neAntikAXDocumentToken = WTF::UUID::createVersion4().toString();
++    }
++    // Expose only native AX semantics of this document. Never send field
++    // values, selection, DOM source, hrefs, or password-related text.
++    constexpr unsigned nodeLimit = 16;
++    constexpr unsigned depthLimit = 12;
++    unsigned count = 0;
++    unsigned inspected = 0;
++    Ref nodes = JSON::Array::create();
++    auto visit = [&](auto&& visit, AXCoreObject& node, int parent, unsigned depth) -> void {
++        if (++inspected > nodeLimit * 4 || count == nodeLimit || depth == depthLimit || node.isDetached()
++            || node.isAXRemoteFrame() || node.isSecureField() || node.document() != document.get())
++            return;
++        auto index = count++;
++        Ref entry = JSON::Object::create();
++        entry->setString("id"_s, makeString(node.objectID().toUInt64()));
++        entry->setInteger("parent"_s, parent);
++        entry->setString("role"_s, detachedAccessibilityRole(node));
++        entry->setString("label"_s, detachedAccessibilityLabel(node));
++        auto bounds = node.relativeFrame();
++#if ENABLE(ACCESSIBILITY_LOCAL_FRAME)
++        if (depth)
++            bounds = view->contentsToView(bounds);
++#endif
++        if (!std::isfinite(bounds.x()) || !std::isfinite(bounds.y())
++            || !std::isfinite(bounds.width()) || !std::isfinite(bounds.height()))
++            bounds = { };
++        entry->setDouble("x"_s, bounds.x());
++        entry->setDouble("y"_s, bounds.y());
++        entry->setDouble("width"_s, bounds.width());
++        entry->setDouble("height"_s, bounds.height());
++        entry->setBoolean("focusable"_s, node.isEnabled() && node.canSetFocusAttribute());
++        entry->setBoolean("focused"_s, node.isFocused());
++        entry->setBoolean("pressable"_s, detachedAccessibilityCanPress(node));
++        nodes->pushObject(WTF::move(entry));
++        for (auto& child : node.unignoredChildren()) {
++            if (count == nodeLimit || inspected >= nodeLimit * 4)
++                break;
++            visit(visit, child.get(), index, depth + 1);
++        }
++    };
++    visit(visit, *root, -1, 0);
++    Ref snapshot = JSON::Object::create();
++    snapshot->setString("document"_s, m_neAntikAXDocumentToken);
++    snapshot->setArray("nodes"_s, WTF::move(nodes));
++    reply(snapshot->toJSONString());
++}
++
++void WebPage::neAntikDetachedAXAction(const String& token, uint64_t identifier, bool press)
++{
++    RefPtr frame = dynamicDowncast<LocalFrame>(corePage()->mainFrame());
++    RefPtr document = frame ? frame->document() : nullptr;
++    if (!document || document.get() != m_neAntikAXDocument.get() || token.isEmpty() || token != m_neAntikAXDocumentToken
++        || !AXID::isValidIdentifier(identifier))
++        return;
++    CheckedPtr cache = document->axObjectCache();
++    RefPtr node = cache ? cache->objectForID(AXID { identifier }) : nullptr;
++    if (!node || node->isDetached() || !node->isEnabled() || node->isSecureField() || node->document() != document.get())
++        return;
++    if (press && detachedAccessibilityCanPress(*node))
++        node->press();
++    else if (!press && node->canSetFocusAttribute())
++        node->setFocused(true);
++}
++
+ void WebPage::invalidateNeAntikDetachedEditor()
+ {
+     m_neAntikDetachedFocusToken = { };
+diff --git a/Source/WebKit/WebProcess/WebPage/WebPage.h b/Source/WebKit/WebProcess/WebPage/WebPage.h
+index 3c24739..0abe72f 100644
+--- a/Source/WebKit/WebProcess/WebPage/WebPage.h
++++ b/Source/WebKit/WebProcess/WebPage/WebPage.h
+@@ -1443,6 +1443,8 @@ public:
+     void invalidateNeAntikDetachedEditor();
+     void neAntikDetachedEditorSnapshot(CompletionHandler<void(const String&, bool, const EditingRange&, const EditingRange&, const WebCore::IntRect&)>&&);
+     void neAntikDetachedEditorCommand(const String&, bool secure, const String& action, const String& text, const EditingRange& selected, const EditingRange& replacement, const EditingRange& expectedSelection);
++    void neAntikDetachedAXSnapshot(CompletionHandler<void(const String&)>&&);
++    void neAntikDetachedAXAction(const String&, uint64_t, bool press);
+ #endif
+     void characterIndexForPointAsync(const WebCore::IntPoint&, CompletionHandler<void(uint64_t)>&&);
+     void firstRectForCharacterRangeAsync(const EditingRange&, CompletionHandler<void(const WebCore::IntRect&, const EditingRange&)>&&);
+@@ -3284,6 +3286,8 @@ private:
+ #if PLATFORM(MAC)
+     String m_neAntikDetachedFocusToken;
+     WeakPtr<WebCore::Element, WebCore::WeakPtrImplWithEventTargetData> m_neAntikDetachedEditingRoot;
++    WeakPtr<WebCore::Document, WebCore::WeakPtrImplWithEventTargetData> m_neAntikAXDocument;
++    String m_neAntikAXDocumentToken;
+ #endif
+     RefPtr<WebCore::Element> m_recentlyBlurredElement;
+     bool m_hasPendingInputContextUpdateAfterBlurringAndRefocusingElement { false };
+diff --git a/Source/WebKit/WebProcess/WebPage/WebPage.messages.in b/Source/WebKit/WebProcess/WebPage/WebPage.messages.in
+index f622b75..c5a049f 100644
+--- a/Source/WebKit/WebProcess/WebPage/WebPage.messages.in
++++ b/Source/WebKit/WebProcess/WebPage/WebPage.messages.in
+@@ -645,6 +645,8 @@ messages -> WebPage WantsAsyncDispatchMessage {
+ #if PLATFORM(MAC)
+     NeAntikDetachedEditorSnapshot() -> (String token, bool secure, struct WebKit::EditingRange selection, struct WebKit::EditingRange composition, WebCore::IntRect caret)
+     NeAntikDetachedEditorCommand(String token, bool secure, String action, String text, struct WebKit::EditingRange selected, struct WebKit::EditingRange replacement, struct WebKit::EditingRange expectedSelection)
++    NeAntikDetachedAXSnapshot() -> (String snapshot)
++    NeAntikDetachedAXAction(String document, uint64_t node, bool press)
+     AttributedSubstringForCharacterRangeAsync(struct WebKit::EditingRange range) -> (struct WebCore::AttributedString string, struct WebKit::EditingRange range)
+     RequestAcceptsFirstMouse(std::optional<WebCore::FrameIdentifier> frameID, int eventNumber, Ref<WebKit::WebMouseEvent> event) AllowedWhenWaitingForSyncReplyDuringUnboundedIPC
+     SetCaretAnimatorType(enum:uint8_t WebCore::CaretAnimatorType caretType)

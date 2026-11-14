@@ -39,6 +39,22 @@ private final class WebKitBrokerAttestationGate: @unchecked Sendable {
     }
 }
 
+private final class WebKitBrokerLeaseSwitch: @unchecked Sendable {
+    private let lock = NSLock()
+    private var valid = true
+
+    func isCurrent() -> Bool { lock.withLock { valid } }
+    func expire() { lock.withLock { valid = false } }
+}
+
+private final class WebKitBrokerLossRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var scopes: [WebKitRelayAuthority.Scope] = []
+
+    func append(_ scope: WebKitRelayAuthority.Scope) { lock.withLock { scopes.append(scope) } }
+    func snapshot() -> [WebKitRelayAuthority.Scope] { lock.withLock { scopes } }
+}
+
 /// Own loopback echo endpoint. It records only counts, not traffic or addresses.
 private final class WebKitBrokerEcho: @unchecked Sendable {
     let listener: NWListener
@@ -46,7 +62,9 @@ private final class WebKitBrokerEcho: @unchecked Sendable {
     private var accepted = 0
     private var tasks: [UUID: Task<Void, Never>] = [:]
     private var finish: ((Result<UInt16, Error>) -> Void)?
-    init() throws {
+    private let receiveTimeout: TimeInterval
+    init(receiveTimeout: TimeInterval = 3) throws {
+        self.receiveTimeout = receiveTimeout
         let parameters = NWParameters.tcp
         parameters.requiredLocalEndpoint = .hostPort(host: .init("127.0.0.1"), port: .any)
         listener = try NWListener(using: parameters)
@@ -81,7 +99,7 @@ private final class WebKitBrokerEcho: @unchecked Sendable {
                         try? await withTaskCancellationHandler {
                             try await front.open(timeout: 2)
                             while true {
-                                let chunk = try await front.receive(timeout: 3)
+                                let chunk = try await front.receive(timeout: receiveTimeout)
                                 if !chunk.data.isEmpty { try await front.send(chunk.data) }
                                 if chunk.endOfStream { try await front.finishWrite(); break }
                             }
@@ -162,21 +180,117 @@ struct WebKitLoopbackBrokerTests {
         try await echo(first, marker: "first"); try await echo(second, marker: "second")
         await broker.revoke(a)
         #expect(await broker.activeConnectionCount() == 1)
-        let rejected = try client(port); defer { rejected.cancel() }
-        await #expect(throws: (any Error).self) {
-            try await rejected.establish(destination: destination, credentials: credentials(ca), timeout: 2, authorizeCredentials: { true })
-        }
-        try await echo(second, marker: "still-independent")
-        #expect(origin.acceptedCount == 2)
-        await broker.stop(); #expect(await broker.activeConnectionCount() == 0)
-        await origin.stop()
         do {
             let end = try await first.receive(timeout: 1)
             #expect(end.data.isEmpty && end.endOfStream)
         } catch let error as ProxyRelayTransportError {
             #expect(error != .timeout)
         }
+        let rejected = try client(port); defer { rejected.cancel() }
+        await #expect(throws: ProxyRelayWireError.authenticationRejected) {
+            try await rejected.establish(destination: destination, credentials: credentials(ca), timeout: 2, authorizeCredentials: { true })
+        }
+        try await echo(second, marker: "still-independent")
+        #expect(origin.acceptedCount == 2)
+
+        let restarted = WebKitRelayAuthority.Scope(profileID: a.profileID, storeID: a.storeID,
+                                                    sessionID: UUID(), revision: a.revision)
+        let replacement = try broker.prepare(scope: restarted, route: .direct)
+        await broker.revoke(a)
+        try broker.activateForTesting(scope: restarted, isCurrent: { true })
+        await broker.revoke(a)
+
+        let reopened = try client(port); defer { reopened.cancel() }
+        _ = try await reopened.establish(destination: destination, credentials: credentials(replacement),
+                                         timeout: 2, authorizeCredentials: { true })
+        try await echo(reopened, marker: "new-generation-survives-stale-revoke")
+        try await echo(second, marker: "other-profile-still-independent")
+        #expect(origin.acceptedCount == 3)
+        await broker.stop(); #expect(await broker.activeConnectionCount() == 0)
+        await origin.stop()
     }
+    @Test func listenerFailureRevokesAllActiveRoutesAndReportsEachOnce() async throws {
+        let broker = try WebKitLoopbackBroker(qualificationPort: .any)
+        _ = try await broker.start()
+        defer { broker.cancel() }
+        let a = scope(), b = scope(), staged = scope()
+        let losses = WebKitBrokerLossRecorder()
+        for route in [a, b] {
+            _ = try broker.prepare(scope: route, route: .direct)
+            try broker.activateForTesting(scope: route, isCurrent: { true }, onLoss: { losses.append($0) })
+        }
+        _ = try broker.prepare(scope: staged, route: .direct)
+        broker.failListenerForTesting()
+        broker.failListenerForTesting()
+        #expect(!broker.hasActiveRoute(a) && !broker.hasActiveRoute(b))
+        #expect(losses.snapshot().count == 2)
+        #expect(losses.snapshot().contains(a) && losses.snapshot().contains(b))
+        await broker.stop()
+    }
+
+    @Test func expiredNetworkingLeaseClosesOnlyItsLiveProxiedTunnel() async throws {
+        let origin = try WebKitBrokerEcho(receiveTimeout: 8), originPort = try await origin.start()
+        defer { origin.cancel() }
+        let upstream = try WebKitLoopbackBroker(qualificationPort: .any)
+        let upstreamPort = try await upstream.start()
+        defer { upstream.cancel() }
+        let upstreamCapability = try upstream.registerForTesting(scope: scope(), route: .direct)
+        let broker = try WebKitLoopbackBroker(qualificationPort: .any), port = try await broker.start()
+        defer { broker.cancel() }
+
+        let a = scope(), b = scope(), lease = WebKitBrokerLeaseSwitch()
+        let losses = WebKitBrokerLossRecorder()
+        let capabilityA = try broker.prepare(scope: a, route: .proxy(
+            kind: .http, upstream: .init(host: "127.0.0.1", port: Int(upstreamPort)),
+            credentials: credentials(upstreamCapability)))
+        try broker.activateForTesting(scope: a, isCurrent: { lease.isCurrent() }, onLoss: { losses.append($0) })
+        let capabilityB = try broker.prepare(scope: b, route: .direct)
+        try broker.activateForTesting(scope: b, isCurrent: { true }, onLoss: { losses.append($0) })
+        #expect(broker.hasActiveRoute(a))
+        #expect(broker.hasActiveRoute(b))
+        let destination = try ProxyRelayDestination(host: "127.0.0.1", port: Int(originPort))
+        let first = try client(port), second = try client(port)
+        defer { first.cancel(); second.cancel() }
+        _ = try await first.establish(destination: destination, credentials: credentials(capabilityA),
+                                     timeout: 2, authorizeCredentials: { true })
+        _ = try await second.establish(destination: destination, credentials: credentials(capabilityB),
+                                      timeout: 2, authorizeCredentials: { true })
+        try await echo(first, marker: "proxied-before-expiry")
+        try await echo(second, marker: "independent-before-expiry")
+        #expect(await upstream.activeConnectionCount() == 1)
+
+        lease.expire()
+        // Wait on the old socket before any new admission can notice expiry.
+        // The origin's idle timeout is longer than this observation window.
+        do {
+            let end = try await first.receive(timeout: 4)
+            #expect(end.data.isEmpty && end.endOfStream)
+        } catch let error as ProxyRelayTransportError {
+            switch error {
+            case .closed, .posixFailure: break
+            default: Issue.record("Expected the lease monitor to close the tunnel, got \(error)")
+            }
+        }
+
+        try await echo(second, marker: "independent-after-expiry")
+        let rejected = try client(port)
+        defer { rejected.cancel() }
+        await #expect(throws: ProxyRelayWireError.authenticationRejected) {
+            try await rejected.establish(destination: destination, credentials: credentials(capabilityA),
+                                         timeout: 2, authorizeCredentials: { true })
+        }
+        #expect(origin.acceptedCount == 2)
+        #expect(!broker.hasActiveRoute(a))
+        #expect(broker.hasActiveRoute(b))
+        #expect(losses.snapshot() == [a])
+        await broker.revoke(b)
+        #expect(!broker.hasActiveRoute(b))
+        #expect(losses.snapshot() == [a])
+        await broker.stop()
+        await upstream.stop()
+        await origin.stop()
+    }
+
     @Test func absentOrForeignCredentialsDoNotDialDestination() async throws {
         let origin = try WebKitBrokerEcho(), originPort = try await origin.start()
         defer { origin.cancel() }
@@ -323,6 +437,44 @@ struct WebKitLoopbackBrokerTests {
 
 @MainActor
 struct WebKitLoopbackBrokerPoolTests {
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["NEANTIK_WEBKIT_FIXED_BROKER_PORT_TEST"] == "1"))
+    func replacementRebindsTheProductionPortAfterListenerFailure() async throws {
+        let pool = WebKitLoopbackBrokerPool()
+        let original = try await pool.acquire()
+        original.failListenerForTesting()
+
+        async let first = pool.acquire()
+        async let second = pool.acquire()
+        let (replacement, other) = try await (first, second)
+        #expect(replacement !== original)
+        #expect(replacement === other)
+
+        let endpoint = try ProxyRelayDestination(host: "127.0.0.1", port: Int(WebKitBrokerPort.sandboxPort))
+        let client = ProxyRelayUpstreamTransport(kind: .http, upstream: endpoint)
+        defer { client.cancel() }
+        try await client.open(timeout: 2)
+        client.cancel()
+        await pool.stopIfIdle(true)
+    }
+
+    @Test func concurrentReopenAfterListenerFailureSharesOneReplacement() async throws {
+        var created = 0
+        let pool = WebKitLoopbackBrokerPool {
+            created += 1
+            return try WebKitLoopbackBroker(qualificationPort: .any)
+        }
+        let original = try await pool.acquire()
+        original.failListenerForTesting()
+
+        async let first = pool.acquire()
+        async let second = pool.acquire()
+        let (replacement, other) = try await (first, second)
+        #expect(replacement !== original)
+        #expect(replacement === other)
+        #expect(created == 2)
+        await pool.stopIfIdle(true)
+    }
+
     @Test func concurrentProfileLaunchesShareOneListenerAndIdlePoolCanRestart() async throws {
         let pool = WebKitLoopbackBrokerPool {
             try WebKitLoopbackBroker(qualificationPort: .any)

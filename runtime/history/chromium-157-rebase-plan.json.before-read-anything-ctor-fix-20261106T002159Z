@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "Chromium 157.0.8103.39 source port plan",
+  "targetChromiumVersion": "157.0.8103.39",
+  "targetArchitecture": "arm64",
+  "sourceMode": "official-chromium-stable-with-reviewed-neantik-port",
+  "releaseReady": false,
+  "officialChromiumBase": {
+    "repository": "https://chromium.googlesource.com/chromium/src.git",
+    "tag": "157.0.8103.39",
+    "commit": "9a31f0acec1854d44e49a73fbf8017598151a583",
+    "tree": "e400810dee21ba266feeeef005ea83ae83fd274e"
+  },
+  "portSource": {
+    "head": "95b9ebdb2192fb206f9838e1a2fbe791fbffb235",
+    "parent": "39eb0679325c11436bb56ae6f3eea7bee4373322",
+    "sourceFileSHA256": {
+      "chrome/browser/extensions/BUILD.gn": "7014558c6021cad9034c390fb14b6fe81c01c10e42a30fa26773353bdd630290",
+      "chrome/browser/extensions/extension_allowlist_unittest.cc": "e1b4f65c21dbb257309683e201c87ac2529bcf59794e325f313ba5719414a13f",
+      "chrome/browser/extensions/extension_service.cc": "b2864a94ab34a6710ac78957e4b85900281cb70a6d8bf903a47bd9f135936452",
+      "chrome/browser/extensions/extension_service_unittest.cc": "d18613becad6a7ed71355bc7454211fca1fcdc79e662a166a245e9a3103c2fac",
+      "chrome/browser/resources/extensions/sidebar.ts": "6b0f08d6301e00da638ec94c54c382ce7d36ab66ec58069c89f8c51815bab5dc",
+      "chrome/browser/resources/settings/privacy_page/privacy_page_index.html": "c5c6b6095a608974219ac50a0ee3a318081d00bf7cf9cf95cff8bddde2853cd8",
+      "chrome/browser/signin/chrome_signin_client.cc": "429e3ff8c10e6c97e2c0814d587324b4529bc0f722ecc9c59b1fd6458d4b2cbc",
+      "chrome/test/data/webui/history/history_routing_test.ts": "c6d0b011c92585b96581063ae1fe41317dade546b95c16820332cef34238a07f",
+      "chrome/test/data/webui/settings/about_page_test.ts": "d05d2fdcbbf983e9fba03446e8a6f799854f6d1f60bb8d310052315f5543c128",
+      "chrome/test/data/webui/settings/payments_page_test.ts": "2cabf735f10d833af75160392769a93d43d3c24068014b2ea678f92bd68bfb0d",
+      "chrome/test/data/webui/settings/personalization_options_test.ts": "6399df3807a119b5a5d5489fef09ce4e9ecbf7f2fd2a0ad125cca842bcf38222",
+      "chrome/test/data/webui/settings/test_search_engines_browser_proxy.ts": "4dddcf10ede33569e308a563ae64b58136a2cfcd1596e8e9b0e8c37b2a75b271",
+      "components/domain_reliability/bake_in_configs.py": "7f43fc331ade5e41caa7e973c40d3e819c017b0823898f281897817371f33a37",
+      "components/safe_browsing/content/browser/triggers/trigger_manager.cc": "e736b8b3d41b18d1384f3ab1c18d236fe4499adfb16b3386c5f95be7412689b7",
+      "components/signin/internal/identity_manager/gaia_cookie_manager_service.cc": "64b9ecc2770171e74f7051cd5bedaa17a706c91763e1a0b876768e5846a09d23",
+      "components/signin/internal/identity_manager/gaia_cookie_manager_service_unittest.cc": "7e8c41376fd9fef1a518518eacba562948c8b48bcfc86cc71ea451d034363a51",
+      "content/browser/file_system_access/file_system_access_safe_move_helper.h": "93e162341151221707a49a77ba6f8f221747ff61c69931ebfa178d1cdf459c29",
+      "storage/browser/quota/quota_features.cc": "73051a48c162bded135987473ccb1e7ed19d3f6b6d4bec88138a3b4dd4223973",
+      "storage/browser/quota/quota_manager_impl.cc": "15d2f700eca00f9741f1df6e2cba45ca46a1b4346308d9637b8c562e09791029",
+      "storage/browser/quota/quota_manager_unittest.cc": "8da1fc98fbd71a0f70833ecfee0686b3bc376e72980488988115f9d72b6c8005"
+    },
+    "sourcePatchManifestSHA256": "bc7ddea1045262783f4aa5007a36950f528fa58ae631b1bc199833d0393c80df",
+    "buildArgsPath": "out/neantik157-port-smoke-correctargs3/args.gn",
+    "buildArgsSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e",
+    "buildOutputDirectory": "out/neantik157-port-smoke-correctargs3",
+    "changedFiles": [
+      "chrome/browser/extensions/BUILD.gn",
+      "chrome/browser/extensions/extension_allowlist_unittest.cc",
+      "chrome/browser/extensions/extension_service.cc",
+      "chrome/browser/extensions/extension_service_unittest.cc",
+      "chrome/browser/resources/extensions/sidebar.ts",
+      "chrome/browser/resources/settings/privacy_page/privacy_page_index.html",
+      "chrome/browser/signin/chrome_signin_client.cc",
+      "chrome/test/data/webui/history/history_routing_test.ts",
+      "chrome/test/data/webui/settings/about_page_test.ts",
+      "chrome/test/data/webui/settings/payments_page_test.ts",
+      "chrome/test/data/webui/settings/personalization_options_test.ts",
+      "chrome/test/data/webui/settings/test_search_engines_browser_proxy.ts",
+      "components/domain_reliability/bake_in_configs.py",
+      "components/safe_browsing/content/browser/triggers/trigger_manager.cc",
+      "components/signin/internal/identity_manager/gaia_cookie_manager_service.cc",
+      "components/signin/internal/identity_manager/gaia_cookie_manager_service_unittest.cc",
+      "content/browser/file_system_access/file_system_access_safe_move_helper.h",
+      "storage/browser/quota/quota_features.cc",
+      "storage/browser/quota/quota_manager_impl.cc",
+      "storage/browser/quota/quota_manager_unittest.cc"
+    ]
+  },
+  "dependencySync": {
+    "gitCheckouts": 151,
+    "nonGitInputs": 50,
+    "status": "verified by CURRENT-linked Chromium 157 sync receipt"
+  },
+  "build": {
+    "outputDirectory": "out/neantik157-port-smoke-correctargs3",
+    "argsPath": "out/neantik157-port-smoke-correctargs3/args.gn",
+    "argsSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e",
+    "target": "chrome unit_tests",
+    "status": "pending"
+  },
+  "buildEvidence": {
+    "status": "pending-after-diagnosed-source-port-build-failure",
+    "file": "runtime/chromium-157-build-evidence.json",
+    "releaseReady": false
+  }
+}

@@ -1,0 +1,10 @@
+NeAntik Chromium 157.0.8103.79 privacy changes
+
+The system_font_source.cc/.h and system_font_policy_mac.cc/.h files retain
+their NeAntik copyright and MPL-2.0 notices. The macOS GN target builds the
+two implementation files as separate sources. The corresponding-source offer
+includes their complete source, the Chromium and Skia changes, and the build
+instructions. Chromium consumer files retain their existing notices.
+
+The Chromium and FFmpeg licenses and corresponding sources are identified
+in the same offer. No Apple SDK or private signing material is redistributed.

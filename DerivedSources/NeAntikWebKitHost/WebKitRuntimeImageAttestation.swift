@@ -7,6 +7,11 @@ import Foundation
 /// framework dyld selected at runtime.
 enum WebKitRuntimeImageAttestation {
     static let pinKey = "NeAntikWebKitRuntimeV1"
+    static let networkSandboxPinKey = "NeAntikWebKitNetworkSandboxSHA256"
+    private static let networkSandboxDirectories = [
+        "Contents", "Frameworks", "WebKit.framework", "Versions", "A", "Resources"
+    ]
+    private static let maximumNetworkSandboxBytes = 1 << 20
 
     /// QA diagnosis only. The counts contain no image paths or profile data.
     struct StartupCheckpoint: Equatable {
@@ -22,6 +27,10 @@ enum WebKitRuntimeImageAttestation {
         case wrongRuntimeImage
         case runtimeHashMismatch
         case unsupportedOperatingSystem
+        case missingNetworkSandboxPin
+        case malformedNetworkSandboxPin
+        case unsafeNetworkSandboxPolicy
+        case networkSandboxHashMismatch
     }
 
     /// QA-only failure payload: bounded counts, never image paths. Nine means
@@ -102,11 +111,26 @@ enum WebKitRuntimeImageAttestation {
         try attestCurrentProcess(bundleURL: bundleURL).url
     }
 
+    #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+    /// The initial attestation hashes the signed image. A live check can
+    /// then detect an additional dyld image without hashing each video frame.
+    static func isOnlyLoadedRuntime(_ verified: VerifiedImage) -> Bool {
+        let paths = (0..<_dyld_image_count()).compactMap { index -> String? in
+            guard let name = _dyld_get_image_name(index) else { return nil }
+            return String(cString: name)
+        }
+        let candidates = runtimeCandidates(paths)
+        guard candidates.count == 1, let only = candidates.first else { return false }
+        return URL(fileURLWithPath: only).resolvingSymlinksInPath().standardizedFileURL == verified.url
+    }
+    #endif
+
     /// Returns a capability for the exact embedded image only after the
     /// current process's signed bundle pin and dyld image table agree.
     static func attestCurrentProcess(
         bundleURL: URL = Bundle.main.bundleURL,
-        startupCheckpoint: StartupCheckpoint? = nil
+        startupCheckpoint: StartupCheckpoint? = nil,
+        requireNetworkSandboxPin: Bool = false
     ) throws -> VerifiedImage {
         guard let info = Bundle(url: bundleURL)?.infoDictionary else {
             throw Failure.unsafeBundle
@@ -131,7 +155,65 @@ enum WebKitRuntimeImageAttestation {
             throw Failure.ambiguousRuntimeImage
             #endif
         }
+        try verifyNetworkSandbox(bundleURL: bundleURL, signedSHA256: info[networkSandboxPinKey],
+                                 required: requireNetworkSandboxPin)
         return VerifiedImage(url: url, sha256: pin.webKitSHA256)
+    }
+
+    /// An owned proxy requires the signed host to bind the staged policy.
+    /// Legacy image-only callers can omit the pin, but a present pin always
+    /// requires exact bytes at the NetworkProcess resource path.
+    static func verifyNetworkSandbox(bundleURL: URL, signedSHA256: Any?, required: Bool) throws {
+        guard let signedSHA256 else {
+            if required { throw Failure.missingNetworkSandboxPin }
+            return
+        }
+        guard let digest = signedSHA256 as? String, digest.utf8.count == 64,
+              digest.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) else {
+            throw Failure.malformedNetworkSandboxPin
+        }
+        let policy = try readNetworkSandbox(bundleURL: bundleURL)
+        let actual = SHA256.hash(data: policy).map { String(format: "%02x", $0) }.joined()
+        guard actual == digest else { throw Failure.networkSandboxHashMismatch }
+    }
+
+    private static func readNetworkSandbox(bundleURL: URL) throws -> Data {
+        guard bundleURL.isFileURL, bundleURL.pathExtension == "app",
+              bundleURL.pathComponents.first == "/" else { throw Failure.unsafeNetworkSandboxPolicy }
+        var bundleComponents = Array(bundleURL.pathComponents.dropFirst())
+        // Foundation rewrites /private/tmp and /private/var to Darwin's
+        // top-level aliases. Walk the corresponding physical paths without
+        // following arbitrary symlinks inside the bundle.
+        if let first = bundleComponents.first, first == "tmp" || first == "var" {
+            bundleComponents.insert("private", at: 0)
+        }
+        guard !bundleComponents.contains(where: { $0 == "." || $0 == ".." }) else {
+            throw Failure.unsafeNetworkSandboxPolicy
+        }
+
+        // Walk with directory descriptors so no intermediate symlink can
+        // redirect the read between a path check and the file open.
+        var directory = Darwin.open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC)
+        guard directory >= 0 else { throw Failure.unsafeNetworkSandboxPolicy }
+        defer { _ = Darwin.close(directory) }
+        for component in bundleComponents + networkSandboxDirectories {
+            let next = Darwin.openat(directory, component, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+            guard next >= 0 else { throw Failure.unsafeNetworkSandboxPolicy }
+            _ = Darwin.close(directory)
+            directory = next
+        }
+        let descriptor = Darwin.openat(directory, "com.apple.WebKit.NetworkProcess.sb",
+                                       O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
+        guard descriptor >= 0 else { throw Failure.unsafeNetworkSandboxPolicy }
+        let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+        defer { try? handle.close() }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0,
+              info.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG),
+              info.st_size > 0, info.st_size <= maximumNetworkSandboxBytes,
+              let bytes = try? handle.read(upToCount: maximumNetworkSandboxBytes + 1),
+              bytes.count == Int(info.st_size) else { throw Failure.unsafeNetworkSandboxPolicy }
+        return bytes
     }
 
     /// Count only Apple's system WebKit image at an early host milestone.

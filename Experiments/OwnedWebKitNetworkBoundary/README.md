@@ -145,3 +145,24 @@ Official upstream references:
 [build archives](https://webkit.org/build-archives/),
 [license information](https://webkit.org/licensing-webkit/),
 [network sandbox source](https://github.com/WebKit/WebKit/blob/d22fe75a1b10a54d034da33bf2174cff9814639b/Source/WebKit/NetworkProcess/mac/com.apple.WebKit.NetworkProcess.sb.in).
+
+### Exact signed NetworkProcess policy control
+
+Run `python3 -B exact_seatbelt_control.py /absolute/path/to/stage.json` in
+a native host shell. The child must be allowed to initialize its own Seatbelt
+sandbox. The probe verifies the staged app signature and both policy pins.
+It sends a fixed payload to local TCP and UDP listeners, first from an
+unconfined child and then from a child with the complete signed policy.
+Expected results are TCP delivery to the broker on IPv4 and IPv6 and denial
+of alternate TCP ports and direct UDP on both families. The broker port
+must be free before the run.
+
+Use `--mach-only` to query the kernel's permission for the two macOS resolver
+service names. The unconfined child must be allowed to look up both names,
+and the confined child must be denied both while retaining permission for
+the positive control `com.apple.familycontrols`. This mode makes no Mach
+service calls and sends no DNS traffic.
+
+This is evidence for the kernel policy on the tested OS. Browser routing,
+NetworkProcess adoption of the policy, DNS, WebRTC and profile lifecycle
+require their own runtime checks.

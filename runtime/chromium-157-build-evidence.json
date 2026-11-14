@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "status": "chromium-source-build-succeeded-unqualified",
+  "chromiumVersion": "157.0.8103.39",
+  "targetArchitecture": "arm64",
+  "officialCommit": "9a31f0acec1854d44e49a73fbf8017598151a583",
+  "officialTree": "e400810dee21ba266feeeef005ea83ae83fd274e",
+  "portHead": "95b9ebdb2192fb206f9838e1a2fbe791fbffb235",
+  "sourcePatchSHA256": "26a2856cd6cb3acb97283898ef415be3c0afc0d2239028ffaebda0525dd17e43",
+  "buildConfigurationSHA256": "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e",
+  "buildOutputDirectory": "out/neantik157-port-smoke-correctargs3",
+  "ninjaTarget": "chrome + focused modified test objects",
+  "ninjaExitCode": 0,
+  "ninjaActionsCompleted": 33373,
+  "ninjaActionsExpected": 33373,
+  "buildLogSHA256": "50e51fe9e2d52f120c54a8f2c802cbd9ec4db0644932d8dacd1f3212bd3af926",
+  "focusedTestObjects": [
+    "obj/chrome/browser/permissions/unit_tests/passage_embedder_delegate_unittest.o",
+    "obj/components/signin/core/browser/unit_tests/account_preview_data_service_impl_unittest.o",
+    "obj/chrome/browser/media/router/unittests/dns_sd_registry_unittest.o",
+    "obj/chrome/browser/sync/test/integration/sync_integration_test_support/search_engines_helper.o",
+    "obj/chrome/browser/autocomplete/unit_tests/search_provider_unittest.o",
+    "obj/chrome/browser/browsing_data/unit_tests/chrome_browsing_data_remover_delegate_unittest.o",
+    "obj/chrome/browser/download/unit_tests/download_item_model_unittest.o",
+    "obj/chrome/browser/extensions/unit_tests/extension_allowlist_unittest.o",
+    "obj/chrome/browser/extensions/unit_tests/extension_service_unittest.o",
+    "obj/chrome/browser/new_tab_page/unit_tests/one_google_bar_loader_impl_unittest.o",
+    "obj/chrome/browser/search_engines/unit_tests/template_url_service_unittest.o",
+    "obj/chrome/browser/search_engines/unit_tests/template_url_service_sync_unittest.o",
+    "obj/chrome/browser/search_engines/platform_browser_tests/prepopulated_engines_migration_browsertest.o",
+    "obj/chrome/renderer/unit_tests/read_anything_app_controller_unittest.o",
+    "obj/chrome/renderer/unit_tests/read_anything_app_model_unittest.o",
+    "obj/chrome/renderer/unit_tests/read_anything_node_utils_unittest.o",
+    "obj/components/search_engines/unit_tests/template_url_service_unittest.o",
+    "obj/components/signin/internal/identity_manager/unit_tests/gaia_cookie_manager_service_unittest.o",
+    "obj/storage/browser/unittests/quota_manager_unittest.o",
+    "obj/chrome/browser/enterprise/reporting/test/test_support/test_utils.o"
+  ],
+  "focusedTestExitCode": 0,
+  "focusedTestLogSHA256": "f0a7fc8350a9fea67ab943541f4ff37f28303e4ec81f301effd8b9848f72b835",
+  "focusedTestResult": "PASS: all 20 exact object targets were present and the matching Ninja 1.13.2 invocation reported no work for the pinned source, args and output; compile only, no test binary executed.",
+  "aggregateUnitTests": {
+    "status": "blocked",
+    "exitCode": 1,
+    "logPath": "/private/tmp/neantik-m157-unit-tests-resume9-20261106.log",
+    "logSHA256": "37ce85838e161c8b1884ba3f48f542488c0545556f25da97fccb5d1301eac5a2",
+    "failureBoundary": [
+      "Safe Browsing notification content detection and notification telemetry tests call SafeBrowsingService APIs unavailable with safe_browsing_mode=0.",
+      "Cloud binary upload test calls deep_scan_requests and ClearDeepScans methods absent from the M157 WebUIContentInfoSingleton API."
+    ],
+    "classification": "test source/config mismatch; product chrome target linked successfully; no runtime failure observed."
+  },
+  "browserExecutableSHA256": "78cbf84173e09eb13d29e7afb493451485c58f9ae37ccbf0af8bd5c740d56ca1",
+  "frameworkSHA256": "2464d6deb506484f680a6fa7e624add4b94fbdc222d5af4caf90ff3d733d5abe",
+  "browserExecutableRelativePath": "NeAntik Browser.app/Contents/MacOS/NeAntik Browser",
+  "frameworkRelativePath": "NeAntik Browser Framework.framework/Versions/157.0.8103.39/NeAntik Browser Framework",
+  "releaseReady": false,
+  "runtimeExecution": "not run; this Chromium output is unqualified and not a manager-bound candidate.",
+  "supplementalSourceEvidence": {
+    "sourceChanges": {
+      "additionalTestAdaptations": 11,
+      "safeBrowsingFixFiles": 2,
+      "totalManifestFiles": 62
+    },
+    "testAdaptationCompileReceipt": {
+      "path": "artifacts/neantik/looper-goals/20261020-webkit-1_0/evidence/neantik-v096-m157-build-and-launch-boundaries-20261106T034844Z.json",
+      "sha256": "8d0ee9edd1772e659acaa8760a5af28acdbbcb8be6d1975a047dc4502558a8d7",
+      "status": "11 additional browser test-adaptation objects compiled; aggregate unit_tests final link failed; no tests executed"
+    },
+    "safeBrowsingGuardReceipt": {
+      "path": "artifacts/neantik/looper-goals/20261020-webkit-1_0/evidence/neantik-m157-safe-browsing-missing-prefs-fix-20261106T041738Z.json",
+      "sha256": "00cfe8844a82e1e56b90532f81d9fd8bbac31ea875c67fb91761460ee7f36305",
+      "status": "safe_browsing_prefs.o and safe_browsing_prefs_unittest.o compile PASS; chrome target relink PASS; no focused gtest execution"
+    },
+    "releaseReady": false
+  },
+  "ninjaVersion": "1.13.2",
+  "latestChromeBuildReceipt": {
+    "path": "artifacts/neantik/looper-goals/20261020-webkit-1_0/evidence/neantik-m157-native-chrome-build-result-20261106T135500Z.json",
+    "sha256": "150779083bd043f010c49402da78b5e9b82f2b07ec34e6ad308e586f7a06e14b"
+  },
+  "focusedObjectCheckLog": {
+    "path": "/private/tmp/neantik-m157-focused-test-targets-final-20261106.log",
+    "sha256": "f0a7fc8350a9fea67ab943541f4ff37f28303e4ec81f301effd8b9848f72b835",
+    "scope": "20 listed modified test objects; no test execution"
+  }
+}

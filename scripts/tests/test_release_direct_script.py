@@ -21,6 +21,33 @@ RELEASE_ENTRYPOINT = SCRIPTS.parent / "Release-NeAntik.command"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
+    def test_integrated_engine_scope_preserves_legacy_refusal_and_requires_owned_host(self) -> None:
+        text = INTEGRATED_VERIFIER.read_text(encoding="utf-8")
+        start = text.index('ENGINE_SCOPE="$(plutil')
+        end = text.index('if [[ -e "$OWNED_WEBKIT_HOST"', start)
+        scope_check = text[start:end]
+        with tempfile.TemporaryDirectory() as temporary:
+            app = Path(temporary) / "NeAntik.app"
+            info = app / "Contents/Info.plist"
+            info.parent.mkdir(parents=True)
+            host = app / "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
+            environment = {**os.environ, "APP_PATH": str(app),
+                           "RELEASE_CHROMIUM_VERSION": "157.0.8103.79",
+                           "ACTUAL_MANAGER_VERSION": "1.0.0"}
+
+            def verify(scope):
+                info.write_bytes(plistlib.dumps({"NeAntikEngineScope": scope}))
+                return subprocess.run(["/bin/zsh", "-c", scope_check], env=environment,
+                                      text=True, capture_output=True, timeout=10)
+
+            self.assertEqual(verify("chromium-only").returncode, 0)
+            self.assertEqual(verify("chromium-owned-webkit").returncode, 65)
+            host.mkdir(parents=True)
+            self.assertEqual(verify("chromium-only").returncode, 65)
+            self.assertEqual(verify("chromium-owned-webkit").returncode, 0)
+            environment["ACTUAL_MANAGER_VERSION"] = "0.9.6"
+            self.assertEqual(verify("chromium-owned-webkit").returncode, 65)
+
     def test_final_candidate_materializes_and_verifies_embedded_runtime(self) -> None:
         text = PREPARE.read_text(encoding="utf-8")
         copy = text.index('ditto "$ENGINEERING_APP" "$APP_PATH"')
@@ -103,7 +130,8 @@ class ReleaseDirectScriptTests(unittest.TestCase):
 
     def test_missing_build_log_refuses_ninja_and_preserves_output(self) -> None:
         script = PREPARE.read_text(encoding="utf-8")
-        start = script.index('  NINJA_BIN="$SOURCE_ROOT/third_party/ninja/ninja"')
+        first = script.index('  NINJA_BIN="$SOURCE_ROOT/third_party/ninja/ninja"')
+        start = script.index('  NINJA_BIN="$SOURCE_ROOT/third_party/ninja/ninja"', first + 1)
         end = script.index('\nfi\nif [[ "$(plutil', start)
         guard = script[start:end]
         with tempfile.TemporaryDirectory(prefix="neantik-missing-ninja-log-") as temporary:
@@ -131,6 +159,80 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             self.assertIn("build log is unavailable", result.stderr)
             self.assertFalse(marker.exists())
             self.assertEqual(retained.read_text(), "keep")
+
+    def test_m157_missing_log_uses_manual_public_alpha_signer_without_ninja(self) -> None:
+        text = PREPARE.read_text(encoding="utf-8")
+        start = text.index('if [[ "$RUNTIME_VERSION" == "157.0.8103.39" ]]; then')
+        end = text.index('\nelif [[ -f "$CHROMIUM_OUT_DIR/build.ninja"', start)
+        branch = text[start:end]
+        self.assertIn('PACKAGING_DIR="$SIGNED_RUNTIME_ROOT/manual-public-alpha-signing-inputs"', branch)
+        self.assertIn('M157 production signing requires a valid Ninja log', branch)
+        self.assertIn('no Ninja action will run', branch)
+
+        with tempfile.TemporaryDirectory(prefix="neantik-m157-no-log-") as temporary:
+            root = Path(temporary)
+            source = root / "src"
+            output = source / "out"
+            runtime = output / "NeAntik Browser.app"
+            packaging = output / "NeAntik Browser Packaging"
+            ninja = source / "third_party/ninja/ninja"
+            runtime.mkdir(parents=True)
+            packaging.mkdir()
+            ninja.parent.mkdir(parents=True)
+            marker = root / "ninja-was-run"
+            ninja.write_text('#!/bin/sh\ntouch "$MARKER"\n')
+            ninja.chmod(0o755)
+            (output / "build.ninja").write_text("pinned graph")
+            stage = root / "signed-runtime"
+            stage.mkdir()
+            environment = {
+                **os.environ,
+                "RUNTIME_VERSION": "157.0.8103.39",
+                "CHROMIUM_OUT_DIR": str(output),
+                "RUNTIME_APP": str(runtime),
+                "SOURCE_ROOT": str(source),
+                "SIGNED_RUNTIME_ROOT": str(stage),
+                "CHROMIUM_SIGNING_CONFIG": str(packaging / "signing/build_props_config.py"),
+                "PACKAGING_DIR": str(packaging),
+                "NEANTIK_RELEASE_CHANNEL": "public-alpha",
+                "MARKER": str(marker),
+            }
+            command = "set -euo pipefail\n" + branch + "\nfi\necho $PACKAGING_DIR\n"
+            result = subprocess.run(["/bin/zsh", "-f", "-c", command], env=environment,
+                                    capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("no Ninja action will run", result.stdout)
+            self.assertFalse(marker.exists())
+            selected = Path(result.stdout.splitlines()[-1])
+            self.assertEqual(selected, stage / "manual-public-alpha-signing-inputs")
+            self.assertFalse(selected.exists())
+
+            production = dict(environment, NEANTIK_RELEASE_CHANNEL="production")
+            result = subprocess.run(["/bin/zsh", "-f", "-c", command], env=production,
+                                    capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 65, result.stderr)
+            self.assertIn("production signing requires a valid Ninja log", result.stderr)
+            self.assertFalse(marker.exists())
+
+            (output / ".ninja_log").symlink_to(root / "missing-log-target")
+            result = subprocess.run(["/bin/zsh", "-f", "-c", command], env=environment,
+                                    capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 65, result.stderr)
+            self.assertIn("M157 Ninja log is unsafe", result.stderr)
+            self.assertFalse(marker.exists())
+
+    def test_runtime_preparation_builds_the_complete_chromium_signing_package(self) -> None:
+        text = PREPARE.read_text(encoding="utf-8")
+        target = '"$NINJA_BIN" -C "$CHROMIUM_OUT_DIR" \'chrome/installer/mac:copies\''
+        self.assertIn(target, text)
+        target_position = text.index(target)
+        config_check = text.index('if [[ ! -f "$CHROMIUM_SIGNING_CONFIG"', target_position)
+        helper_check = text.index('if [[ ! -f "$PACKAGING_DIR/sign_chrome.py"', target_position)
+        signing = text.index('scripts/sign-runtime.sh', helper_check)
+        self.assertLess(target_position, config_check)
+        self.assertLess(config_check, helper_check)
+        self.assertLess(helper_check, signing)
+        self.assertIn('|| -L "$PACKAGING_DIR/sign_chrome.py"', text[helper_check:signing])
 
     def test_runtime_preparation_refuses_warning_before_ninja_or_signing(self) -> None:
         with tempfile.TemporaryDirectory(prefix="neantik-admission-fixture-") as temporary:
@@ -399,6 +501,21 @@ class ReleaseDirectScriptTests(unittest.TestCase):
                     else:
                         self.assertEqual(result.returncode, 0, result.stderr)
                         self.assertEqual(Path(result.stdout.strip()).name, expected)
+
+    def test_manager_contract_selection_accepts_m157_source_contract(self) -> None:
+        text = PREPARE_MANAGER.read_text(encoding='utf-8')
+        start = text.index('  case "$runtime_version" in')
+        end = text.index('  local packaged_contract_name=', start)
+        dispatch = text[start:end]
+        command = 'runtime_version="$1"; evidence="$2"; PROJECT_DIR="$3"\n' + dispatch + '\nprint -r -- "$source_contract"'
+        result = subprocess.run(
+            ['/bin/zsh', '-c', command, 'test', '157.0.8103.39', '/tmp', str(SCRIPTS.parent)],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(Path(result.stdout.strip()).name, 'chromium-157-source-contract.json')
+        self.assertIn('local packaged_provenance="$SOURCE_APP/Contents/Resources/NeAntikRuntimeEvidence/source-provenance.json"', text)
+        self.assertIn('chromium-157-source-adoption-v1.json chromium-157-rebase-plan.json chromium-157-build-evidence.json', text)
 
     def test_manager_only_update_preserves_verified_runtime_evidence(self) -> None:
         text = PREPARE_MANAGER.read_text(encoding="utf-8")

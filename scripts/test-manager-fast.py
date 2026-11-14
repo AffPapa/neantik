@@ -75,8 +75,9 @@ def input_digest(root):
     digest = hashlib.sha256()
     paths = [root / "Package.swift"]
     compiled = {".swift", ".c", ".h", ".cpp", ".m", ".mm", ".metal", ".S"}
-    paths += sorted(p for p in (root / "Sources").rglob("*") if p.is_file() and p.suffix in compiled)
-    paths += sorted(p for p in (root / "Tests").rglob("*") if p.is_file() and p.suffix in compiled)
+    for source_root in ("Sources", "DerivedSources", "Tests"):
+        paths += sorted(path for path in (root / source_root).rglob("*")
+                        if path.is_file() and path.suffix in compiled)
     for path in paths:
         digest.update(str(path.relative_to(root)).encode()); digest.update(b"\0"); digest.update(path.read_bytes())
     return digest.hexdigest()

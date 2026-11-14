@@ -179,6 +179,11 @@ enum WebKitProfileError: LocalizedError {
 /// System WebKit has its own APIs and networking. Refuse unsupported launches
 /// before constructing views rather than falling back to another route.
 enum WebKitProfilePolicy {
+    enum LaunchRoute: Equatable {
+        case systemDirect
+        case owned
+    }
+
     static let maximumTabs = 32
     static func canOpenTab(count: Int) -> Bool { (0..<maximumTabs).contains(count) }
 
@@ -197,16 +202,50 @@ enum WebKitProfilePolicy {
         return ownedProxyAvailable ? .isolatedV1 : previous
     }
 
-    static func validate(_ profile: BrowserProfile) throws {
+    /// Metadata edits and proxy endpoint replacements keep the profile's
+    /// existing store. Moving between Direct and proxy can require a new one.
+    static func runtimeGenerationForEdit(
+        _ original: BrowserProfile, proxy: ProxyConfiguration?, ownedProxyAvailable: Bool
+    ) -> WebKitRuntimeGeneration {
+        if (original.proxy == nil) == (proxy == nil) { return original.webKitRuntimeGeneration }
+        return runtimeGenerationForSave(engine: original.engine, proxy: proxy,
+            previous: original.webKitRuntimeGeneration, ownedProxyAvailable: ownedProxyAvailable)
+    }
+
+    /// Validate the saved route before the manager acquires any leases or
+    /// starts the broker. Proxy qualification never enables a system route.
+    static func launchRoute(
+        _ profile: BrowserProfile,
+        ownedProxyAvailable: Bool = WebKitProxyFeature.launchEnabled,
+        systemOnly: Bool = false
+    ) throws -> LaunchRoute {
         guard !profile.isArchived else { throw NeAntikError.profileArchived }
         try validateConfiguration(profile)
-        guard profile.webKitRuntimeGeneration == .system else {
-            throw WebKitProfileError.unsupported("Для этого профиля нужен отдельный WebKit runtime, который ещё не включён в приложение. Данные не открывались и не изменены.")
+        if profile.webKitRelayOnly && !WebKitPeerConnectionPolicy.productionRelayEnabled() {
+            throw WebKitPeerConnectionPolicy.Failure.relayUnavailable
         }
-        guard profile.proxy == nil || WebKitProxyFeature.launchEnabled else {
-            throw WebKitProfileError.unsupported("Прокси WebKit пока отключён: маршрут не прошёл квалификацию. Настройки профиля сохранены; прямое подключение вместо прокси не выполняется.")
+        let route: LaunchRoute
+        switch profile.webKitRuntimeGeneration {
+        case .system:
+            guard profile.proxy == nil else {
+                throw WebKitProfileError.unsupported("Системный WebKit не запускает профиль с прокси. Настройки профиля сохранены; прямое подключение вместо прокси не выполняется.")
+            }
+            route = .systemDirect
+        case .isolatedV1:
+            guard !systemOnly else {
+                throw WebKitProfileError.unsupported("Для этого профиля нужен отдельный WebKit runtime, который ещё не включён в приложение. Данные не открывались и не изменены.")
+            }
+            guard profile.proxy == nil || ownedProxyAvailable else {
+                throw WebKitProfileError.unsupported("Прокси WebKit пока отключён: маршрут ещё не прошёл квалификацию. Настройки сохранены, прямое подключение вместо прокси не выполняется.")
+            }
+            route = .owned
         }
         try validateNativeContext(profile)
+        return route
+    }
+
+    static func validate(_ profile: BrowserProfile) throws {
+        _ = try launchRoute(profile, systemOnly: true)
     }
 
     /// Owned WebKit accepts only the exact immutable isolated-runtime session
@@ -225,6 +264,10 @@ enum WebKitProfilePolicy {
     }
 
     private static func validateNativeContext(_ profile: BrowserProfile) throws {
+        guard profile.privacyPolicy.retention == .persistent else {
+            throw WebKitProfileError.unsupported("Одноразовое хранилище для WebKit недоступно. Профиль не запускался, данные не изменены.")
+        }
+        guard profile.privacyPolicy == .legacy else { throw UnsupportedBrowserPrivacyPolicyError() }
         // Keep legacy metadata readable and unchanged; reject an unsupported
         // launch rather than silently ignoring explicit Chromium context.
         guard profile.identity.timezoneIdentifier == nil,
@@ -239,7 +282,8 @@ enum WebKitProfilePolicy {
 
     static func validateConfiguration(_ profile: BrowserProfile) throws {
         guard profile.engine == .webkit,
-              profile.id != UUID(uuidString: "00000000-0000-0000-0000-000000000000") else {
+              profile.id != UUID(uuidString: "00000000-0000-0000-0000-000000000000"),
+              WebKitPeerConnectionPolicy.validRelayPolicy(profile) else {
             throw NeAntikError.invalidProfile
         }
         guard profile.fontPolicy == .native else {
@@ -338,13 +382,18 @@ enum WebKitWindowCommand: Equatable {
 private final class WebKitBrowserTab {
     let id = UUID()
     let view: WKWebView
-    let titleButton = NSButton()
-    let closeButton = NSButton()
-    let row = NSStackView()
+    lazy var titleButton = NSButton()
+    lazy var closeButton = NSButton()
+    lazy var row = NSStackView()
     var observations: [NSKeyValueObservation] = []
     var status = "WebKit · данные этого профиля · параметры устройства определяет macOS"
     var committedURL = "about:blank"
     var initialURLFallback: String?
+    var presenterNavigation = UUID()
+    var presenterFocus = UUID()
+    var presenterTarget: WebKitPresenterChannel.Target {
+        .init(tab: id, navigation: presenterNavigation, focus: presenterFocus)
+    }
     init(view: WKWebView) { self.view = view }
     func detach(preserveNavigationDelegate: Bool = false) {
         observations.removeAll()
@@ -357,7 +406,7 @@ private final class WebKitBrowserTab {
         // then cancel the actual WKDownload and stop the navigation.
         if !preserveNavigationDelegate { view.stopLoading(); view.navigationDelegate = nil }
         view.uiDelegate = nil
-        view.removeFromSuperview(); row.removeFromSuperview()
+        view.removeFromSuperview()
     }
 }
 
@@ -371,14 +420,15 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     private(set) var webView: WKWebView
     private let dataStore: WKWebsiteDataStore
     private let mediaPolicy: WebKitMediaPolicy
-    private let blockPeerConnections: Bool
-    private let window: WebKitBrowserWindow
-    private let pageArea = NSView()
-    private let tabStrip = NSStackView()
-    private let address = NSTextField()
-    private let message = NSTextField(labelWithString: "")
-    private let backButton = NSButton()
-    private let forwardButton = NSButton()
+    private let peerConnectionMode: WebKitPeerConnectionPolicy.Mode
+    private let window: WebKitBrowserWindow?
+    private lazy var pageArea = NSView()
+    private lazy var tabStrip = NSStackView()
+    private lazy var address = NSTextField()
+    private lazy var message = NSTextField(labelWithString: "")
+    private lazy var backButton = NSButton()
+    private lazy var forwardButton = NSButton()
+    private let viewport: NSRect
     private var order: WebKitTabOrder
     private var tabs: [UUID: WebKitBrowserTab]
     private var isClosed = false
@@ -402,6 +452,327 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     private var downloadsSettled = false
     private var onSessionSaveError: (() -> Void)?
     private let onQANavigation: ((String, String, Int) -> Void)?
+    #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+    private static let detachedInputSelector = NSSelectorFromString("_neantikApplyDetachedPresenterInput:")
+    private static let detachedEditorSelector = NSSelectorFromString("_neantikReadDetachedEditorState:")
+    private static let detachedAccessibilitySelector = NSSelectorFromString("_neantikReadDetachedAccessibility:")
+    private static let detachedFocusDirectionSelector = NSSelectorFromString("_neantikConsumeDetachedFocusDirection")
+    private var presenterFocused = false
+    private var presenterEditor: WebKitPresenterChannel.Editor?
+    private var presenterEditorQuery: UUID?
+    private var presenterAccessibility: WebKitPresenterChannel.AccessibilitySnapshot?
+    private var presenterAccessibilityQuery: UUID?
+    private var presenterFocusHandoff: WebKitPresenterChannel.State.FocusHandoff?
+    private lazy var presenterPlaceholder: CALayer = {
+        let placeholder = CALayer()
+        placeholder.frame = viewport
+        placeholder.backgroundColor = NSColor.textBackgroundColor.cgColor
+        return placeholder
+    }()
+    var onPresenterStop: (() -> Void)?
+    var onDetachedDownloadsSettled: (() -> Void)?
+
+    func attachDetachedDownloads(_ remote: WebKitDownloads.Remote) {
+        precondition(window == nil && downloads == nil && !initialNavigationStarted)
+        downloads = WebKitDownloads(window: nil, remote: remote)
+    }
+
+    var hasDetachedPresenterBridge: Bool {
+        window == nil && webView.responds(to: Self.detachedInputSelector) &&
+            webView.responds(to: Self.detachedEditorSelector) &&
+            webView.responds(to: Self.detachedAccessibilitySelector) &&
+            webView.responds(to: Self.detachedFocusDirectionSelector)
+    }
+
+    private func presenterPageLayer() -> CALayer? {
+        guard !webView.isLoading else { return nil }
+        let layers = webView.subviews.compactMap(\.layer).filter { $0.sublayers?.isEmpty == false }
+        return layers.count == 1 ? layers.first : nil
+    }
+
+    func presenterCompositingLayer() -> CALayer {
+        presenterPageLayer() ?? presenterPlaceholder
+    }
+
+    private func refreshPresenterEditor(for tab: WebKitBrowserTab) {
+        guard presenterFocused, presenterEditorQuery == nil, hasDetachedPresenterBridge else { return }
+        let query = UUID()
+        let focus = tab.presenterFocus
+        presenterEditorQuery = query
+        typealias Reply = @convention(block) (NSDictionary?) -> Void
+        typealias ReadEditor = @convention(c) (AnyObject, Selector, Reply) -> Void
+        let read = unsafeBitCast(tab.view.method(for: Self.detachedEditorSelector), to: ReadEditor.self)
+        let reply: Reply = { [weak self, weak tab] metadata in
+            MainActor.assumeIsolated {
+                guard let self, self.presenterEditorQuery == query else { return }
+                self.presenterEditorQuery = nil
+                guard let tab, self.presenterFocused, self.order.selected == tab.id,
+                      tab.presenterFocus == focus, let metadata,
+                      let token = (metadata["token"] as? String).flatMap(UUID.init(uuidString:)),
+                      let secure = metadata["secure"] as? Bool else {
+                    self.presenterEditor = nil
+                    return
+                }
+                func range(_ key: String) -> WebKitPresenterChannel.TextRange? {
+                    (metadata[key] as? NSValue).flatMap { .init($0.rangeValue) }
+                }
+                let rect = (metadata["caret"] as? NSValue)?.rectValue
+                let editor = WebKitPresenterChannel.Editor(token: token, secure: secure,
+                    selected: range("selected"), marked: range("marked"), caret: rect)
+                self.presenterEditor = editor.isValid ? editor : nil
+            }
+        }
+        read(tab.view, Self.detachedEditorSelector, reply)
+    }
+
+    private func invalidatePresenterEditor() {
+        presenterEditor = nil
+        presenterEditorQuery = nil
+    }
+
+    private func invalidatePresenterDocument() {
+        invalidatePresenterEditor()
+        presenterAccessibility = nil
+        presenterAccessibilityQuery = nil
+        presenterFocusHandoff = nil
+    }
+
+    private func capturePresenterFocusHandoff() {
+        guard presenterFocused, presenterFocusHandoff == nil,
+              webView.responds(to: Self.detachedFocusDirectionSelector) else { return }
+        typealias Consume = @convention(c) (AnyObject, Selector) -> Int
+        let consume = unsafeBitCast(webView.method(for: Self.detachedFocusDirectionSelector), to: Consume.self)
+        let direction = consume(webView, Self.detachedFocusDirectionSelector)
+        guard direction == -1 || direction == 1 else { return }
+        invalidatePresenterEditor()
+        presenterFocusHandoff = .init(id: UUID(), backward: direction < 0)
+    }
+
+    private func refreshPresenterAccessibility(for tab: WebKitBrowserTab) {
+        guard presenterAccessibilityQuery == nil, hasDetachedPresenterBridge else { return }
+        let query = UUID()
+        let target = tab.presenterTarget
+        presenterAccessibilityQuery = query
+        typealias Reply = @convention(block) (NSString?) -> Void
+        typealias ReadAccessibility = @convention(c) (AnyObject, Selector, Reply) -> Void
+        let read = unsafeBitCast(tab.view.method(for: Self.detachedAccessibilitySelector), to: ReadAccessibility.self)
+        let reply: Reply = { [weak self, weak tab] metadata in
+            MainActor.assumeIsolated {
+                guard let self, self.presenterAccessibilityQuery == query else { return }
+                self.presenterAccessibilityQuery = nil
+                guard let tab, self.order.selected == tab.id, tab.presenterTarget == target,
+                      let metadata, let data = (metadata as String).data(using: .utf8), data.count <= 8_192,
+                      let snapshot = try? JSONDecoder().decode(WebKitPresenterChannel.AccessibilitySnapshot.self, from: data),
+                      snapshot.isValid else {
+                    self.presenterAccessibility = nil
+                    return
+                }
+                self.presenterAccessibility = snapshot
+            }
+        }
+        read(tab.view, Self.detachedAccessibilitySelector, reply)
+    }
+
+    func applyPresenterCommand(_ command: WebKitPresenterChannel.Command) {
+        guard command.generation == sessionGeneration, command.isValid, let tab = tabs[order.selected],
+              command.target.tab == tab.id, command.target.navigation == tab.presenterNavigation,
+              hasDetachedPresenterBridge else { return }
+        switch command.action {
+        case .tabKey:
+            guard presenterFocused else { return }
+        case .scroll:
+            break
+        default:
+            guard command.target.focus == tab.presenterFocus else { return }
+        }
+        if let edit = command.editor {
+            guard presenterPageLayer() != nil, presenterFocused,
+                  edit.token == presenterEditor?.token, edit.secure == presenterEditor?.secure
+            else { return }
+        }
+        var input: [String: Any]
+        func range(_ value: WebKitPresenterChannel.TextRange?) -> Any {
+            guard let value else { return NSNull() }
+            return NSValue(range: NSRange(location: value.location, length: value.length))
+        }
+        func point(_ x: Double, _ y: Double) -> NSValue {
+            NSValue(point: CGPoint(x: webView.bounds.minX + webView.bounds.width * x,
+                                   y: webView.bounds.minY + webView.bounds.height * y))
+        }
+
+        switch command.action {
+        case .navigate(let navigation):
+            if applyPresenterNavigation(navigation) {
+                tab.presenterNavigation = UUID()
+                tab.presenterFocus = UUID()
+                invalidatePresenterDocument()
+            }
+            return
+        case .activity(let visible, let active, let focused):
+            input = ["action": "activity", "visible": visible, "active": active, "focused": focused]
+            if presenterFocused && !focused {
+                tab.presenterFocus = UUID()
+                invalidatePresenterEditor()
+            }
+            presenterFocused = focused
+            if !focused { presenterFocusHandoff = nil }
+        case .click(let x, let y, let screenX, let screenY):
+            guard presenterPageLayer() != nil, presenterFocused else { return }
+            input = ["action": "click", "point": point(x, y),
+                     "screenPoint": NSValue(point: CGPoint(x: screenX, y: screenY))]
+            tab.presenterFocus = UUID()
+            invalidatePresenterEditor()
+        case .scroll(let wheel):
+            guard presenterPageLayer() != nil else { return }
+            input = ["action": "scroll", "point": point(wheel.x, wheel.y),
+                     "deltaX": wheel.deltaX, "deltaY": wheel.deltaY, "precise": wheel.precise,
+                     "phase": wheel.phase.rawValue, "momentum": wheel.momentum.rawValue, "inverted": wheel.inverted]
+        case .tabKey(let backward, let option):
+            capturePresenterFocusHandoff()
+            guard presenterPageLayer() != nil, presenterFocused, presenterFocusHandoff == nil else { return }
+            input = ["action": "tabKey", "backward": backward, "option": option]
+            tab.presenterFocus = UUID()
+            invalidatePresenterEditor()
+        case .accessibilitySnapshot:
+            if presenterPageLayer() != nil { refreshPresenterAccessibility(for: tab) }
+            return
+        case .accessibilityAction(let document, let node, let press):
+            guard presenterPageLayer() != nil, presenterFocused,
+                  let snapshot = presenterAccessibility, snapshot.document == document,
+                  let element = snapshot.nodes.first(where: { $0.identifier == node }),
+                  press ? element.pressable : element.focusable else { return }
+            input = ["action": "accessibility", "document": document.uuidString.lowercased(),
+                     "node": NSNumber(value: node), "press": press]
+            tab.presenterFocus = UUID()
+            invalidatePresenterEditor()
+        case .insert(let text, let replacement):
+            input = ["action": "insert", "text": text, "replacement": range(replacement)]
+        case .mark(let text, let selection, let replacement):
+            input = ["action": "mark", "text": text, "selection": range(selection),
+                     "replacement": range(replacement)]
+        case .unmark:
+            input = ["action": "unmark"]
+        case .edit(let edit):
+            input = ["action": edit.rawValue]
+        }
+        if let edit = command.editor {
+            input["token"] = edit.token.uuidString.lowercased()
+            input["secure"] = edit.secure
+            input["expectedSelection"] = range(edit.selected)
+        }
+        applyPresenterInput(input, to: webView)
+    }
+
+    private func applyPresenterInput(_ input: [String: Any], to view: WKWebView) {
+        guard view.responds(to: Self.detachedInputSelector) else { return }
+        typealias DispatchInput = @convention(c) (AnyObject, Selector, NSDictionary) -> Bool
+        let dispatch = unsafeBitCast(view.method(for: Self.detachedInputSelector), to: DispatchInput.self)
+        _ = dispatch(view, Self.detachedInputSelector, input as NSDictionary)
+    }
+    #endif
+
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    var onQAPreviewFrame: ((Data, Bool) -> Void)?
+    var onQAMetalLayer: (() -> Void)?
+    var onQAMetalStop: (() -> Void)?
+    private var qaMetalNavigation: WKNavigation?
+    private weak var qaMetalView: WKWebView?
+    private var qaClickNavigation: WKNavigation?
+    private var qaClickView: WKWebView?
+    private var qaClickURL: URL?
+    private static let qaClickSelector = NSSelectorFromString("_neantikTestClickAtPosition:globalPosition:completion:")
+
+    func dispatchQAPreviewClick(_ click: ProxyRelayPrivatePipe.PreviewClick,
+                                onFrame: @escaping (Data) -> Void) -> Bool {
+        dispatchQAInput(click) { [weak self] view in
+            let navigation = self?.qaClickNavigation
+            let expectedURL = view.url
+            self?.captureQAPreview(of: view) { [weak self, weak view] png in
+                guard let self, let view, self.qaClickNavigation === navigation,
+                      !view.isLoading, view.url == expectedURL else { return }
+                onFrame(png)
+            }
+        }
+    }
+
+    func armQAMetalClick(for layer: CALayer) -> Bool {
+        let view = webView
+        guard !isClosed, window == nil, view === qaMetalView, !view.isLoading,
+              qaMetalCompositingLayer() === layer, let navigation = qaMetalNavigation, qaClickNavigation === navigation,
+              let url = view.url, url.scheme == "https", url.path == "/",
+              let host = url.host, let port = url.port,
+              qaTLSTrustScope?.authorizes(host: host, port: port) == true,
+              view.responds(to: Self.qaClickSelector) else { return false }
+        qaClickView = view
+        qaClickURL = url
+        return true
+    }
+
+    func dispatchQAMetalClick(_ click: ProxyRelayPrivatePipe.PreviewClick) -> Bool {
+        dispatchQAInput(click) { _ in }
+    }
+
+    private func dispatchQAInput(_ click: ProxyRelayPrivatePipe.PreviewClick,
+                                 completion: @escaping (WKWebView) -> Void) -> Bool {
+        let view = qaClickView
+        qaClickView = nil
+        guard click.isValid, !isClosed, window == nil,
+              let view, view === webView, !view.isLoading, view.url == qaClickURL,
+              view.responds(to: Self.qaClickSelector) else { return false }
+        let bounds = view.bounds
+        let position = CGPoint(x: bounds.minX + bounds.width * click.x,
+                               y: bounds.minY + bounds.height * click.y)
+        let screen = CGPoint(x: click.screenX, y: click.screenY)
+        let navigation = qaClickNavigation
+        let expectedURL = view.url
+        typealias Completed = @convention(block) () -> Void
+        typealias DispatchClick = @convention(c) (AnyObject, Selector, CGPoint, CGPoint, Completed) -> Bool
+        let dispatch = unsafeBitCast(view.method(for: Self.qaClickSelector), to: DispatchClick.self)
+        let completed: Completed = { [weak self, weak view] in
+            guard let self, let view, self.qaClickNavigation === navigation,
+                  self.webView === view, !view.isLoading, view.url == expectedURL else { return }
+            completion(view)
+        }
+        return dispatch(view, Self.qaClickSelector, position, screen, completed)
+    }
+
+    func qaMetalCompositingLayer() -> CALayer? {
+        guard !isClosed, window == nil, !webView.isLoading else { return nil }
+        let layers = webView.subviews.compactMap(\.layer).filter { $0.sublayers?.isEmpty == false }
+        return layers.count == 1 ? layers.first : nil
+    }
+
+    private func deliverQAMetalLayer(_ view: WKWebView, navigation: WKNavigation?, attempts: Int) {
+        guard !isClosed, view === webView, qaMetalNavigation === navigation, !view.isLoading, let deliver = onQAMetalLayer else { return }
+        if qaMetalCompositingLayer() != nil {
+            onQAMetalLayer = nil
+            deliver()
+        } else if attempts > 0 {
+            let url = view.url
+            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(50)) { [weak self, weak view] in
+                guard let view, view.url == url else { return }
+                self?.deliverQAMetalLayer(view, navigation: navigation, attempts: attempts - 1)
+            }
+        } else {
+            onQAMetalLayer = nil
+            close()
+        }
+    }
+
+    private func captureQAPreview(of view: WKWebView, onFrame: @escaping (Data) -> Void) {
+        let configuration = WKSnapshotConfiguration()
+        configuration.snapshotWidth = 640
+        configuration.afterScreenUpdates = true
+        view.takeSnapshot(with: configuration) { [weak self, weak view] image, error in
+            guard let self, let view, !self.isClosed, self.webView === view, error == nil,
+                  let tiff = image?.tiffRepresentation,
+                  let bitmap = NSBitmapImageRep(data: tiff),
+                  let png = bitmap.representation(using: .png, properties: [:]),
+                  png.count <= ProxyRelayPrivatePipe.maximumPreviewBytes else { return }
+            onFrame(png)
+        }
+    }
+    #endif
     #if NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_DIAGNOSTIC
     private var qaTLSTrustScope: WebKitQATrustScope?
     private var onQATLSStage: ((String) -> Void)?
@@ -420,12 +791,14 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
          sessionStore: WebKitSessionStore? = nil, restoredSession: WebKitSessionSnapshot? = nil,
          sessionWarning: String? = nil,
          runtime: WebKitProfileBrowserRuntime = .system,
+         detached: Bool = false,
          onSessionSaveError: (() -> Void)? = nil,
          onQANavigation: ((String, String, Int) -> Void)? = nil,
          onClose: @escaping () -> Void) throws {
         let proxyConfigurations: [nw_proxy_config_t]
         switch runtime {
         case .system:
+            guard !detached else { throw WebKitProfileError.unsupported("Detached session requires owned WebKit") }
             try WebKitProfilePolicy.validate(profile)
             proxyConfigurations = try WebKitProxyConfigurationFactory.systemWebKitConfigurations(for: profile.proxy)
         case .owned(let session, let relayCredential):
@@ -441,7 +814,25 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         profileID = profile.id
         self.sessionGeneration = sessionGeneration
         mediaPolicy = profile.webKitMediaPolicy
-        blockPeerConnections = profile.webKitBlockPeerConnections
+        let usesOwnedProxy: Bool
+        let signedRelayQualification: Bool
+        if case .owned = runtime {
+            usesOwnedProxy = profile.proxy != nil
+            #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+            signedRelayQualification = try !profile.webKitBlockPeerConnections &&
+                WebKitPeerConnectionPolicy.ownedRelayQualificationRequested(in: .main)
+            #else
+            signedRelayQualification = false
+            #endif
+        } else {
+            usesOwnedProxy = false
+            signedRelayQualification = false
+        }
+        peerConnectionMode = try WebKitPeerConnectionPolicy.mode(
+            blockRequested: profile.webKitBlockPeerConnections,
+            usesOwnedProxy: usesOwnedProxy, signedRelayQualification: signedRelayQualification,
+            relayRequested: profile.webKitRelayOnly,
+            productionRelayAvailable: WebKitPeerConnectionPolicy.productionRelayEnabled())
         restoresSession = profile.startupMode == .restoreSession
         self.sessionNotice = sessionWarning; self.onSessionSaveError = onSessionSaveError
         self.onQANavigation = onQANavigation
@@ -449,17 +840,30 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         dataStore = WKWebsiteDataStore(forIdentifier: profile.id)
         // Apply before constructing the first view so every connection owned
         // by this persistent profile store receives the same proxy policy.
-        dataStore.__proxyConfigurations = proxyConfigurations
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = dataStore
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
-        try WebKitPeerConnectionPolicy.apply(blocked: blockPeerConnections, preferences: configuration.preferences)
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_PRODUCTION
+        if peerConnectionMode == .relayOnly {
+            guard proxyConfigurations.count == 1, let proxy = proxyConfigurations.first else {
+                throw WebKitPeerConnectionPolicy.Failure.relayUnavailable
+            }
+            try WebKitPeerConnectionPolicy.installOwnedRelayProxy(
+                proxy: proxy, dataStore: dataStore, profileID: profile.id)
+        } else {
+            dataStore.__proxyConfigurations = proxyConfigurations
+        }
+        #else
+        dataStore.__proxyConfigurations = proxyConfigurations
+        #endif
+        try WebKitPeerConnectionPolicy.apply(peerConnectionMode, preferences: configuration.preferences)
         // The system engine supplies its APIs; never inject Chromium identity
         // or use the shared default website store.
-        webView = WKWebView(frame: .zero, configuration: configuration)
+        viewport = detached ? NSRect(x: 0, y: 0, width: 1100, height: 760) : .zero
+        webView = WKWebView(frame: viewport, configuration: configuration)
         let first = WebKitBrowserTab(view: webView)
         tabs = [first.id: first]; order = WebKitTabOrder(first: first.id)
-        window = WebKitBrowserWindow(contentRect: NSRect(x: 0, y: 0, width: 1100, height: 760),
+        window = detached ? nil : WebKitBrowserWindow(contentRect: NSRect(x: 0, y: 0, width: 1100, height: 760),
             styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
         super.init()
         if restoresSession, let sessionStore {
@@ -469,9 +873,25 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
                 self.refreshTab(self.order.selected)
             }
         }
+        if let window { configureWindow(window, title: profile.name, downloadPicker: downloadPicker) }
+        configure(first); presentSelectedTab()
+        switch runtime {
+        case .system:
+            startInitialNavigation(profile: profile, restoredSession: restoredSession)
+            assemblingSession = false
+            checkpointSession()
+        case .owned(let session, _):
+            pendingRouteActivationSession = session
+            pendingStartupProfile = profile
+            pendingRestoredSession = restoredSession
+        }
+    }
+
+    private func configureWindow(_ window: WebKitBrowserWindow, title: String,
+                                 downloadPicker: WebKitDownloads.Picker?) {
         window.browser = self; window.delegate = self; window.isReleasedWhenClosed = false
         downloads = WebKitDownloads(window: window, picker: downloadPicker)
-        window.title = "\(profile.name) — WebKit · NeAntik"
+        window.title = "\(title) — WebKit · NeAntik"
         window.minSize = NSSize(width: 640, height: 420); window.center()
         address.placeholderString = "Адрес сайта"; address.font = .systemFont(ofSize: 14)
         address.delegate = self; address.target = self; address.action = #selector(openAddress)
@@ -502,20 +922,9 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
             message.topAnchor.constraint(equalTo: pageArea.bottomAnchor, constant: 6), message.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 12),
             message.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -12), message.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -6)
         ])
-        configure(first); presentSelectedTab()
         commandMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self, event.window === self.window else { return event }
+            guard let self, let window = self.window, event.window === window else { return event }
             return self.handleCommand(event) ? nil : event
-        }
-        switch runtime {
-        case .system:
-            startInitialNavigation(profile: profile, restoredSession: restoredSession)
-            assemblingSession = false
-            checkpointSession()
-        case .owned(let session, _):
-            pendingRouteActivationSession = session
-            pendingStartupProfile = profile
-            pendingRestoredSession = restoredSession
         }
     }
 
@@ -616,18 +1025,20 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     }
     private func configure(_ tab: WebKitBrowserTab) {
         tab.view.navigationDelegate = self; tab.view.uiDelegate = self
-        tab.view.allowsBackForwardNavigationGestures = true
-        let title = button(tab.titleButton, title: "Новая вкладка", help: "Переключить вкладку", action: #selector(selectTabButton(_:)))
-        title.identifier = NSUserInterfaceItemIdentifier(tab.id.uuidString)
-        title.setButtonType(.pushOnPushOff)
-        title.font = .systemFont(ofSize: 14); title.lineBreakMode = .byTruncatingTail
-        let close = button(tab.closeButton, title: "×", help: "Закрыть вкладку", action: #selector(closeTabButton(_:)))
-        close.identifier = title.identifier
-        tab.row.orientation = .horizontal; tab.row.spacing = 2
-        tab.row.addArrangedSubview(title); tab.row.addArrangedSubview(close)
-        title.widthAnchor.constraint(equalToConstant: 170).isActive = true
-        close.widthAnchor.constraint(equalToConstant: 28).isActive = true
-        tabStrip.addArrangedSubview(tab.row)
+        if window != nil {
+            tab.view.allowsBackForwardNavigationGestures = true
+            let title = button(tab.titleButton, title: "Новая вкладка", help: "Переключить вкладку", action: #selector(selectTabButton(_:)))
+            title.identifier = NSUserInterfaceItemIdentifier(tab.id.uuidString)
+            title.setButtonType(.pushOnPushOff)
+            title.font = .systemFont(ofSize: 14); title.lineBreakMode = .byTruncatingTail
+            let close = button(tab.closeButton, title: "×", help: "Закрыть вкладку", action: #selector(closeTabButton(_:)))
+            close.identifier = title.identifier
+            tab.row.orientation = .horizontal; tab.row.spacing = 2
+            tab.row.addArrangedSubview(title); tab.row.addArrangedSubview(close)
+            title.widthAnchor.constraint(equalToConstant: 170).isActive = true
+            close.widthAnchor.constraint(equalToConstant: 28).isActive = true
+            tabStrip.addArrangedSubview(tab.row)
+        }
         let id = tab.id
         tab.observations = [tab.view.observe(\.url, options: [.new]) { [weak self] _, _ in
             Task { @MainActor in self?.refreshTab(id); self?.checkpointSession() }
@@ -641,7 +1052,16 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     }
     private func presentSelectedTab() {
         guard !isClosed, let selected = tabs[order.selected] else { return }
+        #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+        if window == nil, selected.view !== webView {
+            applyPresenterInput(["action": "activity", "visible": false, "active": false, "focused": false], to: webView)
+            presenterFocused = false
+            selected.presenterFocus = UUID()
+            invalidatePresenterDocument()
+        }
+        #endif
         webView.removeFromSuperview(); webView = selected.view
+        guard window != nil else { return }
         webView.translatesAutoresizingMaskIntoConstraints = false; pageArea.addSubview(webView)
         NSLayoutConstraint.activate([
             webView.topAnchor.constraint(equalTo: pageArea.topAnchor), webView.bottomAnchor.constraint(equalTo: pageArea.bottomAnchor),
@@ -654,7 +1074,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         tabStrip.scrollToVisible(selected.row.frame)
     }
     private func refreshTab(_ id: UUID) {
-        guard !isClosed, let tab = tabs[id] else { return }
+        guard !isClosed, let window, let tab = tabs[id] else { return }
         let title = tab.view.title.flatMap { $0.isEmpty ? nil : $0 } ?? (tab.view.url?.host ?? "Новая вкладка")
         tab.titleButton.title = title
         tab.titleButton.setAccessibilityLabel("Вкладка: \(title)")
@@ -685,12 +1105,14 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
             setStatus("Приложение завершает текущую операцию. Попробуй открыть вкладку после её окончания.", for: webView)
             return nil
         }
-        do { try WebKitPeerConnectionPolicy.apply(blocked: blockPeerConnections, preferences: configuration.preferences) }
+        do {
+            try WebKitPeerConnectionPolicy.apply(peerConnectionMode, preferences: configuration.preferences)
+        }
         catch {
-            setStatus("Не удалось отключить WebRTC: вкладка не открыта.", for: webView)
+            setStatus("Не удалось применить политику WebRTC: вкладка не открыта.", for: webView)
             return nil
         }
-        let tab = WebKitBrowserTab(view: WKWebView(frame: .zero, configuration: configuration))
+        let tab = WebKitBrowserTab(view: WKWebView(frame: viewport, configuration: configuration))
         tabs[tab.id] = tab; order.append(tab.id); configure(tab); presentSelectedTab()
         checkpointSession()
         return tab.view
@@ -710,8 +1132,8 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         if order.ids.count == 1 { close(); return }
         let wasSelected = id == order.selected
         guard order.remove(id) else { return }
-        tabStrip.removeArrangedSubview(tab.row)
-        tab.detach(preserveNavigationDelegate: downloads.hasReservations(for: tab.view))
+        if window != nil { tabStrip.removeArrangedSubview(tab.row); tab.row.removeFromSuperview() }
+        tab.detach(preserveNavigationDelegate: downloads?.hasReservations(for: tab.view) == true)
         tabs.removeValue(forKey: id)
         if wasSelected { presentSelectedTab() }
         checkpointSession()
@@ -725,10 +1147,8 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     @objc private func newTab() {
         if openTab(at: URL(string: "about:blank")!) != nil { focusAddress() }
     }
-    func show() { guard !isClosed, initialNavigationStarted else { return }; window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
-    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_DIAGNOSTIC
-    var qaWindowVisible: Bool { !isClosed && initialNavigationStarted && window.isVisible }
-    #endif
+    func show() { guard !isClosed, initialNavigationStarted, let window else { return }; window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
+    var isWindowVisible: Bool { !isClosed && initialNavigationStarted && window?.isVisible == true }
     /// Manager Stop closes the entire profile, whereas Command-W closes a tab.
     func close() {
         if !isClosed {
@@ -736,13 +1156,17 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
             closeRequested = true
             // AppKit ignores performClose while NSSavePanel owns a sheet.
             // Cancel our producers/panel first, then close after real settlement.
-            downloads.close { [weak self] in
-                guard let self, !self.isClosed else { return }
-                self.window.performClose(nil)
+            if let window, let downloads {
+                downloads.close { [weak self] in
+                    guard let self, !self.isClosed else { return }
+                    window.performClose(nil)
+                }
+            } else {
+                finishSession()
             }
         } else if sessionWriteFailed, let pendingSnapshot { beginSessionSave(pendingSnapshot) }
     }
-    func focusAddress() { if !isClosed { window.makeFirstResponder(address); address.selectText(nil) } }
+    func focusAddress() { if !isClosed, let window { window.makeFirstResponder(address); address.selectText(nil) } }
     fileprivate func handleCommand(_ event: NSEvent) -> Bool {
         guard !isClosed, let command = WebKitWindowCommand.resolve(characters: event.charactersIgnoringModifiers, keyCode: event.keyCode, modifiers: event.modifierFlags) else { return false }
         switch command {
@@ -761,13 +1185,84 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     @objc func forward() { if !isClosed { webView.goForward() } }
     @objc func reload() { if !isClosed { webView.reload() } }
     @objc private func openAddress() {
+        guard let window else { return }
         guard !isClosed, let url = BrowserStartURL.validate(address.stringValue), WebKitProfilePolicy.permits(url) else {
             message.stringValue = "Введи адрес http:// или https://. Для пустой страницы — about:blank."; return
         }
         webView.load(URLRequest(url: url)); window.makeFirstResponder(webView)
     }
-    func windowWillClose(_ notification: Notification) {
+
+    /// Detached browsing keeps the same tab model, site store and URL policy
+    /// as the in-process window. The presenter cannot open a different route.
+    func presenterState() -> WebKitPresenterChannel.State? {
+        guard window == nil, !isClosed, initialNavigationStarted,
+              let selected = tabs[order.selected] else { return nil }
+        let target = selected.presenterTarget
+        let summaries = order.ids.compactMap { id -> WebKitPresenterChannel.State.Tab? in
+            guard let tab = tabs[id] else { return nil }
+            let title = (tab.view.title ?? "").unicodeScalars.filter { !CharacterSet.controlCharacters.contains($0) }
+            return .init(id: id, title: String(decoding: String(String.UnicodeScalarView(title)).utf8.prefix(124), as: UTF8.self))
+        }
+        let address = selected.view.url?.absoluteString ?? selected.committedURL
+        #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+        let acceptsPageInput = presenterPageLayer() != nil
+        if acceptsPageInput { refreshPresenterEditor(for: selected) }
+        capturePresenterFocusHandoff()
+        let editor = acceptsPageInput ? presenterEditor : nil
+        let accessibility = acceptsPageInput ? presenterAccessibility : nil
+        let focusHandoff = presenterFocusHandoff
+        let status = String(decoding: displayedStatus(selected.status).utf8.prefix(508), as: UTF8.self)
+        #else
+        let acceptsPageInput = false
+        let editor: WebKitPresenterChannel.Editor? = nil
+        let accessibility: WebKitPresenterChannel.AccessibilitySnapshot? = nil
+        let focusHandoff: WebKitPresenterChannel.State.FocusHandoff? = nil
+        let status = ""
+        #endif
+        return .init(generation: sessionGeneration, target: target, tabs: summaries,
+                     address: address.utf8.count <= 2_048 ? address : "",
+                     canGoBack: selected.view.canGoBack, canGoForward: selected.view.canGoForward,
+                     acceptsPageInput: acceptsPageInput, status: status, editor: editor,
+                     accessibility: accessibility, focusHandoff: focusHandoff)
+    }
+
+    @discardableResult
+    func applyPresenterNavigation(_ navigation: WebKitPresenterChannel.Navigation) -> Bool {
+        guard window == nil, !isClosed, initialNavigationStarted else { return false }
+        switch navigation {
+        case .open(let address):
+            guard let url = BrowserStartURL.validate(address), WebKitProfilePolicy.permits(url) else { return false }
+            webView.load(URLRequest(url: url))
+        case .back: back()
+        case .forward: forward()
+        case .reload: reload()
+        case .newTab:
+            guard openTab(at: URL(string: "about:blank")!) != nil else { return false }
+        case .selectTab(let id):
+            guard tabs[id] != nil else { return false }
+            selectTab(id)
+        case .closeTab(let id):
+            guard tabs[id] != nil else { return false }
+            closeTab(id)
+        }
+        return true
+    }
+
+    func windowWillClose(_ notification: Notification) { finishSession() }
+
+    private func finishSession() {
         guard !isClosed else { return }; isClosed = true
+        #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+        let stopPresenter = onPresenterStop
+        onPresenterStop = nil
+        stopPresenter?()
+        #endif
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+        onQAMetalLayer = nil
+        let stopFrames = onQAMetalStop
+        onQAMetalStop = nil
+        stopFrames?()
+        #endif
         if restoresSession, initialNavigationStarted, !restoreIncomplete {
             do {
                 beginSessionSave(try captureSession())
@@ -775,10 +1270,19 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         }
         if let commandMonitor { NSEvent.removeMonitor(commandMonitor); self.commandMonitor = nil }
         let closingViews = tabs.values.map(\.view)
-        for tab in tabs.values { tab.detach(preserveNavigationDelegate: downloads.hasReservations(for: tab.view)) }; tabs.removeAll()
-        window.contentView = nil; window.delegate = nil; window.browser = nil
+        for tab in tabs.values { tab.detach(preserveNavigationDelegate: downloads?.hasReservations(for: tab.view) == true) }; tabs.removeAll()
+        window?.contentView = nil; window?.delegate = nil; window?.browser = nil
+        guard let downloads else {
+            downloadsSettled = true
+            finishCloseIfSettled()
+            return
+        }
         downloads.close { [self, closingViews] in
             for view in closingViews { view.navigationDelegate = nil }
+            #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+            onDetachedDownloadsSettled?()
+            onDetachedDownloadsSettled = nil
+            #endif
             downloadsSettled = true
             finishCloseIfSettled()
         }
@@ -825,7 +1329,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         guard !isClosed, let tab = tabs.values.first(where: { $0.view === view }) else { return }
         tab.status = value; refreshTab(tab.id)
     }
-    func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+    func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void) {
         #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
         if qaTLSTrustScope != nil, action.targetFrame?.isMainFrame == true {
             qaTLSChallengeSeen = false
@@ -834,6 +1338,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         #endif
         if owns(webView), action.shouldPerformDownload, let url = action.request.url,
            WebKitProfilePolicy.permits(url) || url.scheme?.lowercased() == "blob" {
+            guard let downloads else { decisionHandler(.cancel); return }
             let admitted = downloads.reserve(action, from: webView)
             decisionHandler(admitted ? .download : .cancel)
             if admitted { downloads.policyAccepted() }
@@ -848,7 +1353,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     }
     #if NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_DIAGNOSTIC
     func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge,
-                 completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+                 completionHandler: @escaping @MainActor (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         qaTLSChallengeSeen = true
         onQATLSStage?("qa-tls-challenge")
         guard let scope = qaTLSTrustScope else {
@@ -888,21 +1393,24 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     }
     #endif
     func webView(_ webView: WKWebView, decidePolicyFor response: WKNavigationResponse,
-                 decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+                 decisionHandler: @escaping @MainActor (WKNavigationResponsePolicy) -> Void) {
         guard owns(webView) else { decisionHandler(.cancel); return }
         let attachment = (response.response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Disposition")?
             .lowercased().hasPrefix("attachment") == true
         if !response.canShowMIMEType || attachment {
+            guard let downloads else { decisionHandler(.cancel); return }
             let admitted = downloads.reserve(response, from: webView)
             decisionHandler(admitted ? .download : .cancel)
             if admitted { downloads.policyAccepted() }
         } else { decisionHandler(.allow) }
     }
     func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
+        guard let downloads else { download.cancel { _ in }; return }
         downloads.adopt(download, token: navigationAction, allowed: owns(webView))
         if !owns(webView), !downloads.hasReservations(for: webView) { webView.stopLoading(); webView.navigationDelegate = nil }
     }
     func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
+        guard let downloads else { download.cancel { _ in }; return }
         downloads.adopt(download, token: navigationResponse, allowed: owns(webView))
         if !owns(webView), !downloads.hasReservations(for: webView) { webView.stopLoading(); webView.navigationDelegate = nil }
     }
@@ -916,12 +1424,12 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     }
     func webView(_ webView: WKWebView, requestMediaCapturePermissionFor origin: WKSecurityOrigin,
                  initiatedByFrame frame: WKFrameInfo, type: WKMediaCaptureType,
-                 decisionHandler: @escaping (WKPermissionDecision) -> Void) {
+                 decisionHandler: @escaping @MainActor (WKPermissionDecision) -> Void) {
         let knownType: Bool
         switch type { case .camera, .microphone, .cameraAndMicrophone: knownType = true; @unknown default: knownType = false }
         // Do not grant or cache consent. WebKit still enforces frame/Permissions
         // Policy, secure-context requirements and the system hardware prompt.
-        decisionHandler(mediaPolicy.decision(owned: owns(webView) && frame.webView === webView,
+        decisionHandler(mediaPolicy.decision(owned: window != nil && owns(webView) && frame.webView === webView,
             persistent: webView.configuration.websiteDataStore.isPersistent,
             storeID: webView.configuration.websiteDataStore.identifier, profileID: profileID,
             secureOrigin: WebKitMediaPolicy.permitsOrigin(scheme: origin.protocol, host: origin.host),
@@ -930,9 +1438,46 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     func webViewDidClose(_ webView: WKWebView) {
         if let tab = tabs.values.first(where: { $0.view === webView }) { closeTab(tab.id) }
     }
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        if window == nil, let tab = tabs.values.first(where: { $0.view === webView }) {
+            tab.presenterNavigation = UUID()
+            tab.presenterFocus = UUID()
+            #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+            if self.webView === webView { invalidatePresenterDocument() }
+            #endif
+        }
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+        if self.webView === webView {
+            qaClickNavigation = navigation
+            qaClickView = nil
+        }
+        #endif
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         if owns(webView) {
             onQANavigation?("finished", "none", 0)
+            #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+            if window == nil, self.webView === webView, onQAMetalLayer != nil {
+                qaMetalNavigation = navigation
+                qaMetalView = webView
+                deliverQAMetalLayer(webView, navigation: navigation, attempts: 10)
+            }
+            if window == nil, self.webView === webView, let deliver = onQAPreviewFrame {
+                onQAPreviewFrame = nil
+                captureQAPreview(of: webView) { [weak self, weak webView] png in
+                    guard let self, let webView else { return }
+                    let acceptsClick = navigation != nil && self.qaClickNavigation === navigation &&
+                        self.webView === webView && !webView.isLoading &&
+                        webView.responds(to: Self.qaClickSelector)
+                    if acceptsClick {
+                        self.qaClickView = webView
+                        self.qaClickURL = webView.url
+                    }
+                    deliver(png, acceptsClick)
+                }
+            }
+            #endif
     #if NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_DIAGNOSTIC
             if Bundle.main.bundleIdentifier == "app.neantik.desktop.dev.webkit-host",
                let url = webView.url, url.scheme == "http",
@@ -993,6 +1538,14 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         setStatus("Не удалось открыть страницу. Проверь адрес и подключение к сети; затем обнови страницу.", for: view)
     }
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        guard owns(webView) else { return }
+        if window == nil, self.webView === webView {
+            // The detached presenter cannot reload a crashed page. Close the
+            // session so its last frame cannot stay visible as a live browser.
+            onQANavigation?("failed", "webkit", WKError.Code.webContentProcessTerminated.rawValue)
+            close()
+            return
+        }
         setStatus("Процесс страницы завершился. Нажми «Обновить», чтобы открыть её снова.", for: webView)
     }
 }

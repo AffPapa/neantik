@@ -88,6 +88,7 @@ class OwnedWebKitDevProducerContracts(unittest.TestCase):
             binary = host / "Contents/MacOS/NeAntikWebKitHost"
             binary.parent.mkdir(parents=True)
             binary.write_bytes(b"qa-host")
+            (host / "Contents/Info.plist").write_bytes(plistlib.dumps({"NeAntikWebKitNetworkSandboxSHA256": "c" * 64}))
             observed = {}
 
             class Packager:
@@ -110,6 +111,7 @@ class OwnedWebKitDevProducerContracts(unittest.TestCase):
             self.assertEqual(observed["qa_tls_origins"], [origin])
             self.assertEqual(observed["source_offer_root"], Path("fixture-offer"))
             self.assertEqual(observed["source_offer_manifest_sha256"], "b" * 64)
+            self.assertEqual(observed["network_sandbox_sha256"], "c" * 64)
             self.assertTrue(observed["binary"].is_relative_to(stage))
             self.assertFalse((stage / "NeAntikWebKitHost.source.app").exists())
 
@@ -133,6 +135,7 @@ class OwnedWebKitDevProducerContracts(unittest.TestCase):
             stage = Path(directory); app = stage / 'NeAntik.app'; host = app / MODULE.HOST_RELATIVE
             binary = host / 'Contents/MacOS/NeAntikWebKitHost'; binary.parent.mkdir(parents=True)
             binary.write_bytes(b'host'); (host / 'Contents/Frameworks').mkdir()
+            (host / 'Contents/Info.plist').write_bytes(plistlib.dumps({}))
             values = {name: stage / name for name in ('runtime', 'offer', 'source', 'baseline', 'modified', 'binding', 'receipt')}
             observed = {}
             class Packager:

@@ -1,9 +1,37 @@
 # NeAntik changelog
 
+## Direct 1.0.0 (211) — production candidate
+
+- Coalesce compatible wheel events in the detached WebKit window and preserve gesture boundaries and input order.
+- Report enabled page controls to macOS accessibility and log channel failures without page data.
+- Bundled proxy WebKit requires macOS 15.4 or later. The manager and Chromium require macOS 14 or later.
+
+## Direct 1.0.0 (210) — internal qualification candidate
+
+- Preserve line and trackpad wheel input and forward native Select All and plain-text Paste in the detached page.
+
+## Direct 1.0.0 (209) — internal qualification candidate
+
+- Connect the detached page responder to an explicit macOS text input context for typing and composition.
+
+## Direct 1.0.0 (208) — internal qualification candidate
+
+- Connect keyboard navigation and native accessibility to page controls in the detached WebKit window.
+- Document how to preserve and verify the release warning-color catalog when relinking from a clean recipient build.
+
+## Direct 1.0.0 (207) — internal qualification candidate
+
+- Add a bundled WebKit engine alongside Chromium 157.0.8103.79. New profiles can select either engine, and existing profiles retain their engine and data.
+- Run owned WebKit profiles in a separate host and present the browser window through a native Metal surface. WebKit uses the macOS language and time zone.
+- Block WebRTC by default in WebKit profiles. Eligible profiles can opt in to relay-only WebRTC through their configured proxy. The proxy route and TURN/TLS recovery require qualification on the signed production candidate.
+- Document how recipients can rebuild and relink the bundled WebKit runtime, with corresponding source inputs and notices.
+
 ## Direct 0.9.6 (206) — release candidate; release gates pending
 
 - Prevent update-audit mode from treating a persisted fingerprint evidence envelope as a successful GUI launch. Update-audit now continues through current authority authentication; normal fingerprint audit retains its recovery behavior.
-- Preserve the qualified Chromium runtime and the existing 0.9.5 public-alpha distribution scope. This fix does not qualify an external proxy route, DNS, UDP, IPv6, background traffic, WebSocket, downloads, TURN/media or WebKit; no anonymity or universal fingerprint-resistance claim is made.
+- Update Chromium to 157.0.8103.79 for Apple Silicon. Port the existing profile privacy and system-font policy so Balanced and Strict profiles can keep their settings.
+- Fix Chromium's rejection of the sealed tracking-query rule. Only that exact expression receives the larger regex budget. Its signed-path and mixed-query safeguards stay in place.
+- Report unsupported privacy and font policies as distinct MCP errors. The installed 0.9.5 updater pins M156, so installation of the M157 build uses the signed ZIP or DMG.
 
 ## Direct 0.9.5 (205) — published Chromium-only public alpha
 

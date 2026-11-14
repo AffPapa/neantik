@@ -20,6 +20,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 
 
@@ -235,7 +236,7 @@ def validate_manager_info(info: object, identity: str) -> None:
     if build != expected_build:
         raise PackageError(f"1.0.0 manager build must match source build {expected_build}")
     forbidden = {"NeAntikBackupQualificationRunID", "NeAntikBackupQualificationRoot",
-                 "NeAntikBrowserDataBackupDevelopmentEnabled", "NeAntikQATrustScope",
+                 "NeAntikBrowserDataBackupDevelopmentEnabled", "NeAntikQATrustScope", "NeAntikQATURNSTrustScope",
                  "NeAntikProductionDiagnosticEnabled", "NeAntikProductionDiagnosticDataRoot"}
     if forbidden.intersection(info):
         raise PackageError("development or QA manager metadata is not allowed")
@@ -1048,12 +1049,119 @@ def verify_chromium_compliance_prerequisite(app: Path) -> Path:
     return embedded_lock
 
 
+def db6_package_inputs(app: Path, build_root: Path, source_root: Path, identity: str,
+                       build_receipt_path: Path, offer_root: Path, offer: dict, temp: Path) -> Path:
+    """Bind the clean build and extract the exact recipient staging recipe."""
+    from webkit_runtime_notices import DB6_UPSTREAM_COMMIT, verify_db6_source_archives
+
+    if any(path.is_symlink() or not path.is_dir() for path in (app, build_root, source_root)):
+        raise PackageError("db6 application, build and source roots must be physical directories")
+    manager_info = plistlib.loads((app / "Contents/Info.plist").read_bytes())
+    validate_manager_info(manager_info, identity)
+    if manager_info.get("NeAntikWebKitDetachedPresenterV1") is not True:
+        raise PackageError("db6 release manager is missing the detached presenter capability")
+    host = app / "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
+    if host.exists() or host.is_symlink():
+        raise PackageError("candidate already contains a WebKit host")
+    cache = {}
+    for line in (build_root / "CMakeCache.txt").read_text(encoding="utf-8").splitlines():
+        if not line or line.startswith(("#", "//")) or ":" not in line or "=" not in line:
+            continue
+        setting, _, value = line.partition("=")
+        cache[setting.split(":", 1)[0]] = value
+    home = cache.get("CMAKE_HOME_DIRECTORY")
+    expected = {"CMAKE_OSX_ARCHITECTURES": "arm64", "CMAKE_OSX_DEPLOYMENT_TARGET": "15.4",
+                "CMAKE_BUILD_TYPE": "Release", "CMAKE_GENERATOR": "Ninja", "PORT": "Cocoa",
+                "ENABLE_GPU_PROCESS": "ON", "ENABLE_WEBGPU": "ON", "ENABLE_WEBXR": "OFF",
+                "USE_SYSTEM_MALLOC": "OFF", "ENABLE_WRITING_TOOLS": "OFF",
+                "NEANTIK_TURNS_QA_ANCHOR": "OFF", "NEANTIK_DETACHED_INPUT_EXPERIMENT": "OFF",
+                "NEANTIK_DETACHED_PRESENTER": "ON"}
+    if (home is None or Path(home).resolve(strict=True) != source_root.resolve(strict=True)
+            or any(cache.get(key) != value for key, value in expected.items())):
+        raise PackageError("db6 CMake source, architecture or production mode differs from the recipe")
+    if (build_receipt_path.is_symlink() or not build_receipt_path.is_file()
+            or sha256(build_receipt_path) != offer.get("preSignStageReceiptSHA256")):
+        raise PackageError("db6 pre-sign stage receipt differs from the reviewed source offer")
+    stage = json.loads(build_receipt_path.read_bytes())
+    if (stage.get("upstreamCommit") != DB6_UPSTREAM_COMMIT
+            or stage.get("machOSHA256") != offer.get("preSignImages")
+            or stage.get("status") != "staged-pre-sign-only"):
+        raise PackageError("db6 pre-sign stage receipt does not bind the reviewed image set")
+    recipe_name = Path("NeAntik-WebKit-db6a98765e-build-inputs-revised.tar")
+    archives = verify_db6_source_archives(offer_root, offer)
+    inputs = temp / "inputs"
+    inputs.mkdir()
+    with tarfile.open(archives[recipe_name], mode="r:") as archive:
+        seen = set()
+        for member in archive:
+            name = member.name.removeprefix("./")
+            relative = Path(name)
+            if member.isdir() and name == ".":
+                continue
+            if (relative.is_absolute() or not relative.parts
+                    or relative.as_posix() != name or ".." in relative.parts):
+                raise PackageError("db6 recipient recipe has an unsafe archive path")
+            if member.isdir():
+                continue
+            if (not member.isfile()
+                    or relative in seen or len(seen) >= 256):
+                raise PackageError("db6 recipient recipe has an unsafe archive member")
+            seen.add(relative)
+            destination = inputs / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with archive.extractfile(member) as source, destination.open("xb") as output:
+                shutil.copyfileobj(source, output)
+    recipe = json.loads((inputs / "manifest.json").read_bytes())
+    members = recipe.get("members")
+    if (recipe.get("upstreamCommit") != DB6_UPSTREAM_COMMIT or not isinstance(members, dict)
+            or set(members) != {p.as_posix() for p in seen if p != Path("manifest.json")}
+            or any(sha256(inputs / name) != expected for name, expected in members.items())):
+        raise PackageError("db6 recipient recipe inventory differs from its manifest")
+    validate_db6_presenter_recipe(recipe)
+    return inputs
+
+
+def validate_db6_presenter_recipe(recipe: dict) -> None:
+    flags = recipe.get("buildFlags")
+    presenter_patch = "patches/neantik-webkit-detached-presenter.patch"
+    if (not isinstance(flags, dict) or flags.get("NEANTIK_DETACHED_PRESENTER") is not True
+            or flags.get("NEANTIK_DETACHED_INPUT_EXPERIMENT") is not False
+            or flags.get("NEANTIK_TURNS_QA_ANCHOR") is not False
+            or presenter_patch not in recipe["members"]):
+        raise PackageError("db6 recipient recipe must rebuild the production detached presenter")
+
+
+def stage_db6_runtime(inputs: Path, build_root: Path, source_root: Path, build_receipt_path: Path,
+                      offer: dict, temp: Path) -> tuple[Path, dict, dict]:
+    from webkit_runtime_notices import verify_db6_runtime_resources
+
+    recipe_scripts = inputs / "scripts"
+    unsigned = temp / "Frameworks"
+    staged = run([sys.executable, str(recipe_scripts / "stage-webkit-runtime.py"),
+                  str(build_root), str(unsigned), "--upstream-source", str(source_root),
+                  "--manifest", str(inputs / "staging-manifest.json")], cwd=ROOT)
+    receipt = _last_json(staged.stdout, field="machOSHA256")
+    if receipt != json.loads(build_receipt_path.read_bytes()):
+        raise PackageError("restaged db6 build does not match the reviewed stage receipt")
+    run([sys.executable, str(recipe_scripts / "check-owned-webkit-xpc-launcher.py"),
+         "--source-root", str(source_root), "--frameworks", str(unsigned)])
+    overlaid = temp / "Frameworks-with-overlays"
+    overlay = run([sys.executable, str(recipe_scripts / "apply-webkit-runtime-overlays.py"),
+                   str(unsigned), str(overlaid)])
+    verify_db6_runtime_resources(overlaid, offer)
+    return overlaid, receipt, _last_json(overlay.stdout, field="resourceOverlays")
+
+
 def package(app: Path, build_root: Path, source_root: Path, identity: str,
             build_receipt_path: Path, source_offer_root: Path,
             source_offer_manifest_sha256: str) -> dict:
-    app, build_root, source_root = validate_inputs(
-        app, build_root, source_root, identity, build_receipt_path, source_offer_root,
-        source_offer_manifest_sha256)
+    from webkit_runtime_notices import read_db6_source_offer
+
+    db6 = read_db6_source_offer(source_offer_root, source_offer_manifest_sha256)
+    if db6 is None:
+        app, build_root, source_root = validate_inputs(
+            app, build_root, source_root, identity, build_receipt_path, source_offer_root,
+            source_offer_manifest_sha256)
     # This cheap dependency must be checked before profile signing, runtime
     # staging, and the standalone-host build. The WebKit notice installer
     # extends the integrated Chromium compliance artifact in place.
@@ -1064,32 +1172,46 @@ def package(app: Path, build_root: Path, source_root: Path, identity: str,
     env["NEANTIK_RELEASE_CHANNEL"] = "production"
     env["NEANTIK_SIGNING_IDENTITY"] = identity
 
-    # Validate profile and manager signing before staging the large runtime or
-    # compiling the production host. These inputs are cheaper failure points.
-    run([sys.executable, str(ROOT / "scripts/direct_backup_signing.py"),
-         "sign", str(app), identity], env=env)
-
     with tempfile.TemporaryDirectory(prefix="neantik-webkit-production-package-") as temporary:
         temp = Path(temporary)
-        unsigned_frameworks = temp / "Frameworks"
+        if db6 is None:
+            staging_manifest = STAGING_MANIFEST
+        else:
+            inputs = db6_package_inputs(app, build_root, source_root, identity,
+                                         build_receipt_path, source_offer_root, db6, temp)
+            staging_manifest = inputs / "staging-manifest.json"
+            unsigned_frameworks, stage_receipt, overlay_receipt = stage_db6_runtime(
+                inputs, build_root, source_root, build_receipt_path, db6, temp)
+        # The manager identity is authenticated again by the runtime signer.
+        run([sys.executable, str(ROOT / "scripts/direct_backup_signing.py"),
+             "sign", str(app), identity], env=env)
         signed_frameworks = temp / "Frameworks-signed"
-        staged = run([sys.executable, str(ROOT / "scripts/stage-webkit-runtime.py"),
-                      str(build_root), str(unsigned_frameworks), "--upstream-source", str(source_root),
-                      "--manifest", str(STAGING_MANIFEST)], cwd=ROOT)
-        stage_receipt = _last_json(staged.stdout, field="machOSHA256")
-        if stage_receipt.get("networkSandbox", {}).get("policyRevision") != 13:
+        if db6 is None:
+            unsigned_frameworks = temp / "Frameworks"
+            staged = run([sys.executable, str(ROOT / "scripts/stage-webkit-runtime.py"),
+                          str(build_root), str(unsigned_frameworks), "--upstream-source", str(source_root),
+                          "--manifest", str(staging_manifest)], cwd=ROOT)
+            stage_receipt = _last_json(staged.stdout, field="machOSHA256")
+            overlay_receipt = apply_source_offer_runtime_overlays(
+                unsigned_frameworks, source_root, source_offer_root, source_offer_manifest_sha256)
+        staging_manifest_sha256 = sha256(staging_manifest)
+        sandbox = stage_receipt.get("networkSandbox", {})
+        sandbox_sha = sandbox.get("patchedSHA256")
+        if sandbox.get("policyRevision") != 13 or not isinstance(sandbox_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", sandbox_sha):
             raise PackageError("runtime staging did not apply the pinned broker-only sandbox policy")
-        overlay_receipt = apply_source_offer_runtime_overlays(
-            unsigned_frameworks, source_root, source_offer_root,
-            source_offer_manifest_sha256)
-
         run([sys.executable, str(ROOT / "scripts/resign-webkit-recipient-runtime.py"),
              "--manager-app", str(app), "--source-frameworks", str(unsigned_frameworks),
              "--output-frameworks", str(signed_frameworks), "--identity", identity])
-        run([sys.executable, str(ROOT / "scripts/webkit_runtime_notices.py"),
-             "--install", "--app", str(app), "--runtime-frameworks", str(signed_frameworks),
-             "--source-offer-root", str(source_offer_root),
-             "--source-offer-manifest-sha256", source_offer_manifest_sha256], env=env)
+        if db6 is None:
+            run([sys.executable, str(ROOT / "scripts/webkit_runtime_notices.py"),
+                 "--install", "--app", str(app), "--runtime-frameworks", str(signed_frameworks),
+                 "--source-offer-root", str(source_offer_root),
+                 "--source-offer-manifest-sha256", source_offer_manifest_sha256], env=env)
+        else:
+            from webkit_runtime_notices import preflight_owned_webkit_notices
+
+            preflight_owned_webkit_notices(app, signed_frameworks, source_offer_root=source_offer_root,
+                                          source_offer_manifest_sha256=source_offer_manifest_sha256)
 
         host_result = run([sys.executable, str(ROOT / "scripts/build-webkit-standalone-host.py"),
                            "--configuration", "release", "--production-proxy"], cwd=ROOT, env=env)
@@ -1099,6 +1221,7 @@ def package(app: Path, build_root: Path, source_root: Path, identity: str,
         run([sys.executable, str(ROOT / "scripts/package-webkit-host.py"),
              "--app", str(app), "--host-binary", str(host_binary),
              "--runtime-frameworks", str(signed_frameworks), "--identity", identity,
+             "--network-sandbox-sha256", sandbox_sha,
              "--source-offer-root", str(source_offer_root),
              "--source-offer-manifest-sha256", source_offer_manifest_sha256])
 
@@ -1116,14 +1239,15 @@ def package(app: Path, build_root: Path, source_root: Path, identity: str,
         "status": "owned_webkit_host_and_runtime_embedded; outer_manager_resign_required",
         "managerBundleID": PRODUCTION_BUNDLE_ID,
         "managerVersion": f"1.0.0 ({production_build_number()})",
-        "upstreamCommit": EXPECTED_COMMIT,
-        "sourcePatchSHA256": EXPECTED_PATCH_SHA256,
-        "sourceCrosswalkSHA256": SOURCE_CROSSWALK_SHA256,
+        "upstreamCommit": db6["upstreamCommit"] if db6 is not None else EXPECTED_COMMIT,
+        **({"sourcePatchSHA256": EXPECTED_PATCH_SHA256,
+            "sourceCrosswalkSHA256": SOURCE_CROSSWALK_SHA256} if db6 is None else {}),
         "buildReceiptSHA256": sha256(build_receipt_path),
         "sourceOfferManifestSHA256": source_offer_manifest_sha256,
-        "stagingManifestSHA256": sha256(STAGING_MANIFEST),
+        "stagingManifestSHA256": staging_manifest_sha256,
         "runtimeImageCount": len(stage_receipt.get("machOSHA256", {})),
         "networkSandboxPolicyRevision": 13,
+        "networkSandboxSHA256": sandbox_sha,
         "sourceOfferOverlayPreparation": overlay_receipt,
         "hostSHA256": host_hash,
         "noticeVerification": notices,
@@ -1144,12 +1268,22 @@ def main() -> int:
     parser.add_argument("--check-only", action="store_true",
                         help="validate exact source/build bindings without signing or mutating the app")
     args = parser.parse_args()
+    from webkit_runtime_notices import NoticeError, read_db6_source_offer
+
     try:
         if args.check_only:
-            app, build_root, source_root = validate_inputs(
-                args.app, args.build_root, args.source_root, args.identity,
-                args.build_receipt, args.source_offer_root,
-                args.source_offer_manifest_sha256)
+            offer = read_db6_source_offer(args.source_offer_root, args.source_offer_manifest_sha256)
+            if offer is None:
+                app, build_root, source_root = validate_inputs(
+                    args.app, args.build_root, args.source_root, args.identity,
+                    args.build_receipt, args.source_offer_root, args.source_offer_manifest_sha256)
+            else:
+                app, build_root, source_root = args.app, args.build_root, args.source_root
+                with tempfile.TemporaryDirectory(prefix="neantik-webkit-db6-preflight-") as temporary:
+                    temp = Path(temporary)
+                    inputs = db6_package_inputs(app, build_root, source_root, args.identity,
+                                               args.build_receipt, args.source_offer_root, offer, temp)
+                    stage_db6_runtime(inputs, build_root, source_root, args.build_receipt, offer, temp)
             result = {
                 "status": "PASS_OWNED_WEBKIT_EXACT_BUILD_SOURCE_AND_OVERLAY_CHECK_ONLY",
                 "app": str(app),
@@ -1162,7 +1296,8 @@ def main() -> int:
             result = package(args.app, args.build_root, args.source_root, args.identity,
                              args.build_receipt, args.source_offer_root,
                              args.source_offer_manifest_sha256)
-    except (PackageError, OSError, subprocess.SubprocessError) as error:
+    except (PackageError, NoticeError, OSError, ValueError, tarfile.TarError,
+            subprocess.SubprocessError) as error:
         parser.exit(1, f"Owned WebKit release packaging refused: {error}\n")
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0

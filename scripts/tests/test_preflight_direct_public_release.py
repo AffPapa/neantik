@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from datetime import timedelta
 from pathlib import Path
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
@@ -35,6 +36,40 @@ VERIFIER_SPEC.loader.exec_module(VERIFIER_FIXTURES)
 
 
 class DirectPublicReleasePreflightTests(unittest.TestCase):
+    def test_m157_preflight_uses_pinned_provenance_and_lock_verifiers(self):
+        import chromium_157_release_evidence
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            contract_path = root / "contract.json"
+            contract_path.write_text('{"binaryBindingStatus":"pending-runtime-report","schemaVersion":1}')
+            args = root / "args.gn"
+            args.write_text("angle_enable_metal=true\n")
+            provenance_path = root / "source-provenance.json"
+            provenance_path.write_text("{}")
+            provenance = {
+                "sourceContractSHA256": MODULE.sha256_file(contract_path),
+                "buildArgsSHA256": MODULE.sha256_file(args),
+            }
+            lock = {"schemaVersion": 4}
+            kwargs = dict(
+                runtime_version="157.0.8103.39",
+                contract={"schemaVersion": 1, "binaryBindingStatus": "pending-runtime-report"},
+                contract_path=contract_path,
+                provenance=provenance,
+                candidate_lock=lock,
+                project_root=root,
+                args_gn=args,
+                provenance_path=provenance_path,
+            )
+            with mock.patch.object(chromium_157_release_evidence, "verify_provenance") as verify_source, \
+                 mock.patch.object(chromium_157_release_evidence, "verify_lock") as verify_lock:
+                MODULE.verify_source_contract_binding(**kwargs)
+                verify_source.assert_called_once_with(provenance, root)
+                verify_lock.assert_called_once_with(lock, provenance_path, root)
+                args.write_text("angle_enable_metal=false\n")
+                with self.assertRaisesRegex(ValueError, "packaged args differ"):
+                    MODULE.verify_source_contract_binding(**kwargs)
+
     def test_m15680_preflight_requires_exact_source_contract_and_args(self):
         import chromium_15680_release_evidence
         with tempfile.TemporaryDirectory() as temporary:
@@ -68,6 +103,40 @@ class DirectPublicReleasePreflightTests(unittest.TestCase):
         # A mismatched lock cannot supply a review for another binary version.
         with self.assertRaisesRegex(ValueError, "does not match"):
             MODULE.verify_runtime_security_branch("156.0.8078.39", lock, baseline)
+
+    def test_runtime_security_gate_rejects_stale_primary_source_baseline(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            integrated, runtime, args_gn, gui_report, runtime_lock = (
+                write_fixture_project(root, security_baseline_age_days=1)
+            )
+            results = MODULE.verify_direct_public_release_plan(
+                project_root=root,
+                integrated_app=integrated,
+                runtime_app=runtime,
+                args_gn=args_gn,
+                gui_fingerprint_report=gui_report,
+                runtime_lock=runtime_lock,
+                download_url=(
+                    "https://downloads.neantik.app/"
+                    "NeAntik-1.2.3-arm64-notarized.zip"
+                ),
+                release_channel="public-alpha",
+                env={
+                    "NEANTIK_SIGNING_IDENTITY": (
+                        "Developer ID Application: Example (TEAMID)"
+                    ),
+                    "NEANTIK_NOTARY_PROFILE": "nevision-notary",
+                },
+            )
+
+        blocked = {
+            result.name: result.details
+            for result in results
+            if not result.passed
+        }
+        self.assertIn("Runtime security baseline", blocked)
+        self.assertIn("stale (1 days old; maximum 0)", blocked["Runtime security baseline"])
 
     def test_doctor_cli_prevents_real_descendant_bytecode_even_without_parent_environment(self):
         with tempfile.TemporaryDirectory(prefix='neantik-own-doctor-child-') as directory:
@@ -524,7 +593,9 @@ def write_plist(path: Path, values: dict) -> None:
         plistlib.dump(values, file)
 
 
-def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
+def write_fixture_project(
+    root: Path, *, security_baseline_age_days: int = 0
+) -> tuple[Path, Path, Path, Path, Path]:
     write_plist(
         root / "Resources" / "Info.plist",
         {
@@ -535,8 +606,30 @@ def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
     )
     baseline = root / "runtime" / "security-baseline.json"
     baseline.parent.mkdir(parents=True)
+    checked = (
+        MODULE.RUNTIME_SECURITY.datetime.now(
+            MODULE.RUNTIME_SECURITY.timezone.utc
+        ).date()
+        - timedelta(days=security_baseline_age_days)
+    )
     baseline.write_text(
-        json.dumps({"minimumPublicChromiumVersion": "150.0.7871.186"}),
+        json.dumps(
+            {
+                "schemaVersion": 1,
+                "checkedAt": checked.isoformat(),
+                "publishedAt": checked.isoformat(),
+                "maximumAgeDays": 0,
+                "minimumPublicChromiumVersion": "150.0.7871.186",
+                "alsoObservedPublicChromiumVersions": [],
+                "channel": "Desktop Stable",
+                "platforms": ["macOS"],
+                "securityFixCount": 0,
+                "reference": "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop.html",
+                "referenceTitle": "Stable Channel Update for Desktop",
+                "sourceLabel": "Chrome Releases",
+                "releaseBoundary": "This is not a live updater. Refresh before every public Direct release.",
+            }
+        ),
         encoding="utf-8",
     )
     releases = root / "releases"
@@ -643,6 +736,9 @@ def write_fixture_project(root: Path) -> tuple[Path, Path, Path, Path, Path]:
                 "sourceContractSHA256": MODULE.sha256_file(source_contract),
                 "sourceProvenanceSHA256":
                     MODULE.sha256_file(source_provenance),
+                "verification": {
+                    "coherentAppleDeviceTuples": "verified",
+                },
             }
         ),
         encoding="utf-8",

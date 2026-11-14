@@ -1,0 +1,370 @@
+#!/usr/bin/env python3
+"""Fail-closed source and build evidence for the NeAntik Chromium 157 port.
+
+This module binds the private Mac ARM64 source tree to the exact upstream
+157.0.8103.39 commit, reviewed port diff and GN args. Source evidence never
+qualifies a binary or release; the build receipt must be completed separately.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+import subprocess
+from pathlib import Path
+from typing import Any
+
+VERSION = "157.0.8103.39"
+PREFIX = "chromium-157"
+CONTRACT = PREFIX + "-source-contract.json"
+PLAN = PREFIX + "-rebase-plan.json"
+ADOPTION = PREFIX + "-source-adoption-v1.json"
+BUILD_EVIDENCE = PREFIX + "-build-evidence.json"
+LOCK = "fingerprint-" + PREFIX + ".lock.json"
+REPOSITORY = "https://chromium.googlesource.com/chromium/src.git"
+OFFICIAL_COMMIT = "9a31f0acec1854d44e49a73fbf8017598151a583"
+OFFICIAL_TREE = "e400810dee21ba266feeeef005ea83ae83fd274e"
+PORT_HEAD = "95b9ebdb2192fb206f9838e1a2fbe791fbffb235"
+PORT_PARENT = "39eb0679325c11436bb56ae6f3eea7bee4373322"
+PORT_SOURCE_FILE_SHA256 = {'chrome/browser/extensions/BUILD.gn': '7014558c6021cad9034c390fb14b6fe81c01c10e42a30fa26773353bdd630290',
+ 'chrome/browser/extensions/extension_allowlist_unittest.cc': 'e1b4f65c21dbb257309683e201c87ac2529bcf59794e325f313ba5719414a13f',
+ 'chrome/browser/extensions/extension_service.cc': 'b2864a94ab34a6710ac78957e4b85900281cb70a6d8bf903a47bd9f135936452',
+ 'chrome/browser/extensions/extension_service_unittest.cc': 'd18613becad6a7ed71355bc7454211fca1fcdc79e662a166a245e9a3103c2fac',
+ 'chrome/browser/resources/extensions/sidebar.ts': '6b0f08d6301e00da638ec94c54c382ce7d36ab66ec58069c89f8c51815bab5dc',
+ 'chrome/browser/resources/settings/privacy_page/privacy_page_index.html': 'c5c6b6095a608974219ac50a0ee3a318081d00bf7cf9cf95cff8bddde2853cd8',
+ 'chrome/browser/signin/chrome_signin_client.cc': '429e3ff8c10e6c97e2c0814d587324b4529bc0f722ecc9c59b1fd6458d4b2cbc',
+ 'chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.cc': '396399dbd5107ad787d3e0f5c5b560e66a5293e6bccf69dc00b5709b49804e79',
+ 'chrome/browser/ui/webui/side_panel/read_anything/read_anything_untrusted_page_handler.h': 'dd142b2ee73baf597ed8853c5ab011fa1ff3666b94856f7042a6e72639db0082',
+ 'chrome/test/data/webui/history/history_routing_test.ts': 'c6d0b011c92585b96581063ae1fe41317dade546b95c16820332cef34238a07f',
+ 'chrome/test/data/webui/settings/about_page_test.ts': 'd05d2fdcbbf983e9fba03446e8a6f799854f6d1f60bb8d310052315f5543c128',
+ 'chrome/test/data/webui/settings/payments_page_test.ts': '2cabf735f10d833af75160392769a93d43d3c24068014b2ea678f92bd68bfb0d',
+ 'chrome/test/data/webui/settings/personalization_options_test.ts': '6399df3807a119b5a5d5489fef09ce4e9ecbf7f2fd2a0ad125cca842bcf38222',
+ 'chrome/test/data/webui/settings/test_search_engines_browser_proxy.ts': '4dddcf10ede33569e308a563ae64b58136a2cfcd1596e8e9b0e8c37b2a75b271',
+ 'components/domain_reliability/bake_in_configs.py': '7f43fc331ade5e41caa7e973c40d3e819c017b0823898f281897817371f33a37',
+ 'components/safe_browsing/content/browser/triggers/trigger_manager.cc': 'e736b8b3d41b18d1384f3ab1c18d236fe4499adfb16b3386c5f95be7412689b7',
+ 'components/signin/internal/identity_manager/gaia_cookie_manager_service.cc': '64b9ecc2770171e74f7051cd5bedaa17a706c91763e1a0b876768e5846a09d23',
+ 'components/signin/internal/identity_manager/gaia_cookie_manager_service_unittest.cc': '7e8c41376fd9fef1a518518eacba562948c8b48bcfc86cc71ea451d034363a51',
+ 'content/browser/file_system_access/file_system_access_safe_move_helper.h': '93e162341151221707a49a77ba6f8f221747ff61c69931ebfa178d1cdf459c29',
+ 'storage/browser/quota/quota_features.cc': '73051a48c162bded135987473ccb1e7ed19d3f6b6d4bec88138a3b4dd4223973',
+ 'storage/browser/quota/quota_manager_impl.cc': '15d2f700eca00f9741f1df6e2cba45ca46a1b4346308d9637b8c562e09791029',
+ 'storage/browser/quota/quota_manager_unittest.cc': '8da1fc98fbd71a0f70833ecfee0686b3bc376e72980488988115f9d72b6c8005'}
+PORT_PATCH_SHA256 = "08b4e2482fb42bc200ac7dee1313c315f1b46dbc748fb37d05c5c45d307dc928"
+PENDING_BUILD_STATUS = "pending-after-diagnosed-source-port-build-failure"
+ARGS_RELATIVE_PATH = "out/neantik157-port-smoke-correctargs3/args.gn"
+ARGS_SHA256 = "8c013d5d2cbc3372f13e38d2220c6a698d13dd8dd7a0ed853197f21af253d46e"
+HEX = re.compile(r"^[0-9a-f]{64}$")
+
+
+class M157EvidenceError(ValueError):
+    pass
+
+
+def _sha_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
+
+
+def _sha(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _load(path: Path, label: str) -> dict[str, Any]:
+    if path.is_symlink() or not path.is_file():
+        raise M157EvidenceError(f"Missing or unsafe {label}")
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise M157EvidenceError(f"Invalid JSON in {label}") from error
+    if not isinstance(value, dict):
+        raise M157EvidenceError(f"{label} must be an object")
+    return value
+
+
+def _git(repository: Path, *args: str) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(repository), *args],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode:
+        raise M157EvidenceError(f"Git source check failed: {result.stderr.strip()}")
+    return result.stdout.strip()
+
+
+def verify_contract(project_root: Path) -> dict[str, Any]:
+    root = project_root.resolve()
+    runtime = root / "runtime"
+    contract_path, plan_path, adoption_path = (
+        runtime / CONTRACT,
+        runtime / PLAN,
+        runtime / ADOPTION,
+    )
+    contract = _load(contract_path, "Chromium 157 source contract")
+    plan = _load(plan_path, "Chromium 157 rebase plan")
+    adoption = _load(adoption_path, "Chromium 157 source adoption manifest")
+    upstream = {
+        "repository": REPOSITORY,
+        "tag": VERSION,
+        "commit": OFFICIAL_COMMIT,
+        "tree": OFFICIAL_TREE,
+    }
+    source = {
+        "head": PORT_HEAD,
+        "parent": PORT_PARENT,
+        "sourceFileSHA256": PORT_SOURCE_FILE_SHA256,
+        "sourcePatchManifestSHA256": PORT_PATCH_SHA256,
+        "buildArgsPath": ARGS_RELATIVE_PATH,
+        "buildArgsSHA256": ARGS_SHA256,
+        "buildOutputDirectory": "out/neantik157-port-smoke-correctargs3",
+        "changedFiles": list(PORT_SOURCE_FILE_SHA256),
+    }
+    dependency_sync = {
+        "gitCheckouts": 151,
+        "nonGitInputs": 50,
+        "status": "verified by CURRENT-linked Chromium 157 sync receipt",
+    }
+    for document, name in ((contract, "contract"), (plan, "plan"), (adoption, "adoption")):
+        if document.get("schemaVersion") != 1 or document.get("releaseReady") is not False:
+            raise M157EvidenceError(f"Chromium 157 {name} must remain schema 1 and releaseReady=false")
+        if document.get("targetChromiumVersion", document.get("chromiumVersion")) != VERSION:
+            raise M157EvidenceError(f"Chromium 157 {name} version mismatch")
+        if document.get("targetArchitecture") != "arm64":
+            raise M157EvidenceError(f"Chromium 157 {name} must target arm64")
+    if contract.get("sourceMode") != "official-chromium-stable-with-reviewed-neantik-port":
+        raise M157EvidenceError("Chromium 157 source mode is not the reviewed stable port")
+    if contract.get("officialChromiumBase") != upstream or plan.get("officialChromiumBase") != upstream:
+        raise M157EvidenceError("Chromium 157 official source pin mismatch")
+    if adoption.get("officialChromiumBase") != upstream:
+        raise M157EvidenceError("Chromium 157 adoption manifest upstream pin mismatch")
+    for document in (contract, plan, adoption):
+        if document.get("portSource") != source:
+            raise M157EvidenceError("Chromium 157 source head, file manifest or GN args pin mismatch")
+        if document.get("dependencySync") != dependency_sync:
+            raise M157EvidenceError("Chromium 157 dependency sync counts or evidence status mismatch")
+    if plan.get("build") != {
+            "outputDirectory": source["buildOutputDirectory"],
+            "argsPath": source["buildArgsPath"],
+            "argsSHA256": ARGS_SHA256,
+            "target": "chrome unit_tests",
+            "status": "pending" if contract.get("binaryBindingStatus") == "pending-build" else "verified"}:
+        raise M157EvidenceError("Chromium 157 rebase-plan build identity/state mismatch")
+    if (adoption.get("buildOutputDirectory") != source["buildOutputDirectory"] or
+            adoption.get("buildArgsPath") != source["buildArgsPath"] or
+            adoption.get("buildArgsSHA256") != ARGS_SHA256 or
+            adoption.get("buildEvidenceFile") != "runtime/" + BUILD_EVIDENCE):
+        raise M157EvidenceError("Chromium 157 adoption manifest build identity mismatch")
+    if contract.get("sourceAdoptionManifest") != "runtime/" + ADOPTION:
+        raise M157EvidenceError("Chromium 157 adoption manifest path mismatch")
+    if contract.get("rebasePlan") != "runtime/" + PLAN:
+        raise M157EvidenceError("Chromium 157 rebase plan path mismatch")
+    if contract.get("sourceAdoptionManifestSHA256") != _sha(adoption_path):
+        raise M157EvidenceError("Chromium 157 adoption manifest digest mismatch")
+    if contract.get("rebasePlanSHA256") != _sha(plan_path):
+        raise M157EvidenceError("Chromium 157 rebase plan digest mismatch")
+    license_path = runtime / "licenses" / "Chromium-LICENSE"
+    if contract.get("chromiumLicenseSHA256") != _sha(license_path):
+        raise M157EvidenceError("Chromium 157 license digest mismatch")
+    baseline_path = runtime / "security-baseline.json"
+    if contract.get("securityBaselineSHA256") != _sha(baseline_path):
+        raise M157EvidenceError("Chromium 157 security baseline digest is stale")
+    if contract.get("buildEvidenceFile") != "runtime/" + BUILD_EVIDENCE:
+        raise M157EvidenceError("Chromium 157 build evidence path mismatch")
+    if contract.get("binaryBindingStatus") == "pending-build":
+        if (contract.get("status") != "source-pins-verified-build-pending" or
+                contract.get("buildEvidenceStatus") != PENDING_BUILD_STATUS or
+                contract.get("buildEvidenceSHA256") is not None or
+                adoption.get("buildEvidenceSHA256") is not None or
+                plan.get("buildEvidence", {}).get("status") != PENDING_BUILD_STATUS):
+            raise M157EvidenceError("Chromium 157 pending-build state is inconsistent")
+    elif contract.get("binaryBindingStatus") == "pending-runtime-report":
+        evidence_path = runtime / BUILD_EVIDENCE
+        evidence = _load(evidence_path, "Chromium 157 completed build evidence")
+        if (contract.get("status") != "build-complete-runtime-report-pending" or
+                contract.get("buildEvidenceStatus") != "completed-build-verified-runtime-report-pending" or
+                contract.get("buildEvidenceSHA256") != _sha(evidence_path) or
+                adoption.get("buildEvidenceSHA256") != _sha(evidence_path) or
+                plan.get("buildEvidence", {}).get("status") != "verified" or
+                plan.get("buildEvidence", {}).get("sha256") != _sha(evidence_path) or
+                evidence.get("status") != "chromium-source-build-succeeded-unqualified" or
+                evidence.get("chromiumVersion") != VERSION or
+                evidence.get("officialCommit") != OFFICIAL_COMMIT or
+                evidence.get("officialTree") != OFFICIAL_TREE or
+                evidence.get("portHead") != PORT_HEAD or
+                evidence.get("sourcePatchSHA256") != PORT_PATCH_SHA256 or
+                evidence.get("buildConfigurationSHA256") != ARGS_SHA256 or
+                evidence.get("buildOutputDirectory") != source["buildOutputDirectory"] or
+                evidence.get("ninjaTarget") != "chrome unit_tests" or
+                evidence.get("ninjaExitCode") != 0 or
+                not isinstance(evidence.get("ninjaActionsCompleted"), int) or
+                evidence.get("ninjaActionsCompleted") <= 0 or
+                evidence.get("ninjaActionsCompleted") != evidence.get("ninjaActionsExpected") or
+                not isinstance(evidence.get("buildLogSHA256"), str) or
+                not HEX.fullmatch(evidence.get("buildLogSHA256", "")) or
+                not isinstance(evidence.get("browserExecutableSHA256"), str) or
+                not HEX.fullmatch(evidence.get("browserExecutableSHA256", "")) or
+                not isinstance(evidence.get("frameworkSHA256"), str) or
+                not HEX.fullmatch(evidence.get("frameworkSHA256", "")) or
+                not isinstance(evidence.get("browserExecutableRelativePath"), str) or
+                not evidence.get("browserExecutableRelativePath") or
+                not isinstance(evidence.get("frameworkRelativePath"), str) or
+                not evidence.get("frameworkRelativePath") or
+                evidence.get("releaseReady") is not False):
+            raise M157EvidenceError("Chromium 157 completed build evidence is inconsistent")
+    else:
+        raise M157EvidenceError("Chromium 157 contract has unknown binary-binding state")
+    return contract
+
+
+def verify_source_root(source_root: Path, project_root: Path) -> dict[str, Any]:
+    contract = verify_contract(project_root)
+    if source_root.is_symlink() or not source_root.is_absolute() or not source_root.is_dir():
+        raise M157EvidenceError("Chromium 157 source root must be absolute and non-symlinked")
+    source_root = source_root.resolve()
+    if _git(source_root, "rev-parse", "HEAD") != PORT_HEAD:
+        raise M157EvidenceError("Chromium 157 port source HEAD mismatch")
+    if _git(source_root, "rev-parse", "HEAD^") != PORT_PARENT:
+        raise M157EvidenceError("Chromium 157 port source parent mismatch")
+    if _git(source_root, "rev-parse", OFFICIAL_COMMIT + "^{tree}") != OFFICIAL_TREE:
+        raise M157EvidenceError("Chromium 157 official commit tree mismatch")
+    if _git(source_root, "merge-base", "--is-ancestor", OFFICIAL_COMMIT, "HEAD") == "":
+        # `merge-base --is-ancestor` has no stdout on success; the helper raises
+        # on non-zero, so this explicit form documents the required relation.
+        pass
+    version_file = source_root / "chrome" / "VERSION"
+    if version_file.is_symlink() or not version_file.is_file():
+        raise M157EvidenceError("Chromium 157 version file is missing or unsafe")
+    version = {}
+    for line in version_file.read_text(encoding="utf-8").splitlines():
+        if "=" in line:
+            key, value = line.split("=", 1)
+            version[key] = value
+    if ".".join(version.get(key, "") for key in ("MAJOR", "MINOR", "BUILD", "PATCH")) != VERSION:
+        raise M157EvidenceError("Chromium 157 version file mismatch")
+    changed_files = _git(source_root, "diff", "HEAD", "--name-only").splitlines()
+    if changed_files != list(PORT_SOURCE_FILE_SHA256):
+        raise M157EvidenceError("Chromium 157 changed source file list mismatch")
+    for relative, expected_sha256 in PORT_SOURCE_FILE_SHA256.items():
+        path = source_root / relative
+        if path.is_symlink() or not path.is_file() or _sha(path) != expected_sha256:
+            raise M157EvidenceError(f"Chromium 157 source file digest mismatch: {relative}")
+    patch_manifest = {"head": PORT_HEAD, "parent": PORT_PARENT,
+                      "files": PORT_SOURCE_FILE_SHA256}
+    if _sha_bytes(json.dumps(patch_manifest, sort_keys=True, separators=(",", ":")).encode()) != PORT_PATCH_SHA256:
+        raise M157EvidenceError("Chromium 157 source patch manifest digest mismatch")
+    args_path = source_root / ARGS_RELATIVE_PATH
+    if args_path.is_symlink() or not args_path.is_file() or _sha(args_path) != ARGS_SHA256:
+        raise M157EvidenceError("Chromium 157 GN args path or digest mismatch")
+    deps = source_root / "DEPS"
+    if deps.is_symlink() or not deps.is_file():
+        raise M157EvidenceError("Chromium 157 DEPS file is missing or unsafe")
+    deps_text = deps.read_text(encoding="utf-8")
+    required_pins = {
+        "skia_revision": "ca84ce0a6f1659748188469a89361ccea71e3a64",
+        "v8_revision": "440c1c463e2e528c309af5067952e7b11631507f",
+        "pdfium_revision": "a4d199fba716a1edcc5d032a1d875f9a8ef2c283",
+        "ffmpeg_revision": "5c85ff666b3434d9323b83437f910ad8431ab7c9",
+    }
+    for name, revision in required_pins.items():
+        if not re.search(r"['\"]" + re.escape(name) + r"['\"]\s*:\s*['\"]" + revision + r"['\"]", deps_text):
+            raise M157EvidenceError(f"Chromium 157 dependency pin mismatch: {name}")
+    result = {"sourceHead": PORT_HEAD, "officialCommit": OFFICIAL_COMMIT,
+              "officialTree": OFFICIAL_TREE, "sourcePatchSHA256": PORT_PATCH_SHA256,
+              "buildArgsSHA256": ARGS_SHA256,
+              "buildOutputDirectory": contract["portSource"]["buildOutputDirectory"]}
+    return result
+
+
+def build_provenance(source_root: Path, project_root: Path) -> dict[str, Any]:
+    source = verify_source_root(source_root, project_root)
+    contract = verify_contract(project_root)
+    if contract.get("binaryBindingStatus") != "pending-runtime-report":
+        raise M157EvidenceError("Chromium 157 source pins are verified but the exact Ninja build is still pending")
+    evidence_path = project_root.resolve() / "runtime" / BUILD_EVIDENCE
+    evidence = _load(evidence_path, "Chromium 157 build evidence")
+    return _expected_provenance(contract, evidence, source, project_root)
+
+
+def _expected_provenance(contract: dict[str, Any], evidence: dict[str, Any],
+                         source: dict[str, Any], project_root: Path) -> dict[str, Any]:
+    return {
+        "schemaVersion": 1,
+        "status": "source-qualified",
+        "sourceMode": contract["sourceMode"],
+        "targetChromiumVersion": VERSION,
+        "targetArchitecture": "arm64",
+        "officialChromiumBase": contract["officialChromiumBase"],
+        "sourceContractSHA256": _sha(project_root.resolve() / "runtime" / CONTRACT),
+        "sourceAdoptionManifestSHA256": _sha(project_root.resolve() / "runtime" / ADOPTION),
+        "sourceHead": source["sourceHead"],
+        "sourcePatchSHA256": source["sourcePatchSHA256"],
+        "buildArgsSHA256": source["buildArgsSHA256"],
+        "buildEvidenceSHA256": _sha(project_root.resolve() / "runtime" / BUILD_EVIDENCE),
+        "buildEvidence": {"ninjaTarget": evidence["ninjaTarget"],
+                          "ninjaExitCode": evidence["ninjaExitCode"],
+                          "ninjaActionsCompleted": evidence["ninjaActionsCompleted"],
+                          "ninjaActionsExpected": evidence["ninjaActionsExpected"],
+                          "buildLogSHA256": evidence["buildLogSHA256"],
+                          "browserExecutableSHA256": evidence["browserExecutableSHA256"],
+                          "frameworkSHA256": evidence["frameworkSHA256"]},
+        "sourceChecks": {"officialCommitTree": "verified", "versionFile": "verified",
+                          "pinnedDependencies": "verified", "reviewedPortDiff": "verified",
+                          "buildArgs": "verified", "buildEvidence": "verified"},
+        "binaryBinding": {"status": "pending-runtime-report",
+                          "requiredEvidence": "schema-3-runtime-report"},
+        "releaseReady": False,
+    }
+
+
+def verify_provenance(document: dict[str, Any], project_root: Path) -> None:
+    contract = verify_contract(project_root)
+    if contract.get("binaryBindingStatus") != "pending-runtime-report":
+        raise M157EvidenceError("Chromium 157 provenance cannot be accepted before exact build evidence")
+    runtime = project_root.resolve() / "runtime"
+    evidence = _load(runtime / BUILD_EVIDENCE, "Chromium 157 build evidence")
+    source = {"sourceHead": PORT_HEAD, "sourcePatchSHA256": PORT_PATCH_SHA256,
+              "buildArgsSHA256": ARGS_SHA256,
+              "buildOutputDirectory": contract["portSource"]["buildOutputDirectory"]}
+    expected = _expected_provenance(contract, evidence, source, project_root)
+    if document != expected:
+        raise M157EvidenceError("Chromium 157 source provenance differs from pinned evidence")
+
+
+def expected_lock(provenance_path: Path, project_root: Path) -> dict[str, Any]:
+    provenance = _load(provenance_path, "Chromium 157 provenance")
+    verify_provenance(provenance, project_root)
+    contract = verify_contract(project_root)
+    base = contract["officialChromiumBase"]
+    return {
+        "schemaVersion": 4,
+        "status": "source-qualified",
+        "targetArchitecture": "arm64",
+        "sourceContractSHA256": _sha(project_root.resolve() / "runtime" / CONTRACT),
+        "sourceProvenanceSHA256": _sha(provenance_path),
+        "sourceAdoptionManifestSHA256": _sha(project_root.resolve() / "runtime" / ADOPTION),
+        "fingerprintChromium": {"repository": base["repository"], "tag": base["tag"],
+                                "commit": base["commit"], "tree": base["tree"],
+                                "chromiumVersion": VERSION,
+                                "licenseSHA256": contract["chromiumLicenseSHA256"]},
+        "ownedInputs": {"sourcePatchSHA256": PORT_PATCH_SHA256,
+                         "buildArgsSHA256": ARGS_SHA256},
+        "ownedManifests": {
+            "neantikPatchSeriesSHA256": _sha(project_root.resolve() / "runtime/nevision-patches/series.json"),
+            "appleDeviceTuplesSHA256": _sha(project_root.resolve() / "runtime/apple-device-tuples.json"),
+            "securityBaselineSHA256": _sha(project_root.resolve() / "runtime/security-baseline.json"),
+        },
+        "binaryBinding": {"status": "not-attested-by-this-document",
+                          "requiredEvidence": "schema-3-runtime-report",
+                          "policy": "This source-only lock makes no runtime, signing, notarization, publication or release claim."},
+    }
+
+
+def verify_lock(lock: dict[str, Any], provenance_path: Path, project_root: Path) -> dict[str, Any]:
+    if lock != expected_lock(provenance_path, project_root):
+        raise M157EvidenceError("Chromium 157 candidate lock is stale or mutated")
+    return lock

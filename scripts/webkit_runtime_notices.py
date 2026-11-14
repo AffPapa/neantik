@@ -488,6 +488,14 @@ MACHO_MAGICS = {
     )
 }
 RUNTIME_IMAGE_BINDING_FILE = "NeAntikRuntimeImageBinding.json"
+DB6_UPSTREAM_COMMIT = "db6a98765ec472910f9e0737f3f96f042c616e50"
+DB6_NOTICE_ROOT = Path("NeAntikRuntimeLicenses/WebKit-db6")
+DB6_RECIPIENT_RECEIPT = Path("NeAntikRuntimeEvidence/LocalWebKitRelink.json")
+DB6_SANDBOX_RESOURCE = "WebKit.framework/Versions/A/Resources/com.apple.WebKit.NetworkProcess.sb"
+DB6_BASELINE_SANDBOX_SHA256 = "e3e8a047e122938338f8e2a37e2d7e59d6f18ba20534c30765aaab9a579d2881"
+DB6_NOTICE_HEADING = "## Owned WebKit runtime notices and corresponding source"
+DB6_NOTICE_SECTION = '<section id="neantik-owned-webkit-db6-notices">'
+DB6_SOURCE_RELEASE = "https://github.com/AffPapa/neantik/releases/download/v1.0.0/"
 
 
 class NoticeError(RuntimeError):
@@ -996,6 +1004,244 @@ def _with_v382_runtime_hashes(function):
     return wrapped
 
 
+def _with_db6_source_offer(*, install: bool):
+    def decorate(legacy):
+        @wraps(legacy)
+        def wrapped(app, runtime_frameworks=None, *, project_root=PROJECT_ROOT,
+                    source_offer_root=None, source_offer_manifest_sha256=None,
+                    recipient_stage=None):
+            if source_offer_root is not None and not _CURRENT_PRIVATE_V446_QA.get():
+                manifest = read_db6_source_offer(source_offer_root, source_offer_manifest_sha256)
+                if manifest is not None:
+                    return _db6_notices(app, runtime_frameworks, source_offer_root, manifest,
+                                        source_offer_manifest_sha256, install=install,
+                                        recipient_stage=recipient_stage)
+            if recipient_stage is not None:
+                raise NoticeError("Recipient stage evidence requires the db6 source offer")
+            return legacy(app, runtime_frameworks, project_root=project_root,
+                          source_offer_root=source_offer_root,
+                          source_offer_manifest_sha256=source_offer_manifest_sha256)
+        return wrapped
+    return decorate
+
+
+def _db6_json(payload: bytes) -> dict:
+    try:
+        value = json.loads(payload)
+    except (ValueError, UnicodeError) as error:
+        raise NoticeError("WebKit source offer manifest is invalid JSON") from error
+    if not isinstance(value, dict):
+        raise NoticeError("WebKit source offer manifest must be an object")
+    return value
+
+
+def read_db6_source_offer(root: Path, expected_sha256: str | None) -> dict | None:
+    """Identify the db6 offer and enforce an independent manifest pin."""
+    path = _physical_path_beneath(root, Path("manifest.json"), label="WebKit source offer manifest")
+    with path.open("rb") as stream:
+        payload = stream.read(2_000_001)
+    if len(payload) > 2_000_000:
+        raise NoticeError("WebKit source offer manifest exceeds its size limit")
+    manifest = _db6_json(payload)
+    if manifest.get("noticeFormat") != "owned-webkit-db6":
+        return None
+    if root.is_symlink() or hashlib.sha256(payload).hexdigest() != expected_sha256:
+        raise NoticeError("db6 source offer requires its exact manifest SHA-256")
+    return manifest
+
+
+def _db6_files(root: Path, hashes: object) -> dict[Path, Path]:
+    if not isinstance(hashes, dict) or not hashes:
+        raise NoticeError("db6 offer requires a nonempty file inventory")
+    files = {}
+    for name, digest in hashes.items():
+        path = Path(name)
+        if (not path.parts or path.is_absolute() or path.as_posix() != name
+                or ".." in path.parts or re.fullmatch(r"[A-Za-z0-9_./+@-]+", name) is None
+                or not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None):
+            raise NoticeError(f"invalid db6 inventory entry: {name}")
+        source = _physical_path_beneath(root, path, label=f"db6 file {name}")
+        if sha256_file(source) != digest:
+            raise NoticeError(f"db6 file hash differs: {name}")
+        files[path] = source
+    return files
+
+
+def verify_db6_source_archives(root: Path, offer: dict) -> dict[Path, Path]:
+    archives = _db6_files(root, offer.get("sourceArchives"))
+    if set(archives) != {Path("WebKit-db6a98765e-upstream.tar.zst"),
+                         Path("NeAntik-WebKit-db6a98765e-build-inputs-revised.tar")}:
+        raise NoticeError("db6 source offer must include the upstream and recipient input archives")
+    return archives
+
+
+def verify_db6_runtime_resources(root: Path, offer: dict) -> None:
+    resources = offer.get("runtimeResourceSHA256")
+    required = {f"WebInspectorUI.framework/Versions/A/Resources/External/{name}/LICENSE"
+                for name, _, _ in WEBINSPECTOR_LICENSES}
+    if not isinstance(resources, dict) or not required <= resources.keys():
+        raise NoticeError("db6 runtime resource inventory omits Web Inspector licenses")
+    _db6_files(root, resources)
+
+
+def _db6_recipient_images(stage: Path, expected_sha256: str, runtime_frameworks: Path,
+                          image_paths: set[str], expected_sandbox: str) -> dict[str, str]:
+    import webkit_network_sandbox_pin as sandbox_pin
+
+    _physical_file(stage, label="db6 recipient stage receipt")
+    if stage.stat().st_size > 2_000_000:
+        raise NoticeError("db6 recipient stage receipt exceeds its size limit")
+    payload = stage.read_bytes()
+    if hashlib.sha256(payload).hexdigest() != expected_sha256:
+        raise NoticeError("db6 recipient stage receipt differs from its pin")
+    receipt = _db6_json(payload)
+    images = receipt.get("machOSHA256")
+    policy = receipt.get("networkSandbox")
+    if (receipt.get("status") != "staged-pre-sign-only"
+            or receipt.get("upstreamCommit") != DB6_UPSTREAM_COMMIT
+            or receipt.get("launchQualified") is not False
+            or type(receipt.get("machOCount")) is not int or receipt["machOCount"] != len(image_paths)
+            or not isinstance(images, dict) or images.keys() != image_paths
+            or not isinstance(policy, dict) or policy.get("policyRevision") != 13
+            or policy.get("path") != sandbox_pin.RELATIVE_PATH.as_posix()
+            or policy.get("patchedSHA256") != expected_sandbox):
+        raise NoticeError("invalid db6 recipient stage receipt")
+    try:
+        sandbox_pin.verify(runtime_frameworks, expected_sandbox)
+    except ValueError as error:
+        raise NoticeError(f"db6 recipient sandbox verification failed: {error}") from error
+    return images
+
+
+def _db6_notices(app: Path, runtime_frameworks: Path | None, offer_root: Path,
+                 offer: dict, digest: str, *, install: bool,
+                 recipient_stage: tuple[Path, str] | None = None) -> dict[str, str]:
+    from owned_webkit_successor_evidence import (
+        EvidenceError, verify_runtime_images, verify_signed_image_binding,
+    )
+
+    if (type(offer.get("schemaVersion")) is not int or offer["schemaVersion"] != 1
+            or offer.get("upstreamCommit") != DB6_UPSTREAM_COMMIT
+            or runtime_frameworks is None or runtime_frameworks.is_symlink()
+            or not runtime_frameworks.is_dir()):
+        raise NoticeError("db6 notice verification requires its physical runtime and source offer")
+    inputs = offer.get("preSignImages")
+    image_paths = V382_REQUIRED_OUTPUTS | {"libswiftCompatibilitySpan.dylib",
+                                          "WebKit.framework/Versions/A/Frameworks/libWebKitSwift.dylib"}
+    if not isinstance(inputs, dict) or inputs.keys() != image_paths:
+        raise NoticeError("db6 source offer must bind all 16 pre-sign images")
+    verify_db6_runtime_resources(runtime_frameworks, offer)
+    if recipient_stage is not None:
+        expected_sandbox = offer["runtimeResourceSHA256"].get(DB6_SANDBOX_RESOURCE, DB6_BASELINE_SANDBOX_SHA256)
+        inputs = _db6_recipient_images(*recipient_stage, runtime_frameworks, image_paths, expected_sandbox)
+
+    binding_candidates = (
+        runtime_frameworks / RUNTIME_IMAGE_BINDING_FILE,
+        runtime_frameworks.parent / f"{runtime_frameworks.name}.{RUNTIME_IMAGE_BINDING_FILE}",
+        runtime_frameworks.parent / "Resources/NeAntikRuntimeEvidence" / RUNTIME_IMAGE_BINDING_FILE,
+    )
+    bindings = [path for path in binding_candidates if path.exists() or path.is_symlink()]
+    if len(bindings) != 1:
+        raise NoticeError("db6 runtime requires one signed image binding")
+    binding = bindings[0]
+    _physical_file(binding, label="db6 signed runtime image binding")
+    if binding.stat().st_size > 2_000_000:
+        raise NoticeError("db6 signed runtime image binding exceeds its size limit")
+    try:
+        binding_payload = binding.read_bytes()
+        signed = verify_signed_image_binding(_db6_json(binding_payload), inputs)
+        verify_runtime_images(runtime_frameworks.resolve(strict=True), signed)
+    except EvidenceError as error:
+        raise NoticeError(f"db6 signed runtime image verification failed: {error}") from error
+
+    archives = verify_db6_source_archives(offer_root, offer)
+    notices = _db6_files(offer_root, offer.get("noticeFiles"))
+    notice_hashes = offer["noticeFiles"]
+    required = {"Swift-CompatibilitySpan-LICENSE.txt": LICENSE_SHA256,
+                "WebCore-LICENSE-LGPL-2.txt": WEBCORE_LGPL2_SHA256,
+                "WebCore-LICENSE-LGPL-2.1.txt": WEBCORE_LGPL21_SHA256,
+                "Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+                "JavaScriptCore/BinaryNinja/LICENSE-binja.txt": JSC_BINJA_ATTRIBUTION_SHA256}
+    if (Path("NOTICE.txt") not in notices
+            or any(notice_hashes.get(name) != expected for name, expected in required.items())):
+        raise NoticeError("db6 source offer omits required license and notice texts")
+
+    markdown = _safe_destination(app, NOTICE_DESTINATION, create_parent=False)
+    html_notice = _safe_destination(app, HTML_DESTINATION, create_parent=False)
+    current_markdown = markdown.read_bytes().decode("utf-8")
+    current_html = html_notice.read_bytes().decode("utf-8")
+    compliance = _compliance_manifest(app, current_html.encode("utf-8"))
+    manifest_name = DB6_NOTICE_ROOT / "source-offer-manifest.json"
+    markdown_section = (f"{DB6_NOTICE_HEADING}\n\n"
+                        f"- [Runtime license and notice index]({DB6_NOTICE_ROOT}/NOTICE.txt)\n"
+                        f"- [Source offer manifest]({manifest_name}) (SHA-256 `{digest}`)\n")
+    html_section = (f"{DB6_NOTICE_SECTION}\n<h2>Owned WebKit runtime notices and corresponding source</h2>\n"
+                    f'<p><a href="../{DB6_NOTICE_ROOT}/NOTICE.txt">Runtime license and notice index</a> '
+                    f'· <a href="../{manifest_name}">Source offer manifest</a> '
+                    f'(SHA-256 <code>{digest}</code>)</p>\n<ul>\n')
+    for archive in sorted(archives):
+        url = DB6_SOURCE_RELEASE + archive.name
+        archive_digest = offer["sourceArchives"][archive.name]
+        markdown_section += f"- [{archive.name}]({url}) (SHA-256 `{archive_digest}`)\n"
+        html_section += (f'<li><a href="{url}">{archive.name}</a> '
+                         f'(SHA-256 <code>{archive_digest}</code>)</li>\n')
+    html_section += "</ul>\n</section>\n"
+    clean_markdown = _remove_owned_markdown_sections(current_markdown)
+    clean_html = _remove_owned_html_sections(current_html)
+    if re.search(r"<body(?:\s[^>]*)?>", clean_html, re.IGNORECASE) is None:
+        raise NoticeError("generated third-party HTML notice has no body element")
+    closing_body = re.search(r"</(?:body|html)>\s*(?:</html>\s*)?\Z", clean_html, re.IGNORECASE)
+    position = closing_body.start() if closing_body else len(clean_html)
+    final_markdown = (clean_markdown.rstrip() + "\n\n" + markdown_section).encode("utf-8")
+    final_html = (clean_html[:position] + html_section + clean_html[position:]).encode("utf-8")
+    if not install and (markdown.read_bytes() != final_markdown or html_notice.read_bytes() != final_html):
+        raise NoticeError("installed db6 notice sections differ from the source offer")
+
+    copies = {DB6_NOTICE_ROOT / relative: source for relative, source in notices.items()}
+    if manifest_name in copies:
+        raise NoticeError("db6 notice inventory shadows the source offer manifest")
+    copies[manifest_name] = offer_root / "manifest.json"
+    recipient_relative = Path("Contents/Resources") / DB6_RECIPIENT_RECEIPT
+    recipient_receipt = app / recipient_relative
+    if recipient_stage is None and os.path.lexists(recipient_receipt):
+        raise NoticeError("Local WebKit relink receipt is not accepted for publisher verification")
+    if recipient_stage is not None:
+        recipient_receipt = _safe_destination(app, recipient_relative, create_parent=install)
+        local_record = {
+            "schemaVersion": 1,
+            "scope": "local-webkit-relink",
+            "sourceOfferManifestSHA256": digest,
+            "recipientStageSHA256": recipient_stage[1],
+            "signedImageBindingSHA256": hashlib.sha256(binding_payload).hexdigest(),
+            "changedImages": sorted(name for name in inputs if inputs[name] != offer["preSignImages"][name]),
+            "releaseQualified": False,
+        }
+        local_bytes = (json.dumps(local_record, sort_keys=True, indent=2) + "\n").encode()
+        if install:
+            _atomic_write(recipient_receipt, local_bytes)
+        _physical_file(recipient_receipt, label="local WebKit relink receipt")
+        if recipient_receipt.read_bytes() != local_bytes:
+            raise NoticeError("Local WebKit relink receipt differs from its runtime")
+    destinations = {_safe_destination(app, Path("Contents/Resources") / relative,
+                                      create_parent=install): source
+                    for relative, source in copies.items()}
+    for destination, source in destinations.items():
+        if install:
+            _atomic_write(destination, source.read_bytes())
+        if sha256_file(destination) != sha256_file(source):
+            raise NoticeError(f"installed db6 notice bytes differ: {destination.name}")
+    if sha256_file(app / "Contents/Resources" / manifest_name) != digest:
+        raise NoticeError("installed db6 source offer manifest differs from the pin")
+    if install:
+        _atomic_write(markdown, final_markdown)
+        _atomic_write(html_notice, final_html)
+        _refresh_compliance_notice_hash(compliance, final_html)
+    return {"sourceOfferManifestSHA256": digest,
+            "licenseSHA256": LICENSE_SHA256,
+            "webcoreLGPL2SHA256": WEBCORE_LGPL2_SHA256,
+            "webcoreLGPL21SHA256": WEBCORE_LGPL21_SHA256}
+
+
 def _runtime_image_build_sha(runtime_frameworks: Path, relative: Path,
                              expected_source_sha256: str | None) -> str:
     """Return the pinned pre-sign build hash for an exact signed runtime image.
@@ -1193,7 +1439,7 @@ def _remove_owned_markdown_sections(text: str) -> str:
     index = 0
     while index < len(lines):
         heading = lines[index].rstrip("\r\n")
-        if heading not in OWNED_MARKDOWN_MARKERS:
+        if heading not in (*OWNED_MARKDOWN_MARKERS, DB6_NOTICE_HEADING):
             result.append(lines[index])
             index += 1
             continue
@@ -1207,7 +1453,7 @@ def _remove_owned_markdown_sections(text: str) -> str:
 
 def _remove_owned_html_sections(text: str) -> str:
     """Remove prior generated HTML sections by unique section ID."""
-    for marker in OWNED_HTML_MARKERS:
+    for marker in (*OWNED_HTML_MARKERS, DB6_NOTICE_SECTION):
         count = text.count(marker)
         if count > 1:
             raise NoticeError(f"duplicate owned-WebKit HTML marker: {marker}")
@@ -2764,7 +3010,8 @@ def _atomic_write(path: Path, data: bytes, *, mode: int | None = None) -> None:
 
 
 def _compliance_manifest(app: Path, current_html: bytes) -> tuple[Path, dict] | None:
-    path = app / "Contents/Resources/NeAntikRuntimeCompliance/compliance-manifest.json"
+    relative = HTML_DESTINATION.with_name("compliance-manifest.json")
+    path = _safe_destination(app, relative, create_parent=False)
     if not path.exists() and not path.is_symlink():
         return None
     _physical_file(path, label="Chromium compliance manifest")
@@ -3750,21 +3997,27 @@ def preflight_owned_webkit_notices(
     app: Path, runtime_frameworks: Path, *, project_root: Path = PROJECT_ROOT,
     source_offer_root: Path | None = None,
     source_offer_manifest_sha256: str | None = None,
+    recipient_stage: tuple[Path, str] | None = None,
 ) -> None:
     """Validate notice inputs in a disposable app before changing the signed app."""
     with tempfile.TemporaryDirectory(prefix="neantik-webkit-notice-preflight-") as temporary:
         scratch = Path(temporary) / "NeAntik.app"
-        for relative in (NOTICE_DESTINATION, HTML_DESTINATION):
+        compliance = HTML_DESTINATION.with_name("compliance-manifest.json")
+        for relative in (NOTICE_DESTINATION, HTML_DESTINATION, compliance):
             source = _safe_destination(app, relative, create_parent=False)
+            if relative == compliance and not source.exists():
+                continue
             _physical_file(source, label=f"app notice {relative}")
             destination = scratch / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(source, destination)
         install_owned_webkit_notices(scratch, runtime_frameworks, project_root=project_root,
                                      source_offer_root=source_offer_root,
-                                     source_offer_manifest_sha256=source_offer_manifest_sha256)
+                                     source_offer_manifest_sha256=source_offer_manifest_sha256,
+                                     recipient_stage=recipient_stage)
 
 
+@_with_db6_source_offer(install=True)
 @_with_v382_runtime_hashes
 def install_owned_webkit_notices(
     app: Path, runtime_frameworks: Path, *, project_root: Path = PROJECT_ROOT,
@@ -4331,6 +4584,7 @@ def install_owned_webkit_notices(
     }
 
 
+@_with_db6_source_offer(install=False)
 @_with_v382_runtime_hashes
 def verify_owned_webkit_notices(
     app: Path, runtime_frameworks: Path | None = None, *, project_root: Path = PROJECT_ROOT,
@@ -5008,7 +5262,14 @@ def main() -> int:
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--source-offer-root", type=Path)
     parser.add_argument("--source-offer-manifest-sha256")
+    parser.add_argument("--recipient-stage", type=Path,
+                        help="Verify a local db6 recipient build against its pre-sign stage")
+    parser.add_argument("--recipient-stage-sha256")
     args = parser.parse_args()
+    if (args.recipient_stage is None) != (args.recipient_stage_sha256 is None):
+        parser.error("recipient stage and SHA-256 must be supplied together")
+    if args.recipient_stage is not None and args.install:
+        parser.error("install a relinked runtime with package-webkit-host.py --recipient-relink")
     source_offer_root = args.source_offer_root
     if source_offer_root is None:
         configured_offer = os.environ.get("NEANTIK_WEBKIT_SOURCE_OFFER_ROOT")
@@ -5026,7 +5287,9 @@ def main() -> int:
             result = verify_owned_webkit_notices(
                 args.app, args.runtime_frameworks, project_root=args.project_root,
                 source_offer_root=source_offer_root,
-                source_offer_manifest_sha256=args.source_offer_manifest_sha256)
+                source_offer_manifest_sha256=args.source_offer_manifest_sha256,
+                recipient_stage=(args.recipient_stage, args.recipient_stage_sha256)
+                if args.recipient_stage is not None else None)
     except (OSError, NoticeError) as error:
         print(f"WebKit runtime notice check failed: {error}", file=sys.stderr)
         return 1

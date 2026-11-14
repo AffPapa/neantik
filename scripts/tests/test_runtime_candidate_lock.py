@@ -26,6 +26,19 @@ PROMOTION_SPEC.loader.exec_module(PROMOTION)
 
 
 class RuntimeCandidateLockTests(unittest.TestCase):
+    def test_m157_candidate_lock_refuses_unpinned_synthetic_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            provenance = Path(temporary) / "source-provenance.json"
+            provenance.write_text(
+                json.dumps({"targetChromiumVersion": "157.0.8103.39"}),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                SOURCE.SourceProvenanceError,
+                "source provenance differs from pinned evidence",
+            ):
+                CANDIDATE.expected_candidate_lock(provenance, project_root=PROJECT_ROOT)
+
     def test_m15680_candidate_lock_refuses_until_completed_build_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             fixture = Path(temporary)

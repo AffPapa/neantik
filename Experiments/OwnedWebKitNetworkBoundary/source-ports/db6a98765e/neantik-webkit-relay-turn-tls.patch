@@ -1,0 +1,42 @@
+diff --git a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
+--- a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
++++ b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
+@@ -32,6 +32,7 @@
+ #include "Logging.h"
+ #include "NetworkRTCUtilitiesCocoa.h"
+ #include "RTCSocketCreationFlags.h"
++#include <Security/Security.h>
+ #include <WebCore/STUNMessageParsing.h>
+ #include <pal/spi/cocoa/NetworkSPI.h>
+ #include <pal/spi/cf/CFNetworkSPI.h>
+@@ -97,8 +98,28 @@
+ static RetainPtr<nw_connection_t> createNWConnection(NetworkRTCProvider& rtcProvider, UTF8CStringView hostName, UTF8CStringView port, bool isTLS, const String& attributedBundleIdentifier, RTCSocketCreationFlags flags, const WebCore::RegistrableDomain& domain)
+ {
+     RetainPtr host = adoptNS(nw_endpoint_create_host(hostName.utf8(), port.utf8()));
+-    // FIXME: Handle TLS certificate validation like for other network code paths, using sec_protocol_options_set_verify_block
+-    RetainPtr tcpTLS = adoptNS(nw_parameters_create_secure_tcp(isTLS ? NW_PARAMETERS_DEFAULT_CONFIGURATION : NW_PARAMETERS_DISABLE_PROTOCOL, ^(nw_protocol_options_t tcp_options) {
++    nw_parameters_configure_protocol_block_t configureTLS = isTLS ? NW_PARAMETERS_DEFAULT_CONFIGURATION : NW_PARAMETERS_DISABLE_PROTOCOL;
++    if (isTLS && rtcProvider.requiresRTCProxy()) {
++        configureTLS = ^(nw_protocol_options_t tlsOptions) {
++            RetainPtr securityOptions = adoptNS(nw_tls_copy_sec_protocol_options(tlsOptions));
++            sec_protocol_options_set_peer_authentication_required(securityOptions.get(), true);
++            auto queue = tcpSocketQueueSingleton();
++            sec_protocol_options_set_verify_block(securityOptions.get(), ^(sec_protocol_metadata_t, sec_trust_t trust, sec_protocol_verify_complete_t complete) {
++                RetainPtr certificateTrust = adoptCF(trust ? sec_trust_copy_ref(trust) : nullptr);
++                // System trust must not fetch missing intermediates outside the profile broker.
++                if (!certificateTrust || SecTrustSetNetworkFetchAllowed(certificateTrust.get(), false) != errSecSuccess) {
++                    complete(false);
++                    return;
++                }
++                auto status = SecTrustEvaluateAsyncWithError(certificateTrust.get(), queue, ^(SecTrustRef, bool trusted, CFErrorRef) {
++                    complete(trusted);
++                });
++                if (status != errSecSuccess)
++                    complete(false);
++            }, queue);
++        };
++    }
++    RetainPtr tcpTLS = adoptNS(nw_parameters_create_secure_tcp(configureTLS, ^(nw_protocol_options_t tcp_options) {
+         nw_tcp_options_set_no_delay(tcp_options, true);
+     }));
+ 

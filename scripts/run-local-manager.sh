@@ -102,6 +102,20 @@ if [[ -L "$SOURCE_APP" || ! -d "$SOURCE_APP" || \
   exit 66
 fi
 
+# This launcher stages system WebKit only. Do not carry a nested runtime
+# or its trust pins into an ad-hoc signed Dev manager.
+for input_app in "$SOURCE_APP" "$DEVELOPMENT_APP"; do
+  [[ -d "$input_app" ]] || continue
+  owned_payload="$input_app/Contents/Helpers/webkit-v1"
+  if [[ -e "$owned_payload" || -L "$owned_payload" ]] ||
+     /usr/libexec/PlistBuddy -c 'Print :NeAntikWebKitHostV1' "$input_app/Contents/Info.plist" >/dev/null 2>&1 ||
+     /usr/libexec/PlistBuddy -c 'Print :NeAntikWebKitRuntimeV1' "$input_app/Contents/Info.plist" >/dev/null 2>&1 ||
+     /usr/libexec/PlistBuddy -c 'Print :NeAntikWebKitNetworkProcessV1' "$input_app/Contents/Info.plist" >/dev/null 2>&1; then
+    echo "Dev launcher requires a source and destination without a preexisting owned WebKit host." >&2
+    exit 78
+  fi
+done
+
 mkdir -p \
   "$DEVELOPMENT_ROOT" \
   "$SWIFT_CACHE" \
@@ -166,6 +180,9 @@ if (( REFRESH_RUNTIME == 1 )) || \
   /bin/cp -cR "$SOURCE_APP" "$DEVELOPMENT_APP"
 fi
 
+# The Dev copy uses an ad-hoc signature and its own bundle identifier.
+/bin/rm -f "$DEVELOPMENT_APP/Contents/embedded.provisionprofile"
+
 # A cached Dev.app may contain SiteProtection resources from an older manager.
 # Refresh only the disposable app copy so the compiled manager and sealed
 # policy payload always come from the same source checkout.
@@ -177,6 +194,14 @@ python3 -B "$PROJECT_DIR/scripts/verify_site_protection_package.py" \
   --project-root "$PROJECT_DIR" --app "$DEVELOPMENT_APP"
 
 INFO_PLIST="$DEVELOPMENT_APP/Contents/Info.plist"
+# The copied release marker describes its original executable, not this build.
+if [[ "${NEANTIK_CHROMIUM_ONLY:-0}" == "1" ]]; then
+  engine_scope="chromium-only"
+else
+  engine_scope="chromium-system-webkit-dev"
+fi
+/usr/libexec/PlistBuddy -c 'Delete :NeAntikEngineScope' "$INFO_PLIST" >/dev/null 2>&1 || true
+/usr/libexec/PlistBuddy -c "Add :NeAntikEngineScope string $engine_scope" "$INFO_PLIST"
 DEVELOPMENT_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PROJECT_DIR/Resources/Info.plist")"
 DEVELOPMENT_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PROJECT_DIR/Resources/Info.plist")"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $DEVELOPMENT_VERSION" "$INFO_PLIST"

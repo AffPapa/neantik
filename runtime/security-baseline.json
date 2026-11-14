@@ -1,21 +1,21 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-11-03",
-  "publishedAt": "2026-10-29",
+  "checkedAt": "2026-11-14",
+  "publishedAt": "2026-11-11",
   "maximumAgeDays": 0,
-  "minimumPublicChromiumVersion": "156.0.8078.80",
+  "minimumPublicChromiumVersion": "157.0.8103.79",
   "alsoObservedPublicChromiumVersions": [
-    "156.0.8078.79"
+    "157.0.8103.78"
   ],
   "channel": "Desktop Stable",
   "platforms": [
     "macOS"
   ],
-  "securityFixCount": 21,
-  "reference": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_02107719452.html",
+  "securityFixCount": 83,
+  "reference": "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01744469280.html",
   "referenceTitle": "Stable Channel Update for Desktop",
   "sourceLabel": "Chrome Releases",
-  "releaseBoundary": "This manually pinned primary-source security baseline is not a live updater. Refresh checkedAt, versions, securityFixCount and reference on the day of every public Direct release. A securityFixCount of 0 means the official post had not enumerated fixes, not that there were no fixes. This names the current widely deployed M156 stable floor; same-train version comparison is not a source review for another Chromium branch.",
-  "policy": "As verified 2026-11-03, the latest published macOS Desktop Stable baseline remains Chromium 156.0.8078.80 from 2026-10-29, with 156.0.8078.79 also listed for Windows and Mac. Chrome 157 remains an Early Stable rollout rather than the broadly released macOS Stable floor. The NeAntik runtime must be built from the pinned official stable source at or above the macOS floor. Cross-branch runtime use still requires source-bound review.",
+  "releaseBoundary": "This manually pinned primary-source security baseline is not a live updater. Refresh the observation date, versions and reference on the day of each public Direct release. A source-version floor does not establish fix survival in the custom port, candidate runtime behavior or release qualification.",
+  "policy": "Chrome Releases documents 83 security fixes in macOS Desktop Stable 157.0.8103.78/.79. Chrome VersionHistory still shows 157.0.8103.79 serving Apple Silicon at fraction 1. The .80 tag is one commit past the pinned .79 tip and changes only chrome/VERSION. Chrome Releases identifies 158.0.8127.36/.37 as Early Stable. The pinned NeAntik port remains 157.0.8103.79. The upstream advisory count describes the upstream release.",
   "securityFixCountStatus": "count-reported-by-official-post"
 }

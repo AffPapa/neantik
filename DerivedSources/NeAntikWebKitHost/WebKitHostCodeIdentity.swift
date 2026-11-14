@@ -1,3 +1,4 @@
+import CoreFoundation
 import CryptoKit
 import Darwin
 import Foundation
@@ -19,6 +20,62 @@ enum WebKitHostCodeIdentity {
     static let hostBundleRelativePath = "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
     static let hostExecutableRelativePath =
         hostBundleRelativePath + "/Contents/MacOS/NeAntikWebKitHost"
+    static let presenterCapabilityKey = "NeAntikWebKitDetachedPresenterV1"
+
+    enum QASessionTransport: Equatable {
+        case ordinary, detachedPipe, detachedSocket, detachedMetal, detachedPresenter
+
+        var usesDuplexSocket: Bool { self == .detachedSocket || usesFrames }
+        var usesFrames: Bool { self == .detachedMetal || self == .detachedPresenter }
+    }
+
+    static func qaSessionTransport(for helper: URL) throws -> QASessionTransport {
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_PRODUCTION
+        let infoURL = helper.deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Info.plist")
+        guard isPhysicalFile(infoURL), let info = NSDictionary(contentsOf: infoURL) as? [String: Any]
+        else { throw Failure.unsafeBundle }
+        func exactBoolean(_ raw: Any?, equals expected: Bool) -> Bool {
+            guard let value = raw as? NSNumber, CFGetTypeID(value) == CFBooleanGetTypeID()
+            else { return false }
+            return value.boolValue == expected
+        }
+        #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+        guard let manager = managerBundle(for: helper) else { throw Failure.unsafeBundle }
+        let managerInfoURL = manager.appendingPathComponent("Contents/Info.plist")
+        guard isPhysicalFile(managerInfoURL),
+              let managerInfo = NSDictionary(contentsOf: managerInfoURL) as? [String: Any]
+        else { throw Failure.unsafeBundle }
+        let hostPresenter = info[presenterCapabilityKey]
+        let managerPresenter = managerInfo[presenterCapabilityKey]
+        guard hostPresenter != nil || managerPresenter != nil else { return .ordinary }
+        guard info["CFBundleIdentifier"] as? String == hostIdentifier,
+              managerInfo["CFBundleIdentifier"] as? String == managerIdentifier,
+              exactBoolean(hostPresenter, equals: true), exactBoolean(managerPresenter, equals: true)
+        else { throw Failure.unsafeBundle }
+        return .detachedPresenter
+        #else
+        let detached = info["NeAntikQADetachedSession"]
+        let sockets = info["NeAntikQADetachedSocketTransportV1"]
+        let metal = info["NeAntikQAMetalFrameTransportV1"]
+        guard detached != nil || sockets != nil || metal != nil else { return .ordinary }
+        guard info["CFBundleIdentifier"] as? String == developmentHostIdentifier,
+              let successor = info["NeAntikOwnedWebKitPrivateSuccessorV1"] as? [String: Any],
+              exactBoolean(successor["releaseQualified"], equals: false),
+              exactBoolean(detached, equals: true) else { throw Failure.unsafeBundle }
+        if let metal {
+            guard exactBoolean(metal, equals: true), exactBoolean(sockets, equals: true)
+            else { throw Failure.unsafeBundle }
+            return .detachedMetal
+        }
+        guard let sockets else { return .detachedPipe }
+        guard exactBoolean(sockets, equals: true) else { throw Failure.unsafeBundle }
+        return .detachedSocket
+        #endif
+        #else
+        return .ordinary
+        #endif
+    }
 
     static func expectedHostIdentifier(for managerIdentifier: String?) -> String? {
         if managerIdentifier == Self.managerIdentifier { return Self.hostIdentifier }
