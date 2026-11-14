@@ -304,6 +304,10 @@ enum WebKitFrameTransport {
         private var sequence: UInt64 = 1
         private var pending = false
 
+        init(generation: UUID) {
+            self.generation = generation
+        }
+
         mutating func accept(_ frame: Frame) throws {
             guard frame.generation == generation, frame.sequence == sequence, sequence < UInt64.max,
                   frame.kind == (pending ? .consumed : .ready),
