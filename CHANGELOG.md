@@ -1,6 +1,11 @@
 # NeAntik changelog
 
-## Direct 1.0.0 (207) — production candidate, qualification pending
+## Direct 1.0.0 (208) — production candidate, qualification pending
+
+- Connect keyboard navigation and native accessibility to page controls in the detached WebKit window.
+- Document how to preserve and verify the release warning-color catalog when relinking from a clean recipient build.
+
+## Direct 1.0.0 (207) — internal qualification candidate
 
 - Add a bundled WebKit engine alongside Chromium 157.0.8103.79. New profiles can select either engine, and existing profiles retain their engine and data.
 - Run owned WebKit profiles in a separate host and present the browser window through a native Metal surface. WebKit uses the macOS language and time zone.
