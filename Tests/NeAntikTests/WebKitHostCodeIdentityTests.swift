@@ -4,6 +4,80 @@ import Testing
 @testable import NeAntik
 
 @Suite struct WebKitHostCodeIdentityTests {
+    #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+    @Test func detachedPresenterRequiresExactProductionMetadataOnBothBundles() throws {
+        let app = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID()).app")
+        defer { try? FileManager.default.removeItem(at: app) }
+        let executable = app.appendingPathComponent(WebKitHostCodeIdentity.hostExecutableRelativePath)
+        try FileManager.default.createDirectory(at: executable.deletingLastPathComponent(),
+                                                withIntermediateDirectories: true)
+        let managerInfo = app.appendingPathComponent("Contents/Info.plist")
+        let hostInfo = executable.deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Info.plist")
+        let key = WebKitHostCodeIdentity.presenterCapabilityKey
+        func write(_ manager: Any?, _ host: Any?, managerID: String = WebKitHostCodeIdentity.managerIdentifier) throws {
+            let definitions: [(URL, String, Any?)] = [
+                (managerInfo, managerID, manager),
+                (hostInfo, WebKitHostCodeIdentity.hostIdentifier, host)
+            ]
+            for (destination, id, capability) in definitions {
+                var info: [String: Any] = ["CFBundleIdentifier": id]
+                info[key] = capability
+                try PropertyListSerialization.data(fromPropertyList: info, format: .binary, options: 0)
+                    .write(to: destination)
+            }
+        }
+        try write(nil, nil)
+        #expect(try WebKitHostCodeIdentity.qaSessionTransport(for: executable) == .ordinary)
+        try write(true, true)
+        #expect(try WebKitHostCodeIdentity.qaSessionTransport(for: executable) == .detachedPresenter)
+        for (manager, host) in [(true, nil), (nil, true), (true, false), (1, true)] as [(Any?, Any?)] {
+            try write(manager, host)
+            #expect(throws: WebKitHostCodeIdentity.Failure.unsafeBundle) {
+                try WebKitHostCodeIdentity.qaSessionTransport(for: executable)
+            }
+        }
+        try write(true, true, managerID: "app.neantik.desktop.dev")
+        #expect(throws: WebKitHostCodeIdentity.Failure.unsafeBundle) {
+            try WebKitHostCodeIdentity.qaSessionTransport(for: executable)
+        }
+    }
+    #endif
+
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    @Test func privateSocketModeRequiresExactBooleanAndDetachedDevIdentity() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let contents = root.appendingPathComponent("Contents")
+        let executable = contents.appendingPathComponent("MacOS/NeAntikWebKitHost")
+        try FileManager.default.createDirectory(at: executable.deletingLastPathComponent(),
+                                                withIntermediateDirectories: true)
+        let infoURL = contents.appendingPathComponent("Info.plist")
+        func write(_ info: [String: Any]) throws {
+            try PropertyListSerialization.data(fromPropertyList: info, format: .binary, options: 0)
+                .write(to: infoURL)
+        }
+        var info: [String: Any] = [
+            "CFBundleIdentifier": "app.neantik.desktop.dev.webkit-host",
+            "NeAntikOwnedWebKitPrivateSuccessorV1": ["releaseQualified": false],
+            "NeAntikQADetachedSession": true
+        ]
+        try write(info)
+        #expect(try WebKitHostCodeIdentity.qaSessionTransport(for: executable) == .detachedPipe)
+        info["NeAntikQADetachedSocketTransportV1"] = true
+        try write(info)
+        #expect(try WebKitHostCodeIdentity.qaSessionTransport(for: executable) == .detachedSocket)
+        info["NeAntikQAMetalFrameTransportV1"] = true
+        try write(info)
+        #expect(try WebKitHostCodeIdentity.qaSessionTransport(for: executable) == .detachedMetal)
+        info["NeAntikQADetachedSocketTransportV1"] = 1
+        try write(info)
+        #expect(throws: WebKitHostCodeIdentity.Failure.unsafeBundle) {
+            try WebKitHostCodeIdentity.qaSessionTransport(for: executable)
+        }
+    }
+    #endif
+
     @Test func failuresExplainTheSafeActionWithoutExposingPathsOrSecrets() {
         #expect(WebKitHostCodeIdentity.Failure.hostHashMismatch.errorDescription ==
                 "Файл WebKit-host не совпадает с проверочной записью приложения. Нужна новая сборка.")

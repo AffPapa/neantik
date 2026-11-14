@@ -167,7 +167,9 @@ struct MCPProfileManagementTests {
         #expect(intent["siteProtectionScope"] as? String == "NeAntik known-domain and tracker filters only; not Google Safe Browsing or unsafe-download scanning")
         let properties = try #require(MCPOutputSchemas.schema(for: "profile_get")["properties"] as? [String: Any])
         let intentSchema = try #require(properties["privacyPolicyIntent"] as? [String: Any])
-        let intentProperties = try #require(intentSchema["properties"] as? [String: Any])
+        let variants = try #require(intentSchema["oneOf"] as? [[String: Any]])
+        #expect(variants.contains { $0["type"] as? String == "null" })
+        let intentProperties = try #require(variants.first { $0["type"] as? String == "object" }?["properties"] as? [String: Any])
         let siteProtectionScope = try #require(intentProperties["siteProtectionScope"] as? [String: Any])
         #expect(siteProtectionScope["const"] as? String == intent["siteProtectionScope"] as? String)
         #expect((siteProtectionScope["description"] as? String)?.contains("not proof") == true)
@@ -303,6 +305,39 @@ struct MCPProfileManagementTests {
         args = request(changed); args["changes"] = ["webKitMediaPolicy": "grant"]
         await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
         await #expect(throws: Error.self) { try await engine.call("profile_create", ["name": "Wrong engine", "changes": ["webKitMediaPolicy": "deny"]]) }
+    }
+
+    @Test func webKitPeerConnectionBlockIsPersistedAndRevisionChecked() async throws {
+        guard BrowserEngine.webkit.isAvailableInBuild else { return }
+        let (root, engine, _) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let created = try await engine.call("profile_create", [
+            "name": "Own WebKit WebRTC control", "engine": "webkit",
+            "changes": ["startURL": "about:blank", "webKitBlockPeerConnections": true]
+        ])
+        #expect(created["webKitBlockPeerConnections"] as? Bool == true)
+        #expect(created["privacyPolicyIntent"] is NSNull)
+        let idString = try #require(created["id"] as? String)
+        let id = try #require(UUID(uuidString: idString))
+        let saved = try ProfileStore.decodeProfiles(Data(contentsOf: engine.store.paths.profilesFile))
+        #expect(saved.first { $0.id == id }?.webKitBlockPeerConnections == true)
+        #expect(saved.first { $0.id == id }?.privacyPolicy == .legacy)
+
+        var args = request(created)
+        args["changes"] = ["webKitBlockPeerConnections": false]
+        let updated = try await engine.call("profile_update", args)
+        #expect(updated["webKitBlockPeerConnections"] as? Bool == false)
+        await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
+
+        args = request(updated)
+        args["changes"] = ["webKitBlockPeerConnections": 1]
+        await #expect(throws: Error.self) { try await engine.call("profile_update", args) }
+        await #expect(throws: Error.self) {
+            try await engine.call("profile_create", [
+                "name": "Wrong engine", "changes": ["webKitBlockPeerConnections": true]
+            ])
+        }
     }
 
     @Test func chromiumOnlyDescriptionsDoNotOfferWebKitLaunch() throws {
@@ -602,6 +637,32 @@ struct MCPProfileManagementTests {
         #expect(engine.health.state(for: engine.store.profile(withID: UUID(uuidString: profileID)!)!) == nil)
         await #expect(throws: MCPProfileManagement.Failure.self) {
             try await engine.call("profile_start", ["profileID": profileID, "expectedRevision": localRevision])
+        }
+        // A fresh store read can see a proxy changed by another local writer.
+        var changed = try #require(engine.store.profile(withID: UUID(uuidString: profileID)!))
+        changed.proxy?.port = 10
+        let saved = try engine.store.upsert(changed)
+        do {
+            _ = try await engine.call("profile_check_proxy", request(saved))
+            Issue.record("QA preflight accepted a port outside its authorization")
+        } catch MCPProfileManagement.Failure.denied {
+        }
+    }
+
+    @Test func proxyCheckSchemaKeepsOrdinaryAndSyntheticResultsDistinct() throws {
+        let schema = MCPOutputSchemas.schema(for: "profile_check_proxy")
+        #expect(schema["type"] as? String == "object")
+        let variants = try #require(schema["oneOf"] as? [[String: Any]])
+        #expect(variants.count == 2)
+        let fields = try variants.map { try #require($0["required"] as? [String]) }
+        #expect(fields.map(Set.init) == [
+            ["profileID", "outcome", "chromiumRoute"],
+            ["profileID", "result", "qaOnly", "chromiumRoute"]
+        ])
+        for variant in variants {
+            #expect(variant["additionalProperties"] as? Bool == false)
+            let properties = try #require(variant["properties"] as? [String: [String: Any]])
+            #expect(properties["chromiumRoute"]?["const"] as? String == "unverified")
         }
     }
 

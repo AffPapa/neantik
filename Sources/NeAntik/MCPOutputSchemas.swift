@@ -53,9 +53,17 @@ enum MCPOutputSchemas {
         }
         if name == "profile_stop" { return object(["profileID": uuid, "processState": state, "stopRequested": boolean, "webKitState": webKitState], optional: ["webKitState"]) }
         if name == "profile_start" { return object(["profileID": uuid, "processState": state, "revision": revision]) }
-        if name == "profile_check_proxy" { return object(["profileID": uuid, "outcome": text, "chromiumRoute": ["type": "string", "const": "unverified"]]) }
+        if name == "profile_check_proxy" {
+            let route = ["type": "string", "const": "unverified"]
+            return ["type": "object", "oneOf": [
+                object(["profileID": uuid, "outcome": text, "chromiumRoute": route]),
+                object(["profileID": uuid, "chromiumRoute": route,
+                        "result": ["type": "string", "const": "synthetic-loopback-origin-passed"],
+                        "qaOnly": ["type": "boolean", "const": true]])
+            ]]
+        }
         return object(["id": uuid, "revision": revision, "name": text, "startURL": text, "startupMode": ["type": "string", "enum": BrowserStartupMode.allCases.map(\.rawValue)], "fontPolicy": ["type": ["string", "null"], "enum": ["native", "system-v1", NSNull()]], "engine": ["type": "string", "enum": BrowserEngine.allCases.map(\.rawValue)], "webKitMediaPolicy": ["type": ["string", "null"], "enum": WebKitMediaPolicy.allCases.map { $0.rawValue as Any } + [NSNull()]], "tags": ["type": "array", "items": text], "isPinned": boolean, "isArchived": boolean,
-                       "privacyPolicyIntent": object([
+                       "privacyPolicyIntent": ["oneOf": [["type": "null"], object([
                            "schemaVersion": ["type": "integer", "const": 1],
                            "preset": ["type": "string", "enum": ["legacy", "balanced", "strict", "custom"]],
                            "rtc": ["type": "string", "enum": BrowserPrivacyPolicy.RTC.allCases.map(\.rawValue)],
@@ -68,7 +76,9 @@ enum MCPOutputSchemas {
                                "description": "Clarifies the scope of siteProtection. This is saved intent, not proof that filters are applied."],
                            "disableSyncAndAutofill": boolean,
                            "evidence": ["type": "string", "const": "saved-intent; not native qualification"]
-                       ]),
+                       ])], "description": "Chromium saved privacy intent. Null for WebKit."],
+                       "webKitBlockPeerConnections": ["type": ["boolean", "null"]],
+                       "webKitRelayOnly": ["type": ["boolean", "null"]],
                        "engineCapabilities": object(["persistentSiteData": boolean, "fingerprintConfiguration": boolean, "proxy": boolean, "mcpLaunch": boolean, "extensions": boolean, "browserDataBackup": boolean]),
                        "networkPolicyIntent": object([
                            "configuredRoute": ["type": "string", "enum": ["direct", "proxyConfigured"]],

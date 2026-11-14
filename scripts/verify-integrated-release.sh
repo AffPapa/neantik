@@ -58,10 +58,20 @@ RELEASE_CHROMIUM_VERSION="$(
   plutil -extract fingerprintChromium.chromiumVersion raw -o - \
     "$EVIDENCE/fingerprint-chromium.lock.json"
 )"
-if [[ "$RELEASE_CHROMIUM_VERSION" == "156.0.8078.80" ||
+ENGINE_SCOPE="$(plutil -extract NeAntikEngineScope raw -o - "$APP_PATH/Contents/Info.plist" 2>/dev/null || true)"
+OWNED_WEBKIT_HOST="$APP_PATH/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
+if [[ "$ENGINE_SCOPE" == "chromium-owned-webkit" ]]; then
+  if [[ "$ACTUAL_MANAGER_VERSION" != "1.0.0" ||
+        "$RELEASE_CHROMIUM_VERSION" != "157.0.8103.79" ||
+        ! -d "$OWNED_WEBKIT_HOST" || -L "$OWNED_WEBKIT_HOST" ]]; then
+    echo "The dual-engine marker requires the production version and an embedded owned WebKit host." >&2
+    exit 65
+  fi
+fi
+if [[ ( "$RELEASE_CHROMIUM_VERSION" == "156.0.8078.80" ||
       "$RELEASE_CHROMIUM_VERSION" == "157.0.8103.39" ||
-      "$RELEASE_CHROMIUM_VERSION" == "157.0.8103.79" ]]; then
-  ENGINE_SCOPE="$(plutil -extract NeAntikEngineScope raw -o - "$APP_PATH/Contents/Info.plist" 2>/dev/null || true)"
+      "$RELEASE_CHROMIUM_VERSION" == "157.0.8103.79" ) &&
+      "$ENGINE_SCOPE" != "chromium-owned-webkit" ]]; then
   if [[ "$ENGINE_SCOPE" != "chromium-only" ]]; then
     echo "Chromium $RELEASE_CHROMIUM_VERSION candidate is missing the Chromium-only manager build marker." >&2
     exit 65
@@ -84,7 +94,6 @@ if [[ "$RELEASE_CHROMIUM_VERSION" == "156.0.8078.80" ||
   fi
 fi
 
-OWNED_WEBKIT_HOST="$APP_PATH/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
 if [[ -e "$OWNED_WEBKIT_HOST" || -L "$OWNED_WEBKIT_HOST" ]]; then
   WEBKIT_SOURCE_OFFER="${NEANTIK_WEBKIT_SOURCE_OFFER_ROOT:-}"
   if [[ "$WEBKIT_SOURCE_OFFER" != /* || -L "$WEBKIT_SOURCE_OFFER" ||
@@ -100,7 +109,8 @@ if [[ -e "$OWNED_WEBKIT_HOST" || -L "$OWNED_WEBKIT_HOST" ]]; then
     fi
     WEBKIT_OFFER_DIGEST_ARGS=(--source-offer-manifest-sha256 "$NEANTIK_WEBKIT_SOURCE_OFFER_MANIFEST_SHA256")
   fi
-  python3 -B "$PROJECT_DIR/scripts/verify-webkit-host-pin.py" "$APP_PATH" --require-network-sandbox-pin
+  python3 -B "$PROJECT_DIR/scripts/verify-webkit-host-pin.py" "$APP_PATH" \
+    --require-network-sandbox-pin --require-detached-presenter
   python3 -B "$PROJECT_DIR/scripts/webkit_runtime_notices.py" \
     --verify --app "$APP_PATH" \
     --runtime-frameworks "$OWNED_WEBKIT_HOST/Contents/Frameworks" \

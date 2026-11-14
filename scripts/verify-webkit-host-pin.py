@@ -19,6 +19,8 @@ PIN_KEY = "NeAntikWebKitHostV1"
 RUNTIME_PIN_KEY = "NeAntikWebKitRuntimeV1"
 NETWORK_PIN_KEY = "NeAntikWebKitNetworkProcessV1"
 NETWORK_ID = "app.neantik.desktop.webkit.Networking"
+RELAY_CAPABILITY_KEY = "NeAntikWebKitRelayOnlyEnabled"
+PRESENTER_CAPABILITY_KEY = "NeAntikWebKitDetachedPresenterV1"
 
 
 class PinError(ValueError):
@@ -127,7 +129,8 @@ def _network_code(manager: dict, host_contents: Path, runner) -> tuple[dict, str
     return pin, sha, fields["CDHash"]
 
 
-def verify(app: Path, runner=subprocess.run, *, require_network_sandbox_pin: bool = False) -> dict[str, str]:
+def verify(app: Path, runner=subprocess.run, *, require_network_sandbox_pin: bool = False,
+           require_presenter: bool = False) -> dict[str, str]:
     """Check the exact nested host hash and CodeDirectory pin after final signing."""
     if app.is_symlink() or app.suffix != ".app" or not _physical_dir(app):
         raise PinError("manager app bundle is missing or unsafe")
@@ -151,6 +154,20 @@ def verify(app: Path, runner=subprocess.run, *, require_network_sandbox_pin: boo
             or host_info.get("CFBundlePackageType") != "APPL"
             or executable_name != "NeAntikWebKitHost"):
         raise PinError("nested WebKit host identity is missing or inconsistent")
+    manager_relay = manager.get(RELAY_CAPABILITY_KEY, False)
+    host_relay = host_info.get(RELAY_CAPABILITY_KEY, False)
+    if (type(manager_relay) is not bool or type(host_relay) is not bool
+            or manager_relay is not host_relay
+            or (manager_relay and (manager_id != "app.neantik.desktop"
+                                   or manager.get("NeAntikEngineScope") != "chromium-owned-webkit"))):
+        raise PinError("manager and WebKit host relay capabilities do not match")
+    presenter_expected = (require_presenter or PRESENTER_CAPABILITY_KEY in manager
+                          or PRESENTER_CAPABILITY_KEY in host_info)
+    if presenter_expected and (manager.get(PRESENTER_CAPABILITY_KEY) is not True
+                               or host_info.get(PRESENTER_CAPABILITY_KEY) is not True
+                               or manager_id != "app.neantik.desktop"
+                               or manager.get("NeAntikEngineScope") != "chromium-owned-webkit"):
+        raise PinError("signed production manager and WebKit host detached presenter capabilities do not match")
     runtime_sha = _verify_runtime_pin(host_contents, host_info)
     if require_network_sandbox_pin or sandbox_pin.PIN_KEY in host_info:
         sandbox_pin.verify(host_contents / "Frameworks", host_info.get(sandbox_pin.PIN_KEY))
@@ -284,9 +301,12 @@ def main() -> int:
     parser.add_argument("--refresh-pin", action="store_true",
                         help="refresh manager Info.plist after final nested-host signing; then shallow-sign manager and verify again")
     parser.add_argument("--require-network-sandbox-pin", action="store_true")
+    parser.add_argument("--require-detached-presenter", action="store_true")
     args = parser.parse_args()
     try:
-        result = refresh_pin(args.app) if args.refresh_pin else verify(args.app, require_network_sandbox_pin=args.require_network_sandbox_pin)
+        result = refresh_pin(args.app) if args.refresh_pin else verify(
+            args.app, require_network_sandbox_pin=args.require_network_sandbox_pin,
+            require_presenter=args.require_detached_presenter)
     except (PinError, OSError, ValueError) as error:
         print(f"FAIL: {error}", file=sys.stderr)
         return 1

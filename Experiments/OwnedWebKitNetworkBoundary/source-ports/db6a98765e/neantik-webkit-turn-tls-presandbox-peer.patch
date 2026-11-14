@@ -1,0 +1,187 @@
+diff --git a/Source/WebKit/NetworkProcess/NetworkProcess.h b/Source/WebKit/NetworkProcess/NetworkProcess.h
+index 1c51f60b8714b50dca7f5c313b3fdf5efe63c265..13244655788e34cac6743aae1ac1ef3714554094 100644
+--- a/Source/WebKit/NetworkProcess/NetworkProcess.h
++++ b/Source/WebKit/NetworkProcess/NetworkProcess.h
+@@ -236,6 +236,9 @@ public:
+ #if PLATFORM(COCOA)
+     RetainPtr<CFDataRef> sourceApplicationAuditData() const;
+     std::optional<audit_token_t> sourceApplicationAuditToken() const;
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++    bool hasAuthenticatedNeAntikTURNSQAHost() const { return m_hasAuthenticatedNeAntikTURNSQAHost; }
++#endif
+ #endif
+ #if PLATFORM(COCOA) || USE(SOUP)
+     HashSet<String> hostNamesWithHSTSCache(PAL::SessionID) const;
+@@ -716,6 +719,9 @@ private:
+     const RefPtr<RTCDataChannelRemoteManagerProxy> m_rtcDataChannelProxy;
+ #endif
+ 
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++    bool m_hasAuthenticatedNeAntikTURNSQAHost { false };
++#endif
+     OptionSet<NetworkCache::CacheOption> m_cacheOptions;
+     WebCore::MessagePortChannelRegistry m_messagePortChannelRegistry;
+ 
+diff --git a/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm b/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm
+index f6c32e0353765e945c62589575d29fc567d27cc1..35b5ad2782782effd5b98a1d42ea9fcfcf33295a 100644
+--- a/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm
++++ b/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm
+@@ -39,9 +39,6 @@
+ #import "NetworkProcess.h"
+ #import "NetworkProcessProxyMessages.h"
+ #import "NetworkSessionCreationParameters.h"
+-#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
+-#import <Security/Security.h>
+-#endif
+ #import "NetworkStorageSession.h"
+ #import "PrivateRelayed.h"
+ #import "WKURLSessionTaskDelegate.h"
+@@ -1160,29 +1157,6 @@ void SessionWrapper::initialize(NSURLSessionConfiguration *configuration, Networ
+     session = [NSURLSession sessionWithConfiguration:configuration delegate:delegate.get() delegateQueue:[NSOperationQueue mainQueue]];
+ }
+ 
+-#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
+-static bool isSignedNeAntikDevHost(NetworkProcess& process)
+-{
+-    auto token = process.sourceApplicationAuditToken();
+-    if (!token)
+-        return false;
+-    RetainPtr auditData = adoptCF(CFDataCreate(nullptr, reinterpret_cast<const UInt8*>(&*token), sizeof(*token)));
+-    if (!auditData)
+-        return false;
+-    const void* keys[] { kSecGuestAttributeAudit };
+-    const void* values[] { auditData.get() };
+-    RetainPtr attributes = adoptCF(CFDictionaryCreate(nullptr, keys, values, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
+-    SecCodeRef guest = nullptr;
+-    if (!attributes || SecCodeCopyGuestWithAttributes(nullptr, attributes.get(), kSecCSDefaultFlags, &guest) != errSecSuccess)
+-        return false;
+-    RetainPtr code = adoptCF(guest);
+-    SecRequirementRef requirement = nullptr;
+-    if (SecRequirementCreateWithString(CFSTR("anchor apple generic and identifier \"app.neantik.desktop.dev.webkit-host\" and certificate leaf[subject.OU] = \"H6VGU2M6JD\" and certificate leaf[field.1.2.840.113635.100.6.1.13] exists"), kSecCSDefaultFlags, &requirement) != errSecSuccess)
+-        return false;
+-    RetainPtr expected = adoptCF(requirement);
+-    return SecCodeCheckValidity(code.get(), kSecCSDefaultFlags, expected.get()) == errSecSuccess;
+-}
+-#endif
+ 
+ NetworkSessionCocoa::NetworkSessionCocoa(NetworkProcess& networkProcess, const NetworkSessionCreationParameters& parameters)
+     : NetworkSession(networkProcess, parameters)
+@@ -1203,8 +1177,10 @@ NetworkSessionCocoa::NetworkSessionCocoa(NetworkProcess& networkProcess, const N
+ 
+     if (m_requiresRTCProxy && parameters.turnsQAAnchor && parameters.turnsQAAnchor->first >= 1024
+         && !parameters.turnsQAAnchor->second.isEmpty() && parameters.turnsQAAnchor->second.size() <= 4096
+-        && isSignedNeAntikDevHost(networkProcess))
++        && networkProcess.hasAuthenticatedNeAntikTURNSQAHost()) {
+         m_turnsQAAnchor = parameters.turnsQAAnchor;
++        RELEASE_LOG(Process, "NeAntik TURNS QA: session anchor admitted");
++    }
+ #endif
+ 
+ #if ASSERT_ENABLED
+diff --git a/Source/WebKit/NetworkProcess/mac/NetworkProcessMac.mm b/Source/WebKit/NetworkProcess/mac/NetworkProcessMac.mm
+index c87f3f17b2b5e862088df7ec7d2d20de9d164aab..10b724a62c69972093ff6939b8e14edcabb1b1a6 100644
+--- a/Source/WebKit/NetworkProcess/mac/NetworkProcessMac.mm
++++ b/Source/WebKit/NetworkProcess/mac/NetworkProcessMac.mm
+@@ -28,6 +28,7 @@
+ 
+ #if PLATFORM(MAC) || PLATFORM(MACCATALYST)
+ 
++#import "Logging.h"
+ #import "NetworkCache.h"
+ #import "NetworkProcessCreationParameters.h"
+ #import "NetworkResourceLoader.h"
+@@ -35,6 +36,9 @@
+ #import "SandboxInitializationParameters.h"
+ #import "SecItemShim.h"
+ #import "WKFoundation.h"
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++#import <Security/Security.h>
++#endif
+ #import <WebCore/CertificateInfo.h>
+ #import <WebCore/LocalizedStrings.h>
+ #import <notify.h>
+@@ -73,12 +77,50 @@ void NetworkProcess::platformInitializeNetworkProcess(const NetworkProcessCreati
+ #endif
+ }
+ 
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++static bool isSignedNeAntikDevHost(xpc_connection_t connection)
++{
++    if (!connection)
++        return false;
++    audit_token_t token;
++    xpc_connection_get_audit_token(connection, &token);
++    RetainPtr auditData = adoptCF(CFDataCreate(nullptr, reinterpret_cast<const UInt8*>(&token), sizeof(token)));
++    if (!auditData)
++        return false;
++    const void* keys[] { kSecGuestAttributeAudit };
++    const void* values[] { auditData.get() };
++    RetainPtr attributes = adoptCF(CFDictionaryCreate(nullptr, keys, values, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
++    SecCodeRef guest = nullptr;
++    if (!attributes)
++        return false;
++    auto guestStatus = SecCodeCopyGuestWithAttributes(nullptr, attributes.get(), kSecCSDefaultFlags, &guest);
++    if (guestStatus != errSecSuccess) {
++        RELEASE_LOG_ERROR(Process, "NeAntik TURNS QA: parent code lookup failed (%d)", guestStatus);
++        return false;
++    }
++    RetainPtr code = adoptCF(guest);
++    SecRequirementRef requirement = nullptr;
++    if (SecRequirementCreateWithString(CFSTR("anchor apple generic and identifier \"app.neantik.desktop.dev.webkit-host\" and certificate leaf[subject.OU] = \"H6VGU2M6JD\" and certificate leaf[field.1.2.840.113635.100.6.1.13] exists"), kSecCSDefaultFlags, &requirement) != errSecSuccess)
++        return false;
++    RetainPtr expected = adoptCF(requirement);
++    auto validationStatus = SecCodeCheckValidity(code.get(), kSecCSDefaultFlags, expected.get());
++    if (validationStatus != errSecSuccess)
++        RELEASE_LOG_ERROR(Process, "NeAntik TURNS QA: parent signature rejected (%d)", validationStatus);
++    return validationStatus == errSecSuccess;
++}
++#endif
++
+ void NetworkProcess::initializeSandbox(const AuxiliaryProcessInitializationParameters& parameters, SandboxInitializationParameters& sandboxParameters)
+ {
+     RetainPtr webKitBundle = [NSBundle bundleForClass:NSClassFromString(@"WKWebView")];
+ 
+     sandboxParameters.setOverrideSandboxProfilePath(makeString(String([webKitBundle resourcePath]), "/com.apple.WebKit.NetworkProcess.sb"_s));
+ 
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++    // Authenticate this launch connection before the network sandbox denies guest lookup.
++    m_hasAuthenticatedNeAntikTURNSQAHost = isSignedNeAntikDevHost(parameters.connectionIdentifier.xpcConnection.get());
++#endif
++
+     AuxiliaryProcess::initializeSandbox(parameters, sandboxParameters);
+ }
+ 
+diff --git a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
+index d351bf52ce2910d939ecb95884f2328457ac909a..74058b6e9d86b98f7ee5656638e27d2834dc97da 100644
+--- a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
++++ b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
+@@ -116,6 +116,8 @@ static RetainPtr<nw_connection_t> createNWConnection(NetworkRTCProvider& rtcProv
+                 if (data)
+                     qaAnchor = adoptCF(SecCertificateCreateWithData(nullptr, data.get()));
+             }
++            if (String::fromUTF8(hostName.utf8()) == "turn-neantik.invalid"_s)
++                RELEASE_LOG(WebRTC, "NeAntik TURNS QA: fixture socket scope matched=%d", useQAAnchor);
+         }
+ #endif
+         configureTLS = ^(nw_protocol_options_t tlsOptions) {
+@@ -138,12 +140,19 @@ static RetainPtr<nw_connection_t> createNWConnection(NetworkRTCProvider& rtcProv
+                         || SecTrustSetPolicies(certificateTrust.get(), policy.get()) != errSecSuccess
+                         || SecTrustSetAnchorCertificates(certificateTrust.get(), anchorList.get()) != errSecSuccess
+                         || SecTrustSetAnchorCertificatesOnly(certificateTrust.get(), true) != errSecSuccess) {
++                        RELEASE_LOG_ERROR(WebRTC, "NeAntik TURNS QA: fixture trust setup rejected");
+                         complete(false);
+                         return;
+                     }
+                 }
+ #endif
+-                auto status = SecTrustEvaluateAsyncWithError(certificateTrust.get(), queue, ^(SecTrustRef, bool trusted, CFErrorRef) {
++                auto status = SecTrustEvaluateAsyncWithError(certificateTrust.get(), queue, ^(SecTrustRef, bool trusted, CFErrorRef error) {
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++                    if (useQAAnchor)
++                        RELEASE_LOG(WebRTC, "NeAntik TURNS QA: fixture trust accepted=%d code=%ld", trusted, error ? CFErrorGetCode(error) : 0L);
++#else
++                    UNUSED_PARAM(error);
++#endif
+                     complete(trusted);
+                 });
+                 if (status != errSecSuccess)

@@ -32,6 +32,18 @@ class ProductionSourceMetadataTests(unittest.TestCase):
 
 
 class OwnedWebKitReleaseContractTests(unittest.TestCase):
+    def test_db6_recipient_recipe_rebuilds_exact_production_presenter(self):
+        flags = {"NEANTIK_DETACHED_PRESENTER": True, "NEANTIK_DETACHED_INPUT_EXPERIMENT": False,
+                 "NEANTIK_TURNS_QA_ANCHOR": False}
+        members = {"patches/neantik-webkit-detached-presenter.patch": "a" * 64}
+        MODULE.validate_db6_presenter_recipe({"buildFlags": flags, "members": members})
+        for key, wrong in (("NEANTIK_DETACHED_PRESENTER", 1), ("NEANTIK_DETACHED_INPUT_EXPERIMENT", True),
+                           ("NEANTIK_TURNS_QA_ANCHOR", True)):
+            with self.assertRaisesRegex(MODULE.PackageError, "must rebuild"):
+                MODULE.validate_db6_presenter_recipe({"buildFlags": flags | {key: wrong}, "members": members})
+        with self.assertRaisesRegex(MODULE.PackageError, "must rebuild"):
+            MODULE.validate_db6_presenter_recipe({"buildFlags": flags, "members": {}})
+
     def test_production_validation_rejects_inconsistent_recipe_before_staging(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

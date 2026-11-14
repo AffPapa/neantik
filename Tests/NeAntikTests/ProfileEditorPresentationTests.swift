@@ -12,7 +12,9 @@ struct ProfileEditorPresentationTests {
         #expect(both.isAvailable && both.showsPicker)
     }
     @Test func incompleteProxyContextExplainsNextActionWithoutReadinessClaim() {
-        let message = ProfileProxyTestPresentation.successMessage(location: "", hasCompleteRouteContext: false)
+        let message = ProfileProxyTestPresentation.successMessage(
+            location: "", hasCompleteRouteContext: false, engine: .chromium
+        )
         #expect(message.contains("Прокси отвечает"))
         #expect(message.contains("Повтори проверку перед запуском"))
         #expect(!message.contains("прошла"))
@@ -162,13 +164,28 @@ struct ProfileEditorPresentationTests {
         #expect(stale.detail.contains("Перед следующим запуском"))
     }
 
+    @Test(arguments: [true, false])
+    func webKitProbeReportsCurlAndNativeSettings(hasCompleteRouteContext: Bool) {
+        let message = ProfileProxyTestPresentation.successMessage(
+            location: hasCompleteRouteContext ? "Нидерланды" : "",
+            hasCompleteRouteContext: hasCompleteRouteContext,
+            engine: .webkit
+        )
+
+        #expect(message.contains("curl"))
+        #expect(message.contains("часовой пояс macOS"))
+        #expect(message.contains("Маршрут окна проверяется отдельно"))
+        #expect(!message.contains("перед запуском"))
+        #expect(message.contains("Нидерланды") == hasCompleteRouteContext)
+    }
+
     @Test
     func proxySuccessPresentationNeverIncludesDetectedIPAddress() {
         let withoutLocation = ProfileProxyTestPresentation.successMessage(
-            location: ""
+            location: "", engine: .chromium
         )
         let withLocation = ProfileProxyTestPresentation.successMessage(
-            location: "Нидерланды · Europe/Amsterdam"
+            location: "Нидерланды · Europe/Amsterdam", engine: .chromium
         )
 
         #expect(withoutLocation == "Проверка через прокси прошла")

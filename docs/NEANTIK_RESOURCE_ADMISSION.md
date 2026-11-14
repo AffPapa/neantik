@@ -16,8 +16,10 @@ constants are in [event_private.h](https://github.com/apple-oss-distributions/xn
 
 Use `scripts/native-qa-readiness.py --check` in the authorized host context.
 Unknown observations fail closed. A resource observation permits an attempt;
-it does not prove browser behavior or release readiness. The manager's live
-Dispatch memory-pressure and thermal checks remain active.
+it does not prove browser behavior or release readiness. The manager and the
+standalone WebKit host sample the same kernel flag before new work and check
+thermal state. If the live memory sample is unavailable, they retain the
+last known pressure state and use Dispatch notifications for updates.
 
 Older receipts that called raw value 1 Warning used an incorrect interpretation.
 Preserve their original bytes, but do not reuse that label as a current blocker.

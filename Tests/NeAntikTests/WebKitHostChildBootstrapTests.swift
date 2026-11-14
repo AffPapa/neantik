@@ -163,6 +163,12 @@ struct WebKitHostChildBootstrapTests {
         #expect(WebKitHostClient.childQANavigationStage(capture.snapshot) == "qa-nav-sentinel")
         #expect(WebKitHostClient.childQAWindowStage(Data(
             "NEANTIK_WEBKIT_QA_WINDOW stage=visible-with-url\n".utf8)) == nil)
+        var detached = WebKitStartupDiagnosticCapture.Tokens()
+        detached.append(Data((
+            "NEANTIK_WEBKIT_STARTUP_STAGE stage=qa-window-detached\n" +
+            "NEANTIK_WEBKIT_STARTUP_STAGE stage=qa-detached-runtime-attested\n" +
+            "NEANTIK_WEBKIT_STARTUP_STAGE stage=close-callback\n").utf8))
+        #expect(WebKitHostClient.childQAWindowStage(detached.snapshot) == "qa-window-detached")
     }
 
     @Test func qaTLSStageSurvivesCloseAndRejectsUntrustedText() {
@@ -217,6 +223,22 @@ struct WebKitHostChildBootstrapTests {
         #expect(WebKitHostClient.startupDiagnosticFailure(
             error: ProxyRelayPrivatePipe.Failure.closed, data: data) ==
             .childRefusedStartup(code: "runtime-missingRuntimeImage", stage: "identity-verified"))
+    }
+
+    @Test(arguments: [
+        ("webrtc-disable-unavailable", "отключить peer-соединения WebRTC"),
+        ("webrtc-relay-unavailable", "режим WebRTC через TURN"),
+        ("window-not-visible", "показать окно профиля")
+    ])
+    func startupRefusalsKeepTheirSpecificUserMessage(code: String, message: String) {
+        var tokens = WebKitStartupDiagnosticCapture.Tokens()
+        tokens.append(Data("NEANTIK_WEBKIT_STARTUP_FAILURE code=\(code)-extra\n".utf8))
+        #expect(WebKitHostClient.childStartupDiagnosticCode(tokens.snapshot) == nil)
+        tokens.append(Data("NEANTIK_WEBKIT_STARTUP_FAILURE code=\(code)\n".utf8))
+        let failure = WebKitHostClient.startupDiagnosticFailure(
+            error: ProxyRelayPrivatePipe.Failure.closed, data: tokens.snapshot)
+        #expect(failure == .childRefusedStartup(code: code))
+        #expect(failure?.errorDescription?.contains(message) == true)
     }
 
     @Test func childPipeClosurePreservesTheParentsFirstFailure() {

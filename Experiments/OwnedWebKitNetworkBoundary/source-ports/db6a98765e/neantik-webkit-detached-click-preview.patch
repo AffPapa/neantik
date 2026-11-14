@@ -1,0 +1,121 @@
+diff --git a/Source/WebKit/CMakeLists.txt b/Source/WebKit/CMakeLists.txt
+index 947673a..dab514c 100644
+--- a/Source/WebKit/CMakeLists.txt
++++ b/Source/WebKit/CMakeLists.txt
+@@ -1,5 +1,10 @@
+ set_property(DIRECTORY . PROPERTY FOLDER "WebKit")
+ 
++option(NEANTIK_DETACHED_INPUT_EXPERIMENT "Private NeAntik detached click qualification" OFF)
++if (APPLE AND NEANTIK_DETACHED_INPUT_EXPERIMENT)
++    add_compile_definitions(NEANTIK_DETACHED_INPUT_EXPERIMENT)
++endif ()
++
+ option(NEANTIK_TURNS_QA_ANCHOR "Private NeAntik TURN/TLS fixture trust" OFF)
+ if (APPLE AND NEANTIK_TURNS_QA_ANCHOR)
+     add_compile_definitions(NEANTIK_TURNS_QA_ANCHOR)
+diff --git a/Source/WebKit/Shared/NativeWebMouseEvent.h b/Source/WebKit/Shared/NativeWebMouseEvent.h
+index 0e6b6d7..d15c9c0 100644
+--- a/Source/WebKit/Shared/NativeWebMouseEvent.h
++++ b/Source/WebKit/Shared/NativeWebMouseEvent.h
+@@ -68,6 +68,9 @@ class NativeWebMouseEvent : public WebMouseEvent {
+     WTF_MAKE_TZONE_ALLOCATED(NativeWebMouseEvent);
+ public:
+ #if USE(APPKIT)
++#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT)
++    static Ref<NativeWebMouseEvent> create(WebMouseEventInit&&);
++#endif
+     static Ref<NativeWebMouseEvent> create(NSEvent *, NSEvent *lastPressureEvent, NSView *, WebEventInputSource, WebCore::PlatformMouseEvent::CanInitiateDrag = WebCore::PlatformMouseEvent::CanInitiateDrag::Yes);
+ #elif PLATFORM(GTK)
+     static Ref<NativeWebMouseEvent> create(const NativeWebMouseEvent&);
+diff --git a/Source/WebKit/Shared/mac/NativeWebMouseEventMac.mm b/Source/WebKit/Shared/mac/NativeWebMouseEventMac.mm
+index 0ae3fcb..8343a10 100644
+--- a/Source/WebKit/Shared/mac/NativeWebMouseEventMac.mm
++++ b/Source/WebKit/Shared/mac/NativeWebMouseEventMac.mm
+@@ -35,6 +35,13 @@
+ 
+ WTF_MAKE_TZONE_ALLOCATED_IMPL(NativeWebMouseEvent);
+ 
++#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT)
++Ref<NativeWebMouseEvent> NativeWebMouseEvent::create(WebMouseEventInit&& init)
++{
++    return adoptRef(*new NativeWebMouseEvent(WTF::move(init), nil));
++}
++#endif
++
+ Ref<NativeWebMouseEvent> NativeWebMouseEvent::create(NSEvent *event, NSEvent *lastPressureEvent, NSView *view, WebEventInputSource inputSource, WebCore::PlatformMouseEvent::CanInitiateDrag canInitiateDrag)
+ {
+     return adoptRef(*new NativeWebMouseEvent(WebEventFactory::createWebMouseEvent(event, lastPressureEvent, view, inputSource, canInitiateDrag), event));
+diff --git a/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm b/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
+index cf578b9..3d364db 100644
+--- a/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
++++ b/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
+@@ -35,6 +35,9 @@
+ 
+ #import "AppKitSPI.h"
+ #import "CompletionHandlerCallChecker.h"
++#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT)
++#import "NativeWebMouseEvent.h"
++#endif
+ #import "PDFPluginIdentifier.h"
+ #import "WKAPICast.h"
+ #import "WKIntelligenceTextEffectCoordinator.h"
+@@ -2309,6 +2312,41 @@ - (void)_storeSimulatedPrivateClickMeasurementConversionWithPriority:(uint8_t)pr
+ 
+ @end // WKWebView (WKPrivateMac)
+ 
++#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT)
++@interface WKWebView (NeAntikDetachedInputExperiment)
++- (BOOL)_neantikTestClickAtPosition:(NSPoint)position globalPosition:(NSPoint)globalPosition completion:(void (^)(void))completion;
++@end
++
++@implementation WKWebView (NeAntikDetachedInputExperiment)
++
++- (BOOL)_neantikTestClickAtPosition:(NSPoint)position globalPosition:(NSPoint)globalPosition completion:(void (^)(void))completion
++{
++    if (!completion || self.window || !_page->hasRunningProcess() || !NSPointInRect(position, self.bounds)
++        || !std::isfinite(globalPosition.x) || !std::isfinite(globalPosition.y))
++        return NO;
++
++    for (auto type : { WebKit::WebEventType::MouseDown, WebKit::WebEventType::MouseUp }) {
++        WebKit::WebMouseEventData data;
++        data.button = WebKit::WebMouseEventButton::Left;
++        data.buttons = type == WebKit::WebEventType::MouseDown ? 1 : 0;
++        data.position = { position.x, position.y };
++        data.globalPosition = { globalPosition.x, globalPosition.y };
++        data.clickCount = 1;
++        data.canInitiateDrag = WebCore::PlatformMouseEvent::CanInitiateDrag::No;
++        WebKit::WebMouseEventInit event { { type, { }, MonotonicTime::now() }, WTF::move(data) };
++        _page->handleMouseEvent(WebKit::NativeWebMouseEvent::create(WTF::move(event)));
++    }
++    _page->doAfterProcessingAllPendingMouseEvents([weakSelf = WeakObjCPtr<WKWebView>(self), done = makeBlockPtr(completion)] {
++        RetainPtr view = weakSelf.get();
++        if (view && [view _page]->hasRunningProcess())
++            done();
++    });
++    return YES;
++}
++
++@end
++#endif
++
+ @implementation WKWebView (WKWindowSnapshot)
+ - (NSImage *)_windowSnapshotInRect:(CGRect)rect withOptions:(CGWindowImageOption)options
+ {
+diff --git a/Source/WebKit/UIProcess/mac/PageClientImplMac.mm b/Source/WebKit/UIProcess/mac/PageClientImplMac.mm
+index 311405f..6819a40 100644
+--- a/Source/WebKit/UIProcess/mac/PageClientImplMac.mm
++++ b/Source/WebKit/UIProcess/mac/PageClientImplMac.mm
+@@ -1148,7 +1148,12 @@ NODELETE static inline NSCorrectionResponse toCorrectionResponse(AutocorrectionR
+ 
+ bool PageClientImpl::windowIsFrontWindowUnderMouse(const NativeWebMouseEvent& event)
+ {
+-    return protect(m_impl)->windowIsFrontWindowUnderMouse(RetainPtr { event.nativeEvent() }.get());
++    RetainPtr nativeEvent = event.nativeEvent();
++#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT)
++    if (!nativeEvent)
++        return false;
++#endif
++    return protect(m_impl)->windowIsFrontWindowUnderMouse(nativeEvent.get());
+ }
+ 
+ std::optional<float> PageClientImpl::computeAutomaticTopObscuredInset()

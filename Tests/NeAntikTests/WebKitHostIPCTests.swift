@@ -348,6 +348,22 @@ struct WebKitHostIPCTests {
         }
     }
 
+    @Test func bufferedCloseCanBeConfirmedAfterTheHostHasExited() throws {
+        let expected = session()
+        let reply = Pipe()
+        let writer = reply.fileHandleForWriting
+        let reader = reply.fileHandleForReading
+        try WebKitHostIPC.write(.saved(expected), to: writer.fileDescriptor)
+        try WebKitHostIPC.write(.closed(expected), to: writer.fileDescriptor)
+        try writer.close()
+
+        var gate = try runningGate(for: expected)
+        try gate.requestClose()
+        try gate.accept(WebKitHostIPC.read(from: reader.fileDescriptor, timeout: 0.25))
+        try gate.accept(WebKitHostIPC.read(from: reader.fileDescriptor, timeout: 0.25))
+        try gate.acceptEOF()
+    }
+
     @Test func zeroIdentityCannotEnterBootstrap() throws {
         let invalid = WebKitHostIPC.Session(profileID: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
                                             revision: 1, generation: UUID(),

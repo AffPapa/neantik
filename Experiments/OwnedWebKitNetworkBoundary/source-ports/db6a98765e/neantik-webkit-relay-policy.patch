@@ -1,0 +1,63 @@
+diff --git a/Source/WTF/Scripts/Preferences/UnifiedWebPreferences.yaml b/Source/WTF/Scripts/Preferences/UnifiedWebPreferences.yaml
+--- a/Source/WTF/Scripts/Preferences/UnifiedWebPreferences.yaml
++++ b/Source/WTF/Scripts/Preferences/UnifiedWebPreferences.yaml
+@@ -4875,6 +4875,15 @@
+   richJavaScript: true
+   mediaPlaybackRelated: true
+ 
++PeerConnectionRelayOnly:
++  type: bool
++  status: embedder
++  category: media
++  humanReadableName: "WebRTC relay-only policy"
++  humanReadableDescription: "Require relay candidates and TCP TURN in peer connections"
++  condition: ENABLE(WEB_RTC)
++  defaultValue: false
++
+ PeerConnectionVideoScalingAdaptationDisabled:
+   type: bool
+   status: embedder
+diff --git a/Source/WebCore/Modules/mediastream/RTCPeerConnection.h b/Source/WebCore/Modules/mediastream/RTCPeerConnection.h
+--- a/Source/WebCore/Modules/mediastream/RTCPeerConnection.h
++++ b/Source/WebCore/Modules/mediastream/RTCPeerConnection.h
+@@ -277,6 +277,7 @@
+ 
+     const std::unique_ptr<PeerConnectionBackend> m_backend;
+ 
++    const bool m_relayOnly;
+     RTCConfiguration m_configuration;
+     WeakPtr<RTCController> m_controller;
+     Vector<RTCDataChannelIdentifier> m_channels;
+diff --git a/Source/WebCore/Modules/mediastream/RTCPeerConnection.cpp b/Source/WebCore/Modules/mediastream/RTCPeerConnection.cpp
+--- a/Source/WebCore/Modules/mediastream/RTCPeerConnection.cpp
++++ b/Source/WebCore/Modules/mediastream/RTCPeerConnection.cpp
+@@ -128,6 +128,7 @@
+     , m_logger(document.logger())
+     , m_logIdentifier(LoggerHelper::uniqueLogIdentifier())
+ #endif
++    , m_relayOnly(document.settings().peerConnectionRelayOnly())
+ {
+     ALWAYS_LOG(LOGIDENTIFIER);
+ }
+@@ -571,6 +572,9 @@
+ // Implementation of https://w3c.github.io/webrtc-pc/#set-pc-configuration
+ ExceptionOr<Vector<MediaEndpointConfiguration::IceServerInfo>> RTCPeerConnection::iceServersFromConfiguration(RTCConfiguration& newConfiguration, const RTCConfiguration* existingConfiguration, bool isLocalDescriptionSet)
+ {
++    if (m_relayOnly)
++        newConfiguration.iceTransportPolicy = RTCIceTransportPolicy::Relay;
++
+     if (existingConfiguration && newConfiguration.bundlePolicy != existingConfiguration->bundlePolicy)
+         return Exception { ExceptionCode::InvalidModificationError, "BundlePolicy does not match existing policy"_s };
+ 
+@@ -611,7 +615,10 @@
+                 return Exception { ExceptionCode::TypeError, "Bad ICE server URL"_s };
+             if (!serverURL.hasOpaquePath())
+                 return Exception { ExceptionCode::SyntaxError, "STUN/TURN URL should be opaque-path"_s };
+-            if (serverURL.protocolIs("turn"_s) || serverURL.protocolIs("turns"_s)) {
++            bool isTURN = serverURL.protocolIs("turn"_s) || serverURL.protocolIs("turns"_s);
++            if (m_relayOnly && (!isTURN || serverURL.query() != "transport=tcp"_s))
++                return Exception { ExceptionCode::InvalidAccessError, "The profile requires TCP TURN"_s };
++            if (isTURN) {
+                 if (serverURL.hasQuery()) {
+                     auto parameters = WTF::URLParser::parseURLEncodedForm(serverURL.query());
+                     if (parameters.size() != 1 || !equalIgnoringASCIICase(parameters[0].key, "transport"_s))

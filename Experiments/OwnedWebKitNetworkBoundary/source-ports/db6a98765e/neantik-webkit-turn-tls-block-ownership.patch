@@ -1,0 +1,54 @@
+diff --git a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
+--- a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
++++ b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
+@@ -102,6 +102,7 @@
+ )
+ {
+     RetainPtr host = adoptNS(nw_endpoint_create_host(hostName.utf8(), port.utf8()));
++    BlockPtr<void(nw_protocol_options_t)> retainedTLSConfiguration;
+     nw_parameters_configure_protocol_block_t configureTLS = isTLS ? NW_PARAMETERS_DEFAULT_CONFIGURATION : NW_PARAMETERS_DISABLE_PROTOCOL;
+     if (isTLS && rtcProvider.requiresRTCProxy()) {
+ #if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
+@@ -120,7 +121,7 @@
+                 RELEASE_LOG(WebRTC, "NeAntik TURNS QA: fixture socket scope matched=%d", useQAAnchor);
+         }
+ #endif
+-        configureTLS = ^(nw_protocol_options_t tlsOptions) {
++        retainedTLSConfiguration = makeBlockPtr(^(nw_protocol_options_t tlsOptions) {
+             RetainPtr securityOptions = adoptNS(nw_tls_copy_sec_protocol_options(tlsOptions));
+             sec_protocol_options_set_peer_authentication_required(securityOptions.get(), true);
+             auto queue = tcpSocketQueueSingleton();
+@@ -136,11 +137,16 @@
+                     RetainPtr policy = adoptCF(SecPolicyCreateSSL(true, CFSTR("turn-neantik.invalid")));
+                     const void* anchors[] { qaAnchor.get() };
+                     RetainPtr anchorList = qaAnchor ? adoptCF(CFArrayCreate(nullptr, anchors, 1, &kCFTypeArrayCallBacks)) : nullptr;
+-                    if (!policy || !anchorList
+-                        || SecTrustSetPolicies(certificateTrust.get(), policy.get()) != errSecSuccess
+-                        || SecTrustSetAnchorCertificates(certificateTrust.get(), anchorList.get()) != errSecSuccess
+-                        || SecTrustSetAnchorCertificatesOnly(certificateTrust.get(), true) != errSecSuccess) {
+-                        RELEASE_LOG_ERROR(WebRTC, "NeAntik TURNS QA: fixture trust setup rejected");
++                    if (!policy || !anchorList) {
++                        RELEASE_LOG_ERROR(WebRTC, "NeAntik TURNS QA: fixture trust objects unavailable policy=%d anchor=%d", !!policy, !!anchorList);
++                        complete(false);
++                        return;
++                    }
++                    auto policyStatus = SecTrustSetPolicies(certificateTrust.get(), policy.get());
++                    auto anchorStatus = SecTrustSetAnchorCertificates(certificateTrust.get(), anchorList.get());
++                    auto anchorsOnlyStatus = SecTrustSetAnchorCertificatesOnly(certificateTrust.get(), true);
++                    if (policyStatus != errSecSuccess || anchorStatus != errSecSuccess || anchorsOnlyStatus != errSecSuccess) {
++                        RELEASE_LOG_ERROR(WebRTC, "NeAntik TURNS QA: fixture trust setup rejected policy=%d anchor=%d anchorOnly=%d", policyStatus, anchorStatus, anchorsOnlyStatus);
+                         complete(false);
+                         return;
+                     }
+@@ -158,7 +164,10 @@
+                 if (status != errSecSuccess)
+                     complete(false);
+             }, queue);
+-        };
++        });
++        // This translation unit uses manual block ownership. Keep captured
++        // trust configuration alive until Network copies the callback.
++        configureTLS = retainedTLSConfiguration.get();
+     }
+     RetainPtr tcpTLS = adoptNS(nw_parameters_create_secure_tcp(configureTLS, ^(nw_protocol_options_t tcp_options) {
+         nw_tcp_options_set_no_delay(tcp_options, true);

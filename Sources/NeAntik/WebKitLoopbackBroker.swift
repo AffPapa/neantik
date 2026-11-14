@@ -38,8 +38,12 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
         var scope: WebKitRelayAuthority.Scope?
         let task: Task<Void, Never>
     }
+    private struct ActiveLease {
+        let owner: WebKitNetworkProcessCodeIdentity.Lease
+        let onLoss: (@Sendable (WebKitRelayAuthority.Scope) -> Void)?
+    }
     private let authority = WebKitRelayAuthority()
-    private var processLeases: [UUID: WebKitNetworkProcessCodeIdentity.Lease] = [:]
+    private var processLeases: [UUID: ActiveLease] = [:]
     private let queue = DispatchQueue(label: "app.neantik.webkit.broker")
     private let leaseMonitorQueue = DispatchQueue(label: "app.neantik.webkit.broker.lease-monitor", qos: .utility)
     private let listener: NWListener
@@ -149,9 +153,9 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
                             self.deadline?.cancel(); self.deadline = nil
                             let finish = self.startFinish; self.startFinish = nil; finish?(.success(port))
                         case .failed(let error):
-                            self.stopOnQueue(startFailure: Self.listenerStartFailure(error))
+                            self.listenerFailedOnQueue(Self.listenerStartFailure(error))
                         case .cancelled:
-                            self.stopOnQueue(startFailure: Failure.listenerStartCancelled)
+                            self.listenerFailedOnQueue(Failure.listenerStartCancelled)
                         default: break
                         }
                     }
@@ -186,13 +190,14 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
     /// the NetworkProcess started with that credential. Before this succeeds,
     /// `bind` rejects every authenticated CONNECT and opens no upstream socket.
     func activate(scope: WebKitRelayAuthority.Scope,
-                  lease: WebKitNetworkProcessCodeIdentity.Lease) throws {
+                  lease: WebKitNetworkProcessCodeIdentity.Lease,
+                  onLoss: (@Sendable (WebKitRelayAuthority.Scope) -> Void)? = nil) throws {
         guard lease.scope == scope, lease.authorizes(scope) else { throw Failure.refused }
         try queue.sync {
             guard state == .ready else { throw Failure.state }
             guard preparedScopes[scope.profileID] == scope,
                   processLeases[scope.profileID] == nil else { throw Failure.refused }
-            processLeases[scope.profileID] = lease
+            processLeases[scope.profileID] = ActiveLease(owner: lease, onLoss: onLoss)
             startLeaseMonitorOnQueue()
         }
     }
@@ -225,32 +230,46 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
     private func checkLeasesOffQueue() {
         let snapshot: [WebKitNetworkProcessCodeIdentity.Lease] = queue.sync {
             guard state == .ready else { return [] }
-            return Array(processLeases.values)
+            return processLeases.values.map(\.owner)
         }
         let expired = Self.expiredLeases(snapshot)
         guard !expired.isEmpty else { return }
         queue.async {
-            for lease in expired {
-                let scope = lease.scope
-                guard self.state == .ready,
-                      self.processLeases[scope.profileID] === lease else { continue }
-                // The expensive live attestation was checked on the utility
-                // queue. Identity fences a replacement lease even for the same
-                // blocking listener work on a second SecCode inspection.
-                self.revokeExpiredLeaseOnQueue(scope)
-            }
+            for lease in expired { self.loseLeaseOnQueue(lease) }
         }
     }
 
-    private func revokeExpiredLeaseOnQueue(_ scope: WebKitRelayAuthority.Scope) {
+    private func loseLeaseOnQueue(_ lease: WebKitNetworkProcessCodeIdentity.Lease) {
+        let scope = lease.scope
+        guard state == .ready, let active = processLeases[scope.profileID],
+              active.owner === lease else { return }
+        revokeOnQueue(scope)
+        // Observers enqueue work outside the broker queue. Explicit revoke
+        // and intentional shutdown do not notify as unexpected loss.
+        active.onLoss?(scope)
+    }
+
+    func hasActiveRoute(_ scope: WebKitRelayAuthority.Scope) -> Bool {
+        queue.sync { state == .ready && processLeases[scope.profileID]?.owner.scope == scope }
+    }
+
+    fileprivate var isReady: Bool { queue.sync { state == .ready } }
+
+    @discardableResult
+    private func revokeOnQueue(_ scope: WebKitRelayAuthority.Scope) -> [Task<Void, Never>] {
         authority.revoke(scope)
-        processLeases.removeValue(forKey: scope.profileID)
-        preparedScopes.removeValue(forKey: scope.profileID)
-        // Revoke first, then cancel every already-authorized tunnel. New
-        // handshakes fail authorization while these tasks unwind.
-        for connection in connections.values where connection.scope == scope {
-            connection.task.cancel()
+        // Cleanup from an earlier generation can arrive after the same profile
+        // has staged or activated a new session. Keep its lease and route.
+        if processLeases[scope.profileID]?.owner.scope == scope {
+            processLeases.removeValue(forKey: scope.profileID)
         }
+        if preparedScopes[scope.profileID] == scope {
+            preparedScopes.removeValue(forKey: scope.profileID)
+        }
+        // Revoke first so a stale handshake cannot open an upstream socket.
+        let tasks = connections.values.filter { $0.scope == scope }.map(\.task)
+        tasks.forEach { $0.cancel() }
+        return tasks
     }
 
     #if DEBUG
@@ -266,12 +285,13 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
     }
     /// Staging test intentionally delays process-owner activation.
     func activateForTesting(scope: WebKitRelayAuthority.Scope,
-                            isCurrent: @escaping @Sendable () -> Bool) throws {
+                            isCurrent: @escaping @Sendable () -> Bool,
+                            onLoss: (@Sendable (WebKitRelayAuthority.Scope) -> Void)? = nil) throws {
         let fixture = WebKitHostIPC.Session(profileID: scope.profileID,
             revision: scope.revision, generation: scope.sessionID,
             dataRoot: "/tmp/neantik-webkit-broker-fixture",
             runtimeSHA256: String(repeating: "a", count: 64))
-        try activate(scope: scope, lease: .fixture(session: fixture, isCurrent: isCurrent))
+        try activate(scope: scope, lease: .fixture(session: fixture, isCurrent: isCurrent), onLoss: onLoss)
     }
     #endif
     /// Revoke before cancelling sockets. A stale auth cannot race a reconnect
@@ -279,11 +299,7 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
     func revoke(_ scope: WebKitRelayAuthority.Scope) async {
         let tasks: [Task<Void, Never>] = await withCheckedContinuation { continuation in
             queue.async {
-                self.authority.revoke(scope)
-                self.processLeases.removeValue(forKey: scope.profileID)
-                self.preparedScopes.removeValue(forKey: scope.profileID)
-                let tasks = self.connections.values.filter { $0.scope == scope }.map(\.task)
-                tasks.forEach { $0.cancel() }; continuation.resume(returning: tasks)
+                continuation.resume(returning: self.revokeOnQueue(scope))
             }
         }
         for task in tasks { await task.value }
@@ -328,24 +344,32 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
         for connection in connections.values { connection.task.cancel() }
     }
 
+    private func listenerFailedOnQueue(_ error: Error) {
+        let lost = Array(processLeases.values)
+        stopOnQueue(startFailure: error)
+        for lease in lost { lease.onLoss?(lease.owner.scope) }
+    }
+
+    #if DEBUG
+    func failListenerForTesting() {
+        queue.sync { listenerFailedOnQueue(Failure.unavailable) }
+    }
+    #endif
+
     private func bind(_ permit: WebKitRelayAuthority.Permit, connectionID: UUID) throws {
         let lease = try queue.sync {
             guard state == .ready, authority.isCurrent(permit), connections[connectionID] != nil,
-                  let lease = processLeases[permit.scope.profileID], lease.scope == permit.scope
+                  let lease = processLeases[permit.scope.profileID]?.owner, lease.scope == permit.scope
             else { throw Failure.refused }
             return lease
         }
         guard lease.authorizes(permit.scope) else {
-            queue.sync {
-                if processLeases[permit.scope.profileID] === lease {
-                    revokeExpiredLeaseOnQueue(permit.scope)
-                }
-            }
+            queue.sync { loseLeaseOnQueue(lease) }
             throw Failure.refused
         }
         try queue.sync {
             guard state == .ready, authority.isCurrent(permit),
-                  processLeases[permit.scope.profileID] === lease,
+                  processLeases[permit.scope.profileID]?.owner === lease,
                   var entry = connections[connectionID] else { throw Failure.refused }
             guard connections.values.filter({ $0.scope == permit.scope }).count < Self.maximumConnectionsPerProfile else { throw Failure.limit }
             entry.scope = permit.scope; connections[connectionID] = entry
@@ -513,11 +537,15 @@ final class WebKitLoopbackBrokerPool {
     /// same broker instance. A stopped listener is fully drained before a new
     /// one can bind the fixed sandbox endpoint.
     func acquire() async throws -> WebKitLoopbackBroker {
-        if let stopTask { await stopTask.value }
-
-        if let broker {
+        while let existing = broker {
+            if let stopTask {
+                await stopTask.value
+                continue
+            }
             if let startTask { _ = try await startTask.value }
-            return broker
+            guard self.broker === existing, stopTask == nil else { continue }
+            if existing.isReady { return existing }
+            await drain(existing)
         }
 
         let broker = try makeBroker()
@@ -526,14 +554,13 @@ final class WebKitLoopbackBrokerPool {
         self.startTask = startTask
         do {
             _ = try await startTask.value
-            if self.broker === broker { self.startTask = nil }
+            guard self.broker === broker, stopTask == nil, broker.isReady else {
+                throw WebKitLoopbackBroker.Failure.unavailable
+            }
+            self.startTask = nil
             return broker
         } catch {
-            if self.broker === broker {
-                self.broker = nil
-                self.startTask = nil
-            }
-            await broker.stop()
+            if self.broker === broker { await drain(broker) }
             throw error
         }
     }
@@ -543,9 +570,12 @@ final class WebKitLoopbackBrokerPool {
     /// stop task before binding a new listener.
     func stopIfIdle(_ isIdle: Bool) async {
         guard isIdle else { return }
-        if let stopTask { await stopTask.value; return }
         guard let broker else { return }
+        await drain(broker)
+    }
 
+    private func drain(_ broker: WebKitLoopbackBroker) async {
+        if let stopTask { await stopTask.value; return }
         let task = Task { @MainActor [weak self] in
             await broker.stop()
             guard let self, self.broker === broker else { return }

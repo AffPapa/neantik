@@ -1,17 +1,17 @@
-# NeAntik first-release acceptance plan — Chromium-only scope
+# NeAntik release acceptance plan
 
 This file defines release gates, not current candidate identity. The private maintainer checkpoint is maintained separately and is not included in public source archives.
 
-## Current release scope
+## Published Chromium baseline and dual-engine development
 
-For the current first-release attempt, ship current stable Chromium for Mac only. Owned WebKit is deferred and must not be packaged or offered as a launchable engine in this candidate. Preserve existing WebKit profiles and their data; Chromium-only builds leave them readable and fail closed on launch. WebKit source, runtime and legal qualification remain a separate future milestone and do not block this Chromium-only candidate.
+Preserve the published Chromium-only baseline, rollback and existing profile data during dual-engine qualification. Private QA can include owned WebKit. Enable it in production only after the exact production runtime, its source offer and notices pass the applicable gates.
 
 ## Required gates
 
-1. Freeze a clean source tree and bind exact Chromium and manager inputs, build outputs, notices and applicable license decisions; verify the package contains no owned WebKit host/runtime and exposes Chromium only.
-2. Verify the recipient source offer can rebuild and relink the distributed Chromium runtime from the published source and documented tools.
-3. Qualify the exact signed app: Chromium launch, profile isolation, per-profile proxy route, proxy refusal without direct fallback, and recovery.
-4. Measure privacy behavior and document its limits. Do not promise maximum or absolute anonymity, undetectability, or bypass of site controls.
+1. Freeze a clean source tree and bind the manager, each packaged runtime, build outputs, notices and license decisions. Check that the engine picker agrees with the exact bundle's launch capabilities.
+2. Verify the recipient source offer and documented tools cover rebuilding and relinking each distributed engine where its license requires it.
+3. On the same signed dual-engine candidate, qualify both manager launch paths, separate profile stores, stop/reopen and final process exit. For each enabled proxy path, measure the intended route, refusal without direct fallback, and recovery with an independent positive control.
+4. Verify WebRTC blocking and any enabled relay mode with an owned observer. WebKit uses macOS language and time zone. Report that boundary and measure any other advertised privacy controls on the engine that applies them.
 5. Sign and notarize the exact Apple Silicon ZIP and DMG, staple tickets, verify Gatekeeper, publish through GitHub Releases and browser.free, then verify downloaded bytes.
 
 ## Resume rule

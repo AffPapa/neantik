@@ -15,11 +15,16 @@ from pathlib import Path, PurePosixPath
 import plistlib
 import re
 import stat
+import sys
 from urllib.parse import urlsplit
 import zipfile
 
+import webkit_turns_qa_scope as turns_scope
+
 V508_WEBGPU_SHA256 = "6dbb393c3fae9515e10e6cc9fd42e960ca89270cb35e948c3fe8434a65aa0abc"
 V508_BINDING_SHA256 = "c4264d49e80670c09cf769f4031fae9740cbc1accfa5d37372b78d270b0df39a"
+SUCCESSOR_VARIANT = "OwnedWebKitSuccessorV1"
+ZIP_READ_SIZE = 1024 * 1024
 
 
 class PreflightError(ValueError):
@@ -34,7 +39,7 @@ def require(condition: bool, code: str) -> None:
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
+        for block in iter(lambda: stream.read(ZIP_READ_SIZE), b""):
             digest.update(block)
     return digest.hexdigest()
 
@@ -109,6 +114,26 @@ def _read_unique(zf: zipfile.ZipFile, names: list[str], path: str) -> bytes:
     return zf.read(matches[0])
 
 
+def _digest_unique(zf: zipfile.ZipFile, names: list[str], path: str) -> str:
+    require(names.count(path) == 1, "archive-path-not-unique:" + path)
+    with zf.open(path) as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def _scan_unique(zf: zipfile.ZipFile, names: list[str], path: str, needle: bytes = b"") -> bool:
+    require(names.count(path) == 1, "archive-path-not-unique:" + path)
+    found = not needle
+    tail = b""
+    with zf.open(path) as stream:
+        # Keep consuming after a match so ZipExtFile still verifies the CRC.
+        for block in iter(lambda: stream.read(ZIP_READ_SIZE), b""):
+            if not found:
+                window = tail + block
+                found = needle in window
+                tail = window[-(len(needle) - 1):] if len(needle) > 1 else b""
+    return found
+
+
 def _read_unique_regular(zf: zipfile.ZipFile, names: list[str], path: str, maximum: int) -> bytes:
     require(names.count(path) == 1, "archive-path-not-unique:" + path)
     info = zf.getinfo(path)
@@ -122,14 +147,28 @@ def inspect(candidate: dict, plan: dict) -> dict:
     require(isinstance(candidate, dict) and isinstance(plan, dict), "invalid-input-schema")
     candidate_variant = candidate.get("qaRuntimeVariant")
     plan_variant = plan.get("qaRuntimeVariant")
-    require(candidate_variant == plan_variant and candidate_variant in (None, "V508"),
+    require(candidate_variant == plan_variant and candidate_variant in (None, "V508", SUCCESSOR_VARIANT),
             "qa-runtime-variant-mismatch")
     v508 = candidate_variant == "V508"
+    successor = candidate_variant == SUCCESSOR_VARIANT
+    detached = candidate.get("qaDetachedSession", False)
+    sockets = candidate.get("qaDetachedSocketTransport", False)
+    metal = candidate.get("qaMetalFrameTransport", False)
+    require(type(detached) is bool and detached is plan.get("qaDetachedSession", False)
+            and (successor or not detached), "private-detached-session-plan-mismatch")
+    require(type(sockets) is bool and sockets is plan.get("qaDetachedSocketTransport", False)
+            and (detached or not sockets), "private-detached-socket-plan-mismatch")
+    require(type(metal) is bool and metal is plan.get("qaMetalFrameTransport", False)
+            and (sockets or not metal), "private-metal-frame-plan-mismatch")
     if v508:
         for key, expected in (("qaWebGPUSHA256", V508_WEBGPU_SHA256),
                               ("qaRuntimeBindingSHA256", V508_BINDING_SHA256)):
             require(candidate.get(key) == expected and plan.get(key) == expected,
                     "qa-v508-candidate-plan-identity-mismatch:" + key)
+    elif successor:
+        require(all(isinstance(candidate.get(key), str) and re.fullmatch(r"[0-9a-f]{64}", candidate[key])
+                    for key in ("qaRuntimeBindingSHA256", "qaSuccessorManifestSHA256", "qaNetworkSandboxSHA256")),
+                "qa-successor-invalid-evidence-hash")
     else:
         require(not any(key in obj for obj in (candidate, plan)
                         for key in ("qaWebGPUSHA256", "qaRuntimeBindingSHA256")),
@@ -158,6 +197,12 @@ def inspect(candidate: dict, plan: dict) -> dict:
             "qa-tls-origin-mismatch")
     actual_sha = sha256(archive)
     require(actual_sha == expected_sha, "archive-sha-mismatch")
+    fixture_turns = turns_scope.load(Path(root))
+    expected_turns = turns_scope.receipt(fixture_turns) if fixture_turns is not None else None
+    require(candidate.get(turns_scope.RECEIPT_KEY) == expected_turns
+            and plan.get(turns_scope.RECEIPT_KEY) == expected_turns
+            and (expected_turns is None or (successor and candidate.get("qaRTCRelayQualification") is True)),
+            "qa-turns-fixture-candidate-plan-mismatch")
     fixture_anchor_sha, fixture_origin = _fixture_scope(Path(root), candidate["profileSeedSHA256"])
     require(fixture_anchor_sha == trust_sha, "qa-tls-fixture-anchor-mismatch")
     require(fixture_origin == trust_origin, "qa-tls-fixture-origin-mismatch")
@@ -177,7 +222,8 @@ def inspect(candidate: dict, plan: dict) -> dict:
         app_info = plistlib.loads(_read_unique(zf, names, app_info_path))
         require(app_info.get("CFBundleIdentifier") == "app.neantik.desktop.dev", "not-dev-bundle")
         marker_key = "NeAntikPrivateQARuntimeVariant"
-        require((app_info.get(marker_key) == "V508") if v508 else (marker_key not in app_info),
+        require(app_info.get(marker_key) == candidate_variant
+                if candidate_variant is not None else marker_key not in app_info,
                 "qa-runtime-variant-app-marker-mismatch")
         require(app_info.get("CFBundleShortVersionString") == candidate.get("version"), "version-mismatch")
         require(app_info.get("CFBundleVersion") == candidate.get("build"), "build-mismatch")
@@ -190,7 +236,7 @@ def inspect(candidate: dict, plan: dict) -> dict:
         manager_expected = candidate.get("managerSignedSHA256") or candidate.get("managerSHA256")
         require(isinstance(manager_expected, str) and re.fullmatch(r"[0-9a-f]{64}", manager_expected),
                 "manager-sha-missing")
-        require(hashlib.sha256(_read_unique(zf, names, manager_path)).hexdigest() == manager_expected,
+        require(_digest_unique(zf, names, manager_path) == manager_expected,
                 "manager-sha-mismatch")
         if v508:
             require(plan.get("managerSignedSHA256") == manager_expected,
@@ -198,8 +244,34 @@ def inspect(candidate: dict, plan: dict) -> dict:
 
         host_prefix = app_prefix + "Helpers/webkit-v1/NeAntikWebKitHost.app/Contents/"
         host_info = plistlib.loads(_read_unique(zf, names, host_prefix + "Info.plist"))
+        require(host_info.get("NeAntikQADetachedSession") is True if detached
+                else "NeAntikQADetachedSession" not in host_info,
+                "private detached session marker mismatch")
+        require(host_info.get("NeAntikQADetachedSocketTransportV1") is True if sockets
+                else "NeAntikQADetachedSocketTransportV1" not in host_info,
+                "private detached socket transport marker mismatch")
+        require(host_info.get("NeAntikQAMetalFrameTransportV1") is True if metal
+                else "NeAntikQAMetalFrameTransportV1" not in host_info,
+                "private Metal frame marker mismatch")
+        if successor:
+            marker = host_info.get("NeAntikOwnedWebKitPrivateSuccessorV1")
+            require(isinstance(marker, dict) and set(marker) == {"manifestSHA256", "releaseQualified"}
+                    and marker["manifestSHA256"] == candidate["qaSuccessorManifestSHA256"]
+                    and marker["releaseQualified"] is False, "qa-successor-host-marker-mismatch")
+            require(host_info.get("NeAntikWebKitNetworkSandboxSHA256") == candidate["qaNetworkSandboxSHA256"],
+                    "qa-successor-sandbox-pin-mismatch")
+            for relative, key, limit in (
+                ("Resources/NeAntikRuntimeEvidence/NeAntikRuntimeImageBinding.json", "qaRuntimeBindingSHA256", 2_000_000),
+                ("Frameworks/WebKit.framework/Versions/A/Resources/com.apple.WebKit.NetworkProcess.sb",
+                 "qaNetworkSandboxSHA256", 2_000_000),
+            ):
+                entry = _read_unique_regular(zf, names, host_prefix + relative, limit)
+                require(hashlib.sha256(entry).hexdigest() == candidate[key], "qa-successor-entry-hash-mismatch:" + key)
         require(host_info.get("CFBundleIdentifier") == "app.neantik.desktop.dev.webkit-host",
                 "host-bundle-id-mismatch")
+        require(host_info.get(turns_scope.KEY) == fixture_turns
+                and (fixture_turns is None or host_info.get("NeAntikOwnedWebKitRTCRelayQualification") is True),
+                "qa-turns-signed-host-scope-mismatch")
         scope = host_info.get("NeAntikQATrustScope")
         require(isinstance(scope, dict) and isinstance(scope.get("anchorDER"), bytes)
                 and hashlib.sha256(scope["anchorDER"]).hexdigest() == trust_sha,
@@ -221,7 +293,7 @@ def inspect(candidate: dict, plan: dict) -> dict:
         host_expected = candidate.get("hostSHA256")
         require(isinstance(host_expected, str) and re.fullmatch(r"[0-9a-f]{64}", host_expected),
                 "host-sha-missing")
-        require(hashlib.sha256(_read_unique(zf, names, host_path)).hexdigest() == host_expected,
+        require(_digest_unique(zf, names, host_path) == host_expected,
                 "host-sha-mismatch")
         if v508:
             require(plan.get("hostSHA256") == host_expected, "qa-v508-plan-host-sha-mismatch")
@@ -233,7 +305,10 @@ def inspect(candidate: dict, plan: dict) -> dict:
             "WebCore.framework/Versions/A/WebCore",
             "WebKitLegacy.framework/Versions/A/WebKitLegacy",
         ):
-            _read_unique(zf, names, runtime_prefix + relative)
+            needle = (turns_scope.SELECTOR if expected_turns is not None
+                      and relative == "WebKit.framework/Versions/A/WebKit" else b"")
+            require(_scan_unique(zf, names, runtime_prefix + relative, needle),
+                    "qa-turns-runtime-selector-missing")
         if v508:
             gpu_path = runtime_prefix + "WebGPU.framework/Versions/A/WebGPU"
             binding_path = host_prefix + "Resources/NeAntikRuntimeEvidence/NeAntikRuntimeImageBinding.json"
@@ -252,17 +327,32 @@ def inspect(candidate: dict, plan: dict) -> dict:
         "ownedWebKitRuntimePresent": True,
         "qaTLSAnchorAndOriginBound": True,
         **({"qaRuntimeVariant": "V508", "qaWebGPUAndBindingBytesMatch": True} if v508 else {}),
+        **({turns_scope.RECEIPT_KEY: expected_turns} if expected_turns is not None else {}),
+        **({"qaRuntimeVariant": SUCCESSOR_VARIANT, "qaDetachedSession": detached,
+            "qaDetachedSocketTransport": sockets, "qaMetalFrameTransport": metal} if successor else {}),
         "scope": "static exact-ZIP consumer preflight only; signature, Gatekeeper, launch and runtime remain separate gates",
     }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--candidate", type=Path, required=True)
-    parser.add_argument("--run-plan", type=Path, required=True)
+    parser.add_argument("--candidate", type=Path)
+    parser.add_argument("--run-plan", type=Path)
+    parser.add_argument("--stdin", action="store_true",
+                        help="Read a candidate and runPlan snapshot from standard input")
     args = parser.parse_args()
+    if args.stdin and (args.candidate or args.run_plan):
+        parser.error("--stdin cannot be combined with file arguments")
+    if not args.stdin and (not args.candidate or not args.run_plan):
+        parser.error("--candidate and --run-plan are required")
     try:
-        result = inspect(json.loads(args.candidate.read_text()), json.loads(args.run_plan.read_text()))
+        if args.stdin:
+            payload = sys.stdin.buffer.read(64 * 1024 + 1)
+            require(len(payload) <= 64 * 1024, "oversized-input")
+            request = json.loads(payload)
+            result = inspect(request["candidate"], request["runPlan"])
+        else:
+            result = inspect(json.loads(args.candidate.read_text()), json.loads(args.run_plan.read_text()))
     except (OSError, ValueError, KeyError, TypeError, zipfile.BadZipFile, plistlib.InvalidFileException) as error:
         code = str(error) if isinstance(error, PreflightError) else "unreadable-input"
         print(json.dumps({"status": "REFUSED", "code": code, "externalSubmission": False}))

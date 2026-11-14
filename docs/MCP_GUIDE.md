@@ -243,6 +243,15 @@ applied or measured it. A profile requiring unsupported native controls refuses
 launch. Configuration exports, templates and profile workspaces prevent older
 managers from ignoring these policies; old documents remain legacy.
 
+In dual-engine builds, `changes.privacyPreset` applies to Chromium profiles.
+For WebKit, `privacyPolicyIntent` is null. Use `webKitBlockPeerConnections`
+and, when available, `webKitMediaPolicy` for its separate saved controls.
+An isolated WebKit proxy profile blocks peer connections by default. A build
+with signed relay support accepts `webKitRelayOnly: true` for that profile.
+Set `webKitBlockPeerConnections: false` in the same edit if it was enabled.
+The returned value describes saved intent. Establish the live TURN route with
+a runtime observation.
+
 `privacyPolicyIntent.siteProtection` is an intent for NeAntik's known-domain and
 tracker filters only. It does not mean Google Safe Browsing or unsafe-download
 scanning is enabled. The companion `siteProtectionScope` field repeats this

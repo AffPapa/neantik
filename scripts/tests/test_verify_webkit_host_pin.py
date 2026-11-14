@@ -14,12 +14,11 @@ SPEC.loader.exec_module(MODULE)
 
 
 class VerifyWebKitHostPinTests(unittest.TestCase):
-    def make_app(self, root: Path):
+    def make_app(self, root: Path, manager_id: str = "app.neantik.desktop.dev"):
         app = root / "NeAntik.app"
         contents = app / "Contents"
         host = contents / "Helpers/webkit-v1/NeAntikWebKitHost.app/Contents"
         (host / "MacOS").mkdir(parents=True)
-        manager_id = "app.neantik.desktop.dev"
         host_id = manager_id + ".webkit-host"
         executable = host / "MacOS/NeAntikWebKitHost"
         executable.write_bytes(b"signed-host-binary")
@@ -91,6 +90,42 @@ class VerifyWebKitHostPinTests(unittest.TestCase):
             result = MODULE.verify(app, self.runner_for(
                 "app.neantik.desktop.dev.webkit-host", cdhash))
             self.assertEqual(result["status"], "PASS")
+
+    def test_rejects_mismatched_or_debug_relay_capability(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, executable, _, cdhash = self.make_app(Path(temporary))
+            runner = self.runner_for("app.neantik.desktop.dev.webkit-host", cdhash)
+            manager_info = app / "Contents/Info.plist"
+            host_info = executable.parent.parent / "Info.plist"
+            for info_file in (host_info, manager_info):
+                info = plistlib.loads(info_file.read_bytes())
+                info[MODULE.RELAY_CAPABILITY_KEY] = True
+                info_file.write_bytes(plistlib.dumps(info))
+                with self.assertRaisesRegex(MODULE.PinError, "relay capabilities do not match"):
+                    MODULE.verify(app, runner)
+
+    def test_production_presenter_requires_matching_true_flags(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, executable, _, cdhash = self.make_app(Path(temporary), "app.neantik.desktop")
+            runner = self.runner_for("app.neantik.desktop.webkit-host", cdhash)
+            manager_info = app / "Contents/Info.plist"
+            host_info = executable.parent.parent / "Info.plist"
+            manager = plistlib.loads(manager_info.read_bytes())
+            host = plistlib.loads(host_info.read_bytes())
+            manager["NeAntikEngineScope"] = "chromium-owned-webkit"
+            key = MODULE.PRESENTER_CAPABILITY_KEY
+            for manager_flag, host_flag in ((None, None), (True, None), (1, True), (True, False)):
+                for path, info, flag in ((manager_info, manager, manager_flag), (host_info, host, host_flag)):
+                    info.pop(key, None)
+                    if flag is not None:
+                        info[key] = flag
+                    path.write_bytes(plistlib.dumps(info))
+                with self.assertRaisesRegex(MODULE.PinError, "detached presenter"):
+                    MODULE.verify(app, runner, require_presenter=True)
+            manager[key] = host[key] = True
+            manager_info.write_bytes(plistlib.dumps(manager))
+            host_info.write_bytes(plistlib.dumps(host))
+            self.assertEqual(MODULE.verify(app, runner, require_presenter=True)["status"], "PASS")
 
     def test_required_sandbox_pin_rejects_missing_or_changed_resource(self):
         with tempfile.TemporaryDirectory() as temporary:

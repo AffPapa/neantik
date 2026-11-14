@@ -1,4 +1,5 @@
 import Combine
+import Darwin
 import Foundation
 
 /// One admission slot for manager windows, including asynchronous proxy
@@ -15,21 +16,53 @@ final class ManagerLaunchAdmission: ObservableObject {
     private var nextStart = Date.distantPast
     private var source: DispatchSourceMemoryPressure?
     private let thermalState: () -> ProcessInfo.ThermalState
+    private let pressureLevel: (() -> Int32?)?
 
     init(observePressure: Bool = true,
-         thermalState: @escaping () -> ProcessInfo.ThermalState = { ProcessInfo.processInfo.thermalState }) {
+         thermalState: @escaping () -> ProcessInfo.ThermalState = { ProcessInfo.processInfo.thermalState },
+         pressureLevel: (() -> Int32?)? = nil) {
         self.thermalState = thermalState
+        if let pressureLevel {
+            self.pressureLevel = pressureLevel
+        } else if observePressure {
+            self.pressureLevel = Self.systemPressureLevel
+        } else {
+            self.pressureLevel = nil
+        }
+        refreshPressure()
         if observePressure {
             let source = DispatchSource.makeMemoryPressureSource(eventMask: [.normal, .warning, .critical], queue: .main)
             source.setEventHandler { [weak self, weak source] in
-                let pressure = source?.data.contains(.warning) == true || source?.data.contains(.critical) == true
-                Task { @MainActor [weak self] in self?.pressured = pressure }
+                guard let flags = source?.data else { return }
+                MainActor.assumeIsolated {
+                    self?.refreshPressure(eventFallback: flags.contains(.warning) || flags.contains(.critical))
+                }
             }
             source.resume()
             self.source = source
         }
     }
     deinit { source?.cancel() }
+
+    nonisolated private static func systemPressureLevel() -> Int32? {
+        var level: Int32 = 0
+        var size = MemoryLayout<Int32>.size
+        guard sysctlbyname("kern.memorystatus_vm_pressure_level", &level, &size, nil, 0) == 0,
+              size == MemoryLayout<Int32>.size else { return nil }
+        return level
+    }
+
+    private func refreshPressure(eventFallback: Bool? = nil) {
+        // This sysctl exposes Dispatch notification flags, not XNU's internal enum.
+        let observed: Bool?
+        switch pressureLevel?() {
+        case 1: observed = false
+        case 2, 4: observed = true
+        default: observed = eventFallback
+        }
+        if let observed, pressured != observed { pressured = observed }
+    }
+
     func requireSafePressure() throws {
         #if NEANTIK_WEBKIT_STANDALONE_HOST
         // The child has no manager install controller. The signed parent owns
@@ -40,6 +73,7 @@ final class ManagerLaunchAdmission: ObservableObject {
         #endif
         // Use one observation: critical followed by serious must not pass two
         // separate inequality checks while the system temperature changes.
+        refreshPressure()
         let thermal = thermalState()
         guard !pressured, thermal != .serious, thermal != .critical else {
             throw ManagerLaunchAdmissionError.pressure

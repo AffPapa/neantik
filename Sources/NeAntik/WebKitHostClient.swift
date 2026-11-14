@@ -35,6 +35,7 @@ actor WebKitHostClient {
         case invalidChild
         case invalidReply
         case childExited
+        case routeLostDuringStartup
         case childRefusedStartup(code: String, stage: String? = nil)
         case childStartupTimedOut(stage: String)
         case childStartupClosed(stage: String)
@@ -47,7 +48,17 @@ actor WebKitHostClient {
             case .invalidChild: return "Не удалось подтвердить подписанный процесс WebKit."
             case .invalidReply: return "Процесс WebKit вернул неожиданный ответ."
             case .childExited: return "Процесс WebKit завершился во время запуска."
+            case .routeLostDuringStartup: return "WebKit потерял сетевой маршрут при запуске. Профиль остался закрыт. Попробуйте открыть его снова."
             case .childRefusedStartup(let code, _):
+                if code == "webrtc-disable-unavailable" {
+                    return "WebKit не смог отключить peer-соединения WebRTC. Запуск профиля отменён."
+                }
+                if code == "webrtc-relay-unavailable" {
+                    return "WebKit не смог применить режим WebRTC через TURN. Запуск профиля отменён."
+                }
+                if code == "window-not-visible" {
+                    return "WebKit не смог показать окно профиля. Запуск отменён."
+                }
                 if code == "runtime-ambiguousRuntimeImage" ||
                     code.hasPrefix("runtime-ambiguousImages-") {
                     return "Встроенный WebKit не запущен: одновременно загрузились две версии движка. Это ошибка сборки NeAntik; профиль остался закрыт."
@@ -78,16 +89,51 @@ actor WebKitHostClient {
     private var activeBroker: WebKitLoopbackBroker?
     private var activeScope: WebKitRelayAuthority.Scope?
     private var closed = false
+    private var closeReplyInvalidated = false
+    private var closeFailureStage: String?
+    private var metalFrames: WebKitFrameTransport.Endpoint?
+    private var presenterChannel: FileHandle?
+    private var downloadIntake: FileHandle?
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    let canReadQAPreview: Bool
+    private let canSendMetalClick: Bool
+    private var sentMetalClick = false
+    private var requestedQAPreview = false
+    private var maySendQAPreviewClick = false
+    #endif
+
+    private static func processChannel(duplex: Bool, childReads: Bool) throws
+        -> (parent: FileHandle, child: FileHandle, attachment: Any) {
+        if duplex {
+            let (parent, child) = try ProxyRelayPrivatePipe.anonymousSocketPair()
+            return (parent, child, child)
+        }
+        let pipe = Pipe()
+        return childReads
+            ? (pipe.fileHandleForWriting, pipe.fileHandleForReading, pipe)
+            : (pipe.fileHandleForReading, pipe.fileHandleForWriting, pipe)
+    }
 
     private init(process: Process, input: FileHandle, output: FileHandle,
                  diagnostic: WebKitStartupDiagnosticCapture?,
                  session: WebKitHostIPC.Session, managerBundle: URL,
                  acceptedBootstrapGate: WebKitHostCloseGate,
+                 transport: WebKitHostCodeIdentity.QASessionTransport,
+                 metalFrames: WebKitFrameTransport.Endpoint?,
+                 presenterChannel: FileHandle?,
+                 downloadIntake: FileHandle?,
                  forgetChild: @escaping @Sendable (pid_t, Bool) throws -> Void) {
         self.process = process
         self.input = input
         self.output = output
         self.diagnostic = diagnostic
+        #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+        canReadQAPreview = transport == .detachedSocket
+        canSendMetalClick = transport == .detachedMetal
+        #endif
+        self.metalFrames = metalFrames
+        self.presenterChannel = presenterChannel
+        self.downloadIntake = downloadIntake
         self.session = session
         self.managerBundle = managerBundle
         self.forgetChild = forgetChild
@@ -129,15 +175,20 @@ actor WebKitHostClient {
             else { throw Failure.invalidState }
 
             let (helper, _) = try WebKitHostCodeIdentity.pinnedHelperCode(in: managerBundle)
-            let request = Pipe(), reply = Pipe(), child = Process()
+            let transport = try WebKitHostCodeIdentity.qaSessionTransport(for: helper)
+            let duplex = transport.usesDuplexSocket
+            let request = try processChannel(duplex: duplex, childReads: true)
+            let reply = try processChannel(duplex: duplex, childReads: false)
+            let child = Process()
+            defer { try? request.child.close(); try? reply.child.close() }
             let diagnostic = Pipe()
             child.terminationHandler = { process in
                 onUnexpectedTermination(session, process.terminationStatus)
             }
             child.executableURL = helper
             child.arguments = [NeAntikLaunchIntent.webKitHostChildArgument]
-            child.standardInput = request
-            child.standardOutput = reply
+            child.standardInput = request.attachment
+            child.standardOutput = reply.attachment
             #if DEBUG || NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_DIAGNOSTIC
             // The child writes only fixed, secret-free startup failure codes.
             // Keep them available to disposable QA logs; release builds discard
@@ -153,8 +204,8 @@ actor WebKitHostClient {
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin"
             ]
 
-            let input = request.fileHandleForWriting
-            let output = reply.fileHandleForReading
+            let input = request.parent
+            let output = reply.parent
             #if DEBUG || NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_DIAGNOSTIC
             let diagnosticReader = WebKitStartupDiagnosticCapture(
                 handle: diagnostic.fileHandleForReading)
@@ -173,11 +224,16 @@ actor WebKitHostClient {
                 parentStartStep = .registering
                 try registerChild(child.processIdentifier, helper.path)
                 parentStartStep = .closingUnusedEnds
-                try request.fileHandleForReading.close()
-                try reply.fileHandleForWriting.close()
+                try request.child.close()
+                try reply.child.close()
                 parentStartStep = .preparingPipes
-                try ProxyRelayPrivatePipe.prepare(input.fileDescriptor, writable: true)
-                try ProxyRelayPrivatePipe.prepare(output.fileDescriptor, writable: false)
+                if duplex {
+                    try ProxyRelayPrivatePipe.prepareAnonymousSocket(input.fileDescriptor)
+                    try ProxyRelayPrivatePipe.prepareAnonymousSocket(output.fileDescriptor)
+                } else {
+                    try ProxyRelayPrivatePipe.prepare(input.fileDescriptor, writable: true)
+                    try ProxyRelayPrivatePipe.prepare(output.fileDescriptor, writable: false)
+                }
                 parentStartStep = .verifyingChild
                 guard child.isRunning,
                       WebKitHostCodeIdentity.verifyChild(
@@ -201,10 +257,19 @@ actor WebKitHostClient {
                         managerBundle: managerBundle) != nil
                 else { throw Failure.invalidReply }
                 try Task.checkCancellation()
+                let metalFrames = try transport.usesFrames ? WebKitFrameTransport.offer(
+                    layout: WebKitFrameTransport.qaLayout, generation: session.generation,
+                    to: input.fileDescriptor, timeout: 2) : nil
+                let presenter = try transport == .detachedPresenter
+                    ? WebKitPresenterChannel.offer(to: input.fileDescriptor, timeout: 2) : nil
+                let downloadIntake = try transport == .detachedPresenter
+                    ? WebKitPresenterChannel.offer(to: input.fileDescriptor, timeout: 2) : nil
                 return WebKitHostClient(process: child, input: input, output: output,
                     diagnostic: diagnosticReader, session: session,
                     managerBundle: managerBundle,
                     acceptedBootstrapGate: gate,
+                    transport: transport, metalFrames: metalFrames, presenterChannel: presenter,
+                    downloadIntake: downloadIntake,
                     forgetChild: forgetChild)
             } catch {
                 try? input.close(); try? output.close()
@@ -270,13 +335,14 @@ actor WebKitHostClient {
     /// this authenticated child; it never receives permission to navigate.
     func activate(scope: WebKitRelayAuthority.Scope,
                   broker: WebKitLoopbackBroker,
-                  lease: WebKitNetworkProcessCodeIdentity.Lease) async throws {
+                  lease: WebKitNetworkProcessCodeIdentity.Lease,
+                  onRouteLoss: @escaping @Sendable (WebKitRelayAuthority.Scope) -> Void) async throws {
         guard scope == expectedScope, lease.scope == scope else { throw Failure.invalidState }
         var parentWaitPhase: ParentWaitPhase?
         do {
             guard !closed, process.isRunning, childIsTrusted() else { throw Failure.invalidChild }
             let frame = try gate.activateRoute(scope: scope) { exactScope in
-                try broker.activate(scope: exactScope, lease: lease)
+                try broker.activate(scope: exactScope, lease: lease, onLoss: onRouteLoss)
             }
             activeBroker = broker
             activeScope = scope
@@ -303,51 +369,134 @@ actor WebKitHostClient {
     /// acknowledgements for the same session before releasing the child fence.
     func close() async throws {
         guard !closed else { return }
+        guard !closeReplyInvalidated else { throw Failure.invalidReply }
+        closeFailureStage = nil
+        metalFrames = nil
+        presenterChannel = nil
+        downloadIntake = nil
         if gate.state != .closed {
+            var closeRequestSent = true
             if gate.state == .running || gate.state == .failed {
-                let childStillRunning = process.isRunning
-                if childStillRunning && !childIsTrusted() { throw Failure.invalidChild }
+                closeFailureStage = "parent-close-request"
                 try gate.requestClose()
-                if childStillRunning {
-                    do { try WebKitHostIPC.write(.close(session), to: input.fileDescriptor, timeout: 2) }
-                    catch {
-                        // A user-close can race this write. Only the later
-                        // saved+closed frames may prove a successful close.
-                        if process.isRunning { throw error }
+                closeRequestSent = false
+                if process.isRunning && childIsTrusted() {
+                    do {
+                        try WebKitHostIPC.write(.close(session), to: input.fileDescriptor, timeout: 2)
+                        closeRequestSent = true
+                    } catch ProxyRelayPrivatePipe.Failure.closed {
+                        // Window close or Metal teardown can finish the child
+                        // during verification or this write. The reply channel
+                        // was authenticated at startup and still owns its data.
                     }
                 }
             } else if gate.state != .closing && gate.state != .saved {
                 throw Failure.invalidState
             }
-            // A user-closed child may already have exited, or it may exit as
-            // soon as it writes acknowledgements. Drain its authenticated pipe
-            // before classifying that normal exit as an unconfirmed save.
             if gate.state == .closing {
-                try gate.accept(WebKitHostIPC.read(from: output.fileDescriptor, timeout: 30))
+                closeFailureStage = closeRequestSent ? "parent-close-awaiting-save" : "parent-close-draining-save"
+                try acceptCloseReply(timeout: process.isRunning && closeRequestSent ? 30 : 2)
             }
             guard gate.state == .saved else { throw Failure.invalidReply }
-            try gate.accept(WebKitHostIPC.read(from: output.fileDescriptor, timeout: 5))
+            closeFailureStage = "parent-close-awaiting-closed"
+            try acceptCloseReply(timeout: process.isRunning ? 5 : 2)
             guard gate.state == .closed else { throw Failure.invalidReply }
         }
+        closeFailureStage = "parent-close-awaiting-exit"
         for _ in 0..<100 where process.isRunning {
             try await Task.sleep(for: .milliseconds(20))
         }
         guard !process.isRunning else { throw Failure.cleanupUnconfirmed }
+        guard process.terminationReason == .exit, process.terminationStatus == EXIT_SUCCESS else {
+            throw Failure.cleanupUnconfirmed
+        }
+        closeFailureStage = "parent-close-releasing-lease"
         try input.close(); try output.close()
         if let activeBroker, let activeScope { await activeBroker.revoke(activeScope) }
         self.activeBroker = nil; self.activeScope = nil
         try forgetChild(process.processIdentifier, true)
         _ = readStartupDiagnostic()
         closeStartupDiagnostic()
+        closeFailureStage = nil
         closed = true
+    }
+
+    private func acceptCloseReply(timeout: TimeInterval) throws {
+        do {
+            try gate.accept(WebKitHostIPC.read(from: output.fileDescriptor, timeout: timeout))
+        } catch ProxyRelayPrivatePipe.Failure.timeout {
+            // An idle read has not consumed any part of the next frame.
+            throw ProxyRelayPrivatePipe.Failure.timeout
+        } catch {
+            closeReplyInvalidated = true
+            throw error
+        }
     }
 
     var isRunning: Bool { process.isRunning }
 
+    func takePresenterChannels() -> (WebKitFrameTransport.Endpoint, FileHandle, FileHandle)? {
+        guard !closed, gate.state == .running, let metalFrames, let presenterChannel, let downloadIntake else { return nil }
+        self.metalFrames = nil
+        self.presenterChannel = nil
+        self.downloadIntake = nil
+        return (metalFrames, presenterChannel, downloadIntake)
+    }
+
+    #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
+    func takeMetalFrameEndpoint() -> WebKitFrameTransport.Endpoint? {
+        guard !closed, gate.state == .running else { return nil }
+        defer { metalFrames = nil }
+        return metalFrames
+    }
+
+    func readFirstQAPreview() async -> ProxyRelayPrivatePipe.Preview? {
+        guard canReadQAPreview, !requestedQAPreview, !closed, gate.state == .running else { return nil }
+        requestedQAPreview = true
+        guard let preview = await readQAPreviewFrame() else { return nil }
+        maySendQAPreviewClick = preview.acceptsClick
+        return preview
+    }
+
+    func sendQAMetalClick(_ click: ProxyRelayPrivatePipe.PreviewClick) throws {
+        guard canSendMetalClick, !sentMetalClick, !closed, gate.state == .running,
+              process.isRunning, click.isValid else { throw Failure.invalidState }
+        sentMetalClick = true
+        try ProxyRelayPrivatePipe.writePreviewClick(output.fileDescriptor, click: click, generation: session.generation)
+    }
+
+    func sendQAPreviewClick(_ click: ProxyRelayPrivatePipe.PreviewClick) async -> Data? {
+        guard maySendQAPreviewClick, !closed, gate.state == .running, click.isValid else { return nil }
+        maySendQAPreviewClick = false
+        // One small frame on the reverse direction, serialized with lifecycle state.
+        do {
+            try ProxyRelayPrivatePipe.writePreviewClick(output.fileDescriptor, click: click, generation: session.generation)
+        } catch { return nil }
+        guard let preview = await readQAPreviewFrame(), !preview.acceptsClick else { return nil }
+        return preview.png
+    }
+
+    private func readQAPreviewFrame() async -> ProxyRelayPrivatePipe.Preview? {
+        let fd = fcntl(input.fileDescriptor, F_DUPFD_CLOEXEC, 3)
+        guard fd >= 0 else { return nil }
+        let generation = session.generation
+        let preview = await Task.detached {
+            defer { Darwin.close(fd) }
+            return try? ProxyRelayPrivatePipe.readPreview(fd, generation: generation)
+        }.value
+        guard !closed, gate.state == .running else { return nil }
+        return preview
+    }
+    #endif
+
     /// Closed-vocabulary QA marker only. Never expose the child's raw stderr.
     func qaCloseStage() -> String? {
         #if DEBUG || NEANTIK_WEBKIT_PROXY_QUALIFICATION || NEANTIK_WEBKIT_PROXY_DIAGNOSTIC
-        return Self.childStartupStage(diagnostic?.snapshot())
+        let childStage = Self.childStartupStage(diagnostic?.snapshot())
+        if childStage == "close-save-send-failed" || childStage == "close-closed-send-failed" {
+            return childStage
+        }
+        return closeFailureStage ?? childStage
         #else
         return nil
         #endif
@@ -413,6 +562,7 @@ actor WebKitHostClient {
     @discardableResult
     func abort() async -> Bool {
         guard !closed else { return !process.isRunning }
+        metalFrames = nil
         try? input.close(); try? output.close()
         if let activeBroker, let activeScope { await activeBroker.revoke(activeScope) }
         self.activeBroker = nil; self.activeScope = nil
@@ -565,6 +715,7 @@ actor WebKitHostClient {
             case .invalidChild: return "invalidChild"
             case .invalidReply: return "invalidReply"
             case .childExited: return "childExited"
+            case .routeLostDuringStartup: return "routeLostDuringStartup"
             case .childRefusedStartup: return "childRefused"
             case .childStartupTimedOut, .parentStartupTimedOut: return "timedOut"
             case .childStartupClosed: return "childClosed"
@@ -625,7 +776,7 @@ final class WebKitStartupDiagnosticCapture: @unchecked Sendable {
         ]
 
         static func isSafeQAWindowStage(_ value: String) -> Bool {
-            value == "qa-window-visible" || value == "qa-window-not-visible"
+            value == "qa-window-visible" || value == "qa-window-not-visible" || value == "qa-window-detached"
         }
 
         static let qaTLSStages: Set<String> = [
@@ -656,7 +807,7 @@ final class WebKitStartupDiagnosticCapture: @unchecked Sendable {
         }
 
         static let stages: Set<String> = [
-            "host-entry", "appkit-created", "event-loop-starting", "child-entry",
+            "host-entry", "appkit-created", "qa-detached-entry", "event-loop-starting", "child-entry",
             "identity-verified", "runtime-attested", "pipes-ready",
             "bootstrap-received", "profile-acquired", "bootstrap-accepted",
             "capability-received", "browser-created", "browser-runtime-attested",
@@ -668,9 +819,14 @@ final class WebKitStartupDiagnosticCapture: @unchecked Sendable {
             "qa-tls-settings-invalid", "qa-tls-settings-valid", "qa-tls-scope-created",
             "qa-tls-scope-install-rejected",
             "qa-nav-started", "qa-nav-finished", "qa-nav-sentinel", "qa-nav-failed-url", "qa-nav-failed-webkit", "qa-nav-failed-other",
-            "qa-window-visible", "qa-window-not-visible",
-            "visible-runtime-attested", "ready-sent", "close-request-received",
-            "close-main", "close-callback", "parent-spawning",
+            "qa-window-visible", "qa-window-not-visible", "qa-window-detached",
+            "visible-runtime-attested", "qa-detached-runtime-attested", "qa-preview-image-refused", "qa-preview-click-dispatched",
+            "ready-sent", "close-request-received",
+            "close-main", "close-callback", "close-save-sent", "close-closed-sent",
+            "close-save-send-failed", "close-closed-send-failed",
+            "parent-close-request", "parent-close-awaiting-save", "parent-close-draining-save",
+            "parent-close-awaiting-closed", "parent-close-awaiting-exit", "parent-close-releasing-lease",
+            "parent-spawning",
             "parent-registering", "parent-closing-unused-ends",
             "parent-preparing-pipes", "parent-verifying-child",
             "parent-writing-bootstrap", "parent-reading-bootstrap",
@@ -687,10 +843,12 @@ final class WebKitStartupDiagnosticCapture: @unchecked Sendable {
                           "changedFile", "decodeFailed", "schemaMismatch", "pidMismatch",
                           "managerMismatch", "generationMismatch", "executableMismatch",
                           "dataPathMismatch"],
-                "network": ["imageNotLoaded", "symbolMissing", "processStarting", "processStartupTimedOut", "invalidProcessIdentifier", "invalidProcessIdentity"]
+                "network": ["imageNotLoaded", "symbolMissing", "processStarting", "processStartupTimedOut", "invalidProcessIdentifier", "invalidProcessIdentity"],
+                "webrtc": ["disable-unavailable", "relay-unavailable"],
+                "window": ["not-visible"]
             ]
             let fixed = Set(groups.flatMap { prefix, values in values.map { prefix + "-" + $0 } })
-            let parentCauses = ["invalidState", "invalidChild", "invalidReply", "childExited",
+            let parentCauses = ["invalidState", "invalidChild", "invalidReply", "childExited", "routeLostDuringStartup",
                                 "childRefused", "timedOut", "childClosed", "cleanupUnconfirmed",
                                 "pipeClosed", "pipeTimeout", "pipeInvalid", "protocol",
                                 "cancelled", "posix", "cocoa", "other",

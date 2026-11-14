@@ -108,13 +108,21 @@ struct ProfileEditorProxyContextPresentation: Equatable, Sendable {
 }
 
 enum ProfileProxyTestPresentation {
-  static func successMessage(location: String, hasCompleteRouteContext: Bool = true) -> String {
+  static func successMessage(
+    location: String,
+    hasCompleteRouteContext: Bool = true,
+    engine: BrowserEngine
+  ) -> String {
+    let cleanLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
+    if engine == .webkit {
+      let observation = cleanLocation.isEmpty
+        ? "Прокси ответил на предварительную проверку curl."
+        : "Местоположение по проверке curl — " + cleanLocation + "."
+      return observation + " WebKit использует язык и часовой пояс macOS. Маршрут окна проверяется отдельно."
+    }
     guard hasCompleteRouteContext else {
       return "Прокси отвечает, но часовой пояс и язык не определены. Повтори проверку перед запуском."
     }
-    let cleanLocation = location.trimmingCharacters(
-      in: .whitespacesAndNewlines
-    )
     return cleanLocation.isEmpty
       ? "Проверка через прокси прошла"
       : "Проверка через прокси прошла · " + cleanLocation
@@ -173,6 +181,7 @@ struct ProfileEditorView: View {
   @State private var privacyPolicy: BrowserPrivacyPolicy
   @State private var webKitMediaPolicy: WebKitMediaPolicy
   @State private var webKitBlockPeerConnections: Bool
+  @State private var webKitRelayOnly: Bool
   @State private var startupMode: BrowserStartupMode
   @State private var usesProxy: Bool
   @State private var proxyKind: ProxyKind
@@ -203,7 +212,7 @@ struct ProfileEditorView: View {
   private var isDetectingProtocol: Bool { protocolDetectionTask != nil }
   @State private var showsAdvancedOptions = false
   private var hasUnsavedChanges: Bool {
-    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue, engine.rawValue, webKitMediaPolicy.rawValue, String(webKitBlockPeerConnections), fontPolicy.rawValue, privacyPolicy.draftToken,
+    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue, engine.rawValue, webKitMediaPolicy.rawValue, String(webKitBlockPeerConnections), String(webKitRelayOnly), fontPolicy.rawValue, privacyPolicy.draftToken,
       String(usesProxy), proxyKind.rawValue, proxyHost, proxyPort, proxyUsername,
       proxyPassword, proxyImportText], tags: tags, folderID: selectedFolderID)
   }
@@ -256,6 +265,7 @@ struct ProfileEditorView: View {
       profile.webKitRuntimeGeneration = .system
       profile.webKitMediaPolicy = .ask
       profile.webKitBlockPeerConnections = false
+      profile.webKitRelayOnly = false
     }
     #endif
     _draftProfileID = State(initialValue: profile.id)
@@ -276,6 +286,7 @@ struct ProfileEditorView: View {
     _privacyPolicy = State(initialValue: profile.privacyPolicy)
     _webKitMediaPolicy = State(initialValue: profile.webKitMediaPolicy)
     _webKitBlockPeerConnections = State(initialValue: profile.webKitBlockPeerConnections)
+    _webKitRelayOnly = State(initialValue: profile.webKitRelayOnly)
     _startupMode = State(initialValue: profile.startupMode)
     _usesProxy = State(initialValue: profile.proxy != nil)
     _proxyKind = State(initialValue: profile.proxy?.kind ?? .http)
@@ -306,7 +317,7 @@ struct ProfileEditorView: View {
       }
     }
     _initialDraft = State(initialValue: ProfileEditorDraft(values: [profile.name, profile.colorHex, profile.displaySymbolName,
-      profile.note, profile.startURL, profile.startupMode.rawValue, profile.engine.rawValue, profile.webKitMediaPolicy.rawValue, String(profile.webKitBlockPeerConnections), profile.fontPolicy.rawValue, profile.privacyPolicy.draftToken, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
+      profile.note, profile.startURL, profile.startupMode.rawValue, profile.engine.rawValue, profile.webKitMediaPolicy.rawValue, String(profile.webKitBlockPeerConnections), String(profile.webKitRelayOnly), profile.fontPolicy.rawValue, profile.privacyPolicy.draftToken, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
       profile.proxy?.host ?? "", profile.proxy.map { String($0.port) } ?? "",
       profile.proxy?.username ?? "", originalProxyPassword ?? "", ""], tags: profile.tags,
       folderID: folders.contains { $0.id == initialFolderID } ? initialFolderID : nil))
@@ -529,9 +540,23 @@ struct ProfileEditorView: View {
 
         if engine == .webkit {
           Section("WebRTC") {
-            Toggle("Ограничить WebRTC peer-соединения (экспериментально)", isOn: $webKitBlockPeerConnections)
-            Text("Ограничивает peer-соединения WebRTC. Сайты для звонков могут работать не полностью. Если движок не поддерживает настройку, профиль не запустится. Это не гарантирует анонимность.")
-              .font(.callout).foregroundStyle(.secondary)
+            if usesProxy && (WebKitPeerConnectionPolicy.productionRelayEnabled() || webKitRelayOnly) {
+              Toggle("Разрешить соединения WebRTC только через TURN", isOn: Binding(
+                get: { webKitRelayOnly },
+                set: { active in
+                  webKitRelayOnly = active
+                  if active { webKitBlockPeerConnections = false }
+                }
+              ))
+              .disabled(!WebKitPeerConnectionPolicy.productionRelayEnabled() && !webKitRelayOnly)
+              Text("Без этой настройки WebKit блокирует peer-соединения в прокси-профиле.")
+                .font(.callout).foregroundStyle(.secondary)
+            } else if usesProxy {
+              Text("WebKit блокирует peer-соединения в прокси-профиле.")
+                .font(.callout).foregroundStyle(.secondary)
+            } else {
+              Toggle("Отключать peer-соединения WebRTC", isOn: $webKitBlockPeerConnections)
+            }
           }
         }
         if engine == .webkit && WebKitMediaFeature.isEnabled {
@@ -741,7 +766,7 @@ struct ProfileEditorView: View {
               }
             }
 
-            if let detectedTimezone {
+            if engine == .chromium, let detectedTimezone {
               Text(
                 [
                   detectedLocation,
@@ -754,7 +779,7 @@ struct ProfileEditorView: View {
               .font(.caption)
               .foregroundStyle(.secondary)
             }
-            if let evidence = detectedProxyContextEvidence {
+            if engine == .chromium, let evidence = detectedProxyContextEvidence {
               let status = ProfileEditorProxyContextPresentation.resolve(
                 evidence: evidence
               )
@@ -770,7 +795,7 @@ struct ProfileEditorView: View {
               .foregroundStyle(.secondary)
               .accessibilityElement(children: .combine)
               .accessibilityLabel("\(status.title). \(status.detail)")
-            } else if detectedTimezone != nil {
+            } else if engine == .chromium, detectedTimezone != nil {
               Label(
                 "Контекст прокси без даты проверки",
                 systemImage: "exclamationmark.triangle.fill"
@@ -1081,7 +1106,12 @@ struct ProfileEditorView: View {
       proxyInputDidChange()
     }
     .onChange(of: engine) { _, value in
-      if value == .webkit { cancelProtocolDetection(); proxyTestTask?.cancel(); proxyTestTask = nil; isTesting = false; validationIssue = nil; errorMessage = nil }
+      invalidateProxyEvidence()
+      if value == .webkit {
+        cancelProtocolDetection()
+        validationIssue = nil
+        errorMessage = nil
+      }
     }
     .onChange(of: proxyUsername) { _, _ in
       proxyInputDidChange()
@@ -1393,7 +1423,7 @@ struct ProfileEditorView: View {
       #endif
       profile.engine = engine
       profile.fontPolicy = engine == .chromium ? fontPolicy : .native
-      profile.privacyPolicy = privacyPolicy
+      profile.privacyPolicy = engine == .chromium ? privacyPolicy : .legacy
       profile.webKitMediaPolicy = engine == .webkit ? webKitMediaPolicy : .ask
       profile.webKitBlockPeerConnections = engine == .webkit && webKitBlockPeerConnections
       profile.name = cleanName
@@ -1417,18 +1447,23 @@ struct ProfileEditorView: View {
       )
       let proxy = proxySettings.configuration
       profile.proxy = proxy
-      let desiredWebKitRuntime = WebKitProfilePolicy.runtimeGenerationForSave(
-        engine: engine,
-        proxy: proxy,
-        previous: profile.webKitRuntimeGeneration,
-        ownedProxyAvailable: WebKitProxyFeature.launchEnabled
-      )
+      profile.webKitRelayOnly = engine == .webkit && proxy != nil && webKitRelayOnly
+      let desiredWebKitRuntime = original.map {
+        WebKitProfilePolicy.runtimeGenerationForEdit($0, proxy: proxy,
+          ownedProxyAvailable: WebKitProxyFeature.launchEnabled)
+      } ?? WebKitProfilePolicy.runtimeGenerationForSave(
+        engine: engine, proxy: proxy, previous: profile.webKitRuntimeGeneration,
+        ownedProxyAvailable: WebKitProxyFeature.launchEnabled)
       if let original, original.webKitRuntimeGeneration != desiredWebKitRuntime {
         throw WebKitProfileError.unsupported(
           "Смена режима сети WebKit требует нового профиля: хранилища системного и изолированного WebKit разделены. Старый профиль и его данные сохранены."
         )
       }
       profile.webKitRuntimeGeneration = desiredWebKitRuntime
+      if profile.webKitRelayOnly && original?.webKitRelayOnly != true &&
+          !WebKitPeerConnectionPolicy.productionRelayEnabled() {
+        throw WebKitPeerConnectionPolicy.Failure.relayUnavailable
+      }
       let locationMatchesProxy = proxySettings.appliesProxyContext
       profile.identity = profile.identity.replacingProxyContext(
         timezoneIdentifier: locationMatchesProxy
@@ -1569,6 +1604,7 @@ struct ProfileEditorView: View {
     isTesting = true
     testMessage = nil
     proxyTestSucceeded = false
+    let testedEngine = engine
     proxyTestTask = Task {
         do {
           let observation = try await ProxyTester().probe(
@@ -1577,27 +1613,29 @@ struct ProfileEditorView: View {
           )
           try Task.checkCancellation()
           await MainActor.run {
+            guard !Task.isCancelled, engine == testedEngine else { return }
             let result = observation.result
             let location = result.locationSummary
             let hasCompleteRouteContext = ProxyHealthUpdatePolicy.success(observation).hasCompleteRouteContext
             testMessage = ProfileProxyTestPresentation.successMessage(
-              location: location, hasCompleteRouteContext: hasCompleteRouteContext
+              location: location, hasCompleteRouteContext: hasCompleteRouteContext, engine: testedEngine
             )
             detectedProxy = proxy
             detectedTimezone = result.timezoneIdentifier
             detectedLocale = result.localeIdentifier
             detectedLocation = location.isEmpty ? nil : location
-            detectedProxyContextEvidence = hasCompleteRouteContext ? .from(
+            detectedProxyContextEvidence = testedEngine == .chromium && hasCompleteRouteContext ? .from(
               observation.source,
               observedAt: observation.observedAt
             ) : nil
             isTesting = false
-            proxyTestSucceeded = hasCompleteRouteContext
+            proxyTestSucceeded = testedEngine == .webkit || hasCompleteRouteContext
             proxyTestTask = nil
           }
         } catch {
           guard !Task.isCancelled else { return }
           await MainActor.run {
+            guard !Task.isCancelled, engine == testedEngine else { return }
             testMessage = error.localizedDescription
             isTesting = false
             proxyTestSucceeded = false

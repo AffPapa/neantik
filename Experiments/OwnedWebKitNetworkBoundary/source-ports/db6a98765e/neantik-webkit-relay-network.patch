@@ -1,0 +1,171 @@
+diff --git a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.h b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.h
+--- a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.h
++++ b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.h
+@@ -41,7 +41,10 @@
+ #include <wtf/UniqueRef.h>
+ #include <wtf/text/WTFString.h>
+ 
+-#if !PLATFORM(COCOA)
++#if PLATFORM(COCOA)
++#include <Network/Network.h>
++#include <wtf/RetainPtr.h>
++#else
+ 
+ WTF_IGNORE_WARNINGS_IN_THIRD_PARTY_CODE_BEGIN
+ #include <webrtc/p2p/base/basic_packet_socket_factory.h>
+@@ -119,6 +122,8 @@
+     void closeSocket(WebCore::LibWebRTCSocketIdentifier);
+ 
+ #if PLATFORM(COCOA)
++    bool requiresRTCProxy() const { return m_requiresRTCProxy; }
++    nw_proxy_config_t requiredRTCProxyConfig() const { return m_requiredRTCProxyConfig.get(); }
+     NODELETE bool webRTCInterfaceMonitoringViaNWEnabled() const;
+     const std::optional<audit_token_t>& sourceApplicationAuditToken() const LIFETIME_BOUND { return m_sourceApplicationAuditToken; }
+     const UTF8CString& applicationBundleIdentifier() const LIFETIME_BOUND { return m_applicationBundleIdentifier; }
+@@ -174,6 +179,8 @@
+     HashMap<WebPageProxyIdentifier, String> m_attributedBundleIdentifiers;
+     std::optional<audit_token_t> m_sourceApplicationAuditToken;
+     UTF8CString m_applicationBundleIdentifier;
++    bool m_requiresRTCProxy { true };
++    RetainPtr<nw_proxy_config_t> m_requiredRTCProxyConfig;
+     const Ref<WorkQueue> m_rtcNetworkThreadQueue;
+ #endif
+ 
+diff --git a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.cpp b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.cpp
+--- a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.cpp
++++ b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.cpp
+@@ -76,8 +76,11 @@
+ #endif
+ {
+ #if PLATFORM(COCOA)
+-    if (CheckedPtr session = downcast<NetworkSessionCocoa>(connection.networkSession()))
++    if (CheckedPtr session = downcast<NetworkSessionCocoa>(connection.networkSession())) {
+         m_applicationBundleIdentifier = session->sourceApplicationBundleIdentifier().utf8();
++        m_requiresRTCProxy = session->requiresRTCProxy();
++        m_requiredRTCProxyConfig = session->requiredRTCProxyConfig();
++    }
+ #endif
+ #if !RELEASE_LOG_DISABLED
+     LibWebRTCProvider::setRTCLogging(WebKit2LogWebRTC.state == WTFLogChannelState::On ? WTFLogLevel::Info : WTFLogLevel::Warning);
+@@ -206,6 +209,13 @@
+         });
+         return;
+     }
++
++#if PLATFORM(COCOA)
++    if (requiresRTCProxy()) {
++        protect(this->connection())->send(Messages::WebRTCResolver::ResolvedAddressError(1), identifier);
++        return;
++    }
++#endif
+ 
+     RefPtr connection = m_connection.get();
+     if (connection && protect(connection->mdnsRegister())->hasRegisteredName(address)) {
+@@ -294,6 +304,11 @@
+         return;
+     }
+ 
++    if (requiresRTCProxy()) {
++        signalSocketIsClosed(identifier);
++        return;
++    }
++
+     auto socket = makeUnique<NetworkRTCUDPSocketCocoa>(identifier, *this, rtcAddress, m_ipcConnection.copyRef(), String(attributedBundleIdentifierFromPageIdentifier(pageIdentifier)), flags, WTF::move(domain));
+     addSocket(identifier, WTF::move(socket));
+ }
+@@ -323,7 +338,7 @@
+ 
+ void NetworkRTCProvider::getInterfaceName(URL&& url, WebPageProxyIdentifier pageIdentifier, RTCSocketCreationFlags flags, WebCore::RegistrableDomain&& domain, CompletionHandler<void(String&&)>&& completionHandler)
+ {
+-    if (!url.protocolIsInHTTPFamily()) {
++    if (requiresRTCProxy() || !url.protocolIsInHTTPFamily()) {
+         completionHandler({ });
+         return;
+     }
+diff --git a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
+--- a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
++++ b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
+@@ -34,6 +34,7 @@
+ #include "RTCSocketCreationFlags.h"
+ #include <WebCore/STUNMessageParsing.h>
+ #include <pal/spi/cocoa/NetworkSPI.h>
++#include <pal/spi/cf/CFNetworkSPI.h>
+ #include <wtf/BlockPtr.h>
+ #include <wtf/NeverDestroyed.h>
+ #include <wtf/TZoneMallocInlines.h>
+@@ -62,6 +62,12 @@
+ 
+ std::unique_ptr<NetworkRTCProvider::Socket> NetworkRTCTCPSocketCocoa::createClientTCPSocket(LibWebRTCSocketIdentifier identifier, NetworkRTCProvider& rtcProvider, const webrtc::SocketAddress& remoteAddress, int tcpOptions, const String& attributedBundleIdentifier, RTCSocketCreationFlags flags, const WebCore::RegistrableDomain& domain, Ref<IPC::Connection>&& connection)
+ {
++    if (rtcProvider.requiresRTCProxy()) {
++        constexpr int allowedOptions = webrtc::PacketSocketFactory::OPT_STUN | webrtc::PacketSocketFactory::OPT_TLS;
++        if (!rtcProvider.requiredRTCProxyConfig() || !(tcpOptions & webrtc::PacketSocketFactory::OPT_STUN) || (tcpOptions & ~allowedOptions))
++            return nullptr;
++    }
++
+     // FIXME: We should support ssltcp candidates, maybe support OPT_TLS_INSECURE as well.
+     return makeUnique<NetworkRTCTCPSocketCocoa>(identifier, rtcProvider, remoteAddress, tcpOptions, attributedBundleIdentifier, flags, domain, WTF::move(connection));
+ }
+@@ -94,6 +100,9 @@
+     RetainPtr tcpTLS = adoptNS(nw_parameters_create_secure_tcp(isTLS ? NW_PARAMETERS_DEFAULT_CONFIGURATION : NW_PARAMETERS_DISABLE_PROTOCOL, ^(nw_protocol_options_t tcp_options) {
+         nw_tcp_options_set_no_delay(tcp_options, true);
+     }));
++
++    if (auto proxy = rtcProvider.requiredRTCProxyConfig())
++        nw_parameters_add_custom_proxy_config(tcpTLS.get(), proxy);
+ 
+     setNWParametersApplicationIdentifiers(tcpTLS.get(), rtcProvider.applicationBundleIdentifier(), rtcProvider.sourceApplicationAuditToken(), attributedBundleIdentifier);
+     setNWParametersTrackerOptions(tcpTLS.get(), flags.isRelayDisabled, flags.isFirstParty, isKnownTracker(domain));
+diff --git a/Source/WebKit/NetworkProcess/webrtc/NetworkMDNSRegister.cpp b/Source/WebKit/NetworkProcess/webrtc/NetworkMDNSRegister.cpp
+--- a/Source/WebKit/NetworkProcess/webrtc/NetworkMDNSRegister.cpp
++++ b/Source/WebKit/NetworkProcess/webrtc/NetworkMDNSRegister.cpp
+@@ -30,6 +30,9 @@
+ 
+ #include "Logging.h"
+ #include "NetworkConnectionToWebProcess.h"
++#if PLATFORM(COCOA)
++#include "NetworkSessionCocoa.h"
++#endif
+ #include <wtf/UUID.h>
+ #include <wtf/text/MakeString.h>
+ 
+@@ -120,6 +123,12 @@
+ 
+ void NetworkMDNSRegister::registerMDNSName(WebCore::ScriptExecutionContextIdentifier documentIdentifier, const String& ipAddress, CompletionHandler<void(const String&, std::optional<WebCore::MDNSRegisterError>)>&& completionHandler)
+ {
++#if PLATFORM(COCOA)
++    CheckedPtr session = downcast<NetworkSessionCocoa>(m_connection->networkSession());
++    if (!session || session->requiresRTCProxy())
++        return completionHandler({ }, WebCore::MDNSRegisterError::BadParameter);
++#endif
++
+     auto name = makeString(WTF::UUID::createVersion4(), ".local"_s);
+ 
+     m_registeredNames.add(name);
+diff --git a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCMonitor.cpp b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCMonitor.cpp
+--- a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCMonitor.cpp
++++ b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCMonitor.cpp
+@@ -257,6 +257,12 @@
+ 
+ void NetworkRTCMonitor::startUpdatingIfNeeded()
+ {
++#if PLATFORM(COCOA)
++    if (m_rtcProvider->requiresRTCProxy()) {
++        onNetworksChanged({ }, { }, { });
++        return;
++    }
++#endif
+ #if ASSERT_ENABLED
+     m_isStarted = true;
+ #endif
+@@ -265,6 +271,10 @@
+ 
+ void NetworkRTCMonitor::stopUpdating()
+ {
++#if PLATFORM(COCOA)
++    if (m_rtcProvider->requiresRTCProxy())
++        return;
++#endif
+ #if ASSERT_ENABLED
+     m_isStarted = false;
+ #endif

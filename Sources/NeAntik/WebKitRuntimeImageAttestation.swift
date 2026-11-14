@@ -111,6 +111,20 @@ enum WebKitRuntimeImageAttestation {
         try attestCurrentProcess(bundleURL: bundleURL).url
     }
 
+    #if NEANTIK_WEBKIT_PROXY_PRODUCTION
+    /// The initial attestation hashes the signed image. A live check can
+    /// then detect an additional dyld image without hashing each video frame.
+    static func isOnlyLoadedRuntime(_ verified: VerifiedImage) -> Bool {
+        let paths = (0..<_dyld_image_count()).compactMap { index -> String? in
+            guard let name = _dyld_get_image_name(index) else { return nil }
+            return String(cString: name)
+        }
+        let candidates = runtimeCandidates(paths)
+        guard candidates.count == 1, let only = candidates.first else { return false }
+        return URL(fileURLWithPath: only).resolvingSymlinksInPath().standardizedFileURL == verified.url
+    }
+    #endif
+
     /// Returns a capability for the exact embedded image only after the
     /// current process's signed bundle pin and dyld image table agree.
     static func attestCurrentProcess(

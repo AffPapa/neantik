@@ -1,0 +1,334 @@
+diff --git a/Source/WebKit/CMakeLists.txt b/Source/WebKit/CMakeLists.txt
+index f6cdf68..947673a 100644
+--- a/Source/WebKit/CMakeLists.txt
++++ b/Source/WebKit/CMakeLists.txt
+@@ -1,5 +1,10 @@
+ set_property(DIRECTORY . PROPERTY FOLDER "WebKit")
+ 
++option(NEANTIK_TURNS_QA_ANCHOR "Private NeAntik TURN/TLS fixture trust" OFF)
++if (APPLE AND NEANTIK_TURNS_QA_ANCHOR)
++    add_compile_definitions(NEANTIK_TURNS_QA_ANCHOR)
++endif ()
++
+ # Build the IPC and platform layer as a subtarget. TestIPC links against it
+ # directly instead of WebKit, which enables WebKit to keep c++ implementation
+ # details out of the exported symbol table. In Xcode, this is built as
+diff --git a/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.h b/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.h
+index 2b2bb61..7c633dd 100644
+--- a/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.h
++++ b/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.h
+@@ -139,6 +139,9 @@ struct NetworkSessionCreationParameters {
+ #endif
+ #if PLATFORM(COCOA)
+     bool requiresRTCProxy { false };
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++    std::optional<std::pair<uint16_t, Vector<uint8_t>>> turnsQAAnchor;
++#endif
+     std::optional<Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>> proxyConfigData;
+ #endif
+     ResourceLoadStatisticsParameters resourceLoadStatisticsParameters;
+diff --git a/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.serialization.in b/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.serialization.in
+index 952e25c..c587a8a 100644
+--- a/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.serialization.in
++++ b/Source/WebKit/NetworkProcess/NetworkSessionCreationParameters.serialization.in
+@@ -112,6 +112,9 @@ enum class WebKit::AllowsCellularAccess : bool;
+ #endif
+ #if PLATFORM(COCOA)
+     bool requiresRTCProxy;
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++    std::optional<std::pair<uint16_t, Vector<uint8_t>>> turnsQAAnchor;
++#endif
+     std::optional<Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>> proxyConfigData;
+ #endif
+     WebKit::ResourceLoadStatisticsParameters resourceLoadStatisticsParameters;
+diff --git a/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.h b/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.h
+index 4bedf92..545411d 100644
+--- a/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.h
++++ b/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.h
+@@ -188,6 +188,9 @@ public:
+     bool proxyConfigurationRequiresTCPProtocols() const;
+     bool requiresRTCProxy() const { return m_requiresRTCProxy; }
+     nw_proxy_config_t requiredRTCProxyConfig() const;
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++    const auto& turnsQAAnchor() const LIFETIME_BOUND { return m_turnsQAAnchor; }
++#endif
+     bool isLegacyTLSAllowed() const { return m_isLegacyTLSAllowed; }
+ 
+ private:
+@@ -241,6 +244,9 @@ private:
+     String m_sourceApplicationSecondaryIdentifier;
+     const RetainPtr<CFDictionaryRef> m_proxyConfiguration;
+     const bool m_requiresRTCProxy;
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++    std::optional<std::pair<uint16_t, Vector<uint8_t>>> m_turnsQAAnchor;
++#endif
+     Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>> m_proxyConfigData;
+     Vector<RetainPtr<nw_proxy_config_t>> m_nwProxyConfigs;
+     Vector<UniqueRef<SessionWrapper>> m_replacedSessionWrappers;
+diff --git a/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm b/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm
+index f78a00f..f6c32e0 100644
+--- a/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm
++++ b/Source/WebKit/NetworkProcess/cocoa/NetworkSessionCocoa.mm
+@@ -39,6 +39,9 @@
+ #import "NetworkProcess.h"
+ #import "NetworkProcessProxyMessages.h"
+ #import "NetworkSessionCreationParameters.h"
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++#import <Security/Security.h>
++#endif
+ #import "NetworkStorageSession.h"
+ #import "PrivateRelayed.h"
+ #import "WKURLSessionTaskDelegate.h"
+@@ -1157,6 +1160,30 @@ - (void)URLSession:(NSURLSession *)session webSocketTask:(NSURLSessionWebSocketT
+     session = [NSURLSession sessionWithConfiguration:configuration delegate:delegate.get() delegateQueue:[NSOperationQueue mainQueue]];
+ }
+ 
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++static bool isSignedNeAntikDevHost(NetworkProcess& process)
++{
++    auto token = process.sourceApplicationAuditToken();
++    if (!token)
++        return false;
++    RetainPtr auditData = adoptCF(CFDataCreate(nullptr, reinterpret_cast<const UInt8*>(&*token), sizeof(*token)));
++    if (!auditData)
++        return false;
++    const void* keys[] { kSecGuestAttributeAudit };
++    const void* values[] { auditData.get() };
++    RetainPtr attributes = adoptCF(CFDictionaryCreate(nullptr, keys, values, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
++    SecCodeRef guest = nullptr;
++    if (!attributes || SecCodeCopyGuestWithAttributes(nullptr, attributes.get(), kSecCSDefaultFlags, &guest) != errSecSuccess)
++        return false;
++    RetainPtr code = adoptCF(guest);
++    SecRequirementRef requirement = nullptr;
++    if (SecRequirementCreateWithString(CFSTR("anchor apple generic and identifier \"app.neantik.desktop.dev.webkit-host\" and certificate leaf[subject.OU] = \"H6VGU2M6JD\" and certificate leaf[field.1.2.840.113635.100.6.1.13] exists"), kSecCSDefaultFlags, &requirement) != errSecSuccess)
++        return false;
++    RetainPtr expected = adoptCF(requirement);
++    return SecCodeCheckValidity(code.get(), kSecCSDefaultFlags, expected.get()) == errSecSuccess;
++}
++#endif
++
+ NetworkSessionCocoa::NetworkSessionCocoa(NetworkProcess& networkProcess, const NetworkSessionCreationParameters& parameters)
+     : NetworkSession(networkProcess, parameters)
+     , m_defaultSessionSet(SessionSet::create())
+@@ -1172,6 +1199,13 @@ - (void)URLSession:(NSURLSession *)session webSocketTask:(NSURLSessionWebSocketT
+     , m_isLegacyTLSAllowed(parameters.isLegacyTLSAllowed)
+ {
+     ASSERT(hasProcessPrivilege(ProcessPrivilege::CanAccessRawCookies));
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++
++    if (m_requiresRTCProxy && parameters.turnsQAAnchor && parameters.turnsQAAnchor->first >= 1024
++        && !parameters.turnsQAAnchor->second.isEmpty() && parameters.turnsQAAnchor->second.size() <= 4096
++        && isSignedNeAntikDevHost(networkProcess))
++        m_turnsQAAnchor = parameters.turnsQAAnchor;
++#endif
+ 
+ #if ASSERT_ENABLED
+     sessionsCreated = true;
+diff --git a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.cpp b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.cpp
+index 0d931ea..aec289a 100644
+--- a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.cpp
++++ b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.cpp
+@@ -80,6 +80,10 @@ NetworkRTCProvider::NetworkRTCProvider(NetworkConnectionToWebProcess& connection
+         m_applicationBundleIdentifier = session->sourceApplicationBundleIdentifier().utf8();
+         m_requiresRTCProxy = session->requiresRTCProxy();
+         m_requiredRTCProxyConfig = session->requiredRTCProxyConfig();
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++        if (m_requiredRTCProxyConfig)
++            m_turnsQAAnchor = session->turnsQAAnchor();
++#endif
+     }
+ #endif
+ #if !RELEASE_LOG_DISABLED
+diff --git a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.h b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.h
+index 322925d..7d534b6 100644
+--- a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.h
++++ b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCProvider.h
+@@ -124,6 +124,9 @@ public:
+ #if PLATFORM(COCOA)
+     bool requiresRTCProxy() const { return m_requiresRTCProxy; }
+     nw_proxy_config_t requiredRTCProxyConfig() const { return m_requiredRTCProxyConfig.get(); }
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++    const auto& turnsQAAnchor() const LIFETIME_BOUND { return m_turnsQAAnchor; }
++#endif
+     NODELETE bool webRTCInterfaceMonitoringViaNWEnabled() const;
+     const std::optional<audit_token_t>& sourceApplicationAuditToken() const LIFETIME_BOUND { return m_sourceApplicationAuditToken; }
+     const UTF8CString& applicationBundleIdentifier() const LIFETIME_BOUND { return m_applicationBundleIdentifier; }
+@@ -180,6 +183,9 @@ private:
+     std::optional<audit_token_t> m_sourceApplicationAuditToken;
+     UTF8CString m_applicationBundleIdentifier;
+     bool m_requiresRTCProxy { true };
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++    std::optional<std::pair<uint16_t, Vector<uint8_t>>> m_turnsQAAnchor;
++#endif
+     RetainPtr<nw_proxy_config_t> m_requiredRTCProxyConfig;
+     const Ref<WorkQueue> m_rtcNetworkThreadQueue;
+ #endif
+diff --git a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
+index 117996d..d351bf5 100644
+--- a/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
++++ b/Source/WebKit/NetworkProcess/webrtc/NetworkRTCTCPSocketCocoa.mm
+@@ -95,11 +95,29 @@ static inline void processIncomingData(RetainPtr<nw_connection_t>&& nwConnection
+     }).get());
+ }
+ 
+-static RetainPtr<nw_connection_t> createNWConnection(NetworkRTCProvider& rtcProvider, UTF8CStringView hostName, UTF8CStringView port, bool isTLS, const String& attributedBundleIdentifier, RTCSocketCreationFlags flags, const WebCore::RegistrableDomain& domain)
++static RetainPtr<nw_connection_t> createNWConnection(NetworkRTCProvider& rtcProvider, UTF8CStringView hostName, UTF8CStringView port, bool isTLS, const String& attributedBundleIdentifier, RTCSocketCreationFlags flags, const WebCore::RegistrableDomain& domain
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++    , bool isTURNS = false
++#endif
++)
+ {
+     RetainPtr host = adoptNS(nw_endpoint_create_host(hostName.utf8(), port.utf8()));
+     nw_parameters_configure_protocol_block_t configureTLS = isTLS ? NW_PARAMETERS_DEFAULT_CONFIGURATION : NW_PARAMETERS_DISABLE_PROTOCOL;
+     if (isTLS && rtcProvider.requiresRTCProxy()) {
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++        bool useQAAnchor = false;
++        RetainPtr<SecCertificateRef> qaAnchor;
++        if (isTURNS && rtcProvider.requiredRTCProxyConfig()) {
++            if (const auto& scope = rtcProvider.turnsQAAnchor(); scope
++                && String::fromUTF8(hostName.utf8()) == "turn-neantik.invalid"_s
++                && String::fromUTF8(port.utf8()) == String::number(scope->first)) {
++                useQAAnchor = true;
++                RetainPtr data = adoptCF(CFDataCreate(nullptr, scope->second.span().data(), scope->second.size()));
++                if (data)
++                    qaAnchor = adoptCF(SecCertificateCreateWithData(nullptr, data.get()));
++            }
++        }
++#endif
+         configureTLS = ^(nw_protocol_options_t tlsOptions) {
+             RetainPtr securityOptions = adoptNS(nw_tls_copy_sec_protocol_options(tlsOptions));
+             sec_protocol_options_set_peer_authentication_required(securityOptions.get(), true);
+@@ -111,6 +129,20 @@ static inline void processIncomingData(RetainPtr<nw_connection_t>&& nwConnection
+                     complete(false);
+                     return;
+                 }
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++                if (useQAAnchor) {
++                    RetainPtr policy = adoptCF(SecPolicyCreateSSL(true, CFSTR("turn-neantik.invalid")));
++                    const void* anchors[] { qaAnchor.get() };
++                    RetainPtr anchorList = qaAnchor ? adoptCF(CFArrayCreate(nullptr, anchors, 1, &kCFTypeArrayCallBacks)) : nullptr;
++                    if (!policy || !anchorList
++                        || SecTrustSetPolicies(certificateTrust.get(), policy.get()) != errSecSuccess
++                        || SecTrustSetAnchorCertificates(certificateTrust.get(), anchorList.get()) != errSecSuccess
++                        || SecTrustSetAnchorCertificatesOnly(certificateTrust.get(), true) != errSecSuccess) {
++                        complete(false);
++                        return;
++                    }
++                }
++#endif
+                 auto status = SecTrustEvaluateAsyncWithError(certificateTrust.get(), queue, ^(SecTrustRef, bool trusted, CFErrorRef) {
+                     complete(trusted);
+                 });
+@@ -148,7 +180,11 @@ static inline void processIncomingData(RetainPtr<nw_connection_t>&& nwConnection
+     if (hostName.empty())
+         hostName = remoteAddress.ipaddr().ToString();
+     bool isTLS = options & webrtc::PacketSocketFactory::OPT_TLS;
+-    lazyInitialize(m_nwConnection, createNWConnection(rtcProvider, UTF8CStringView::unsafeFromUTF8(hostName.c_str()), String::number(remoteAddress.port()).utf8(), isTLS, attributedBundleIdentifier, flags, domain));
++    lazyInitialize(m_nwConnection, createNWConnection(rtcProvider, UTF8CStringView::unsafeFromUTF8(hostName.c_str()), String::number(remoteAddress.port()).utf8(), isTLS, attributedBundleIdentifier, flags, domain
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++        , m_isSTUN
++#endif
++        ));
+ 
+     nw_connection_set_queue(m_nwConnection.get(), tcpSocketQueueSingleton());
+     nw_connection_set_state_changed_handler(m_nwConnection.get(), makeBlockPtr([weakNWConnection = WeakObjCPtr { m_nwConnection.get() }, identifier = m_identifier, rtcProvider = Ref { rtcProvider }, connection = m_connection.copyRef()](nw_connection_state_t state, _Nullable nw_error_t error) {
+diff --git a/Source/WebKit/Scripts/webkit/opaque_ipc_types.tracking.in b/Source/WebKit/Scripts/webkit/opaque_ipc_types.tracking.in
+index 34a1085..fdac83b 100644
+--- a/Source/WebKit/Scripts/webkit/opaque_ipc_types.tracking.in
++++ b/Source/WebKit/Scripts/webkit/opaque_ipc_types.tracking.in
+@@ -129,6 +129,7 @@
+ [Legacy] StructureParam WebCore::FragmentedSharedBuffer.toIPCData() Variant<std::optional<WebCore::SharedMemoryHandle>, Vector<std::span<const uint8_t>>>
+ [Legacy] StructureParam WebKit::RemoteLayerTreeTransaction::LayerCreationProperties::CustomData.sendRightAnnotated std::optional<WTF::MachSendRightAnnotated>
+ [Legacy] StructureParam WebKit::NetworkSessionCreationParameters.proxyConfigData std::optional<Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>>
++[NotSentFromWebContent] StructureParam WebKit::NetworkSessionCreationParameters.turnsQAAnchor std::optional<std::pair<uint16_t, Vector<uint8_t>>>
+ [Legacy] StructureParam WebKit::ICCData.data Vector<uint8_t>
+ [Legacy] StructureParam WebKit::IndexedColorSpace.table Vector<uint8_t>
+ 
+diff --git a/Source/WebKit/UIProcess/API/Cocoa/WKWebsiteDataStore.mm b/Source/WebKit/UIProcess/API/Cocoa/WKWebsiteDataStore.mm
+index 320db2e..6b1e25c 100644
+--- a/Source/WebKit/UIProcess/API/Cocoa/WKWebsiteDataStore.mm
++++ b/Source/WebKit/UIProcess/API/Cocoa/WKWebsiteDataStore.mm
+@@ -599,6 +599,20 @@ - (BOOL)_neAntikRequireRTCProxy:(nw_proxy_config_t)proxy
+     return YES;
+ }
+ 
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++- (BOOL)_neAntikRequireRTCProxy:(nw_proxy_config_t)proxy turnsFixturePort:(uint16_t)port anchorDER:(NSData *)anchor
++{
++    if (!proxy || nw_proxy_config_get_failover_allowed(proxy) || nw_proxy_config_get_type(proxy) != nw_proxy_type_http_connect
++        || port < 1024 || !anchor.length || anchor.length > 4096)
++        return NO;
++    RetainPtr configurations = @[ proxy ];
++    if (!protect(*_websiteDataStore)->setRequiredRTCProxyConfigData(serializedProxyConfigurations(configurations.get()), std::pair { port, makeVector(anchor) }))
++        return NO;
++    _proxyConfigurations = WTF::move(configurations);
++    return YES;
++}
++
++#endif
+ - (NSArray<nw_proxy_config_t> *)proxyConfigurations
+ {
+     return _proxyConfigurations.get();
+diff --git a/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.cpp b/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.cpp
+index b5819f1..d67d991 100644
+--- a/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.cpp
++++ b/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.cpp
+@@ -2481,6 +2481,9 @@ WebsiteDataStoreParameters WebsiteDataStore::parameters()
+ #endif
+ #if PLATFORM(COCOA)
+     networkSessionParameters.requiresRTCProxy = m_requiresRTCProxy;
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++    networkSessionParameters.turnsQAAnchor = m_turnsQAAnchor;
++#endif
+     networkSessionParameters.proxyConfigData = m_proxyConfigData;
+ #endif
+ #if ENABLE(CONTENT_EXTENSIONS)
+@@ -3011,11 +3014,20 @@ bool WebsiteDataStore::hasActivePages()
+ }
+ 
+ #if PLATFORM(COCOA)
+-bool WebsiteDataStore::setRequiredRTCProxyConfigData(Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>&& data)
++bool WebsiteDataStore::setRequiredRTCProxyConfigData(Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>&& data
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++    , std::optional<std::pair<uint16_t, Vector<uint8_t>>>&& turnsQAAnchor
++#endif
++)
+ {
+     if (m_requiresRTCProxy || networkProcessIfExists() || hasActivePages() || data.size() != 1 || data[0].first.isEmpty())
+         return false;
+ 
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++    if (turnsQAAnchor && (turnsQAAnchor->first < 1024 || turnsQAAnchor->second.isEmpty() || turnsQAAnchor->second.size() > 4096))
++        return false;
++    m_turnsQAAnchor = WTF::move(turnsQAAnchor);
++#endif
+     // Session creation and process recovery both consume these fields.
+     m_proxyConfigData = WTF::move(data);
+     m_requiresRTCProxy = true;
+diff --git a/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.h b/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.h
+index 618b352..6cf1072 100644
+--- a/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.h
++++ b/Source/WebKit/UIProcess/WebsiteData/WebsiteDataStore.h
+@@ -514,7 +514,11 @@ public:
+ #if PLATFORM(COCOA)
+     void clearProxyConfigData();
+     bool requiresRTCProxy() const { return m_requiresRTCProxy; }
+-    bool setRequiredRTCProxyConfigData(Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>&&);
++    bool setRequiredRTCProxyConfigData(Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>&&
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++        , std::optional<std::pair<uint16_t, Vector<uint8_t>>>&& turnsQAAnchor = std::nullopt
++#endif
++    );
+     void setProxyConfigData(Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>&&);
+ #endif
+     void setCompletionHandlerForRemovalFromNetworkProcess(CompletionHandler<void(String&&)>&&);
+@@ -732,6 +736,9 @@ private:
+ #if PLATFORM(COCOA)
+     const RefPtr<EnhancedSecuritySitesHolder> m_enhancedSecuritySites;
+     bool m_requiresRTCProxy { false };
++#if PLATFORM(MAC) && defined(NEANTIK_TURNS_QA_ANCHOR)
++    std::optional<std::pair<uint16_t, Vector<uint8_t>>> m_turnsQAAnchor;
++#endif
+     std::optional<Vector<std::pair<Vector<uint8_t>, std::optional<WTF::UUID>>>> m_proxyConfigData;
+ #endif
+     bool m_storageSiteValidationEnabled { true };

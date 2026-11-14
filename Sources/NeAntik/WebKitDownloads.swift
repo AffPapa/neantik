@@ -42,17 +42,48 @@ final class WebKitDownloadFile {
     }
     deinit { Darwin.close(stagingFD); Darwin.close(parentFD) }
 
+    func openNewStagingFile() throws -> FileHandle {
+        guard Self.directoryMatches(parentFD, parent), Self.directoryMatches(stagingFD, directory) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        let fd = openat(stagingFD, "payload", O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
+        guard fd >= 0 else { throw CocoaError(.fileWriteUnknown) }
+        return FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+    }
+
+    func openDownloadedPayload() throws -> FileHandle {
+        var before = stat(), after = stat()
+        guard Self.directoryMatches(stagingFD, directory),
+              fstatat(stagingFD, "payload", &before, AT_SYMLINK_NOFOLLOW) == 0,
+              (before.st_mode & S_IFMT) == S_IFREG else { throw CocoaError(.fileReadCorruptFile) }
+        let fd = openat(stagingFD, "payload", O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
+        guard fd >= 0 else { throw CocoaError(.fileReadUnknown) }
+        let handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+        guard fstat(fd, &after) == 0, before.st_dev == after.st_dev, before.st_ino == after.st_ino else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        _ = try WebKitDownloadChannel.validatePayload(handle)
+        return handle
+    }
+
     private static func directoryMatches(_ fd: Int32, _ url: URL) -> Bool {
         var pinned = stat(), current = stat()
         return fstat(fd, &pinned) == 0 && lstat(url.path, &current) == 0 &&
             current.st_mode & S_IFMT == S_IFDIR && pinned.st_dev == current.st_dev && pinned.st_ino == current.st_ino
     }
-    func publish() throws {
+    func publish(expectedFile: FileHandle? = nil) throws {
         guard !published else { return }
         var info = stat()
         guard Self.directoryMatches(parentFD, parent), fstatat(stagingFD, "payload", &info, AT_SYMLINK_NOFOLLOW) == 0,
               info.st_mode & S_IFMT == S_IFREG, info.st_uid == getuid(), info.st_nlink == 1 else {
             throw CocoaError(.fileReadCorruptFile)
+        }
+        if let expectedFile {
+            var pinned = stat()
+            guard fstat(expectedFile.fileDescriptor, &pinned) == 0,
+                  pinned.st_dev == info.st_dev, pinned.st_ino == info.st_ino else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
         }
         // Same filesystem, exclusive rename preserves xattrs and also works
         // on writable volumes where hardlinks are unavailable.
@@ -87,9 +118,15 @@ private final class WebKitDownloadRows: NSStackView {
 
 @MainActor
 final class WebKitDownloads: NSObject, WKDownloadDelegate {
-    enum State: Equatable { case choosing, receiving, cancelling, finished, cancelled, failed }
+    enum State: Equatable { case choosing, receiving, delivering, cancelling, finished, cancelled, failed }
     struct Snapshot { let id: UUID; let state: State; let filename: String; let fraction: Double }
     typealias Picker = (String, @escaping @MainActor (URL?) -> Void) -> Void
+    struct Remote {
+        let begin: (UUID, String, @escaping @MainActor (URL?) -> Void) -> Void
+        let deliver: (UUID, FileHandle, @escaping @MainActor (State) -> Void) -> Void
+        let cancel: (UUID) -> Void
+        let dispose: (UUID) -> Void
+    }
     private final class Transfer {
         let id = UUID()
         var download: WKDownload?
@@ -102,7 +139,7 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
         var observation: NSKeyValueObservation?
         var panel: NSSavePanel?
         init(_ download: WKDownload) { self.download = download }
-        var active: Bool { [.choosing, .receiving, .cancelling].contains(state) }
+        var active: Bool { [.choosing, .receiving, .delivering, .cancelling].contains(state) }
     }
     private var transfers: [Transfer] = []
     // Policy conversion is asynchronous: count it before returning .download.
@@ -114,21 +151,23 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
     #endif
     private weak var window: NSWindow?
     private let picker: Picker?
+    private let remote: Remote?
     private var closing = false
     private var drainCallbacks: [() -> Void] = []
     private var progressRefresh: Task<Void, Never>?
-    private let popover = NSPopover()
-    private let rows = WebKitDownloadRows()
-    let button = NSButton(title: "Загрузки", target: nil, action: nil)
+    private lazy var popover = NSPopover()
+    private lazy var rows = WebKitDownloadRows()
+    private(set) lazy var button = NSButton(title: "Загрузки", target: nil, action: nil)
     var activeCount: Int { transfers.filter(\.active).count + reservations.count }
     var snapshots: [Snapshot] {
         transfers.map { Snapshot(id: $0.id, state: $0.state, filename: $0.filename,
                                 fraction: $0.download?.progress.fractionCompleted ?? $0.fraction) }
     }
 
-    init(window: NSWindow, picker: Picker? = nil) {
-        self.window = window; self.picker = picker
+    init(window: NSWindow?, picker: Picker? = nil, remote: Remote? = nil) {
+        self.window = window; self.picker = picker; self.remote = remote
         super.init()
+        guard window != nil else { return }
         button.target = self; button.action = #selector(showDownloads)
         button.bezelStyle = .rounded; button.toolTip = "Прогресс загрузок и отмена. Закрытие профиля отменяет незавершённые файлы."
         button.setAccessibilityLabel("Загрузки этого профиля")
@@ -191,7 +230,8 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
             }
             self.refresh()
         }
-        if let picker { picker(item.filename, chosen) }
+        if let remote { remote.begin(item.id, item.filename, chosen) }
+        else if let picker { picker(item.filename, chosen) }
         else if let window, window.attachedSheet == nil {
             let panel = NSSavePanel(); item.panel = panel
             panel.title = "Сохранить загрузку"; panel.prompt = "Сохранить"
@@ -208,7 +248,16 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
         guard let item = item(download), item.state == .receiving else { return }
         do {
             guard let file = item.file else { finish(item, .failed); return }
-            try file.publish(); item.savedDestination = file.destination; finish(item, .finished)
+            if let remote {
+                let payload = try file.openDownloadedPayload()
+                item.state = .delivering
+                remote.deliver(item.id, payload) { [weak self, weak item] result in
+                    guard let item, item.state == .delivering else { return }
+                    self?.finish(item, result)
+                }
+            } else {
+                try file.publish(); item.savedDestination = file.destination; finish(item, .finished)
+            }
         }
         catch { finish(item, .failed) }
     }
@@ -219,11 +268,11 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
         finish(item, (error as NSError).code == NSURLErrorCancelled ? .cancelled : .failed)
     }
     func download(_ download: WKDownload, didReceive challenge: URLAuthenticationChallenge,
-                  completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+                  completionHandler: @escaping @MainActor (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         completionHandler(challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust ? .performDefaultHandling : .cancelAuthenticationChallenge, nil)
     }
     func download(_ download: WKDownload, willPerformHTTPRedirection response: HTTPURLResponse,
-                  newRequest request: URLRequest, decisionHandler: @escaping (WKDownload.RedirectPolicy) -> Void) {
+                  newRequest request: URLRequest, decisionHandler: @escaping @MainActor (WKDownload.RedirectPolicy) -> Void) {
         let permitted = request.url.map { url in
             WebKitProfilePolicy.permits(url) &&
                 !(response.url?.scheme?.lowercased() == "https" && url.scheme?.lowercased() != "https")
@@ -234,9 +283,12 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
     func cancel(_ id: UUID) { if let item = transfers.first(where: { $0.id == id }) { cancel(item) } }
     private func cancel(_ item: Transfer, outcome: State = .cancelled) {
         guard item.active, item.state != .cancelling else { return }
+        let delivering = item.state == .delivering
         item.state = .cancelling
         let completion = item.completion; item.completion = nil; completion?(nil)
+        if !delivering { remote?.cancel(item.id) }
         if let panel = item.panel { window?.endSheet(panel, returnCode: .cancel); item.panel = nil }
+        if delivering { finish(item, outcome); return }
         guard let download = item.download else { finish(item, outcome); return }
         download.cancel { [self, item] _ in finish(item, outcome) }
         refresh()
@@ -251,6 +303,7 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
         item.fraction = item.download?.progress.fractionCompleted ?? item.fraction
         item.download?.delegate = nil; item.download = nil
         item.file?.cleanup(); item.file = nil
+        remote?.dispose(item.id)
         refresh()
         notifyDrained()
     }
@@ -265,7 +318,7 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
         drainCallbacks.append(onDrained)
         if closing { notifyDrained(); return }
         closing = true; progressRefresh?.cancel(); progressRefresh = nil
-        popover.close()
+        if window != nil { popover.close() }
         if activeCount == 0 { notifyDrained(); return }
         for item in transfers where item.active { cancel(item) }
     }
@@ -292,6 +345,7 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
         NSWorkspace.shared.activateFileViewerSelecting([destination])
     }
     private func refresh() {
+        guard window != nil else { return }
         button.title = activeCount == 0 ? "Загрузки" : "Загрузки · \(activeCount)"
         popover.contentSize = NSSize(width: 380, height: min(320, max(72, transfers.count * 70 + 24)))
         for row in rows.arrangedSubviews { rows.removeArrangedSubview(row); row.removeFromSuperview() }
@@ -303,6 +357,7 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
             switch item.state {
             case .choosing: status = "Выбери, куда сохранить файл"
             case .receiving: status = (item.download?.progress.totalUnitCount ?? 0) > 0 ? "Загрузка: \(Int(max(0, min(1, item.download?.progress.fractionCompleted ?? 0)) * 100))%" : "Файл загружается…"
+            case .delivering: status = "Файл сохраняется…"
             case .cancelling: status = "Отмена…"
             case .finished: status = "Сохранено"
             case .cancelled: status = "Отменено"

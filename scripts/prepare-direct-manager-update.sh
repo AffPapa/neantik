@@ -333,6 +333,17 @@ case "$WEBKIT_HOST_ENABLED" in
   0|1) ;;
   *) echo "NEANTIK_WEBKIT_HOST_ENABLED must be 0 or 1." >&2; exit 64 ;;
 esac
+WEBKIT_RELAY_ENABLED="${NEANTIK_WEBKIT_RELAY_ONLY_ENABLED:-0}"
+case "$WEBKIT_RELAY_ENABLED" in
+  0) ;;
+  1)
+    if [[ "${NEANTIK_RELEASE_CHANNEL:-}" != "production" || "$WEBKIT_HOST_ENABLED" != "1" ]]; then
+      echo "WebKit relay requires production owned WebKit packaging." >&2
+      exit 78
+    fi
+    ;;
+  *) echo "NEANTIK_WEBKIT_RELAY_ONLY_ENABLED must be 0 or 1." >&2; exit 64 ;;
+esac
 if [[ "${NEANTIK_CHROMIUM_ONLY:-0}" == "1" && "$WEBKIT_HOST_ENABLED" == "1" ]]; then
   echo "Chromium-only manager cannot include the owned WebKit host." >&2
   exit 78
@@ -508,6 +519,17 @@ if [[ "$(plutil -extract fingerprintChromium.chromiumVersion raw -o - "$CANDIDAT
 fi
 
 if [[ "$WEBKIT_HOST_ENABLED" == "1" ]]; then
+  /usr/libexec/PlistBuddy \
+    -c 'Add :NeAntikEngineScope string chromium-owned-webkit' \
+    "$CANDIDATE_APP/Contents/Info.plist"
+  if [[ "$WEBKIT_RELAY_ENABLED" == "1" ]]; then
+    /usr/libexec/PlistBuddy \
+      -c 'Add :NeAntikWebKitRelayOnlyEnabled bool true' \
+      "$CANDIDATE_APP/Contents/Info.plist"
+  fi
+  /usr/libexec/PlistBuddy \
+    -c 'Add :NeAntikWebKitDetachedPresenterV1 bool true' \
+    "$CANDIDATE_APP/Contents/Info.plist"
   python3 "$PROJECT_DIR/scripts/package-owned-webkit-release.py" \
     --app "$CANDIDATE_APP" \
     --build-root "$NEANTIK_WEBKIT_BUILD_ROOT" \

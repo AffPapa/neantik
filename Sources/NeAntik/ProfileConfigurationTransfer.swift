@@ -8,7 +8,7 @@ import Foundation
 /// profile IDs and a new browser identity so a configuration file cannot clone
 /// a live session or silently reuse an identity.
 struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
-    static let currentSchemaVersion = 6
+    static let currentSchemaVersion = 7
     static let maximumProfileCount = ProfileStorageLimits.maximumProfileCount
 
     let schemaVersion: Int
@@ -27,10 +27,19 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
             throw ProfileConfigurationTransferError.invalidDate
         }
 
-        self.schemaVersion = profiles.contains(where: { $0.privacyPolicy != .legacy }) ? 6 :
-            (profiles.contains(where: { $0.webKitBlockPeerConnections }) ? 5 :
-            (profiles.contains(where: { $0.webKitRuntimeGeneration != .system }) ? 4 :
-            (profiles.contains(where: { $0.webKitMediaPolicy == .deny }) ? 3 : (profiles.contains(where: { $0.engine == .webkit }) ? 2 : 1))))
+        if profiles.contains(where: \.webKitRelayOnly) {
+            self.schemaVersion = 7
+        } else if profiles.contains(where: { $0.privacyPolicy != .legacy }) {
+            self.schemaVersion = 6
+        } else if profiles.contains(where: \.webKitBlockPeerConnections) {
+            self.schemaVersion = 5
+        } else if profiles.contains(where: { $0.webKitRuntimeGeneration != .system }) {
+            self.schemaVersion = 4
+        } else if profiles.contains(where: { $0.webKitMediaPolicy == .deny }) {
+            self.schemaVersion = 3
+        } else {
+            self.schemaVersion = profiles.contains(where: { $0.engine == .webkit }) ? 2 : 1
+        }
         self.exportedAt = exportedAt
         self.profiles = try profiles.map { profile in
             let folderName = folderNameByProfileID[profile.id]
@@ -47,7 +56,7 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
             Int.self,
             forKey: .schemaVersion
         )
-        guard [1, 2, 3, 4, 5, 6].contains(schemaVersion) else {
+        guard (1...Self.currentSchemaVersion).contains(schemaVersion) else {
             throw ProfileConfigurationTransferError.unsupportedSchema
         }
         let exportedAt = try container.decode(Date.self, forKey: .exportedAt)
@@ -64,7 +73,9 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
               (schemaVersion >= 5 || !profiles.contains(where: { $0.webKitBlockPeerConnections == true })),
               (schemaVersion < 5 || !profiles.contains(where: { $0.webKitBlockPeerConnections == nil })),
               (schemaVersion >= 6 || !profiles.contains(where: { ($0.privacyPolicy ?? .legacy) != .legacy })),
-              (schemaVersion < 6 || !profiles.contains(where: { $0.privacyPolicy == nil })) else {
+              (schemaVersion < 6 || !profiles.contains(where: { $0.privacyPolicy == nil })),
+              (schemaVersion >= 7 || !profiles.contains(where: { $0.webKitRelayOnly == true })),
+              (schemaVersion < 7 || !profiles.contains(where: { $0.webKitRelayOnly == nil })) else {
             throw ProfileConfigurationTransferError.unsupportedSchema
         }
         guard !profiles.isEmpty else {
@@ -105,6 +116,7 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
                 webKitRuntimeGeneration: entry.webKitRuntimeGeneration ?? .system,
                 webKitMediaPolicy: entry.webKitMediaPolicy ?? .ask,
                 webKitBlockPeerConnections: entry.webKitBlockPeerConnections ?? false,
+                webKitRelayOnly: entry.webKitRelayOnly ?? false,
                 fontPolicy: (entry.engine ?? .chromium) == .chromium && (entry.privacyPolicy ?? .legacy) != .legacy ? .systemV1 : .native,
                 privacyPolicy: entry.privacyPolicy ?? .legacy,
                 proxy: entry.proxy,
@@ -154,6 +166,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
     let webKitRuntimeGeneration: WebKitRuntimeGeneration?
     let webKitMediaPolicy: WebKitMediaPolicy?
     let webKitBlockPeerConnections: Bool?
+    let webKitRelayOnly: Bool?
     let privacyPolicy: BrowserPrivacyPolicy?
     let proxy: ProxyConfiguration?
     let folderName: String?
@@ -171,6 +184,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         webKitRuntimeGeneration: WebKitRuntimeGeneration? = nil,
         webKitMediaPolicy: WebKitMediaPolicy? = nil,
         webKitBlockPeerConnections: Bool? = nil,
+        webKitRelayOnly: Bool? = nil,
         privacyPolicy: BrowserPrivacyPolicy? = nil,
         proxy: ProxyConfiguration?,
         folderName: String?
@@ -187,6 +201,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         self.webKitRuntimeGeneration = webKitRuntimeGeneration
         self.webKitMediaPolicy = webKitMediaPolicy
         self.webKitBlockPeerConnections = webKitBlockPeerConnections
+        self.webKitRelayOnly = webKitRelayOnly
         self.privacyPolicy = privacyPolicy
         self.proxy = proxy
         self.folderName = folderName
@@ -215,6 +230,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         webKitRuntimeGeneration = normalized.webKitRuntimeGeneration
         webKitMediaPolicy = normalized.webKitMediaPolicy
         webKitBlockPeerConnections = normalized.webKitBlockPeerConnections
+        webKitRelayOnly = normalized.webKitRelayOnly
         privacyPolicy = normalized.privacyPolicy
         proxy = normalized.proxy
         self.folderName = folderName
@@ -235,6 +251,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
             webKitRuntimeGeneration: webKitRuntimeGeneration ?? .system,
             webKitMediaPolicy: webKitMediaPolicy ?? .ask,
             webKitBlockPeerConnections: webKitBlockPeerConnections ?? false,
+            webKitRelayOnly: webKitRelayOnly ?? false,
             privacyPolicy: privacyPolicy ?? .legacy,
             proxy: proxy,
             identity: BrowserIdentity()

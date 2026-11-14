@@ -755,6 +755,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     var webKitRuntimeGeneration: WebKitRuntimeGeneration
     var webKitMediaPolicy: WebKitMediaPolicy
     var webKitBlockPeerConnections: Bool
+    var webKitRelayOnly: Bool
     var fontPolicy: BrowserFontPolicy
     var privacyPolicy: BrowserPrivacyPolicy
     var proxy: ProxyConfiguration?
@@ -779,6 +780,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         webKitRuntimeGeneration: WebKitRuntimeGeneration = .system,
         webKitMediaPolicy: WebKitMediaPolicy = .ask,
         webKitBlockPeerConnections: Bool = false,
+        webKitRelayOnly: Bool = false,
         fontPolicy: BrowserFontPolicy = .native,
         privacyPolicy: BrowserPrivacyPolicy = .legacy,
         proxy: ProxyConfiguration? = nil,
@@ -803,6 +805,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         self.webKitRuntimeGeneration = webKitRuntimeGeneration
         self.webKitMediaPolicy = webKitMediaPolicy
         self.webKitBlockPeerConnections = webKitBlockPeerConnections
+        self.webKitRelayOnly = webKitRelayOnly
         self.fontPolicy = fontPolicy
         self.privacyPolicy = privacyPolicy
         self.proxy = proxy
@@ -874,7 +877,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
     func normalizedForPersistence() -> BrowserProfile? {
         if engine != .chromium && (fontPolicy != .native || privacyPolicy != .legacy) { return nil }
         if engine != .webkit && webKitRuntimeGeneration != .system { return nil }
-        if engine != .webkit && (webKitMediaPolicy != .ask || webKitBlockPeerConnections) { return nil }
+        if engine != .webkit && (webKitMediaPolicy != .ask || webKitBlockPeerConnections || webKitRelayOnly) { return nil }
         if engine == .webkit { do { try WebKitProfilePolicy.validateConfiguration(self) } catch { return nil } }
         let cleanStartURL = startURL.trimmingCharacters(
             in: .whitespacesAndNewlines
@@ -935,6 +938,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
             webKitRuntimeGeneration: webKitRuntimeGeneration,
             webKitMediaPolicy: webKitMediaPolicy,
             webKitBlockPeerConnections: webKitBlockPeerConnections,
+            webKitRelayOnly: webKitRelayOnly,
             // A copy receives a new identity and retains the requested protections.
             fontPolicy: fontPolicy,
             privacyPolicy: privacyPolicy,
@@ -964,6 +968,7 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         case webKitRuntimeGeneration
         case webKitMediaPolicy
         case webKitBlockPeerConnections
+        case webKitRelayOnly
         case fontPolicy
         case privacyPolicy
         case proxy
@@ -1014,6 +1019,8 @@ struct BrowserProfile: Codable, Identifiable, Equatable, Sendable {
         webKitMediaPolicy = try container.decodeIfPresent(WebKitMediaPolicy.self, forKey: .webKitMediaPolicy) ?? .ask
         webKitBlockPeerConnections = container.contains(.webKitBlockPeerConnections)
             ? try container.decode(Bool.self, forKey: .webKitBlockPeerConnections) : false
+        webKitRelayOnly = container.contains(.webKitRelayOnly)
+            ? try container.decode(Bool.self, forKey: .webKitRelayOnly) : false
         if container.contains(.fontPolicy) {
             do {
                 // Missing is legacy/native; explicit null or unknown is not.

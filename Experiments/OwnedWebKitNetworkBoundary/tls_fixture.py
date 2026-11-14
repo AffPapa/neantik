@@ -30,8 +30,9 @@ def fetch_destination(header):
 
 def certificates(root, address, name=NAME):
     ipaddress.IPv4Address(address)
-    if name != NAME and not re.fullmatch(r'[0-9a-f]{32}\.neantik-dns\.(?:test|invalid)', name):
-        raise ValueError('Only the owned random DNS fixture name is accepted')
+    if name != NAME and not (name == TurnTCPFixture.host and address == '127.0.0.1') and not re.fullmatch(
+            r'[0-9a-f]{32}\.neantik-dns\.(?:test|invalid)', name):
+        raise ValueError('Only owned TLS fixture names are accepted')
     root.mkdir(mode=0o700)
     (root / 'ca.cnf').write_text('[req]\ndistinguished_name=dn\n[dn]\n[ca_ext]\n'
                                'basicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign,cRLSign\n'
@@ -67,10 +68,14 @@ def certificates(root, address, name=NAME):
 
 
 class TLSOrigin(probe.Endpoint):
-    def __init__(self, host, marker, certificate_root, persistence_nonce=None):
+    def __init__(self, host, marker, certificate_root, persistence_nonce=None, *, click_probe=False,
+                 attribute_routes=False):
         if persistence_nonce is not None and not re.fullmatch(r'[0-9a-f]{32}', persistence_nonce):
             raise ValueError('Exact random persistence nonce required')
         self.persistence_nonce = persistence_nonce
+        self.proxy_peers = {}
+        self.attribute_routes = attribute_routes
+        self.click_probe = click_probe
         self.turn_probe_token = None
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         self.context.minimum_version = ssl.TLSVersion.TLSv1_2
@@ -80,13 +85,15 @@ class TLSOrigin(probe.Endpoint):
             self.counts.update(handshakeComplete=0, handshakeTimeout=0,
                                handshakeTLSFailure=0, handshakeOtherFailure=0,
                                pageResponses=0, stateInitial=0, stateRestored=0)
+            if attribute_routes:
+                self.counts['unattributedConnections'] = 0
         # The headed WebKit isolation fixture needs request ordering to tell a
         # first-load persistence failure from a repeated navigation or a lost
         # async acknowledgement. Keep only closed request categories and
         # monotonic timestamps; never retain URL, cookie, or nonce values.
         self.persistence_request_trace = []
 
-    def record_persistence_request(self, category, result, destination=None):
+    def record_persistence_request(self, category, result, destination=None, *, route=None):
         if self.persistence_nonce is None:
             return
         with self.lock:
@@ -97,6 +104,8 @@ class TLSOrigin(probe.Endpoint):
             }
             if destination is not None:
                 event['fetchDestination'] = destination
+            if route is not None:
+                event['route'] = route
             self.persistence_request_trace.append(event)
 
     def snapshot(self):
@@ -106,22 +115,27 @@ class TLSOrigin(probe.Endpoint):
                 result['requestTrace'] = [dict(event) for event in self.persistence_request_trace]
             return result
 
-    def arm_turn_probe(self, target, token):
+    def arm_turn_probe(self, target, token, *, outage: bool = False):
         if self.persistence_nonce is None:
             raise ValueError('TURN probe requires the owned HTTPS fixture')
-        fragment = turn_probe_fragment(target, token)
+        fragment = turn_probe_fragment(target, token, outage=outage)
         with self.lock:
             if self.turn_probe_token is not None:
                 raise ValueError('TURN probe already armed')
             self.turn_probe_token = token
             self.marker += fragment
 
-    def serve_persistence(self, client):
+    def disarm_turn_probe(self, base_page):
+        with self.lock:
+            self.turn_probe_token = None
+            self.marker = base_page
+
+    def serve_persistence(self, client, route):
         category = 'unread'
         try:
             client.settimeout(6)
             if self.refusing:
-                self.record_persistence_request('unread', 'refused')
+                self.record_persistence_request('unread', 'refused', route=route)
                 self.increment('refused'); return
             header = probe.read_header(client)
             request = header.split(b'\r\n', 1)[0]
@@ -134,8 +148,8 @@ class TLSOrigin(probe.Endpoint):
                 initial = f'GET /qa-state/{self.persistence_nonce}/initial HTTP/1.1'.encode()
                 restored = f'GET /qa-state/{self.persistence_nonce}/restored HTTP/1.1'.encode()
                 peer = None
-                for top in ('absent', 'created', 'error', 'timeout'):
-                    for frame in ('absent', 'created', 'error', 'timeout'):
+                for top in ('absent', 'created', 'rejected', 'error', 'timeout'):
+                    for frame in ('absent', 'created', 'rejected', 'error', 'timeout'):
                         expected = f'GET /qa-peer/{self.persistence_nonce}/{top}/{frame} HTTP/1.1'.encode()
                         if request == expected:
                             peer = f'peer-{top}-{frame}'
@@ -150,28 +164,40 @@ class TLSOrigin(probe.Endpoint):
                         expected = f'GET /qa-turn/{self.turn_probe_token}/{result} HTTP/1.1'.encode()
                         if request == expected:
                             turn = f'turn-{result}'
-                if request not in (initial, restored) and peer is None and gpu is None and turn is None:
-                    self.record_persistence_request('unrecognized', 'refused')
+                click = None
+                if self.click_probe:
+                    for result in ('trusted', 'untrusted'):
+                        if request == f'GET /qa-click/{self.persistence_nonce}/{result} HTTP/1.1'.encode():
+                            click = f'click-{result}'
+                control = peer or gpu or turn or click
+                if request not in (initial, restored) and control is None:
+                    self.record_persistence_request('unrecognized', 'refused', route=route)
                     self.increment('refused'); return
-                category = peer or gpu or turn or ('initial' if request == initial else 'restored')
+                category = control or ('initial' if request == initial else 'restored')
                 body = b'ack'
-                kind = None if peer or gpu or turn else ('stateInitial' if request == initial else 'stateRestored')
+                kind = None if control else ('stateInitial' if request == initial else 'stateRestored')
                 content_type = b'text/plain'
             client.sendall(b'HTTP/1.1 200 OK\r\nContent-Type: ' + content_type
                            + b'\r\nCache-Control: no-store\r\nConnection: close\r\nContent-Length: '
                            + str(len(body)).encode() + b'\r\n\r\n' + body)
             self.record_persistence_request(category, 'responded',
-                                            fetch_destination(header) if category == 'page' else None)
+                                            fetch_destination(header) if category == 'page' else None, route=route)
             self.increment('responses')
             if kind is not None:
                 self.increment(kind)
         except (OSError, EOFError, ValueError, UnicodeError):
-            self.record_persistence_request(category, 'failed')
+            self.record_persistence_request(category, 'failed', route=route)
             self.increment('refused')
 
     def handle(self, client):
         wrapped = None
         try:
+            route = None
+            if self.attribute_routes:
+                with self.lock:
+                    route = self.proxy_peers.get(client.getpeername(), 'unattributed')
+                    if route == 'unattributed':
+                        self.counts['unattributedConnections'] += 1
             # A headed WebKit trust challenge can pause the client while the
             # delegate evaluates the exact QA anchor. Four seconds classified
             # that pause as a TLS refusal and hid the actual boundary.
@@ -196,7 +222,7 @@ class TLSOrigin(probe.Endpoint):
             if self.persistence_nonce is None:
                 super().handle(wrapped)
             else:
-                self.serve_persistence(wrapped)
+                self.serve_persistence(wrapped, route)
         except OSError:
             self.increment('refused')
         finally:
@@ -208,7 +234,7 @@ class TLSOrigin(probe.Endpoint):
 
 
 class Tunnel(probe.Endpoint):
-    def __init__(self, destinations, authorization, port=0, dns_validator=None, *, turn_target=None):
+    def __init__(self, destinations, authorization, port=0, dns_validator=None, *, turn_target=None, route=None):
         if dns_validator is not None and not callable(dns_validator):
             raise ValueError('Owned DNS validator must be callable')
         owned = {}
@@ -220,6 +246,11 @@ class Tunnel(probe.Endpoint):
                 raise ValueError('Own fixture must be local')
             owned[authority] = (host, number)
         self.destinations = owned
+        if route not in (None, 'A', 'B') or (route is not None and any(
+                address[0] != '127.0.0.1' for address in owned.values())):
+            raise ValueError('Route attribution requires an owned loopback destination')
+        self.route = route
+        self.origins = destinations.copy()
         # Keep the bound address as immutable fixture metadata. The origin
         # socket is closed during teardown, but final counters are collected
         # afterwards to prove all channels drained.
@@ -236,11 +267,21 @@ class Tunnel(probe.Endpoint):
         self.turn_target = turn_target
         self.target_counts = {}
         self.turn_count = 0
+        self.turn_outage_refusals = 0
+        self.turn_outage_enabled = False
         super().__init__('127.0.0.1', '', auth=authorization, port=port)
 
     def authenticated_turn_count(self):
         with self.lock:
             return self.turn_count
+
+    def set_turn_outage(self, enabled):
+        with self.lock:
+            self.turn_outage_enabled = enabled
+
+    def turn_outage_count(self):
+        with self.lock:
+            return self.turn_outage_refusals
 
     def authenticated_for(self, origin):
         if not isinstance(origin, TLSOrigin): raise ValueError('Owned origin required')
@@ -251,6 +292,8 @@ class Tunnel(probe.Endpoint):
 
     def handle(self, client):
         upstream = None
+        tracked_origin = None
+        tracked_peer = None
         try:
             client.settimeout(4)
             if self.refusing:
@@ -263,7 +306,8 @@ class Tunnel(probe.Endpoint):
             if len(request) != 3 or request[0] != 'CONNECT' or request[2] != 'HTTP/1.1':
                 self.increment('refused'); return
             authority = request[1]
-            is_turn = self.turn_target is not None and authority == self.turn_target.authority
+            is_turn = self.turn_target is not None and authority in (
+                self.turn_target.authority, self.turn_target.direct_canary_authority)
             destination = (self.turn_target.loopback_destination(authority)
                            if is_turn else self.destinations.get(authority))
             if destination is None:
@@ -284,11 +328,29 @@ class Tunnel(probe.Endpoint):
                                b'Proxy-Authenticate: Basic realm="Owned TLS QA"\r\n'
                                b'Content-Length: 0\r\nConnection: close\r\n\r\n')
                 return
+            with self.lock:
+                deny_turn = is_turn and (self.turn_outage_enabled or authority == self.turn_target.direct_canary_authority)
+                if deny_turn:
+                    self.turn_outage_refusals += 1
+            if deny_turn:
+                client.sendall(b'HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\nConnection: close\r\n\r\n')
+                return
             if not is_turn and self.dns_validator is not None and not self.dns_validator(authority, destination):
                 self.increment('refused')
                 client.sendall(b'HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\nConnection: close\r\n\r\n')
                 return
-            upstream = socket.create_connection(destination, timeout=4)
+            if self.route is not None and not is_turn:
+                origin = self.origins[authority]
+                upstream = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                upstream.settimeout(4)
+                upstream.bind(('127.0.0.1', 0))
+                tracked_peer = upstream.getsockname()
+                with origin.lock:
+                    origin.proxy_peers[tracked_peer] = self.route
+                tracked_origin = origin
+                upstream.connect(destination)
+            else:
+                upstream = socket.create_connection(destination, timeout=4)
             with self.lock:
                 if self.stopping.is_set(): return
                 self.active.add(upstream)
@@ -312,6 +374,9 @@ class Tunnel(probe.Endpoint):
         except (OSError, ValueError, EOFError, UnicodeError):
             self.increment('refused')
         finally:
+            if tracked_origin is not None:
+                with tracked_origin.lock:
+                    tracked_origin.proxy_peers.pop(tracked_peer, None)
             with self.lock:
                 self.active.discard(client)
                 if upstream: self.active.discard(upstream)

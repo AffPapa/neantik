@@ -51,6 +51,8 @@ enum WebKitHostProfileReader {
             if data.first(where: { ![0x20, 0x09, 0x0A, 0x0D].contains($0) }) == 0x7B {
                 let document = try decoder.decode(Document.self, from: data)
                 guard (1...7).contains(document.schemaVersion),
+                      (document.schemaVersion >= 6 || !document.profiles.contains(where: \.webKitRelayOnly)),
+                      document.profiles.allSatisfy(WebKitPeerConnectionPolicy.validRelayPolicy),
                       (document.schemaVersion < 6 || WebKitPeerConnectionPolicy.hasExplicitProfilePolicies(in: data)),
                       (document.schemaVersion < 7 || BrowserPrivacyPolicy.hasExplicitProfilePolicies(in: data)),
                       (document.schemaVersion >= 7 || !document.profiles.contains(where: { $0.privacyPolicy != .legacy })),
@@ -64,7 +66,7 @@ enum WebKitHostProfileReader {
                 profiles = document.profiles
             } else {
                 let decoded = try decoder.decode([BrowserProfile].self, from: data)
-                guard !decoded.contains(where: { $0.engine == .webkit || $0.fontPolicy != .native || $0.privacyPolicy != .legacy || $0.webKitRuntimeGeneration != .system || $0.webKitBlockPeerConnections })
+                guard !decoded.contains(where: { $0.engine == .webkit || $0.fontPolicy != .native || $0.privacyPolicy != .legacy || $0.webKitRuntimeGeneration != .system || $0.webKitBlockPeerConnections || $0.webKitRelayOnly })
                 else { throw Failure.unsupportedSchema }
                 profiles = decoded
             }

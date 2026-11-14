@@ -67,6 +67,55 @@ struct WebKitDownloadTests {
         #expect(WebKitDownloadFile.suggestedName(String(repeating: "x", count: 500)).count == 180)
     }
 
+    @Test func detachedDownloadOffersAndReadOnlyPayloadsUseTheSameTransfer() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (hostIntake, managerIntake) = try ProxyRelayPrivatePipe.anonymousSocketPair()
+        let generation = UUID()
+        let offer = WebKitDownloadChannel.Offer(generation: generation, id: UUID(), filename: "Отчёт.txt")
+        let host = try WebKitDownloadChannel.offer(offer, on: hostIntake, timeout: 1)
+        let (incoming, manager) = try WebKitDownloadChannel.accept(on: managerIntake, generation: generation, timeout: 1)
+        #expect(incoming == offer)
+        try WebKitDownloadChannel.write(WebKitDownloadChannel.Decision.accept, on: manager, timeout: 1)
+        #expect(try WebKitDownloadChannel.read(WebKitDownloadChannel.Decision.self, on: host, timeout: 1) == .accept)
+
+        let source = try WebKitDownloadFile(destination: root.appendingPathComponent("producer"))
+        let bytes = Data((0..<520_000).map { UInt8(truncatingIfNeeded: $0) })
+        try bytes.write(to: source.staging)
+        let readOnly = try source.openDownloadedPayload()
+        try ProxyRelayPrivatePipe.sendDescriptor(readOnly.fileDescriptor, to: host.fileDescriptor, timeout: 1)
+        let payload = try ProxyRelayPrivatePipe.receiveDescriptor(from: manager.fileDescriptor, timeout: 1)
+        #expect(try WebKitDownloadChannel.validatePayload(payload) == bytes.count)
+        let destination = try WebKitDownloadFile(destination: root.appendingPathComponent("saved"))
+        let expected = try destination.openNewStagingFile()
+        try WebKitDownloadChannel.copyPayload(payload, to: expected)
+        try destination.publish(expectedFile: expected)
+        #expect(try Data(contentsOf: destination.destination) == bytes)
+        try WebKitDownloadChannel.write(WebKitDownloadChannel.Result.saved, on: manager, timeout: 1)
+        #expect(try WebKitDownloadChannel.read(WebKitDownloadChannel.Result.self, on: host, timeout: 1) == .saved)
+    }
+
+    @Test func detachedDownloadRejectsForeignGenerationWritableFileAndTraversal() throws {
+        let (hostIntake, managerIntake) = try ProxyRelayPrivatePipe.anonymousSocketPair()
+        let offered = WebKitDownloadChannel.Offer(generation: UUID(), id: UUID(), filename: "valid")
+        let host = try WebKitDownloadChannel.offer(offered, on: hostIntake, timeout: 1)
+        defer { WebKitDownloadChannel.stop(host) }
+        #expect(throws: WebKitDownloadChannel.Failure.self) {
+            try WebKitDownloadChannel.accept(on: managerIntake, generation: UUID(), timeout: 1)
+        }
+        let bad = WebKitDownloadChannel.Offer(generation: UUID(), id: UUID(), filename: "../path")
+        #expect(throws: WebKitDownloadChannel.Failure.self) {
+            try WebKitDownloadChannel.offer(bad, on: hostIntake, timeout: 1)
+        }
+        let output = try WebKitDownloadFile(destination: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        defer { output.cleanup() }
+        let writeOnly = try output.openNewStagingFile()
+        #expect(throws: WebKitDownloadChannel.Failure.self) {
+            try WebKitDownloadChannel.validatePayload(writeOnly)
+        }
+    }
+
     @Test func reservationCapacityAndCloseWaitForUnconvertedPolicies() {
         _ = NSApplication.shared
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 420), styleMask: [.titled], backing: .buffered, defer: false)
@@ -82,6 +131,14 @@ struct WebKitDownloadTests {
         #expect(!drained && downloads.activeCount == 4)
         #expect(!drained, "A navigation failure or timeout cannot prove download settlement")
         #expect(!downloads.reserve(NSObject(), from: view))
+    }
+
+    @Test func downloadPolicyCallbacksAreRegisteredWithWebKit() {
+        _ = NSApplication.shared
+        let window = NSWindow(contentRect: .zero, styleMask: [.titled], backing: .buffered, defer: false)
+        let downloads = WebKitDownloads(window: window)
+        #expect(downloads.responds(to: NSSelectorFromString("download:didReceiveAuthenticationChallenge:completionHandler:")))
+        #expect(downloads.responds(to: NSSelectorFromString("download:willPerformHTTPRedirection:newRequest:decisionHandler:")))
     }
 
     @Test func settledCloseSubscribersRunOnceIncludingReentrantWindowClose() {

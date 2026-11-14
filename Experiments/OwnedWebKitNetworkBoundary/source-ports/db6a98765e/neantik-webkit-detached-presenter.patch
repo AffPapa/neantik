@@ -1,0 +1,625 @@
+diff --git a/Source/WebKit/CMakeLists.txt b/Source/WebKit/CMakeLists.txt
+--- a/Source/WebKit/CMakeLists.txt
++++ b/Source/WebKit/CMakeLists.txt
+@@ -1,4 +1,9 @@
+ set_property(DIRECTORY . PROPERTY FOLDER "WebKit")
++
++option(NEANTIK_DETACHED_PRESENTER "NeAntik detached renderer input" OFF)
++if (APPLE AND NEANTIK_DETACHED_PRESENTER)
++    add_compile_definitions(NEANTIK_DETACHED_PRESENTER)
++endif ()
+ 
+ option(NEANTIK_DETACHED_INPUT_EXPERIMENT "Private NeAntik detached click qualification" OFF)
+ if (APPLE AND NEANTIK_DETACHED_INPUT_EXPERIMENT)
+diff --git a/Source/WebKit/Shared/NativeWebMouseEvent.h b/Source/WebKit/Shared/NativeWebMouseEvent.h
+--- a/Source/WebKit/Shared/NativeWebMouseEvent.h
++++ b/Source/WebKit/Shared/NativeWebMouseEvent.h
+@@ -68,7 +68,7 @@
+     WTF_MAKE_TZONE_ALLOCATED(NativeWebMouseEvent);
+ public:
+ #if USE(APPKIT)
+-#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT)
++#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT) || defined(NEANTIK_DETACHED_PRESENTER)
+     static Ref<NativeWebMouseEvent> create(WebMouseEventInit&&);
+ #endif
+     static Ref<NativeWebMouseEvent> create(NSEvent *, NSEvent *lastPressureEvent, NSView *, WebEventInputSource, WebCore::PlatformMouseEvent::CanInitiateDrag = WebCore::PlatformMouseEvent::CanInitiateDrag::Yes);
+diff --git a/Source/WebKit/Shared/mac/NativeWebMouseEventMac.mm b/Source/WebKit/Shared/mac/NativeWebMouseEventMac.mm
+--- a/Source/WebKit/Shared/mac/NativeWebMouseEventMac.mm
++++ b/Source/WebKit/Shared/mac/NativeWebMouseEventMac.mm
+@@ -35,7 +35,7 @@
+ 
+ WTF_MAKE_TZONE_ALLOCATED_IMPL(NativeWebMouseEvent);
+ 
+-#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT)
++#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT) || defined(NEANTIK_DETACHED_PRESENTER)
+ Ref<NativeWebMouseEvent> NativeWebMouseEvent::create(WebMouseEventInit&& init)
+ {
+     return adoptRef(*new NativeWebMouseEvent(WTF::move(init), nil));
+diff --git a/Source/WebKit/UIProcess/mac/PageClientImplMac.mm b/Source/WebKit/UIProcess/mac/PageClientImplMac.mm
+--- a/Source/WebKit/UIProcess/mac/PageClientImplMac.mm
++++ b/Source/WebKit/UIProcess/mac/PageClientImplMac.mm
+@@ -65,6 +65,9 @@
+ #import "WebPopupMenuProxyMac.h"
+ #import "WebPreferences.h"
+ #import "WebViewImpl.h"
++#if defined(NEANTIK_DETACHED_PRESENTER)
++#import "DetachedPresenterActivity.h"
++#endif
+ #import "WindowServerConnection.h"
+ #import "_WKDownloadInternal.h"
+ #import "_WKHitTestResultInternal.h"
+@@ -177,6 +180,12 @@
+ 
+ bool PageClientImpl::isViewWindowActive()
+ {
++#if defined(NEANTIK_DETACHED_PRESENTER)
++    if (RetainPtr view = m_view.get()) {
++        if (auto activity = detachedPresenterActivity(view.get()); activity && !activeWindow())
++            return activity->active;
++    }
++#endif
+     ASSERT(hasProcessPrivilege(ProcessPrivilege::CanCommunicateWithWindowServer));
+     RetainPtr activeViewWindow = activeWindow();
+     return activeViewWindow.get().isKeyWindow || (activeViewWindow && [NSApp keyWindow] == activeViewWindow.get());
+@@ -184,6 +193,12 @@
+ 
+ bool PageClientImpl::isViewFocused()
+ {
++#if defined(NEANTIK_DETACHED_PRESENTER)
++    if (RetainPtr view = m_view.get()) {
++        if (auto activity = detachedPresenterActivity(view.get()); activity && !activeWindow())
++            return activity->focused;
++    }
++#endif
+     // FIXME: This is called from the WebPageProxy constructor before we have a WebViewImpl.
+     // Once WebViewImpl and PageClient merge, this won't be a problem.
+     if (CheckedPtr impl = m_impl.get())
+@@ -232,6 +247,12 @@
+ 
+ bool PageClientImpl::isActiveViewVisible()
+ {
++#if defined(NEANTIK_DETACHED_PRESENTER)
++    if (RetainPtr view = m_view.get()) {
++        if (auto activity = detachedPresenterActivity(view.get()); activity && !activeWindow())
++            return activity->visible;
++    }
++#endif
+     RetainPtr activeView = this->activeView();
+     RetainPtr activeViewWindow = activeWindow();
+ 
+@@ -240,6 +261,12 @@
+ 
+ bool PageClientImpl::isMainViewVisible()
+ {
++#if defined(NEANTIK_DETACHED_PRESENTER)
++    if (RetainPtr view = m_view.get()) {
++        if (auto activity = detachedPresenterActivity(view.get()); activity && !activeWindow())
++            return activity->visible;
++    }
++#endif
+     RetainPtr mainView = m_view.get();
+     RetainPtr mainViewWindow = [mainView window];
+ 
+@@ -248,16 +275,34 @@
+ 
+ bool PageClientImpl::isViewVisibleOrOccluded()
+ {
++#if defined(NEANTIK_DETACHED_PRESENTER)
++    if (RetainPtr view = m_view.get()) {
++        if (auto activity = detachedPresenterActivity(view.get()); activity && !activeWindow())
++            return activity->visible;
++    }
++#endif
+     return RetainPtr { activeWindow() }.get().isVisible;
+ }
+ 
+ bool PageClientImpl::isViewInWindow()
+ {
++#if defined(NEANTIK_DETACHED_PRESENTER)
++    if (RetainPtr view = m_view.get()) {
++        if (auto activity = detachedPresenterActivity(view.get()); activity && !activeWindow())
++            return true;
++    }
++#endif
+     return activeWindow();
+ }
+ 
+ bool PageClientImpl::isVisuallyIdle()
+ {
++#if defined(NEANTIK_DETACHED_PRESENTER)
++    if (RetainPtr view = m_view.get()) {
++        if (auto activity = detachedPresenterActivity(view.get()); activity && !activeWindow())
++            return !activity->visible;
++    }
++#endif
+     // The window server's window modification notifications are a form of occlusion detection, so they
+     // should be ignored when the client has disabled it.
+     bool applicationWindowModificationsHaveStopped = m_impl && m_impl->windowOcclusionDetectionEnabled() && WindowServerConnection::singleton().applicationWindowModificationsHaveStopped();
+@@ -1149,7 +1194,7 @@
+ bool PageClientImpl::windowIsFrontWindowUnderMouse(const NativeWebMouseEvent& event)
+ {
+     RetainPtr nativeEvent = event.nativeEvent();
+-#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT)
++#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT) || defined(NEANTIK_DETACHED_PRESENTER)
+     if (!nativeEvent)
+         return false;
+ #endif
+diff --git a/Source/WebKit/UIProcess/mac/DetachedPresenterActivity.h b/Source/WebKit/UIProcess/mac/DetachedPresenterActivity.h
+new file mode 100644
+--- /dev/null
++++ b/Source/WebKit/UIProcess/mac/DetachedPresenterActivity.h
+@@ -0,0 +1,38 @@
++#pragma once
++
++#import <AppKit/NSView.h>
++#import <Foundation/Foundation.h>
++#import <objc/runtime.h>
++#include <optional>
++
++namespace WebKit {
++
++struct DetachedPresenterActivity {
++    bool visible { false };
++    bool active { false };
++    bool focused { false };
++    bool operator==(const DetachedPresenterActivity&) const = default;
++};
++
++inline const void *detachedPresenterActivityKey()
++{
++    // Objective-C selectors are interned across translation units.
++    return sel_registerName("_neantikDetachedPresenterActivity");
++}
++
++inline std::optional<DetachedPresenterActivity> detachedPresenterActivity(NSView *view)
++{
++    NSNumber *value = objc_getAssociatedObject(view, detachedPresenterActivityKey());
++    if (!value || view.window)
++        return std::nullopt;
++    auto bits = value.unsignedCharValue;
++    return DetachedPresenterActivity { !!(bits & 1), !!(bits & 2), !!(bits & 4) };
++}
++
++inline void setDetachedPresenterActivity(NSView *view, DetachedPresenterActivity activity)
++{
++    unsigned bits = (activity.visible ? 1 : 0) | (activity.active ? 2 : 0) | (activity.focused ? 4 : 0);
++    objc_setAssociatedObject(view, detachedPresenterActivityKey(), @(bits), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
++}
++
++} // namespace WebKit
+diff --git a/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm b/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
+--- a/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
++++ b/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
+@@ -35,7 +35,18 @@
+ 
+ #import "AppKitSPI.h"
+ #import "CompletionHandlerCallChecker.h"
+-#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT)
++#if defined(NEANTIK_DETACHED_PRESENTER)
++#import "DetachedPresenterActivity.h"
++#import "EditingRange.h"
++#import "EditorState.h"
++#import "InsertTextOptions.h"
++#import "NativeWebWheelEvent.h"
++#import "WebWheelEvent.h"
++#import <WebCore/ActivityState.h>
++#import <WebCore/CompositionHighlight.h>
++#import <WebCore/CompositionUnderline.h>
++#endif
++#if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT) || defined(NEANTIK_DETACHED_PRESENTER)
+ #import "NativeWebMouseEvent.h"
+ #endif
+ #import "PDFPluginIdentifier.h"
+@@ -2347,6 +2358,125 @@
+ @end
+ #endif
+ 
++#if defined(NEANTIK_DETACHED_PRESENTER)
++@interface WKWebView (NeAntikDetachedPresenter)
++- (BOOL)_neantikApplyDetachedPresenterInput:(NSDictionary *)input;
++- (void)_neantikReadDetachedEditorState:(void (^)(NSDictionary *))reply;
++@end
++
++@implementation WKWebView (NeAntikDetachedPresenter)
++
++- (void)_neantikReadDetachedEditorState:(void (^)(NSDictionary *))reply
++{
++    if (!reply)
++        return;
++    const auto activity = WebKit::detachedPresenterActivity(self);
++    if (!activity || !activity->focused || !_page->hasRunningProcess())
++        return reply(nil);
++
++    _page->neAntikDetachedEditorSnapshot([weakSelf = WeakObjCPtr<WKWebView>(self), reply = makeBlockPtr(reply)]
++        (const String& token, bool secure, const WebKit::EditingRange& selected,
++            const WebKit::EditingRange& marked, const WebCore::IntRect& caret) {
++        RetainPtr view = weakSelf.get();
++        auto currentActivity = view ? WebKit::detachedPresenterActivity(view.get()) : std::nullopt;
++        if (!currentActivity || !currentActivity->focused || token.isEmpty())
++            return reply(nil);
++
++        auto editingToken = token.createNSString();
++        if (secure)
++            return reply(@{ @"token": editingToken.get(), @"secure": @YES });
++
++        return reply(@{ @"token": editingToken.get(), @"secure": @NO,
++            @"selected": [NSValue valueWithRange:selected],
++            @"marked": [NSValue valueWithRange:marked],
++            @"caret": [NSValue valueWithRect:NSMakeRect(caret.x(), caret.y(), caret.width(), caret.height())] });
++    });
++}
++
++- (BOOL)_neantikApplyDetachedPresenterInput:(NSDictionary *)input
++{
++    if (self.window || !_page->hasRunningProcess())
++        return NO;
++    NSString *action = input[@"action"];
++    if ([action isEqualToString:@"activity"]) {
++        bool visible = [input[@"visible"] boolValue];
++        bool active = visible && [input[@"active"] boolValue];
++        bool focused = active && [input[@"focused"] boolValue];
++        WebKit::DetachedPresenterActivity activity { visible, active, focused };
++        auto previous = WebKit::detachedPresenterActivity(self);
++        if (previous == activity)
++            return YES;
++        if (!previous)
++            _page->setShouldSkipWaitingForPaintAfterNextViewDidMoveToWindow(true);
++        WebKit::setDetachedPresenterActivity(self, activity);
++        using State = WebCore::ActivityState;
++        _page->activityStateDidChange({ State::WindowIsActive, State::IsFocused, State::IsVisible,
++            State::IsVisibleOrOccluded, State::IsInWindow, State::IsVisuallyIdle },
++            WebKit::WebPageProxy::ActivityStateChangeDispatchMode::Immediate);
++        return YES;
++    }
++    auto activity = WebKit::detachedPresenterActivity(self);
++    if (!activity || !activity->active)
++        return NO;
++    if ([action isEqualToString:@"click"] || [action isEqualToString:@"scroll"]) {
++        NSPoint position = [input[@"point"] pointValue];
++        if (!NSPointInRect(position, self.bounds))
++            return NO;
++        if ([action isEqualToString:@"click"]) {
++            if (!activity->focused)
++                return NO;
++            NSPoint globalPosition = [input[@"screenPoint"] pointValue];
++            if (!std::isfinite(globalPosition.x) || !std::isfinite(globalPosition.y))
++                return NO;
++            for (auto type : { WebKit::WebEventType::MouseDown, WebKit::WebEventType::MouseUp }) {
++                WebKit::WebMouseEventData data;
++                data.button = WebKit::WebMouseEventButton::Left;
++                data.buttons = type == WebKit::WebEventType::MouseDown ? 1 : 0;
++                data.position = { position.x, position.y };
++                data.globalPosition = { globalPosition.x, globalPosition.y };
++                data.clickCount = 1;
++                data.canInitiateDrag = WebCore::PlatformMouseEvent::CanInitiateDrag::No;
++                _page->handleMouseEvent(WebKit::NativeWebMouseEvent::create(
++                    { { type, { }, MonotonicTime::now() }, WTF::move(data) }));
++            }
++            return YES;
++        }
++        float deltaX = [input[@"deltaX"] floatValue];
++        float deltaY = [input[@"deltaY"] floatValue];
++        if (!std::isfinite(deltaX) || !std::isfinite(deltaY))
++            return NO;
++        auto timestamp = MonotonicTime::now();
++        auto event = WebKit::WebWheelEvent::create({ WebKit::WebEventType::Wheel, { }, timestamp }, {
++            .position = { static_cast<int>(position.x), static_cast<int>(position.y) },
++            .delta = { deltaX, deltaY },
++            .granularity = WebKit::WebWheelEvent::Granularity::ScrollByPixelWheelEvent,
++            .hasPreciseScrollingDeltas = true,
++            .scrollCount = 1,
++            .unacceleratedScrollingDelta = { deltaX, deltaY },
++            .ioHIDEventTimestamp = timestamp,
++        });
++        _page->handleNativeWheelEvent(WebKit::NativeWebWheelEvent::create(event));
++        return YES;
++    }
++    if (!activity->focused)
++        return NO;
++    NSString *token = input[@"token"];
++    NSString *text = input[@"text"] ?: @"";
++    if (![token isKindOfClass:NSString.class] || token.length != 36
++        || ![text isKindOfClass:NSString.class] || text.length > 4096)
++        return NO;
++    auto readRange = [&](NSString *key) -> WebKit::EditingRange {
++        id range = input[key];
++        return [range isKindOfClass:NSValue.class] ? WebKit::EditingRange { [range rangeValue] } : WebKit::EditingRange { };
++    };
++    _page->neAntikDetachedEditorCommand(token, [input[@"secure"] boolValue], action, text,
++        readRange(@"selection"), readRange(@"replacement"), readRange(@"expectedSelection"));
++    return YES;
++}
++
++@end
++#endif
++
+ @implementation WKWebView (WKWindowSnapshot)
+ - (NSImage *)_windowSnapshotInRect:(CGRect)rect withOptions:(CGWindowImageOption)options
+ {
+diff --git a/Source/WebKit/WebProcess/WebPage/WebPage.messages.in b/Source/WebKit/WebProcess/WebPage/WebPage.messages.in
+--- a/Source/WebKit/WebProcess/WebPage/WebPage.messages.in
++++ b/Source/WebKit/WebProcess/WebPage/WebPage.messages.in
+@@ -643,6 +643,8 @@
+     ConfirmCompositionAsync()
+ #endif
+ #if PLATFORM(MAC)
++    NeAntikDetachedEditorSnapshot() -> (String token, bool secure, struct WebKit::EditingRange selection, struct WebKit::EditingRange composition, WebCore::IntRect caret)
++    NeAntikDetachedEditorCommand(String token, bool secure, String action, String text, struct WebKit::EditingRange selected, struct WebKit::EditingRange replacement, struct WebKit::EditingRange expectedSelection)
+     AttributedSubstringForCharacterRangeAsync(struct WebKit::EditingRange range) -> (struct WebCore::AttributedString string, struct WebKit::EditingRange range)
+     RequestAcceptsFirstMouse(std::optional<WebCore::FrameIdentifier> frameID, int eventNumber, Ref<WebKit::WebMouseEvent> event) AllowedWhenWaitingForSyncReplyDuringUnboundedIPC
+     SetCaretAnimatorType(enum:uint8_t WebCore::CaretAnimatorType caretType)
+diff --git a/Source/WebKit/WebProcess/WebPage/WebPage.h b/Source/WebKit/WebProcess/WebPage/WebPage.h
+--- a/Source/WebKit/WebProcess/WebPage/WebPage.h
++++ b/Source/WebKit/WebProcess/WebPage/WebPage.h
+@@ -1439,6 +1439,11 @@
+     void isMarkedTextRequiredForComposition(CompletionHandler<void(bool)>&&);
+     void getMarkedRangeAsync(CompletionHandler<void(const EditingRange&)>&&);
+     void getSelectedRangeAsync(CompletionHandler<void(const EditingRange&, const EditingRange&)>&&);
++#if PLATFORM(MAC)
++    void invalidateNeAntikDetachedEditor();
++    void neAntikDetachedEditorSnapshot(CompletionHandler<void(const String&, bool, const EditingRange&, const EditingRange&, const WebCore::IntRect&)>&&);
++    void neAntikDetachedEditorCommand(const String&, bool secure, const String& action, const String& text, const EditingRange& selected, const EditingRange& replacement, const EditingRange& expectedSelection);
++#endif
+     void characterIndexForPointAsync(const WebCore::IntPoint&, CompletionHandler<void(uint64_t)>&&);
+     void firstRectForCharacterRangeAsync(const EditingRange&, CompletionHandler<void(const WebCore::IntRect&, const EditingRange&)>&&);
+     void setCompositionAsync(const String& text, const Vector<WebCore::CompositionUnderline>&, const Vector<WebCore::CompositionHighlight>&, const HashMap<String, Vector<WebCore::CharacterRange>>&, const EditingRange& selectionRange, const EditingRange& replacementRange);
+@@ -3276,6 +3281,10 @@
+     bool m_needsScrollGeometryUpdates { false };
+ 
+     RefPtr<WebCore::Element> m_focusedElement;
++#if PLATFORM(MAC)
++    String m_neAntikDetachedFocusToken;
++    WeakPtr<WebCore::Element, WebCore::WeakPtrImplWithEventTargetData> m_neAntikDetachedEditingRoot;
++#endif
+     RefPtr<WebCore::Element> m_recentlyBlurredElement;
+     bool m_hasPendingInputContextUpdateAfterBlurringAndRefocusingElement { false };
+     bool m_pendingThemeColorChange { false };
+diff --git a/Source/WebKit/WebProcess/WebPage/WebPage.cpp b/Source/WebKit/WebProcess/WebPage/WebPage.cpp
+--- a/Source/WebKit/WebProcess/WebPage/WebPage.cpp
++++ b/Source/WebKit/WebProcess/WebPage/WebPage.cpp
+@@ -5167,6 +5167,10 @@
+     LOG_WITH_STREAM(ActivityState, stream << "WebPage " << identifier().toUInt64() << " setActivityState to " << activityState);
+ 
+     auto changed = m_activityState ^ activityState;
++#if PLATFORM(MAC)
++    if (changed.contains(ActivityState::IsFocused))
++        invalidateNeAntikDetachedEditor();
++#endif
+     m_activityState = activityState;
+ 
+     if (changed)
+@@ -8254,6 +8258,9 @@
+ 
+ void WebPage::resetFocusedElementForFrame(WebFrame* frame)
+ {
++#if PLATFORM(MAC)
++    invalidateNeAntikDetachedEditor();
++#endif
+ #if PLATFORM(GTK) || PLATFORM(WPE)
+     if (frame->isMainFrame() || corePage()->focusController().focusedOrMainFrame() == frame->coreLocalFrame())
+         m_page->editorClient().setInputMethodState(nullptr);
+@@ -8389,6 +8396,9 @@
+ 
+ void WebPage::elementDidFocus(Element& element, const FocusOptions& options)
+ {
++#if PLATFORM(MAC)
++    invalidateNeAntikDetachedEditor();
++#endif
+ #if PLATFORM(IOS_FAMILY)
+     m_updateFocusedElementInformationTimer.stop();
+ #endif
+@@ -8448,6 +8458,9 @@
+ 
+ void WebPage::elementDidBlur(WebCore::Element& element)
+ {
++#if PLATFORM(MAC)
++    invalidateNeAntikDetachedEditor();
++#endif
+     if (m_focusedElement == &element) {
+ #if PLATFORM(IOS_FAMILY)
+         m_pendingFocusedElementUpdate = std::nullopt;
+@@ -11261,6 +11274,9 @@
+ 
+ void WebPage::frameWasFocusedInAnotherProcess(std::optional<WebCore::FrameIdentifier>&& frameID)
+ {
++#if PLATFORM(MAC)
++    invalidateNeAntikDetachedEditor();
++#endif
+     RefPtr frame = frameID ? WebProcess::singleton().webFrame(*frameID) : nullptr;
+     RefPtr coreFrame = frame ? frame->coreFrame() : nullptr;
+     CheckedRef focusController { corePage()->focusController() };
+@@ -11282,6 +11298,9 @@
+ 
+ void WebPage::focusedFrameProcessDidTerminate(WebCore::FrameIdentifier frameID)
+ {
++#if PLATFORM(MAC)
++    invalidateNeAntikDetachedEditor();
++#endif
+     CheckedRef focusController { corePage()->focusController() };
+     if (RefPtr focusedFrame = focusController->focusedFrame(); focusedFrame && focusedFrame->frameID() == frameID)
+         focusController->setFocusedFrame(nullptr, WebCore::BroadcastFocusedFrame::No);
+diff --git a/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm b/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm
+--- a/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm
++++ b/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm
+@@ -98,6 +98,9 @@
+ #import <WebCore/FrameView.h>
+ #import <WebCore/GraphicsContextCG.h>
+ #import <WebCore/HTMLAnchorElement.h>
++#if PLATFORM(MAC)
++#import <WebCore/HTMLInputElement.h>
++#endif
+ #import <WebCore/HTMLAreaElement.h>
+ #import <WebCore/HTMLBodyElement.h>
+ #import <WebCore/HTMLFrameOwnerElement.h>
+@@ -2267,6 +2270,89 @@
+         EditingRange::fromRange(*frame, protect(frame->editor())->compositionRange()));
+ }
+ 
++#if PLATFORM(MAC)
++void WebPage::invalidateNeAntikDetachedEditor()
++{
++    m_neAntikDetachedFocusToken = { };
++    m_neAntikDetachedEditingRoot = nullptr;
++}
++
++static bool detachedSelectionIsSecure(LocalFrame& frame, Element& focused)
++{
++    RefPtr input = dynamicDowncast<HTMLInputElement>(focused);
++    return (input && input->isPasswordField()) || frame.selection().selection().isInPasswordField();
++}
++
++void WebPage::neAntikDetachedEditorSnapshot(CompletionHandler<void(const String&, bool, const EditingRange&, const EditingRange&, const IntRect&)>&& reply)
++{
++    auto& focus = corePage()->focusController();
++    RefPtr frame = focus.localFocusedFrame();
++    RefPtr document = frame ? frame->document() : nullptr;
++    RefPtr element = document ? document->focusedElement() : nullptr;
++    RefPtr view = frame ? frame->view() : nullptr;
++    if (!focus.isFocused() || !element || !element->isConnected() || !view)
++        return reply({ }, false, { }, { }, { });
++
++    const auto& selection = frame->selection().selection();
++    RefPtr root = selection.rootEditableElement();
++    if (!root || (root.get() != element.get() && !root->isShadowIncludingDescendantOf(*element)))
++        return reply({ }, false, { }, { }, { });
++
++    if (m_neAntikDetachedFocusToken.isEmpty() || m_neAntikDetachedEditingRoot.get() != root.get()) {
++        m_neAntikDetachedFocusToken = WTF::UUID::createVersion4().toString();
++        m_neAntikDetachedEditingRoot = WeakPtr { *root };
++    }
++    if (detachedSelectionIsSecure(*frame, *element))
++        return reply(m_neAntikDetachedFocusToken, true, { }, { }, { });
++
++    const auto selected = EditingRange::fromRange(*frame, selection.toNormalizedRange());
++    const auto marked = EditingRange::fromRange(*frame, protect(frame->editor())->compositionRange());
++    auto caret = view->contentsToMainFrameView(frame->selection().absoluteCaretBounds());
++    reply(m_neAntikDetachedFocusToken, false, selected, marked, caret);
++}
++
++void WebPage::neAntikDetachedEditorCommand(const String& token, bool secure, const String& action, const String& text, const EditingRange& selected, const EditingRange& replacement, const EditingRange& expectedSelection)
++{
++    if (token.isEmpty() || token != m_neAntikDetachedFocusToken || text.length() > 4096)
++        return;
++    auto& focus = corePage()->focusController();
++    RefPtr frame = focus.localFocusedFrame();
++    RefPtr document = frame ? frame->document() : nullptr;
++    RefPtr element = document ? document->focusedElement() : nullptr;
++    if (!focus.isFocused() || !element || !element->isConnected() || secure != detachedSelectionIsSecure(*frame, *element))
++        return;
++    const auto& selection = frame->selection().selection();
++    RefPtr root = selection.rootEditableElement();
++    if (!root || root.get() != m_neAntikDetachedEditingRoot.get()
++        || (root.get() != element.get() && !root->isShadowIncludingDescendantOf(*element)))
++        return;
++
++    if (replacement.location != notFound) {
++        auto currentSelection = EditingRange::fromRange(*frame, selection.toNormalizedRange());
++        if (secure || !replacement.isValid() || currentSelection.location != expectedSelection.location
++            || currentSelection.length != expectedSelection.length)
++            return;
++    }
++    if (action == "insert"_s)
++        return insertTextAsync(text, replacement, { });
++    if (action == "mark"_s && !secure && selected.isValid() && selected.location <= text.length()
++        && selected.length <= text.length() - selected.location)
++        return setCompositionAsync(text, { }, { }, { }, selected, replacement);
++    if (action == "unmark"_s && !secure)
++        return confirmCompositionAsync();
++    if (action == "cancel"_s && !secure)
++        return protect(frame->editor())->cancelComposition();
++
++    // Only fixed native selectors are converted to editing commands by the UIProcess.
++    if (action == "DeleteBackward"_s || action == "DeleteForward"_s || action == "MoveLeft"_s || action == "MoveRight"_s
++        || action == "MoveUp"_s || action == "MoveDown"_s || action == "MoveWordLeft"_s || action == "MoveWordRight"_s
++        || action == "MoveLeftAndModifySelection"_s || action == "MoveRightAndModifySelection"_s
++        || action == "MoveToBeginningOfLine"_s || action == "MoveToEndOfLine"_s || action == "SelectAll"_s
++        || (!secure && (action == "InsertNewline"_s || action == "Undo"_s || action == "Redo"_s)))
++        executeEditCommand(action, { });
++}
++#endif
++
+ void WebPage::characterIndexForPointAsync(const WebCore::IntPoint& point, CompletionHandler<void(uint64_t)>&& completionHandler)
+ {
+     RefPtr frame = corePage()->focusController().focusedOrMainFrame();
+diff --git a/Source/WebKit/UIProcess/WebPageProxy.h b/Source/WebKit/UIProcess/WebPageProxy.h
+--- a/Source/WebKit/UIProcess/WebPageProxy.h
++++ b/Source/WebKit/UIProcess/WebPageProxy.h
+@@ -1518,6 +1518,10 @@
+     void isMarkedTextRequiredForComposition(CompletionHandler<void(bool)>&&);
+     void getMarkedRangeAsync(CompletionHandler<void(const EditingRange&)>&&);
+     void getSelectedRangeAsync(CompletionHandler<void(const EditingRange& selectedRange, const EditingRange& compositionRange)>&&);
++#if PLATFORM(MAC)
++    void neAntikDetachedEditorSnapshot(CompletionHandler<void(const String&, bool, const EditingRange&, const EditingRange&, const WebCore::IntRect&)>&&);
++    void neAntikDetachedEditorCommand(const String&, bool secure, const String& action, const String& text, const EditingRange& selected, const EditingRange& replacement, const EditingRange& expectedSelection);
++#endif
+     void characterIndexForPointAsync(const WebCore::IntPoint&, CompletionHandler<void(uint64_t)>&&);
+     void firstRectForCharacterRangeAsync(const EditingRange&, CompletionHandler<void(const WebCore::IntRect&, const EditingRange&)>&&);
+     void setCompositionAsync(const String& text, const Vector<WebCore::CompositionUnderline>&, const Vector<WebCore::CompositionHighlight>&, const HashMap<String, Vector<WebCore::CharacterRange>>&, const EditingRange& selectionRange, const EditingRange& replacementRange);
+diff --git a/Source/WebKit/UIProcess/WebPageProxy.cpp b/Source/WebKit/UIProcess/WebPageProxy.cpp
+--- a/Source/WebKit/UIProcess/WebPageProxy.cpp
++++ b/Source/WebKit/UIProcess/WebPageProxy.cpp
+@@ -19132,6 +19132,21 @@
+     sendWithAsyncReplyToFocusedOrMainFrameProcess(Messages::WebPage::GetSelectedRangeAsync(), WTF::move(callbackFunction));
+ }
+ 
++#if PLATFORM(MAC)
++void WebPageProxy::neAntikDetachedEditorSnapshot(CompletionHandler<void(const String&, bool, const EditingRange&, const EditingRange&, const IntRect&)>&& reply)
++{
++    if (!hasRunningProcess())
++        return reply({ }, false, { }, { }, { });
++    sendWithAsyncReplyToFocusedOrMainFrameProcess(Messages::WebPage::NeAntikDetachedEditorSnapshot(), WTF::move(reply));
++}
++
++void WebPageProxy::neAntikDetachedEditorCommand(const String& token, bool secure, const String& action, const String& text, const EditingRange& selected, const EditingRange& replacement, const EditingRange& expectedSelection)
++{
++    if (hasRunningProcess())
++        sendToFocusedOrMainFrameProcess(Messages::WebPage::NeAntikDetachedEditorCommand(token, secure, action, text, selected, replacement, expectedSelection));
++}
++#endif
++
+ void WebPageProxy::characterIndexForPointAsync(const WebCore::IntPoint& point, CompletionHandler<void(uint64_t)>&& callbackFunction)
+ {
+     sendWithAsyncReplyToFocusedOrMainFrameProcess(Messages::WebPage::CharacterIndexForPointAsync(point), WTF::move(callbackFunction));
+diff --git a/Source/WebKit/WebProcess/WebCoreSupport/WebChromeClient.cpp b/Source/WebKit/WebProcess/WebCoreSupport/WebChromeClient.cpp
+--- a/Source/WebKit/WebProcess/WebCoreSupport/WebChromeClient.cpp
++++ b/Source/WebKit/WebProcess/WebCoreSupport/WebChromeClient.cpp
+@@ -402,6 +402,9 @@
+     if (!m_page)
+         return;
+ 
++#if PLATFORM(MAC)
++    protect(m_page)->invalidateNeAntikDetachedEditor();
++#endif
+     RefPtr webFrame = frame ? WebFrame::fromCoreFrame(*frame) : nullptr;
+     protect(WebProcess::singleton().parentProcessConnection())->send(Messages::WebPageProxy::FocusedFrameChanged(webFrame ? std::make_optional(webFrame->frameID()) : std::nullopt), m_page->identifier());
+ }
+diff --git a/Source/WebKit/Platform/IPC/HandleMessage.h b/Source/WebKit/Platform/IPC/HandleMessage.h
+--- a/Source/WebKit/Platform/IPC/HandleMessage.h
++++ b/Source/WebKit/Platform/IPC/HandleMessage.h
+@@ -88,6 +88,13 @@
+ 
+     auto stream = textStreamForLogging(connection, messageName, object, ForReply::No);
+ 
++#if PLATFORM(MAC)
++    // Never send editor payloads or focus tokens to the IPC diagnostic log.
++    if (messageName == MessageName::WebPage_NeAntikDetachedEditorCommand) {
++        LOG(IPCMessages, "%s", stream.release().utf8());
++        return;
++    }
++#endif
+     if (auto argumentDescriptions = messageArgumentDescriptions(messageName))
+         (stream.dumpProperty((*argumentDescriptions)[ArgsIndex].name, ValueOrEllipsis(std::get<ArgsIndex>(args))), ...);
+ 
+@@ -117,6 +124,12 @@
+ 
+     auto stream = textStreamForLogging(connection, messageName, nullptr, ForReply::Yes);
+ 
++#if PLATFORM(MAC)
++    if (messageName == MessageName::WebPage_NeAntikDetachedEditorSnapshotReply) {
++        LOG(IPCMessages, "%s", stream.release().utf8());
++        return;
++    }
++#endif
+     unsigned argIndex = 0;
+     if (auto argumentDescriptions = messageReplyArgumentDescriptions(messageName))
+         (stream.dumpProperty((*argumentDescriptions)[argIndex++].name, ValueOrEllipsis(args)), ...);

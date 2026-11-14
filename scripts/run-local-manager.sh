@@ -180,6 +180,9 @@ if (( REFRESH_RUNTIME == 1 )) || \
   /bin/cp -cR "$SOURCE_APP" "$DEVELOPMENT_APP"
 fi
 
+# The Dev copy uses an ad-hoc signature and its own bundle identifier.
+/bin/rm -f "$DEVELOPMENT_APP/Contents/embedded.provisionprofile"
+
 # A cached Dev.app may contain SiteProtection resources from an older manager.
 # Refresh only the disposable app copy so the compiled manager and sealed
 # policy payload always come from the same source checkout.

@@ -33,6 +33,7 @@ let package = Package(
         .executable(name: "NeAntikUpdateOwner", targets: ["NeAntikUpdateOwner"])
     ],
     targets: [
+        .target(name: "WebKitFrameMemory"),
         .target(name: "DirectZipCodec", linkerSettings: [.linkedLibrary("z")]),
         .target(name: "DirectProvisioning", linkerSettings: [.linkedFramework("Security")]),
         .target(name: "DirectAssessment", linkerSettings: [.linkedFramework("Security")]),
@@ -50,7 +51,7 @@ let package = Package(
                           linkerSettings: [.linkedFramework("Security")]),
         .executableTarget(
             name: "NeAntik",
-            dependencies: ["DirectUpdateCore", "DirectZipCodec", "DirectProvisioning", "DirectInstallFilesystem", "DirectAssessmentParent"],
+            dependencies: ["DirectUpdateCore", "DirectZipCodec", "DirectProvisioning", "DirectInstallFilesystem", "DirectAssessmentParent", "WebKitFrameMemory"],
             // Use WebKit's Objective-C proxy API. The system Swift overlay
             // re-exports system WebKit and cannot enter an owned-runtime host.
             // Any new overlay symbol must fail linking, not silently mix engines.
@@ -63,7 +64,7 @@ let package = Package(
         ),
         .executableTarget(
             name: "NeAntikWebKitHost",
-            dependencies: ["DirectUpdateCore", "DirectZipCodec", "DirectProvisioning", "DirectInstallFilesystem", "DirectAssessmentParent"],
+            dependencies: ["DirectUpdateCore", "DirectZipCodec", "DirectProvisioning", "DirectInstallFilesystem", "DirectAssessmentParent", "WebKitFrameMemory"],
             path: "DerivedSources/NeAntikWebKitHost",
             swiftSettings: [.define("NEANTIK_WEBKIT_STANDALONE_HOST")] + webKitProxyBuildSettings + [
                             .unsafeFlags(["-Xfrontend", "-disable-autolink-library",

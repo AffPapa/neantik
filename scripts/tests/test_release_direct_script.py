@@ -21,6 +21,33 @@ RELEASE_ENTRYPOINT = SCRIPTS.parent / "Release-NeAntik.command"
 
 
 class ReleaseDirectScriptTests(unittest.TestCase):
+    def test_integrated_engine_scope_preserves_legacy_refusal_and_requires_owned_host(self) -> None:
+        text = INTEGRATED_VERIFIER.read_text(encoding="utf-8")
+        start = text.index('ENGINE_SCOPE="$(plutil')
+        end = text.index('if [[ -e "$OWNED_WEBKIT_HOST"', start)
+        scope_check = text[start:end]
+        with tempfile.TemporaryDirectory() as temporary:
+            app = Path(temporary) / "NeAntik.app"
+            info = app / "Contents/Info.plist"
+            info.parent.mkdir(parents=True)
+            host = app / "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
+            environment = {**os.environ, "APP_PATH": str(app),
+                           "RELEASE_CHROMIUM_VERSION": "157.0.8103.79",
+                           "ACTUAL_MANAGER_VERSION": "1.0.0"}
+
+            def verify(scope):
+                info.write_bytes(plistlib.dumps({"NeAntikEngineScope": scope}))
+                return subprocess.run(["/bin/zsh", "-c", scope_check], env=environment,
+                                      text=True, capture_output=True, timeout=10)
+
+            self.assertEqual(verify("chromium-only").returncode, 0)
+            self.assertEqual(verify("chromium-owned-webkit").returncode, 65)
+            host.mkdir(parents=True)
+            self.assertEqual(verify("chromium-only").returncode, 65)
+            self.assertEqual(verify("chromium-owned-webkit").returncode, 0)
+            environment["ACTUAL_MANAGER_VERSION"] = "0.9.6"
+            self.assertEqual(verify("chromium-owned-webkit").returncode, 65)
+
     def test_final_candidate_materializes_and_verifies_embedded_runtime(self) -> None:
         text = PREPARE.read_text(encoding="utf-8")
         copy = text.index('ditto "$ENGINEERING_APP" "$APP_PATH"')
