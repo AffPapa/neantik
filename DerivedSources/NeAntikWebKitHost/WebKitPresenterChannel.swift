@@ -60,6 +60,14 @@ enum WebKitPresenterChannel {
                 (-16_384...16_384).contains(caret.origin.y) &&
                 (0...16_384).contains(caret.size.width) && (0...16_384).contains(caret.size.height)
         }
+
+        /// AppKit can describe ordinary insertion using the selection that
+        /// was shown in the last frame. WebCore owns its current selection.
+        func insertionReplacement(_ replacement: TextRange?) -> TextRange? {
+            guard !secure, marked == nil, replacement?.length == 0,
+                  replacement == selected else { return replacement }
+            return nil
+        }
     }
 
     struct EditTarget: Codable, Equatable, Sendable {
@@ -120,11 +128,29 @@ enum WebKitPresenterChannel {
         case closeTab(UUID)
     }
 
+    struct Wheel: Codable, Equatable, Sendable {
+        enum Phase: String, Codable, Sendable {
+            case none, began, stationary, changed, ended, cancelled, mayBegin
+        }
+
+        let x: Double, y: Double
+        let deltaX: Double, deltaY: Double
+        let precise: Bool
+        let phase: Phase
+        let momentum: Phase
+        let inverted: Bool
+
+        var isValid: Bool {
+            (0..<1).contains(x) && (0..<1).contains(y) &&
+                (-10_000...10_000).contains(deltaX) && (-10_000...10_000).contains(deltaY)
+        }
+    }
+
     enum Action: Codable, Equatable, Sendable {
         case navigate(Navigation)
         case activity(visible: Bool, active: Bool, focused: Bool)
         case click(x: Double, y: Double, screenX: Double, screenY: Double)
-        case scroll(x: Double, y: Double, deltaX: Double, deltaY: Double)
+        case scroll(Wheel)
         case tabKey(backward: Bool, option: Bool)
         case accessibilitySnapshot
         case accessibilityAction(document: UUID, node: UInt64, press: Bool)
@@ -145,9 +171,8 @@ enum WebKitPresenterChannel {
             case .click(let x, let y, let screenX, let screenY):
                 return (0..<1).contains(x) && (0..<1).contains(y) &&
                     (-100_000...100_000).contains(screenX) && (-100_000...100_000).contains(screenY)
-            case .scroll(let x, let y, let deltaX, let deltaY):
-                return (0..<1).contains(x) && (0..<1).contains(y) &&
-                    (-10_000...10_000).contains(deltaX) && (-10_000...10_000).contains(deltaY)
+            case .scroll(let wheel):
+                return wheel.isValid
             case .accessibilityAction(_, let node, _):
                 return node > 0 && node < UInt64.max
             case .insert(let text, let replacement):

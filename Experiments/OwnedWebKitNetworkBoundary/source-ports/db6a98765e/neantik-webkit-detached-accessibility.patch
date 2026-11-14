@@ -58,10 +58,10 @@ index e0021ad..c5f901d 100644
  {
      return adoptRef(*new NativeWebKeyboardEvent(WebEventFactory::createWebKeyboardEvent(event, handledByInputMethod, replacesSoftSpace, commands), event));
 diff --git a/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm b/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
-index e32668b..edebeca 100644
+index e32668b..4b58929 100644
 --- a/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
 +++ b/Source/WebKit/UIProcess/API/mac/WKWebViewMac.mm
-@@ -40,6 +40,7 @@
+@@ -40,11 +40,13 @@
  #import "EditingRange.h"
  #import "EditorState.h"
  #import "InsertTextOptions.h"
@@ -69,7 +69,13 @@ index e32668b..edebeca 100644
  #import "NativeWebWheelEvent.h"
  #import "WebWheelEvent.h"
  #import <WebCore/ActivityState.h>
-@@ -2362,10 +2363,36 @@ ALLOW_DEPRECATED_DECLARATIONS_END
+ #import <WebCore/CompositionHighlight.h>
+ #import <WebCore/CompositionUnderline.h>
++#import <WebCore/Scrollbar.h>
+ #endif
+ #if defined(NEANTIK_DETACHED_INPUT_EXPERIMENT) || defined(NEANTIK_DETACHED_PRESENTER)
+ #import "NativeWebMouseEvent.h"
+@@ -2362,10 +2364,36 @@ ALLOW_DEPRECATED_DECLARATIONS_END
  @interface WKWebView (NeAntikDetachedPresenter)
  - (BOOL)_neantikApplyDetachedPresenterInput:(NSDictionary *)input;
  - (void)_neantikReadDetachedEditorState:(void (^)(NSDictionary *))reply;
@@ -106,7 +112,7 @@ index e32668b..edebeca 100644
  - (void)_neantikReadDetachedEditorState:(void (^)(NSDictionary *))reply
  {
      if (!reply)
-@@ -2409,6 +2436,8 @@ ALLOW_DEPRECATED_DECLARATIONS_END
+@@ -2409,6 +2437,8 @@ ALLOW_DEPRECATED_DECLARATIONS_END
          if (!previous)
              _page->setShouldSkipWaitingForPaintAfterNextViewDidMoveToWindow(true);
          WebKit::setDetachedPresenterActivity(self, activity);
@@ -115,7 +121,7 @@ index e32668b..edebeca 100644
          using State = WebCore::ActivityState;
          _page->activityStateDidChange({ State::WindowIsActive, State::IsFocused, State::IsVisible,
              State::IsVisibleOrOccluded, State::IsInWindow, State::IsVisuallyIdle },
-@@ -2418,6 +2447,42 @@ ALLOW_DEPRECATED_DECLARATIONS_END
+@@ -2418,6 +2448,42 @@ ALLOW_DEPRECATED_DECLARATIONS_END
      auto activity = WebKit::detachedPresenterActivity(self);
      if (!activity || !activity->active)
          return NO;
@@ -158,6 +164,46 @@ index e32668b..edebeca 100644
      if ([action isEqualToString:@"click"] || [action isEqualToString:@"scroll"]) {
          NSPoint position = [input[@"point"] pointValue];
          if (!NSPointInRect(position, self.bounds))
+@@ -2445,14 +2511,36 @@ ALLOW_DEPRECATED_DECLARATIONS_END
+         float deltaY = [input[@"deltaY"] floatValue];
+         if (!std::isfinite(deltaX) || !std::isfinite(deltaY))
+             return NO;
++        auto phase = [](NSString *value) {
++            using enum WebKit::WebWheelEvent::Phase;
++            if ([value isEqualToString:@"began"]) return Began;
++            if ([value isEqualToString:@"stationary"]) return Stationary;
++            if ([value isEqualToString:@"changed"]) return Changed;
++            if ([value isEqualToString:@"ended"]) return Ended;
++            if ([value isEqualToString:@"cancelled"]) return Cancelled;
++            if ([value isEqualToString:@"mayBegin"]) return MayBegin;
++            return None;
++        };
++        bool precise = [input[@"precise"] boolValue];
++        constexpr float pixelsPerLine = WebCore::Scrollbar::pixelsPerLineStep();
++        WebCore::FloatSize delta { deltaX, deltaY };
++        WebCore::FloatSize ticks = delta;
++        if (precise)
++            ticks.scale(1 / pixelsPerLine);
++        else
++            delta.scale(pixelsPerLine);
+         auto timestamp = MonotonicTime::now();
+         auto event = WebKit::WebWheelEvent::create({ WebKit::WebEventType::Wheel, { }, timestamp }, {
+             .position = { static_cast<int>(position.x), static_cast<int>(position.y) },
+-            .delta = { deltaX, deltaY },
++            .delta = delta,
++            .wheelTicks = ticks,
+             .granularity = WebKit::WebWheelEvent::Granularity::ScrollByPixelWheelEvent,
+-            .hasPreciseScrollingDeltas = true,
++            .directionInvertedFromDevice = [input[@"inverted"] boolValue],
++            .phase = phase(input[@"phase"]),
++            .momentumPhase = phase(input[@"momentum"]),
++            .hasPreciseScrollingDeltas = precise,
+             .scrollCount = 1,
+-            .unacceleratedScrollingDelta = { deltaX, deltaY },
++            .unacceleratedScrollingDelta = delta,
+             .ioHIDEventTimestamp = timestamp,
+         });
+         _page->handleNativeWheelEvent(WebKit::NativeWebWheelEvent::create(event));
 diff --git a/Source/WebKit/UIProcess/WebPageProxy.cpp b/Source/WebKit/UIProcess/WebPageProxy.cpp
 index b1f4572..a490919 100644
 --- a/Source/WebKit/UIProcess/WebPageProxy.cpp

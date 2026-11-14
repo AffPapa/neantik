@@ -27,7 +27,7 @@
 	<key>CFBundleSignature</key>
 	<string>NANT</string>
 	<key>CFBundleVersion</key>
-	<string>209</string>
+	<string>210</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>

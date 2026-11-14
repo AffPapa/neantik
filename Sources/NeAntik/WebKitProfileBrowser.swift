@@ -577,9 +577,12 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         guard command.generation == sessionGeneration, command.isValid, let tab = tabs[order.selected],
               command.target.tab == tab.id, command.target.navigation == tab.presenterNavigation,
               hasDetachedPresenterBridge else { return }
-        if case .tabKey = command.action {
+        switch command.action {
+        case .tabKey:
             guard presenterFocused else { return }
-        } else {
+        case .scroll:
+            break
+        default:
             guard command.target.focus == tab.presenterFocus else { return }
         }
         if let edit = command.editor {
@@ -619,9 +622,11 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
                      "screenPoint": NSValue(point: CGPoint(x: screenX, y: screenY))]
             tab.presenterFocus = UUID()
             invalidatePresenterEditor()
-        case .scroll(let x, let y, let deltaX, let deltaY):
+        case .scroll(let wheel):
             guard presenterPageLayer() != nil else { return }
-            input = ["action": "scroll", "point": point(x, y), "deltaX": deltaX, "deltaY": deltaY]
+            input = ["action": "scroll", "point": point(wheel.x, wheel.y),
+                     "deltaX": wheel.deltaX, "deltaY": wheel.deltaY, "precise": wheel.precise,
+                     "phase": wheel.phase.rawValue, "momentum": wheel.momentum.rawValue, "inverted": wheel.inverted]
         case .tabKey(let backward, let option):
             capturePresenterFocusHandoff()
             guard presenterPageLayer() != nil, presenterFocused, presenterFocusHandoff == nil else { return }
