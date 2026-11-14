@@ -456,11 +456,13 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     private static let detachedInputSelector = NSSelectorFromString("_neantikApplyDetachedPresenterInput:")
     private static let detachedEditorSelector = NSSelectorFromString("_neantikReadDetachedEditorState:")
     private static let detachedAccessibilitySelector = NSSelectorFromString("_neantikReadDetachedAccessibility:")
+    private static let detachedFocusDirectionSelector = NSSelectorFromString("_neantikConsumeDetachedFocusDirection")
     private var presenterFocused = false
     private var presenterEditor: WebKitPresenterChannel.Editor?
     private var presenterEditorQuery: UUID?
     private var presenterAccessibility: WebKitPresenterChannel.AccessibilitySnapshot?
     private var presenterAccessibilityQuery: UUID?
+    private var presenterFocusHandoff: WebKitPresenterChannel.State.FocusHandoff?
     private lazy var presenterPlaceholder: CALayer = {
         let placeholder = CALayer()
         placeholder.frame = viewport
@@ -478,7 +480,8 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     var hasDetachedPresenterBridge: Bool {
         window == nil && webView.responds(to: Self.detachedInputSelector) &&
             webView.responds(to: Self.detachedEditorSelector) &&
-            webView.responds(to: Self.detachedAccessibilitySelector)
+            webView.responds(to: Self.detachedAccessibilitySelector) &&
+            webView.responds(to: Self.detachedFocusDirectionSelector)
     }
 
     private func presenterPageLayer() -> CALayer? {
@@ -525,8 +528,24 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     private func invalidatePresenterEditor() {
         presenterEditor = nil
         presenterEditorQuery = nil
+    }
+
+    private func invalidatePresenterDocument() {
+        invalidatePresenterEditor()
         presenterAccessibility = nil
         presenterAccessibilityQuery = nil
+        presenterFocusHandoff = nil
+    }
+
+    private func capturePresenterFocusHandoff() {
+        guard presenterFocused, presenterFocusHandoff == nil,
+              webView.responds(to: Self.detachedFocusDirectionSelector) else { return }
+        typealias Consume = @convention(c) (AnyObject, Selector) -> Int
+        let consume = unsafeBitCast(webView.method(for: Self.detachedFocusDirectionSelector), to: Consume.self)
+        let direction = consume(webView, Self.detachedFocusDirectionSelector)
+        guard direction == -1 || direction == 1 else { return }
+        invalidatePresenterEditor()
+        presenterFocusHandoff = .init(id: UUID(), backward: direction < 0)
     }
 
     private func refreshPresenterAccessibility(for tab: WebKitBrowserTab) {
@@ -555,9 +574,14 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     }
 
     func applyPresenterCommand(_ command: WebKitPresenterChannel.Command) {
-        guard command.generation == sessionGeneration, command.isValid,
-              let tab = tabs[order.selected], tab.presenterTarget == command.target,
+        guard command.generation == sessionGeneration, command.isValid, let tab = tabs[order.selected],
+              command.target.tab == tab.id, command.target.navigation == tab.presenterNavigation,
               hasDetachedPresenterBridge else { return }
+        if case .tabKey = command.action {
+            guard presenterFocused else { return }
+        } else {
+            guard command.target.focus == tab.presenterFocus else { return }
+        }
         if let edit = command.editor {
             guard presenterPageLayer() != nil, presenterFocused,
                   edit.token == presenterEditor?.token, edit.secure == presenterEditor?.secure
@@ -578,7 +602,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
             if applyPresenterNavigation(navigation) {
                 tab.presenterNavigation = UUID()
                 tab.presenterFocus = UUID()
-                invalidatePresenterEditor()
+                invalidatePresenterDocument()
             }
             return
         case .activity(let visible, let active, let focused):
@@ -588,6 +612,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
                 invalidatePresenterEditor()
             }
             presenterFocused = focused
+            if !focused { presenterFocusHandoff = nil }
         case .click(let x, let y, let screenX, let screenY):
             guard presenterPageLayer() != nil, presenterFocused else { return }
             input = ["action": "click", "point": point(x, y),
@@ -597,9 +622,10 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         case .scroll(let x, let y, let deltaX, let deltaY):
             guard presenterPageLayer() != nil else { return }
             input = ["action": "scroll", "point": point(x, y), "deltaX": deltaX, "deltaY": deltaY]
-        case .tabKey(let backward):
-            guard presenterPageLayer() != nil, presenterFocused else { return }
-            input = ["action": "tabKey", "backward": backward]
+        case .tabKey(let backward, let option):
+            capturePresenterFocusHandoff()
+            guard presenterPageLayer() != nil, presenterFocused, presenterFocusHandoff == nil else { return }
+            input = ["action": "tabKey", "backward": backward, "option": option]
             tab.presenterFocus = UUID()
             invalidatePresenterEditor()
         case .accessibilitySnapshot:
@@ -1026,7 +1052,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
             applyPresenterInput(["action": "activity", "visible": false, "active": false, "focused": false], to: webView)
             presenterFocused = false
             selected.presenterFocus = UUID()
-            invalidatePresenterEditor()
+            invalidatePresenterDocument()
         }
         #endif
         webView.removeFromSuperview(); webView = selected.view
@@ -1176,20 +1202,23 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         #if NEANTIK_WEBKIT_PROXY_PRODUCTION
         let acceptsPageInput = presenterPageLayer() != nil
         if acceptsPageInput { refreshPresenterEditor(for: selected) }
+        capturePresenterFocusHandoff()
         let editor = acceptsPageInput ? presenterEditor : nil
         let accessibility = acceptsPageInput ? presenterAccessibility : nil
+        let focusHandoff = presenterFocusHandoff
         let status = String(decoding: displayedStatus(selected.status).utf8.prefix(508), as: UTF8.self)
         #else
         let acceptsPageInput = false
         let editor: WebKitPresenterChannel.Editor? = nil
         let accessibility: WebKitPresenterChannel.AccessibilitySnapshot? = nil
+        let focusHandoff: WebKitPresenterChannel.State.FocusHandoff? = nil
         let status = ""
         #endif
         return .init(generation: sessionGeneration, target: target, tabs: summaries,
                      address: address.utf8.count <= 2_048 ? address : "",
                      canGoBack: selected.view.canGoBack, canGoForward: selected.view.canGoForward,
                      acceptsPageInput: acceptsPageInput, status: status, editor: editor,
-                     accessibility: accessibility)
+                     accessibility: accessibility, focusHandoff: focusHandoff)
     }
 
     @discardableResult
@@ -1409,7 +1438,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
             tab.presenterNavigation = UUID()
             tab.presenterFocus = UUID()
             #if NEANTIK_WEBKIT_PROXY_PRODUCTION
-            if self.webView === webView { invalidatePresenterEditor() }
+            if self.webView === webView { invalidatePresenterDocument() }
             #endif
         }
         #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
