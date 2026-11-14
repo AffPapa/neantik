@@ -5,7 +5,7 @@ import sys
 import tempfile
 import unittest
 from datetime import date, datetime, timezone
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from pathlib import Path
 
 
@@ -164,6 +164,46 @@ class RuntimeSecurityBaselineTests(unittest.TestCase):
                 "coherent Apple device tuples are not verified",
             ):
                 MODULE.verify(lock_path, baseline_path, date(2026, 7, 25))
+
+    def test_production_source_only_lock_needs_exact_authenticated_tuples(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            app = root / "NeAntik.app"
+            embedded_root = app / "Contents/Resources/NeAntikRuntimeEvidence"
+            embedded_root.mkdir(parents=True)
+            lock = self.lock("157.0.8103.79")
+            del lock["verification"]
+            lock.update(schemaVersion=4, status="source-qualified")
+            candidate_lock = self.write_json(embedded_root, "fingerprint-chromium.lock.json", lock)
+            baseline = self.write_json(root, "baseline.json", self.baseline(minimum="157.0.8103.79"))
+            candidate_paths = (app, root / "direct-candidate-manifest.json", root / "fingerprint-audit.json")
+            verifier = Mock()
+            verifier.load_manifest_with_bytes.return_value = ({"releaseChannel": "production"}, b"manifest")
+            verifier.GUI_VERIFIER.expected_runtime_evidence_from_app.return_value = {
+                "runtimeVersion": "157.0.8103.79",
+            }
+            verifier.verify_evidence_follows_manifest_payload.return_value = {
+                "runtimeVersion": "157.0.8103.79", "releaseChannel": "production",
+                "productionQualified": True, "deviceTupleConsistent": True,
+            }
+            with patch.object(MODULE, "import_module", return_value=verifier):
+                with self.assertRaisesRegex(SystemExit, "no verification object"):
+                    MODULE.verify(candidate_lock, baseline, date(2026, 7, 25))
+                result = MODULE.verify(candidate_lock, baseline, date(2026, 7, 25),
+                                       candidate_evidence=candidate_paths)
+                self.assertIn("authenticated production candidate", result)
+                verifier.verify_manifest_payload.assert_called_once_with(
+                    app, {"releaseChannel": "production"}, b"manifest", release_channel="production",
+                )
+                verifier.verify_evidence_follows_manifest_payload.assert_called_once_with(
+                    {"releaseChannel": "production"}, b"manifest", candidate_paths[2],
+                )
+                unbound = self.write_json(root, "unbound.json", dict(lock, altered=True))
+                with self.assertRaisesRegex(SystemExit, "lock differs"):
+                    MODULE.verify(unbound, baseline, date(2026, 7, 25), candidate_evidence=candidate_paths)
+                verifier.verify_evidence_follows_manifest_payload.return_value["deviceTupleConsistent"] = False
+                with self.assertRaisesRegex(SystemExit, "tuple evidence does not match"):
+                    MODULE.verify(candidate_lock, baseline, date(2026, 7, 25), candidate_evidence=candidate_paths)
 
     def test_missing_provenance_fails_closed(self) -> None:
         broken = self.baseline()

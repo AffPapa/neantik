@@ -864,6 +864,12 @@ def verify_candidate_app(
         ]
         if release_channel == "public-alpha":
             baseline.append("--allow-public-alpha-tuples")
+        else:
+            baseline.extend([
+                "--candidate-app", str(app),
+                "--candidate-manifest", str(manifest),
+                "--fingerprint-evidence", str(evidence),
+            ])
         commands[1:1] = [
             ("runtime security baseline", baseline),
             (
