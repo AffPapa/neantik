@@ -1,6 +1,10 @@
 # NeAntik changelog
 
-## Direct 1.0.0 (209) — production candidate, qualification pending
+## Direct 1.0.0 (210) — production candidate, qualification pending
+
+- Preserve line and trackpad wheel input and forward native Select All and plain-text Paste in the detached page.
+
+## Direct 1.0.0 (209) — internal qualification candidate
 
 - Connect the detached page responder to an explicit macOS text input context for typing and composition.
 

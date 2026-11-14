@@ -61,6 +61,17 @@ struct WebKitPresenterChannelTests {
         #expect(Action.insert(text: "résumé\n水", replacing: nil).isValid)
     }
 
+    @Test func insertionCanUseLiveCaretButKeepsExplicitReplacement() {
+        typealias Channel = WebKitPresenterChannel
+        let caret = Channel.TextRange(location: 4, length: 0)
+        let selectedText = Channel.TextRange(location: 4, length: 2)
+        let editor = Channel.Editor(token: UUID(), secure: false, selected: caret, marked: nil, caret: nil)
+        let composing = Channel.Editor(token: UUID(), secure: false, selected: caret, marked: selectedText, caret: nil)
+        #expect(editor.insertionReplacement(caret) == nil)
+        #expect(editor.insertionReplacement(selectedText) == selectedText)
+        #expect(composing.insertionReplacement(caret) == caret)
+    }
+
     @Test func carriesInputWithoutConsumingLifecycleFrames() throws {
         let (manager, host) = try ProxyRelayPrivatePipe.anonymousSocketPair()
         let sender = try WebKitPresenterChannel.offer(to: manager.fileDescriptor, timeout: 1)

@@ -522,10 +522,14 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
         inputContext?.allowedInputSourceLocales = secureEventInput ? [NSAllRomanInputSourcesLocaleIdentifier] : nil
     }
 
+    private var canEditPage: Bool {
+        !discardingComposition && editor != nil && NSApp.isActive &&
+            window?.isKeyWindow == true && window?.firstResponder === self &&
+            (editor?.secure == false || secureEventInput)
+    }
+
     private func sendEdit(_ action: WebKitPresenterChannel.Action) {
-        guard !discardingComposition, let editor, NSApp.isActive,
-              window?.isKeyWindow == true, window?.firstResponder === self,
-              !editor.secure || secureEventInput else { return }
+        guard canEditPage, let editor else { return }
         onInput?(action, .init(editor: editor))
     }
 
@@ -566,7 +570,21 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
 
     override func scrollWheel(with event: NSEvent) {
         guard let point = point(event) else { return }
-        onInput?(.scroll(x: point.x, y: point.y, deltaX: event.scrollingDeltaX, deltaY: event.scrollingDeltaY), nil)
+        func phase(_ native: NSEvent.Phase) -> WebKitPresenterChannel.Wheel.Phase {
+            if native.contains(.mayBegin) { return .mayBegin }
+            if native.contains(.cancelled) { return .cancelled }
+            if native.contains(.ended) { return .ended }
+            if native.contains(.changed) { return .changed }
+            if native.contains(.stationary) { return .stationary }
+            if native.contains(.began) { return .began }
+            return .none
+        }
+        let precise = event.hasPreciseScrollingDeltas
+        onInput?(.scroll(.init(x: point.x, y: point.y,
+            deltaX: precise ? event.scrollingDeltaX : event.deltaX,
+            deltaY: precise ? event.scrollingDeltaY : event.deltaY,
+            precise: precise, phase: phase(event.phase), momentum: phase(event.momentumPhase),
+            inverted: event.isDirectionInvertedFromDevice)), nil)
     }
 
     override func keyDown(with event: NSEvent) {
@@ -592,8 +610,31 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
     }
 
     func insertText(_ value: Any, replacementRange: NSRange) {
-        guard let text = text(value) else { return }
-        sendEdit(.insert(text: text, replacing: .init(replacementRange)))
+        guard let text = text(value), let editor else { return }
+        let replacement = WebKitPresenterChannel.TextRange(replacementRange)
+        guard replacement != nil || replacementRange.location == NSNotFound else { return }
+        sendEdit(.insert(text: text, replacing: editor.insertionReplacement(replacement)))
+    }
+
+    @objc override func selectAll(_ sender: Any?) {
+        sendEdit(.edit(.selectAll))
+    }
+
+    @objc func paste(_ sender: Any?) {
+        guard canEditPage, let text = NSPasteboard.general.string(forType: .string),
+              !text.isEmpty, text.utf8.count <= 4_096 else { return }
+        sendEdit(.insert(text: text, replacing: nil))
+    }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
+        guard canEditPage, modifiers == .command else { return super.performKeyEquivalent(with: event) }
+        switch event.keyCode {
+        case UInt16(kVK_ANSI_A): selectAll(nil)
+        case UInt16(kVK_ANSI_V): paste(nil)
+        default: return super.performKeyEquivalent(with: event)
+        }
+        return true
     }
 
     func setMarkedText(_ value: Any, selectedRange: NSRange, replacementRange: NSRange) {
