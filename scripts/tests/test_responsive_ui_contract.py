@@ -48,11 +48,20 @@ class ResponsiveUIContractTests(unittest.TestCase):
 
     def test_app_does_not_issue_custom_voiceover_announcements(self) -> None:
         sources = ROOT / "Sources" / "NeAntik"
-        forbidden = ("NSAccessibility.post", ".announcementRequested")
         for path in sources.glob("*.swift"):
             text = path.read_text(encoding="utf-8")
-            for marker in forbidden:
-                self.assertNotIn(marker, text, f"{marker} remains in {path.name}")
+            self.assertNotIn("announcementRequested", text, path.name)
+            self.assertNotIn("NSAccessibilityAnnouncementRequestedNotification", text, path.name)
+            if path.name == "WebKitDetachedPresenter.swift":
+                # The detached web view publishes normal layout and focus updates.
+                updates = (
+                    "NSAccessibility.post(element: self, notification: .layoutChanged)",
+                    "NSAccessibility.post(element: focused, notification: .focusedUIElementChanged)",
+                )
+                for update in updates:
+                    self.assertIn(update, text)
+                    text = text.replace(update, "", 1)
+            self.assertNotIn("NSAccessibility.post", text, path.name)
 
     def test_interactive_workspace_and_sheets_remain_accessible(self) -> None:
         app = APP.read_text(encoding="utf-8")
