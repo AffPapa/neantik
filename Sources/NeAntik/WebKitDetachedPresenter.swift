@@ -380,6 +380,7 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
     private var editor: WebKitPresenterChannel.Editor?
     private var secureEventInput = false
     private var discardingComposition = false
+    private lazy var pageTextInputContext = NSTextInputContext(client: self)
     var onInput: ((WebKitPresenterChannel.Action, WebKitPresenterChannel.EditTarget?) -> Void)?
     var onFocusChange: (() -> Void)?
     var onAccessibilityQuery: (() -> Void)?
@@ -403,6 +404,7 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
     required init?(coder: NSCoder) { nil }
 
     override var acceptsFirstResponder: Bool { true }
+    override var inputContext: NSTextInputContext? { pageTextInputContext }
 
     override func accessibilityChildren() -> [Any]? {
         onAccessibilityQuery?()
@@ -582,7 +584,7 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
             return
         }
         guard !editor.secure || secureEventInput else { return }
-        if inputContext?.handleEvent(event) != true { super.keyDown(with: event) }
+        if inputContext?.handleEvent(event) != true { interpretKeyEvents([event]) }
     }
 
     private func text(_ value: Any) -> String? {
