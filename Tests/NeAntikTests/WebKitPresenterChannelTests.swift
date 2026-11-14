@@ -74,4 +74,44 @@ struct WebKitPresenterChannelTests {
         #expect(try WebKitPresenterChannel.read(from: receiver, timeout: 1) == command)
         #expect(try ProxyRelayPrivatePipe.readFrame(host.fileDescriptor, timeout: 1) == payload)
     }
+
+    @Test func tabTraversalCarriesDirectionWithoutEditorMetadata() throws {
+        let generation = UUID()
+        let target = WebKitPresenterChannel.Target(tab: UUID(), navigation: UUID(), focus: UUID())
+        let editor = WebKitPresenterChannel.EditTarget(editor: .init(
+            token: UUID(), secure: true, selected: nil, marked: nil, caret: nil))
+        for backward in [false, true] {
+            let action = WebKitPresenterChannel.Action.tabKey(backward: backward)
+            let command = WebKitPresenterChannel.Command(generation: generation, sequence: 1,
+                                                          target: target, action: action)
+            let unexpectedEditor = WebKitPresenterChannel.Command(generation: generation, sequence: 1,
+                                                                   target: target, action: action, editor: editor)
+            #expect(command.isValid)
+            #expect(!unexpectedEditor.isValid)
+            let decoded = try JSONDecoder().decode(WebKitPresenterChannel.Command.self,
+                                                   from: JSONEncoder().encode(command))
+            #expect(decoded == command)
+        }
+    }
+
+    @Test func detachedAccessibilityRejectsInvalidTreeAndAction() {
+        typealias Snapshot = WebKitPresenterChannel.AccessibilitySnapshot
+        func node(_ id: String, parent: Int, role: String = "AXButton", x: Double = 20) -> Snapshot.Node {
+            .init(id: id, parent: parent, role: role, label: "Synthetic", x: x, y: 20,
+                  width: 120, height: 32, focusable: true, focused: false, pressable: true)
+        }
+        let document = UUID()
+        let root = node("1", parent: -1, role: "AXWebArea")
+        let button = node("2", parent: 0)
+        #expect(Snapshot(document: document, nodes: [root, button]).isValid)
+        let duplicate = Snapshot(document: document, nodes: [root, node("1", parent: 0)])
+        let orphan = Snapshot(document: document, nodes: [root, node("2", parent: 2)])
+        let infinite = Snapshot(document: document, nodes: [root, node("2", parent: 0, x: .infinity)])
+        #expect(!duplicate.isValid)
+        #expect(!orphan.isValid)
+        #expect(!infinite.isValid)
+        #expect(WebKitPresenterChannel.Action.accessibilityAction(document: document, node: 2, press: true).isValid)
+        let sentinel = WebKitPresenterChannel.Action.accessibilityAction(document: document, node: UInt64.max, press: true)
+        #expect(!sentinel.isValid)
+    }
 }

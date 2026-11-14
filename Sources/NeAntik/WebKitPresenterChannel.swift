@@ -74,6 +74,45 @@ enum WebKitPresenterChannel {
         }
     }
 
+    struct AccessibilitySnapshot: Codable, Equatable, Sendable {
+        struct Node: Codable, Equatable, Sendable {
+            let id: String
+            let parent: Int
+            let role: String
+            let label: String?
+            let x: Double
+            let y: Double
+            let width: Double
+            let height: Double
+            let focusable: Bool
+            let focused: Bool
+            let pressable: Bool
+
+            var bounds: CGRect { .init(x: x, y: y, width: width, height: height) }
+            var identifier: UInt64? { UInt64(id).flatMap { $0 > 0 && $0 < UInt64.max ? $0 : nil } }
+
+            var isValid: Bool {
+                let roles = ["AXWebArea", "AXHeading", "AXStaticText", "AXButton", "AXLink",
+                             "AXCheckBox", "AXRadioButton", "AXImage", "AXTextArea", "AXTextField", "AXGroup"]
+                return roles.contains(role) && identifier != nil &&
+                    (label?.utf8.count ?? 0) <= 256 &&
+                    (-100_000...100_000).contains(x) && (-100_000...100_000).contains(y) &&
+                    (0...100_000).contains(width) && (0...100_000).contains(height)
+            }
+        }
+
+        let document: UUID
+        let nodes: [Node]
+
+        var isValid: Bool {
+            (1...16).contains(nodes.count) &&
+                Set(nodes.compactMap(\.identifier)).count == nodes.count &&
+                nodes.enumerated().allSatisfy { index, node in
+                    node.isValid && (index == 0 ? node.parent == -1 : (0..<index).contains(node.parent))
+                } && (try? JSONEncoder().encode(self).count).map { $0 <= 6_144 } == true
+        }
+    }
+
     enum Navigation: Codable, Equatable, Sendable {
         case open(String)
         case back, forward, reload, newTab
@@ -86,6 +125,9 @@ enum WebKitPresenterChannel {
         case activity(visible: Bool, active: Bool, focused: Bool)
         case click(x: Double, y: Double, screenX: Double, screenY: Double)
         case scroll(x: Double, y: Double, deltaX: Double, deltaY: Double)
+        case tabKey(backward: Bool)
+        case accessibilitySnapshot
+        case accessibilityAction(document: UUID, node: UInt64, press: Bool)
         case insert(text: String, replacing: TextRange?)
         case mark(text: String, selected: TextRange, replacing: TextRange?)
         case unmark
@@ -106,6 +148,8 @@ enum WebKitPresenterChannel {
             case .scroll(let x, let y, let deltaX, let deltaY):
                 return (0..<1).contains(x) && (0..<1).contains(y) &&
                     (-10_000...10_000).contains(deltaX) && (-10_000...10_000).contains(deltaY)
+            case .accessibilityAction(_, let node, _):
+                return node > 0 && node < UInt64.max
             case .insert(let text, let replacement):
                 return Self.validText(text) && replacement?.isValid != false
             case .mark(let text, let selection, let replacement):
@@ -113,7 +157,7 @@ enum WebKitPresenterChannel {
                     selection.location <= text.utf16.count &&
                     selection.length <= text.utf16.count - selection.location &&
                     replacement?.isValid != false
-            case .unmark, .edit:
+            case .tabKey, .accessibilitySnapshot, .unmark, .edit:
                 return true
             }
         }
@@ -183,10 +227,11 @@ enum WebKitPresenterChannel {
         let acceptsPageInput: Bool
         let status: String
         let editor: Editor?
+        let accessibility: AccessibilitySnapshot?
 
         init(generation: UUID, target: Target, tabs: [Tab], address: String,
              canGoBack: Bool, canGoForward: Bool, acceptsPageInput: Bool, status: String,
-             editor: Editor? = nil) {
+             editor: Editor? = nil, accessibility: AccessibilitySnapshot? = nil) {
             self.generation = generation
             self.target = target
             self.tabs = tabs
@@ -196,6 +241,7 @@ enum WebKitPresenterChannel {
             self.acceptsPageInput = acceptsPageInput
             self.status = status
             self.editor = editor
+            self.accessibility = accessibility
         }
 
         var isValid: Bool {
@@ -205,7 +251,8 @@ enum WebKitPresenterChannel {
                 tabs.allSatisfy { $0.title.utf8.count <= 128 &&
                     !$0.title.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) } &&
                 address.utf8.count <= 2_048 && status.utf8.count <= 512 &&
-                editor?.isValid != false && (acceptsPageInput || editor == nil)
+                editor?.isValid != false && accessibility?.isValid != false &&
+                (acceptsPageInput || (editor == nil && accessibility == nil))
         }
     }
 
