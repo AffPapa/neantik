@@ -240,7 +240,7 @@ index 9b1bf66..c3dcff4 100644
  }
  
 diff --git a/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm b/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm
-index cb32a6f..997a932 100644
+index cb32a6f..ec54a4b 100644
 --- a/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm
 +++ b/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm
 @@ -108,6 +108,7 @@
@@ -341,12 +341,12 @@ index cb32a6f..997a932 100644
 +        if (++visited > 32 || depth > 6 || label.length() >= labelLimit
 +            || candidate.isInUserAgentShadowTree() || candidate.isContentEditable())
 +            return;
-+        if (RefPtr element = dynamicDowncast<Element>(candidate);
-+            element && (element->hasTagName(HTMLNames::inputTag) || element->hasTagName(HTMLNames::textareaTag)
-+                || element->hasTagName(HTMLNames::selectTag) || element->hasTagName(HTMLNames::scriptTag)
-+                || element->hasTagName(HTMLNames::styleTag) || element->hasTagName(SVGNames::scriptTag)
-+                || element->hasTagName(SVGNames::styleTag)))
-+            return;
++        if (RefPtr element = dynamicDowncast<Element>(candidate)) {
++            const auto& name = element->localName();
++            if (element->hasTagName(HTMLNames::inputTag) || element->hasTagName(HTMLNames::textareaTag)
++                || element->hasTagName(HTMLNames::selectTag) || name == "script"_s || name == "style"_s)
++                return;
++        }
 +        if (RefPtr value = dynamicDowncast<Text>(candidate)) {
 +            label.append(StringView(value->data()).left(labelLimit - label.length()));
 +            return;
