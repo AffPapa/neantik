@@ -1,6 +1,10 @@
 # NeAntik changelog
 
-## Direct 1.0.0 (208) — production candidate, qualification pending
+## Direct 1.0.0 (209) — production candidate, qualification pending
+
+- Connect the detached page responder to an explicit macOS text input context for typing and composition.
+
+## Direct 1.0.0 (208) — internal qualification candidate
 
 - Connect keyboard navigation and native accessibility to page controls in the detached WebKit window.
 - Document how to preserve and verify the release warning-color catalog when relinking from a clean recipient build.
