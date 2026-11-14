@@ -1,5 +1,12 @@
 # NeAntik changelog
 
+## Direct 1.0.0 (207) — production candidate, qualification pending
+
+- Add a bundled WebKit engine alongside Chromium 157.0.8103.79. New profiles can select either engine, and existing profiles retain their engine and data.
+- Run owned WebKit profiles in a separate host and present the browser window through a native Metal surface. WebKit uses the macOS language and time zone.
+- Block WebRTC by default in WebKit profiles. Eligible profiles can opt in to relay-only WebRTC through their configured proxy. The proxy route and TURN/TLS recovery require qualification on the signed production candidate.
+- Document how recipients can rebuild and relink the bundled WebKit runtime, with corresponding source inputs and notices.
+
 ## Direct 0.9.6 (206) — release candidate; release gates pending
 
 - Prevent update-audit mode from treating a persisted fingerprint evidence envelope as a successful GUI launch. Update-audit now continues through current authority authentication; normal fingerprint audit retains its recovery behavior.
