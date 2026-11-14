@@ -144,6 +144,16 @@ enum WebKitPresenterChannel {
             (0..<1).contains(x) && (0..<1).contains(y) &&
                 (-10_000...10_000).contains(deltaX) && (-10_000...10_000).contains(deltaY)
         }
+
+        func coalescing(_ next: Self) -> Self? {
+            guard x == next.x, y == next.y, precise == next.precise, inverted == next.inverted,
+                  phase == next.phase, momentum == next.momentum,
+                  (phase == .none || phase == .changed), (momentum == .none || momentum == .changed),
+                  deltaX.sign == next.deltaX.sign, deltaY.sign == next.deltaY.sign else { return nil }
+            let result = Self(x: x, y: y, deltaX: deltaX + next.deltaX, deltaY: deltaY + next.deltaY,
+                              precise: precise, phase: phase, momentum: momentum, inverted: inverted)
+            return result.isValid ? result : nil
+        }
     }
 
     enum Action: Codable, Equatable, Sendable {

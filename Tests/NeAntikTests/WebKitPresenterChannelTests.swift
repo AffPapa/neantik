@@ -3,6 +3,22 @@ import Testing
 @testable import NeAntik
 
 struct WebKitPresenterChannelTests {
+    @Test func wheelBurstPreservesDirectionPositionAndGestureBoundaries() {
+        typealias Wheel = WebKitPresenterChannel.Wheel
+        func wheel(_ deltaY: Double, x: Double = 0.5, phase: Wheel.Phase = .changed,
+                   momentum: Wheel.Phase = .none) -> Wheel {
+            Wheel(x: x, y: 0.6, deltaX: 0, deltaY: deltaY, precise: true, phase: phase,
+                  momentum: momentum, inverted: true)
+        }
+        #expect(wheel(2).coalescing(wheel(3)) == wheel(5))
+        #expect(wheel(2).coalescing(wheel(-3)) == nil)
+        #expect(wheel(2).coalescing(wheel(3, x: 0.4)) == nil)
+        #expect(wheel(2).coalescing(wheel(3, phase: .ended)) == nil)
+        #expect(wheel(2, phase: .began).coalescing(wheel(3, phase: .began)) == nil)
+        #expect(wheel(2).coalescing(wheel(3, momentum: .changed)) == nil)
+        #expect(wheel(9_000).coalescing(wheel(2_000)) == nil)
+    }
+
     @Test func staleInputDoesNotReachAnotherTabOrFocus() throws {
         let generation = UUID(), tab = UUID(), navigation = UUID()
         let initial = WebKitPresenterChannel.Target(tab: tab, navigation: navigation, focus: UUID())
