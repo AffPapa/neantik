@@ -80,8 +80,9 @@ struct WebKitPresenterChannelTests {
         let target = WebKitPresenterChannel.Target(tab: UUID(), navigation: UUID(), focus: UUID())
         let editor = WebKitPresenterChannel.EditTarget(editor: .init(
             token: UUID(), secure: true, selected: nil, marked: nil, caret: nil))
-        for backward in [false, true] {
-            let action = WebKitPresenterChannel.Action.tabKey(backward: backward)
+        let modifiers = [(false, false), (true, false), (false, true), (true, true)]
+        for (backward, option) in modifiers {
+            let action = WebKitPresenterChannel.Action.tabKey(backward: backward, option: option)
             let command = WebKitPresenterChannel.Command(generation: generation, sequence: 1,
                                                           target: target, action: action)
             let unexpectedEditor = WebKitPresenterChannel.Command(generation: generation, sequence: 1,
