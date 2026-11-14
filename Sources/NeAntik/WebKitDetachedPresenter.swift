@@ -37,6 +37,7 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
     private var onClose: (() -> Void)?
     private var onFailure: (() -> Void)?
     private var appActivityObservers: [NSObjectProtocol] = []
+    private var nextAccessibilityRefresh = ContinuousClock.now
     private var active = false
 
     init?(profileName: String, generation: UUID, endpoint: WebKitFrameTransport.Endpoint,
@@ -71,6 +72,13 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
         window.contentView = makeContent()
         view.onInput = { [weak self] action, editor in self?.send(action, editor: editor) }
         view.onFocusChange = { [weak self] in self?.sendActivity() }
+        view.onAccessibilityQuery = { [weak self] in self?.requestAccessibility() }
+        view.onAccessibilityAction = { [weak self] document, node, press in
+            guard let self, self.window.isKeyWindow, NSApp.isActive,
+                  self.window.makeFirstResponder(self.view) else { return false }
+            self.sendActivity()
+            return self.send(.accessibilityAction(document: document, node: node, press: press))
+        }
     }
 
     private func makeContent() -> NSView {
@@ -241,6 +249,7 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
         pageStatus = page.status
         refreshStatus()
         view.updateEditor(page.editor)
+        view.updatePageAccessibility(page.accessibility, reset: changedTarget)
         if changedTabs {
             tabs.removeAllItems()
             for (index, summary) in page.tabs.enumerated() {
@@ -252,6 +261,9 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
         }
         if let index = page.tabs.firstIndex(where: { $0.id == page.target.tab }) { tabs.selectItem(at: index) }
         if changedTarget { sendActivity() }
+        if NSWorkspace.shared.isVoiceOverEnabled || NSWorkspace.shared.isSwitchControlEnabled {
+            requestAccessibility()
+        }
     }
 
     private func refreshStatus() {
@@ -261,21 +273,35 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
 
     @objc private func cancelPendingDownloads() { downloads?.cancelActive() }
 
-    private func send(_ action: WebKitPresenterChannel.Action, editor: WebKitPresenterChannel.EditTarget? = nil) {
-        guard active, let state, let inputSink, action.isValid else { return }
+    @discardableResult
+    private func send(_ action: WebKitPresenterChannel.Action, editor: WebKitPresenterChannel.EditTarget? = nil) -> Bool {
+        guard active, let state, let inputSink, action.isValid else { return false }
         switch action {
         case .navigate, .activity: break
-        default: guard state.acceptsPageInput else { return }
+        default: guard state.acceptsPageInput else { return false }
         }
-        guard nextInputSequence < UInt64.max else { fail(); return }
+        guard nextInputSequence < UInt64.max else { fail(); return false }
         let command = WebKitPresenterChannel.Command(generation: generation, sequence: nextInputSequence,
             target: state.target, action: action, editor: editor)
-        guard command.isValid else { return }
+        guard command.isValid else { return false }
         switch inputSink.yield(command) {
-        case .enqueued: nextInputSequence += 1
-        case .dropped, .terminated: fail()
-        @unknown default: fail()
+        case .enqueued:
+            nextInputSequence += 1
+            return true
+        case .dropped, .terminated:
+            fail()
+            return false
+        @unknown default:
+            fail()
+            return false
         }
+    }
+
+    private func requestAccessibility() {
+        let now = ContinuousClock.now
+        guard now >= nextAccessibilityRefresh, NSApp.isActive, window.isKeyWindow,
+              send(.accessibilitySnapshot) else { return }
+        nextAccessibilityRefresh = now + .milliseconds(500)
     }
 
     private func sendActivity() {
@@ -317,6 +343,7 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
         appActivityObservers.forEach(NotificationCenter.default.removeObserver)
         appActivityObservers.removeAll()
         view.updateEditor(nil)
+        view.updatePageAccessibility(nil, reset: true)
         window.delegate = nil
         window.orderOut(nil)
         inputSink?.finish()
@@ -341,6 +368,10 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
     private var discardingComposition = false
     var onInput: ((WebKitPresenterChannel.Action, WebKitPresenterChannel.EditTarget?) -> Void)?
     var onFocusChange: (() -> Void)?
+    var onAccessibilityQuery: (() -> Void)?
+    var onAccessibilityAction: ((UUID, UInt64, Bool) -> Bool)?
+    private var accessibilitySnapshot: WebKitPresenterChannel.AccessibilitySnapshot?
+    private var pageElements: [WebKitPageAccessibilityElement] = []
 
     init(drawable: CAMetalLayer) {
         self.drawable = drawable
@@ -350,11 +381,69 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
         layer?.masksToBounds = true
         drawable.setAffineTransform(.init(scaleX: 1, y: -1))
         layer?.addSublayer(drawable)
+        setAccessibilityElement(true)
+        setAccessibilityRole(.group)
+        setAccessibilityLabel("Веб-страница")
     }
 
     required init?(coder: NSCoder) { nil }
 
     override var acceptsFirstResponder: Bool { true }
+
+    override func accessibilityChildren() -> [Any]? {
+        onAccessibilityQuery?()
+        return pageElements.first.map { [$0] } ?? []
+    }
+
+    func updatePageAccessibility(_ snapshot: WebKitPresenterChannel.AccessibilitySnapshot?, reset: Bool) {
+        if reset {
+            accessibilitySnapshot = nil
+            pageElements = []
+        }
+        guard accessibilitySnapshot != snapshot else { return }
+        let reusable = accessibilitySnapshot?.document == snapshot?.document ?
+            Dictionary(uniqueKeysWithValues: pageElements.map { ($0.node, $0) }) : [:]
+        let previousFocus = pageElements.first(where: { $0.isAccessibilityFocused() })?.node
+        accessibilitySnapshot = snapshot
+        pageElements = []
+        if let snapshot {
+            for model in snapshot.nodes {
+                guard let node = model.identifier else { continue }
+                let element = reusable[node] ?? WebKitPageAccessibilityElement(view: self, document: snapshot.document, node: node)
+                element.model = model
+                pageElements.append(element)
+            }
+            for index in pageElements.indices {
+                let model = snapshot.nodes[index]
+                let parent: Any = model.parent < 0 ? self : pageElements[model.parent]
+                pageElements[index].setAccessibilityParent(parent)
+                pageElements[index].setAccessibilityChildren(pageElements.indices.compactMap {
+                    snapshot.nodes[$0].parent == index ? pageElements[$0] : nil
+                })
+            }
+        }
+        NSAccessibility.post(element: self, notification: .layoutChanged)
+        if let focused = pageElements.first(where: { $0.isAccessibilityFocused() }), previousFocus != focused.node {
+            NSAccessibility.post(element: focused, notification: .focusedUIElementChanged)
+        }
+    }
+
+    func performPageAccessibilityAction(document: UUID, node: UInt64, press: Bool) -> Bool {
+        guard accessibilitySnapshot?.document == document,
+              let item = pageElements.first(where: { $0.node == node }),
+              press ? item.model?.pressable == true : item.model?.focusable == true else { return false }
+        return onAccessibilityAction?(document, node, press) ?? false
+    }
+
+    func pageAccessibilityFrame(_ bounds: CGRect) -> CGRect {
+        let display = contentRect
+        guard drawable.drawableSize.width > 0, drawable.drawableSize.height > 0 else { return .zero }
+        let xScale = display.width / drawable.drawableSize.width
+        let yScale = display.height / drawable.drawableSize.height
+        return NSAccessibility.screenRect(fromView: self, rect: .init(
+            x: display.minX + bounds.minX * xScale, y: display.maxY - bounds.maxY * yScale,
+            width: bounds.width * xScale, height: bounds.height * yScale))
+    }
 
     override func becomeFirstResponder() -> Bool {
         DispatchQueue.main.async { [weak self] in self?.onFocusChange?() }
@@ -440,7 +529,19 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
 
     override func keyDown(with event: NSEvent) {
         updateSecureInput()
-        guard let editor, !editor.secure || secureEventInput else { return }
+        let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
+        if event.keyCode == UInt16(kVK_Tab),
+           modifiers == [] || modifiers == .shift,
+           NSApp.isActive, window?.isKeyWindow == true, window?.firstResponder === self {
+            if editor?.marked != nil { inputContext?.discardMarkedText() }
+            onInput?(.tabKey(backward: modifiers == .shift), nil)
+            return
+        }
+        guard let editor else {
+            super.keyDown(with: event)
+            return
+        }
+        guard !editor.secure || secureEventInput else { return }
         if inputContext?.handleEvent(event) != true { super.keyDown(with: event) }
     }
 
@@ -501,5 +602,53 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
         return window.convertToScreen(convert(local, to: nil))
     }
     func characterIndex(for point: NSPoint) -> Int { NSNotFound }
+}
+
+@MainActor
+private final class WebKitPageAccessibilityElement: NSAccessibilityElement {
+    private weak var view: WebKitPresenterView?
+    private let document: UUID
+    let node: UInt64
+    var model: WebKitPresenterChannel.AccessibilitySnapshot.Node?
+
+    init(view: WebKitPresenterView, document: UUID, node: UInt64) {
+        self.view = view
+        self.document = document
+        self.node = node
+        super.init()
+        setAccessibilityElement(true)
+    }
+
+    nonisolated override func accessibilityRole() -> NSAccessibility.Role? {
+        guard Thread.isMainThread else { return nil }
+        return MainActor.assumeIsolated { model.map { NSAccessibility.Role(rawValue: $0.role) } }
+    }
+    nonisolated override func accessibilityLabel() -> String? {
+        guard Thread.isMainThread else { return nil }
+        return MainActor.assumeIsolated { model?.label }
+    }
+    nonisolated override func accessibilityFrame() -> CGRect {
+        guard Thread.isMainThread else { return .zero }
+        return MainActor.assumeIsolated {
+            guard let model else { return .zero }
+            return view?.pageAccessibilityFrame(model.bounds) ?? .zero
+        }
+    }
+    nonisolated override func isAccessibilityFocused() -> Bool {
+        guard Thread.isMainThread else { return false }
+        return MainActor.assumeIsolated { model?.focused == true }
+    }
+    nonisolated override func setAccessibilityFocused(_ focused: Bool) {
+        guard focused, Thread.isMainThread else { return }
+        MainActor.assumeIsolated {
+            _ = view?.performPageAccessibilityAction(document: document, node: node, press: false)
+        }
+    }
+    nonisolated override func accessibilityPerformPress() -> Bool {
+        guard Thread.isMainThread else { return false }
+        return MainActor.assumeIsolated {
+            view?.performPageAccessibilityAction(document: document, node: node, press: true) ?? false
+        }
+    }
 }
 #endif

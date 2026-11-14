@@ -455,9 +455,12 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     #if NEANTIK_WEBKIT_PROXY_PRODUCTION
     private static let detachedInputSelector = NSSelectorFromString("_neantikApplyDetachedPresenterInput:")
     private static let detachedEditorSelector = NSSelectorFromString("_neantikReadDetachedEditorState:")
+    private static let detachedAccessibilitySelector = NSSelectorFromString("_neantikReadDetachedAccessibility:")
     private var presenterFocused = false
     private var presenterEditor: WebKitPresenterChannel.Editor?
     private var presenterEditorQuery: UUID?
+    private var presenterAccessibility: WebKitPresenterChannel.AccessibilitySnapshot?
+    private var presenterAccessibilityQuery: UUID?
     private lazy var presenterPlaceholder: CALayer = {
         let placeholder = CALayer()
         placeholder.frame = viewport
@@ -474,7 +477,8 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
 
     var hasDetachedPresenterBridge: Bool {
         window == nil && webView.responds(to: Self.detachedInputSelector) &&
-            webView.responds(to: Self.detachedEditorSelector)
+            webView.responds(to: Self.detachedEditorSelector) &&
+            webView.responds(to: Self.detachedAccessibilitySelector)
     }
 
     private func presenterPageLayer() -> CALayer? {
@@ -521,6 +525,33 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     private func invalidatePresenterEditor() {
         presenterEditor = nil
         presenterEditorQuery = nil
+        presenterAccessibility = nil
+        presenterAccessibilityQuery = nil
+    }
+
+    private func refreshPresenterAccessibility(for tab: WebKitBrowserTab) {
+        guard presenterAccessibilityQuery == nil, hasDetachedPresenterBridge else { return }
+        let query = UUID()
+        let target = tab.presenterTarget
+        presenterAccessibilityQuery = query
+        typealias Reply = @convention(block) (NSString?) -> Void
+        typealias ReadAccessibility = @convention(c) (AnyObject, Selector, Reply) -> Void
+        let read = unsafeBitCast(tab.view.method(for: Self.detachedAccessibilitySelector), to: ReadAccessibility.self)
+        let reply: Reply = { [weak self, weak tab] metadata in
+            MainActor.assumeIsolated {
+                guard let self, self.presenterAccessibilityQuery == query else { return }
+                self.presenterAccessibilityQuery = nil
+                guard let tab, self.order.selected == tab.id, tab.presenterTarget == target,
+                      let metadata, let data = (metadata as String).data(using: .utf8), data.count <= 8_192,
+                      let snapshot = try? JSONDecoder().decode(WebKitPresenterChannel.AccessibilitySnapshot.self, from: data),
+                      snapshot.isValid else {
+                    self.presenterAccessibility = nil
+                    return
+                }
+                self.presenterAccessibility = snapshot
+            }
+        }
+        read(tab.view, Self.detachedAccessibilitySelector, reply)
     }
 
     func applyPresenterCommand(_ command: WebKitPresenterChannel.Command) {
@@ -566,6 +597,23 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         case .scroll(let x, let y, let deltaX, let deltaY):
             guard presenterPageLayer() != nil else { return }
             input = ["action": "scroll", "point": point(x, y), "deltaX": deltaX, "deltaY": deltaY]
+        case .tabKey(let backward):
+            guard presenterPageLayer() != nil, presenterFocused else { return }
+            input = ["action": "tabKey", "backward": backward]
+            tab.presenterFocus = UUID()
+            invalidatePresenterEditor()
+        case .accessibilitySnapshot:
+            if presenterPageLayer() != nil { refreshPresenterAccessibility(for: tab) }
+            return
+        case .accessibilityAction(let document, let node, let press):
+            guard presenterPageLayer() != nil, presenterFocused,
+                  let snapshot = presenterAccessibility, snapshot.document == document,
+                  let element = snapshot.nodes.first(where: { $0.identifier == node }),
+                  press ? element.pressable : element.focusable else { return }
+            input = ["action": "accessibility", "document": document.uuidString.lowercased(),
+                     "node": NSNumber(value: node), "press": press]
+            tab.presenterFocus = UUID()
+            invalidatePresenterEditor()
         case .insert(let text, let replacement):
             input = ["action": "insert", "text": text, "replacement": range(replacement)]
         case .mark(let text, let selection, let replacement):
@@ -1129,16 +1177,19 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         let acceptsPageInput = presenterPageLayer() != nil
         if acceptsPageInput { refreshPresenterEditor(for: selected) }
         let editor = acceptsPageInput ? presenterEditor : nil
+        let accessibility = acceptsPageInput ? presenterAccessibility : nil
         let status = String(decoding: displayedStatus(selected.status).utf8.prefix(508), as: UTF8.self)
         #else
         let acceptsPageInput = false
         let editor: WebKitPresenterChannel.Editor? = nil
+        let accessibility: WebKitPresenterChannel.AccessibilitySnapshot? = nil
         let status = ""
         #endif
         return .init(generation: sessionGeneration, target: target, tabs: summaries,
                      address: address.utf8.count <= 2_048 ? address : "",
                      canGoBack: selected.view.canGoBack, canGoForward: selected.view.canGoForward,
-                     acceptsPageInput: acceptsPageInput, status: status, editor: editor)
+                     acceptsPageInput: acceptsPageInput, status: status, editor: editor,
+                     accessibility: accessibility)
     }
 
     @discardableResult
