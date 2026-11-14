@@ -1135,17 +1135,18 @@ def stage_db6_runtime(inputs: Path, build_root: Path, source_root: Path, build_r
                       offer: dict, temp: Path) -> tuple[Path, dict, dict]:
     from webkit_runtime_notices import verify_db6_runtime_resources
 
+    recipe_scripts = inputs / "scripts"
     unsigned = temp / "Frameworks"
-    staged = run([sys.executable, str(inputs / "scripts/stage-webkit-runtime.py"),
+    staged = run([sys.executable, str(recipe_scripts / "stage-webkit-runtime.py"),
                   str(build_root), str(unsigned), "--upstream-source", str(source_root),
                   "--manifest", str(inputs / "staging-manifest.json")], cwd=ROOT)
     receipt = _last_json(staged.stdout, field="machOSHA256")
     if receipt != json.loads(build_receipt_path.read_bytes()):
         raise PackageError("restaged db6 build does not match the reviewed stage receipt")
-    run([sys.executable, str(inputs / "scripts/check-owned-webkit-xpc-launcher.py"),
+    run([sys.executable, str(recipe_scripts / "check-owned-webkit-xpc-launcher.py"),
          "--source-root", str(source_root), "--frameworks", str(unsigned)])
     overlaid = temp / "Frameworks-with-overlays"
-    overlay = run([sys.executable, str(inputs / "scripts/apply-webkit-runtime-overlays.py"),
+    overlay = run([sys.executable, str(recipe_scripts / "apply-webkit-runtime-overlays.py"),
                    str(unsigned), str(overlaid)])
     verify_db6_runtime_resources(overlaid, offer)
     return overlaid, receipt, _last_json(overlay.stdout, field="resourceOverlays")
