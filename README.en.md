@@ -3,7 +3,7 @@
 
 NeAntik is an open-source, local-first browser profile manager for Apple
 Silicon Macs. The manager is native SwiftUI and launches an embedded,
-source-pinned Chromium and WebKit runtimes. It does not require Electron, an account, a
+source-pinned Chromium runtime and a separate WebKit runtime for proxied profiles. It does not require Electron, an account, a
 separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
@@ -49,7 +49,7 @@ for scope and limits. Source availability is separate from binary publication.
 
 ## WebKit in the current release
 
-Version 1.0.0 includes persistent profiles backed by the bundled WebKit runtime. Proxied WebKit profiles block WebRTC by default. Relay-only TURN/TLS and recovery after terminating the network process were verified through a controlled HTTP proxy. See the [WebKit guide](docs/WEBKIT_PROFILES.md).
+Direct WebKit profiles use system WebKit. Proxied WebKit profiles use the bundled runtime and require macOS 15.4 or later. Proxied WebKit profiles block WebRTC by default. Relay-only TURN/TLS and recovery after terminating the network process were verified through a controlled HTTP proxy. See the [WebKit guide](docs/WEBKIT_PROFILES.md).
 
 ## What it does
 
