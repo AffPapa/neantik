@@ -4,12 +4,14 @@ import Carbon
 import Darwin
 import Foundation
 import Metal
+import OSLog
 import QuartzCore
 
 /// The manager owns only the window and read-only frame mapping. The host
 /// owns navigation, website data, the compositor and the network route.
 @MainActor
 final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
+    private static let logger = Logger(subsystem: "com.neantik", category: "WebKitPresenter")
     let generation: UUID
     private let window: NSWindow
     private let view: WebKitPresenterView
@@ -33,6 +35,8 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
     private var nextInputSequence: UInt64 = 1
     private var inputSink: AsyncStream<WebKitPresenterChannel.Command>.Continuation?
     private var inputTask: Task<Void, Never>?
+    private var pendingWheel: (target: WebKitPresenterChannel.Target, wheel: WebKitPresenterChannel.Wheel)?
+    private var wheelFlushScheduled = false
     private var frameTask: Task<Void, Never>?
     private var onClose: (() -> Void)?
     private var onFailure: (() -> Void)?
@@ -158,7 +162,10 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
                     try WebKitPresenterChannel.write(command, to: input, timeout: 2)
                 }
             } catch {
-                if !Task.isCancelled { await self?.fail() }
+                if !Task.isCancelled {
+                    Self.logger.error("Presenter input channel failed")
+                    await self?.fail()
+                }
             }
         }
         let endpoint = endpoint
@@ -195,7 +202,10 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
                                             sequence: frame.sequence), timeout: 2)
                 }
             } catch {
-                if !Task.isCancelled { await self?.fail() }
+                if !Task.isCancelled {
+                    Self.logger.error("Presenter frame channel failed")
+                    await self?.fail()
+                }
             }
         }
     }
@@ -289,20 +299,55 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
 
     @discardableResult
     private func send(_ action: WebKitPresenterChannel.Action, editor: WebKitPresenterChannel.EditTarget? = nil) -> Bool {
-        guard active, let state, let inputSink, action.isValid else { return false }
+        guard active, let state, action.isValid else { return false }
         switch action {
         case .navigate, .activity: break
         default: guard state.acceptsPageInput else { return false }
         }
+        if case .scroll(let wheel) = action { return queueWheel(wheel, target: state.target) }
+        guard flushWheel() else { return false }
+        return enqueue(action, target: state.target, editor: editor)
+    }
+
+    private func queueWheel(_ wheel: WebKitPresenterChannel.Wheel, target: WebKitPresenterChannel.Target) -> Bool {
+        if let pendingWheel, pendingWheel.target == target, let combined = pendingWheel.wheel.coalescing(wheel) {
+            self.pendingWheel = (target, combined)
+            return true
+        }
+        guard flushWheel() else { return false }
+        pendingWheel = (target, wheel)
+        if !wheelFlushScheduled {
+            wheelFlushScheduled = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(8)) { [weak self] in
+                guard let self else { return }
+                self.wheelFlushScheduled = false
+                _ = self.flushWheel()
+            }
+        }
+        return true
+    }
+
+    private func flushWheel() -> Bool {
+        guard let pendingWheel else { return true }
+        self.pendingWheel = nil
+        guard active, state?.target.tab == pendingWheel.target.tab,
+              state?.target.navigation == pendingWheel.target.navigation else { return true }
+        return enqueue(.scroll(pendingWheel.wheel), target: pendingWheel.target)
+    }
+
+    private func enqueue(_ action: WebKitPresenterChannel.Action, target: WebKitPresenterChannel.Target,
+                         editor: WebKitPresenterChannel.EditTarget? = nil) -> Bool {
+        guard let inputSink else { return false }
         guard nextInputSequence < UInt64.max else { fail(); return false }
         let command = WebKitPresenterChannel.Command(generation: generation, sequence: nextInputSequence,
-            target: state.target, action: action, editor: editor)
+            target: target, action: action, editor: editor)
         guard command.isValid else { return false }
         switch inputSink.yield(command) {
         case .enqueued:
             nextInputSequence += 1
             return true
         case .dropped, .terminated:
+            Self.logger.error("Presenter input queue rejected a command")
             fail()
             return false
         @unknown default:
@@ -352,6 +397,7 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
 
     func dismiss() {
         active = false
+        pendingWheel = nil
         downloads?.stop()
         downloads = nil
         appActivityObservers.forEach(NotificationCenter.default.removeObserver)
@@ -727,6 +773,18 @@ private final class WebKitPageAccessibilityElement: NSAccessibilityElement {
     nonisolated override func isAccessibilityFocused() -> Bool {
         guard Thread.isMainThread else { return false }
         return MainActor.assumeIsolated { model?.focused == true }
+    }
+    nonisolated override func isAccessibilityEnabled() -> Bool {
+        guard Thread.isMainThread else { return false }
+        return MainActor.assumeIsolated {
+            guard let model else { return false }
+            switch model.role {
+            case "AXButton", "AXLink", "AXCheckBox", "AXRadioButton", "AXTextArea", "AXTextField":
+                return model.focusable || model.pressable
+            default:
+                return true
+            }
+        }
     }
     nonisolated override func setAccessibilityFocused(_ focused: Bool) {
         guard focused, Thread.isMainThread else { return }
