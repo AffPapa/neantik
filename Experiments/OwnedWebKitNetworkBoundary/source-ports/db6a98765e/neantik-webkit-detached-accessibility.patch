@@ -240,7 +240,7 @@ index 9b1bf66..c3dcff4 100644
  }
  
 diff --git a/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm b/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm
-index cb32a6f..20a65fb 100644
+index cb32a6f..997a932 100644
 --- a/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm
 +++ b/Source/WebKit/WebProcess/WebPage/Cocoa/WebPageCocoa.mm
 @@ -108,6 +108,7 @@
@@ -279,7 +279,7 @@ index cb32a6f..20a65fb 100644
  #import <wtf/cf/VectorCF.h>
  #import <wtf/cocoa/SpanCocoa.h>
  #import <wtf/cocoa/TypeCastsCocoa.h>
-@@ -2271,6 +2276,159 @@ void WebPage::getSelectedRangeAsync(CompletionHandler<void(const EditingRange& s
+@@ -2271,6 +2276,160 @@ void WebPage::getSelectedRangeAsync(CompletionHandler<void(const EditingRange& s
  }
  
  #if PLATFORM(MAC)
@@ -317,7 +317,6 @@ index cb32a6f..20a65fb 100644
 +
 +static String detachedAccessibilityLabel(const AXCoreObject& node)
 +{
-+    using namespace HTMLNames;
 +    RefPtr source = node.node();
 +    if (!source || source->isInUserAgentShadowTree())
 +        return { };
@@ -326,7 +325,7 @@ index cb32a6f..20a65fb 100644
 +    // controls through references. Only read literal names and static text.
 +    constexpr unsigned labelLimit = 48;
 +    if (RefPtr element = dynamicDowncast<Element>(source)) {
-+        for (const auto* attribute : { &aria_labelAttr.get(), &altAttr.get(), &titleAttr.get() }) {
++        for (const auto* attribute : { &HTMLNames::aria_labelAttr.get(), &HTMLNames::altAttr.get(), &HTMLNames::titleAttr.get() }) {
 +            const auto& value = element->attributeWithoutSynchronization(*attribute);
 +            if (!value.isEmpty())
 +                return value.string().left(labelLimit);
@@ -343,8 +342,10 @@ index cb32a6f..20a65fb 100644
 +            || candidate.isInUserAgentShadowTree() || candidate.isContentEditable())
 +            return;
 +        if (RefPtr element = dynamicDowncast<Element>(candidate);
-+            element && (element->hasTagName(inputTag) || element->hasTagName(textareaTag)
-+                || element->hasTagName(selectTag) || element->hasTagName(scriptTag) || element->hasTagName(styleTag)))
++            element && (element->hasTagName(HTMLNames::inputTag) || element->hasTagName(HTMLNames::textareaTag)
++                || element->hasTagName(HTMLNames::selectTag) || element->hasTagName(HTMLNames::scriptTag)
++                || element->hasTagName(HTMLNames::styleTag) || element->hasTagName(SVGNames::scriptTag)
++                || element->hasTagName(SVGNames::styleTag)))
 +            return;
 +        if (RefPtr value = dynamicDowncast<Text>(candidate)) {
 +            label.append(StringView(value->data()).left(labelLimit - label.length()));
