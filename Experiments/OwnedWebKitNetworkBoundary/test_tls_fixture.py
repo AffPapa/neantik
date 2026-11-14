@@ -122,11 +122,13 @@ class TLSFixtureTests(unittest.TestCase):
                 with self.connect(authority=child.authority, tunnel=tunnel) as raw:
                     self.assertIn(b'200 Connection Established', probe.read_header(raw))
                     context = ssl.create_default_context(cafile=str(tls_root / f'{ca}.pem'))
+                    context.minimum_version = ssl.TLSVersion.TLSv1_2
                     with self.assertRaises(ssl.SSLCertVerificationError):
                         context.wrap_socket(raw, server_hostname=hostname)
             with self.connect(authority=child.authority, tunnel=tunnel) as raw:
                 self.assertIn(b'200 Connection Established', probe.read_header(raw))
                 context = ssl.create_default_context(cafile=str(tls_root / 'ca.pem'))
+                context.minimum_version = ssl.TLSVersion.TLSv1_2
                 with context.wrap_socket(raw, server_hostname=child.host) as secured:
                     transaction = os.urandom(12)
                     secured.sendall(struct.pack('!HHI12s', 1, 0, 0x2112A442, transaction))
