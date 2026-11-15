@@ -2,6 +2,10 @@ import Combine
 import Darwin
 import Foundation
 
+private func fingerprintPhaseText(_ value: String) -> String {
+    NSLocalizedString(value, tableName: "Pages", bundle: .main, value: value, comment: "")
+}
+
 /// Immutable value captured when a manual fingerprint audit is presented.
 /// SwiftUI may rebuild the sheet content, but it cannot silently replace this
 /// session's profiles or runtime with values edited in another window.
@@ -1667,7 +1671,7 @@ struct FingerprintAuditReportStore: Sendable {
 @MainActor
 final class FingerprintAuditCoordinator: ObservableObject {
     @Published private(set) var isRunning = false
-    @Published private(set) var phase = "Готово"
+    @Published private(set) var phase = fingerprintPhaseText("Готово")
     @Published private(set) var report: FingerprintAuditReport?
     @Published private(set) var reportURL: URL?
     @Published private(set) var releaseEvidenceIsReady = false
@@ -1693,7 +1697,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
             ).pruneStoredReports()
         } catch {
             errorMessage =
-                "Не удалось безопасно ограничить старые локальные отчёты отпечатка."
+                fingerprintPhaseText("Не удалось безопасно ограничить старые локальные отчёты отпечатка.")
         }
     }
 
@@ -1711,16 +1715,16 @@ final class FingerprintAuditCoordinator: ObservableObject {
     ) {
         guard !isRunning else { return }
         guard first.privacyPolicy == .legacy, second.privacyPolicy == .legacy else {
-            errorMessage = "Локальная проверка отпечатка пока не поддерживает новые режимы защиты. Их ограничения не будут отключены ради проверки."
+            errorMessage = fingerprintPhaseText("Локальная проверка отпечатка пока не поддерживает новые режимы защиты. Их ограничения не будут отключены ради проверки.")
             return
         }
         guard first.id != second.id else {
-            errorMessage = "Выбери два разных профиля."
+            errorMessage = fingerprintPhaseText("Выбери два разных профиля.")
             return
         }
         guard runtime.supportsFingerprintIdentity else {
             errorMessage =
-                "Встроенный браузер не поддерживает проверку отпечатка. Переустанови NeAntik из официального DMG или ZIP."
+                fingerprintPhaseText("Встроенный браузер не поддерживает проверку отпечатка. Переустанови NeAntik из официального DMG или ZIP.")
             return
         }
         let preflight = BrowserRuntimePreflightValidator.validate(runtime)
@@ -1731,13 +1735,13 @@ final class FingerprintAuditCoordinator: ObservableObject {
         for profile in [first, second] {
             if processes.processState(for: profile.id) != .stopped {
                 errorMessage =
-                    "Останови выбранные профили и дождись завершения восстановления перед проверкой."
+                    fingerprintPhaseText("Останови выбранные профили и дождись завершения восстановления перед проверкой.")
                 return
             }
         }
 
         isRunning = true
-        phase = "Готовим проверку отпечатка"
+        phase = fingerprintPhaseText("Готовим проверку отпечатка")
         report = nil
         reportURL = nil
         releaseEvidenceIsReady = false
@@ -1746,11 +1750,11 @@ final class FingerprintAuditCoordinator: ObservableObject {
         task = Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                phase = "Проверяем браузерный движок"
+                phase = fingerprintPhaseText("Проверяем браузерный движок")
                 let initialRuntimeInspection =
                     await inspectRuntime(runtime.executableURL)
 
-                phase = "Проверяем прямой WebRTC-контроль"
+                phase = fingerprintPhaseText("Проверяем прямой WebRTC-контроль")
                 var controlProfile = first
                 controlProfile.proxy = nil
                 let webrtcDirectControl = try await capture(
@@ -1759,21 +1763,21 @@ final class FingerprintAuditCoordinator: ObservableObject {
                     executionMode: executionMode
                 )
 
-                phase = "Снимаем \(first.name) · проход 1 из 3"
+                phase = String(format: fingerprintPhaseText("Снимаем %@ · проход 1 из 3"), first.name)
                 let firstInitial = try await capture(
                     profile: first,
                     runtime: runtime,
                     executionMode: executionMode
                 )
 
-                phase = "Снимаем \(second.name) · проход 2 из 3"
+                phase = String(format: fingerprintPhaseText("Снимаем %@ · проход 2 из 3"), second.name)
                 let secondCapture = try await capture(
                     profile: second,
                     runtime: runtime,
                     executionMode: executionMode
                 )
 
-                phase = "Повторяем \(first.name) · проход 3 из 3"
+                phase = String(format: fingerprintPhaseText("Повторяем %@ · проход 3 из 3"), first.name)
                 let firstRepeat = try await capture(
                     profile: first,
                     runtime: runtime,
@@ -1829,7 +1833,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
                             "Проверка не прошла обязательный уровень выпуска. Точная техническая причина записана в журнал этой попытки. Одноразовое доказательство не использовано; проверку можно безопасно повторить."
                         )
                     }
-                    phase = "Подписываем отчёт выпуска"
+                    phase = fingerprintPhaseText("Подписываем отчёт выпуска")
                     savedURL = try releaseContext.persist(
                         report: newReport
                     )
@@ -1843,10 +1847,10 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 releaseEvidenceIsReady = releaseContext != nil
                 phase = newReport.verdict.title
             } catch is CancellationError {
-                phase = "Отменено"
+                phase = fingerprintPhaseText("Отменено")
             } catch {
                 errorMessage = error.localizedDescription
-                phase = "Проверка не прошла"
+                phase = fingerprintPhaseText("Проверка не прошла")
             }
             activeProfileID = nil
             isRunning = false
