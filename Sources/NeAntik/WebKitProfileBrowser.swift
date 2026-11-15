@@ -386,7 +386,7 @@ private final class WebKitBrowserTab {
     lazy var closeButton = NSButton()
     lazy var row = NSStackView()
     var observations: [NSKeyValueObservation] = []
-    var status = "WebKit · данные этого профиля · параметры устройства определяет macOS"
+    var status = NSLocalizedString("WebKit · данные этого профиля · параметры устройства определяет macOS", comment: "WebKit profile status")
     var committedURL = "about:blank"
     var initialURLFallback: String?
     var presenterNavigation = UUID()
@@ -1330,7 +1330,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     private func owns(_ view: WKWebView) -> Bool { !isClosed && tabs.values.contains { $0.view === view } }
     private func setStatus(_ value: String, for view: WKWebView) {
         guard !isClosed, let tab = tabs.values.first(where: { $0.view === view }) else { return }
-        tab.status = value; refreshTab(tab.id)
+        tab.status = NSLocalizedString(value, comment: "WebKit page status"); refreshTab(tab.id)
     }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void) {
         #if NEANTIK_WEBKIT_PROXY_QUALIFICATION
