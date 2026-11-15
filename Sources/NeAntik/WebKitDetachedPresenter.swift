@@ -254,12 +254,13 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
             state?.target.navigation != page.target.navigation
         let changedTarget = state?.target != page.target
         let changedTabs = state?.tabs != page.tabs
+        let changedStatus = state?.status != page.status
         state = page
         address.isEnabled = true
         if window.firstResponder !== address.currentEditor() { address.stringValue = page.address }
         back.isEnabled = page.canGoBack
         forward.isEnabled = page.canGoForward
-        pageStatus = page.status
+        if changedStatus { pageStatus = WebKitPresenterChannel.localizedStatus(page.status) }
         refreshStatus()
         view.updateEditor(page.editor)
         view.updatePageAccessibility(page.accessibility, reset: changedDocument)

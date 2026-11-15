@@ -715,3 +715,5 @@
 "Подпись браузера не удалось проверить." = "The browser signature could not be verified.";
 "Браузерный движок изменился во время проверки отпечатка." = "The browser engine changed during the fingerprint check.";
 "Проверка не прошла обязательный уровень выпуска. Точная техническая причина записана в журнал этой попытки. Одноразовое доказательство не использовано; проверку можно безопасно повторить." = "The check did not meet the required release level. The technical reason was recorded in this attempt’s log. The one-time evidence was not used; the check can safely be repeated.";
+
+"Сохранённые вкладки недоступны. Открыта стартовая страница; исходные данные не изменены." = "Saved tabs are unavailable. The start page opened; the original data was not changed.";
