@@ -1,5 +1,10 @@
 # NeAntik changelog
 
+## Direct 1.1.0 (212)
+
+- Добавлены английские интерфейс и справка с выбором языка macOS.
+- Улучшена передача подписей и состояний элементов страницы в VoiceOver для встроенного WebKit.
+
 ## Direct 1.0.0 (211) — production candidate
 
 - Coalesce compatible wheel events in the detached WebKit window and preserve gesture boundaries and input order.
