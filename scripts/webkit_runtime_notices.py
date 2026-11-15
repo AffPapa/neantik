@@ -4022,7 +4022,7 @@ def preflight_owned_webkit_notices(
     with tempfile.TemporaryDirectory(prefix="neantik-webkit-notice-preflight-") as temporary:
         scratch = Path(temporary) / "NeAntik.app"
         compliance = HTML_DESTINATION.with_name("compliance-manifest.json")
-        for relative in (NOTICE_DESTINATION, HTML_DESTINATION, compliance):
+        for relative in (Path("Contents/Info.plist"), NOTICE_DESTINATION, HTML_DESTINATION, compliance):
             source = _safe_destination(app, relative, create_parent=False)
             if relative == compliance and not source.exists():
                 continue
