@@ -6,9 +6,54 @@ private func fingerprintDisplayText(_ value: String) -> String {
     NSLocalizedString(value, tableName: "Pages", bundle: .main, value: value, comment: "")
 }
 
-private func fingerprintDisplaySummary(_ value: String) -> String {
-    let parts = ["Обычный режим браузера", "Диагностический режим", "Подпись подтверждена", "Подпись не подтверждена", "не записана", "не записан", "сборка ", "NeAntik — безопасная сводка fingerprint-проверки", "Менеджер:", "Схема проверки:", "Каталог устройств:", "Движок:", "Режим:", "Подпись движка:", "Сетевое доказательство: настроенный маршрут и WebRTC-контроль", "Фактический HTTP-маршрут: не измерялся", "Публичное тестирование:", "Базовая согласованность page/worker:"]
-    return parts.reduce(value) { $0.replacingOccurrences(of: $1, with: fingerprintDisplayText($1)) }
+private func fingerprintSafeMetadata(_ value: String?) -> String? {
+    guard let value else { return nil }
+    let clean = value.components(separatedBy: .newlines).joined(separator: " ")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    return clean.isEmpty ? nil : String(clean.prefix(80))
+}
+
+private func fingerprintManagerSummary(_ report: FingerprintAuditReport) -> String {
+    let version = fingerprintSafeMetadata(report.managerVersion)
+    let build = fingerprintSafeMetadata(report.managerBuild)
+    switch (version, build) {
+    case let (version?, build?): return "\(version) (\(build))"
+    case let (version?, nil): return version
+    case let (nil, build?): return fingerprintDisplayText("сборка ") + build
+    case (nil, nil): return fingerprintDisplayText("не записана")
+    }
+}
+
+private func fingerprintRuntimeSummary(_ report: FingerprintAuditReport) -> String {
+    let version = fingerprintSafeMetadata(report.runtimeVersion) ?? fingerprintDisplayText("не записана")
+    return fingerprintDisplayText(report.runtimeFlavor.title) + " · " + version
+}
+
+private func fingerprintRuntimeSourceSummary(_ runtime: BrowserRuntime) -> String {
+    var parts = [fingerprintDisplayText(runtime.source)]
+    if let version = runtime.inspection.version, !version.isEmpty { parts.append("v" + version) }
+    if !runtime.inspection.architectures.isEmpty { parts.append(runtime.inspection.architectures.joined(separator: "+")) }
+    return parts.joined(separator: " · ")
+}
+
+func fingerprintDiagnosticSummary(_ report: FingerprintAuditReport) -> String {
+    func line(_ title: String, _ value: String) -> String { fingerprintDisplayText(title) + " " + value }
+    func hash(_ value: String) -> String { value == "не подтверждён" ? fingerprintDisplayText(value) : value }
+    return [
+        fingerprintDisplayText("NeAntik — безопасная сводка fingerprint-проверки"),
+        line("Менеджер:", fingerprintManagerSummary(report)),
+        line("Схема проверки:", String(report.effectiveAuditSchemaVersion)),
+        line("Каталог устройств:", report.identityCatalogVersion.map(String.init) ?? fingerprintDisplayText("не записан")),
+        line("Движок:", fingerprintRuntimeSummary(report)),
+        line("Режим:", fingerprintDisplayText(report.effectiveExecutionMode.diagnosticTitle)),
+        line("Подпись движка:", fingerprintDisplayText(report.safeRuntimeSignatureSummary)),
+        "SHA-256 executable: " + hash(report.safeRuntimeExecutableHashSummary),
+        "SHA-256 framework: " + hash(report.safeRuntimeFrameworkHashSummary),
+        fingerprintDisplayText("Сетевое доказательство: настроенный маршрут и WebRTC-контроль"),
+        fingerprintDisplayText("Фактический HTTP-маршрут: не измерялся"),
+        line("Публичное тестирование:", report.isPublicAlphaReleaseQualified ? "PASS" : "FAIL"),
+        line("Базовая согласованность page/worker:", report.isProductionReleaseQualified ? "PASS" : "FAIL")
+    ].joined(separator: "\n")
 }
 
 enum FingerprintAuditErrorPresentation: Equatable {
@@ -174,8 +219,8 @@ struct FingerprintAuditView: View {
         )
         .alert(
             isReleaseAudit
-                ? "Проверка отпечатка"
-                : "Проверка отпечатков",
+                ? fingerprintDisplayText("Проверка отпечатка")
+                : fingerprintDisplayText("Проверка отпечатков"),
             isPresented: Binding(
                 get: {
                     FingerprintAuditAutomationPolicy.errorPresentation(
@@ -278,8 +323,8 @@ struct FingerprintAuditView: View {
         VStack(alignment: .leading, spacing: 8) {
             Label(
                 isReleaseAudit
-                    ? "Проверка отпечатка"
-                    : "Проверка профиля",
+                    ? fingerprintDisplayText("Проверка отпечатка")
+                    : fingerprintDisplayText("Проверка профиля"),
                 systemImage:
                     isReleaseAudit
                         ? "waveform.path.ecg.rectangle"
@@ -290,21 +335,21 @@ struct FingerprintAuditView: View {
 
             Text(
                 isReleaseAudit
-                    ? "NeAntik запускает профиль A, профиль B и снова профиль A. Так мы проверяем различие между профилями и стабильность первого профиля без отправки данных на внешний сайт."
-                    : "NeAntik проверит, что профиль сохраняет свои параметры и отличается от другого профиля. Данные останутся на этом Mac."
+                    ? fingerprintDisplayText("NeAntik запускает профиль A, профиль B и снова профиль A. Так мы проверяем различие между профилями и стабильность первого профиля без отправки данных на внешний сайт.")
+                    : fingerprintDisplayText("NeAntik проверит, что профиль сохраняет свои параметры и отличается от другого профиля. Данные останутся на этом Mac.")
             )
             .foregroundStyle(.secondary)
         }
     }
 
     private var profileSelection: some View {
-        GroupBox(isReleaseAudit ? "Профили" : "Сравниваем профили") {
+        GroupBox(isReleaseAudit ? "Профили" : fingerprintDisplayText("Сравниваем профили")) {
             VStack(spacing: 12) {
                 if isReleaseAudit {
                     profilePickers
                     LabeledContent(
                         "Браузерный движок",
-                        value: runtime.runtimeSummary
+                        value: fingerprintRuntimeSourceSummary(runtime)
                     )
                     .foregroundStyle(.secondary)
                 } else {
@@ -356,14 +401,14 @@ struct FingerprintAuditView: View {
     @ViewBuilder
     private var profileComparisonLabels: some View {
         Label(
-            firstProfile.map(profileLabel) ?? "Профиль не найден",
+            firstProfile.map(profileLabel) ?? fingerprintDisplayText("Профиль не найден"),
             systemImage: "person.crop.rectangle"
         )
         Image(systemName: "arrow.left.arrow.right")
             .foregroundStyle(.secondary)
             .accessibilityHidden(true)
         Label(
-            secondProfile.map(profileLabel) ?? "Профиль не найден",
+            secondProfile.map(profileLabel) ?? fingerprintDisplayText("Профиль не найден"),
             systemImage: "person.crop.rectangle"
         )
     }
@@ -377,8 +422,8 @@ struct FingerprintAuditView: View {
                     .fontWeight(.medium)
                 Text(
                     isReleaseAudit
-                        ? "Будет один прямой WebRTC-контроль и три коротких запуска A → B → A. Эти профили должны быть закрыты во время проверки."
-                        : "Окна браузера откроются и закроются автоматически. Обычно это занимает меньше минуты."
+                        ? fingerprintDisplayText("Будет один прямой WebRTC-контроль и три коротких запуска A → B → A. Эти профили должны быть закрыты во время проверки.")
+                        : fingerprintDisplayText("Окна браузера откроются и закроются автоматически. Обычно это занимает меньше минуты.")
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -463,14 +508,14 @@ struct FingerprintAuditView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(
                         passed
-                            ? "Проверка пройдена"
-                            : "Проверка не пройдена"
+                            ? fingerprintDisplayText("Проверка пройдена")
+                            : fingerprintDisplayText("Проверка не пройдена")
                     )
                     .font(.title2)
                     .fontWeight(.semibold)
                     Text(
                         passed
-                            ? "Профиль стабилен и отличается от другого профиля."
+                            ? fingerprintDisplayText("Профиль стабилен и отличается от другого профиля.")
                             : primaryUserIssue(report)
                     )
                     .foregroundStyle(.secondary)
@@ -530,8 +575,8 @@ struct FingerprintAuditView: View {
             }
 
             Text(report.criticalObservationsStable
-                 ? "Измерения доступны и повторяемы. Совпадающий результат между профилями допустим; различия показаны отдельно. Это не подтверждает изоляцию данных или сетевой маршрут."
-                 : "Часть измерений недоступна или изменилась при повторе. Проверка не подтверждена.")
+                 ? fingerprintDisplayText("Измерения доступны и повторяемы. Совпадающий результат между профилями допустим; различия показаны отдельно. Это не подтверждает изоляцию данных или сетевой маршрут.")
+                 : fingerprintDisplayText("Часть измерений недоступна или изменилась при повторе. Проверка не подтверждена."))
                 .foregroundStyle(.secondary)
 
             GroupBox("Критичные поверхности") {
@@ -581,7 +626,7 @@ struct FingerprintAuditView: View {
                 VStack(alignment: .leading, spacing: 9) {
                     LabeledContent(
                         "Менеджер",
-                        value: fingerprintDisplaySummary(report.safeManagerVersionSummary)
+                        value: fingerprintManagerSummary(report)
                     )
                     LabeledContent(
                         "Схема и каталог",
@@ -590,7 +635,7 @@ struct FingerprintAuditView: View {
                     )
                     LabeledContent(
                         "Движок",
-                        value: fingerprintDisplaySummary(report.safeRuntimeVersionSummary)
+                        value: fingerprintRuntimeSummary(report)
                     )
                     LabeledContent(
                         "Режим",
@@ -598,7 +643,7 @@ struct FingerprintAuditView: View {
                     )
                     LabeledContent(
                         "Подпись",
-                        value: fingerprintDisplaySummary(report.safeRuntimeSignatureSummary)
+                        value: fingerprintDisplayText(report.safeRuntimeSignatureSummary)
                     )
 
                     disclosureButton(
@@ -607,7 +652,7 @@ struct FingerprintAuditView: View {
                         font: .caption
                     )
                     if safeDiagnosticSummaryIsExpanded {
-                        Text(fingerprintDisplaySummary(report.safeDiagnosticSummary))
+                        Text(fingerprintDiagnosticSummary(report))
                             .font(.caption.monospaced())
                             .foregroundStyle(.secondary)
                             .textSelection(.enabled)
@@ -705,7 +750,7 @@ struct FingerprintAuditView: View {
                 )
                 .font(.caption2.weight(.semibold))
                 .accessibilityHidden(true)
-                Text(title)
+                Text(fingerprintDisplayText(title))
                     .font(font)
                 Spacer()
             }
@@ -932,7 +977,7 @@ struct FingerprintAuditView: View {
     private func startSelectedAudit() {
         guard let firstProfile, let secondProfile else {
             coordinator.errorMessage =
-                "Выбранный профиль больше не найден в списке. Закрой окно проверки, убедись что есть два профиля, и открой проверку заново."
+                fingerprintDisplayText("Выбранный профиль больше не найден в списке. Закрой окно проверки, убедись что есть два профиля, и открой проверку заново.")
             return
         }
         coordinator.start(
@@ -964,7 +1009,7 @@ struct FingerprintAuditView: View {
         color: Color
     ) -> some View {
         Label {
-            Text(title)
+            Text(fingerprintDisplayText(title))
                 .foregroundStyle(.primary)
         } icon: {
             Image(systemName: systemImage)
@@ -972,7 +1017,7 @@ struct FingerprintAuditView: View {
                 .accessibilityHidden(true)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(title)
+        .accessibilityLabel(fingerprintDisplayText(title))
     }
 
     private func surfaceTitle(_ key: String) -> String {

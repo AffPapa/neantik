@@ -48,5 +48,22 @@ class EnglishLocalizationCoverageTests(unittest.TestCase):
             self.assertNotRegex(translations[key], r"[А-Яа-яЁё]", key)
 
 
+    def test_fingerprint_view_and_preflight_strings_have_english(self):
+        translations = {}
+        for filename in ("Localizable.strings", "Pages.strings"):
+            table = (ROOT / "Resources/en.lproj" / filename).read_text(encoding="utf-8")
+            entries = re.findall(r'^("(?:\\.|[^"\\])*")\s*=\s*("(?:\\.|[^"\\])*");', table, re.MULTILINE)
+            translations.update({json.loads(key): json.loads(value) for key, value in entries})
+        view = (ROOT / "Sources/NeAntik/FingerprintAuditView.swift").read_text(encoding="utf-8")
+        preflight = (ROOT / "Sources/NeAntik/BrowserRuntimePreflight.swift").read_text(encoding="utf-8")
+        values = re.findall(r'"([^"\\]*[А-Яа-яЁё][^"\\]*)"', view)
+        values += re.findall(r'errors\.append\("([^"\\]+)"\)', preflight)
+        # This is an internal automation log prefix, not user interface text.
+        values.remove("Автоматическая проверка отпечатка остановлена: ")
+        for key in values:
+            self.assertIn(key, translations, key)
+            self.assertNotRegex(translations[key], r"[А-Яа-яЁё]", key)
+
+
 if __name__ == "__main__":
     unittest.main()
