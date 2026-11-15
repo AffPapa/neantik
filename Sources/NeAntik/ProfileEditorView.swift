@@ -792,7 +792,7 @@ struct ProfileEditorView: View {
               .font(.caption)
               .foregroundStyle(.secondary)
               .accessibilityElement(children: .combine)
-              .accessibilityLabel("\(status.title). \(status.detail)")
+              .accessibilityLabel(NSLocalizedString(status.title, comment: "Proxy check status") + ". " + NSLocalizedString(status.detail, comment: "Proxy check details"))
             } else if engine == .chromium, detectedTimezone != nil {
               Label(
                 "Контекст прокси без даты проверки",
@@ -1175,9 +1175,9 @@ struct ProfileEditorView: View {
               selectedFolderID = option.folderID
             } label: {
               if option.isSelected {
-                Label(option.title, systemImage: "checkmark")
+                Label(option.folderID == nil ? NSLocalizedString("Без папки", comment: "Unfiled profiles") : option.title, systemImage: "checkmark")
               } else {
-                Text(option.title)
+                Text(verbatim: option.folderID == nil ? NSLocalizedString("Без папки", comment: "Unfiled profiles") : option.title)
               }
             }
           }
@@ -1189,12 +1189,12 @@ struct ProfileEditorView: View {
             }
           }
         } label: {
-          Text(folderPresentation.selectedTitle)
+          Text(verbatim: selectedFolderID == nil ? NSLocalizedString("Без папки", comment: "Unfiled profiles") : folderPresentation.selectedTitle)
             .lineLimit(1)
         }
         .menuStyle(.borderlessButton)
         .accessibilityLabel("Папка профиля в NeAntik")
-        .accessibilityValue(folderPresentation.selectedTitle)
+        .accessibilityValue(selectedFolderID == nil ? NSLocalizedString("Без папки", comment: "Unfiled profiles") : folderPresentation.selectedTitle)
         .accessibilityHint(
           "Показывает список папок и поиск по всем папкам"
         )
@@ -1202,7 +1202,7 @@ struct ProfileEditorView: View {
     } else {
       Picker("Папка", selection: $selectedFolderID) {
         ForEach(folderPresentation.quickOptions) { option in
-          Text(option.title).tag(option.folderID)
+          Text(verbatim: option.folderID == nil ? NSLocalizedString("Без папки", comment: "Unfiled profiles") : option.title).tag(option.folderID)
         }
       }
       .pickerStyle(.menu)
@@ -1316,7 +1316,7 @@ struct ProfileEditorView: View {
       .font(.caption)
 
       if let message = notePresentation.validationMessage {
-        Label(NSLocalizedString(message, comment: "Profile validation message"), systemImage: "exclamationmark.circle.fill")
+        Label(localizedEditorValidation(message), systemImage: "exclamationmark.circle.fill")
           .font(.caption)
           .foregroundStyle(.red)
           .accessibilityElement(children: .combine)
@@ -1489,12 +1489,25 @@ struct ProfileEditorView: View {
     if validationIssue?.field == field,
       let message = validationIssue?.message
     {
-      Label(message, systemImage: "exclamationmark.circle.fill")
+      Label(localizedEditorValidation(message), systemImage: "exclamationmark.circle.fill")
         .font(.caption)
         .foregroundStyle(.red)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(message)
+        .accessibilityLabel(localizedEditorValidation(message))
     }
+  }
+
+  private func localizedEditorValidation(_ message: String) -> String {
+    let formats: [(String, String, [CVarArg])] = [
+      ("Проверь теги: не больше \(BrowserProfile.maximumTagCount), до \(BrowserProfile.maximumTagLength) символов каждый.", "Проверь теги: не больше %ld, до %ld символов каждый.", [BrowserProfile.maximumTagCount, BrowserProfile.maximumTagLength]),
+      ("Сократи заметку до \(BrowserProfile.maximumNoteLength) символов.", "Сократи заметку до %ld символов.", [BrowserProfile.maximumNoteLength]),
+      ("Сократи заметку до \(BrowserProfile.maximumNoteUTF8Bytes) байт UTF-8.", "Сократи заметку до %ld байт UTF-8.", [BrowserProfile.maximumNoteUTF8Bytes]),
+      ("Сократи пароль прокси до \(ProxyImportParser.maximumPasswordLength) символов и \(ProxyImportParser.maximumPasswordBytes) байт UTF-8.", "Сократи пароль прокси до %ld символов и %ld байт UTF-8.", [ProxyImportParser.maximumPasswordLength, ProxyImportParser.maximumPasswordBytes])
+    ]
+    if let match = formats.first(where: { $0.0 == message }) {
+      return String(format: NSLocalizedString(match.1, comment: "Profile validation"), arguments: match.2)
+    }
+    return NSLocalizedString(message, comment: "Profile validation")
   }
 
   private func presentValidation(_ issue: ProfileEditorValidationIssue) {

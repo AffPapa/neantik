@@ -664,3 +664,15 @@
 "Не удалось сохранить файл" = "Could not save the file";
 "Загрузки отменены" = "Downloads cancelled";
 "Отменено" = "Cancelled";
+"Введи название профиля." = "Enter a profile name.";
+"Проверь теги: не больше %ld, до %ld символов каждый." = "Check tags: at most %ld tags, up to %ld characters each.";
+"Проверь адрес стартовой страницы." = "Check the start page address.";
+"Для SOCKS5 нужны логин и пароль длиной до 255 байт UTF-8 каждый." = "SOCKS5 requires a username and password of up to 255 UTF-8 bytes each.";
+"Введи адрес прокси." = "Enter the proxy address.";
+"Введи порт от 1 до 65535." = "Enter a port from 1 to 65535.";
+"Проверь адрес прокси." = "Check the proxy address.";
+"Удали из пароля прокси нулевой управляющий символ." = "Remove the null control character from the proxy password.";
+"Сократи пароль прокси до %ld символов и %ld байт UTF-8." = "Shorten the proxy password to %ld characters and %ld UTF-8 bytes.";
+"Сократи заметку до %ld символов." = "Shorten the note to %ld characters.";
+"Сократи заметку до %ld байт UTF-8." = "Shorten the note to %ld UTF-8 bytes.";
+"Удали из заметки недопустимые управляющие символы." = "Remove invalid control characters from the note.";
