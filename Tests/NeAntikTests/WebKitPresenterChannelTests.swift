@@ -17,7 +17,13 @@ struct WebKitPresenterChannelTests {
         let key = try #require(WebKitPresenterChannel.localizedStatusKeys.first)
         let english = en.localizedString(forKey: key, value: key, table: nil)
         #expect(WebKitPresenterChannel.localizedStatus(key + "\n" + unknown, target: en, english: en) == english + "\n" + unknown)
-        // Exercise each host combination including its actual 508-byte cap.
+        let ambiguous = String(repeating: "x", count: 475) + "\n" + String(WebKitPresenterChannel.localizedStatusKeys[11].prefix(16))
+        #expect(WebKitPresenterChannel.localizedStatus(ambiguous, target: en, english: en) == ambiguous)
+        #expect(WebKitPresenterChannel.encodedStatus(unknown, english: en) == unknown)
+        for malformed in ["neantik-status-v1:", "neantik-status-v1:99", "neantik-status-v1:0,00", "neantik-status-v1:0,8,8"] {
+            #expect(WebKitPresenterChannel.localizedStatus(malformed, target: en, english: en) == malformed)
+        }
+        // Exercise each host combination through the versioned status encoding.
         let keys = WebKitPresenterChannel.localizedStatusKeys
         for base in keys.prefix(8) {
             for notice in [String?](arrayLiteral: nil, keys[8], keys[9], keys[10]) {
@@ -25,10 +31,11 @@ struct WebKitPresenterChannelTests {
                     let values = [base] + [notice, checkpoint].compactMap { $0 }
                     for source in [ru, en] {
                         let sent = values.map { source.localizedString(forKey: $0, value: $0, table: nil) }.joined(separator: "\n")
-                        let bounded = String(decoding: sent.utf8.prefix(508), as: UTF8.self)
+                        let encoded = WebKitPresenterChannel.encodedStatus(sent, english: en)
+                        #expect(encoded.utf8.count < 508)
                         for target in [ru, en] {
                             let expected = values.map { target.localizedString(forKey: $0, value: $0, table: nil) }.joined(separator: "\n")
-                            #expect(WebKitPresenterChannel.localizedStatus(bounded, target: target, english: en) == expected)
+                            #expect(WebKitPresenterChannel.localizedStatus(encoded, target: target, english: en) == expected)
                         }
                     }
                 }

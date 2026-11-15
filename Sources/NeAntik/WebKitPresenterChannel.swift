@@ -23,23 +23,45 @@ enum WebKitPresenterChannel {
         "Список вкладок не удалось подготовить к сохранению. Последняя сохранённая сессия не изменена."
     ]
 
-    static func localizedStatus(_ value: String, target: Bundle = .main, english: Bundle? = nil) -> String {
-        let englishBundle = english ?? Bundle.main.path(forResource: "en", ofType: "lproj").flatMap(Bundle.init(path:))
+    private static let statusMarker = "neantik-status-v1:"
+
+    private static func statusIDs(_ ids: [Int]) -> Bool {
+        guard (1...3).contains(ids.count), (0..<8).contains(ids[0]) else { return false }
+        if ids.count == 2 { return (8..<13).contains(ids[1]) }
+        if ids.count == 3 { return (8..<11).contains(ids[1]) && (11..<13).contains(ids[2]) }
+        return true
+    }
+
+    /// Encode only the exact built-in status lines; unknown messages use the
+    /// old text path untouched. IDs avoid truncating localized multi-line text.
+    static func encodedStatus(_ value: String, english: Bundle? = nil) -> String {
+        let en = english ?? Bundle.main.path(forResource: "en", ofType: "lproj").flatMap(Bundle.init(path:))
         let lines = value.components(separatedBy: "\n")
-        return lines.enumerated().map { index, line in
-            let exact = localizedStatusKeys.filter { key in
-                line == key || englishBundle?.localizedString(forKey: key, value: key, table: nil) == line
+        let ids = lines.compactMap { line -> Int? in
+            let matches = localizedStatusKeys.indices.filter { index in
+                let key = localizedStatusKeys[index]
+                return line == key || en?.localizedString(forKey: key, value: key, table: nil) == line
             }
-            if exact.count == 1 {
-                return target.localizedString(forKey: exact[0], value: exact[0], table: nil)
+            return matches.count == 1 ? matches[0] : nil
+        }
+        guard ids.count == lines.count, statusIDs(ids) else { return value }
+        return statusMarker + ids.map(String.init).joined(separator: ",")
+    }
+
+    static func localizedStatus(_ value: String, target: Bundle = .main, english: Bundle? = nil) -> String {
+        if value.hasPrefix(statusMarker) {
+            let tokens = value.dropFirst(statusMarker.count).split(separator: ",", omittingEmptySubsequences: false)
+            let ids = tokens.compactMap { token -> Int? in
+                guard let number = Int(token), String(number) == token else { return nil }
+                return number
             }
-            // The existing host limits status to 508 UTF-8 bytes. Recover only
-            // an unambiguous known final status, retaining all unknown text.
-            guard index == lines.count - 1, value.utf8.count >= 508 else { return line }
-            let prefix = line.hasSuffix("�") ? String(line.dropLast()) : line
-            guard prefix.utf8.count >= 32 else { return line }
+            guard ids.count == tokens.count, statusIDs(ids) else { return value }
+            return ids.map { target.localizedString(forKey: localizedStatusKeys[$0], value: localizedStatusKeys[$0], table: nil) }.joined(separator: "\n")
+        }
+        let en = english ?? Bundle.main.path(forResource: "en", ofType: "lproj").flatMap(Bundle.init(path:))
+        return value.components(separatedBy: "\n").map { line in
             let matches = localizedStatusKeys.filter { key in
-                key.hasPrefix(prefix) || (englishBundle?.localizedString(forKey: key, value: key, table: nil).hasPrefix(prefix) ?? false)
+                line == key || en?.localizedString(forKey: key, value: key, table: nil) == line
             }
             guard matches.count == 1 else { return line }
             return target.localizedString(forKey: matches[0], value: matches[0], table: nil)
