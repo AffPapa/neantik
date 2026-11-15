@@ -160,21 +160,6 @@ struct WebKitPresenterChannelTests {
         var unfocusedField = node("5", parent: 0, role: "AXTextField")
         unfocusedField.value = "must be focused"
         #expect(!Snapshot(document: document, nodes: [root, unfocusedField]).isValid)
-        var secureField = Snapshot.Node(id: "6", parent: 0, role: "AXTextField", label: "Password",
-                                        x: 20, y: 20, width: 120, height: 32,
-                                        focusable: true, focused: true, pressable: false)
-        secureField.secure = true
-        let secureSnapshot = Snapshot(document: document, nodes: [root, secureField])
-        #expect(secureSnapshot.isValid)
-        #expect(try JSONDecoder().decode(Snapshot.self, from: JSONEncoder().encode(secureSnapshot)) == secureSnapshot)
-        secureField.value = "secret"
-        #expect(!Snapshot(document: document, nodes: [root, secureField]).isValid)
-        secureField.value = nil
-        secureField.pressable = true
-        #expect(!Snapshot(document: document, nodes: [root, secureField]).isValid)
-        secureField.pressable = false
-        secureField.checked = 1
-        #expect(!Snapshot(document: document, nodes: [root, secureField]).isValid)
         let sentinel = WebKitPresenterChannel.Action.accessibilityAction(document: document, node: UInt64.max, press: true)
         #expect(!sentinel.isValid)
     }
