@@ -8,60 +8,60 @@ struct ProfileSnapshotRestorePreviewSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Добавление настроек из снимка")
+            Text(NSLocalizedString("page.663", tableName: "Pages", bundle: .main, value: "Добавление настроек из снимка", comment: ""))
                 .font(.title2.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
 
-            Text("Снимок настроек от \(preview.snapshotDate.formatted(date: .long, time: .shortened))")
+            Text(String(format: NSLocalizedString("page.664", tableName: "Pages", bundle: .main, value: "Снимок настроек от %@", comment: ""), String(describing: preview.snapshotDate.formatted(date: .long, time: .shortened))))
                 .foregroundStyle(.secondary)
 
             Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 8) {
                 GridRow {
-                    Text("Профилей будет добавлено")
+                    Text(NSLocalizedString("page.665", tableName: "Pages", bundle: .main, value: "Профилей будет добавлено", comment: ""))
                     Text(preview.profileCount.formatted())
                         .monospacedDigit()
                 }
                 GridRow {
-                    Text("Папок будет использовано")
+                    Text(NSLocalizedString("page.666", tableName: "Pages", bundle: .main, value: "Папок будет использовано", comment: ""))
                     Text(preview.folderCount.formatted())
                         .monospacedDigit()
                 }
                 GridRow {
-                    Text("Существующих папок совпадёт")
+                    Text(NSLocalizedString("page.667", tableName: "Pages", bundle: .main, value: "Существующих папок совпадёт", comment: ""))
                     Text(preview.reusedFolderCount.formatted())
                         .monospacedDigit()
                 }
                 GridRow {
-                    Text("Новых папок будет создано")
+                    Text(NSLocalizedString("page.668", tableName: "Pages", bundle: .main, value: "Новых папок будет создано", comment: ""))
                     Text(preview.newFolderCount.formatted())
                         .monospacedDigit()
                 }
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Сводка добавления новых профилей")
+            .accessibilityLabel(NSLocalizedString("page.669", tableName: "Pages", bundle: .main, value: "Сводка добавления новых профилей", comment: ""))
             .accessibilityValue(preview.accessibilitySummary)
 
-            Text("Будут добавлены новые профили. Существующие профили и данные браузера не изменятся. Для новых профилей создаются новые identity.")
-            Text("Заметки, cookies, данные браузера, identity seeds и пароли из Связки ключей macOS не восстанавливаются.")
+            Text(NSLocalizedString("page.670", tableName: "Pages", bundle: .main, value: "Будут добавлены новые профили. Существующие профили и данные браузера не изменятся. Для новых профилей создаются новые identity.", comment: ""))
+            Text(NSLocalizedString("page.671", tableName: "Pages", bundle: .main, value: "Заметки, cookies, данные браузера, identity seeds и пароли из Связки ключей macOS не восстанавливаются.", comment: ""))
                 .foregroundStyle(.secondary)
 
             HStack {
-                Button("Отмена", action: onCancel)
+                Button(NSLocalizedString("page.632", tableName: "Pages", bundle: .main, value: "Отмена", comment: ""), action: onCancel)
                     .keyboardShortcut(.cancelAction)
                     .disabled(isRestoring)
-                    .accessibilityLabel("Отменить добавление профилей")
+                    .accessibilityLabel(NSLocalizedString("page.672", tableName: "Pages", bundle: .main, value: "Отменить добавление профилей", comment: ""))
                     .accessibilityHint(
-                        "Закроет просмотр. Профили и папки не изменятся."
+                        NSLocalizedString("page.673", tableName: "Pages", bundle: .main, value: "Закроет просмотр. Профили и папки не изменятся.", comment: "")
                     )
                 Spacer()
                 Button(action: onRestore) {
                     if isRestoring {
                         HStack(spacing: 8) {
                             ProgressView().controlSize(.small)
-                            Text("Добавляем…")
+                            Text(NSLocalizedString("page.674", tableName: "Pages", bundle: .main, value: "Добавляем…", comment: ""))
                         }
                     } else {
-                        Text("Добавить новые профили")
+                        Text(NSLocalizedString("page.675", tableName: "Pages", bundle: .main, value: "Добавить новые профили", comment: ""))
                     }
                 }
                 .disabled(isRestoring)
@@ -69,13 +69,13 @@ struct ProfileSnapshotRestorePreviewSheet: View {
                 .buttonStyle(.borderedProminent)
                 .accessibilityLabel(
                     isRestoring
-                        ? "Добавляем новые профили из снимка настроек"
-                        : "Добавить новые профили из снимка настроек"
+                        ? NSLocalizedString("page.676", tableName: "Pages", bundle: .main, value: "Добавляем новые профили из снимка настроек", comment: "")
+                        : NSLocalizedString("page.677", tableName: "Pages", bundle: .main, value: "Добавить новые профили из снимка настроек", comment: "")
                 )
                 .accessibilityHint(
                     isRestoring
-                        ? "Сохраняем новые профили и папки. Подожди завершения операции."
-                        : "Добавит новые профили с новыми identity. Данные сайтов не переносятся."
+                        ? NSLocalizedString("page.678", tableName: "Pages", bundle: .main, value: "Сохраняем новые профили и папки. Подожди завершения операции.", comment: "")
+                        : NSLocalizedString("page.679", tableName: "Pages", bundle: .main, value: "Добавит новые профили с новыми identity. Данные сайтов не переносятся.", comment: "")
                 )
             }
         }

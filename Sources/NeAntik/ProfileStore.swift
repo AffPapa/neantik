@@ -2267,13 +2267,13 @@ private struct LegacyProfilesDocument: Decodable {
 
 private struct UnsupportedProfilesSchemaError: LocalizedError {
     var errorDescription: String? {
-        "Версия файла профилей не поддерживается. Данные не изменены. Открой их в совместимой версии NeAntik или обратись в поддержку."
+        NSLocalizedString("userError.020", tableName: "Errors", bundle: .main, value: "Версия файла профилей не поддерживается. Данные не изменены. Открой их в совместимой версии NeAntik или обратись в поддержку.", comment: "")
     }
 }
 
 private struct BrowserIdentityAllocationError: LocalizedError {
     var errorDescription: String? {
-        "Не удалось создать отдельный идентификатор профиля. Удали ненужный профиль или обратись в поддержку; существующие данные не изменены."
+        NSLocalizedString("userError.021", tableName: "Errors", bundle: .main, value: "Не удалось создать отдельный идентификатор профиля. Удали ненужный профиль или обратись в поддержку; существующие данные не изменены.", comment: "")
     }
 }
 
@@ -2281,19 +2281,19 @@ struct BrowserProfileRevisionConflictError: LocalizedError, Equatable {
     let profileID: UUID
 
     var errorDescription: String? {
-        "Профиль изменился в другом окне. Твои изменения не сохранены; открой редактор заново, чтобы не перезаписать более новую версию."
+        NSLocalizedString("userError.022", tableName: "Errors", bundle: .main, value: "Профиль изменился в другом окне. Твои изменения не сохранены; открой редактор заново, чтобы не перезаписать более новую версию.", comment: "")
     }
 }
 
 struct ProfileDeleteRevisionConflictError: LocalizedError, Equatable {
     var errorDescription: String? {
-        "Профиль изменился в другом окне. Удаление отменено; проверь текущие данные и повтори действие."
+        NSLocalizedString("userError.023", tableName: "Errors", bundle: .main, value: "Профиль изменился в другом окне. Удаление отменено; проверь текущие данные и повтори действие.", comment: "")
     }
 }
 
 private struct BrowserProfileRevisionExhaustedError: LocalizedError {
     var errorDescription: String? {
-        "Профиль достиг предельной версии и не был изменён."
+        NSLocalizedString("userError.024", tableName: "Errors", bundle: .main, value: "Профиль достиг предельной версии и не был изменён.", comment: "")
     }
 }
 
@@ -2305,9 +2305,9 @@ struct ProfileSaveRollbackError: LocalizedError {
         // Both nested file-system errors can disclose private paths. The
         // detailed values remain available to the private debugger while the
         // user-facing error stays safe and actionable.
-        "Не удалось сохранить профиль, а откат старых метаданных тоже не " +
-        "прошёл. Состояние профилей не подтверждено; проверь список профилей " +
-            "и папок перед повтором операции."
+        NSLocalizedString("userError.025", tableName: "Errors", bundle: .main, value: "Не удалось сохранить профиль, а откат старых метаданных тоже не ", comment: "") +
+        NSLocalizedString("userError.026", tableName: "Errors", bundle: .main, value: "прошёл. Состояние профилей не подтверждено; проверь список профилей ", comment: "") +
+            NSLocalizedString("userError.027", tableName: "Errors", bundle: .main, value: "и папок перед повтором операции.", comment: "")
     }
 }
 
@@ -2318,9 +2318,9 @@ struct ProfileDeleteRollbackError: LocalizedError {
 
     var errorDescription: String? {
         if rollbackError != nil {
-            return "Не удалось завершить удаление и автоматически восстановить папку данных профиля. Запуск профиля заблокирован. Проверь Корзину macOS или обратись в поддержку; данные не очищались безвозвратно."
+            return NSLocalizedString("userError.028", tableName: "Errors", bundle: .main, value: "Не удалось завершить удаление и автоматически восстановить папку данных профиля. Запуск профиля заблокирован. Проверь Корзину macOS или обратись в поддержку; данные не очищались безвозвратно.", comment: "")
         }
-        return "Не удалось удалить профиль. Данные профиля не изменены."
+        return NSLocalizedString("userError.029", tableName: "Errors", bundle: .main, value: "Не удалось удалить профиль. Данные профиля не изменены.", comment: "")
     }
 }
 
@@ -2328,25 +2328,25 @@ struct ProfileCredentialCleanupPendingError: LocalizedError {
     let cleanupError: Error
 
     var errorDescription: String? {
-        "Профиль и его данные уже удалены. Не удалось полностью очистить пароль прокси из Связки ключей; повторный запуск профиля заблокирован. NeAntik безопасно повторит очистку при следующем запуске."
+        NSLocalizedString("userError.030", tableName: "Errors", bundle: .main, value: "Профиль и его данные уже удалены. Не удалось полностью очистить пароль прокси из Связки ключей; повторный запуск профиля заблокирован. NeAntik безопасно повторит очистку при следующем запуске.", comment: "")
     }
 }
 
 private struct ProfileTrashLocationUnavailableError: LocalizedError {
     var errorDescription: String? {
-        "macOS переместила папку данных профиля, но не сообщила её новое расположение."
+        NSLocalizedString("userError.031", tableName: "Errors", bundle: .main, value: "macOS переместила папку данных профиля, но не сообщила её новое расположение.", comment: "")
     }
 }
 
 private struct ProfileDirectoryRecoveryRequiredError: LocalizedError {
     var errorDescription: String? {
-        "Не удалось подтвердить или восстановить папку данных профиля из Корзины macOS."
+        NSLocalizedString("userError.032", tableName: "Errors", bundle: .main, value: "Не удалось подтвердить или восстановить папку данных профиля из Корзины macOS.", comment: "")
     }
 }
 
 private struct ProfileStorageUnavailableError: LocalizedError {
     var errorDescription: String? {
-        "Не удалось загрузить профили. NeAntik не изменит повреждённое хранилище. Перезапусти приложение. Если ошибка повторится, скопируй сведения об ошибке и обратись в поддержку."
+        NSLocalizedString("userError.033", tableName: "Errors", bundle: .main, value: "Не удалось загрузить профили. NeAntik не изменит повреждённое хранилище. Перезапусти приложение. Если ошибка повторится, скопируй сведения об ошибке и обратись в поддержку.", comment: "")
     }
 }
 

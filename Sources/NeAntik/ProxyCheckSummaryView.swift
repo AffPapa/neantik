@@ -11,14 +11,14 @@ struct ProxyCheckSummaryView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if let checkedAt = summary.checkedAt {
-                Text("Последняя проверка: \(checkedAt, style: .relative)")
+                (Text(NSLocalizedString("page.600", tableName: "Pages", bundle: .main, value: "Последняя проверка: ", comment: "")) + Text(checkedAt, style: .relative))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             if summary.status == .latestCheckFailed,
                let lastSuccessfulCheckAt = summary.lastSuccessfulCheckAt
             {
-                Text("Последний успех: \(lastSuccessfulCheckAt, style: .relative)")
+                (Text(NSLocalizedString("page.601", tableName: "Pages", bundle: .main, value: "Последний успех: ", comment: "")) + Text(lastSuccessfulCheckAt, style: .relative))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -32,11 +32,11 @@ struct ProxyCheckSummaryView: View {
         guard let checkedAt = summary.checkedAt else {
             return value
         }
-        value += " Последняя проверка: \(checkedAt.formatted(date: .abbreviated, time: .shortened))."
+        value += String(format: NSLocalizedString("page.602", tableName: "Pages", bundle: .main, value: " Последняя проверка: %@.", comment: ""), String(describing: checkedAt.formatted(date: .abbreviated, time: .shortened)))
         if summary.status == .latestCheckFailed,
            let lastSuccessfulCheckAt = summary.lastSuccessfulCheckAt
         {
-            value += " Последний успех: \(lastSuccessfulCheckAt.formatted(date: .abbreviated, time: .shortened))."
+            value += String(format: NSLocalizedString("page.603", tableName: "Pages", bundle: .main, value: " Последний успех: %@.", comment: ""), String(describing: lastSuccessfulCheckAt.formatted(date: .abbreviated, time: .shortened)))
         }
         return value
     }

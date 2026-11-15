@@ -7,12 +7,12 @@ enum WebKitProfileDeletionError: LocalizedError, Equatable {
     case wrongEngine, unsafeJournal, changed, nativeFailed, identifierStillPresent, interrupted
     var errorDescription: String? {
         switch self {
-        case .wrongEngine: "Эта операция предназначена для профиля WebKit."
-        case .unsafeJournal: "Журнал удаления WebKit не прошёл проверку. Запуск профиля заблокирован; сохрани папку данных NeAntik и обратись в поддержку."
-        case .changed: "Настройки или защита удаления изменились. Операция остановлена; данные WebKit уже могли быть удалены. Закрой другие экземпляры NeAntik и открой восстановление удаления."
-        case .nativeFailed: "macOS не завершила удаление WebKit. Данные могли быть удалены частично; профиль скрыт и заблокирован. Закрой его окна и повтори удаление через восстановление."
-        case .identifierStillPresent: "WebKit ещё сообщает об этом хранилище после удаления. Завершение не подтверждено; профиль остаётся заблокированным."
-        case .interrupted: "Удаление профиля не завершено. Продолжи через восстановление удаления. Часть данных уже могла быть удалена; возвращать этот профиль в работу небезопасно."
+        case .wrongEngine: NSLocalizedString("userError.075", tableName: "Errors", bundle: .main, value: "Эта операция предназначена для профиля WebKit.", comment: "")
+        case .unsafeJournal: NSLocalizedString("userError.076", tableName: "Errors", bundle: .main, value: "Журнал удаления WebKit не прошёл проверку. Запуск профиля заблокирован; сохрани папку данных NeAntik и обратись в поддержку.", comment: "")
+        case .changed: NSLocalizedString("userError.077", tableName: "Errors", bundle: .main, value: "Настройки или защита удаления изменились. Операция остановлена; данные WebKit уже могли быть удалены. Закрой другие экземпляры NeAntik и открой восстановление удаления.", comment: "")
+        case .nativeFailed: NSLocalizedString("userError.078", tableName: "Errors", bundle: .main, value: "macOS не завершила удаление WebKit. Данные могли быть удалены частично; профиль скрыт и заблокирован. Закрой его окна и повтори удаление через восстановление.", comment: "")
+        case .identifierStillPresent: NSLocalizedString("userError.079", tableName: "Errors", bundle: .main, value: "WebKit ещё сообщает об этом хранилище после удаления. Завершение не подтверждено; профиль остаётся заблокированным.", comment: "")
+        case .interrupted: NSLocalizedString("userError.080", tableName: "Errors", bundle: .main, value: "Удаление профиля не завершено. Продолжи через восстановление удаления. Часть данных уже могла быть удалена; возвращать этот профиль в работу небезопасно.", comment: "")
         }
     }
 }

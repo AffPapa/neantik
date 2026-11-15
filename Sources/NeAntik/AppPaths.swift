@@ -12,13 +12,13 @@ enum PrivateFileEntryKind: Equatable, Sendable {
 
 struct ProfileMetadataBusyError: LocalizedError {
     var errorDescription: String? {
-        "Данные профилей заняты другим действием. Дождись его завершения и повтори."
+        NSLocalizedString("userError.081", tableName: "Errors", bundle: .main, value: "Данные профилей заняты другим действием. Дождись его завершения и повтори.", comment: "")
     }
 }
 
 struct ProfileProcessBusyError: LocalizedError {
     var errorDescription: String? {
-        "Профиль занят другим действием. Дождись его завершения и повтори."
+        NSLocalizedString("userError.082", tableName: "Errors", bundle: .main, value: "Профиль занят другим действием. Дождись его завершения и повтори.", comment: "")
     }
 }
 

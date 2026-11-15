@@ -368,11 +368,11 @@ struct ProfileCommandMenu: Commands {
 
     var body: some Commands {
         CommandMenu("Профиль") {
-            Button(resolved.presentation.openTitle, action: resolved.openOrShow)
+            Button(NSLocalizedString(resolved.presentation.openTitle, comment: "Profile action"), action: resolved.openOrShow)
                 .disabled(!resolved.hasProfile)
 
             Button(
-                resolved.presentation.launchTitle,
+                NSLocalizedString(resolved.presentation.launchTitle, comment: "Profile action"),
                 systemImage: resolved.presentation.launchSystemImage,
                 action: resolved.toggleRunning
             )
@@ -392,7 +392,7 @@ struct ProfileCommandMenu: Commands {
             Divider()
 
             Button(
-                resolved.presentation.pinTitle,
+                NSLocalizedString(resolved.presentation.pinTitle, comment: "Profile action"),
                 systemImage: resolved.presentation.pinSystemImage,
                 action: resolved.togglePinned
             )
@@ -436,7 +436,7 @@ struct ProfileCommandMenu: Commands {
             .disabled(!resolved.hasProfile)
 
             Button(
-                resolved.presentation.archiveTitle,
+                NSLocalizedString(resolved.presentation.archiveTitle, comment: "Profile action"),
                 systemImage: resolved.presentation.archiveSystemImage,
                 action: resolved.toggleArchived
             )
@@ -453,7 +453,7 @@ struct ProfileCommandMenu: Commands {
 
             Button("Очистить кэш…", systemImage: "arrow.triangle.2.circlepath", action: resolved.clearCache)
                 .disabled(!resolved.presentation.cacheIsEnabled)
-                .help(resolved.presentation.cacheHelp)
+                .help(NSLocalizedString(resolved.presentation.cacheHelp, comment: "Profile action"))
 
             Divider()
 

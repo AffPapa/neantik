@@ -10,7 +10,7 @@ struct ProfileQuickCommand: Identifiable {
     let action: () -> Void
     var openAction: (() -> Void)? = nil
     var openEnabled: Bool = false
-    var openTitle: String = "Запустить профиль"
+    var openTitle: String = NSLocalizedString("page.737", tableName: "Pages", bundle: .main, value: "Запустить профиль", comment: "")
 }
 
 struct ProfileQuickCommandsSheet: View {
@@ -49,10 +49,10 @@ struct ProfileQuickCommandsSheet: View {
     }
 
     private var openProfileButton: some View {
-        Button(selected?.openTitle ?? "Запустить профиль", action: openSelectedProfile)
+        Button(selected?.openTitle ?? NSLocalizedString("page.737", tableName: "Pages", bundle: .main, value: "Запустить профиль", comment: ""), action: openSelectedProfile)
             .keyboardShortcut(.return, modifiers: .command)
             .disabled(selected?.openEnabled != true)
-            .help("⌘Return — запустить остановленный профиль или выбрать его в менеджере; Return — только выбрать в менеджере")
+            .help(NSLocalizedString("page.738", tableName: "Pages", bundle: .main, value: "⌘Return — запустить остановленный профиль или выбрать его в менеджере; Return — только выбрать в менеджере", comment: ""))
     }
 
     private func moveSelection(by offset: Int) {
@@ -64,8 +64,8 @@ struct ProfileQuickCommandsSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Быстрые команды").font(.title2.bold())
-            TextField("Команда, профиль, тег, заметка или папка", text: $search)
+            Text(NSLocalizedString("page.739", tableName: "Pages", bundle: .main, value: "Быстрые команды", comment: "")).font(.title2.bold())
+            TextField(NSLocalizedString("page.740", tableName: "Pages", bundle: .main, value: "Команда, профиль, тег, заметка или папка", comment: ""), text: $search)
                 .textFieldStyle(.roundedBorder)
                 .focused($searchFocused)
                 .onSubmit(perform)
@@ -88,16 +88,16 @@ struct ProfileQuickCommandsSheet: View {
                 .opacity(command.enabled ? 1 : 0.5)
                 .tag(command.id)
             }
-            .overlay { if matches.isEmpty { Text("Ничего не найдено. Измени запрос.").foregroundStyle(.secondary) } }
+            .overlay { if matches.isEmpty { Text(NSLocalizedString("page.741", tableName: "Pages", bundle: .main, value: "Ничего не найдено. Измени запрос.", comment: "")).foregroundStyle(.secondary) } }
             ViewThatFits(in: .horizontal) {
                 footer
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("↑ ↓ — выбор • Return — выполнить").font(.caption).foregroundStyle(.secondary)
+                    Text(NSLocalizedString("page.742", tableName: "Pages", bundle: .main, value: "↑ ↓ — выбор • Return — выполнить", comment: "")).font(.caption).foregroundStyle(.secondary)
                     HStack {
                         Spacer()
                         openProfileButton
-                        Button("Закрыть", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
-                        Button("Выполнить", action: perform).keyboardShortcut(.defaultAction)
+                        Button(NSLocalizedString("page.637", tableName: "Pages", bundle: .main, value: "Закрыть", comment: ""), role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
+                        Button(NSLocalizedString("page.743", tableName: "Pages", bundle: .main, value: "Выполнить", comment: ""), action: perform).keyboardShortcut(.defaultAction)
                             .disabled(selected?.enabled != true)
                     }
                 }
@@ -112,11 +112,11 @@ struct ProfileQuickCommandsSheet: View {
 
     private var footer: some View {
         HStack {
-            Text("↑ ↓ — выбор • Return — выполнить").font(.caption).foregroundStyle(.secondary)
+            Text(NSLocalizedString("page.742", tableName: "Pages", bundle: .main, value: "↑ ↓ — выбор • Return — выполнить", comment: "")).font(.caption).foregroundStyle(.secondary)
             Spacer()
             openProfileButton
-            Button("Закрыть", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
-            Button("Выполнить", action: perform).keyboardShortcut(.defaultAction)
+            Button(NSLocalizedString("page.637", tableName: "Pages", bundle: .main, value: "Закрыть", comment: ""), role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
+            Button(NSLocalizedString("page.743", tableName: "Pages", bundle: .main, value: "Выполнить", comment: ""), action: perform).keyboardShortcut(.defaultAction)
                 .disabled(selected?.enabled != true)
         }
     }

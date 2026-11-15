@@ -19,22 +19,22 @@ struct ProfileCacheMaintenanceSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Очистить кэш").font(.title2.bold())
+            Text(NSLocalizedString("page.644", tableName: "Pages", bundle: .main, value: "Очистить кэш", comment: "")).font(.title2.bold())
             Text(profile.name).font(.headline).lineLimit(2)
-            Text("Удаляются только HTTP Cache и Code Cache закрытого профиля. Cookies, данные сайтов, вкладки, Service Worker и расширения сохраняются.")
+            Text(NSLocalizedString("page.712", tableName: "Pages", bundle: .main, value: "Удаляются только HTTP Cache и Code Cache закрытого профиля. Cookies, данные сайтов, вкладки, Service Worker и расширения сохраняются.", comment: ""))
                 .fixedSize(horizontal: false, vertical: true)
             GroupBox {
                 if busy {
                     HStack {
                         ProgressView().controlSize(.small)
-                        Text(recovering ? "Возвращаем оставшийся кэш…" : clearing ? "Очищаем кэш…" : "Считаем объём кэша…")
+                        Text(recovering ? NSLocalizedString("page.713", tableName: "Pages", bundle: .main, value: "Возвращаем оставшийся кэш…", comment: "") : clearing ? NSLocalizedString("page.714", tableName: "Pages", bundle: .main, value: "Очищаем кэш…", comment: "") : NSLocalizedString("page.715", tableName: "Pages", bundle: .main, value: "Считаем объём кэша…", comment: ""))
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 } else if let estimate {
-                    LabeledContent(completed ? "Удалённый объём" : "Объём кэша", value: ByteCountFormatter.string(fromByteCount: estimate.bytes, countStyle: .file))
-                    Text(completed ? "Очистка завершена. При следующем запуске браузер создаст кэш заново." : "\(estimate.files) файлов. Перед удалением объём и безопасность проверятся повторно.")
+                    LabeledContent(completed ? NSLocalizedString("page.716", tableName: "Pages", bundle: .main, value: "Удалённый объём", comment: "") : NSLocalizedString("page.717", tableName: "Pages", bundle: .main, value: "Объём кэша", comment: ""), value: ByteCountFormatter.string(fromByteCount: estimate.bytes, countStyle: .file))
+                    Text(completed ? NSLocalizedString("page.718", tableName: "Pages", bundle: .main, value: "Очистка завершена. При следующем запуске браузер создаст кэш заново.", comment: "") : String(format: NSLocalizedString("page.719", tableName: "Pages", bundle: .main, value: "%@ файлов. Перед удалением объём и безопасность проверятся повторно.", comment: ""), String(describing: estimate.files)))
                         .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 } else {
-                    Text("Проверка кэша недоступна.").frame(maxWidth: .infinity, alignment: .leading)
+                    Text(NSLocalizedString("page.720", tableName: "Pages", bundle: .main, value: "Проверка кэша недоступна.", comment: "")).frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             if let errorMessage {
@@ -42,23 +42,23 @@ struct ProfileCacheMaintenanceSheet: View {
                     .foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
             }
             if let recoveryMessage { Text(recoveryMessage).fixedSize(horizontal: false, vertical: true) }
-            Text("Кэш не является резервной копией. После очистки первая загрузка страниц может быть медленнее.")
+            Text(NSLocalizedString("page.721", tableName: "Pages", bundle: .main, value: "Кэш не является резервной копией. После очистки первая загрузка страниц может быть медленнее.", comment: ""))
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Divider()
             HStack {
                 if busy {
-                    Button("Отменить") { task?.cancel() }
-                        .help("До удаления операция отменяется. Если удаление уже началось, дождись результата: уже удалённый кэш не восстанавливается.")
+                    Button(NSLocalizedString("page.722", tableName: "Pages", bundle: .main, value: "Отменить", comment: "")) { task?.cancel() }
+                        .help(NSLocalizedString("page.723", tableName: "Pages", bundle: .main, value: "До удаления операция отменяется. Если удаление уже началось, дождись результата: уже удалённый кэш не восстанавливается.", comment: ""))
                 }
                 if recoveryAvailable {
-                    Button("Вернуть оставшийся кэш") { perform(clear: false, recover: true) }
+                    Button(NSLocalizedString("page.724", tableName: "Pages", bundle: .main, value: "Вернуть оставшийся кэш", comment: "")) { perform(clear: false, recover: true) }
                         .disabled(busy)
-                        .help("Проверяется журнал незавершённой операции. Уже удалённые байты не восстанавливаются; данные сайтов не меняются.")
+                        .help(NSLocalizedString("page.725", tableName: "Pages", bundle: .main, value: "Проверяется журнал незавершённой операции. Уже удалённые байты не восстанавливаются; данные сайтов не меняются.", comment: ""))
                 }
                 Spacer()
-                Button("Закрыть") { dismiss() }.keyboardShortcut(.cancelAction).disabled(busy)
+                Button(NSLocalizedString("page.637", tableName: "Pages", bundle: .main, value: "Закрыть", comment: "")) { dismiss() }.keyboardShortcut(.cancelAction).disabled(busy)
                 if !completed {
-                    Button("Очистить кэш") { perform(clear: true) }
+                    Button(NSLocalizedString("page.644", tableName: "Pages", bundle: .main, value: "Очистить кэш", comment: "")) { perform(clear: true) }
                         .disabled(busy || estimate == nil || estimate?.files == 0)
                         .keyboardShortcut(.defaultAction)
                 }
@@ -95,11 +95,11 @@ struct ProfileCacheMaintenanceSheet: View {
                 estimate = result.0; completed = clear; recoveryAvailable = false
                 if let recovery = result.1 {
                     recoveryMessage = recovery.cacheMayAlreadyBeRemoved
-                        ? "Незавершённая операция закрыта. Вернулось папок кэша: \(recovery.restoredRoots). Уже удалённые байты не восстанавливаются; данные сайтов сохранены."
-                        : "Незавершённая операция отменена. Папки кэша возвращены без удаления данных."
+                        ? String(format: NSLocalizedString("page.726", tableName: "Pages", bundle: .main, value: "Незавершённая операция закрыта. Вернулось папок кэша: %@. Уже удалённые байты не восстанавливаются; данные сайтов сохранены.", comment: ""), String(describing: recovery.restoredRoots))
+                        : NSLocalizedString("page.727", tableName: "Pages", bundle: .main, value: "Незавершённая операция отменена. Папки кэша возвращены без удаления данных.", comment: "")
                 }
             } catch is CancellationError {
-                if requestID == id { errorMessage = "Операция отменена до удаления кэша." }
+                if requestID == id { errorMessage = NSLocalizedString("page.728", tableName: "Pages", bundle: .main, value: "Операция отменена до удаления кэша.", comment: "") }
             } catch {
                 if requestID == id {
                     estimate = nil; errorMessage = error.localizedDescription

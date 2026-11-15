@@ -95,6 +95,8 @@ enum WebKitPresenterChannel {
             let focusable: Bool
             let focused: Bool
             let pressable: Bool
+            var checked: Int? = nil
+            var value: String? = nil
 
             var bounds: CGRect { .init(x: x, y: y, width: width, height: height) }
             var identifier: UInt64? { UInt64(id).flatMap { $0 > 0 && $0 < UInt64.max ? $0 : nil } }
@@ -104,6 +106,9 @@ enum WebKitPresenterChannel {
                              "AXCheckBox", "AXRadioButton", "AXImage", "AXTextArea", "AXTextField", "AXGroup"]
                 return roles.contains(role) && identifier != nil &&
                     (label?.utf8.count ?? 0) <= 256 &&
+                    (value?.utf8.count ?? 0) <= 256 &&
+                    (value == nil || (focused && ["AXTextField", "AXTextArea"].contains(role))) &&
+                    (checked.map { ["AXCheckBox", "AXRadioButton"].contains(role) && (0...2).contains($0) } ?? true) &&
                     (-100_000...100_000).contains(x) && (-100_000...100_000).contains(y) &&
                     (0...100_000).contains(width) && (0...100_000).contains(height)
             }

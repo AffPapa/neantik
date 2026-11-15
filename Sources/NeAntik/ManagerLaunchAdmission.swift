@@ -107,8 +107,8 @@ enum ManagerLaunchAdmissionError: LocalizedError {
     case pressure, busy
     var errorDescription: String? {
         switch self {
-        case .pressure: "Новый запуск приостановлен: macOS сообщает о нехватке памяти или высокой температуре. Дождись снижения нагрузки и повтори. Открытые профили продолжают работать."
-        case .busy: "Другой запуск ещё подготавливается. Дождись его завершения или отмени подготовку; затем повтори запуск."
+        case .pressure: NSLocalizedString("userError.154", tableName: "Errors", bundle: .main, value: "Новый запуск приостановлен: macOS сообщает о нехватке памяти или высокой температуре. Дождись снижения нагрузки и повтори. Открытые профили продолжают работать.", comment: "")
+        case .busy: NSLocalizedString("userError.155", tableName: "Errors", bundle: .main, value: "Другой запуск ещё подготавливается. Дождись его завершения или отмени подготовку; затем повтори запуск.", comment: "")
         }
     }
 }

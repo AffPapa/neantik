@@ -94,8 +94,8 @@ struct ProxyHealthCancellationRollbackError: LocalizedError, Sendable {
     var errorDescription: String? {
         // The underlying persistence error may contain a private file path or
         // other implementation detail. Keep it out of UI/log surfaces.
-        "Проверка прокси отменена, но предыдущее состояние не удалось " +
-            "восстановить. Повтори проверку позже."
+        NSLocalizedString("userError.152", tableName: "Errors", bundle: .main, value: "Проверка прокси отменена, но предыдущее состояние не удалось ", comment: "") +
+            NSLocalizedString("userError.153", tableName: "Errors", bundle: .main, value: "восстановить. Повтори проверку позже.", comment: "")
     }
 }
 

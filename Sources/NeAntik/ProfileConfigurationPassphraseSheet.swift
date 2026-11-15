@@ -13,17 +13,17 @@ enum ProfileConfigurationPassphraseMode: Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .export: "Зашифровать конфигурацию"
-        case .import: "Расшифровать конфигурацию"
+        case .export: NSLocalizedString("page.332", tableName: "Pages", bundle: .main, value: "Зашифровать конфигурацию", comment: "")
+        case .import: NSLocalizedString("page.333", tableName: "Pages", bundle: .main, value: "Расшифровать конфигурацию", comment: "")
         }
     }
 
     var message: String {
         switch self {
         case .export:
-            "Пароль нужен для открытия файла на другом Mac. Он не сохраняется в приложении или файле."
+            NSLocalizedString("page.334", tableName: "Pages", bundle: .main, value: "Пароль нужен для открытия файла на другом Mac. Он не сохраняется в приложении или файле.", comment: "")
         case .import:
-            "Введи пароль, которым был зашифрован файл конфигурации."
+            NSLocalizedString("page.335", tableName: "Pages", bundle: .main, value: "Введи пароль, которым был зашифрован файл конфигурации.", comment: "")
         }
     }
 }
@@ -60,7 +60,7 @@ struct ProfileConfigurationPassphraseSheet: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            SecureField("Пароль, минимум 12 байт UTF-8", text: $passphrase)
+            SecureField(NSLocalizedString("page.336", tableName: "Pages", bundle: .main, value: "Пароль, минимум 12 байт UTF-8", comment: ""), text: $passphrase)
                 .textFieldStyle(.roundedBorder)
                 .focused($focusedField, equals: .passphrase)
                 .onSubmit {
@@ -72,29 +72,29 @@ struct ProfileConfigurationPassphraseSheet: View {
                 }
 
             if mode == .export {
-                SecureField("Повтори пароль", text: $confirmation)
+                SecureField(NSLocalizedString("page.210", tableName: "Pages", bundle: .main, value: "Повтори пароль", comment: ""), text: $confirmation)
                     .textFieldStyle(.roundedBorder)
                     .focused($focusedField, equals: .confirmation)
                     .onSubmit {
                         if canSubmit { submit() }
                     }
                 if !confirmation.isEmpty && passphrase != confirmation {
-                    Text("Пароли не совпадают.")
+                    Text(NSLocalizedString("page.337", tableName: "Pages", bundle: .main, value: "Пароли не совпадают.", comment: ""))
                         .font(.caption)
                         .foregroundStyle(.red)
                 }
             }
 
             if !passphrase.isEmpty && !hasMinimumLength {
-                Text("Используй не менее 12 байт UTF-8.")
+                Text(NSLocalizedString("page.338", tableName: "Pages", bundle: .main, value: "Используй не менее 12 байт UTF-8.", comment: ""))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             HStack {
                 Spacer()
-                Button("Отмена", role: .cancel, action: cancel)
-                Button(mode == .export ? "Зашифровать" : "Открыть") {
+                Button(NSLocalizedString("page.339", tableName: "Pages", bundle: .main, value: "Отмена", comment: ""), role: .cancel, action: cancel)
+                Button(mode == .export ? NSLocalizedString("page.340", tableName: "Pages", bundle: .main, value: "Зашифровать", comment: "") : NSLocalizedString("page.341", tableName: "Pages", bundle: .main, value: "Открыть", comment: "")) {
                     submit()
                 }
                 .keyboardShortcut(.defaultAction)

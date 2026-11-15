@@ -35,39 +35,39 @@ struct ProfileBrowserDataBackupSheet: View {
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text(restoring ? "Восстановить данные профиля" : "Создать копию данных профиля").font(.title2.bold())
-            LabeledContent("Профиль", value: request.profile.name).font(.body)
+            Text(restoring ? NSLocalizedString("page.200", tableName: "Pages", bundle: .main, value: "Восстановить данные профиля", comment: "") : NSLocalizedString("page.201", tableName: "Pages", bundle: .main, value: "Создать копию данных профиля", comment: "")).font(.title2.bold())
+            LabeledContent(NSLocalizedString("page.202", tableName: "Pages", bundle: .main, value: "Профиль", comment: ""), value: request.profile.name).font(.body)
             Text(restoring
-                 ? "Данные сайтов этого профиля будут заменены содержимым копии. Настройки профиля, прокси и папки сохранятся."
-                 : "Зашифрованный файл содержит данные сайтов закрытого профиля. Настройки профиля, прокси и папки экспортируются отдельно.")
+                 ? NSLocalizedString("page.203", tableName: "Pages", bundle: .main, value: "Данные сайтов этого профиля будут заменены содержимым копии. Настройки профиля, прокси и папки сохранятся.", comment: "")
+                 : NSLocalizedString("page.204", tableName: "Pages", bundle: .main, value: "Зашифрованный файл содержит данные сайтов закрытого профиля. Настройки профиля, прокси и папки экспортируются отдельно.", comment: ""))
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
-                Button(restoring ? "Выбрать копию…" : "Выбрать место…") { chooseFile() }.disabled(busy || complete)
-                Text(file?.lastPathComponent ?? "Файл не выбран").lineLimit(2).textSelection(.enabled)
+                Button(restoring ? NSLocalizedString("page.205", tableName: "Pages", bundle: .main, value: "Выбрать копию…", comment: "") : NSLocalizedString("page.206", tableName: "Pages", bundle: .main, value: "Выбрать место…", comment: "")) { chooseFile() }.disabled(busy || complete)
+                Text(file?.lastPathComponent ?? NSLocalizedString("page.207", tableName: "Pages", bundle: .main, value: "Файл не выбран", comment: "")).lineLimit(2).textSelection(.enabled)
                 Spacer()
             }
-            SecureField(restoring ? "Пароль копии" : "Пароль: от 12 байт", text: $password)
+            SecureField(restoring ? NSLocalizedString("page.208", tableName: "Pages", bundle: .main, value: "Пароль копии", comment: "") : NSLocalizedString("page.209", tableName: "Pages", bundle: .main, value: "Пароль: от 12 байт", comment: ""), text: $password)
                 .focused($passwordFocused).textFieldStyle(.roundedBorder).disabled(busy || complete)
             if !restoring {
-                SecureField("Повтори пароль", text: $confirmation).textFieldStyle(.roundedBorder).disabled(busy || complete)
-                Text("Сохрани пароль отдельно: восстановить его из копии нельзя.")
+                SecureField(NSLocalizedString("page.210", tableName: "Pages", bundle: .main, value: "Повтори пароль", comment: ""), text: $confirmation).textFieldStyle(.roundedBorder).disabled(busy || complete)
+                Text(NSLocalizedString("page.211", tableName: "Pages", bundle: .main, value: "Сохрани пароль отдельно: восстановить его из копии нельзя.", comment: ""))
                     .font(.body).foregroundStyle(.secondary)
             }
-            Text("Копия совместима с этим Mac, исходным профилем и точной версией движка. После восстановления сайт может попросить войти снова. Перенос сохранённых паролей и авторизации на другой Mac не поддерживается.")
+            Text(NSLocalizedString("page.212", tableName: "Pages", bundle: .main, value: "Копия совместима с этим Mac, исходным профилем и точной версией движка. После восстановления сайт может попросить войти снова. Перенос сохранённых паролей и авторизации на другой Mac не поддерживается.", comment: ""))
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            if busy { ProgressView(restoring ? "Проверка и восстановление данных…" : "Создание зашифрованной копии…") }
+            if busy { ProgressView(restoring ? NSLocalizedString("page.213", tableName: "Pages", bundle: .main, value: "Проверка и восстановление данных…", comment: "") : NSLocalizedString("page.214", tableName: "Pages", bundle: .main, value: "Создание зашифрованной копии…", comment: "")) }
             if let message {
                 Label(message, systemImage: complete ? "checkmark.circle" : "exclamationmark.triangle")
                     .foregroundStyle(complete ? .green : .primary).fixedSize(horizontal: false, vertical: true)
             }
             Divider()
             HStack {
-                if busy { Button("Остановить операцию") { task?.cancel() } }
-                if needsRecovery { Button("Завершить восстановление") { perform(recovery: true) }.disabled(busy) }
+                if busy { Button(NSLocalizedString("page.215", tableName: "Pages", bundle: .main, value: "Остановить операцию", comment: "")) { task?.cancel() } }
+                if needsRecovery { Button(NSLocalizedString("page.216", tableName: "Pages", bundle: .main, value: "Завершить восстановление", comment: "")) { perform(recovery: true) }.disabled(busy) }
                 Spacer()
-                Button(complete ? "Готово" : "Закрыть") { dismiss() }.disabled(busy).keyboardShortcut(.cancelAction)
+                Button(complete ? NSLocalizedString("page.217", tableName: "Pages", bundle: .main, value: "Готово", comment: "") : NSLocalizedString("page.218", tableName: "Pages", bundle: .main, value: "Закрыть", comment: "")) { dismiss() }.disabled(busy).keyboardShortcut(.cancelAction)
                 if !complete && !needsRecovery && !recoveryBlocked {
-                    Button(restoring ? "Восстановить данные" : "Создать копию") { perform() }
+                    Button(restoring ? NSLocalizedString("page.219", tableName: "Pages", bundle: .main, value: "Восстановить данные", comment: "") : NSLocalizedString("page.220", tableName: "Pages", bundle: .main, value: "Создать копию", comment: "")) { perform() }
                         .disabled(!canConfirm).keyboardShortcut(.defaultAction)
                 }
             }
@@ -107,14 +107,14 @@ struct ProfileBrowserDataBackupSheet: View {
                     dataOperationCompleted = true
                     try await didRestore()
                     complete = true; needsRecovery = false
-                    message = result.restored ? "Восстановление завершено." : "Незавершённая замена отменена. Прежние данные профиля сохранены."
+                    message = result.restored ? NSLocalizedString("page.221", tableName: "Pages", bundle: .main, value: "Восстановление завершено.", comment: "") : NSLocalizedString("page.222", tableName: "Pages", bundle: .main, value: "Незавершённая замена отменена. Прежние данные профиля сохранены.", comment: "")
                 } else if restoring {
                     _ = try await service.restore(profileID: profile.id, expectedRevision: profile.revision, archive: file, password: password)
                     dataOperationCompleted = true
-                    try await didRestore(); complete = true; message = "Данные профиля восстановлены. Теперь можно запустить браузер."
+                    try await didRestore(); complete = true; message = NSLocalizedString("page.223", tableName: "Pages", bundle: .main, value: "Данные профиля восстановлены. Теперь можно запустить браузер.", comment: "")
                 } else {
                     let manifest = try await service.export(profileID: profile.id, expectedRevision: profile.revision, destination: file, password: password)
-                    complete = true; message = "Копия сохранена: \(manifest.entries.count) файлов и папок."
+                    complete = true; message = String(format: NSLocalizedString("page.224", tableName: "Pages", bundle: .main, value: "Копия сохранена: %@ файлов и папок.", comment: ""), String(describing: manifest.entries.count))
                 }
                 self.password = ""; confirmation = ""
             } catch {
@@ -122,7 +122,7 @@ struct ProfileBrowserDataBackupSheet: View {
                 // authenticated journal decides recovery, including roll-forward.
                 if dataOperationCompleted {
                     complete = true; needsRecovery = false; self.password = ""; confirmation = ""
-                    message = "Операция с данными завершена, но список не обновился. Перезапусти NeAntik перед запуском профиля."
+                    message = NSLocalizedString("page.225", tableName: "Pages", bundle: .main, value: "Операция с данными завершена, но список не обновился. Перезапусти NeAntik перед запуском профиля.", comment: "")
                     return
                 }
                 let pending = await service.pendingRecoveryRequired()
@@ -131,18 +131,18 @@ struct ProfileBrowserDataBackupSheet: View {
                 needsRecovery = recoveryPreview?.context.profileID == profile.id
                 recoveryBlocked = pending && !needsRecovery
                 if recoveryBlocked {
-                    message = "В NeAntik есть другое или неподтверждённое восстановление. Закрой это окно и перезапусти NeAntik: он проверит журнал перед запуском профилей. Не удаляй файлы данных."
+                    message = NSLocalizedString("page.226", tableName: "Pages", bundle: .main, value: "В NeAntik есть другое или неподтверждённое восстановление. Закрой это окно и перезапусти NeAntik: он проверит журнал перед запуском профилей. Не удаляй файлы данных.", comment: "")
                 }
-                else if needsRecovery { message = "Операция не завершена. Закрой другие версии NeAntik и заверши восстановление этого профиля." }
-                else if error is CancellationError { message = "Операция остановлена до завершения. Проверь выбранный файл перед повторной попыткой." }
+                else if needsRecovery { message = NSLocalizedString("page.227", tableName: "Pages", bundle: .main, value: "Операция не завершена. Закрой другие версии NeAntik и заверши восстановление этого профиля.", comment: "") }
+                else if error is CancellationError { message = NSLocalizedString("page.228", tableName: "Pages", bundle: .main, value: "Операция остановлена до завершения. Проверь выбранный файл перед повторной попыткой.", comment: "") }
                 else if let value = error as? EncryptedBackupError {
                     switch value {
-                    case .authenticationFailed: message = "Не удалось подтвердить копию. Проверь пароль и целостность файла."
-                    case .passwordLength: message = "Пароль должен содержать от 12 до 1024 байт UTF-8."
-                    default: message = "Формат или размер копии не поддерживается. Выбери исходный файл NeAntik."
+                    case .authenticationFailed: message = NSLocalizedString("page.229", tableName: "Pages", bundle: .main, value: "Не удалось подтвердить копию. Проверь пароль и целостность файла.", comment: "")
+                    case .passwordLength: message = NSLocalizedString("page.230", tableName: "Pages", bundle: .main, value: "Пароль должен содержать от 12 до 1024 байт UTF-8.", comment: "")
+                    default: message = NSLocalizedString("page.231", tableName: "Pages", bundle: .main, value: "Формат или размер копии не поддерживается. Выбери исходный файл NeAntik.", comment: "")
                     }
                 } else if error as? BrowserDataBackupStorageError == .incompatibleContext {
-                    message = "Копия относится к другому профилю, Mac или движку. Данные не заменены."
+                    message = NSLocalizedString("page.232", tableName: "Pages", bundle: .main, value: "Копия относится к другому профилю, Mac или движку. Данные не заменены.", comment: "")
                 } else { message = error.localizedDescription }
             }
         }

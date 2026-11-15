@@ -11,15 +11,15 @@ enum ProxyRelayPrivatePipe {
         var errorDescription: String? {
             switch self {
             case .unsafeDescriptor:
-                return "Канал обмена с процессом WebKit не прошёл проверку."
+                return NSLocalizedString("userError.145", tableName: "Errors", bundle: .main, value: "Канал обмена с процессом WebKit не прошёл проверку.", comment: "")
             case .invalidLimit:
-                return "Ответ процесса WebKit нарушает ограничения протокола."
+                return NSLocalizedString("userError.146", tableName: "Errors", bundle: .main, value: "Ответ процесса WebKit нарушает ограничения протокола.", comment: "")
             case .timeout:
-                return "Процесс WebKit не ответил вовремя."
+                return NSLocalizedString("userError.147", tableName: "Errors", bundle: .main, value: "Процесс WebKit не ответил вовремя.", comment: "")
             case .closed:
-                return "Процесс WebKit закрыл канал запуска до подтверждения."
+                return NSLocalizedString("userError.148", tableName: "Errors", bundle: .main, value: "Процесс WebKit закрыл канал запуска до подтверждения.", comment: "")
             case .malformed:
-                return "Процесс WebKit вернул повреждённый ответ."
+                return NSLocalizedString("userError.149", tableName: "Errors", bundle: .main, value: "Процесс WebKit вернул повреждённый ответ.", comment: "")
             }
         }
     }

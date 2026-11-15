@@ -23,11 +23,11 @@ final class NeAntikApplicationDelegate: NSObject, NSApplicationDelegate {
             if !drained {
                 gui?.cancelTermination()
                 let alert = NSAlert()
-                alert.messageText = processes.hasFailedWebKitSessionSave ? "Вкладки не удалось сохранить" : "Браузер ещё завершается"
-                alert.informativeText = processes.hasFailedWebKitSessionSave
+                alert.messageText = NSLocalizedString(processes.hasFailedWebKitSessionSave ? "Вкладки не удалось сохранить" : "Браузер ещё завершается", comment: "Application termination alert")
+                alert.informativeText = NSLocalizedString(processes.hasFailedWebKitSessionSave
                     ? "Выход отложен: NeAntik не смог подтвердить сохранение списка вкладок. Проверь свободное место и доступ к папке данных, затем попробуй выйти снова."
-                    : "Выход отложен: браузер ещё завершает работу или очистка одноразового сеанса не подтверждена. Дождись закрытия его окон и проверь карточку очистки профиля."
-                alert.addButton(withTitle: "Понятно")
+                    : "Выход отложен: браузер ещё завершает работу или очистка одноразового сеанса не подтверждена. Дождись закрытия его окон и проверь карточку очистки профиля.", comment: "Application termination details")
+                alert.addButton(withTitle: NSLocalizedString("Понятно", comment: "Acknowledge alert"))
                 alert.runModal()
             }
         }

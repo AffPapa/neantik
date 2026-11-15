@@ -91,14 +91,14 @@ struct ProfileEditorProxyContextPresentation: Equatable, Sendable {
       title: isFresh
         ? "Контекст прокси свежий"
         : "Контекст прокси устарел",
-      detail:
-        "Источник: \(evidence.source) · проверено " +
-        "\(evidence.observedAt.neAntikDisplayDateTime). " +
-        (isFresh
-          ? "Перед каждым запуском профиля NeAntik проверит " +
-            "прокси заново."
-          : "Перед следующим запуском профиля NeAntik проверит " +
-            "прокси заново."),
+      detail: String(
+        format: NSLocalizedString(
+          isFresh
+            ? "Источник: %@ · проверено %@. Перед каждым запуском профиля NeAntik проверит прокси заново."
+            : "Источник: %@ · проверено %@. Перед следующим запуском профиля NeAntik проверит прокси заново.",
+          comment: "Proxy context freshness details"
+        ), evidence.source, evidence.observedAt.neAntikDisplayDateTime
+      ),
       systemImage: isFresh
         ? "checkmark.circle.fill"
         : "exclamationmark.triangle.fill",
@@ -116,16 +116,16 @@ enum ProfileProxyTestPresentation {
     let cleanLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
     if engine == .webkit {
       let observation = cleanLocation.isEmpty
-        ? "Прокси ответил на предварительную проверку curl."
-        : "Местоположение по проверке curl — " + cleanLocation + "."
-      return observation + " WebKit использует язык и часовой пояс macOS. Маршрут окна проверяется отдельно."
+        ? NSLocalizedString("Прокси ответил на предварительную проверку curl.", comment: "WebKit proxy check result")
+        : String(format: NSLocalizedString("Местоположение по проверке curl — %@.", comment: "WebKit proxy check location"), cleanLocation)
+      return observation + NSLocalizedString(" WebKit использует язык и часовой пояс macOS. Маршрут окна проверяется отдельно.", comment: "WebKit route verification notice")
     }
     guard hasCompleteRouteContext else {
-      return "Прокси отвечает, но часовой пояс и язык не определены. Повтори проверку перед запуском."
+      return NSLocalizedString("Прокси отвечает, но часовой пояс и язык не определены. Повтори проверку перед запуском.", comment: "Incomplete proxy context")
     }
     return cleanLocation.isEmpty
-      ? "Проверка через прокси прошла"
-      : "Проверка через прокси прошла · " + cleanLocation
+      ? NSLocalizedString("Проверка через прокси прошла", comment: "Proxy check result")
+      : String(format: NSLocalizedString("Проверка через прокси прошла · %@", comment: "Proxy check result and location"), cleanLocation)
   }
 }
 
@@ -409,7 +409,7 @@ struct ProfileEditorView: View {
   var body: some View {
     VStack(spacing: 0) {
       HStack {
-        Text(original == nil ? "Создать профиль" : "Настройки профиля")
+        Text(verbatim: NSLocalizedString(original == nil ? "Создать профиль" : "Настройки профиля", comment: "Profile editor heading"))
           .font(.title3.weight(.semibold))
           .accessibilityHeading(.h1)
         Spacer()
@@ -434,7 +434,7 @@ struct ProfileEditorView: View {
           Section("Быстрый старт") {
             Picker("Шаблон", selection: $quickStartTemplate) {
               ForEach(ProfileQuickStartTemplate.allCases) { template in
-                Text(template.title).tag(template)
+                Text(verbatim: NSLocalizedString(template.title, comment: "Quick-start template")).tag(template)
               }
             }
             .accessibilityLabel("Шаблон нового профиля")
@@ -488,7 +488,7 @@ struct ProfileEditorView: View {
           )
           if enginePresentation.showsPicker {
             Picker("Движок браузера", selection: $engine) {
-              ForEach(BrowserEngine.allCases) { Text($0.title).tag($0) }
+              ForEach(BrowserEngine.allCases) { Text(verbatim: NSLocalizedString($0.title, comment: "Profile option")).tag($0) }
             }
             .pickerStyle(.segmented)
             .disabled(original != nil)
@@ -496,10 +496,10 @@ struct ProfileEditorView: View {
               if value == .webkit { fontPolicy = .native }
             }
           } else {
-            LabeledContent("Движок браузера", value: engine.title)
+            LabeledContent("Движок браузера", value: NSLocalizedString(engine.title, comment: "Profile engine"))
           }
           if enginePresentation.isAvailable {
-            Text(engine.settingsSummary + (engine == .webkit && !WebKitMediaFeature.isEnabled ? " Камера и микрофон пока отключены." : ""))
+            Text(verbatim: NSLocalizedString(engine.settingsSummary, comment: "Browser engine description") + (engine == .webkit && !WebKitMediaFeature.isEnabled ? NSLocalizedString(" Камера и микрофон пока отключены.", comment: "WebKit media notice") : ""))
               .font(.callout).foregroundStyle(.secondary)
           } else {
             Text("Этот движок недоступен в текущем выпуске. Данные профиля сохранены.")
@@ -530,9 +530,7 @@ struct ProfileEditorView: View {
                 )
               }
             }
-          Text(
-            "\(name.count) из \(BrowserProfile.maximumNameLength) символов"
-          )
+          Text(verbatim: String(format: NSLocalizedString("%ld из %ld символов", comment: "Character count"), name.count, BrowserProfile.maximumNameLength))
           .font(.caption)
           .foregroundStyle(.secondary)
           validationLabel(for: .name)
@@ -562,7 +560,7 @@ struct ProfileEditorView: View {
         if engine == .webkit && WebKitMediaFeature.isEnabled {
           Section("Камера и микрофон") {
             Picker("Доступ сайтов", selection: $webKitMediaPolicy) {
-              ForEach(WebKitMediaPolicy.allCases) { Text($0.title).tag($0) }
+              ForEach(WebKitMediaPolicy.allCases) { Text(verbatim: NSLocalizedString($0.title, comment: "Profile option")).tag($0) }
             }
             Text("«Спрашивать» оставляет запрос доступа WebKit и macOS. «Запретить» отклоняет запросы всех сайтов этого профиля. Измени настройку после остановки профиля. Это не отключает сетевые соединения WebRTC.")
               .font(.callout).foregroundStyle(.secondary)
@@ -595,7 +593,7 @@ struct ProfileEditorView: View {
           }
           Toggle("Использовать прокси", isOn: $usesProxy)
           if !usesProxy {
-            Text(FirstProfileBootstrap.directPrivacyNotice)
+            Text(verbatim: NSLocalizedString(FirstProfileBootstrap.directPrivacyNotice, comment: "Direct connection privacy notice"))
               .font(.caption).foregroundStyle(.secondary)
           }
           if usesProxy {
@@ -616,7 +614,7 @@ struct ProfileEditorView: View {
             .help("Вставь одну строку или заполни поля вручную")
             Picker("Тип", selection: $proxyKind) {
               ForEach(ProxyKind.allCases) { kind in
-                Text(kind.title).tag(kind)
+                Text(verbatim: NSLocalizedString(kind.title, comment: "Proxy type")).tag(kind)
               }
             }
             Text(
@@ -701,10 +699,10 @@ struct ProfileEditorView: View {
             }
 
             if let proxyImportMessage {
-              Text(proxyImportMessage)
+              Text(verbatim: NSLocalizedString(proxyImportMessage, comment: "Proxy import status"))
                 .font(.caption)
                 .foregroundColor(proxyImportFailed ? .red : .secondary)
-                .accessibilityLabel(proxyImportMessage)
+                .accessibilityLabel(NSLocalizedString(proxyImportMessage, comment: "Proxy import status"))
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -723,7 +721,7 @@ struct ProfileEditorView: View {
                   Button {
                     testProxy()
                   } label: {
-                    Label(engine == .webkit ? "Предварительно проверить прокси" : "Проверить прокси", systemImage: "network")
+                    Label(NSLocalizedString(engine == .webkit ? "Предварительно проверить прокси" : "Проверить прокси", comment: "Proxy check action"), systemImage: "network")
                   }
                   .disabled(proxyEntryMode == .paste && proxyImportText.isEmpty)
                   .disabled(isDetectingProtocol)
@@ -740,27 +738,27 @@ struct ProfileEditorView: View {
                 }
               }
               if let testMessage {
-                Text(testMessage)
+                Text(verbatim: NSLocalizedString(testMessage, comment: "Proxy check status"))
                   .font(.caption)
                   .foregroundStyle(
                     proxyTestSucceeded ? Color.green : Color.red
                   )
-                  .accessibilityLabel(testMessage)
+                  .accessibilityLabel(NSLocalizedString(testMessage, comment: "Proxy check status"))
               }
             }
 
             DisclosureGroup("Как работает проверка") {
-              Text(engine == .webkit
+              Text(verbatim: NSLocalizedString(engine == .webkit
                 ? (WebKitProxyFeature.launchEnabled
                   ? "Эта предварительная проверка использует curl и IP-сервисы. Она не измеряет маршрут окна WebKit; фактический маршрут и отказ без прямого подключения проверяются отдельно."
                   : "Эта предварительная проверка использует curl и IP-сервисы. Она не измеряет маршрут окна WebKit; в этой сборке запуск WebKit с прокси отключён.")
-                : "Проверка через прокси сверяет ответы ipwho.is и free.freeipapi.com по выходному IP, стране и часовому поясу. При недоступности используется резервный ipapi.co. Сервисы получают IP выхода прокси и данные запроса. Проверка повторяется перед запуском; маршрут Chromium проверяется отдельно.")
+                : "Проверка через прокси сверяет ответы ipwho.is и free.freeipapi.com по выходному IP, стране и часовому поясу. При недоступности используется резервный ipapi.co. Сервисы получают IP выхода прокси и данные запроса. Проверка повторяется перед запуском; маршрут Chromium проверяется отдельно.", comment: "Proxy check explanation"))
               .font(.caption)
               .foregroundStyle(.secondary)
               if !proxyUsername.isEmpty {
-                Text(engine == .webkit
+                Text(verbatim: NSLocalizedString(engine == .webkit
                   ? "Логин и пароль берутся из Связки ключей для выбранного прокси. Если конфигурация не может быть применена, окно должно завершиться ошибкой без прямого маршрута."
-                  : "HTTP, HTTPS и SOCKS5 используют сохранённые данные автоматически через локальный relay. Для HTTPS-прокси сначала проверяется сертификат сервера; ошибки TLS не приводят к переходу на HTTP или прямое подключение.")
+                  : "HTTP, HTTPS и SOCKS5 используют сохранённые данные автоматически через локальный relay. Для HTTPS-прокси сначала проверяется сертификат сервера; ошибки TLS не приводят к переходу на HTTP или прямое подключение.", comment: "Proxy credential explanation"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
               }
@@ -783,14 +781,14 @@ struct ProfileEditorView: View {
               let status = ProfileEditorProxyContextPresentation.resolve(
                 evidence: evidence
               )
-              Label(status.title, systemImage: status.systemImage)
+              Label(NSLocalizedString(status.title, comment: "Proxy check status"), systemImage: status.systemImage)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(
                   status.requiresAttention
                     ? Color.orange
                     : Color.secondary
                 )
-              Text(status.detail)
+              Text(verbatim: NSLocalizedString(status.detail, comment: "Proxy check details"))
               .font(.caption)
               .foregroundStyle(.secondary)
               .accessibilityElement(children: .combine)
@@ -882,7 +880,7 @@ struct ProfileEditorView: View {
           if showsAdvancedOptions {
             Picker("При запуске", selection: $startupMode) {
               ForEach(BrowserStartupMode.allCases, id: \.self) { mode in
-                Text(mode.title).tag(mode)
+                Text(verbatim: NSLocalizedString(mode.title, comment: "Startup mode")).tag(mode)
               }
             }
             .accessibilityLabel("При запуске профиля")
@@ -890,11 +888,11 @@ struct ProfileEditorView: View {
               .accessibilityLabel("Стартовая страница")
               .focused($focusedField, equals: .startURL)
               .id(ProfileEditorField.startURL)
-            Text(startupMode == .restoreSession
+            Text(verbatim: NSLocalizedString(startupMode == .restoreSession
               ? (engine == .webkit
                   ? "Адреса, порядок и выбранная вкладка сохраняются автоматически и при закрытии. После сбоя восстанавливается последний успешно сохранённый список; формы не восстанавливаются. Полные адреса остаются в приватной папке на этом Mac и не попадают в MCP или экспорт настроек. При первом запуске откроется стартовая страница."
                   : "При первом запуске откроется этот адрес, затем — сохранённые вкладки. Вкладки сохраняются после штатного закрытия браузера.")
-              : "По умолчанию открывается приватная пустая страница about:blank без внешних запросов страницы. Указанный веб-адрес будет открываться при каждом запуске; сайт получит обычные данные соединения.")
+              : "По умолчанию открывается приватная пустая страница about:blank без внешних запросов страницы. Указанный веб-адрес будет открываться при каждом запуске; сайт получит обычные данные соединения.", comment: "Profile startup description"))
               .font(.callout)
               .foregroundStyle(.secondary)
             validationLabel(for: .startURL)
@@ -939,12 +937,10 @@ struct ProfileEditorView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(
-                  "Иконка \(ProfileAppearance.title(for: symbol))"
+                  String(format: NSLocalizedString("Иконка %@", comment: "Profile icon accessibility"), NSLocalizedString(ProfileAppearance.title(for: symbol), comment: "Profile icon name"))
                 )
                 .accessibilityValue(
-                  symbolName == symbol
-                    ? "Выбрана"
-                    : "Не выбрана"
+                  NSLocalizedString(symbolName == symbol ? "Выбрана" : "Не выбрана", comment: "Icon selection state")
                 )
               }
             }
@@ -990,10 +986,10 @@ struct ProfileEditorView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(
-                  ProfileAppearance.title(forColor: hex)
+                  NSLocalizedString(ProfileAppearance.title(forColor: hex), comment: "Profile color name")
                 )
                 .accessibilityValue(
-                  colorHex == hex ? "Выбран" : "Не выбран"
+                  NSLocalizedString(colorHex == hex ? "Выбран" : "Не выбран", comment: "Color selection state")
                 )
               }
             }
@@ -1056,7 +1052,7 @@ struct ProfileEditorView: View {
       ProfileFolderPickerSheet(
         profileName:
           name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? "Новый профиль"
+            ? NSLocalizedString("Новый профиль", comment: "Unnamed profile")
             : name,
         folders: folders,
         selectedFolderID: selectedFolderID
@@ -1290,9 +1286,7 @@ struct ProfileEditorView: View {
           .focused($focusedField, equals: .note)
           .id(ProfileEditorField.note)
           .accessibilityLabel("Заметка профиля")
-          .accessibilityHint(
-            "До \(BrowserProfile.maximumNoteLength) символов"
-          )
+          .accessibilityHint(String(format: NSLocalizedString("До %ld символов", comment: "Maximum note length"), BrowserProfile.maximumNoteLength))
         if note.isEmpty {
           Text("Короткий контекст для этого профиля")
             .foregroundStyle(.tertiary)
@@ -1305,7 +1299,7 @@ struct ProfileEditorView: View {
       .frame(minHeight: 96, idealHeight: 108, maxHeight: 120)
 
       HStack(alignment: .firstTextBaseline) {
-        Text(notePresentation.countLabel)
+        Text(verbatim: String(format: NSLocalizedString("%ld из %ld символов", comment: "Character count"), notePresentation.characterCount, BrowserProfile.maximumNoteLength))
           .foregroundStyle(
             notePresentation.validationMessage == nil
               ? Color.secondary
@@ -1315,17 +1309,14 @@ struct ProfileEditorView: View {
         if notePresentation.utf8ByteCount >
           BrowserProfile.maximumNoteUTF8Bytes
         {
-          Text(
-            "\(notePresentation.utf8ByteCount) из " +
-              "\(BrowserProfile.maximumNoteUTF8Bytes) байт"
-          )
+          Text(verbatim: String(format: NSLocalizedString("%ld из %ld байт", comment: "Byte count"), notePresentation.utf8ByteCount, BrowserProfile.maximumNoteUTF8Bytes))
           .foregroundStyle(.red)
         }
       }
       .font(.caption)
 
       if let message = notePresentation.validationMessage {
-        Label(message, systemImage: "exclamationmark.circle.fill")
+        Label(NSLocalizedString(message, comment: "Profile validation message"), systemImage: "exclamationmark.circle.fill")
           .font(.caption)
           .foregroundStyle(.red)
           .accessibilityElement(children: .combine)
@@ -1336,7 +1327,7 @@ struct ProfileEditorView: View {
   private var proxyImportOrderPicker: some View {
     Picker("Порядок", selection: $proxyImportOrder) {
       ForEach(ProxyImportOrder.allCases) { order in
-        Text(order.title).tag(order)
+        Text(verbatim: NSLocalizedString(order.title, comment: "Proxy field order")).tag(order)
       }
     }
     .pickerStyle(.menu)
@@ -1575,9 +1566,10 @@ struct ProfileEditorView: View {
       proxyPort = String(draft.configuration.port)
       proxyUsername = draft.configuration.username
       proxyPassword = draft.password
-      proxyImportMessage =
-        "Прокси распознан: \(draft.redactedSummary). " +
-        "Соединение ещё не проверено; сверь тип и порт с провайдером."
+      proxyImportMessage = String(
+        format: NSLocalizedString("Прокси распознан: %@. Соединение ещё не проверено; сверь тип и порт с провайдером.", comment: "Parsed proxy status"),
+        draft.redactedSummary
+      )
       proxyImportFailed = false
       proxyEntryMode = .manual
       errorMessage = nil
@@ -1688,7 +1680,7 @@ struct ProfileEditorView: View {
         Text(finding.message).font(.callout).foregroundStyle(.secondary)
           .fixedSize(horizontal: false, vertical: true)
         if let kind = finding.kind {
-          Button("Использовать \(kind.title)") { applyDetectedProtocol() }
+          Button(String(format: NSLocalizedString("Использовать %@", comment: "Use detected proxy protocol"), kind.title)) { applyDetectedProtocol() }
             .disabled(isTesting || isDetectingProtocol)
         }
       }

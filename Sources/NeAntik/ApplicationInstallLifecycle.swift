@@ -56,6 +56,6 @@ enum ApplicationInstallLifecycle {
 enum ApplicationInstallLifecycleError: LocalizedError {
     case unavailable
     var errorDescription: String? {
-        "NeAntik готовится к обновлению или не может проверить его состояние. Закрой другие экземпляры приложения и повтори запуск. Если ошибка сохраняется, сохрани данные профилей и обратись в поддержку."
+        NSLocalizedString("userError.085", tableName: "Errors", bundle: .main, value: "NeAntik готовится к обновлению или не может проверить его состояние. Закрой другие экземпляры приложения и повтори запуск. Если ошибка сохраняется, сохрани данные профилей и обратись в поддержку.", comment: "")
     }
 }

@@ -7,12 +7,12 @@ enum CRXPreparationError: LocalizedError, Equatable {
     case incompatible, keyMismatch, changed, alreadyPrepared, storage, retained
     var errorDescription: String? {
         switch self {
-        case .incompatible: "Подготовка поддерживает Manifest V3 и глубину папок до 26 уровней. Пакет не изменён."
-        case .keyMismatch: "Ключ в manifest не соответствует проверенной подписи CRX. Нужен исходный пакет от разработчика."
-        case .changed: "Данные или профиль изменились во время подготовки. Выбери пакет заново."
-        case .alreadyPrepared: "Этот пакет уже подготовлен. Существующие файлы не перезаписаны: проверь расширение в Chromium."
-        case .storage: "Не удалось подготовить пакет. Проверь свободное место и доступ к данным профиля."
-        case .retained: "Подготовка не завершена. Каталог сохранён, потому что его безопасное удаление не подтверждено. Не загружай его в Chromium."
+        case .incompatible: NSLocalizedString("userError.179", tableName: "Errors", bundle: .main, value: "Подготовка поддерживает Manifest V3 и глубину папок до 26 уровней. Пакет не изменён.", comment: "")
+        case .keyMismatch: NSLocalizedString("userError.180", tableName: "Errors", bundle: .main, value: "Ключ в manifest не соответствует проверенной подписи CRX. Нужен исходный пакет от разработчика.", comment: "")
+        case .changed: NSLocalizedString("userError.181", tableName: "Errors", bundle: .main, value: "Данные или профиль изменились во время подготовки. Выбери пакет заново.", comment: "")
+        case .alreadyPrepared: NSLocalizedString("userError.182", tableName: "Errors", bundle: .main, value: "Этот пакет уже подготовлен. Существующие файлы не перезаписаны: проверь расширение в Chromium.", comment: "")
+        case .storage: NSLocalizedString("userError.183", tableName: "Errors", bundle: .main, value: "Не удалось подготовить пакет. Проверь свободное место и доступ к данным профиля.", comment: "")
+        case .retained: NSLocalizedString("userError.184", tableName: "Errors", bundle: .main, value: "Подготовка не завершена. Каталог сохранён, потому что его безопасное удаление не подтверждено. Не загружай его в Chromium.", comment: "")
         }
     }
 }

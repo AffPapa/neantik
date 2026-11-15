@@ -207,13 +207,13 @@ enum RedactedSupportBundleError: LocalizedError, Equatable, Sendable {
     var errorDescription: String? {
         switch self {
         case .managerMetadataUnavailable:
-            "Не удалось безопасно определить версию NeAntik."
+            NSLocalizedString("userError.134", tableName: "Errors", bundle: .main, value: "Не удалось безопасно определить версию NeAntik.", comment: "")
         case .invalidDate:
-            "Диагностика содержит некорректную дату."
+            NSLocalizedString("userError.135", tableName: "Errors", bundle: .main, value: "Диагностика содержит некорректную дату.", comment: "")
         case .inconsistentWorkspace:
-            "Состояние рабочего пространства изменилось во время экспорта."
+            NSLocalizedString("userError.136", tableName: "Errors", bundle: .main, value: "Состояние рабочего пространства изменилось во время экспорта.", comment: "")
         case .fileTooLarge:
-            "Файл диагностики превысил безопасный размер."
+            NSLocalizedString("userError.137", tableName: "Errors", bundle: .main, value: "Файл диагностики превысил безопасный размер.", comment: "")
         }
     }
 }

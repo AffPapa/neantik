@@ -9,11 +9,11 @@ enum DiagnosticEvidenceState: String, Equatable, Sendable {
 
     var title: String {
         switch self {
-        case .configured: "Настроено"
-        case .derived: "Рассчитано"
-        case .observed: "Измерено"
-        case .unavailable: "Недоступно"
-        case .unverified: "Не подтверждено"
+        case .configured: NSLocalizedString("page.400", tableName: "Pages", bundle: .main, value: "Настроено", comment: "")
+        case .derived: NSLocalizedString("page.401", tableName: "Pages", bundle: .main, value: "Рассчитано", comment: "")
+        case .observed: NSLocalizedString("page.402", tableName: "Pages", bundle: .main, value: "Измерено", comment: "")
+        case .unavailable: NSLocalizedString("page.403", tableName: "Pages", bundle: .main, value: "Недоступно", comment: "")
+        case .unverified: NSLocalizedString("page.404", tableName: "Pages", bundle: .main, value: "Не подтверждено", comment: "")
         }
     }
 }
@@ -264,12 +264,12 @@ enum ProfileEnvironmentInspector {
                 )
             ],
             limitations: [
-                "Настройка сама по себе не доказывает " +
-                    "фактический сетевой маршрут.",
-                "Проверка прокси наблюдает запрос curl, а не " +
-                    "маршрут запущенного Chromium.",
-                "Фактические HTTP, DNS, QUIC и публичный " +
-                    "WebRTC-маршруты не измеряются."
+                NSLocalizedString("page.405", tableName: "Pages", bundle: .main, value: "Настройка сама по себе не доказывает ", comment: "") +
+                    NSLocalizedString("page.406", tableName: "Pages", bundle: .main, value: "фактический сетевой маршрут.", comment: ""),
+                NSLocalizedString("page.407", tableName: "Pages", bundle: .main, value: "Проверка прокси наблюдает запрос curl, а не ", comment: "") +
+                    NSLocalizedString("page.408", tableName: "Pages", bundle: .main, value: "маршрут запущенного Chromium.", comment: ""),
+                NSLocalizedString("page.409", tableName: "Pages", bundle: .main, value: "Фактические HTTP, DNS, QUIC и публичный ", comment: "") +
+                    NSLocalizedString("page.410", tableName: "Pages", bundle: .main, value: "WebRTC-маршруты не измеряются.", comment: "")
             ],
             siteCompatibility: siteCompatibility?.isUsable(
                 for: profile, runtime: runtime, now: now
@@ -285,81 +285,81 @@ enum ProfileEnvironmentInspector {
         let restoresSession = BrowserLaunchBuilder.restoresSession(profile: profile)
         return EnvironmentDiagnosticSection(
             id: "protection",
-            title: "Паспорт защиты",
+            title: NSLocalizedString("page.411", tableName: "Pages", bundle: .main, value: "Паспорт защиты", comment: ""),
             fields: (profile.privacyPolicy == .legacy ? [] : [
                 EnvironmentDiagnosticField(
                     id: "protection.policy",
-                    title: "Сохранённый режим защиты",
+                    title: NSLocalizedString("page.412", tableName: "Pages", bundle: .main, value: "Сохранённый режим защиты", comment: ""),
                     value: profile.privacyPolicy.presetName,
                     state: .configured,
-                    detail: "Это настройки профиля. Изменение режима не считается измерением защиты."
+                    detail: NSLocalizedString("page.413", tableName: "Pages", bundle: .main, value: "Это настройки профиля. Изменение режима не считается измерением защиты.", comment: "")
                 ),
                 EnvironmentDiagnosticField(
-                    id: "protection.runtime", title: "Поддержка движка",
-                    value: compatible ? "Точный подписанный движок распознан" : "Нужен совместимый движок",
+                    id: "protection.runtime", title: NSLocalizedString("page.414", tableName: "Pages", bundle: .main, value: "Поддержка движка", comment: ""),
+                    value: compatible ? NSLocalizedString("page.415", tableName: "Pages", bundle: .main, value: "Точный подписанный движок распознан", comment: "") : NSLocalizedString("page.416", tableName: "Pages", bundle: .main, value: "Нужен совместимый движок", comment: ""),
                     state: compatible ? .observed : .unavailable,
                     severity: compatible ? .neutral : .blocking,
-                    detail: "Сверяются подпись и полный набор файлов. Синтетический тест на этом Mac проверил RTC-off, LAN, графику и изоляцию хранилищ; он не доказывает отсутствие всех утечек."
+                    detail: NSLocalizedString("page.417", tableName: "Pages", bundle: .main, value: "Сверяются подпись и полный набор файлов. Синтетический тест на этом Mac проверил RTC-off, LAN, графику и изоляцию хранилищ; он не доказывает отсутствие всех утечек.", comment: "")
                 ),
                 EnvironmentDiagnosticField(
-                    id: "protection.applied", title: "Текущий сеанс",
-                    value: parametersSent ? "Параметры переданы запущенному процессу" : "Применение к текущему сеансу не подтверждено",
+                    id: "protection.applied", title: NSLocalizedString("page.418", tableName: "Pages", bundle: .main, value: "Текущий сеанс", comment: ""),
+                    value: parametersSent ? NSLocalizedString("page.419", tableName: "Pages", bundle: .main, value: "Параметры переданы запущенному процессу", comment: "") : NSLocalizedString("page.420", tableName: "Pages", bundle: .main, value: "Применение к текущему сеансу не подтверждено", comment: ""),
                     state: parametersSent ? .configured : .unverified,
-                    detail: "Передача параметров не является измерением API страницы. Эффективные правила сайтов и сторонних cookies показаны в расширении «Защита сайтов»."
+                    detail: NSLocalizedString("page.421", tableName: "Pages", bundle: .main, value: "Передача параметров не является измерением API страницы. Эффективные правила сайтов и сторонних cookies показаны в расширении «Защита сайтов».", comment: "")
                 ),
                 EnvironmentDiagnosticField(
-                    id: "protection.controls", title: "Ограничения",
-                    value: "RTC: \(profile.privacyPolicy.rtc.rawValue) · LAN: \(profile.privacyPolicy.localNetwork.rawValue) · разрешения: \(profile.privacyPolicy.media.rawValue)",
+                    id: "protection.controls", title: NSLocalizedString("page.422", tableName: "Pages", bundle: .main, value: "Ограничения", comment: ""),
+                    value: String(format: NSLocalizedString("page.423", tableName: "Pages", bundle: .main, value: "RTC: %@ · LAN: %@ · разрешения: %@", comment: ""), String(describing: profile.privacyPolicy.rtc.rawValue), String(describing: profile.privacyPolicy.localNetwork.rawValue), String(describing: profile.privacyPolicy.media.rawValue)),
                     state: .configured,
-                    detail: "При RTC proxyOnly без прокси WebRTC выключен. С прокси политика ограничивает прямой UDP; работа TURN зависит от сайта и не подтверждена проверкой маршрута. Строгий режим запрещает создание RTCPeerConnection."
+                    detail: NSLocalizedString("page.424", tableName: "Pages", bundle: .main, value: "При RTC proxyOnly без прокси WebRTC выключен. С прокси политика ограничивает прямой UDP; работа TURN зависит от сайта и не подтверждена проверкой маршрута. Строгий режим запрещает создание RTCPeerConnection.", comment: "")
                 ),
                 EnvironmentDiagnosticField(
-                    id: "protection.extensions", title: "Расширения, Sync и autofill",
-                    value: profile.proxy != nil || profile.privacyPolicy.restrictsUserExtensions ? "Настроено отключение обычных расширений" : "Допускаются отдельные расширения профиля",
+                    id: "protection.extensions", title: NSLocalizedString("page.425", tableName: "Pages", bundle: .main, value: "Расширения, Sync и autofill", comment: ""),
+                    value: profile.proxy != nil || profile.privacyPolicy.restrictsUserExtensions ? NSLocalizedString("page.426", tableName: "Pages", bundle: .main, value: "Настроено отключение обычных расширений", comment: "") : NSLocalizedString("page.427", tableName: "Pages", bundle: .main, value: "Допускаются отдельные расширения профиля", comment: ""),
                     state: .configured,
                     detail: (profile.proxy != nil || profile.privacyPolicy.restrictsUserExtensions
-                        ? "При запуске совместимого движка передаётся ограничение обычных расширений. "
-                        : "Отдельные расширения профиля разрешены. ") +
-                        "Компоненты браузера и системные интеграции могут сохраняться. " +
-                        (profile.proxy != nil ? "В совместимом движке обязательный прокси закреплён независимо от их настроек. " : "") +
-                        "Данные расширений не удаляются. " +
+                        ? NSLocalizedString("page.428", tableName: "Pages", bundle: .main, value: "При запуске совместимого движка передаётся ограничение обычных расширений. ", comment: "")
+                        : NSLocalizedString("page.429", tableName: "Pages", bundle: .main, value: "Отдельные расширения профиля разрешены. ", comment: "")) +
+                        NSLocalizedString("page.430", tableName: "Pages", bundle: .main, value: "Компоненты браузера и системные интеграции могут сохраняться. ", comment: "") +
+                        (profile.proxy != nil ? NSLocalizedString("page.431", tableName: "Pages", bundle: .main, value: "В совместимом движке обязательный прокси закреплён независимо от их настроек. ", comment: "") : "") +
+                        NSLocalizedString("page.432", tableName: "Pages", bundle: .main, value: "Данные расширений не удаляются. ", comment: "") +
                         (profile.privacyPolicy.disableSyncAndAutofill
-                            ? "Политика запрещает Sync, autofill и сохранение паролей."
-                            : "Политика не запрещает Sync, autofill и сохранение паролей.")
+                            ? NSLocalizedString("page.433", tableName: "Pages", bundle: .main, value: "Политика запрещает Sync, autofill и сохранение паролей.", comment: "")
+                            : NSLocalizedString("page.434", tableName: "Pages", bundle: .main, value: "Политика не запрещает Sync, autofill и сохранение паролей.", comment: ""))
                 ),
                 EnvironmentDiagnosticField(
-                    id: "protection.retention", title: "Данные сайтов",
-                    value: profile.privacyPolicy.retention == .ephemeral ? "Очистка после закрытия сеанса" : "Постоянное хранение",
+                    id: "protection.retention", title: NSLocalizedString("page.435", tableName: "Pages", bundle: .main, value: "Данные сайтов", comment: ""),
+                    value: profile.privacyPolicy.retention == .ephemeral ? NSLocalizedString("page.436", tableName: "Pages", bundle: .main, value: "Очистка после закрытия сеанса", comment: "") : NSLocalizedString("page.437", tableName: "Pages", bundle: .main, value: "Постоянное хранение", comment: ""),
                     state: .configured,
-                    detail: "Для выбранного открытого профиля: расширение «Защита сайтов» → «Очистить данные этого профиля…» или ⌘⇧⌫. Очистка не меняет настройки личности; скачанные файлы сохраняются."
+                    detail: NSLocalizedString("page.438", tableName: "Pages", bundle: .main, value: "Для выбранного открытого профиля: расширение «Защита сайтов» → «Очистить данные этого профиля…» или ⌘⇧⌫. Очистка не меняет настройки личности; скачанные файлы сохраняются.", comment: "")
                 )
             ]) + [
                 EnvironmentDiagnosticField(
                     id: "protection.start-page",
-                    title: "При запуске",
-                    value: restoresSession ? "Сохранённые вкладки" :
-                        (localStart ? "Локальная пустая страница" : "Выбранная веб-страница"),
+                    title: NSLocalizedString("page.439", tableName: "Pages", bundle: .main, value: "При запуске", comment: ""),
+                    value: restoresSession ? NSLocalizedString("page.440", tableName: "Pages", bundle: .main, value: "Сохранённые вкладки", comment: "") :
+                        (localStart ? NSLocalizedString("page.441", tableName: "Pages", bundle: .main, value: "Локальная пустая страница", comment: "") : NSLocalizedString("page.442", tableName: "Pages", bundle: .main, value: "Выбранная веб-страница", comment: "")),
                     state: .configured,
                     detail: restoresSession
-                        ? "Восстановленные сайты могут обращаться в сеть. Стартовый адрес используется при первом запуске."
+                        ? NSLocalizedString("page.443", tableName: "Pages", bundle: .main, value: "Восстановленные сайты могут обращаться в сеть. Стартовый адрес используется при первом запуске.", comment: "")
                         : (localStart
-                            ? "Пустая страница не отправляет запросы внешнему чекеру. Это не проверка всего фонового трафика браузера."
-                            : "Открытие выбранного сайта передаёт ему обычные данные соединения. Полный адрес здесь не раскрывается.")
+                            ? NSLocalizedString("page.444", tableName: "Pages", bundle: .main, value: "Пустая страница не отправляет запросы внешнему чекеру. Это не проверка всего фонового трафика браузера.", comment: "")
+                            : NSLocalizedString("page.445", tableName: "Pages", bundle: .main, value: "Открытие выбранного сайта передаёт ему обычные данные соединения. Полный адрес здесь не раскрывается.", comment: ""))
                 ),
                 EnvironmentDiagnosticField(
                     id: "protection.malware",
-                    title: "Проверка вредоносных сайтов NeAntik",
-                    value: profile.privacyPolicy.siteProtection ? "CERT Polska и HaGeZi настроены" : "Выключена в настройках",
+                    title: NSLocalizedString("page.446", tableName: "Pages", bundle: .main, value: "Проверка вредоносных сайтов NeAntik", comment: ""),
+                    value: profile.privacyPolicy.siteProtection ? NSLocalizedString("page.447", tableName: "Pages", bundle: .main, value: "CERT Polska и HaGeZi настроены", comment: "") : NSLocalizedString("page.448", tableName: "Pages", bundle: .main, value: "Выключена в настройках", comment: ""),
                     state: .configured,
                     severity: .attention,
-                    detail: "Дополнительные списки известных доменов; не полная защита от phishing/malware и не проверка файлов. Safe Browsing выключен. Свежесть CERT и дата снимка HaGeZi показаны в расширении. Проверка отпечатка для новых режимов пока недоступна."
+                    detail: NSLocalizedString("page.449", tableName: "Pages", bundle: .main, value: "Дополнительные списки известных доменов; не полная защита от phishing/malware и не проверка файлов. Safe Browsing выключен. Свежесть CERT и дата снимка HaGeZi показаны в расширении. Проверка отпечатка для новых режимов пока недоступна.", comment: "")
                 ),
                 EnvironmentDiagnosticField(
                     id: "protection.linkability",
-                    title: "Связывание профилей",
-                    value: "Полная несопоставимость не подтверждена",
+                    title: NSLocalizedString("page.450", tableName: "Pages", bundle: .main, value: "Связывание профилей", comment: ""),
+                    value: NSLocalizedString("page.451", tableName: "Pages", bundle: .main, value: "Полная несопоставимость не подтверждена", comment: ""),
                     state: .unverified,
-                    detail: "Общий внешний IP, одинаковые аккаунты, файлы и поведение могут связывать посещения даже при разных настройках среды."
+                    detail: NSLocalizedString("page.452", tableName: "Pages", bundle: .main, value: "Общий внешний IP, одинаковые аккаунты, файлы и поведение могут связывать посещения даже при разных настройках среды.", comment: "")
                 )
             ]
         )
@@ -371,20 +371,20 @@ enum ProfileEnvironmentInspector {
         let isChromium = profile.engine == .chromium
         return EnvironmentDiagnosticSection(
             id: "site-protection",
-            title: "Защита сайтов",
+            title: NSLocalizedString("page.453", tableName: "Pages", bundle: .main, value: "Защита сайтов", comment: ""),
             fields: [
                 EnvironmentDiagnosticField(
                     id: "site-protection.phishing-malware",
-                    title: "Фишинг и вредоносные загрузки",
+                    title: NSLocalizedString("page.454", tableName: "Pages", bundle: .main, value: "Фишинг и вредоносные загрузки", comment: ""),
                     value: isChromium
-                        ? "Не включена"
-                        : "Не проверено NeAntik",
+                        ? NSLocalizedString("page.455", tableName: "Pages", bundle: .main, value: "Не включена", comment: "")
+                        : NSLocalizedString("page.456", tableName: "Pages", bundle: .main, value: "Не проверено NeAntik", comment: ""),
                     state: isChromium ? .unavailable : .unverified,
                     severity: .attention,
                     detail: isChromium
-                        ? "Текущий Chromium runtime не проверяет адреса по списку угроз и не показывает предупреждения о таких сайтах. Не считай этот профиль защищённым от фишинга или вредоносных загрузок."
-                        : "NeAntik не проверяет защиту системного WebKit от таких сайтов. " +
-                            "Возможности macOS не квалифицированы; не считай их подтверждёнными NeAntik."
+                        ? NSLocalizedString("page.457", tableName: "Pages", bundle: .main, value: "Текущий Chromium runtime не проверяет адреса по списку угроз и не показывает предупреждения о таких сайтах. Не считай этот профиль защищённым от фишинга или вредоносных загрузок.", comment: "")
+                        : NSLocalizedString("page.458", tableName: "Pages", bundle: .main, value: "NeAntik не проверяет защиту системного WebKit от таких сайтов. ", comment: "") +
+                            NSLocalizedString("page.459", tableName: "Pages", bundle: .main, value: "Возможности macOS не квалифицированы; не считай их подтверждёнными NeAntik.", comment: "")
                 )
             ]
         )
@@ -398,14 +398,14 @@ enum ProfileEnvironmentInspector {
         let routeValue: String
         switch policy.route {
         case .direct:
-            routeValue = "Прямое подключение"
+            routeValue = NSLocalizedString("page.460", tableName: "Pages", bundle: .main, value: "Прямое подключение", comment: "")
         case let .proxied(kind):
-            routeValue = "Через \(kind.title)-прокси"
+            routeValue = String(format: NSLocalizedString("page.461", tableName: "Pages", bundle: .main, value: "Через %@-прокси", comment: ""), String(describing: kind.title))
         }
         var fields = [
             EnvironmentDiagnosticField(
                 id: "route.mode",
-                title: "Режим",
+                title: NSLocalizedString("page.462", tableName: "Pages", bundle: .main, value: "Режим", comment: ""),
                 value: routeValue,
                 state: .configured,
                 severity: .success
@@ -438,17 +438,17 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "route.last-probe",
-                    title: "Последняя проверка",
+                    title: NSLocalizedString("page.463", tableName: "Pages", bundle: .main, value: "Последняя проверка", comment: ""),
                     value: attempt.outcome == .succeeded
                         ? (routeContextIsComplete
                             ? responseSummary(milliseconds: attempt.responseTimeMilliseconds)
-                            : "Результат устарел или его время не подтверждено")
+                            : NSLocalizedString("page.464", tableName: "Pages", bundle: .main, value: "Результат устарел или его время не подтверждено", comment: ""))
                         : attempt.outcome.userSummary,
                     state: .observed,
                     severity: probeSeverity,
                     resolution: probeResolution,
                     detail:
-                        "Результат относится только к моменту проверки.",
+                        NSLocalizedString("page.465", tableName: "Pages", bundle: .main, value: "Результат относится только к моменту проверки.", comment: ""),
                     observedAt: attempt.checkedAt
                 )
             )
@@ -456,8 +456,8 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "route.last-probe",
-                    title: "Последняя проверка",
-                    value: "Проверится автоматически перед запуском",
+                    title: NSLocalizedString("page.463", tableName: "Pages", bundle: .main, value: "Последняя проверка", comment: ""),
+                    value: NSLocalizedString("page.466", tableName: "Pages", bundle: .main, value: "Проверится автоматически перед запуском", comment: ""),
                     state: .unverified,
                     severity: .neutral,
                     resolution: DiagnosticResolution(
@@ -466,25 +466,25 @@ enum ProfileEnvironmentInspector {
                         action: .testProxy
                     ),
                     detail:
-                        "Если проверка не пройдёт, NeAntik остановит запуск."
+                        NSLocalizedString("page.467", tableName: "Pages", bundle: .main, value: "Если проверка не пройдёт, NeAntik остановит запуск.", comment: "")
                 )
             )
         }
         fields.append(
             EnvironmentDiagnosticField(
                 id: "route.chromium-http",
-                title: "HTTP-маршрут Chromium",
-                value: "Не измерялся",
+                title: NSLocalizedString("page.468", tableName: "Pages", bundle: .main, value: "HTTP-маршрут Chromium", comment: ""),
+                value: NSLocalizedString("page.469", tableName: "Pages", bundle: .main, value: "Не измерялся", comment: ""),
                 state: .unverified,
                 severity: .neutral,
                 detail:
-                    "Проверка прокси выполняется curl и не " +
-                    "подтверждает маршрут Chromium."
+                    NSLocalizedString("page.470", tableName: "Pages", bundle: .main, value: "Проверка прокси выполняется curl и не ", comment: "") +
+                    NSLocalizedString("page.471", tableName: "Pages", bundle: .main, value: "подтверждает маршрут Chromium.", comment: "")
             )
         )
         return EnvironmentDiagnosticSection(
             id: "route",
-            title: "Маршрут и прокси",
+            title: NSLocalizedString("page.472", tableName: "Pages", bundle: .main, value: "Маршрут и прокси", comment: ""),
             fields: fields
         )
     }
@@ -502,11 +502,11 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "fingerprint.runtime",
-                    title: "Движок",
+                    title: NSLocalizedString("page.473", tableName: "Pages", bundle: .main, value: "Движок", comment: ""),
                     value: policy.fingerprintIdentityConfigured
-                        ? "Chromium с разделением отпечатков" +
+                        ? NSLocalizedString("page.474", tableName: "Pages", bundle: .main, value: "Chromium с разделением отпечатков", comment: "") +
                             versionSuffix
-                        : "Обычный Chromium" +
+                        : NSLocalizedString("page.475", tableName: "Pages", bundle: .main, value: "Обычный Chromium", comment: "") +
                             versionSuffix,
                     state: .configured,
                     severity: .success
@@ -517,22 +517,22 @@ enum ProfileEnvironmentInspector {
             let signatureSeverity: DiagnosticFindingSeverity
             switch runtime.inspection.codeSignatureValid {
             case .some(true):
-                signatureValue = "Подпись подтверждена локально"
+                signatureValue = NSLocalizedString("page.476", tableName: "Pages", bundle: .main, value: "Подпись подтверждена локально", comment: "")
                 signatureState = .observed
                 signatureSeverity = .success
             case .some(false):
-                signatureValue = "Подпись не подтверждена"
+                signatureValue = NSLocalizedString("page.477", tableName: "Pages", bundle: .main, value: "Подпись не подтверждена", comment: "")
                 signatureState = .observed
                 signatureSeverity = .failure
             case .none:
-                signatureValue = "Подпись не удалось проверить"
+                signatureValue = NSLocalizedString("page.478", tableName: "Pages", bundle: .main, value: "Подпись не удалось проверить", comment: "")
                 signatureState = .unverified
                 signatureSeverity = .attention
             }
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "fingerprint.runtime-signature",
-                    title: "Подпись движка",
+                    title: NSLocalizedString("page.479", tableName: "Pages", bundle: .main, value: "Подпись движка", comment: ""),
                     value: signatureValue,
                     state: signatureState,
                     severity: signatureSeverity
@@ -542,8 +542,8 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "fingerprint.runtime",
-                    title: "Движок",
-                    value: "Браузерный движок не найден",
+                    title: NSLocalizedString("page.473", tableName: "Pages", bundle: .main, value: "Движок", comment: ""),
+                    value: NSLocalizedString("page.480", tableName: "Pages", bundle: .main, value: "Браузерный движок не найден", comment: ""),
                     state: .unavailable,
                     severity: .blocking
                 )
@@ -553,14 +553,14 @@ enum ProfileEnvironmentInspector {
         fields.append(
             EnvironmentDiagnosticField(
                 id: "fingerprint.device-tuple",
-                title: "Профиль устройства",
+                title: NSLocalizedString("page.481", tableName: "Pages", bundle: .main, value: "Профиль устройства", comment: ""),
                 value: deviceTupleTitle(profile.identity.deviceTupleID),
                 state: .derived,
                 severity: .neutral,
                 detail: policy.fingerprintIdentityConfigured
-                    ? "Рассчитан из стабильной конфигурации " +
-                        "профиля."
-                    : "Будет применён только совместимым движком."
+                    ? NSLocalizedString("page.482", tableName: "Pages", bundle: .main, value: "Рассчитан из стабильной конфигурации ", comment: "") +
+                        NSLocalizedString("page.483", tableName: "Pages", bundle: .main, value: "профиля.", comment: "")
+                    : NSLocalizedString("page.484", tableName: "Pages", bundle: .main, value: "Будет применён только совместимым движком.", comment: "")
             )
         )
 
@@ -568,8 +568,8 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "fingerprint.configuration",
-                    title: "Стабильная конфигурация",
-                    value: "Назначена этому профилю",
+                    title: NSLocalizedString("page.485", tableName: "Pages", bundle: .main, value: "Стабильная конфигурация", comment: ""),
+                    value: NSLocalizedString("page.486", tableName: "Pages", bundle: .main, value: "Назначена этому профилю", comment: ""),
                     state: .configured,
                     severity: .success
                 )
@@ -579,9 +579,9 @@ enum ProfileEnvironmentInspector {
                     id: "fingerprint.webgpu",
                     title: "WebGPU",
                     value: policy.webGPUDisabled
-                        ? "Отключён до поддержки согласованного " +
-                            "профиля устройства"
-                        : "NeAntik не меняет настройку",
+                        ? NSLocalizedString("page.487", tableName: "Pages", bundle: .main, value: "Отключён до поддержки согласованного ", comment: "") +
+                            NSLocalizedString("page.488", tableName: "Pages", bundle: .main, value: "профиля устройства", comment: "")
+                        : NSLocalizedString("page.489", tableName: "Pages", bundle: .main, value: "NeAntik не меняет настройку", comment: ""),
                     state: .configured,
                     severity: .success
                 )
@@ -590,8 +590,8 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "fingerprint.configuration",
-                    title: "Разделение отпечатков",
-                    value: "Доступна только изоляция данных",
+                    title: NSLocalizedString("page.490", tableName: "Pages", bundle: .main, value: "Разделение отпечатков", comment: ""),
+                    value: NSLocalizedString("page.491", tableName: "Pages", bundle: .main, value: "Доступна только изоляция данных", comment: ""),
                     state: .unavailable,
                     severity: .neutral
                 )
@@ -605,7 +605,7 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "fingerprint.observation",
-                    title: "Проверка поверхностей",
+                    title: NSLocalizedString("page.492", tableName: "Pages", bundle: .main, value: "Проверка поверхностей", comment: ""),
                     value: observation.verdict.title,
                     state: .observed,
                     severity: observationSeverity,
@@ -617,8 +617,8 @@ enum ProfileEnvironmentInspector {
                             action: .runFingerprintAudit
                         ),
                     detail:
-                        "Локальное сравнение A → B → A без " +
-                        "внешнего сервиса проверки.",
+                        NSLocalizedString("page.493", tableName: "Pages", bundle: .main, value: "Локальное сравнение A → B → A без ", comment: "") +
+                        NSLocalizedString("page.494", tableName: "Pages", bundle: .main, value: "внешнего сервиса проверки.", comment: ""),
                     observedAt: observation.observedAt
                 )
             )
@@ -626,10 +626,10 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "fingerprint.observation",
-                    title: "Проверка поверхностей",
+                    title: NSLocalizedString("page.492", tableName: "Pages", bundle: .main, value: "Проверка поверхностей", comment: ""),
                     value: policy.fingerprintIdentityConfigured
-                        ? "Дополнительная проверка не запускалась"
-                        : "Текущий движок не поддерживает проверку",
+                        ? NSLocalizedString("page.495", tableName: "Pages", bundle: .main, value: "Дополнительная проверка не запускалась", comment: "")
+                        : NSLocalizedString("page.496", tableName: "Pages", bundle: .main, value: "Текущий движок не поддерживает проверку", comment: ""),
                     state: policy.fingerprintIdentityConfigured
                         ? .unverified
                         : .unavailable,
@@ -642,8 +642,8 @@ enum ProfileEnvironmentInspector {
                         )
                         : nil,
                     detail: policy.fingerprintIdentityConfigured
-                        ? "Необязательно для обычного запуска. " +
-                            "Доступно в дополнительных проверках."
+                        ? NSLocalizedString("page.497", tableName: "Pages", bundle: .main, value: "Необязательно для обычного запуска. ", comment: "") +
+                            NSLocalizedString("page.498", tableName: "Pages", bundle: .main, value: "Доступно в дополнительных проверках.", comment: "")
                         : nil
                 )
             )
@@ -662,16 +662,16 @@ enum ProfileEnvironmentInspector {
     ) -> EnvironmentDiagnosticSection {
         let policyValue = switch policy.webRTC {
         case .disabledByProfile:
-            "WebRTC выключен политикой профиля"
+            NSLocalizedString("page.499", tableName: "Pages", bundle: .main, value: "WebRTC выключен политикой профиля", comment: "")
         case .publicInterfaceOnly:
-            "Только публичный интерфейс"
+            NSLocalizedString("page.500", tableName: "Pages", bundle: .main, value: "Только публичный интерфейс", comment: "")
         case .disableNonProxiedUDP:
-            "Ограничен прямой UDP для WebRTC"
+            NSLocalizedString("page.501", tableName: "Pages", bundle: .main, value: "Ограничен прямой UDP для WebRTC", comment: "")
         }
         var fields = [
             EnvironmentDiagnosticField(
                 id: "webrtc.policy",
-                title: "Политика",
+                title: NSLocalizedString("page.502", tableName: "Pages", bundle: .main, value: "Политика", comment: ""),
                 value: policyValue,
                 state: .configured,
                 severity: .success
@@ -680,11 +680,11 @@ enum ProfileEnvironmentInspector {
         if let observation {
             let value = switch observation.webRTCLoopback {
             case .passed:
-                "Локальный контроль пройден"
+                NSLocalizedString("page.503", tableName: "Pages", bundle: .main, value: "Локальный контроль пройден", comment: "")
             case .failed:
-                "Локальный контроль выявил проблему"
+                NSLocalizedString("page.504", tableName: "Pages", bundle: .main, value: "Локальный контроль выявил проблему", comment: "")
             case .incomplete:
-                "Локальный контроль не завершён"
+                NSLocalizedString("page.505", tableName: "Pages", bundle: .main, value: "Локальный контроль не завершён", comment: "")
             }
             let severity: DiagnosticFindingSeverity =
                 switch observation.webRTCLoopback {
@@ -695,7 +695,7 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "webrtc.loopback",
-                    title: "Локальный контроль",
+                    title: NSLocalizedString("page.506", tableName: "Pages", bundle: .main, value: "Локальный контроль", comment: ""),
                     value: value,
                     state: .observed,
                     severity: severity,
@@ -707,8 +707,8 @@ enum ProfileEnvironmentInspector {
                             action: .runFingerprintAudit
                         ),
                     detail:
-                        "Loopback STUN; адреса и строки " +
-                        "кандидатов не сохраняются.",
+                        NSLocalizedString("page.507", tableName: "Pages", bundle: .main, value: "Loopback STUN; адреса и строки ", comment: "") +
+                        NSLocalizedString("page.508", tableName: "Pages", bundle: .main, value: "кандидатов не сохраняются.", comment: ""),
                     observedAt: observation.observedAt
                 )
             )
@@ -716,8 +716,8 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "webrtc.loopback",
-                    title: "Локальный контроль",
-                    value: "Дополнительная проверка не запускалась",
+                    title: NSLocalizedString("page.506", tableName: "Pages", bundle: .main, value: "Локальный контроль", comment: ""),
+                    value: NSLocalizedString("page.495", tableName: "Pages", bundle: .main, value: "Дополнительная проверка не запускалась", comment: ""),
                     state: .unverified,
                     severity: .neutral,
                     resolution: DiagnosticResolution(
@@ -725,20 +725,20 @@ enum ProfileEnvironmentInspector {
                         mode: .informational,
                         action: nil
                     ),
-                    detail: "Необязательно для обычного запуска."
+                    detail: NSLocalizedString("page.509", tableName: "Pages", bundle: .main, value: "Необязательно для обычного запуска.", comment: "")
                 )
             )
         }
         fields.append(
             EnvironmentDiagnosticField(
                 id: "webrtc.public-route",
-                title: "Публичный WebRTC-маршрут",
-                value: "Не измерялся",
+                title: NSLocalizedString("page.510", tableName: "Pages", bundle: .main, value: "Публичный WebRTC-маршрут", comment: ""),
+                value: NSLocalizedString("page.469", tableName: "Pages", bundle: .main, value: "Не измерялся", comment: ""),
                 state: .unverified,
                 severity: .neutral,
                 detail:
-                    "Локальный контроль не доказывает " +
-                    "отсутствие всех сетевых утечек."
+                    NSLocalizedString("page.511", tableName: "Pages", bundle: .main, value: "Локальный контроль не доказывает ", comment: "") +
+                    NSLocalizedString("page.512", tableName: "Pages", bundle: .main, value: "отсутствие всех сетевых утечек.", comment: "")
             )
         )
         return EnvironmentDiagnosticSection(
@@ -753,27 +753,27 @@ enum ProfileEnvironmentInspector {
     ) -> EnvironmentDiagnosticSection {
         let quicValue = switch policy.quic {
         case .disabledByNeAntik:
-            "Отключён настройками запуска"
+            NSLocalizedString("page.513", tableName: "Pages", bundle: .main, value: "Отключён настройками запуска", comment: "")
         case .notDisabledByNeAntik:
-            "NeAntik не отключает QUIC"
+            NSLocalizedString("page.514", tableName: "Pages", bundle: .main, value: "NeAntik не отключает QUIC", comment: "")
         }
         let dnsValue: String
         let dnsDetail: String
         switch policy.dns {
         case .ordinaryChromium:
-            dnsValue = "Обычная политика Chromium и macOS"
-            dnsDetail = "Имена сайтов разрешаются по обычной политике Chromium и macOS."
+            dnsValue = NSLocalizedString("page.515", tableName: "Pages", bundle: .main, value: "Обычная политика Chromium и macOS", comment: "")
+            dnsDetail = NSLocalizedString("page.516", tableName: "Pages", bundle: .main, value: "Имена сайтов разрешаются по обычной политике Chromium и macOS.", comment: "")
         case .proxyResolverFailClosed:
-            dnsValue = "Прямое разрешение сайтов ограничено"
+            dnsValue = NSLocalizedString("page.517", tableName: "Pages", bundle: .main, value: "Прямое разрешение сайтов ограничено", comment: "")
             if policy.proxyHostRequiresDNSResolution == false {
-                dnsDetail = "Chromium ограничивает прямое DNS-разрешение сайтов. Адрес proxy задан как IP, DNS для адреса proxy не требуется; фактический DNS-маршрут не измерялся."
+                dnsDetail = NSLocalizedString("page.518", tableName: "Pages", bundle: .main, value: "Chromium ограничивает прямое DNS-разрешение сайтов. Адрес proxy задан как IP, DNS для адреса proxy не требуется; фактический DNS-маршрут не измерялся.", comment: "")
             } else {
-                dnsDetail = "Chromium ограничивает прямое DNS-разрешение сайтов. Для подключения к proxy с именем хоста может потребоваться системное DNS-разрешение; фактический DNS-маршрут не измерялся."
+                dnsDetail = NSLocalizedString("page.519", tableName: "Pages", bundle: .main, value: "Chromium ограничивает прямое DNS-разрешение сайтов. Для подключения к proxy с именем хоста может потребоваться системное DNS-разрешение; фактический DNS-маршрут не измерялся.", comment: "")
             }
         }
         return EnvironmentDiagnosticSection(
             id: "transport",
-            title: "QUIC и DNS",
+            title: NSLocalizedString("page.520", tableName: "Pages", bundle: .main, value: "QUIC и DNS", comment: ""),
             fields: [
                 EnvironmentDiagnosticField(
                     id: "transport.quic-policy",
@@ -796,15 +796,15 @@ enum ProfileEnvironmentInspector {
                 ),
                 EnvironmentDiagnosticField(
                     id: "transport.quic-observed",
-                    title: "Фактический QUIC / HTTP/3",
-                    value: "Не измерялся",
+                    title: NSLocalizedString("page.521", tableName: "Pages", bundle: .main, value: "Фактический QUIC / HTTP/3", comment: ""),
+                    value: NSLocalizedString("page.469", tableName: "Pages", bundle: .main, value: "Не измерялся", comment: ""),
                     state: .unverified,
                     severity: .neutral
                 ),
                 EnvironmentDiagnosticField(
                     id: "transport.dns-observed",
-                    title: "Фактический DNS-маршрут",
-                    value: "Не измерялся",
+                    title: NSLocalizedString("page.522", tableName: "Pages", bundle: .main, value: "Фактический DNS-маршрут", comment: ""),
+                    value: NSLocalizedString("page.469", tableName: "Pages", bundle: .main, value: "Не измерялся", comment: ""),
                     state: .unverified,
                     severity: .neutral
                 )
@@ -821,12 +821,12 @@ enum ProfileEnvironmentInspector {
         guard case .proxied = policy.route else {
             return EnvironmentDiagnosticSection(
                 id: "geolocation",
-                title: "Геолокация",
+                title: NSLocalizedString("page.523", tableName: "Pages", bundle: .main, value: "Геолокация", comment: ""),
                 fields: [
                     EnvironmentDiagnosticField(
                         id: "geolocation.proxy",
-                        title: "Контекст прокси",
-                        value: "Для прямого профиля не применяется",
+                        title: NSLocalizedString("page.524", tableName: "Pages", bundle: .main, value: "Контекст прокси", comment: ""),
+                        value: NSLocalizedString("page.525", tableName: "Pages", bundle: .main, value: "Для прямого профиля не применяется", comment: ""),
                         state: .unavailable,
                         severity: .neutral
                     ),
@@ -850,8 +850,8 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "geolocation.source",
-                    title: "Источник",
-                    value: "\(success.source.rawValue) через проверку прокси",
+                    title: NSLocalizedString("page.526", tableName: "Pages", bundle: .main, value: "Источник", comment: ""),
+                    value: String(format: NSLocalizedString("page.527", tableName: "Pages", bundle: .main, value: "%@ через проверку прокси", comment: ""), String(describing: success.source.rawValue)),
                     state: .observed,
                     severity: routeContextIsComplete
                         ? .success
@@ -863,7 +863,7 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "geolocation.location",
-                    title: "Примерная локация",
+                    title: NSLocalizedString("page.528", tableName: "Pages", bundle: .main, value: "Примерная локация", comment: ""),
                     value: safeLocationSummary(success),
                     state: .observed,
                     severity: routeContextIsComplete
@@ -871,15 +871,15 @@ enum ProfileEnvironmentInspector {
                         : .attention,
                     resolution: contextResolution,
                     detail:
-                        (routeContextIsComplete ? "Определена по выходному IP прокси. " : "Локация из предыдущей проверки; сейчас не подтверждена. ") +
-                        "Точный IP здесь не хранится.",
+                        (routeContextIsComplete ? NSLocalizedString("page.529", tableName: "Pages", bundle: .main, value: "Определена по выходному IP прокси. ", comment: "") : NSLocalizedString("page.530", tableName: "Pages", bundle: .main, value: "Локация из предыдущей проверки; сейчас не подтверждена. ", comment: "")) +
+                        NSLocalizedString("page.531", tableName: "Pages", bundle: .main, value: "Точный IP здесь не хранится.", comment: ""),
                     observedAt: success.observedAt
                 )
             )
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "geolocation.context",
-                    title: "Часовой пояс и язык",
+                    title: NSLocalizedString("page.532", tableName: "Pages", bundle: .main, value: "Часовой пояс и язык", comment: ""),
                     value: contextSummary(success),
                     state: .observed,
                     severity: routeContextIsComplete
@@ -893,8 +893,8 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "geolocation.source",
-                    title: "Контекст прокси",
-                    value: "Обновится автоматически перед запуском",
+                    title: NSLocalizedString("page.524", tableName: "Pages", bundle: .main, value: "Контекст прокси", comment: ""),
+                    value: NSLocalizedString("page.533", tableName: "Pages", bundle: .main, value: "Обновится автоматически перед запуском", comment: ""),
                     state: .unverified,
                     severity: .neutral,
                     resolution: DiagnosticResolution(
@@ -914,8 +914,8 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "geolocation.launch",
-                    title: "При запуске",
-                    value: "Движок не принимает контекст профиля",
+                    title: NSLocalizedString("page.439", tableName: "Pages", bundle: .main, value: "При запуске", comment: ""),
+                    value: NSLocalizedString("page.534", tableName: "Pages", bundle: .main, value: "Движок не принимает контекст профиля", comment: ""),
                     state: .unavailable,
                     severity: .attention
                 )
@@ -924,12 +924,12 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "geolocation.launch",
-                    title: "При запуске",
+                    title: NSLocalizedString("page.439", tableName: "Pages", bundle: .main, value: "При запуске", comment: ""),
                     value: appliedValues.joined(separator: " · "),
                     state: .derived,
                     severity: .success,
                     detail:
-                        "Будут применены только к этому запуску профиля."
+                        NSLocalizedString("page.535", tableName: "Pages", bundle: .main, value: "Будут применены только к этому запуску профиля.", comment: "")
                 )
             )
         } else {
@@ -939,10 +939,10 @@ enum ProfileEnvironmentInspector {
             fields.append(
                 EnvironmentDiagnosticField(
                     id: "geolocation.launch",
-                    title: "При запуске",
+                    title: NSLocalizedString("page.439", tableName: "Pages", bundle: .main, value: "При запуске", comment: ""),
                     value: hasStoredContext
-                        ? "Устаревший контекст обновится перед запуском"
-                        : "Контекст определится перед запуском",
+                        ? NSLocalizedString("page.536", tableName: "Pages", bundle: .main, value: "Устаревший контекст обновится перед запуском", comment: "")
+                        : NSLocalizedString("page.537", tableName: "Pages", bundle: .main, value: "Контекст определится перед запуском", comment: ""),
                     state: .unverified,
                     severity: .neutral,
                     resolution: DiagnosticResolution(
@@ -951,15 +951,15 @@ enum ProfileEnvironmentInspector {
                         action: .testProxy
                     ),
                     detail:
-                        "Если прокси или контекст не подтвердятся, " +
-                        "NeAntik остановит запуск."
+                        NSLocalizedString("page.538", tableName: "Pages", bundle: .main, value: "Если прокси или контекст не подтвердятся, ", comment: "") +
+                        NSLocalizedString("page.539", tableName: "Pages", bundle: .main, value: "NeAntik остановит запуск.", comment: "")
                 )
             )
         }
         fields.append(browserGeolocationField)
         return EnvironmentDiagnosticSection(
             id: "geolocation",
-            title: "Геолокация",
+            title: NSLocalizedString("page.523", tableName: "Pages", bundle: .main, value: "Геолокация", comment: ""),
             fields: fields
         )
     }
@@ -967,12 +967,12 @@ enum ProfileEnvironmentInspector {
     private static var browserGeolocationField: EnvironmentDiagnosticField {
         EnvironmentDiagnosticField(
             id: "geolocation.browser-api",
-            title: "Geolocation API браузера",
-            value: "Не измеряется",
+            title: NSLocalizedString("page.540", tableName: "Pages", bundle: .main, value: "Geolocation API браузера", comment: ""),
+            value: NSLocalizedString("page.541", tableName: "Pages", bundle: .main, value: "Не измеряется", comment: ""),
             state: .unavailable,
             severity: .neutral,
             detail:
-                "IP-геолокация не является GPS или " +
+                NSLocalizedString("page.542", tableName: "Pages", bundle: .main, value: "IP-геолокация не является GPS или ", comment: "") +
                 "navigator.geolocation."
         )
     }
@@ -998,9 +998,9 @@ enum ProfileEnvironmentInspector {
 
     private static func responseSummary(milliseconds: Int?) -> String {
         guard let milliseconds else {
-            return "Успешно"
+            return NSLocalizedString("page.543", tableName: "Pages", bundle: .main, value: "Успешно", comment: "")
         }
-        return "Успешно · отклик \(milliseconds) мс"
+        return String(format: NSLocalizedString("page.544", tableName: "Pages", bundle: .main, value: "Успешно · отклик %@ мс", comment: ""), String(describing: milliseconds))
     }
 
     private static func safeLocationSummary(
@@ -1011,7 +1011,7 @@ enum ProfileEnvironmentInspector {
             safeText(success.countryName),
             safeText(success.countryCode)
         ].compactMap { $0 }
-        return values.isEmpty ? "IP подтверждён" : values.joined(separator: ", ")
+        return values.isEmpty ? NSLocalizedString("page.545", tableName: "Pages", bundle: .main, value: "IP подтверждён", comment: "") : values.joined(separator: ", ")
     }
 
     private static func contextSummary(
@@ -1021,7 +1021,7 @@ enum ProfileEnvironmentInspector {
             safeText(success.timezoneIdentifier),
             safeText(success.localeIdentifier)
         ].compactMap { $0 }
-        return values.isEmpty ? "Не определены" : values.joined(separator: " · ")
+        return values.isEmpty ? NSLocalizedString("page.546", tableName: "Pages", bundle: .main, value: "Не определены", comment: "") : values.joined(separator: " · ")
     }
 
     private static func safeText(_ value: String?) -> String? {
@@ -1051,7 +1051,7 @@ enum ProfileEnvironmentInspector {
         case "macbook-air-m4": "MacBook Air M4"
         case "macbook-pro-m4-max": "MacBook Pro M4 Max"
         case "macbook-pro-m4-pro": "MacBook Pro M4 Pro"
-        default: "Профиль устройства из каталога NeAntik"
+        default: NSLocalizedString("page.547", tableName: "Pages", bundle: .main, value: "Профиль устройства из каталога NeAntik", comment: "")
         }
     }
 }

@@ -960,8 +960,9 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
     runtime_hash = digest(runtime_source)
     if digest(staged_webkit) != runtime_hash:
         raise ContractError("Staged WebKit image differs from the validated runtime input")
+    install_host_localizations(app, host_bundle, info)
     host_info = {
-        "CFBundleDevelopmentRegion": "en",
+        "CFBundleDevelopmentRegion": info.get("CFBundleDevelopmentRegion", "en"),
         "CFBundleExecutable": "NeAntikWebKitHost",
         "CFBundleIdentifier": host_bundle_id,
         "CFBundleInfoDictionaryVersion": "6.0",
@@ -972,6 +973,8 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
         RUNTIME_PIN_KEY: {"schemaVersion": 2, "webKitSHA256": runtime_hash,
                           "minimumOSVersion": minimum_os_version},
     }
+    if "en" in info.get("CFBundleLocalizations", []):
+        host_info["CFBundleLocalizations"] = ["ru", "en"]
     if network_sandbox_sha256 is not None:
         host_info[sandbox_pin.PIN_KEY] = sandbox_pin.verify(framework_destination, network_sandbox_sha256)
     if successor is not None:
@@ -1029,6 +1032,22 @@ def _package_verified_host(app: Path, host_binary: Path, runtime_frameworks: Pat
     else:
         _v508_notice_action("install", app, framework_destination, source_offer_root, private_v508_evidence)
     return host_bundle
+
+
+def install_host_localizations(app: Path, host_bundle: Path, info: dict) -> None:
+    """Copy manager translations used by shared host error paths before signing."""
+    if "en" not in info.get("CFBundleLocalizations", []):
+        return
+    for language, names in (("ru", ("Localizable.strings",)),
+                            ("en", ("Localizable.strings", "Errors.strings"))):
+        source_dir = app / "Contents/Resources" / f"{language}.lproj"
+        destination_dir = host_bundle / "Contents/Resources" / f"{language}.lproj"
+        destination_dir.mkdir(parents=True, exist_ok=True)
+        for name in names:
+            source = source_dir / name
+            if not source.is_file() or source.is_symlink():
+                raise ContractError(f"Missing manager localization resource: {language}/{name}")
+            shutil.copyfile(source, destination_dir / name)
 
 
 def package(app: Path, host_binary: Path, runtime_frameworks: Path, identity: str,

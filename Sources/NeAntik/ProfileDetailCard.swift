@@ -28,13 +28,15 @@ struct ProfileDetailCard<Heading: View, Content: View>: View {
                 .accessibilityHidden(true)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(title)
+        .accessibilityLabel(NSLocalizedString(title, comment: "Profile detail section"))
     }
 }
 
 extension ProfileDetailCard where Heading == Text {
     init(_ title: String, @ViewBuilder content: () -> Content) {
-        self.init(title, content: content) { Text(title).font(.headline) }
+        self.init(title, content: content) {
+            Text(verbatim: NSLocalizedString(title, comment: "Profile detail section")).font(.headline)
+        }
     }
 }
 

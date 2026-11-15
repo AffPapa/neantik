@@ -141,15 +141,15 @@ enum WebKitHostCodeIdentity {
         var errorDescription: String? {
             switch self {
             case .malformedPin:
-                return "Проверочная запись отдельного WebKit повреждена. Профиль не запускался."
+                return NSLocalizedString("userError.156", tableName: "Errors", bundle: .main, value: "Проверочная запись отдельного WebKit повреждена. Профиль не запускался.", comment: "")
             case .unsafeBundle:
-                return "Пакет отдельного WebKit неполный или изменён. Профиль не запускался."
+                return NSLocalizedString("userError.157", tableName: "Errors", bundle: .main, value: "Пакет отдельного WebKit неполный или изменён. Профиль не запускался.", comment: "")
             case .hostHashMismatch:
-                return "Файл WebKit-host не совпадает с проверочной записью приложения. Нужна новая сборка."
+                return NSLocalizedString("userError.158", tableName: "Errors", bundle: .main, value: "Файл WebKit-host не совпадает с проверочной записью приложения. Нужна новая сборка.", comment: "")
             case .codeIdentityMismatch:
-                return "Не удалось подтвердить подпись процесса WebKit. Профиль не запускался."
+                return NSLocalizedString("userError.159", tableName: "Errors", bundle: .main, value: "Не удалось подтвердить подпись процесса WebKit. Профиль не запускался.", comment: "")
             case .parentIdentityMismatch:
-                return "Не удалось подтвердить связь процесса WebKit с приложением. Профиль не запускался."
+                return NSLocalizedString("userError.160", tableName: "Errors", bundle: .main, value: "Не удалось подтвердить связь процесса WebKit с приложением. Профиль не запускался.", comment: "")
             }
         }
     }

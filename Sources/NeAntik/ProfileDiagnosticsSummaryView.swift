@@ -17,7 +17,7 @@ struct ProfileDiagnosticsSummaryView: View {
     }
 
     var body: some View {
-        ProfileDetailCard(accessibilityTitle: "Диагностика профиля") {
+        ProfileDetailCard(accessibilityTitle: NSLocalizedString("page.744", tableName: "Pages", bundle: .main, value: "Диагностика профиля", comment: "")) {
             VStack(alignment: .leading, spacing: 8) {
                 Button {
                     isExpanded.toggle()
@@ -32,7 +32,7 @@ struct ProfileDiagnosticsSummaryView: View {
                         .foregroundStyle(.secondary)
                         .accessibilityHidden(true)
 
-                        Label("Диагностика", systemImage: "stethoscope")
+                        Label(NSLocalizedString("page.745", tableName: "Pages", bundle: .main, value: "Диагностика", comment: ""), systemImage: "stethoscope")
                             .font(.headline)
 
                         Spacer(minLength: 8)
@@ -46,15 +46,15 @@ struct ProfileDiagnosticsSummaryView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Диагностика профиля")
+                .accessibilityLabel(NSLocalizedString("page.744", tableName: "Pages", bundle: .main, value: "Диагностика профиля", comment: ""))
                 .accessibilityValue(
                     "\(summary.status.title). " +
-                        (isExpanded ? "Развёрнута" : "Скрыта")
+                        (isExpanded ? NSLocalizedString("page.746", tableName: "Pages", bundle: .main, value: "Развёрнута", comment: "") : NSLocalizedString("page.747", tableName: "Pages", bundle: .main, value: "Скрыта", comment: ""))
                 )
                 .accessibilityHint(
                     isExpanded
-                        ? "Скрывает подробные локальные проверки"
-                        : "Показывает подробные локальные проверки"
+                        ? NSLocalizedString("page.748", tableName: "Pages", bundle: .main, value: "Скрывает подробные локальные проверки", comment: "")
+                        : NSLocalizedString("page.749", tableName: "Pages", bundle: .main, value: "Показывает подробные локальные проверки", comment: "")
                 )
 
                 if let nextStep = summary.nextStep.title {
@@ -78,7 +78,7 @@ struct ProfileDiagnosticsSummaryView: View {
             .padding(.vertical, 4)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Диагностика профиля")
+        .accessibilityLabel(NSLocalizedString("page.744", tableName: "Pages", bundle: .main, value: "Диагностика профиля", comment: ""))
     }
 
     private var statusColor: Color {

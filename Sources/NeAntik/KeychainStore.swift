@@ -340,7 +340,7 @@ struct KeychainCredentialPurgeError: LocalizedError {
     let failedNamespaceCount: Int
 
     var errorDescription: String? {
-        "Не удалось полностью удалить пароль прокси из Связки ключей macOS. Очистку можно безопасно повторить позже."
+        NSLocalizedString("userError.049", tableName: "Errors", bundle: .main, value: "Не удалось полностью удалить пароль прокси из Связки ключей macOS. Очистку можно безопасно повторить позже.", comment: "")
     }
 }
 
@@ -349,7 +349,7 @@ struct KeychainProfileEditRollbackError: LocalizedError {
     let rollbackError: any Error
 
     var errorDescription: String? {
-        "Не удалось изменить пароль прокси и полностью восстановить прежнее состояние Связки ключей. Профиль не изменён; проверь пароль перед следующим запуском."
+        NSLocalizedString("userError.050", tableName: "Errors", bundle: .main, value: "Не удалось изменить пароль прокси и полностью восстановить прежнее состояние Связки ключей. Профиль не изменён; проверь пароль перед следующим запуском.", comment: "")
     }
 }
 
@@ -372,7 +372,7 @@ struct KeychainNewCredentialRollbackError:
     }
 
     var errorDescription: String? {
-        "Не удалось сохранить новый пароль прокси и полностью отменить запись в Связке ключей. Профиль не создан; NeAntik безопасно повторит очистку."
+        NSLocalizedString("userError.051", tableName: "Errors", bundle: .main, value: "Не удалось сохранить новый пароль прокси и полностью отменить запись в Связке ключей. Профиль не создан; NeAntik безопасно повторит очистку.", comment: "")
     }
 }
 
@@ -380,7 +380,7 @@ private struct KeychainCredentialSnapshotRestoreError: LocalizedError {
     let failedNamespaceCount: Int
 
     var errorDescription: String? {
-        "Не удалось восстановить прежний пароль прокси во всех пространствах Связки ключей."
+        NSLocalizedString("userError.052", tableName: "Errors", bundle: .main, value: "Не удалось восстановить прежний пароль прокси во всех пространствах Связки ключей.", comment: "")
     }
 }
 
@@ -388,12 +388,12 @@ struct KeychainError: LocalizedError {
     let status: OSStatus
 
     var errorDescription: String? {
-        "Не удалось выполнить операцию со Связкой ключей macOS (код \(status))."
+        String(format: NSLocalizedString("userError.053", tableName: "Errors", bundle: .main, value: "Не удалось выполнить операцию со Связкой ключей macOS (код %@).", comment: ""), String(describing: status))
     }
 }
 
 private struct KeychainDataError: LocalizedError {
     var errorDescription: String? {
-        "Сохранённый пароль прокси повреждён и не может быть прочитан."
+        NSLocalizedString("userError.054", tableName: "Errors", bundle: .main, value: "Сохранённый пароль прокси повреждён и не может быть прочитан.", comment: "")
     }
 }

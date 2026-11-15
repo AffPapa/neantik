@@ -6,10 +6,10 @@ enum BrowserDataRestoreError: LocalizedError, Equatable {
     case pending, changed, unsupported, authorityRequired
     var errorDescription: String? {
         switch self {
-        case .pending: "Восстановление данных не завершено. Закрой браузеры и заверши восстановление перед работой с профилями."
-        case .changed: "Файлы изменились во время восстановления. Данные сохранены; автоматическая замена остановлена."
-        case .unsupported: "Журнал восстановления имеет неподдерживаемый формат. Сохрани данные и обратись в поддержку."
-        case .authorityRequired: "Перед восстановлением закрой профиль и другие версии NeAntik."
+        case .pending: NSLocalizedString("userError.189", tableName: "Errors", bundle: .main, value: "Восстановление данных не завершено. Закрой браузеры и заверши восстановление перед работой с профилями.", comment: "")
+        case .changed: NSLocalizedString("userError.190", tableName: "Errors", bundle: .main, value: "Файлы изменились во время восстановления. Данные сохранены; автоматическая замена остановлена.", comment: "")
+        case .unsupported: NSLocalizedString("userError.191", tableName: "Errors", bundle: .main, value: "Журнал восстановления имеет неподдерживаемый формат. Сохрани данные и обратись в поддержку.", comment: "")
+        case .authorityRequired: NSLocalizedString("userError.192", tableName: "Errors", bundle: .main, value: "Перед восстановлением закрой профиль и другие версии NeAntik.", comment: "")
         }
     }
 }

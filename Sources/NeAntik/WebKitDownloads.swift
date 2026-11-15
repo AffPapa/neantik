@@ -234,8 +234,8 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
         else if let picker { picker(item.filename, chosen) }
         else if let window, window.attachedSheet == nil {
             let panel = NSSavePanel(); item.panel = panel
-            panel.title = "Сохранить загрузку"; panel.prompt = "Сохранить"
-            panel.message = "Выбери новое имя файла. Существующие файлы не заменяются."
+            panel.title = NSLocalizedString("userDialog.013", tableName: "Errors", bundle: .main, value: "Сохранить загрузку", comment: ""); panel.prompt = NSLocalizedString("userDialog.014", tableName: "Errors", bundle: .main, value: "Сохранить", comment: "")
+            panel.message = NSLocalizedString("userDialog.015", tableName: "Errors", bundle: .main, value: "Выбери новое имя файла. Существующие файлы не заменяются.", comment: "")
             panel.nameFieldStringValue = item.filename
             panel.beginSheetModal(for: window) { result in chosen(result == .OK ? panel.url : nil) }
         } else {

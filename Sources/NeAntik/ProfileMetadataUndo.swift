@@ -35,6 +35,6 @@ struct ProfileMetadataUndo: Sendable {
 }
 struct ProfileMetadataUndoConflict: LocalizedError {
     var errorDescription: String? {
-        "Отмена недоступна: профиль или папки уже изменились. Обнови список и проверь последнее состояние; более новые правки сохранены."
+        NSLocalizedString("userError.195", tableName: "Errors", bundle: .main, value: "Отмена недоступна: профиль или папки уже изменились. Обнови список и проверь последнее состояние; более новые правки сохранены.", comment: "")
     }
 }

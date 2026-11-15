@@ -171,7 +171,7 @@ enum WebKitProfileError: LocalizedError {
     case unsupported(String)
     var errorDescription: String? {
         switch self {
-        case .unsupported(let reason): return reason
+        case .unsupported(let reason): return NSLocalizedString(reason, comment: "WebKit launch error")
         }
     }
 }
@@ -893,9 +893,9 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         downloads = WebKitDownloads(window: window, picker: downloadPicker)
         window.title = "\(title) — WebKit · NeAntik"
         window.minSize = NSSize(width: 640, height: 420); window.center()
-        address.placeholderString = "Адрес сайта"; address.font = .systemFont(ofSize: 14)
+        address.placeholderString = NSLocalizedString("Адрес сайта", comment: "Website address placeholder"); address.font = .systemFont(ofSize: 14)
         address.delegate = self; address.target = self; address.action = #selector(openAddress)
-        address.setAccessibilityLabel("Адрес сайта")
+        address.setAccessibilityLabel(NSLocalizedString("Адрес сайта", comment: "Website address"))
         let bar = NSStackView(views: [button(backButton, title: "←", help: "Назад · ⌘[", action: #selector(back)),
             button(forwardButton, title: "→", help: "Вперёд · ⌘]", action: #selector(forward)),
             button(NSButton(), title: "↻", help: "Обновить · ⌘R", action: #selector(reload)), address, downloads.button])
@@ -1019,8 +1019,9 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     }
 
     private func button(_ button: NSButton, title: String, help: String, action: Selector) -> NSButton {
-        button.title = title; button.bezelStyle = .rounded; button.toolTip = help
-        button.setAccessibilityLabel(help); button.target = self; button.action = action
+        button.title = NSLocalizedString(title, comment: "Browser toolbar action"); button.bezelStyle = .rounded
+        button.toolTip = NSLocalizedString(help, comment: "Browser toolbar action help")
+        button.setAccessibilityLabel(NSLocalizedString(help, comment: "Browser toolbar accessibility label")); button.target = self; button.action = action
         return button
     }
     private func configure(_ tab: WebKitBrowserTab) {
@@ -1075,9 +1076,9 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     }
     private func refreshTab(_ id: UUID) {
         guard !isClosed, let window, let tab = tabs[id] else { return }
-        let title = tab.view.title.flatMap { $0.isEmpty ? nil : $0 } ?? (tab.view.url?.host ?? "Новая вкладка")
+        let title = tab.view.title.flatMap { $0.isEmpty ? nil : $0 } ?? (tab.view.url?.host ?? NSLocalizedString("Новая вкладка", comment: "Untitled browser tab"))
         tab.titleButton.title = title
-        tab.titleButton.setAccessibilityLabel("Вкладка: \(title)")
+        tab.titleButton.setAccessibilityLabel(String(format: NSLocalizedString("Вкладка: %@", comment: "Browser tab accessibility label"), title))
         tab.titleButton.state = order.selected == id ? .on : .off
         tab.titleButton.font = order.selected == id ? .boldSystemFont(ofSize: 14) : .systemFont(ofSize: 14)
         tab.titleButton.contentTintColor = order.selected == id ? .controlAccentColor : nil
@@ -1088,7 +1089,9 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         }
     }
     private func displayedStatus(_ status: String) -> String {
-        ([status] + [sessionNotice, checkpointWarning].compactMap { $0 }).joined(separator: "\n")
+        ([status] + [sessionNotice, checkpointWarning].compactMap { $0 })
+            .map { NSLocalizedString($0, comment: "WebKit browser status") }
+            .joined(separator: "\n")
     }
     @discardableResult private func appendTab(configuration: WKWebViewConfiguration) -> WKWebView? {
         guard !isClosed, configuration.websiteDataStore.identifier == profileID else { return nil }
@@ -1187,7 +1190,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
     @objc private func openAddress() {
         guard let window else { return }
         guard !isClosed, let url = BrowserStartURL.validate(address.stringValue), WebKitProfilePolicy.permits(url) else {
-            message.stringValue = "Введи адрес http:// или https://. Для пустой страницы — about:blank."; return
+            message.stringValue = NSLocalizedString("Введи адрес http:// или https://. Для пустой страницы — about:blank.", comment: "Invalid browser address"); return
         }
         webView.load(URLRequest(url: url)); window.makeFirstResponder(webView)
     }

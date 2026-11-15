@@ -44,22 +44,22 @@ struct ProfileFolderNameSheet: View {
                 .font(.title2)
                 .fontWeight(.semibold)
 
-            TextField("Название папки", text: $name)
+            TextField(NSLocalizedString("page.706", tableName: "Pages", bundle: .main, value: "Название папки", comment: ""), text: $name)
                 .focused($nameIsFocused)
                 .onSubmit(save)
-                .accessibilityLabel("Название папки")
+                .accessibilityLabel(NSLocalizedString("page.706", tableName: "Pages", bundle: .main, value: "Название папки", comment: ""))
 
             Text(
-                "До \(ProfileFolder.maximumNameLength) символов. " +
-                "Папки нужны только для порядка в NeAntik; " +
-                "данные профилей не перемещаются."
+                String(format: NSLocalizedString("page.707", tableName: "Pages", bundle: .main, value: "До %@ символов. ", comment: ""), String(describing: ProfileFolder.maximumNameLength)) +
+                NSLocalizedString("page.708", tableName: "Pages", bundle: .main, value: "Папки нужны только для порядка в NeAntik; ", comment: "") +
+                NSLocalizedString("page.709", tableName: "Pages", bundle: .main, value: "данные профилей не перемещаются.", comment: "")
             )
             .font(.caption)
             .foregroundStyle(.secondary)
 
             if duplicatesExistingName {
                 validationLabel(
-                    "Папка с таким именем уже существует."
+                    NSLocalizedString("page.710", tableName: "Pages", bundle: .main, value: "Папка с таким именем уже существует.", comment: "")
                 )
             } else if let errorMessage {
                 validationLabel(errorMessage)
@@ -67,11 +67,11 @@ struct ProfileFolderNameSheet: View {
 
             HStack {
                 Spacer()
-                Button("Отмена", role: .cancel) {
+                Button(NSLocalizedString("page.632", tableName: "Pages", bundle: .main, value: "Отмена", comment: ""), role: .cancel) {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
-                Button("Сохранить", action: save)
+                Button(NSLocalizedString("page.711", tableName: "Pages", bundle: .main, value: "Сохранить", comment: ""), action: save)
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
                     .disabled(

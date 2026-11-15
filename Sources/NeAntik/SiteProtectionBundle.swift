@@ -4,7 +4,7 @@ import Foundation
 
 struct SiteProtectionPreparationError: LocalizedError {
     var errorDescription: String? {
-        "Не удалось безопасно подготовить защиту сайтов. Запуск отменён; существующие данные не удалены."
+        NSLocalizedString("userError.175", tableName: "Errors", bundle: .main, value: "Не удалось безопасно подготовить защиту сайтов. Запуск отменён; существующие данные не удалены.", comment: "")
     }
 }
 

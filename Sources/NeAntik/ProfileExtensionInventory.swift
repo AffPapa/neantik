@@ -6,10 +6,10 @@ enum ProfileExtensionInventoryError: LocalizedError, Equatable {
     case unsafeEntry, changed, limitExceeded, unsupportedPreferences
     var errorDescription: String? {
         switch self {
-        case .unsafeEntry: "Не удалось безопасно прочитать расширения. Закрой профиль и проверь его данные; ссылки и чужие файлы не открываются."
-        case .changed: "Данные расширений изменились во время чтения. Закрой профиль и обнови список."
-        case .limitExceeded: "Список расширений превышает лимит локального просмотра. Открой управление в браузере."
-        case .unsupportedPreferences: "Сохранённые настройки расширений не удалось прочитать. Открой управление в браузере; данные не изменены."
+        case .unsafeEntry: NSLocalizedString("userError.104", tableName: "Errors", bundle: .main, value: "Не удалось безопасно прочитать расширения. Закрой профиль и проверь его данные; ссылки и чужие файлы не открываются.", comment: "")
+        case .changed: NSLocalizedString("userError.105", tableName: "Errors", bundle: .main, value: "Данные расширений изменились во время чтения. Закрой профиль и обнови список.", comment: "")
+        case .limitExceeded: NSLocalizedString("userError.106", tableName: "Errors", bundle: .main, value: "Список расширений превышает лимит локального просмотра. Открой управление в браузере.", comment: "")
+        case .unsupportedPreferences: NSLocalizedString("userError.107", tableName: "Errors", bundle: .main, value: "Сохранённые настройки расширений не удалось прочитать. Открой управление в браузере; данные не изменены.", comment: "")
         }
     }
 }

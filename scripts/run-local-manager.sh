@@ -250,6 +250,19 @@ mkdir -p "$DEVELOPMENT_APP/Contents/Resources/ru.lproj"
   "$PROJECT_DIR/Resources/ru.lproj/InfoPlist.strings" \
   "$PROJECT_DIR/Resources/ru.lproj/Localizable.strings" \
   "$DEVELOPMENT_APP/Contents/Resources/ru.lproj/"
+if ! /usr/libexec/PlistBuddy -c "Print :CFBundleLocalizations:1" "$INFO_PLIST" >/dev/null 2>&1; then
+  /usr/libexec/PlistBuddy -c "Add :CFBundleLocalizations:1 string en" "$INFO_PLIST"
+else
+  /usr/libexec/PlistBuddy -c "Set :CFBundleLocalizations:1 en" "$INFO_PLIST"
+fi
+mkdir -p "$DEVELOPMENT_APP/Contents/Resources/en.lproj"
+/bin/cp \
+  "$PROJECT_DIR/Resources/en.lproj/InfoPlist.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Localizable.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Help.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Errors.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Pages.strings" \
+  "$DEVELOPMENT_APP/Contents/Resources/en.lproj/"
 
 # The localized production strings intentionally call the product "NeAntik".
 # Keep the isolated engineering bundle visibly distinct after those resources

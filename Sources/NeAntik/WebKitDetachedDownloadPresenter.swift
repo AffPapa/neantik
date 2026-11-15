@@ -91,8 +91,8 @@ final class WebKitDetachedDownloadPresenter {
               let id = queued.first, let transfer = active[id] else { return }
         queued.removeFirst()
         let panel = NSSavePanel()
-        panel.title = "Сохранить загрузку"
-        panel.prompt = "Сохранить"
+        panel.title = NSLocalizedString("userDialog.013", tableName: "Errors", bundle: .main, value: "Сохранить загрузку", comment: "")
+        panel.prompt = NSLocalizedString("userDialog.014", tableName: "Errors", bundle: .main, value: "Сохранить", comment: "")
         panel.nameFieldStringValue = transfer.filename
         transfer.panel = panel
         panel.beginSheetModal(for: window) { [weak self, weak transfer] result in

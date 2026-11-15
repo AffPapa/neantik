@@ -5,10 +5,10 @@ enum BookmarkImportError: LocalizedError {
     case invalidFormat, limitExceeded, unsupportedURL, empty
     var errorDescription: String? {
         switch self {
-        case .invalidFormat: return "Не удалось прочитать закладки. Выбери экспорт Netscape HTML или файл Bookmarks Chromium версии 1."
-        case .limitExceeded: return "Файл закладок слишком большой или сложный: до 8 МБ, 10 000 элементов и 32 уровней папок."
-        case .unsupportedURL: return "Импорт остановлен: поддерживаются только абсолютные HTTP/HTTPS-ссылки без логина и пароля. Проверь экспорт закладок."
-        case .empty: return "В файле нет закладок для импорта."
+        case .invalidFormat: return NSLocalizedString("userError.040", tableName: "Errors", bundle: .main, value: "Не удалось прочитать закладки. Выбери экспорт Netscape HTML или файл Bookmarks Chromium версии 1.", comment: "")
+        case .limitExceeded: return NSLocalizedString("userError.041", tableName: "Errors", bundle: .main, value: "Файл закладок слишком большой или сложный: до 8 МБ, 10 000 элементов и 32 уровней папок.", comment: "")
+        case .unsupportedURL: return NSLocalizedString("userError.042", tableName: "Errors", bundle: .main, value: "Импорт остановлен: поддерживаются только абсолютные HTTP/HTTPS-ссылки без логина и пароля. Проверь экспорт закладок.", comment: "")
+        case .empty: return NSLocalizedString("userError.043", tableName: "Errors", bundle: .main, value: "В файле нет закладок для импорта.", comment: "")
         }
     }
 }
