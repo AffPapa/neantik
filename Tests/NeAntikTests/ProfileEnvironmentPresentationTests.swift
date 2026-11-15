@@ -22,6 +22,41 @@ struct ProfileEnvironmentPresentationTests {
         )
     }
 
+    @Test(arguments: [
+        (0, "0 sections"), (1, "1 section"), (2, "2 sections"),
+        (11, "11 sections"), (21, "21 sections"), (24, "24 sections"),
+    ])
+    func diagnosticSectionCountUsesEnglishPluralization(count: Int, expected: String) throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let bundle = try #require(Bundle(path: root.appendingPathComponent("Resources/en.lproj").path))
+        #expect(ProfileEnvironmentPresentation.sectionCountTitle(count, bundle: bundle) == expected)
+    }
+
+    @Test(arguments: [
+        (1, "1 раздел"), (2, "2 раздела"), (11, "11 разделов"),
+        (21, "21 раздел"), (24, "24 раздела"),
+    ])
+    func diagnosticSectionCountFallsBackToRussianWithoutPages(count: Int, expected: String) throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let bundle = try #require(Bundle(path: root.appendingPathComponent("Resources/ru.lproj").path))
+        #expect(ProfileEnvironmentPresentation.sectionCountTitle(count, bundle: bundle) == expected)
+    }
+
+    @Test
+    func englishPreferenceWithoutPagesUsesRussianFallbackRules() throws {
+        let temporary = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let localization = temporary.appendingPathComponent("en.lproj", isDirectory: true)
+        try FileManager.default.createDirectory(at: localization, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temporary) }
+        let bundle = try #require(Bundle(path: localization.path))
+        #expect(bundle.preferredLocalizations.first == "en")
+        #expect(ProfileEnvironmentPresentation.sectionCountTitle(2, bundle: bundle) == "2 раздела")
+        #expect(ProfileEnvironmentPresentation.sectionCountTitle(21, bundle: bundle) == "21 раздел")
+    }
+
     @Test
     func expandingASectionCollapsesThePreviouslyExpandedSection() {
         let expanded = ProfileEnvironmentPresentation.expansionSelection(
