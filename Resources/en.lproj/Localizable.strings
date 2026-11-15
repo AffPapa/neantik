@@ -717,3 +717,38 @@
 "Проверка не прошла обязательный уровень выпуска. Точная техническая причина записана в журнал этой попытки. Одноразовое доказательство не использовано; проверку можно безопасно повторить." = "The check did not meet the required release level. The technical reason was recorded in this attempt’s log. The one-time evidence was not used; the check can safely be repeated.";
 
 "Сохранённые вкладки недоступны. Открыта стартовая страница; исходные данные не изменены." = "Saved tabs are unavailable. The start page opened; the original data was not changed.";
+
+"Ещё %ld папок" = "%ld more folders";
+"Ещё %ld тегов" = "%ld more tags";
+
+"Экспортировано настроек профилей: %ld." = "Profile settings exported: %ld.";
+"Профиль создан. Закладок: %ld." = "Profile created. Bookmarks: %ld.";
+"Импортировано профилей: %ld." = "Profiles imported: %ld.";
+"Создано профилей из снимка: %ld, с отдельными данными и новой конфигурацией среды." = "Profiles created from snapshot: %ld, with separate data and a new environment configuration.";
+"Зашифрованный экспорт сохранён: %ld профилей." = "Encrypted export saved: %ld profiles.";
+"Импортировано профилей из зашифрованного файла: %ld." = "Profiles imported from encrypted file: %ld.";
+"snapshot.saved" = "Saved settings for %ld profiles.";
+"snapshot.skipped" = " Running profiles excluded: %ld.";
+"snapshot.exclusions" = " BrowserData and cookies are not saved. The last 3 snapshots are retained.";
+
+"Доступно в проверенной среде" = "Available in the tested environment";
+"Недоступно в проверенной среде" = "Unavailable in the tested environment";
+"Не удалось прочитать список устройств" = "Could not read the device list";
+"Устройства не ответили вовремя" = "Devices did not respond in time";
+"Проверяет только доступность функций в локальном Chromium. Не проверяет выбранный сайт, его интерфейс, вход, сценарии или решения его защиты. Сводка действует 24 часа." = "Checks only feature availability in local Chromium. It does not check the selected site, its interface, sign-in, workflows, or protection decisions. The summary is valid for 24 hours.";
+"Прокси 1" = "Proxy 1";
+
+"без авторизации" = "without authentication";
+"с авторизацией" = "with authentication";
+"Проверь адрес, порт и формат." = "Check the address, port, and format.";
+"Выбери порядок полей в параметрах." = "Choose the field order in options.";
+"Строка слишком длинная." = "The line is too long.";
+"Проверь логин и пароль SOCKS5: до 255 байт UTF-8 каждый." = "Check the SOCKS5 username and password: each can be up to 255 UTF-8 bytes.";
+"Проверь строку." = "Check the line.";
+"Строка %ld, готово, %@" = "Line %ld, ready, %@";
+"Строка %ld, требует исправления, %@" = "Line %ld, needs correction, %@";
+
+"snapshot.saved.one" = "Saved settings for %ld profile.";
+"workspace.encryptedExport.one" = "Encrypted export saved: %ld profile.";
+"Ещё %ld папка" = "%ld more folder";
+"Ещё %ld тег" = "%ld more tag";

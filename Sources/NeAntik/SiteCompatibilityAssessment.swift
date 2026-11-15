@@ -7,6 +7,10 @@ enum SiteFeatureObservation: Equatable, Sendable {
     case failed
     case timedOut
 
+    func localizedTitle(bundle: Bundle = .main) -> String {
+        bundle.localizedString(forKey: title, value: title, table: nil)
+    }
+
     var title: String {
         switch self {
         case .observed: "Доступно в проверенной среде"

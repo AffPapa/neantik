@@ -17,6 +17,20 @@ struct ProxyCheckSummaryTests {
     }
 
     @Test
+    func proxyRowStatusAndTimestampRespectLanguage() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let english = try #require(Bundle(path: root.appendingPathComponent("Resources/en.lproj").path))
+        let russian = try #require(Bundle(path: root.appendingPathComponent("Resources/ru.lproj").path))
+        let unchecked = summary(record: nil)
+        #expect(unchecked.localizedRowSummary(bundle: english) == "Proxy availability has not been checked yet")
+        #expect(unchecked.localizedRowSummary(bundle: russian) == "Доступность прокси ещё не проверялась")
+        let checked = summary(record: record(at: now))
+        #expect(checked.localizedRowSummary(bundle: english).contains("Last checked:"))
+        #expect(checked.localizedRowSummary(bundle: russian).contains("Последняя проверка:"))
+    }
+
+    @Test
     func ipOnlyObservationDoesNotClaimReadyForLaunch() {
         var partial = record(at: now)
         partial = ProxyHealthRecord(identity: identity, state: ProxyHealthState(

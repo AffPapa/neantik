@@ -4,6 +4,23 @@ import Testing
 
 struct ProfileListProjectionTests {
     @Test
+    func sidebarFixedLabelsUseEnglishResourcesAndPreserveRussian() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let english = try #require(Bundle(path: root.appendingPathComponent("Resources/en.lproj").path))
+        let russian = try #require(Bundle(path: root.appendingPathComponent("Resources/ru.lproj").path))
+        let expected: [(ProfileSidebarLabel, String)] = [
+            (.allProfiles, "All Profiles"), (.pinned, "Pinned"), (.archive, "Archive"),
+            (.folders, "Folders"), (.unfiled, "Unfiled"), (.tags, "Tags")
+        ]
+        #expect(expected.count == ProfileSidebarLabel.allCases.count)
+        for (label, translation) in expected {
+            #expect(label.localized(bundle: english) == translation)
+            #expect(label.localized(bundle: russian) == label.rawValue)
+        }
+    }
+
+    @Test
     func foldedTagIdentitySurvivesDisplayRepresentativeFlip() {
         let accentedFirst = ProfileListIndex(
             profiles: [
