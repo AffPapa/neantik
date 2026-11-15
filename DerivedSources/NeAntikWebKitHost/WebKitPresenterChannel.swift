@@ -5,6 +5,68 @@ import Foundation
 /// Separate from frame acknowledgements and the profile's lifecycle pipe.
 /// Use one sequential reader and one sequential writer at each endpoint.
 enum WebKitPresenterChannel {
+    /// Child and manager may use different macOS application languages. Only
+    /// known fixed status messages are translated; unknown text stays intact.
+    static let localizedStatusKeys = [
+        "WebKit · данные этого профиля · параметры устройства определяет macOS",
+        "В этом окне уже 32 вкладки. Закрой ненужную, чтобы открыть новую.",
+        "Сейчас мало свободной памяти. Закрой ненужные вкладки или профили и попробуй снова.",
+        "Приложение завершает текущую операцию. Попробуй открыть вкладку после её окончания.",
+        "Не удалось применить политику WebRTC: вкладка не открыта.",
+        "Этот тип ссылки пока не поддерживается в WebKit-профиле.",
+        "Не удалось открыть страницу. Проверь адрес и подключение к сети; затем обнови страницу.",
+        "Процесс страницы завершился. Нажми «Обновить», чтобы открыть её снова.",
+        "Сохранённые вкладки недоступны. Открыта стартовая страница; исходные данные не изменены.",
+        "Не все вкладки удалось открыть. Прежний список сохранён; закрой ненужные окна и открой профиль снова.",
+        "Некоторые специальные адреса нельзя восстановить. Их вкладки открыты пустыми.",
+        "Автосохранение вкладок не подтверждено. Проверь свободное место и доступ к папке данных NeAntik.",
+        "Список вкладок не удалось подготовить к сохранению. Последняя сохранённая сессия не изменена."
+    ]
+
+    private static let statusMarker = "neantik-status-v1:"
+
+    private static func statusIDs(_ ids: [Int]) -> Bool {
+        guard (1...3).contains(ids.count), (0..<8).contains(ids[0]) else { return false }
+        if ids.count == 2 { return (8..<13).contains(ids[1]) }
+        if ids.count == 3 { return (8..<11).contains(ids[1]) && (11..<13).contains(ids[2]) }
+        return true
+    }
+
+    /// Encode only the exact built-in status lines; unknown messages use the
+    /// old text path untouched. IDs avoid truncating localized multi-line text.
+    static func encodedStatus(_ value: String, english: Bundle? = nil) -> String {
+        let en = english ?? Bundle.main.path(forResource: "en", ofType: "lproj").flatMap(Bundle.init(path:))
+        let lines = value.components(separatedBy: "\n")
+        let ids = lines.compactMap { line -> Int? in
+            let matches = localizedStatusKeys.indices.filter { index in
+                let key = localizedStatusKeys[index]
+                return line == key || en?.localizedString(forKey: key, value: key, table: nil) == line
+            }
+            return matches.count == 1 ? matches[0] : nil
+        }
+        guard ids.count == lines.count, statusIDs(ids) else { return value }
+        return statusMarker + ids.map(String.init).joined(separator: ",")
+    }
+
+    static func localizedStatus(_ value: String, target: Bundle = .main, english: Bundle? = nil) -> String {
+        if value.hasPrefix(statusMarker) {
+            let tokens = value.dropFirst(statusMarker.count).split(separator: ",", omittingEmptySubsequences: false)
+            let ids = tokens.compactMap { token -> Int? in
+                guard let number = Int(token), String(number) == token else { return nil }
+                return number
+            }
+            guard ids.count == tokens.count, statusIDs(ids) else { return value }
+            return ids.map { target.localizedString(forKey: localizedStatusKeys[$0], value: localizedStatusKeys[$0], table: nil) }.joined(separator: "\n")
+        }
+        let en = english ?? Bundle.main.path(forResource: "en", ofType: "lproj").flatMap(Bundle.init(path:))
+        return value.components(separatedBy: "\n").map { line in
+            let matches = localizedStatusKeys.filter { key in
+                line == key || en?.localizedString(forKey: key, value: key, table: nil) == line
+            }
+            guard matches.count == 1 else { return line }
+            return target.localizedString(forKey: matches[0], value: matches[0], table: nil)
+        }.joined(separator: "\n")
+    }
     struct Target: Codable, Equatable, Sendable {
         let tab: UUID
         let navigation: UUID

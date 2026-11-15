@@ -1214,7 +1214,7 @@ final class WebKitProfileBrowser: NSObject, NSWindowDelegate, WKNavigationDelega
         let editor = acceptsPageInput ? presenterEditor : nil
         let accessibility = acceptsPageInput ? presenterAccessibility : nil
         let focusHandoff = presenterFocusHandoff
-        let status = String(decoding: displayedStatus(selected.status).utf8.prefix(508), as: UTF8.self)
+        let status = String(decoding: WebKitPresenterChannel.encodedStatus(displayedStatus(selected.status)).utf8.prefix(508), as: UTF8.self)
         #else
         let acceptsPageInput = false
         let editor: WebKitPresenterChannel.Editor? = nil
