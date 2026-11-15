@@ -33,7 +33,8 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             host = app / "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
             environment = {**os.environ, "APP_PATH": str(app),
                            "RELEASE_CHROMIUM_VERSION": "157.0.8103.79",
-                           "ACTUAL_MANAGER_VERSION": "1.0.0"}
+                           "ACTUAL_MANAGER_VERSION": "1.1.0", "EXPECTED_MANAGER_VERSION": "1.1.0",
+                           "ACTUAL_MANAGER_BUILD": "212", "EXPECTED_MANAGER_BUILD": "212"}
 
             def verify(scope):
                 info.write_bytes(plistlib.dumps({"NeAntikEngineScope": scope}))
@@ -42,11 +43,25 @@ class ReleaseDirectScriptTests(unittest.TestCase):
 
             self.assertEqual(verify("chromium-only").returncode, 0)
             self.assertEqual(verify("chromium-owned-webkit").returncode, 65)
-            host.mkdir(parents=True)
+            (host / "Contents").mkdir(parents=True)
+            host_info = host / "Contents/Info.plist"
+            host_info.write_bytes(plistlib.dumps({"CFBundleShortVersionString": "1.1.0", "CFBundleVersion": "212"}))
             self.assertEqual(verify("chromium-only").returncode, 65)
             self.assertEqual(verify("chromium-owned-webkit").returncode, 0)
             environment["ACTUAL_MANAGER_VERSION"] = "0.9.6"
             self.assertEqual(verify("chromium-owned-webkit").returncode, 65)
+            environment["ACTUAL_MANAGER_VERSION"] = "1.1.0"
+            environment["ACTUAL_MANAGER_BUILD"] = "211"
+            self.assertEqual(verify("chromium-owned-webkit").returncode, 65)
+            environment["ACTUAL_MANAGER_BUILD"] = "212"
+            host_info.write_bytes(plistlib.dumps({"CFBundleShortVersionString": "1.0.0", "CFBundleVersion": "212"}))
+            self.assertEqual(verify("chromium-owned-webkit").returncode, 65)
+            host_info.write_bytes(plistlib.dumps({"CFBundleShortVersionString": "1.1.0", "CFBundleVersion": "211"}))
+            self.assertEqual(verify("chromium-owned-webkit").returncode, 65)
+            environment.update(ACTUAL_MANAGER_VERSION="1.0.0", EXPECTED_MANAGER_VERSION="1.0.0",
+                               ACTUAL_MANAGER_BUILD="211", EXPECTED_MANAGER_BUILD="211")
+            host_info.write_bytes(plistlib.dumps({"CFBundleShortVersionString": "1.0.0", "CFBundleVersion": "211"}))
+            self.assertEqual(verify("chromium-owned-webkit").returncode, 0)
 
     def test_final_candidate_materializes_and_verifies_embedded_runtime(self) -> None:
         text = PREPARE.read_text(encoding="utf-8")
@@ -284,11 +299,26 @@ class ReleaseDirectScriptTests(unittest.TestCase):
             self.assertIn("native-qa-readiness.py", calls)
             self.assertNotIn("forbidden-native-action", calls)
 
-    def test_1_0_wrapper_requires_production_channel(self) -> None:
+    def test_production_wrapper_selects_channel_for_current_and_future_versions(self) -> None:
         text = RELEASE_ENTRYPOINT.read_text(encoding="utf-8")
-        self.assertIn('if [[ "$VERSION" == "1.0.0" ]]; then', text)
-        self.assertIn('"$NEANTIK_RELEASE_CHANNEL" != "production"', text)
-        self.assertIn("export NEANTIK_RELEASE_CHANNEL=production", text)
+        start = text.index("# Production releases must not inherit")
+        end = text.index('RELEASE_SCRIPT=', start)
+        guard = text[start:end] + '\nprintf "%s" "${NEANTIK_RELEASE_CHANNEL:-unset}"\n'
+        for version in ("1.0.0", "1.1.0", "2.0.0"):
+            with self.subTest(version=version):
+                env = {**os.environ, "VERSION": version}
+                env.pop("NEANTIK_RELEASE_CHANNEL", None)
+                result = subprocess.run(["/bin/zsh", "-c", guard], env=env, text=True, capture_output=True)
+                self.assertEqual((result.returncode, result.stdout), (0, "production"))
+                env["NEANTIK_RELEASE_CHANNEL"] = "public-alpha"
+                self.assertEqual(subprocess.run(["/bin/zsh", "-c", guard], env=env, capture_output=True).returncode, 64)
+        for version in ("invalid", "1.1", "1.0.0/evil"):
+            env = {**os.environ, "VERSION": version}
+            self.assertEqual(subprocess.run(["/bin/zsh", "-c", guard], env=env, capture_output=True).returncode, 64)
+        env = {**os.environ, "VERSION": "0.9.6"}
+        env.pop("NEANTIK_RELEASE_CHANNEL", None)
+        result = subprocess.run(["/bin/zsh", "-c", guard], env=env, text=True, capture_output=True)
+        self.assertEqual((result.returncode, result.stdout), (0, "unset"))
 
     def test_public_alpha_wrapper_selects_chromium_only_manager(self) -> None:
         text = RELEASE_COMMAND.read_text(encoding="utf-8")

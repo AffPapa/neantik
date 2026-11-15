@@ -290,11 +290,11 @@ def verify_app(
     with (app / "Contents" / "Info.plist").open("rb") as file:
         manager_info = plistlib.load(file)
     owned_host = app / "Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
-    if "NeAntikWebKitHostV1" in manager_info or owned_host.exists() or owned_host.is_symlink():
+    if (manager_info.get("NeAntikEngineScope") == "chromium-owned-webkit"
+            or "NeAntikWebKitHostV1" in manager_info or owned_host.exists() or owned_host.is_symlink()):
         pin_verifier = Path(__file__).resolve().with_name("verify-webkit-host-pin.py")
         pin_command = [sys.executable, str(pin_verifier), str(app)]
-        if (manager_info.get("CFBundleShortVersionString") == "1.0.0"
-                and manager_info.get("NeAntikEngineScope") == "chromium-owned-webkit"):
+        if manager_info.get("NeAntikEngineScope") == "chromium-owned-webkit":
             pin_command += ["--require-network-sandbox-pin", "--require-detached-presenter"]
         run_checked(pin_command, runner=runner)
         notice_verifier = Path(__file__).resolve().with_name("webkit_runtime_notices.py")

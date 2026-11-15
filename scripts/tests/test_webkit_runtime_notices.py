@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import plistlib
 import os
 import shutil
 import tempfile
@@ -62,6 +63,24 @@ class DB6RecipientStageTests(unittest.TestCase):
             rewritten_pin = hashlib.sha256(stage.read_bytes()).hexdigest()
             with self.assertRaisesRegex(MODULE.NoticeError, "invalid db6 recipient stage"):
                 MODULE._db6_recipient_images(stage, rewritten_pin, runtime, set(images), sandbox_digest)
+
+
+class Db6SourceReleaseTests(unittest.TestCase):
+    def test_source_links_are_bound_to_packaged_manager_version(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app = Path(temporary) / "NeAntik.app"
+            info = app / "Contents/Info.plist"
+            info.parent.mkdir(parents=True)
+            for version in ("1.0.0", "1.1.0"):
+                with self.subTest(version=version):
+                    info.write_bytes(plistlib.dumps({"CFBundleShortVersionString": version}))
+                    self.assertEqual(MODULE.db6_source_release(app),
+                                     f"https://github.com/AffPapa/neantik/releases/download/v{version}/")
+            for version in ("../1.0.0", "1.0.0/other", "1.1", "v1.1.0"):
+                with self.subTest(version=version):
+                    info.write_bytes(plistlib.dumps({"CFBundleShortVersionString": version}))
+                    with self.assertRaisesRegex(MODULE.NoticeError, "manager version"):
+                        MODULE.db6_source_release(app)
 
 
 @unittest.skipUnless(

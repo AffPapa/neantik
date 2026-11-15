@@ -223,6 +223,27 @@ class DirectNotarizedArchiveVerifierTests(unittest.TestCase):
                             and command[1].endswith("verify-webkit-host-pin.py")
                             for command in commands))
 
+    def test_dual_engine_marker_requires_strict_webkit_pin_on_each_release(self) -> None:
+        for version in ("1.0.0", "1.1.0", "2.0.0"):
+            with self.subTest(version=version), tempfile.TemporaryDirectory() as temporary:
+                app = Path(temporary) / "NeAntik.app"
+                write_app_info(app, version=version)
+                info_path = app / "Contents/Info.plist"
+                info = plistlib.loads(info_path.read_bytes())
+                info["NeAntikEngineScope"] = "chromium-owned-webkit"
+                info_path.write_bytes(plistlib.dumps(info))
+                expected = MODULE.ExpectedAppContract(bundle_identifier="app.neantik.desktop", version=version,
+                                                      build="7", team_identifier="H6VGU2M6JD")
+                commands = []
+                def runner(command):
+                    commands.append(command)
+                    return MODULE.CommandResult(0, signed_display() if command[:2] == ["codesign", "--display"] else "ok")
+                MODULE.verify_app(app, expected=expected, runner=runner)
+                pins = [cmd for cmd in commands if len(cmd) > 1 and cmd[1].endswith("verify-webkit-host-pin.py")]
+                self.assertEqual(len(pins), 1)
+                self.assertIn("--require-network-sandbox-pin", pins[0])
+                self.assertIn("--require-detached-presenter", pins[0])
+
     def test_verify_app_requires_owned_webkit_runtime_notice_guard(self) -> None:
         commands: list[list[str]] = []
 

@@ -495,11 +495,29 @@ DB6_SANDBOX_RESOURCE = "WebKit.framework/Versions/A/Resources/com.apple.WebKit.N
 DB6_BASELINE_SANDBOX_SHA256 = "e3e8a047e122938338f8e2a37e2d7e59d6f18ba20534c30765aaab9a579d2881"
 DB6_NOTICE_HEADING = "## Owned WebKit runtime notices and corresponding source"
 DB6_NOTICE_SECTION = '<section id="neantik-owned-webkit-db6-notices">'
-DB6_SOURCE_RELEASE = "https://github.com/AffPapa/neantik/releases/download/v1.0.0/"
+DB6_SOURCE_RELEASE = "https://github.com/AffPapa/neantik/releases/download/v{version}/"
 
 
 class NoticeError(RuntimeError):
     pass
+
+
+def db6_source_release(app: Path) -> str:
+    """Bind published source links to the version of the containing manager."""
+    info_path = app / "Contents/Info.plist"
+    if info_path.is_symlink() or not info_path.is_file():
+        raise NoticeError("db6 manager metadata is unavailable")
+    try:
+        with info_path.open("rb") as stream:
+            info = plistlib.load(stream)
+    except (OSError, plistlib.InvalidFileException, ValueError) as error:
+        raise NoticeError("db6 manager metadata is invalid") from error
+    if not isinstance(info, dict):
+        raise NoticeError("db6 manager metadata is invalid")
+    version = info.get("CFBundleShortVersionString")
+    if not isinstance(version, str) or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
+        raise NoticeError("db6 manager version is invalid")
+    return DB6_SOURCE_RELEASE.format(version=version)
 
 
 def sha256_file(path: Path) -> str:
@@ -1179,8 +1197,9 @@ def _db6_notices(app: Path, runtime_frameworks: Path | None, offer_root: Path,
                     f'<p><a href="../{DB6_NOTICE_ROOT}/NOTICE.txt">Runtime license and notice index</a> '
                     f'· <a href="../{manifest_name}">Source offer manifest</a> '
                     f'(SHA-256 <code>{digest}</code>)</p>\n<ul>\n')
+    source_release = db6_source_release(app)
     for archive in sorted(archives):
-        url = DB6_SOURCE_RELEASE + archive.name
+        url = source_release + archive.name
         archive_digest = offer["sourceArchives"][archive.name]
         markdown_section += f"- [{archive.name}]({url}) (SHA-256 `{archive_digest}`)\n"
         html_section += (f'<li><a href="{url}">{archive.name}</a> '
