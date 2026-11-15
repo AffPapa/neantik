@@ -325,7 +325,7 @@ index cb32a6f..ec54a4b 100644
  #import <wtf/cf/VectorCF.h>
  #import <wtf/cocoa/SpanCocoa.h>
  #import <wtf/cocoa/TypeCastsCocoa.h>
-@@ -2271,6 +2276,178 @@ void WebPage::getSelectedRangeAsync(CompletionHandler<void(const EditingRange& s
+@@ -2271,6 +2276,176 @@ void WebPage::getSelectedRangeAsync(CompletionHandler<void(const EditingRange& s
  }
  
  #if PLATFORM(MAC)
@@ -439,15 +439,13 @@ index cb32a6f..ec54a4b 100644
 +    Ref nodes = JSON::Array::create();
 +    auto visit = [&](auto&& visit, AXCoreObject& node, int parent, unsigned depth) -> void {
 +        if (++inspected > nodeLimit * 4 || count == nodeLimit || depth == depthLimit || node.isDetached()
-+            || node.isAXRemoteFrame() || node.document() != document.get())
++            || node.isAXRemoteFrame() || node.isSecureField() || node.document() != document.get())
 +            return;
 +        auto index = count++;
 +        Ref entry = JSON::Object::create();
 +        entry->setString("id"_s, makeString(node.objectID().toUInt64()));
 +        entry->setInteger("parent"_s, parent);
-+        entry->setString("role"_s, node.isSecureField() ? "AXTextField"_s : detachedAccessibilityRole(node));
-+        if (node.isSecureField())
-+            entry->setBoolean("secure"_s, true);
++        entry->setString("role"_s, detachedAccessibilityRole(node));
 +        entry->setString("label"_s, detachedAccessibilityLabel(node));
 +        auto bounds = node.relativeFrame();
 +#if ENABLE(ACCESSIBILITY_LOCAL_FRAME)
@@ -463,12 +461,12 @@ index cb32a6f..ec54a4b 100644
 +        entry->setDouble("height"_s, bounds.height());
 +        entry->setBoolean("focusable"_s, node.isEnabled() && node.canSetFocusAttribute());
 +        entry->setBoolean("focused"_s, node.isFocused());
-+        entry->setBoolean("pressable"_s, !node.isSecureField() && detachedAccessibilityCanPress(node));
++        entry->setBoolean("pressable"_s, detachedAccessibilityCanPress(node));
 +        if (node.role() == AccessibilityRole::Checkbox || node.role() == AccessibilityRole::RadioButton)
 +            entry->setInteger("checked"_s, static_cast<int>(node.checkboxOrRadioValue()));
 +        // Only the active non-secure text control is needed for VoiceOver.
-+        // Secure fields expose only their role, name and focus, never a value.
-+        if (!node.isSecureField() && node.isFocused() && (node.role() == AccessibilityRole::TextField || node.role() == AccessibilityRole::TextArea))
++        // Secure fields are excluded above and never enter the presenter pipe.
++        if (node.isFocused() && (node.role() == AccessibilityRole::TextField || node.role() == AccessibilityRole::TextArea))
 +            entry->setString("value"_s, node.stringValue().left(64));
 +        nodes->pushObject(WTF::move(entry));
 +        for (auto& child : node.unignoredChildren()) {
@@ -493,9 +491,9 @@ index cb32a6f..ec54a4b 100644
 +        return;
 +    CheckedPtr cache = document->axObjectCache();
 +    RefPtr node = cache ? cache->objectForID(AXID { identifier }) : nullptr;
-+    if (!node || node->isDetached() || !node->isEnabled() || node->document() != document.get())
++    if (!node || node->isDetached() || !node->isEnabled() || node->isSecureField() || node->document() != document.get())
 +        return;
-+    if (press && !node->isSecureField() && detachedAccessibilityCanPress(*node))
++    if (press && detachedAccessibilityCanPress(*node))
 +        node->press();
 +    else if (!press && node->canSetFocusAttribute())
 +        node->setFocused(true);
