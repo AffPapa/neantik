@@ -157,7 +157,7 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
     private var progressRefresh: Task<Void, Never>?
     private lazy var popover = NSPopover()
     private lazy var rows = WebKitDownloadRows()
-    private(set) lazy var button = NSButton(title: "Загрузки", target: nil, action: nil)
+    private(set) lazy var button = NSButton(title: NSLocalizedString("Загрузки", comment: "WebKit downloads"), target: nil, action: nil)
     var activeCount: Int { transfers.filter(\.active).count + reservations.count }
     var snapshots: [Snapshot] {
         transfers.map { Snapshot(id: $0.id, state: $0.state, filename: $0.filename,
@@ -169,8 +169,8 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
         super.init()
         guard window != nil else { return }
         button.target = self; button.action = #selector(showDownloads)
-        button.bezelStyle = .rounded; button.toolTip = "Прогресс загрузок и отмена. Закрытие профиля отменяет незавершённые файлы."
-        button.setAccessibilityLabel("Загрузки этого профиля")
+        button.bezelStyle = .rounded; button.toolTip = NSLocalizedString("Прогресс загрузок и отмена. Закрытие профиля отменяет незавершённые файлы.", comment: "WebKit downloads")
+        button.setAccessibilityLabel(NSLocalizedString("Загрузки этого профиля", comment: "WebKit downloads"))
         rows.orientation = .vertical; rows.alignment = .leading; rows.spacing = 10
         rows.edgeInsets = NSEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
         let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 380, height: 300))
@@ -346,31 +346,31 @@ final class WebKitDownloads: NSObject, WKDownloadDelegate {
     }
     private func refresh() {
         guard window != nil else { return }
-        button.title = activeCount == 0 ? "Загрузки" : "Загрузки · \(activeCount)"
+        button.title = activeCount == 0 ? NSLocalizedString("Загрузки", comment: "WebKit downloads") : String(format: NSLocalizedString("Загрузки · %ld", comment: "WebKit downloads"), activeCount)
         popover.contentSize = NSSize(width: 380, height: min(320, max(72, transfers.count * 70 + 24)))
         for row in rows.arrangedSubviews { rows.removeArrangedSubview(row); row.removeFromSuperview() }
-        if transfers.isEmpty { rows.addArrangedSubview(NSTextField(labelWithString: "Здесь появятся загрузки этого профиля.")); return }
+        if transfers.isEmpty { rows.addArrangedSubview(NSTextField(labelWithString: NSLocalizedString("Здесь появятся загрузки этого профиля.", comment: "WebKit downloads"))); return }
         for item in transfers.reversed() {
             let name = NSTextField(labelWithString: item.filename); name.lineBreakMode = .byTruncatingMiddle
             name.font = .systemFont(ofSize: 14); name.widthAnchor.constraint(equalToConstant: 350).isActive = true
             let status: String
             switch item.state {
-            case .choosing: status = "Выбери, куда сохранить файл"
-            case .receiving: status = (item.download?.progress.totalUnitCount ?? 0) > 0 ? "Загрузка: \(Int(max(0, min(1, item.download?.progress.fractionCompleted ?? 0)) * 100))%" : "Файл загружается…"
-            case .delivering: status = "Файл сохраняется…"
-            case .cancelling: status = "Отмена…"
-            case .finished: status = "Сохранено"
-            case .cancelled: status = "Отменено"
-            case .failed: status = "Не удалось сохранить. Проверь сеть, место на диске и выбери новое имя."
+            case .choosing: status = NSLocalizedString("Выбери, куда сохранить файл", comment: "WebKit downloads")
+            case .receiving: status = (item.download?.progress.totalUnitCount ?? 0) > 0 ? String(format: NSLocalizedString("Загрузка: %ld%%", comment: "WebKit downloads"), Int(max(0, min(1, item.download?.progress.fractionCompleted ?? 0)) * 100)) : NSLocalizedString("Файл загружается…", comment: "WebKit downloads")
+            case .delivering: status = NSLocalizedString("Файл сохраняется…", comment: "WebKit downloads")
+            case .cancelling: status = NSLocalizedString("Отмена…", comment: "WebKit downloads")
+            case .finished: status = NSLocalizedString("Сохранено", comment: "WebKit downloads")
+            case .cancelled: status = NSLocalizedString("Отменено", comment: "WebKit downloads")
+            case .failed: status = NSLocalizedString("Не удалось сохранить. Проверь сеть, место на диске и выбери новое имя.", comment: "WebKit downloads")
             }
             let detail = NSTextField(wrappingLabelWithString: status); detail.font = .systemFont(ofSize: 12)
             let line = NSStackView(views: [detail]); line.orientation = .horizontal
             if item.active {
-                let cancel = NSButton(title: "Отменить", target: self, action: #selector(cancelButton(_:)))
+                let cancel = NSButton(title: NSLocalizedString("Отменить", comment: "WebKit downloads"), target: self, action: #selector(cancelButton(_:)))
                 cancel.identifier = NSUserInterfaceItemIdentifier(item.id.uuidString); cancel.isEnabled = item.state != .cancelling
                 line.addArrangedSubview(cancel)
             } else if item.state == .finished {
-                let reveal = NSButton(title: "В Finder", target: self, action: #selector(revealButton(_:)))
+                let reveal = NSButton(title: NSLocalizedString("В Finder", comment: "WebKit downloads"), target: self, action: #selector(revealButton(_:)))
                 reveal.identifier = NSUserInterfaceItemIdentifier(item.id.uuidString)
                 line.addArrangedSubview(reveal)
             }

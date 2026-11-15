@@ -27,9 +27,9 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
     private var pageStatus = ""
     private var downloadStatus: String?
     private var downloads: WebKitDetachedDownloadPresenter?
-    private let back = NSButton(title: "Назад", target: nil, action: nil)
-    private let forward = NSButton(title: "Вперёд", target: nil, action: nil)
-    private let cancelDownloads = NSButton(title: "Отменить загрузки", target: nil, action: nil)
+    private let back = NSButton(title: NSLocalizedString("Назад", comment: "WebKit window control"), target: nil, action: nil)
+    private let forward = NSButton(title: NSLocalizedString("Вперёд", comment: "WebKit window control"), target: nil, action: nil)
+    private let cancelDownloads = NSButton(title: NSLocalizedString("Отменить загрузки", comment: "WebKit window control"), target: nil, action: nil)
     private var state: WebKitPresenterChannel.State?
     private var displayedSequence: UInt64 = 0
     private var nextInputSequence: UInt64 = 1
@@ -93,17 +93,17 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
         forward.action = #selector(goForward)
         back.isEnabled = false
         forward.isEnabled = false
-        address.placeholderString = "Адрес страницы"
-        address.setAccessibilityLabel("Адрес страницы")
+        address.placeholderString = NSLocalizedString("Адрес страницы", comment: "WebKit window control")
+        address.setAccessibilityLabel(NSLocalizedString("Адрес страницы", comment: "WebKit window control"))
         address.target = self
         address.action = #selector(openAddress)
         address.isEnabled = false
-        tabs.setAccessibilityLabel("Вкладки")
+        tabs.setAccessibilityLabel(NSLocalizedString("Вкладки", comment: "WebKit window control"))
         tabs.target = self
         tabs.action = #selector(selectTab)
-        let reload = NSButton(title: "Обновить", target: self, action: #selector(reloadPage))
-        let newTab = NSButton(title: "Новая вкладка", target: self, action: #selector(addTab))
-        let closeTab = NSButton(title: "Закрыть вкладку", target: self, action: #selector(removeTab))
+        let reload = NSButton(title: NSLocalizedString("Обновить", comment: "WebKit window control"), target: self, action: #selector(reloadPage))
+        let newTab = NSButton(title: NSLocalizedString("Новая вкладка", comment: "WebKit window control"), target: self, action: #selector(addTab))
+        let closeTab = NSButton(title: NSLocalizedString("Закрыть вкладку", comment: "WebKit window control"), target: self, action: #selector(removeTab))
         let bar = NSStackView(views: [back, forward, reload, address, tabs, newTab, closeTab])
         bar.edgeInsets = NSEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
         bar.orientation = .horizontal
@@ -240,7 +240,7 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
         window.makeFirstResponder(view)
         let coordinator = WebKitDetachedDownloadPresenter(intake: downloadIntake, generation: generation, window: window,
             onStatus: { [weak self] value in
-                self?.downloadStatus = value
+                self?.downloadStatus = NSLocalizedString(value, comment: "WebKit download status")
                 self?.refreshStatus()
             }, onFailure: { [weak self] in self?.fail() })
         downloads = coordinator
@@ -266,7 +266,7 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
         if changedTabs {
             tabs.removeAllItems()
             for (index, summary) in page.tabs.enumerated() {
-                let title = summary.title.isEmpty ? "Новая вкладка" : summary.title
+                let title = summary.title.isEmpty ? NSLocalizedString("Новая вкладка", comment: "WebKit window control") : summary.title
                 let item = NSMenuItem(title: "\(index + 1) · \(title)", action: nil, keyEquivalent: "")
                 item.representedObject = summary.id
                 tabs.menu?.addItem(item)
@@ -444,7 +444,7 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
         layer?.addSublayer(drawable)
         setAccessibilityElement(true)
         setAccessibilityRole(.group)
-        setAccessibilityLabel("Веб-страница")
+        setAccessibilityLabel(NSLocalizedString("Веб-страница", comment: "WebKit window control"))
     }
 
     required init?(coder: NSCoder) { nil }
