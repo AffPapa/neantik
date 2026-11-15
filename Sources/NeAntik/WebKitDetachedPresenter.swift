@@ -763,6 +763,14 @@ private final class WebKitPageAccessibilityElement: NSAccessibilityElement {
         guard Thread.isMainThread else { return nil }
         return MainActor.assumeIsolated { model?.label }
     }
+    nonisolated override func accessibilityValue() -> Any? {
+        guard Thread.isMainThread else { return nil }
+        return MainActor.assumeIsolated {
+            guard let model else { return nil }
+            if let checked = model.checked { return NSNumber(value: checked) }
+            return model.value
+        }
+    }
     nonisolated override func accessibilityFrame() -> CGRect {
         guard Thread.isMainThread else { return .zero }
         return MainActor.assumeIsolated {

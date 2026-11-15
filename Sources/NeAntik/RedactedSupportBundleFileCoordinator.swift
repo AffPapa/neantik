@@ -18,9 +18,9 @@ enum RedactedSupportBundleFileCoordinator {
         }
 
         let panel = NSSavePanel()
-        panel.title = "Экспорт безопасной диагностики"
+        panel.title = NSLocalizedString("userDialog.011", tableName: "Errors", bundle: .main, value: "Экспорт безопасной диагностики", comment: "")
         panel.message =
-            "Файл содержит только агрегированные статусы и версии. Имена профилей, пути, cookies, proxy и raw fingerprint не включаются."
+            NSLocalizedString("userDialog.012", tableName: "Errors", bundle: .main, value: "Файл содержит только агрегированные статусы и версии. Имена профилей, пути, cookies, proxy и raw fingerprint не включаются.", comment: "")
         panel.nameFieldStringValue = "neantik-support-diagnostics.json"
         panel.allowedContentTypes = [.json]
         panel.canCreateDirectories = true

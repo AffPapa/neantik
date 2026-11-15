@@ -219,15 +219,15 @@ enum BulkProxyImportError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .empty:
-            "Вставь хотя бы одну строку прокси."
+            NSLocalizedString("userError.044", tableName: "Errors", bundle: .main, value: "Вставь хотя бы одну строку прокси.", comment: "")
         case .tooMany:
-            "За один раз можно создать не больше \(BulkProxyImportParser.maximumEntries) профилей."
+            String(format: NSLocalizedString("userError.045", tableName: "Errors", bundle: .main, value: "За один раз можно создать не больше %@ профилей.", comment: ""), String(describing: BulkProxyImportParser.maximumEntries))
         case .tooLarge:
-            "Список прокси слишком большой."
+            NSLocalizedString("userError.046", tableName: "Errors", bundle: .main, value: "Список прокси слишком большой.", comment: "")
         case let .invalidLine(line):
-            "Не удалось распознать строку \(line). Пароль в ошибке не показывается."
+            String(format: NSLocalizedString("userError.047", tableName: "Errors", bundle: .main, value: "Не удалось распознать строку %@. Пароль в ошибке не показывается.", comment: ""), String(describing: line))
         case .rollbackFailed:
-            "Импорт остановлен, но часть данных Связки ключей не удалось очистить. Профили не созданы; обратись в поддержку, не передавая пароль."
+            NSLocalizedString("userError.048", tableName: "Errors", bundle: .main, value: "Импорт остановлен, но часть данных Связки ключей не удалось очистить. Профили не созданы; обратись в поддержку, не передавая пароль.", comment: "")
         }
     }
 }
@@ -525,7 +525,7 @@ struct BulkProxyImportView: View {
                 Section("Прокси — по одному на строку") {
                     Picker("Тип прокси", selection: $kind) {
                         ForEach(ProxyKind.allCases) { value in
-                            Text(value.title).tag(value)
+                            Text(verbatim: NSLocalizedString(value.title, comment: "Proxy field order")).tag(value)
                         }
                     }
                     Text(
@@ -562,17 +562,13 @@ struct BulkProxyImportView: View {
                             .accessibilityLabel("Список прокси")
                     }
 
-                    Text(
-                        "Доступность прокси будет автоматически проверяться " +
-                            "перед каждым запуском профиля. Эта проверка не " +
-                            "подтверждает маршрут Chromium."
-                    )
+                    Text("Доступность прокси будет автоматически проверяться перед каждым запуском профиля. Эта проверка не подтверждает маршрут Chromium.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                     if isCreating {
                         statusLabel(
-                            "Создаём \(profileCountTitle(preview.drafts.count))…",
+                            String(format: NSLocalizedString("Создаём %@…", comment: "Creating proxy profiles"), profileCountTitle(preview.drafts.count)),
                             systemImage: "hourglass",
                             color: .accentColor
                         )
@@ -640,14 +636,11 @@ struct BulkProxyImportView: View {
 
                         Picker("Порядок полей", selection: $order) {
                             ForEach(ProxyImportOrder.allCases) { value in
-                                Text(value.title).tag(value)
+                                Text(verbatim: NSLocalizedString(value.title, comment: "Proxy field order")).tag(value)
                             }
                         }
 
-                        Text(
-                            "Обычно достаточно автоматического порядка. " +
-                                "Измени его только для неоднозначных строк."
-                        )
+                        Text("Обычно достаточно автоматического порядка. Измени его только для неоднозначных строк.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     }
@@ -718,12 +711,12 @@ struct BulkProxyImportView: View {
 
     private var createButtonTitle: String {
         if preview.hasIssues {
-            return "Исправь \(issueCountTitle(preview.issueLineNumbers.count))"
+            return String(format: NSLocalizedString("Исправь %@", comment: "Fix proxy import lines"), issueCountTitle(preview.issueLineNumbers.count))
         }
         guard !preview.drafts.isEmpty else {
-            return "Создать профили"
+            return NSLocalizedString("Создать профили", comment: "Create profiles")
         }
-        return "Создать \(profileCountTitle(preview.drafts.count))"
+        return String(format: NSLocalizedString("Создать %@", comment: "Create proxy profiles"), profileCountTitle(preview.drafts.count))
     }
 
     @ViewBuilder
@@ -748,14 +741,13 @@ struct BulkProxyImportView: View {
             )
         } else if preview.hasIssues {
             statusLabel(
-                "Готово: \(profileCountTitle(preview.drafts.count)) · " +
-                    issueStatusTitle(preview.issueLineNumbers.count),
+                String(format: NSLocalizedString("Готово: %@ · %@", comment: "Proxy import preview"), profileCountTitle(preview.drafts.count), issueStatusTitle(preview.issueLineNumbers.count)),
                 systemImage: "exclamationmark.triangle.fill",
                 color: .orange
             )
         } else if preview.isReady {
             statusLabel(
-                "Распознано: \(profileCountTitle(preview.drafts.count))",
+                String(format: NSLocalizedString("Распознано: %@", comment: "Proxy import preview"), profileCountTitle(preview.drafts.count)),
                 systemImage: "checkmark.circle.fill",
                 color: .green
             )
@@ -772,12 +764,7 @@ struct BulkProxyImportView: View {
                 }
 
                 if validPreviewRows.count > validLimit {
-                    Text(
-                        "И ещё распознано: " +
-                            profileCountTitle(
-                                validPreviewRows.count - validLimit
-                            )
-                    )
+                    Text(verbatim: String(format: NSLocalizedString("И ещё распознано: %@", comment: "Additional recognized proxy profiles"), profileCountTitle(validPreviewRows.count - validLimit)))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -888,6 +875,9 @@ struct BulkProxyImportView: View {
     }
 
     private func profileCountTitle(_ count: Int) -> String {
+        if Bundle.main.preferredLocalizations.first == "en" {
+            return count == 1 ? "1 profile" : "\(count) profiles"
+        }
         let modulo100 = count % 100
         let modulo10 = count % 10
         let noun: String
@@ -904,6 +894,9 @@ struct BulkProxyImportView: View {
     }
 
     private func issueCountTitle(_ count: Int) -> String {
+        if Bundle.main.preferredLocalizations.first == "en" {
+            return count == 1 ? "1 line" : "\(count) lines"
+        }
         let modulo100 = count % 100
         let modulo10 = count % 10
         let noun: String
@@ -920,6 +913,9 @@ struct BulkProxyImportView: View {
     }
 
     private func issueStatusTitle(_ count: Int) -> String {
+        if Bundle.main.preferredLocalizations.first == "en" {
+            return count == 1 ? "1 line needs correction" : "\(count) lines need correction"
+        }
         let modulo100 = count % 100
         let modulo10 = count % 10
         let isSingular = modulo10 == 1 && modulo100 != 11
@@ -944,7 +940,7 @@ struct BulkProxyImportView: View {
         color: Color
     ) -> some View {
         Label {
-            Text(title)
+            Text(verbatim: NSLocalizedString(title, comment: "Proxy import status"))
                 .foregroundStyle(.primary)
         } icon: {
             Image(systemName: systemImage)
@@ -953,7 +949,7 @@ struct BulkProxyImportView: View {
         }
         .font(.caption)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(title)
+        .accessibilityLabel(NSLocalizedString(title, comment: "Proxy import status"))
     }
 
 }

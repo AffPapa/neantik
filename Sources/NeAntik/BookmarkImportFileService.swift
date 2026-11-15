@@ -47,8 +47,8 @@ enum BookmarkImportFileService {
 
     @MainActor static func select() async throws -> BookmarkImportDocument? {
         let panel = NSOpenPanel()
-        panel.title = "Создать профиль из закладок"
-        panel.message = "Выбери экспорт закладок HTML или файл Bookmarks Chromium. После просмотра будет создан новый профиль."
+        panel.title = NSLocalizedString("userDialog.009", tableName: "Errors", bundle: .main, value: "Создать профиль из закладок", comment: "")
+        panel.message = NSLocalizedString("userDialog.010", tableName: "Errors", bundle: .main, value: "Выбери экспорт закладок HTML или файл Bookmarks Chromium. После просмотра будет создан новый профиль.", comment: "")
         panel.allowedContentTypes = [.html, .json, .data]
         panel.allowsMultipleSelection = false; panel.canChooseDirectories = false
         guard panel.runModal() == .OK, let url = panel.url else { return nil }

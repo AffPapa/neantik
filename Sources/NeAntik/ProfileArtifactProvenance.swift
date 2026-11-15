@@ -325,7 +325,7 @@ enum ProfileArtifactQuarantineError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .unsafeSource:
-            "Файл нельзя безопасно переместить в карантин. Данные не изменены."
+            NSLocalizedString("userError.151", tableName: "Errors", bundle: .main, value: "Файл нельзя безопасно переместить в карантин. Данные не изменены.", comment: "")
         }
     }
 }

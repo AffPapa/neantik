@@ -7,12 +7,12 @@ enum CRXPackageInspectionError: LocalizedError, Equatable {
     case unsafeFile, changed, archive, limit, manifest, signature
     var errorDescription: String? {
         switch self {
-        case .unsafeFile: "Выбери обычный файл CRX. Ссылки, папки и специальные файлы не читаются."
-        case .changed: "Файл изменился во время проверки. Выбери его заново."
-        case .archive: "Архив внутри CRX повреждён или имеет неподдерживаемую структуру. Нужен исходный пакет от разработчика."
-        case .limit: "Пакет превышает лимит проверки: 64 МБ CRX, 256 МБ содержимого или 2048 записей."
-        case .manifest: "Manifest расширения отсутствует, повреждён или неоднозначен. Нужен исходный пакет от разработчика."
-        case .signature: "Подпись разработчика CRX3 не прошла проверку. Не устанавливай этот пакет. Старые CRX2 не поддерживаются."
+        case .unsafeFile: NSLocalizedString("userError.197", tableName: "Errors", bundle: .main, value: "Выбери обычный файл CRX. Ссылки, папки и специальные файлы не читаются.", comment: "")
+        case .changed: NSLocalizedString("userError.198", tableName: "Errors", bundle: .main, value: "Файл изменился во время проверки. Выбери его заново.", comment: "")
+        case .archive: NSLocalizedString("userError.199", tableName: "Errors", bundle: .main, value: "Архив внутри CRX повреждён или имеет неподдерживаемую структуру. Нужен исходный пакет от разработчика.", comment: "")
+        case .limit: NSLocalizedString("userError.200", tableName: "Errors", bundle: .main, value: "Пакет превышает лимит проверки: 64 МБ CRX, 256 МБ содержимого или 2048 записей.", comment: "")
+        case .manifest: NSLocalizedString("userError.201", tableName: "Errors", bundle: .main, value: "Manifest расширения отсутствует, повреждён или неоднозначен. Нужен исходный пакет от разработчика.", comment: "")
+        case .signature: NSLocalizedString("userError.202", tableName: "Errors", bundle: .main, value: "Подпись разработчика CRX3 не прошла проверку. Не устанавливай этот пакет. Старые CRX2 не поддерживаются.", comment: "")
         }
     }
 }

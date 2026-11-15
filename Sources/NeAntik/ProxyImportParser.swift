@@ -12,13 +12,13 @@ struct ProxyImportDraft: Equatable, Sendable, CustomStringConvertible, CustomDeb
 
     var redactedSummary: String {
         let authentication = configuration.username.isEmpty
-            ? "без авторизации"
-            : "логин \(Self.redacted(configuration.username))"
+            ? NSLocalizedString("proxySummary.none", tableName: "Pages", bundle: .main, value: "без авторизации", comment: "")
+            : String(format: NSLocalizedString("proxySummary.user", tableName: "Pages", bundle: .main, value: "логин %@", comment: ""), Self.redacted(configuration.username))
         return "\(configuration.kind.title) · \(configuration.displayEndpoint) · \(authentication)"
     }
 
     private static func redacted(_ value: String) -> String {
-        guard let first = value.first else { return "не указан" }
+        guard let first = value.first else { return NSLocalizedString("proxySummary.unspecified", tableName: "Pages", bundle: .main, value: "не указан", comment: "") }
         return "\(first)•••"
     }
 }
@@ -375,15 +375,15 @@ enum ProxyImportError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .empty:
-            "Вставь адрес прокси одной строкой."
+            NSLocalizedString("userError.001", tableName: "Errors", bundle: .main, value: "Вставь адрес прокси одной строкой.", comment: "")
         case .tooLong:
-            "Строка прокси слишком длинная."
+            NSLocalizedString("userError.002", tableName: "Errors", bundle: .main, value: "Строка прокси слишком длинная.", comment: "")
         case .invalid:
-            "Не удалось распознать прокси. Проверь адрес, порт и формат."
+            NSLocalizedString("userError.003", tableName: "Errors", bundle: .main, value: "Не удалось распознать прокси. Проверь адрес, порт и формат.", comment: "")
         case .ambiguous:
-            "Неясно, где адрес прокси. Выбери «Адрес прокси слева» или «Адрес прокси справа»."
+            NSLocalizedString("userError.004", tableName: "Errors", bundle: .main, value: "Неясно, где адрес прокси. Выбери «Адрес прокси слева» или «Адрес прокси справа».", comment: "")
         case .invalidSOCKSCredentials:
-            "Для SOCKS5 нужны логин и пароль длиной до 255 байт UTF-8 каждый."
+            NSLocalizedString("userError.005", tableName: "Errors", bundle: .main, value: "Для SOCKS5 нужны логин и пароль длиной до 255 байт UTF-8 каждый.", comment: "")
         }
     }
 }

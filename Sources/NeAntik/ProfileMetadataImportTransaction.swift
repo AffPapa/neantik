@@ -372,6 +372,6 @@ enum ProfileMetadataImportTransaction {
 
 struct ProfileMetadataMutationInProgressError: LocalizedError {
     var errorDescription: String? {
-        "Импорт профилей ещё сохраняется. Повтори действие через мгновение."
+        NSLocalizedString("userError.178", tableName: "Errors", bundle: .main, value: "Импорт профилей ещё сохраняется. Повтори действие через мгновение.", comment: "")
     }
 }

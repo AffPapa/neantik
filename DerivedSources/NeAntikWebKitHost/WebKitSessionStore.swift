@@ -5,8 +5,8 @@ enum WebKitSessionError: LocalizedError {
     case invalid, unavailable
     var errorDescription: String? {
         switch self {
-        case .invalid: "Сохранённые вкладки не удалось прочитать. Открой стартовую страницу и сохрани вкладки заново."
-        case .unavailable: "Не удалось сохранить или удалить список вкладок. Проверь доступ к папке данных NeAntik."
+        case .invalid: NSLocalizedString("userError.176", tableName: "Errors", bundle: .main, value: "Сохранённые вкладки не удалось прочитать. Открой стартовую страницу и сохрани вкладки заново.", comment: "")
+        case .unavailable: NSLocalizedString("userError.177", tableName: "Errors", bundle: .main, value: "Не удалось сохранить или удалить список вкладок. Проверь доступ к папке данных NeAntik.", comment: "")
         }
     }
 }

@@ -122,7 +122,7 @@ struct WebKitPresenterChannelTests {
         }
     }
 
-    @Test func detachedAccessibilityRejectsInvalidTreeAndAction() {
+    @Test func detachedAccessibilityRejectsInvalidTreeAndAction() throws {
         typealias Snapshot = WebKitPresenterChannel.AccessibilitySnapshot
         func node(_ id: String, parent: Int, role: String = "AXButton", x: Double = 20) -> Snapshot.Node {
             .init(id: id, parent: parent, role: role, label: "Synthetic", x: x, y: 20,
@@ -139,6 +139,27 @@ struct WebKitPresenterChannelTests {
         #expect(!orphan.isValid)
         #expect(!infinite.isValid)
         #expect(WebKitPresenterChannel.Action.accessibilityAction(document: document, node: 2, press: true).isValid)
+        var checkbox = node("3", parent: 0, role: "AXCheckBox")
+        checkbox.checked = 2
+        #expect(Snapshot(document: document, nodes: [root, checkbox]).isValid)
+        checkbox.checked = 3
+        #expect(!Snapshot(document: document, nodes: [root, checkbox]).isValid)
+        var buttonWithState = button
+        buttonWithState.checked = 1
+        #expect(!Snapshot(document: document, nodes: [root, buttonWithState]).isValid)
+        var focusedField = Snapshot.Node(id: "4", parent: 0, role: "AXTextField", label: "Name",
+                                        x: 20, y: 20, width: 120, height: 32,
+                                        focusable: true, focused: true, pressable: false)
+        focusedField.value = "Hello Привет"
+        #expect(Snapshot(document: document, nodes: [root, focusedField]).isValid)
+        let encoded = try JSONEncoder().encode(Snapshot(document: document, nodes: [root, focusedField]))
+        let decoded = try JSONDecoder().decode(Snapshot.self, from: encoded)
+        #expect(decoded == Snapshot(document: document, nodes: [root, focusedField]))
+        focusedField.value = String(repeating: "a", count: 257)
+        #expect(!Snapshot(document: document, nodes: [root, focusedField]).isValid)
+        var unfocusedField = node("5", parent: 0, role: "AXTextField")
+        unfocusedField.value = "must be focused"
+        #expect(!Snapshot(document: document, nodes: [root, unfocusedField]).isValid)
         let sentinel = WebKitPresenterChannel.Action.accessibilityAction(document: document, node: UInt64.max, press: true)
         #expect(!sentinel.isValid)
     }

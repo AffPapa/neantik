@@ -5,6 +5,10 @@ enum HelpTopic: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var title: String {
+        localized("\(rawValue).title", fallback: russianTitle)
+    }
+
+    private var russianTitle: String {
         switch self {
         case .profiles: "Профили и запуск"
         case .proxy: "Прокси и проверка сети"
@@ -18,6 +22,10 @@ enum HelpTopic: String, CaseIterable, Identifiable {
     }
 
     var introduction: String {
+        localized("\(rawValue).introduction", fallback: russianIntroduction)
+    }
+
+    private var russianIntroduction: String {
         switch self {
         case .profiles: "Профиль — отдельная сессия браузера. Данные сайтов могут сохраняться постоянно или очищаться после сеанса. Создание не требует внешнего чекера."
         case .proxy: "Вставь одну строку или заполни поля. Протокол и порт должны совпадать с настройками поставщика."
@@ -31,6 +39,38 @@ enum HelpTopic: String, CaseIterable, Identifiable {
     }
 
     var sections: [(title: String, text: String)] {
+        russianSections.map { section in
+            let prefix = "\(rawValue).section.\(section.title)"
+            let textKey: String
+            #if NEANTIK_CHROMIUM_ONLY
+            switch (self, section.title) {
+            case (.storage, "Очистить кэш"), (.mcp, "Прокси"), (.mcp, "FAQ и ошибки"):
+                textKey = prefix + ".text.chromium"
+            default:
+                textKey = prefix + ".text"
+            }
+            #else
+            switch (self, section.title) {
+            case (.profiles, "Chromium или WebKit"), (.mcp, "Прокси"), (.mcp, "WebKit через AI"):
+                textKey = prefix + (WebKitProxyFeature.launchEnabled ? ".text.enabled" : ".text.disabled")
+            case (.profiles, "Камера и микрофон в WebKit"):
+                textKey = prefix + (WebKitMediaFeature.isEnabled ? ".text.enabled" : ".text.disabled")
+            default:
+                textKey = prefix + ".text"
+            }
+            #endif
+            return (
+                localized(prefix + ".title", fallback: section.title),
+                localized(textKey, fallback: section.text)
+            )
+        }
+    }
+
+    private func localized(_ key: String, fallback: String) -> String {
+        NSLocalizedString(key, tableName: "Help", bundle: .main, value: fallback, comment: "")
+    }
+
+    private var russianSections: [(title: String, text: String)] {
         #if NEANTIK_CHROMIUM_ONLY
         return defaultSections.compactMap { section in
             switch (self, section.title) {

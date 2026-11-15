@@ -88,19 +88,19 @@ enum ProfileSnapshotError: LocalizedError, Equatable, Sendable {
     var errorDescription: String? {
         switch self {
         case .unsupportedSchema:
-            "Snapshot создан другой версией NeAntik."
+            NSLocalizedString("userError.108", tableName: "Errors", bundle: .main, value: "Snapshot создан другой версией NeAntik.", comment: "")
         case .invalidDate:
-            "Snapshot содержит некорректную дату."
+            NSLocalizedString("userError.109", tableName: "Errors", bundle: .main, value: "Snapshot содержит некорректную дату.", comment: "")
         case .emptySnapshot:
-            "Snapshot не содержит профилей."
+            NSLocalizedString("userError.110", tableName: "Errors", bundle: .main, value: "Snapshot не содержит профилей.", comment: "")
         case .tooManyProfiles:
-            "Snapshot содержит слишком много профилей."
+            NSLocalizedString("userError.111", tableName: "Errors", bundle: .main, value: "Snapshot содержит слишком много профилей.", comment: "")
         case .fileTooLarge:
-            "Snapshot слишком большой."
+            NSLocalizedString("userError.112", tableName: "Errors", bundle: .main, value: "Snapshot слишком большой.", comment: "")
         case .invalidFile:
-            "Snapshot повреждён или имеет неподдерживаемый формат."
+            NSLocalizedString("userError.113", tableName: "Errors", bundle: .main, value: "Snapshot повреждён или имеет неподдерживаемый формат.", comment: "")
         case .unsafeLocation:
-            "Snapshot находится вне защищённой папки NeAntik."
+            NSLocalizedString("userError.114", tableName: "Errors", bundle: .main, value: "Snapshot находится вне защищённой папки NeAntik.", comment: "")
         }
     }
 }
@@ -323,8 +323,8 @@ struct ProfileSnapshotCommitError: LocalizedError {
 
     var errorDescription: String? {
         rolledBack
-            ? "Snapshot не сохранён; новый файл удалён. Предыдущие версии проверь в списке snapshots."
-            : "Snapshot не завершён, и новый файл не удалось удалить. Проверь локальную папку snapshots перед повтором."
+            ? NSLocalizedString("userError.115", tableName: "Errors", bundle: .main, value: "Snapshot не сохранён; новый файл удалён. Предыдущие версии проверь в списке snapshots.", comment: "")
+            : NSLocalizedString("userError.116", tableName: "Errors", bundle: .main, value: "Snapshot не завершён, и новый файл не удалось удалить. Проверь локальную папку snapshots перед повтором.", comment: "")
     }
 }
 
@@ -333,9 +333,9 @@ enum ProfileSnapshotFileCoordinator {
     static func chooseSnapshot(paths: AppPaths) throws -> URL? {
         try paths.prepareBaseDirectories()
         let panel = NSOpenPanel()
-        panel.title = "Создать профили из снимка настроек"
+        panel.title = NSLocalizedString("userDialog.016", tableName: "Errors", bundle: .main, value: "Создать профили из снимка настроек", comment: "")
         panel.message =
-            "Будут добавлены новые профили без BrowserData, cookies, identity и Keychain-секретов."
+            NSLocalizedString("userDialog.017", tableName: "Errors", bundle: .main, value: "Будут добавлены новые профили без BrowserData, cookies, identity и Keychain-секретов.", comment: "")
         panel.directoryURL = paths.profileSnapshotsDirectory
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false

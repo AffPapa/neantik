@@ -4,40 +4,40 @@ struct ProfilePrivacyPanelView: View {
     let snapshot: ProfilePrivacyPanelSnapshot
 
     var body: some View {
-        ProfileDetailCard("Медиа в тестовом окружении") {
+        ProfileDetailCard(NSLocalizedString("page.653", tableName: "Pages", bundle: .main, value: "Медиа в тестовом окружении", comment: "")) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Результат временной проверки браузера. Разрешения сайтов рабочего профиля могут отличаться.")
+                Text(NSLocalizedString("page.654", tableName: "Pages", bundle: .main, value: "Результат временной проверки браузера. Разрешения сайтов рабочего профиля могут отличаться.", comment: ""))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 LabeledContent(
-                    "Чтение списка устройств",
+                    NSLocalizedString("page.655", tableName: "Pages", bundle: .main, value: "Чтение списка устройств", comment: ""),
                     value: snapshot.mediaDevices.title
                 )
                 LabeledContent(
-                    "Устройств в списке",
+                    NSLocalizedString("page.656", tableName: "Pages", bundle: .main, value: "Устройств в списке", comment: ""),
                     value: snapshot.mediaDeviceCount.map(String.init)
-                        ?? "Не показывается"
+                        ?? NSLocalizedString("page.657", tableName: "Pages", bundle: .main, value: "Не показывается", comment: "")
                 )
                 LabeledContent(
                     "Permissions API",
                     value: snapshot.permissionsAPI.title
                 )
-                LabeledContent("Камера", value: snapshot.camera.title)
+                LabeledContent(NSLocalizedString("page.658", tableName: "Pages", bundle: .main, value: "Камера", comment: ""), value: snapshot.camera.title)
                 LabeledContent(
-                    "Микрофон",
+                    NSLocalizedString("page.659", tableName: "Pages", bundle: .main, value: "Микрофон", comment: ""),
                     value: snapshot.microphone.title
                 )
                 if let observedAt = snapshot.observedAt {
                     Text(
-                        "Последняя проверка: " +
+                        NSLocalizedString("page.660", tableName: "Pages", bundle: .main, value: "Последняя проверка: ", comment: "") +
                             observedAt.neAntikDisplayDateTime
                     )
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 Text(
-                    "Список устройств не доказывает, что камера или микрофон работают: для этого сайт запрашивает разрешение и открывает устройство. ID и названия устройств не сохраняются в отчёте."
+                    NSLocalizedString("page.661", tableName: "Pages", bundle: .main, value: "Список устройств не доказывает, что камера или микрофон работают: для этого сайт запрашивает разрешение и открывает устройство. ID и названия устройств не сохраняются в отчёте.", comment: "")
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -46,6 +46,6 @@ struct ProfilePrivacyPanelView: View {
             .padding(.vertical, 4)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Медиа и разрешения временного тестового окружения")
+        .accessibilityLabel(NSLocalizedString("page.662", tableName: "Pages", bundle: .main, value: "Медиа и разрешения временного тестового окружения", comment: ""))
     }
 }

@@ -6,12 +6,12 @@ enum ProfileCacheError: LocalizedError, Equatable {
     case unsafeEntry, changed, unsupportedLocation, limitExceeded, rollbackRequired, partiallyRemoved
     var errorDescription: String? {
         switch self {
-        case .unsafeEntry: "Кэш содержит небезопасный объект. Ничего не удалено; проверь папку профиля."
-        case .changed: "Кэш изменился во время проверки. Повтори после закрытия браузера."
-        case .unsupportedLocation: "У профиля нестандартная папка кэша. Автоматическая очистка для неё недоступна."
-        case .limitExceeded: "Кэш превышает безопасный лимит проверки. Используй очистку в самом браузере."
-        case .rollbackRequired: "Очистка остановлена; оставшийся кэш сохранён отдельно. Закрой браузер и выбери «Вернуть оставшийся кэш». Если восстановление не проходит, сохрани папку профиля и обратись в поддержку."
-        case .partiallyRemoved: "Часть кэша удалена, но очистка не завершена. Данные сайтов не затронуты. Не удаляй оставшиеся папки вручную: сохрани папку профиля и обратись в поддержку."
+        case .unsafeEntry: NSLocalizedString("userError.067", tableName: "Errors", bundle: .main, value: "Кэш содержит небезопасный объект. Ничего не удалено; проверь папку профиля.", comment: "")
+        case .changed: NSLocalizedString("userError.068", tableName: "Errors", bundle: .main, value: "Кэш изменился во время проверки. Повтори после закрытия браузера.", comment: "")
+        case .unsupportedLocation: NSLocalizedString("userError.069", tableName: "Errors", bundle: .main, value: "У профиля нестандартная папка кэша. Автоматическая очистка для неё недоступна.", comment: "")
+        case .limitExceeded: NSLocalizedString("userError.070", tableName: "Errors", bundle: .main, value: "Кэш превышает безопасный лимит проверки. Используй очистку в самом браузере.", comment: "")
+        case .rollbackRequired: NSLocalizedString("userError.071", tableName: "Errors", bundle: .main, value: "Очистка остановлена; оставшийся кэш сохранён отдельно. Закрой браузер и выбери «Вернуть оставшийся кэш». Если восстановление не проходит, сохрани папку профиля и обратись в поддержку.", comment: "")
+        case .partiallyRemoved: NSLocalizedString("userError.072", tableName: "Errors", bundle: .main, value: "Часть кэша удалена, но очистка не завершена. Данные сайтов не затронуты. Не удаляй оставшиеся папки вручную: сохрани папку профиля и обратись в поддержку.", comment: "")
         }
     }
 }

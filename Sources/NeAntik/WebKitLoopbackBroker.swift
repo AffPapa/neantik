@@ -20,16 +20,16 @@ final class WebKitLoopbackBroker: @unchecked Sendable {
 
         var errorDescription: String? {
             switch self {
-            case .state: "Локальный WebKit-маршрут уже запущен или остановлен."
-            case .unavailable: "Локальный WebKit-маршрут недоступен. Профиль не запущен."
-            case .refused: "Локальный WebKit-маршрут отклонил запрос. Профиль не запущен."
-            case .limit: "Достигнут лимит соединений WebKit-маршрута."
+            case .state: NSLocalizedString("userError.125", tableName: "Errors", bundle: .main, value: "Локальный WebKit-маршрут уже запущен или остановлен.", comment: "")
+            case .unavailable: NSLocalizedString("userError.126", tableName: "Errors", bundle: .main, value: "Локальный WebKit-маршрут недоступен. Профиль не запущен.", comment: "")
+            case .refused: NSLocalizedString("userError.127", tableName: "Errors", bundle: .main, value: "Локальный WebKit-маршрут отклонил запрос. Профиль не запущен.", comment: "")
+            case .limit: NSLocalizedString("userError.128", tableName: "Errors", bundle: .main, value: "Достигнут лимит соединений WebKit-маршрута.", comment: "")
             case .listenerStartFailed(let diagnostic):
-                "Не удалось запустить локальный WebKit-маршрут (\(diagnostic)). Профиль не запущен."
+                String(format: NSLocalizedString("userError.129", tableName: "Errors", bundle: .main, value: "Не удалось запустить локальный WebKit-маршрут (%@). Профиль не запущен.", comment: ""), String(describing: diagnostic))
             case .listenerStartTimedOut:
-                "Локальный WebKit-маршрут не запустился вовремя. Профиль не запущен."
+                NSLocalizedString("userError.130", tableName: "Errors", bundle: .main, value: "Локальный WebKit-маршрут не запустился вовремя. Профиль не запущен.", comment: "")
             case .listenerStartCancelled:
-                "Запуск локального WebKit-маршрута отменён. Профиль не запущен."
+                NSLocalizedString("userError.131", tableName: "Errors", bundle: .main, value: "Запуск локального WebKit-маршрута отменён. Профиль не запущен.", comment: "")
             }
         }
     }

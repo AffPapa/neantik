@@ -24,17 +24,17 @@ enum ProfileConfigurationEncryptionError: LocalizedError, Equatable, Sendable {
     var errorDescription: String? {
         switch self {
         case .weakPassphrase:
-            "Пароль должен содержать 12–512 байт UTF-8, не состоять только из пробелов и не содержать управляющих знаков."
+            NSLocalizedString("userError.061", tableName: "Errors", bundle: .main, value: "Пароль должен содержать 12–512 байт UTF-8, не состоять только из пробелов и не содержать управляющих знаков.", comment: "")
         case .invalidEnvelope:
-            "Зашифрованный файл конфигурации повреждён."
+            NSLocalizedString("userError.062", tableName: "Errors", bundle: .main, value: "Зашифрованный файл конфигурации повреждён.", comment: "")
         case .unsupportedEnvelope:
-            "Зашифрованный файл создан другой версией NeAntik."
+            NSLocalizedString("userError.063", tableName: "Errors", bundle: .main, value: "Зашифрованный файл создан другой версией NeAntik.", comment: "")
         case .fileTooLarge:
-            "Зашифрованный файл конфигурации слишком большой."
+            NSLocalizedString("userError.064", tableName: "Errors", bundle: .main, value: "Зашифрованный файл конфигурации слишком большой.", comment: "")
         case .encryptionFailed:
-            "Не удалось зашифровать конфигурацию профилей."
+            NSLocalizedString("userError.065", tableName: "Errors", bundle: .main, value: "Не удалось зашифровать конфигурацию профилей.", comment: "")
         case .decryptionFailed:
-            "Не удалось расшифровать конфигурацию. Проверь пароль и файл."
+            NSLocalizedString("userError.066", tableName: "Errors", bundle: .main, value: "Не удалось расшифровать конфигурацию. Проверь пароль и файл.", comment: "")
         }
     }
 }

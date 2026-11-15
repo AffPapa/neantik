@@ -46,10 +46,10 @@ struct ProfileFolderPickerSheet: View {
         let visibleFolders = presentation.filteredFolders
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Выбрать папку")
+                Text(NSLocalizedString("page.625", tableName: "Pages", bundle: .main, value: "Выбрать папку", comment: ""))
                     .font(.headline)
                     .accessibilityHeading(.h1)
-                Text("Профиль «\(profileName)»")
+                Text(String(format: NSLocalizedString("page.626", tableName: "Pages", bundle: .main, value: "Профиль «%@»", comment: ""), String(describing: profileName)))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -61,18 +61,18 @@ struct ProfileFolderPickerSheet: View {
             Divider()
 
             VStack(spacing: 12) {
-                TextField("Поиск папок", text: $searchText)
+                TextField(NSLocalizedString("page.627", tableName: "Pages", bundle: .main, value: "Поиск папок", comment: ""), text: $searchText)
                     .textFieldStyle(.roundedBorder)
                     .focused($searchIsFocused)
                     .onSubmit(selectFirstSearchResult)
                     .accessibilityHint(
-                        "Фильтрует список папок по названию. " +
-                            "Return выбирает первый найденный результат."
+                        NSLocalizedString("page.628", tableName: "Pages", bundle: .main, value: "Фильтрует список папок по названию. ", comment: "") +
+                            NSLocalizedString("page.629", tableName: "Pages", bundle: .main, value: "Return выбирает первый найденный результат.", comment: "")
                     )
 
                 List {
                     folderButton(
-                        title: "Без папки",
+                        title: NSLocalizedString("page.630", tableName: "Pages", bundle: .main, value: "Без папки", comment: ""),
                         systemImage: "tray",
                         folderID: nil
                     )
@@ -97,11 +97,11 @@ struct ProfileFolderPickerSheet: View {
             Divider()
 
             HStack {
-                Text("\(visibleFolders.count) из \(folders.count) папок")
+                Text(String(format: NSLocalizedString("page.631", tableName: "Pages", bundle: .main, value: "%@ из %@ папок", comment: ""), String(describing: visibleFolders.count), String(describing: folders.count)))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("Отмена", role: .cancel) {
+                Button(NSLocalizedString("page.632", tableName: "Pages", bundle: .main, value: "Отмена", comment: ""), role: .cancel) {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
@@ -148,9 +148,9 @@ struct ProfileFolderPickerSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(
-            isSelected ? "\(title), выбрано" : title
+            isSelected ? String(format: NSLocalizedString("page.633", tableName: "Pages", bundle: .main, value: "%@, выбрано", comment: ""), String(describing: title)) : title
         )
-        .accessibilityHint("Переместить профиль в эту папку")
+        .accessibilityHint(NSLocalizedString("page.634", tableName: "Pages", bundle: .main, value: "Переместить профиль в эту папку", comment: ""))
     }
 }
 
@@ -166,18 +166,18 @@ struct ProfileFolderPickerUnavailableSheet: View {
     var body: some View {
         VStack(spacing: 16) {
             ContentUnavailableView(
-                "Профиль недоступен",
+                NSLocalizedString("page.635", tableName: "Pages", bundle: .main, value: "Профиль недоступен", comment: ""),
                 systemImage: "exclamationmark.triangle",
                 description: Text(
-                    "Профиль удалён или изменён в другом окне."
+                    NSLocalizedString("page.636", tableName: "Pages", bundle: .main, value: "Профиль удалён или изменён в другом окне.", comment: "")
                 )
             )
-            Button("Закрыть", role: .cancel) {
+            Button(NSLocalizedString("page.637", tableName: "Pages", bundle: .main, value: "Закрыть", comment: ""), role: .cancel) {
                 onClose()
                 dismiss()
             }
             .keyboardShortcut(.cancelAction)
-            .accessibilityHint("Закрывает выбор папки")
+            .accessibilityHint(NSLocalizedString("page.638", tableName: "Pages", bundle: .main, value: "Закрывает выбор папки", comment: ""))
         }
         .padding(24)
         .frame(width: 460, height: 280)

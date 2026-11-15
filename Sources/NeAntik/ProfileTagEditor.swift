@@ -10,11 +10,11 @@ enum ProfileTagEditorValidationError: LocalizedError, Equatable {
   var errorDescription: String? {
     switch self {
     case .tooMany:
-      "Можно добавить не больше \(BrowserProfile.maximumTagCount) тегов."
+      String(format: NSLocalizedString("userError.186", tableName: "Errors", bundle: .main, value: "Можно добавить не больше %@ тегов.", comment: ""), String(describing: BrowserProfile.maximumTagCount))
     case .tooLong:
-      "Тег должен быть не длиннее \(BrowserProfile.maximumTagLength) символов."
+      String(format: NSLocalizedString("userError.187", tableName: "Errors", bundle: .main, value: "Тег должен быть не длиннее %@ символов.", comment: ""), String(describing: BrowserProfile.maximumTagLength))
     case .invalid:
-      "Тег не должен быть пустым или содержать переносы строк."
+      NSLocalizedString("userError.188", tableName: "Errors", bundle: .main, value: "Тег не должен быть пустым или содержать переносы строк.", comment: "")
     }
   }
 }
@@ -224,7 +224,7 @@ struct ProfileTagEditor: View {
           .accessibilityLabel(validationMessage)
       } else {
         Text(
-          "\(tags.count) из \(BrowserProfile.maximumTagCount) тегов · до \(BrowserProfile.maximumTagLength) символов"
+          String(format: NSLocalizedString("page.106", tableName: "Pages", bundle: .main, value: "%@ из %@ тегов · до %@ символов", comment: ""), String(describing: tags.count), String(describing: BrowserProfile.maximumTagCount), String(describing: BrowserProfile.maximumTagLength))
         )
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -247,16 +247,16 @@ struct ProfileTagEditor: View {
   private var inputField: some View {
     TextField(
       tags.count >= BrowserProfile.maximumTagCount
-        ? "Достигнут лимит тегов"
-        : "Добавить тег",
+        ? NSLocalizedString("page.107", tableName: "Pages", bundle: .main, value: "Достигнут лимит тегов", comment: "")
+        : NSLocalizedString("page.108", tableName: "Pages", bundle: .main, value: "Добавить тег", comment: ""),
       text: $input,
-      prompt: Text("Введи тег и нажми Return")
+      prompt: Text(NSLocalizedString("page.109", tableName: "Pages", bundle: .main, value: "Введи тег и нажми Return", comment: ""))
     )
     .focused($inputIsFocused)
     .onSubmit(commitInput)
     .disabled(tags.count >= BrowserProfile.maximumTagCount)
-    .accessibilityLabel("Новый тег профиля")
-    .accessibilityHint("Нажми Return или введи запятую, чтобы добавить тег")
+    .accessibilityLabel(NSLocalizedString("page.110", tableName: "Pages", bundle: .main, value: "Новый тег профиля", comment: ""))
+    .accessibilityHint(NSLocalizedString("page.111", tableName: "Pages", bundle: .main, value: "Нажми Return или введи запятую, чтобы добавить тег", comment: ""))
   }
 
   @ViewBuilder
@@ -268,13 +268,13 @@ struct ProfileTagEditor: View {
         suggestionSearch = ""
         showingSuggestionPicker = true
       } label: {
-        Label("Добавить существующий тег", systemImage: "tag")
+        Label(NSLocalizedString("page.112", tableName: "Pages", bundle: .main, value: "Добавить существующий тег", comment: ""), systemImage: "tag")
       }
       .popover(isPresented: $showingSuggestionPicker) {
         searchableSuggestionPicker
       }
-      .help("Найти и добавить существующий тег")
-      .accessibilityLabel("Найти существующий тег")
+      .help(NSLocalizedString("page.113", tableName: "Pages", bundle: .main, value: "Найти и добавить существующий тег", comment: ""))
+      .accessibilityLabel(NSLocalizedString("page.114", tableName: "Pages", bundle: .main, value: "Найти существующий тег", comment: ""))
       .disabled(tags.count >= BrowserProfile.maximumTagCount)
     } else {
       Menu {
@@ -296,10 +296,10 @@ struct ProfileTagEditor: View {
           }
         }
       } label: {
-        Label("Добавить существующий тег", systemImage: "tag")
+        Label(NSLocalizedString("page.112", tableName: "Pages", bundle: .main, value: "Добавить существующий тег", comment: ""), systemImage: "tag")
       }
-      .help("Добавить существующий тег")
-      .accessibilityLabel("Добавить существующий тег")
+      .help(NSLocalizedString("page.112", tableName: "Pages", bundle: .main, value: "Добавить существующий тег", comment: ""))
+      .accessibilityLabel(NSLocalizedString("page.112", tableName: "Pages", bundle: .main, value: "Добавить существующий тег", comment: ""))
       .disabled(
         availableSuggestions.isEmpty ||
           tags.count >= BrowserProfile.maximumTagCount
@@ -309,7 +309,7 @@ struct ProfileTagEditor: View {
 
   private var searchableSuggestionPicker: some View {
     VStack(alignment: .leading, spacing: 10) {
-      Text("Существующие теги")
+      Text(NSLocalizedString("page.115", tableName: "Pages", bundle: .main, value: "Существующие теги", comment: ""))
         .font(.headline)
         .accessibilityHeading(.h2)
 
@@ -317,10 +317,10 @@ struct ProfileTagEditor: View {
         Image(systemName: "magnifyingglass")
           .foregroundStyle(.secondary)
           .accessibilityHidden(true)
-        TextField("Поиск тегов", text: $suggestionSearch)
+        TextField(NSLocalizedString("page.116", tableName: "Pages", bundle: .main, value: "Поиск тегов", comment: ""), text: $suggestionSearch)
           .textFieldStyle(.plain)
           .focused($suggestionSearchIsFocused)
-          .accessibilityLabel("Поиск существующих тегов")
+          .accessibilityLabel(NSLocalizedString("page.117", tableName: "Pages", bundle: .main, value: "Поиск существующих тегов", comment: ""))
           .onSubmit(addFirstFilteredSuggestion)
         if !suggestionSearch.isEmpty {
           Button {
@@ -333,8 +333,8 @@ struct ProfileTagEditor: View {
               .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
-          .help("Очистить поиск")
-          .accessibilityLabel("Очистить поиск тегов")
+          .help(NSLocalizedString("page.118", tableName: "Pages", bundle: .main, value: "Очистить поиск", comment: ""))
+          .accessibilityLabel(NSLocalizedString("page.119", tableName: "Pages", bundle: .main, value: "Очистить поиск тегов", comment: ""))
         }
       }
       .padding(.horizontal, 8)
@@ -343,9 +343,9 @@ struct ProfileTagEditor: View {
 
       if filteredSuggestions.isEmpty {
         ContentUnavailableView(
-          "Теги не найдены",
+          NSLocalizedString("page.120", tableName: "Pages", bundle: .main, value: "Теги не найдены", comment: ""),
           systemImage: "tag.slash",
-          description: Text("Измени запрос или создай новый тег в поле профиля.")
+          description: Text(NSLocalizedString("page.121", tableName: "Pages", bundle: .main, value: "Измени запрос или создай новый тег в поле профиля.", comment: ""))
         )
         .frame(maxWidth: .infinity, minHeight: 150)
       } else {
@@ -369,13 +369,13 @@ struct ProfileTagEditor: View {
                 .contentShape(Rectangle())
               }
               .buttonStyle(.plain)
-              .accessibilityLabel("Добавить тег \(suggestion)")
+              .accessibilityLabel(String(format: NSLocalizedString("page.122", tableName: "Pages", bundle: .main, value: "Добавить тег %@", comment: ""), String(describing: suggestion)))
             }
           }
         }
         .frame(maxHeight: 230)
         .accessibilityLabel(
-          "Найдено существующих тегов: \(filteredSuggestions.count)"
+          String(format: NSLocalizedString("page.123", tableName: "Pages", bundle: .main, value: "Найдено существующих тегов: %@", comment: ""), String(describing: filteredSuggestions.count))
         )
       }
     }
@@ -411,8 +411,8 @@ struct ProfileTagEditor: View {
           .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
-      .help("Удалить тег \(tag)")
-      .accessibilityLabel("Удалить тег \(tag)")
+      .help(String(format: NSLocalizedString("page.124", tableName: "Pages", bundle: .main, value: "Удалить тег %@", comment: ""), String(describing: tag)))
+      .accessibilityLabel(String(format: NSLocalizedString("page.124", tableName: "Pages", bundle: .main, value: "Удалить тег %@", comment: ""), String(describing: tag)))
     }
     .frame(minHeight: 28)
     .background(

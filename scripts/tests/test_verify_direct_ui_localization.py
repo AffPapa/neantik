@@ -60,6 +60,25 @@ def write_sources(root: Path, *, extra: str = "") -> tuple[Path, Path]:
 
 
 class VerifyDirectUiLocalizationTests(unittest.TestCase):
+    def test_english_declaration_requires_real_resources(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            sources, info_plist = write_sources(root)
+            info = plistlib.loads(info_plist.read_bytes())
+            info["CFBundleLocalizations"].append("en")
+            info_plist.write_bytes(plistlib.dumps(info))
+            result = MODULE.inspect_sources(sources, info_plist)
+            self.assertFalse(result["qualified"])
+            self.assertIn("Resources/en.lproj", " ".join(result["issues"]))
+            english = root / "en.lproj"
+            english.mkdir()
+            (english / "InfoPlist.strings").write_text('"CFBundleName" = "NeAntik";\n')
+            (english / "Localizable.strings").write_text('"Профили" = "Profiles";\n')
+            (english / "Help.strings").write_text('"profiles.title" = "Profiles";\n')
+            (english / "Errors.strings").write_text('"error.invalid" = "Invalid";\n')
+            (english / "Pages.strings").write_text('"page.title" = "Title";\n')
+            self.assertTrue(MODULE.inspect_sources(sources, info_plist)["qualified"])
+
     def test_accepts_required_russian_actions(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             sources, info_plist = write_sources(Path(temporary))

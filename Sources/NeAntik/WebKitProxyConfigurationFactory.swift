@@ -7,7 +7,7 @@ enum WebKitProxyConfigurationError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .systemWebKitProxyUnsupported:
-            return "Системный WebKit не запускает профиль с прокси: безопасный изолированный маршрут ещё не подключён."
+            return NSLocalizedString("userError.196", tableName: "Errors", bundle: .main, value: "Системный WebKit не запускает профиль с прокси: безопасный изолированный маршрут ещё не подключён.", comment: "")
         }
     }
 }

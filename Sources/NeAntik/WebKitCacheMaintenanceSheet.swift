@@ -14,19 +14,19 @@ struct WebKitCacheMaintenanceSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Очистить кэш WebKit").font(.title2.bold())
+            Text(NSLocalizedString("page.639", tableName: "Pages", bundle: .main, value: "Очистить кэш WebKit", comment: "")).font(.title2.bold())
             Text(profile.name).font(.headline).lineLimit(2)
-            Text("Удаляются временные HTTP-файлы загруженных страниц из памяти и с диска. Cookies, сохранённые входы, данные сайтов, Service Worker и список предыдущих вкладок не входят в очистку.")
+            Text(NSLocalizedString("page.640", tableName: "Pages", bundle: .main, value: "Удаляются временные HTTP-файлы загруженных страниц из памяти и с диска. Cookies, сохранённые входы, данные сайтов, Service Worker и список предыдущих вкладок не входят в очистку.", comment: ""))
                 .fixedSize(horizontal: false, vertical: true)
             GroupBox {
                 if busy {
-                    HStack { ProgressView().controlSize(.small); Text("Очищаем кэш… Дождись завершения.") }
+                    HStack { ProgressView().controlSize(.small); Text(NSLocalizedString("page.641", tableName: "Pages", bundle: .main, value: "Очищаем кэш… Дождись завершения.", comment: "")) }
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else if completed {
-                    Label("Очистка завершена", systemImage: "checkmark.circle")
+                    Label(NSLocalizedString("page.642", tableName: "Pages", bundle: .main, value: "Очистка завершена", comment: ""), systemImage: "checkmark.circle")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    Text("Точный объём кэша WebKit не измеряется. Профиль должен быть закрыт; первая загрузка страниц после очистки может быть медленнее.")
+                    Text(NSLocalizedString("page.643", tableName: "Pages", bundle: .main, value: "Точный объём кэша WebKit не измеряется. Профиль должен быть закрыт; первая загрузка страниц после очистки может быть медленнее.", comment: ""))
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -37,9 +37,9 @@ struct WebKitCacheMaintenanceSheet: View {
             Divider()
             HStack {
                 Spacer()
-                Button("Закрыть") { dismiss() }.keyboardShortcut(.cancelAction).disabled(busy)
+                Button(NSLocalizedString("page.637", tableName: "Pages", bundle: .main, value: "Закрыть", comment: "")) { dismiss() }.keyboardShortcut(.cancelAction).disabled(busy)
                 if !completed {
-                    Button("Очистить кэш") { clear() }.keyboardShortcut(.defaultAction).disabled(busy)
+                    Button(NSLocalizedString("page.644", tableName: "Pages", bundle: .main, value: "Очистить кэш", comment: "")) { clear() }.keyboardShortcut(.defaultAction).disabled(busy)
                 }
             }
         }
@@ -60,7 +60,7 @@ struct WebKitCacheMaintenanceSheet: View {
                 completed = true
             } catch is CancellationError {
                 // The manager returns cancellation only before native dispatch.
-                errorMessage = "Операция отменена до начала очистки."
+                errorMessage = NSLocalizedString("page.645", tableName: "Pages", bundle: .main, value: "Операция отменена до начала очистки.", comment: "")
             } catch { errorMessage = error.localizedDescription }
         }
     }

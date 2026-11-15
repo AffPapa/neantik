@@ -543,22 +543,22 @@ struct BrowserProfileDeletionBlockedError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch reason {
         case .managedProcess:
-            "Нельзя удалить профиль, пока его браузер запущен."
+            NSLocalizedString("userError.010", tableName: "Errors", bundle: .main, value: "Нельзя удалить профиль, пока его браузер запущен.", comment: "")
         case .leasePresent:
-            "Профиль используется другим экземпляром NeAntik. Закрой браузер и повтори удаление."
+            NSLocalizedString("userError.011", tableName: "Errors", bundle: .main, value: "Профиль используется другим экземпляром NeAntik. Закрой браузер и повтори удаление.", comment: "")
         case .unsafeLease:
-            "Файл состояния запуска не прошёл проверку безопасности. Данные профиля не изменены."
+            NSLocalizedString("userError.012", tableName: "Errors", bundle: .main, value: "Файл состояния запуска не прошёл проверку безопасности. Данные профиля не изменены.", comment: "")
         case .browserDataInUse:
-            "Данные профиля сейчас используются браузером. Закрой его окно и повтори удаление."
+            NSLocalizedString("userError.013", tableName: "Errors", bundle: .main, value: "Данные профиля сейчас используются браузером. Закрой его окно и повтори удаление.", comment: "")
         case .inspectionUnavailable:
-            "NeAntik не смог доказать, что данные профиля свободны. Удаление безопасно отменено."
+            NSLocalizedString("userError.014", tableName: "Errors", bundle: .main, value: "NeAntik не смог доказать, что данные профиля свободны. Удаление безопасно отменено.", comment: "")
         }
     }
 }
 
 struct BrowserProfileDeletedError: LocalizedError, Equatable {
     var errorDescription: String? {
-        "Этот профиль уже удалён другим экземпляром NeAntik. Обнови список профилей."
+        NSLocalizedString("userError.015", tableName: "Errors", bundle: .main, value: "Этот профиль уже удалён другим экземпляром NeAntik. Обнови список профилей.", comment: "")
     }
 }
 
@@ -590,9 +590,9 @@ struct BrowserStartLeaseSupersededError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         if reason == .childExited {
-            return "Chromium завершился сразу после запуска. Проверь состояние браузера и повтори запуск профиля."
+            return NSLocalizedString("userError.016", tableName: "Errors", bundle: .main, value: "Chromium завершился сразу после запуска. Проверь состояние браузера и повтори запуск профиля.", comment: "")
         }
-        return "Пока браузер готовился, состояние профиля изменилось. Дождись завершения проверки профиля и нажми «Запустить» ещё раз."
+        return NSLocalizedString("userError.017", tableName: "Errors", bundle: .main, value: "Пока браузер готовился, состояние профиля изменилось. Дождись завершения проверки профиля и нажми «Запустить» ещё раз.", comment: "")
     }
 }
 
@@ -602,9 +602,9 @@ private struct BrowserProfileLeaseUnavailableError: LocalizedError {
     var errorDescription: String? {
         switch inspection {
         case .found:
-            "Данные профиля уже используются браузером без файла состояния. Закрой окно браузера вручную."
+            NSLocalizedString("userError.018", tableName: "Errors", bundle: .main, value: "Данные профиля уже используются браузером без файла состояния. Закрой окно браузера вручную.", comment: "")
         case .unknown:
-            "NeAntik не смог доказать, что данные профиля свободны. Запуск безопасно отменён."
+            NSLocalizedString("userError.019", tableName: "Errors", bundle: .main, value: "NeAntik не смог доказать, что данные профиля свободны. Запуск безопасно отменён.", comment: "")
         case .absent:
             nil
         }

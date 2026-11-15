@@ -38,10 +38,10 @@ enum ProxyDiagnosticError: LocalizedError, Equatable {
     case invalidAddress, consentRequired, unavailableSettings, revisionConflict
     var errorDescription: String? {
         switch self {
-        case .invalidAddress: "Укажи полный HTTPS-адрес без логина, пароля, query и fragment. Например: https://your-domain.example/ip."
-        case .consentRequired: "Подтверди отправку запроса выбранному сервису через настроенный прокси."
-        case .unavailableSettings: "Настройки адреса диагностики недоступны. Файл сохранён; проверь его перед повтором."
-        case .revisionConflict: "Адрес диагностики изменён в другом окне. Закрой и открой эту проверку заново."
+        case .invalidAddress: NSLocalizedString("userError.006", tableName: "Errors", bundle: .main, value: "Укажи полный HTTPS-адрес без логина, пароля, query и fragment. Например: https://your-domain.example/ip.", comment: "")
+        case .consentRequired: NSLocalizedString("userError.007", tableName: "Errors", bundle: .main, value: "Подтверди отправку запроса выбранному сервису через настроенный прокси.", comment: "")
+        case .unavailableSettings: NSLocalizedString("userError.008", tableName: "Errors", bundle: .main, value: "Настройки адреса диагностики недоступны. Файл сохранён; проверь его перед повтором.", comment: "")
+        case .revisionConflict: NSLocalizedString("userError.009", tableName: "Errors", bundle: .main, value: "Адрес диагностики изменён в другом окне. Закрой и открой эту проверку заново.", comment: "")
         }
     }
 }

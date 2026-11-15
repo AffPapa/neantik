@@ -17,6 +17,7 @@
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>ru</string>
+		<string>en</string>
 	</array>
 	<key>CFBundleName</key>
 	<string>NeAntik</string>

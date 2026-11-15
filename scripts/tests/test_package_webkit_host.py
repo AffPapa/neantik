@@ -21,6 +21,27 @@ TEST_IDENTITY_LINE = f'  1) {TEST_IDENTITY} "Developer ID Application: QA ({MODU
 
 
 class PackageWebKitHostTests(unittest.TestCase):
+    def test_host_localizations_are_copied_and_missing_resources_fail(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            app, host = root / "NeAntik.app", root / "Host.app"
+            resources = app / "Contents/Resources"
+            for language, names in (("ru", ("Localizable.strings",)),
+                                    ("en", ("Localizable.strings", "Errors.strings"))):
+                directory = resources / f"{language}.lproj"
+                directory.mkdir(parents=True)
+                for name in names:
+                    (directory / name).write_text(f"{language} {name}")
+            info = {"CFBundleLocalizations": ["ru", "en"]}
+            MODULE.install_host_localizations(app, host, info)
+            self.assertEqual(
+                (host / "Contents/Resources/en.lproj/Errors.strings").read_text(),
+                "en Errors.strings",
+            )
+            (resources / "en.lproj/Errors.strings").unlink()
+            with self.assertRaisesRegex(MODULE.ContractError, "Missing manager localization"):
+                MODULE.install_host_localizations(app, host, info)
+
     def test_detached_presenter_checks_both_binaries_and_runtime_selectors(self):
         with tempfile.TemporaryDirectory() as temporary:
             manager, host, runtime = (Path(temporary) / name for name in ("manager", "host", "WebKit"))

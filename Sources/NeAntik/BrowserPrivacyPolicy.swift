@@ -118,6 +118,6 @@ struct BrowserPrivacyPolicy: Codable, Equatable, Hashable, Sendable {
 
 struct UnsupportedBrowserPrivacyPolicyError: LocalizedError {
     var errorDescription: String? {
-        "Эта политика защиты требует совместимой версии NeAntik и квалифицированного движка. Настройки и данные не изменены."
+        NSLocalizedString("userError.185", tableName: "Errors", bundle: .main, value: "Эта политика защиты требует совместимой версии NeAntik и квалифицированного движка. Настройки и данные не изменены.", comment: "")
     }
 }

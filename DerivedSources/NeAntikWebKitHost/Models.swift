@@ -717,7 +717,7 @@ enum BrowserFontPolicy: String, Codable, Sendable {
 /// an older recovery snapshot that silently changes the profile environment.
 struct UnsupportedBrowserFontPolicyError: LocalizedError {
     var errorDescription: String? {
-        "Эта версия NeAntik не может применить выбранную политику шрифтов. Данные сохранены. Открой профиль в версии с проверенной поддержкой этой настройки."
+        NSLocalizedString("userError.161", tableName: "Errors", bundle: .main, value: "Эта версия NeAntik не может применить выбранную политику шрифтов. Данные сохранены. Открой профиль в версии с проверенной поддержкой этой настройки.", comment: "")
     }
 }
 
@@ -1209,33 +1209,33 @@ enum NeAntikError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .browserNotFound:
-            "Встроенный браузер NeAntik отсутствует или повреждён. Переустанови приложение из официального DMG или ZIP."
+            NSLocalizedString("userError.162", tableName: "Errors", bundle: .main, value: "Встроенный браузер NeAntik отсутствует или повреждён. Переустанови приложение из официального DMG или ZIP.", comment: "")
         case .profileAlreadyRunning:
-            "Профиль уже запускается или используется другим окном NeAntik. Дождись завершения проверки и повтори запуск."
+            NSLocalizedString("userError.163", tableName: "Errors", bundle: .main, value: "Профиль уже запускается или используется другим окном NeAntik. Дождись завершения проверки и повтори запуск.", comment: "")
         case .invalidProfile:
-            "Укажи название до 120 символов без переносов строк и корректную стартовую страницу."
+            NSLocalizedString("userError.164", tableName: "Errors", bundle: .main, value: "Укажи название до 120 символов без переносов строк и корректную стартовую страницу.", comment: "")
         case .profileLimitReached:
-            "Можно хранить не больше \(ProfileStorageLimits.maximumProfileCount) профилей."
+            String(format: NSLocalizedString("userError.165", tableName: "Errors", bundle: .main, value: "Можно хранить не больше %@ профилей.", comment: ""), String(describing: ProfileStorageLimits.maximumProfileCount))
         case .invalidProxy:
-            "Укажи корректный хост и порт прокси."
+            NSLocalizedString("userError.166", tableName: "Errors", bundle: .main, value: "Укажи корректный хост и порт прокси.", comment: "")
         case .profileArchived:
-            "Сначала верни профиль из архива."
+            NSLocalizedString("userError.167", tableName: "Errors", bundle: .main, value: "Сначала верни профиль из архива.", comment: "")
         case let .runtimeValidationFailed(message):
-            "Браузерный движок не готов: \(message)"
+            String(format: NSLocalizedString("userError.168", tableName: "Errors", bundle: .main, value: "Браузерный движок не готов: %@", comment: ""), String(describing: message))
         case let .processLaunchFailed(message):
             if message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                "Не удалось запустить браузер. Проверь целостность приложения и доступ к папке профиля."
+                NSLocalizedString("userError.169", tableName: "Errors", bundle: .main, value: "Не удалось запустить браузер. Проверь целостность приложения и доступ к папке профиля.", comment: "")
             } else {
-                "Не удалось запустить браузер: \(message)"
+                String(format: NSLocalizedString("userError.170", tableName: "Errors", bundle: .main, value: "Не удалось запустить браузер: %@", comment: ""), String(describing: message))
             }
         case let .proxyTestFailed(message):
-            "Прокси не прошёл проверку: \(message)"
+            String(format: NSLocalizedString("userError.171", tableName: "Errors", bundle: .main, value: "Прокси не прошёл проверку: %@", comment: ""), String(describing: message))
         case .proxyPreparationRequired:
-            "Прокси нужно безопасно проверить перед запуском. Запусти профиль из главного окна NeAntik."
+            NSLocalizedString("userError.172", tableName: "Errors", bundle: .main, value: "Прокси нужно безопасно проверить перед запуском. Запусти профиль из главного окна NeAntik.", comment: "")
         case .profileLaunchStateNotPersisted:
-            "Браузер остановлен: NeAntik не смог безопасно сохранить состояние запуска профиля. Проверь доступ к данным приложения и повтори."
+            NSLocalizedString("userError.173", tableName: "Errors", bundle: .main, value: "Браузер остановлен: NeAntik не смог безопасно сохранить состояние запуска профиля. Проверь доступ к данным приложения и повтори.", comment: "")
         case let .fingerprintAuditFailed(message):
-            "Проверка отпечатка не прошла: \(message)"
+            String(format: NSLocalizedString("userError.174", tableName: "Errors", bundle: .main, value: "Проверка отпечатка не прошла: %@", comment: ""), String(describing: message))
         }
     }
 }

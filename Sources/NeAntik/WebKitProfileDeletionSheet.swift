@@ -22,19 +22,19 @@ struct WebKitProfileDeletionSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Удаление профиля WebKit").font(.title2.bold())
+            Text(NSLocalizedString("page.698", tableName: "Pages", bundle: .main, value: "Удаление профиля WebKit", comment: "")).font(.title2.bold())
             Text(request.name).font(.headline).lineLimit(2)
-            Text("macOS удалит отдельное хранилище этого профиля: cookies, входы и данные сайтов. Сохранённые вкладки и запись профиля также будут удалены. Вернуть эти данные из Корзины нельзя. Для обратимого скрытия выбери архив.")
+            Text(NSLocalizedString("page.699", tableName: "Pages", bundle: .main, value: "macOS удалит отдельное хранилище этого профиля: cookies, входы и данные сайтов. Сохранённые вкладки и запись профиля также будут удалены. Вернуть эти данные из Корзины нельзя. Для обратимого скрытия выбери архив.", comment: ""))
                 .fixedSize(horizontal: false, vertical: true)
             GroupBox {
                 if busy {
-                    HStack { ProgressView().controlSize(.small); Text("Удаляем профиль… Дождись завершения.") }
+                    HStack { ProgressView().controlSize(.small); Text(NSLocalizedString("page.700", tableName: "Pages", bundle: .main, value: "Удаляем профиль… Дождись завершения.", comment: "")) }
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else if finished {
-                    Label("Удаление завершено", systemImage: "checkmark.circle")
+                    Label(NSLocalizedString("page.701", tableName: "Pages", bundle: .main, value: "Удаление завершено", comment: ""), systemImage: "checkmark.circle")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    Text("Окна и загрузки профиля должны быть закрыты. Если удаление уже начиналось, продолжится незавершённый этап. После сбоя профиль останется заблокированным до безопасного завершения.")
+                    Text(NSLocalizedString("page.702", tableName: "Pages", bundle: .main, value: "Окна и загрузки профиля должны быть закрыты. Если удаление уже начиналось, продолжится незавершённый этап. После сбоя профиль останется заблокированным до безопасного завершения.", comment: ""))
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -45,9 +45,9 @@ struct WebKitProfileDeletionSheet: View {
             Divider()
             HStack {
                 Spacer()
-                Button(finished ? "Закрыть" : "Отмена") { dismiss() }.keyboardShortcut(.cancelAction).disabled(busy)
+                Button(finished ? NSLocalizedString("page.637", tableName: "Pages", bundle: .main, value: "Закрыть", comment: "") : NSLocalizedString("page.632", tableName: "Pages", bundle: .main, value: "Отмена", comment: "")) { dismiss() }.keyboardShortcut(.cancelAction).disabled(busy)
                 if !finished {
-                    Button(errorMessage == nil ? "Удалить без возможности отмены" : "Продолжить удаление", role: .destructive) { remove() }
+                    Button(errorMessage == nil ? NSLocalizedString("page.703", tableName: "Pages", bundle: .main, value: "Удалить без возможности отмены", comment: "") : NSLocalizedString("page.704", tableName: "Pages", bundle: .main, value: "Продолжить удаление", comment: ""), role: .destructive) { remove() }
                         .disabled(busy)
                 }
             }
@@ -67,7 +67,7 @@ struct WebKitProfileDeletionSheet: View {
                     store: store, afterCommit: cleanupCredentials)
                 finished = true; completed()
             } catch is CancellationError {
-                errorMessage = "Операция отменена до начала удаления."
+                errorMessage = NSLocalizedString("page.705", tableName: "Pages", bundle: .main, value: "Операция отменена до начала удаления.", comment: "")
             } catch { errorMessage = error.localizedDescription }
         }
     }

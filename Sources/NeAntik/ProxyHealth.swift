@@ -23,28 +23,28 @@ enum ProxyHealthOutcome: String, Codable, Equatable, Sendable {
     var userSummary: String {
         switch self {
         case .succeeded:
-            "Проверка прошла успешно."
+            NSLocalizedString("proxyStatus.01", tableName: "Errors", bundle: .main, value: "Проверка прошла успешно.", comment: "")
         case .invalidConfiguration:
-            "Проверь тип, адрес и порт прокси."
+            NSLocalizedString("proxyStatus.02", tableName: "Errors", bundle: .main, value: "Проверь тип, адрес и порт прокси.", comment: "")
         case .nameResolutionFailed:
-            "Не удалось разрешить адрес прокси или сервиса проверки. Проверь адрес прокси и доступность DNS."
+            NSLocalizedString("proxyStatus.03", tableName: "Errors", bundle: .main, value: "Не удалось разрешить адрес прокси или сервиса проверки. Проверь адрес прокси и доступность DNS.", comment: "")
         case .timedOut:
-            "Время проверки истекло. Ответ не получен от прокси или сервиса проверки; повтори проверку позже."
+            NSLocalizedString("proxyStatus.04", tableName: "Errors", bundle: .main, value: "Время проверки истекло. Ответ не получен от прокси или сервиса проверки; повтори проверку позже.", comment: "")
         case .connectionFailed:
-            "Соединение с прокси не установлено."
+            NSLocalizedString("proxyStatus.05", tableName: "Errors", bundle: .main, value: "Соединение с прокси не установлено.", comment: "")
         case .authenticationRejected:
-            "Прокси отклонил логин или пароль."
+            NSLocalizedString("proxyStatus.06", tableName: "Errors", bundle: .main, value: "Прокси отклонил логин или пароль.", comment: "")
         case .transportSecurityFailed:
-            "Защищённое соединение не установлено. Сверь тип и порт прокси; HTTPS-прокси требует TLS до самого сервера прокси."
+            NSLocalizedString("proxyStatus.07", tableName: "Errors", bundle: .main, value: "Защищённое соединение не установлено. Сверь тип и порт прокси; HTTPS-прокси требует TLS до самого сервера прокси.", comment: "")
         case .protocolFailed:
-            "Обмен с прокси прервался. Сверь тип и порт с данными провайдера; причина пока не определена."
+            NSLocalizedString("proxyStatus.08", tableName: "Errors", bundle: .main, value: "Обмен с прокси прервался. Сверь тип и порт с данными провайдера; причина пока не определена.", comment: "")
         case .probeServiceFailed:
-            "IP-сервис отказал в ответе или ограничил запросы. Маршрут прокси не подтверждён; повтори проверку позже."
+            NSLocalizedString("proxyStatus.09", tableName: "Errors", bundle: .main, value: "IP-сервис отказал в ответе или ограничил запросы. Маршрут прокси не подтверждён; повтори проверку позже.", comment: "")
         case .invalidResponse:
-            "Получен некорректный ответ; состояние прокси " +
-                "не определено."
+            NSLocalizedString("proxyStatus.10", tableName: "Errors", bundle: .main, value: "Получен некорректный ответ; состояние прокси ", comment: "") +
+                NSLocalizedString("proxyStatus.11", tableName: "Errors", bundle: .main, value: "не определено.", comment: "")
         case .internalFailure:
-            "Проверку не удалось запустить."
+            NSLocalizedString("proxyStatus.12", tableName: "Errors", bundle: .main, value: "Проверку не удалось запустить.", comment: "")
         }
     }
 }
@@ -246,16 +246,16 @@ enum ProxyHealthStoreError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .unsupportedSchema:
-            "Формат истории проверок прокси не " +
-                "поддерживается."
+            NSLocalizedString("userError.138", tableName: "Errors", bundle: .main, value: "Формат истории проверок прокси не ", comment: "") +
+                NSLocalizedString("userError.139", tableName: "Errors", bundle: .main, value: "поддерживается.", comment: "")
         case .unsafePath:
-            "Историю проверок прокси нельзя безопасно " +
-                "открыть."
+            NSLocalizedString("userError.140", tableName: "Errors", bundle: .main, value: "Историю проверок прокси нельзя безопасно ", comment: "") +
+                NSLocalizedString("userError.141", tableName: "Errors", bundle: .main, value: "открыть.", comment: "")
         case .capacityExceeded:
-            "История проверок прокси достигла безопасного лимита."
+            NSLocalizedString("userError.142", tableName: "Errors", bundle: .main, value: "История проверок прокси достигла безопасного лимита.", comment: "")
         case .lockTimedOut:
-            "История проверок прокси занята другим процессом. " +
-                "Повтори проверку позже."
+            NSLocalizedString("userError.143", tableName: "Errors", bundle: .main, value: "История проверок прокси занята другим процессом. ", comment: "") +
+                NSLocalizedString("userError.144", tableName: "Errors", bundle: .main, value: "Повтори проверку позже.", comment: "")
         }
     }
 }

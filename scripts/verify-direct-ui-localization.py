@@ -126,6 +126,18 @@ def inspect_sources(
                         f"Russian Localizable.strings is missing native key: {key}"
                     )
 
+    if isinstance(bundle_localizations, list) and "en" in bundle_localizations:
+        english_resources = info_plist_path.parent / "en.lproj"
+        if not english_resources.is_dir() or english_resources.is_symlink():
+            issues.append("Resources/en.lproj must be a regular directory")
+        else:
+            for name in ("InfoPlist.strings", "Localizable.strings", "Help.strings", "Errors.strings", "Pages.strings"):
+                resource = english_resources / name
+                if not resource.is_file() or resource.is_symlink():
+                    issues.append(f"Missing regular English bundle resource: {name}")
+                elif not resource.read_text(encoding="utf-8").strip():
+                    issues.append(f"English bundle resource is empty: {name}")
+
     return {
         "qualified": not issues,
         "files": [

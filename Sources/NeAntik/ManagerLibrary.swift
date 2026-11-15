@@ -162,8 +162,8 @@ enum ManagerLibraryError: LocalizedError {
     case invalidDocument, invalidTemplate
     var errorDescription: String? {
         switch self {
-        case .invalidDocument: "Локальная библиотека недоступна или достигнут лимит (50 шаблонов/фильтров). Проверь файл библиотеки; профили не изменены."
-        case .invalidTemplate: "Шаблон не сохранён. Проверь имя, теги и стартовый URL: параметры, фрагмент и логин/пароль URL в шаблон не входят."
+        case .invalidDocument: NSLocalizedString("userError.132", tableName: "Errors", bundle: .main, value: "Локальная библиотека недоступна или достигнут лимит (50 шаблонов/фильтров). Проверь файл библиотеки; профили не изменены.", comment: "")
+        case .invalidTemplate: NSLocalizedString("userError.133", tableName: "Errors", bundle: .main, value: "Шаблон не сохранён. Проверь имя, теги и стартовый URL: параметры, фрагмент и логин/пароль URL в шаблон не входят.", comment: "")
         }
     }
 }

@@ -54,6 +54,15 @@ for localized_resource in InfoPlist.strings Localizable.strings; do
   fi
 done
 
+for localized_resource in InfoPlist.strings Localizable.strings Help.strings Errors.strings Pages.strings; do
+  expected="$PROJECT_DIR/Resources/en.lproj/$localized_resource"
+  packaged="$APP_PATH/Contents/Resources/en.lproj/$localized_resource"
+  if [[ ! -f "$packaged" || -L "$packaged" ]] || ! cmp -s "$expected" "$packaged"; then
+    echo "Integrated manager English localization does not match project resource: $localized_resource" >&2
+    exit 65
+  fi
+done
+
 RELEASE_CHROMIUM_VERSION="$(
   plutil -extract fingerprintChromium.chromiumVersion raw -o - \
     "$EVIDENCE/fingerprint-chromium.lock.json"

@@ -255,15 +255,15 @@ enum ProfileOrganizationError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .invalidFolderName:
-            "Проверь название папки: от 1 до \(ProfileFolder.maximumNameLength) символов без переносов строк."
+            String(format: NSLocalizedString("userError.034", tableName: "Errors", bundle: .main, value: "Проверь название папки: от 1 до %@ символов без переносов строк.", comment: ""), String(describing: ProfileFolder.maximumNameLength))
         case .duplicateFolderName:
-            "Папка с таким именем уже существует."
+            NSLocalizedString("userError.035", tableName: "Errors", bundle: .main, value: "Папка с таким именем уже существует.", comment: "")
         case .folderNotFound:
-            "Папка уже удалена или недоступна. Профили не изменены."
+            NSLocalizedString("userError.036", tableName: "Errors", bundle: .main, value: "Папка уже удалена или недоступна. Профили не изменены.", comment: "")
         case .profileNotFound:
-            "Один из профилей уже удалён. Папка не изменена."
+            NSLocalizedString("userError.037", tableName: "Errors", bundle: .main, value: "Один из профилей уже удалён. Папка не изменена.", comment: "")
         case .storageUnavailable:
-            "Папки временно недоступны. Профили и данные браузеров не изменены."
+            NSLocalizedString("userError.038", tableName: "Errors", bundle: .main, value: "Папки временно недоступны. Профили и данные браузеров не изменены.", comment: "")
         }
     }
 }
@@ -275,6 +275,6 @@ enum ProfileOrganizationDocumentError: LocalizedError {
     case duplicateAssignment
 
     var errorDescription: String? {
-        "Файл папок имеет неподдерживаемый или повреждённый формат."
+        NSLocalizedString("userError.039", tableName: "Errors", bundle: .main, value: "Файл папок имеет неподдерживаемый или повреждённый формат.", comment: "")
     }
 }

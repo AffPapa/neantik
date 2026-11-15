@@ -277,17 +277,17 @@ enum ProfileConfigurationTransferError: LocalizedError, Equatable, Sendable {
     var errorDescription: String? {
         switch self {
         case .unsupportedSchema:
-            "Файл конфигурации создан другой версией NeAntik."
+            NSLocalizedString("userError.055", tableName: "Errors", bundle: .main, value: "Файл конфигурации создан другой версией NeAntik.", comment: "")
         case .invalidDate:
-            "Файл конфигурации содержит некорректную дату."
+            NSLocalizedString("userError.056", tableName: "Errors", bundle: .main, value: "Файл конфигурации содержит некорректную дату.", comment: "")
         case .emptyDocument:
-            "Файл конфигурации не содержит профилей."
+            NSLocalizedString("userError.057", tableName: "Errors", bundle: .main, value: "Файл конфигурации не содержит профилей.", comment: "")
         case .tooManyProfiles:
-            "Файл конфигурации содержит слишком много профилей."
+            NSLocalizedString("userError.058", tableName: "Errors", bundle: .main, value: "Файл конфигурации содержит слишком много профилей.", comment: "")
         case .invalidProfile:
-            "Файл конфигурации содержит некорректные параметры профиля."
+            NSLocalizedString("userError.059", tableName: "Errors", bundle: .main, value: "Файл конфигурации содержит некорректные параметры профиля.", comment: "")
         case .invalidFolderName:
-            "Файл конфигурации содержит некорректное имя папки."
+            NSLocalizedString("userError.060", tableName: "Errors", bundle: .main, value: "Файл конфигурации содержит некорректное имя папки.", comment: "")
         }
     }
 }

@@ -34,21 +34,21 @@ struct WebKitHostLeaseReservation: Equatable, Sendable {
         var errorDescription: String? {
             switch self {
             case .invalidSession:
-                return "Параметры сеанса WebKit имеют неверный формат."
+                return NSLocalizedString("userError.117", tableName: "Errors", bundle: .main, value: "Параметры сеанса WebKit имеют неверный формат.", comment: "")
             case .dataRootMismatch:
-                return "Путь данных сеанса WebKit не совпадает с хранилищем профиля."
+                return NSLocalizedString("userError.118", tableName: "Errors", bundle: .main, value: "Путь данных сеанса WebKit не совпадает с хранилищем профиля.", comment: "")
             case .invalidProcessIdentity:
-                return "Не удалось подтвердить отдельный процесс WebKit."
+                return NSLocalizedString("userError.119", tableName: "Errors", bundle: .main, value: "Не удалось подтвердить отдельный процесс WebKit.", comment: "")
             case .invalidExecutablePath:
-                return "Путь исполняемого файла WebKit не прошёл проверку."
+                return NSLocalizedString("userError.120", tableName: "Errors", bundle: .main, value: "Путь исполняемого файла WebKit не прошёл проверку.", comment: "")
             case .guardNotHeld:
-                return "Не удалось подтвердить блокировки профиля перед запуском WebKit."
+                return NSLocalizedString("userError.121", tableName: "Errors", bundle: .main, value: "Не удалось подтвердить блокировки профиля перед запуском WebKit.", comment: "")
             case .reservationExists:
-                return "Профиль уже зарезервирован другим процессом."
+                return NSLocalizedString("userError.122", tableName: "Errors", bundle: .main, value: "Профиль уже зарезервирован другим процессом.", comment: "")
             case .reservationMismatch:
-                return "Запись запуска WebKit не совпадает с текущей сессией."
+                return NSLocalizedString("userError.123", tableName: "Errors", bundle: .main, value: "Запись запуска WebKit не совпадает с текущей сессией.", comment: "")
             case .cleanupUnconfirmed:
-                return "Не удалось подтвердить безопасное завершение процесса WebKit."
+                return NSLocalizedString("userError.124", tableName: "Errors", bundle: .main, value: "Не удалось подтвердить безопасное завершение процесса WebKit.", comment: "")
             }
         }
     }

@@ -582,7 +582,7 @@ struct ContentView: View {
             }
             if !webKitDeletionRecoveries.isEmpty {
                 HStack {
-                    Label("Незавершённое удаление WebKit: \(webKitDeletionRecoveries.count)", systemImage: "exclamationmark.triangle")
+                    Label(String(format: NSLocalizedString("Незавершённое удаление WebKit: %ld", comment: "Incomplete WebKit deletion count"), webKitDeletionRecoveries.count), systemImage: "exclamationmark.triangle")
                     Spacer()
                     Menu("Завершить удаление…") {
                         ForEach(webKitDeletionRecoveries) { request in
@@ -994,7 +994,7 @@ struct ContentView: View {
             }
             Button("Отмена", role: .cancel) {}
         } message: { profile in
-            Text("Профиль «\(profile.name)» и его данные браузера будут перемещены в Корзину macOS. Пароль прокси будет удалён из Связки ключей. Возврат файлов из Корзины не восстанавливает профиль полностью. Для обратимого скрытия используй архив.")
+            Text(verbatim: String(format: NSLocalizedString("Профиль «%@» и его данные браузера будут перемещены в Корзину macOS. Пароль прокси будет удалён из Связки ключей. Возврат файлов из Корзины не восстанавливает профиль полностью. Для обратимого скрытия используй архив.", comment: "Profile deletion confirmation"), profile.name))
         }
         .alert(
             "Удалить папку?",
@@ -1016,9 +1016,10 @@ struct ContentView: View {
             let count = store.organization.profileIDs(
                 inFolderID: folder.id
             ).count
-            Text(
-                "Папка «\(folder.name)» будет удалена. \(count) \(profileCountWord(count)) останутся и перейдут в «Без папки»."
-            )
+            Text(verbatim: String(
+                format: NSLocalizedString("Папка «%@» будет удалена. %ld %@ останутся и перейдут в «Без папки».", comment: "Folder deletion confirmation"),
+                folder.name, count, profileCountWord(count)
+            ))
         }
         .alert(
             launchPreparationFailure?.title ?? "Не удалось запустить",
@@ -1056,12 +1057,12 @@ struct ContentView: View {
                 launchPreparationFailure = nil
             }
         } message: { failure in
-            Text(failure.message)
+            Text(verbatim: NSLocalizedString(failure.message, comment: "Profile launch failure"))
         }
         .alert(item: workspaceAlertBinding) { presentation in
             Alert(
-                title: Text(presentation.title),
-                message: Text(presentation.message),
+                title: Text(verbatim: NSLocalizedString(presentation.title, comment: "Workspace alert title")),
+                message: Text(verbatim: NSLocalizedString(presentation.message, comment: "Workspace alert message")),
                 dismissButton: .default(Text("OK")) {
                     clearWorkspaceAlert(presentation.source)
                 }
@@ -1370,17 +1371,17 @@ struct ContentView: View {
                 )
                 Button(action: commands.toggleRunning) {
                     Label(
-                        commands.presentation.launchTitle,
+                        NSLocalizedString(commands.presentation.launchTitle, comment: "Profile action"),
                         systemImage:
                             commands.presentation.launchSystemImage
                     )
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(!commands.presentation.launchIsEnabled)
-                .help(commands.presentation.launchHelp)
+                .help(NSLocalizedString(commands.presentation.launchHelp, comment: "Profile action help"))
                 .accessibilityLabel(
-                    "\(commands.presentation.launchTitle) профиль " +
-                        profile.name
+                    String(format: NSLocalizedString("%@ профиль %@", comment: "Profile action accessibility label"),
+                           NSLocalizedString(commands.presentation.launchTitle, comment: "Profile action"), profile.name)
                 )
 
                 Button(action: commands.edit) {
@@ -2017,7 +2018,8 @@ struct ContentView: View {
         }
         guard !isCreatingFirstProfile,
               let profile = FirstProfileBootstrap.makeProfile(
-                  existingProfiles: store.profiles
+                  existingProfiles: store.profiles,
+                  name: NSLocalizedString(FirstProfileBootstrap.defaultName, comment: "Default first profile name")
               )
         else {
             return
@@ -2071,6 +2073,9 @@ struct ContentView: View {
     }
 
     private func profileCountWord(_ count: Int) -> String {
+        if Bundle.main.preferredLocalizations.first == "en" {
+            return count == 1 ? "profile" : "profiles"
+        }
         let lastTwo = count % 100
         if (11...14).contains(lastTwo) {
             return "профилей"
@@ -2281,9 +2286,9 @@ struct ContentView: View {
                         }
                         .buttonStyle(.plain)
                         .frame(width: 32, height: 32)
-                        .help("Переименовать «\(selectedFolder.name)»")
+                        .help(String(format: NSLocalizedString("Переименовать «%@»", comment: "Rename folder help"), selectedFolder.name))
                         .accessibilityLabel(
-                            "Переименовать папку \(selectedFolder.name)"
+                            String(format: NSLocalizedString("Переименовать папку %@", comment: "Rename folder accessibility label"), selectedFolder.name)
                         )
                     }
                 }
@@ -2602,8 +2607,8 @@ struct ContentView: View {
                 } label: {
                     Label(
                         bulkProxyTestTask == nil
-                            ? "Проверить прокси (\(bulkProxyAction.count))"
-                            : "Остановить проверку",
+                            ? String(format: NSLocalizedString("Проверить прокси (%ld)", comment: "Bulk proxy check count"), bulkProxyAction.count)
+                            : NSLocalizedString("Остановить проверку", comment: "Stop bulk check"),
                         systemImage:
                             bulkProxyTestTask == nil
                             ? "checkmark.shield"
@@ -2612,36 +2617,30 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, minHeight: 28)
                 }
                 .buttonStyle(.bordered)
-                .help(
+                .help(NSLocalizedString(
                     bulkProxyTestTask == nil
                         ? "Проверить доступные остановленные прокси-профили, не более трёх одновременно"
-                        : "Остановить массовую проверку прокси"
-                )
+                        : "Остановить массовую проверку прокси", comment: "Bulk proxy check help"
+                ))
                 .accessibilityLabel(
                     bulkProxyTestTask == nil
-                        ? "Проверить прокси доступных профилей: \(bulkProxyAction.count)"
-                        : "Остановить массовую проверку прокси"
+                        ? String(format: NSLocalizedString("Проверить прокси доступных профилей: %ld", comment: "Bulk proxy check accessibility"), bulkProxyAction.count)
+                        : NSLocalizedString("Остановить массовую проверку прокси", comment: "Stop bulk check")
                 )
                 if let bulkProxyProgress, bulkProxyTestTask != nil {
                     ProgressView(
                         value: Double(bulkProxyProgress.completed),
                         total: Double(max(1, bulkProxyProgress.total))
                     ) {
-                        Text(
-                            "Проверено \(bulkProxyProgress.completed) из " +
-                                "\(bulkProxyProgress.total)"
-                        )
+                        Text(verbatim: String(format: NSLocalizedString("Проверено %ld из %ld", comment: "Bulk proxy check progress"), bulkProxyProgress.completed, bulkProxyProgress.total))
                     }
                     .font(.caption)
-                    .accessibilityLabel(
-                        "Проверено \(bulkProxyProgress.completed) из " +
-                            "\(bulkProxyProgress.total)"
-                    )
+                    .accessibilityLabel(String(format: NSLocalizedString("Проверено %ld из %ld", comment: "Bulk proxy check progress"), bulkProxyProgress.completed, bulkProxyProgress.total))
                 } else if let bulkProxyStatusMessage {
-                    Text(bulkProxyStatusMessage)
+                    Text(verbatim: NSLocalizedString(bulkProxyStatusMessage, comment: "Bulk proxy check status"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .accessibilityLabel(bulkProxyStatusMessage)
+                        .accessibilityLabel(NSLocalizedString(bulkProxyStatusMessage, comment: "Bulk proxy check status"))
                 }
             }
         }
@@ -2690,9 +2689,9 @@ struct ContentView: View {
                         .foregroundStyle(runtimeStatusColor)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(runtimeReadinessTitle)
+                    Text(verbatim: NSLocalizedString(runtimeReadinessTitle, comment: "Browser readiness title"))
                     .font(.subheadline.weight(.medium))
-                    Text(runtimeReadinessMessage)
+                    Text(verbatim: NSLocalizedString(runtimeReadinessMessage, comment: "Browser readiness message"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -2797,7 +2796,7 @@ struct ContentView: View {
             .background(background, in: Capsule())
         }
         .buttonStyle(.plain)
-        .help("Убрать фильтр «\(title)»")
+        .help(String(format: NSLocalizedString("Убрать фильтр «%@»", comment: "Remove filter help"), title))
     }
 
     private func sourceButton(
@@ -3257,10 +3256,7 @@ struct ContentView: View {
                         systemImage: "rectangle.stack.person.crop"
                     )
                 } description: {
-                    Text(
-                        "Каждый профиль хранит свои файлы cookie, " +
-                            "настройки сети и локальные данные."
-                    )
+                    Text("Каждый профиль хранит свои файлы cookie, настройки сети и локальные данные.")
                 }
             }
         }
@@ -3803,8 +3799,8 @@ struct ContentView: View {
             let completed = bulkProxyProgress?.completed ?? 0
             let total = bulkProxyProgress?.total ?? 0
             bulkProxyStatusMessage = total > 0
-                ? "Проверка остановлена: \(completed) из \(total)"
-                : "Проверка остановлена"
+                ? String(format: NSLocalizedString("Проверка остановлена: %ld из %ld", comment: "Canceled proxy checks"), completed, total)
+                : NSLocalizedString("Проверка остановлена", comment: "Canceled proxy check")
             bulkProxyProgress = nil
             bulkProxyTestTask.cancel()
             return
@@ -3843,8 +3839,10 @@ struct ContentView: View {
             }
             if bulkProxyTestID == runID {
                 if !Task.isCancelled {
-                    bulkProxyStatusMessage =
-                        "Проверено \(completed) из \(profiles.count)"
+                    bulkProxyStatusMessage = String(
+                        format: NSLocalizedString("Проверено %ld из %ld", comment: "Completed proxy checks"),
+                        completed, profiles.count
+                    )
                 }
                 bulkProxyTestTask = nil
                 bulkProxyTestID = nil
@@ -4207,9 +4205,9 @@ private struct ProfileRow: View {
                         )
                 )
                 .disabled(!launchAction.isEnabled)
-                .help("\(launchAction.help): «\(profile.name)»")
+                .help("\(NSLocalizedString(launchAction.help, comment: "Profile action help")): «\(profile.name)»")
                 .accessibilityLabel(
-                    "\(launchAction.title) профиль \(profile.name)"
+                    String(format: NSLocalizedString("%@ профиль %@", comment: "Profile action accessibility label"), NSLocalizedString(launchAction.title, comment: "Profile action"), profile.name)
                 )
             }
         }
@@ -4339,7 +4337,7 @@ struct ProfileDetailView: View {
             if profile.engine == .chromium { networkAndEnvironment }
             else {
                 ProfileDetailCard("WebKit · движок Safari") {
-                    Text(profile.engine.settingsSummary)
+                    Text(verbatim: NSLocalizedString(profile.engine.settingsSummary, comment: "Browser engine description"))
                         .font(.body)
                 }
             }
@@ -4348,7 +4346,7 @@ struct ProfileDetailView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     LabeledContent(
                         "При запуске",
-                        value: profile.startupMode.title
+                        value: NSLocalizedString(profile.startupMode.title, comment: "Profile startup mode")
                     )
                     LabeledContent(
                         profile.startupMode == .restoreSession ? "При первом запуске" : "Стартовая страница",
@@ -4532,14 +4530,14 @@ struct ProfileDetailView: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityAddTraits(.isStaticText)
                 .accessibilityLabel(
-                    "Прокси \(proxy.kind.title), сервер \(proxy.displayEndpoint)"
+                    String(format: NSLocalizedString("Прокси %@, сервер %@", comment: "Proxy accessibility label"), proxy.kind.title, proxy.displayEndpoint)
                 )
 
-                Text(
+                Text(verbatim: NSLocalizedString(
                     proxy.username.isEmpty
                         ? "Без авторизации"
-                        : "Авторизация настроена · пароль в Связке ключей"
-                )
+                        : "Авторизация настроена · пароль в Связке ключей", comment: "Proxy authentication status"
+                ))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -4576,13 +4574,13 @@ struct ProfileDetailView: View {
                 ? onCancelProxyTest : onTestProxy
         ) {
             Label(
-                isTestingProxy
+                NSLocalizedString(isTestingProxy
                     ? (
                         canCancelProxyTest
                             ? "Отменить проверку"
                             : "Проверка в другом окне…"
                     )
-                    : "Проверить прокси",
+                    : "Проверить прокси", comment: "Proxy check action"),
                 systemImage: isTestingProxy
                     ? "stop.circle"
                     : "network.badge.shield.half.filled"
@@ -4593,7 +4591,7 @@ struct ProfileDetailView: View {
             (isTestingProxy && !canCancelProxyTest) ||
                 (!isTestingProxy && processState != .stopped)
         )
-        .help(
+        .help(NSLocalizedString(
             isTestingProxy
                 ? (
                     canCancelProxyTest
@@ -4604,8 +4602,8 @@ struct ProfileDetailView: View {
                     processState == .stopped
                         ? "Проверяет доступность и контекст выхода прокси"
                         : "Сначала останови профиль"
-                )
-        )
+                ), comment: "Proxy check action help"
+        ))
 
         Button(action: onEditProxy) {
             Label("Изменить прокси…", systemImage: "slider.horizontal.3")
@@ -4683,13 +4681,13 @@ struct ProfileDetailView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.72)
             Label(
-                processState.title,
+                NSLocalizedString(processState.title, comment: "Profile process status"),
                 systemImage: isRunning ? "circle.fill" : "circle"
             )
             .font(.subheadline)
             .foregroundStyle(processStatusColor)
             if let guidance = processState.guidance {
-                Text(guidance)
+                Text(verbatim: NSLocalizedString(guidance, comment: "Profile status guidance"))
                     .font(.caption)
                     .foregroundStyle(
                         processState.statusTone == .attention

@@ -7,10 +7,11 @@ enum FirstProfileBootstrap {
     static let directPrivacyNotice = "Сайты видят IP текущего соединения. Профили с одним IP могут быть связаны."
 
     static func makeProfile(
-        existingProfiles: [BrowserProfile]
+        existingProfiles: [BrowserProfile],
+        name: String = defaultName
     ) -> BrowserProfile? {
         guard existingProfiles.isEmpty else { return nil }
-        return BrowserProfile(name: defaultName, fontPolicy: .native, privacyPolicy: .balanced)
+        return BrowserProfile(name: name, fontPolicy: .native, privacyPolicy: .balanced)
     }
 }
 
@@ -88,7 +89,7 @@ struct FirstProfileOnboardingPresentation: Equatable, Sendable {
             )
             let explanation = detail.isEmpty
                 ? "Браузерный движок не готов. Повтори проверку."
-                : "Браузерный движок не готов: \(detail)"
+                : String(format: NSLocalizedString("Браузерный движок не готов: %@", comment: "Runtime readiness detail"), detail)
             return unavailableRuntime(message: explanation)
         }
     }
@@ -131,23 +132,20 @@ struct FirstProfileOnboardingView: View {
             )
         } description: {
             VStack(spacing: 6) {
-                Text(
-                    "NeAntik создаст постоянный локальный профиль браузера " +
-                        "со стабильными настройками среды."
-                )
+                Text("NeAntik создаст постоянный локальный профиль браузера со стабильными настройками среды.")
                 Label(
-                    "Сеть: \(FirstProfileBootstrap.routeSummary)",
+                    String(format: NSLocalizedString("Сеть: %@", comment: "First profile network mode"), NSLocalizedString(FirstProfileBootstrap.routeSummary, comment: "First profile route")),
                     systemImage: "network"
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                Text(FirstProfileBootstrap.directPrivacyNotice)
+                Text(verbatim: NSLocalizedString(FirstProfileBootstrap.directPrivacyNotice, comment: "Direct connection privacy notice"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if let statusMessage = presentation.statusMessage,
                    let statusSystemImage = presentation.statusSystemImage
                 {
-                    Label(statusMessage, systemImage: statusSystemImage)
+                    Label(NSLocalizedString(statusMessage, comment: "First profile status"), systemImage: statusSystemImage)
                         .font(.caption)
                         .foregroundStyle(
                             runtimeAvailability == .missing
@@ -155,7 +153,7 @@ struct FirstProfileOnboardingView: View {
                                 : Color.secondary
                         )
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel(statusMessage)
+                        .accessibilityLabel(NSLocalizedString(statusMessage, comment: "First profile status"))
                 }
             }
             .frame(maxWidth: 440)
@@ -173,7 +171,7 @@ struct FirstProfileOnboardingView: View {
     private var createAndOpenButton: some View {
         Button(action: performPrimaryAction) {
             Label(
-                presentation.primaryTitle,
+                NSLocalizedString(presentation.primaryTitle, comment: "First profile action"),
                 systemImage: presentation.primarySystemImage
             )
             .lineLimit(2)
@@ -183,8 +181,8 @@ struct FirstProfileOnboardingView: View {
         }
         .buttonStyle(.bordered)
         .disabled(!presentation.primaryIsEnabled)
-        .accessibilityLabel(presentation.primaryTitle)
-        .accessibilityHint(presentation.primaryAccessibilityHint)
+        .accessibilityLabel(NSLocalizedString(presentation.primaryTitle, comment: "First profile action"))
+        .accessibilityHint(NSLocalizedString(presentation.primaryAccessibilityHint, comment: "First profile action hint"))
     }
 
     private var configureButton: some View {

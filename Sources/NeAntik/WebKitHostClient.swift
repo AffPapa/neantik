@@ -23,9 +23,9 @@ actor WebKitHostClient {
 
         var userLabel: String {
             switch self {
-            case .bootstrapAcknowledgement: "подтверждения профиля"
-            case .networkProcessOwner: "идентификации сетевого процесса"
-            case .routeReady: "готовности сетевого маршрута"
+            case .bootstrapAcknowledgement: NSLocalizedString("webKitPhase.01", tableName: "Errors", bundle: .main, value: "подтверждения профиля", comment: "")
+            case .networkProcessOwner: NSLocalizedString("webKitPhase.02", tableName: "Errors", bundle: .main, value: "идентификации сетевого процесса", comment: "")
+            case .routeReady: NSLocalizedString("webKitPhase.03", tableName: "Errors", bundle: .main, value: "готовности сетевого маршрута", comment: "")
             }
         }
     }
@@ -44,34 +44,34 @@ actor WebKitHostClient {
 
         var errorDescription: String? {
             switch self {
-            case .invalidState: return "Состояние запуска WebKit изменилось."
-            case .invalidChild: return "Не удалось подтвердить подписанный процесс WebKit."
-            case .invalidReply: return "Процесс WebKit вернул неожиданный ответ."
-            case .childExited: return "Процесс WebKit завершился во время запуска."
-            case .routeLostDuringStartup: return "WebKit потерял сетевой маршрут при запуске. Профиль остался закрыт. Попробуйте открыть его снова."
+            case .invalidState: return NSLocalizedString("userError.086", tableName: "Errors", bundle: .main, value: "Состояние запуска WebKit изменилось.", comment: "")
+            case .invalidChild: return NSLocalizedString("userError.087", tableName: "Errors", bundle: .main, value: "Не удалось подтвердить подписанный процесс WebKit.", comment: "")
+            case .invalidReply: return NSLocalizedString("userError.088", tableName: "Errors", bundle: .main, value: "Процесс WebKit вернул неожиданный ответ.", comment: "")
+            case .childExited: return NSLocalizedString("userError.089", tableName: "Errors", bundle: .main, value: "Процесс WebKit завершился во время запуска.", comment: "")
+            case .routeLostDuringStartup: return NSLocalizedString("userError.090", tableName: "Errors", bundle: .main, value: "WebKit потерял сетевой маршрут при запуске. Профиль остался закрыт. Попробуйте открыть его снова.", comment: "")
             case .childRefusedStartup(let code, _):
                 if code == "webrtc-disable-unavailable" {
-                    return "WebKit не смог отключить peer-соединения WebRTC. Запуск профиля отменён."
+                    return NSLocalizedString("userError.091", tableName: "Errors", bundle: .main, value: "WebKit не смог отключить peer-соединения WebRTC. Запуск профиля отменён.", comment: "")
                 }
                 if code == "webrtc-relay-unavailable" {
-                    return "WebKit не смог применить режим WebRTC через TURN. Запуск профиля отменён."
+                    return NSLocalizedString("userError.092", tableName: "Errors", bundle: .main, value: "WebKit не смог применить режим WebRTC через TURN. Запуск профиля отменён.", comment: "")
                 }
                 if code == "window-not-visible" {
-                    return "WebKit не смог показать окно профиля. Запуск отменён."
+                    return NSLocalizedString("userError.093", tableName: "Errors", bundle: .main, value: "WebKit не смог показать окно профиля. Запуск отменён.", comment: "")
                 }
                 if code == "runtime-ambiguousRuntimeImage" ||
                     code.hasPrefix("runtime-ambiguousImages-") {
-                    return "Встроенный WebKit не запущен: одновременно загрузились две версии движка. Это ошибка сборки NeAntik; профиль остался закрыт."
+                    return NSLocalizedString("userError.094", tableName: "Errors", bundle: .main, value: "Встроенный WebKit не запущен: одновременно загрузились две версии движка. Это ошибка сборки NeAntik; профиль остался закрыт.", comment: "")
                 }
-                return "Встроенный WebKit не прошёл проверку запуска. Профиль остался закрыт."
+                return NSLocalizedString("userError.095", tableName: "Errors", bundle: .main, value: "Встроенный WebKit не прошёл проверку запуска. Профиль остался закрыт.", comment: "")
             case .childStartupTimedOut(let stage):
-                return "Встроенный WebKit не ответил на этапе запуска (\(stage))."
+                return String(format: NSLocalizedString("userError.096", tableName: "Errors", bundle: .main, value: "Встроенный WebKit не ответил на этапе запуска (%@).", comment: ""), String(describing: stage))
             case .childStartupClosed(let stage):
-                return "Встроенный WebKit закрыл канал на этапе запуска (\(stage))."
+                return String(format: NSLocalizedString("userError.097", tableName: "Errors", bundle: .main, value: "Встроенный WebKit закрыл канал на этапе запуска (%@).", comment: ""), String(describing: stage))
             case .parentStartupTimedOut(let phase):
-                return "Встроенный WebKit не ответил на этапе \(phase.userLabel)."
+                return String(format: NSLocalizedString("userError.098", tableName: "Errors", bundle: .main, value: "Встроенный WebKit не ответил на этапе %@.", comment: ""), String(describing: phase.userLabel))
             case .cleanupUnconfirmed:
-                return "Не удалось подтвердить остановку изолированного WebKit."
+                return NSLocalizedString("userError.099", tableName: "Errors", bundle: .main, value: "Не удалось подтвердить остановку изолированного WebKit.", comment: "")
             }
         }
     }

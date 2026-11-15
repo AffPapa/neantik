@@ -3,14 +3,14 @@ import Foundation
 
 struct ProfileCreationOwnershipError: LocalizedError {
     var errorDescription: String? {
-        "Каталог нового профиля изменился или содержит неожиданные данные. Он сохранён; автоматический откат остановлен."
+        NSLocalizedString("userError.203", tableName: "Errors", bundle: .main, value: "Каталог нового профиля изменился или содержит неожиданные данные. Он сохранён; автоматический откат остановлен.", comment: "")
     }
 }
 struct ProfileCreationDescriptorBudgetError: LocalizedError {
-    var errorDescription: String? { "Недостаточно свободных файловых дескрипторов для создания профилей. Закрой лишние приложения или импортируй меньший пакет." }
+    var errorDescription: String? { NSLocalizedString("userError.204", tableName: "Errors", bundle: .main, value: "Недостаточно свободных файловых дескрипторов для создания профилей. Закрой лишние приложения или импортируй меньший пакет.", comment: "") }
 }
 struct ProfileCreationIncompleteError: LocalizedError {
-    var errorDescription: String? { "Создание каталога профиля не завершено. Каталог мог сохраниться; NeAntik не удаляет его без подтверждения владения. Сохрани данные приложения и обратись в поддержку." }
+    var errorDescription: String? { NSLocalizedString("userError.205", tableName: "Errors", bundle: .main, value: "Создание каталога профиля не завершено. Каталог мог сохраниться; NeAntik не удаляет его без подтверждения владения. Сохрани данные приложения и обратись в поддержку.", comment: "") }
 }
 
 /// Holds only the directories this creation actually made. Cleanup removes

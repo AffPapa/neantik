@@ -4,7 +4,7 @@ import Foundation
 
 struct EphemeralProfileStorageError: LocalizedError {
     var errorDescription: String? {
-        "Очистка одноразового профиля не подтверждена. Его данные сохранены; запуск и изменение режима хранения заблокированы до безопасного завершения."
+        NSLocalizedString("userError.103", tableName: "Errors", bundle: .main, value: "Очистка одноразового профиля не подтверждена. Его данные сохранены; запуск и изменение режима хранения заблокированы до безопасного завершения.", comment: "")
     }
 }
 

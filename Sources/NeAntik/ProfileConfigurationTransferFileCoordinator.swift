@@ -21,9 +21,9 @@ enum ProfileConfigurationTransferFileCoordinator {
         try Task.checkCancellation()
 
         let panel = NSSavePanel()
-        panel.title = "Экспорт конфигурации профилей"
+        panel.title = NSLocalizedString("userDialog.001", tableName: "Errors", bundle: .main, value: "Экспорт конфигурации профилей", comment: "")
         panel.message =
-            "Экспортируются только настройки. Cookies, BrowserData, заметки, identity и Keychain не включаются."
+            NSLocalizedString("userDialog.002", tableName: "Errors", bundle: .main, value: "Экспортируются только настройки. Cookies, BrowserData, заметки, identity и Keychain не включаются.", comment: "")
         panel.nameFieldStringValue = "neantik-profile-config.json"
         panel.allowedContentTypes = [.json]
         panel.canCreateDirectories = true
@@ -52,9 +52,9 @@ enum ProfileConfigurationTransferFileCoordinator {
         try Task.checkCancellation()
 
         let panel = NSSavePanel()
-        panel.title = "Зашифрованный экспорт профилей"
+        panel.title = NSLocalizedString("userDialog.003", tableName: "Errors", bundle: .main, value: "Зашифрованный экспорт профилей", comment: "")
         panel.message =
-            "Сохраняются только настройки профилей. Пароль не записывается в файл и не сохраняется в Keychain."
+            NSLocalizedString("userDialog.004", tableName: "Errors", bundle: .main, value: "Сохраняются только настройки профилей. Пароль не записывается в файл и не сохраняется в Keychain.", comment: "")
         panel.nameFieldStringValue =
             "neantik-profile-config.encrypted.json"
         panel.allowedContentTypes = [.json]
@@ -69,9 +69,9 @@ enum ProfileConfigurationTransferFileCoordinator {
 
     static func `import`() async throws -> ProfileConfigurationTransferDocument? {
         let panel = NSOpenPanel()
-        panel.title = "Импорт конфигурации профилей"
+        panel.title = NSLocalizedString("userDialog.005", tableName: "Errors", bundle: .main, value: "Импорт конфигурации профилей", comment: "")
         panel.message =
-            "Будут созданы новые профили. Proxy-login входит в файл; пароли, cookies, BrowserData, заметки, identity и Keychain-секреты — нет."
+            NSLocalizedString("userDialog.006", tableName: "Errors", bundle: .main, value: "Будут созданы новые профили. Proxy-login входит в файл; пароли, cookies, BrowserData, заметки, identity и Keychain-секреты — нет.", comment: "")
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -93,9 +93,9 @@ enum ProfileConfigurationTransferFileCoordinator {
         passphrase: String
     ) async throws -> ProfileConfigurationTransferDocument? {
         let panel = NSOpenPanel()
-        panel.title = "Импорт зашифрованной конфигурации"
+        panel.title = NSLocalizedString("userDialog.007", tableName: "Errors", bundle: .main, value: "Импорт зашифрованной конфигурации", comment: "")
         panel.message =
-            "Будут созданы новые профили. Proxy-login находится в зашифрованном файле; пароли, cookies, BrowserData, заметки, identity и Keychain-секреты не импортируются."
+            NSLocalizedString("userDialog.008", tableName: "Errors", bundle: .main, value: "Будут созданы новые профили. Proxy-login находится в зашифрованном файле; пароли, cookies, BrowserData, заметки, identity и Keychain-секреты не импортируются.", comment: "")
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -130,11 +130,11 @@ enum ProfileConfigurationTransferFileError: LocalizedError, Equatable, Sendable 
     var errorDescription: String? {
         switch self {
         case .noStoppedProfiles:
-            "Нет остановленных профилей для экспорта."
+            NSLocalizedString("userError.100", tableName: "Errors", bundle: .main, value: "Нет остановленных профилей для экспорта.", comment: "")
         case .fileTooLarge:
-            "Файл конфигурации слишком большой."
+            NSLocalizedString("userError.101", tableName: "Errors", bundle: .main, value: "Файл конфигурации слишком большой.", comment: "")
         case .invalidFile:
-            "Не удалось прочитать конфигурацию профилей. Выбери JSON-файл NeAntik."
+            NSLocalizedString("userError.102", tableName: "Errors", bundle: .main, value: "Не удалось прочитать конфигурацию профилей. Выбери JSON-файл NeAntik.", comment: "")
         }
     }
 }

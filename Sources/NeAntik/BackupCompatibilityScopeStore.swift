@@ -56,7 +56,7 @@ struct UnavailableBackupCompatibilityScopeBackend: BackupCompatibilityScopeBacke
 enum BackupCompatibilityScopeError: LocalizedError, Equatable {
     case unavailable
     var errorDescription: String? {
-        "Не удалось подтвердить локальный ключ совместимости копии. Данные не заменены. Разблокируй Связку ключей и повтори. Если ключ удалён или это другой Mac, автоматическое восстановление недоступно."
+        NSLocalizedString("userError.150", tableName: "Errors", bundle: .main, value: "Не удалось подтвердить локальный ключ совместимости копии. Данные не заменены. Разблокируй Связку ключей и повтори. Если ключ удалён или это другой Mac, автоматическое восстановление недоступно.", comment: "")
     }
 }
 

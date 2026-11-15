@@ -119,6 +119,14 @@ cp \
   "$PROJECT_DIR/Resources/ru.lproj/InfoPlist.strings" \
   "$PROJECT_DIR/Resources/ru.lproj/Localizable.strings" \
   "$RESOURCES_DIR/ru.lproj/"
+mkdir -p "$RESOURCES_DIR/en.lproj"
+cp \
+  "$PROJECT_DIR/Resources/en.lproj/InfoPlist.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Localizable.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Help.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Errors.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Pages.strings" \
+  "$RESOURCES_DIR/en.lproj/"
 
 if [[ "$SIGNING_IDENTITY" == "-" ]]; then
   if [[ "${NEANTIK_BROWSER_DATA_BACKUP_ENABLED:-0}" != "0" || -n "${NEANTIK_DIRECT_PROVISIONING_PROFILE:-}" ]]; then

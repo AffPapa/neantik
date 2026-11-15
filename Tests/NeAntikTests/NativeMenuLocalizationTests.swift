@@ -3,6 +3,11 @@ import Testing
 
 @MainActor
 struct NativeMenuLocalizationTests {
+    @Test func englishSelectionLeavesSystemMenuInEnglish() {
+        #expect(NativeMenuLocalization.shouldLocalize(preferredLanguage: "ru"))
+        #expect(!NativeMenuLocalization.shouldLocalize(preferredLanguage: "en"))
+        #expect(!NativeMenuLocalization.shouldLocalize(preferredLanguage: nil))
+    }
     @Test func translatesDynamicApplicationCommands() {
         let appName = "NeAntik Dev"
         #expect(

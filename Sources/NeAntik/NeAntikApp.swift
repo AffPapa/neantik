@@ -64,9 +64,9 @@ struct NeAntikApp: App {
             #endif
             if CommandLine.arguments.count == 1 {
                 let alert = NSAlert()
-                alert.messageText = "Запуск NeAntik временно недоступен"
+                alert.messageText = NSLocalizedString("Запуск NeAntik временно недоступен", comment: "Launch unavailable alert")
                 alert.informativeText = error.localizedDescription
-                alert.addButton(withTitle: "Закрыть")
+                alert.addButton(withTitle: NSLocalizedString("Закрыть", comment: "Close alert"))
                 NSApplication.shared.setActivationPolicy(.regular)
                 NSApplication.shared.activate(ignoringOtherApps: true)
                 alert.runModal()

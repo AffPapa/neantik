@@ -325,7 +325,7 @@ index cb32a6f..ec54a4b 100644
  #import <wtf/cf/VectorCF.h>
  #import <wtf/cocoa/SpanCocoa.h>
  #import <wtf/cocoa/TypeCastsCocoa.h>
-@@ -2271,6 +2276,160 @@ void WebPage::getSelectedRangeAsync(CompletionHandler<void(const EditingRange& s
+@@ -2271,6 +2276,176 @@ void WebPage::getSelectedRangeAsync(CompletionHandler<void(const EditingRange& s
  }
  
  #if PLATFORM(MAC)
@@ -377,10 +377,6 @@ index cb32a6f..ec54a4b 100644
 +                return value.string().left(labelLimit);
 +        }
 +    }
-+    if (node.role() != AccessibilityRole::StaticText && node.role() != AccessibilityRole::Heading
-+        && !detachedAccessibilityCanPress(node))
-+        return { };
-+
 +    unsigned visited = 0;
 +    StringBuilder label;
 +    auto collect = [&](auto&& collect, Node& candidate, unsigned depth) -> void {
@@ -400,7 +396,21 @@ index cb32a6f..ec54a4b 100644
 +        for (RefPtr child = candidate.firstChild(); child && visited < 32 && label.length() < labelLimit; child = child->nextSibling())
 +            collect(collect, *child, depth + 1);
 +    };
-+    collect(collect, *source, 0);
++    // Follow accessibility label relationships but collect only static text.
++    // Editable descendants are deliberately excluded from the returned name.
++    auto labels = node.labeledByObjects();
++    if (labels.isEmpty())
++        labels = node.nativeLabeledByObjects();
++    for (auto& related : labels) {
++        RefPtr relatedNode = related->node();
++        if (relatedNode && &relatedNode->document() == &source->document())
++            collect(collect, *relatedNode, 0);
++        if (visited >= 32 || label.length() >= labelLimit)
++            break;
++    }
++    if (label.isEmpty() && (node.role() == AccessibilityRole::StaticText
++        || node.role() == AccessibilityRole::Heading || detachedAccessibilityCanPress(node)))
++        collect(collect, *source, 0);
 +    return label.toString();
 +}
 +
@@ -452,6 +462,12 @@ index cb32a6f..ec54a4b 100644
 +        entry->setBoolean("focusable"_s, node.isEnabled() && node.canSetFocusAttribute());
 +        entry->setBoolean("focused"_s, node.isFocused());
 +        entry->setBoolean("pressable"_s, detachedAccessibilityCanPress(node));
++        if (node.role() == AccessibilityRole::Checkbox || node.role() == AccessibilityRole::RadioButton)
++            entry->setInteger("checked"_s, static_cast<int>(node.checkboxOrRadioValue()));
++        // Only the active non-secure text control is needed for VoiceOver.
++        // Secure fields are excluded above and never enter the presenter pipe.
++        if (node.isFocused() && (node.role() == AccessibilityRole::TextField || node.role() == AccessibilityRole::TextArea))
++            entry->setString("value"_s, node.stringValue().left(64));
 +        nodes->pushObject(WTF::move(entry));
 +        for (auto& child : node.unignoredChildren()) {
 +            if (count == nodeLimit || inspected >= nodeLimit * 4)

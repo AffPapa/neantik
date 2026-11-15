@@ -64,9 +64,9 @@ enum WebKitPeerConnectionPolicy {
         var errorDescription: String? {
             switch self {
             case .unavailable:
-                return "WebKit не смог отключить WebRTC. Профиль не запущен; настройки и данные сохранены."
+                return NSLocalizedString("userError.193", tableName: "Errors", bundle: .main, value: "WebKit не смог отключить WebRTC. Профиль не запущен; настройки и данные сохранены.", comment: "")
             case .relayUnavailable:
-                return "WebKit не принял обязательный прокси для WebRTC. Запуск профиля остановлен."
+                return NSLocalizedString("userError.194", tableName: "Errors", bundle: .main, value: "WebKit не принял обязательный прокси для WebRTC. Запуск профиля остановлен.", comment: "")
             }
         }
     }

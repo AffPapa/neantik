@@ -74,11 +74,16 @@ enum NativeMenuLocalization {
     ]
 
     static func apply() {
+        guard shouldLocalize(preferredLanguage: Bundle.main.preferredLocalizations.first) else { return }
         guard let menu = NSApp.mainMenu else { return }
         let appName = Bundle.main.object(
             forInfoDictionaryKey: "CFBundleDisplayName"
         ) as? String ?? "NeAntik"
         localize(menu, appName: appName)
+    }
+
+    static func shouldLocalize(preferredLanguage: String?) -> Bool {
+        preferredLanguage == "ru"
     }
 
     static func applyAfterMenuCreation() {

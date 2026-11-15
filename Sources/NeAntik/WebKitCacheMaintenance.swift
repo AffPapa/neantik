@@ -24,8 +24,8 @@ enum WebKitCacheMaintenanceError: LocalizedError, Equatable {
     case wrongEngine, authorityChangedAfterCompletion
     var errorDescription: String? {
         switch self {
-        case .wrongEngine: "Эта операция доступна только для профиля WebKit."
-        case .authorityChangedAfterCompletion: "Очистка WebKit завершилась, но защита операции изменилась. Кэш мог быть удалён; не запускай этот профиль в другом экземпляре NeAntik одновременно. Данные сайтов не входили в очистку."
+        case .wrongEngine: NSLocalizedString("userError.073", tableName: "Errors", bundle: .main, value: "Эта операция доступна только для профиля WebKit.", comment: "")
+        case .authorityChangedAfterCompletion: NSLocalizedString("userError.074", tableName: "Errors", bundle: .main, value: "Очистка WebKit завершилась, но защита операции изменилась. Кэш мог быть удалён; не запускай этот профиль в другом экземпляре NeAntik одновременно. Данные сайтов не входили в очистку.", comment: "")
         }
     }
 }

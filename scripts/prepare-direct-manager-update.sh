@@ -503,6 +503,14 @@ cp \
   "$PROJECT_DIR/Resources/ru.lproj/InfoPlist.strings" \
   "$PROJECT_DIR/Resources/ru.lproj/Localizable.strings" \
   "$CANDIDATE_APP/Contents/Resources/ru.lproj/"
+mkdir -p "$CANDIDATE_APP/Contents/Resources/en.lproj"
+cp \
+  "$PROJECT_DIR/Resources/en.lproj/InfoPlist.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Localizable.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Help.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Errors.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Pages.strings" \
+  "$CANDIDATE_APP/Contents/Resources/en.lproj/"
 printf 'APPLNANT' >"$CANDIDATE_APP/Contents/PkgInfo"
 rm -rf "$CANDIDATE_APP/Contents/_CodeSignature"
 python3 "$PROJECT_DIR/scripts/package-manager-release-baseline.py" \

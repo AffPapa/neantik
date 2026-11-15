@@ -14,7 +14,7 @@ struct ProfileEnvironmentView: View {
     var now: Date = .now
 
     var body: some View {
-        ProfileDetailCard("Среда профиля") {
+        ProfileDetailCard(NSLocalizedString("page.256", tableName: "Pages", bundle: .main, value: "Среда профиля", comment: "")) {
             VStack(alignment: .leading, spacing: 0) {
                 overview
 
@@ -38,8 +38,8 @@ struct ProfileEnvironmentView: View {
                         .font(.caption2.weight(.semibold))
                         Text(
                             showingDetails
-                                ? "Скрыть подробности"
-                                : "Показать подробности"
+                                ? NSLocalizedString("page.257", tableName: "Pages", bundle: .main, value: "Скрыть подробности", comment: "")
+                                : NSLocalizedString("page.258", tableName: "Pages", bundle: .main, value: "Показать подробности", comment: "")
                         )
                         Spacer()
                         Text(
@@ -51,7 +51,7 @@ struct ProfileEnvironmentView: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .accessibilityLabel(
-                                "Диагностических разделов: \(snapshot.sections.count)"
+                                String(format: NSLocalizedString("page.259", tableName: "Pages", bundle: .main, value: "Диагностических разделов: %@", comment: ""), String(describing: snapshot.sections.count))
                             )
                     }
                     .frame(minHeight: 28)
@@ -60,20 +60,20 @@ struct ProfileEnvironmentView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(
                     (showingDetails
-                        ? "Скрыть подробности"
-                        : "Показать подробности") +
+                        ? NSLocalizedString("page.257", tableName: "Pages", bundle: .main, value: "Скрыть подробности", comment: "")
+                        : NSLocalizedString("page.258", tableName: "Pages", bundle: .main, value: "Показать подробности", comment: "")) +
                         ", " +
                         ProfileEnvironmentPresentation.sectionCountTitle(
                             snapshot.sections.count
                         )
                 )
                 .accessibilityValue(
-                    showingDetails ? "Развёрнуто" : "Свёрнуто"
+                    showingDetails ? NSLocalizedString("page.260", tableName: "Pages", bundle: .main, value: "Развёрнуто", comment: "") : NSLocalizedString("page.261", tableName: "Pages", bundle: .main, value: "Свёрнуто", comment: "")
                 )
                 .accessibilityHint(
                     showingDetails
-                        ? "Скрывает диагностические разделы"
-                        : "Показывает диагностические разделы"
+                        ? NSLocalizedString("page.262", tableName: "Pages", bundle: .main, value: "Скрывает диагностические разделы", comment: "")
+                        : NSLocalizedString("page.263", tableName: "Pages", bundle: .main, value: "Показывает диагностические разделы", comment: "")
                 )
 
                 if showingDetails {
@@ -98,7 +98,7 @@ struct ProfileEnvironmentView: View {
             .padding(.vertical, 4)
         } label: {
             HStack(spacing: 6) {
-                Label("Среда профиля", systemImage: "checklist.checked")
+                Label(NSLocalizedString("page.256", tableName: "Pages", bundle: .main, value: "Среда профиля", comment: ""), systemImage: "checklist.checked")
                     .font(.headline)
 
                 HelpLink(topic: .environment)
@@ -111,8 +111,8 @@ struct ProfileEnvironmentView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Что проверка среды не доказывает")
-                .accessibilityLabel("Ограничения проверки среды")
+                .help(NSLocalizedString("page.264", tableName: "Pages", bundle: .main, value: "Что проверка среды не доказывает", comment: ""))
+                .accessibilityLabel(NSLocalizedString("page.265", tableName: "Pages", bundle: .main, value: "Ограничения проверки среды", comment: ""))
                 .popover(isPresented: $showingLimitations) {
                     limitationsPopover
                 }
@@ -122,7 +122,7 @@ struct ProfileEnvironmentView: View {
         // group its own title instead of deriving it from those controls;
         // retain each child for keyboard and accessibility navigation.
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Среда профиля")
+        .accessibilityLabel(NSLocalizedString("page.256", tableName: "Pages", bundle: .main, value: "Среда профиля", comment: ""))
         .onAppear {
             resetExpansion(for: snapshot)
         }
@@ -137,28 +137,28 @@ struct ProfileEnvironmentView: View {
         now: Date
     ) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text("Совместимость среды браузера")
+            Text(NSLocalizedString("page.266", tableName: "Pages", bundle: .main, value: "Совместимость среды браузера", comment: ""))
                 .font(.subheadline.weight(.semibold))
             if assessment.isFresh(at: now) {
                 Text("Canvas · \(assessment.canvas.title)")
                 Text("WebGL · \(assessment.webGL.title)")
                 Text("Audio · \(assessment.audio.title)")
-                Text("Медиаустройства · \(assessment.mediaDevices.title)")
-                Text("Проверено: \(assessment.observedAt.neAntikDisplayDateTime)")
+                Text(String(format: NSLocalizedString("page.267", tableName: "Pages", bundle: .main, value: "Медиаустройства · %@", comment: ""), String(describing: assessment.mediaDevices.title)))
+                Text(String(format: NSLocalizedString("page.268", tableName: "Pages", bundle: .main, value: "Проверено: %@", comment: ""), String(describing: assessment.observedAt.neAntikDisplayDateTime)))
                 Text(assessment.limitations)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
-                Label("Отчёт устарел · проверь среду заново", systemImage: "clock.badge.exclamationmark")
+                Label(NSLocalizedString("page.269", tableName: "Pages", bundle: .main, value: "Отчёт устарел · проверь среду заново", comment: ""), systemImage: "clock.badge.exclamationmark")
                     .foregroundStyle(.secondary)
-                Text("Последняя проверка: \(assessment.observedAt.neAntikDisplayDateTime)")
+                Text(String(format: NSLocalizedString("page.270", tableName: "Pages", bundle: .main, value: "Последняя проверка: %@", comment: ""), String(describing: assessment.observedAt.neAntikDisplayDateTime)))
                     .foregroundStyle(.secondary)
             }
         }
         .font(.caption)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Отчёт о совместимости среды браузера")
+        .accessibilityLabel(NSLocalizedString("page.271", tableName: "Pages", bundle: .main, value: "Отчёт о совместимости среды браузера", comment: ""))
     }
 
     @ViewBuilder
@@ -231,16 +231,16 @@ struct ProfileEnvironmentView: View {
                 ". " +
                 ProfileEnvironmentPresentation.sectionSummary(for: section)
         )
-        .accessibilityValue(isExpanded ? "Развёрнуто" : "Свёрнуто")
+        .accessibilityValue(isExpanded ? NSLocalizedString("page.260", tableName: "Pages", bundle: .main, value: "Развёрнуто", comment: "") : NSLocalizedString("page.261", tableName: "Pages", bundle: .main, value: "Свёрнуто", comment: ""))
         .accessibilityHint(
             isExpanded
-                ? "Сворачивает диагностические значения"
-                : "Раскрывает диагностические значения"
+                ? NSLocalizedString("page.272", tableName: "Pages", bundle: .main, value: "Сворачивает диагностические значения", comment: "")
+                : NSLocalizedString("page.273", tableName: "Pages", bundle: .main, value: "Раскрывает диагностические значения", comment: "")
         )
         .help(
             isExpanded
-                ? "Скрыть значения раздела"
-                : "Показать значения раздела"
+                ? NSLocalizedString("page.274", tableName: "Pages", bundle: .main, value: "Скрыть значения раздела", comment: "")
+                : NSLocalizedString("page.275", tableName: "Pages", bundle: .main, value: "Показать значения раздела", comment: "")
         )
     }
 
@@ -248,7 +248,7 @@ struct ProfileEnvironmentView: View {
         VStack(alignment: .leading, spacing: 8) {
             overviewFacts
 
-            Text("Доступность сайтов в открытом браузере не проверяется автоматически.")
+            Text(NSLocalizedString("page.276", tableName: "Pages", bundle: .main, value: "Доступность сайтов в открытом браузере не проверяется автоматически.", comment: ""))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -265,7 +265,7 @@ struct ProfileEnvironmentView: View {
         VStack(alignment: .leading, spacing: 5) {
             if hasProxy {
                 EnvironmentOverviewFact(
-                    title: "Движок",
+                    title: NSLocalizedString("page.277", tableName: "Pages", bundle: .main, value: "Движок", comment: ""),
                     value: ProfileEnvironmentPresentation.runtimeSummary(
                         in: snapshot
                     )
@@ -274,13 +274,13 @@ struct ProfileEnvironmentView: View {
                 ViewThatFits(in: .horizontal) {
                     HStack(alignment: .firstTextBaseline, spacing: 16) {
                         EnvironmentOverviewFact(
-                            title: "Маршрут",
+                            title: NSLocalizedString("page.278", tableName: "Pages", bundle: .main, value: "Маршрут", comment: ""),
                             value: ProfileEnvironmentPresentation.routeSummary(
                                 in: snapshot
                             )
                         )
                         EnvironmentOverviewFact(
-                            title: "Движок",
+                            title: NSLocalizedString("page.277", tableName: "Pages", bundle: .main, value: "Движок", comment: ""),
                             value: ProfileEnvironmentPresentation.runtimeSummary(
                                 in: snapshot
                             )
@@ -290,13 +290,13 @@ struct ProfileEnvironmentView: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         EnvironmentOverviewFact(
-                            title: "Маршрут",
+                            title: NSLocalizedString("page.278", tableName: "Pages", bundle: .main, value: "Маршрут", comment: ""),
                             value: ProfileEnvironmentPresentation.routeSummary(
                                 in: snapshot
                             )
                         )
                         EnvironmentOverviewFact(
-                            title: "Движок",
+                            title: NSLocalizedString("page.277", tableName: "Pages", bundle: .main, value: "Движок", comment: ""),
                             value: ProfileEnvironmentPresentation.runtimeSummary(
                                 in: snapshot
                             )
@@ -311,7 +311,7 @@ struct ProfileEnvironmentView: View {
 
     private var diagnosticTools: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Дополнительные проверки")
+            Text(NSLocalizedString("page.279", tableName: "Pages", bundle: .main, value: "Дополнительные проверки", comment: ""))
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
@@ -333,31 +333,31 @@ struct ProfileEnvironmentView: View {
 
     private var fingerprintAuditButton: some View {
         Button(action: onRunFingerprintAudit) {
-            Label("Сравнить отпечатки…", systemImage: "viewfinder")
+            Label(NSLocalizedString("page.280", tableName: "Pages", bundle: .main, value: "Сравнить отпечатки…", comment: ""), systemImage: "viewfinder")
         }
         .buttonStyle(.bordered)
         .disabled(!canRunFingerprintAudit)
         .help(
             canRunFingerprintAudit
-                ? "Локальное сравнение профилей A → B → A"
+                ? NSLocalizedString("page.281", tableName: "Pages", bundle: .main, value: "Локальное сравнение профилей A → B → A", comment: "")
                 : fingerprintDisabledReason
         )
         .accessibilityHint(
             canRunFingerprintAudit
-                ? "Запускает локальное сравнение профилей " +
-                    "A, B и снова A"
+                ? NSLocalizedString("page.282", tableName: "Pages", bundle: .main, value: "Запускает локальное сравнение профилей ", comment: "") +
+                    NSLocalizedString("page.283", tableName: "Pages", bundle: .main, value: "A, B и снова A", comment: "")
                 : fingerprintDisabledReason
         )
     }
 
     private var fingerprintDisabledReason: String {
-        "Нужны два остановленных активных профиля и " +
-            "совместимый браузерный движок"
+        NSLocalizedString("page.284", tableName: "Pages", bundle: .main, value: "Нужны два остановленных активных профиля и ", comment: "") +
+            NSLocalizedString("page.285", tableName: "Pages", bundle: .main, value: "совместимый браузерный движок", comment: "")
     }
 
     private var limitationsPopover: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Что проверка не доказывает")
+            Text(NSLocalizedString("page.286", tableName: "Pages", bundle: .main, value: "Что проверка не доказывает", comment: ""))
                 .font(.headline)
                 .accessibilityHeading(.h2)
 
@@ -678,7 +678,7 @@ private struct EnvironmentFieldRow: View {
         }
         if let observedAt = field.observedAt {
             parts.append(
-                "Измерено " + observedAt.neAntikDisplayDateTime
+                NSLocalizedString("page.287", tableName: "Pages", bundle: .main, value: "Измерено ", comment: "") + observedAt.neAntikDisplayDateTime
             )
         }
         return parts.joined(separator: ". ")
@@ -706,11 +706,11 @@ private struct EnvironmentFieldStatus: View {
 
     private var statusHelp: String {
         var parts = [
-            "Источник: \(field.state.title.lowercased())",
-            "Результат: \(EnvironmentFieldPresentation.title(for: field).lowercased())",
+            String(format: NSLocalizedString("page.288", tableName: "Pages", bundle: .main, value: "Источник: %@", comment: ""), String(describing: field.state.title.lowercased())),
+            String(format: NSLocalizedString("page.289", tableName: "Pages", bundle: .main, value: "Результат: %@", comment: ""), String(describing: EnvironmentFieldPresentation.title(for: field).lowercased())),
         ]
         if let observedAt = field.observedAt {
-            parts.append("Измерено \(observedAt.neAntikDisplayDateTime)")
+            parts.append(String(format: NSLocalizedString("page.290", tableName: "Pages", bundle: .main, value: "Измерено %@", comment: ""), String(describing: observedAt.neAntikDisplayDateTime)))
         }
         return parts.joined(separator: ". ")
     }
@@ -718,18 +718,24 @@ private struct EnvironmentFieldStatus: View {
 
 enum ProfileEnvironmentPresentation {
     static func sectionCountTitle(_ count: Int) -> String {
+        if Bundle.main.preferredLocalizations.first == "en" {
+            let noun = count == 1
+                ? NSLocalizedString("page.292", tableName: "Pages", bundle: .main, value: "раздел", comment: "")
+                : NSLocalizedString("page.291", tableName: "Pages", bundle: .main, value: "разделов", comment: "")
+            return "\(count) \(noun)"
+        }
         let lastTwo = count % 100
         let noun: String
         if (11...14).contains(lastTwo) {
-            noun = "разделов"
+            noun = NSLocalizedString("page.291", tableName: "Pages", bundle: .main, value: "разделов", comment: "")
         } else {
             switch count % 10 {
             case 1:
-                noun = "раздел"
+                noun = NSLocalizedString("page.292", tableName: "Pages", bundle: .main, value: "раздел", comment: "")
             case 2...4:
-                noun = "раздела"
+                noun = NSLocalizedString("page.293", tableName: "Pages", bundle: .main, value: "раздела", comment: "")
             default:
-                noun = "разделов"
+                noun = NSLocalizedString("page.291", tableName: "Pages", bundle: .main, value: "разделов", comment: "")
             }
         }
         return "\(count) \(noun)"
@@ -811,7 +817,7 @@ enum ProfileEnvironmentPresentation {
     }
 
     static func displayTitle(for section: EnvironmentDiagnosticSection) -> String {
-        section.id == "fingerprint" ? "Отпечаток браузера" : section.title
+        section.id == "fingerprint" ? NSLocalizedString("page.294", tableName: "Pages", bundle: .main, value: "Отпечаток браузера", comment: "") : section.title
     }
 
     static func sectionSummary(
@@ -834,9 +840,9 @@ enum ProfileEnvironmentPresentation {
             parts.append(
                 russianCount(
                     blockingCount,
-                    one: "блокирует запуск",
-                    few: "блокируют запуск",
-                    many: "блокируют запуск"
+                    one: NSLocalizedString("page.295", tableName: "Pages", bundle: .main, value: "блокирует запуск", comment: ""),
+                    few: NSLocalizedString("page.296", tableName: "Pages", bundle: .main, value: "блокируют запуск", comment: ""),
+                    many: NSLocalizedString("page.296", tableName: "Pages", bundle: .main, value: "блокируют запуск", comment: "")
                 )
             )
         }
@@ -844,9 +850,9 @@ enum ProfileEnvironmentPresentation {
             parts.append(
                 russianCount(
                     failureCount,
-                    one: "проблема",
-                    few: "проблемы",
-                    many: "проблем"
+                    one: NSLocalizedString("page.297", tableName: "Pages", bundle: .main, value: "проблема", comment: ""),
+                    few: NSLocalizedString("page.298", tableName: "Pages", bundle: .main, value: "проблемы", comment: ""),
+                    many: NSLocalizedString("page.299", tableName: "Pages", bundle: .main, value: "проблем", comment: "")
                 )
             )
         }
@@ -854,9 +860,9 @@ enum ProfileEnvironmentPresentation {
             parts.append(
                 russianCount(
                     attentionCount,
-                    one: "требует внимания",
-                    few: "требуют внимания",
-                    many: "требуют внимания"
+                    one: NSLocalizedString("page.300", tableName: "Pages", bundle: .main, value: "требует внимания", comment: ""),
+                    few: NSLocalizedString("page.301", tableName: "Pages", bundle: .main, value: "требуют внимания", comment: ""),
+                    many: NSLocalizedString("page.301", tableName: "Pages", bundle: .main, value: "требуют внимания", comment: "")
                 )
             )
         }
@@ -864,7 +870,7 @@ enum ProfileEnvironmentPresentation {
     }
 
     static func routeSummary(in snapshot: ProfileEnvironmentSnapshot) -> String {
-        fieldValue(id: "route.mode", in: snapshot) ?? "Не определён"
+        fieldValue(id: "route.mode", in: snapshot) ?? NSLocalizedString("page.302", tableName: "Pages", bundle: .main, value: "Не определён", comment: "")
     }
 
     static func runtimeSummary(in snapshot: ProfileEnvironmentSnapshot) -> String {
@@ -872,7 +878,7 @@ enum ProfileEnvironmentPresentation {
             id: "fingerprint.runtime",
             in: snapshot
         ) else {
-            return "Не найден"
+            return NSLocalizedString("page.303", tableName: "Pages", bundle: .main, value: "Не найден", comment: "")
         }
         guard value.localizedCaseInsensitiveContains("Chromium") else {
             return value
@@ -891,9 +897,9 @@ enum ProfileEnvironmentPresentation {
     static func attentionTitle(count: Int) -> String {
         russianCount(
             count,
-            one: "требует внимания",
-            few: "требуют внимания",
-            many: "требуют внимания"
+            one: NSLocalizedString("page.300", tableName: "Pages", bundle: .main, value: "требует внимания", comment: ""),
+            few: NSLocalizedString("page.301", tableName: "Pages", bundle: .main, value: "требуют внимания", comment: ""),
+            many: NSLocalizedString("page.301", tableName: "Pages", bundle: .main, value: "требуют внимания", comment: "")
         )
     }
 
@@ -905,20 +911,20 @@ enum ProfileEnvironmentPresentation {
     ) -> String {
         switch highestSeverity {
         case .blocking:
-            return "Запуск заблокирован"
+            return NSLocalizedString("page.304", tableName: "Pages", bundle: .main, value: "Запуск заблокирован", comment: "")
         case .failure:
             return russianCount(
                 failureCount,
-                one: "проблема",
-                few: "проблемы",
-                many: "проблем"
+                one: NSLocalizedString("page.297", tableName: "Pages", bundle: .main, value: "проблема", comment: ""),
+                few: NSLocalizedString("page.298", tableName: "Pages", bundle: .main, value: "проблемы", comment: ""),
+                many: NSLocalizedString("page.299", tableName: "Pages", bundle: .main, value: "проблем", comment: "")
             )
         case .attention:
-            return "Нужно проверить"
+            return NSLocalizedString("page.305", tableName: "Pages", bundle: .main, value: "Нужно проверить", comment: "")
         case .success, .neutral:
             return hasAutomaticLaunchFix
-                ? "Настроено · проверка прокси при запуске"
-                : "Настройки готовы"
+                ? NSLocalizedString("page.306", tableName: "Pages", bundle: .main, value: "Настроено · проверка прокси при запуске", comment: "")
+                : NSLocalizedString("page.307", tableName: "Pages", bundle: .main, value: "Настройки готовы", comment: "")
         }
     }
 
@@ -974,7 +980,7 @@ enum ProfileEnvironmentPresentation {
         if !values.isEmpty {
             return values.prefix(2).joined(separator: " · ")
         }
-        return section.fields.first?.value ?? "Нет данных"
+        return section.fields.first?.value ?? NSLocalizedString("page.308", tableName: "Pages", bundle: .main, value: "Нет данных", comment: "")
     }
 
     private static func fieldValue(
@@ -1027,6 +1033,9 @@ enum ProfileEnvironmentPresentation {
         few: String,
         many: String
     ) -> String {
+        if Bundle.main.preferredLocalizations.first == "en" {
+            return "\(count) \(count == 1 ? one : many)"
+        }
         let remainder100 = count % 100
         let remainder10 = count % 10
         let word: String
@@ -1058,11 +1067,11 @@ enum EvidenceBadgePresentation {
 enum DiagnosticSeverityPresentation {
     static func title(for severity: DiagnosticFindingSeverity) -> String {
         switch severity {
-        case .neutral: "Информация"
-        case .success: "Подтверждено"
-        case .attention: "Требует внимания"
-        case .failure: "Проблема"
-        case .blocking: "Блокирует запуск"
+        case .neutral: NSLocalizedString("page.309", tableName: "Pages", bundle: .main, value: "Информация", comment: "")
+        case .success: NSLocalizedString("page.310", tableName: "Pages", bundle: .main, value: "Подтверждено", comment: "")
+        case .attention: NSLocalizedString("page.311", tableName: "Pages", bundle: .main, value: "Требует внимания", comment: "")
+        case .failure: NSLocalizedString("page.312", tableName: "Pages", bundle: .main, value: "Проблема", comment: "")
+        case .blocking: NSLocalizedString("page.313", tableName: "Pages", bundle: .main, value: "Блокирует запуск", comment: "")
         }
     }
 

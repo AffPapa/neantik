@@ -33,8 +33,8 @@ enum ApplicationUpdateAdmissionError: LocalizedError {
     case busy, updating
     var errorDescription: String? {
         switch self {
-        case .busy: "Операция с данными ещё выполняется. Дождись её завершения и снова открой обновление."
-        case .updating: "NeAntik готовится к обновлению. Заверши или отмени его перед другой операцией."
+        case .busy: NSLocalizedString("userError.083", tableName: "Errors", bundle: .main, value: "Операция с данными ещё выполняется. Дождись её завершения и снова открой обновление.", comment: "")
+        case .updating: NSLocalizedString("userError.084", tableName: "Errors", bundle: .main, value: "NeAntik готовится к обновлению. Заверши или отмени его перед другой операцией.", comment: "")
         }
     }
 }
