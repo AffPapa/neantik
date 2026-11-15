@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import select
+import stat
 import subprocess
 import sys
 import tempfile
@@ -422,6 +423,82 @@ class DMGTransactionTests(unittest.TestCase):
         submitted = dmg.decode_seal(dmg.Receipts(self.root).data["submitted"], self.root / "submitted" / self.destination.name)
         with self.assertRaises(dmg.DMGError):
             dmg.validated_apple_log(json.dumps(payload), IDENTIFIER, submitted)
+
+
+class AppleCompatibilityTicketTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.archive = self.root / "qualified.zip"
+        self.submitted = SimpleNamespace(path=Path("NeAntik-1.1.0-arm64-notarized.dmg"), sha256="a" * 64)
+        self.ticket = {"path": self.submitted.path.name + "/" + dmg.COMPATIBILITY_LIBRARY,
+                       "cdhash": dmg.COMPATIBILITY_X86_CDHASH, "arch": "x86_64", "digestAlgorithm": "SHA-256"}
+        self.payload = {"jobId": IDENTIFIER, "status": "Accepted", "statusCode": 0,
+                        "issues": None, "archiveFilename": self.submitted.path.name,
+                        "sha256": self.submitted.sha256,
+                        "ticketContents": [{"path": self.submitted.path.name + suffix,
+                            "cdhash": "b" * 40, "arch": "arm64"} for suffix in
+                            ("", "/NeAntik.app", "/NeAntik.app/Contents/Resources/NeAntik Browser.app")]}
+        self.commands = []
+        self.display_hash = dmg.COMPATIBILITY_X86_CDHASH
+        self.verify_exit = 0
+
+    def write_library(self, *, duplicate=False, mode=stat.S_IFREG | 0o644):
+        entry = zipfile.ZipInfo(dmg.COMPATIBILITY_LIBRARY)
+        entry.create_system = 3
+        entry.external_attr = mode << 16
+        with zipfile.ZipFile(self.archive, "w") as archive:
+            archive.writestr(entry, b"signed library bytes")
+            if duplicate:
+                with self.assertWarns(UserWarning):
+                    archive.writestr(entry, b"different bytes")
+
+    def runner(self, command, cwd):
+        self.commands.append(command)
+        self.assertEqual(Path(command[-1]).read_bytes(), b"signed library bytes")
+        if command[1] == "--verify":
+            return dmg.notary.CommandResult(self.verify_exit, "")
+        return dmg.notary.CommandResult(0, "CDHash=" + self.display_hash + "\n")
+
+    def validate(self, tickets, compatibility_check=None):
+        self.payload["ticketContents"] += tickets
+        return dmg.validated_apple_log(json.dumps(self.payload), IDENTIFIER, self.submitted,
+                                       compatibility_check=compatibility_check)
+
+    def test_three_known_intel_tickets_require_and_retain_verified_slice(self):
+        self.write_library()
+        result = self.validate([dict(self.ticket) for _ in range(3)],
+            lambda: dmg.verify_compatibility_slice(self.archive, self.root, self.runner))
+        self.assertEqual(result["ticketContents"][-3:], [self.ticket] * 3)
+        self.assertEqual(self.commands[0][0:4], ["codesign", "--verify", "--strict", "--all-architectures"])
+        self.assertEqual(self.commands[1][0:5], ["codesign", "--display", "--verbose=4", "--arch", "x86_64"])
+
+    def test_unverified_and_unexpected_intel_tickets_fail_closed(self):
+        with self.assertRaisesRegex(dmg.DMGError, "requires signed ZIP"):
+            self.validate([dict(self.ticket)])
+        for field, value in (("path", self.submitted.path.name + "/other.dylib"),
+                             ("cdhash", "c" * 40), ("digestAlgorithm", "SHA-1")):
+            with self.subTest(field=field):
+                self.payload["ticketContents"] = self.payload["ticketContents"][:3]
+                altered = dict(self.ticket, **{field: value})
+                with self.assertRaisesRegex(dmg.DMGError, "Unexpected Intel"):
+                    self.validate([altered], lambda: self.fail("unexpected verification"))
+
+    def test_signature_hash_failure_and_unsafe_zip_entries_are_rejected(self):
+        self.write_library()
+        self.display_hash = "d" * 40
+        with self.assertRaisesRegex(dmg.DMGError, "signature does not match"):
+            dmg.verify_compatibility_slice(self.archive, self.root, self.runner)
+        self.verify_exit = 1
+        with self.assertRaisesRegex(dmg.DMGError, "external DMG phase failed"):
+            dmg.verify_compatibility_slice(self.archive, self.root, self.runner)
+        self.write_library(duplicate=True)
+        with self.assertRaisesRegex(dmg.DMGError, "absent or ambiguous"):
+            dmg.verify_compatibility_slice(self.archive, self.root, self.runner)
+        self.write_library(mode=stat.S_IFLNK | 0o777)
+        with self.assertRaisesRegex(dmg.DMGError, "unsafe"):
+            dmg.verify_compatibility_slice(self.archive, self.root, self.runner)
 
 
 class DMGContentsTests(unittest.TestCase):

@@ -16,6 +16,7 @@ import stat
 import sys
 import tempfile
 import uuid
+import zipfile
 
 from dmg_contents import assert_app_matches_zip, assert_volume_inventory
 import notarize_direct_transaction as notary
@@ -26,6 +27,10 @@ import release_transaction as transaction
 import release_candidate_location as location
 
 MAX_BYTES = 16 * 1024**3
+COMPATIBILITY_LIBRARY = ("NeAntik.app/Contents/Helpers/webkit-v1/"
+                         "NeAntikWebKitHost.app/Contents/Frameworks/"
+                         "libswiftCompatibilitySpan.dylib")
+COMPATIBILITY_X86_CDHASH = "abc581fe551196f5f4f6abae5e235b295d24301a"
 STAGES = ("created", "qualified", "submit-intent", "submission-known",
           "accepted", "final-verified", "sidecar-committed", "dmg-committed", "complete")
 POLICY_CLOSURE = tuple(sorted(set(source.RELEASE_SOURCE_CLOSURE) | {
@@ -389,7 +394,9 @@ def run(root, project, destination, profile, *, runner=native_runner,
         notary.parse_notary_result(output, expected_identifier=identifier)
         log_output = immutable(lambda: call(["xcrun", "notarytool", "log", identifier,
                                             "--keychain-profile", profile]))
-        apple_log = validated_apple_log(log_output, identifier, submitted)
+        apple_log = immutable(lambda: validated_apple_log(
+            log_output, identifier, submitted,
+            compatibility_check=lambda: verify_compatibility_slice(archive.path, project, runner)))
         advance("accepted", appleLog=apple_log)
     export_apple_receipts(root, project, destination.name, receipts.data["appleLog"], identifier)
     final = root / "final" / destination.name
@@ -432,7 +439,40 @@ def run(root, project, destination, profile, *, runner=native_runner,
     return {"status": "complete", "submissionID": identifier, "sha256": final_seal.sha256}
 
 
-def validated_apple_log(output, identifier, submitted):
+def verify_compatibility_slice(archive, project, runner):
+    """Verify the one known Intel compatibility slice against the sealed ZIP.
+
+    The submitted DMG was already checked byte-for-byte against this ZIP. The
+    surrounding immutable phase keeps both artifacts sealed while this runs.
+    Never extract arbitrary paths or accept a ticket based solely on its claim.
+    """
+    try:
+        with zipfile.ZipFile(archive) as bundle:
+            matches = [item for item in bundle.infolist() if item.filename == COMPATIBILITY_LIBRARY]
+            if len(matches) != 1:
+                raise DMGError("Compatibility library is absent or ambiguous")
+            item = matches[0]
+            if (not stat.S_ISREG(item.external_attr >> 16) or
+                    item.file_size <= 0 or item.file_size > 1024 * 1024):
+                raise DMGError("Compatibility library ZIP entry is unsafe")
+            contents = bundle.read(item)
+            if len(contents) != item.file_size:
+                raise DMGError("Compatibility library ZIP entry is invalid")
+    except DMGError:
+        raise
+    except (OSError, zipfile.BadZipFile, RuntimeError) as error:
+        raise DMGError("Compatibility library ZIP entry could not be verified") from error
+    with tempfile.TemporaryDirectory(prefix="neantik-compat-slice-") as temporary:
+        library = Path(temporary) / "libswiftCompatibilitySpan.dylib"
+        library.write_bytes(contents)
+        checked(runner, ["codesign", "--verify", "--strict", "--all-architectures", str(library)], project)
+        details = checked(runner, ["codesign", "--display", "--verbose=4", "--arch", "x86_64", str(library)], project)
+        hashes = re.findall(r"^CDHash=([0-9a-f]{40})$", details, re.M)
+        if hashes != [COMPATIBILITY_X86_CDHASH]:
+            raise DMGError("Compatibility library signature does not match Apple's ticket")
+
+
+def validated_apple_log(output, identifier, submitted, *, compatibility_check=None):
     """Keep only release fields, and bind Apple's accepted log to submitted bytes."""
     if len(output.encode("utf-8")) > 8 * 1024**2:
         raise DMGError("Apple log exceeds its limit")
@@ -444,6 +484,7 @@ def validated_apple_log(output, identifier, submitted):
             not isinstance(payload.get("ticketContents"), list)):
         raise DMGError("Apple log does not match accepted DMG submission")
     tickets = []
+    needs_compatibility_check = False
     for item in payload["ticketContents"]:
         if not isinstance(item, dict):
             raise DMGError("Apple ticket is invalid")
@@ -451,13 +492,23 @@ def validated_apple_log(output, identifier, submitted):
         if (not isinstance(path, str) or ".." in Path(path).parts or
                 not (path == submitted.path.name or path.startswith(submitted.path.name + "/")) or
                 not re.fullmatch(r"[0-9a-f]{40}", str(item.get("cdhash"))) or
-                item.get("arch") not in {None, "arm64"}):
+                item.get("arch") not in {None, "arm64", "x86_64"}):
             raise DMGError("Apple ticket path or signature is invalid")
+        if item.get("arch") == "x86_64":
+            if (path != submitted.path.name + "/" + COMPATIBILITY_LIBRARY or
+                    item.get("cdhash") != COMPATIBILITY_X86_CDHASH or
+                    item.get("digestAlgorithm") != "SHA-256"):
+                raise DMGError("Unexpected Intel compatibility ticket")
+            needs_compatibility_check = True
         tickets.append({k: v for k, v in item.items() if k in {"path", "cdhash", "arch", "digestAlgorithm"}})
     for expected in (submitted.path.name, submitted.path.name + "/NeAntik.app",
                      submitted.path.name + "/NeAntik.app/Contents/Resources/NeAntik Browser.app"):
         if sum(ticket["path"] == expected for ticket in tickets) != 1:
             raise DMGError("Apple log lacks an unambiguous required signature ticket")
+    if needs_compatibility_check:
+        if compatibility_check is None:
+            raise DMGError("Compatibility ticket requires signed ZIP verification")
+        compatibility_check()
     return {**{k: payload[k] for k in ("jobId", "status", "statusCode", "archiveFilename", "sha256")},
             "issues": None, "ticketContents": tickets}
 
