@@ -1677,7 +1677,7 @@ struct ProfileEditorView: View {
           .font(.caption).foregroundStyle(.secondary)
       }
       if let finding = protocolDiscovery.finding {
-        Text(finding.message).font(.callout).foregroundStyle(.secondary)
+        Text(verbatim: NSLocalizedString(finding.message, comment: "Proxy type detection result")).font(.callout).foregroundStyle(.secondary)
           .fixedSize(horizontal: false, vertical: true)
         if let kind = finding.kind {
           Button(String(format: NSLocalizedString("Использовать %@", comment: "Use detected proxy protocol"), kind.title)) { applyDetectedProtocol() }
@@ -1685,7 +1685,7 @@ struct ProfileEditorView: View {
         }
       }
       if let protocolDetectionError {
-        Text(protocolDetectionError).font(.callout).foregroundStyle(.red)
+        Text(verbatim: NSLocalizedString(protocolDetectionError, comment: "Proxy type detection error")).font(.callout).foregroundStyle(.red)
           .fixedSize(horizontal: false, vertical: true)
       }
     }

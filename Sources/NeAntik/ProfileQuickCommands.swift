@@ -49,7 +49,7 @@ struct ProfileQuickCommandsSheet: View {
     }
 
     private var openProfileButton: some View {
-        Button(selected?.openTitle ?? NSLocalizedString("page.737", tableName: "Pages", bundle: .main, value: "Запустить профиль", comment: ""), action: openSelectedProfile)
+        Button(selected.map { NSLocalizedString($0.openTitle, comment: "Profile action") } ?? NSLocalizedString("page.737", tableName: "Pages", bundle: .main, value: "Запустить профиль", comment: ""), action: openSelectedProfile)
             .keyboardShortcut(.return, modifiers: .command)
             .disabled(selected?.openEnabled != true)
             .help(NSLocalizedString("page.738", tableName: "Pages", bundle: .main, value: "⌘Return — запустить остановленный профиль или выбрать его в менеджере; Return — только выбрать в менеджере", comment: ""))
