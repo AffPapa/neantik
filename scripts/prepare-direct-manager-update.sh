@@ -510,6 +510,7 @@ cp \
   "$PROJECT_DIR/Resources/en.lproj/Help.strings" \
   "$PROJECT_DIR/Resources/en.lproj/Errors.strings" \
   "$PROJECT_DIR/Resources/en.lproj/Pages.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Status.strings" \
   "$CANDIDATE_APP/Contents/Resources/en.lproj/"
 printf 'APPLNANT' >"$CANDIDATE_APP/Contents/PkgInfo"
 rm -rf "$CANDIDATE_APP/Contents/_CodeSignature"

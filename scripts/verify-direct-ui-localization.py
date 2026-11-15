@@ -131,7 +131,7 @@ def inspect_sources(
         if not english_resources.is_dir() or english_resources.is_symlink():
             issues.append("Resources/en.lproj must be a regular directory")
         else:
-            for name in ("InfoPlist.strings", "Localizable.strings", "Help.strings", "Errors.strings", "Pages.strings"):
+            for name in ("InfoPlist.strings", "Localizable.strings", "Help.strings", "Errors.strings", "Pages.strings", "Status.strings"):
                 resource = english_resources / name
                 if not resource.is_file() or resource.is_symlink():
                     issues.append(f"Missing regular English bundle resource: {name}")

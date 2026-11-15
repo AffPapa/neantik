@@ -126,6 +126,7 @@ cp \
   "$PROJECT_DIR/Resources/en.lproj/Help.strings" \
   "$PROJECT_DIR/Resources/en.lproj/Errors.strings" \
   "$PROJECT_DIR/Resources/en.lproj/Pages.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Status.strings" \
   "$RESOURCES_DIR/en.lproj/"
 
 if [[ "$SIGNING_IDENTITY" == "-" ]]; then

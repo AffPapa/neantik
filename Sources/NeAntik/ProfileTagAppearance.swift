@@ -95,6 +95,6 @@ struct ProfileTagChip: View {
             in: Capsule()
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Тег \(tag)")
+        .accessibilityLabel(String(format: NSLocalizedString("Тег %@", comment: "Profile tag accessibility label"), tag))
     }
 }

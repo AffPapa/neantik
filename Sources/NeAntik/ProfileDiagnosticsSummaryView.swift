@@ -37,7 +37,7 @@ struct ProfileDiagnosticsSummaryView: View {
 
                         Spacer(minLength: 8)
 
-                        Text(summary.status.title)
+                        Text(verbatim: localizedProfileStatus(summary.status.title))
                             .font(.caption.weight(.medium))
                             .foregroundStyle(statusColor)
                             .lineLimit(1)
@@ -48,7 +48,7 @@ struct ProfileDiagnosticsSummaryView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(NSLocalizedString("page.744", tableName: "Pages", bundle: .main, value: "Диагностика профиля", comment: ""))
                 .accessibilityValue(
-                    "\(summary.status.title). " +
+                    "\(localizedProfileStatus(summary.status.title)). " +
                         (isExpanded ? NSLocalizedString("page.746", tableName: "Pages", bundle: .main, value: "Развёрнута", comment: "") : NSLocalizedString("page.747", tableName: "Pages", bundle: .main, value: "Скрыта", comment: ""))
                 )
                 .accessibilityHint(
@@ -58,18 +58,18 @@ struct ProfileDiagnosticsSummaryView: View {
                 )
 
                 if let nextStep = summary.nextStep.title {
-                    Label(nextStep, systemImage: "arrow.turn.down.right")
+                    Label(localizedProfileStatus(nextStep), systemImage: "arrow.turn.down.right")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityLabel(
-                            summary.nextStep.accessibilityLabel ?? nextStep
+                            String(format: localizedProfileStatus("Следующий шаг: %@"), localizedProfileStatus(nextStep))
                         )
                 }
 
                 if isExpanded {
                     Divider()
-                    Text(summary.detail)
+                    Text(verbatim: localizedProfileStatus(summary.detail))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

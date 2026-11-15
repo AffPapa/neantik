@@ -77,6 +77,7 @@ class VerifyDirectUiLocalizationTests(unittest.TestCase):
             (english / "Help.strings").write_text('"profiles.title" = "Profiles";\n')
             (english / "Errors.strings").write_text('"error.invalid" = "Invalid";\n')
             (english / "Pages.strings").write_text('"page.title" = "Title";\n')
+            (english / "Status.strings").write_text('"status.title" = "Ready";\n')
             self.assertTrue(MODULE.inspect_sources(sources, info_plist)["qualified"])
 
     def test_accepts_required_russian_actions(self) -> None:

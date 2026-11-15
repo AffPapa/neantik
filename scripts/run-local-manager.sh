@@ -262,6 +262,7 @@ mkdir -p "$DEVELOPMENT_APP/Contents/Resources/en.lproj"
   "$PROJECT_DIR/Resources/en.lproj/Help.strings" \
   "$PROJECT_DIR/Resources/en.lproj/Errors.strings" \
   "$PROJECT_DIR/Resources/en.lproj/Pages.strings" \
+  "$PROJECT_DIR/Resources/en.lproj/Status.strings" \
   "$DEVELOPMENT_APP/Contents/Resources/en.lproj/"
 
 # The localized production strings intentionally call the product "NeAntik".
