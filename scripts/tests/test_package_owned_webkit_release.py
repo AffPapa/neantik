@@ -16,19 +16,25 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ProductionSourceMetadataTests(unittest.TestCase):
-    def test_webkit_production_metadata_stays_1_0_only(self):
+    def test_reads_supported_source_version_and_build(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / 'Resources').mkdir()
             info = root / 'Resources/Info.plist'
             with patch.object(MODULE, 'ROOT', root):
-                info.write_bytes(plistlib.dumps({'CFBundleShortVersionString': '1.0.0',
-                                                'CFBundleVersion': '201'}))
-                self.assertEqual(MODULE.production_build_number(), 201)
-                info.write_bytes(plistlib.dumps({'CFBundleShortVersionString': '0.9.1',
-                                                'CFBundleVersion': '201'}))
-                with self.assertRaisesRegex(MODULE.PackageError, 'version/build metadata'):
-                    MODULE.production_build_number()
+                for version, build in [('1.0.0', '201'), ('1.1.0', '212')]:
+                    with self.subTest(version=version):
+                        info.write_bytes(plistlib.dumps({'CFBundleShortVersionString': version,
+                                                        'CFBundleVersion': build}))
+                        self.assertEqual(MODULE.production_release_metadata(), (version, int(build)))
+                for version, build in [('0.9.1', '201'), ('invalid', '212'),
+                                       ('1.1.0', '0'), ('1.1.0', '1.5'), ('1.1.0', True)]:
+                    with self.subTest(version=version, build=build):
+                        info.write_bytes(plistlib.dumps({'CFBundleShortVersionString': version,
+                                                        'CFBundleVersion': build}))
+                        with self.assertRaisesRegex(MODULE.PackageError, 'version/build metadata'):
+                            MODULE.production_release_metadata()
+
 
 
 class OwnedWebKitReleaseContractTests(unittest.TestCase):
@@ -127,15 +133,13 @@ class OwnedWebKitReleaseContractTests(unittest.TestCase):
                     before, after, overlay.stat().st_size)
 
     def setUp(self):
-        # This suite models the future WebKit 1.0 producer. The current
-        # Chromium-only alpha's version is not its fixture metadata.
-        build_number = patch.object(MODULE, 'production_build_number', return_value=201)
-        build_number.start()
-        self.addCleanup(build_number.stop)
+        metadata = patch.object(MODULE, 'production_release_metadata', return_value=('1.1.0', 212))
+        metadata.start()
+        self.addCleanup(metadata.stop)
         self.info = {
             "CFBundleIdentifier": MODULE.PRODUCTION_BUNDLE_ID,
-            "CFBundleShortVersionString": "1.0.0",
-            "CFBundleVersion": str(MODULE.production_build_number()),
+            "CFBundleShortVersionString": "1.1.0",
+            "CFBundleVersion": "212",
         }
 
     def test_accepts_only_versioned_production_manager_and_existing_signer(self):
@@ -146,10 +150,10 @@ class OwnedWebKitReleaseContractTests(unittest.TestCase):
         with self.assertRaisesRegex(MODULE.PackageError, "production manager"):
             MODULE.validate_manager_info(info, MODULE.IDENTITY_SHA1)
 
-    def test_rejects_non_1_0_release(self):
-        info = {**self.info, "CFBundleShortVersionString": "0.8.26"}
-        with self.assertRaisesRegex(MODULE.PackageError, "1.0.0"):
-            MODULE.validate_manager_info(info, MODULE.IDENTITY_SHA1)
+    def test_rejects_manager_version_that_differs_from_source(self):
+        for version in ("1.0.0", "1.2.0", "invalid"):
+            with self.subTest(version=version), self.assertRaisesRegex(MODULE.PackageError, "source version"):
+                MODULE.validate_manager_info({**self.info, "CFBundleShortVersionString": version}, MODULE.IDENTITY_SHA1)
 
     def test_rejects_old_or_malformed_build_number(self):
         for build in (str(MODULE.production_build_number() - 1), "not-a-build"):

@@ -76,16 +76,29 @@ class PackageError(RuntimeError):
     pass
 
 
-def production_build_number() -> int:
-    """Read the build currently declared by the production release source."""
+def production_release_metadata() -> tuple[str, int]:
+    """Read the version and build declared by the production release source."""
     try:
         info = plistlib.loads((ROOT / "Resources/Info.plist").read_bytes())
-        version = int(info.get("CFBundleVersion", ""))
-    except (OSError, plistlib.InvalidFileException, AttributeError, TypeError, ValueError) as error:
-        raise PackageError("production source build number is unavailable") from error
-    if info.get("CFBundleShortVersionString") != "1.0.0" or version < 1:
+        version = info.get("CFBundleShortVersionString")
+        raw_build = info.get("CFBundleVersion")
+    except (OSError, plistlib.InvalidFileException, AttributeError) as error:
+        raise PackageError("production source version/build metadata is unavailable") from error
+    if (not isinstance(version, str) or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version)
+            or not isinstance(raw_build, str) or not re.fullmatch(r"[0-9]+", raw_build)):
         raise PackageError("production source version/build metadata is invalid")
-    return version
+    try:
+        components = tuple(map(int, version.split(".")))
+        build = int(raw_build)
+    except ValueError as error:
+        raise PackageError("production source version/build metadata is invalid") from error
+    if components < (1, 0, 0) or build < 1:
+        raise PackageError("production source version/build metadata is invalid")
+    return version, build
+
+
+def production_build_number() -> int:
+    return production_release_metadata()[1]
 
 
 def sha256(path: Path) -> str:
@@ -225,16 +238,20 @@ def verify_source_offer_recipe_identity(source_offer_root: Path) -> None:
 
 
 def validate_manager_info(info: object, identity: str) -> None:
-    if (not isinstance(info, dict) or info.get("CFBundleIdentifier") != PRODUCTION_BUNDLE_ID
-            or info.get("CFBundleShortVersionString") != "1.0.0"):
-        raise PackageError("owned WebKit release packaging requires the 1.0.0 production manager")
+    if not isinstance(info, dict) or info.get("CFBundleIdentifier") != PRODUCTION_BUNDLE_ID:
+        raise PackageError("owned WebKit release packaging requires the production manager")
+    expected_version, expected_build = production_release_metadata()
+    if info.get("CFBundleShortVersionString") != expected_version:
+        raise PackageError(f"manager version must match source version {expected_version}")
+    raw_build = info.get("CFBundleVersion")
+    if not isinstance(raw_build, str) or not re.fullmatch(r"[0-9]+", raw_build):
+        raise PackageError("manager build number is malformed")
     try:
-        build = int(info.get("CFBundleVersion", ""))
-    except (TypeError, ValueError) as error:
-        raise PackageError("1.0.0 manager build number is malformed") from error
-    expected_build = production_build_number()
+        build = int(raw_build)
+    except ValueError as error:
+        raise PackageError("manager build number is malformed") from error
     if build != expected_build:
-        raise PackageError(f"1.0.0 manager build must match source build {expected_build}")
+        raise PackageError(f"manager build must match source build {expected_build}")
     forbidden = {"NeAntikBackupQualificationRunID", "NeAntikBackupQualificationRoot",
                  "NeAntikBrowserDataBackupDevelopmentEnabled", "NeAntikQATrustScope", "NeAntikQATURNSTrustScope",
                  "NeAntikProductionDiagnosticEnabled", "NeAntikProductionDiagnosticDataRoot"}
@@ -1235,10 +1252,11 @@ def package(app: Path, build_root: Path, source_root: Path, identity: str,
     except Exception as error:
         raise PackageError("staged WebKit notice byte verification failed") from error
     host_hash = sha256(app / packager.HOST_EXECUTABLE_RELATIVE_PATH)
+    manager_version, manager_build = production_release_metadata()
     return {
         "status": "owned_webkit_host_and_runtime_embedded; outer_manager_resign_required",
         "managerBundleID": PRODUCTION_BUNDLE_ID,
-        "managerVersion": f"1.0.0 ({production_build_number()})",
+        "managerVersion": f"{manager_version} ({manager_build})",
         "upstreamCommit": db6["upstreamCommit"] if db6 is not None else EXPECTED_COMMIT,
         **({"sourcePatchSHA256": EXPECTED_PATCH_SHA256,
             "sourceCrosswalkSHA256": SOURCE_CROSSWALK_SHA256} if db6 is None else {}),
