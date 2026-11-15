@@ -717,25 +717,36 @@ private struct EnvironmentFieldStatus: View {
 }
 
 enum ProfileEnvironmentPresentation {
-    static func sectionCountTitle(_ count: Int) -> String {
-        if Bundle.main.preferredLocalizations.first == "en" {
+    // Choose plural rules for the language actually available in the table.
+    // Test runners can prefer English while having no app resources at all.
+    private static func usesEnglishPages(in bundle: Bundle) -> Bool {
+        let missing = "__neantik_missing_pages_translation__"
+        return bundle.preferredLocalizations.first == "en" &&
+            bundle.localizedString(forKey: "page.291", value: missing, table: "Pages") != missing
+    }
+
+    static func sectionCountTitle(_ count: Int, bundle: Bundle = .main) -> String {
+        func localized(_ key: String, fallback: String) -> String {
+            bundle.localizedString(forKey: key, value: fallback, table: "Pages")
+        }
+        if usesEnglishPages(in: bundle) {
             let noun = count == 1
-                ? NSLocalizedString("page.292", tableName: "Pages", bundle: .main, value: "раздел", comment: "")
-                : NSLocalizedString("page.291", tableName: "Pages", bundle: .main, value: "разделов", comment: "")
+                ? localized("page.292", fallback: "раздел")
+                : localized("page.291", fallback: "разделов")
             return "\(count) \(noun)"
         }
         let lastTwo = count % 100
         let noun: String
         if (11...14).contains(lastTwo) {
-            noun = NSLocalizedString("page.291", tableName: "Pages", bundle: .main, value: "разделов", comment: "")
+            noun = localized("page.291", fallback: "разделов")
         } else {
             switch count % 10 {
             case 1:
-                noun = NSLocalizedString("page.292", tableName: "Pages", bundle: .main, value: "раздел", comment: "")
+                noun = localized("page.292", fallback: "раздел")
             case 2...4:
-                noun = NSLocalizedString("page.293", tableName: "Pages", bundle: .main, value: "раздела", comment: "")
+                noun = localized("page.293", fallback: "раздела")
             default:
-                noun = NSLocalizedString("page.291", tableName: "Pages", bundle: .main, value: "разделов", comment: "")
+                noun = localized("page.291", fallback: "разделов")
             }
         }
         return "\(count) \(noun)"
@@ -1033,7 +1044,7 @@ enum ProfileEnvironmentPresentation {
         few: String,
         many: String
     ) -> String {
-        if Bundle.main.preferredLocalizations.first == "en" {
+        if usesEnglishPages(in: .main) {
             return "\(count) \(count == 1 ? one : many)"
         }
         let remainder100 = count % 100
