@@ -119,11 +119,18 @@ class ResponsiveUIContractTests(unittest.TestCase):
         sources = text[sources_start:list_start]
 
         self.assertIn('Section("Профили")', sources)
-        self.assertIn('title: "Все профили"', sources)
-        self.assertIn('title: "Закреплённые"', sources)
-        self.assertIn('title: "Папки"', sources)
-        self.assertIn('title: "Без папки"', sources)
-        self.assertIn('title: "Теги"', sources)
+        fixed_labels = {
+            "allProfiles": "Все профили",
+            "pinned": "Закреплённые",
+            "folders": "Папки",
+            "unfiled": "Без папки",
+            "tags": "Теги",
+        }
+        label_definitions = PROFILE_LIST_PROJECTION.read_text(encoding="utf-8")
+        for name, russian in fixed_labels.items():
+            with self.subTest(label=name):
+                self.assertIn(f"title: ProfileSidebarLabel.{name}.localized()", sources)
+                self.assertIn(f'case {name} = "{russian}"', label_definitions)
         self.assertIn("folderPreview.visibleItems", sources)
         self.assertIn("tagPreview.visibleItems", sources)
         self.assertIn("previewToggleButton(", sources)
