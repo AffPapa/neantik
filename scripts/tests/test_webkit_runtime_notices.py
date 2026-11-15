@@ -66,6 +66,76 @@ class DB6RecipientStageTests(unittest.TestCase):
 
 
 class Db6SourceReleaseTests(unittest.TestCase):
+    def test_preflight_generates_11_source_links_without_mutating_app(self):
+        import hashlib
+        import owned_webkit_successor_evidence as evidence
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            app, runtime, offer_root = root / "NeAntik.app", root / "Frameworks", root / "offer"
+            runtime.mkdir()
+            offer_root.mkdir()
+            info = app / "Contents/Info.plist"
+            info.parent.mkdir(parents=True)
+            info.write_bytes(plistlib.dumps({"CFBundleShortVersionString": "1.1.0"}))
+            markdown, html = app / MODULE.NOTICE_DESTINATION, app / MODULE.HTML_DESTINATION
+            markdown.parent.mkdir(parents=True, exist_ok=True)
+            html.parent.mkdir(parents=True, exist_ok=True)
+            markdown.write_text("# Notices\n")
+            html.write_text("<html><body>Notices</body></html>")
+            original = (markdown.read_bytes(), html.read_bytes(), info.read_bytes())
+            (runtime / MODULE.RUNTIME_IMAGE_BINDING_FILE).write_text("{}")
+            manifest = offer_root / "manifest.json"
+            manifest.write_text("{}")
+            digest = hashlib.sha256(manifest.read_bytes()).hexdigest()
+            notice = offer_root / "NOTICE.txt"
+            notice.write_text("License index")
+            archive = offer_root / "source.tar.gz"
+            offer = {
+                "schemaVersion": 1, "upstreamCommit": MODULE.DB6_UPSTREAM_COMMIT,
+                "preSignImages": {name: "0" * 64 for name in MODULE.V382_REQUIRED_OUTPUTS | {
+                    "libswiftCompatibilitySpan.dylib",
+                    "WebKit.framework/Versions/A/Frameworks/libWebKitSwift.dylib"}},
+                "sourceArchives": {archive.name: "1" * 64},
+                "noticeFiles": {"Swift-CompatibilitySpan-LICENSE.txt": MODULE.LICENSE_SHA256,
+                                "WebCore-LICENSE-LGPL-2.txt": MODULE.WEBCORE_LGPL2_SHA256,
+                                "WebCore-LICENSE-LGPL-2.1.txt": MODULE.WEBCORE_LGPL21_SHA256,
+                                "Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+                                "JavaScriptCore/BinaryNinja/LICENSE-binja.txt": MODULE.JSC_BINJA_ATTRIBUTION_SHA256},
+            }
+            writes = {}
+            atomic_write = MODULE._atomic_write
+
+            def capture_write(path, payload):
+                writes[path.name] = payload
+                atomic_write(path, payload)
+
+            with mock.patch.object(MODULE, "read_db6_source_offer", return_value=offer), \
+                 mock.patch.object(MODULE, "verify_db6_runtime_resources"), \
+                 mock.patch.object(MODULE, "verify_db6_source_archives", return_value=[archive]), \
+                 mock.patch.object(MODULE, "_db6_files", return_value={Path("NOTICE.txt"): notice}), \
+                 mock.patch.object(evidence, "verify_signed_image_binding", return_value={}), \
+                 mock.patch.object(evidence, "verify_runtime_images"), \
+                 mock.patch.object(MODULE, "_atomic_write", side_effect=capture_write):
+                MODULE.preflight_owned_webkit_notices(app, runtime, source_offer_root=offer_root,
+                                                     source_offer_manifest_sha256=digest)
+            expected = b"https://github.com/AffPapa/neantik/releases/download/v1.1.0/source.tar.gz"
+            self.assertIn(expected, writes[markdown.name])
+            self.assertIn(expected, writes[html.name])
+            self.assertEqual((markdown.read_bytes(), html.read_bytes(), info.read_bytes()), original)
+
+    def test_preflight_rejects_symlinked_info_plist(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            app = root / "NeAntik.app"
+            info = app / "Contents/Info.plist"
+            info.parent.mkdir(parents=True)
+            external = root / "Info.plist"
+            external.write_bytes(plistlib.dumps({"CFBundleShortVersionString": "1.1.0"}))
+            info.symlink_to(external)
+            with self.assertRaises(MODULE.NoticeError):
+                MODULE.preflight_owned_webkit_notices(app, root)
+
     def test_source_links_are_bound_to_packaged_manager_version(self):
         with tempfile.TemporaryDirectory() as temporary:
             app = Path(temporary) / "NeAntik.app"
@@ -544,6 +614,8 @@ class WebKitRuntimeNoticeTests(unittest.TestCase):
         self.app = self.root / "NeAntik.app"
         resources = self.app / "Contents/Resources"
         (resources / "NeAntikRuntimeCompliance").mkdir(parents=True)
+        (self.app / "Contents/Info.plist").write_bytes(
+            plistlib.dumps({"CFBundleShortVersionString": "1.0.0"}))
         (resources / "NeAntikRuntimeNotices.md").write_text(
             "# NeAntik Chromium runtime notices\n\nChromium component list.\n",
             encoding="utf-8",
