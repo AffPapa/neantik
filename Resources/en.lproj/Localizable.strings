@@ -639,3 +639,6 @@
 "Программы пользователя" = "User Applications";
 "Обычный Chromium" = "Standard Chromium";
 "Chromium с разделением отпечатков" = "Chromium with Fingerprint Isolation";
+"Сервер ответил как SOCKS5. Авторизация и доступ к сайтам ещё не проверены." = "The server responded as SOCKS5. Authentication and access to websites have not yet been checked.";
+"HTTP-прокси запросил авторизацию. Логин и пароль не отправлялись." = "The HTTP proxy requested authentication. No username or password was sent.";
+"Не удалось однозначно определить тип. Уточни протокол и порт у провайдера. HTTPS и HTTP без подтверждённого ответа выбираются вручную." = "The proxy type could not be determined. Check the protocol and port with your provider. Select HTTPS and HTTP without a confirmed response manually.";

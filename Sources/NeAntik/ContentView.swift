@@ -1581,9 +1581,9 @@ struct ContentView: View {
 
     private var quickCommands: [ProfileQuickCommand] {
         [
-            ProfileQuickCommand(id: "library", title: "Шаблоны, фильтры и журнал", subtitle: "Локальная библиотека", enabled: true, action: { showingManagerLibrary = true }),
-            ProfileQuickCommand(id: "create", title: "Новый профиль", subtitle: "Открыть форму создания", enabled: true, action: beginCreatingProfile),
-            ProfileQuickCommand(id: "diagnostics", title: "Безопасная диагностика", subtitle: "Сохранить отчёт без паролей и данных сайтов", enabled: true, action: exportRedactedSupportBundle)
+            ProfileQuickCommand(id: "library", title: NSLocalizedString("Шаблоны, фильтры и журнал", comment: "Quick command"), subtitle: NSLocalizedString("Локальная библиотека", comment: "Quick command description"), enabled: true, action: { showingManagerLibrary = true }),
+            ProfileQuickCommand(id: "create", title: NSLocalizedString("Новый профиль", comment: "Quick command"), subtitle: NSLocalizedString("Открыть форму создания", comment: "Quick command description"), enabled: true, action: beginCreatingProfile),
+            ProfileQuickCommand(id: "diagnostics", title: NSLocalizedString("Безопасная диагностика", comment: "Quick command"), subtitle: NSLocalizedString("Сохранить отчёт без паролей и данных сайтов", comment: "Quick command description"), enabled: true, action: exportRedactedSupportBundle)
         ]
     }
 
@@ -1591,7 +1591,7 @@ struct ContentView: View {
         ProfileQuickCommand(
             id: profile.id.uuidString,
             title: profile.name,
-            subtitle: "Показать в менеджере",
+            subtitle: NSLocalizedString("Показать в менеджере", comment: "Quick command description"),
             enabled: true,
             action: {
                 guard let current = store.profile(withID: profile.id) else { return }
