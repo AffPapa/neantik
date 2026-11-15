@@ -3,6 +3,38 @@ import Testing
 @testable import NeAntik
 
 struct WebKitPresenterChannelTests {
+    @Test func knownPageStatusesFollowManagerLanguageWithoutChangingUnknownText() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let en = try #require(Bundle(path: root.appendingPathComponent("Resources/en.lproj").path))
+        let ru = try #require(Bundle(path: root.appendingPathComponent("Resources/ru.lproj").path))
+        for key in WebKitPresenterChannel.localizedStatusKeys {
+            let english = en.localizedString(forKey: key, value: key, table: nil)
+            #expect(english != key)
+            #expect(WebKitPresenterChannel.localizedStatus(key, target: en, english: en) == english)
+            #expect(WebKitPresenterChannel.localizedStatus(english, target: ru, english: en) == key)
+        }
+        let unknown = "unrecognized page status: private.example"
+        let key = try #require(WebKitPresenterChannel.localizedStatusKeys.first)
+        let english = en.localizedString(forKey: key, value: key, table: nil)
+        #expect(WebKitPresenterChannel.localizedStatus(key + "\n" + unknown, target: en, english: en) == english + "\n" + unknown)
+        // Exercise each host combination including its actual 508-byte cap.
+        let keys = WebKitPresenterChannel.localizedStatusKeys
+        for base in keys.prefix(8) {
+            for notice in [String?](arrayLiteral: nil, keys[8], keys[9], keys[10]) {
+                for checkpoint in [String?](arrayLiteral: nil, keys[11], keys[12]) {
+                    let values = [base] + [notice, checkpoint].compactMap { $0 }
+                    for source in [ru, en] {
+                        let sent = values.map { source.localizedString(forKey: $0, value: $0, table: nil) }.joined(separator: "\n")
+                        let bounded = String(decoding: sent.utf8.prefix(508), as: UTF8.self)
+                        for target in [ru, en] {
+                            let expected = values.map { target.localizedString(forKey: $0, value: $0, table: nil) }.joined(separator: "\n")
+                            #expect(WebKitPresenterChannel.localizedStatus(bounded, target: target, english: en) == expected)
+                        }
+                    }
+                }
+            }
+        }
+    }
     @Test func wheelBurstPreservesDirectionPositionAndGestureBoundaries() {
         typealias Wheel = WebKitPresenterChannel.Wheel
         func wheel(_ deltaY: Double, x: Double = 0.5, phase: Wheel.Phase = .changed,

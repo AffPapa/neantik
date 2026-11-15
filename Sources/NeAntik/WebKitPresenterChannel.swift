@@ -5,6 +5,46 @@ import Foundation
 /// Separate from frame acknowledgements and the profile's lifecycle pipe.
 /// Use one sequential reader and one sequential writer at each endpoint.
 enum WebKitPresenterChannel {
+    /// Child and manager may use different macOS application languages. Only
+    /// known fixed status messages are translated; unknown text stays intact.
+    static let localizedStatusKeys = [
+        "WebKit · данные этого профиля · параметры устройства определяет macOS",
+        "В этом окне уже 32 вкладки. Закрой ненужную, чтобы открыть новую.",
+        "Сейчас мало свободной памяти. Закрой ненужные вкладки или профили и попробуй снова.",
+        "Приложение завершает текущую операцию. Попробуй открыть вкладку после её окончания.",
+        "Не удалось применить политику WebRTC: вкладка не открыта.",
+        "Этот тип ссылки пока не поддерживается в WebKit-профиле.",
+        "Не удалось открыть страницу. Проверь адрес и подключение к сети; затем обнови страницу.",
+        "Процесс страницы завершился. Нажми «Обновить», чтобы открыть её снова.",
+        "Сохранённые вкладки недоступны. Открыта стартовая страница; исходные данные не изменены.",
+        "Не все вкладки удалось открыть. Прежний список сохранён; закрой ненужные окна и открой профиль снова.",
+        "Некоторые специальные адреса нельзя восстановить. Их вкладки открыты пустыми.",
+        "Автосохранение вкладок не подтверждено. Проверь свободное место и доступ к папке данных NeAntik.",
+        "Список вкладок не удалось подготовить к сохранению. Последняя сохранённая сессия не изменена."
+    ]
+
+    static func localizedStatus(_ value: String, target: Bundle = .main, english: Bundle? = nil) -> String {
+        let englishBundle = english ?? Bundle.main.path(forResource: "en", ofType: "lproj").flatMap(Bundle.init(path:))
+        let lines = value.components(separatedBy: "\n")
+        return lines.enumerated().map { index, line in
+            let exact = localizedStatusKeys.filter { key in
+                line == key || englishBundle?.localizedString(forKey: key, value: key, table: nil) == line
+            }
+            if exact.count == 1 {
+                return target.localizedString(forKey: exact[0], value: exact[0], table: nil)
+            }
+            // The existing host limits status to 508 UTF-8 bytes. Recover only
+            // an unambiguous known final status, retaining all unknown text.
+            guard index == lines.count - 1, value.utf8.count >= 508 else { return line }
+            let prefix = line.hasSuffix("�") ? String(line.dropLast()) : line
+            guard prefix.utf8.count >= 32 else { return line }
+            let matches = localizedStatusKeys.filter { key in
+                key.hasPrefix(prefix) || (englishBundle?.localizedString(forKey: key, value: key, table: nil).hasPrefix(prefix) ?? false)
+            }
+            guard matches.count == 1 else { return line }
+            return target.localizedString(forKey: matches[0], value: matches[0], table: nil)
+        }.joined(separator: "\n")
+    }
     struct Target: Codable, Equatable, Sendable {
         let tab: UUID
         let navigation: UUID
