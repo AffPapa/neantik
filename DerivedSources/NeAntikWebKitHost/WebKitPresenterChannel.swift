@@ -95,6 +95,7 @@ enum WebKitPresenterChannel {
             let focusable: Bool
             let focused: Bool
             let pressable: Bool
+            var secure: Bool? = nil
             var checked: Int? = nil
             var value: String? = nil
 
@@ -107,6 +108,7 @@ enum WebKitPresenterChannel {
                 return roles.contains(role) && identifier != nil &&
                     (label?.utf8.count ?? 0) <= 256 &&
                     (value?.utf8.count ?? 0) <= 256 &&
+                    (secure != true || (role == "AXTextField" && value == nil && !pressable && checked == nil)) &&
                     (value == nil || (focused && ["AXTextField", "AXTextArea"].contains(role))) &&
                     (checked.map { ["AXCheckBox", "AXRadioButton"].contains(role) && (0...2).contains($0) } ?? true) &&
                     (-100_000...100_000).contains(x) && (-100_000...100_000).contains(y) &&
