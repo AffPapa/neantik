@@ -17,8 +17,8 @@ struct HelpLink: View {
         } label: {
             Label("Справка", systemImage: "questionmark.circle")
         }
-        .help("Справка: \(topic.title)")
-        .accessibilityLabel("Справка: \(topic.title)")
+        .help(String(format: NSLocalizedString("Справка: %@", comment: "Context help"), topic.title))
+        .accessibilityLabel(String(format: NSLocalizedString("Справка: %@", comment: "Context help"), topic.title))
     }
 }
 
@@ -118,9 +118,9 @@ struct NeAntikHelpWindow: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("1. Выбери AI-клиент ниже.\n2. Скопируй настройку и добавь её к остальным серверам клиента.\n3. Перезапусти клиент и попроси: «Покажи мои профили. Ничего не изменяй».")
                     .font(.system(size: 14)).lineSpacing(4)
-                Text(allowsManagement
+                Text(verbatim: NSLocalizedString(allowsManagement
                      ? "AI может создавать, изменять и запускать профили."
-                     : "AI может только просматривать профили.").font(.callout)
+                     : "AI может только просматривать профили.", comment: "MCP permissions summary")).font(.callout)
                 DisclosureGroup("Дополнительная настройка доступа") {
                     Toggle("Только просмотр — без изменений и запуска", isOn: Binding(
                         get: { !allowsManagement }, set: { allowsManagement = !$0 }))
@@ -131,19 +131,19 @@ struct NeAntikHelpWindow: View {
                 Picker("AI-клиент", selection: $client) {
                     ForEach(MCPClient.allCases) { Text($0.title).tag($0) }
                 }.pickerStyle(.menu)
-                Text(client.steps).font(.system(size: 14)).textSelection(.enabled)
+                Text(verbatim: NSLocalizedString(client.steps, comment: "MCP client setup instructions")).font(.system(size: 14)).textSelection(.enabled)
                 Text(selectedConnection.configuration(for: client))
                     .font(.system(size: 14, design: .monospaced))
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Button(copied ? "Настройка скопирована" : "Скопировать настройку MCP") {
+                Button(NSLocalizedString(copied ? "Настройка скопирована" : "Скопировать настройку MCP", comment: "Copy MCP configuration")) {
                     NSPasteboard.general.clearContents()
                     copied = NSPasteboard.general.setString(selectedConnection.configuration(for: client), forType: .string)
                 }
-                .accessibilityLabel(Text(copied ? "Настройка скопирована" : "Скопировать настройку MCP"))
+                .accessibilityLabel(Text(verbatim: NSLocalizedString(copied ? "Настройка скопирована" : "Скопировать настройку MCP", comment: "Copy MCP configuration")))
                 .accessibilityIdentifier("mcp-copy-configuration")
                 Link("Официальная инструкция клиента", destination: client.source)
-                Text("Найти профиль, создать его по сохранённому шаблону, поменять стартовую страницу или открыть браузер — можно обычным запросом в чате. Управление: \(MCPProfileManagement.allTools.count) инструментов; только просмотр: \(MCPProfileManagement.readTools.count + 2). Работа каждой версии стороннего клиента отдельно не подтверждена.")
+                Text(verbatim: String(format: NSLocalizedString("Найти профиль, создать его по сохранённому шаблону, поменять стартовую страницу или открыть браузер — можно обычным запросом в чате. Управление: %ld инструментов; только просмотр: %ld. Работа каждой версии стороннего клиента отдельно не подтверждена.", comment: "MCP capabilities summary"), MCPProfileManagement.allTools.count, MCPProfileManagement.readTools.count + 2))
                     .font(.callout)
                 Text("Управление разрешает записи и запуск. Настройка не содержит паролей; если вводишь их в чат, клиент может сохранить их или отправить модели.")
                     .font(.callout).foregroundStyle(.secondary)

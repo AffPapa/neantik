@@ -5,9 +5,9 @@ struct ProxyCheckSummaryView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(summary.title)
+            Text(verbatim: localizedProfileStatus(summary.title))
                 .font(.subheadline)
-            Text(ProxyCheckSummary.routeScopeNotice)
+            Text(verbatim: localizedProfileStatus(ProxyCheckSummary.routeScopeNotice))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if let checkedAt = summary.checkedAt {
@@ -28,7 +28,7 @@ struct ProxyCheckSummaryView: View {
     }
 
     private var accessibilitySummary: String {
-        var value = "\(summary.title). \(ProxyCheckSummary.routeScopeNotice)"
+        var value = "\(localizedProfileStatus(summary.title)). \(localizedProfileStatus(ProxyCheckSummary.routeScopeNotice))"
         guard let checkedAt = summary.checkedAt else {
             return value
         }

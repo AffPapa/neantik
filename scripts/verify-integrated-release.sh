@@ -54,7 +54,7 @@ for localized_resource in InfoPlist.strings Localizable.strings; do
   fi
 done
 
-for localized_resource in InfoPlist.strings Localizable.strings Help.strings Errors.strings Pages.strings; do
+for localized_resource in InfoPlist.strings Localizable.strings Help.strings Errors.strings Pages.strings Status.strings; do
   expected="$PROJECT_DIR/Resources/en.lproj/$localized_resource"
   packaged="$APP_PATH/Contents/Resources/en.lproj/$localized_resource"
   if [[ ! -f "$packaged" || -L "$packaged" ]] || ! cmp -s "$expected" "$packaged"; then
