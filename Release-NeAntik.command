@@ -16,11 +16,14 @@ BUILD="$(
     -c 'Print :CFBundleVersion' \
     "$PROJECT_DIR/Resources/Info.plist"
 )"
-# A 1.0.0 release must use production qualification, never silently inherit
-# the public-alpha default used for 0.x releases.
-if [[ "$VERSION" == "1.0.0" ]]; then
+# Production releases must not inherit the public-alpha default for 0.x builds.
+if [[ ! "$VERSION" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]]; then
+  echo "NeAntik release version is invalid." >&2
+  exit 64
+fi
+if (( ${VERSION%%.*} >= 1 )); then
   if [[ -n "${NEANTIK_RELEASE_CHANNEL:-}" && "$NEANTIK_RELEASE_CHANNEL" != "production" ]]; then
-    echo "NeAntik 1.0.0 requires NEANTIK_RELEASE_CHANNEL=production." >&2
+    echo "NeAntik $VERSION requires NEANTIK_RELEASE_CHANNEL=production." >&2
     exit 64
   fi
   export NEANTIK_RELEASE_CHANNEL=production

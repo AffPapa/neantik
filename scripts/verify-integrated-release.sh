@@ -70,10 +70,18 @@ RELEASE_CHROMIUM_VERSION="$(
 ENGINE_SCOPE="$(plutil -extract NeAntikEngineScope raw -o - "$APP_PATH/Contents/Info.plist" 2>/dev/null || true)"
 OWNED_WEBKIT_HOST="$APP_PATH/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
 if [[ "$ENGINE_SCOPE" == "chromium-owned-webkit" ]]; then
-  if [[ "$ACTUAL_MANAGER_VERSION" != "1.0.0" ||
+  if [[ "$ACTUAL_MANAGER_VERSION" != "$EXPECTED_MANAGER_VERSION" ||
+        "$ACTUAL_MANAGER_BUILD" != "$EXPECTED_MANAGER_BUILD" ||
         "$RELEASE_CHROMIUM_VERSION" != "157.0.8103.79" ||
         ! -d "$OWNED_WEBKIT_HOST" || -L "$OWNED_WEBKIT_HOST" ]]; then
-    echo "The dual-engine marker requires the production version and an embedded owned WebKit host." >&2
+    echo "The dual-engine marker requires matching production metadata and an embedded owned WebKit host." >&2
+    exit 65
+  fi
+  HOST_INFO="$OWNED_WEBKIT_HOST/Contents/Info.plist"
+  HOST_VERSION="$(plutil -extract CFBundleShortVersionString raw -o - "$HOST_INFO" 2>/dev/null || true)"
+  HOST_BUILD="$(plutil -extract CFBundleVersion raw -o - "$HOST_INFO" 2>/dev/null || true)"
+  if [[ "$HOST_VERSION" != "$ACTUAL_MANAGER_VERSION" || "$HOST_BUILD" != "$ACTUAL_MANAGER_BUILD" ]]; then
+    echo "Owned WebKit host version/build does not match the production manager." >&2
     exit 65
   fi
 fi
