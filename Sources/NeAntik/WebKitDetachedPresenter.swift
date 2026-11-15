@@ -759,6 +759,10 @@ private final class WebKitPageAccessibilityElement: NSAccessibilityElement {
         guard Thread.isMainThread else { return nil }
         return MainActor.assumeIsolated { model.map { NSAccessibility.Role(rawValue: $0.role) } }
     }
+    nonisolated override func accessibilitySubrole() -> NSAccessibility.Subrole? {
+        guard Thread.isMainThread else { return nil }
+        return MainActor.assumeIsolated { model?.secure == true ? .secureTextField : nil }
+    }
     nonisolated override func accessibilityLabel() -> String? {
         guard Thread.isMainThread else { return nil }
         return MainActor.assumeIsolated { model?.label }
