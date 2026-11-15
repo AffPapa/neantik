@@ -169,6 +169,24 @@ struct FingerprintAuditTests {
     }
 
     @Test
+    func displayedDiagnosticSummaryKeepsMetadataAndOmitsProfileData() {
+        let first = capture(name: "PRIVATE-PROFILE", values: baseValues(canvas: "PRIVATE-SURFACE"))
+        let report = FingerprintAuditReport(
+            id: UUID(), createdAt: Date(timeIntervalSince1970: 1),
+            managerVersion: "Движок: retained", managerBuild: " ", runtimeName: "PRIVATE-RUNTIME-NAME",
+            runtimeVersion: "version 1", runtimeFlavor: .fingerprintChromium,
+            runtimeCodeSignatureValid: false, runtimeExecutableSHA256: nil, runtimeFrameworkSHA256: nil,
+            firstInitial: first, second: first, firstRepeat: first
+        )
+        let summary = fingerprintDiagnosticSummary(report)
+        #expect(summary.contains("Движок: retained"))
+        #expect(summary.contains("version 1"))
+        #expect(!summary.contains("PRIVATE-PROFILE"))
+        #expect(!summary.contains("PRIVATE-SURFACE"))
+        #expect(!summary.contains("PRIVATE-RUNTIME-NAME"))
+    }
+
+    @Test
     func privacyDiagnosticsRejectMalformedPresentValuesWithoutRequiringNewKeys() {
         var firstValues = baseValues(canvas: "canvas-a")
         firstValues["media_devices"] = "available"

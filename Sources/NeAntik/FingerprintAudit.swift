@@ -1729,7 +1729,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
         }
         let preflight = BrowserRuntimePreflightValidator.validate(runtime)
         guard preflight.isReady else {
-            errorMessage = preflight.errors.joined(separator: " ")
+            errorMessage = preflight.errors.map(fingerprintPhaseText).joined(separator: " ")
             return
         }
         for profile in [first, second] {
@@ -1787,7 +1787,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
                     await inspectRuntime(runtime.executableURL)
                 guard initialRuntimeInspection == finalRuntimeInspection else {
                     throw NeAntikError.fingerprintAuditFailed(
-                        "Браузерный движок изменился во время проверки отпечатка."
+                        fingerprintPhaseText("Браузерный движок изменился во время проверки отпечатка.")
                     )
                 }
 
@@ -1830,7 +1830,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
                         report = newReport
                         Self.writeReleaseQualificationIssues(releaseIssues)
                         throw NeAntikError.fingerprintAuditFailed(
-                            "Проверка не прошла обязательный уровень выпуска. Точная техническая причина записана в журнал этой попытки. Одноразовое доказательство не использовано; проверку можно безопасно повторить."
+                            fingerprintPhaseText("Проверка не прошла обязательный уровень выпуска. Точная техническая причина записана в журнал этой попытки. Одноразовое доказательство не использовано; проверку можно безопасно повторить.")
                         )
                     }
                     phase = fingerprintPhaseText("Подписываем отчёт выпуска")
@@ -1845,7 +1845,7 @@ final class FingerprintAuditCoordinator: ObservableObject {
                 report = newReport
                 reportURL = savedURL
                 releaseEvidenceIsReady = releaseContext != nil
-                phase = newReport.verdict.title
+                phase = fingerprintPhaseText(newReport.verdict.title)
             } catch is CancellationError {
                 phase = fingerprintPhaseText("Отменено")
             } catch {
