@@ -4,6 +4,25 @@ import Testing
 
 struct SiteCompatibilityAssessmentTests {
     @Test
+    func featureObservationsHaveEnglishAndRussianPresentation() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let en = try #require(Bundle(path: root.appendingPathComponent("Resources/en.lproj").path))
+        let ru = try #require(Bundle(path: root.appendingPathComponent("Resources/ru.lproj").path))
+        let cases: [(SiteFeatureObservation, String)] = [
+            (.observed, "Available in the tested environment"),
+            (.unavailable, "Unavailable in the tested environment"),
+            (.notChecked, "Not Checked"),
+            (.failed, "Could not read the device list"),
+            (.timedOut, "Devices did not respond in time")
+        ]
+        for (observation, expected) in cases {
+            #expect(observation.localizedTitle(bundle: en) == expected)
+            #expect(observation.localizedTitle(bundle: ru) == observation.title)
+        }
+    }
+
+    @Test
     func enumerationMustSucceedBeforeShowingAvailability() {
         #expect(SiteCompatibilityAssessment.mediaState(["media_devices": "available"]) == .notChecked)
         #expect(SiteCompatibilityAssessment.mediaState(["media_devices": "available", "media_device_count": "-1"]) == .notChecked)

@@ -3,6 +3,27 @@ import Testing
 @testable import NeAntik
 
 struct BulkProxyImportTests {
+    @MainActor @Test
+    func previewLocalizesSystemTextWithoutExposingCredentials() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let en = try #require(Bundle(path: root.appendingPathComponent("Resources/en.lproj").path))
+        let ru = try #require(Bundle(path: root.appendingPathComponent("Resources/ru.lproj").path))
+        #expect(BulkProxyImportView.defaultBaseName(bundle: en) == "Proxy")
+        #expect(BulkProxyImportView.defaultBaseName(bundle: ru) == "Прокси")
+        let preview = try BulkProxyImportParser.preview(
+            "user:synthetic-secret@203.0.113.10:50100\n203.0.113.11:50101",
+            kind: .http, order: .automatic
+        )
+        let first = try #require(preview.rows.first?.localizedSafeSummary(bundle: en))
+        let second = try #require(preview.rows.last?.localizedSafeSummary(bundle: en))
+        #expect(first.contains("with authentication"))
+        #expect(second.contains("without authentication"))
+        #expect(!first.contains("synthetic-secret"))
+        #expect(BulkProxyImportRowIssue.invalid.localizedMessage(bundle: en) == "Check the address, port, and format.")
+        #expect(BulkProxyImportRowIssue.invalid.localizedMessage(bundle: ru) == BulkProxyImportRowIssue.invalid.message)
+    }
+
     @Test func numericIPv4WithCredentialsPreviewsAsHTTPWithoutExposingPassword() throws {
         let secret = "synthetic-password"
         let preview = try BulkProxyImportParser.preview(

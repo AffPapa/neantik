@@ -803,8 +803,8 @@ struct ContentView: View {
         .sheet(item: $folderNameRequest) { request in
             ProfileFolderNameSheet(
                 title: request.folder == nil
-                    ? "Новая папка"
-                    : "Переименовать папку",
+                    ? NSLocalizedString("Новая папка", comment: "Create folder title")
+                    : NSLocalizedString("Переименовать папку", comment: "Rename folder title"),
                 initialName: request.folder?.name ?? "",
                 existingNames: store.organization.folders.map(\.name)
             ) { name in
@@ -1741,7 +1741,7 @@ struct ContentView: View {
                 }
                 try Task.checkCancellation()
                 showWorkspaceSuccessNotice(
-                    "Экспортировано настроек профилей: \(exportedCount)."
+                    WorkspaceSuccessMessage.profilesExported.localized(count: exportedCount)
                 )
             } catch is CancellationError {
                 return
@@ -1774,7 +1774,7 @@ struct ContentView: View {
                 let saved = try await store.createProfileFromBookmarks(name: name, document: request.document)
                 pendingBookmarkImport = nil
                 revealSavedProfile(saved)
-                showWorkspaceSuccessNotice("Профиль создан. Закладок: \(request.document.linkCount).")
+                showWorkspaceSuccessNotice(WorkspaceSuccessMessage.bookmarksImported.localized(count: request.document.linkCount))
             } catch is CancellationError { return }
             catch { localError = error.localizedDescription }
         }
@@ -1802,7 +1802,7 @@ struct ContentView: View {
                     revealSavedProfile(first)
                 }
                 showWorkspaceSuccessNotice(
-                    "Импортировано профилей: \(saved.count)."
+                    WorkspaceSuccessMessage.profilesImported.localized(count: saved.count)
                 )
             } catch is CancellationError {
                 return
@@ -1845,7 +1845,7 @@ struct ContentView: View {
                     skippedRunningProfileCount:
                         totalProfileCount - stoppedProfiles.count
                 )
-                showWorkspaceSuccessNotice(summary.statusMessage)
+                showWorkspaceSuccessNotice(summary.localizedStatusMessage())
             } catch is CancellationError {
                 return
             } catch {
@@ -1890,7 +1890,7 @@ struct ContentView: View {
                     revealSavedProfile(first)
                 }
                 showWorkspaceSuccessNotice(
-                    "Создано профилей из снимка: \(saved.count), с отдельными данными и новой конфигурацией среды."
+                    WorkspaceSuccessMessage.snapshotRestored.localized(count: saved.count)
                 )
             } catch {
                 pendingSnapshotRestore = nil
@@ -1921,7 +1921,7 @@ struct ContentView: View {
             )) != nil else {
                 return
             }
-            showWorkspaceSuccessNotice("Безопасная диагностика сохранена.")
+            showWorkspaceSuccessNotice(WorkspaceSuccessMessage.diagnosticsSaved.localized())
         } catch {
             localError = error.localizedDescription
         }
@@ -1960,7 +1960,7 @@ struct ContentView: View {
                 }
                 try Task.checkCancellation()
                 showWorkspaceSuccessNotice(
-                    "Зашифрованный экспорт сохранён: \(exportedCount) профилей."
+                    WorkspaceSuccessMessage.encryptedExported.localized(count: exportedCount)
                 )
             } catch is CancellationError {
                 return
@@ -1995,7 +1995,7 @@ struct ContentView: View {
                     revealSavedProfile(first)
                 }
                 showWorkspaceSuccessNotice(
-                    "Импортировано профилей из зашифрованного файла: \(saved.count)."
+                    WorkspaceSuccessMessage.encryptedImported.localized(count: saved.count)
                 )
             } catch is CancellationError {
                 return
@@ -2200,7 +2200,7 @@ struct ContentView: View {
         return List {
             Section("Профили") {
                 sourceButton(
-                    title: "Все профили",
+                    title: ProfileSidebarLabel.allProfiles.localized(),
                     systemImage: "rectangle.stack.person.crop",
                     count: sourceIndex.count(
                         scope: .active,
@@ -2216,7 +2216,7 @@ struct ContentView: View {
                 }
 
                 sourceButton(
-                    title: "Закреплённые",
+                    title: ProfileSidebarLabel.pinned.localized(),
                     systemImage: "pin.fill",
                     count: sourceIndex.count(
                         scope: .pinned,
@@ -2233,7 +2233,7 @@ struct ContentView: View {
 
                 if sourceIndex.archivedCount > 0 {
                     sourceButton(
-                        title: "Архив",
+                        title: ProfileSidebarLabel.archive.localized(),
                         systemImage: "archivebox",
                         count: sourceIndex.count(
                             scope: .archived,
@@ -2253,7 +2253,7 @@ struct ContentView: View {
             Section {
                 HStack {
                     sourceDisclosureButton(
-                        title: "Папки",
+                        title: ProfileSidebarLabel.folders.localized(),
                         isExpanded: $foldersSourceExpanded
                     )
                     Spacer()
@@ -2298,7 +2298,7 @@ struct ContentView: View {
 
                 if foldersSourceExpanded {
                     sourceButton(
-                        title: "Без папки",
+                        title: ProfileSidebarLabel.unfiled.localized(),
                         systemImage: "tray",
                         count: sourceIndex.count(
                             scope: profileListScope,
@@ -2395,7 +2395,7 @@ struct ContentView: View {
                     }
                 } header: {
                     sourceDisclosureButton(
-                        title: "Теги",
+                        title: ProfileSidebarLabel.tags.localized(),
                         isExpanded: $tagsSourceExpanded
                     )
                 }
@@ -2729,7 +2729,7 @@ struct ContentView: View {
                             )
                         }
                     } else if selectedFolderFilter == .unfiled {
-                        filterChip("Без папки", systemImage: "tray") {
+                        filterChip(ProfileSidebarLabel.unfiled.localized(), systemImage: "tray") {
                             applyWorkspaceQuery(
                                 workspaceQuery.removing(.folder)
                             )
@@ -2749,7 +2749,7 @@ struct ContentView: View {
                         }
                     }
                     if profileListScope != .active {
-                        filterChip(profileListScope.title, systemImage: "line.3.horizontal.decrease.circle") {
+                        filterChip(NSLocalizedString(profileListScope.title, comment: "Profile scope"), systemImage: "line.3.horizontal.decrease.circle") {
                             applyWorkspaceQuery(
                                 workspaceQuery.removing(.scope)
                             )
@@ -2898,8 +2898,12 @@ struct ContentView: View {
         Button(action: action) {
             Label(
                 isExpanded
-                    ? "Показать меньше"
-                    : "Ещё \(hiddenCount) \(noun)",
+                    ? NSLocalizedString("Показать меньше", comment: "Collapse sidebar preview")
+                    : String(format: NSLocalizedString(
+                        hiddenCount == 1
+                            ? (noun == "папок" ? "Ещё %ld папка" : "Ещё %ld тег")
+                            : (noun == "папок" ? "Ещё %ld папок" : "Ещё %ld тегов"),
+                        comment: "Expand sidebar preview"), hiddenCount),
                 systemImage: isExpanded ? "chevron.up" : "chevron.down"
             )
             .font(.caption)
@@ -3033,7 +3037,7 @@ struct ContentView: View {
                     commands.moveToFolder(option.folderID)
                 } label: {
                     Label(
-                        option.title,
+                        option.folderID == nil ? ProfileSidebarLabel.unfiled.localized() : option.title,
                         systemImage:
                             option.isSelected
                                 ? "checkmark"
@@ -4156,14 +4160,10 @@ private struct ProfileRow: View {
                                     : Color.orange
                             )
                             .help(
-                                summary.title + (summary.checkedAt.map {
-                                    " Последняя проверка: \($0.formatted(date: .abbreviated, time: .shortened))."
-                                } ?? "")
+                                summary.localizedRowSummary()
                             )
                             .accessibilityLabel(
-                                summary.title + (summary.checkedAt.map {
-                                    ". Последняя проверка: \($0.formatted(date: .abbreviated, time: .shortened))."
-                                } ?? "")
+                                summary.localizedRowSummary()
                             )
                         }
                     }

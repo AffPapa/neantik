@@ -56,6 +56,16 @@ struct ProxyCheckSummary: Equatable, Sendable {
         return age <= freshnessLifetime ? .currentSuccess : .staleSuccess
     }
 
+    /// A localized row description assembled without exposing proxy details.
+    func localizedRowSummary(bundle: Bundle = .main) -> String {
+        let status = bundle.localizedString(forKey: title, value: title, table: "Status")
+        guard let checkedAt else { return status }
+        let template = bundle.localizedString(
+            forKey: "page.602", value: " Последняя проверка: %@.", table: "Pages"
+        )
+        return status + String(format: template, checkedAt.formatted(date: .abbreviated, time: .shortened))
+    }
+
     var title: String {
         switch status {
         case .neverChecked: "Доступность прокси ещё не проверялась"

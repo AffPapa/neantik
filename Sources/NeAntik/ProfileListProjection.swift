@@ -1,5 +1,19 @@
 import Foundation
 
+/// Fixed navigation labels only; user-provided folder and tag names stay verbatim.
+enum ProfileSidebarLabel: String, CaseIterable {
+    case allProfiles = "Все профили"
+    case pinned = "Закреплённые"
+    case archive = "Архив"
+    case folders = "Папки"
+    case unfiled = "Без папки"
+    case tags = "Теги"
+
+    func localized(bundle: Bundle = .main) -> String {
+        bundle.localizedString(forKey: rawValue, value: rawValue, table: nil)
+    }
+}
+
 enum ProfileListScope: String, Codable, CaseIterable, Identifiable, Sendable {
     case active
     case pinned

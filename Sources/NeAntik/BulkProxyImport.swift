@@ -21,6 +21,10 @@ enum BulkProxyImportRowIssue: Equatable, Sendable {
         }
     }
 
+    func localizedMessage(bundle: Bundle = .main) -> String {
+        bundle.localizedString(forKey: message, value: message, table: nil)
+    }
+
     static func resolve(_ error: Error) -> Self {
         switch error as? ProxyImportError {
         case .ambiguous:
@@ -41,6 +45,13 @@ struct BulkProxyImportPreviewRow: Identifiable, Equatable, Sendable {
     let issue: BulkProxyImportRowIssue?
 
     var id: Int { lineNumber }
+
+    func localizedSafeSummary(bundle: Bundle = .main) -> String? {
+        guard let draft else { return nil }
+        let key = draft.configuration.username.isEmpty ? "без авторизации" : "с авторизацией"
+        let auth = bundle.localizedString(forKey: key, value: key, table: nil)
+        return "\(draft.configuration.kind.title) · \(draft.configuration.displayEndpoint) · \(auth)"
+    }
 
     var safeSummary: String? {
         guard let draft else { return nil }
@@ -493,7 +504,7 @@ struct BulkProxyImportView: View {
     init(
         targetFolderName: String? = nil,
         initialText: String = "",
-        initialBaseName: String = "Прокси",
+        initialBaseName: String? = nil,
         initialKind: ProxyKind = .http,
         initialOrder: ProxyImportOrder = .automatic,
         showsOptionsInitially: Bool = false,
@@ -501,11 +512,15 @@ struct BulkProxyImportView: View {
     ) {
         self.targetFolderName = targetFolderName
         _text = State(initialValue: initialText)
-        _baseName = State(initialValue: initialBaseName)
+        _baseName = State(initialValue: initialBaseName ?? Self.defaultBaseName())
         _kind = State(initialValue: initialKind)
         _order = State(initialValue: initialOrder)
         _showsOptions = State(initialValue: showsOptionsInitially)
         self.onCreate = onCreate
+    }
+
+    static func defaultBaseName(bundle: Bundle = .main) -> String {
+        bundle.localizedString(forKey: "Прокси", value: "Прокси", table: nil)
     }
 
     var body: some View {
@@ -631,7 +646,7 @@ struct BulkProxyImportView: View {
                         }
 
                         LabeledContent("Папка") {
-                            Text(targetFolderName ?? "Без папки")
+                            Text(targetFolderName ?? ProfileSidebarLabel.unfiled.localized())
                         }
 
                         Picker("Порядок полей", selection: $order) {
@@ -701,12 +716,12 @@ struct BulkProxyImportView: View {
 
     private var previewName: String {
         BulkProxyImportParser.profileName(base: baseName, index: 1)
-            ?? "Прокси 1"
+            ?? NSLocalizedString("Прокси 1", comment: "Default proxy profile preview")
     }
 
     private var optionsSummary: String {
         "\(kind.title) · \(previewName)… · " +
-            (targetFolderName ?? "Без папки")
+            (targetFolderName ?? ProfileSidebarLabel.unfiled.localized())
     }
 
     private var createButtonTitle: String {
@@ -799,12 +814,12 @@ struct BulkProxyImportView: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 24, alignment: .trailing)
 
-            if let summary = row.safeSummary {
+            if let summary = row.localizedSafeSummary() {
                 Label(summary, systemImage: "checkmark.circle")
                     .foregroundStyle(.secondary)
             } else {
                 Label(
-                    row.issue?.message ?? "Проверь строку.",
+                    row.issue?.localizedMessage() ?? NSLocalizedString("Проверь строку.", comment: "Proxy import row error"),
                     systemImage: "exclamationmark.circle.fill"
                 )
                 .foregroundStyle(.orange)
@@ -813,11 +828,10 @@ struct BulkProxyImportView: View {
         .font(.caption)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            row.safeSummary.map {
-                "Строка \(row.lineNumber), готово, \($0)"
-            } ??
-                "Строка \(row.lineNumber), требует исправления, " +
-                (row.issue?.message ?? "Проверь строку.")
+            row.localizedSafeSummary().map {
+                String(format: NSLocalizedString("Строка %ld, готово, %@", comment: "Proxy import valid row"), row.lineNumber, $0)
+            } ?? String(format: NSLocalizedString("Строка %ld, требует исправления, %@", comment: "Proxy import invalid row"),
+                         row.lineNumber, row.issue?.localizedMessage() ?? NSLocalizedString("Проверь строку.", comment: "Proxy import row error"))
         )
     }
 
