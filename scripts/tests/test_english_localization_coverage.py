@@ -33,5 +33,20 @@ class EnglishLocalizationCoverageTests(unittest.TestCase):
         self.assertEqual(missing, [], "Visible Russian literals need English translations")
 
 
+    def test_fingerprint_dynamic_verdicts_and_phases_have_english(self):
+        table = (ROOT / "Resources/en.lproj/Pages.strings").read_text(encoding="utf-8")
+        entries = re.findall(r'^("(?:\\.|[^"\\])*")\s*=\s*("(?:\\.|[^"\\])*");', table, re.MULTILINE)
+        translations = {json.loads(key): json.loads(value) for key, value in entries}
+        self.assertEqual(len(translations), len(entries), "Duplicate Pages keys")
+        source = (ROOT / "Sources/NeAntik/FingerprintAudit.swift").read_text(encoding="utf-8")
+        verdicts = source.split("enum FingerprintAuditVerdict:", 1)[1].split("enum FingerprintAuditExecutionMode:", 1)[0]
+        values = re.findall(r'"([^"\\]*[А-Яа-яЁё][^"\\]*)"', verdicts)
+        self.assertEqual(len(values), 8)
+        phases = re.findall(r'fingerprintPhaseText\("([^"\\]+)"\)', source)
+        for key in values + phases:
+            self.assertIn(key, translations, key)
+            self.assertNotRegex(translations[key], r"[А-Яа-яЁё]", key)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -2,6 +2,15 @@ import AppKit
 import Foundation
 import SwiftUI
 
+private func fingerprintDisplayText(_ value: String) -> String {
+    NSLocalizedString(value, tableName: "Pages", bundle: .main, value: value, comment: "")
+}
+
+private func fingerprintDisplaySummary(_ value: String) -> String {
+    let parts = ["Обычный режим браузера", "Диагностический режим", "Подпись подтверждена", "Подпись не подтверждена", "не записана", "не записан", "сборка ", "NeAntik — безопасная сводка fingerprint-проверки", "Менеджер:", "Схема проверки:", "Каталог устройств:", "Движок:", "Режим:", "Подпись движка:", "Сетевое доказательство: настроенный маршрут и WebRTC-контроль", "Фактический HTTP-маршрут: не измерялся", "Публичное тестирование:", "Базовая согласованность page/worker:"]
+    return parts.reduce(value) { $0.replacingOccurrences(of: $1, with: fingerprintDisplayText($1)) }
+}
+
 enum FingerprintAuditErrorPresentation: Equatable {
     case hidden
     case manualAlert
@@ -185,7 +194,7 @@ struct FingerprintAuditView: View {
                 coordinator.errorMessage = nil
             }
         } message: {
-            Text(coordinator.errorMessage ?? "Неизвестная ошибка")
+            Text(coordinator.errorMessage ?? fingerprintDisplayText("Неизвестная ошибка"))
         }
         .onDisappear {
             if coordinator.isRunning {
@@ -487,13 +496,13 @@ struct FingerprintAuditView: View {
                         ])
                     } label: {
                         Label(
-                            FingerprintAuditReportPresentationPolicy.manualReportLabel,
+                            fingerprintDisplayText(FingerprintAuditReportPresentationPolicy.manualReportLabel),
                             systemImage: "doc.text"
                         )
                     }
                     .padding(.top, 8)
                     Text(
-                        FingerprintAuditReportPresentationPolicy.manualReportCaption
+                        fingerprintDisplayText(FingerprintAuditReportPresentationPolicy.manualReportCaption)
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -512,10 +521,10 @@ struct FingerprintAuditView: View {
                     .foregroundStyle(verdictColor(report.verdict))
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(report.verdict.title)
+                    Text(fingerprintDisplayText(report.verdict.title))
                         .font(.title3)
                         .fontWeight(.semibold)
-                    Text(report.verdict.explanation)
+                    Text(fingerprintDisplayText(report.verdict.explanation))
                         .foregroundStyle(.secondary)
                 }
             }
@@ -572,24 +581,24 @@ struct FingerprintAuditView: View {
                 VStack(alignment: .leading, spacing: 9) {
                     LabeledContent(
                         "Менеджер",
-                        value: report.safeManagerVersionSummary
+                        value: fingerprintDisplaySummary(report.safeManagerVersionSummary)
                     )
                     LabeledContent(
                         "Схема и каталог",
                         value:
-                            "\(report.effectiveAuditSchemaVersion) · \(report.identityCatalogVersion.map(String.init) ?? "не записан")"
+                            "\(report.effectiveAuditSchemaVersion) · \(report.identityCatalogVersion.map(String.init) ?? fingerprintDisplayText("не записан"))"
                     )
                     LabeledContent(
                         "Движок",
-                        value: report.safeRuntimeVersionSummary
+                        value: fingerprintDisplaySummary(report.safeRuntimeVersionSummary)
                     )
                     LabeledContent(
                         "Режим",
-                        value: report.effectiveExecutionMode.diagnosticTitle
+                        value: fingerprintDisplayText(report.effectiveExecutionMode.diagnosticTitle)
                     )
                     LabeledContent(
                         "Подпись",
-                        value: report.safeRuntimeSignatureSummary
+                        value: fingerprintDisplaySummary(report.safeRuntimeSignatureSummary)
                     )
 
                     disclosureButton(
@@ -598,7 +607,7 @@ struct FingerprintAuditView: View {
                         font: .caption
                     )
                     if safeDiagnosticSummaryIsExpanded {
-                        Text(report.safeDiagnosticSummary)
+                        Text(fingerprintDisplaySummary(report.safeDiagnosticSummary))
                             .font(.caption.monospaced())
                             .foregroundStyle(.secondary)
                             .textSelection(.enabled)
@@ -747,19 +756,19 @@ struct FingerprintAuditView: View {
         _ report: FingerprintAuditReport
     ) -> String {
         guard let issue = report.publicAlphaReleaseIssues.first else {
-            return "Проверку не удалось завершить. Закрой другие окна браузера и повтори."
+            return fingerprintDisplayText("Проверку не удалось завершить. Закрой другие окна браузера и повтори.")
         }
         if issue.contains("unstable") {
-            return "Настройки профиля меняются между запусками."
+            return fingerprintDisplayText("Настройки профиля меняются между запусками.")
         }
         if issue.contains("WebGL") ||
             issue.contains("separation") ||
             issue.contains("unchanged") {
-            return "Профили выглядят слишком похоже."
+            return fingerprintDisplayText("Профили выглядят слишком похоже.")
         }
         if issue.contains("runtime") ||
             issue.contains("code signature") {
-            return "Браузерный движок не готов к проверке."
+            return fingerprintDisplayText("Браузерный движок не готов к проверке.")
         }
         return localizedIssue(issue)
     }
@@ -771,59 +780,59 @@ struct FingerprintAuditView: View {
         else {
             return profile.name
         }
-        return "\(profile.name) · профиль \(index + 1)"
+        return String(format: fingerprintDisplayText("%@ · профиль %lld"), profile.name, Int64(index + 1))
     }
 
     private func localizedIssue(_ issue: String) -> String {
         if issue.contains("Font rendering evidence") {
-            return "Нужна новая проверка шрифтов по измерениям DOM и Canvas. Старый список названий не подтверждает отображение и fallback."
+            return fingerprintDisplayText("Нужна новая проверка шрифтов по измерениям DOM и Canvas. Старый список названий не подтверждает отображение и fallback.")
         }
         if issue.contains("browser mode") ||
             issue.contains("diagnostic mode") {
-            return "Отчёт получен не в обычном режиме браузера."
+            return fingerprintDisplayText("Отчёт получен не в обычном режиме браузера.")
         }
         if issue.contains("fingerprint audit schema") {
-            return "Нужен свежий отчёт текущего формата."
+            return fingerprintDisplayText("Нужен свежий отчёт текущего формата.")
         }
         if issue.contains("immutable identity catalog") {
-            return "Отчёт не связан с текущей неизменяемой версией каталога устройств."
+            return fingerprintDisplayText("Отчёт не связан с текущей неизменяемой версией каталога устройств.")
         }
         if issue.contains("disagrees with worker_") ||
             issue.contains("page and worker") {
-            return "Основная страница и Web Worker показывают разные значения."
+            return fingerprintDisplayText("Основная страница и Web Worker показывают разные значения.")
         }
         if issue.contains("canvas_repeat") {
-            return "Повторные чтения Canvas внутри одной страницы нестабильны."
+            return fingerprintDisplayText("Повторные чтения Canvas внутри одной страницы нестабильны.")
         }
         if issue.contains("client_rects_repeat") {
-            return "Повторные чтения ClientRects внутри одной страницы нестабильны."
+            return fingerprintDisplayText("Повторные чтения ClientRects внутри одной страницы нестабильны.")
         }
         if issue.contains("webgl_pixels_repeat") {
-            return "Повторные чтения пикселей WebGL внутри одной страницы нестабильны."
+            return fingerprintDisplayText("Повторные чтения пикселей WebGL внутри одной страницы нестабильны.")
         }
         if issue.contains("CSS screen") {
-            return "CSS media queries не согласованы с размером экрана и DPR."
+            return fingerprintDisplayText("CSS media queries не согласованы с размером экрана и DPR.")
         }
         if issue.contains("runtime") {
-            return "Отчёт не удалось надёжно связать с проверенным браузерным движком."
+            return fingerprintDisplayText("Отчёт не удалось надёжно связать с проверенным браузерным движком.")
         }
         if issue.contains("code signature") {
-            return "Не подтверждена подпись браузерного движка."
+            return fingerprintDisplayText("Не подтверждена подпись браузерного движка.")
         }
         if issue.contains("A → B → A") ||
             issue.contains("profile identities") {
-            return "Последовательность профилей A → B → A не подтверждена."
+            return fingerprintDisplayText("Последовательность профилей A → B → A не подтверждена.")
         }
         if issue.contains("unavailable") {
-            return "Часть обязательных поверхностей браузера недоступна."
+            return fingerprintDisplayText("Часть обязательных поверхностей браузера недоступна.")
         }
         if issue.contains("unstable") {
-            return "Значения профиля A изменились при повторном запуске."
+            return fingerprintDisplayText("Значения профиля A изменились при повторном запуске.")
         }
         if issue.contains("WebGL") {
-            return "Пиксели WebGL не различаются между профилями."
+            return fingerprintDisplayText("Пиксели WebGL не различаются между профилями.")
         }
-        return "Одна из обязательных технических проверок не пройдена; подробности сохранены в JSON-отчёте."
+        return fingerprintDisplayText("Одна из обязательных технических проверок не пройдена; подробности сохранены в JSON-отчёте.")
     }
 
     private var controls: some View {
