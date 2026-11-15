@@ -1,5 +1,9 @@
 # NeAntik changelog
 
+## Direct 1.1.0 (214) — internal qualification candidate
+
+- Complete English localization of profile navigation, proxy import and status, transfer notices, and compatibility details.
+
 ## Direct 1.1.0 (213)
 
 - Добавлены английские интерфейс и справка с выбором языка macOS.
