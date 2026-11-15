@@ -232,7 +232,9 @@ class ResponsiveUIContractTests(unittest.TestCase):
             commands[projection_start:projection_end],
         )
         self.assertIn('"Выбрать другую папку…"', commands)
-        self.assertIn('TextField("Поиск папок"', picker)
+        self.assertIn("TextField(", picker)
+        self.assertIn('value: "Поиск папок"', picker)
+        self.assertIn('"page.627" = "Search folders";', (ROOT / "Resources/en.lproj/Pages.strings").read_text())
         self.assertIn("localizedCaseInsensitiveContains", picker)
         self.assertIn(
             "let visibleFolders = presentation.filteredFolders",
@@ -304,7 +306,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
             onboarding,
         )
         self.assertIn('primaryTitle: "Повторить проверку"', onboarding)
-        self.assertIn(".accessibilityHint(presentation.primaryAccessibilityHint)", onboarding)
+        self.assertIn(".accessibilityHint(", onboarding)
+        self.assertIn("presentation.primaryAccessibilityHint", onboarding)
         self.assertNotIn("terminalAccessibilityAnnouncement", onboarding)
         self.assertIn("постоянный локальный профиль браузера", onboarding)
 
@@ -349,10 +352,10 @@ class ResponsiveUIContractTests(unittest.TestCase):
     ) -> None:
         text = EDITOR.read_text(encoding="utf-8")
         self.assertIn('Label("Заполнить из буфера"', text)
-        self.assertIn(
-            'Label(engine == .webkit ? "Предварительно проверить прокси" : "Проверить прокси"',
-            text,
-        )
+        self.assertIn('engine == .webkit ? "Предварительно проверить прокси" : "Проверить прокси"', text)
+        translations = (ROOT / "Resources/en.lproj/Localizable.strings").read_text()
+        self.assertIn('"Предварительно проверить прокси" = "Preflight Proxy";', translations)
+        self.assertIn('"Проверить прокси" = "Check Proxy";', translations)
         self.assertIn("private func importProxy(source: String)", text)
         self.assertNotIn("importProxyAndTest", text)
         import_start = text.index("private func importProxy(source: String)")
@@ -513,7 +516,9 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("BulkProxyImportParser.preview(", text)
         self.assertIn("preview.issueLineNumbers", text)
         self.assertIn("issuePreviewRows", text)
-        self.assertIn("Исправь \\(issueCountTitle", text)
+        self.assertIn('"Исправь %@"', text)
+        self.assertIn("issueCountTitle(preview.issueLineNumbers.count)", text)
+        self.assertIn('"Исправь %@" = "Fix %@";', (ROOT / "Resources/en.lproj/Localizable.strings").read_text())
         self.assertNotIn("DisclosureGroup(isExpanded: $showsOptions)", text)
         self.assertIn("showsOptions.toggle()", text)
         self.assertIn("maxWidth: .infinity", text)
@@ -565,7 +570,12 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("minHeight: 32", button)
         self.assertIn(".contentShape(Rectangle())", button)
         self.assertIn(".onHover", button)
-        self.assertIn('isExpanded ? "Развёрнуто" : "Свёрнуто"', button)
+        self.assertIn("isExpanded ?", button)
+        self.assertIn('value: "Развёрнуто"', button)
+        self.assertIn('value: "Свёрнуто"', button)
+        translations = (ROOT / "Resources/en.lproj/Pages.strings").read_text()
+        self.assertIn('"page.260" = "Expanded";', translations)
+        self.assertIn('"page.261" = "Collapsed";', translations)
 
     def test_environment_overview_hides_optional_unavailable_actions(self) -> None:
         text = PROFILE_ENVIRONMENT.read_text(encoding="utf-8")
@@ -577,7 +587,8 @@ class ResponsiveUIContractTests(unittest.TestCase):
         self.assertIn("criticalFindings", overview)
         self.assertNotIn("snapshot.limitations.last", overview)
         self.assertNotIn("fingerprintDisabledReason", overview)
-        self.assertIn('Text("Дополнительные проверки")', text)
+        self.assertIn('value: "Дополнительные проверки"', text)
+        self.assertIn('"page.279" = "Additional Checks";', (ROOT / "Resources/en.lproj/Pages.strings").read_text())
 
     def test_post_save_reveal_policy_covers_every_workspace_facet(self) -> None:
         text = POST_SAVE_REVEAL.read_text(encoding="utf-8")
