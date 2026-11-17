@@ -1,5 +1,9 @@
 # NeAntik changelog
 
+## Direct 1.1.1 (215) — internal qualification candidate
+
+- Improve launch admission messages, profile dates, Chromium device preset selection, and safe reporting of incomplete credential cleanup. This candidate has not been released.
+
 ## Direct 1.1.0 (214) — internal qualification candidate
 
 - Complete English localization of profile navigation, proxy import and status, transfer notices, and compatibility details.

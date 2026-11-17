@@ -1,6 +1,6 @@
 # NeAntik local MCP: profile management
 
-**Current public scope:** NeAntik 1.0.0 (211) includes Chromium and bundled WebKit. Management mode can ask an open NeAntik manager to launch WebKit after local consent.
+**Current public scope:** NeAntik 1.1.0 (214) includes Chromium and bundled WebKit. Management mode can ask an open NeAntik manager to launch WebKit after local consent.
 
 The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. For Chromium and metadata operations the manager GUI may be closed. WebKit lifecycle commands require an open manager and local consent. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Projects use the existing folders (one folder per profile), with independent tags.
 

@@ -7,7 +7,7 @@ Chromium и отдельный WebKit для прокси-профилей, со
 
 [English version](README.en.md)
 
-На [GitHub](https://github.com/AffPapa/neantik/releases/tag/v1.0.0) опубликована **NeAntik 1.0.0 (211)** для прямой установки. Выпуск включает Chromium 157.0.8103.79 и встроенный WebKit. [Хеши ZIP/DMG и проведённые проверки](releases/v1.0.0.json).
+На [GitHub](https://github.com/AffPapa/neantik/releases/tag/v1.1.0) опубликована **NeAntik 1.1.0 (214)** для прямой установки. Выпуск включает Chromium 157.0.8103.79 и встроенный WebKit. [Хеши ZIP/DMG и проведённые проверки](releases/v1.1.0.json).
 
 
 ## Предупреждение безопасности
@@ -21,16 +21,16 @@ Chromium и отдельный WebKit для прокси-профилей, со
 Кнопка GitHub **Code → Download ZIP** скачивает исходный код, а не готовое
 приложение.
 
-Последний опубликованный выпуск: [NeAntik 1.0.0 (211)](https://github.com/AffPapa/neantik/releases/tag/v1.0.0). Размеры и SHA-256 скачанных ZIP/DMG указаны в [записи о выпуске](releases/v1.0.0.json).
+Последний опубликованный выпуск: [NeAntik 1.1.0 (214)](https://github.com/AffPapa/neantik/releases/tag/v1.1.0). Размеры и SHA-256 скачанных ZIP/DMG указаны в [записи о выпуске](releases/v1.1.0.json).
 
 **Обновление вручную через DMG/ZIP:** закройте приложение перед заменой; папки профилей удалять не нужно. Возможности встроенного updater указаны для каждой версии в release notes.
-Переход на 1.0.0 выполняется вручную через DMG или ZIP.
+Переход на 1.1.0 выполняется вручную через DMG или ZIP.
 
 - macOS 14 или новее, только Apple Silicon;
 - Chromium `157.0.8103.79`, ARM64, Metal;
 - Developer ID, notarization, ZIP/DMG и SHA-256 относятся к конкретному опубликованному выпуску.
 
-Скачать напрямую: [GitHub](https://github.com/AffPapa/neantik/releases/tag/v1.0.0) и [browser.free](https://browser.free).
+Скачать напрямую: [GitHub](https://github.com/AffPapa/neantik/releases/tag/v1.1.0) и [browser.free](https://browser.free).
 
 Описание ниже отражает контракт менеджера и текущей ветки; точный состав
 публичного бинарного релиза определяется его release notes и артефактами.
@@ -42,7 +42,7 @@ Chromium и отдельный WebKit для прокси-профилей, со
 3. Нажмите «Запустить». Cookies и данные сайтов останутся только в этом
    профиле.
 
-## Privacy-функции в опубликованном выпуске 1.0.0
+## Privacy-функции в опубликованном выпуске 1.1.0
 
 Выпуск включает согласованные пресеты, настройку прокси для Chromium, защиту сайтов,
 одноразовые профили и паспорт защиты. Предварительная проверка прокси не измеряет

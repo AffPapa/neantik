@@ -240,3 +240,12 @@
 "webKitPhase.01" = "profile confirmation";
 "webKitPhase.02" = "network process identification";
 "webKitPhase.03" = "network route readiness";
+"cleanup.metadata" = "Profile data could not be verified, so credential cleanup was not attempted.";
+"cleanup.inspection" = "NeAntik could not safely check some cleanup records.";
+"cleanup.access" = "macOS did not confirm access to some Keychain items.";
+"cleanup.unavailable" = "The Keychain operation is currently unavailable.";
+"cleanup.other" = "The Keychain operation could not be completed.";
+"cleanup.marker" = "NeAntik could not update its cleanup marker.";
+"cleanup.generic" = "NeAntik could not confirm that saved proxy password cleanup finished.";
+"cleanup.nextStart" = "NeAntik will safely check again the next time the app opens. If the message persists, contact support.";
+"cleanup.deletedPrefix" = "The profile was deleted; its data folder, if present, was moved to Trash.";

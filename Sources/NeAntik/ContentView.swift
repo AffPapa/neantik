@@ -229,6 +229,7 @@ struct ContentView: View {
     @State private var backgroundFileOperationTasks:
         [UUID: Task<Void, Never>] = [:]
     @State private var localError: String?
+    @State private var credentialCleanupNotice: String?
     @State private var workspaceSuccessNotice: WorkspaceSuccessNotice?
     @State private var workspaceSuccessNoticeTask: Task<Void, Never>?
     @State private var launchPreparationFailure: LaunchPreparationFailure?
@@ -559,9 +560,7 @@ struct ContentView: View {
         Binding(
             get: { workspaceAlert },
             set: { value in
-                guard value == nil, let source = workspaceAlert?.source else {
-                    return
-                }
+                guard value == nil, let source = workspaceAlert?.source else { return }
                 clearWorkspaceAlert(source)
             }
         )
@@ -573,6 +572,18 @@ struct ContentView: View {
 
     private var workspaceBase: some View {
         VStack(spacing: 0) {
+            if let notice = credentialCleanupNotice {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    Text(verbatim: notice).frame(maxWidth: .infinity, alignment: .leading)
+                    Button("Понятно") {
+                        credentialCleanupNotice = nil
+                        Task { await credentialCleanup.acknowledgeOutcome() }
+                    }
+                }
+                .padding(12)
+                .background(.regularMaterial)
+            }
             if webKitDeletionRecoveryReadError {
                 HStack {
                     Label("Не удалось проверить незавершённые удаления WebKit.", systemImage: "exclamationmark.triangle")
@@ -999,7 +1010,17 @@ struct ContentView: View {
                     normalizeSelection()
                     fingerprintObservationStore.remove(profileID: profile.id)
                     clearProxyHealth(for: profile.id)
-                    localError = error.localizedDescription
+                    if let keychainFailure = error.cleanupError as? KeychainCredentialPurgeError {
+                        let diagnostic = DeletedProfileCredentialCleanupSummary(
+                            attemptedCount: 1, clearedCount: 0, failedCount: 1,
+                            skippedActiveCount: 0, skippedBecauseMetadataUntrusted: false,
+                            inspectionFailed: false, alreadyRan: false,
+                            keychainCategories: keychainFailure.categories
+                        )
+                        localError = NSLocalizedString("cleanup.deletedPrefix", tableName: "Errors", bundle: .main, value: "Профиль удалён; его папка данных, если существовала, перемещена в Корзину.", comment: "Profile removed before credential cleanup") + " " + diagnostic.userMessage
+                    } else {
+                        localError = error.localizedDescription
+                    }
                 } catch {
                     localError = error.localizedDescription
                 }
@@ -1204,7 +1225,8 @@ struct ContentView: View {
         .task {
             await resolveRuntime()
         }
-        .task {
+        .task(id: "\(store.hasTrustedMetadata)-\(updateController.isPresented)") {
+            guard !updateController.holdsFence else { return }
             await recoverDeletedProfileCredentials()
         }
         .task {
@@ -1440,19 +1462,22 @@ struct ContentView: View {
     private func recoverDeletedProfileCredentials() async {
         guard let activity = try? ApplicationUpdateAdmission.shared.beginActivity() else { return }
         defer { ApplicationUpdateAdmission.shared.finishActivity(activity) }
-        let summary = await credentialCleanup.runOnce(
+        let result = await credentialCleanup.runOnce(
             metadataIsTrusted: store.hasTrustedMetadata,
             excluding: Set(store.profiles.map(\.id))
         )
+        let summary: DeletedProfileCredentialCleanupSummary
+        if result.alreadyRan {
+            summary = await credentialCleanup.lastOutcome() ?? result
+        } else {
+            summary = result
+        }
         guard !Task.isCancelled,
-              summary.failedCount > 0 || summary.inspectionFailed
+              summary.failedCount > 0 || summary.inspectionFailed || summary.markerFailure
         else {
             return
         }
-        if localError == nil {
-            localError =
-                "Не удалось завершить очистку некоторых ранее удалённых паролей прокси. NeAntik безопасно повторит попытку при следующем запуске."
-        }
+        credentialCleanupNotice = summary.userMessage
     }
 
     private func normalizeSelection(preferred: UUID? = nil) {
