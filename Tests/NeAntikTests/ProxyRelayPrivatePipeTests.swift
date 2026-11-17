@@ -63,6 +63,34 @@ struct ProxyRelayPrivatePipeTests {
         let (nextInput, nextOutput) = try pair(); defer { close(nextInput) }; close(nextOutput)
         #expect(throws: ProxyRelayPrivatePipe.Failure.closed) { try ProxyRelayPrivatePipe.readFrame(nextInput, timeout: 1) }
     }
+    @Test func fullPreparedPipeHonorsWriteDeadline() throws {
+        let (input, output) = try pair(); defer { close(input); close(output) }
+        let bytes = [UInt8](repeating: 0x61, count: 256)
+        var filled = 0
+        while filled < 1_048_576 {
+            let result = bytes.withUnsafeBytes { Darwin.write(output, $0.baseAddress!, $0.count) }
+            if result < 0 && errno == EAGAIN { break }
+            try #require(result > 0)
+            filled += result
+        }
+        try #require(filled < 1_048_576)
+        // A blocked atomic 256-byte write may leave room for a short frame.
+        // Fill the remainder byte by byte until the descriptor says EAGAIN.
+        var byte: UInt8 = 0x61
+        while filled < 1_048_576 {
+            let result = Darwin.write(output, &byte, 1)
+            if result < 0 && errno == EINTR { continue }
+            if result < 0 && errno == EAGAIN { break }
+            try #require(result == 1)
+            filled += result
+        }
+        try #require(filled < 1_048_576)
+        let start = ContinuousClock.now
+        #expect(throws: ProxyRelayPrivatePipe.Failure.timeout) {
+            try ProxyRelayPrivatePipe.writeFrame(output, data: Data([1]), timeout: 0.05)
+        }
+        #expect(start.duration(to: .now) < .seconds(2))
+    }
     @Test func onlyTimeoutBeforeAnyHeaderByteCanBeRetried() throws {
         let (input, output) = try pair()
         defer { close(input); close(output) }

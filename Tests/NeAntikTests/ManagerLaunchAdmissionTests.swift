@@ -1,10 +1,22 @@
 import Combine
+import DirectInstallFilesystem
 import Foundation
 import Testing
 @testable import NeAntik
 
 @MainActor
 struct ManagerLaunchAdmissionTests {
+    @Test func installAdmissionDistinguishesContentionUpdateAndUnverifiedState() {
+        #expect(ApplicationInstallLifecycleError.classify(InstallFilesystemError.busy) == .busy)
+        #expect(ApplicationInstallLifecycleError.classify(ApplicationUpdateAdmissionError.updating) == .updating)
+        #expect(ApplicationInstallLifecycleError.classify(InstallFilesystemError.changed) == .unavailable)
+        #expect(ApplicationInstallLifecycleError.classify(InstallFilesystemError.unsafe) == .unavailable)
+        #expect(ApplicationInstallLifecycleError.busy.permitsLaunchRetry(attempt: 0))
+        #expect(ApplicationInstallLifecycleError.busy.permitsLaunchRetry(attempt: 1))
+        #expect(!ApplicationInstallLifecycleError.busy.permitsLaunchRetry(attempt: 2))
+        #expect(!ApplicationInstallLifecycleError.unavailable.permitsLaunchRetry(attempt: 0))
+        #expect(!ApplicationInstallLifecycleError.updating.permitsLaunchRetry(attempt: 0))
+    }
     @Test func thermalAdmissionUsesOneSnapshotAndRejectsCriticalToSeriousTransition() throws {
         var reads = 0
         let admission = ManagerLaunchAdmission(observePressure: false, thermalState: {

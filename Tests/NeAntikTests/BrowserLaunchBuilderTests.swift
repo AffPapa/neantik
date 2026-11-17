@@ -731,6 +731,20 @@ struct BrowserLaunchBuilderTests {
         }
     }
 
+    @Test func devicePresetsKeepTheCurrentIdentityContractAndDoNotEditSavedOrWebKitProfiles() throws {
+        let original = BrowserIdentity()
+        for preset in BrowserDevicePreset.allCases where preset != .automatic {
+            let selected = try #require(preset.apply(to: original, isNew: true, engine: .chromium))
+            #expect(selected.issuanceVersion == BrowserIdentityIssuancePolicy.currentVersion)
+            #expect(BrowserIdentityIssuancePolicy.isCurrentSeed(selected.seed))
+            #expect(selected.deviceTupleID == BrowserIdentityIssuancePolicy.commonTupleIDs[preset.rawValue])
+            #expect(try JSONDecoder().decode(BrowserIdentity.self, from: JSONEncoder().encode(selected)) == selected)
+            #expect(preset.apply(to: original, isNew: false, engine: .chromium) == original)
+            #expect(preset.apply(to: original, isNew: true, engine: .webkit) == original)
+        }
+        #expect(BrowserDevicePreset.automatic.apply(to: original, isNew: true, engine: .chromium) == original)
+    }
+
     @Test
     func staleOrUnprovenProxyContextIsNotAppliedAtLaunch() {
         let observedAt = Date(timeIntervalSince1970: 1_700_000_000)

@@ -2328,7 +2328,7 @@ struct ProfileCredentialCleanupPendingError: LocalizedError {
     let cleanupError: Error
 
     var errorDescription: String? {
-        NSLocalizedString("userError.030", tableName: "Errors", bundle: .main, value: "Профиль и его данные уже удалены. Не удалось полностью очистить пароль прокси из Связки ключей; повторный запуск профиля заблокирован. NeAntik безопасно повторит очистку при следующем запуске.", comment: "")
+        NSLocalizedString("userError.030", tableName: "Errors", bundle: .main, value: "Профиль удалён. Если его папка данных существовала, она перемещена в Корзину. Не удалось подтвердить завершение очистки пароля прокси. NeAntik безопасно повторит проверку при следующем запуске.", comment: "")
     }
 }
 

@@ -26,7 +26,10 @@ class ManagerDNSFixtureTests(unittest.TestCase):
             self.assertEqual(pending,b'{')
             os.write(write,b'"action":"recover"}\n')
             self.assertEqual(MOD.DNS.BASE.read_control_lines(read,pending),[b'{"action":"recover"}'])
-            os.write(write,b'a'*1025)
+            # Keep the write bounded on hosts with little pipe-buffer space.
+            # The same 1025-byte pending-line boundary remains under test.
+            pending.extend(b'a'*1024)
+            os.write(write,b'a')
             with self.assertRaises(ValueError):MOD.DNS.BASE.read_control_lines(read,pending)
         finally:os.close(read);os.close(write)
 

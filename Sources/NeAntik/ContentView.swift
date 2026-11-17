@@ -988,6 +988,18 @@ struct ContentView: View {
                     }
                     fingerprintObservationStore.remove(profileID: profile.id)
                     clearProxyHealth(for: profile.id)
+                } catch let error as ProfileCredentialCleanupPendingError {
+                    // The deletion was committed; discard only cached UI
+                    // state, leaving credential recovery to its guarded path.
+                    if store.profiles.isEmpty {
+                        profileSearchText = ""
+                        selectedProfileTag = nil
+                        profileListScope = .active
+                    }
+                    normalizeSelection()
+                    fingerprintObservationStore.remove(profileID: profile.id)
+                    clearProxyHealth(for: profile.id)
+                    localError = error.localizedDescription
                 } catch {
                     localError = error.localizedDescription
                 }
@@ -3352,8 +3364,18 @@ struct ContentView: View {
         extensionsProfile = current
     }
 
-    private func launch(_ profile: BrowserProfile, target: BrowserUserLaunchTarget = .profileStart) {
-        guard !updateController.holdsFence else { return }
+    private func launch(_ profile: BrowserProfile, target: BrowserUserLaunchTarget = .profileStart, admissionRetryAttempt: Int = 0) {
+        guard !updateController.holdsFence else {
+            if admissionRetryAttempt > 0 {
+                launchPreparationFailure = LaunchPreparationFailure(
+                    profileID: profile.id,
+                    message: ApplicationInstallLifecycleError.updating.localizedDescription,
+                    title: "Браузер не запустился", offersProxyEdit: false, target: target
+                )
+            }
+            return
+        }
+        guard launchPreparationTasks[profile.id] == nil else { return }
         // A second click can arrive before SwiftUI redraws the disabled
         // launch control. Keep the in-flight launch and avoid a false alert.
         guard managerLaunchAdmission.preparingProfileID != profile.id else { return }
@@ -3368,10 +3390,10 @@ struct ContentView: View {
             if profile.engine == .webkit {
                 guard target == .profileStart else { throw NeAntikError.invalidProfile }
                 if profile.webKitRuntimeGeneration == .isolatedV1 {
-                    launchIsolatedWebKitProfile(profile)
+                    launchIsolatedWebKitProfile(profile, admissionRetryAttempt: admissionRetryAttempt)
                     return
                 }
-                let token = try ManagerLaunchAdmission.shared.begin(profileID: profile.id)
+                guard let token = try beginLaunchAdmission(profile, target: target, attempt: admissionRetryAttempt) else { return }
                 var launched = false
                 defer { ManagerLaunchAdmission.shared.finish(token: token, launched: launched) }
                 try processes.launchWebKitProfile(profile)
@@ -3385,7 +3407,7 @@ struct ContentView: View {
                 profile: profile
             ) {
             case .launchImmediately:
-                let admissionToken = try ManagerLaunchAdmission.shared.begin(profileID: profile.id)
+                guard let admissionToken = try beginLaunchAdmission(profile, target: target, attempt: admissionRetryAttempt) else { return }
                 var launched = false
                 defer { ManagerLaunchAdmission.shared.finish(token: admissionToken, launched: launched) }
                 try launchPreparedProfile(
@@ -3399,7 +3421,7 @@ struct ContentView: View {
                 // Every browser session gets its own route observation.
                 // A manual health check is useful feedback, not authority to
                 // reuse a potentially rotating endpoint at Start time.
-                let admissionToken = try ManagerLaunchAdmission.shared.begin(profileID: profile.id)
+                guard let admissionToken = try beginLaunchAdmission(profile, target: target, attempt: admissionRetryAttempt) else { return }
                 startAutomaticLaunchPreparation(
                     profile,
                     runtime: runtime,
@@ -3422,9 +3444,35 @@ struct ContentView: View {
     /// The separate WebKit host has an asynchronous authenticated bootstrap.
     /// Keep launch admission active until its route is ready and profile
     /// metadata has recorded the same revision.
-    private func launchIsolatedWebKitProfile(_ profile: BrowserProfile) {
+    private func beginLaunchAdmission(_ profile: BrowserProfile, target: BrowserUserLaunchTarget, attempt: Int) throws -> UUID? {
+        do { return try ManagerLaunchAdmission.shared.begin(profileID: profile.id) }
+        catch ApplicationInstallLifecycleError.busy {
+            guard scheduleAdmissionRetry(profile, target: target, attempt: attempt) else { throw ApplicationInstallLifecycleError.busy }
+            return nil
+        }
+    }
+
+    private func scheduleAdmissionRetry(_ profile: BrowserProfile, target: BrowserUserLaunchTarget, attempt: Int) -> Bool {
+        guard ApplicationInstallLifecycleError.busy.permitsLaunchRetry(attempt: attempt),
+              launchPreparationTasks[profile.id] == nil else { return false }
+        let token = UUID()
+        launchPreparationTokens[profile.id] = token
+        launchPreparingProfileIDs.insert(profile.id)
+        let task = Task { @MainActor in
+            do { try await Task.sleep(for: .milliseconds(150)) } catch { return }
+            guard !Task.isCancelled, launchPreparationTokens[profile.id] == token else { return }
+            launchPreparationTokens[profile.id] = nil
+            launchPreparingProfileIDs.remove(profile.id)
+            launchPreparationTasks[profile.id] = nil
+            launch(profile, target: target, admissionRetryAttempt: attempt + 1)
+        }
+        launchPreparationTasks[profile.id] = task
+        return true
+    }
+
+    private func launchIsolatedWebKitProfile(_ profile: BrowserProfile, admissionRetryAttempt: Int = 0) {
         do {
-            let token = try ManagerLaunchAdmission.shared.begin(profileID: profile.id)
+            guard let token = try beginLaunchAdmission(profile, target: .profileStart, attempt: admissionRetryAttempt) else { return }
             let launchToken = UUID()
             launchPreparationTokens[profile.id] = launchToken
             launchPreparingProfileIDs.insert(profile.id)
@@ -4344,6 +4392,16 @@ struct ProfileDetailView: View {
 
             ProfileDetailCard("Основное") {
                 VStack(alignment: .leading, spacing: 10) {
+                    LabeledContent(
+                        NSLocalizedString("profile.created", value: "Создан", comment: "Profile creation time"),
+                        value: profile.createdAt.formatted(date: .abbreviated, time: .shortened)
+                    )
+                    LabeledContent(
+                        NSLocalizedString("profile.lastLaunch", value: "Последний запуск", comment: "Last profile launch time"),
+                        value: profile.lastLaunchedAt?.formatted(date: .abbreviated, time: .shortened)
+                            ?? NSLocalizedString("profile.neverLaunched", value: "Ещё не запускался", comment: "Profile has never launched")
+                    )
+                    Divider()
                     LabeledContent(
                         "При запуске",
                         value: NSLocalizedString(profile.startupMode.title, comment: "Profile startup mode")

@@ -27,7 +27,7 @@
 "userError.027" = "and folders before retrying.";
 "userError.028" = "Could not finish deletion or automatically restore the profile data folder. Launch is blocked. Check macOS Trash or contact support; data was not permanently erased.";
 "userError.029" = "Could not delete the profile. Profile data was not changed.";
-"userError.030" = "The profile and its data were already deleted, but the proxy password could not be fully cleared from Keychain. Relaunch is blocked. NeAntik will safely retry cleanup on the next start.";
+"userError.030" = "The profile was deleted. Its data folder, if present, was moved to Trash. NeAntik could not confirm that proxy password cleanup finished. It will safely check again the next time the app opens.";
 "userError.031" = "macOS moved the profile data folder but did not report its new location.";
 "userError.032" = "Could not verify or restore the profile data folder from macOS Trash.";
 "userError.033" = "Could not load profiles. NeAntik will not modify the damaged storage. Restart the app. If the error persists, copy the error details and contact support.";
@@ -83,6 +83,9 @@
 "userError.083" = "A data operation is still running. Wait for it to finish, then reopen the update.";
 "userError.084" = "NeAntik is preparing an update. Finish or cancel it before another operation.";
 "userError.085" = "NeAntik is preparing an update or cannot verify its state. Close other app instances and retry launch. If the error persists, preserve profile data and contact support.";
+"lifecycle.busy" = "Another operation is still preparing the app. Wait a few seconds and try launching again.";
+"lifecycle.updating" = "An update is being prepared. Wait for it to finish or cancel the update, then launch the profile.";
+"lifecycle.unavailable" = "NeAntik could not verify its installation state. Restart the app. If this happens again, preserve your profile data and contact support.";
 "userError.086" = "The WebKit launch state changed.";
 "userError.087" = "Could not verify the signed WebKit process.";
 "userError.088" = "The WebKit process returned an unexpected response.";

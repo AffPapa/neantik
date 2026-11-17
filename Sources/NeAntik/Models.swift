@@ -283,6 +283,13 @@ enum BrowserIdentityIssuancePolicy {
         return seed(cohortIndex: cohortIndex, ordinal: ordinal)!
     }
 
+    static func newSeed<Generator: RandomNumberGenerator>(
+        cohortIndex: Int, using generator: inout Generator
+    ) -> UInt32? {
+        guard commonTupleResidues.indices.contains(cohortIndex), isContractValid() else { return nil }
+        return seed(cohortIndex: cohortIndex, ordinal: UInt32.random(in: 0..<membersPerCohort, using: &generator))
+    }
+
     static func isContractValid() -> Bool {
         guard commonTupleIDs.count == commonTupleResidues.count,
               UInt64(commonTupleIDs.count) *
@@ -295,6 +302,29 @@ enum BrowserIdentityIssuancePolicy {
             BrowserIdentityCatalog.tupleIDs.indices.contains(Int(residue)) &&
                 BrowserIdentityCatalog.tupleIDs[Int(residue)] == tupleID
         }
+    }
+}
+
+/// Optional creation-time choice from the existing, immutable Chromium catalog.
+/// It never changes a saved profile or a WebKit identity.
+enum BrowserDevicePreset: Int, CaseIterable, Identifiable {
+    case automatic = -1, airM1 = 0, airM2, airM3, airM4
+    var id: Int { rawValue }
+    var title: String {
+        switch self {
+        case .automatic: return NSLocalizedString("devicePreset.automatic", value: "Автоматически", comment: "Automatic device configuration")
+        case .airM1: return "MacBook Air M1"
+        case .airM2: return "MacBook Air M2"
+        case .airM3: return "MacBook Air M3"
+        case .airM4: return "MacBook Air M4"
+        }
+    }
+    func apply(to identity: BrowserIdentity, isNew: Bool, engine: BrowserEngine) -> BrowserIdentity? {
+        guard isNew, engine == .chromium, self != .automatic else { return identity }
+        guard identity.issuanceVersion == BrowserIdentityIssuancePolicy.currentVersion else { return nil }
+        var generator = SystemRandomNumberGenerator()
+        guard let seed = BrowserIdentityIssuancePolicy.newSeed(cohortIndex: rawValue, using: &generator) else { return nil }
+        return identity.replacingSeed(seed)
     }
 }
 

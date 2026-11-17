@@ -350,9 +350,12 @@ struct WebKitHostIPCTests {
 
     @Test func bufferedCloseCanBeConfirmedAfterTheHostHasExited() throws {
         let expected = session()
-        let reply = Pipe()
-        let writer = reply.fileHandleForWriting
-        let reader = reply.fileHandleForReading
+        // Both frames must be buffered before the sender exits. Under system
+        // pressure a pipe can have only 512 bytes of capacity; the prepared
+        // socket pair preserves the stream/EOF scenario without blocking on
+        // that unrelated pipe limit.
+        let (writer, reader) = try ProxyRelayPrivatePipe.anonymousSocketPair()
+        defer { try? reader.close() }
         try WebKitHostIPC.write(.saved(expected), to: writer.fileDescriptor)
         try WebKitHostIPC.write(.closed(expected), to: writer.fileDescriptor)
         try writer.close()

@@ -167,6 +167,7 @@ struct ProfileEditorView: View {
   @State private var showingCustomProxyDiagnostic = false
   @State private var name: String
   @State private var quickStartTemplate: ProfileQuickStartTemplate = .blank
+  @State private var devicePreset: BrowserDevicePreset = .automatic
   @State private var generatedTemplateName: String?
   @State private var generatedTemplateTag: String?
   @State private var colorHex: String
@@ -212,7 +213,7 @@ struct ProfileEditorView: View {
   private var isDetectingProtocol: Bool { protocolDetectionTask != nil }
   @State private var showsAdvancedOptions = false
   private var hasUnsavedChanges: Bool {
-    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue, engine.rawValue, webKitMediaPolicy.rawValue, String(webKitBlockPeerConnections), String(webKitRelayOnly), fontPolicy.rawValue, privacyPolicy.draftToken,
+    initialDraft != ProfileEditorDraft(values: [name, colorHex, symbolName, note, startURL, startupMode.rawValue, engine.rawValue, String(devicePreset.rawValue), webKitMediaPolicy.rawValue, String(webKitBlockPeerConnections), String(webKitRelayOnly), fontPolicy.rawValue, privacyPolicy.draftToken,
       String(usesProxy), proxyKind.rawValue, proxyHost, proxyPort, proxyUsername,
       proxyPassword, proxyImportText], tags: tags, folderID: selectedFolderID)
   }
@@ -317,7 +318,7 @@ struct ProfileEditorView: View {
       }
     }
     _initialDraft = State(initialValue: ProfileEditorDraft(values: [profile.name, profile.colorHex, profile.displaySymbolName,
-      profile.note, profile.startURL, profile.startupMode.rawValue, profile.engine.rawValue, profile.webKitMediaPolicy.rawValue, String(profile.webKitBlockPeerConnections), String(profile.webKitRelayOnly), profile.fontPolicy.rawValue, profile.privacyPolicy.draftToken, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
+      profile.note, profile.startURL, profile.startupMode.rawValue, profile.engine.rawValue, String(BrowserDevicePreset.automatic.rawValue), profile.webKitMediaPolicy.rawValue, String(profile.webKitBlockPeerConnections), String(profile.webKitRelayOnly), profile.fontPolicy.rawValue, profile.privacyPolicy.draftToken, String(profile.proxy != nil), (profile.proxy?.kind ?? .http).rawValue,
       profile.proxy?.host ?? "", profile.proxy.map { String($0.port) } ?? "",
       profile.proxy?.username ?? "", originalProxyPassword ?? "", ""], tags: profile.tags,
       folderID: folders.contains { $0.id == initialFolderID } ? initialFolderID : nil))
@@ -508,6 +509,14 @@ struct ProfileEditorView: View {
           if original != nil && enginePresentation.showsPicker {
             Text("Чтобы выбрать другой движок, создай новый профиль.")
               .font(.callout).foregroundStyle(.secondary)
+          }
+
+          if original == nil && engine == .chromium {
+            Picker(NSLocalizedString("devicePreset.label", value: "Конфигурация устройства", comment: "Chromium device configuration"), selection: $devicePreset) {
+              ForEach(BrowserDevicePreset.allCases) { preset in Text(verbatim: preset.title).tag(preset) }
+            }
+            Text(verbatim: NSLocalizedString("devicePreset.explanation", value: "Набор из каталога NeAntik сохранится за профилем и применяется совместимым Chromium. Фактическое состояние проверь в диагностике. Набор не меняет macOS и не гарантирует анонимность.", comment: "Device configuration limitations"))
+              .font(.caption).foregroundStyle(.secondary)
           }
 
           TextField("Название", text: $name)
@@ -1407,6 +1416,10 @@ struct ProfileEditorView: View {
         id: draftProfileID,
         name: cleanName
       )
+      guard let identity = devicePreset.apply(to: profile.identity, isNew: original == nil, engine: engine) else {
+        throw NeAntikError.invalidProfile
+      }
+      profile.identity = identity
       #if NEANTIK_CHROMIUM_ONLY
       guard original != nil || engine.isAvailableInBuild else {
         throw NeAntikError.invalidProfile
