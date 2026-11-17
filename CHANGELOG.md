@@ -1,5 +1,9 @@
 # NeAntik changelog
 
+## Direct 1.1.1 (220) — internal qualification candidate
+
+- Explain that the WebKit window is preparing while its first frame is awaiting presentation. This candidate has not been released.
+
 ## Direct 1.1.1 (217) — internal qualification candidate
 
 - Refresh the actual window focus state before forwarding a page click in the detached WebKit presenter. This candidate has not been released.
