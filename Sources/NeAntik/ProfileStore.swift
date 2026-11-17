@@ -1290,18 +1290,25 @@ final class ProfileStore: ObservableObject {
         afterCommit: (BrowserProfile) throws -> Void
     ) throws {
         try requireSynchronousMutationAdmission()
+        var cleanupFailure: (any Error)?
         try processManager.withVerifiedProfileDeletion(
             profileID: profile.id
         ) {
             try deleteAfterVerifiedPreflight(profile)
+            // Keep the per-profile fence after the durable metadata commit.
+            // Startup recovery uses the same fence and must not race the
+            // callback or marker removal for this already-deleted profile.
+            do {
+                try afterCommit(profile)
+                try paths.removeCredentialCleanupMarker(for: profile.id)
+            } catch {
+                cleanupFailure = error
+            }
         }
         pruneOrganizationAfterProfileDeletion()
-        do {
-            try afterCommit(profile)
-            try paths.removeCredentialCleanupMarker(for: profile.id)
-        } catch {
+        if let cleanupFailure {
             throw ProfileCredentialCleanupPendingError(
-                cleanupError: error
+                cleanupError: cleanupFailure
             )
         }
     }
