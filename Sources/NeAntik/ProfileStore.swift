@@ -1290,18 +1290,25 @@ final class ProfileStore: ObservableObject {
         afterCommit: (BrowserProfile) throws -> Void
     ) throws {
         try requireSynchronousMutationAdmission()
+        var cleanupFailure: (any Error)?
         try processManager.withVerifiedProfileDeletion(
             profileID: profile.id
         ) {
             try deleteAfterVerifiedPreflight(profile)
+            // Keep the per-profile fence after the durable metadata commit.
+            // Startup recovery uses the same fence and must not race the
+            // callback or marker removal for this already-deleted profile.
+            do {
+                try afterCommit(profile)
+                try paths.removeCredentialCleanupMarker(for: profile.id)
+            } catch {
+                cleanupFailure = error
+            }
         }
         pruneOrganizationAfterProfileDeletion()
-        do {
-            try afterCommit(profile)
-            try paths.removeCredentialCleanupMarker(for: profile.id)
-        } catch {
+        if let cleanupFailure {
             throw ProfileCredentialCleanupPendingError(
-                cleanupError: error
+                cleanupError: cleanupFailure
             )
         }
     }
@@ -2328,7 +2335,7 @@ struct ProfileCredentialCleanupPendingError: LocalizedError {
     let cleanupError: Error
 
     var errorDescription: String? {
-        NSLocalizedString("userError.030", tableName: "Errors", bundle: .main, value: "Профиль и его данные уже удалены. Не удалось полностью очистить пароль прокси из Связки ключей; повторный запуск профиля заблокирован. NeAntik безопасно повторит очистку при следующем запуске.", comment: "")
+        NSLocalizedString("userError.030", tableName: "Errors", bundle: .main, value: "Профиль удалён. Если его папка данных существовала, она перемещена в Корзину. Не удалось подтвердить завершение очистки пароля прокси. NeAntik безопасно повторит проверку при следующем запуске.", comment: "")
     }
 }
 

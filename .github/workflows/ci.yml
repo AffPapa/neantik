@@ -59,7 +59,7 @@ jobs:
     if: ${{ ! inputs.toolchain_probe && inputs.diagnostic_suite == '' }}
     name: Release and privacy contracts
     runs-on: macos-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
@@ -70,6 +70,18 @@ jobs:
         run: python3 -B scripts/build-webkit-standalone-host.py --check-generated
       - name: Release build
         run: ./scripts/verify-native-swift-release.sh
+      - name: Production WebKit focus regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          export DEVELOPER_DIR="$(./scripts/resolve-compatible-developer-dir.sh)"
+          NEANTIK_WEBKIT_PROXY_BUILD_MODE=production swift test \
+            --build-system native --jobs 2 --no-parallel --disable-sandbox \
+            --scratch-path "$RUNNER_TEMP/neantik-webkit-focus" \
+            --filter mouseDownRefreshesFocusOnlyForAnInsideSingleClick \
+            2>&1 | tee "$RUNNER_TEMP/neantik-webkit-focus.log"
+          grep -Eq 'Test run with 1 test .* passed' "$RUNNER_TEMP/neantik-webkit-focus.log"
+          grep -Fq 'Test mouseDownRefreshesFocusOnlyForAnInsideSingleClick() passed' "$RUNNER_TEMP/neantik-webkit-focus.log"
       - name: Direct privacy contract
         run: python3 scripts/verify-direct-telemetry-disabled.py
       - name: Russian UI contract

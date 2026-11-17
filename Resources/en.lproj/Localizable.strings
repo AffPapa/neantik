@@ -361,6 +361,7 @@
 "Остановить профиль" = "Stop Profile";
 "Отменить подготовку" = "Cancel Preparation";
 "Подготовка…" = "Preparing…";
+"Подготавливаем окно браузера…" = "Preparing the browser window…";
 "Требуется проверка" = "Check Required";
 "Закрыть вручную" = "Close Manually";
 "Проверка прокси…" = "Checking Proxy…";
@@ -752,3 +753,9 @@
 "workspace.encryptedExport.one" = "Encrypted export saved: %ld profile.";
 "Ещё %ld папка" = "%ld more folder";
 "Ещё %ld тег" = "%ld more tag";
+"profile.created" = "Created";
+"profile.lastLaunch" = "Last opened";
+"profile.neverLaunched" = "Not opened yet";
+"devicePreset.automatic" = "Automatic";
+"devicePreset.label" = "Device configuration";
+"devicePreset.explanation" = "A NeAntik catalog configuration is saved with the profile and used by a compatible Chromium engine. Check the actual state in diagnostics. It does not change macOS or guarantee anonymity.";

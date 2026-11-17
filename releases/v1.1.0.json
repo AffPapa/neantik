@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "version": "1.1.0",
+  "build": 214,
+  "tag": "v1.1.0",
+  "channel": "direct",
+  "releaseQualified": true,
+  "releaseURL": "https://github.com/AffPapa/neantik/releases/tag/v1.1.0",
+  "publishedAt": "2026-11-15T17:57:36Z",
+  "sourceCommit": "54505fd4e7ccdfb41b3db82ceb361ee94872d8b1",
+  "runtime": {
+    "chromiumVersion": "157.0.8103.79",
+    "webKitSource": "db6a98765e",
+    "architecture": "arm64",
+    "minimumOS": "14.0"
+  },
+  "qualification": {
+    "scope": "Public assets and Apple verification recorded in the release receipt. TURN/TLS relay and network-process recovery tested on one Mac with synthetic profiles. Earlier intermittent page/worker Canvas mismatch remains unexplained."
+  },
+  "artifacts": [
+    {
+      "name": "NeAntik-1.1.0-arm64-notarized.dmg",
+      "sha256": "16537be6ef88a2952db9bd21e3092286ba2e18e58d0b25331747bba4db032c8d",
+      "size": 290312452,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.1.0/NeAntik-1.1.0-arm64-notarized.dmg"
+    },
+    {
+      "name": "NeAntik-1.1.0-arm64-notarized.zip",
+      "sha256": "3141195b254c075cb074748065b3742097a8dc55c869ba0e3c717e848c8cd52c",
+      "size": 254035282,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.1.0/NeAntik-1.1.0-arm64-notarized.zip"
+    }
+  ],
+  "sourceAssets": [
+    {
+      "name": "NeAntik-1.1.0-corresponding-source.zip",
+      "sha256": "d3e910970e69b1a5001dfa37b729f40a330b9125fe92b4be6a0504f00d05c2ea",
+      "size": 58732309,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.1.0/NeAntik-1.1.0-corresponding-source.zip"
+    },
+    {
+      "name": "NeAntik-1.1.0-fingerprint-attestation.json",
+      "sha256": "6dcac9077519801d2f9e02ca71d30d5e9457fa0334b5905a7477ee77b2cc1c21",
+      "size": 1370,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.1.0/NeAntik-1.1.0-fingerprint-attestation.json"
+    },
+    {
+      "name": "NeAntik-1.1.0-source-offer.json",
+      "sha256": "bfa0e56dbbee7e37e0ea2c004a81f1571f9efc85ad61d73b5a055d0928205f36",
+      "size": 3021,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.1.0/NeAntik-1.1.0-source-offer.json"
+    },
+    {
+      "name": "NeAntik-1.1.0-webkit-source-manifest.json",
+      "sha256": "274613cda2892b2e78157b05f6158d08c4eb3ac9ea488330f714c0d2ae5dcd9a",
+      "size": 36430,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.1.0/NeAntik-1.1.0-webkit-source-manifest.json"
+    },
+    {
+      "name": "NeAntik-WebKit-db6a98765e-build-inputs-revised.tar",
+      "sha256": "fee112ffafc124e66cf4cdb2c982bbe3f9af8595e6549145cff3cba3054007b5",
+      "size": 2293760,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.1.0/NeAntik-WebKit-db6a98765e-build-inputs-revised.tar"
+    },
+    {
+      "name": "WebKit-db6a98765e-upstream.tar.zst",
+      "sha256": "50b56c9262e59cb14c4617df2d8752c45ffdfea2260a285807403ab35d367ae6",
+      "size": 1815660127,
+      "url": "https://github.com/AffPapa/neantik/releases/download/v1.1.0/WebKit-db6a98765e-upstream.tar.zst"
+    }
+  ]
+}

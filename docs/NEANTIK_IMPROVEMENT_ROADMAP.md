@@ -1,6 +1,6 @@
 # NeAntik improvement roadmap
 
-> Current public release: 1.0.0/build 211 Direct Distribution; Chromium 157.0.8103.79 and bundled WebKit. See `releases/v1.0.0.json` for the assets and verified scope.
+> Current public release: 1.1.0/build 214 Direct Distribution; Chromium 157.0.8103.79 and bundled WebKit. See `releases/v1.1.0.json` for the assets and verified scope.
 
 ## Release 1.0
 

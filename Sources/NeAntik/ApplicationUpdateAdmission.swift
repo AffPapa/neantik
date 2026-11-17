@@ -29,7 +29,7 @@ final class ApplicationUpdateAdmission {
     }
 }
 
-enum ApplicationUpdateAdmissionError: LocalizedError {
+enum ApplicationUpdateAdmissionError: LocalizedError, Equatable {
     case busy, updating
     var errorDescription: String? {
         switch self {

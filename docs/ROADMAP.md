@@ -4,7 +4,7 @@ The private maintainer checkpoint tracks live 1.0 qualification and is intention
 
 ## Current status
 
-The public baseline is [1.0.0 (211)](https://github.com/AffPapa/neantik/releases/tag/v1.0.0) for Direct Distribution. It bundles Chromium 157.0.8103.79 and WebKit. See [the release record](../releases/v1.0.0.json) for published assets and validation scope.
+The public baseline is [1.1.0 (214)](https://github.com/AffPapa/neantik/releases/tag/v1.1.0) for Direct Distribution. It bundles Chromium 157.0.8103.79 and WebKit. See [the release record](../releases/v1.1.0.json) for published assets and validation scope.
 
 ## Release 1.0 acceptance
 
@@ -17,6 +17,8 @@ The public baseline is [1.0.0 (211)](https://github.com/AffPapa/neantik/releases
 - Sign and notarize ZIP and DMG, staple tickets, verify Gatekeeper, publish through GitHub Releases and browser.free, and recheck downloaded bytes.
 
 ## Исторический срез
+
+Snapshot after publication: [1.1.0 (214)](https://github.com/AffPapa/neantik/releases/tag/v1.1.0) is recorded on GitHub. [The release record](../releases/v1.1.0.json) lists asset hashes and the scope of verification.
 
 Snapshot after publication: [1.0.0 (211)](https://github.com/AffPapa/neantik/releases/tag/v1.0.0) was available on GitHub and browser.free (Sites 178). [The release record](../releases/v1.0.0.json) includes asset hashes, source delivery and WebKit qualification.
 

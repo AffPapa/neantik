@@ -24,7 +24,7 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
     private let address = NSTextField()
     private let tabs = NSPopUpButton()
     private let status = NSTextField(wrappingLabelWithString: "")
-    private var pageStatus = ""
+    private var pageStatus = NSLocalizedString("Подготавливаем окно браузера…", comment: "WebKit window is waiting for its first displayed frame")
     private var downloadStatus: String?
     private var downloads: WebKitDetachedDownloadPresenter?
     private let back = NSButton(title: NSLocalizedString("Назад", comment: "WebKit window control"), target: nil, action: nil)
@@ -118,6 +118,7 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
         status.translatesAutoresizingMaskIntoConstraints = false
         status.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
         status.textColor = .secondaryLabelColor
+        refreshStatus()
         cancelDownloads.target = self
         cancelDownloads.action = #selector(cancelPendingDownloads)
         cancelDownloads.isHidden = true
@@ -421,7 +422,7 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
 }
 
 @MainActor
-private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
+final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
     private let drawable: CAMetalLayer
     private var downInsideContent = false
     private var editor: WebKitPresenterChannel.Editor?
@@ -600,7 +601,11 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
 
     override func mouseDown(with event: NSEvent) {
         downInsideContent = event.clickCount == 1 && point(event) != nil
-        if downInsideContent { window?.makeFirstResponder(self) }
+        if downInsideContent, window?.makeFirstResponder(self) == true {
+            // Queue the actual window/focus state before the corresponding click.
+            // The responder callback is asynchronous and can otherwise arrive later.
+            onFocusChange?()
+        }
     }
 
     override func mouseDragged(with event: NSEvent) { downInsideContent = false }

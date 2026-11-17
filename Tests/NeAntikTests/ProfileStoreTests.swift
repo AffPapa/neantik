@@ -1279,6 +1279,150 @@ struct ProfileStoreTests {
         }
     }
 
+    @Test(arguments: [false, true])
+    func deletedProfileCleanupKeepsProcessFenceThroughCallback(failLegacy: Bool) throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let trash = root.appendingPathComponent("SyntheticTrash", isDirectory: true)
+        let store = ProfileStore(paths: paths, trashDirectory: { source in
+            try FileManager.default.moveItem(at: source, to: trash)
+            return trash
+        })
+        let profile = try store.upsert(BrowserProfile(name: "Delete fence fixture"))
+        let other = try store.upsert(BrowserProfile(name: "Unrelated active fixture"))
+        let folder = try store.createFolder(named: "Synthetic folder")
+        try store.assignProfile(profile.id, toFolderID: folder.id)
+        let backend = LockedProfileDeleteBackend(failLegacy: failLegacy)
+        backend.set("synthetic-deleted", service: KeychainStore.currentService, profileID: profile.id)
+        backend.set("synthetic-deleted-legacy", service: KeychainStore.legacyService, profileID: profile.id)
+        backend.set("synthetic-active", service: KeychainStore.currentService, profileID: other.id)
+        let keychain = KeychainStore(backend: backend)
+        let manager = BrowserProcessManager(paths: paths,
+            processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent })
+        let recovery = DeletedProfileCredentialCleanup(paths: paths, keychain: keychain)
+        let concurrentResult = CleanupSummaryBox()
+        let recoveryFinished = DispatchSemaphore(value: 0)
+
+        let deleteOperation = {
+            try store.delete(profile, processManager: manager) { deleted in
+                // The metadata fence must already be released while the
+                // process fence remains held across the cleanup callback.
+                try paths.withProfilesMetadataGuard { }
+                #expect(try paths.privateFileEntryKind(paths.profileCredentialCleanupMarker(for: deleted.id)) == .regular)
+                #expect(try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: deleted.id)) == .regular)
+                #expect(try paths.privateFileEntryKind(paths.profileDirectory(for: deleted.id)) == .missing)
+                let recoveryTask = Task.detached {
+                    defer { recoveryFinished.signal() }
+                    let otherGuardAvailable = (try? paths.withProcessLockGuard(for: other.id) { true }) ?? false
+                    concurrentResult.setOtherGuardAvailable(otherGuardAvailable)
+                    let summary = await recovery.runOnce(metadataIsTrusted: true, excluding: [other.id])
+                    concurrentResult.set(summary)
+                }
+                defer { recoveryTask.cancel() }
+                try waitForProfileStoreTestSignal(recoveryFinished)
+                let blocked = try #require(concurrentResult.get())
+                #expect(concurrentResult.getOtherGuardAvailable() == true)
+                #expect(blocked.inspectionFailed)
+                #expect(blocked.attemptedCount == 0 && blocked.clearedCount == 0)
+                #expect(backend.deleteCallCount == 0)
+                try keychain.deleteProxyPassword(profileID: deleted.id)
+            }
+        }
+        if failLegacy {
+            #expect(throws: ProfileCredentialCleanupPendingError.self) { try deleteOperation() }
+        } else {
+            try deleteOperation()
+        }
+        #expect(store.profile(withID: profile.id) == nil)
+        #expect(store.profile(withID: other.id) != nil)
+        #expect(store.folderID(forProfileID: profile.id) == nil)
+        #expect(store.folder(withID: folder.id) != nil)
+        #expect(backend.string(service: KeychainStore.currentService, profileID: other.id) == "synthetic-active")
+        #expect(try paths.privateFileEntryKind(paths.profileCredentialCleanupMarker(for: profile.id)) == (failLegacy ? .regular : .missing))
+        #expect(try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: profile.id)) == .regular)
+        #expect(throws: BrowserProfileDeletedError.self) { try store.upsert(profile) }
+        #expect(backend.deleteCallCount == 2)
+        // A new startup attempt sees a retained partial-failure marker. Its
+        // backend is synthetic; allow the second namespace to succeed now.
+        backend.allowLegacyDeletes()
+        let retry = DeletedProfileCredentialCleanup(paths: paths, keychain: keychain)
+        let retryResult = CleanupSummaryBox()
+        let retryFinished = DispatchSemaphore(value: 0)
+        let retryTask = Task.detached {
+            defer { retryFinished.signal() }
+            let summary = await retry.runOnce(metadataIsTrusted: true, excluding: [other.id])
+            retryResult.set(summary)
+        }
+        defer { retryTask.cancel() }
+        try waitForProfileStoreTestSignal(retryFinished)
+        let retried = try #require(retryResult.get())
+        #expect(!retried.inspectionFailed && retried.failedCount == 0)
+        #expect(retried.clearedCount == (failLegacy ? 1 : 0))
+        #expect(backend.deleteCallCount == (failLegacy ? 4 : 2))
+        #expect(try paths.privateFileEntryKind(paths.profileCredentialCleanupMarker(for: profile.id)) == .missing)
+        #expect(try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: profile.id)) == .regular)
+        #expect(backend.string(service: KeychainStore.currentService, profileID: other.id) == "synthetic-active")
+    }
+
+    @Test
+    func markerRemovalFailureIsReportedAfterCommittedDeletionAndPrunesOrganization() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        let trash = root.appendingPathComponent("SyntheticMarkerTrash", isDirectory: true)
+        let store = ProfileStore(paths: paths, trashDirectory: { source in
+            try FileManager.default.moveItem(at: source, to: trash)
+            return trash
+        })
+        let profile = try store.upsert(BrowserProfile(name: "Marker failure fixture"))
+        let other = try store.upsert(BrowserProfile(name: "Independent fixture"))
+        let folder = try store.createFolder(named: "Synthetic marker folder")
+        try store.assignProfile(profile.id, toFolderID: folder.id)
+        let backend = LockedProfileDeleteBackend(failLegacy: false)
+        backend.set("synthetic-delete", service: KeychainStore.currentService, profileID: profile.id)
+        backend.set("synthetic-keep", service: KeychainStore.currentService, profileID: other.id)
+        let keychain = KeychainStore(backend: backend)
+        let manager = BrowserProcessManager(paths: paths,
+            processIdentityValidator: { _ in false }, browserDataProcessInspector: { _ in .absent })
+        let sentinel = root.appendingPathComponent("synthetic-sentinel")
+        try Data("keep".utf8).write(to: sentinel)
+
+        var sawCleanupPending = false
+        do {
+            try store.delete(profile, processManager: manager) { deleted in
+                // A different profile's fence and the metadata fence are free,
+                // while this committed deletion retains its own fence.
+                try paths.withProcessLockGuard(for: other.id) { }
+                try paths.withProfilesMetadataGuard { }
+                #expect(throws: ProfileProcessBusyError.self) {
+                    try paths.withProcessLockGuard(for: deleted.id) { }
+                }
+                try keychain.deleteProxyPassword(profileID: deleted.id)
+                let marker = paths.profileCredentialCleanupMarker(for: deleted.id)
+                try FileManager.default.removeItem(at: marker)
+                try FileManager.default.createSymbolicLink(at: marker, withDestinationURL: sentinel)
+            }
+        } catch is ProfileCredentialCleanupPendingError {
+            sawCleanupPending = true
+        } catch {
+            Issue.record("Expected the committed-deletion cleanup error")
+        }
+        #expect(sawCleanupPending)
+        #expect(store.profile(withID: profile.id) == nil)
+        #expect(store.profile(withID: other.id) != nil)
+        #expect(store.folderID(forProfileID: profile.id) == nil)
+        #expect(store.folder(withID: folder.id) != nil)
+        #expect(backend.deleteCallCount == 2)
+        #expect(backend.string(service: KeychainStore.currentService, profileID: other.id) == "synthetic-keep")
+        #expect(try paths.privateFileEntryKind(paths.profileCredentialCleanupMarker(for: profile.id)) == .unsafe)
+        #expect(try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: profile.id)) == .regular)
+        #expect(try Data(contentsOf: sentinel) == Data("keep".utf8))
+        #expect(throws: BrowserProfileDeletedError.self) { try store.upsert(profile) }
+    }
+
     @Test
     func deletionTombstoneBlocksStaleLaunchAndMarkLaunched() throws {
         let root = FileManager.default.temporaryDirectory
@@ -2008,6 +2152,61 @@ private struct ProfileStoreTestError: Error {}
 
 private func waitForProfileStoreTestSignal(_ semaphore: DispatchSemaphore) throws {
     guard semaphore.wait(timeout: .now() + 5) == .success else { throw ProfileStoreTestError() }
+}
+
+private final class CleanupSummaryBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value: DeletedProfileCredentialCleanupSummary?
+    private var otherGuardAvailable: Bool?
+    func setOtherGuardAvailable(_ available: Bool) {
+        lock.lock(); defer { lock.unlock() }
+        otherGuardAvailable = available
+    }
+    func getOtherGuardAvailable() -> Bool? {
+        lock.lock(); defer { lock.unlock() }
+        return otherGuardAvailable
+    }
+    func set(_ summary: DeletedProfileCredentialCleanupSummary) {
+        lock.lock(); defer { lock.unlock() }
+        value = summary
+    }
+    func get() -> DeletedProfileCredentialCleanupSummary? {
+        lock.lock(); defer { lock.unlock() }
+        return value
+    }
+}
+
+private final class LockedProfileDeleteBackend: KeychainBackend, @unchecked Sendable {
+    private let lock = NSLock()
+    private var failLegacy: Bool
+    private var values: [String: Data] = [:]
+    private var calls = 0
+    init(failLegacy: Bool) { self.failLegacy = failLegacy }
+    func allowLegacyDeletes() { lock.lock(); defer { lock.unlock() }; failLegacy = false }
+    private func key(_ service: String, _ id: UUID) -> String { "\(service)|\(id.uuidString)" }
+    var deleteCallCount: Int { lock.lock(); defer { lock.unlock() }; return calls }
+    func data(service: String, profileID: UUID) throws -> Data? {
+        lock.lock(); defer { lock.unlock() }
+        return values[key(service, profileID)]
+    }
+    func upsert(_ data: Data, service: String, profileID: UUID) throws {
+        lock.lock(); defer { lock.unlock() }
+        values[key(service, profileID)] = data
+    }
+    func delete(service: String, profileID: UUID) throws {
+        lock.lock(); defer { lock.unlock() }
+        calls += 1
+        if failLegacy && service == KeychainStore.legacyService { throw ProfileStoreTestError() }
+        values.removeValue(forKey: key(service, profileID))
+    }
+    func set(_ value: String, service: String, profileID: UUID) {
+        lock.lock(); defer { lock.unlock() }
+        values[key(service, profileID)] = Data(value.utf8)
+    }
+    func string(service: String, profileID: UUID) -> String? {
+        lock.lock(); defer { lock.unlock() }
+        return values[key(service, profileID)].flatMap { String(data: $0, encoding: .utf8) }
+    }
 }
 
 private final class ProfileDeleteKeychainBackend:

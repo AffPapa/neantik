@@ -1,5 +1,25 @@
 # NeAntik changelog
 
+## Direct 1.1.1 (221) — internal qualification candidate
+
+- Clarify macOS Keychain cleanup refusals and serialize committed profile credential cleanup with recovery. This candidate has not been released.
+
+## Direct 1.1.1 (220) — internal qualification candidate
+
+- Explain that the WebKit window is preparing while its first frame is awaiting presentation. This candidate has not been released.
+
+## Direct 1.1.1 (217) — internal qualification candidate
+
+- Refresh the actual window focus state before forwarding a page click in the detached WebKit presenter. This candidate has not been released.
+
+## Direct 1.1.1 (216) — internal qualification candidate
+
+- Add aggregate macOS status codes to credential-cleanup diagnostics without exposing profile or Keychain item details. This candidate has not been released.
+
+## Direct 1.1.1 (215) — internal qualification candidate
+
+- Improve launch admission messages, profile dates, Chromium device preset selection, and safe reporting of incomplete credential cleanup. This candidate has not been released.
+
 ## Direct 1.1.0 (214) — internal qualification candidate
 
 - Complete English localization of profile navigation, proxy import and status, transfer notices, and compatibility details.

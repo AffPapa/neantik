@@ -8,7 +8,7 @@ separately installed Chrome, or telemetry.
 
 [Русская версия](README.md)
 
-**NeAntik 1.0.0 (211)** is available on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v1.0.0) for Direct Distribution. It includes Chromium 157.0.8103.79 and bundled WebKit. See the [release record](releases/v1.0.0.json) for ZIP/DMG hashes and validation scope.
+**NeAntik 1.1.0 (214)** is available on [GitHub](https://github.com/AffPapa/neantik/releases/tag/v1.1.0) for Direct Distribution. It includes Chromium 157.0.8103.79 and bundled WebKit. See the [release record](releases/v1.1.0.json) for ZIP/DMG hashes and validation scope.
 
 ## Security advisory
 
@@ -21,15 +21,15 @@ Download the signed and notarized application from
 Do not use GitHub's **Code → Download ZIP** button when you want the app: that
 archive contains source code, not `NeAntik.app`.
 
-Latest published release: [NeAntik 1.0.0 (211)](https://github.com/AffPapa/neantik/releases/tag/v1.0.0). Downloaded ZIP/DMG sizes and SHA-256 digests are recorded in the [release record](releases/v1.0.0.json).
+Latest published release: [NeAntik 1.1.0 (214)](https://github.com/AffPapa/neantik/releases/tag/v1.1.0). Downloaded ZIP/DMG sizes and SHA-256 digests are recorded in the [release record](releases/v1.1.0.json).
 
-**Update to 1.0.0 manually using DMG or ZIP.** Quit before replacing the app and keep profile folders.
+**Update to 1.1.0 manually using DMG or ZIP.** Quit before replacing the app and keep profile folders.
 
 - macOS 14 or newer, Apple Silicon only;
 - Chromium `157.0.8103.79`, ARM64, Metal;
 - signing, notarization, ZIP/DMG and SHA-256 apply to the exact published release.
 
-Direct downloads: [GitHub](https://github.com/AffPapa/neantik/releases/tag/v1.0.0) and [browser.free](https://browser.free).
+Direct downloads: [GitHub](https://github.com/AffPapa/neantik/releases/tag/v1.1.0) and [browser.free](https://browser.free).
 
 The description below reflects the manager contract and this source branch;
 the exact public binary contents are defined by its release notes and assets.
@@ -40,7 +40,7 @@ the exact public binary contents are defined by its release notes and assets.
 2. Paste a proxy if needed; NeAntik parses it locally.
 3. Click **Launch**. Cookies and site data stay inside that profile.
 
-## Privacy features in the published 1.0.0 release
+## Privacy features in the published 1.1.0 release
 
 This release retains coherent presets, Chromium proxy configuration, site protection,
 ephemeral profiles and a protection passport. Proxy preflight does not measure the

@@ -1,8 +1,227 @@
 import Foundation
+import Security
 import Testing
 @testable import NeAntik
 
 struct KeychainStoreTests {
+    @Test func ownerEditRefusalKeepsRecoveryMarkersAfterOtherNamespaceSucceedsOrIsMissing() async throws {
+        for rejectedService in [KeychainStore.currentService, KeychainStore.legacyService] {
+            let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: root) }
+            let paths = AppPaths(rootDirectory: root)
+            try paths.prepareBaseDirectories()
+            let id = UUID()
+            try createCommittedCleanupMarkers(paths: paths, profileID: id)
+            let backend = MemoryKeychainBackend()
+            let otherService = rejectedService == KeychainStore.currentService ? KeychainStore.legacyService : KeychainStore.currentService
+            backend.set("synthetic-secret", service: rejectedService, profileID: id)
+            if rejectedService == KeychainStore.currentService {
+                backend.set("other-synthetic-secret", service: otherService, profileID: id)
+            }
+            backend.deleteStatusByService = [rejectedService: errSecInvalidOwnerEdit]
+            let cleanup = DeletedProfileCredentialCleanup(paths: paths, keychain: KeychainStore(backend: backend))
+            let summary = await cleanup.runOnce(metadataIsTrusted: true, excluding: [])
+            #expect(summary.attemptedCount == 1 && summary.failedCount == 1 && summary.clearedCount == 0)
+            #expect(summary.keychainCategories == [.ownerEditRestricted])
+            #expect(summary.keychainStatusCodes == [errSecInvalidOwnerEdit])
+            #expect(!summary.markerFailure && !summary.inspectionFailed)
+            #expect(backend.deleteCallCount == 2)
+            #expect(backend.string(service: rejectedService, profileID: id) == "synthetic-secret")
+            #expect(backend.string(service: otherService, profileID: id) == nil)
+            #expect(try paths.privateFileEntryKind(paths.profileCredentialCleanupMarker(for: id)) == .regular)
+            #expect(try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: id)) == .regular)
+            let expected = NSLocalizedString("cleanup.ownerEditRestricted", tableName: "Errors", bundle: .main,
+                value: "macOS отклонила запрос на удаление записи Связки ключей. Очистка не подтверждена.", comment: "")
+            #expect(summary.userMessage.contains(expected))
+            #expect(summary.userMessage.contains(String(errSecInvalidOwnerEdit)))
+            #expect(!summary.userMessage.contains(id.uuidString))
+            #expect(!summary.userMessage.contains("synthetic-secret"))
+            #expect(!summary.userMessage.contains(KeychainStore.currentService))
+            #expect(!summary.userMessage.contains(KeychainStore.legacyService))
+        }
+    }
+
+    @Test func ownerEditAndUnknownRefusalsRemainDistinctAndSecretFree() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let id = UUID()
+        try createCommittedCleanupMarkers(paths: paths, profileID: id)
+        let backend = MemoryKeychainBackend()
+        backend.set("synthetic-secret", service: KeychainStore.currentService, profileID: id)
+        backend.deleteStatusByService = [KeychainStore.currentService: errSecInvalidOwnerEdit,
+                                         KeychainStore.legacyService: -67891]
+        let cleanup = DeletedProfileCredentialCleanup(paths: paths, keychain: KeychainStore(backend: backend))
+        let summary = await cleanup.runOnce(metadataIsTrusted: true, excluding: [])
+        #expect(summary.failedCount == 1 && summary.clearedCount == 0)
+        #expect(summary.keychainCategories == [.ownerEditRestricted, .other])
+        #expect(summary.keychainStatusCodes == [errSecInvalidOwnerEdit, -67891])
+        #expect(summary.userMessage.contains("-67891, \(errSecInvalidOwnerEdit)"))
+        let ownerMessage = NSLocalizedString("cleanup.ownerEditRestricted", tableName: "Errors", bundle: .main,
+            value: "macOS отклонила запрос на удаление записи Связки ключей. Очистка не подтверждена.", comment: "")
+        let otherMessage = NSLocalizedString("cleanup.other", tableName: "Errors", bundle: .main,
+            value: "Не удалось завершить операцию со Связкой ключей.", comment: "")
+        #expect(summary.userMessage.contains(ownerMessage) && summary.userMessage.contains(otherMessage))
+        #expect(!summary.userMessage.contains(id.uuidString))
+        #expect(!summary.userMessage.contains("synthetic-secret"))
+        #expect(!summary.userMessage.contains(KeychainStore.currentService))
+        #expect(!summary.userMessage.contains(KeychainStore.legacyService))
+        #expect(backend.deleteCallCount == 2)
+        #expect(try paths.privateFileEntryKind(paths.profileCredentialCleanupMarker(for: id)) == .regular)
+        #expect(try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: id)) == .regular)
+    }
+
+    @Test func ownerEditDiagnosticHasEnglishTranslation() throws {
+        let sourceRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let english = try #require(Bundle(path: sourceRoot.appendingPathComponent("Resources/en.lproj").path))
+        let translated = english.localizedString(forKey: "cleanup.ownerEditRestricted", value: "missing", table: "Errors")
+        #expect(translated == "macOS rejected a Keychain item deletion request. Cleanup could not be confirmed.")
+    }
+
+    @Test func recoveryReportsOnlyAggregateStatusCodesForUnknownSecurityFailures() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let id = UUID()
+        try createCommittedCleanupMarkers(paths: paths, profileID: id)
+        let backend = MemoryKeychainBackend()
+        backend.set("synthetic-secret", service: KeychainStore.currentService, profileID: id)
+        backend.deleteStatusByService = [KeychainStore.currentService: -67891,
+                                         KeychainStore.legacyService: -67892]
+        let cleanup = DeletedProfileCredentialCleanup(paths: paths, keychain: KeychainStore(backend: backend))
+        let summary = await cleanup.runOnce(metadataIsTrusted: true, excluding: [])
+        #expect(summary.keychainCategories == [.other])
+        #expect(summary.keychainStatusCodes == [-67891, -67892])
+        #expect(summary.userMessage.contains("-67892, -67891"))
+        #expect(!summary.userMessage.contains(id.uuidString))
+        #expect(!summary.userMessage.contains("synthetic-secret"))
+        #expect(!summary.userMessage.contains(KeychainStore.currentService))
+        #expect(backend.deleteCallCount == 2)
+        #expect(try paths.privateFileEntryKind(paths.profileCredentialCleanupMarker(for: id)) == .regular)
+        #expect(try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: id)) == .regular)
+    }
+
+    @Test func purgeClassifiesBothNamespacesWithoutExposingUnderlyingErrors() throws {
+        let backend = MemoryKeychainBackend()
+        backend.deleteStatusByService = [KeychainStore.currentService: errSecInteractionNotAllowed,
+                                         KeychainStore.legacyService: errSecNotAvailable]
+        let id = UUID()
+        do {
+            try KeychainStore(backend: backend).deleteProxyPassword(profileID: id)
+            Issue.record("Expected cleanup refusal")
+        } catch let error as KeychainCredentialPurgeError {
+            #expect(error.failedNamespaceCount == 2)
+            #expect(error.categories == [.accessDenied, .unavailable])
+            #expect(error.statusCodes == [errSecInteractionNotAllowed, errSecNotAvailable])
+            #expect(!error.localizedDescription.contains(id.uuidString))
+            #expect(!error.localizedDescription.contains(String(errSecInteractionNotAllowed)))
+        }
+        #expect(backend.deleteCallCount == 2)
+        #expect(KeychainPurgeCategory.classify(MemoryKeychainError()) == .other)
+        #expect(KeychainPurgeCategory.classify(KeychainError(status: errSecMissingEntitlement)) == .accessDenied)
+    }
+
+    @Test func recoveryDistinguishesMarkerFailureFromKeychainRefusal() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let id = UUID()
+        try createCommittedCleanupMarkers(paths: paths, profileID: id)
+        let backend = MemoryKeychainBackend()
+        backend.set("synthetic-secret", service: KeychainStore.currentService, profileID: id)
+        let cleanup = DeletedProfileCredentialCleanup(paths: paths, keychain: KeychainStore(backend: backend),
+            beforeMarkerRemoval: { _ in throw MemoryKeychainError() })
+        let summary = await cleanup.runOnce(metadataIsTrusted: true, excluding: [])
+        #expect(summary.failedCount == 1)
+        #expect(summary.markerFailure)
+        #expect(summary.keychainCategories.isEmpty)
+        #expect(!summary.inspectionFailed)
+        #expect(backend.string(service: KeychainStore.currentService, profileID: id) == nil)
+        #expect(try paths.privateFileEntryKind(paths.profileCredentialCleanupMarker(for: id)) == .regular)
+        #expect(try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: id)) == .regular)
+        #expect(!summary.userMessage.contains(id.uuidString))
+        #expect(!summary.userMessage.contains("synthetic-secret"))
+        let repeated = await cleanup.runOnce(metadataIsTrusted: true, excluding: [])
+        #expect(repeated.alreadyRan)
+        let observedAgain = await cleanup.lastOutcome()
+        #expect(observedAgain == summary)
+        #expect(backend.deleteCallCount == 2)
+        await cleanup.acknowledgeOutcome()
+        let afterAcknowledgement = await cleanup.lastOutcome()
+        #expect(afterAcknowledgement == nil)
+        let afterDismissal = await cleanup.runOnce(metadataIsTrusted: true, excluding: [])
+        #expect(afterDismissal.alreadyRan)
+        #expect(backend.deleteCallCount == 2)
+    }
+
+    @Test func activeImportMarkerFailureDoesNotTouchKeychainOrMisreportInspection() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let id = UUID()
+        try paths.createPrivateFileExclusively(Data("synthetic".utf8), at: paths.profileCredentialStagingMarker(for: id))
+        let backend = MemoryKeychainBackend()
+        backend.set("synthetic-secret", service: KeychainStore.currentService, profileID: id)
+        let cleanup = DeletedProfileCredentialCleanup(paths: paths, keychain: KeychainStore(backend: backend),
+            beforeMarkerRemoval: { _ in throw MemoryKeychainError() })
+        let summary = await cleanup.runOnce(metadataIsTrusted: true, excluding: [id])
+        #expect(summary.markerFailure)
+        #expect(!summary.inspectionFailed)
+        #expect(summary.keychainCategories.isEmpty)
+        #expect(backend.deleteCallCount == 0)
+        #expect(backend.string(service: KeychainStore.currentService, profileID: id) == "synthetic-secret")
+        #expect(try paths.privateFileEntryKind(paths.profileCredentialStagingMarker(for: id)) == .regular)
+        #expect(!summary.userMessage.contains(id.uuidString))
+        #expect(!summary.userMessage.contains("synthetic-secret"))
+    }
+
+    @Test func recoveryReportsClosedKeychainCategoriesWithoutLeakingIdentifiers() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let id = UUID()
+        try createCommittedCleanupMarkers(paths: paths, profileID: id)
+        let backend = MemoryKeychainBackend()
+        backend.deleteStatusByService = [KeychainStore.currentService: errSecInteractionNotAllowed,
+                                         KeychainStore.legacyService: errSecNotAvailable]
+        let cleanup = DeletedProfileCredentialCleanup(paths: paths, keychain: KeychainStore(backend: backend))
+        let summary = await cleanup.runOnce(metadataIsTrusted: true, excluding: [])
+        #expect(summary.failedCount == 1)
+        #expect(summary.keychainCategories == [.accessDenied, .unavailable])
+        #expect(summary.keychainStatusCodes == [errSecInteractionNotAllowed, errSecNotAvailable])
+        #expect(!summary.markerFailure && !summary.inspectionFailed)
+        #expect(backend.deleteCallCount == 2)
+        #expect(try paths.privateFileEntryKind(paths.profileCredentialCleanupMarker(for: id)) == .regular)
+        #expect(!summary.userMessage.contains(id.uuidString))
+        #expect(summary.userMessage.contains(String(errSecInteractionNotAllowed)))
+        #expect(summary.userMessage.contains(String(errSecNotAvailable)))
+        #expect(!summary.userMessage.contains(KeychainStore.currentService))
+    }
+
+    @Test func untrustedMetadataDoesNotConsumeTheOnlyRecoveryAttempt() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let id = UUID()
+        try createCommittedCleanupMarkers(paths: paths, profileID: id)
+        let backend = MemoryKeychainBackend()
+        backend.set("synthetic-secret", service: KeychainStore.currentService, profileID: id)
+        let cleanup = DeletedProfileCredentialCleanup(paths: paths, keychain: KeychainStore(backend: backend))
+        let skipped = await cleanup.runOnce(metadataIsTrusted: false, excluding: [])
+        #expect(skipped.skippedBecauseMetadataUntrusted)
+        #expect(backend.deleteCallCount == 0)
+        let completed = await cleanup.runOnce(metadataIsTrusted: true, excluding: [])
+        #expect(completed.clearedCount == 1)
+        #expect(!completed.alreadyRan)
+        #expect(backend.deleteCallCount == 2)
+    }
     @Test func customWorkspaceCannotReadOrMutateDefaultCredentials() throws {
         let environment = NeAntikApplicationEnvironment.resolve(bundleIdentifier: "app.neantik.desktop")
         let backend = MemoryKeychainBackend()
@@ -1084,6 +1303,9 @@ struct KeychainStoreTests {
 
         #expect(summary.failedCount == 1)
         #expect(!summary.inspectionFailed)
+        #expect(summary.keychainCategories == [.other])
+        #expect(summary.keychainStatusCodes.isEmpty)
+        #expect(!summary.markerFailure)
         #expect(
             try paths.privateFileEntryKind(
                 paths.profileCredentialCleanupMarker(for: profileID)
@@ -1109,6 +1331,7 @@ struct KeychainStoreTests {
 private final class MemoryKeychainBackend: KeychainBackend, @unchecked Sendable {
     var deleteFailureService: String?
     var deleteFailureServices = Set<String>()
+    var deleteStatusByService: [String: OSStatus] = [:]
     var upsertAlwaysFails = false
     private(set) var upsertCallCount = 0
     private(set) var deleteCallCount = 0
@@ -1132,6 +1355,7 @@ private final class MemoryKeychainBackend: KeychainBackend, @unchecked Sendable 
 
     func delete(service: String, profileID: UUID) throws {
         deleteCallCount += 1
+        if let status = deleteStatusByService[service] { throw KeychainError(status: status) }
         if deleteFailureServices.contains(service) {
             throw MemoryKeychainError()
         }

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-15",
+  "publishedAt": "2026-11-11",
+  "maximumAgeDays": 0,
+  "minimumPublicChromiumVersion": "157.0.8103.79",
+  "alsoObservedPublicChromiumVersions": [
+    "157.0.8103.78"
+  ],
+  "channel": "Desktop Stable",
+  "platforms": [
+    "macOS"
+  ],
+  "securityFixCount": 83,
+  "reference": "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01744469280.html",
+  "referenceTitle": "Stable Channel Update for Desktop",
+  "sourceLabel": "Chrome Releases",
+  "releaseBoundary": "This manually pinned primary-source security baseline is not a live updater. Refresh the observation date, versions and reference on the day of each public Direct release. A source-version floor does not establish fix survival in the custom port, candidate runtime behavior or release qualification.",
+  "policy": "Chrome Releases documents 83 security fixes in macOS Desktop Stable 157.0.8103.78/.79. Chrome VersionHistory on 2026-11-15 shows 157.0.8103.79 serving macOS Apple Silicon at fraction 1. The 157.0.8103.80 control release serves fraction 0.005 and the 158.0.8127.37 early-stable version serves fraction 0. The pinned NeAntik port remains 157.0.8103.79. The upstream advisory count describes the upstream release.",
+  "securityFixCountStatus": "count-reported-by-official-post"
+}

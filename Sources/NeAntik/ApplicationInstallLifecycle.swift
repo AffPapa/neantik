@@ -49,13 +49,28 @@ enum ApplicationInstallLifecycle {
             try ApplicationUpdateAdmission.shared.requireNewWork()
             try participant?.requireNewWork()
         }
-        catch { throw ApplicationInstallLifecycleError.unavailable }
+        catch { throw ApplicationInstallLifecycleError.classify(error) }
     }
 }
 
-enum ApplicationInstallLifecycleError: LocalizedError {
-    case unavailable
+enum ApplicationInstallLifecycleError: LocalizedError, Equatable {
+    case unavailable, busy, updating
+
+    static func classify(_ error: any Error) -> Self {
+        if let error = error as? InstallFilesystemError, error == .busy { return .busy }
+        if let error = error as? ApplicationUpdateAdmissionError, error == .updating { return .updating }
+        return .unavailable
+    }
+
+    func permitsLaunchRetry(attempt: Int) -> Bool {
+        self == .busy && (0..<2).contains(attempt)
+    }
+
     var errorDescription: String? {
-        NSLocalizedString("userError.085", tableName: "Errors", bundle: .main, value: "NeAntik готовится к обновлению или не может проверить его состояние. Закрой другие экземпляры приложения и повтори запуск. Если ошибка сохраняется, сохрани данные профилей и обратись в поддержку.", comment: "")
+        switch self {
+        case .busy: NSLocalizedString("lifecycle.busy", tableName: "Errors", bundle: .main, value: "Другая операция ещё подготавливает приложение. Подожди несколько секунд и повтори запуск.", comment: "Temporary install admission contention")
+        case .updating: NSLocalizedString("lifecycle.updating", tableName: "Errors", bundle: .main, value: "Идёт подготовка обновления. Дождись её завершения или отмени обновление, затем запусти профиль.", comment: "Update is actively preparing")
+        case .unavailable: NSLocalizedString("lifecycle.unavailable", tableName: "Errors", bundle: .main, value: "Не удалось проверить состояние установки NeAntik. Перезапусти приложение. Если ошибка повторится, сохрани данные профилей и обратись в поддержку.", comment: "Install state could not be verified")
+        }
     }
 }

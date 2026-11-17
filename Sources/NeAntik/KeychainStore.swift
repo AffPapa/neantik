@@ -258,6 +258,8 @@ struct KeychainStore: Sendable {
 
     func deleteProxyPassword(profileID: UUID) throws {
         var failures = 0
+        var categories = Set<KeychainPurgeCategory>()
+        var statusCodes = Set<Int32>()
         for service in [service, legacyService].compactMap({ $0 }) {
             do {
                 try backend.delete(
@@ -266,11 +268,15 @@ struct KeychainStore: Sendable {
                 )
             } catch {
                 failures += 1
+                categories.insert(KeychainPurgeCategory.classify(error))
+                if let status = (error as? KeychainError)?.status { statusCodes.insert(status) }
             }
         }
         if failures > 0 {
             throw KeychainCredentialPurgeError(
-                failedNamespaceCount: failures
+                failedNamespaceCount: failures,
+                categories: categories,
+                statusCodes: statusCodes
             )
         }
     }
@@ -336,8 +342,29 @@ struct KeychainStore: Sendable {
 
 }
 
+/// Closed, secret-free classes. Never retain account names or raw item data.
+enum KeychainPurgeCategory: Hashable, Sendable {
+    case accessDenied, ownerEditRestricted, unavailable, other
+
+    static func classify(_ error: any Error) -> Self {
+        guard let status = (error as? KeychainError)?.status else { return .other }
+        switch status {
+        case errSecAuthFailed, errSecInteractionNotAllowed, errSecMissingEntitlement:
+            return .accessDenied
+        case errSecInvalidOwnerEdit:
+            return .ownerEditRestricted
+        case errSecNotAvailable:
+            return .unavailable
+        default:
+            return .other
+        }
+    }
+}
+
 struct KeychainCredentialPurgeError: LocalizedError {
     let failedNamespaceCount: Int
+    let categories: Set<KeychainPurgeCategory>
+    let statusCodes: Set<Int32>
 
     var errorDescription: String? {
         NSLocalizedString("userError.049", tableName: "Errors", bundle: .main, value: "Не удалось полностью удалить пароль прокси из Связки ключей macOS. Очистку можно безопасно повторить позже.", comment: "")
