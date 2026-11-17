@@ -4,6 +4,30 @@ import Testing
 @testable import NeAntik
 
 struct KeychainStoreTests {
+    @Test func recoveryReportsOnlyAggregateStatusCodesForUnknownSecurityFailures() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let id = UUID()
+        try createCommittedCleanupMarkers(paths: paths, profileID: id)
+        let backend = MemoryKeychainBackend()
+        backend.set("synthetic-secret", service: KeychainStore.currentService, profileID: id)
+        backend.deleteStatusByService = [KeychainStore.currentService: -67891,
+                                         KeychainStore.legacyService: -67892]
+        let cleanup = DeletedProfileCredentialCleanup(paths: paths, keychain: KeychainStore(backend: backend))
+        let summary = await cleanup.runOnce(metadataIsTrusted: true, excluding: [])
+        #expect(summary.keychainCategories == [.other])
+        #expect(summary.keychainStatusCodes == [-67891, -67892])
+        #expect(summary.userMessage.contains("-67892, -67891"))
+        #expect(!summary.userMessage.contains(id.uuidString))
+        #expect(!summary.userMessage.contains("synthetic-secret"))
+        #expect(!summary.userMessage.contains(KeychainStore.currentService))
+        #expect(backend.deleteCallCount == 2)
+        #expect(try paths.privateFileEntryKind(paths.profileCredentialCleanupMarker(for: id)) == .regular)
+        #expect(try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: id)) == .regular)
+    }
+
     @Test func purgeClassifiesBothNamespacesWithoutExposingUnderlyingErrors() throws {
         let backend = MemoryKeychainBackend()
         backend.deleteStatusByService = [KeychainStore.currentService: errSecInteractionNotAllowed,
@@ -15,6 +39,7 @@ struct KeychainStoreTests {
         } catch let error as KeychainCredentialPurgeError {
             #expect(error.failedNamespaceCount == 2)
             #expect(error.categories == [.accessDenied, .unavailable])
+            #expect(error.statusCodes == [errSecInteractionNotAllowed, errSecNotAvailable])
             #expect(!error.localizedDescription.contains(id.uuidString))
             #expect(!error.localizedDescription.contains(String(errSecInteractionNotAllowed)))
         }
@@ -93,11 +118,13 @@ struct KeychainStoreTests {
         let summary = await cleanup.runOnce(metadataIsTrusted: true, excluding: [])
         #expect(summary.failedCount == 1)
         #expect(summary.keychainCategories == [.accessDenied, .unavailable])
+        #expect(summary.keychainStatusCodes == [errSecInteractionNotAllowed, errSecNotAvailable])
         #expect(!summary.markerFailure && !summary.inspectionFailed)
         #expect(backend.deleteCallCount == 2)
         #expect(try paths.privateFileEntryKind(paths.profileCredentialCleanupMarker(for: id)) == .regular)
         #expect(!summary.userMessage.contains(id.uuidString))
-        #expect(!summary.userMessage.contains(String(errSecInteractionNotAllowed)))
+        #expect(summary.userMessage.contains(String(errSecInteractionNotAllowed)))
+        #expect(summary.userMessage.contains(String(errSecNotAvailable)))
         #expect(!summary.userMessage.contains(KeychainStore.currentService))
     }
 
@@ -1201,6 +1228,7 @@ struct KeychainStoreTests {
         #expect(summary.failedCount == 1)
         #expect(!summary.inspectionFailed)
         #expect(summary.keychainCategories == [.other])
+        #expect(summary.keychainStatusCodes.isEmpty)
         #expect(!summary.markerFailure)
         #expect(
             try paths.privateFileEntryKind(

@@ -10,6 +10,7 @@ struct DeletedProfileCredentialCleanupSummary: Equatable, Sendable {
     let alreadyRan: Bool
     // Aggregate classifications only: no profile IDs, Keychain services or data.
     var keychainCategories: Set<KeychainPurgeCategory> = []
+    var keychainStatusCodes: Set<Int32> = []
     var markerFailure: Bool = false
 
     var userMessage: String {
@@ -31,6 +32,11 @@ struct DeletedProfileCredentialCleanupSummary: Equatable, Sendable {
         }
         if markerFailure {
             messages.append(NSLocalizedString("cleanup.marker", tableName: "Errors", bundle: .main, value: "Не удалось обновить служебную отметку очистки.", comment: "Credential cleanup marker"))
+        }
+        if !keychainStatusCodes.isEmpty {
+            let codes = keychainStatusCodes.sorted().map(String.init).joined(separator: ", ")
+            let format = NSLocalizedString("cleanup.statusCodes", tableName: "Errors", bundle: .main, value: "Код macOS для поддержки: %@.", comment: "Aggregate Keychain OSStatus codes")
+            messages.append(String(format: format, codes))
         }
         if messages.isEmpty {
             messages.append(NSLocalizedString("cleanup.generic", tableName: "Errors", bundle: .main, value: "Не удалось подтвердить завершение очистки сохранённых паролей прокси.", comment: "Credential cleanup generic"))
@@ -134,6 +140,7 @@ actor DeletedProfileCredentialCleanup {
         var skippedActiveCount = 0
         var inspectionFailed = false
         var keychainCategories = Set<KeychainPurgeCategory>()
+        var keychainStatusCodes = Set<Int32>()
         var markerFailure = false
 
         // Staging markers differ from deletion markers: they are written
@@ -190,7 +197,11 @@ actor DeletedProfileCredentialCleanup {
                     attemptedCount += 1
                     failedCount += 1
                     if keychainCompleted { markerFailure = true }
-                    else { keychainCategories.formUnion((error as? KeychainCredentialPurgeError)?.categories ?? [.other]) }
+                    else {
+                        let failure = error as? KeychainCredentialPurgeError
+                        keychainCategories.formUnion(failure?.categories ?? [.other])
+                        keychainStatusCodes.formUnion(failure?.statusCodes ?? [])
+                    }
                 } else {
                     if activeMarkerRemovalAttempted { markerFailure = true }
                     else { inspectionFailed = true }
@@ -255,7 +266,11 @@ actor DeletedProfileCredentialCleanup {
                     attemptedCount += 1
                     failedCount += 1
                     if keychainCompleted { markerFailure = true }
-                    else { keychainCategories.formUnion((error as? KeychainCredentialPurgeError)?.categories ?? [.other]) }
+                    else {
+                        let failure = error as? KeychainCredentialPurgeError
+                        keychainCategories.formUnion(failure?.categories ?? [.other])
+                        keychainStatusCodes.formUnion(failure?.statusCodes ?? [])
+                    }
                 } else {
                     inspectionFailed = true
                 }
@@ -270,6 +285,7 @@ actor DeletedProfileCredentialCleanup {
             inspectionFailed: inspectionFailed,
             alreadyRan: false,
             keychainCategories: keychainCategories,
+            keychainStatusCodes: keychainStatusCodes,
             markerFailure: markerFailure
         ))
     }

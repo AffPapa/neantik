@@ -1015,7 +1015,8 @@ struct ContentView: View {
                             attemptedCount: 1, clearedCount: 0, failedCount: 1,
                             skippedActiveCount: 0, skippedBecauseMetadataUntrusted: false,
                             inspectionFailed: false, alreadyRan: false,
-                            keychainCategories: keychainFailure.categories
+                            keychainCategories: keychainFailure.categories,
+                            keychainStatusCodes: keychainFailure.statusCodes
                         )
                         localError = NSLocalizedString("cleanup.deletedPrefix", tableName: "Errors", bundle: .main, value: "Профиль удалён; его папка данных, если существовала, перемещена в Корзину.", comment: "Profile removed before credential cleanup") + " " + diagnostic.userMessage
                     } else {

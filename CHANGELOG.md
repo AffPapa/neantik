@@ -1,5 +1,9 @@
 # NeAntik changelog
 
+## Direct 1.1.1 (216) — internal qualification candidate
+
+- Add aggregate macOS status codes to credential-cleanup diagnostics without exposing profile or Keychain item details. This candidate has not been released.
+
 ## Direct 1.1.1 (215) — internal qualification candidate
 
 - Improve launch admission messages, profile dates, Chromium device preset selection, and safe reporting of incomplete credential cleanup. This candidate has not been released.

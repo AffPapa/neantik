@@ -259,6 +259,7 @@ struct KeychainStore: Sendable {
     func deleteProxyPassword(profileID: UUID) throws {
         var failures = 0
         var categories = Set<KeychainPurgeCategory>()
+        var statusCodes = Set<Int32>()
         for service in [service, legacyService].compactMap({ $0 }) {
             do {
                 try backend.delete(
@@ -268,12 +269,14 @@ struct KeychainStore: Sendable {
             } catch {
                 failures += 1
                 categories.insert(KeychainPurgeCategory.classify(error))
+                if let status = (error as? KeychainError)?.status { statusCodes.insert(status) }
             }
         }
         if failures > 0 {
             throw KeychainCredentialPurgeError(
                 failedNamespaceCount: failures,
-                categories: categories
+                categories: categories,
+                statusCodes: statusCodes
             )
         }
     }
@@ -359,6 +362,7 @@ enum KeychainPurgeCategory: Hashable, Sendable {
 struct KeychainCredentialPurgeError: LocalizedError {
     let failedNamespaceCount: Int
     let categories: Set<KeychainPurgeCategory>
+    let statusCodes: Set<Int32>
 
     var errorDescription: String? {
         NSLocalizedString("userError.049", tableName: "Errors", bundle: .main, value: "Не удалось полностью удалить пароль прокси из Связки ключей macOS. Очистку можно безопасно повторить позже.", comment: "")

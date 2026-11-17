@@ -245,6 +245,7 @@
 "cleanup.access" = "macOS did not confirm access to some Keychain items.";
 "cleanup.unavailable" = "The Keychain operation is currently unavailable.";
 "cleanup.other" = "The Keychain operation could not be completed.";
+"cleanup.statusCodes" = "macOS code for support: %@.";
 "cleanup.marker" = "NeAntik could not update its cleanup marker.";
 "cleanup.generic" = "NeAntik could not confirm that saved proxy password cleanup finished.";
 "cleanup.nextStart" = "NeAntik will safely check again the next time the app opens. If the message persists, contact support.";
