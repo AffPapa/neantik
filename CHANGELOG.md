@@ -1,5 +1,9 @@
 # NeAntik changelog
 
+## Direct 1.1.1 (217) — internal qualification candidate
+
+- Refresh the actual window focus state before forwarding a page click in the detached WebKit presenter. This candidate has not been released.
+
 ## Direct 1.1.1 (216) — internal qualification candidate
 
 - Add aggregate macOS status codes to credential-cleanup diagnostics without exposing profile or Keychain item details. This candidate has not been released.

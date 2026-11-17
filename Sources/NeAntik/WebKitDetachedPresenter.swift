@@ -421,7 +421,7 @@ final class WebKitDetachedPresenter: NSObject, NSWindowDelegate {
 }
 
 @MainActor
-private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
+final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
     private let drawable: CAMetalLayer
     private var downInsideContent = false
     private var editor: WebKitPresenterChannel.Editor?
@@ -600,7 +600,11 @@ private final class WebKitPresenterView: NSView, @MainActor NSTextInputClient {
 
     override func mouseDown(with event: NSEvent) {
         downInsideContent = event.clickCount == 1 && point(event) != nil
-        if downInsideContent { window?.makeFirstResponder(self) }
+        if downInsideContent, window?.makeFirstResponder(self) == true {
+            // Queue the actual window/focus state before the corresponding click.
+            // The responder callback is asynchronous and can otherwise arrive later.
+            onFocusChange?()
+        }
     }
 
     override func mouseDragged(with event: NSEvent) { downInsideContent = false }
