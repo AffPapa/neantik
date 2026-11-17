@@ -1390,7 +1390,8 @@ struct ProfileStoreTests {
         let sentinel = root.appendingPathComponent("synthetic-sentinel")
         try Data("keep".utf8).write(to: sentinel)
 
-        #expect(throws: ProfileCredentialCleanupPendingError.self) {
+        var sawCleanupPending = false
+        do {
             try store.delete(profile, processManager: manager) { deleted in
                 // A different profile's fence and the metadata fence are free,
                 // while this committed deletion retains its own fence.
@@ -1404,7 +1405,12 @@ struct ProfileStoreTests {
                 try FileManager.default.removeItem(at: marker)
                 try FileManager.default.createSymbolicLink(at: marker, withDestinationURL: sentinel)
             }
+        } catch is ProfileCredentialCleanupPendingError {
+            sawCleanupPending = true
+        } catch {
+            Issue.record("Expected the committed-deletion cleanup error")
         }
+        #expect(sawCleanupPending)
         #expect(store.profile(withID: profile.id) == nil)
         #expect(store.profile(withID: other.id) != nil)
         #expect(store.folderID(forProfileID: profile.id) == nil)
