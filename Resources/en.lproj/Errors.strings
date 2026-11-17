@@ -243,6 +243,7 @@
 "cleanup.metadata" = "Profile data could not be verified, so credential cleanup was not attempted.";
 "cleanup.inspection" = "NeAntik could not safely check some cleanup records.";
 "cleanup.access" = "macOS did not confirm access to some Keychain items.";
+"cleanup.ownerEditRestricted" = "macOS rejected a Keychain item deletion request. Cleanup could not be confirmed.";
 "cleanup.unavailable" = "The Keychain operation is currently unavailable.";
 "cleanup.other" = "The Keychain operation could not be completed.";
 "cleanup.statusCodes" = "macOS code for support: %@.";

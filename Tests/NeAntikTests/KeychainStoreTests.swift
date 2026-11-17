@@ -4,6 +4,82 @@ import Testing
 @testable import NeAntik
 
 struct KeychainStoreTests {
+    @Test func ownerEditRefusalKeepsRecoveryMarkersAfterOtherNamespaceSucceedsOrIsMissing() async throws {
+        for rejectedService in [KeychainStore.currentService, KeychainStore.legacyService] {
+            let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: root) }
+            let paths = AppPaths(rootDirectory: root)
+            try paths.prepareBaseDirectories()
+            let id = UUID()
+            try createCommittedCleanupMarkers(paths: paths, profileID: id)
+            let backend = MemoryKeychainBackend()
+            let otherService = rejectedService == KeychainStore.currentService ? KeychainStore.legacyService : KeychainStore.currentService
+            backend.set("synthetic-secret", service: rejectedService, profileID: id)
+            if rejectedService == KeychainStore.currentService {
+                backend.set("other-synthetic-secret", service: otherService, profileID: id)
+            }
+            backend.deleteStatusByService = [rejectedService: errSecInvalidOwnerEdit]
+            let cleanup = DeletedProfileCredentialCleanup(paths: paths, keychain: KeychainStore(backend: backend))
+            let summary = await cleanup.runOnce(metadataIsTrusted: true, excluding: [])
+            #expect(summary.attemptedCount == 1 && summary.failedCount == 1 && summary.clearedCount == 0)
+            #expect(summary.keychainCategories == [.ownerEditRestricted])
+            #expect(summary.keychainStatusCodes == [errSecInvalidOwnerEdit])
+            #expect(!summary.markerFailure && !summary.inspectionFailed)
+            #expect(backend.deleteCallCount == 2)
+            #expect(backend.string(service: rejectedService, profileID: id) == "synthetic-secret")
+            #expect(backend.string(service: otherService, profileID: id) == nil)
+            #expect(try paths.privateFileEntryKind(paths.profileCredentialCleanupMarker(for: id)) == .regular)
+            #expect(try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: id)) == .regular)
+            let expected = NSLocalizedString("cleanup.ownerEditRestricted", tableName: "Errors", bundle: .main,
+                value: "macOS отклонила запрос на удаление записи Связки ключей. Очистка не подтверждена.", comment: "")
+            #expect(summary.userMessage.contains(expected))
+            #expect(summary.userMessage.contains(String(errSecInvalidOwnerEdit)))
+            #expect(!summary.userMessage.contains(id.uuidString))
+            #expect(!summary.userMessage.contains("synthetic-secret"))
+            #expect(!summary.userMessage.contains(KeychainStore.currentService))
+            #expect(!summary.userMessage.contains(KeychainStore.legacyService))
+        }
+    }
+
+    @Test func ownerEditAndUnknownRefusalsRemainDistinctAndSecretFree() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = AppPaths(rootDirectory: root)
+        try paths.prepareBaseDirectories()
+        let id = UUID()
+        try createCommittedCleanupMarkers(paths: paths, profileID: id)
+        let backend = MemoryKeychainBackend()
+        backend.set("synthetic-secret", service: KeychainStore.currentService, profileID: id)
+        backend.deleteStatusByService = [KeychainStore.currentService: errSecInvalidOwnerEdit,
+                                         KeychainStore.legacyService: -67891]
+        let cleanup = DeletedProfileCredentialCleanup(paths: paths, keychain: KeychainStore(backend: backend))
+        let summary = await cleanup.runOnce(metadataIsTrusted: true, excluding: [])
+        #expect(summary.failedCount == 1 && summary.clearedCount == 0)
+        #expect(summary.keychainCategories == [.ownerEditRestricted, .other])
+        #expect(summary.keychainStatusCodes == [errSecInvalidOwnerEdit, -67891])
+        #expect(summary.userMessage.contains("-67891, \(errSecInvalidOwnerEdit)"))
+        let ownerMessage = NSLocalizedString("cleanup.ownerEditRestricted", tableName: "Errors", bundle: .main,
+            value: "macOS отклонила запрос на удаление записи Связки ключей. Очистка не подтверждена.", comment: "")
+        let otherMessage = NSLocalizedString("cleanup.other", tableName: "Errors", bundle: .main,
+            value: "Не удалось завершить операцию со Связкой ключей.", comment: "")
+        #expect(summary.userMessage.contains(ownerMessage) && summary.userMessage.contains(otherMessage))
+        #expect(!summary.userMessage.contains(id.uuidString))
+        #expect(!summary.userMessage.contains("synthetic-secret"))
+        #expect(!summary.userMessage.contains(KeychainStore.currentService))
+        #expect(!summary.userMessage.contains(KeychainStore.legacyService))
+        #expect(backend.deleteCallCount == 2)
+        #expect(try paths.privateFileEntryKind(paths.profileCredentialCleanupMarker(for: id)) == .regular)
+        #expect(try paths.privateFileEntryKind(paths.profileDeletionTombstone(for: id)) == .regular)
+    }
+
+    @Test func ownerEditDiagnosticHasEnglishTranslation() throws {
+        let sourceRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let english = try #require(Bundle(path: sourceRoot.appendingPathComponent("Resources/en.lproj").path))
+        let translated = english.localizedString(forKey: "cleanup.ownerEditRestricted", value: "missing", table: "Errors")
+        #expect(translated == "macOS rejected a Keychain item deletion request. Cleanup could not be confirmed.")
+    }
+
     @Test func recoveryReportsOnlyAggregateStatusCodesForUnknownSecurityFailures() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }

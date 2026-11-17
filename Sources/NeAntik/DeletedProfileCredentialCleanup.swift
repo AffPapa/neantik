@@ -24,6 +24,9 @@ struct DeletedProfileCredentialCleanupSummary: Equatable, Sendable {
         if keychainCategories.contains(.accessDenied) {
             messages.append(NSLocalizedString("cleanup.access", tableName: "Errors", bundle: .main, value: "macOS не подтвердила доступ к некоторым записям Связки ключей.", comment: "Credential cleanup access"))
         }
+        if keychainCategories.contains(.ownerEditRestricted) {
+            messages.append(NSLocalizedString("cleanup.ownerEditRestricted", tableName: "Errors", bundle: .main, value: "macOS отклонила запрос на удаление записи Связки ключей. Очистка не подтверждена.", comment: "Credential cleanup owner edit restriction"))
+        }
         if keychainCategories.contains(.unavailable) {
             messages.append(NSLocalizedString("cleanup.unavailable", tableName: "Errors", bundle: .main, value: "Операция со Связкой ключей сейчас недоступна.", comment: "Credential cleanup unavailable"))
         }

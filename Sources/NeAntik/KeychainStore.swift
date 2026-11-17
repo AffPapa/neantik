@@ -344,13 +344,15 @@ struct KeychainStore: Sendable {
 
 /// Closed, secret-free classes. Never retain account names or raw item data.
 enum KeychainPurgeCategory: Hashable, Sendable {
-    case accessDenied, unavailable, other
+    case accessDenied, ownerEditRestricted, unavailable, other
 
     static func classify(_ error: any Error) -> Self {
         guard let status = (error as? KeychainError)?.status else { return .other }
         switch status {
         case errSecAuthFailed, errSecInteractionNotAllowed, errSecMissingEntitlement:
             return .accessDenied
+        case errSecInvalidOwnerEdit:
+            return .ownerEditRestricted
         case errSecNotAvailable:
             return .unavailable
         default:
