@@ -127,3 +127,6 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Diagnose one manager suite
         run: python3 -B scripts/test-manager-ci.py --suite "$DIAGNOSTIC_SUITE"
+      - name: Verify specific profile cleanup regressions
+        if: ${{ inputs.diagnostic_suite == 'ProfileStoreTests' }}
+        run: python3 -B scripts/verify-profile-race-receipt.py
