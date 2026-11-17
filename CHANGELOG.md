@@ -1,5 +1,9 @@
 # NeAntik changelog
 
+## Direct 1.1.1 (221) — internal qualification candidate
+
+- Clarify macOS Keychain cleanup refusals and serialize committed profile credential cleanup with recovery. This candidate has not been released.
+
 ## Direct 1.1.1 (220) — internal qualification candidate
 
 - Explain that the WebKit window is preparing while its first frame is awaiting presentation. This candidate has not been released.
