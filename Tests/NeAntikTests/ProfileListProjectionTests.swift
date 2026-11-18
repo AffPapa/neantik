@@ -4,6 +4,23 @@ import Testing
 
 struct ProfileListProjectionTests {
     @Test
+    func sortPreferencePersistsAndFallsBackToNameForUnknownValues() throws {
+        let suite = "NeAntik.ProfileListSortPreferenceTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        #expect(ProfileListSortPreference.load(from: defaults) == .name)
+
+        for sort in ProfileListSort.allCases {
+            ProfileListSortPreference.save(sort, to: defaults)
+            #expect(ProfileListSortPreference.load(from: defaults) == sort)
+        }
+
+        defaults.set("unsupported-order", forKey: ProfileListSortPreference.key)
+        #expect(ProfileListSortPreference.load(from: defaults) == .name)
+    }
+
+    @Test
     func sortKeepsPinsFirstAndUnopenedLastWithStableTies() {
         let t = Date(timeIntervalSince1970: 1_000)
         let pinned = BrowserProfile(name: "Pinned", isPinned: true, createdAt: t)

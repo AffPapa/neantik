@@ -24,6 +24,19 @@ enum ProfileListSort: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
+enum ProfileListSortPreference {
+    static let key = "profile-list.sort-order"
+
+    static func load(from defaults: UserDefaults = .standard) -> ProfileListSort {
+        guard let rawValue = defaults.string(forKey: key) else { return .name }
+        return ProfileListSort(rawValue: rawValue) ?? .name
+    }
+
+    static func save(_ sort: ProfileListSort, to defaults: UserDefaults = .standard) {
+        defaults.set(sort.rawValue, forKey: key)
+    }
+}
+
 /// Immutable data needed to render and normalize the profile list once.
 ///
 /// Reusing `index` for search-only changes avoids rebuilding folder and tag

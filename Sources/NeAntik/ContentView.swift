@@ -247,7 +247,7 @@ struct ContentView: View {
     @State private var releaseAuditTerminationScheduled = false
     @State private var releaseAuditProfiles: [BrowserProfile] = []
     @State private var profileSearchText = ""
-    @State private var profileSort: ProfileListSort = .name
+    @State private var profileSort: ProfileListSort = ProfileListSortPreference.load()
     @State private var selectedProfileTag: ProfileTagID?
     @State private var profileListScope: ProfileListScope = .active
     @State private var selectedFolderFilter: ProfileFolderFilter = .all
@@ -1136,6 +1136,9 @@ struct ContentView: View {
         }
         .onChange(of: selectedFolderFilter) { _, _ in
             normalizeSelection(preferred: preferredProfileSelection)
+        }
+        .onChange(of: profileSort) { _, sort in
+            ProfileListSortPreference.save(sort)
         }
         .onChange(of: store.profileListRevision) { _, _ in
             if NSApplication.shared.isActive {
