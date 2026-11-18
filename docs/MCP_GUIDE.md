@@ -2,7 +2,7 @@
 
 **Current public scope:** NeAntik 1.0.0 (211) includes Chromium and bundled WebKit. Management mode can ask an open NeAntik manager to launch WebKit after local consent.
 
-The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. For Chromium and metadata operations the manager GUI may be closed. WebKit lifecycle commands require an open manager and local consent. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Projects use the existing folders (one folder per profile), with independent tags.
+The installed NeAntik executable is an opt-in local **stdio MCP server**. No Node/npm, network listener, account or mandatory cloud is required. For Chromium and metadata operations the manager GUI may be closed. WebKit lifecycle commands require an open manager and local consent. New connection snippets enable the complete profile toolset: canonical writes and normal browser lifecycle. Optional **read-only** access is available in advanced connection settings; existing configurations without the management flag remain read-only. Profiles can be organized in nested folders with independent tags.
 
 Read-only access requires the existing private metadata lock; it does not create or repair that lock. If access fails, open NeAntik to inspect the workspace instead of creating or changing files manually.
 
@@ -47,17 +47,17 @@ Newline-delimited JSON-RPC: 64 KiB/request, 32 queued requests, 256 KiB for the 
 | `workspace_list_profiles` | Small allowlisted list; processState remains unverified |
 | `workspace_list_profiles_page` | Pages of 1–100 profiles, default 50; pass nextCursor unchanged; restart on workspace change |
 | `template_list` | Read up to 50 saved templates: id/name/startURL/startupMode/tags/resolved folderID and organizationRevision; no identity, notes, proxy or BrowserData |
-| `profile_get` | Current decimal-string revision, name, startURL, startupMode, engine, engineCapabilities, saved privacy/network policy, tags, appearance, pinned/archive, folderID, organizationRevision, proxy kind |
-| `workspace_query_profiles` | Name/tag/project/pinned/archive filters; active default, tags AND; folderID omitted:any, null:unfiled; UUID/revision/folderID; cursor bound to filter and metadata |
-| `folder_list` | Pages1–100 of folder IDs/names and organizationRevision; pass nextCursor; restart on change |
+| `profile_get` | Current decimal-string revision, name, startURL, startupMode, engine, engineCapabilities, saved privacy/network policy, tags, appearance, pinned/archive, folderID, bounded folderPath and folderPathTruncated, organizationRevision, proxy kind |
+| `workspace_query_profiles` | Name/tag/project/pinned/archive filters; active default, tags AND; folderID omitted:any, null:unfiled; UUID/revision/folderID; bounded folderPath with folderPathTruncated; cursor bound to filter and metadata |
+| `folder_list` | Pages of up to 100 folder IDs, names, parent IDs and root-to-leaf paths capped at 512 UTF-8 bytes per path; `folderPathTruncated` marks a shortened path. Parent IDs preserve exact hierarchy. A page may be shortened to fit the 256 KiB MCP response budget; pass nextCursor unchanged and restart on change |
 | `profile_status` | Management mode reconciles stopped/managed/checking/recovery/external state and can observe this session's owned browser. Read-only mode only observes a process snapshot: `externalUnverified` means a process referenced the profile data; `unverified` means its state is unknown. Neither establishes that the browser is stopped or permits a launch. |
 | `profile_create` | Create persistent configuration without launching |
 | `profile_update` | Patch name, startURL, startupMode, tags, note, isPinned, isArchived, colorHex, symbolName |
 | `profile_set_proxy` | Set fields or parse one proxy line; proxy:null disables |
 | `profile_move` | Assign one folder/project or null (unfiled) |
 | `profile_duplicate` | Fresh profile identity and ID; configuration only, no cookies/BrowserData/notes; copies local proxy password without returning it |
-| `folder_create` / `folder_rename` | Organize projects with locked organization revision checks; compact receipt: affectedFolderID, organizationRevision and affected folder only |
-| `folder_remove` | Remove folder only; profiles and website data remain unfiled; folders:[] in mutation receipt, not a whole empty catalog |
+| `folder_create` / `folder_rename` / `folder_move` | Build and reorganize nested folders with locked organization revision checks; move accepts a parent folder ID or null for the top level, rejects cycles/name conflicts and retains profile assignments; compact receipt includes the affected folder ID, name, parent ID, bounded `folderPath` and `folderPathTruncated`. Read `folder_list`; when `folderPathTruncated` is true, reconstruct the full hierarchy from parentFolderID. |
+| `folder_remove` | Remove only the folder; direct profile assignments become unfiled and child folders move up one level; browser data is retained; a sibling-name conflict prevents deletion |
 | `profile_check_proxy` | Existing bounded multi-source availability diagnostic; no context rewrite, not Chromium route qualification |
 | `profile_start` | Normal qualified runtime launch; fresh proxy preparation, no hidden direct fallback |
 | `profile_stop` | Graceful close request for browser owned by this live MCP session; poll status until stopped |
@@ -84,7 +84,7 @@ separate `stopPending` state.
 
 `profile_get`, creation and edit responses include `engineCapabilities`. These flags describe operations supported by the build, not measured state of a browser session. Check the selected profile’s capabilities before offering an operation. A supported WebKit launch still requires local consent and an open manager.
 2. Send `expectedRevision` exactly as a decimal **string**, not a floating-point JSON number.
-3. For folders/move, call `folder_list`; send `expectedOrganizationRevision` including explicit initial `null`. Checks happen inside the metadata transaction, preventing stale/ABA writes.
+3. For folders and `folder_move`, call `folder_list`; send `expectedOrganizationRevision` including explicit initial `null`. Checks happen inside the metadata transaction, preventing stale/ABA writes. `folder_move.parentFolderID: null` moves a folder to the top level; the folder itself and its descendants cannot be destinations.
 4. Patches preserve omitted fields. `tags: []` clears tags. `folderID: null` unfiles; `proxy: null` disables.
 5. Close the browser before configuration edits. Unknown ownership fails closed.
 6. On conflict, reread and intentionally retry. Do not silently overwrite newer data. **Create/duplicate are not idempotent**: uncertain success must be reconciled before retry.

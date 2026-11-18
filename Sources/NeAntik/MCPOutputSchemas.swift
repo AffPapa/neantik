@@ -12,7 +12,7 @@ enum MCPOutputSchemas {
         let count: [String: Any] = ["type": "integer", "minimum": 0]
         let state: [String: Any] = ["type": "string", "enum": ["managed", "stopped", "checking", "closing", "externalManualOnly", "externalUnverified", "recoveryRequired", "unverified"]]
         let path: [String: Any] = ["type": "array", "items": text]
-        let folder = object(["id": uuid, "name": text, "parentFolderID": nullable, "folderPath": path])
+        let folder = object(["id": uuid, "name": text, "parentFolderID": nullable, "folderPath": path, "folderPathTruncated": boolean])
         let folders: [String: Any] = ["type": "array", "items": folder, "maxItems": 100]
         if name == "template_list" {
             return object(["templates": ["type": "array", "maxItems": ManagerLibraryDocument.maximumItems,
@@ -23,7 +23,7 @@ enum MCPOutputSchemas {
         if name == "folder_list" { return object(["organizationRevision": nullable, "folders": folders, "count": count, "totalCount": count, "nextCursor": nullable]) }
         if name.hasPrefix("folder_") { return object(["organizationRevision": nullable, "folders": ["type": "array", "items": folder, "maxItems": 1], "affectedFolderID": uuid]) }
         if name == "workspace_query_profiles" {
-            let profile = object(["id": uuid, "revision": revision, "name": text, "tags": ["type": "array", "items": text], "isPinned": boolean, "isArchived": boolean, "folderID": nullable, "folderPath": path, "processState": ["type": "string", "const": "unverified"]])
+            let profile = object(["id": uuid, "revision": revision, "name": text, "tags": ["type": "array", "items": text], "isPinned": boolean, "isArchived": boolean, "folderID": nullable, "folderPath": path, "folderPathTruncated": boolean, "processState": ["type": "string", "const": "unverified"]])
             return object(["profiles": ["type": "array", "items": profile, "maxItems": 100], "count": count, "totalCount": count, "organizationRevision": nullable, "nextCursor": nullable])
         }
         if name == "profile_status" {
@@ -88,7 +88,7 @@ enum MCPOutputSchemas {
                            "runtimeRoute": ["type": "string", "const": "unverified"],
                            "evidence": ["type": "string", "const": "saved-configuration-only; runtime route unverified"]
                        ]),
-                       "colorHex": text, "symbolName": text, "folderID": nullable, "folderPath": path, "organizationRevision": nullable,
+                       "colorHex": text, "symbolName": text, "folderID": nullable, "folderPath": path, "folderPathTruncated": boolean, "organizationRevision": nullable,
                        "proxyKind": ["type": ["string", "null"], "enum": ["http", "https", "socks5", NSNull()]], "warning": text], optional: ["warning"])
     }
     private static func object(_ properties: [String: Any], optional: Set<String> = []) -> [String: Any] {

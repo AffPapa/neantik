@@ -32,6 +32,11 @@ private struct FolderNameRequest: Identifiable {
     }
 }
 
+private struct FolderMoveRequest: Identifiable {
+    let id = UUID()
+    let folderID: UUID
+}
+
 private struct ProfileFolderPickerRequest: Identifiable {
     let id = UUID()
     let profileID: UUID
@@ -252,6 +257,7 @@ struct ContentView: View {
     @State private var profileListScope: ProfileListScope = .active
     @State private var selectedFolderFilter: ProfileFolderFilter = .all
     @State private var folderNameRequest: FolderNameRequest?
+    @State private var folderMoveRequest: FolderMoveRequest?
     @State private var profileFolderPickerRequest:
         ProfileFolderPickerRequest?
     @State private var folderPendingDelete: ProfileFolder?
@@ -319,6 +325,7 @@ struct ContentView: View {
             showingBackupRecovery ||
             editorRequest != nil ||
             folderNameRequest != nil ||
+            folderMoveRequest != nil ||
             profileFolderPickerRequest != nil ||
             bulkProxyImportRequest != nil ||
             transferPassphraseMode != nil ||
@@ -833,6 +840,29 @@ struct ContentView: View {
                     selectedFolderFilter = .folder(folder.id)
                     selectedProfileTag = nil
                     normalizeSelection()
+                }
+            }
+        }
+        .sheet(item: $folderMoveRequest) { request in
+            let organization = store.organization
+            if let folder = organization.folder(withID: request.folderID) {
+                let path = organization.folderPath(for: folder.id)?.map(\.name)
+                    .joined(separator: " › ") ?? folder.name
+                ProfileFolderParentPickerSheet(
+                    folderPath: path,
+                    folderID: folder.id,
+                    organization: organization
+                ) { parentFolderID in
+                    _ = try store.moveFolder(
+                        withID: folder.id,
+                        underParentFolderID: parentFolderID,
+                        expectedOrganizationRevision: .some(organization.mutationRevision)
+                    )
+                    normalizeSelection()
+                }
+            } else {
+                ProfileFolderPickerUnavailableSheet {
+                    folderMoveRequest = nil
                 }
             }
         }
@@ -2395,6 +2425,9 @@ struct ContentView: View {
                         .contextMenu {
                             Button("Новая подпапка…", systemImage: "folder.badge.plus") {
                                 beginCreatingSubfolder(of: folder.id)
+                            }
+                            Button("Переместить папку…", systemImage: "arrowshape.turn.up.right") {
+                                folderMoveRequest = FolderMoveRequest(folderID: folder.id)
                             }
                             Button("Переименовать…", systemImage: "pencil") {
                                 folderNameRequest = FolderNameRequest(folder: folder)

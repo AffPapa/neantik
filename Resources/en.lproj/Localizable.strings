@@ -755,3 +755,14 @@
 "workspace.encryptedExport.one" = "Encrypted export saved: %ld profile.";
 "Ещё %ld папка" = "%ld more folder";
 "Ещё %ld тег" = "%ld more tag";
+
+"folder.move.title" = "Move folder";
+"folder.move.subtitle" = "Choose a new parent folder for “%@”";
+"folder.move.search" = "Search folders";
+"folder.move.search.hint" = "Search by full path. The folder and its descendants are hidden.";
+"folder.move.root" = "Top level";
+"folder.move.count" = "Folders shown: %@";
+"folder.move.conflict" = "Unavailable destinations already contain a folder with the same name.";
+"folder.move.select.hint" = "Move here without changing profiles or browser data.";
+"folder.move.selected" = "%@, selected";
+"Переместить папку…" = "Move Folder…";

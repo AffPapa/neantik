@@ -98,13 +98,18 @@ struct MCPWorkspaceQuery: Sendable {
         var end = min(offset + limit, matches.count)
         while true {
             try Task.checkCancellation()
-            let values: [[String: Any]] = matches[offset..<end].map { profile in [
-                "id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name,
-                "tags": profile.tags, "isPinned": profile.isPinned, "isArchived": profile.isArchived,
-                "folderID": organization.folderID(forProfileID: profile.id)?.uuidString as Any? ?? NSNull(),
-                "folderPath": organization.folderID(forProfileID: profile.id).flatMap { organization.folderPath(for: $0)?.map(\.name) } ?? [],
-                "processState": "unverified"
-            ] }
+            let values: [[String: Any]] = matches[offset..<end].map { profile in
+                let folderID = organization.folderID(forProfileID: profile.id)
+                let folderPath = organization.boundedFolderPath(for: folderID)
+                return [
+                    "id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name,
+                    "tags": profile.tags, "isPinned": profile.isPinned, "isArchived": profile.isArchived,
+                    "folderID": folderID?.uuidString as Any? ?? NSNull(),
+                    "folderPath": folderPath.components,
+                    "folderPathTruncated": folderPath.truncated,
+                    "processState": "unverified"
+                ]
+            }
             let payload: [String: Any] = ["profiles": values, "count": values.count, "totalCount": matches.count,
                 "organizationRevision": organization.mutationRevision?.uuidString as Any? ?? NSNull(),
                 "nextCursor": end < matches.count ? cursor(snapshot: snapshot, offset: end) as Any : NSNull()]

@@ -84,7 +84,7 @@ Direct before the click; the full editor remains a secondary action.
   context is described as automatic, while observed failures expose one
   relevant action.
 - One immutable workspace projection and an allowlisted read-only DTO for the
-  native UI. An opt-in local MCP stdio mode provides 18 management tools (7 in
+  native UI. An opt-in local MCP stdio mode provides 19 management tools (7 in
   read mode), including saved-template reuse and owned browser lifecycle.
   Generated connections enable management; legacy configurations retain read
   permissions. WebKit lifecycle uses an explicitly enabled local Unix socket in

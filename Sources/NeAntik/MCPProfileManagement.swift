@@ -37,7 +37,7 @@ final class MCPProfileManagement {
     enum Failure: Error { case invalid, conflict, unavailable, browserRuntimeUnavailable, browserRuntimePreflightFailed, running, proxyFailed, manualClose, denied, stopRefused, cursor, responseLimit }
 
     nonisolated static let readTools = ["profile_get", "folder_list", "profile_status", "workspace_query_profiles", "template_list"]
-    nonisolated static let writeTools = ["profile_create", "profile_update", "profile_set_proxy", "profile_move", "profile_duplicate", "folder_create", "folder_rename", "folder_remove", "profile_check_proxy", "profile_start", "profile_stop"]
+    nonisolated static let writeTools = ["profile_create", "profile_update", "profile_set_proxy", "profile_move", "profile_duplicate", "folder_create", "folder_rename", "folder_move", "folder_remove", "profile_check_proxy", "profile_start", "profile_stop"]
     nonisolated static var allTools: [String] { ["workspace_list_profiles", "workspace_list_profiles_page"] + readTools + writeTools }
 
     nonisolated static func definitions(allowsManagement: Bool, mediaPolicyEnabled: Bool = WebKitMediaFeature.isEnabled) -> [[String: Any]] {
@@ -61,9 +61,9 @@ final class MCPProfileManagement {
         #endif
         let specs: [(String, String, [String: Any], [String])] = [
             ("template_list", "Read saved user templates (maximum50), safe start pages and tags. No credentials, notes, identity or BrowserData. Missing project folders resolve to unfiled. Use templateID plus this organizationRevision with profile_create; creation never starts a browser.", [:], []),
-            ("profile_get", "Read profile revision, start page, organization and requested fontPolicy (not applied-state proof). folderPath contains root-to-leaf names; folderID remains the stable exact-folder assignment. networkPolicyIntent reports saved route/DNS policy only; hostname DNS may use the system resolver, IP-literal proxy endpoints need no DNS, and runtimeRoute is always unverified. system-v1 is Chromium-only and needs the exact qualified runtime at launch. Proxy endpoint, credentials and note excluded.", ["profileID": uuid], ["profileID"]),
-            ("folder_list", "Read up to100 project folders in stable depth-first order and organizationRevision. Each row includes parentFolderID (null for a root) and folderPath from root to leaf. Pass nextCursor unchanged; restart on organization change.", ["limit": ["type": "integer", "minimum": 1, "maximum": 100], "cursor": text], []),
-            ("workspace_query_profiles", "Find profiles by name, tags and project without reading private notes. Tags use AND; omitted archived means active only. folderID:null means unfiled, omission means any, and a specified folderID matches exact assignments only. folderPath contains root-to-leaf names. Cursor is tied to filters and snapshot. Process state remains unverified.", MCPWorkspaceQuery.properties, []),
+            ("profile_get", "Read profile revision, start page, organization and requested fontPolicy (not applied-state proof). folderPath contains root-to-leaf names up to 512 UTF-8 bytes; folderPathTruncated indicates omitted path text. folderID remains the stable exact-folder assignment. networkPolicyIntent reports saved route/DNS policy only; hostname DNS may use the system resolver, IP-literal proxy endpoints need no DNS, and runtimeRoute is always unverified. system-v1 is Chromium-only and needs the exact qualified runtime at launch. Proxy endpoint, credentials and note excluded.", ["profileID": uuid], ["profileID"]),
+            ("folder_list", "Read up to100 project folders in stable depth-first order and organizationRevision. Each row includes parentFolderID (null for a root), folderPath up to 512 UTF-8 bytes and folderPathTruncated when the path is shortened. A page can contain fewer rows than requested to fit the MCP response budget. Pass nextCursor unchanged; restart on organization change.", ["limit": ["type": "integer", "minimum": 1, "maximum": 100], "cursor": text], []),
+            ("workspace_query_profiles", "Find profiles by name, tags and project without reading private notes. Tags use AND; omitted archived means active only. folderID:null means unfiled, omission means any, and a specified folderID matches exact assignments only. folderPath contains root-to-leaf names up to 512 UTF-8 bytes; folderPathTruncated indicates omitted path text. Cursor is tied to filters and snapshot. Process state remains unverified.", MCPWorkspaceQuery.properties, []),
             ("profile_status", "Management mode reconciles profile ownership; external sessions require manual close. Read-only mode does not reconcile or clear data: externalUnverified indicates a process referencing the profile data was seen, unverified means the state is unknown; neither establishes that the profile is stopped or authorizes a launch. Optional includeObservation:true requires expectedRevision and observes only this session's verified owned browser. Never returns page content, credentials, PID, paths or proof of Chromium network route.", ["profileID": uuid, "includeObservation": ["type": "boolean"], "expectedRevision": revision], ["profileID"]),
             ("profile_create", profileCreateDescription, ["name": text, "engine": ["type": "string", "enum": BrowserEngine.allCases.map(\.rawValue)], "changes": changes, "templateID": uuid, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]]], ["name"]),
             ("profile_update", "Patch an existing stopped profile; omitted fields stay unchanged. fontPolicy:native|system-v1 explicitly selects Chromium font handling; system-v1 needs the qualified runtime at launch, not just a profile seed. Read its revision first.", ["profileID": uuid, "expectedRevision": revision, "changes": changes], ["profileID", "expectedRevision", "changes"]),
@@ -72,7 +72,8 @@ final class MCPProfileManagement {
             ("profile_duplicate", "Copy configuration into a fresh identity; never copy cookies, notes or BrowserData. Copies proxy password via local Keychain without returning it.", ["profileID": uuid, "expectedRevision": revision, "name": text], ["profileID", "expectedRevision", "name"]),
             ("folder_create", "Create a project folder. Omit parentFolderID or pass null for a root; pass an existing parentFolderID to create a nested folder.", ["name": text, "parentFolderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["name", "expectedOrganizationRevision"]),
             ("folder_rename", "Rename a project folder using its current organization revision.", ["folderID": uuid, "name": text, "expectedOrganizationRevision": optionalUUID], ["folderID", "name", "expectedOrganizationRevision"]),
-            ("folder_remove", "Remove only the folder; retain all profiles and website data, moving them to unfiled.", ["folderID": uuid, "expectedOrganizationRevision": optionalUUID], ["folderID", "expectedOrganizationRevision"]),
+            ("folder_move", "Move a project folder to the top level or under another folder. Moving into itself or a descendant is rejected; profile assignments and browser data stay unchanged. Use the current organization revision.", ["folderID": uuid, "parentFolderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["folderID", "parentFolderID", "expectedOrganizationRevision"]),
+            ("folder_remove", "Remove only the folder; keep browser data, unfile direct profile assignments and promote child folders one level. A conflicting child name prevents deletion.", ["folderID": uuid, "expectedOrganizationRevision": optionalUUID], ["folderID", "expectedOrganizationRevision"]),
             ("profile_check_proxy", BrowserEngine.webkit.isAvailableInBuild ? "Check proxy availability using bounded preflight diagnostics; does not qualify the Chromium or WebKit window route and does not change profile context." : "Check proxy availability using bounded preflight diagnostics; this does not prove the browser route and does not change profile context.", ["profileID": uuid, "expectedRevision": revision], ["profileID", "expectedRevision"]),
             ("profile_start", BrowserEngine.webkit.isAvailableInBuild ? "Start Chromium via the normal pipeline, no direct fallback. WebKit requires an already open signed NeAntik GUI, enabled MCP WebKit access and explicit approval of this connection and selected profiles. First request asks for consent; retry intentionally after approval. Disconnect leaves browsers open. Never starts the GUI automatically." : "Start a Chromium profile via the normal pipeline without direct fallback. Existing WebKit profiles cannot be started in this build.", ["profileID": uuid, "expectedRevision": revision], ["profileID", "expectedRevision"]),
             ("profile_stop", "Request graceful close of a browser owned by this live session. Poll profile_status; pending is not stopped.", ["profileID": uuid], ["profileID"])
@@ -146,6 +147,14 @@ final class MCPProfileManagement {
             case "folder_rename":
                 affectedID = try id(args, "folderID")
                 affected = try store.renameFolder(withID: affectedID, to: string(args, "name"), expectedOrganizationRevision: .some(orgRevision))
+            case "folder_move":
+                affectedID = try id(args, "folderID")
+                let parentFolderID = try nullableID(args, "parentFolderID")
+                affected = try store.moveFolder(
+                    withID: affectedID,
+                    underParentFolderID: parentFolderID,
+                    expectedOrganizationRevision: .some(orgRevision)
+                )
             case "folder_remove":
                 affectedID = try id(args, "folderID")
                 _ = try store.deleteFolder(withID: affectedID, expectedOrganizationRevision: .some(orgRevision))
@@ -524,7 +533,8 @@ final class MCPProfileManagement {
         return ProxyImportDraft(configuration: configuration, password: "")
     }
     private func dto(_ profile: BrowserProfile) -> [String: Any] {
-        WebKitMediaFeature.visibleFields(["id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name, "startURL": profile.startURL, "startupMode": profile.startupMode.rawValue, "fontPolicy": profile.engine == .chromium ? profile.fontPolicy.rawValue as Any : NSNull(), "engine": profile.engine.rawValue, "webKitMediaPolicy": profile.engine == .webkit ? profile.webKitMediaPolicy.rawValue as Any : NSNull(),
+        let folderPath = store.organization.boundedFolderPath(for: store.folderID(forProfileID: profile.id))
+        return WebKitMediaFeature.visibleFields(["id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name, "startURL": profile.startURL, "startupMode": profile.startupMode.rawValue, "fontPolicy": profile.engine == .chromium ? profile.fontPolicy.rawValue as Any : NSNull(), "engine": profile.engine.rawValue, "webKitMediaPolicy": profile.engine == .webkit ? profile.webKitMediaPolicy.rawValue as Any : NSNull(),
          "webKitBlockPeerConnections": profile.engine == .webkit ? profile.webKitBlockPeerConnections as Any : NSNull(),
          "webKitRelayOnly": profile.engine == .webkit ? profile.webKitRelayOnly as Any : NSNull(),
          "engineCapabilities": profile.engine.managementCapabilities,
@@ -532,16 +542,18 @@ final class MCPProfileManagement {
          "networkPolicyIntent": networkPolicyIntent(profile),
          "tags": profile.tags, "isPinned": profile.isPinned, "isArchived": profile.isArchived,
          "colorHex": profile.colorHex, "symbolName": profile.symbolName, "folderID": store.folderID(forProfileID: profile.id)?.uuidString as Any? ?? NSNull(),
-         "folderPath": store.folderID(forProfileID: profile.id).flatMap { store.organization.folderPath(for: $0)?.map(\.name) } ?? [],
+         "folderPath": folderPath.components, "folderPathTruncated": folderPath.truncated,
          "organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(), "proxyKind": profile.proxy?.kind.rawValue as Any? ?? NSNull()])
     }
 
     private func folderDTO(_ folder: ProfileFolder) -> [String: Any] {
-        [
+        let folderPath = store.organization.boundedFolderPath(for: folder.id)
+        return [
             "id": folder.id.uuidString,
             "name": folder.name,
             "parentFolderID": folder.parentFolderID?.uuidString as Any? ?? NSNull(),
-            "folderPath": store.organization.folderPath(for: folder.id)?.map(\.name) ?? [folder.name]
+            "folderPath": folderPath.components,
+            "folderPathTruncated": folderPath.truncated
         ]
     }
 
@@ -579,11 +591,20 @@ final class MCPProfileManagement {
         let foldersByID = Dictionary(uniqueKeysWithValues: store.organization.folders.map { ($0.id, $0) })
         let folders = store.organization.folderIDsInHierarchyOrder().compactMap { foldersByID[$0] }
         guard offset <= folders.count else { throw Failure.cursor }
-        let end = min(offset + query.limit, folders.count)
-        return ["organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(),
+        var end = min(offset + query.limit, folders.count)
+        while true {
+            let payload: [String: Any] = [
+                "organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(),
                 "folders": folders[offset..<end].map(folderDTO),
                 "count": end - offset, "totalCount": folders.count,
-                "nextCursor": end < folders.count ? query.cursor(snapshot: revision, offset: end) as Any : NSNull()]
+                "nextCursor": end < folders.count ? query.cursor(snapshot: revision, offset: end) as Any : NSNull()
+            ]
+            if try MCPStdioServer.toolResult(payload).count <= MCPStdioServer.maximumToolPayloadBytes {
+                return payload
+            }
+            guard end - offset > 1 else { throw Failure.responseLimit }
+            end = offset + max(1, (end - offset) / 2)
+        }
     }
     /// Production inventory is asynchronous. A newly queued check is not proof
     /// that a stopped browser is running. Await it, bounded and cancellable.

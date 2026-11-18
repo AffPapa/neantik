@@ -93,7 +93,7 @@ passport reports configured policy, not observed network traffic.
 
 Searchable in-app help covers profiles, proxies, organization, storage and MCP.
 **Help → Connect MCP to AI…** copies workspace-specific JSON/TOML settings.
-Read access is the default; management enables 18 tools for profile creation,
+Read access is the default; management enables 19 tools for profile creation,
 editing, duplication, proxy settings, project folders, tags, pins, archive and
 normal launch/stop. Profile and folder revisions prevent stale writes; passwords
 are write-only. Stop is graceful and owned by the live MCP session; reconnect
@@ -180,4 +180,4 @@ NeAntik-owned source files are licensed under MPL-2.0. Chromium-derived files
 retain their upstream licenses and notices. The NeAntik name and logo are
 subject to [TRADEMARKS.md](TRADEMARKS.md).
 
-MCP supports modern 2026-07-28 plus legacy handshake, project/tag queries, 18 tools in management mode; read-only mode exposes 7 of these, 3 static prompts and 7 client formats: [cookbook](docs/MCP_GUIDE.md). Official configuration compatibility is distinct from end-to-end qualification of each AI client.
+MCP supports modern 2026-07-28 plus legacy handshake, project/tag queries, 19 tools in management mode; read-only mode exposes 7 of these, 3 static prompts and 7 client formats: [cookbook](docs/MCP_GUIDE.md). Official configuration compatibility is distinct from end-to-end qualification of each AI client.

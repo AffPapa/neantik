@@ -922,6 +922,13 @@ struct ProfileOrganizationTests {
             ProfileFolder(id: childID, name: "Child", parentFolderID: rootID)
         ])
         #expect(!duplicateRootName.canMoveFolder(childID, toParentFolderID: nil))
+        var duplicateMoveState = duplicateRootName
+        do {
+            try duplicateMoveState.moveFolder(childID, toParentFolderID: nil)
+            Issue.record("Moving into a same-name sibling must fail")
+        } catch let error as ProfileOrganizationError {
+            #expect(error == .duplicateFolderName)
+        }
         #expect(throws: ProfileOrganizationError.self) {
             try state.moveFolder(rootID, toParentFolderID: leafID)
         }
@@ -937,6 +944,37 @@ struct ProfileOrganizationTests {
         #expect(state.folderID(forProfileID: rootProfile) == nil)
         #expect(state.folderID(forProfileID: leafProfile) == leafID)
         #expect(state.descendantFolderIDs(of: childID) == [leafID])
+    }
+
+    @Test
+    func movingFolderToItsCurrentParentIsARevisionPreservingNoOp() throws {
+        let parent = ProfileFolder(name: "Parent")
+        let child = ProfileFolder(name: "Child", parentFolderID: parent.id)
+        var state = ProfileOrganizationState(
+            folders: [parent, child],
+            mutationRevision: UUID()
+        )
+        let original = state
+
+        try state.moveFolder(child.id, toParentFolderID: parent.id, at: Date(timeIntervalSince1970: 99))
+
+        #expect(state == original)
+    }
+
+    @Test
+    func boundedFolderPathMarksUtf8SafeTruncation() throws {
+        let wideName = String(repeating: "🙂", count: 64)
+        let root = ProfileFolder(name: wideName)
+        let child = ProfileFolder(name: wideName, parentFolderID: root.id)
+        let state = ProfileOrganizationState(folders: [root, child])
+
+        let result = state.boundedFolderPath(for: child.id)
+
+        #expect(result.truncated)
+        #expect(result.components.first == wideName)
+        #expect(result.components.last?.hasSuffix("…") == true)
+        #expect(result.components.joined(separator: " › ").utf8.count <= 512)
+        #expect(!result.components.joined().contains("�"))
     }
 
     @Test

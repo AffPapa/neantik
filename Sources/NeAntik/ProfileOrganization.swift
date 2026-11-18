@@ -307,6 +307,35 @@ struct ProfileOrganizationState: Equatable, Sendable {
         return path.reversed()
     }
 
+    func boundedFolderPath(for folderID: UUID?, maximumUTF8Bytes: Int = 512) -> (components: [String], truncated: Bool) {
+        let path = folderID.flatMap { folderPath(for: $0)?.map(\.name) } ?? []
+        var components: [String] = []
+        var usedBytes = 0
+        let separatorBytesInPath = " › ".utf8.count
+        for component in path {
+            let separatorBytes = components.isEmpty ? 0 : separatorBytesInPath
+            let availableBytes = maximumUTF8Bytes - usedBytes - separatorBytes
+            let componentBytes = Array(component.utf8)
+            if componentBytes.count <= availableBytes {
+                components.append(component)
+                usedBytes += separatorBytes + componentBytes.count
+                continue
+            }
+            guard availableBytes >= 3 else { return (components, true) }
+            let marker = "…"
+            let prefixBudget = availableBytes - marker.utf8.count
+            var prefix = ""
+            for character in component {
+                let value = String(character)
+                guard prefix.utf8.count + value.utf8.count <= prefixBudget else { break }
+                prefix.append(character)
+            }
+            components.append(prefix + marker)
+            return (components, true)
+        }
+        return (components, false)
+    }
+
     func folderIDsInHierarchyOrder() -> [UUID] {
         var result: [UUID] = []
         var pending = Array(childFolders(of: nil).reversed())
@@ -359,6 +388,23 @@ struct ProfileOrganizationState: Equatable, Sendable {
         guard let index = folders.firstIndex(where: { $0.id == folderID }) else {
             throw ProfileOrganizationError.folderNotFound
         }
+        if let parentFolderID {
+            guard self.folder(withID: parentFolderID) != nil,
+                  parentFolderID != folderID,
+                  !descendantFolderIDs(of: folderID).contains(parentFolderID)
+            else {
+                throw ProfileOrganizationError.invalidFolderHierarchy
+            }
+        }
+        guard !folders.contains(where: {
+            $0.id != folderID &&
+                $0.parentFolderID == parentFolderID &&
+                ProfileFolder.comparisonKey($0.name) ==
+                    ProfileFolder.comparisonKey(folders[index].name)
+        }) else {
+            throw ProfileOrganizationError.duplicateFolderName
+        }
+        guard folders[index].parentFolderID != parentFolderID else { return }
         guard canMoveFolder(folderID, toParentFolderID: parentFolderID) else {
             throw ProfileOrganizationError.invalidFolderHierarchy
         }
