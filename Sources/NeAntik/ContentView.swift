@@ -91,6 +91,7 @@ private final class ProfileListStateResolver {
         let revision: UInt64
         let query: WorkspaceQueryState
         let searchText: String
+        let sort: ProfileListSort
     }
 
     func resolve(
@@ -98,7 +99,8 @@ private final class ProfileListStateResolver {
         profiles: [BrowserProfile],
         organization: ProfileOrganizationState,
         query: WorkspaceQueryState,
-        searchText: String
+        searchText: String,
+        sort: ProfileListSort
     ) -> ProfileListViewState {
         let currentIndex = resolveIndex(
             revision: requestedRevision,
@@ -108,7 +110,8 @@ private final class ProfileListStateResolver {
         let key = ViewStateKey(
             revision: requestedRevision,
             query: query,
-            searchText: searchText
+            searchText: searchText,
+            sort: sort
         )
         if viewStateKey == key, let viewState {
             return viewState
@@ -116,7 +119,8 @@ private final class ProfileListStateResolver {
         let resolved = ProfileListViewState(
             index: currentIndex,
             query: query,
-            searchText: searchText
+            searchText: searchText,
+            sort: sort
         )
         viewStateKey = key
         viewState = resolved
@@ -243,6 +247,7 @@ struct ContentView: View {
     @State private var releaseAuditTerminationScheduled = false
     @State private var releaseAuditProfiles: [BrowserProfile] = []
     @State private var profileSearchText = ""
+    @State private var profileSort: ProfileListSort = .name
     @State private var selectedProfileTag: ProfileTagID?
     @State private var profileListScope: ProfileListScope = .active
     @State private var selectedFolderFilter: ProfileFolderFilter = .all
@@ -407,7 +412,8 @@ struct ContentView: View {
             profiles: store.profiles,
             organization: store.organization,
             query: workspaceQuery,
-            searchText: profileSearchText
+            searchText: profileSearchText,
+            sort: profileSort
         )
     }
 
@@ -2638,6 +2644,13 @@ struct ContentView: View {
             .help("Каждая строка списка станет отдельным профилем")
 
             profileSearchField
+
+            Picker("Сортировка профилей", selection: $profileSort) {
+                Text("По имени").tag(ProfileListSort.name)
+                Text("Недавно открытые").tag(ProfileListSort.recentlyOpened)
+                Text("Сначала новые").tag(ProfileListSort.newest)
+            }
+            .help("Закреплённые профили всегда показываются первыми")
 
             if bulkProxyTestTask != nil || bulkProxyAction.isVisible {
                 Button {

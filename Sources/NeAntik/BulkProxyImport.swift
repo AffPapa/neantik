@@ -80,6 +80,24 @@ struct BulkProxyImportPreview: Equatable, Sendable {
         !issueLineNumbers.isEmpty
     }
 
+    /// An endpoint may intentionally serve different sessions or credentials.
+    /// This is a warning only; do not remove or merge any input rows.
+    var repeatedServerLineNumbers: [Int] {
+        struct Server: Hashable {
+            let kind: String
+            let host: String
+            let port: Int
+        }
+        var groups: [Server: [Int]] = [:]
+        for row in rows {
+            guard let config = row.draft?.configuration else { continue }
+            let server = Server(kind: config.kind.rawValue,
+                                host: config.host.lowercased(), port: config.port)
+            groups[server, default: []].append(row.lineNumber)
+        }
+        return groups.values.filter { $0.count > 1 }.flatMap { $0 }.sorted()
+    }
+
     var isReady: Bool {
         !rows.isEmpty && !hasIssues
     }
@@ -773,6 +791,20 @@ struct BulkProxyImportView: View {
     private var previewRows: some View {
         if previewIsCurrent, !preview.rows.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
+                if !preview.repeatedServerLineNumbers.isEmpty {
+                    let lines = preview.repeatedServerLineNumbers
+                    let shown = lines.prefix(12).map(String.init).joined(separator: ", ")
+                        + (lines.count > 12 ? ", …" : "")
+                    Label {
+                        Text(verbatim: String(format: NSLocalizedString(
+                            "Повторяющиеся серверы прокси найдены в строках: %@. Учётные данные и выходные IP могут различаться.",
+                            comment: "Repeated proxy server warning"), shown))
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
                 let validLimit = preview.hasIssues ? 3 : 6
                 ForEach(Array(validPreviewRows.prefix(validLimit))) { row in
                     previewRow(row)

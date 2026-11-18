@@ -4,6 +4,52 @@ import Testing
 
 struct ProfileListProjectionTests {
     @Test
+    func sortKeepsPinsFirstAndUnopenedLastWithStableTies() {
+        let t = Date(timeIntervalSince1970: 1_000)
+        let pinned = BrowserProfile(name: "Pinned", isPinned: true, createdAt: t)
+        let never = BrowserProfile(name: "Never", createdAt: t.addingTimeInterval(3))
+        let old = BrowserProfile(name: "Old", createdAt: t.addingTimeInterval(1), lastLaunchedAt: t)
+        let recent = BrowserProfile(name: "Recent", createdAt: t.addingTimeInterval(2), lastLaunchedAt: t.addingTimeInterval(1))
+        let tied = BrowserProfile(name: "A tie", createdAt: t, lastLaunchedAt: t.addingTimeInterval(1))
+        // The production store supplies the index in its canonical name order.
+        let profiles = [never, old, recent, pinned, tied]
+            .sorted(by: ProfileListProjection.areInIncreasingOrder)
+        func ordered(_ sort: ProfileListSort) -> [UUID] {
+            ProfileListViewState(profiles: profiles, organization: .empty, query: .default,
+                                 searchText: "", sort: sort).visibleProfiles.map(\.id)
+        }
+        #expect(ordered(.recentlyOpened) == [pinned.id, tied.id, recent.id, old.id, never.id])
+        #expect(ordered(.newest) == [pinned.id, never.id, recent.id, old.id, tied.id])
+        #expect(ordered(.name) == [pinned.id, tied.id, never.id, old.id, recent.id])
+        let searched = ProfileListViewState(profiles: profiles, organization: .empty,
+                                            query: .default, searchText: "recent",
+                                            sort: .recentlyOpened)
+        #expect(searched.visibleProfiles.map(\.id) == [recent.id])
+    }
+
+    @Test
+    func sortRespectsFolderAndTagAndBreaksEqualDatesByID() throws {
+        let t = Date(timeIntervalSince1970: 1_000)
+        let folder = UUID()
+        let firstID = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000001"))
+        let secondID = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000002"))
+        let first = BrowserProfile(id: firstID, name: "Same", tags: ["Work"], createdAt: t, lastLaunchedAt: t)
+        let second = BrowserProfile(id: secondID, name: "Same", tags: ["Work"], createdAt: t, lastLaunchedAt: t)
+        let otherFolder = BrowserProfile(name: "Other", tags: ["Work"], createdAt: t)
+        let otherTag = BrowserProfile(name: "Other tag", tags: ["Personal"], createdAt: t)
+        let profiles = [second, otherFolder, first, otherTag].sorted(by: ProfileListProjection.areInIncreasingOrder)
+        let organization = ProfileOrganizationState(
+            folders: [ProfileFolder(id: folder, name: "Work")],
+            assignmentsByProfileID: [first.id: folder, second.id: folder, otherTag.id: folder]
+        )
+        let query = WorkspaceQueryState(folderFilter: .folder(folder), tag: ProfileTagID(displayName: "Work"))
+        for sort in [ProfileListSort.name, .recentlyOpened, .newest] {
+            let state = ProfileListViewState(profiles: profiles, organization: organization,
+                                             query: query, searchText: "", sort: sort)
+            #expect(state.visibleProfiles.map(\.id) == [firstID, secondID])
+        }
+    }
+    @Test
     func sidebarFixedLabelsUseEnglishResourcesAndPreserveRussian() throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()

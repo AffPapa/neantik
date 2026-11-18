@@ -4,6 +4,39 @@ import Testing
 
 struct FingerprintAuditObservationTests {
     @Test
+    func summaryDoesNotConfuseDifferenceUnavailabilityAndInstability() {
+        let summary = FingerprintAuditReportPresentationPolicy.successfulSummary
+        #expect(summary([]).contains("не обнаружено"))
+        #expect(summary(["canvas"]).contains("обнаружены различия"))
+        let issue = FingerprintAuditReportPresentationPolicy.criticalObservationIssue
+        #expect(issue(true, false).contains("недоступны"))
+        #expect(issue(false, true).contains("изменились"))
+        #expect(issue(true, true).contains("недоступны"))
+        #expect(issue(true, true).contains("изменились"))
+        #expect(issue(false, false).contains("Не удалось проверить"))
+    }
+
+    @Test
+    func summaryMessagesHaveEnglishTranslations() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let english = try #require(Bundle(path: root.appendingPathComponent("Resources/en.lproj").path))
+        let keys = [
+            FingerprintAuditReportPresentationPolicy.successfulSummary(changedCriticalKeys: []),
+            FingerprintAuditReportPresentationPolicy.successfulSummary(changedCriticalKeys: ["canvas"]),
+            FingerprintAuditReportPresentationPolicy.criticalObservationIssue(unavailable: true, unstable: false),
+            FingerprintAuditReportPresentationPolicy.criticalObservationIssue(unavailable: false, unstable: true),
+            FingerprintAuditReportPresentationPolicy.criticalObservationIssue(unavailable: true, unstable: true),
+            FingerprintAuditReportPresentationPolicy.criticalObservationIssue(unavailable: false, unstable: false),
+            "NeAntik сравнит доступные параметры двух профилей и проверит стабильность первого. Данные останутся на этом Mac.",
+            "Эта проверка не подтверждает полную изоляцию профилей или фактический сетевой маршрут.",
+            "Некоторые измеренные значения меняются между запусками.",
+        ]
+        for key in keys {
+            #expect(english.localizedString(forKey: key, value: key, table: "Pages") != key)
+        }
+    }
+    @Test
     func manualReportActionRequiresExplicitTechnicalDetails() {
         #expect(
             !FingerprintAuditReportPresentationPolicy.showsManualReportAction(

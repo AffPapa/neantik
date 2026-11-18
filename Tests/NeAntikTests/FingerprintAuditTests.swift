@@ -844,6 +844,9 @@ struct FingerprintAuditTests {
         let result = report(first: first, second: second, repeatCapture: first)
         #expect(result.changedCriticalKeys.isEmpty)
         #expect(result.verdict == .unchanged) // Truthful difference summary.
+        #expect(FingerprintAuditReportPresentationPolicy.successfulSummary(
+            changedCriticalKeys: result.changedCriticalKeys
+        ).contains("различий с профилем B не обнаружено"))
         #expect(result.criticalObservationsStable)
         #expect(result.productionReleaseIssues.isEmpty)
         #expect(result.isProductionReleaseQualified)

@@ -670,6 +670,15 @@
 "Проверка пройдена" = "Check passed";
 "Проверка не пройдена" = "Check failed";
 "Профиль стабилен и отличается от другого профиля." = "The profile is stable and differs from the other profile.";
+"NeAntik сравнит доступные параметры двух профилей и проверит стабильность первого. Данные останутся на этом Mac." = "NeAntik compares available settings from two profiles and checks the first profile for stability. Data stays on this Mac.";
+"Canvas, WebGL, аудио и геометрия профиля A стабильны; среди этих четырёх измерений различий с профилем B не обнаружено." = "Canvas, WebGL, audio and geometry for profile A are stable; no differences from profile B were found among these four measurements.";
+"Canvas, WebGL, аудио и геометрия профиля A стабильны; среди этих четырёх измерений между профилями обнаружены различия." = "Canvas, WebGL, audio and geometry for profile A are stable; differences were found between the profiles among these four measurements.";
+"Эта проверка не подтверждает полную изоляцию профилей или фактический сетевой маршрут." = "This check does not establish complete profile isolation or the actual network route.";
+"Некоторые проверяемые параметры недоступны. Повтори проверку." = "Some checked values are unavailable. Run the check again.";
+"Некоторые параметры недоступны, другие изменились при повторном запуске. Повтори проверку." = "Some values are unavailable; others changed on the repeated launch. Run the check again.";
+"Некоторые измеренные значения меняются между запусками." = "Some measured values change between launches.";
+"Проверенные значения профиля A изменились при повторном запуске." = "The checked values for profile A changed on the repeated launch.";
+"Не удалось проверить стабильность параметров. Повтори проверку." = "Could not check the stability of the values. Run the check again.";
 "Технические подробности" = "Technical details";
 "Измерения доступны и повторяемы. Совпадающий результат между профилями допустим; различия показаны отдельно. Это не подтверждает изоляцию данных или сетевой маршрут." = "Measurements are available and repeatable. Matching results between profiles are acceptable; differences are shown separately. This does not establish data isolation or a network route.";
 "Часть измерений недоступна или изменилась при повторе. Проверка не подтверждена." = "Some measurements are unavailable or changed on repetition. The check is not verified.";

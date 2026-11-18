@@ -3,6 +3,33 @@ import Testing
 @testable import NeAntik
 
 struct BulkProxyImportTests {
+    @Test func repeatedServersWarnWithoutRemovingProfilesOrExposingCredentials() throws {
+        let input = """
+        first:secret-one@Proxy.Example:8080
+
+        second:secret-two@proxy.example:8080
+        http://proxy.example:8081
+        https://proxy.example:8080
+        """
+        let preview = try BulkProxyImportParser.preview(input, kind: .http, order: .automatic)
+        #expect(preview.isReady)
+        #expect(preview.drafts.count == 4)
+        #expect(preview.repeatedServerLineNumbers == [1, 3])
+        #expect(try BulkProxyImportParser.parse(input, kind: .http, order: .automatic).count == 4)
+        let exposed = preview.repeatedServerLineNumbers.map(String.init).joined(separator: ", ")
+        #expect(!exposed.contains("secret") && !exposed.contains("first") && !exposed.contains("second"))
+    }
+
+    @Test func repeatedServerWarningsIgnoreInvalidRowsAndKeepOriginalLineNumbers() throws {
+        let preview = try BulkProxyImportParser.preview(
+            "proxy.example:80\n\ninvalid host:80\nproxy.example:80",
+            kind: .http, order: .automatic
+        )
+        #expect(preview.issueLineNumbers == [3])
+        #expect(preview.repeatedServerLineNumbers == [1, 4])
+        #expect(!preview.isReady)
+    }
+
     @MainActor @Test
     func previewLocalizesSystemTextWithoutExposingCredentials() throws {
         let root = URL(fileURLWithPath: #filePath)
@@ -11,6 +38,8 @@ struct BulkProxyImportTests {
         let ru = try #require(Bundle(path: root.appendingPathComponent("Resources/ru.lproj").path))
         #expect(BulkProxyImportView.defaultBaseName(bundle: en) == "Proxy")
         #expect(BulkProxyImportView.defaultBaseName(bundle: ru) == "Прокси")
+        let warning = "Повторяющиеся серверы прокси найдены в строках: %@. Учётные данные и выходные IP могут различаться."
+        #expect(en.localizedString(forKey: warning, value: warning, table: nil) != warning)
         let preview = try BulkProxyImportParser.preview(
             "user:synthetic-secret@203.0.113.10:50100\n203.0.113.11:50101",
             kind: .http, order: .automatic
