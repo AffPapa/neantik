@@ -30,6 +30,30 @@ the application. Then verify that the application and selected certificate
 are usable. Make an owner-only work directory and copy the application there.
 Preserve the original signed bundle as the rollback copy.
 
+For the pinned NeAntik Developer ID certificate and a shipped manager with
+backup enabled, retain the original provisioning profile as a read-only input.
+The signing helper below is pinned to that certificate; it is not a general
+signer for other certificates. Run this selection **before** modifying the
+copy, and keep these variables for both signing steps:
+
+```bash
+set -euo pipefail
+codesign --verify --deep --strict "$shipped"
+pinned_backup=0
+identity_upper=$(printf '%s' "$identity" | tr '[:lower:]' '[:upper:]')
+if [ "$identity_upper" = "474F7C78F33EE324C24F6F5AE0443EB713E85E60" ]; then
+    backup_state=$(python3 -B scripts/direct_backup_signing.py state "$shipped") || exit 1
+    if [ "$backup_state" != "enabled" ]; then
+        echo "This pinned-certificate example requires a backup-enabled source app." >&2
+        exit 1
+    fi
+    pinned_backup=1
+    export NEANTIK_BROWSER_DATA_BACKUP_ENABLED=1
+    export NEANTIK_DIRECT_PROVISIONING_PROFILE="$shipped/Contents/embedded.provisionprofile"
+    python3 -B scripts/direct_backup_signing.py preflight "$shipped" "$identity" || exit 1
+fi
+```
+
 ```bash
 set -euo pipefail
 codesign --verify --deep --strict "$shipped"
@@ -39,7 +63,17 @@ ditto "$shipped" "$copy"
 host="$copy/Contents/Helpers/webkit-v1/NeAntikWebKitHost.app"
 cp -p "$host/Contents/MacOS/NeAntikWebKitHost" "$work/NeAntikWebKitHost"
 mv "$host" "$work/original-WebKit-host.app"
+if [ "$pinned_backup" -eq 1 ]; then
+    python3 -B scripts/direct_backup_signing.py sign "$copy" "$identity"
+fi
 ```
+
+Moving the host invalidates the copied manager's signature. The pinned backup
+case is re-signed above because the Frameworks signing helper verifies the
+manager before signing. Other recipients must likewise have a valid signed
+manager before invoking that helper; the different-team procedure below signs
+its modified manager. Preserve or explicitly disable capabilities as required
+for the recipient's signing identity; do not silently drop provisioning.
 
 Keep the release's compiled warning-color catalog in the relink. Xcode
 embeds the build time and compiler metadata in `Assets.car`, so a fresh
@@ -139,7 +173,11 @@ python3 -B scripts/package-webkit-host.py --recipient-relink --app "$copy" \
   --identity "$identity" --network-sandbox-sha256 "$sandbox_pin" \
   --source-offer-root "$offer" --source-offer-manifest-sha256 "$offer_pin" \
   --recipient-stage "$stage" --recipient-stage-sha256 "$stage_pin"
-codesign --force --options runtime --timestamp --sign "$identity" "$copy"
+if [ "$pinned_backup" -eq 1 ]; then
+  python3 -B scripts/direct_backup_signing.py sign "$copy" "$identity"
+else
+  codesign --force --options runtime --timestamp --sign "$identity" "$copy"
+fi
 codesign --verify --deep --strict "$copy"
 python3 -B scripts/verify-webkit-host-pin.py "$copy" --require-network-sandbox-pin --require-detached-presenter
 python3 -B scripts/webkit_runtime_notices.py --verify --app "$copy" \
