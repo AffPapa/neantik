@@ -103,10 +103,17 @@ struct BulkProxyImportPreview: Equatable, Sendable {
     }
 }
 
-struct BulkProxyImportPreviewRequest: Equatable, Sendable {
+struct BulkProxyImportPreviewRequest: Equatable, Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     let text: String
     let kind: ProxyKind
     let order: ProxyImportOrder
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.kind == rhs.kind && lhs.order == rhs.order && lhs.text.utf8.elementsEqual(rhs.text.utf8)
+    }
+    var description: String { "BulkProxyImportPreviewRequest(<redacted>)" }
+    var debugDescription: String { description }
+    var customMirror: Mirror { Mirror(self, children: [:]) }
 }
 
 enum BulkProxyImportPreviewComputation {
