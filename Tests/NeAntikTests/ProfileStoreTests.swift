@@ -172,6 +172,38 @@ struct ProfileStoreTests {
     }
 
     @Test
+    func createsMovesAndDeletesNestedFoldersWithoutChangingProfileAssignment() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
+        let profile = try store.upsert(BrowserProfile(name: "Nested profile"))
+        let parent = try store.createFolder(named: "Campaigns")
+        let child = try store.createFolder(
+            named: "Travel",
+            underParentFolderID: parent.id
+        )
+        try store.assignProfile(profile.id, toFolderID: child.id)
+
+        #expect(store.organization.folderPath(for: child.id)?.map(\.name) == ["Campaigns", "Travel"])
+        #expect(store.folderID(forProfileID: profile.id) == child.id)
+
+        let sameLeafName = try store.createFolder(named: "Travel")
+        #expect(sameLeafName.parentFolderID == nil)
+        let secondParent = try store.createFolder(named: "Regions")
+        try store.moveFolder(withID: sameLeafName.id, underParentFolderID: secondParent.id)
+        #expect(store.folder(withID: sameLeafName.id)?.parentFolderID == secondParent.id)
+        #expect(throws: ProfileOrganizationError.self) {
+            try store.moveFolder(withID: parent.id, underParentFolderID: child.id)
+        }
+
+        _ = try store.deleteFolder(withID: parent.id)
+        #expect(store.folder(withID: child.id)?.parentFolderID == nil)
+        #expect(store.folderID(forProfileID: profile.id) == child.id)
+        #expect(ProfileStore(paths: store.paths).folderID(forProfileID: profile.id) == child.id)
+    }
+
+    @Test
     func missingPrimaryRestoresProfilesBeforeAnotherSave() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -452,6 +484,40 @@ struct ProfileStoreTests {
                     store.folderID(forProfileID: profile.id)
             )
         }
+    }
+
+    @Test
+    func importedFolderPathsRecreateNestedHierarchyAndReuseExistingBranches() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = ProfileStore(paths: AppPaths(rootDirectory: root))
+        let first = BrowserProfile(name: "First")
+        let second = BrowserProfile(name: "Second")
+
+        let saved = try await store.insertImportedProfilesOffMainActor(
+            [first, second],
+            folderNames: ["Japan", "Travel"],
+            folderPaths: [["Projects", "Japan"], ["Projects", "Travel"]]
+        )
+
+        let rootFolder = try #require(store.organization.folders.first {
+            $0.name == "Projects" && $0.parentFolderID == nil
+        })
+        let japan = try #require(store.organization.folders.first {
+            $0.name == "Japan" && $0.parentFolderID == rootFolder.id
+        })
+        let travel = try #require(store.organization.folders.first {
+            $0.name == "Travel" && $0.parentFolderID == rootFolder.id
+        })
+        #expect(store.folderID(forProfileID: saved[0].id) == japan.id)
+        #expect(store.folderID(forProfileID: saved[1].id) == travel.id)
+
+        let reloaded = ProfileStore(paths: store.paths)
+        #expect(reloaded.organization.folderPath(for: japan.id)?.map(\.name) == ["Projects", "Japan"])
+        #expect(reloaded.organization.folderPath(for: travel.id)?.map(\.name) == ["Projects", "Travel"])
+        #expect(reloaded.folderID(forProfileID: saved[0].id) == japan.id)
+        #expect(reloaded.folderID(forProfileID: saved[1].id) == travel.id)
     }
 
     @Test

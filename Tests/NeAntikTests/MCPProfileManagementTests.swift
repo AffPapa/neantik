@@ -741,14 +741,43 @@ struct MCPProfileManagementTests {
         let initial = try await engine.call("folder_list", [:])
         let folders = try await engine.call("folder_create", ["name": "Project", "expectedOrganizationRevision": initial["organizationRevision"]!])
         let folder = try #require((folders["folders"] as? [[String: Any]])?.first)
+        let childReceipt = try await engine.call("folder_create", [
+            "name": "Japan",
+            "parentFolderID": folder["id"]!,
+            "expectedOrganizationRevision": folders["organizationRevision"]!
+        ])
+        let child = try #require((childReceipt["folders"] as? [[String: Any]])?.first)
+        #expect(child["parentFolderID"] as? String == folder["id"] as? String)
+        #expect(child["folderPath"] as? [String] == ["Project", "Japan"])
         await #expect(throws: ProfileMetadataUndoConflict.self) { try await engine.call("folder_create", ["name": "Stale", "expectedOrganizationRevision": initial["organizationRevision"]!]) }
-        var move = request(profile); move["folderID"] = folder["id"]!; move["expectedOrganizationRevision"] = folders["organizationRevision"]!
+        var move = request(profile); move["folderID"] = child["id"]!; move["expectedOrganizationRevision"] = childReceipt["organizationRevision"]!
         let moved = try await engine.call("profile_move", move)
-        #expect(moved["folderID"] as? String == folder["id"] as? String)
+        #expect(moved["folderID"] as? String == child["id"] as? String)
+        #expect(moved["folderPath"] as? [String] == ["Project", "Japan"])
+        let listed = try await engine.call("folder_list", [:])
+        let listedFolders = try #require(listed["folders"] as? [[String: Any]])
+        #expect(listedFolders.map { $0["folderPath"] as? [String] } == [["Project"], ["Project", "Japan"]])
+        #expect(listedFolders[0]["parentFolderID"] is NSNull)
+        #expect(listedFolders[1]["parentFolderID"] as? String == folder["id"] as? String)
+        let fetched = try await engine.call("profile_get", ["profileID": profile["id"]!])
+        #expect(fetched["folderPath"] as? [String] == ["Project", "Japan"])
         let removed = try await engine.call("folder_remove", ["folderID": folder["id"]!, "expectedOrganizationRevision": moved["organizationRevision"]!])
         #expect((removed["folders"] as? [[String: Any]])?.isEmpty == true)
-        #expect(try await engine.call("profile_get", ["profileID": profile["id"]!])["folderID"] is NSNull)
+        let afterRemoval = try await engine.call("profile_get", ["profileID": profile["id"]!])
+        #expect(afterRemoval["folderID"] as? String == child["id"] as? String)
+        #expect(afterRemoval["folderPath"] as? [String] == ["Japan"])
         #expect(engine.store.profiles.count == 1)
+    }
+
+    @Test func folderCreateSchemaAcceptsOptionalParentFolderID() throws {
+        let definition = try #require(MCPProfileManagement.definitions(allowsManagement: true).first {
+            $0["name"] as? String == "folder_create"
+        })
+        let schema = try #require(definition["inputSchema"] as? [String: Any])
+        let properties = try #require(schema["properties"] as? [String: Any])
+        let required = try #require(schema["required"] as? [String])
+        #expect(properties["parentFolderID"] != nil)
+        #expect(!required.contains("parentFolderID"))
     }
     @Test func proxyCredentialsAreRejectedAndEndpointOnlyConfigurationWorks() async throws {
         let (root, engine, backend) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }

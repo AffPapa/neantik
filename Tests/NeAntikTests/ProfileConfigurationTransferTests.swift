@@ -4,6 +4,30 @@ import Testing
 
 struct ProfileConfigurationTransferTests {
     @Test
+    func nestedFolderPathUsesVersionEightAndRoundTrips() throws {
+        let profile = BrowserProfile(name: "Nested", tags: ["local"])
+        let document = try ProfileConfigurationTransferDocument(
+            profiles: [profile],
+            folderNameByProfileID: [profile.id: "Travel"],
+            folderPathByProfileID: [profile.id: ["Projects", "Travel"]],
+            exportedAt: Date(timeIntervalSince1970: 1_800_000_000)
+        )
+        #expect(document.schemaVersion == 8)
+        #expect(document.profiles[0].folderName == "Travel")
+        #expect(document.folderPath(at: 0) == ["Projects", "Travel"])
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode(
+            ProfileConfigurationTransferDocument.self,
+            from: encoder.encode(document)
+        )
+        #expect(decoded == document)
+    }
+
+    @Test
     func isolatedWebKitRuntimeGenerationIsVersionedAndPreservedByTransfer() throws {
         let profile = BrowserProfile(name: "Owned WebKit", startURL: "about:blank", engine: .webkit,
                                      webKitRuntimeGeneration: .isolatedV1)

@@ -88,6 +88,7 @@ struct ProfileFolderCommandProjection: Equatable, Sendable {
     static func resolve(
         folders: [ProfileFolder],
         currentFolderID: UUID?,
+        organization: ProfileOrganizationState = .empty,
         limit: Int = defaultLimit
     ) -> Self {
         // ProfileOrganizationState maintains this array in display order.
@@ -117,9 +118,11 @@ struct ProfileFolderCommandProjection: Equatable, Sendable {
                 isSelected: currentFolderID == nil
             )
         ] + visibleFolders.map { folder in
-            ProfileFolderCommandOption(
+            let path = organization.folderPath(for: folder.id)?.map(\.name)
+                ?? [folder.name]
+            return ProfileFolderCommandOption(
                 folderID: folder.id,
-                title: folder.name,
+                title: path.joined(separator: " › "),
                 isSelected: currentFolderID == folder.id
             )
         }

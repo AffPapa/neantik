@@ -17,6 +17,7 @@ struct ProfileSnapshotDocument: Codable, Equatable, Sendable {
     init(
         profiles: [BrowserProfile],
         folderNameByProfileID: [UUID: String],
+        folderPathByProfileID: [UUID: [String]] = [:],
         createdAt: Date = Date()
     ) throws {
         guard createdAt.timeIntervalSinceReferenceDate.isFinite else {
@@ -33,6 +34,7 @@ struct ProfileSnapshotDocument: Codable, Equatable, Sendable {
         configuration = try ProfileConfigurationTransferDocument(
             profiles: profiles,
             folderNameByProfileID: folderNameByProfileID,
+            folderPathByProfileID: folderPathByProfileID,
             exportedAt: createdAt
         )
     }
@@ -113,6 +115,7 @@ enum ProfileSnapshotStore {
     static func save(
         profiles: [BrowserProfile],
         folderNameByProfileID: [UUID: String],
+        folderPathByProfileID: [UUID: [String]] = [:],
         paths: AppPaths,
         createdAt: Date = Date(),
         afterWrite: () throws -> Void = {}
@@ -120,6 +123,7 @@ enum ProfileSnapshotStore {
         let document = try ProfileSnapshotDocument(
             profiles: profiles,
             folderNameByProfileID: folderNameByProfileID,
+            folderPathByProfileID: folderPathByProfileID,
             createdAt: createdAt
         )
         let encoder = JSONEncoder()

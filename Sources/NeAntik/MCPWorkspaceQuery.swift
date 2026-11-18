@@ -80,7 +80,9 @@ struct MCPWorkspaceQuery: Sendable {
         // pagination just as a profile edit does. Hashes never expose private values.
         let snapshot = Self.hash(try encoder.encode(profiles) + encoder.encode(ProfileOrganizationDocument(state: organization)))
         try Task.checkCancellation()
-        let folderNames = Dictionary(uniqueKeysWithValues: organization.folders.map { ($0.id, ProfileTagID(rawValue: $0.name).rawValue) })
+        let folderPaths = Dictionary(uniqueKeysWithValues: organization.folders.map { folder in
+            (folder.id, organization.folderPath(for: folder.id)?.map(\.name) ?? [folder.name])
+        })
         let matches = try profiles.filter { profile in
             try Task.checkCancellation()
             guard profile.isArchived == archived, pinned == nil || profile.isPinned == pinned else { return false }
@@ -88,7 +90,8 @@ struct MCPWorkspaceQuery: Sendable {
             if let folder, folder != id { return false }
             let profileTags = Set(profile.tags.map { ProfileTagID(rawValue: $0).rawValue })
             guard tags.allSatisfy(profileTags.contains) else { return false }
-            return text.isEmpty || ([ProfileTagID(rawValue: profile.name).rawValue] + Array(profileTags) + [id.flatMap { folderNames[$0] } ?? ""]).contains { $0.contains(text) }
+            let pathTerms = id.flatMap { folderPaths[$0] } ?? []
+            return text.isEmpty || ([ProfileTagID(rawValue: profile.name).rawValue] + Array(profileTags) + pathTerms.map { ProfileTagID(rawValue: $0).rawValue }).contains { $0.contains(text) }
         }
         let offset = try offset(snapshot: snapshot)
         guard offset <= matches.count else { throw MCPProfileManagement.Failure.cursor }
@@ -99,6 +102,7 @@ struct MCPWorkspaceQuery: Sendable {
                 "id": profile.id.uuidString, "revision": String(profile.revision), "name": profile.name,
                 "tags": profile.tags, "isPinned": profile.isPinned, "isArchived": profile.isArchived,
                 "folderID": organization.folderID(forProfileID: profile.id)?.uuidString as Any? ?? NSNull(),
+                "folderPath": organization.folderID(forProfileID: profile.id).flatMap { organization.folderPath(for: $0)?.map(\.name) } ?? [],
                 "processState": "unverified"
             ] }
             let payload: [String: Any] = ["profiles": values, "count": values.count, "totalCount": matches.count,

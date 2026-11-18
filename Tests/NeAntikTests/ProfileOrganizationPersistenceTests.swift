@@ -113,6 +113,48 @@ struct ProfileOrganizationPersistenceTests {
     }
 
     @Test
+    func openingSchemaOneOrganizationMigratesFolderIDsAssignmentsAndRevision() throws {
+        let fixture = try OrganizationFixture()
+        let profile = try fixture.store.upsert(BrowserProfile(name: "Migrated"))
+        let rootID = UUID()
+        let childID = UUID()
+        let revision = UUID()
+        let legacy = ProfileOrganizationDocument(
+            schemaVersion: 1,
+            folders: [
+                ProfileFolder(id: rootID, name: "Campaigns"),
+                ProfileFolder(id: childID, name: "Travel")
+            ],
+            assignments: [ProfileFolderAssignment(profileID: profile.id, folderID: childID)],
+            mutationRevision: revision
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        try fixture.paths.writePrivateFile(
+            encoder.encode(legacy),
+            to: fixture.paths.profileOrganizationFile
+        )
+
+        let migrated = ProfileStore(paths: fixture.paths)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let persisted = try decoder.decode(
+            ProfileOrganizationDocument.self,
+            from: Data(contentsOf: fixture.paths.profileOrganizationFile)
+        )
+
+        #expect(migrated.hasTrustedOrganization)
+        #expect(migrated.organization.folder(withID: rootID) != nil)
+        #expect(migrated.organization.folder(withID: childID) != nil)
+        #expect(migrated.folderID(forProfileID: profile.id) == childID)
+        #expect(persisted.schemaVersion == ProfileOrganizationDocument.currentSchemaVersion)
+        #expect(persisted.assignments == [ProfileFolderAssignment(profileID: profile.id, folderID: childID)])
+        #expect(persisted.mutationRevision == migrated.organization.mutationRevision)
+        #expect(persisted.mutationRevision != revision)
+    }
+
+    @Test
     func legacyZWJFolderReloadsAndSurvivesAssignmentUpdate() throws {
         let fixture = try OrganizationFixture()
         let profile = BrowserProfile(name: "Profile")

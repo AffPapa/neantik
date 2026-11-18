@@ -199,6 +199,7 @@ struct ResponsiveLayoutRenderTests {
                 folders: (0..<24).map {
                     ProfileFolder(name: "Папка \($0 + 1)")
                 },
+                organization: .empty,
                 selectedFolderID: nil,
                 onSelect: { _ in }
             ),

@@ -24,6 +24,12 @@ private struct EditorRequest: Identifiable {
 private struct FolderNameRequest: Identifiable {
     let id = UUID()
     let folder: ProfileFolder?
+    let parentFolderID: UUID?
+
+    init(folder: ProfileFolder?, parentFolderID: UUID? = nil) {
+        self.folder = folder
+        self.parentFolderID = parentFolderID
+    }
 }
 
 private struct ProfileFolderPickerRequest: Identifiable {
@@ -803,10 +809,16 @@ struct ContentView: View {
         .sheet(item: $folderNameRequest) { request in
             ProfileFolderNameSheet(
                 title: request.folder == nil
-                    ? NSLocalizedString("Новая папка", comment: "Create folder title")
+                    ? NSLocalizedString(
+                        request.parentFolderID == nil ? "Новая папка" : "Новая подпапка",
+                        comment: "Create folder title"
+                    )
                     : NSLocalizedString("Переименовать папку", comment: "Rename folder title"),
                 initialName: request.folder?.name ?? "",
-                existingNames: store.organization.folders.map(\.name)
+                existingNames: store.organization.folders.filter {
+                    $0.id != request.folder?.id &&
+                        $0.parentFolderID == (request.folder?.parentFolderID ?? request.parentFolderID)
+                }.map(\.name)
             ) { name in
                 if let folder = request.folder {
                     _ = try store.renameFolder(
@@ -814,7 +826,10 @@ struct ContentView: View {
                         to: name
                     )
                 } else {
-                    let folder = try store.createFolder(named: name)
+                    let folder = try store.createFolder(
+                        named: name,
+                        underParentFolderID: request.parentFolderID
+                    )
                     selectedFolderFilter = .folder(folder.id)
                     selectedProfileTag = nil
                     normalizeSelection()
@@ -826,6 +841,7 @@ struct ContentView: View {
                 ProfileFolderPickerSheet(
                     profileName: profile.name,
                     folders: store.organization.folders,
+                    organization: store.organization,
                     selectedFolderID: store.folderID(
                         forProfileID: profile.id
                     )
@@ -1016,10 +1032,16 @@ struct ContentView: View {
             let count = store.organization.profileIDs(
                 inFolderID: folder.id
             ).count
-            Text(verbatim: String(
-                format: NSLocalizedString("Папка «%@» будет удалена. %ld %@ останутся и перейдут в «Без папки».", comment: "Folder deletion confirmation"),
-                folder.name, count, profileCountWord(count)
-            ))
+            let childCount = store.organization.childFolders(of: folder.id).count
+            VStack(alignment: .leading, spacing: 4) {
+                Text(verbatim: String(
+                    format: NSLocalizedString("Папка «%@» будет удалена. %ld %@ останутся и перейдут в «Без папки».", comment: "Folder deletion confirmation"),
+                    folder.name, count, profileCountWord(count)
+                ))
+                if childCount > 0 {
+                    Text("Вложенные папки останутся и поднимутся на один уровень.")
+                }
+            }
         }
         .alert(
             launchPreparationFailure?.title ?? "Не удалось запустить",
@@ -1263,6 +1285,7 @@ struct ContentView: View {
             creationTemplate: request.creationTemplate,
             keychain: keychain,
             folders: store.organization.folders,
+            organization: store.organization,
             initialFolderID: initialFolderID,
             suggestedTags: suggestedTags,
             paths: store.paths,
@@ -1666,6 +1689,26 @@ struct ContentView: View {
         folderNameRequest = FolderNameRequest(folder: nil)
     }
 
+    private func beginCreatingSubfolder(of folderID: UUID) {
+        guard !isWorkspaceModalPresented else { return }
+        folderNameRequest = FolderNameRequest(
+            folder: nil,
+            parentFolderID: folderID
+        )
+    }
+
+    private func folderPathsByProfileID(
+        for profiles: [BrowserProfile]
+    ) -> [UUID: [String]] {
+        Dictionary(uniqueKeysWithValues: profiles.compactMap { profile in
+            guard let folderID = store.folderID(forProfileID: profile.id),
+                  let path = store.organization.folderPath(for: folderID)?.map(\.name) else {
+                return nil
+            }
+            return (profile.id, path)
+        })
+    }
+
     private func runBackgroundFileOperation(
         _ operation: @escaping @MainActor () async -> Void
     ) {
@@ -1728,6 +1771,7 @@ struct ContentView: View {
                 return (profile.id, folder.name)
             }
         )
+        let folderPaths = folderPathsByProfileID(for: stoppedProfiles)
         runBackgroundFileOperation {
             defer { isPreparingProfileExport = false }
             do {
@@ -1735,7 +1779,8 @@ struct ContentView: View {
                 guard let exportedCount = try await
                     ProfileConfigurationTransferFileCoordinator.export(
                         profiles: stoppedProfiles,
-                        folderNameByProfileID: folderNames
+                        folderNameByProfileID: folderNames,
+                        folderPathByProfileID: folderPaths
                     ) else {
                     return
                 }
@@ -1796,7 +1841,10 @@ struct ContentView: View {
                 try Task.checkCancellation()
                 let saved = try await store.insertImportedProfilesOffMainActor(
                     imported,
-                    folderNames: document.profiles.map(\.folderName)
+                    folderNames: document.profiles.map(\.folderName),
+                    folderPaths: document.profiles.indices.map {
+                        document.folderPath(at: $0)
+                    }
                 )
                 if let first = saved.first {
                     revealSavedProfile(first)
@@ -1830,6 +1878,7 @@ struct ContentView: View {
                 return (profile.id, folder.name)
             }
         )
+        let folderPaths = folderPathsByProfileID(for: stoppedProfiles)
         isSavingLocalSnapshot = true
         runBackgroundFileOperation {
             defer { isSavingLocalSnapshot = false }
@@ -1838,6 +1887,7 @@ struct ContentView: View {
                 _ = try await ProfileSnapshotFileService.save(
                     profiles: stoppedProfiles,
                     folderNameByProfileID: folderNames,
+                    folderPathByProfileID: folderPaths,
                     paths: store.paths
                 )
                 let summary = ProfileSnapshotSaveSummary(
@@ -1883,7 +1933,8 @@ struct ContentView: View {
             do {
                 let saved = try await store.insertImportedProfilesOffMainActor(
                     prepared.profiles,
-                    folderNames: prepared.folderNames
+                    folderNames: prepared.folderNames,
+                    folderPaths: prepared.folderPaths
                 )
                 pendingSnapshotRestore = nil
                 if let first = saved.first {
@@ -1945,6 +1996,7 @@ struct ContentView: View {
                 return (profile.id, folder.name)
             }
         )
+        let folderPaths = folderPathsByProfileID(for: stoppedProfiles)
         runBackgroundFileOperation {
             defer { isPreparingProfileExport = false }
             do {
@@ -1954,6 +2006,7 @@ struct ContentView: View {
                         .exportEncrypted(
                             profiles: stoppedProfiles,
                             folderNameByProfileID: folderNames,
+                            folderPathByProfileID: folderPaths,
                             passphrase: passphrase
                         ) else {
                     return
@@ -1989,7 +2042,10 @@ struct ContentView: View {
                 try Task.checkCancellation()
                 let saved = try await store.insertImportedProfilesOffMainActor(
                     imported,
-                    folderNames: document.profiles.map(\.folderName)
+                    folderNames: document.profiles.map(\.folderName),
+                    folderPaths: document.profiles.indices.map {
+                        document.folderPath(at: $0)
+                    }
                 )
                 if let first = saved.first {
                     revealSavedProfile(first)
@@ -2183,8 +2239,8 @@ struct ContentView: View {
     ) -> some View {
         let sourceIndex = listState.index
         let tagSummaries = listState.tagSummaries
-        let folderPreview = ProfileListProjection.folderPreview(
-            store.organization.folders,
+        let folderPreview = ProfileListProjection.folderTreePreview(
+            store.organization,
             selectedID: selectedFolderID,
             limit: showsAllFolders
                 ? .max
@@ -2315,7 +2371,8 @@ struct ContentView: View {
                         )
                     }
 
-                    ForEach(folderPreview.visibleItems) { folder in
+                    ForEach(folderPreview.visibleItems) { row in
+                        let folder = row.folder
                         sourceButton(
                             title: folder.name,
                             systemImage: "folder",
@@ -2334,7 +2391,11 @@ struct ContentView: View {
                                 )
                             )
                         }
+                        .padding(.leading, CGFloat(row.depth) * 12)
                         .contextMenu {
+                            Button("Новая подпапка…", systemImage: "folder.badge.plus") {
+                                beginCreatingSubfolder(of: folder.id)
+                            }
                             Button("Переименовать…", systemImage: "pencil") {
                                 folderNameRequest = FolderNameRequest(folder: folder)
                             }
@@ -3081,7 +3142,8 @@ struct ContentView: View {
         let currentFolderID = store.folderID(forProfileID: profile.id)
         let folderProjection = ProfileFolderCommandProjection.resolve(
             folders: store.organization.folders,
-            currentFolderID: currentFolderID
+            currentFolderID: currentFolderID,
+            organization: store.organization
         )
         var presentation = ProfileCommandPresentation.resolve(
                 profile: profile,

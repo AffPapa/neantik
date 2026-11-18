@@ -8,7 +8,7 @@ import Foundation
 /// profile IDs and a new browser identity so a configuration file cannot clone
 /// a live session or silently reuse an identity.
 struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
-    static let currentSchemaVersion = 7
+    static let currentSchemaVersion = 8
     static let maximumProfileCount = ProfileStorageLimits.maximumProfileCount
 
     let schemaVersion: Int
@@ -18,6 +18,7 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
     init(
         profiles: [BrowserProfile],
         folderNameByProfileID: [UUID: String] = [:],
+        folderPathByProfileID: [UUID: [String]] = [:],
         exportedAt: Date = Date()
     ) throws {
         guard profiles.count <= Self.maximumProfileCount else {
@@ -27,7 +28,9 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
             throw ProfileConfigurationTransferError.invalidDate
         }
 
-        if profiles.contains(where: \.webKitRelayOnly) {
+        if profiles.contains(where: { folderPathByProfileID[$0.id, default: []].count > 1 }) {
+            self.schemaVersion = Self.currentSchemaVersion
+        } else if profiles.contains(where: \.webKitRelayOnly) {
             self.schemaVersion = 7
         } else if profiles.contains(where: { $0.privacyPolicy != .legacy }) {
             self.schemaVersion = 6
@@ -42,10 +45,12 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
         }
         self.exportedAt = exportedAt
         self.profiles = try profiles.map { profile in
-            let folderName = folderNameByProfileID[profile.id]
+            let folderPath = folderPathByProfileID[profile.id]
+            let folderName = folderPath?.last ?? folderNameByProfileID[profile.id]
             return try ProfileConfigurationTransferEntry(
                 profile: profile,
-                folderName: folderName
+                folderName: folderName,
+                folderPath: folderPath
             )
         }
     }
@@ -76,6 +81,9 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
               (schemaVersion < 6 || !profiles.contains(where: { $0.privacyPolicy == nil })),
               (schemaVersion >= 7 || !profiles.contains(where: { $0.webKitRelayOnly == true })),
               (schemaVersion < 7 || !profiles.contains(where: { $0.webKitRelayOnly == nil })) else {
+            throw ProfileConfigurationTransferError.unsupportedSchema
+        }
+        guard schemaVersion >= 8 || !profiles.contains(where: { ($0.folderPath?.count ?? 0) > 1 }) else {
             throw ProfileConfigurationTransferError.unsupportedSchema
         }
         guard !profiles.isEmpty else {
@@ -134,6 +142,12 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
         return profiles[index].folderName
     }
 
+    func folderPath(at index: Int) -> [String]? {
+        guard profiles.indices.contains(index) else { return nil }
+        if let path = profiles[index].folderPath { return path }
+        return profiles[index].folderName.map { [$0] }
+    }
+
     private enum CodingKeys: String, CodingKey {
         case schemaVersion
         case exportedAt
@@ -144,9 +158,25 @@ struct ProfileConfigurationTransferDocument: Codable, Equatable, Sendable {
         in profiles: [ProfileConfigurationTransferEntry]
     ) throws {
         for profile in profiles {
-            guard let folderName = profile.folderName else { continue }
-            guard let normalized = ProfileFolder.normalizedName(folderName),
-                  normalized == folderName else {
+            if let folderName = profile.folderName {
+                guard let normalized = ProfileFolder.normalizedName(folderName),
+                      normalized == folderName else {
+                    throw ProfileConfigurationTransferError.invalidFolderName
+                }
+            }
+            if let folderPath = profile.folderPath {
+                guard !folderPath.isEmpty,
+                      folderPath.allSatisfy({ ProfileFolder.normalizedName($0) == $0 }),
+                      folderPath.last == profile.folderName else {
+                    throw ProfileConfigurationTransferError.invalidFolderName
+                }
+            }
+            if profile.folderPath?.count ?? 0 > 1 {
+                guard profile.folderName == profile.folderPath?.last else {
+                    throw ProfileConfigurationTransferError.invalidFolderName
+                }
+            }
+            if profile.folderName == nil && profile.folderPath != nil {
                 throw ProfileConfigurationTransferError.invalidFolderName
             }
         }
@@ -170,6 +200,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
     let privacyPolicy: BrowserPrivacyPolicy?
     let proxy: ProxyConfiguration?
     let folderName: String?
+    let folderPath: [String]?
 
     init(
         name: String,
@@ -187,7 +218,8 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         webKitRelayOnly: Bool? = nil,
         privacyPolicy: BrowserPrivacyPolicy? = nil,
         proxy: ProxyConfiguration?,
-        folderName: String?
+        folderName: String?,
+        folderPath: [String]? = nil
     ) {
         self.name = name
         self.colorHex = colorHex
@@ -205,17 +237,25 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         self.privacyPolicy = privacyPolicy
         self.proxy = proxy
         self.folderName = folderName
+        self.folderPath = folderPath
     }
 
     init(
         profile: BrowserProfile,
-        folderName: String?
+        folderName: String?,
+        folderPath: [String]? = nil
     ) throws {
         guard let normalized = profile.normalizedForPersistence() else {
             throw ProfileConfigurationTransferError.invalidProfile
         }
         if let folderName,
            ProfileFolder.normalizedName(folderName) != folderName {
+            throw ProfileConfigurationTransferError.invalidFolderName
+        }
+        if let folderPath,
+           folderPath.isEmpty ||
+            !folderPath.allSatisfy({ ProfileFolder.normalizedName($0) == $0 }) ||
+            folderPath.last != folderName {
             throw ProfileConfigurationTransferError.invalidFolderName
         }
         name = normalized.name
@@ -234,6 +274,7 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         privacyPolicy = normalized.privacyPolicy
         proxy = normalized.proxy
         self.folderName = folderName
+        self.folderPath = folderPath
     }
 
     func validate() throws {
@@ -261,6 +302,12 @@ struct ProfileConfigurationTransferEntry: Codable, Equatable, Sendable {
         }
         if let folderName,
            ProfileFolder.normalizedName(folderName) != folderName {
+            throw ProfileConfigurationTransferError.invalidFolderName
+        }
+        if let folderPath,
+           folderPath.isEmpty ||
+            !folderPath.allSatisfy({ ProfileFolder.normalizedName($0) == $0 }) ||
+            folderPath.last != folderName {
             throw ProfileConfigurationTransferError.invalidFolderName
         }
     }

@@ -4,22 +4,29 @@ import SwiftUI
 struct ProfileFolderPickerPresentation: Equatable, Sendable {
     let filteredFolders: [ProfileFolder]
     let returnFolderID: UUID?
+    let pathByFolderID: [UUID: String]
 
     static func resolve(
         folders: [ProfileFolder],
+        organization: ProfileOrganizationState = .empty,
         searchText: String
     ) -> Self {
+        let pathByFolderID = Dictionary(uniqueKeysWithValues: folders.map { folder in
+            let path = organization.folderPath(for: folder.id)?.map(\.name) ?? [folder.name]
+            return (folder.id, path.joined(separator: " › "))
+        })
         let query = searchText.trimmingCharacters(
             in: .whitespacesAndNewlines
         )
         let filteredFolders = folders.filter {
             query.isEmpty ||
-                $0.name.localizedCaseInsensitiveContains(query)
+                (pathByFolderID[$0.id] ?? $0.name).localizedCaseInsensitiveContains(query)
         }
         return Self(
             filteredFolders: filteredFolders,
             // Return with an empty query must not move a profile by accident.
-            returnFolderID: query.isEmpty ? nil : filteredFolders.first?.id
+            returnFolderID: query.isEmpty ? nil : filteredFolders.first?.id,
+            pathByFolderID: pathByFolderID
         )
     }
 }
@@ -29,6 +36,7 @@ struct ProfileFolderPickerSheet: View {
 
     let profileName: String
     let folders: [ProfileFolder]
+    let organization: ProfileOrganizationState
     let selectedFolderID: UUID?
     let onSelect: (UUID?) -> Void
 
@@ -38,6 +46,7 @@ struct ProfileFolderPickerSheet: View {
     private var presentation: ProfileFolderPickerPresentation {
         ProfileFolderPickerPresentation.resolve(
             folders: folders,
+            organization: organization,
             searchText: searchText
         )
     }
@@ -83,7 +92,7 @@ struct ProfileFolderPickerSheet: View {
                     } else {
                         ForEach(visibleFolders) { folder in
                             folderButton(
-                                title: folder.name,
+                                title: presentation.pathByFolderID[folder.id] ?? folder.name,
                                 systemImage: "folder",
                                 folderID: folder.id
                             )

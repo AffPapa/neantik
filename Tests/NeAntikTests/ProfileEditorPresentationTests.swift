@@ -139,6 +139,44 @@ struct ProfileEditorPresentationTests {
     }
 
     @Test
+    func nestedFolderPickerShowsAndSearchesFullPaths() {
+        let firstParent = ProfileFolder(name: "Кампании")
+        let secondParent = ProfileFolder(name: "Архив")
+        let firstJapan = ProfileFolder(name: "Japan", parentFolderID: firstParent.id)
+        let secondJapan = ProfileFolder(name: "Japan", parentFolderID: secondParent.id)
+        let folders = [firstParent, secondParent, firstJapan, secondJapan]
+        let organization = ProfileOrganizationState(folders: folders)
+
+        let all = ProfileFolderPickerPresentation.resolve(
+            folders: folders,
+            organization: organization,
+            searchText: ""
+        )
+        #expect(all.pathByFolderID[firstJapan.id] == "Кампании › Japan")
+        #expect(all.pathByFolderID[secondJapan.id] == "Архив › Japan")
+
+        let editorControl = ProfileEditorFolderPresentation.resolve(
+            folders: folders,
+            selectedFolderID: secondJapan.id,
+            organization: organization
+        )
+        #expect(editorControl.selectedTitle == "Архив › Japan")
+        #expect(editorControl.quickOptions.contains {
+            $0.folderID == firstJapan.id && $0.title == "Кампании › Japan"
+        })
+        #expect(editorControl.quickOptions.contains {
+            $0.folderID == secondJapan.id && $0.title == "Архив › Japan"
+        })
+
+        let byAncestor = ProfileFolderPickerPresentation.resolve(
+            folders: folders,
+            organization: organization,
+            searchText: "Кампании"
+        )
+        #expect(Set(byAncestor.filteredFolders.map(\.id)) == Set([firstParent.id, firstJapan.id]))
+    }
+
+    @Test
     func proxyContextUsesTextAndIconForFreshness() {
         let now = Date(timeIntervalSinceReferenceDate: 10_000_000)
         let fresh = ProfileEditorProxyContextPresentation.resolve(

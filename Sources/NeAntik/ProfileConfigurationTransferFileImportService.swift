@@ -7,7 +7,8 @@ import Foundation
 enum ProfileConfigurationTransferFileImportService {
     static func prepareExport(
         profiles: [BrowserProfile],
-        folderNameByProfileID: [UUID: String]
+        folderNameByProfileID: [UUID: String],
+        folderPathByProfileID: [UUID: [String]] = [:]
     ) async throws -> Data {
         let task = Task.detached(priority: .userInitiated) {
             try Task.checkCancellation()
@@ -16,7 +17,8 @@ enum ProfileConfigurationTransferFileImportService {
             }
             let document = try ProfileConfigurationTransferDocument(
                 profiles: profiles,
-                folderNameByProfileID: folderNameByProfileID
+                folderNameByProfileID: folderNameByProfileID,
+                folderPathByProfileID: folderPathByProfileID
             )
             try Task.checkCancellation()
             let encoder = JSONEncoder()
@@ -39,6 +41,7 @@ enum ProfileConfigurationTransferFileImportService {
     static func prepareEncryptedExport(
         profiles: [BrowserProfile],
         folderNameByProfileID: [UUID: String],
+        folderPathByProfileID: [UUID: [String]] = [:],
         passphrase: String
     ) async throws -> Data {
         let task = Task.detached(priority: .userInitiated) {
@@ -48,7 +51,8 @@ enum ProfileConfigurationTransferFileImportService {
             }
             let document = try ProfileConfigurationTransferDocument(
                 profiles: profiles,
-                folderNameByProfileID: folderNameByProfileID
+                folderNameByProfileID: folderNameByProfileID,
+                folderPathByProfileID: folderPathByProfileID
             )
             try Task.checkCancellation()
             let data = try ProfileConfigurationEncryption.seal(

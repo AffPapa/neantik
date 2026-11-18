@@ -769,4 +769,194 @@ struct ProfileOrganizationTests {
             !ProfileAppearance.usesDarkForeground(for: "invalid")
         )
     }
+
+    @Test
+    func legacyOrganizationSchemaMigratesWithoutChangingIdentityOrAssignments() throws {
+        let rootID = UUID(uuidString: "10000000-0000-0000-0000-000000000001")!
+        let childID = UUID(uuidString: "10000000-0000-0000-0000-000000000002")!
+        let profileID = UUID(uuidString: "20000000-0000-0000-0000-000000000001")!
+        let revision = UUID(uuidString: "30000000-0000-0000-0000-000000000001")!
+        let legacy = ProfileOrganizationDocument(
+            schemaVersion: 1,
+            folders: [
+                ProfileFolder(id: rootID, name: "Root"),
+                ProfileFolder(id: childID, name: "Child")
+            ],
+            assignments: [ProfileFolderAssignment(profileID: profileID, folderID: childID)],
+            mutationRevision: revision
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let decoded = try decoder.decode(
+            ProfileOrganizationDocument.self,
+            from: encoder.encode(legacy)
+        )
+        let migration = try decoded.validatedState(knownProfileIDs: [profileID])
+        let currentDocument = ProfileOrganizationDocument(state: migration.state)
+
+        #expect(migration.changed)
+        #expect(currentDocument.schemaVersion == ProfileOrganizationDocument.currentSchemaVersion)
+        #expect(Set(migration.state.folders.map(\.id)) == [rootID, childID])
+        #expect(migration.state.folders.allSatisfy { $0.parentFolderID == nil })
+        #expect(migration.state.folderID(forProfileID: profileID) == childID)
+        #expect(migration.state.mutationRevision == revision)
+        #expect(try decoder.decode(
+            ProfileOrganizationDocument.self,
+            from: encoder.encode(currentDocument)
+        ) == currentDocument)
+    }
+
+    @Test
+    func nestedFolderQueriesAndOrderingAreDeterministic() throws {
+        let root = ProfileFolder(
+            id: UUID(uuidString: "10000000-0000-0000-0000-000000000001")!,
+            name: "Root"
+        )
+        let alpha = ProfileFolder(
+            id: UUID(uuidString: "10000000-0000-0000-0000-000000000002")!,
+            name: "Alpha",
+            parentFolderID: UUID(uuidString: "10000000-0000-0000-0000-000000000001")!
+        )
+        let beta = ProfileFolder(
+            id: UUID(uuidString: "10000000-0000-0000-0000-000000000003")!,
+            name: "Beta",
+            parentFolderID: UUID(uuidString: "10000000-0000-0000-0000-000000000001")!
+        )
+        let leaf = ProfileFolder(
+            id: UUID(uuidString: "10000000-0000-0000-0000-000000000004")!,
+            name: "Leaf",
+            parentFolderID: UUID(uuidString: "10000000-0000-0000-0000-000000000002")!
+        )
+        let state = ProfileOrganizationState(folders: [leaf, beta, alpha, root])
+
+        #expect(state.childFolders(of: root.id).map(\.id) == [alpha.id, beta.id])
+        #expect(state.descendantFolderIDs(of: root.id) == [alpha.id, leaf.id, beta.id])
+        #expect(state.descendantFolderIDs(of: root.id, includingSelf: true) == [root.id, alpha.id, leaf.id, beta.id])
+        #expect(state.folderPath(for: leaf.id)?.map(\.id) == [root.id, alpha.id, leaf.id])
+        #expect(state.folderDepth(of: leaf.id) == 2)
+        #expect(state.folderIDsInHierarchyOrder() == [root.id, alpha.id, leaf.id, beta.id])
+        #expect(state.folderIDs(includingDescendantsOf: root.id) == [root.id, alpha.id, leaf.id, beta.id])
+        #expect(state.folderPath(for: UUID()) == nil)
+
+        var movedState = state
+        try movedState.moveFolder(beta.id, toParentFolderID: alpha.id)
+        #expect(movedState.folderPath(for: beta.id)?.map(\.id) == [root.id, alpha.id, beta.id])
+    }
+
+    @Test
+    func organizationRejectsMissingParentsCyclesAndDuplicateSiblingNames() throws {
+        let aID = UUID()
+        let bID = UUID()
+        let cID = UUID()
+        let profileID = UUID()
+
+        let missingParent = ProfileOrganizationDocument(
+            folders: [ProfileFolder(id: aID, name: "A", parentFolderID: UUID())]
+        )
+        #expect(throws: ProfileOrganizationDocumentError.self) {
+            try missingParent.validatedState(knownProfileIDs: [])
+        }
+
+        let cycle = ProfileOrganizationDocument(
+            folders: [
+                ProfileFolder(id: aID, name: "A", parentFolderID: bID),
+                ProfileFolder(id: bID, name: "B", parentFolderID: aID)
+            ]
+        )
+        #expect(throws: ProfileOrganizationDocumentError.self) {
+            try cycle.validatedState(knownProfileIDs: [])
+        }
+
+        let selfParent = ProfileOrganizationDocument(
+            folders: [ProfileFolder(id: aID, name: "A", parentFolderID: aID)]
+        )
+        #expect(throws: ProfileOrganizationDocumentError.self) {
+            try selfParent.validatedState(knownProfileIDs: [])
+        }
+
+        let duplicateSiblings = ProfileOrganizationDocument(
+            folders: [
+                ProfileFolder(id: aID, name: "A"),
+                ProfileFolder(id: bID, name: "Team"),
+                ProfileFolder(id: cID, name: "team")
+            ]
+        )
+        #expect(throws: ProfileOrganizationDocumentError.self) {
+            try duplicateSiblings.validatedState(knownProfileIDs: [])
+        }
+
+        let sameNameInDifferentBranches = ProfileOrganizationDocument(
+            folders: [
+                ProfileFolder(id: aID, name: "A"),
+                ProfileFolder(id: bID, name: "B"),
+                ProfileFolder(id: cID, name: "Team", parentFolderID: aID),
+                ProfileFolder(id: UUID(), name: "team", parentFolderID: bID)
+            ],
+            assignments: [ProfileFolderAssignment(profileID: profileID, folderID: cID)]
+        )
+        #expect(try sameNameInDifferentBranches.validatedState(knownProfileIDs: [profileID]).state.folderID(forProfileID: profileID) == cID)
+    }
+
+    @Test
+    func movingFoldersRejectsCyclesAndDuplicateNamesAndDeletingParentPreservesChildren() throws {
+        let rootID = UUID()
+        let childID = UUID()
+        let leafID = UUID()
+        let rootProfile = UUID()
+        let leafProfile = UUID()
+        var state = ProfileOrganizationState(
+            folders: [
+                ProfileFolder(id: rootID, name: "Root"),
+                ProfileFolder(id: childID, name: "Child", parentFolderID: rootID),
+                ProfileFolder(id: leafID, name: "Leaf", parentFolderID: childID)
+            ],
+            assignmentsByProfileID: [rootProfile: rootID, leafProfile: leafID]
+        )
+
+        #expect(!state.canMoveFolder(rootID, toParentFolderID: leafID))
+        let duplicateRootName = ProfileOrganizationState(folders: [
+            ProfileFolder(id: rootID, name: "Child"),
+            ProfileFolder(id: childID, name: "Child", parentFolderID: rootID)
+        ])
+        #expect(!duplicateRootName.canMoveFolder(childID, toParentFolderID: nil))
+        #expect(throws: ProfileOrganizationError.self) {
+            try state.moveFolder(rootID, toParentFolderID: leafID)
+        }
+
+        let removed = try state.removeFolder(
+            withID: rootID,
+            at: Date(timeIntervalSince1970: 10)
+        )
+        #expect(removed == [rootProfile])
+        #expect(state.folder(withID: rootID) == nil)
+        #expect(state.folder(withID: childID)?.parentFolderID == nil)
+        #expect(state.folder(withID: leafID)?.parentFolderID == childID)
+        #expect(state.folderID(forProfileID: rootProfile) == nil)
+        #expect(state.folderID(forProfileID: leafProfile) == leafID)
+        #expect(state.descendantFolderIDs(of: childID) == [leafID])
+    }
+
+    @Test
+    func removingParentThatWouldCreateDuplicateSiblingFailsWithoutChangingState() throws {
+        let rootID = UUID()
+        let containerID = UUID()
+        let promotedID = UUID()
+        let existingSiblingID = UUID()
+        var state = ProfileOrganizationState(folders: [
+            ProfileFolder(id: rootID, name: "Root"),
+            ProfileFolder(id: containerID, name: "Container", parentFolderID: rootID),
+            ProfileFolder(id: promotedID, name: "Shared", parentFolderID: containerID),
+            ProfileFolder(id: existingSiblingID, name: "shared", parentFolderID: rootID)
+        ])
+        let before = state
+
+        #expect(!state.canRemoveFolder(withID: containerID))
+        #expect(throws: ProfileOrganizationError.self) {
+            try state.removeFolder(withID: containerID)
+        }
+        #expect(state == before)
+    }
 }

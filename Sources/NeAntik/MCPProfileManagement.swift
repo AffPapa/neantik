@@ -61,16 +61,16 @@ final class MCPProfileManagement {
         #endif
         let specs: [(String, String, [String: Any], [String])] = [
             ("template_list", "Read saved user templates (maximum50), safe start pages and tags. No credentials, notes, identity or BrowserData. Missing project folders resolve to unfiled. Use templateID plus this organizationRevision with profile_create; creation never starts a browser.", [:], []),
-            ("profile_get", "Read profile revision, start page, organization and requested fontPolicy (not applied-state proof). networkPolicyIntent reports saved route/DNS policy only; hostname DNS may use the system resolver, IP-literal proxy endpoints need no DNS, and runtimeRoute is always unverified. system-v1 is Chromium-only and needs the exact qualified runtime at launch. Proxy endpoint, credentials and note excluded.", ["profileID": uuid], ["profileID"]),
-            ("folder_list", "Read up to100 project folders and organizationRevision. Pass nextCursor unchanged; restart on organization change.", ["limit": ["type": "integer", "minimum": 1, "maximum": 100], "cursor": text], []),
-            ("workspace_query_profiles", "Find profiles by name, tags and project without reading private notes. Tags use AND; omitted archived means active only. folderID:null means unfiled, omission means any. Cursor is tied to filters and snapshot. Process state remains unverified.", MCPWorkspaceQuery.properties, []),
+            ("profile_get", "Read profile revision, start page, organization and requested fontPolicy (not applied-state proof). folderPath contains root-to-leaf names; folderID remains the stable exact-folder assignment. networkPolicyIntent reports saved route/DNS policy only; hostname DNS may use the system resolver, IP-literal proxy endpoints need no DNS, and runtimeRoute is always unverified. system-v1 is Chromium-only and needs the exact qualified runtime at launch. Proxy endpoint, credentials and note excluded.", ["profileID": uuid], ["profileID"]),
+            ("folder_list", "Read up to100 project folders in stable depth-first order and organizationRevision. Each row includes parentFolderID (null for a root) and folderPath from root to leaf. Pass nextCursor unchanged; restart on organization change.", ["limit": ["type": "integer", "minimum": 1, "maximum": 100], "cursor": text], []),
+            ("workspace_query_profiles", "Find profiles by name, tags and project without reading private notes. Tags use AND; omitted archived means active only. folderID:null means unfiled, omission means any, and a specified folderID matches exact assignments only. folderPath contains root-to-leaf names. Cursor is tied to filters and snapshot. Process state remains unverified.", MCPWorkspaceQuery.properties, []),
             ("profile_status", "Management mode reconciles profile ownership; external sessions require manual close. Read-only mode does not reconcile or clear data: externalUnverified indicates a process referencing the profile data was seen, unverified means the state is unknown; neither establishes that the profile is stopped or authorizes a launch. Optional includeObservation:true requires expectedRevision and observes only this session's verified owned browser. Never returns page content, credentials, PID, paths or proof of Chromium network route.", ["profileID": uuid, "includeObservation": ["type": "boolean"], "expectedRevision": revision], ["profileID"]),
             ("profile_create", profileCreateDescription, ["name": text, "engine": ["type": "string", "enum": BrowserEngine.allCases.map(\.rawValue)], "changes": changes, "templateID": uuid, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]]], ["name"]),
             ("profile_update", "Patch an existing stopped profile; omitted fields stay unchanged. fontPolicy:native|system-v1 explicitly selects Chromium font handling; system-v1 needs the qualified runtime at launch, not just a profile seed. Read its revision first.", ["profileID": uuid, "expectedRevision": revision, "changes": changes], ["profileID", "expectedRevision", "changes"]),
             ("profile_set_proxy", BrowserEngine.webkit.isAvailableInBuild ? "Configure/disable proxy settings on a stopped profile. Use proxy:null, proxy with kind/host/port, or an unauthenticated proxyLine with kind. MCP rejects username/password fields and credential-bearing proxy lines; enter credentials in NeAntik's local profile editor. Chromium authentication uses its per-profile local relay. A WebKit proxy requires the owned runtime; switching an existing WebKit profile between Direct and proxy is refused because those runtimes have separate site data. Create a new profile for that change. When the WebKit route is disabled, settings may be saved but launch fails closed without Direct fallback. HTTPS proxy certificates are verified before authentication when the supported route is enabled. A saved proxy and preflight result do not prove the browser route." : "Configure or disable proxy settings on a stopped Chromium profile. Use proxy:null, proxy with kind/host/port, or an unauthenticated proxyLine with kind. MCP rejects username/password fields and credential-bearing proxy lines; enter credentials in NeAntik's local profile editor. Chromium authentication uses its per-profile local relay. HTTPS proxy certificates are verified before authentication. A saved proxy or preflight result does not prove the browser route.", ["profileID": uuid, "expectedRevision": revision, "proxy": ["anyOf": [proxyFields, ["type": "null"]]], "proxyLine": text, "kind": ["type": "string", "enum": ["http", "https", "socks5"]]], ["profileID", "expectedRevision"]),
             ("profile_move", "Move stopped profile to folder/project or null (unfiled). Both revisions protect concurrent changes.", ["profileID": uuid, "expectedRevision": revision, "folderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["profileID", "expectedRevision", "folderID", "expectedOrganizationRevision"]),
             ("profile_duplicate", "Copy configuration into a fresh identity; never copy cookies, notes or BrowserData. Copies proxy password via local Keychain without returning it.", ["profileID": uuid, "expectedRevision": revision, "name": text], ["profileID", "expectedRevision", "name"]),
-            ("folder_create", "Create a project folder.", ["name": text, "expectedOrganizationRevision": optionalUUID], ["name", "expectedOrganizationRevision"]),
+            ("folder_create", "Create a project folder. Omit parentFolderID or pass null for a root; pass an existing parentFolderID to create a nested folder.", ["name": text, "parentFolderID": optionalUUID, "expectedOrganizationRevision": optionalUUID], ["name", "expectedOrganizationRevision"]),
             ("folder_rename", "Rename a project folder using its current organization revision.", ["folderID": uuid, "name": text, "expectedOrganizationRevision": optionalUUID], ["folderID", "name", "expectedOrganizationRevision"]),
             ("folder_remove", "Remove only the folder; retain all profiles and website data, moving them to unfiled.", ["folderID": uuid, "expectedOrganizationRevision": optionalUUID], ["folderID", "expectedOrganizationRevision"]),
             ("profile_check_proxy", BrowserEngine.webkit.isAvailableInBuild ? "Check proxy availability using bounded preflight diagnostics; does not qualify the Chromium or WebKit window route and does not change profile context." : "Check proxy availability using bounded preflight diagnostics; this does not prove the browser route and does not change profile context.", ["profileID": uuid, "expectedRevision": revision], ["profileID", "expectedRevision"]),
@@ -134,7 +134,15 @@ final class MCPProfileManagement {
             var affected: ProfileFolder?
             switch name {
             case "folder_create":
-                affected = try store.createFolder(named: string(args, "name"), expectedOrganizationRevision: .some(orgRevision)); affectedID = affected!.id
+                let parentFolderID = args["parentFolderID"] == nil
+                    ? nil
+                    : try nullableID(args, "parentFolderID")
+                affected = try store.createFolder(
+                    named: string(args, "name"),
+                    underParentFolderID: parentFolderID,
+                    expectedOrganizationRevision: .some(orgRevision)
+                )
+                affectedID = affected!.id
             case "folder_rename":
                 affectedID = try id(args, "folderID")
                 affected = try store.renameFolder(withID: affectedID, to: string(args, "name"), expectedOrganizationRevision: .some(orgRevision))
@@ -147,7 +155,7 @@ final class MCPProfileManagement {
             // catalog: a large workspace cannot turn a committed write into an error.
             return ["organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(),
                     "affectedFolderID": affectedID.uuidString,
-                    "folders": affected.map { [["id": $0.id.uuidString, "name": $0.name]] } ?? []]
+                    "folders": affected.map { [folderDTO($0)] } ?? []]
         }
         if name == "profile_create" {
             if loopbackQAProxyPort != nil, !store.profiles.isEmpty { throw Failure.denied }
@@ -524,7 +532,17 @@ final class MCPProfileManagement {
          "networkPolicyIntent": networkPolicyIntent(profile),
          "tags": profile.tags, "isPinned": profile.isPinned, "isArchived": profile.isArchived,
          "colorHex": profile.colorHex, "symbolName": profile.symbolName, "folderID": store.folderID(forProfileID: profile.id)?.uuidString as Any? ?? NSNull(),
+         "folderPath": store.folderID(forProfileID: profile.id).flatMap { store.organization.folderPath(for: $0)?.map(\.name) } ?? [],
          "organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(), "proxyKind": profile.proxy?.kind.rawValue as Any? ?? NSNull()])
+    }
+
+    private func folderDTO(_ folder: ProfileFolder) -> [String: Any] {
+        [
+            "id": folder.id.uuidString,
+            "name": folder.name,
+            "parentFolderID": folder.parentFolderID?.uuidString as Any? ?? NSNull(),
+            "folderPath": store.organization.folderPath(for: folder.id)?.map(\.name) ?? [folder.name]
+        ]
     }
 
     /// Configuration disclosure only: it never claims that the launched
@@ -558,11 +576,12 @@ final class MCPProfileManagement {
         let query = try MCPWorkspaceQuery(arguments: args)
         let revision = store.organization.mutationRevision?.uuidString ?? "initial"
         let offset = try query.offset(snapshot: revision)
-        let folders = store.organization.folders
+        let foldersByID = Dictionary(uniqueKeysWithValues: store.organization.folders.map { ($0.id, $0) })
+        let folders = store.organization.folderIDsInHierarchyOrder().compactMap { foldersByID[$0] }
         guard offset <= folders.count else { throw Failure.cursor }
         let end = min(offset + query.limit, folders.count)
         return ["organizationRevision": store.organization.mutationRevision?.uuidString as Any? ?? NSNull(),
-                "folders": folders[offset..<end].map { ["id": $0.id.uuidString, "name": $0.name] },
+                "folders": folders[offset..<end].map(folderDTO),
                 "count": end - offset, "totalCount": folders.count,
                 "nextCursor": end < folders.count ? query.cursor(snapshot: revision, offset: end) as Any : NSNull()]
     }

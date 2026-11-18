@@ -326,6 +326,7 @@ final class ProfileStore: ObservableObject {
     @discardableResult
     func createFolder(
         named requestedName: String,
+        underParentFolderID parentFolderID: UUID? = nil,
         at date: Date = Date(),
         expectedOrganizationRevision: UUID?? = nil
     ) throws -> ProfileFolder {
@@ -334,9 +335,14 @@ final class ProfileStore: ObservableObject {
             throw ProfileOrganizationError.invalidFolderName
         }
         return try mutateOrganization(expectedRevision: expectedOrganizationRevision) { state in
+            if let parentFolderID,
+               state.folder(withID: parentFolderID) == nil {
+                throw ProfileOrganizationError.folderNotFound
+            }
             let key = ProfileFolder.comparisonKey(name)
             guard !state.folders.contains(where: {
-                ProfileFolder.comparisonKey($0.name) == key
+                $0.parentFolderID == parentFolderID &&
+                    ProfileFolder.comparisonKey($0.name) == key
             }) else {
                 throw ProfileOrganizationError.duplicateFolderName
             }
@@ -348,7 +354,8 @@ final class ProfileStore: ObservableObject {
                 id: id,
                 name: name,
                 createdAt: date,
-                updatedAt: date
+                updatedAt: date,
+                parentFolderID: parentFolderID
             )
             state.addFolder(folder)
             return folder
@@ -373,6 +380,7 @@ final class ProfileStore: ObservableObject {
             let key = ProfileFolder.comparisonKey(name)
             guard !state.folders.contains(where: {
                 $0.id != folderID &&
+                    $0.parentFolderID == folder.parentFolderID &&
                     ProfileFolder.comparisonKey($0.name) == key
             }) else {
                 throw ProfileOrganizationError.duplicateFolderName
@@ -392,7 +400,24 @@ final class ProfileStore: ObservableObject {
             guard state.folder(withID: folderID) != nil else {
                 throw ProfileOrganizationError.folderNotFound
             }
-            return state.removeFolder(withID: folderID)
+            return try state.removeFolder(withID: folderID)
+        }
+    }
+
+    @discardableResult
+    func moveFolder(
+        withID folderID: UUID,
+        underParentFolderID parentFolderID: UUID?,
+        at date: Date = Date(),
+        expectedOrganizationRevision: UUID?? = nil
+    ) throws -> ProfileFolder {
+        try requireSynchronousMutationAdmission()
+        return try mutateOrganization(expectedRevision: expectedOrganizationRevision) { state in
+            try state.moveFolder(folderID, toParentFolderID: parentFolderID, at: date)
+            guard let folder = state.folder(withID: folderID) else {
+                throw ProfileOrganizationError.folderNotFound
+            }
+            return folder
         }
     }
 
@@ -713,6 +738,7 @@ final class ProfileStore: ObservableObject {
     func insertImportedProfilesOffMainActor(
         _ requestedProfiles: [BrowserProfile],
         folderNames: [String?],
+        folderPaths: [[String]?]? = nil,
         initialBookmarks: [UUID: BookmarkImportDocument] = [:]
     ) async throws -> [BrowserProfile] {
         let activity = try updateAdmission.beginActivity()
@@ -738,6 +764,7 @@ final class ProfileStore: ObservableObject {
                 paths: paths,
                 requestedProfiles: requestedProfiles,
                 folderNames: folderNames,
+                folderPaths: folderPaths,
                 initialBookmarks: initialBookmarks,
                 beforeOrganizationPersist: beforeOrganizationPersist
             )

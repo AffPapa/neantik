@@ -203,6 +203,8 @@
 "userError.203" = "The new profile directory changed or contains unexpected data. It was preserved; automatic rollback stopped.";
 "userError.204" = "There are not enough free file descriptors to create profiles. Close extra applications or import a smaller batch.";
 "userError.205" = "Profile directory creation did not finish. The directory may still exist; NeAntik does not delete it without verified ownership. Preserve the app data and contact support.";
+"userError.206" = "A folder cannot be nested inside itself or one of its subfolders.";
+"userError.207" = "This folder cannot be deleted because moving a subfolder up would create a duplicate name. Rename or move the conflicting subfolder first; profiles are preserved.";
 "userDialog.001" = "Export Profile Configuration";
 "userDialog.002" = "Only settings are exported. Cookies, BrowserData, notes, identity and Keychain secrets are excluded.";
 "userDialog.003" = "Encrypted Profile Export";
