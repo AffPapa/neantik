@@ -103,6 +103,25 @@ struct ManualFingerprintReportDeliveryGate: Equatable {
 }
 
 enum FingerprintAuditReportPresentationPolicy {
+    static func successfulSummary(changedCriticalKeys: [String]) -> String {
+        changedCriticalKeys.isEmpty
+            ? "Canvas, WebGL, аудио и геометрия профиля A стабильны; среди этих четырёх измерений различий с профилем B не обнаружено."
+            : "Canvas, WebGL, аудио и геометрия профиля A стабильны; среди этих четырёх измерений между профилями обнаружены различия."
+    }
+
+    static func criticalObservationIssue(unavailable: Bool, unstable: Bool) -> String {
+        if unavailable && unstable {
+            return "Некоторые параметры недоступны, другие изменились при повторном запуске. Повтори проверку."
+        }
+        if unavailable {
+            return "Некоторые проверяемые параметры недоступны. Повтори проверку."
+        }
+        if unstable {
+            return "Проверенные значения профиля A изменились при повторном запуске."
+        }
+        return "Не удалось проверить стабильность параметров. Повтори проверку."
+    }
+
     static func showsManualReportAction(
         isReleaseAudit: Bool,
         technicalDetailsAreExpanded: Bool,
@@ -336,7 +355,7 @@ struct FingerprintAuditView: View {
             Text(
                 isReleaseAudit
                     ? fingerprintDisplayText("NeAntik запускает профиль A, профиль B и снова профиль A. Так мы проверяем различие между профилями и стабильность первого профиля без отправки данных на внешний сайт.")
-                    : fingerprintDisplayText("NeAntik проверит, что профиль сохраняет свои параметры и отличается от другого профиля. Данные останутся на этом Mac.")
+                    : fingerprintDisplayText("NeAntik сравнит доступные параметры двух профилей и проверит стабильность первого. Данные останутся на этом Mac.")
             )
             .foregroundStyle(.secondary)
         }
@@ -515,13 +534,17 @@ struct FingerprintAuditView: View {
                     .fontWeight(.semibold)
                     Text(
                         passed
-                            ? fingerprintDisplayText("Профиль стабилен и отличается от другого профиля.")
+                            ? fingerprintDisplayText(FingerprintAuditReportPresentationPolicy.successfulSummary(changedCriticalKeys: report.changedCriticalKeys))
                             : primaryUserIssue(report)
                     )
                     .foregroundStyle(.secondary)
                 }
             }
             .accessibilityElement(children: .combine)
+
+            Text(fingerprintDisplayText("Эта проверка не подтверждает полную изоляцию профилей или фактический сетевой маршрут."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
             disclosureButton(
                 "Технические подробности",
@@ -803,8 +826,16 @@ struct FingerprintAuditView: View {
         guard let issue = report.publicAlphaReleaseIssues.first else {
             return fingerprintDisplayText("Проверку не удалось завершить. Закрой другие окна браузера и повтори.")
         }
+        if issue == "The critical observations are unavailable or unstable." {
+            return fingerprintDisplayText(
+                FingerprintAuditReportPresentationPolicy.criticalObservationIssue(
+                    unavailable: !report.unavailableCriticalKeys.isEmpty,
+                    unstable: !report.unstableCriticalKeys.isEmpty
+                )
+            )
+        }
         if issue.contains("unstable") {
-            return fingerprintDisplayText("Настройки профиля меняются между запусками.")
+            return fingerprintDisplayText("Некоторые измеренные значения меняются между запусками.")
         }
         if issue.contains("WebGL") ||
             issue.contains("separation") ||

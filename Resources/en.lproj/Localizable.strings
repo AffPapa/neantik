@@ -86,6 +86,12 @@
 "Подключение" = "Connection";
 "Поиск" = "Search";
 "Поиск профилей, заметок, тегов и папок" = "Search profiles, notes, tags, and folders";
+"Сортировка профилей" = "Sort profiles";
+"Повторяющиеся серверы прокси найдены в строках: %@. Учётные данные и выходные IP могут различаться." = "Repeated proxy servers appear on lines: %@. Credentials and exit IP addresses may differ.";
+"По имени" = "By name";
+"Недавно открытые" = "Recently opened";
+"Сначала новые" = "Newest first";
+"Закреплённые профили всегда показываются первыми" = "Pinned profiles are always shown first";
 "Показать меньше" = "Show Less";
 "Показать полностью" = "Show More";
 "Поля" = "Fields";
