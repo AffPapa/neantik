@@ -3,6 +3,19 @@ import Testing
 @testable import NeAntik
 
 struct BulkProxyImportTests {
+    @Test func previewRequestComparesCredentialBytesAndRedactsDebugOutput() {
+        let first = BulkProxyImportPreviewRequest(text: "us\u{e9}r:pw\u{e9}@proxy.example:80", kind: .http, order: .automatic)
+        let changedUser = BulkProxyImportPreviewRequest(text: "use\u{301}r:pw\u{e9}@proxy.example:80", kind: .http, order: .automatic)
+        let changedPassword = BulkProxyImportPreviewRequest(text: "us\u{e9}r:pwe\u{301}@proxy.example:80", kind: .http, order: .automatic)
+        #expect(first != changedUser)
+        #expect(first != changedPassword)
+        #expect(first == BulkProxyImportPreviewRequest(text: first.text, kind: .http, order: .automatic))
+        #expect(first != BulkProxyImportPreviewRequest(text: first.text, kind: .https, order: .automatic))
+        #expect(first != BulkProxyImportPreviewRequest(text: first.text, kind: .http, order: .endpointFirst))
+        let output = "\(first) \(String(reflecting: first))"
+        #expect(!output.contains("proxy.example") && !output.contains("us\u{e9}r") && !output.contains("pw\u{e9}"))
+        #expect(Mirror(reflecting: first).children.isEmpty)
+    }
     @Test func repeatedServersWarnWithoutRemovingProfilesOrExposingCredentials() throws {
         let input = """
         first:secret-one@Proxy.Example:8080
