@@ -1,10 +1,11 @@
 {
-  "schemaVersion": 1,
-  "toolCount": 18,
   "readToolCount": 7,
+  "schemaVersion": 1,
+  "toolCount": 19,
   "tools": [
     "folder_create",
     "folder_list",
+    "folder_move",
     "folder_remove",
     "folder_rename",
     "profile_check_proxy",

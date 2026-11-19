@@ -62,12 +62,14 @@ enum ProfileMetadataImportTransaction {
         paths: AppPaths,
         requestedProfiles: [BrowserProfile],
         folderNames: [String?],
+        folderPaths requestedFolderPaths: [[String]?]? = nil,
         initialBookmarks: [UUID: BookmarkImportDocument] = [:],
         beforeProfilesPersist: @Sendable () throws -> Void = {},
         beforeOrganizationPersist: @Sendable () throws -> Void = {}
     ) throws -> ProfileMetadataImportResult {
         guard !requestedProfiles.isEmpty,
               requestedProfiles.count == folderNames.count,
+              requestedFolderPaths == nil || requestedFolderPaths?.count == folderNames.count,
               // Portable Chromium imports can derive the system font policy
               // from a non-legacy privacy policy. Launch still validates it.
               requestedProfiles.allSatisfy({ profile in
@@ -116,44 +118,61 @@ enum ProfileMetadataImportTransaction {
 
             let operationDate = Date()
             var nextOrganization = previousOrganization
-            var folderIDByComparisonKey: [String: UUID] = [:]
+            struct FolderPathKey: Hashable {
+                let parentID: UUID?
+                let nameKey: String
+            }
+            var folderIDByPathKey: [FolderPathKey: UUID] = [:]
             var folderIDs = Set(previousOrganization.folders.map(\.id))
             var newFolders: [ProfileFolder] = []
             for folder in previousOrganization.folders {
-                folderIDByComparisonKey[
-                    ProfileFolder.comparisonKey(folder.name)
-                ] = folder.id
+                folderIDByPathKey[FolderPathKey(
+                    parentID: folder.parentFolderID,
+                    nameKey: ProfileFolder.comparisonKey(folder.name)
+                )] = folder.id
             }
 
             var folderIDsByProfileIndex: [UUID?] = []
             folderIDsByProfileIndex.reserveCapacity(folderNames.count)
-            for requestedName in folderNames {
-                guard let requestedName else {
+            let folderPaths = requestedFolderPaths ?? folderNames.map { $0.map { [$0] } }
+            for (index, requestedPath) in folderPaths.enumerated() {
+                guard let requestedPath else {
+                    guard folderNames[index] == nil else {
+                        throw ProfileOrganizationError.invalidFolderName
+                    }
                     folderIDsByProfileIndex.append(nil)
                     continue
                 }
-                guard let normalizedName = ProfileFolder.normalizedName(
-                    requestedName
-                ) else {
+                guard !requestedPath.isEmpty,
+                      requestedPath.allSatisfy({ ProfileFolder.normalizedName($0) == $0 }),
+                      folderNames[index] == requestedPath.last else {
                     throw ProfileOrganizationError.invalidFolderName
                 }
-                let key = ProfileFolder.comparisonKey(normalizedName)
-                if let existingID = folderIDByComparisonKey[key] {
-                    folderIDsByProfileIndex.append(existingID)
-                    continue
+                var parentID: UUID?
+                for component in requestedPath {
+                    let key = FolderPathKey(
+                        parentID: parentID,
+                        nameKey: ProfileFolder.comparisonKey(component)
+                    )
+                    if let existingID = folderIDByPathKey[key] {
+                        parentID = existingID
+                        continue
+                    }
+                    var folderID = UUID()
+                    while !folderIDs.insert(folderID).inserted {
+                        folderID = UUID()
+                    }
+                    newFolders.append(ProfileFolder(
+                        id: folderID,
+                        name: component,
+                        createdAt: operationDate,
+                        updatedAt: operationDate,
+                        parentFolderID: parentID
+                    ))
+                    folderIDByPathKey[key] = folderID
+                    parentID = folderID
                 }
-                var folderID = UUID()
-                while !folderIDs.insert(folderID).inserted {
-                    folderID = UUID()
-                }
-                newFolders.append(ProfileFolder(
-                    id: folderID,
-                    name: normalizedName,
-                    createdAt: operationDate,
-                    updatedAt: operationDate
-                ))
-                folderIDByComparisonKey[key] = folderID
-                folderIDsByProfileIndex.append(folderID)
+                folderIDsByProfileIndex.append(parentID)
             }
             nextOrganization.addFolders(newFolders)
 

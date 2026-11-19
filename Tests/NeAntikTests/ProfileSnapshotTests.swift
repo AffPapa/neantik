@@ -301,7 +301,8 @@ struct ProfileSnapshotTests {
         )
         let snapshotURL = try ProfileSnapshotStore.save(
             profiles: [profile],
-            folderNameByProfileID: [profile.id: "Работа"],
+            folderNameByProfileID: [profile.id: "Токио"],
+            folderPathByProfileID: [profile.id: ["Проекты", "Азия", "Токио"]],
             paths: paths,
             createdAt: Date(timeIntervalSince1970: 1_800_000_030)
         )
@@ -314,7 +315,8 @@ struct ProfileSnapshotTests {
 
         let restored = try #require(prepared.profiles.first)
         #expect(prepared.profiles.count == 1)
-        #expect(prepared.folderNames == ["Работа"])
+        #expect(prepared.folderNames == ["Токио"])
+        #expect(prepared.folderPaths == [["Проекты", "Азия", "Токио"]])
         #expect(restored.id != profile.id)
         #expect(restored.identity.runtimeSeed != profile.identity.runtimeSeed)
         #expect(restored.note.isEmpty)

@@ -54,20 +54,23 @@ struct ProfileEditorFolderPresentation: Equatable, Sendable {
 
   static func resolve(
     folders: [ProfileFolder],
-    selectedFolderID: UUID?
+    selectedFolderID: UUID?,
+    organization: ProfileOrganizationState = .empty
   ) -> Self {
     let offersSearchablePicker =
       folders.count > searchablePickerThreshold
     let projection = ProfileFolderCommandProjection.resolve(
       folders: folders,
       currentFolderID: selectedFolderID,
+      organization: organization,
       limit: offersSearchablePicker
         ? ProfileFolderCommandProjection.defaultLimit
         : folders.count + 1
     )
-    let selectedTitle = folders.first(where: {
-      $0.id == selectedFolderID
-    })?.name ?? "Без папки"
+    let selectedTitle = selectedFolderID.flatMap { folderID in
+      organization.folderPath(for: folderID)?.map(\.name).joined(separator: " › ")
+        ?? folders.first(where: { $0.id == folderID })?.name
+    } ?? "Без папки"
     return Self(
       quickOptions: projection.options,
       selectedTitle: selectedTitle,
@@ -147,6 +150,7 @@ struct ProfileEditorView: View {
   let keychain: KeychainStore
   let paths: AppPaths
   let folders: [ProfileFolder]
+  let organization: ProfileOrganizationState
   let suggestedTags: [String]
   let onSave: (
     BrowserProfile,
@@ -226,6 +230,7 @@ struct ProfileEditorView: View {
     creationTemplate: UserProfileTemplate? = nil,
     keychain: KeychainStore,
     folders: [ProfileFolder],
+    organization: ProfileOrganizationState = .empty,
     initialFolderID: UUID?,
     suggestedTags: [String],
     paths: AppPaths = AppPaths(),
@@ -243,6 +248,7 @@ struct ProfileEditorView: View {
     self.keychain = keychain
     self.paths = paths
     self.folders = folders.sorted(by: ProfileFolder.areInIncreasingOrder)
+    self.organization = organization
     self.suggestedTags = suggestedTags
     self.onSave = onSave
     self.onClose = onClose
@@ -348,6 +354,7 @@ struct ProfileEditorView: View {
       original: original,
       keychain: keychain,
       folders: [],
+      organization: .empty,
       initialFolderID: nil,
       suggestedTags: original?.tags ?? [],
       showsAdvancedOptionsInitially: showsAdvancedOptionsInitially
@@ -1055,6 +1062,7 @@ struct ProfileEditorView: View {
             ? NSLocalizedString("Новый профиль", comment: "Unnamed profile")
             : name,
         folders: folders,
+        organization: organization,
         selectedFolderID: selectedFolderID
       ) { folderID in
         selectedFolderID = folderID
@@ -1161,7 +1169,8 @@ struct ProfileEditorView: View {
   private var folderPresentation: ProfileEditorFolderPresentation {
     ProfileEditorFolderPresentation.resolve(
       folders: folders,
-      selectedFolderID: selectedFolderID
+      selectedFolderID: selectedFolderID,
+      organization: organization
     )
   }
 

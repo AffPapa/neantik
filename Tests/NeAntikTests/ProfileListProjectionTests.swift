@@ -47,6 +47,24 @@ struct ProfileListProjectionTests {
     }
 
     @Test
+    func profileSearchMatchesAncestorFolderInNestedPath() {
+        let parent = ProfileFolder(name: "Кампании")
+        let child = ProfileFolder(name: "Japan", parentFolderID: parent.id)
+        let profile = BrowserProfile(name: "Landing")
+        var organization = ProfileOrganizationState(folders: [parent, child])
+        organization.assign(profileIDs: [profile.id], toFolderID: child.id)
+
+        let matches = ProfileListProjection.filtered(
+            [profile],
+            searchText: "Кампании",
+            tag: nil,
+            organization: organization
+        )
+
+        #expect(matches.map(\.id) == [profile.id])
+    }
+
+    @Test
     func tagSummariesRespectScopeAndFolder() {
         let workID = UUID()
         let personalID = UUID()
@@ -175,6 +193,63 @@ struct ProfileListProjectionTests {
         #expect(tagPreview.hasHiddenItems)
         #expect(tagPreview.visibleItems.contains { $0.id == selectedTagID })
         #expect(!tagPreview.visibleItems.contains { $0.name == "Tag 7" })
+    }
+
+    @Test
+    func selectingNestedFolderIncludesDescendantProfilesAndTagCounts() {
+        let rootID = UUID()
+        let childID = UUID()
+        let direct = BrowserProfile(name: "Direct", tags: ["Shared"])
+        let nested = BrowserProfile(name: "Nested", tags: ["Shared"])
+        let outside = BrowserProfile(name: "Outside", tags: ["Shared"])
+        let organization = ProfileOrganizationState(
+            folders: [
+                ProfileFolder(id: rootID, name: "Projects"),
+                ProfileFolder(id: childID, name: "Travel", parentFolderID: rootID)
+            ],
+            assignmentsByProfileID: [
+                direct.id: rootID,
+                nested.id: childID
+            ]
+        )
+        let index = ProfileListIndex(
+            profiles: [direct, nested, outside],
+            organization: organization
+        )
+
+        #expect(index.filtered(
+            searchText: "",
+            tag: nil,
+            scope: .active,
+            folderFilter: .folder(rootID)
+        ).map(\.id) == [direct.id, nested.id])
+        #expect(index.activeCount(in: .folder(rootID)) == 2)
+        #expect(index.count(scope: .active, in: .folder(rootID), tagID: ProfileTagID(displayName: "Shared")) == 2)
+    }
+
+    @Test
+    func nestedFolderPreviewRetainsSelectedFolderAncestors() {
+        let rootID = UUID()
+        let childID = UUID()
+        let leafID = UUID()
+        let otherIDs = (0..<10).map { _ in UUID() }
+        let organization = ProfileOrganizationState(folders: [
+            ProfileFolder(id: rootID, name: "A root"),
+            ProfileFolder(id: childID, name: "A child", parentFolderID: rootID),
+            ProfileFolder(id: leafID, name: "A leaf", parentFolderID: childID)
+        ] + otherIDs.map { ProfileFolder(id: $0, name: UUID().uuidString) })
+
+        let preview = ProfileListProjection.folderTreePreview(
+            organization,
+            selectedID: leafID,
+            limit: 2
+        )
+
+        #expect(preview.visibleItems.map(\.id).contains(rootID))
+        #expect(preview.visibleItems.map(\.id).contains(childID))
+        #expect(preview.visibleItems.map(\.id).contains(leafID))
+        #expect(preview.visibleItems.first(where: { $0.id == leafID })?.depth == 2)
+        #expect(preview.hiddenCount == organization.folders.count - preview.visibleItems.count)
     }
 
     @Test

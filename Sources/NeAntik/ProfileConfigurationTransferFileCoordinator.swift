@@ -8,7 +8,8 @@ enum ProfileConfigurationTransferFileCoordinator {
 
     static func export(
         profiles: [BrowserProfile],
-        folderNameByProfileID: [UUID: String]
+        folderNameByProfileID: [UUID: String],
+        folderPathByProfileID: [UUID: [String]] = [:]
     ) async throws -> Int? {
         guard !profiles.isEmpty else {
             throw ProfileConfigurationTransferFileError.noStoppedProfiles
@@ -16,7 +17,8 @@ enum ProfileConfigurationTransferFileCoordinator {
         let data = try await ProfileConfigurationTransferFileImportService
             .prepareExport(
             profiles: profiles,
-            folderNameByProfileID: folderNameByProfileID
+            folderNameByProfileID: folderNameByProfileID,
+            folderPathByProfileID: folderPathByProfileID
         )
         try Task.checkCancellation()
 
@@ -38,6 +40,7 @@ enum ProfileConfigurationTransferFileCoordinator {
     static func exportEncrypted(
         profiles: [BrowserProfile],
         folderNameByProfileID: [UUID: String],
+        folderPathByProfileID: [UUID: [String]] = [:],
         passphrase: String
     ) async throws -> Int? {
         guard !profiles.isEmpty else {
@@ -47,6 +50,7 @@ enum ProfileConfigurationTransferFileCoordinator {
             .prepareEncryptedExport(
             profiles: profiles,
             folderNameByProfileID: folderNameByProfileID,
+            folderPathByProfileID: folderPathByProfileID,
             passphrase: passphrase
         )
         try Task.checkCancellation()

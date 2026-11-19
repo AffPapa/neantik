@@ -92,6 +92,13 @@ struct ProfileListPreview<Element: Equatable & Sendable>:
     }
 }
 
+struct ProfileFolderTreeRow: Identifiable, Equatable, Sendable {
+    let folder: ProfileFolder
+    let depth: Int
+
+    var id: UUID { folder.id }
+}
+
 /// One linear index for the workspace source column.
 ///
 /// It keeps folder lookups and folder-aware tag counts out of SwiftUI row
@@ -100,6 +107,7 @@ struct ProfileListIndex: Equatable, Sendable {
     private struct IndexedProfile: Equatable, Sendable {
         let profile: BrowserProfile
         let folderID: UUID?
+        let folderScopeIDs: Set<UUID>
         let profileSearchText: String
         let folderSearchText: String?
     }
@@ -146,8 +154,9 @@ struct ProfileListIndex: Equatable, Sendable {
         var displayNameByTagID: [ProfileTagID: String] = [:]
 
         let resolvedFolderNameByID = Dictionary(
-            uniqueKeysWithValues: organization.folders.map {
-                ($0.id, $0.name)
+            uniqueKeysWithValues: organization.folders.map { folder in
+                let path = organization.folderPath(for: folder.id)?.map(\.name) ?? [folder.name]
+                return (folder.id, path.joined(separator: " › "))
             }
         )
         folderNameByID = resolvedFolderNameByID
@@ -157,11 +166,16 @@ struct ProfileListIndex: Equatable, Sendable {
                 forProfileID: profile.id
             )
             let folderFilter: ProfileFolderFilter
+            let folderScopeIDs: Set<UUID>
             if let assignedFolderID,
                resolvedFolderNameByID[assignedFolderID] != nil {
                 folderFilter = .folder(assignedFolderID)
+                folderScopeIDs = Set(
+                    organization.folderPath(for: assignedFolderID)?.map(\.id) ?? [assignedFolderID]
+                )
             } else {
                 folderFilter = .unfiled
+                folderScopeIDs = []
             }
 
             let scopes: [ProfileListScope]
@@ -170,10 +184,12 @@ struct ProfileListIndex: Equatable, Sendable {
                 scopes = [.archived]
             } else {
                 activeCount += 1
-                if case let .folder(folderID) = folderFilter {
-                    activeCountByFolderID[folderID, default: 0] += 1
-                } else {
+                if folderScopeIDs.isEmpty {
                     unfiledCount += 1
+                } else {
+                    for folderID in folderScopeIDs {
+                        activeCountByFolderID[folderID, default: 0] += 1
+                    }
                 }
                 if profile.isPinned {
                     pinnedCount += 1
@@ -197,6 +213,7 @@ struct ProfileListIndex: Equatable, Sendable {
                 IndexedProfile(
                     profile: profile,
                     folderID: folderFilter.folderID,
+                    folderScopeIDs: folderScopeIDs,
                     profileSearchText: ProfileSearchText.document(
                         profileValues: [profile.name] + profile.tags + [
                             profile.note
@@ -208,7 +225,10 @@ struct ProfileListIndex: Equatable, Sendable {
                 )
             )
             for scope in scopes {
-                for filter in [ProfileFolderFilter.all, folderFilter] {
+                let folderFilters = folderScopeIDs.isEmpty
+                    ? [ProfileFolderFilter.unfiled]
+                    : folderScopeIDs.map(ProfileFolderFilter.folder)
+                for filter in [ProfileFolderFilter.all] + folderFilters {
                     countsByScope[scope, default: [:]][filter, default: 0] += 1
                     for (tagID, displayName) in profileDisplayNameByTagID {
                         let key = TagAccumulatorKey(
@@ -326,7 +346,7 @@ struct ProfileListIndex: Equatable, Sendable {
             case .unfiled:
                 guard entry.folderID == nil else { return nil }
             case let .folder(requiredFolderID):
-                guard entry.folderID == requiredFolderID else { return nil }
+                guard entry.folderScopeIDs.contains(requiredFolderID) else { return nil }
             }
             if let tag, !entry.profile.tags.contains(where: {
                 $0.compare(
@@ -394,8 +414,10 @@ enum ProfileListProjection {
     ) -> [BrowserProfile] {
         let query = ProfileSearchText.query(searchText)
         let folderNameByID = Dictionary(
-            uniqueKeysWithValues: organization.folders.map {
-                ($0.id, $0.name)
+            uniqueKeysWithValues: organization.folders.map { folder in
+                let path = organization.folderPath(for: folder.id)?.map(\.name)
+                    ?? [folder.name]
+                return (folder.id, path.joined(separator: " › "))
             }
         )
         return profiles.filter { profile in
@@ -421,7 +443,9 @@ enum ProfileListProjection {
             case .unfiled:
                 guard folderID == nil else { return false }
             case let .folder(requiredFolderID):
-                guard folderID == requiredFolderID else { return false }
+                guard assignedFolderID.flatMap({
+                    organization.folderPath(for: $0)?.contains(where: { $0.id == requiredFolderID })
+                }) == true else { return false }
             }
             let matchesTag: Bool
             if let tag {
@@ -492,6 +516,38 @@ enum ProfileListProjection {
             limit: limit,
             id: \.id,
             areInIncreasingOrder: ProfileFolder.areInIncreasingOrder
+        )
+    }
+
+    static func folderTreePreview(
+        _ organization: ProfileOrganizationState,
+        selectedID: UUID?,
+        limit: Int = defaultPreviewLimit
+    ) -> ProfileListPreview<ProfileFolderTreeRow> {
+        let rows: [ProfileFolderTreeRow] = organization.folderIDsInHierarchyOrder().compactMap { id -> ProfileFolderTreeRow? in
+            guard let folder = organization.folder(withID: id),
+                  let depth = organization.folderDepth(of: id) else { return nil }
+            return ProfileFolderTreeRow(folder: folder, depth: depth)
+        }
+        let requiredIDs = Set(
+            selectedID.flatMap { organization.folderPath(for: $0)?.map(\.id) } ?? []
+        )
+        let effectiveLimit = max(max(0, limit), requiredIDs.count)
+        var visibleIDs = Set(rows.prefix(effectiveLimit).map(\.id))
+        for row in rows where requiredIDs.contains(row.id) && !visibleIDs.contains(row.id) {
+            if visibleIDs.count < effectiveLimit {
+                visibleIDs.insert(row.id)
+            } else if let replacement = rows.reversed().first(where: {
+                visibleIDs.contains($0.id) && !requiredIDs.contains($0.id)
+            }) {
+                visibleIDs.remove(replacement.id)
+                visibleIDs.insert(row.id)
+            }
+        }
+        let visible = rows.filter { visibleIDs.contains($0.id) }
+        return ProfileListPreview(
+            visibleItems: visible,
+            hiddenCount: max(0, rows.count - visible.count)
         )
     }
 

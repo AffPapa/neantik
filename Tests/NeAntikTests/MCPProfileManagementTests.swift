@@ -741,15 +741,176 @@ struct MCPProfileManagementTests {
         let initial = try await engine.call("folder_list", [:])
         let folders = try await engine.call("folder_create", ["name": "Project", "expectedOrganizationRevision": initial["organizationRevision"]!])
         let folder = try #require((folders["folders"] as? [[String: Any]])?.first)
+        let childReceipt = try await engine.call("folder_create", [
+            "name": "Japan",
+            "parentFolderID": folder["id"]!,
+            "expectedOrganizationRevision": folders["organizationRevision"]!
+        ])
+        let child = try #require((childReceipt["folders"] as? [[String: Any]])?.first)
+        #expect(child["parentFolderID"] as? String == folder["id"] as? String)
+        #expect(child["folderPath"] as? [String] == ["Project", "Japan"])
         await #expect(throws: ProfileMetadataUndoConflict.self) { try await engine.call("folder_create", ["name": "Stale", "expectedOrganizationRevision": initial["organizationRevision"]!]) }
-        var move = request(profile); move["folderID"] = folder["id"]!; move["expectedOrganizationRevision"] = folders["organizationRevision"]!
+        var move = request(profile); move["folderID"] = child["id"]!; move["expectedOrganizationRevision"] = childReceipt["organizationRevision"]!
         let moved = try await engine.call("profile_move", move)
-        #expect(moved["folderID"] as? String == folder["id"] as? String)
+        #expect(moved["folderID"] as? String == child["id"] as? String)
+        #expect(moved["folderPath"] as? [String] == ["Project", "Japan"])
+        let listed = try await engine.call("folder_list", [:])
+        let listedFolders = try #require(listed["folders"] as? [[String: Any]])
+        #expect(listedFolders.map { $0["folderPath"] as? [String] } == [["Project"], ["Project", "Japan"]])
+        #expect(listedFolders[0]["parentFolderID"] is NSNull)
+        #expect(listedFolders[1]["parentFolderID"] as? String == folder["id"] as? String)
+        let fetched = try await engine.call("profile_get", ["profileID": profile["id"]!])
+        #expect(fetched["folderPath"] as? [String] == ["Project", "Japan"])
+        #expect(fetched["folderPathTruncated"] as? Bool == false)
         let removed = try await engine.call("folder_remove", ["folderID": folder["id"]!, "expectedOrganizationRevision": moved["organizationRevision"]!])
         #expect((removed["folders"] as? [[String: Any]])?.isEmpty == true)
-        #expect(try await engine.call("profile_get", ["profileID": profile["id"]!])["folderID"] is NSNull)
+        let afterRemoval = try await engine.call("profile_get", ["profileID": profile["id"]!])
+        #expect(afterRemoval["folderID"] as? String == child["id"] as? String)
+        #expect(afterRemoval["folderPath"] as? [String] == ["Japan"])
         #expect(engine.store.profiles.count == 1)
     }
+
+    @Test func folderCreateSchemaAcceptsOptionalParentFolderID() throws {
+        let definition = try #require(MCPProfileManagement.definitions(allowsManagement: true).first {
+            $0["name"] as? String == "folder_create"
+        })
+        let schema = try #require(definition["inputSchema"] as? [String: Any])
+        let properties = try #require(schema["properties"] as? [String: Any])
+        let required = try #require(schema["required"] as? [String])
+        #expect(properties["parentFolderID"] != nil)
+        #expect(!required.contains("parentFolderID"))
+    }
+
+    @Test func folderMoveRevisionPreservesAssignmentAndRejectsCycle() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let profile = try await create(engine)
+        let initial = try await engine.call("folder_list", [:])
+        let projectReceipt = try await engine.call("folder_create", [
+            "name": "Project",
+            "expectedOrganizationRevision": initial["organizationRevision"]!
+        ])
+        let project = try #require((projectReceipt["folders"] as? [[String: Any]])?.first)
+        let japanReceipt = try await engine.call("folder_create", [
+            "name": "Japan",
+            "parentFolderID": project["id"]!,
+            "expectedOrganizationRevision": projectReceipt["organizationRevision"]!
+        ])
+        let japan = try #require((japanReceipt["folders"] as? [[String: Any]])?.first)
+        let archiveReceipt = try await engine.call("folder_create", [
+            "name": "Archive",
+            "expectedOrganizationRevision": japanReceipt["organizationRevision"]!
+        ])
+        let archive = try #require((archiveReceipt["folders"] as? [[String: Any]])?.first)
+
+        var profileMove = request(profile)
+        profileMove["folderID"] = japan["id"]!
+        profileMove["expectedOrganizationRevision"] = archiveReceipt["organizationRevision"]!
+        let assigned = try await engine.call("profile_move", profileMove)
+        let movedProject = try await engine.call("folder_move", [
+            "folderID": project["id"]!,
+            "parentFolderID": archive["id"]!,
+            "expectedOrganizationRevision": assigned["organizationRevision"]!
+        ])
+        let movedDTO = try #require((movedProject["folders"] as? [[String: Any]])?.first)
+        #expect(movedDTO["parentFolderID"] as? String == archive["id"] as? String)
+        #expect(movedDTO["folderPath"] as? [String] == ["Archive", "Project"])
+        let currentProfile = try await engine.call("profile_get", ["profileID": profile["id"]!])
+        #expect(currentProfile["folderID"] as? String == japan["id"] as? String)
+        #expect(currentProfile["folderPath"] as? [String] == ["Archive", "Project", "Japan"])
+
+        await #expect(throws: ProfileOrganizationError.invalidFolderHierarchy) {
+            try await engine.call("folder_move", [
+                "folderID": archive["id"]!,
+                "parentFolderID": japan["id"]!,
+                "expectedOrganizationRevision": movedProject["organizationRevision"]!
+            ])
+        }
+
+        let returnedToRoot = try await engine.call("folder_move", [
+            "folderID": project["id"]!,
+            "parentFolderID": NSNull(),
+            "expectedOrganizationRevision": movedProject["organizationRevision"]!
+        ])
+        let rootDTO = try #require((returnedToRoot["folders"] as? [[String: Any]])?.first)
+        #expect(rootDTO["parentFolderID"] is NSNull)
+        #expect(rootDTO["folderPath"] as? [String] == ["Project"])
+        let restoredPath = try await engine.call("profile_get", ["profileID": profile["id"]!])
+        #expect(restoredPath["folderID"] as? String == japan["id"] as? String)
+        #expect(restoredPath["folderPath"] as? [String] == ["Project", "Japan"])
+    }
+
+    @Test func folderMoveSchemaRequiresExplicitNullableParentAndRevision() throws {
+        let definition = try #require(MCPProfileManagement.definitions(allowsManagement: true).first {
+            $0["name"] as? String == "folder_move"
+        })
+        let schema = try #require(definition["inputSchema"] as? [String: Any])
+        let properties = try #require(schema["properties"] as? [String: Any])
+        let required = try #require(schema["required"] as? [String])
+        #expect(properties["parentFolderID"] != nil)
+        #expect(Set(required) == Set(["folderID", "parentFolderID", "expectedOrganizationRevision"]))
+    }
+
+    @Test func nestedFolderReadPathsStayBoundedAndDeclareTruncation() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let wideName = String(repeating: "🙂", count: 64)
+        var parentID: UUID?
+        for _ in 0..<3 {
+            parentID = try engine.store.createFolder(
+                named: wideName,
+                underParentFolderID: parentID
+            ).id
+        }
+        let profile = try engine.store.upsert(BrowserProfile(name: "Long path"))
+        try engine.store.assignProfile(profile.id, toFolderID: parentID)
+
+        let folders = try await engine.call("folder_list", [:])
+        let rows = try #require(folders["folders"] as? [[String: Any]])
+        #expect(rows.allSatisfy {
+            guard let path = $0["folderPath"] as? [String] else { return false }
+            return path.joined(separator: " › ").utf8.count <= 512
+        })
+        #expect(rows.first?["folderPathTruncated"] as? Bool == false)
+        #expect(rows.last?["folderPathTruncated"] as? Bool == true)
+        let profileDTO = try await engine.call("profile_get", ["profileID": profile.id.uuidString])
+        let profilePath = try #require(profileDTO["folderPath"] as? [String])
+        #expect(profilePath.joined(separator: " › ").utf8.count <= 512)
+        #expect(profileDTO["folderPathTruncated"] as? Bool == true)
+    }
+
+    @Test func folderListShrinksOversizedPagesWithoutLosingRows() async throws {
+        let (root, engine, _) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let cluster = "a" + String(repeating: "\u{0301}", count: 31)
+        let commonPrefix = String(repeating: cluster, count: 32)
+        #expect(commonPrefix.count == 32)
+        #expect(commonPrefix.utf8.count == 2_016)
+        for index in 0..<100 {
+            let suffix = String(format: "%02d", index) + String(repeating: "x", count: 30)
+            try engine.store.createFolder(named: commonPrefix + suffix)
+        }
+
+        var cursor: Any = NSNull()
+        var seenIDs: Set<String> = []
+        var pageCount = 0
+        repeat {
+            var args: [String: Any] = ["limit": 100]
+            if !(cursor is NSNull) { args["cursor"] = cursor }
+            let page = try await engine.call("folder_list", args)
+            #expect(try MCPStdioServer.toolResult(page).count <= MCPStdioServer.maximumToolPayloadBytes)
+            let rows = try #require(page["folders"] as? [[String: Any]])
+            #expect(!rows.isEmpty)
+            for row in rows {
+                let id = try #require(row["id"] as? String)
+                #expect(seenIDs.insert(id).inserted)
+            }
+            cursor = page["nextCursor"] ?? NSNull()
+            pageCount += 1
+            #expect(pageCount <= 100)
+        } while !(cursor is NSNull)
+
+        #expect(seenIDs.count == 100)
+        #expect(pageCount > 1)
+    }
+
     @Test func proxyCredentialsAreRejectedAndEndpointOnlyConfigurationWorks() async throws {
         let (root, engine, backend) = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let profile = try await create(engine)
@@ -906,7 +1067,7 @@ struct MCPProfileManagementTests {
         #expect(config.arguments.contains(NeAntikLaunchIntent.mcpManagementArgument))
         #expect(NeAntikLaunchIntent.parse(arguments: [config.executable.path] + config.arguments).mode == .mcpManagement(dataRoot: config.dataRoot))
         for tool in MCPProfileManagement.allTools { #expect(config.codexTOML.contains(tool)) }
-        #expect(MCPProfileManagement.allTools.count == 18)
+        #expect(MCPProfileManagement.allTools.count == 19)
         #expect(NeAntikLaunchIntent.parse(arguments: [config.executable.path] + config.arguments + ["--untrusted"]).mode == .invalidControlArguments)
         config.allowsManagement = false
         #expect(!config.arguments.contains(NeAntikLaunchIntent.mcpManagementArgument))

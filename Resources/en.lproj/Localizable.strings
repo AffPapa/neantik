@@ -57,6 +57,7 @@
 "Настройки профиля" = "Profile Settings";
 "Новая вкладка" = "New Tab";
 "Новая папка…" = "New Folder…";
+"Новая подпапка…" = "New Subfolder…";
 "Новое окно" = "New Window";
 "Обновить" = "Reload";
 "Обновить NeAntik…" = "Update NeAntik…";
@@ -140,6 +141,7 @@
 "Удалить" = "Delete";
 "Удалить папку" = "Delete Folder";
 "Удалить папку?" = "Delete Folder?";
+"Вложенные папки останутся и поднимутся на один уровень." = "Nested folders will be kept and moved up one level.";
 "Удалить профиль" = "Delete Profile";
 "Удалить профиль?" = "Delete Profile?";
 "Учётные данные" = "Credentials";
@@ -250,6 +252,7 @@
 "Импортирую профили…" = "Importing profiles…";
 "Локальная библиотека" = "Local Library";
 "Новая папка" = "New Folder";
+"Новая подпапка" = "New Subfolder";
 "Проверить файлы обновления или открыть ручную загрузку" = "Check update files or open the manual download";
 "Проверить доступные остановленные прокси-профили, не более трёх одновременно" = "Check stopped proxy profiles, up to three at once";
 "Каждая строка списка станет отдельным профилем" = "Each line in the list becomes a separate profile";
@@ -752,3 +755,14 @@
 "workspace.encryptedExport.one" = "Encrypted export saved: %ld profile.";
 "Ещё %ld папка" = "%ld more folder";
 "Ещё %ld тег" = "%ld more tag";
+
+"folder.move.title" = "Move folder";
+"folder.move.subtitle" = "Choose a new parent folder for “%@”";
+"folder.move.search" = "Search folders";
+"folder.move.search.hint" = "Search by full path. The folder and its descendants are hidden.";
+"folder.move.root" = "Top level";
+"folder.move.count" = "Folders shown: %@";
+"folder.move.conflict" = "Unavailable destinations already contain a folder with the same name.";
+"folder.move.select.hint" = "Move here without changing profiles or browser data.";
+"folder.move.selected" = "%@, selected";
+"Переместить папку…" = "Move Folder…";

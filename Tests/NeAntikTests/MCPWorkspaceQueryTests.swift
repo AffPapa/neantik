@@ -29,16 +29,22 @@ struct MCPWorkspaceQueryTests {
     }
     @Test func filtersUseOnlyPublicMetadataAndCursorBindsBothSnapshotAndFilter() throws {
         let folder = ProfileFolder(name: "Café Project")
+        let nested = ProfileFolder(name: "QA", parentFolderID: folder.id)
         var a = BrowserProfile(name: "Same"); a.tags = ["QA", "ready"]; a.isPinned = true
         var b = BrowserProfile(name: "Same"); b.tags = ["qa"]; b.note = "private-marker";
         var c = BrowserProfile(name: "Archived"); c.isArchived = true
-        let organization = ProfileOrganizationState(folders: [folder], assignmentsByProfileID: [a.id: folder.id], mutationRevision: UUID())
+        let organization = ProfileOrganizationState(folders: [folder, nested], assignmentsByProfileID: [a.id: nested.id], mutationRevision: UUID())
         let profiles = [a,b,c]
         let query = try MCPWorkspaceQuery(arguments: ["text": "cafe", "tags": ["qa", "READY"], "isPinned": true])
         let page = try query.page(profiles: profiles, organization: organization)
         #expect(page["totalCount"] as? Int == 1)
         let match = try #require((page["profiles"] as? [[String: Any]])?.first)
         #expect(match["id"] as? String == a.id.uuidString); #expect(match["revision"] is String)
+        #expect(match["folderID"] as? String == nested.id.uuidString)
+        #expect(match["folderPath"] as? [String] == [folder.name, nested.name])
+        #expect(try MCPWorkspaceQuery(arguments: ["folderID": folder.id.uuidString]).page(profiles: profiles, organization: organization)["count"] as? Int == 0)
+        #expect(try MCPWorkspaceQuery(arguments: ["folderID": nested.id.uuidString]).page(profiles: profiles, organization: organization)["count"] as? Int == 1)
+        #expect(try MCPWorkspaceQuery(arguments: ["text": "cafe"]).page(profiles: profiles, organization: organization)["totalCount"] as? Int == 1)
         #expect(try MCPWorkspaceQuery(arguments: ["text": "private-marker"]).page(profiles: profiles, organization: organization)["count"] as? Int == 0)
         #expect(try MCPWorkspaceQuery(arguments: ["folderID": NSNull()]).page(profiles: profiles, organization: organization)["count"] as? Int == 1)
         #expect(try MCPWorkspaceQuery(arguments: ["isArchived": true]).page(profiles: profiles, organization: organization)["count"] as? Int == 1)
